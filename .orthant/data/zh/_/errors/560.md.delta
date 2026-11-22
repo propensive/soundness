@@ -1,0 +1,33 @@
+orthant 2 language
+
+@ 0 1 0 19cbb54c512700551a1ebc518ba130ee
++ # `SN-560` — 多行插值字符串的布局（已退役）
+
+@ 0 2 0 1a537637d484d5a0090a985cc99411f5
++ 此错误已不复存在。
++ 保留本页是为了不重复使用该代码，并使旧版本中对它的引用仍可解析。
+
+@ 0 1 0 1a08cb6777f7bfef175fcbc06499ad14
++ ## 后来如何
+
+@ 0 4 0 0217e8089a0722a70565e4cc04ba0bfa
++ 抛出此错误的 Decorum 编译器插件已从 Soundness 中分离出来，如今成为 [Consequent](https://github.com/propensive/consequent)，一个独立的 Consequent Style 检查工具。
++ 该规则在那里以新的标识符继续存在，其中的字母指明了它所源自的原则：
+
+% 0 1 0 0a7c55b4c0ac40601a46d9fdcd155626
+
+@ 0 2 0 11e1da673f3a24af013216749613ea3b
++ column  原代码
++ column  现代码
+
+% 0 1 0 1264939eeaa3b22113365e9d19c77e0a
+
+% 0 1 0 07c9b4731de4ca7f061c10dc84d58e84
+
+% 0 1 0 0ee8af89771d03d402186d78ed1d84bf
+
+% 0 1 0 1607aa9fd0553d291e14ca1555657af9
+
+% 0 1 0 1d26a5b6298d767e1a1126b1bdad7134
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37

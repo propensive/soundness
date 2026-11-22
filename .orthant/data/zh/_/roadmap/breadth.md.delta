@@ -1,0 +1,97 @@
+orthant 2 language
+
+@ 0 1 0 078b75ade43b93810be2da42b74a786e
++ # 标准覆盖广度
+
+@ 0 5 0 1a3d1de9e2c3ec5e0bca786bd0deef13
++ Soundness 实现标准，而不是发明它们的替代品，而且清单已经很长：HTTP/2、WebSocket、TLS、CBOR、Protocol Buffers、tar、zip、xz、PDF、TrueType、X.509、COSE、iCalendar、OAuth 2、OpenAPI、LSP、MCP 以及其他数十种，代码中附有 RFC 引用。
++ 但“开箱即用”的评判标准，是生产团队伸手去找却找不到的东西。
++ 本路线是一份固定的目标清单，按这种伸手落空发生的频率依次完成。
+
+@ 0 8 0 07a8e9a666ba8b5d197fbe8320a51ecb
++ 这份清单是刻意封闭的：五项标准，每一项的入选都是因为它补全了平台已在讲述的一个故事。
++ JOSE/JWT 是最大的缺口：基于令牌的认证无处不在，而相邻的部分（COSE、OAuth 2、X.509）已经存在。
++ TOML 是与更广泛的工具生态互操作的基本要求。
++ WebAuthn 补全了 Web 认证。
++ QUIC/HTTP-3 和 IMAP 补齐了传输和邮件。
++ 只有前三项位于生产就绪关卡之内；其余几项在关卡之外。
++ 当一项的模块附带测试、错误页面和主题指南发布时，该项即告完成；这与其他每个模块的标准相同，因为没有文档或不完整的功能并不算“附带”，只是“存在”而已。
+
+% 0 1 0 0a7c55b4c0ac40601a46d9fdcd155626
+
+@ 0 9 0 0c9e13c35c97404f0003ff06b3bfa162
++ column  条目
++ column  标准
++ column  时间范围
++ column  在关卡内
++ row  brd-1  JOSE：JWS、JWE、JWK、JWT（RFC 7515–7519）  近期  是
++ row  brd-2  TOML  近期  是
++ row  brd-3  WebAuthn  中期  是
++ row  brd-4  QUIC 和 HTTP/3（RFC 9000、RFC 9114）  远期  否
++ row  brd-5  IMAP（RFC 9051）  远期  否
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 1 0 01c89940c6bd12fe0c415ad7c86823bf
++ ## brd-1：JOSE
+
+@ 2 1 0 0a6b1d27ff08f3b30494be0fa5c317ec
++ 时间范围：近期
+
+@ 0 2 0 132f01b21e81e8fc140e7bdb70d20f23
++ 签名和加密的令牌：JWS、JWE、JWK 和 JWT，建立在 enigmatic 已经提供的原语之上，与其 COSE 支持并列。
+
+@ 0 2 0 1bad04e316c8f2b4074f158c42b79d5b
++ 完成条件：该模块附带测试、错误页面和一个 `doc/modules/` 主题发布，并能往返处理 RFC 7515/7516 的示例向量。
+
+@ 0 1 0 1998f84233791eca0abc020308a1bd92
++ ## brd-2：TOML
+
+@ 2 1 0 161197c1544681051edb61c89ef2754f
++ 时间范围：近期
+
+@ 0 2 0 02743a8b4510befc047e84e4dd78e560
++ 更广泛的工具生态所使用的配置格式。
++ Soundness 用 TEL 配置自身；但它仍然要读取别人写的东西。
+
+@ 0 2 0 18af8032fad0dd991bc252be8e8278aa
++ 完成条件：该模块附带测试、错误页面和一个 `doc/modules/` 主题发布，并通过标准的 TOML 合规测试套件。
+
+@ 0 1 0 1a8bb91b78e6de911354db5c71cedcc0
++ ## brd-3：WebAuthn
+
+@ 0 2 0 0a2a77535bd0c7e613013d40c9b76eba
++ 时间范围：中期
++ 依赖：brd-1
+
+@ 0 2 0 0babb33bc64a53ff0143b1e3ffc2fcca
++ 为 Web 技术栈提供无密码认证，补全 OAuth 2 和 JOSE 开启的故事。
++ 它所依赖的 COSE 支持已经存在。
+
+@ 0 2 0 10c5b8e16d190e5d05d62d5e6cf14588
++ 完成条件：该模块附带测试、错误页面和一个 `doc/modules/` 主题发布，并且一套脚本化的注册与断言流程能针对参考认证器通过。
+
+@ 0 1 0 0b3017b08d8c1f4018f26169215a2ca8
++ ## brd-4：QUIC 和 HTTP/3
+
+@ 2 1 0 1799573cdbc5182a090fd2e8eebd63ea
++ 时间范围：远期
+
+@ 0 2 0 02000836236b01aa0658f84f67d0bbaa
++ 传输层的后继者。
++ HTTP/2 和 HPACK 已经是原生实现；QUIC 把同样的处理延伸到它们之下。
+
+@ 0 2 0 15dbf9a13b6a33de02a1a0e99848348b
++ 完成条件：该模块附带测试、错误页面和一个 `doc/modules/` 主题发布，并能与参考 HTTP/3 服务器和客户端互操作。
+
+@ 0 1 0 01e52ef2626c334f018da700256be54b
++ ## brd-5：IMAP
+
+@ 2 1 0 1fc5f7954d6b6212198f29931270e73c
++ 时间范围：远期
+
+@ 0 1 0 0cf20e7aa955445d068c24caca973255
++ 邮件收取，补全 caduceus 的 SMTP 支持所开启的部分。
+
+@ 0 2 0 010de3cefe35de400abeab67664b483d
++ 完成条件：该模块附带测试、错误页面和一个 `doc/modules/` 主题发布，并且一次脚本化的会话能针对参考 IMAP 服务器通过。

@@ -1,0 +1,252 @@
+orthant 2 language
+
+% 0 1 0 0f04ec4b9ac2d4270a232409219e1f6b
+
+% 0 1 0 0b8b49a2a021ff5308fb7ad72870f54a
+
+% 0 1 0 0b5938ce7315323607e1922cbc4d93e2
+
+@ 0 1 0 0777a2b74520db161c5f6349cba9564f
++ info   把任何 Scala 值转换为由 JDK 装箱类型、字符串和对象数组构成的、与类加载器无关的 `Pojo`，并转换回来
+
+% 0 1 0 0ca6d61ddd9511ea1cdae38f1414f6fe
+
+@ 0 7 0 141bf02df385acdb167edce4b922978f
++     _Austronesian_ 把一个结构化的值带过它的类无法跨越的边界——进入另一个类加载器、另一个进程或一次分阶段执行的计算——方法是把它编码为 `Pojo`：一棵只由每个 JVM 环境都共享的类型构成的树，即 `String`、装箱的原始类型和 `Array[Object]`。
++     积类型变成由其字段组成的数组，变体变成由其标注和载荷组成的对，集合变成由其元素组成的数组，原始值变成它自身的装箱形式。
++     接收方按它所期望的类型解码，从同一个定义派生出同一个编解码器，因此没有任何 schema 随数据传输。
+
+% 2 1 0 188018541f603ff71814814a19c1e096
+
+% 3 1 0 16775ca7822ece2d1b36e60ee9d0d64f
+
+% 5 1 0 1a0100dae1099ef11d5c5f7084e373ef
+
+% 6 1 0 15d8024e78fdc98d046e3d3f4c83f7ee
+
+% 0 1 0 0a9d721800c0303a1124f1a6a61fafe4
+
+% 0 1 0 19e511027bb6bcd114b5d3c96485b2e1
+
+% 0 1 0 1274fd6ab6d6f571092aa9021a5a8b01
+
+% 1 1 0 0fdd80e794b4ca2a0cc29985677f6929
+
+@ 0 1 0 1508dc7eb8394cc2130421bb041918ec
++     转换随着值的结构增长，每次增加类型的一层：
+
+% 0 1 0 15d6d2800841da9e1c6e709ce05d6a7d
+
+% 1 1 0 0a47f914ed53260906bd03717b3d64ff
+
+@ 0 1 0 06c421a1d9dd28ff0bc45a2dee320aec
++       label 原始值就是它自身的装箱形式
+
+% 1 1 0 095c9ddeec80fe7e0004ce16cefe8c23
+
+% 0 1 0 06bef61e13d27143083d080dcf34003d
+
+% 1 1 0 0cc745d0e45c385601c2b5c5e12144f6
+
+@ 0 1 0 0b554eff0938c97d0fed9157561912b9
++       label 积类型是由其字段组成的数组
+
+% 1 1 0 14bebd8224a2492a1670ac01c454fcb5
+
+% 0 1 0 06abab8ecfa0276c147810ce479657ab
+
+% 1 1 0 078796ddd7f094361b54fa443008b2b5
+
+@ 0 1 0 042919cc89c1a4de053395f59e24ffd5
++       label 集合是由其元素组成的数组
+
+% 1 1 0 05895d6f448923311a6cbfc16045d829
+
+% 0 1 0 09ef87b5a43b6db4076ed5d3e8262699
+
+% 1 1 0 0ce951b38061b8d115241fce742965f9
+
+@ 0 1 0 0353167e8921610f141570c3f600638a
++       label 变体是由其标注和载荷组成的对
+
+% 1 1 0 12f869f9b87fd5911d6d2f63ea9b3d87
+
+% 0 1 0 03fd9757e0fb00b30a13f4333b10d00d
+
+% 0 1 0 093c7f35ae5bf57906d60a81463d334b
+
+% 0 1 0 1508fe5f66fc060200f1c3832efdfd5f
+
+% 0 1 0 0472326144a49ce71767be845f62f575
+
+% 1 1 0 11e767d9efb47d1a0f4b85a0051bf1dd
+
+@ 0 6 0 0a6f94ca3a7778ee0b0a36a910a4c50b
++     编码是 `pojo`，适用于任何 `Encodable in Pojo` 的类型：原始类型、`Text` 和 `String`、由可编码元素组成的集合，以及——通过 wisteria 派生的——各部分均可编码的任何积类型或和类型。
++     解码是 `Pojo` 上的 `as[T]`，在形状不匹配时抛出 `Pojo.Error`，因此它需要一个 `Tactic[Pojo.Error]`（例如在 `safely` 或 `unsafely` 之下）。
++     通过集合递归的类型，例如 `case class Tree(value: Text, children: List[Tree])`，也能派生。
+
+@ 0 3 0 11fb6c16f529f34506e9ec8fc5e190ee
++     这个库只有一个源集 `austronesian.core`，它是分阶段执行的远程执行所依赖的传输机制。
++     `Pojo` 和 `pojo` 导出到 `soundness` 总括包；每个编解码器都位于 `Pojo` 的伴生对象中，处于隐式作用域内，因此无需导入其他任何东西。
+
+% 0 1 0 1adca7ac254a1e4d197463810dfe6bfd
+
+% 0 1 0 18b010adecf2d36b00c9efaaef182475
+
+% 0 1 0 1004f83506a2be8513a8e6193b2524a3
+
+@ 0 7 0 17ad49125159ebeb1ab7de4faf2c0fd7
++ entry .Pojo   仅由 JDK 类型构成的树形式的值：字符串、装箱的原始类型和对象数组
++     `Pojo` 是不透明类型 `austronesian.internal.Pojo`，在此导出。
++     它是 `Object` 的子类型，底层类型是 `Array[Object]`、`String`、`java.lang.Boolean`、`java.lang.Byte`、`java.lang.Character`、`java.lang.Short`、`java.lang.Integer`、`java.lang.Long`、`java.lang.Float` 和 `java.lang.Double` 的联合，因此 `Pojo` 不会与任意对象混淆，并且对任何类加载器都有意义，因为所有这些类都来自 JDK。
+
+% 2 1 0 0f9d54d275152d5b1f6cf3bd7bbe69a9
+
+% 3 1 0 02586693b75929261e6a5303a27390ee
+
+% 5 1 0 1db9f8795e532fa50a64853de3e79a8d
+
+% 0 1 0 198e3f863f2dc39113e463a46e16bca9
+
+% 0 1 0 1c59eed13d307024020a292d4dad51c7
+
+% 1 1 0 0e8bf5d7aa452d681bef27d4f83af1d3
+
+@ 0 2 0 1efaddaeb6b8770e1fe54ef7a9abbe09
++     值通过扩展方法 `pojo` 变成 `Pojo`，再用 `as[T]` 读回，后者在形状不匹配时抛出 `Pojo.Error`。
++     每种值的编码如下：
+
+@ 0 8 0 1c925d699d3e72980eef76b20b9934f0
++     - `Text` 和 `String` 编码为 `String`，`Int`、`Long`、`Float`、`Double`、`Char`、`Boolean` 和 `Byte` 编码为它们的装箱形式。
++     - 集合（任何 `Iterable`，或 `List`、`Set`、`Sequence`）编码为由其元素的编码组成的 `Array[Object]`。
++     - 积类型（case class）编码为由其字段的编码按声明顺序组成的 `Array[Object]`。
++     - 和类型（密封特质或枚举）编码为一个二元素数组，由变体的标注和变体自身的编码组成：无参数的枚举分支为 `Array("Green", Array())`。
+
+@ 0 3 0 067dc01b19b6f01007b3cbe1d8dbd4e2
++     两个 `Pojo` 可以用 probably 的 `===` 按结构比较，这通过 `Pojo` 的 `Checkable` 实例实现，它逐个元素地比较数组，而 `==` 只会比较它们的同一性。
++     `Pojo(value)` 直接包装一个属于所允许的 JDK 类型之一的值。
+
+@ 0 4 0 11c6237fc5d1e16602911bb170191ce8
++ entry .pojo   把值编码为与类加载器无关的 `Pojo`
++     任何 `Encodable in Pojo` 的值上的内联扩展方法：原始类型、`Text`、`String`、由可编码元素组成的集合，以及各部分均可编码的任何 case class、枚举或密封特质，它们的编解码器是派生的。
++     编码不会失败。
+
+% 2 1 0 0488f251d41cad9c190cbb03dbb61c7c
+
+% 3 1 0 1b327b9b259d79fe0ce40f5657984223
+
+% 5 1 0 0f1b74118896b3681416a627100cbc20
+
+% 6 1 0 0b30a8374550b0d7074d38b49cf9b5ee
+
+% 0 1 0 09158d9ff4ad2d600fc2032c3130fff5
+
+% 0 1 0 1b0b194ad7ed583e048bdab05e61f9c7
+
+% 1 1 0 138b640fa8be4b591b87ee6175bbca5f
+
+@ 0 1 0 1f826888a0b0848b050fc873b3cc43ea
++ entry .internal   不透明类型 `Pojo`、它包含编解码器的伴生对象，以及它的错误
+
+% 1 1 0 07f40d269969e960059ee8212f77502a
+
+% 2 1 0 14400b5444cccf540f0dec9bbc9b5799
+
+@ 0 4 0 0d356b7ed72d2eff0f666c27f6caa2f4
++       不供直接使用：该对象持有 `Pojo` 的不透明定义，它被导出到 `austronesian` 包和 `soundness` 总括包。
++       它的伴生对象持有每个编解码器，因此只要 `Pojo` 在，它们就在隐式作用域内。
++   entry .Pojo   仅由 JDK 类型构成的树形式的值；见 `austronesian.Pojo`
+
+% 1 1 0 0df7ec30377845d812fcfbed36b0223c
+
+@ 0 49 0 0c740d05b3d5e95a08b4817cc9428ab5
++         不透明类型 `Pojo <: Object`，以及持有其构造方法、针对原始类型和集合的 `Encodable` 和 `Decodable` 实例、解码扩展方法 `as` 和 `Pojo.Error` 的伴生对象。
++         针对积类型和和类型的派生实例以及 `Checkable` 实例继承自 `Pojo2`。
++     entry .apply   把字符串、装箱的原始值或对象数组包装为 `Pojo`
++         接收一个属于 `Pojo` 所允许的 JDK 类型之一的值，并原样作为 `Pojo` 返回。
++         它不检查数组的元素，这些元素本身应当是 `Pojo`。
++     entry .text      把 `Text` 编码为它的 `String`
++     entry .string    把 `String` 编码为它自身
++     entry .int       把 `Int` 编码为 `java.lang.Integer`
++     entry .long      把 `Long` 编码为 `java.lang.Long`
++     entry .float     把 `Float` 编码为 `java.lang.Float`
++     entry .double    把 `Double` 编码为 `java.lang.Double`
++     entry .char      把 `Char` 编码为 `java.lang.Character`
++     entry .boolean   把 `Boolean` 编码为 `java.lang.Boolean`
++     entry .byte      把 `Byte` 编码为 `java.lang.Byte`
++     entry .list   把由可编码元素组成的任何 `Iterable` 集合编码为对象数组
++         适用于任何 `collection[element]`，其 `collection` 是标准库 `Iterable` 的子类型，其元素是 `Encodable in Pojo` 的。
++     entry .listEncodable     把由可编码元素组成的 Soundness `List` 编码为对象数组
++     entry .setEncodable      把由可编码元素组成的 Soundness `Set` 编码为对象数组
++     entry .seriesEncodable   把由可编码元素组成的 Soundness `Sequence` 编码为对象数组
++         Soundness 自己的集合是不透明的，不符合 `Iterable`，因此每种集合都有自己的实例，共用 `.list` 的实现。
++     entry .text2      从持有 `String` 的 `Pojo` 解码 `Text`
++     entry .string2    从 `Pojo` 解码 `String`
++     entry .int2       从持有 `java.lang.Integer` 的 `Pojo` 解码 `Int`
++     entry .long2      从持有 `java.lang.Long` 的 `Pojo` 解码 `Long`
++     entry .float2     从持有 `java.lang.Float` 的 `Pojo` 解码 `Float`
++     entry .double2    从持有 `java.lang.Double` 的 `Pojo` 解码 `Double`
++     entry .char2      从持有 `java.lang.Character` 的 `Pojo` 解码 `Char`
++     entry .boolean2   从持有 `java.lang.Boolean` 的 `Pojo` 解码 `Boolean`
++         这个解码器与其他原始类型解码器一样，不加检查地进行强制转换，因此其他类型的 `Pojo` 会以 `ClassCastException` 而不是 `Pojo.Error` 失败；只有数组的形状会被检查。
++     entry .collection   从对象数组逐个元素地解码 `Iterable` 集合
++         适用于任何带有 `Factory` 的标准 `collection[element]`，在实例被解析时需要一个 `Tactic[Pojo.Error]`；不是数组的 `Pojo` 会抛出 `Pojo.Error`。
++         元素的解码器按名称传递，因此通过集合递归的类型，例如 `case class Tree(value: Text, children: List[Tree])`，也能派生。
++     entry .listDecodable     从对象数组解码 Soundness `List`，否则抛出 `Pojo.Error`
++     entry .setDecodable      从对象数组解码 Soundness `Set`，否则抛出 `Pojo.Error`
++     entry .seriesDecodable   从对象数组解码 Soundness `Sequence`，否则抛出 `Pojo.Error`
++         在被解析时需要作用域内有一个 `Tactic[Pojo.Error]`，并像 `.collection` 那样按名称接收元素的解码器，因此递归类型也能派生。
++     entry .as   把 `Pojo` 解码为调用方选择的类型
++         `Pojo` 上的内联扩展方法，适用于任何 `Decodable in Pojo` 的类型。
++         积类型或和类型的解码器在形状不匹配时抛出 `Pojo.Error`，未知的变体标注会抛出 distillate 的 `Variant.Error`；作用域内需要一个 `Tactic[Pojo.Error]`。
+
+% 0 1 0 136a5f198bdaf3ac1a788e9525f64741
+
+% 0 1 0 0a9c20ea134f3fa702331949e4fc1ca4
+
+% 0 1 0 1731d71fd50a08aa19421f43a32417dc
+
+% 0 1 0 1c788b8f2be2eb850fdb78d13387d9b9
+
+% 0 1 0 160554dd3e526e051ae3577c4a1522b4
+
+% 0 1 0 02125690b11d560710feb200e65921bd
+
+@ 0 1 0 14f76c861c5c3a5007c5ee4f911c310c
++     entry .Error   当 `Pojo` 不具有它被解码成的类型的形状时抛出
+
+% 0 1 0 0f0c06beeb68e4ca19dd934fb64b22c4
+
+@ 0 5 0 05e576a53bccfaa7127008e04b449840
++           错误 `↯/s.120.1`：_could not deserialize from Java POJO types_。
++           当期望积类型或集合而 `Pojo` 不是数组时，或者期望和类型而它不是由标注和载荷组成的二元素数组时，由 `as` 抛出。
++           它通常意味着边界两侧对该类型的定义不一致。
++   entry .Pojo2   `Pojo` 伴生对象中较低优先级的实例：派生的编解码器和 `Checkable`
+
+% 1 1 0 06dfbb37706613b414492d5ad3c6fe6b
+
+@ 0 10 0 1466c37f3f9f7890135c303b255b94e1
++         `Pojo` 的伴生对象扩展的特质，因此只要 `Pojo` 在，它的 given 就在隐式作用域内，优先级低于伴生对象自己的 given。
++     entry #checkable   按结构比较两个 `Pojo`，供 probably 的 `===` 使用
++         长度相同且元素相等（递归比较）的数组相等；其他任何东西用 `==` 比较。
++     entry #encodable   通过 wisteria 为任何积类型或和类型派生 `Encodable in Pojo`
++         积类型编码为由其字段组成的数组，和类型编码为由其变体的标注和编码组成的对。
++     entry #decodable   通过 wisteria 为任何积类型或和类型派生 `Decodable in Pojo`
++         `#encodable` 的逆，在形状不匹配时抛出 `Pojo.Error`。
+
+@ 0 1 0 1cf67f7da9dc511813a5ccc48b8f664e
++ entry .protointernal   `Pojo` 的派生编解码器背后的 wisteria 派生
+
+% 1 1 0 00871abd95ff6d7f1267f1e7c4080d65
+
+% 2 1 0 117961863f3af50d0cd5a1b1c23114f5
+
+@ 0 7 0 06590ea98e02722f04c9360a56eb91e8
++       不供直接使用：`Pojo2.encodable` 和 `Pojo2.decodable` 所调用的派生。
++   entry .EncodableDerivation   为积类型和和类型派生 `Encodable in Pojo`
++     entry .conjunction   积类型编码为由其字段的编码组成的数组
++     entry .disjunction   和类型编码为由其变体的标注和编码组成的二元素数组
++   entry .DecodableDerivation   为积类型和和类型派生 `Decodable in Pojo`
++     entry .conjunction   从由字段组成的数组解码积类型，对任何其他形状抛出 `Pojo.Error`
++     entry .disjunction   从标注与载荷组成的对解码和类型，对任何其他形状抛出 `Pojo.Error`

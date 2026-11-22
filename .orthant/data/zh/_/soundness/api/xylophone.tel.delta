@@ -1,0 +1,3028 @@
+orthant 2 language
+
+% 0 1 0 0f04ec4b9ac2d4270a232409219e1f6b
+
+% 0 1 0 1b279ef41f180c44137ac9d44d3e5eaf
+
+% 0 1 0 0b5938ce7315323607e1922cbc4d93e2
+
+@ 0 1 0 099c07c2a192d64c1cc63c6481c03d76
++ info   以不可变的类型化值表示 XML：解析、字面量、派生编解码器、命名空间、XPath 和由 schema 驱动的记录
+
+% 0 1 0 0ca6d61ddd9511ea1cdae38f1414f6fe
+
+@ 0 10 0 16618be156eaa42c00f71cb6c0ea287c
++     _Xylophone_ 读写 [XML](https://en.wikipedia.org/wiki/XML)。
++     文本或字节被解析为一个 `Xml` 值，它是一棵树，其各种节点是 `Xml` 伴生对象中各自独立的类型（`Xml.Element`、`Xml.Text`、`Xml.Cdata`、`Xml.Comment`、`Xml.ProcessingInstruction`、`Xml.Doctype`，以及表示没有单一父节点的节点序列的 `Xml.Fragment`）；case class 或枚举通过由其形状派生的 `Encodable in Xml` 和 `Decodable in Xml` 与 XML 相互转换；文档的元素可以通过动态成员访问来导航、用 XPath 来选取，或通过透镜来更新；用 `x"…"` 插值器直接写出的 XML 在代码编译时就被解析和检查。
++     无法完成的转换会抛出一个指明原因的类型化 `Xml.Error`，而格式错误的文档会抛出一个 `Parse.Error`，其位置是一个范围，而不仅仅是一行。
+
+@ 0 4 0 13bc1a0d5093049d14afcf65a34dbdcf
++     一切都来自 `soundness` 总括包，只需在作用域内有一个错误策略和一个 schema。
++     schema 是一个按名称导入的选择：`xmlSchemas.freeformXmlSchema` 接受任何元素和属性，而当文档需要按 XML Schema 校验时，由一个 `Xsd` 代替它：
+
+% 2 1 0 127ef9be0638125d14a02518bfa4e5d1
+
+% 3 1 0 10f71b80a846b4730e8f2149028aa4d6
+
+% 0 1 0 0323f27fc4985e0804a43d7947f66e41
+
+% 0 1 0 0a7dbbab05c7c6e110d82930e8e4606b
+
+% 0 1 0 18ee8e1ba585b2ee198a70721d374a1a
+
+% 0 1 0 0825d1d3742f3d240942f6c129f1cb1a
+
+% 0 1 0 19b6c273c28ff22c064285e465fc5b5e
+
+% 0 1 0 023462e4648155201fef91c589d0c88e
+
+% 0 1 0 030b8c05db01d5d41419c2ae410a2bb8
+
+% 0 1 0 016244fccbb94f6c1fb75e42b8e13f7d
+
+% 1 1 0 11d86fa85c94dfe006a3e1341ef2a3e7
+
+@ 0 1 0 002d2410d591a14009479c529c61f1df
++     各个组成部分及其位置：
+
+@ 0 20 0 06b262f453f7b7e509ea51ee898d9245
++     - `Xml` 是节点类型，也是几乎一切的所在：它的伴生对象包含节点类，使 `read[Xml]`、`read[T in Xml]` 和 `load[Xml]` 能从文本或字节工作的 `Aggregable`/`Readable`/`Loadable` given，基本类型和集合的编解码器，针对积类型和和类型的 Wisteria 派生，渲染一棵树的 `Showable` 和 `Formatting`，流式序列化器 `Xml.emit` 和 `Xml.lend`，命名空间词汇（`Xml.Scope`、`Xml.Name`、`Xml.Namespacing`、`Xml.Namespaced` 以及 `@xmlns` 和 `@unqualified` 注解），`@attribute` 注解，XPath 扩展 `select`、`selectText` 和 `evaluate`，位置跟踪（`Xml.Position`、`Xml.Focus`、`Xml.positionable`、`asTracked`），直接（无树）编解码器接口（`Xml.Parsable`、`Xml.Printable`、`Xml.Field`、`Xml.Reader`、`Xml.Out`、`Xml.Direct`），以及 `Xml.Provider`，一个基于 XML Schema 的 polyvinyl 类型提供器。
++     - `x"…"` 和 `xp"…"` 分别是 XML 字面量和 XPath 表达式的插值器，各自在编译时检查；`x"…"` 也是一个模式。
++     - `XPath` 及其包私有的引擎和解析器在 `Xml` 树上实现 XPath 1.0；`Xsd` 是一个已解析的 XML Schema，`XmlSchema` 是解析时据以校验的词汇；`Namespace` 以 given 的形式将前缀绑定到 URI；`Tag`、`Attributive` 和 `Renderable` 是类型化标签的机制，honeycomb 和 savagery 等库在其上构建各自的词汇；`Inlinable` 和 `inlining` 在编译时生成直接解析器和打印器；`internal` 包含解析器、宏，以及从中导出的不透明类型 `Attributes` 和 `Scope`。
+
+@ 0 2 0 01f9cf4b1b2103b404baee685eb2d939
++     动态导航（`xml.child().grandchild()`）由按名称导入的 `dynamicAccess.dynamicXml` given 或一个 `dynamically[Xml]:` 块来开启。
+
+@ 0 1 0 1c948d45ba03373419b271c209842386
++     该库有三个源码集：
+
+@ 0 10 0 1f4a097f789936ba1ae547f066df5a61
++     - `xylophone.core`：上述的一切；解析器自己读取 UTF-8 字节，因此字节来源（文件、HTTP 正文、类路径资源）在到达时即被解析，作用域内无需 `Charset`，而文本来源先被编码为 UTF-8。
++     - `xylophone.http`：`construables`、`postables` 和 `servables` 三个选择包，使 `Xml` 值可以作为媒体类型为 `application/xml` 的 HTTP 请求或响应正文，并使正文在到达时被解析回 `Xml`。
++     - `xylophone.staged`：`InlinableStager`，即宏内的分阶段执行编译器，它让生成的直接解析器能在展开时求值用户编写的 `Inlinable` 实例。当它位于类路径上时，会通过 `Inlinable.Stager` 按名称加载，没有任何代码直接引用它。
+
+@ 0 15 0 1b4c170716cc1eea0b286bc22d706d2d
++     选择包中是需按名称导入的 given，因为 `import xylophone.*`（以及 `import soundness.*`）不会导入 given：`xmlSchemas.freeformXmlSchema`；`formatting.compactXmlFormatting` 和 `formatting.indentedXmlFormatting`；`namespaceOptions.strictNamespaces` 和 `namespaceOptions.lenientNamespaces`；`optionalityOptions.strictXmlAbsence`、`lenientXmlAbsence`、`strictXmlFaults` 和 `lenientXmlFaults`；`optics.xmlLens`、`xmlOrdinalOptical` 和 `xmlEachOptical`（`lens` 通过它们的类型在隐式作用域中找到它们，因此无需导入）；`dynamicAccess.dynamicXml`；以及来自 HTTP 组件的 `construables.xmlConstruable`、`construables.textXmlConstruable`、`postables.xmlPostable` 和 `servables.xmlServable`。
++     每个包都与总括包中同名的包合并，因此 `import formatting.indentedXmlFormatting` 在 `import soundness.*` 之后也能工作。
++     编解码模式 `codecs.direct`、`codecs.derived` 和 `codecs.strict` 来自 distillate，它们为作用域内的每个记录选择 `read[T in Xml]` 和 `in[Text over Xml]` 使用生成的无树编解码器、派生的树编解码器，还是生成的编解码器（无法生成时报编译错误）。
+
+@ 0 4 0 11ab5419a964668312e9cd0679b0c751
++     除 `Attributive`、`Renderable` 和 `Tag` 外，一切都导出到 `soundness` 总括包；这三者与 honeycomb 在那里的名称冲突，需以 `xylophone.Tag` 等形式访问；`attribute` 以类型别名 `soundness.attribute` 导出，因为 galilei 和 tarantula 已经导出了同名的项。
+
+% 0 1 0 02c3900895f096b70fa3c3398c951537
+
+% 0 1 0 14a562471e83ab790a444ed1a91ee968
+
+% 0 1 0 05bd6ddc13c470ee1dd1afed8889b1b4
+
+% 0 1 0 1836923a8ba38dd815be1f0ee4b1d87f
+
+% 0 1 0 1c400f3bb7c2cba1023d004da137c8cb
+
+% 0 1 0 1cd1f42372a5adef0638d964c5c06065
+
+% 0 1 0 1f3ef534b8cf576c026e24e8545889f5
+
+% 0 1 0 087f0b146be209d3098d4198e491e36b
+
+% 0 1 0 1d53e1d9afcc61c217cc20e67a1018c8
+
+@ 0 1 0 1894ab04832fb9d4061a61f20675a47f
++ entry .Xml   一个 XML 节点或节点序列，以及包含全部 XML 词汇的伴生对象
+
+% 1 1 0 0448971b16a7725f011cd7806be6f865
+
+@ 0 6 0 141af4a292a7c258060568f165aa4042
++       `Xml` 是所有 XML 值的密封类型：一个 `Node`（即 `Element`、`Text`、`Cdata`、`Comment`、`ProcessingInstruction`、`Doctype` 或 `Header`），或一个 `Fragment`，即没有单一父节点的节点序列，这是解析所返回的（序言加根元素），也是选取多个子节点时得到的。
++       每个 `Xml` 都是不可变的：更新会返回一个新值。
++       单节点的 `Fragment` 等于它的节点，因此 `t"<a/>".read[Xml] == Xml.Element(t"a", Attributes.empty, Array())`。
+
+% 2 1 0 1ca99e6f5d7a18170436a08955e90751
+
+% 3 1 0 1a11afe29545fa411d2a81cc2d1a87e6
+
+% 4 1 0 00ee783457cbec110ba4892a7fb48dcf
+
+% 5 1 0 0760a20db435719f12c75f0861e353f7
+
+% 6 1 0 1fcbec1ffabec5ed1afa0dfc68acfa1f
+
+% 0 1 0 0284f3501a6d92c410b736e4c25c3ea6
+
+% 0 1 0 1e3dea249ff9ab440b427a2b8c952e62
+
+% 0 1 0 14ee353795e98dcd116b4fb2dbf23727
+
+% 0 1 0 1fe0a61fadf7566709c91ef910eeb875
+
+% 0 1 0 184ca37f80a7a63504f1fa8b45679816
+
+% 1 1 0 0b0c7e849fd1986813add355ae9aa15c
+
+@ 0 5 0 0ef2a8075d5df0b71b5ba1a222a0b68c
++       该类型带有三个细化。
++       `Topic` 是节点的标注，在已知时为一个字面量类型（`Xml of "book"`，对于 `Text` 则为 `"#text"`）；`Transport` 是可作为其子节点的标注的集合；`Form` 是解析它时所依据的 `XmlSchema`。
++       honeycomb 和 savagery 的类型化标签构建在这些之上；对于从文本读取的 `Xml`，这三者都未被细化。
+
+@ 0 8 0 147e99d789754c1b15b82c6de656b316
++       **读取。** `text.read[Xml]` 和 `data.read[Xml]` 解析内容并丢弃开头的 `<?xml …?>` 声明（`.aggregable2`、`.aggregableText2`）；`source.load[Xml]` 把该声明保留为 `Document[Xml]` 的元数据 `Header`（`.loadable`、`.loadableData`）；`source.read[T in Xml]` 一步完成解析和解码（`Xml2#aggregableIn`，或者当 `T` 有 `Xml.Parsable` 时使用无树的 `Xml1#aggregableParsed`）。
++       每一种都需要一个 `XmlSchema`、一个 `Xml.Scope` 和一个 `Xml.Namespacing`（后两者的默认值由伴生对象提供）以及一个 `Tactic[Parse.Error]`。
++       字节来源在到达时按 UTF-8 解析，作用域内无需 `Charset`。
+
+@ 0 9 0 0b913e1778d370a30fcb7a819356ad2d
++       **解码与编码。** `xml.as[T]` 通过 `T` 的 `Decodable in Xml` 进行解码：基本类型（`.int`、`.boolean`、…）、任何具有 `Decodable in Text` 的类型（`.decodable`）、集合（`.listDecodable` 及其同类）、`Optional`（`.optionalDecodable`）、`Map`（`.mapDecodable`），以及由 `.DecodableDerivation` 派生的积类型和和类型。
++       `value.in[Xml]` 通过镜像 given 编码；`value.in[Text over Xml]` 和 `value.in[Data over Xml]` 直接渲染为文本或字节。
++       解码失败会抛出 `Xml.Error`；在累积式策略（`validate[Xml.Focus]`）下，所有错误字段会被一次性报告，每个都带有指明其路径的 `Xml.Focus`。
+
+@ 0 5 0 0bc7cb13f9b3e4c2085f1206fc8b3e33
++       **写出。** `xml.show` 按作用域内的 `Xml.Formatting` 渲染一个节点（默认紧凑；`formatting.indentedXmlFormatting` 会缩进仅含元素的内容）。
++       整个 `Document[Xml]` 通过 `.emit`（在纤程上的拉取形式，或在调用者线程上以文本或 UTF-8 字节输出的推送形式）或 `.lend` 流式输出，后者逐块借出序列化器自己的缓冲区。
+
+@ 0 10 0 029aaf55341031a00ba60a21de51665f
++       **命名空间。** 解析器在读取时解析前缀：每个 `Element` 以其 `scope` 携带在该处生效的绑定，`Element#namespace`、`#localName` 和 `#qualified` 读取解析后的名称。
++       两个名称只要 URI 和本地部分一致就是相同的，无论绑定它们的是什么前缀；带前缀的选取（`` doc.`a:x`() ``、`elements(Xml.Name(uri, local))`）按解析后的名称选取。
++       未绑定的前缀是解析错误，除非作用域内有 `namespaceOptions.lenientNamespaces`。
++       序列化器写出元素的作用域所需、而其上层尚未声明的声明，因此在代码中构建或从文档中截取的子树写出时都符合命名空间规范。
++       派生的编解码器用 `@xmlns("uri")` 把一个类型放入某个命名空间；对于无法加注解的类型，则使用一个 `Xml.Namespaced` given。
+
+@ 0 5 0 14327893639fd1d719cfc144b50a8b88
++       **直接编解码器。** `Xml.Parsable` 和 `Xml.Printable` 通过 `Xml.Reader` 或 `Xml.Out` 读写一个值，不构建树。
++       记录可以通过 `given Play is Xml.Parsable = Xml.Parsable.derived`（或 `.staged`、`Inlinable.parsable[Play]`、`Inlinable.printable[Play]`）、`derives Xml.Direct` 选择启用，也可以用 `import codecs.direct` 一次性为所有记录启用。
+
+@ 0 3 0 023d660784ae346c0bba0ad6c5d30196
++       **Schema。** `object Orders extends Xml.Provider(cp"/xsd/orders.xsd")` 在编译时读取一个 XML Schema，`Orders.record(xml)` 是一个记录，schema 根元素的每个子元素和属性都对应其一个类型化成员。
+
+@ 0 4 0 1b716aa40dbcf23d03eec0737627bbaf
++       `object Xml` 还从隐藏的层 `Xml1`、`Xml2`、`Xml3` 和 `Xml4` 继承成员，这些层按优先级排列它们的 given：直接读取路径和树读取路径、`in[Text over Xml]`、`Xml.Field` 回退以及 `Xml.Provider` 都在那里声明和记述。
+
+% 0 1 0 1b1631809ef0120016c7d463031d543d
+
+% 0 1 0 0a61bc20578c5d4e19c93e7870d26ff3
+
+% 0 1 0 0a9f026b3cbb9e72022edd15c53a873b
+
+% 0 1 0 04cf68acb32d9a531b9c78a16ea37920
+
+% 0 1 0 0e5146c39888573609bd6603ce97e132
+
+% 0 1 0 05f117ba0302008b12a69fb050f6f82f
+
+% 0 1 0 0e469b781d25eeb41ed49fb77549f1b1
+
+% 0 1 0 12dfff91b6486a1a14627431e789e18c
+
+% 1 1 0 1ddfa462650d5b7a045ef475c8988950
+
+% 1 1 0 08e43540cbda82c81198b15e50970ff6
+
+@ 0 19 0 0ae2961cb446502e0fd7c8ef4a790918
++   entry #Topic   节点的标注，在已知时为一个字面量类型；否则为任意 `Label`
++       `Xml of "book"` 是一个 `Topic` 为 `"book"` 的 `Xml`；`Xml.Text` 的 `Topic = "#text"`。
++       从文本解析出的节点未被细化。
++       类型化标签（`Tag`）会细化它，从而可以对照标签的 `Transport` 检查其子节点。
++   entry #Transport   可作为该节点子节点的标注，以字面量类型的联合表示
++   entry #Metadata   `Document[Xml]` 的元数据：它的 `Xml.Header`
++       来自 `load[Xml]` 的 `Document[Xml]` 将根元素与一个 `Header` 配对，后者保存版本、编码和 standalone 声明，以及当文档在作用域内有 `parsing.trackPositions` 的情况下加载时的位置索引。
++   entry #Chunks   文档流式输出时的数据块类型：`Text`
++   entry #Form   解析或构建该值时所依据的 `XmlSchema`
++   entry #as   通过其 `Decodable in Xml` 将该值解码为某个类型
++       `xml.as[T]` 解开单节点的 `Fragment` 并解码该节点。
++       它需要一个 `(T is Decodable in Xml)^`：基本类型的 given、`Decodable in Text` 桥接、集合或 `Optional` 的 given，或者 case class 或枚举的派生，而这又需要一个 `Tactic[Xml.Error]` 和一个 `Foci[Xml.Focus]`（在 `validate[Xml.Focus]` 边界之外不起作用）。
++       无法读取的值会抛出带有原因的 `Xml.Error`：文本不是预期类型时为 `Malformed`，元素没有单一文本段时为 `Untextual`，字段没有对应元素时为 `Missing` 或 `Absent`。
+
+% 2 1 0 19df4a32c63a77ba1b89550757e9bf74
+
+% 3 1 0 1c8bc7d2b327bd181d4ff57c78a5c7b6
+
+% 4 1 0 061c7aac562966330041cd0a88a040d3
+
+% 5 1 0 1a7a76b44f23bd450aa202c8a0402bd5
+
+% 7 1 0 15ba0eb2413b69ce08a8c35257ff1ae2
+
+% 0 1 0 15b9c694e5475eeb0a6c9da1d5d7e5cb
+
+% 0 1 0 1b478dc62d3fa4070b5f1b26d669356d
+
+% 0 1 0 170f2d40b225122c1cef88b16fcb37e6
+
+% 1 1 0 0f328db67779b9eb13c660b84442e30c
+
+@ 0 23 0 1eac78474f4de4920fc1d24c23c756bd
++       焦点上的位置保持为 `Unset`；通过 `asTracked` 解码一个在 `parsing.trackPositions` 下加载的 `Document[Xml]`，即可让每个焦点携带其源码的行和列。
++   entry #elements   每个具有某个解析后名称的子元素，作为一个 `Fragment`
++       `xml.elements(Xml.Name(t"urn:a", t"x"))` 是此处每个元素节点的、命名空间 URI 和本地部分与该名称一致的所有子元素，无论文档用什么前缀绑定它；`Xml.Name(t"x")` 选取不在任何命名空间中的子元素。
++       与 `selectDynamic` 不同，它既不需要 `Dynamical`，也不需要 `Scope`。
++   entry #element   位于某个序数、具有某个解析后名称的子元素，作为单节点的 `Fragment`
++       `xml.element(name)` 是第一个匹配项，`xml.element(name, Sec)` 是第二个；没有匹配项的序数得到一个空的 `Fragment`，而不是错误。
++   entry #selectDynamic   `xml.child`：每个具有该名称的子元素，作为一个 `Fragment`
++       动态导航，由一个擦除的 `Xml is Dynamical`（`import dynamicAccess.dynamicXml`，或一个 `dynamically[Xml]:` 块）和作用域内的 `Xml.Scope` 开启。
++       `xml.book` 按文档顺序选取片段中每个元素节点下标注为 `book` 的所有子元素；XML 标签并不唯一，因此结果是包含零个或多个元素的 `Fragment`。
++       带前缀的名称（`` xml.`a:x` ``）如果其前缀已被 `Scope` given 或父元素自身的绑定所绑定，则按解析后的名称选取，无论子元素使用什么前缀；未绑定的前缀匹配原始标注。
++   entry #applyDynamic   `xml.child(ordinal)`：一个具有该名称的子元素，默认为第一个
++       `xml.book()` 是第一个标注为 `book` 的子元素，`xml.book(Sec)` 是第二个，各自作为单节点的 `Fragment`；没有这样的子元素时为空的 `Fragment`。
++       其开启方式与 `#selectDynamic` 相同，因此各步可以串联：`data.b().c().as[Int]`。
+
+% 2 1 0 196f431c2a82a5e805ed1130f6afacd8
+
+% 3 1 0 1d6f9ad2b5627b9d04e7de7140e33db7
+
+% 4 1 0 143bd7c802b7273d09ad9818bad975da
+
+% 5 1 0 17cb19bcbf758be21506ce88d84a7c1b
+
+% 6 1 0 146a1b1ed106ae4219c03e2971133b81
+
+% 0 1 0 0c13caf96b80f62f0c30d4fc7645ab55
+
+% 0 1 0 082caa5382648c0504c4dcced145a62a
+
+% 0 1 0 196a85b441d933e71070ce9e7994bce4
+
+% 1 1 0 004f201c4bced4df0eac8afa35dd70bb
+
+@ 0 7 0 0fe7162db335ad9b180fd17875a81fe8
++   entry .Node   单节点种类的密封根类型：元素、文本、CDATA、注释、处理指令、文档类型声明、头部
++       `Node` 是一个 XML 节点，与包含多个节点的 `Fragment` 相对。
++       其种类为 `Element`、`Text`、`Cdata`、`Comment`、`ProcessingInstruction`、`Doctype` 和 `Header`，对 `Xml` 的匹配若有一个 `Fragment` 分支并为每种种类各有一个分支，就是穷尽的。
++       `Element` 的 `children` 是一个 `Array[Xml.Node]`。
++       每个节点都是纯的，因此可以在任何地方持有，而不捕获任何东西。
++   entry .Element   一个元素：标注、属性、子节点，以及在该处生效的命名空间绑定
+
+% 1 1 0 074eeffdba5e622a18024d758d24b0b8
+
+@ 0 6 0 1054d63f084e5a7207b8fe6d734d9bcc
++         `Xml.Element(label, attributes, children)` 是一个元素，其 `label` 是书写时的原始名称（`p:a` 保留其前缀），其 `attributes` 是按文档顺序排列的 `Attributes`，其 `children` 是一个 `Array[Xml.Node]`。
++         第四个参数 `scope` 是在该元素处生效的命名空间绑定的 `Xml.Scope`，由解析器、`x"…"` 字面量或派生的编码器填入；序列化器参考它来写出该元素需要、而其上层尚未声明的任何声明。
+
+@ 0 4 0 0d3e0af1a83f95b41c004657f200d431
++         `Element` 是普通类而不是 case class，因为作用域属于来源信息：它不参与 `equals`、`hashCode` 或提取器，因此解析出的元素等于手工构建的相同元素，而模式 `Xml.Element(label, attributes, children)` 看到的仍是它一直看到的三个字段。
+
+% 2 1 0 1786bf0b61e57f011f252bd8cc9ef970
+
+% 3 1 0 1fabcbf5a93d70370c5a6bd22f553879
+
+% 4 1 0 006ec0349bfdae690d97385e5bc6818d
+
+% 5 1 0 079e26dbe43b7caf1b28fb83b6916ef1
+
+% 0 1 0 0eb12f0e8c7a79f41743f3edef2202d1
+
+% 0 1 0 11931a168d81804902efcc4263b1a797
+
+% 0 1 0 0d63b0cd2dcface10201166df30efaa6
+
+% 0 1 0 1f5958c0c598c04816f0f2f3cea0e591
+
+% 0 1 0 00caadd25fe086f2140a44a859e4b33d
+
+% 1 1 0 18fbc42bdb64cafa1688aa051b916442
+
+@ 0 4 0 1bbd3d27d59fec85142f26eea10892e9
++         类型化标签的元素（`Tag.Container#node`）是混入了 `Xml.Vacuiscible` 的 `Element`，因此可以应用于子节点；它的属性通过 `#selectDynamic` 和 `#updateDynamic` 读写，每次都对照标签的 `Xml.XmlAttribute` given 进行检查。
+
+% 0 1 0 08cc6118c28bbbb4032b7399f700e73a
+
+% 1 1 0 0a2e33b6634396a10fd6bdd2ef538bd5
+
+% 0 1 0 15ebdbe6d3203dea05df7b3dca7d3f6f
+
+@ 0 42 0 0387b55f25650bf118180f4b06c54b10
++     entry .apply   由标注、属性、子节点和可选的作用域构造一个元素
++         `Xml.Element(label, attributes, children)` 的作用域为空；对于其前缀（或默认命名空间）需要在写出时声明的元素，将一个 `Xml.Scope` 作为第四个参数传入。
++     entry .unapply   模式 `Xml.Element(label, attributes, children)`：三个字段，从不包括作用域
++     entry #label   元素书写时的名称，包括前缀
++     entry #attributes   元素的属性，按文档顺序排列
++         一个 `Attributes`，包括所有 `xmlns` 声明，它们作为属性保留，以便文档按读入时的样子写回。
++         `attributes(t"id")` 是一个值（不存在时抛出异常），`attributes.fetch(t"id")` 是一个 `Optional`。
++     entry #children   子节点，按顺序排列
++     entry #scope   在该元素处生效的命名空间绑定，来自其祖先和它自身
++         由解析器、字面量或编码器填入的 `Xml.Scope`；对于手工构建且未给出作用域的元素为空。
++         不参与相等性比较。
++     entry #bindings   用该元素自身属性中的 `xmlns` 声明扩展后的作用域
++         对于手工构建、属性中有声明但没有作用域的元素，声明在这里生效。
++     entry #prefix   标注的前缀；如果标注中没有冒号，则为 `Unset`
++     entry #localName   去掉前缀后的标注
++     entry #resolve   某个前缀在该元素处绑定到的 URI；如果未绑定，则为 `Unset`
++         `element.resolve(Unset)` 是默认命名空间。
++         由该元素自身属性绑定的前缀可以解析，由祖先绑定的前缀也可以。
++     entry #namespace   该元素自身名称的 URI；如果它不在任何命名空间中，则为 `Unset`
++     entry #qualified   解析后的名称：命名空间 URI 和本地部分，作为一个 `Xml.Name`
++         访问器名为 `qualified` 而不是 `name`，因为类型化标签也是元素，而 `Format` 已经给了它们一个 `name`。
++         `qualified` 名称相等的两个元素，无论使用什么前缀，元素名都相同；以 Clark 记法显示为 `{urn:a}x`。
++     entry #attribute   具有某个解析后名称的属性的值，或 `Unset`
++         `element.attribute(Xml.Name(t"urn:a", t"id"))` 查找前缀解析为该 URI、且本地部分匹配的属性；`Xml.Name(t"id")` 查找无前缀的属性 `id`。
++         无论默认命名空间是什么，无前缀的属性都不在任何命名空间中。
++     entry #selectDynamic   `element.attr`：一个属性的值，对照标签的属性 given 进行检查
++         用于类型化标签：只要作用域内有 `"href" is Xml.XmlAttribute on element.Topic in element.Form`，`element.href` 就读取 `href` 属性，因此拼错的或不适用的属性是编译错误。
++         结果是一个 `Optional[Text]`。
++     entry #updateDynamic   `element.attr = value`：设置了该属性的元素副本
++         用于类型化标签：返回一个具有相同 `Topic`、`Transport` 和 `Form` 的新 `Element`，其属性已更新，并对照标签的 `Xml.XmlAttribute` given 进行检查。
++   entry .Text   一段字符数据
+
+% 1 1 0 07b939911a604fd9075b33281b938d74
+
+@ 0 6 0 1033d925f80aa6d716c766760d91ea6f
++         `Xml.Text(t"hello")` 是一个文本节点；它的 `Topic` 是 `"#text"`。
++         实体在读入时被解析（`&amp;` 在 `text` 中是字符 `&`），在写出时被重新转义；回车写作 `&#xD;`，因此行尾规范化无法改写它。
++         在类型化标签的子节点中，文本和 `String` 值会隐式转换为 `Xml.Text`（`.text`、`.string`）。
++     entry #text   字符，实体已被解析
+
+% 0 1 0 11d9fed4914dd9af138a17a2f894671b
+
+@ 0 1 0 03fd87a65736dc62114737bb553f9690
++   entry .Cdata   一个 `<![CDATA[…]]>` 段，作为段保留
+
+% 1 1 0 15649050a9b35abe0e1be38e1fcc04f9
+
+@ 0 7 0 1bc60f316fbd5ae21246f90c30ee4e24
++         包含 `<not a tag>` 的文本在往返中保持不变，不会被转义成别的东西。
++         就解码而言，CDATA 段不是文本：唯一子节点为 `Cdata` 的元素没有单一文本段，因此对它调用 `as[Int]` 会抛出带有 `Untextual` 的 `Xml.Error`；schema 提供器的读取器则同样拼接文本和 CDATA。
++     entry #text   定界符之间的内容，原样保留
++   entry .Comment   一个 `<!-- … -->` 注释，无论出现在哪里
+
+% 1 1 0 06a4c5b3d94492e20f5e624f099e2096
+
+@ 0 4 0 1f5e17c6c8b6274208209246da2cec53
++         无论在序言中还是在元素之间都会保留，并原样写回。
++         位于派生解码器所期望的子节点之间的注释会被忽略。
++     entry #text   注释的内容
++   entry .ProcessingInstruction   一条 `<?target data?>` 指令，包括数据为空的 `<?target?>`
+
+% 1 1 0 0bdf340fd7577f891555bf7f74228e6f
+
+@ 0 5 0 06ccc382b359f7370fa38033c1fba187
++         序言中的样式表指令在读取和写出后保持不变。
++         目标不能是任何大小写形式的 `xml`，它保留给声明使用。
++     entry #target   指令的目标
++     entry #data   指令的数据；对于 `<?target?>` 为空文本
++   entry .Doctype   一个 `<!DOCTYPE …>` 声明，原样序列化回去
+
+% 1 1 0 1855838b744c8e890f1a59eecd7e35ae
+
+@ 0 4 0 1ad84e2fdcfab9371feb073252b0d1fa
++         解析器保留声明的文本；它不支持 DTD 内部子集，因此带有内部子集的声明不会被解析。
++     entry #text   声明中 `DOCTYPE` 之后的内容
++   entry .Header   `<?xml …?>` 声明：版本、编码、standalone，以及位置索引
+
+% 1 1 0 119a6b1044845524149068370f14921f
+
+@ 0 5 0 03f74bba38021533050934d75282e1e2
++         `Document[Xml]` 的元数据：`load[Xml]` 根据声明填入它（对于没有声明的文档，`Xml.header` 是普通的 `1.0` 头部），`show` 和 `emit` 将其写回。
++         当文档在作用域内有 `parsing.trackPositions` 的情况下加载时，`positionIndex` 存在；它不参与 `equals` 和 `hashCode`，因此对同一来源的跟踪加载和非跟踪加载比较时相等。
+
+% 2 1 0 0dad5b888785404713877e1ec83cf38d
+
+% 3 1 0 1376d275c57b2c030740a049d0bdb0d1
+
+% 4 1 0 09a368b6c99278a5103ab599084b44ec
+
+% 5 1 0 001457254438d28505c43aa5b4deadff
+
+% 0 1 0 0d3d74ab87d1a37e042de76c51ba63b1
+
+% 0 1 0 1ddbe24ca96966e71e52f5d6ca9d7a17
+
+% 0 1 0 175b455d45ad583a17e2ad60863b2352
+
+% 0 1 0 12062a3f5c82b10d149b4ab128b5788f
+
+% 1 1 0 082780a3c0935e831990689a28137c15
+
+@ 0 5 0 01bbf96584d5f3bd06b9cb3414bf51fe
++     entry #version   XML 版本，通常为 `1.0`
++     entry #encoding   声明的编码，或 `Unset`
++     entry #standalone   `standalone` 声明，或 `Unset`
++     entry #positionIndex   跟踪加载所记录的源码位置索引，或 `Unset`
++   entry .Fragment   没有单一父节点的节点序列
+
+% 1 1 0 11a9326cf2ee33ce066ba277ff7c0073
+
+@ 0 5 0 06886bda43be286d0eef5a2a30936578
++         它是解析所返回的（序言的节点加上根元素），是动态选取所返回的（零个或多个匹配的子元素），也是 `Optional` 或集合编码器在积类型编码器将其展平为重复子元素之前所产生的。
++         单节点的 `Fragment` 等于该节点，而空的 `Fragment` 是解码器交给缺失字段的“不存在”哨兵值。
+
+% 2 1 0 04908af5d1bd076e10ca466f22a24821
+
+% 3 1 0 08170f0588afb0b10af81ac5d5cab987
+
+% 0 1 0 1c3112bace7025cd1bdd1d8fcee1595f
+
+% 0 1 0 004f5ded9969a2ec0e6d0609f85c387d
+
+% 1 1 0 1dae9ba1e2d00ff407f3ddb6059c2635
+
+@ 0 6 0 00771e719fc092ae1d93f741df89be53
++     entry .apply   一个节点片段，以整体的标注作为类型参数
++         `Xml.Fragment[topic](nodes*)` 接受任何 `Topic` 落在 `topic` 之内的 `Xml` 值，将嵌套的片段展平为其节点，并将结果类型定为 `Fragment of topic`；类型化标签用它来表示标签的子节点。
++     entry #nodes   节点，按顺序排列
++   entry .Vacuiscible   使类型化标签的元素可以应用于子节点
+
+% 1 1 0 15aac60fdc2f1e2e075fc2077b140c69
+
+@ 0 6 0 1a8e2bd8654cddb60679a3ddc26e3fd8
++         混入到 `Tag.Container` 所产生的元素中，使 `div(id = t"x")(p(t"hi"))` 读起来是一个标签先应用于属性、再应用于子节点。
++         每个子节点都是一个 `Optional[Xml of (? <: node.Transport)]`，因此 `Unset` 子节点会被丢弃，而标注不可接受的子节点是编译错误。
++     entry #apply   带有给定子节点的元素副本，`Unset` 子节点被丢弃
++   entry .Error   当 XML 无法按所要求的类型读取时抛出
+
+% 1 1 0 03562ef2b618ff4a1dd7bef15f5577ed
+
+@ 0 8 0 0236f2abd438706709571e8d28d81930
++         错误 `↯/s.128.1`：_the XML could not be read because `reason`_，其原因来自 `Xml.Error.Reason`。
++         由基本类型解码器、文本桥接、派生的积类型和和类型解码器以及直接解析器抛出。
++         这些是“抛出后继续”的错误：解码器通过其 `Tactic[Xml.Error]` 记录错误，并以零值或空的哨兵值继续，因此在 `validate[Xml.Focus]` 下，有多个错误字段的记录会为每个字段累积一个错误，而不是在第一个处停止，并且每个错误的 `Xml.Focus` 都携带出错字段的 XPath。
++         在 `strategies.throwUnsafely` 下，第一个错误会被抛出。
+
+% 2 1 0 004f0b57500399df0d4f2b7f92411742
+
+% 3 1 0 021083dbd1fb90a50c3d5ba117dbadd6
+
+% 4 1 0 066b684701263d2207bcb7dbddc15bb9
+
+% 5 1 0 0e90495b3a95a5dd0f7d4e22c3149f0d
+
+% 7 1 0 1849bb7056508ace08a062dee7ae53b2
+
+% 0 1 0 1f9be944ad7c6f4f15c6d3d5ec0f257f
+
+% 0 1 0 02ff622eb5ba835b00662c92fd1b9aa0
+
+% 1 1 0 038fee9fc73c16e51ed7508b932fb670
+
+% 0 1 0 002e8ce34779053d066e1f0d9e8e1650
+
+@ 0 2 0 067fd8376e567c0610ec5bec53c8aa42
++     entry .Reason   XML 无法读取的原因，各带编号
++         各个分支都扩展 `Reason(n)`，因此错误读作 `↯/s.128.1.n`：
+
+% 1 1 0 1a8b918dc7f9969906d6d506b4bfab31
+
+@ 2 4 0 00919b4e47da24a4040f3ec784677ff4
++         column  分支
++         column  代码
++         column  消息
++         column  备注
+
+% 0 1 0 0e081226ace94fec11d0357976dfe46e
+
+@ 0 7 0 004cd7188ef6402213e2b09668cd2e5c
++         row  `Untextual(expected)`  2  _the element has no text to read as `expected`_  没有单一文本段
++         row  `Absent(expected)`  3  _no element or attribute supplied the required `expected`_  必需的基本类型
++         row  `AbsentProduct(product)`  4  _no element supplied the required `product`, which has no default_  嵌套的记录
++         row  `AbsentVariant(sum)`  5  _no element supplied the required `sum`, which has no default_  枚举
++         row  `UnknownVariant(discriminant, sum)`  6  _`discriminant` does not name a variant of `sum`_  元素的标注
++         row  `Empty`  7  _the element has no text_  文本桥接需要文本之处
++         row  `Missing`  8  _the element or attribute was not present_  在抛出处无法指明类型之处
+
+% 1 1 0 1daedbe201f089dc1139ff303ac3f282
+
+@ 0 3 0 0e82aa6cf2d0adf711abdf02d3044d61
++     entry .communicable   将每个原因渲染为一条消息
++     entry #reason   `Xml.Error.Reason`
++   entry .Issue   解析器或 `x"…"` 宏在 XML 文本中发现的问题
+
+% 1 1 0 06891c59ddf711131928f6292b2cbd26
+
+@ 0 16 0 1a906b7e6ac45d2e05040621300b801a
++         XML 的 `Parse.Error` 所携带的问题，各带一条 `describe` 消息：`BadInsertion`（在字面量的此处不能插入值）、`ExpectedMore`（内容过早结束）、`BadDocument`（没有单一的根标签）、`UnquotedAttribute`、`InvalidTag(name)`、`InvalidTagStart(prefix)`、`DuplicateAttribute(name)`、`InadmissibleTag(name, parent)`（schema 不允许该子元素出现在该父元素之下）、`OnlyWhitespace(char)`、`Unexpected(char)`、`UnknownEntity(name)`、`ForbiddenUnquoted(char)`、`MismatchedTag(open, close)`、`UnopenedTag(close)`、`Incomplete(tag)`（内容结束时标签仍未闭合）、`UnknownAttribute(name)`、`UnknownAttributeStart(name)`、`InvalidAttributeUse(attribute, element)`、`UnboundPrefix(prefix)`（在 `Xml.Namespacing.Strict` 下没有命名空间绑定的前缀）以及 `BadEncoding`（输入不是有效的 UTF-8）。
++         `Parse.Error` 的位置是一个范围，即出错文本的偏移量和长度（对字节来源以字节计，对整个 `Text` 以字符计），因此工具可以准确地给不匹配的结束标签加下划线。
++     entry #describe   以消息形式表示的问题
++   entry .Position   源码位置：行、列，以及一个跨度的字节偏移量和长度
+
+% 1 1 0 07321a933ed8b7ff1f0b94f9a9ab4076
+
+@ 0 9 0 01ae2a25a42d40d3188ef94a0c77b80b
++         被跟踪文档中某个元素或某个解析错误所在之处。
++         `line` 和 `column` 是序数（`Prim` 表示第一个）；对于字节来源，`offset` 和 `length` 计算字节数，这正是编辑器在 UTF-8 文件中给一个跨度加下划线所需要的，对 ASCII 而言它们等于字符数。
++         对于在作用域内有 `parsing.trackPositions` 的情况下加载的文档，`Document[Xml]#locate(xpath)` 将一个 `XPath` 解析为一个位置。
++     entry #line   行，作为序数
++     entry #column   列，作为序数，按码位计数
++     entry #offset   在源码中的字节偏移量，或 `Unset`
++     entry #length   跨度的长度，或 `Unset`
+
+% 0 1 0 1921b38f9b9830f504dc819ad918dfff
+
+@ 0 6 0 026593a5b477fbe60b0cc329723ded41
++     entry #span   作为诊断用 `Span` 的位置
++   entry .PositionIndex   被跟踪文档中每个元素所在位置的紧凑记录
++       一个由跟踪加载构建、保存在文档 `Header` 中的不透明整数数组。
++       它自身没有公共操作：`Document[Xml]#locate(xpath)`（通过 `.positionable`）和 `asTracked` 读取它。
++   entry .Focus   文档中发生解码错误的位置：XPath，以及在被跟踪时的源码位置
+
+% 1 1 0 15ef6a8ae20cfaa51aaf3c5bdd4df339
+
+@ 0 12 0 184e581faf00f88d1c7b430b2a479d3a
++         XML 解码的焦点类型：`validate[Xml.Focus]` 收集解码文档时抛出的每个 `Xml.Error`，以及出错字段的 `XPath`。
++         除非文档在 `parsing.trackPositions` 下加载并通过 `asTracked` 解码（它在位置索引中查找每条路径），否则 `position` 为 `Unset`。
++     entry #path   指向正在解码的节点的 XPath
++     entry #position   源码位置；对于未被跟踪的文档为 `Unset`
++     entry #withPosition   一个副本，其 `position` 已根据被跟踪的文档解析
++   entry .positionable   在被跟踪的 `Document[Xml]` 中将一个 `XPath` 解析为 `Xml.Position`
++       `document.locate(path)` 背后的 `Positionable` given：对于未在 `parsing.trackPositions` 下加载的文档，或不匹配任何内容的路径，结果为 `Unset`。
++       路径的第一步指明根元素本身；`locateKey` 总是 `Unset`，因为 XML 没有区别于其元素的键位置。
+
+% 2 1 0 0b9b62714cdb45b215779f1415dbff94
+
+% 3 1 0 02bdd31a1466bb0e12b825e39f76fff2
+
+% 4 1 0 072727f8a951b27f15dc66bfbd66fbfa
+
+% 5 1 0 14e45f78398543391c5f931bffd93ceb
+
+% 0 1 0 1cdc57769a14db061e8c86d90120bb16
+
+% 0 1 0 0814770ec25efb500f469d449ea7eaca
+
+% 0 1 0 16ebda3fcca16f271bbb5dec520cbb75
+
+% 1 1 0 06f51bf8514d9ac61a189db8d4c76e4b
+
+@ 0 17 0 08b05380fc71c41f1cc56e93de30f6bc
++   entry .asTracked   解码一个被跟踪的文档，为每个累积的焦点给出其源码位置
++       `Document[Xml]` 上的一个扩展。
++       `document.asTracked[T]` 像 `Xml#as` 一样解码，然后为外围 `validate[Xml.Focus]` 中累积的每个 `Xml.Focus` 补充其 XPath 在文档索引中解析到的位置，从而校验报告可以指明行和列。
++       在 `validate` 块之外，焦点不起作用，调用没有任何开销；对于未被跟踪的文档，位置保持为 `Unset`。
++       它名为 `asTracked` 而不是 `as`，因为 `as` 是通用的解码扩展。
++   entry .aggregable   从字节 `source.read[Xml of content]`：解析一个类型化片段，丢弃任何声明
++       针对 `content` 标注可具体化的 `Xml of content` 的 `Aggregable by Data` given。
++       需要一个 `XmlSchema`、一个 `Xml.Scope`、一个 `Xml.Namespacing`、一个 `Tactic[Parse.Error]` 和一个 `Buffering`。
++       流在到达时即被解析，而不是先收集起来；开头的 `<?xml …?>` 声明会被接受并丢弃，因此整个文档读作一个片段（要保留它，请使用 `load[Xml]`）。
++   entry .aggregable2   从字节 `source.read[Xml]`：解析内容，丢弃任何声明
++       `.aggregable` 的普通 `Xml` 形式，上下文需求相同。
++       解析器直接读取 UTF-8 字节，因此文件、HTTP 正文或类路径资源在作用域内没有 `Charset` 时也能被解析。
+
+% 2 1 0 1da38179527f36c4013e7ec52c2c36fc
+
+% 3 1 0 06947f50d8463e7f144bcdc60c7fd124
+
+% 4 1 0 03d1217a619c1cd91d2062b8adf63378
+
+% 5 1 0 0bba677cf4a753f50d656c0a83659995
+
+% 0 1 0 08c7c3d6adf7e7d01181243055bc7825
+
+% 1 1 0 182efe694544d11a0051e170ee9989be
+
+@ 0 12 0 04b0afa04652749e020bca27a350cdb5
++   entry .aggregableText   `text.read[Xml of content]`：文本被编码为 UTF-8，并作为字节解析
++   entry .aggregableText2   `text.read[Xml]`：文本被编码为 UTF-8，并作为字节解析
++       `Text` 来源需要一次复制，即转为 UTF-8；对于整个 `Text`，`Parse.Error` 的偏移量和长度会被换算回字符数，因此对于非 ASCII 内容，字面量的错误跨度也是正确的。
++   entry .loadable   `text.load[Xml]`：一个 `Document[Xml]`，其 `<?xml …?>` 头部作为元数据保留
++       `Loadable by Text` given。
++       根元素的解析方式与 `.aggregableText2` 相同，但开头的声明会被提升到文档的 `Xml.Header` 中而不是被丢弃，没有声明的文档则得到 `Xml.header`。
++       需要解析上下文（`XmlSchema`、`Xml.Scope`、`Xml.Namespacing`、`Tactic[Parse.Error]`）和一个 `PositionTracking`：作用域内有 `parsing.trackPositions` 时，解析器会在头部记录一个 `PositionIndex`，供 `Document[Xml]#locate` 和 `asTracked` 读取。
+
+% 2 1 0 15c2a3448dc6dfbb19ccfd4002b345fc
+
+% 3 1 0 173b3e5234c9b0da1a39c3c183a084ec
+
+% 4 1 0 0d4ad450c7d9b38f0c1fcf004058b0dd
+
+% 5 1 0 061de205c141594a1341f0c480e5eca5
+
+% 0 1 0 0ac34298f3d746150409391e415998a7
+
+% 2 1 0 0fb76cfec7ce3e990bf9b1c7c57df0b9
+
+% 0 1 0 08674a15a25237881f32a6413cea375c
+
+% 0 1 0 09820aa3785669301674786343f04606
+
+% 1 1 0 16023838c919eeff16add3f6d8ab86d6
+
+@ 0 22 0 13321d96b2455e5a19256e3774e073ed
++   entry .loadableData   `data.load[Xml]` 或 `path.load[Xml]`：来自字节来源的文档，在到达时即被解析
++       与 `.loadable` 相同，但来自字节：文件、类路径资源或 HTTP 正文无需 `Charset` 即可加载，位置以字节计数。
++   entry .streamable   `Document[Xml]` 以 `Text` 形式流式输出，在纤程上序列化
++       `Streamable by Text over Credit` given，构建在 `.emit` 的拉取形式之上：需要一个 `Monitor` 和一个 `Probate`，因此在 `supervise` 下使用。
++       `document.read[Text]` 在作用域内的 `Xml.Formatting` 下渲染整个文档，包括头部。
++   entry .abstractable   作为 HTTP 正文的 `Xml` 值：使用 `Codepage` 字符集的 `application/xml`
++       `Abstractable across HttpStreams` given，telekinesis 从中派生出一个 `Postable` 和一个 `Servable`；正文是该值的 `show`，以作用域内的 `Codepage` 编码。
++       `xylophone.http` 的 `postables.xmlPostable` 和 `servables.xmlServable` given 是其直接形式。
++   entry .instantiable   HTTP 请求或响应的正文，读回为 `Xml`
++       `Instantiable across HttpRequests from Text` given：用作用域内的解析上下文解析正文文本，对格式错误的 XML 抛出 `Parse.Error`。
++   entry .showable   在作用域内的 `Xml.Formatting` 下将任何 `Xml` 渲染为文本
++       `xml.show` 将一个节点、片段或头部渲染为一个 `Text`：默认在单行上紧凑输出，导入 `formatting.indentedXmlFormatting` 时则缩进输出。
++       字符数据会被转义（`&`、`<`、`>`，以及将 `\r` 转义为 `&#xD;`），属性值还会额外转义 `"`、制表符和换行符，而注释、CDATA 段、文档类型声明和处理指令的内容原样写出。
++       如果一个元素的作用域绑定了它所使用、而没有任何祖先声明过的前缀，就会为它写出相应的 `xmlns` 声明。
+
+% 2 1 0 0b89f0517651789c162c5f8419894a04
+
+% 3 1 0 11a46f85cf67a881040b0ec6c1dfa899
+
+% 0 1 0 0bc4cc727c3fa3cb1f4be68561f4e994
+
+% 2 1 0 1c353b9a5fa0557204dd8fe13cd246e4
+
+% 0 1 0 0d7e449dbf37ed2916de4128c07b8c70
+
+% 0 1 0 1fb431cb649ef85b12110b85ec47baeb
+
+% 2 1 0 09acb160ee86dd9e02803746181bd22a
+
+% 3 1 0 1206aca3363a7c6a0dd55e343f1fde8f
+
+% 0 1 0 0e64ba4d3e4f231c07ef772039b95a22
+
+% 1 1 0 0a954bf10f786dcc0b78d7fe168472e8
+
+@ 0 8 0 171f5b907e07bf710bb49ad0ab67274c
++       子节点中含有字符数据的元素总是内联写出，因此缩进永远不会改变其内容。
++   entry .inspectable   作为 `xml"…"` 字面量的调试渲染，紧凑且位于一行
++       固定使用紧凑格式（因为调试器无法提供 `Formatting`），并将节点自身的源码转义为字面量：`xml"<message>hello</message>"`，它既区别于包含相同标记的 `Text`，也区别于 honeycomb 的 `html"…"`。
++   entry .Formatting   树的序列化方式：缩进单位（如果有），以及是否以换行符结尾
+
+% 1 1 0 053cbff9da171be80965dd8d29c151fe
+
+@ 0 21 0 03201c34be8223250ec1121c63d41015
++         `indent` 是缩进仅含元素的内容时每一嵌套层级输出的空白，为 `Unset` 时则全部保持在一行；`trailingNewline` 会追加一个最终的换行符。
++         伴生对象的 `default` 是紧凑格式，`formatting` 包则捆绑了 `compactXmlFormatting`（与之相同）和 `indentedXmlFormatting`（两个空格，带结尾换行符），供按名称导入。
++         每个渲染器，即 `show`、`emit`、`lend`、`Streamable` 和 `in[Text over Xml]`，都采用作用域内的 `Xml.Formatting`。
++     entry .apply   由可选的缩进单位和结尾换行标志构造一个格式
++     entry .default   紧凑：无缩进，无结尾换行符
++     entry #indent   缩进单位；单行输出时为 `Unset`
++     entry #trailingNewline   输出是否以换行符结尾
++   entry .emit   按块序列化一个 `Document[Xml]`：通过迭代器拉取，或推送给一个函数
++       有两种形式。
++       `Xml.emit(document)` 在纤程上序列化，并通过一个 `Iterator[Text]` 交出文本，因此大型文档可以在完全渲染之前就写入套接字或文件；它需要一个 `Xml.Formatting`、一个 `Monitor` 和一个 `Probate`，因此在 `supervise` 下运行。
++       `Xml.emit[medium](document, deliver)` 是推送形式：它在调用者的线程上序列化，每填满一块就交给 `deliver`，既没有纤程，也没有逐块的线程交接，这正适合写入文件、套接字或 `OutputStream`。
++       介质由类型参数通过一个 `Xml.Emitter` 选择：`emit[Text]` 交付文本块，`emit[Data]` 交付由序列化器直接转义和编码的 UTF-8 字节，没有中间的 `Text`。
++       两者都接受一个 `Xml.Formatting`，推送形式还接受一个决定块大小的 `Buffering`。
+
+% 2 1 0 11210998e2193d3f0c2bd1b86840d25a
+
+% 3 1 0 11e922baee3b957f08a553a77737f29e
+
+% 4 1 0 00dcbc59b9db41f0151a33d3e1b714f7
+
+% 0 1 0 01147745cd1b3104111fc255becf3569
+
+% 2 1 0 0bda94ca8b4ca6bd1a9d40b6f9127c14
+
+% 0 1 0 1d46f411b2cd1ee516988461fec5d5c3
+
+% 1 1 0 0ee05714fc7f0eda140ca5d22c0a6453
+
+@ 0 6 0 1b726821b3d9a32309128c4d8996aff9
++   entry .lend   将文档序列化为 UTF-8 并借出每个填满的块，不复制任何内容
++       推送式 `emit` 的借用形式：消费者以 `Region[Data]` 的形式看到写入器自己的缓冲区，带有一个证明每个索引都在范围内的带品牌区间，仅在调用期间有效，这与 `Stream.lend` 的规范相同。
++       必须保留这些字节的消费者需自行将其实体化；`emit[Data]` 就是常见情况下的这种消费者。
++       需要一个 `Xml.Formatting` 和一个 `Buffering`。
+
+% 2 1 0 000fff59b0b87ef2085365dd2a4aa77d
+
+% 3 1 0 159c6321f233090505b04743a3627c48
+
+% 4 1 0 01c300c127b0982d00854754c9475caa
+
+% 0 1 0 05b25b7db96ae0e50de3bd9a1135a3a1
+
+% 0 1 0 026286b741a4d11708de5b3cbeb1bb22
+
+% 1 1 0 050bbeff7f47a1540f4320316c580b48
+
+@ 0 1 0 18008add0b749b9f1d06902afdfa919e
++   entry .Emitter   推送形式的 `emit` 到达其消费者的方式：作为文本块或作为 UTF-8 字节
+
+% 1 1 0 0f005db1da21625c0a18ec61c547f211
+
+@ 0 8 0 1c238eaf6337174d052af3267ed331ad
++         一个以介质为参数的类型类：`Emitter[Text]` 通过一个 `Producer[Text]` 写出，`Emitter[Data]` 则通过 `lend` 背后的字节级 UTF-8 写入器写出，并将每个块实体化。
++         两个 given 都在伴生对象中，因此 `emit[Text]` 和 `emit[Data]` 无需导入。
++     entry .text   文本介质：`Text` 块
++     entry .data   字节介质：由序列化器直接编码的 UTF-8 `Data` 块
++     entry #emit   在某个格式下写出文档，将每个块交给一个函数
++   entry .Out   `Xml.Printable` 写入的输出：五个叶操作，每种标记各一个
+
+% 1 1 0 13ddc79665a5d07d1b84a4bae46f1c14
+
+@ 0 66 0 07c8153d32753c2a1f216b0179cc7373
++         一个独占的、有状态的能力，序列化器和生成的打印器通过它写出，因此一次遍历既能服务于文本输出（`show`、拉取式 `emit`），也能服务于字节输出（`lend`、`emit[Data]`）。
++         它的实现是内部的；手写的 `Xml.Printable` 调用这些方法，或调用 `Xml.Printable` 上的辅助方法，例如 `writeLeaf`。
++     entry #ascii   已知为 ASCII 的标记：定界符和关键字
++     entry #name   元素名、属性名或前缀，原样写出
++         文档会重复使用其名称，因此字节级输出可以缓存它们的编码。
++     entry #raw   原样写出、不做任何转义的文本：注释、CDATA、文档类型声明和处理指令
++     entry #text   字符数据，按文本内容转义
++     entry #attribute   属性值，按双引号属性转义
++   entry .header   默认头部 `<?xml version="1.0"?>`，用于读取时没有头部的文档
++   entry .name   格式的名称 `XML`，作为一个 `Format`
++   entry .Topic   伴生对象自身的主题 `"xml"`，作为一个 `Tag.Container`
++       `object Xml` 本身是一个标注为 `xml`、接受 `head` 和 `body` 的 `Tag.Container`，类型化标签的机制正是借此到达根元素；它不是 `Xml` 值的 `Topic`，后者是实例成员。
++   entry .Transport   伴生对象自身作为容器时可接受的子节点：`"head" | "body"`
++   entry .Integral   一个未使用的标记 trait
++   entry .Decimal   一个未使用的标记 trait
++   entry .Id   一个未使用的标记 trait
++   entry .nodes   将一个 `List[Xml]` 展平为一个 `Array[Xml.Node]`，拼接其中的片段
++       `List[Xml]` 上的一个扩展：每个 `Fragment` 贡献其节点，每个节点贡献其自身，因此由混合值构建的子节点列表会变成 `Xml.Element` 所接受的数组。
++   entry .text   将 `Text` 转换为 `Xml.Text`，用于类型化标签的子节点
++       一个针对任何接受 `"#text"` 的标注的 `Conversion[Text, Xml of label]`，使 `p(t"hello")` 在类型化标签上可用。
++       不供一般使用：只有在期望 `Xml of label` 的地方，才会通过伴生对象找到它。
++   entry .string   将 `String` 转换为 `Xml.Text`，与 `.text` 相同
++   entry .conversion3   在标注落在内容之内时，将 `Xml of label` 拓宽为 `Xml of content`
++   entry .comment   接受 `Xml.Comment` 作为任何类型化标签的子节点
++   entry .xmlConversion   在期望 `Xml` 的地方，将任何 `Encodable in Xml` 值转换为 `Xml`
++       `document.lens(_.Person = Person(t"Percy", 30))` 背后的强制转换：透镜赋值的右侧，或任何 `Xml` 参数，都接受 case class、`Int` 或 `Text` 并将其编码。
++       其他格式需要导入，例如 `conversions.encodableToJson`；XML 的则位于伴生对象中。
++   entry .sequences   将一个转换提升到 `Seq` 的元素上
++   entry .interpolator   `x"…"` 插值器的实现：在编译时解析并检查字面量
++       `StringContext` 上的 `x` 扩展所使用的 `Interpolable` given。
++       它的宏以宽松方式解析字面量的各部分，对照作用域内的 `Namespace` given 检查字面量所用的每个前缀（未声明、未绑定的前缀是编译错误），在出错的确切跨度处报告格式错误的字面量，并按位置替换每个空位：`Text` 或任何 `Encodable in Xml` 作为内容，`Xml` 作为节点，`Text` 作为属性值。
++       参见 `x`。
++   entry .extrapolator   `x"…"` 模式的实现：匹配字面量的形状并绑定其空位
++       `case x"<a id=$value>$child</a>"` 背后的 `Extrapolable` given。
++       模式可以采用的形状以及每个空位绑定的内容，参见 `x`。
++   entry .Hole   `x"…"` 字面量或模式中可以有空位的位置
++       `Text`（字符数据）、`Tagbody`（在开始标签内，用于属性）、`Comment`、`Element(tag)`（整个元素）、`Attribute(tag, attribute)`（属性的值）和 `Node(parent)`（子节点）。
++       插值器宏按每个 `$` 所处的上下文对其分类，并以 `Xml.Issue.BadInsertion` 拒绝位于无意义位置（例如在 CDATA 内）的 `$`。
++   entry .select   对这棵树求值一个 XPath，并将匹配的节点作为 `Fragment` 返回
++       `Xml` 上的一个扩展。
++       `xml.select(xp"//book[@id='1']")` 是按文档顺序排列的匹配树节点所构成的 `Fragment`。
++       选取属性的路径（`//a/@href`）在这里不产生任何结果，因为属性不是节点：请用 `selectText` 或 `evaluate` 读取它们的值。
++       值不是节点集的表达式会抛出带有 `NotNodeSet` 的 `XPath.Error`；引擎不支持的表达式，或未提供的变量，也会抛出 `XPath.Error`。
++       带前缀的名称测试通过路径自己的作用域解析（`XPath#in(scope)`，或写出 `xp"…"` 字面量时所处的 `Namespace` given）。
++   entry .selectText   第一个匹配节点的字符串值，或标量表达式的值
++       `xml.selectText(xp"//a/@href")` 是该属性的值，没有匹配时为 `Unset`；对于数字、布尔或字符串表达式，它是该值的文本。
+
+% 2 1 0 0e75f00ca2cc7ea21a1ec37e5c05fbe8
+
+% 3 1 0 0cf3d3c0a385c445063805742711250c
+
+% 4 1 0 19e25feed3fe008c15e278b963d0c5bd
+
+% 5 1 0 023911669351045605928555b6e8be2c
+
+% 0 1 0 020168327297f0c608705412cb394340
+
+% 0 1 0 0394bdd2fe12690d1416869c4e1f036b
+
+% 0 1 0 01d9ebadc653db6b1f038869c9eb69e9
+
+% 0 1 0 0c154d364ae737480a0bde6b72985645
+
+% 1 1 0 1dcc2834f70a767a070cd595f6b89d02
+
+@ 0 5 0 0c563184488cea700a306487276759b6
++   entry .evaluate   完整的 XPath 1.0 求值：数字、布尔值、字符串或节点集，作为一个 `XPath.Value`
++       `xml.evaluate(xpath, variables)` 从映射中解析 `$name` 引用（以限定名为键），对未知变量或不支持的表达式抛出 `XPath.Error`。
++   entry .Scope   在某一点生效的命名空间绑定：前缀到 URI，默认命名空间以空前缀为键
+
+% 1 1 0 087f2a707eccd06710aa1384d9d66f22
+
+@ 0 8 0 06d9b43124b452631997f8bc780fa33c
++         `Xml.Scope` 就是不透明的 `xylophone.internal.Scope`，之所以在这里访问它，是因为总括包已经导出了自己的一个 `Scope`（它也以 `xylophone.Scope` 导出）。
++         作用域是从前缀（`Unset` 或空文本表示默认命名空间）到 URI 的有序绑定列表，同一前缀以较晚的绑定为准。
++         每个 `Xml.Element` 都以其 `scope` 携带一个作用域；解析器将每个 `xmlns` 声明压入该元素及其后代的作用域；而作用域内的 `Scope` given 是解析文档时所用、带前缀的选取据以解析的作用域。
++         伴生对象的 `default` 只绑定保留的 `xml` 前缀。
+
+@ 0 1 0 0db5eda91b5ba4f5107b2ae06ed55f67
++         由 given 绑定的作用域使代码可以按文档从未使用过的前缀进行选取：
+
+% 2 1 0 0e6097a4d0b958270d2a6d40ac87eb75
+
+% 3 1 0 05fea988c6260a7d03c8b708c317d969
+
+% 4 1 0 0808e8b3f560f08c0fd9dd524f910218
+
+% 5 1 0 18dfbf1566d1b1bc08cf2e637c186298
+
+% 0 1 0 1c427f5a1552b9cf128839d97f20dcfd
+
+% 0 1 0 0bab8c68f8d1d35c0063340a1faa3183
+
+% 0 1 0 1bac8baa5acbe6d305ff0039830c895b
+
+% 0 1 0 137e8f7086600c4a069cd49e4f7836e2
+
+% 0 1 0 1b0a59710deee57a10fcb6cfe9e3f427
+
+% 1 1 0 16accff2122493a41b74d1a3dba08809
+
+@ 0 4 0 042b9ad894b1501415b099ec38abda4a
++         作用域 given 也为解析绑定前缀，因此只要该 given 位于作用域内，`<q:x/>` 无需声明即可解析，而用作用域构建的元素在写出时会声明它所需要的内容。
++         `Xml.Scope[("svg", "xlink")]` 是通过各自的 `Namespace` given 绑定元组中每个前缀的作用域。
+
+% 0 1 0 055e5f385244b45f11bd025bb7fa9c48
+
+% 1 1 0 0c9a4d18a49222610c35d33f10a42989
+
+@ 0 1 0 00865b5e61aa5dce0a3dd80e24093537
++   entry .Name   解析后的名称：命名空间 URI（如果有）和本地部分
+
+% 1 1 0 1214b8873dd8a6b80a721b747248225f
+
+@ 0 9 0 02d841d3bb12a43d13bac1694859ef76
++         在前缀解析之后用以标识元素和属性的二元组。
++         `Xml.Name(t"urn:a", t"x")` 是命名空间 `urn:a` 中的 `x`，`Xml.Name(t"x")` 是未限定的 `x`；`Element#qualified`、`Xml#elements`、`Xml#element`、`Element#attribute` 和 `Xml.Reader#name` 都使用这种名称。
++         名称以 Clark 记法 `{urn:a}x` 显示，或显示为单纯的本地部分。
++     entry .apply   `Xml.Name(local)`：一个未限定的名称，不在任何命名空间中
++     entry .split   原始 `prefix:local` 标注的前缀和本地部分，不解析前缀
++         对于没有冒号的标注，结果为 `(Unset, label)`。
++     entry .showable   Clark 记法 `{uri}local`，或单纯的本地部分
+
+% 0 1 0 18b3106c02a2bc530ac9c0e6e8b0b645
+
+@ 0 3 0 09ed5c1d98bfcc7505c6a107b93c313e
++     entry #namespace   URI；对于不在任何命名空间中的名称为 `Unset`
++     entry #local   本地部分
++   entry .Namespacing   没有绑定的前缀是解析错误，还是解析为无命名空间
+
+% 1 1 0 16ed34225e92c8de0174ab24f91cf176
+
+@ 0 7 0 03c06749606116d40a077ec1f639e897
++         一个带有 `Strict` 和 `Lenient` 两个分支的枚举。
++         Namespaces 推荐标准要求每个前缀都必须被绑定，因此默认值（伴生对象的 given）是 `Strict`：解析没有声明 `p` 的 `<p:a/>` 会抛出带有 `Xml.Issue.UnboundPrefix` 的 `Parse.Error`，而使用没有 `Namespace` given 的前缀的 `x"…"` 字面量无法编译。
++         导入 `namespaceOptions.lenientNamespaces` 可以让未绑定的前缀转而解析为无命名空间；`namespaceOptions.strictNamespaces` 重申默认值。
+
+% 0 1 0 0080252912aab7950fa73f11256fa25a
+
+@ 0 1 0 13ad4e8b41563927125740d4055ce0c7
++   entry .Namespaced   派生编解码器的类型所在的命名空间，以 given 的形式提供，用于无法加注解的类型
+
+% 1 1 0 1851526ff82c61cd056d2db5a6236001
+
+@ 0 12 0 0598b12691ff0ea11d342836e54d4bfd
++         `given Rect is Xml.Namespaced = Xml.Namespaced(t"http://www.w3.org/2000/svg")` 使 `Rect` 的派生编码器写出 `<Rect xmlns="http://www.w3.org/2000/svg">`，其字段的元素位于同一命名空间中，并使其解码器按该解析后的名称匹配元素。
++         它优先于该类型上的 `@xmlns` 注解。
++         `qualified = false` 使字段的元素不在任何命名空间中。
++     entry .apply   `Xml.Namespaced[value](uri, qualified = true)`：一个类型的命名空间绑定
++     entry .Bound   `Namespaced` given 所属的类：一个 URI，以及字段是否共享它
++       entry #namespace   URI
++       entry #qualified   字段的元素是否共享该命名空间
++     entry #namespace   该类型的元素所在的 URI
++     entry #qualified   字段的元素是位于同一命名空间中，还是不在任何命名空间中
++   entry .xmlns   将派生类型的元素放入某个命名空间的注解
+
+% 1 1 0 1e10566e8b45e13410cb3bdf72de215c
+
+@ 0 8 0 1fe35e97e6df09bb05d2448cff1a24a0
++         `@xmlns("urn:shop") case class Order(id: Int, item: Item)` 编码为 `<Order xmlns="urn:shop">`，其字段的元素位于同一命名空间中，并且可以从任何元素解析到该命名空间的文档解码，无论它使用什么前缀。
++         类上的 `@xmlns("urn:shop", qualified = false)` 使字段的元素不在任何命名空间中，正如带有 `elementFormDefault="unqualified"` 的 schema 那样（它们以 `xmlns=""` 写出）。
++         该注解以 URI 为键，从不以前缀为键。
++         它以 `xylophone.xmlns` 和 `soundness.xmlns` 导出，因此 `@xmlns(…)` 无需限定。
+
+% 2 1 0 06b9239bfa675fa4036300f7ada64acc
+
+% 1 1 0 158e85274d8cd94c0c04d4c98d8066a7
+
+@ 0 1 0 05636cd9e40c631c164ebbdf98477b69
++           label 普通记录写出未限定的元素
+
+% 1 1 0 1863812faf9b33b71ce92c11e37ad00f
+
+% 2 1 0 130e7e1ce7922a990b8312ec2eb6b33a
+
+% 1 1 0 0bd0a2e596b24f91021f46aa639d6bef
+
+% 3 1 0 1d3c142b16c91f870c650ff8059d9508
+
+% 0 1 0 10afce72bad9102f149e09855b361f9b
+
+% 1 1 0 09669316d00a2e5c074e5a6be6ed1d58
+
+@ 0 1 0 0dfef848f029caac0c6c73942aefa899
++           label 加注解后，记录的元素位于该命名空间中
+
+% 1 1 0 0f1375fb07f99608189d02377ec66104
+
+% 2 1 0 050a661f0dda44601b117f15de598630
+
+% 4 1 0 183d298710fddfee19961f3a4d2d46d7
+
+% 5 1 0 161a3761abf4a02b1b7878c12736412a
+
+% 3 1 0 0482f772b00c5858082f99674378aa0f
+
+% 0 1 0 096a45af023a09780b55554866caec4c
+
+% 1 1 0 1fa8252b8315ce040523778ab719e41f
+
+@ 0 1 0 0f5663f4919ff8691e7ee9664e2383cf
++           label 该命名空间中的文档无论使用什么前缀都能读回
+
+% 1 1 0 19afbc8faba48ae00fdd47fd44f2d2a8
+
+% 2 1 0 114096afa966125a19727a878bac9c79
+
+% 4 1 0 0a0347e98a0959c200fa79d9450d6574
+
+% 5 1 0 0444fdeb364458851c3ca054d8536a1d
+
+% 0 1 0 05e7d8768aff54ca1f1536149be554f0
+
+% 0 1 0 064a3931067de8c61963af7611828693
+
+% 0 1 0 187830326677dc2515bafacef82ef63d
+
+% 1 1 0 0bc9e5dd2756d7610d78458d4fd1933a
+
+@ 0 1 0 1584bfc0c887f1450f936ea263392039
++           label 让一个字段不在该命名空间中
+
+% 1 1 0 11506a808da2589f1e9be3b89ba0fdaf
+
+% 2 1 0 0146cfdc84d9a945129981a4430fea88
+
+% 4 1 0 12edaaad8740e0471fb15353ecc188f4
+
+% 0 1 0 1b3fc175bb7f2a87151c88833616581e
+
+% 0 1 0 16e7536a715779e415aad3b301ab334a
+
+% 0 1 0 1c99db68fcd60d991950926a9595ab77
+
+% 1 1 0 1699cc1936d23f5f17b74d2624a13df4
+
+% 2 1 0 1b83a64ee0ff2cdb002c967e27a59c27
+
+@ 0 17 0 0b413c32f0779cfe1b1cf67a7b0734e2
++         没有自己命名空间的类型只按本地名称匹配其字段的元素，无论文档把它们放在哪个命名空间中。
++         直接解析器和分阶段解析器（`Xml.Parsable.derived`、`.staged`）匹配原始标注，不参考该注解。
++     entry #uri   命名空间 URI
++     entry #qualified   字段的元素是共享该命名空间（默认），还是不在任何命名空间中
++   entry .unqualified   使某个字段的元素不在其类型的命名空间中的注解
++       在 `@xmlns` 类型的字段上使用 `@unqualified reference: Text` 会写出 `<reference xmlns="">`，并在无命名空间中读取该元素。
++       以 `xylophone.unqualified` 和 `soundness.unqualified` 导出。
++   entry .attribute   使字段成为属性而非子元素的注解
++       `case class Play(title: Text, @attribute year: Int)` 编码为 `<Play year="1603"><title>Hamlet</title></Play>`，并将该属性解码回来。
++       `Optional` 属性字段在为 `Unset` 时直接不出现。
++       该注解可以通过总括包的类型别名 `soundness.attribute` 以 `@attribute` 访问（名为 `attribute` 的项会与 galilei 和 tarantula 的冲突），也可以写作 `@Xml.attribute` 或 `@xylophone.attribute`。
++       直接解析器和分阶段解析器同样遵循它。
+
+% 2 1 0 016f1b70c87ee58406b83080b4406df2
+
+% 3 1 0 1272bb495f2552af1d4475ad3411e975
+
+% 0 1 0 08f4cf7806fa414d18d49f4d47c63332
+
+% 0 1 0 11a169471fb62c021d12a606194cb507
+
+% 0 1 0 05276fe9b8769dfc1c78778cb83c9ff7
+
+% 1 1 0 1620feaa9326bc0e04514621006db281
+
+@ 0 1 0 079e6416d4bd22091174ed14c6606a70
++   entry .XmlAttribute   类型化标签的属性：其标注、它所适用的元素，或 `global`
+
+% 1 1 0 1aa79aa1cc953a741150a4e992147224
+
+@ 0 41 0 121655ea4a17169705a81acdbb281211
++         类型化标签（`Tag`）用来声明其属性的类型类：一个 `"href" is Xml.XmlAttribute on "a" in Schema` given 表示 `href` 可以用在 `<a>` 上，`Element#selectDynamic` 和 `#updateDynamic` 会解析它。
++         不供普通的 XML 用途使用；honeycomb 和 savagery 在其上构建各自的词汇。
++     entry #label   属性的名称
++     entry #elements   它所适用的元素标注
++     entry #global   它是否适用于每个元素
++     entry #targets   给定的标签是否可以带有它
++     entry #merge   同一属性的两个声明的并集
++     entry #Self   以字面量类型表示的属性标注
++     entry #Topic   属性的值类型
++     entry #Plane   声明它的元素标注
++   entry .decodable   `Decodable in Xml` 的入口：如果存在文本解码器则使用它，否则使用派生
++       一个 inline given，对于任何类型，当该类型有 `Decodable in Text` 时解析为该桥接（因此 `Text`、标识符和任何可从文本解码的类型都从元素的文本读取），否则解析为 case class 或枚举的 Wisteria 派生。
++       文本分支对缺失的字段抛出带有 `Missing` 的 `Xml.Error`，对没有文本的元素抛出带有 `Empty` 的 `Xml.Error`，并以空文本继续。
++       基本类型有专门的 given（`.int`、`.boolean`、…），它们优先于这一个，从而错误的数字会抛出 `Malformed` 并以零继续，而不是中止。
++   entry .encodable   `Encodable in Xml` 的入口：如果存在文本编码器则使用它，否则使用派生
++       `.decodable` 的镜像：具有 `Encodable in Text` 的类型（`Text`、`Int`、`Long`、…）成为叶 `Xml.Text`，而 case class 或枚举通过 `EncodableDerivation` 编码。
++   entry .int   从元素的文本读取 `Int`，失败时抛出 `Xml.Error` 并以 `0` 继续
++       基本类型解码器之一（`.int`、`.long`、`.short`、`.byte`、`.double`、`.float`、`.boolean`），每个都捕获它据以抛出错误的 `Tactic[Xml.Error]`。
++       不是数字的文本抛出 `Malformed(text, t"Int")`；没有单一文本段的元素或缺失的字段抛出 `Untextual(t"Int")`；每种情况都以零哨兵值继续，因此在 `validate[Xml.Focus]` 下，有多个错误字段的记录会报告所有错误。
++   entry .long   读取 `Long`，与 `.int` 读取 `Int` 的方式相同
++   entry .short   读取 `Short`，与 `.int` 读取 `Int` 的方式相同
++   entry .byte   读取 `Byte`，与 `.int` 读取 `Int` 的方式相同
++   entry .double   读取 `Double`，与 `.int` 读取 `Int` 的方式相同
++   entry .float   读取 `Float`，与 `.int` 读取 `Int` 的方式相同
++   entry .boolean   从文本 `true` 或 `false` 读取 `Boolean`，失败时以 `false` 继续
++   entry .booleanEncodable   将 `Boolean` 写为文本 `true` 或 `false`
++       之所以需要它，是因为不存在可供 `.encodable` 桥接使用的 `Boolean is Encodable in Text`；其他基本类型通过各自的文本编码器编码。
++   entry .Repeatable   标记一个编解码器，其传输形式是所有同名子元素，而不仅仅是第一个
+
+% 1 1 0 1dd8845d8c2f17a909c3bbef72f13e6e
+
+@ 0 34 0 047d777f73758a5205d90fa976114db7
++         `Decodable in Xml` 或 `Encodable in Xml` 上的一个混入：可重复的字段（集合、`Map`，或编码侧的 `Optional`）写为共享该字段名称的所有子元素，每项一个，并按文档顺序从所有这些子元素读取（它们不必相邻）。
++         积类型派生会识别这个混入，并将匹配子元素构成的合成 `Fragment` 交给解码器。
++         没有这个混入的编解码器只读取第一个匹配的子元素。
++     entry #repeatable   除非被覆盖，否则为 `true`
++   entry .collectionDecodable   从每个具有该字段名称的元素读取任何 `Iterable` 集合
++       适用于具有 stdlib `Factory` 的集合类型和具有 `Decodable in Xml` 的元素类型：每个匹配的子元素解码为一项，零个子元素构建空集合（缺失的重复字段为空，从不是错误），而单个元素解码为单项集合，这正是 `as[List[T]]` 在文档根处看到的形状。
++       可重复。
++   entry .listDecodable   读取 `List[T]`，与 `.collectionDecodable` 的方式相同
++       不透明的 Soundness 集合不符合 `Iterable`，因此 `List`、`Set` 和 `Sequence` 各有自己的 given。
++   entry .setDecodable   读取 `Set[T]`，与 `.collectionDecodable` 的方式相同
++   entry .seriesDecodable   读取 `Sequence[T]`，与 `.collectionDecodable` 的方式相同
++   entry .collectionEncodable   将 `Iterable` 写为每项一个节点的 `Fragment`，由积类型编码器重新标注
++       可重复：积类型编码器将该片段展平为重复的同名子元素。
++       嵌套的集合没有逐项的元素形状，它嵌套在一个未命名的元素之下，由外围的积类型重新标注。
++   entry .listEncodable   写出 `List[T]`，与 `.collectionEncodable` 的方式相同
++   entry .setEncodable   写出 `Set[T]`，与 `.collectionEncodable` 的方式相同
++   entry .seriesEncodable   写出 `Sequence[T]`，与 `.collectionEncodable` 的方式相同
++   entry .optionalDecodable   读取 `Optional[T]` 字段：元素或属性不存在时为 `Unset`
++       缺失的子元素（或者对于 `@attribute` 字段，缺失的属性）解码为 `Unset`，在 `optionalityOptions.strictXmlAbsence` 下则抛出带有 `Missing` 的 `Xml.Error`；存在的元素解码为 `T`，或者在 `optionalityOptions.lenientXmlFaults` 下内部解码器拒绝它时解码为 `Unset`。
++       XML 没有 null：空元素是一个存在的值，因此没有关于空值的选项。
++       不可重复（存在的可选值是第一个匹配的子元素），因此 `Optional[List[T]]` 不是受支持的形状（`List` 字段在缺失时本来就为空）。
+
+% 2 1 0 1c37372b35759c401c002aa3a88169b8
+
+% 3 1 0 074f41ce9d5e97ef1d9c7b8ce7efc16c
+
+% 4 1 0 114b79d4b2d35ab611ee277342886fc3
+
+% 5 1 0 027c8114f7555ff700a48a88baf5dc70
+
+% 7 1 0 0f7d7339f15776581f2d3949ce33217d
+
+% 0 1 0 0cac40d11917f1a000fa7bb41f71615d
+
+% 2 1 0 1bdba768b168e7cf1e76243c0d043aeb
+
+% 1 1 0 16686680ff47a5da06b382111d3c7a50
+
+% 0 1 0 04590c6c0449d6b11ed3ba14740a9091
+
+% 1 1 0 192f1d7515b80b861939bc4276c92229
+
+@ 0 7 0 121d1c0a3df902f21af134d60e43ca9b
++   entry .optionalEncodable   写出 `Optional[T]` 字段：为 `Unset` 时完全没有元素
++       `Unset` 编码为空的 `Fragment`，可识别重复的积类型编码器将其展平为没有子元素（或没有属性）；存在的值则编码为必需字段会产生的那个单一的、重新标注的子元素。
++   entry .mapEncodable   将 `Map[K, V]` 写为每个条目一个子元素，每个都包含一个 `<key>` 和一个 `<value>`
++       键和值可以是任何可编码为 XML 的类型，因此键不必是有效的元素名。
++       每个条目元素都由积类型编码器以字段的名称重新标注。
+
+% 2 1 0 018b750f9b5ddf5208c5f0e27ededfa6
+
+% 3 1 0 189171eb5133efa2005b37684e5fd5c0
+
+% 0 1 0 1bef4a26270b3c3e15286baa39c1f1a1
+
+% 0 1 0 09cb68bf03cb5d5b113c6264e50c7d13
+
+% 0 1 0 03d9375360fe26a01e6a5d2b82e25adc
+
+% 1 1 0 19d97d40973b8c7f1d669ab84ff21320
+
+@ 0 11 0 0a44e53606952370012d152cb66abeb6
++   entry .mapDecodable   从每个具有该字段名称的条目元素读取 `Map[K, V]`
++       收集到的每个元素的 `<key>` 和 `<value>` 子元素分别解码为键类型和值类型；缺失的子元素会得到“不存在”哨兵值，因此基本类型会登记一个带焦点的错误，而 `Optional` 值读作 `Unset`。
++   entry .xmlDiscriminable   默认的和类型判别器：元素的本地名称即为变体
++       带有分支 `Book` 和 `Magazine` 的密封 trait 按标注从 `<book …/>` 和 `<magazine …/>` 解码，无需判别字段；`<s:Book>` 仍然是 `Book` 变体，因为前缀是词法上的。
++       不指明任何变体的标注会抛出带有 `UnknownVariant` 的 `Xml.Error`。
++       变体上的 `@name[Xml](t"red")` 会重命名其元素。
++       `Xml.DiscriminantAttribute` given 会以一个属性取代这种方式。
++   entry .DiscriminantAttribute   以属性读写变体的和类型判别器
+
+% 1 1 0 1c8eba54f77fb4530ba8d7ff19fcddf5
+
+@ 0 10 0 0c8ecd970d49c76e1f6ca967af389b66
++         `given Shape is Discriminable in Xml = Xml.DiscriminantAttribute[Shape](t"kind")` 使派生的编解码器在元素上写出 `kind="Circle"` 属性并从中读取变体，取代默认的“标注即变体”方案（`.xmlDiscriminable`）。
++         分阶段解析器同样通过 `xylophone.staged` 中的分阶段执行编译器识别它。
++     entry #attribute   属性的名称
++     entry #discriminate   元素上该属性的值，或 `Unset`
++     entry #rewrite   将该属性设为某个变体名称的元素副本
++     entry #variant   元素本身：变体的内容就是该元素
++   entry .DecodableDerivation   针对 case class 和密封类型的 `Decodable in Xml` 的 Wisteria 派生
+
+% 1 1 0 00a1c419f8f7ccdb129d72b187ec9d02
+
+@ 0 13 0 0bc07e3d2cb68595007e0d4d4c28c843
++         积类型从一个每个字段对应一个子元素的元素解码，按字段的传输名称（识别 `@name`）以任意顺序匹配；标记为 `@attribute` 的字段从属性读取；可重复的字段收集所有匹配的子元素；元素缺失的字段会得到“不存在”哨兵值，因此 `Optional` 读作 `Unset`，基本类型抛出错误并继续，而带有 `Default` 的嵌套记录会以一个 `AbsentProduct` 错误代入默认值，而不是产生一连串子字段错误。
++         子元素之间的文本、注释和处理指令会被忽略。
++         和类型通过作用域内的 `Discriminable in Xml` 选择其变体。
++         每个字段都在指明其路径的焦点下解码，以供 `validate[Xml.Focus]` 使用。
++         递归类型通过其自身的派生相互连接。
++         不直接调用：由 `.decodable` 到达它。
++     entry .conjunction   派生一个积类型解码器
++     entry .disjunction   派生一个和类型解码器
++   entry .EncodableDerivation   `Encodable in Xml` 的 Wisteria 派生：积类型是每个字段对应一个子元素的元素
+
+% 1 1 0 1c8af10c3107c765153cad3e0668edb1
+
+@ 0 24 0 08fd6e2253f3dd610bf4926aa3149213
++         `.DecodableDerivation` 的镜像。
++         积类型编码为一个以类型短名称标注的元素：每个字段是以该字段传输名称标注的子元素（重新标注其自身编码器所产生的内容），`@attribute` 字段是一个属性，可重复的字段展平为重复的子元素，`@xmlns` 或 `Xml.Namespaced` 类型的元素放入其命名空间，并在根元素上声明。
++         和类型编码其变体，并将元素重新标注为变体的名称，因此它可以通过 `.xmlDiscriminable` 往返。
++         不直接调用：由 `.encodable` 到达它。
++     entry .conjunction   派生一个积类型编码器
++     entry .disjunction   派生一个和类型编码器
++   entry .aggregableDerived   在 `import codecs.derived` 下，即使存在直接解析器，`read[T in Xml]` 也使用树路径
++       编解码模式 given 之一：`codecs.derived` 为作用域内的每个记录选择派生的树编解码器，覆盖直接实例。
++   entry .aggregableDerivedText   `.aggregableDerived` 的 `Text` 形式
++   entry .readableDerived   `.aggregableDerived` 的完整 `Data` 形式
++   entry .readableDerivedText   `.aggregableDerived` 的完整 `Text` 形式
++   entry .encodableOverDerived   在 `import codecs.derived` 下，`in[Text over Xml]` 通过树渲染
++   entry .aggregableStrict   在 `import codecs.strict` 下，`read[T in Xml]` 直接解析，否则编译失败
++       与 `Xml1#aggregableStrictFailure` 配对：具有直接编解码器的类型通过它读取，而没有直接编解码器的类型是一个指明该类型的编译错误，而不是悄无声息地回退到树。
++   entry .aggregableStrictText   `.aggregableStrict` 的 `Text` 形式
++   entry .encodableOverStrict   在 `import codecs.strict` 下，`in[Text over Xml]` 直接打印，否则编译失败
++   entry .Parsing   直接解析器的基础：从 `Xml.Reader` 读取一个值，不构建树
+
+% 1 1 0 0640655e9da7d0790715ca57d01aabb7
+
+@ 0 8 0 0ed772c9209a34490fff0e575dcb20ec
++         基于 XML 的 distillate `Parsable`：调用 `parse(reader)` 时，当前元素刚在读取器上打开（其名称和属性已被消费），它必须通过读取器的内容消费器中的恰好一个（`nextChild` 直到 `Unset`、`text`、`skipElement` 或 `element`）完整消费该元素的内容和结束标签。
++         `Xml.Parsable` 是名义上的、需选择启用的一面（显式实例、`Xml.Parsable.derived`、`derives Xml.Direct`、`codecs.direct`），而 `Xml.Field` 是积类型派生逐字段解析的操作层面的一面。
++         与 jacinta 的 `Json.Parsing` 不同，这里没有形状：XML 编解码器不携带形态。
+
+% 0 1 0 10f9aec6965c0570077c8cc4e6ecaaa6
+
+% 0 1 0 19934b41b3112671048f54145b615ff6
+
+@ 0 9 0 19f23cfdfae7981c03507edd19da4463
++     entry #repeatable   对于集合解析器为 `true`，逐次出现地收集
++     entry #absent   当没有子元素或属性带有其名称时，该类型的字段产生的值
++         除非被覆盖，否则以 `Xml.Error(Missing)` 中止：基本类型抛出错误并以零哨兵值继续，桥接将“不存在”哨兵值委托给其解码器，而派生的积类型按子字段展开。
++         接受读取处的 `Foci`。
++     entry #attribute   对于 `@attribute` 字段，该类型的字段如何从属性值读取
++         默认为 `absent()`，因为无法从文本叶读取的形状会把属性视为形状错误的输入，这与树路径的做法完全相同。
++   entry .Parsable   类型的可选择启用的直接解析器：`read[T in Xml]` 直接从输入中读取 `T`
+
+% 1 1 0 16ebf025791c95d614b78dd2db4ff9c8
+
+@ 0 6 0 1f8dc00a73a4b381048fe0e5ee8ee741
++         一个名义上的 `Xml.Parsing`。
++         一旦某个类型在作用域内有 `Xml.Parsable`，`source.read[T in Xml]`（通过 `Xml1#aggregableParsed`）就会通过一个 `Xml.Reader` 在输入上驱动它，对于它直接读取的值从不实体化 `Xml` 树；只有 `Decodable in Xml` 的字段类型通过 `fromDecodable` 桥接，它会实体化一个元素。
++         不存在通用的 given，因此在类型选择启用之前，任何读取的行为都不会改变：
+
+% 2 1 0 11a98734bbf8c94911f35f9b5006f112
+
+% 3 1 0 1ff4a6c14759bf250a3d7a8818a9dfac
+
+% 4 1 0 1db8f7146b9eef6b1d00b5e44fd48115
+
+% 5 1 0 04152563b4d10398199a77762e6964d3
+
+% 7 1 0 1be07d7b8dec70011639ffc58e77d6a8
+
+% 0 1 0 01d263a0e8787b0e024799dc2cb0fa78
+
+% 0 1 0 1fb2a0ed362db94a128ae5993032cfdd
+
+% 0 1 0 032a87b89d6e40f50c4a5aae2be8a8cf
+
+% 0 1 0 1d66872e4f44017309848f22b8ea274c
+
+% 1 1 0 09cecb6a0cbf9e181bdccf2a37b8b06d
+
+@ 0 8 0 1c5fa5d21519fead0390026c237e9702
++         语义与树路径完全一致：传输名称、`@attribute` 字段、重复时以第一个匹配为准、重复字段的收集、默认值、缺失的字段以及错误的焦点。
++         同时拥有 `Reflection` 和手写的 `Decodable in Xml` 的 case class 会在这里派生，从而与它的解码器产生分歧；补救办法只需一行：`given MyType is Xml.Parsable = Xml.Parsable.fromDecodable(summon[MyType is Decodable in Xml])`。
++         `derived` 是一个方法，而不是 given，因此一个类型只有在选择启用之后才会被直接解析；`derives Xml.Direct` 和 `import codecs.direct` 是另外两条途径。
++         直接解析器匹配原始标注：不会参考 `@xmlns`。
+
+% 0 1 0 18d7af9e9895f8bc1b0c6d564df8b448
+
+% 0 1 0 13c6b16330912f810dfa2b2ab5819b33
+
+% 0 1 0 0c4daa1510a432ae157fe073ab988907
+
+% 1 1 0 1067dbf874db81280d5f4d3c9746cce4
+
+@ 0 46 0 02ac5f693a14116a03d1eb6fd4a9b808
++     entry .apply   由一个作用于读取器的函数构成的解析器
++         `Xml.Parsable[T](reader => …)`：调用该函数时元素已经打开，函数必须消耗该元素，正如 `Xml.Parsing#parse` 必须做的那样。
++     entry .fromDecodable   来自树世界的桥接：实体化一个元素并对其解码
++         当自定义解码器必须胜过派生出的直接解析器时，只需一行的逃生舱口。
++         可重复的解码器（自定义集合）保持其收集语义：每次出现都被单独实体化，并作为一个合成的 `Fragment` 一起解码。
++         缺失和属性的读取委托给解码器，所用的哨兵值输入与树派生交给它的相同。
++     entry .derived   为 case class 或密封类型由 Wisteria 派生的直接解析器，包装为名义类型
++         `given Play is Xml.Parsable = Xml.Parsable.derived`。
++         每个字段的解析器通过 `Xml.Field` 解析：显式的 `Parsable`、文本编解码器、结构派生，或基于 `Decodable in Xml` 的桥接，因此嵌套的记录也会被直接解析。
++     entry .staged   由宏为 case class 生成的单态解析器，比 `derived` 更快
++         `derived` 的分阶段对应版本：字段值存放在有类型的局部变量中，子元素通过打包成 `Long` 的字面量比较进行分派，记录通过直接的构造器调用构建：没有 `Array[Any]` 缓冲区，没有 `Mirror`，也没有逐字段的装箱。
++         语义与 `derived` 相同。
++         要求是顶层或嵌套在对象中、只有一个参数列表的 case class；和类型、方法局部的类以及其他形状使用 `derived`。
++     entry .fromField   把任意 `Xml.Parsing`（例如一个 `Xml.Field`）包装为名义上的 `Parsable`
++     entry .iterable   任意 `Iterable` 集合的直接解析器，收集该字段的每次出现
++         支撑 `.fieldCollection`；各项通过给定的元素解析器解析，因此嵌套的积类型也会被直接解析。
++     entry .declared   `derives Xml.Direct` 的类型的 `Parsable`
++         一个通过该类型伴生对象中的 `Xml.Direct` 实例解析的 given。
++     entry .Direct   生成的解析器的基类，以中性载体的形式接收读取器
++       entry #parse   通过 `parseCarrier` 读取
++     entry .parseField   在生成的解析器的字段位置调用名义解析器
++         供生成的代码使用的调用点，生成的代码是擦除了捕获的：解析器和读取器以 `AnyRef` 传递，能力在这里被重新断言。
++         不供手写代码使用。
++     entry .absentField   从生成的解析器调用名义解析器的 `absent()`
++     entry .assemble   从字段值数组构建一个积，供生成的解析器使用
++     entry .wireNames   把 `@name` 重命名应用到字段名数组上，供生成的解析器使用
++     entry .missing   抛出 `Xml.Error(Missing)` 并以一个哨兵值继续，供生成的解析器使用
++     entry .focusing   在一个指明字段的焦点下运行一个代码块，供生成的解析器使用
++     entry .childIndex   子元素标注在记录的非属性字段键中的索引，或者 `-1`
++     entry .repeats   解析器是否收集重复的出现
++     entry .parseElement   解析重复字段的一次出现，供派生的积引擎使用
++     entry .gathered   根据重复字段收集到的各次出现构建其值
++     entry .product   派生的积引擎：字段、一个回退默认值和一个构造器，作为一个 `Xml.Field`
++         `ParsableDerivation.conjunction` 所构建的东西：先读取属性，再按传输名称读取每个子元素，收集重复字段，跳过未知的子元素和重复项，并通过字段的解析器或记录的默认值填充缺失的字段。
++         不供直接使用。
++   entry .Field   直接解析中面向每个字段的一面，带有一个通用的回退
+
+% 1 1 0 00966030f73c0e901c07c884b4e0b000
+
+@ 0 28 0 143d140da1cdfec10806840893138ccf
++         积派生为每个字段解析的类型类。
++         它的回退 given（`field`，继承自 `Xml3`）与 `.decodable` 的顺序一致，使字段的传输格式在直接路径和树路径上完全相同：显式的 `Xml.Parsable`、`Decodable in Text` 编解码器、结构派生，或基于任何剩余的 `Decodable in Xml` 的桥接。
++         `Xml.Field(parsing)` 把任意 `Xml.Parsing` 适配为字段解析器。
++     entry .apply   把一个 `Xml.Parsing` 适配为字段解析器，保留它的捕获
++   entry .intParsable   直接的 `Int` 解析器：直接从缓冲的字节中读取内容
++       直接原语之一（`.intParsable`、`.longParsable`、`.shortParsable`、`.byteParsable`、`.doubleParsable`、`.floatParsable`、`.booleanParsable`），与树原语完全一致：缺失或形状不对的元素以及无法解析的值会抛出 `Xml.Error`（而不是中止），并以零哨兵值继续，因此 `validate[Xml.Focus]` 下的累积在两条路径上表现相同。
++       `Int`、`Long`、`Double` 和 `Boolean` 直接从字节解析，不实体化 `Text`。
++   entry .longParsable   直接的 `Long` 解析器，同 `.intParsable`
++   entry .shortParsable   直接的 `Short` 解析器，同 `.intParsable`
++   entry .byteParsable   直接的 `Byte` 解析器，同 `.intParsable`
++   entry .doubleParsable   直接的 `Double` 解析器，同 `.intParsable`
++   entry .floatParsable   直接的 `Float` 解析器，同 `.intParsable`
++   entry .booleanParsable   直接的 `Boolean` 解析器，同 `.intParsable`
++   entry .fieldCollection   任意 `Iterable` 集合的 `Xml.Field`：收集每个同名的子元素
++       声明在回退之上，使集合永远不会到达它的 `Reflection` 分支（`List` 自身的镜像会把它作为和类型派生）。
++       各项通过元素自身的字段解析器解析。
++   entry .fieldList   `List[T]` 的 `Xml.Field`，同 `.fieldCollection`
++   entry .fieldSet   `Set[T]` 的 `Xml.Field`，同 `.fieldCollection`
++   entry .fieldSeries   `Sequence[T]` 的 `Xml.Field`，同 `.fieldCollection`
++   entry .ParsableDerivation   为 case class 和密封类型对 `Xml.Field` 进行的 Wisteria 派生
+
+% 1 1 0 005645db72777f9802f494bb0e552043
+
+@ 0 7 0 0b61502a8b639bae1db042b81bc2a336
++         积类型根据其字段的传输名称、属性标志、字段解析器和默认值派生直接引擎（`Xml.Parsable.product`）；和类型则通过基于其 `Decodable in Xml` 的树桥接派生，因为变体是按元素标注选择的。
++         通过 `Xml.Parsable.derived` 和 `field` 回退到达。
++     entry .conjunction   派生积类型的直接解析器
++     entry .disjunction   派生和类型的解析器，通过它的解码器桥接
++   entry .Parsable2   `Xml.Parsable` 伴生对象中优先级较低的一层，保存 `generated`
+
+% 1 1 0 1c5e6c591a6cf6a00a6f4b1797aa7b5d
+
+% 2 1 0 065db0911cbf7594160df804be4aabea
+
+@ 0 6 0 16394314a1f537881d8dbe3b535293ee
++         不供直接使用：把 `codecs.direct` 的 given 放在伴生对象自身的 `declared` 之下，使派生了 `Xml.Direct` 的类型使用它一次性生成的编解码器。
++     entry #generated   在 `import codecs.direct` 下，为每个需要解析器的记录生成一个解析器
++         位于 `Xml.Parsable` 自身的 `declared` 之下：不是记录的类型无法满足 `Inlinable.Generates`，因而走派生的路径。
++   entry .Printable2   `Xml.Printable` 伴生对象中优先级较低的一层，保存 `generated`
+
+% 1 1 0 05c77542fed1282d05fb694b648ab7f6
+
+% 2 1 0 1483a53da75c71db101b034d40cad31b
+
+@ 0 3 0 10fa3d9b446242481ff38495adaff3ed
++         不供直接使用；是 `Xml.Parsable2` 的镜像。
++     entry #generated   在 `import codecs.direct` 下，为每个需要打印器的记录生成一个打印器
++   entry .Printable   一个类型的直接打印器：写出它的紧凑 XML 文本，不构建树
+
+% 1 1 0 16ae6fb79b5515e216c8ff9d62e333e8
+
+@ 0 6 0 0f3b90074bb0700a05036d716afda1f8
++         `Encodable in Xml` 在直接打印方面的对应物。
++         `write(value, out)` 把值作为它自己的元素写入 `Xml.Out`，`write(value, label, out)` 则把它作为带标注的字段元素写入。
++         只要格式是紧凑的，就可以通过 `in[Text over Xml]` 和 `in[Data over Xml]`（`Xml1#encodableOverPrinted`）到达它；缩进格式仍然通过树渲染。
++         它的接口是显式实例、`Inlinable.printable[T]`、`derives Xml.Direct` 和 `import codecs.direct`。
+
+% 2 1 0 1674aa47f86292d70160d003b18509f9
+
+% 0 1 0 05293f740f48417c1fce1551d14bcbae
+
+% 1 1 0 0d0cc3d636a5ca3a00f06655b9f7a18d
+
+% 2 1 0 1d53261fd8deaabd166531af956b480b
+
+% 2 1 0 0ee87ed2b7874e440e4940bf19857d92
+
+% 0 1 0 19498732d81c19f51481545ba35ab4a4
+
+% 0 1 0 17d68a5ace0e5f7101e11809578bf216
+
+% 1 1 0 0fe39f1517c1c6dd0091818a821aa279
+
+% 2 1 0 1d09809bacaf57461bab047e796b9f41
+
+% 3 1 0 0860766a43d3d10a1983dd60ea16967d
+
+% 2 1 0 0403c6b6a9a6a76903aef46f83ecc702
+
+% 0 1 0 099d4af7a064f9eb08d49063cc8443a9
+
+% 0 1 0 0b28ccfd5e97a7530de5c9f59bce76ed
+
+% 1 1 0 14e63fd920bbdc1e05fc2b82b9063a4c
+
+% 2 1 0 18eb16971d3900ea0d296ec39ceb2fc5
+
+% 3 1 0 1f33cfabab96d0f003ab5682ca63390d
+
+% 0 1 0 06a11818d6a458621bb3f83c1f367f82
+
+% 0 1 0 040f61bdfeedec731c0966471145f624
+
+% 1 1 0 0b6c3dd5af7898ea029763919740b477
+
+% 2 1 0 1bcf187383cff421048326457794bce4
+
+@ 0 2 0 1d71d6b5549d6cfe0367b196461207e1
++         对于没有 `@name` 或 `@attribute` 注解、也没有命名空间的记录，打印器在编译时生成；其他记录通过树打印。
+
+% 0 1 0 16663ce238ae61471af4c8e1bd663d8f
+
+% 0 1 0 0f78594f2f4aab601bfed225ac3ac1f8
+
+% 1 1 0 15cd44e35211669b02fbea8d9ec73db8
+
+@ 0 23 0 17dd64852065af841021ccd95a9c016f
++     entry .print   一个值的完整紧凑 XML 文本，通过它的 `Printable` 得到
++     entry .emit   一个值的文本，分成 `Buffering` 容量大小的块，每块填满时交给一个函数
++         不会构建整个值的文本。
++         需要该值的 `Xml.Printable` 和一个 `Buffering`。
++     entry .fromEncodable   来自树世界的桥接：编码该值并原地写出树
++         在元素嵌套之处给它重新加上标注，正如派生给它重新加上标注一样。
++     entry .declared   `derives Xml.Direct` 的类型的 `Printable`
++     entry .Direct   生成的打印器的基类，以中性载体的形式接收写入器
++       entry #write   通过 `writeCarrier` 写入，作为值自己的元素或作为带标注的字段
++     entry .writeAscii   从生成的打印器写出 ASCII 标记
++         生成的打印器所调用的辅助方法（`.writeAscii`、`.writeName`、`.writeLeaf`、`.absent`、`.nodes`、`.some`、`.writeNodes`、`.writeField`）：写入器以 `AnyRef` 传递，在这里被重新断言。
++         它们是公开的，因为生成的打印器会被拼接到用户模块中；不供手写代码使用。
++     entry .writeName   从生成的打印器写出一个名称
++     entry .writeLeaf   写出一个叶子元素：包围在转义文本周围的标注
++     entry .absent   一个 `Optional` 值是否缺失，从而不写出任何元素
++     entry .nodes   通过 `Encodable` 编码的字段所贡献的节点，重新加上标注并展平
++     entry .some   字段是否贡献了任何节点
++     entry .writeNodes   以紧凑方式写出字段的节点
++     entry .writeField   在生成的打印器的字段位置调用名义上的 `Printable`
++     entry #write   把值作为它自己的元素写出，或作为带标注的字段元素写出
++   entry .Direct   生成的解析器和打印器的 `derives` 载体：`case class Play(…) derives Xml.Direct`
+
+% 1 1 0 18b5f3c1a531f85f0103e446b97d9637
+
+@ 0 4 0 01fdfd8a851caff7006a9ca87ff319f8
++         以 `Self` 为类型的类型类没有类型参数，因此它本身不能出现在 `derives` 子句中；`Xml.Direct[Play]` 保存 `Play` 生成的 `Xml.Parsable` 和 `Xml.Printable`，它们由 `derived` 一次性生成到伴生对象中，而 `Xml.Parsable` 和 `Xml.Printable` 的 `declared` given 通过它解析，无需导入。
+
+% 2 1 0 026cce0ffd11a359038338ae1208dc28
+
+% 3 1 0 1c6d14e4baaec69e095745c42f947755
+
+% 4 1 0 13e0fc7bd0c9091610834931f09b64ce
+
+% 5 1 0 0f07e265430b4dee130490eca5e0b0be
+
+% 0 1 0 15aed87246a0ed4c180ea42d67afc90e
+
+% 0 1 0 1cad526ab1378d3f07ddc06b2c78b013
+
+% 1 1 0 096d28049341f46a0286c6f732dd7436
+
+@ 0 4 0 1f4ce9279dc3308f0778cf1b6304f0bc
++     entry .derived   用 `Inlinable.parsable` 和 `Inlinable.printable` 生成解析器和打印器
++     entry #parsable   生成的 `Xml.Parsable`
++     entry #printable   生成的 `Xml.Printable`
++   entry .Reader   `Xml.Parsable` 进行读取所通过的解析器的受限边界
+
+% 1 1 0 0aa9fe1f0525e92a1e24afab9f5bf84e
+
+@ 0 9 0 034205b40fd9c9a31e2f8e84639791b4
++         一个独占的、有状态的能力，交给 `Xml.Parsing#parse` 时当前元素刚刚被打开：它的名称和属性已被消耗。
++         然后，内容消耗方法中必须恰好有一个完整地消耗该元素的内容和结束标签：`nextChild`（直到它为 `Unset`）、`text`（或 `int`、`long`、`double`、`boolean`）、`skipElement` 或 `element`。
++         读取器每次只归一个 `parse` 调用所有，之后不得保留它的任何部分。
++         它带有自己的 `Tactic[Parse.Error]`，因此格式错误的输入通过读取调用的战术中止；它还带有读取处的 `Tactic[Xml.Error]` 和 `Foci[Xml.Focus]`，因此解析器抛出的解码错误会累积到与树路径相同的 `validate` 边界，并带有相同的字段焦点。
+
+% 2 1 0 0e5521eb6fa1794814dd20173ab3af49
+
+% 3 1 0 0cb1932ccb1095010795e1720086dc33
+
+% 0 1 0 0843c77b25fe644403e9a0df7c04b14f
+
+% 0 1 0 04de88eba7053d0b17596886d2a55615
+
+% 0 1 0 1ec8133b1f1646f5110f68ad78b1446c
+
+% 0 1 0 0548ec5534d2783717fd0ed39af4102d
+
+% 0 1 0 03d28f43c60442bf0cf6620bb5c0ef98
+
+% 0 1 0 0903421f8411c90d17950663d3671984
+
+% 0 1 0 12c02833dd7a967d1d7dd4f6ba654265
+
+% 0 1 0 060f3e48f7faaff30553d127984cf78a
+
+% 0 1 0 18eb6fea5680efd806719b7b35a93eaa
+
+% 0 1 0 18c91a23eb75233d0181e768857b8c90
+
+% 0 1 0 1104c5f10a24af1402c5c66e3832ae2b
+
+% 0 1 0 12f477c88eb83d6019722207c6dfcb4f
+
+% 0 1 0 07ae7e1dfce7fbf21492e5bc456f8481
+
+% 0 1 0 0c44a19c3abd1c8b09cba141e17fb783
+
+% 1 1 0 1c00a141c98a5ead060a6901158221ce
+
+@ 0 24 0 0f04720c524d93ab1e7fb6b5c03fac3b
++         只有 xylophone 的读取路径会构造读取器。
++     entry .NameEnd   `-1`：表示结束标签的 `childWord` 哨兵值
++     entry .NameOpaque   `-2`：表示无法打包进 `Long` 的名称的 `childWord` 哨兵值
++     entry #errorTactic   读取处的 `Tactic[Xml.Error]`
++     entry #foci   读取处的 `Foci[Xml.Focus]`
++     entry #attributes   刚打开的元素的属性，在打开下一个元素之前有效
++     entry #name   刚打开的元素解析出的 `Xml.Name`，通过作用域内的绑定得到
++     entry #nextChild   打开下一个子元素并给出它的名称，或者在结束标签被消耗后给出 `Unset`
++         子元素之间的字符数据、注释、CDATA 节和处理指令会被透明地消耗。
++     entry #childWord   打包进 `Long` 的下一个子元素的名称，或者 `NameEnd` 或 `NameOpaque`
++         供分阶段解析器使用，它们把字段名作为字面常量进行比较；高位字用 `childWordHigh`，无法打包的名称用 `childLabel`。
++     entry #childWordHigh   打包后的子元素名称的高位字
++     entry #childLabel   刚由 `childWord` 打开的子元素的标注
++     entry #text   元素的文本内容，与结束标签一起被消耗，除非恰好只有一段文本，否则为 `Unset`
++         CDATA 在这里不算文本，这与树解码器的形状规则一致。
++     entry #int   直接从字节解析为 `Int` 的内容，与结束标签一起被消耗，或者为 `Unset`
++     entry #long   作为 `Long` 的内容，同 `#int`
++     entry #double   作为 `Double` 的内容，同 `#int`
++     entry #boolean   作为 `Boolean` 的内容，同 `#int`
++     entry #skipElement   跳过元素的整个子树，验证每个结束标签，不构建任何东西
++     entry #element   把元素实体化为 `Xml` 树，用于只有 `Decodable in Xml` 的类型
++     entry #fault   通过读取处的战术抛出带有原因的 `Xml.Error`，并继续
+
+@ 0 1 0 0ce0a95852eb1a811d6b4c02b21a0c13
++ entry .Xml1   `Xml` 伴生对象中保存直接解析读取路径和严格模式失败的那一层
+
+% 1 1 0 0b5db0056787b1680b5958b1178461d9
+
+% 2 1 0 161250761f61d7830f060ab6de8a71ef
+
+@ 0 25 0 0f826b840e3b692d199219d5ffcaf44a
++       不供直接使用：`object Xml` 继承它，因此 `Xml` 继承了这些 given，它们通过 `Xml` 的隐式作用域解析；它们在这里声明并编写文档。
++       它位于 `Xml2` 之上，因此拥有 `Xml.Parsable` 或 `Xml.Printable` 的类型，只要存在这样的实例，就走无树路径；它位于伴生对象自身的 `codecs.derived` 和 `codecs.strict` 条目之下。
++   entry #aggregableParsed   从字节读取的 `source.read[T in Xml]`，通过 `T` 的 `Xml.Parsable` 直接解析
++       位于树路径之上，因此只要存在 `Xml.Parsable`，它就胜出：值通过一个 `Xml.Reader` 直接从输入中读取，不构建 `Xml` 树。
++       需要解析上下文、一个 `Tactic[Parse.Error]`、一个 `Tactic[Xml.Error]`、一个 `Foci[Xml.Focus]`（使直接解码错误以与树路径相同的字段焦点累积）和一个 `Buffering`。
++   entry #aggregableParsedText   直接解析的 `text.read[T in Xml]`，同 `#aggregableParsed`
++   entry #readableParsed   针对手头完整的 `Data` 值的 `data.read[T in Xml]`，直接解析
++       原地解析，而不是把字节包装进流中。
++   entry #readableParsedText   针对手头完整的 `Text` 的 `text.read[T in Xml]`，直接解析
++   entry #encodableOverPrinted   由值的 `Xml.Printable` 直接写出的 `value.in[Text over Xml]`
++       位于 `Xml2#encodableOver` 之上：当值拥有 `Xml.Printable` 且作用域内的 `Xml.Formatting` 是紧凑格式时，文本在不构建树的情况下写出；在缩进格式下（生成的打印器不写这种格式），它像以前一样通过树渲染。
++   entry #aggregableStrictFailure   对于没有直接解析器的类型，`codecs.strict` 中产生编译错误的那一半
++       一个内联 given，它在 `Codecs.Strict` 下在使用处报告 _xylophone_ 和该类型，而不是让派生路径得到解析。
++   entry #aggregableStrictFailureText   `#aggregableStrictFailure` 的 `Text` 形式
++   entry #encodableOverStrictFailure   对于没有直接打印器的类型，`codecs.strict` 中产生编译错误的那一半
+
+@ 0 1 0 158fed07316a419c0f847bee08269a7d
++ entry .Xml2   `Xml` 伴生对象中保存实体化树的读取路径和 `in[Text over Xml]` 的那一层
+
+% 1 1 0 1b743780030ccd3e0619074e9bc603fb
+
+% 2 1 0 1aafbae48da6354d17416c87e3cfe3ab
+
+@ 0 16 0 1323f2a75e665dbe0b625ffddcd6d9f1
++       不供直接使用：`object Xml` 通过 `Xml1` 继承它，因此 `Xml` 继承了这些 given，它们通过 `Xml` 的隐式作用域解析；它们在这里声明并编写文档。
++       它位于 `Xml1` 之下，因此没有直接编解码器的类型在这里解析，与直接解析出现之前完全一样。
++   entry #encodableOver   `value.in[Text over Xml]`：值的 XML 文本，通过树得到
++       通过 `Encodable in Xml` 编码，并在作用域内的 `Xml.Formatting` 下渲染，正如 `show` 所做的那样。
++       当值拥有 `Xml.Printable` 且格式是紧凑格式时，`Xml1#encodableOverPrinted` 的优先级高于它。
++   entry #encodableOverData   `value.in[Data over Xml]`：作为字节的同样的文本，采用作用域内的 `Codepage`
++   entry #aggregableIn   从字节读取的 `source.read[T in Xml]`：一步完成树的解析和解码
++       对于任何拥有 `Decodable in Xml` 的 `T`，是 `source.read[Xml].as[T]` 的简写；流在到达时被解析；开头的声明被丢弃。
++       需要解析上下文、一个 `Tactic[Parse.Error]`、一个 `Tactic[Xml.Error]` 和一个 `Buffering`。
++       当 `T` 拥有 `Xml.Parsable` 时，`Xml1#aggregableParsed` 胜出，不构建树。
++   entry #aggregableInText   `text.read[T in Xml]`：同 `#aggregableIn`，从文本读取
+
+@ 0 1 0 1ad6697880a6c0ee08b12b6422091a40
++ entry .Xml3   `Xml` 伴生对象中保存通用 `Xml.Field` 回退的那一层
+
+% 1 1 0 170b183853cddbbc096ce1a6f22f6bdf
+
+% 2 1 0 0c61bedade4da1ac1fae3ab566cd16d8
+
+@ 0 8 0 1524ee32670285470473d48569bdbcc3
++       不供直接使用：以最低优先级声明 `Xml` 所继承的 `field`，使显式的 `Xml.Parsable`、文本编解码器和结构派生都胜过树桥接。
++   entry #field   通用的 `Xml.Field` 回退：直接解析器、文本编解码器、派生或树桥接
++       位于最低优先级，并且声明为伴生对象父类的成员，使 Wisteria 在派生时的探测排除它。
++       同时拥有 `Reflection` 和自定义 `Decodable in Xml` 的 case class 会在这里派生；用 `Xml.Parsable.fromDecodable` 给它一个 `Xml.Parsable`，就能保留它的解码器。
+
+@ 0 1 0 073b54b38a4557fa1e77f3b2409e3faa
++ entry .Xml4   `Xml` 伴生对象的最低一层，保存 `Xml.Provider`
+
+% 1 1 0 0ea1f92008a9b9f71275609c9e1fc8a4
+
+@ 0 5 0 045b8cde269c8d4e0f88b4663dbeb400
++       不作为特质直接使用：它声明了 `Provider` 和 `Provider2`，`object Xml` 通过 `Xml1`–`Xml3` 继承它们，因此提供器写作 `Xml.Provider`，但在这里声明并编写文档。
++       它不为 `Xml` 本身贡献任何 given。
++   entry #Provider2   `Provider` 伴生对象中优先级较低的一层：时间类型和 URI 类型的文本回退
+
+% 1 1 0 1ac19594c078d1bf073be2565bdd3b4f
+
+@ 0 13 0 04aaa2536f25e7c004ec87f4b778dd7c
++         不供直接使用：声明 `Reader` 以及 `dateTimeText`、`dateText`、`timeText`、`durationText` 和 `anyUriText` 这些 given，伴生对象中由接口驱动的读取器优先级高于它们。
++     entry #Reader   内置读取器的类型：一个从 `Xml` 到结果的 `Intensional.Reading`，以 `Xml.Provider.Error` 失败
++         `Reader[label, result]` 就是 `Intensional.Reading[label, Xml.Provider, Xml, result, Xml.Provider.Error]`；每个内置类型的读取器都是它的一个 given，声明在提供器的伴生对象中，对于优先级较低的文本回退则声明在这里。
++     entry #dateTimeText   作用域内没有时刻接口时，把 `xs:dateTime` 读取为 `Text`
++     entry #dateText   作用域内没有日期接口时，把 `xs:date` 读取为 `Text`
++     entry #timeText   作用域内没有时间接口时，把 `xs:time` 读取为 `Text`
++     entry #durationText   作用域内没有时长接口时，把 `xs:duration` 读取为 `Text`
++     entry #anyUriText   作用域内没有 URL 接口时，把 `xs:anyURI` 读取为 `Text`
++   entry #Provider   基于 XML Schema 的类型提供器：从匹配的文档得到有类型的记录，在编译时检查
+
+% 1 1 0 14923a22f2fe66181fae6c044b71c74d
+
+@ 0 6 0 1e2d2bd94099b43703d9d73e3366f094
++         `object PurchaseOrder extends Xml.Provider(cp"/xsd/po.xsd")` 在 `record` 或 `tuple` 宏第一次展开时读取 schema，而 `PurchaseOrder.record(xml)` 是一个 polyvinyl 记录，schema 根元素的每个子元素和属性都对应一个有类型的成员（`order.shipTo.city`、`order.items.item.map(_.quantity)`），每个成员都由编译器根据 schema 检查，并以 schema 声明的类型惰性读取；`tuple` 则急切地读取每个字段。
+
+% 2 1 0 0e2b16f1bbbc732f1459d3955b4f3538
+
+% 0 1 0 1df5341098744f941cc2cd12aa621758
+
+% 1 1 0 1c42636a507cbf0f1903c90f073389c7
+
+% 0 1 0 066c7de4214f31cd1db1c856202b68b2
+
+% 0 1 0 1cb51f8a8fb1a4f80a06f8eaceafe408
+
+% 0 1 0 025bc0d1e3f5f7851d5639094f28b99a
+
+% 0 1 0 05d70820e797e5cc1283627abcdd4f45
+
+% 0 1 0 03d1ae76df25eaf40c0054ae7eff8d1d
+
+% 0 1 0 13098eb75acd30531f1b50cf84b53e35
+
+% 1 1 0 02b7e70c283821e9121d32274c02a2c0
+
+@ 0 5 0 0f2e9c30dca2b51a00fec5094be8a271
++         schema 参数是一个 `Xml.Provider.Schema`，它的伴生对象中有来自 `Xsd`、`Xml` 文档、schema 文本，或任何可作为文本读取的东西（例如类路径资源）的转换；在声明提供器的地方，作用域内无需有 `XmlSchema`。
++         当 schema 声明了多个全局元素时，根是具有复杂内容的那个，或者用 `root = t"Envelope"` 选定。
+
+@ 0 11 0 0be37bf74a28f77b1d9bb6d8b182f759
++         子元素和属性按本地名称成为字段。
++         当元素带有 `minOccurs="0"` 或是 `nillable` 时，字段是 `Optional`；当 `maxOccurs` 允许多于一个时，字段是 `List`；`choice` 的每个备选项都是 `Optional`。
++         与某个子元素同名的属性以 `` `@name` `` 访问，具有简单内容和属性的元素的文本以 `text` 访问（如果有一个属性叫 `text`，则为 `` `#text` ``）。
++         扩展的基类型先贡献它的字段。
++         内置类型读取为 `Text`、`Boolean`、`Int`、`Short`、`Byte`、`Long`（整数类型，会检查它们隐含的边界）、`Double` 和 `Float`；时间类型和 URI 类型读取为作用域内的 `Instantiable` 接口所产生的类型，否则为 `Text`；`xs:list` 类型读取为 `List[Text]`；而 `anyType`、`xs:any`、递归类型或未解析的引用读取为原始的 `Xml`。
+
+@ 0 11 0 1e504c82622571780b222d7a93315b77
++         限制的各个约束面（`enumeration`、`pattern`、边界、长度约束面和位数约束面）在读取字段时检查，以带有原因的 `Xml.Provider.Error` 抛出，缺失的必需元素和其类型无法读取的值也是如此；每个错误都经过读取该字段的代码的 `Tactic`，因此每个字段使用一个 `venture` 的 `validate` 或 `collect` 能收集文档中的每个问题。
++         元素按解析后的名称匹配：当 schema 限定子元素时，在 schema 的目标命名空间中匹配，否则在无命名空间中匹配，不管文档使用什么前缀。
++         替换组、`xsi:type`、标识约束和混合内容，都按 schema 在不含它们时的声明读取；`import` 或 `include` 会记录在 `Xsd` 中，但不会被获取。
++         提供器不验证文档：它检查的是程序所读取的内容。
+
+% 0 1 0 1f147d03f1cfbf3d1630b4142d910cb2
+
+% 0 1 0 0b49b811539d9dff098a7271a468f001
+
+@ 0 40 0 103dba532176d08b1c38d6b313dfb38f
++     entry .string   把 `xs:string` 以及记号、名称、标识符、QName、二进制和 gYear 类型读取为 `Text`
++     entry .boolean   读取 `xs:boolean`
++     entry .int   把 `xs:int` 读取为 `Int`
++     entry .long   把 `xs:long`、`xs:integer` 以及无符号、正和负整数类型读取为 `Long`
++     entry .short   读取 `xs:short`
++     entry .byte   读取 `xs:byte`
++     entry .double   读取 `xs:double`
++     entry .float   读取 `xs:float`
++     entry .decimal   把 `xs:decimal` 读取为 `Double`
++     entry .xml   把 `anyType`、`xs:any` 以及递归或未解析的类型读取为原始的 `Xml`
++     entry .tokens   把 `xs:list` 类型（`NMTOKENS`、`IDREFS`）读取为以空白分隔的 `List[Text]`
++     entry .dateTime   通过作用域内的 `Instantiable across Instants from Text` 读取 `xs:dateTime`
++         时间和 URI 内置类型（`.dateTime`、`.date`、`.time`、`.duration`、`.anyUri`）通过在读取记录之处找到的领域类型的 `Instantiable`（`instantInterfaces.…`、`urlInterfaces.soundnessUrl`）读取其文本，因此被它拒绝的值会通过在那里提供给其接口的 `Tactic` 失败；作用域内没有接口时，`…Text` 读取器给出文本。
++     entry .date   通过 `Instantiable across Dates from Text` 读取 `xs:date`
++     entry .time   通过 `Instantiable across Times from Text` 读取 `xs:time`
++     entry .duration   通过 `Instantiable across Durations from Text` 读取 `xs:duration`
++     entry .anyUri   通过 `Instantiable across Urls from Text` 读取 `xs:anyURI`
++     entry .RestrictedText   受限字符串类型的读取器，检查其长度、模式和枚举约束面
++       entry #transform   读取文本并检查约束面，抛出 `Xml.Provider.Error`
++     entry .RestrictedInt   受限 `xs:int` 的读取器，检查其边界、位数和枚举
++       entry #transform   读取值并检查约束面
++     entry .RestrictedLong   受限整数类型的读取器，检查其边界、位数和枚举
++       entry #transform   读取值并检查约束面
++     entry .RestrictedDouble   受限十进制或浮点类型的读取器，检查其约束面
++       entry #transform   读取值并检查约束面
++     entry .restrictedText   `RestrictedText` given
++     entry .restrictedInt   `RestrictedInt` given
++     entry .restrictedLong   `RestrictedLong` given
++     entry .restrictedDouble   `RestrictedDouble` given
++     entry .Layout   schema 根元素的字段，以及其子元素和属性所预期的命名空间
++       entry #fields   根元素的字段，作为 polyvinyl 成员，按名称排列
++       entry #elements   每个子元素所预期的命名空间，以父元素和子元素的本地名称为键
++       entry #attributes   每个属性所预期的命名空间，以父元素和属性的本地名称为键
++     entry .layout   遍历一个 `Xsd`，得到其根元素的 `Layout`
++     entry .fieldsOf   schema 根元素的字段，即 `layout(xsd, root).fields`
++     entry .Schema   构建提供器所依据的 schema：一个 `Xsd`、一个 `Xml` 文档、文本或任何文本来源
+
+% 1 1 0 130b940f5183b2f811bdf01248a8cfa6
+
+@ 0 11 0 1e3e2317fd7c9a8a11cc58a01e89260f
++           `Xml.Provider` 的 `into` 参数类型：伴生对象中的转换在调用处应用，因此 `Xml.Provider(cp"/xsd/po.xsd")`、`Xml.Provider(xsd)`、`Xml.Provider(document)` 和 `Xml.Provider(text)` 都可以工作。
++           提供器第一次读取其 schema 时，来源被作为文本读取，并用自由形式的词汇表解析；无法解析的 schema 作为 `Specification.Error` 报告，即 `record` 使用处的编译错误。
++       entry .xsd   由解析好的 `Xsd` 得到的 `Schema`
++       entry .xml   由 schema 的 `Xml` 文档得到的 `Schema`
++       entry .text   由 schema 的文本得到的 `Schema`
++       entry #xsd   解析好的 schema，无法读取时抛出 `Specification.Error`
++     entry .Schema2   `Schema` 伴生对象中优先级较低的一层，保存 `Readable` 转换
+
+% 0 1 0 1dbd995455f497aa1e6b704af81ae91c
+
+% 1 1 0 0cfae82a36adc9830abbf88f939f135b
+
+@ 0 4 0 188f5753f8f7ebae0c4ad7e6a315fea5
++           不供直接使用。
++       entry #readable   由任何 `Readable to Text` 的东西（例如类路径资源）得到的 `Schema`
++           优先级低于 `Schema` 伴生对象中的三个直接转换。
++     entry .Error   当记录的字段不符合其 schema 时抛出
+
+% 1 1 0 1fa567ffd9660cb91729c9020e0ef038
+
+@ 0 6 0 1d1b8fbb2636c99d08e588e4a3c154c2
++           错误 `↯/s.128.4`：_the XML did not conform to its schema because `reason`_。
++           它通过读取记录字段的代码的 `Tactic[Xml.Provider.Error]` 抛出（因此 `attempt[Xml.Provider.Error](record.shipTo.city)` 能捕获一个，而每个字段使用一个 `venture` 的 `collect` 能收集每一处违规），并带有一个来自 `Xml.Provider.Error.Reason` 的原因。
++       entry .Reason   字段为何不符合，每个原因都有自己的编号
+
+% 0 1 0 01eaeca5798d1a3b02d48ba44beec41c
+
+@ 0 5 0 1c5470548a2214641ff7f79bfccfe9a4
++           column  分支
++           column  代码
++           column  消息
++           column  说明
++           row  `OutOfRange(value, minimum, maximum)`  1  _the value `value` is outside the range `minimum` to `maximum`_  边界约束面，或整数类型隐含的边界
+
+% 0 1 0 0870b043630c52f100e258ba19f2941d
+
+% 0 1 0 0650053447a8d7a40cacd6cc4df23883
+
+@ 0 1 0 0112279cff252bb11f1cf93cc39b8613
++           row  `NotPermitted(value, permitted)`  4  _the value `value` is not one of `permitted`_  枚举约束面
+
+% 0 1 0 0c46a103e9b018a7067cf871523966eb
+
+@ 0 2 0 1c2d3290be0ea6c205a96e186741df5d
++           row  `Absent(name)`  6  _the element or attribute `name` is required_  必需的元素或属性
++           row  `Malformed(value, expected)`  7  _the text `value` is not a valid `expected`_，或 _the value has no text to read as `expected`_  其类型无法读取的值；对于没有文本的元素，`value` 为 `Unset`
+
+% 0 1 0 1325124b3afc2ca70063c3f620bd5dcc
+
+@ 0 4 0 18fff5ef3b0b7d150b159da62a24fe49
++           未设置的边界渲染为 _…_。
++       entry .communicable   把每个原因渲染为一条消息
++       entry #reason   `Xml.Provider.Error.Reason`
++     entry #Origin   `Xml`：读取记录的来源
+
+% 0 1 0 0145d6a54e16e68c035533466c39a73d
+
+@ 0 11 0 198a82321e9e17441e69c9529e5267d9
++     entry #Failure   `Xml.Provider.Error`：字段所抛出的错误
++     entry #xsd   解析好的 schema，无法读取时抛出 `Specification.Error`
++     entry #fields   根元素的字段，作为 polyvinyl 成员，供 `record` 宏使用
++     entry #access   字段所读取的 `Xml`：按解析后的名称选出的子元素、一个属性，或元素自身的文本
++         `access(name, xml)` 选择该名称在 schema 所预期的命名空间中解析到的第一个子元素，对于 `` `@name` ``（或没有这样的子元素的名称）选择一个属性，对于 `` `#text` `` 和 `text` 选择元素自身的文本；`nil` 子元素或缺失的子元素给出表示缺失的哨兵值。
++     entry #absent   一个值是否为表示缺失的哨兵值
++     entry #required   该值，或者在它缺失时抛出带有 `Absent(name)` 的 `Xml.Provider.Error`
++     entry #repeated   该名称解析到的每个非 nil 子元素，用于 `List` 字段
+
+@ 0 1 0 13f8be21cb12bec80eb33b6902b4e0c5
++ entry .x   `x"…"` 插值器：在代码编译时解析并检查的 XML 字面量，也是一种模式
+
+% 1 1 0 0e2ef24e599b9c9016a18c668f110937
+
+@ 0 8 0 06ff983ef139a14d02b84afd2b6479c3
++       `x"<user>$name</user>"` 在代码编译时解析字面量，因此格式错误的片段是一个编译错误，精确地指向出错的跨度；它按每个空位所处的上下文进行替换：`Text` 或任何 `Encodable in Xml` 值作为内容，`Xml` 作为子节点，`Text` 作为属性值。
++       无法插入到其所在位置的值会以 `Xml.Issue.BadInsertion` 被拒绝。
++       结果是一个 `Xml`（由字面量的节点组成的 `Fragment`）。
++       字面量使用但未声明的前缀从作用域内的 `Namespace` given 获取其绑定，未绑定的前缀无法通过编译。
++       作用域内无需有 schema 或作用域。
+
+% 2 1 0 1f3c2a12e142d47e13461386e0eb6578
+
+% 3 1 0 0e590dad8149005f168e81b28f27a4d8
+
+% 0 1 0 1bd973de382b8bbc1430ba0ca7521534
+
+% 0 1 0 06344043d59d54940aee500a910b22b2
+
+% 0 1 0 1b11f71a48711646065d85f6d350182d
+
+% 1 1 0 15b976a4f99293dc0245dee939b422a2
+
+@ 0 7 0 100b0185db4d5daf1d7c273d4cfee33e
++       作为模式，`x"…"` 用字面量的形状匹配一个 `Xml` 值并绑定它的空位：内容中的 `$text` 绑定节点（`Xml.Text(t"hello")` 或一个子元素），`<$element>` 绑定整个子元素，`id=$value` 把属性的值绑定为 `Text`，`<!--$text-->` 和 `<![CDATA[$text]]>` 绑定它们的内容，而开始标签中单独的 `$attrs` 把其余的属性绑定为一个 `Map[Text, Text]`。
++       没有空位的字面量作为 `Boolean` 匹配；标签、子节点数量或字面属性值不同时，落入下一个分支。
+
+% 2 1 0 0b69fe216cb6189108d48333b8c880fc
+
+% 3 1 0 0ce86bd4b14d73c81bc250420ca64e04
+
+% 0 1 0 0e4b84b225bd6fca112c1ccdc3dec41c
+
+% 0 1 0 0df5e532b496e8d80f3596ddda17cc6b
+
+% 0 1 0 0ecaddc5fc17744c04277c5a06a1d578
+
+% 0 1 0 011603b093d0afdc195e97569503580b
+
+% 1 1 0 0a21d0369a0889361077b6e1b26f4d65
+
+@ 0 2 0 0f370e4416545b8703d2c23046fe524d
++       CDATA 或注释文本中、处理指令中的空位，或者 `DOCTYPE` 模式，都会被拒绝。
+
+% 0 1 0 0a84cd52285b70aa1b1b7569a77d135a
+
+% 0 1 0 128db8da20fd242807063cac7cf2b1e0
+
+% 1 1 0 1cf2fd2e75048a9a17b54e79c57c225f
+
+@ 0 9 0 02dccf6f358544881504e0ea45fc189b
++ entry .xp   `xp"…"` 插值器：在代码编译时检查的 XPath 表达式
++     `xp"/root[1]/child[2]"` 是在代码编译时解析的 `XPath`，因此格式错误的表达式是一个编译错误。
++     步骤的序数默认为第一个匹配，`@` 指明一个属性，并且完整的 XPath 1.0 语法都被接受，包括轴、针对属性和文本的谓词以及核心函数库。
++     带前缀的名称测试（`xp"//svg:rect"`）从作用域内的 `Namespace` given 获取其绑定，并按命名空间匹配；`XPath#in(scope)` 重新绑定路径的前缀。
++     结果用 `Xml.select`、`Xml.selectText` 和 `Xml.evaluate` 针对文档求值，位置和累积的错误也是以它为准报告的。
+
+% 2 1 0 05d9fa13781b664f0eb9bb4dc65509bf
+
+% 3 1 0 0ebeb1f52072408016decab721d5eba5
+
+% 0 1 0 1f73c5576df6986b05891beebabf919a
+
+% 0 1 0 1c8c2c9ae83f79c31c1d41b8410ef652
+
+% 1 1 0 168fcfa2aff355c21d84929e7ed5c721
+
+@ 0 3 0 120fd85941708adb09fc41e80a033b09
++ entry .attribute   `@attribute` 注解，即 `xylophone.attribute`；参见 `Xml.attribute`
++     从 `Xml` 导出，使字段可以不加限定地标注为 `@attribute`；总括包将它导出为类型别名 `soundness.attribute`。
+
+@ 0 2 0 07c6a47943ff9e1a086caddb32fadc0a
++ entry .xmlns   `@xmlns` 注解，即 `xylophone.xmlns`；参见 `Xml.xmlns`
++     从 `Xml` 导出，也从总括包导出为 `soundness.xmlns`。
+
+@ 0 2 0 008ce379c1a6b725184e6fb8d52fea93
++ entry .unqualified   `@unqualified` 注解，即 `xylophone.unqualified`；参见 `Xml.unqualified`
++     从 `Xml` 导出，也从总括包导出为 `soundness.unqualified`。
+
+@ 0 1 0 098292cdc7f7085801e61049d8f7844a
++ entry .construables   把媒体类型为 XML 的 HTTP 正文解析为 `Xml` 的 `Construable` given
+
+% 1 1 0 0d5ac7249e9b194f028bed2bef088869
+
+@ 0 5 0 189f5c6aa3cdee8c0f207289d7e4afd0
++       位于 `xylophone.http` 中。
++       媒体类型为 `application/xml` 或 `text/xml` 的 telekinesis 响应或请求正文，在作用域内有解析上下文时，通过这些 given 构造为 `Xml` 值。
++       按名称导入：`import construables.xmlConstruable`。
++   entry .xmlConstruable   `application/xml` 正文构造为 `Xml`
++   entry .textXmlConstruable   `text/xml` 正文构造为 `Xml`
+
+@ 0 1 0 0c722d04a820f86710ea1da63ea3cf44
++ entry .postables   把 `Xml` 值作为 HTTP 请求正文发送的 `Postable` given
+
+% 1 1 0 1d837beff3abc9920d83955210cb5b2a
+
+@ 0 2 0 0b9025279eedf6c41c6644c6f79a22b5
++       位于 `xylophone.http` 中。
++       按名称导入：`import postables.xmlPostable`。
++   entry .xmlPostable   作为请求正文的 `Xml` 值：`application/xml; charset=UTF-8`，它的 `show` 以作用域内的 `Codepage` 编码
+
+@ 0 1 0 08aa6956b35a4d5119bad4b1208bce74
++ entry .servables   把 `Xml` 值作为 HTTP 响应正文提供的 `Servable` given
+
+% 1 1 0 1571c1c1dbb6ce120dd658b564dd424f
+
+@ 0 2 0 1b6c536ffc09c5fb024d80b814b0c431
++       位于 `xylophone.http` 中。
++       按名称导入：`import servables.xmlServable`。
++   entry .xmlServable   作为固定响应正文的 `Xml` 值：`application/xml; charset=UTF-8`，以作用域内的 `Codepage` 编码
+
+@ 0 1 0 0901cf99b71e7bdf02e3be0eabca367d
++ entry .InlinableStager   在宏内部进行分阶段执行的编译器，在展开时对 `Inlinable` 实例求值
+
+% 1 1 0 0a3945a2fe58b2ef0507c60bcfd150b0
+
+% 2 1 0 03d909d01129df8506fc03e352aa3a49
+
+@ 0 12 0 06cc95384337b622061c473cd456c989
++       位于 `xylophone.staged` 中；不供直接使用。
++       当该组件位于宏类路径上时，`Inlinable.Stager` 按名称加载 `InlinableStager.Implementation`，使生成的直接解析器（`Inlinable.parsable`、`Xml.Parsable.staged`、`codecs.direct`）能在展开时调用用户编写的 `Inlinable` given 的 `parse`，并读取和类型的 `Xml.DiscriminantAttribute`。
++       每次召唤都在宏类加载器之上运行一个全新的编译器，并排除当前的输出目录，因此在正在进行的编译过程中定义的类型会被拒绝，生成器退化为一个运行时接缝。
++       成功的召唤会作为一条带有耗时的编译器信息消息报告。
++   entry .evaluate   在分阶段编译器中为字段类型召唤 `Inlinable`，或者给出 `None`
++   entry .discriminantAttribute   和类型的鉴别属性，该和类型的 `Discriminable in Xml` 是一个 `Xml.DiscriminantAttribute`
++   entry .Implementation   按名称加载的 `Inlinable.Stager`
+
+% 0 1 0 0f572bb7a736555b161a4d9d2c9a3e1d
+
+% 0 1 0 115cb097e7d7e0b014b11100534305d4
+
+@ 0 1 0 02cf68e59123e34903539574464a5776
++ entry .XPath   作为值的 XPath 1.0 表达式：可解析，可用有类型的构造器构建，可针对 `Xml` 求值
+
+% 1 1 0 163be286bd10851707b794f0c44b2c53
+
+@ 0 8 0 0793bc8843cbf4b8133b5e2f2aad9266
++       `XPath` 以一个不可变值涵盖了整个 XPath 1.0 表达式语言：位置路径（`/app/div[1]/@id`）、过滤路径（`(//a)[1]/b`），或者基于四种值类型（节点集、布尔值、数字和字符串）的任何表达式，例如 `count(//li)` 或 `//li = 'two'`。
++       它是一个 `Format`，因此文本形式用 `as[XPath]` 解析（抛出带有出错处字符偏移量的 `Parse.Error`），用 `encode` 渲染，而 `xp"…"` 插值器在代码编译时检查表达式。
++       `Xml` 通过 `select`（匹配的节点，作为按文档顺序排列的 `Fragment`）、`selectText`（第一个匹配的字符串值）和 `evaluate`（任意种类的 `XPath.Value`）来回应路径。
+
+% 2 1 0 14675a6c6511261503e180cd4e15b4f9
+
+% 1 1 0 08d9458eb73012351c93056f35e51984
+
+@ 0 1 0 1b7ae66e91f0a5d8191901a48786f15b
++         label 文档中的每个列表项
+
+% 1 1 0 1ea3089e7c1a68d01862b9aa3af10dff
+
+% 0 1 0 1808f1bc7a8d73be1e8552eecae778a7
+
+% 0 1 0 0798179fd46066390d73f0f2d8a2bf3e
+
+% 0 1 0 14975f221a79dc9f138781fc14d2ab97
+
+% 0 1 0 03fc0f898601e74318f99fb147f96876
+
+% 0 1 0 1b5c260a34f991a9031bb5c2dd248eab
+
+% 0 1 0 05b6e58238d150b717296db8db6a2b5e
+
+% 0 1 0 173e4ed314179bce121b276d6975b99f
+
+% 0 1 0 04a27ebbf8f875ce0422574d35c17bf4
+
+% 1 1 0 0529d8cde9ee34f41d98e79a3b80013b
+
+@ 0 1 0 1929f3dd1859ce451d760679a4968d9d
++         label 用属性谓词缩小范围
+
+% 1 1 0 03f5da42d95a850e00c45b0f9bc1cf53
+
+% 0 1 0 065cded61e8fc87d00fe0b3a4afdbfc8
+
+% 1 1 0 15cd932d19e6a0790633db677422cd25
+
+@ 0 1 0 1f73774ad994d3741731791eb900ffd0
++         label 按位置取其中最后一个
+
+% 1 1 0 05611548efcca1b505d9f90ace99b6f6
+
+% 0 1 0 184856e90c2c0b541ca58c94986f3231
+
+% 1 1 0 081bde045ad6fe1f09594d79b9b60d0c
+
+@ 0 1 0 1a712feed360b88c183779afa7079b12
++         label 向上一步到外围元素的属性
+
+% 1 1 0 09203d7f25bf68021f8dac21f4142fdc
+
+% 0 1 0 03bd18d68ddb71f00b75ad1bd389a4aa
+
+% 1 1 0 048c2377814ec6681a284219ebdb026a
+
+% 1 1 0 1a277342ea9dfdc5113023e785963c91
+
+@ 0 8 0 06186f0056ce248308a38f148976b87d
++       表达式是由 `XPath.Expression` 节点组成的树；路径是一个 `Expression.Route`，由从一个 `XPath.Origin` 出发的若干 `XPath.Step` 组成，每个步骤由一个 `XPath.Axis`、一个 `XPath.NodeTest` 及其谓词构成。
++       缩写 `//`、`.`、`..` 和 `@` 在解析时被脱糖，在渲染时被还原，因此 `xp"//a/@href".encode` 是 `//a/@href`。
++       当路径是组装出来而不是写出来的时候，伴生对象的构造器读起来与 XPath 本身相近：`XPath / t"html" / t"body"` 是 `/html/body`，`XPath.deep(t"div")` 是 `//div`，而 `#where` 添加一个由 `XPath.attribute`、`XPath.textual` 和 `Expression` 上的运算符构建的谓词。
+
+% 2 1 0 0c8b68ee1a158a0d176d6951341f7c6f
+
+% 3 1 0 0f6509f87ab32f120ef2ec4ad25f3564
+
+% 0 1 0 1f6b0f4db995815008e30c1c26320fd1
+
+% 0 1 0 0ecdaf610e9505150f50e524596b9573
+
+% 0 1 0 014429d2dc5ebe9d05fcad33682662fa
+
+% 0 1 0 0e4725935262074105a0893165d129e5
+
+% 1 1 0 088606cba6d606901436cf5465387380
+
+@ 0 7 0 10e93ca3835feb5f17285f3ce9f875b6
++       除 `namespace` 之外的全部十三个轴都会被求值，核心函数库（`count`、`name`、`local-name`、`namespace-uri`、`string`、`concat`、`starts-with`、`contains`、`substring-before`、`substring-after`、`substring`、`string-length`、`normalize-space`、`translate`、`boolean`、`not`、`true`、`false`、`lang`、`number`、`sum`、`floor`、`ceiling`、`round`、`position` 和 `last`）和变量也是如此，`evaluate` 以由 `XPath.Value` 组成的 `Map` 接收变量。
++       `id()` 函数和 `namespace` 轴会因不受支持而抛出 `XPath.Error`，没有绑定的变量也是如此。
+
+@ 0 5 0 06610a4e887a62d10d2e301c1874ea82
++       路径携带一个 `#scope`，即绑定其名称测试所用前缀的 `Xml.Scope`：前缀由该作用域绑定的带前缀测试，按解析后的命名空间和本地名称匹配，不管文档使用什么前缀；而前缀未绑定的测试匹配原始标注。
++       `xp"…"` 字面量通过其调用处的 `Namespace` given 绑定它的前缀，`#in` 则重新绑定它们。
+
+@ 0 2 0 0d55f9b05b8121180036d894697ededb
++       格式错误的*文本*是基于这种格式的 `Parse.Error`，带有一个说明问题所在的 `XPath.Issue`；对已解析的表达式*求值*失败则是一个 `XPath.Error`。
+
+% 1 1 0 0f28727669ba1bc8163c009da7822e9a
+
+% 0 1 0 048ec114b9fdbda61ee5f0d9b2394f76
+
+% 0 1 0 14ae5bc66f0841c711a99f65c270ead0
+
+% 1 1 0 12bb41289a3f6b7d1bb37b3f54ccb7dd
+
+% 0 1 0 11260115eef7265f01fe61240c073729
+
+@ 0 5 0 0b5567bca191c56e0ce79ed378b0fc36
++   entry .name   格式的名称 `XPath`，即 `Parse.Error` 消息中对它的称呼
++   entry .focusable   让 `XPath` 充当一个 `Focusable` 定位器，其策略为 `xpath`
++       浏览器自动化库借以把 `XPath` 当作定位器的 given：它的策略是 `xpath`，它的焦点文本是渲染出的表达式。
++   entry .Position   XPath 文本中的一个点，即 `Parse.Error` 所报告的位置
+
+% 1 1 0 1cfe27aaa4f2456615bb45e68c40f3c4
+
+@ 0 8 0 0eefda5709dc2fdb0e44720bf319ccc7
++         一个 `Format.Position`，它的 `Span` 处于偏移量模式（即表达式中的字符索引，因为 XPath 没有行），且长度为零，因为解析器是在一个点上而不是在一个范围上发现错误的。
++         `xp"…"` 插值器把它映射回源文件中的一个插入符位置。
++     entry .at   位于某个字符偏移量处的位置，作为零长度的跨度
++     entry #span   跨度，处于偏移量模式，长度为零
++     entry #describe   作为文本的位置：`character 7`，或 `an unknown position`
++   entry .Axis   XPath 1.0 的十三个轴，每个都有自己的关键字
+
+% 1 1 0 045781b456ba0908034e45d7bdc4dc8b
+
+@ 0 7 0 0531b4affb10b6d90febdbc91eb9c829
++         `Ancestor`、`AncestorOrSelf`、`Attribute`、`Child`、`Descendant`、`DescendantOrSelf`、`Following`、`FollowingSibling`、`Namespace`、`Parent`、`Preceding`、`PrecedingSibling` 和 `Self`，它们的 `keyword` 是不加缩写的 `axis::test` 语法中的拼写（`following-sibling`）。
++         除 `Namespace` 之外的每个轴都会被求值；`Namespace` 轴上的步骤会抛出带有 `Reason.Unsupported` 的 `XPath.Error`。
++     entry #keyword   该轴在 `axis::test` 语法中的拼写，例如 `descendant-or-self`
++   entry .NodeTest   步骤匹配什么：一个名称、一个通配符或一种节点类型
+
+% 0 1 0 16a4f2fae7bcd8cc1df54f58ca7e7d4d
+
+@ 0 1 0 1785e2abed513dd50110531f8472f0fd
++       column  节点测试
+
+% 0 1 0 03627b3aa1e78bb10b796b6a830f81d6
+
+@ 0 8 0 18a0d7bdcd89128b0a64ea375c08056b
++       column  匹配
++       row  `Name(prefix, local)`  `local` 或 `prefix:local`  按名称匹配一个元素，在属性轴上则匹配一个属性
++       row  `Wildcard`  `*`  任意元素，在属性轴上则为任意属性
++       row  `PrefixWildcard(prefix)`  `prefix:*`  该前缀的命名空间中的任意元素或属性
++       row  `Node`  `node()`  任意节点
++       row  `Textual`  `text()`  一个文本节点；如此命名是为了不遮蔽 `Text`
++       row  `Comment`  `comment()`  一个注释
++       row  `Instruction(target)`  `processing-instruction('target')`，或在目标为 `Unset` 时为 `processing-instruction()`  一条处理指令
+
+% 1 1 0 1744bd83bc2e61c109ff144060cbe9f6
+
+@ 0 3 0 12df3d37a08f783a1121f5b2825461a9
++       名称测试的主节点类型取决于轴：在属性轴上是属性，在其他每个轴上是元素。
++   entry .Step   一个位置步骤：一个轴、一个节点测试及其谓词
+
+% 1 1 0 19e4e0224f6ffa6b06712e251e0c071d
+
+@ 0 14 0 13392ef8d63b668a162b9fcdd84e424f
++         步骤从根开始、按源代码顺序保存，缩写已被脱糖：`//` 是一个 `descendant-or-self::node()` 步骤，`.` 是 `self::node()`，`..` 是 `parent::node()`，`@name` 是 `attribute::name`。
++         单独的 `Text` 通过 `XPath.stepConversion` 转换为一个 `child::name` 步骤，因此 `XPath / t"html"` 无需写出 `Step`。
++     entry #axis   步骤的轴
++     entry #test   步骤的节点测试
++     entry #predicates   步骤的谓词，按顺序应用；没有谓词时为 `Nil`
++   entry .Origin   路径从何处开始：文档根、上下文节点或一个过滤表达式
++       `Root` 是绝对路径的 `/`，即文档元素之上的虚拟节点；`Here` 是相对路径开始的上下文节点；而 `Filter(expression, predicates)` 是过滤路径（例如 `(//a)[1]/b`）的开头，它的谓词在各步骤之前应用于表达式的节点集。
++   entry .Expression   XPath 1.0 表达式树，带有在代码中构建它的运算符
+
+% 1 1 0 142e21e6282cdab91c9a37c687d649ea
+
+@ 0 8 0 03201323a16581430b8b52809e73dd89
++         表达式语法的每个产生式都是一个分支：布尔运算符 `Or` 和 `And`；比较 `Equal`、`Unequal`、`Less`、`LessOrEqual`、`Greater` 和 `GreaterOrEqual`；算术 `Add`、`Subtract`、`Multiply`、`Divide`、`Modulo` 和 `Negate`；`Union`（`|`）；基本表达式 `Literal(text)`、`Number(value)`、`Variable(prefix, name)` 和 `Call(prefix, name, arguments)`；`Route(origin, steps)`，即任意位置路径或过滤路径；以及 `Substitution(index)`，它在宏展开期间标记一个 `xp"…"` 插入，永远不会出现在解码后或求值的表达式中。
+
+@ 0 3 0 118c6f53ca11a78301b462a07ab284bf
++         运算符方法在代码中构建同样的树，接收任何可转换为 `Expression` 的东西：`Text` 成为字符串字面量，`Int` 或 `Double` 成为数字，`XPath` 成为它的表达式，因此谓词读起来与在 XPath 中差不多。
+
+% 2 1 0 0e1f17dfecde519619b84c61bcdd2c22
+
+% 3 1 0 17e2b6c2f97efbc20b0be2f90a1e7b56
+
+% 0 1 0 1fae83119431078d096126fd891e831b
+
+% 0 1 0 1576b1730719aceb12f22d4c49803f1f
+
+% 0 1 0 055d8235ddc7518d1a43f024d14aa478
+
+% 1 1 0 04e40559fe50fcfe0208b4ffd3470618
+
+@ 0 3 0 0dba24ae62e337ec0e7adec56c5fbea0
++         它们是成员而不是扩展方法，因为 `import soundness.*` 会引入同名的泛型扩展方法（`contains`、`===`、`<`），而这里的扩展方法无法胜过它们。
+
+% 0 1 0 103b52b6fb49b4ef17ebe33c6a11b74a
+
+% 0 1 0 17a43f53797d2ef9132b580ff0f90fb8
+
+@ 0 1 0 02a7b363bfdb4f8715f181a4d9c6c0b1
++     entry #===   `left = right`，XPath 相等，节点集的比较是存在性的
+
+% 0 1 0 1082bfef76cdd7b607a88bdccb0c0326
+
+@ 0 1 0 0e2bac436f94373a0c5392678f440d86
++     entry #<   `left < right`，作为数字比较
+
+% 0 1 0 1b2beadd115dc5a11993b479e6a5536b
+
+% 0 1 0 16d753561137840114b4b10f819d5636
+
+% 0 1 0 02b16b3b4f1e0648107d30eb2655e524
+
+% 0 1 0 0c83a05f3a9efc2f06fa6d3f868041ef
+
+% 0 1 0 1e717d50ca79256d035ee02cff3ff33a
+
+% 0 1 0 038cb1e672b1e79018c833c8ca206949
+
+@ 0 46 0 172b68a4f0872edc05d32f74e9d07cf3
++     entry #|   `left | right`，两个节点集的并集
++     entry #contains   调用 `contains(left, right)`
++     entry #startsWith   调用 `starts-with(left, right)`
++   entry .Location   路径的简单位置视图：按排名排列的具名元素，以及一个属性
++       `Element(name, rank)` 和 `Attribute(name)`：路径的一个子集（带有整数序数的 `child::name` 步骤，可选地以 `@name` 结尾），由 `parsing.trackPositions` 记录的位置可以据此解析，派生的解码器也以它报告错误的位置。
++   entry .stepConversion   作为 `child::name` 步骤的 `Text`
++       使 `XPath / t"html"` 和 `path.deep(t"a")` 能直接接收名称的 `Conversion`：`t"div"` 就是 `Step(Axis.Child, NodeTest.Name(Unset, t"div"))`。
++   entry .literalConversion   作为表达式中字符串字面量的 `Text`
++       这样 `XPath.textual === t"Submit"` 就是 `text()='Submit'`。
++       对 `Text` 应用哪种转换由预期类型决定：路径接收步骤的地方是 `Step`，谓词接收表达式的地方是 `Expression`。
++   entry .integerConversion   作为表达式中数字的 `Int`
++   entry .decimalConversion   作为表达式中数字的 `Double`
++   entry .pathConversion   作为其所含表达式的 `XPath`
++       这样路径就能出现在谓词中：`XPath.deep(t"li").where(XPath.relative(t"b"))` 是 `//li[b]`。
++   entry ./   `XPath / step`：从根开始的绝对路径
++       `XPath / t"html" / t"body"` 是 `/html/body`：伴生对象的 `/` 让路径从 `Origin.Root` 开始，结果上的每个后续 `/` 追加一个 `child::` 步骤。
++   entry .deep   `XPath.deep(step)`：以 `//` 开头的路径
++       `XPath.deep(t"div")` 是 `//div`：从根出发的一个 `descendant-or-self::node()` 步骤，然后是该步骤。
++   entry .relative   `XPath.relative(step)`：从上下文节点出发的路径
++       `XPath.relative(t"div")` 是 `div`，一个相对路径，用作谓词，或用作从其求值之处出发的步骤。
++   entry .here   上下文节点 `.`
++       可用作路径，或通过 `pathConversion` 用在谓词中。
++   entry .attribute   谓词 `@name`：上下文节点的一个属性
++       `XPath.attribute(t"class")` 是 `@class`，用于 `XPath.attribute(t"class").contains(t"active")` 这样的谓词；实例方法 `#attribute` 则是路径步骤 `/@name`。
++   entry .textual   谓词 `text()`：上下文节点的文本子节点
++       `XPath.textual === t"Submit"` 是 `text()='Submit'`。
++   entry .position   调用 `position()`
++   entry .last   调用 `last()`
++   entry .function   按名称调用任意函数，`XPath.function(t"count")(…)`
++       参数接收任何可转换为 `Expression` 的东西。
++       未知的函数名可以被解析和渲染，在求值时抛出带有 `Reason.UnknownFunction` 的 `XPath.Error`。
++   entry .variable   变量引用 `$name`
++       在求值时由 `Xml.evaluate` 所接收的 `variables` 映射绑定；未绑定的变量抛出带有 `Reason.UnboundVariable` 的 `XPath.Error`。
+
+% 2 1 0 1db611174ed9385f070305fd85c158ad
+
+% 3 1 0 12740906a11aa6c503ff2bcbbf5ba30a
+
+% 4 1 0 1ed9177381cd2eb8170f65f81d50a3c3
+
+% 5 1 0 16d6bb6c6d9bb5ff0ef0fc756feee108
+
+% 0 1 0 0d230b36089be6aa04709c70f6da863c
+
+% 0 1 0 13d1cae84e2988580657cf77392fcc7d
+
+% 0 1 0 133bfe3523003087182eb50c078d068e
+
+% 1 1 0 1df5bdfa33021df116a7d1365100a61b
+
+@ 0 1 0 1a599d4d228a75ac1c96b11dde6abed4
++   entry .Locus   通过求值找到的节点，连同它在文档中的位置
+
+% 1 1 0 029240e1e210d0ad0b61c8f6c2e17470
+
+@ 0 16 0 0e9b09f4c83e973312c5baf7c88482e2
++         节点集的成员：求值的对象（`#subject`，对于文档元素之上的虚拟根为 `Unset`）、找到它的 `#document`，以及 `#path`，即从虚拟根向下到该节点的子节点索引路径。
++         索引路径提供了节点树本身无法提供的东西：父子关系、文档顺序和同一性，因为节点不携带父指针，并且一个节点等于由它构成的单元素 `Fragment`。
++         属性是一个伪节点，它与其所属元素共享路径，以所属元素为对象，并设置 `#attributeIndex`。
++     entry #document   找到该节点的文档
++     entry #path   从虚拟根向下到该节点的子节点索引
++     entry #subject   节点本身，对于虚拟根为 `Unset`
++     entry #attributeIndex   对于属性位置，属性在其元素中的索引
++     entry #stringValue   XPath 字符串值：元素的后代文本，属性的值
++         对于元素，是所有后代文本节点和 CDATA 节点的连接；对于文本、CDATA、注释或处理指令节点，是它自己的内容；对于属性，是它的值；对于虚拟根，是整个文档的字符串值。
++   entry .Value   对表达式求值的结果：节点集、布尔值、数字或字符串
+
+% 1 1 0 0990a6140869b83b1e769c4aa3a8109f
+
+@ 0 4 0 006031e36c6394190b6906c9ff1a71e3
++         XPath 1.0 的四种值类型：`NodeSet(loci)`，总是按文档顺序且没有重复；`Truth(value)`；`Numeric(value)`，一个 `Double`；以及 `Textual(value)`。
++         规范中的转换都是成员，因此任何种类的值都可以作为任何其他种类读取，正如 `boolean()`、`number()` 和 `string()` 所做的那样。
+
+% 2 1 0 0128f3839a8ed1ec024accdd42501fc0
+
+% 3 1 0 1b510016029c956602de900bff206b88
+
+% 4 1 0 1ceaa83a37f5eaa3018bb5993b55b088
+
+% 5 1 0 12f0c09d0749375612c766bcb5bf01b4
+
+% 0 1 0 1805ff8da4389bdd0656fe05218481cf
+
+% 0 1 0 01e3f163f92fba9304af1fe286d4663a
+
+% 0 1 0 0f366c0b36a697cb0cd562f8000b619e
+
+% 0 1 0 0718251a779c3987144760087976018d
+
+% 1 1 0 1f5c1802b31d0dd50a5cb04cd5b40063
+
+@ 0 4 0 11a5b5d63678e64f0ecd434b0f36b9d9
++     entry #truth   作为布尔值的值：非空节点集、非零数字、非空字符串
++     entry #number   作为数字的值：`true` 为 1，字符串按 XPath 的 `number()` 解析，否则为 NaN
++     entry #text   作为字符串的值：节点集的第一个字符串值，`1.0` 对应 `1`，`true`/`false`
++   entry .Error   当已解析的表达式无法求值时抛出
+
+% 1 1 0 1f0726e92783040310fbbc8ea02eea3d
+
+@ 0 5 0 00ff6a7f685a2ff31c7d6ac9d91c34e9
++         错误 `↯/s.128.2`：_the XPath could not be evaluated because `reason`_。
++         由 `Xml.select`、`Xml.selectText` 和 `Xml.evaluate` 抛出，它们各自接收一个 `Tactic[XPath.Error]`，抛出的情况有：未知的函数、参数数量错误、未绑定的变量、交给 `select` 的非节点集、不受支持的特性（`id()` 函数、`namespace` 轴），或仍含有未解析替换的表达式。
+
+% 2 1 0 19eeae57e1a2b9eb063a69419fab1e5c
+
+% 3 1 0 107135f90e6af0860c6d209268692c56
+
+% 1 1 0 01e216ffbf7534fe1439bb82c911f4ee
+
+% 0 1 0 07f3236563e837b617b11a6ec759b6f4
+
+% 0 1 0 0876e4652861fb5a03f8897c4a859123
+
+% 1 1 0 1de96a62c34186d41feadcf8feffdb92
+
+@ 0 1 0 08776d3a16f663ed069668bd4722ee43
++     entry .Reason   求值为何失败，带有区分它的编号
+
+% 1 1 0 03306b9e79210c9203b9cdca624daa88
+
+@ 2 4 0 1391b811257ec4750fe502f64c50ba6d
++         column  分支
++         column  代码
++         column  消息
++         column  说明
+
+% 0 1 0 02299b83ef6905360c34baddea11e6d4
+
+% 0 1 0 0d1f1d134b2a348204c99243c194836f
+
+% 0 1 0 0e4778aa178840261c1acf190aa4d24b
+
+@ 0 1 0 1059f5c1ca9e0b930dd9731bcd13ff63
++         row  `NotNodeSet`  4  _a node-set was expected_  当表达式的值不是节点集时由 `select` 抛出
+
+% 0 1 0 072c782391d70c9e101f4c504db4b928
+
+% 0 1 0 16aa09e7d74e9649155f3f173a595ca8
+
+% 1 1 0 1956c98a3baba73207a5ae80ad90c766
+
+@ 0 13 0 1186657a19f541ce0a8fea0d1e5cc796
++     entry .communicable   把每个原因渲染为一条消息
++     entry #reason   使求值停止的 `XPath.Error.Reason`
++   entry .interpolable   `xp"…"` 背后的 given：在代码编译时解析并检查字面量
++       在展开时用与运行时 `Decodable` 相同的解析器解析字面量，因此编译时检查不会与运行时行为产生分歧，并把失败的偏移量映射回源代码中出错的字符。
++       语法允许基本表达式的地方都允许替换，而解析出的树（嫁接了插入的内容）会被提升到代码中，因此在运行时不会重新解析任何东西。
++       字面量所用的前缀通过作用域内的 `Namespace` given 绑定。
++   entry .decodable   从文本解析任意 XPath 1.0 表达式，即 `as[XPath]`
++       需要一个 `Tactic[Parse.Error]`：格式错误的表达式会抛出基于 `XPath` 格式的 `Parse.Error`，它的 `XPath.Issue` 说明问题所在，它的 `XPath.Position` 给出字符偏移量。
+
+% 2 1 0 0b69e1eac8e9d56d0ca69dc12dce6b30
+
+% 3 1 0 052ac92015cbab4b01ed487eb1b669fa
+
+% 4 1 0 0922cd0a4f8828b1104ec2c852bac6da
+
+% 0 1 0 0dc21212ea1e82940d441555eb59b4b5
+
+% 1 1 0 1a13c891edc9d3831c0c6c3c4f3c769c
+
+@ 0 1 0 0844f03fd8523cf60006dff9063ad2a1
++   entry .Issue   XPath 文本出了什么问题，位于 `Parse.Error` 中
+
+% 1 1 0 1ff4dd8aa1266f4a0c1355b7f30ddb5e
+
+@ 0 11 0 14edc72453e408781d1b027ff5380d37
++         `UnexpectedCharacter`、`UnterminatedLiteral`、`UnknownAxis`（不是十三个轴之一）、`ExpectedNodeTest`、`ExpectedExpression`、`ExpectedCloseParen`、`ExpectedCloseBracket`、`UnexpectedEnd` 和 `UnexpectedToken`。
++         每一个都是带有 `describe` 消息的 `Format.Issue`；位置是解析器发现它时所在的 `XPath.Position`。
++     entry #describe   作为消息的问题，例如 _the string literal is not terminated_
++   entry #expression   表达式树；未给出时为一个空的绝对路径 `/`
++   entry #scope   绑定路径的名称测试所用前缀的 `Xml.Scope`
++       默认为 `Xml.Scope.xml`，它只绑定保留的 `xml` 前缀。
++       带前缀的名称测试在其前缀于此绑定时按解析后的名称匹配，否则按原始标注匹配。
++   entry #in   同一个路径，其前缀被重新绑定到另一个作用域
+
+% 1 1 0 1e2278e7170ae0840720ab76cfbf5564
+
+% 2 1 0 1c3f8b0f7b7ac83b0958ecd38df17078
+
+% 3 1 0 0507fbda4aea846a030bb9d1126d55e2
+
+% 4 1 0 11595577c464d6311dda4145ffd9ec6d
+
+% 0 1 0 1e85b05652f46ec518b906e13b3f8f99
+
+% 0 1 0 189622034d1f29c8188ff5277e0aa71c
+
+% 1 1 0 00718c8ddee5be7a1e577f4c27ea6e1c
+
+@ 0 22 0 00cd195bdacbbeed1147ffe93f6ab54b
++   entry #/   `path / step`：追加一个 `child::` 步骤
++       `XPath / t"html" / t"body"` 是 `/html/body`。
++       对于不是路径的表达式，该表达式成为过滤路径的开头，就像 `(//a)[1]/b` 那样。
++   entry #deep   `path.deep(step)`：追加 `//` 和一个步骤
++       `XPath.deep(t"div").deep(t"a")` 是 `//div//a`。
++   entry #on   在任意轴上以任意节点测试追加一个步骤
++       `path.on(XPath.Axis.FollowingSibling, XPath.NodeTest.Name(Unset, t"li"))` 追加 `following-sibling::li`，用于缩写形式无法到达的轴。
++   entry #where   给最后一个步骤添加一个谓词
++       `XPath.deep(t"div").where(XPath.attribute(t"id") === t"main")` 是 `//div[@id='main']`。
++       谓词是任何可转换为 `Expression` 的东西：`Text` 是字符串字面量，`Int` 是数字，`XPath` 是相对路径。
++       没有步骤的路径则把谓词加在它的过滤表达式上。
++   entry #apply   `path(n)`：一个位置谓词
++       `(XPath / t"li")(2)` 是 `/li[2]`。
++   entry #element   追加 `name[ordinal]`，序数默认为 1
++       派生的解码器据以构建错误位置的步骤：`path.element(t"child")` 是 `path/child[1]`。
++   entry #attribute   追加 `@name`，选择一个属性
++       `(XPath / t"root").attribute(t"id")` 是 `/root/@id`。
++       以属性步骤结尾的路径用 `Xml.selectText` 或 `Xml.evaluate` 读取，因为属性不是 `Xml.select` 能够返回的树节点。
+
+@ 0 1 0 1698846790fc16321c9390dcbfb4733b
++ entry .Xsd   XML Schema（XSD 1.0），表示为其声明的不可变模型
+
+% 1 1 0 06273734fa4749b914c1f2889eda58c2
+
+@ 0 9 0 11c69693f4a2e78f0c6b24f643ee5a71
++       `Xsd.parse` 将 schema 文档读取为一个值：其全局的 `#elements`、`#complexTypes`、`#simpleTypes`、`#attributes`、`#groups` 和 `#attributeGroups`，每个都是按声明顺序、以名称为键的 `Map`，还有 `#targetNamespace`、两个 form 默认值、它所指明的 `#imports` 和 `#includes`，以及其顶层的 `#documentation`。
++       引用——`type="tns:Order"`、`ref="tns:item"`、`base`——以解析后的 `Xml.Name` 保存，并在需要时用 `#resolve` 查找，因此递归的 schema 可以表示，解析也只需一遍；导入和包含只被记录，不会被获取。
++       元素按解析后的名称分派，因此 `xs:`、`xsd:` 和默认的 XSD 命名空间读起来都一样。
+
+% 2 1 0 02152599fa621def10e9a3c45680a6be
+
+% 3 1 0 063d16c8d7e1edb10b66961923013b2d
+
+% 0 1 0 1b2fc40646840a3f068e0180d211f5ea
+
+% 1 1 0 0a9774e8cce418fd102b5b80640363a9
+
+% 2 1 0 106f97b3d6c3f0e80e489fc1b4572b44
+
+% 0 1 0 089fbdc90f5218d21cd67aa7096a41bd
+
+% 0 1 0 0d01808272635e6111412502509ccdc0
+
+% 0 1 0 00803384bcf5ed511b38372b44ebaf4b
+
+% 0 1 0 13a3a13808286a181e5abd7d38cb2345
+
+% 1 1 0 03f2f2e312232fcd0b0c2e5b42d3d167
+
+@ 0 3 0 1ad1128046fac4b21ac34fb2739f08c5
++       该模型是 `Xml.Provider` 读取其带类型记录的字段的来源；它不验证文档。
++       不是 schema 的 schema 文档，或违反读取器所遵循语法的文档，会抛出 `Xsd.Error`。
+
+% 1 1 0 086c00658fab141d1558d357897ffd17
+
+% 1 1 0 111a87ff98cff4390745b4b43227ff67
+
+@ 0 5 0 0408c2eb0bbce1d81c05f4fa7ddd5c8e
++   entry .namespace   XML Schema 命名空间，`http://www.w3.org/2001/XMLSchema`
++   entry .instance   实例命名空间，`http://www.w3.org/2001/XMLSchema-instance`
++   entry .Form   局部元素或属性是否受命名空间限定：`Qualified` 或 `Unqualified`
++   entry .Use   属性可以如何出现：`Optional`、`Required` 或 `Prohibited`
++   entry .Occurs   粒子可以出现的次数：`minOccurs` 和 `maxOccurs`
+
+% 1 1 0 0a4fdb358e0a50300aafbcd42fa1807a
+
+@ 0 6 0 12cd6bb9c8d1d620110e58cb9a7c5b36
++         对于 `unbounded`，`max` 为 `Unset`；两者默认都为 1，与 schema 的属性一致。
++     entry #min   最小值，来自 `minOccurs`
++     entry #max   最大值，来自 `maxOccurs`；对于 `unbounded` 为 `Unset`
++     entry #optional   最小值是否为零
++     entry #many   是否允许出现多次
++   entry .Builtin   XML Schema 第 2 部分的内置数据类型，按局部名称
+
+% 1 1 0 11649c924f61426a06bdb7c8b08c72d7
+
+@ 0 25 0 164a18d4a292e15207333c192da1ec8f
++         每个内置类型一个分支，从 `String`、`Boolean`、`Decimal`、`Float` 和 `Double`，经过日期、时间和时长类型，二进制和 URI 类型，token、名称和标识符类型，整数层级（`Integer`、`Long`、`Int`、`Short`、`Byte`，以及非正、负、非负、正和无符号形式），直到 `AnyType` 和 `AnySimpleType`。
++         `Xsd.Builtin(t"positiveInteger")` 按局部名称查找一个，`Xsd#builtin` 则按 XSD 命名空间中解析后的名称查找。
++     entry .apply   具有某个局部名称的内置类型，或 `Unset`
++     entry #local   该类型在 XSD 命名空间中的局部名称，例如 `nonNegativeInteger`
++   entry .TypeRef   声明如何指明其类型：按名称，或通过内联定义
++       `Named(name)` 是一个 `type="…"` 属性，解析为 `Xml.Name`；`Inline(definition)` 是写在声明内部的 `complexType` 或 `simpleType`。
++   entry .Type   复杂类型或简单类型：`ComplexType` 和 `SimpleType` 的密封父类型
++   entry .SimpleType   简单类型：内置类型、限制、列表或联合
++       `Builtin(builtin)`；`Restriction(base, facets)`；`Sequence(item)`，即某个项类型的 `xs:list`；以及 `Union(members)`。
++   entry .SimpleDecl   具名的 `simpleType` 声明
++     entry #name   类型的名称，匿名类型为 `Unset`
++     entry #definition   它所声明的 `SimpleType`
++     entry #documentation   其 `annotation/documentation` 子元素的文本
++   entry .Facet   限制的约束面
++       `Enumeration(values)`、`Pattern(regex)`、`MinInclusive`、`MaxInclusive`、`MinExclusive` 和 `MaxExclusive`（各自以文本保存值）、`MinLength`、`MaxLength` 和 `Length`、`TotalDigits` 和 `FractionDigits`，以及 `WhiteSpace(mode)`。
++       `Xml.Provider` 在读取字段时检查每一个。
++   entry .Particle   内容模型的项：组合器、元素、组引用或通配符
+
+% 1 1 0 0fff83c1fb03a6a0107eb62979ddbb90
+
+@ 0 6 0 1cc78a5051498d490c50ed0693bf2235
++         `Sequence(items, occurs)`、`Choice(items, occurs)` 和 `All(items, occurs)` 是组合器；`Element(declaration, occurs)` 是局部或被引用的元素；`Group(ref, occurs)` 是对具名组的引用；`Any(occurs)` 是 `xs:any` 通配符。
++     entry #occurs   该粒子可以出现的次数
++   entry .ElementDecl   元素声明，全局或局部
+
+% 1 1 0 068efa9214fcd63411e4dcac2d54dd00
+
+@ 0 38 0 0978824e7a2767680fef04f3c5df9cd0
++         全局元素有 `#name`；局部元素则可以是指向全局元素的 `#ref`。
++         其类型是 `#typeRef`，按名称或内联给出，对于 `anyType` 则为 `Unset`。
++     entry #name   元素的名称，引用则为 `Unset`
++     entry #ref   本元素所引用的全局元素，或 `Unset`
++     entry #typeRef   元素的类型，按名称或内联给出，或 `Unset`
++     entry #nillable   是否允许 `xsi:nil`
++     entry #default   `default` 值，以文本表示
++     entry #fixed   `fixed` 值，以文本表示
++     entry #form   元素自身的 `form`，覆盖 schema 的默认值，或 `Unset`
++     entry #substitutionGroup   元素所属替换组的头元素
++     entry #abstractDecl   元素是否被声明为 `abstract`
++     entry #documentation   其 `annotation/documentation` 子元素的文本
++   entry .AttributeDecl   属性声明，全局或局部
++     entry #name   属性的名称，引用则为 `Unset`
++     entry #ref   本属性所引用的全局属性，或 `Unset`
++     entry #typeRef   属性的类型，按名称或内联给出，或 `Unset`
++     entry #use   `Optional`、`Required` 或 `Prohibited`
++     entry #default   `default` 值，以文本表示
++     entry #fixed   `fixed` 值，以文本表示
++     entry #form   属性自身的 `form`，或 `Unset`
++   entry .AttributeUse   复杂类型中的属性使用：声明、组引用或 `anyAttribute`
++       `Attribute(declaration)`、`Group(ref)` 和 `Any`。
++   entry .Content   复杂类型的内容模型
++       `Empty`；直接书写的内容模型为 `Particles(particle)`；`simpleContent` 为 `SimpleExtension(base, attributes)` 和 `SimpleRestriction(base, facets, attributes)`；`complexContent` 为 `ComplexExtension(base, additions, attributes)` 和 `ComplexRestriction(base, particle, attributes)`。
++   entry .ComplexType   `complexType` 声明，具名或匿名
++     entry #name   类型的名称，匿名类型为 `Unset`
++     entry #mixed   子元素之间是否可以出现字符数据
++     entry #content   内容模型
++     entry #attributes   直接在该类型上声明的属性使用
++     entry #anyAttribute   是否声明了 `anyAttribute` 通配符
++     entry #documentation   其 `annotation/documentation` 子元素的文本
++   entry .Import   对另一个 schema 的 `import`：其命名空间和位置，均为可选
++     entry #namespace   被导入的命名空间，如果给出
++     entry #location   `schemaLocation`，如果给出
++   entry .Error   无法读取 schema 文档时抛出
+
+% 1 1 0 1c80086ad61fb20703eff24ccbd20f16
+
+@ 0 2 0 17a2cfadc4d639b21cf5b2207d773740
++         错误 `↯/s.128.3`：_the XML Schema could not be read because `reason`_。
++         由 `Xsd.parse` 通过其 `Tactic[Xsd.Error]` 抛出。
+
+% 2 1 0 0d9b6da440b1f1a204933870bb068ecc
+
+% 3 1 0 0d2935c69dc0cb350cba6ad9a8b8d829
+
+% 4 1 0 05789db434941eed078deb557d5749d4
+
+% 5 1 0 1695e906939a3b9012afc6edc43a6bf6
+
+% 0 1 0 00e6a044ad440ce7025306462f658262
+
+% 0 1 0 00a2c57991f63ec5198b94f4bec57e8e
+
+% 1 1 0 16721c043859279118df108da59501a2
+
+@ 0 1 0 0d87e9f9eabd367908f1fa2bd2992147
++     entry .Reason   无法读取 schema 的原因
+
+% 1 1 0 128bfaee1cc3e49f07a746a7739e34b9
+
+@ 0 6 0 103ba45f00d3f22715144ed5fd178980
++         column  分支
++         column  代码
++         column  消息
++         column  说明
++         row  `NotSchema(found)`  1  _the document element is `found`, not an XML Schema_  文档元素不是 `xs:schema`
++         row  `Unexpected(element, within)`  2  _`element` may not appear in `within`_  语法不允许出现在该处的元素
+
+% 0 1 0 002d21d6fb8c4fec10c04ce062165f18
+
+@ 0 4 0 0de90311bd470f8e0518d812c64ed77e
++         row  `BadOccurs(value)`  4  _`value` is not a valid number of occurrences_  既不是数字也不是 `unbounded` 的 `minOccurs` 或 `maxOccurs`
++         row  `UnknownPrefix(prefix)`  5  _the prefix `prefix` is not bound to a namespace_  出现在以 QName 为值的属性中
++         row  `BadFacet(facet, value)`  6  _`value` is not a valid value for the `facet` facet_  值不是数字的约束面
++         row  `Duplicate(kind, name)`  7  _the `kind` `name` is declared more than once_  声明了两次的全局声明
+
+% 1 1 0 1006d6a5298b986a04b32cdb0a3f9fba
+
+@ 0 27 0 12d2d758e7e60d6e12a2799503eb6908
++     entry .communicable   将每个原因渲染为消息
++     entry #reason   `Xsd.Error.Reason`
++   entry .parse   从 `Xml` 文档或其文本读取 schema
++       `Xsd.parse(xml)` 读取已解析的文档，需要一个 `Tactic[Xsd.Error]`。
++       `Xsd.parse(text)` 先用自由词汇表和严格命名空间解析文本（文本可以以 XML 声明开头），因为 schema 文档会绑定它用到的每个前缀，所以它还需要一个 `Tactic[Parse.Error]`。
++   entry #targetNamespace   `targetNamespace`，没有时为 `Unset`
++   entry #elementFormDefault   局部元素是否默认受限定
++   entry #attributeFormDefault   局部属性是否默认受限定
++   entry #elements   全局元素声明，按名称，按声明顺序
++   entry #complexTypes   具名复杂类型，按名称
++   entry #simpleTypes   具名简单类型，按名称
++   entry #attributes   全局属性声明，按名称
++   entry #groups   具名模型组，按名称，每个表示为其单一组合器
++   entry #attributeGroups   具名属性组，按名称
++   entry #imports   schema 的 `import`，按顺序；只被记录，不会被获取
++   entry #includes   其 `include` 和 `redefine` 的 `schemaLocation`；只被记录，不会被获取
++   entry #documentation   schema 自身 `annotation/documentation` 子元素的文本
++   entry #local   解析后的名称是否指向本 schema：其命名空间是否为目标命名空间
++   entry #element   按名称查找的全局元素声明，或 `Unset`
++   entry #resolve   引用所指明的类型：在此声明的类型、内置类型，或 `Unset`
++       目标命名空间中的名称先查找复杂类型，再查找简单类型；XSD 命名空间中的名称查找 `Builtin`，包装为 `SimpleType.Builtin`。
++       其他任何名称——来自被导入 schema 的类型，而该 schema 不会被获取——都为 `Unset`，`Xml.Provider` 将这样的字段读取为原始 `Xml`。
++   entry #builtin   XSD 命名空间中的名称所表示的内置类型，或 `Unset`
+
+@ 0 1 0 15f1fdec3f29cfb50920bd606485bc1d
++ entry .XmlSchema   解析时据以验证的词汇表：允许哪些元素、属性和实体
+
+% 1 1 0 0c9724121944804108362d6b8ba05828
+
+@ 0 7 0 074956e485f2065c011043c55ed8e095
++       解析 XML 需要作用域中有一个 `XmlSchema`，就像它需要 `Codepage` 或错误策略一样；它决定在何处允许哪些元素和属性，以及哪些具名实体会被展开。
++       `XmlSchema.Freeform` 以 `xmlSchemas.freeformXmlSchema` 导入，它允许任何元素和属性，展开五个预定义实体，是没有特定词汇表时的常用选择。
++       每个 `Xml` 值都以其 `Form` 类型成员携带其 schema，因此在某个词汇表下解析的文档以该词汇表为类型。
+
+% 2 1 0 0a3621e6110aa56800f48cda0d4f3b8c
+
+% 3 1 0 1c83a274e74485a3159f7343d4fa5a5f
+
+% 4 1 0 060127e07b4fc270118f047e085c4318
+
+% 5 1 0 1c2b89a93218588e05f7162e1f90b7fc
+
+% 0 1 0 18fc8946e846cb2517f6fba711e0332b
+
+% 1 1 0 0b21cb66c33077740e7c641220ee8619
+
+@ 0 4 0 09641d00c12f960804ceb4a43164144f
++       自定义词汇表是一个扩展 `XmlSchema` 的对象，带有以 `Tag` 表示的 `#elements`、`#attributes` 和 `#entities`；在它之下的解析会拒绝词汇表中没有的元素（`Xml.Issue.InvalidTag`），或不能作为其父元素子元素的元素（`Xml.Issue.InadmissibleTag`）。
+
+% 0 1 0 0ee1b01f286ea4970ab268d072dce2dd
+
+% 1 1 0 10a7b9d3caa1bb320739d12f1ca0bbdc
+
+@ 0 12 0 04326b4854fbe5711ecec3b3fabb3edc
++   entry .generic   不允许任何子元素的根标签，用于没有元素的 schema
++   entry .defaultEntities   五个预定义实体：`amp`、`lt`、`gt`、`apos` 和 `quot`
++   entry .Freeform   允许任何内容的词汇表
++       没有自己的元素或属性，使用默认实体，且 `freeform` 为 true，因此解析器接受它遇到的每个元素和属性。
++       以 given `xmlSchemas.freeformXmlSchema` 导入。
++   entry #freeform   是否允许任何元素和属性；除非被覆盖，否则为 false
++   entry #elements   词汇表的元素，以 `Tag` 表示，按名称
++   entry #attributes   词汇表的属性，以 `Xml.XmlAttribute` 表示，按名称
++   entry #entities   具名实体及其展开
++   entry #infer   在父元素与不能作为其直接子元素的子元素之间插入的标签，或 `Unset`
++   entry #generic   允许词汇表中每个元素作为子元素的根标签
+
+@ 0 1 0 14d4911b696408cf1a3e5291d3482fc3
++ entry .Namespace   绑定到命名空间 URI 的前缀，作为上下文值
+
+% 1 1 0 1ce89466ca0db38a17c02de1da491300
+
+@ 0 2 0 043f7f20f99b5c2c1f6470677b4a6f4c
++       `Namespace` 将一个前缀（其 `Self`）绑定到一个 URI（其 `Topic`），两者都是单例类型，因此如下的 given
+
+% 2 1 0 17fa9409caf0d54910d6015daac25a23
+
+% 3 1 0 02a0a340d2dd87390b19baa3d581e043
+
+% 0 1 0 13b9ea79d6205a4316301ef579e3d481
+
+% 1 1 0 18ecd085da8274951a71dadc03f7dd58
+
+@ 0 8 0 1a693da0cb7697950f178978496881e5
++       在其所处的任何作用域中绑定 `svg`。
++       `x"…"` 和 `xp"…"` 插值器会为其字面量使用但未声明的前缀查询这些 given——`x"<svg:rect/>"` 在有上述 given 时能编译，没有时则不能——而 `Xml.Scope[prefixes]` 以前缀组成的元组类型为参数，由它们构建一个作用域，解析或带前缀的选择（`` xml.`svg:rect` `` 或 `xp"//svg:rect"`）通过该作用域按解析后的名称进行匹配。
++       前缀只是词法上的便利：两个名称只要 URI 和局部部分一致就是同一个名称，无论绑定它们的是什么前缀，因此代码使用的前缀不必与文档使用的前缀相同。
+
+@ 0 2 0 01768f8503cd071011a50493c79c3b73
++       保留前缀 `xml` 由伴生对象的 `xml` given 在每个文档中绑定，无需声明。
+
+% 1 1 0 07a46f89bd41d600081f5c18f59c83f1
+
+% 1 1 0 164a34e4bc4575cf16cfdba1658d9594
+
+@ 0 13 0 007720ce3dc63f811d4eb06af211c984
++   entry .Bound   `Namespace()` 所构造的类：作为值的前缀和 URI，以其字面量为类型
++     entry #prefix   前缀，以文本表示
++     entry #uri   命名空间 URI，以文本表示
++   entry .apply   `Namespace()`：从期望类型中读取前缀和 URI 的绑定
++       一个内联方法，从它所赋给的 given 的单例类型中取得前缀和 URI：`given k: ("k" is Namespace of "urn:a") = Namespace()`。
++   entry .xml   保留前缀 `xml`，绑定到 `http://www.w3.org/XML/1998/namespace`
++       通过伴生对象位于隐式作用域中，因此每个文档和字面量都有它。
++   entry .inspectable   将绑定渲染为 `Namespace[t"svg" -> t"http://www.w3.org/2000/svg"]`
++   entry #Self   前缀，作为字面量类型
++   entry #Topic   命名空间 URI，作为字面量类型
++   entry #prefix   前缀，以文本表示
++   entry #uri   命名空间 URI，以文本表示
+
+@ 0 1 0 1fa2c0cbb7efa8030934ffffc01e7fb7
++ entry .Tag   词汇表中的元素：其名称、预设属性以及它允许的子元素
+
+% 1 1 0 1a349fb65a40b0261b91820bd91ae79c
+
+@ 0 7 0 1efcea995bb720ff17250d9056bde340
++       `Tag` 是一个没有子元素、但知道哪些内容可以放入其中的 `Xml.Element`：即 `#admissible` 子元素名称，以及每个实例起始时带有的 `#presets`。
++       以具名参数应用它，如 `tag(id = t"main")`，会由宏对照词汇表的 `Xml.XmlAttribute` given 进行检查——元素不接受的属性是编译错误 _the attribute `href` cannot be used on the element `<div>`_——每个值都通过 `Attributive` 实例转换。
++       `object Xml` 本身就是一个 `Tag.Container`，`XmlSchema` 的 `elements` 都是标签。
+
+@ 0 2 0 163e8e77d81d1ffe168fe9ec5a016734
++       该对象不导出到 `soundness` 总括包，因为那里 honeycomb 的 `Tag` 占用了这个名称：请通过 `xylophone.Tag` 访问它。
+
+% 1 1 0 053814d9c909144a01e7e46606d134f7
+
+% 0 1 0 0aa10e934aeecdac09e9cde99d523dcc
+
+@ 0 7 0 196c67b5805d466007d8c9f181e022fc
++   entry .root   文档根标签 `#root`，允许所给的子元素
++       位于词汇表元素之上的标签，由 `XmlSchema#generic` 构建。
++   entry .freeform   任意名称的容器标签，不限定特定的子元素
++   entry .container   以其标注、允许的子元素和 schema 为类型的容器标签
++       `Tag.container[label, children, schema](presets)` 构建一个 `Container of label over children in schema`，子元素由类型层面的名称列表具体化而来。
++   entry .Container   实例为带子元素之元素的标签
+
+% 1 1 0 08e11a40d86e38291cdb5c67067a89f5
+
+@ 0 11 0 0c44a99c5c4f4f14095788aec60a1918
++         应用 `Container` 会构造一个同时也是 `Xml.Vacuiscible` 的 `Xml.Element`，因此它可以在第二次应用中接收子元素：`div(id = t"x")(child, child)`。
++     entry #node   对应一组属性的元素，预设属性合并在其下
++   entry #presets   该标签的每个实例起始时带有的属性
++   entry #admissible   该标签允许作为子元素的元素名称
++   entry #Result   应用该标签所构造的元素的类型
++   entry #applyDynamicNamed   `tag(key = value, …)`：带有经检查属性的元素
++       一个宏：每个键都必须是词汇表为该元素声明的属性（一个 `Xml.XmlAttribute` given），每个值都必须对该属性的类型是 `Attributive` 的，否则调用无法编译。
++   entry #node   对应一组属性的元素
+
+@ 0 1 0 09bc82c0c708d33d0a81ff814005ddb1
++ entry .Attributive   应用标签时，值如何变为属性的文本
+
+% 1 1 0 00f4de0b741e4af51b563c9f6f5bc94e
+
+@ 0 5 0 1e526ae43e4329d619bdd3b697267fcd
++       `tag(width = 10)` 需要把 `10` 变为 `width` 属性的文本，而且仅当该属性接受该类型的值时才可以：`Attributive` 就是这一转换，从 `Self` 值转换为由文本组成的 `(key, value)` 对，或转换为 `Unset` 以省略该属性，并以属性的 `Result` 类型为键。
++       伴生对象为文本属性提供 `Text` 和 `String`；词汇表为它自己的属性类型添加实例。
+
+@ 0 2 0 0334a2d2f0cf934b1a5b95edb5cd4dd4
++       该特质不导出到 `soundness` 总括包，因为那里 honeycomb 的 `Attributive` 占用了这个名称：请通过 `xylophone.Attributive` 访问它。
+
+% 1 1 0 0bef44ae9921e11f0c781c9997c1d7a5
+
+@ 0 4 0 0cafc7bdb05887370d256c857eb8c79b
++   entry .Textual   普通文本属性的属性类型
++   entry .textTextual   作为文本属性值的 `Text`
++   entry .stringTextual   作为文本属性值的 `String`
++   entry #attribute   值对应的 `(key, value)` 对，或 `Unset` 以省略该属性
+
+@ 0 1 0 000b78eb75116cbf01d8ce0a0e437c3b
++ entry .Renderable   渲染为给定形式之 `Xml` 的值
+
+% 1 1 0 03ae6b3412121ec00fba024d356887dc
+
+@ 0 6 0 049130e88e5a19cb120dce966088e6db
++       `Renderable` 是具有 XML 渲染方式之类型的类型类：`render` 将 `Self` 值转换为 `Xml of Form`，其中 `Form` 指明该渲染所属的词汇表。
++       它是 honeycomb 中用于 HTML 的 `Renderable` 在 XML 方面的对应物，并且因为那一个占用了这个名称而不导出到 `soundness` 总括包：请通过 `xylophone.Renderable` 访问它。
++   entry #render   作为 `Xml of Form` 的值
+
+@ 0 1 0 0f93acaba6e6da46000aacfcd39c5180
++ entry .Inlinable   从 XML 读取类型的编译时代码生成器，组合成一个扁平的解析器
+
+% 1 1 0 069cf6f3930ebfcf055297690e9ab16b
+
+@ 0 7 0 15551000d8096f340d4507cf0031b28f
++       `Inlinable` 是 `Xml.Parsable` 在 `Expr` 层面的对应物：一个类型类，其 `#parse` 是宏展开时的生成器，接收一个定位在刚打开的元素内部的 `Xml.Reader` 的 `Expr`，返回解码后值的 `Expr`，由生成它的宏直接拼接进它所构建的解析器。
++       嵌套记录、集合收集和自定义叶子解析器全部内联到一个单态解析器中，没有运行时分派，没有实例数组，组合起来的解析器之间也没有适配器跳转。
++       它完全仿照 jacinta 中用于 JSON 的 `Inlinable`。
+
+@ 0 4 0 074619ee759b91dd019eb14e6937a5af
++       入口是 `Inlinable.parsable[T]`，即一个单态的 `T is Xml.Parsable`，以及 `Inlinable.printable[T]`，即它在写入方面的对应物，一个将记录的紧凑 XML 文本直接写入写入器而不构建树的 `T is Xml.Printable`。
++       `import codecs.direct` 和 `derives Xml.Direct` 所用的正是这两者。
+
+% 2 1 0 19fcede7e34f3db61821b2817ba03bda
+
+% 3 1 0 1e0d01a04e260cf619b72f7d7e3fec20
+
+% 4 1 0 0def8cd4d093724512a7be254791080c
+
+% 5 1 0 098a289257b22aab1d89ea69406a9d0e
+
+% 0 1 0 16e7677aa284c8e107d6438b1b0409df
+
+% 0 1 0 1dda9b4ccf904bec021dc8e26cd8362a
+
+% 0 1 0 08dd668d97f13bb0044b790f9223daa9
+
+% 0 1 0 1c9d2c8a56a7ab611d85e120deb25814
+
+% 0 1 0 073a261df7d976c01a0b5dd43556ea00
+
+% 1 1 0 1c81d610c0bdde4a0b18ee81da6d4ab4
+
+@ 0 8 0 1860ec58ca7be8ff106bf534db2e561b
++       实例是普通的运行时值，因此 `derived` 不需要自己的宏；在 `parsable[T]` 展开处的解析阶梯是：内置叶子（伴生对象的 `int`、`text`，…… given，它们与基本类型的 `Xml.Parsable` 实例一一对应，因此直接读取、分阶段读取和内联读取给出相同的值和相同的错误），然后是在宏内分阶段执行编译器中实时求值的用户编写实例，然后是针对 case class、集合或密封和类型的结构化生成器，最后是运行时接缝，即通过字段的 `Xml.Parsing` 实例进行的拼接调用。
++       递归出现（上例中的 `Tree`）采用接缝，而不会无限展开。
+
+@ 0 5 0 1fc3280ccdd28823186fe1a26bc9698b
++       分阶段执行这一步需要宏类路径上有 `xylophone.staged` 模块，它提供 `Inlinable.Stager`；没有它，类型只有用户编写实例的字段会采用运行时接缝。
++       实例（及其类型）还必须在早于展开的一次编译运行中编译：同一次运行中的实例会通过 `Xml.Field` 降级为接缝。
+
+% 1 1 0 04126addd79c43250d84672239cc5b77
+
+% 0 1 0 1ecbb44567aa12c01e459665c591b6ce
+
+@ 0 9 0 0fa9cd0a17b198fa1428345f2e252f8a
++   entry .parsable   `Inlinable.parsable[T]`：在编译时生成的单态 `T is Xml.Parsable`
++       与 `Xml.Parsable.staged` 类似，但通过 `Inlinable` 实例组合，使嵌套记录、集合和自定义叶子内联到一个扁平的解析器中。
++       获得它的常用方式是 `import codecs.direct` 或 `case class T(…) derives Xml.Direct`。
++   entry .printable   `Inlinable.printable[T]`：在编译时生成的单态 `T is Xml.Printable`
++       将记录的紧凑 XML 文本直接写入写入器，在格式为紧凑格式时，通过 `in[Text over Xml]` 和 `in[Data over Xml]` 使用；缩进格式仍然通过树来渲染。
++   entry .Generates   表明生成器以记录方式结构化地构建某个类型编解码器的证据
+
+% 1 1 0 0dceaffab42805571cd2a5fcddd57b3d
+
+@ 0 5 0 13ddd3e77340dea91daf8b78768f094c
++         `import codecs.direct` 所生成实例的条件：其 `generates` given 只对生成器作为记录处理的类型成功，因此对任何其他类型，查找生成实例会失败，转而解析派生路径。
++     entry .generates   该 given，一个对记录类型成功、对其他类型失败的宏
++   entry .Stager   在展开时对用户编写的实例求值的宏内分阶段执行编译器
+
+% 1 1 0 1e30991c98eb31af02a14f4be16347f0
+
+@ 0 14 0 1df768885fc5f7271500537248a2cedf
++         `Inlinable` given 是普通的运行时值，因此生成器只能通过在宏内对该 given 求值来调用其 `parse`，这需要一个分阶段执行编译器，进而需要 `xylophone.core` 并不依赖的编译器 jar。
++         `xylophone.staged` 模块包含其实现，当它在宏类路径上时，伴生对象按名称加载它；没有它时，`summon` 为 `None`，这样的字段采用运行时接缝。
++     entry .summon   字段类型的实时实例，如果分阶段执行编译器可用且找到了一个
++     entry .discriminantAttribute   密封和类型的 `Discriminable in Xml` 据以分派的属性，如果有的话
++     entry #summon   字段类型的实时实例，或 `None`
++     entry #discriminantAttribute   和类型的判别属性，或 `None`
++   entry .derived   case class 的结构化实例
++       在调用 `parse` 时反射 `Self`，因此不需要宏：`Type[Self]` 随调用一同到来。
++   entry .ForXml   `derives` 子句的载体：`case class Play(…) derives Inlinable.ForXml`
+
+% 1 1 0 14857fcfe25064841ccf42de97bfa628
+
+@ 0 26 0 1df1d1bfbf8a062b196e7e316b6e5dad
++         以 `Self` 为类型的类型类没有类型参数，因此不能出现在 `derives` 子句中；`ForXml[value]` 是一个参数化的子特质，它*就是*一个 `value is Inlinable`，被合成到该类型的伴生对象中，分阶段召唤在那里找到它。
++         解析阶梯会解开这层委托，因此结构化实例保持其生成器身份。
++     entry .derived   基于 `Inlinable.derived[value]` 的载体
++     entry #parse   委托给被包装的实例
++     entry #absent   委托给被包装的实例
++   entry .int   `Int` 的生成器：与 `Xml.intParsable` 相同的读取，缺失时为 `0`
++   entry .long   `Long` 的生成器
++   entry .double   `Double` 的生成器
++   entry .float   `Float` 的生成器
++   entry .boolean   `Boolean` 的生成器
++   entry .text   `Text` 的生成器：元素的文本，或 `Xml.Error.Reason.Untextual`
++   entry .string   `String` 的生成器
++   entry .iterable   由可内联元素类型组成的任何 `Iterable` 的生成器
++       在字段位置上，记录生成器从不调用它：它通过元素自己的生成器收集每个同名子元素。
++       单独使用时，它将单个元素读取为单元素集合，与运行时的 `Xml.Parsable.iterable` 一样。
++   entry #parse   生成器：从读取器的 `Expr` 到值的 `Expr`
++       读取器定位在刚打开的当前元素处。
++       `Quotes` 和 `Type[Self]` 随调用一同到来。
++   entry #absent   当没有子元素带有其名称时，此类型的字段产出什么
++       与运行时实例一致：除非被覆盖，否则以 `Xml.Error.Reason.Missing` 中止；基本类型实例抛出错误并以哨兵值继续，集合为空，记录则抛出一次错误，并采用 `Default` 或以缺失状态构建其字段。
+
+@ 0 1 0 16b41a0ce5ebffcb049f09444ef4cca2
++ entry .inlining   `Inlinable` 背后的机制：生成器和入口宏
+
+% 1 1 0 1c8c2bc60ef027da0dc1458afc204bd4
+
+% 2 1 0 12f3dfb58925b4401c7ca9730759d522
+
+@ 0 11 0 075acd47d9d1d6e701a7b7df45b9e32a
++       不供直接使用：展开时的实例解析，针对积类型、集合和和类型的结构化生成器，以及 `Inlinable.parsable`、`Inlinable.printable` 和 `Inlinable.Generates` 所展开成的宏。
++   entry .fieldInstance   运行时接缝：字段类型的 `Xml.Parsing`，优先使用作用域中的名义 `Parsable`
++       一个内联方法，生成的记录主体在每次解析中绑定它一次，它优先使用名义 `Xml.Parsable`（自定义实例、分阶段的同级实例），而非 `Xml.Field` 回退链，从而使出现的读取、可重复性和缺失都参考同一个实例。
++   entry .generates   `Inlinable.Generates.generates` 背后的宏
++   entry .inlinablePrintable   `Inlinable.printable[T]` 背后的宏
++   entry .inlinableParsable   `Inlinable.parsable[T]` 背后的宏
+
+@ 0 1 0 138cc79961b96be21a9c2a3f2c7ea290
++ entry .dynamicAccess   动态语法 `xml.book` 的许可，作为需按名称导入的 given
+
+% 1 1 0 0a8ada158f1659f01363771dcc3e96a9
+
+@ 0 5 0 10aff1974124122505e46f96a610bc90
++       以成员方式导航 `Xml` 值——`xml.book`、`xml.book(Prim)`、`` xml.`svg:rect` ``——由一个被擦除的 `Xml is Dynamical` 许可解锁，因此未请求该许可的作用域会将拼错的成员名称保留为编译错误。
++       通过导入该 given 将许可授予作用域的其余部分，或通过 `dynamically[Xml]:`（或对每种格式都适用的 `dynamically:`）授予单个代码块。
+
+% 2 1 0 0ba6830f888558de1cc7a396bde02b70
+
+% 3 1 0 04317bea8981ceb809da5870b46013ff
+
+% 4 1 0 07b8f67aec231c5a02ca58a7167b5299
+
+% 5 1 0 073b7d058cfd2d9408bbb7219ad65d16
+
+% 6 1 0 026bc65bba846421084d44f9a73f7f53
+
+% 0 1 0 1f0184113f2fb805019450d62102d02e
+
+% 0 1 0 140dc019fcd424ae1f372aa995cc4651
+
+% 1 1 0 1f8ebc34bb040b0c09999b037a3387e8
+
+@ 0 1 0 0da367c6d77b6fc500271c0729692e9b
++   entry .dynamicXml   向导入它的作用域授予 `Xml is Dynamical`
+
+@ 0 1 0 13e347b1ee60c9060daf0ca73781b8e0
++ entry .internal   `x"…"`、`xp"…"`、XML 提取器、标签应用和分阶段解析器背后的宏
+
+% 1 1 0 0cb8851dbccdab74171bb3f407db8401
+
+% 2 1 0 0f03dc37673e25be0dc7df020f16856f
+
+@ 0 27 0 1f07b59ad50e9f511fd2a9fe784517cf
++       不供直接使用：存放 xylophone 宏实现的对象。
++       它还声明了不透明类型 `Attributes` 和 `Scope`，由 `xylophone` 包导出（`object Xml` 又将 `Scope` 重新导出为 `Xml.Scope`，因为 `soundness` 总括包已经有另一个 `Scope`）；包下它们的页面有完整的说明。
++   entry .extractor   `x"…"` 模式背后的宏：将 `Xml` 与带空位的字面量进行匹配
++       处于模式位置的字面量捕获每个空位的值：单个被捕获的节点就是结果，多个则构成元组，而单个文本值不能单独被捕获（应将它与另一个值或外围节点一起捕获）。
++   entry .xpath   `xp"…"` 背后的宏：解析、检查并提升表达式
++       在展开时用与运行时解码器相同的解析器解析字面量，将失败的偏移映射回源码位置，将插入内容嫁接到其空位处，整体提升这棵树，并通过调用处的 `Namespace` given 绑定表达式用到的前缀。
++   entry .interpolator   `x"…"` 背后的宏：解析并检查字面量，为插入内容留出空位
++       以宽松方式解析，使字面量可以使用仅由其调用处的 `Namespace` given 绑定的前缀，然后自行对照这些 given 检查每个前缀；除非作用域中有 `namespaceOptions.lenientNamespaces`，否则未绑定的前缀是编译错误。
++   entry .attributes   `tag(key = value, …)` 背后的宏：检查每个属性并转换其值
++       每个键都必须是该标签元素的 `Xml.XmlAttribute` given，每个值都必须对该属性的类型是 `Attributive` 的；否则调用无法编译。
++   entry .stagedParsable   `Xml.Parsable.staged` 背后的宏：case class 的单态解析器
++       字段值存放在带类型的局部变量中，子元素通过打包为 `Long` 的字面量比较进行分派，内置基本类型通过直接静态调用读取，`@attribute` 字段从开始标签中填充，记录通过直接的构造器调用构建，语义与派生引擎相同。
++   entry .Attributes   元素的属性，按文档顺序；参见 `xylophone.Attributes`
+
+% 1 1 0 0548d71a095e39ba1a0ef92ca6b71029
+
+@ 0 38 0 123f7fafa36a11211d5afeb4c296a7f5
++         基于冻结交错数组的不透明类型，导出到 `xylophone` 包，那里的页面有完整的说明。
++     entry .empty   没有属性
++     entry .traversable   按文档顺序排列的键值对，因此 `attributes.to[List]` 无需转换
++     entry .inspectable   将属性渲染为 `xml{id="x", class="y"}`
++     entry .indexable   `Applicable` given：以 `Optional` 表示的 `attributes.at(key)`，以及 `contains`
++     entry .apply   `Attributes(pairs*)` 由键值对构建；`attributes(key)` 是一个值，缺失时抛出异常
++         构造器保持键值对的顺序。
++         对于不存在的键，查找会抛出 `NoSuchElementException`；`fetch` 或 `at` 则给出 `Unset`。
++     entry .from   由 `Map[Text, Text]` 构建，按映射的迭代顺序
++     entry .size   属性的数量
++     entry .isEmpty   是否没有属性
++     entry .nonEmpty   是否至少有一个属性
++     entry .nil   是否没有属性
++     entry .fetch   键对应的值，或 `Unset`
++         分阶段解析器的 `@attribute` 步骤所用的查找：不绕经 `Applicable` 的 `at`。
++     entry .declaresNamespace   是否有任何属性是 `xmlns` 或 `xmlns:prefix` 声明
++     entry .contains   某个键是否存在
++     entry .keys   键，按文档顺序
++     entry .values   值，按文档顺序
++     entry .iterator   `(key, value)` 对，按文档顺序
++     entry .toMap   作为 `Map[Text, Text]` 的属性，它仍按文档顺序迭代
++     entry .eachPair   按顺序对每个 `(key, value)` 对执行一个操作
++         命名为 `eachPair` 而非 `each`：否则通用的单参数 `each` 会在解析中胜出，并拒绝双参数的 lambda。
++     entry .foreachPair   作为普通非内联方法的 `eachPair`
++     entry .map   按顺序将每个 `(key, value)` 对映射为一个值
++     entry .removed   去掉某个键后的属性；若该键不存在，则为同一个值
++     entry .-   `attributes - key`，与 `removed` 相同
++     entry .--   去掉多个键中每一个后的属性
++     entry .updated   将某个键设为某个值后的属性，若存在则就地修改，否则追加
++     entry .++   与另一个 `Attributes` 或 `Map` 合并后的属性，右侧优先
++         左侧的键保持其位置，两侧都有的键取右侧的值，右侧的新键按其顺序跟在后面。
++     entry .equalsAttributes   两组属性是否持有相同的键值对，顺序不限
++     entry .hashAttributes   与顺序无关的哈希，与 `equalsAttributes` 一致
++   entry .Scope   在某个元素处生效的命名空间绑定；参见 `xylophone.Scope`
+
+% 1 1 0 03f26aa05872d6f91d2118cc12ecf226
+
+@ 0 24 0 1b34a34931e3e6e8182adeac6b5d7f9a
++         基于冻结交错数组的不透明类型，导出到 `xylophone` 包并重新导出为 `Xml.Scope`，那里的页面有完整的说明。
++     entry .xmlNamespace   `http://www.w3.org/XML/1998/namespace`，保留前缀 `xml` 的 URI
++     entry .xmlnsNamespace   `http://www.w3.org/2000/xmlns/`，`xmlns` 前缀的 URI
++     entry .empty   完全没有绑定，连 `xml` 也没有
++     entry .xml   只有保留前缀 `xml`：除非给出其他作用域，否则文档在此作用域中解析
++     entry .default   给定的作用域 `xml`，通过伴生对象位于隐式作用域中
++     entry .inspectable   将作用域渲染为 `xmlns{"" ="urn:d", p="urn:p"}`
++     entry .apply   `Scope(pairs*)` 由前缀–URI 对构建；`Scope[prefixes]` 由 `Namespace` given 构建
++         `Xml.Scope(t"svg" -> t"http://www.w3.org/2000/svg")` 按顺序绑定这些对，空文本作为默认命名空间的前缀。
++         类型层面的形式以前缀组成的元组类型为参数，在保留的 `xml` 绑定之上，通过各前缀对应的 `Namespace` given 绑定每一个。
++     entry .isEmpty   作用域是否没有绑定
++     entry .size   绑定的数量
++     entry .resolve   绑定到某个前缀的 URI，默认命名空间为 `Unset`；未绑定或已取消声明时为 `Unset`
++     entry .binds   某个前缀是否有绑定，取消声明的绑定也算在内
++     entry .prefixOf   某个 URI 最近绑定的前缀，若没有前缀绑定它则为 `Unset`
++         结果是双重可选的：`Optional(Unset)` 表示该 URI 是默认命名空间，`Unset` 表示没有前缀绑定到它。
++         序列化器用它来写出某个命名空间中的名称。
++     entry .bind   追加一个绑定后的作用域，遮蔽该前缀先前的任何绑定
++     entry .++   追加了另一个作用域绑定的本作用域，因此另一个的绑定会遮蔽本作用域的绑定
++     entry .bindings   按顺序排列的绑定，作为 `(prefix, uri)` 对，默认命名空间为 `Unset`
+
+@ 0 1 0 007264df5380d72819a53066f422f2d2
++ entry .optics   作用于元素子元素的透镜和光学组件，用于 `xml.lens(…)`
+
+% 1 1 0 115fe3416b5d80670587cad2f011a706
+
+@ 0 7 0 01d97a6d4d0c5b421a18872bcb9a626e
++       使 `Xml` 值可以通过透镜更新的 given：`xml.lens(_.book.title = value)` 按名称导航到某个子元素并替换它，而 `Each` 和序数光学组件分别定位每个子元素或第 n 个子元素。
++       每次更新都以不可变方式重建元素，就地保留文本和注释节点，所赋的值也不必已经是 XML：任何 `Encodable in Xml` 的值都会在赋值时被编码。
++       这些 given 位于选择包中，需按名称导入，并且需要 `dynamicAccess.dynamicXml` 才能在透镜内使用成员语法。
+
+% 2 1 0 085b495ca7b6e63605d31db25885d2e3
+
+% 3 1 0 081a58807fe25986002910d5c804fa7e
+
+% 4 1 0 1daa1bf540974a7718f600867ece0fbb
+
+% 5 1 0 192558f8f4877eb81ac3d3cc7d15a261
+
+% 6 1 0 19ef945127e105eb0eb2d999270d7c58
+
+% 0 1 0 1c448a3e8533e6c90a3bdbec5957fd71
+
+% 0 1 0 104e7264cc82fee80216cddebf124d61
+
+% 0 1 0 13045cf33ece0028158f3d35daccbf0d
+
+% 0 1 0 0c026befb3be4efc1ada09ac22d5879c
+
+% 0 1 0 17f04173a64d5dd21c5316b71123c4d1
+
+% 1 1 0 0e89906801490e9b06afb40cf60cd298
+
+@ 0 8 0 0f3006a733702e4412f0ec2c4d1fe8f7
++   entry .xmlLens   从元素到其第一个具有某名称的子元素的透镜，更新时替换它
++       导航到第一个具有所给名称的子元素并在更新时替换它，若不存在这样的子元素，则追加新值。
++       需要作用域中有一个 `Xml.Scope`（伴生对象的默认值只绑定 `xml`），以及 `Xml is Dynamical` 许可。
++   entry .xmlOrdinalOptical   指向第 n 个子元素的光学组件：`_(Sec) = …`
++       只计数元素子节点，因此它们之间的文本和注释不会改变序数。
++   entry .xmlEachOptical   指向每个子元素的光学组件：`_(Each) = …`
+
+@ 0 1 0 0c7ba8da92fea3d00534f1229abb6068
++ entry .optionalityOptions   `Optional` 字段如何读取缺失或有误的元素或属性
+
+% 1 1 0 1c0859fcb1292fcd12c5dcd46e98c228
+
+@ 0 6 0 0ab3a99b74982e2a086589cc0f8a9906
++       派生解码器中 `Optional` 字段的两项方针，每项都是需按名称导入的 given。
++       *缺失*——不存在与字段同名的元素或属性——默认是宽松的，给出 `Unset`；`strictXmlAbsence` 使其成为带有 `Reason.Missing` 的 `Xml.Error`。
++       *错误*——存在但被内层解码器拒绝的元素——默认是严格的，会抛出错误；`lenientXmlFaults` 将这样的字段读取为 `Unset`。
++       XML 没有 null：空元素是存在的值，因此没有空值方针，而 JSON 和 YAML 有。
+
+% 2 1 0 0d3705bb4621a6101f89cbaad3f57fcf
+
+% 3 1 0 1b41078d3f96492319fa1de9787358b7
+
+% 4 1 0 0d782e59630f92eb046394c80932b3e8
+
+% 5 1 0 15ac387e96b788d801696178cb908f68
+
+% 7 1 0 07b31a63248ac212176538e37e1ab817
+
+% 0 1 0 0e7e2f01827718c50dc3ac8ddf16a0e0
+
+% 1 1 0 0cc428f8dd1c8660068bc6eac33299e2
+
+% 0 1 0 0af0dd899cefb04516f86114c6144deb
+
+% 1 1 0 070c34a2ed471cbb15e129ea150c9d6f
+
+@ 0 4 0 02dfc1df49d9c7de14d00b87e2f3cf18
++   entry .strictXmlAbsence   `Optional` 字段缺失的元素或属性是 `Xml.Error`
++   entry .lenientXmlAbsence   `Optional` 字段缺失的元素或属性是 `Unset`；默认
++   entry .strictXmlFaults   存在但被内层解码器拒绝的元素会抛出错误；默认
++   entry .lenientXmlFaults   存在但被内层解码器拒绝的元素读取为 `Unset`
+
+@ 0 1 0 1bbb8b2647ab8bec13eab985c5016b3e
++ entry .namespaceOptions   没有绑定的前缀是错误，还是不属于任何命名空间
+
+% 1 1 0 13daf25e6b1233eb0229d8bb82986238
+
+@ 0 5 0 003103d9408b9acf17ec32ddbd582f03
++       《Namespaces》推荐标准规定未绑定的前缀是错误，这也是默认行为：解析没有声明 `p` 的 `<p:a/>` 会抛出带有 `Xml.Issue.UnboundPrefix` 的 `Parse.Error`，而没有 `p` 的 `Namespace` given 时，`x"<p:a/>"` 无法编译。
++       `lenientNamespaces` 则让未绑定的前缀解析为无命名空间，用于使用了从未声明之前缀的文档。
+
+% 2 1 0 1430435c6ae7b69e14434fb40e22924c
+
+% 3 1 0 1454ef152789881717cbd1c70dbbad12
+
+% 4 1 0 184c902221d5f88909bea882dd3f9ab8
+
+% 5 1 0 13af158ccfaafc4905b10febff1a02b8
+
+% 0 1 0 044e47a69f7ee8b2108c576ba88d208f
+
+% 0 1 0 0793b975eaa8d69c059ec45e480f50b6
+
+% 1 1 0 0f4a8f9810ca0c1e04d656ce9f78d533
+
+@ 0 2 0 07ddf92414918bae037cf212b92c859c
++   entry .strictNamespaces   未绑定的前缀是错误；默认
++   entry .lenientNamespaces   未绑定的前缀解析为无命名空间
+
+@ 0 1 0 148d79115d2ef1690e28df5f69d51e0d
++ entry .xmlSchemas   解析时据以验证的词汇表，作为需按名称导入的 given
+
+% 1 1 0 168ea7251cc4804a03b0b3b42cdaa0a3
+
+@ 0 3 0 1e3378b447b4cdf01a8056c13d44f249
++       每次解析 XML 都需要作用域中有一个 `XmlSchema`。
++       `freeformXmlSchema` 是 `XmlSchema.Freeform`，它允许任何元素和属性以及五个预定义实体，是没有特定词汇表时的常用选择。
+
+% 2 1 0 0e84aafe00b2df6e16dbdce300043c15
+
+% 3 1 0 039a7921686ed87e0adbf57ba11b430a
+
+% 4 1 0 19c82ff660c8ecb60dc93dc31cbae736
+
+% 5 1 0 0013bb60bb4c15b9040017280d1c03df
+
+% 0 1 0 1bb7d423360b613f1f6a2c0b32acfe5d
+
+% 1 1 0 081f64b33d0879931d3586ec31d697d4
+
+@ 0 1 0 1e066a2db84832ea14e689a65ce475c2
++   entry .freeformXmlSchema   `XmlSchema.Freeform`：任何元素、任何属性、预定义实体
+
+@ 0 1 0 1013bcb23ec52cbf0ac6f6dbba2f5f32
++ entry .formatting   渲染 XML 时的排版方式，作为需按名称导入的 given
+
+% 1 1 0 0c08c0a3193b8e5b1d24c54afa2390ca
+
+@ 0 5 0 09b879063f2467160f0b6cce078a14b8
++       `Xml.Formatting` 决定 `show`、`in[Text over Xml]` 和 `Xml.emit` 是否在元素之间写入空白。
++       紧凑格式不写入任何空白；缩进格式将每个元素断到单独的一行，每层缩进两个空格，并以换行结尾。
++       只有在格式为紧凑格式时，具有 `Xml.Printable` 的记录才会被直接写出，而不构建树。
+
+% 2 1 0 078013d25aaee28604d5ded576746b15
+
+% 3 1 0 1c589b99061bf6ee096ebe7120c5d6ac
+
+% 4 1 0 0e1e2eca43b3baa41bcef754ea29f98d
+
+% 5 1 0 04cbadf9426ad6be1c3cc3b0953fbc48
+
+% 7 1 0 1f31d88443052e79124961e881af8302
+
+% 2 1 0 13c7450c1cfa602f05aa994d9a1e3ed0
+
+% 3 1 0 0beb102e9ae19c301130b4c104ae2a6a
+
+% 0 1 0 118f7aa70bd7e23201ea899455d2e869
+
+% 1 1 0 0bf6c653f4ebdaeb133c917b0017fded
+
+@ 0 2 0 1d0b0cd95a5199511c79fca91858211e
++   entry .compactXmlFormatting   元素之间没有空白，也没有末尾换行
++   entry .indentedXmlFormatting   每个元素单独一行，每层缩进两个空格，带末尾换行
+
+@ 0 1 0 100ba509b3a5ee0f0c5eba63b99c5d2c
++ entry .Attributes   元素的属性：从名称到值的有序不可变映射
+
+% 1 1 0 04ea02f50ab3499f1cd34e20d85dca9f
+
+@ 0 5 0 0628b17a286f1f921047fb487839bf75
++       `Xml.Element` 的属性，按文档顺序排列，是基于键和值交错排列的冻结数组的不透明类型，而非 `Map`：解析在对开始标签做词法分析时构建它，元素的 `attributes` 就是它，每次更新（`updated`、`removed`、`++`）都返回一个新值。
++       它在 `xylophone.internal` 中声明，并导出到 `xylophone` 包。
+
+% 2 1 0 0cd75929ec8f9a8c097c63692ee8cc8d
+
+% 3 1 0 18438117b1870f200a9104ceea4225b2
+
+% 0 1 0 098b5272ce02698a1f7d75e945172793
+
+% 0 1 0 1a62d5fc79b2067909dcefb8219da9f9
+
+% 0 1 0 1659b36a26346b681ffab7e751977785
+
+% 0 1 0 008653de3b442cfe01e9f9eb23ecca75
+
+% 0 1 0 076c830a1ce55beb1e66316d661dfe87
+
+% 0 1 0 1b80a40ebba43cb6060d0fcc83fb6c74
+
+% 1 1 0 0839159d85078b92160b5b2fa23efa94
+
+@ 0 4 0 0d9d7991fc6f62810ea84314842fdad7
++       两个 `Attributes` 的相等性与顺序无关（`equalsAttributes`），`Xml.Element` 自身的相等性用的就是它；迭代（`keys`、`values`、`iterator`、`eachPair`、`to[List]`）按文档顺序进行。
++       它检视为 `xml{id="x", class="y"}`，即属性在开始标签中呈现的样子。
+
+% 1 1 0 099fe91b0d84c34a187dfcc63fcd75d1
+
+% 0 1 0 0941623f445b3f011f90e4a469c8db15
+
+@ 0 1 0 0537862a09e705fb0c334b26624558e0
++ entry .Scope   在某个元素处生效的命名空间绑定：与 URI 配对的前缀
+
+% 1 1 0 175d47d4d3216d9505e23047a330c33d
+
+@ 0 8 0 1ef52375f59b0e5f016bb0bad4375d90
++       `Scope` 是在文档某处适用的 `xmlns` 和 `xmlns:prefix` 声明列表，表示为按顺序排列的前缀–URI 对，前缀较晚的绑定遮蔽较早的绑定；默认命名空间是空前缀的绑定，取消声明的 `xmlns=""` 将其绑定到空 URI。
++       每个 `Xml.Element` 都携带其作用域，解析器以每个子元素的声明扩展父元素的作用域，而路径的 `XPath#scope` 绑定其名称测试所用的前缀。
++       它在 `xylophone.internal` 中声明，导出到 `xylophone` 包，并在 `soundness` 总括包中以 `Xml.Scope` 访问，因为总括包已经有另一个 `Scope`。
+
+@ 0 2 0 09e1359adc167656059969a57fffed2a
++       作用域中的 `Scope` given 决定带前缀的选择如何解析，而不论文档本身用的是什么前缀：
+
+% 2 1 0 10ca24cca9625d240800b1b4db837fb1
+
+% 3 1 0 173ab861614397050d7677ed56b539f2
+
+% 4 1 0 06d3f68c6687404b0073e69cd8134ec6
+
+% 5 1 0 00298da494c640a815b417bda0209acc
+
+% 6 1 0 1fbd634a367fdb1514c25b0ab366d834
+
+% 0 1 0 1d7600ac1bd5744c13c475e43dd56aa4
+
+% 2 1 0 09f55ddba8ca06290013c59b71a759e1
+
+% 0 1 0 0dbe7d85a32d5d511ae93c334de60f6a
+
+% 0 1 0 024f01481b31c6490ac90b9a860f8600
+
+% 1 1 0 0c8eca7bde608cc904cf045cca3337e3
+
+@ 0 5 0 182f63cf17bdd88e0ee19a5b65c5c778
++       伴生对象的 `default` given 位于隐式作用域中，它是 `xml`：只有保留前缀 `xml`，每个文档无需声明就有它。
++       作用域不参与元素的相等性：解析得到的元素等于手工构建的同一元素；写出树时，如果某个元素的作用域绑定了它所用的前缀，而其上方没有任何地方声明过该前缀，就会为它写出该声明。
+
+% 1 1 0 040130010875ba630d4279129e0d573d
+
+% 1 1 0 0d6ad48af66c729d16d9dd12af5847c4

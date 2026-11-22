@@ -1,0 +1,380 @@
+orthant 2 language
+
+@ 0 328 0 161a34d1898cfdc619a013fd26414ab6
++   entry .globalAttribute   为在所有元素上都有效的属性生成 given
++       `globalAttribute["title", Textual]()` 构建一个没有元素集合、`global` 为 true 的 `"title" is Attribute of Textual in Whatwg`，因此它 `targets` 每个元素。
++       规范中的全局属性（`id`、`class`、`style`、`title`、`lang`、`dir`、`hidden`、`tabindex`、`accesskey` 等）都用它定义。
++   entry .AccessKeys   `accesskey` 的值标记：有序的按键标注集合
++   entry .Affirmation   `translate` 的值标记：`yes` 或 `no`
++   entry .Autocapitalization   `autocapitalize` 的值标记：`off`、`none`、`on`、`sentences`、`words` 或 `characters`
++   entry .ButtonType   `<button>` 的 `type` 的值标记：`submit`、`reset` 或 `button`
++   entry .Closedby   `<dialog>` 的 `closedby` 的值标记：`any`、`closerequest` 或 `none`
++   entry .Color   CSS 颜色的值标记，如 `<link color>` 所接受的
++   entry .Colorspace   `<input type="color">` 的 `colorspace` 的值标记
++   entry .Command   `<button>` 的 `command` 的值标记：内置命令名或自定义的 `--name`
++   entry .ContentEditable   `contenteditable` 的值标记：`true`、`false`、`plaintext-only` 或空
++   entry .Coords   `<area>` 的 `coords` 的值标记：逗号分隔的数字列表
++   entry .Crossorigin   `crossorigin` 的值标记：`anonymous` 或 `use-credentials`
++       仅为标记；`honeycomb.Crossorigin` 枚举有这两个值，但没有自己的 `Attributive`，因此要在作用域中有 `attributives.textAttributive` 的情况下以 `.show` 传入。
++   entry .CustomElementName   `is` 的值标记：包含连字符的自定义元素名
++   entry .Css   `style` 的值标记：内联 CSS 声明
++       `Attributive.style` 为它接受 `Text`。
++   entry .CssClassList   `class` 的值标记：空格分隔的 CSS 类名
++       接受 `Name[CssClass]`、`List[Name[CssClass]]` 或 `ClassList`（`Attributive.cssClass`、`.cssClassList` 和 `.classList`）；空列表会完全省略该属性。
++   entry .Datetime   `<del>` 或 `<ins>` 的 `datetime` 的值标记：日期，或日期和时间
++   entry .Decimal   浮点属性的值标记：`step`、`<meter>` 的 `min`、`max` 和 `value`、`high`、`low`、`optimum`
++       `Attributive.double` 为它接受 `Double`。
++   entry .Decoding   `<img>` 的 `decoding` 的值标记：`sync`、`async` 或 `auto`
++   entry .Dir   `dir` 的值标记：`ltr`、`rtl` 或 `auto`
++       `HDir` 是其值的枚举，带有自己的 `Attributive`，因此 `Body(dir = HDir.Rtl)` 无需额外导入即可编译。
++   entry .Enctype   `enctype` 和 `formenctype` 的值标记：表单编码的 MIME 类型
++   entry .EnterKeyHint   `enterkeyhint` 的值标记：`enter`、`done`、`go`、`next`、`previous`、`search` 或 `send`
++   entry .FetchPriority   `fetchpriority` 的值标记：`high`、`low` 或 `auto`
++   entry .HashName   `usemap` 的值标记：以 `#` 为前缀、对 `<map>` 名称的引用
++   entry .Hidden   `hidden` 的值标记：存在，或 `until-found`
++   entry .HttpEquiv   `<meta>` 的 `http-equiv` 的值标记：pragma 指令名
++       `honeycomb.HttpEquiv` 枚举有这四个指令，以 `.show` 传入。
++   entry .Id   `id` 以及按 id 指名某个元素的属性的值标记
++       `for`、`form`、`list`、`commandfor` 和 `popovertarget` 都接受 `Id`。
++       `Attributive.domId` 为它接受 `Name[DomId]`。
++   entry .Ids   空格分隔的 id 列表的值标记：`headers`、`itemref`、`<output>` 的 `for`
++       `Attributive.domIds` 接受 `List[Name[DomId]]`，列表为空时省略该属性。
++   entry .ImageSizes   `<link>` 的 `imagesizes` 的值标记：预加载图像的源尺寸列表
++   entry .ImageSrcSet   `<link>` 的 `imagesrcset` 的值标记：预加载图像的 srcset
++   entry .InputMode   `inputmode` 的值标记：`none`、`text`、`tel`、`url`、`email`、`numeric`、`decimal` 或 `search`
++   entry .InputType   `<input>` 的 `type` 的值标记
++       `#Input` 对象将每种类型作为预设标签提供（`Input.Email`、`Input.Checkbox`、…），因此很少直接写这个属性。
++   entry .InputValue   `<input>` 的 `value` 的值标记，其形式取决于输入的类型
++   entry .Integral   有符号整数属性的值标记：`tabindex`、`start`、`<li>` 的 `value`
++       `Attributive.int` 为它接受 `Int`。
++   entry .ItemProp   `itemprop` 的值标记：微数据属性名
++   entry .Kind   `<track>` 的 `kind` 的值标记：`subtitles`、`captions`、`descriptions`、`chapters` 或 `metadata`
++       `#Track` 对象将每种类型作为预设标签提供；`honeycomb.Kind` 枚举有这些值。
++   entry .Language   `lang`、`hreflang` 和 `srclang` 的值标记：BCP 47 语言标签
++   entry .Laziness   `loading` 的值标记：`lazy` 或 `eager`
++   entry .MediaQueryList   `media` 的值标记：CSS 媒体查询列表
++   entry .Method   `method` 和 `formmethod` 的值标记：`get`、`post` 或 `dialog`
++       `honeycomb.Method` 枚举有这三个值，以 `.show` 传入。
++   entry .Minmax   `<input>` 的 `min` 和 `max` 的值标记，其形式取决于输入的类型
++   entry .MimeList   `accept` 的值标记：逗号分隔的 MIME 类型和扩展名列表
++   entry .Mime   单个 MIME 类型的值标记：`<a>`、`<link>`、`<embed>`、`<object>` 和 `<source>` 上的 `type`
++   entry .Name   `name` 的值标记：表单控件、表单、图像映射、meta 或 slot 的名称
++   entry .OlType   `<ol>` 的 `type` 的值标记：`1`、`a`、`A`、`i` 或 `I`
++   entry .Openness   `<template>` 的 `shadowrootmode` 的值标记：`open` 或 `closed`
++   entry .PermissionsPolicy   `<iframe>` 的 `allow` 的值标记：权限策略
++   entry .Popover   `popover` 的值标记：`auto`、`manual` 或 `hint`
++   entry .PopoverAction   `popovertargetaction` 的值标记：`toggle`、`show` 或 `hide`
++   entry .PositiveInt   非负整数属性的值标记：`width`、`height`、`rows`、`cols`、`colspan`、`span`、`size`、…
++       `Attributive.posInt` 为它接受 `Int`；不检查值的符号。
++   entry .Presence   布尔属性的值标记：存在或不存在，没有值
++       `disabled`、`checked`、`hidden` 的普通形式、`required`、`autofocus`、`controls`、`open`，以及其他所有以存在本身为含义的属性。
++       `Attributive.boolean` 接受 `Boolean`：`true` 写出裸属性（`<input disabled>`），`false` 则省略它。
++   entry .Preload   `preload` 的值标记：`none`、`metadata` 或 `auto`
++       `honeycomb.Preload` 枚举有这些值，以 `.show` 传入。
++   entry .ReferrerPolicy   `referrerpolicy` 的值标记：referrer 策略名
++   entry .Regex   `<input>` 的 `pattern` 的值标记：JavaScript 正则表达式
++   entry .Sandbox   `<iframe>` 的 `sandbox` 的值标记：空格分隔的 `allow-…` 令牌
++       `honeycomb.Sandbox` 枚举有这些令牌，以 `.show` 传入。
++   entry .ScriptType   `<script>` 的 `type` 的值标记：`module`、`importmap`、MIME 类型或数据块类型
++   entry .Scripting   事件处理属性的值标记，它接受脚本而不是文本
++       刻意地不存在针对 `Text` 的 `Attributive`：处理函数以带类型的脚本值提供，例如 querencia 的外部 DOM 表达式，脚本库为其提供 `Attributive to Whatwg.Scripting`。
++       WHATWG 词汇表本身不声明任何 `on…` 属性 given；`Html4Transitional` 声明了。
++   entry .Shape   `<area>` 的 `shape` 的值标记：`circle`、`default`、`poly` 或 `rect`
++   entry .Sizes   `<link rel="icon">` 的 `sizes` 的值标记：`any` 或 `WxH` 令牌
++   entry .Softness   `<textarea>` 的 `wrap` 的值标记：`soft` 或 `hard`
++       `honeycomb.Wrap` 枚举有这两个值，以 `.show` 传入。
++   entry .SourceSizeList   `<img>` 或 `<source>` 的 `sizes` 的值标记
++   entry .Srcdoc   `<iframe>` 的 `srcdoc` 的值标记：作为文本的完整 HTML 文档
++   entry .SrcSet   `srcset` 的值标记：候选图像源及其描述符
++   entry .Switch   `autocomplete` 的值标记：`on` 或 `off`
++       `Attributive.switch` 接受 `Boolean`，写作 `on` 或 `off`；`honeycomb.Autocomplete` 枚举有同样的两个值。
++   entry .Target   `target` 和 `formtarget` 的值标记：浏览上下文名称或关键字
++       `honeycomb.Target` 枚举有 `_self`、`_blank`、`_parent`、`_top` 和命名上下文，以 `.show` 传入。
++   entry .Temporal   `<time>` 的 `datetime` 的值标记：规范中任意一种日期、时间和时长形式
++   entry .Textual   接受任意文本的属性的值标记
++       `alt`、`title`、`placeholder`、`content`、`label`、`slot`、`nonce`、`integrity` 等。
++       `Attributive.textTextual` 和 `.stringTextual` 为它接受 `Text` 或 `String`，无需任何导入；`attributives.textAttributive` 选择 given 将同样的接受范围扩展到其他所有标记。
++   entry .ThScope   `<th>` 的 `scope` 的值标记：`row`、`col`、`rowgroup` 或 `colgroup`
++   entry .Tokens   空格分隔的令牌列表的值标记：`rel`、`blocking`
++       `honeycomb.Rel` 枚举有各种链接类型，以 `.show` 传入。
++   entry .Truth   写作 `true` 或 `false` 的属性的值标记：`draggable`、`spellcheck`、`writingsuggestions`
++       `Attributive.truth` 接受 `Boolean`，写作单词 `true` 或 `false`，不同于写出或省略的 `Presence` 属性。
++   entry .Upto8   `headingoffset` 的值标记：0 到 8 的整数
++   entry .Url   URL 值属性的值标记：`href`、`src`、`action`、`cite`、`poster`、`data`、`itemid`、…
++       `Attributive.url` 接受任何 `Abstractable across Urls to Text` 的值（`HttpUrl` 或任何带类型的 URL），作用域中有 `attributives.textAttributive` 时也接受 `Text`。
++   entry .Urls   空格分隔的 URL 列表的值标记：`ping`、`itemtype`
++   entry .Utf8   `charset` 和 `accept-charset` 的值标记，其唯一有效值是 `utf-8`
++   entry .abbr   `<th>` 上的 `abbr`：缩写的表头，作为 `Textual`
++   entry .accept   `<input>` 上的 `accept`：接受的文件类型，作为 `MimeList`
++   entry .acceptCharset   `<form>` 上的 `accept-charset`：表单接受的编码，作为 `Utf8`
++       该 given 名为 `acceptCharset`；它注册的属性是 `accept-charset`。
++   entry .accesskey   所有元素上的 `accesskey`：键盘快捷键标注，作为 `AccessKeys`
++   entry .action   `<form>` 上的 `action`：表单提交到的 URL，作为 `Url`
++   entry .allow   `<iframe>` 上的 `allow`：框架的权限策略，作为 `PermissionsPolicy`
++   entry .allowfullscreen   `<iframe>` 上的 `allowfullscreen`：`Presence`
++   entry .alpha   `<input>` 上的 `alpha`：颜色输入是否有 alpha 通道，作为 `Presence`
++   entry .alt   `<area>`、`<img>` 和 `<input>` 上的 `alt`：替代文本，作为 `Textual`
++   entry .as   `<link>` 上的 `as`：预加载的目标类型，作为 `Textual`
++   entry .async   `<script>` 上的 `async`：`Presence`
++   entry .autocapitalize   所有元素上的 `autocapitalize`，作为 `Autocapitalization`
++   entry .autocomplete   `<form>` 上的 `autocomplete`：`on` 或 `off`，作为 `Switch`
++   entry .autocomplete2   `<input>`、`<select>` 和 `<textarea>` 上的 `autocomplete`，作为 `Switch`
++   entry .autocorrect   所有元素上的 `autocorrect`，作为 `Textual`
++   entry .autofocus   所有元素上的 `autofocus`：`Presence`
++   entry .autoplay   `<audio>` 和 `<video>` 上的 `autoplay`：`Presence`
++   entry .blocking   `<link>`、`<script>` 和 `<style>` 上的 `blocking`：阻塞渲染的令牌，作为 `Tokens`
++   entry .charset   `<meta>` 上的 `charset`：文档编码，作为 `Utf8`
++   entry .checked   `<input>` 上的 `checked`：`Presence`
++   entry .cite   `<blockquote>`、`<del>`、`<ins>` 和 `<q>` 上的 `cite`：来源 URL，作为 `Url`
++   entry .class   所有元素上的 `class`：CSS 类名，作为 `CssClassList`
++       由于 `class` 是关键字，写作 `` `class` = … ``；通常的方式是 `Tag.name(children)` 形式（`Div.panel(…)`），作用域中的 `Attribution` 允许这种写法。
++   entry .closedby   `<dialog>` 上的 `closedby`，作为 `Closedby`
++   entry .color   `<link>` 上的 `color`：遮罩图标的颜色，作为 `Color`
++   entry .colorspace   `<input>` 上的 `colorspace`，作为 `Colorspace`
++   entry .cols   `<textarea>` 上的 `cols`：以字符计的可见宽度，作为 `PositiveInt`
++   entry .colspan   `<td>` 和 `<th>` 上的 `colspan`，作为 `PositiveInt`
++   entry .command   `<button>` 上的 `command`：要调用的命令，作为 `Command`
++   entry .commandfor   `<button>` 上的 `commandfor`：目标元素的 id，作为 `Id`
++   entry .content   `<meta>` 上的 `content`：元数据值，作为 `Textual`
++   entry .contenteditable   所有元素上的 `contenteditable`，作为 `ContentEditable`
++   entry .controls   `<audio>` 和 `<video>` 上的 `controls`：`Presence`
++   entry .coords   `<area>` 上的 `coords`，作为 `Coords`
++   entry .crossorigin   `<audio>`、`<img>`、`<link>`、`<script>` 和 `<video>` 上的 `crossorigin`，作为 `Crossorigin`
++   entry .data   `<object>` 上的 `data`：资源 URL，作为 `Url`
++   entry .datetime   `<del>` 和 `<ins>` 上的 `datetime`：更改的时间，作为 `Datetime`
++   entry .datetime2   `<time>` 上的 `datetime`：机器可读形式，作为 `Temporal`
++   entry .decoding   `<img>` 上的 `decoding`，作为 `Decoding`
++   entry .default   `<track>` 上的 `default`：`Presence`
++   entry .defer   `<script>` 上的 `defer`：`Presence`
++   entry .dir   所有元素上的 `dir`：文本方向，作为 `Dir`
++       `Body(dir = HDir.Rtl)` 通过 `HDir.attributive` 无需导入即可编译。
++   entry .dirname   `<input>` 和 `<textarea>` 上的 `dirname`：表示方向的字段名，作为 `Textual`
++   entry .disabled   `<button>`、`<input>`、`<optgroup>`、`<option>`、`<select>` 和 `<textarea>` 上的 `disabled`：`Presence`
++   entry .disabled2   `<fieldset>` 上的 `disabled`：`Presence`
++   entry .disabled3   `<link>` 上的 `disabled`：`Presence`
++   entry .download4   `<a>` 和 `<area>` 上的 `download`：建议的文件名，作为 `Textual`
++   entry .draggable   所有元素上的 `draggable`：`true` 或 `false`，作为 `Truth`
++   entry .enctype   `<form>` 上的 `enctype`，作为 `Enctype`
++   entry .enterkeyhint   所有元素上的 `enterkeyhint`，作为 `EnterKeyHint`
++   entry .fetchpriority   `<img>`、`<link>` 和 `<script>` 上的 `fetchpriority`，作为 `FetchPriority`
++   entry .for   `<label>` 上的 `for`：被标注控件的 id，作为 `Id`
++       由于 `for` 是关键字，写作 `` `for` = … ``。
++   entry .for2   `<output>` 上的 `for`：参与计算的控件的 id，作为 `Ids`
++   entry .form   表单控件上的 `form`：其所属表单的 id，作为 `Id`
++       位于 `<button>`、`<fieldset>`、`<input>`、`<object>`、`<output>`、`<select>` 和 `<textarea>` 上。
++   entry .formaction   `<input>` 和 `<button>` 上的 `formaction`，作为 `Url`
++   entry .formenctype   `<input>` 和 `<button>` 上的 `formenctype`，作为 `Enctype`
++   entry .formmethod   `<input>` 和 `<button>` 上的 `formmethod`，作为 `Method`
++   entry .formnovalidate   `<input>` 和 `<button>` 上的 `formnovalidate`：`Presence`
++   entry .formtarget   `<input>` 和 `<button>` 上的 `formtarget`，作为 `Target`
++   entry .headers   `<td>` 和 `<th>` 上的 `headers`：单元格的表头单元格的 id，作为 `Ids`
++   entry .headingoffset   所有元素上的 `headingoffset`：0 到 8，作为 `Upto8`
++   entry .headingreset   所有元素上的 `headingreset`，作为 `Presence`
++   entry .height   `<canvas>`、`<embed>`、`<iframe>`、`<img>`、`<input>`、`<object>`、`<video>` 和 `<svg>` 上的 `height`，作为 `PositiveInt`
++   entry .hidden   所有元素上的 `hidden`：存在，或 `until-found`，作为 `Hidden`
++       其标记是 `Hidden` 而不是 `Presence`，因此 `hidden = true` 需要一个从 `Boolean` 到 `Hidden` 的 given，而库并不提供；作用域中有 `attributives.textAttributive` 时，`hidden = t""` 写出裸属性。
++   entry .high   `<meter>` 上的 `high`，作为 `Decimal`
++   entry .href   `<a>` 和 `<area>` 上的 `href`：链接目标，作为 `Url`
++   entry .href2   `<base>` 上的 `href`：文档基础 URL，作为 `Url`
++   entry .href3   `<link>` 上的 `href`：所链接的资源，作为 `Url`
++   entry .hreflang   `<a>` 和 `<link>` 上的 `hreflang`，作为 `Language`
++   entry .httpEquiv   `<meta>` 上的 `http-equiv`：pragma 指令，作为 `HttpEquiv`
++       写作 `httpEquiv = …`；该属性序列化为 `http-equiv`。
++   entry .id   所有元素上的 `id`，作为 `Id`
++       通过 `Attributive.domId` 接受 `Name[DomId]`，或者在有 `attributives.textAttributive` 时接受 `Text`。
++   entry .imagesizes   `<link>` 上的 `imagesizes`，作为 `ImageSizes`
++   entry .imagesrcset   `<link>` 上的 `imagesrcset`，作为 `ImageSrcSet`
++   entry .inert   所有元素上的 `inert`：`Presence`
++   entry .inputmode   所有元素上的 `inputmode`，作为 `InputMode`
++   entry .integrity   `<link>` 和 `<script>` 上的 `integrity`：子资源完整性哈希，作为 `Textual`
++   entry .is   所有元素上的 `is`：自定义元素名，作为 `CustomElementName`
++   entry .ismap   `<img>` 上的 `ismap`：`Presence`
++   entry .itemid   所有元素上的 `itemid`：微数据项的全局标识符，作为 `Url`
++   entry .itemprop   所有元素上的 `itemprop`，作为 `ItemProp`
++   entry .itemref   所有元素上的 `itemref`，作为 `Ids`
++   entry .itemscope   所有元素上的 `itemscope`：`Presence`
++   entry .itemtype   所有元素上的 `itemtype`，作为 `Urls`
++   entry .kind   `<track>` 上的 `kind`，作为 `Kind`
++   entry .label   `<optgroup>`、`<option>` 和 `<track>` 上的 `label`：用户可见的标注，作为 `Textual`
++       其他 Soundness 库也导出了名为 `label` 的 given，因此在 `soundness` 总括包中，当裸引用会产生歧义时，通过 `Whatwg.label` 访问该名称；属性解析本身从不需要这个名称。
++   entry .lang   所有元素上的 `lang`，作为 `Language`
++   entry .list   `<input>` 上的 `list`：`<datalist>` 的 id，作为 `Id`
++   entry .loading   `<img>` 和 `<iframe>` 上的 `loading`：`lazy` 或 `eager`，作为 `Laziness`
++   entry .loop   `<audio>` 和 `<video>` 上的 `loop`：`Presence`
++   entry .low   `<meter>` 上的 `low`，作为 `Decimal`
++   entry .max   `<input>` 上的 `max`，作为 `Minmax`
++   entry .max2   `<meter>` 和 `<progress>` 上的 `max`，作为 `Decimal`
++   entry .maxlength   `<input>` 和 `<textarea>` 上的 `maxlength`，作为 `PositiveInt`
++   entry .media   `<a>`、`<area>`、`<link>`、`<source>` 和 `<style>` 上的 `media`，作为 `MediaQueryList`
++   entry .method   `<form>` 上的 `method`：`get`、`post` 或 `dialog`，作为 `Method`
++   entry .min   `<input>` 上的 `min`，作为 `Minmax`
++   entry .min2   `<meter>` 上的 `min`，作为 `Decimal`
++   entry .minlength   `<input>` 和 `<textarea>` 上的 `minlength`，作为 `PositiveInt`
++   entry .multiple   `<input>` 和 `<select>` 上的 `multiple`：`Presence`
++   entry .muted   `<audio>` 和 `<video>` 上的 `muted`：`Presence`
++   entry .name   `<button>`、`<fieldset>`、`<input>`、`<output>`、`<select>` 和 `<textarea>` 上的 `name`，作为 `Name`
++   entry .name2   `<details>` 上的 `name`：互斥手风琴分组，作为 `Name`
++   entry .name3   `<form>` 上的 `name`，作为 `Name`
++   entry .name4   `<iframe>` 和 `<object>` 上的 `name`：浏览上下文名称，作为 `Target`
++   entry .name5   `<map>` 上的 `name`，作为 `Name`
++   entry .name6   `<meta>` 上的 `name`：元数据名称，作为 `Name`
++       `#Meta` 对象将标准名称作为预设标签提供（`Meta.Viewport`、`Meta.Description`、…）。
++   entry .name7   `<slot>` 上的 `name`，作为 `Name`
++   entry .nomodule   `<script>` 上的 `nomodule`：`Presence`
++   entry .nonce   所有元素上的 `nonce`：密码学 nonce，作为 `Textual`
++   entry .novalidate   `<form>` 上的 `novalidate`：`Presence`
++   entry .open   `<details>` 和 `<dialog>` 上的 `open`：`Presence`
++   entry .optimum   `<meter>` 上的 `optimum`，作为 `Decimal`
++   entry .pattern   `<input>` 上的 `pattern`，作为 `Regex`
++   entry .ping   `<a>` 和 `<area>` 上的 `ping`：要通知的 URL，作为 `Urls`
++   entry .placeholder   `<input>` 和 `<textarea>` 上的 `placeholder`，作为 `Textual`
++   entry .playsinline   `<video>` 上的 `playsinline`：`Presence`
++   entry .popover   所有元素上的 `popover`，作为 `Popover`
++   entry .popovertarget   `<button>` 和 `<input>` 上的 `popovertarget`：弹出层的 id，作为 `Id`
++   entry .pta   `<button>` 和 `<input>` 上的 `popovertargetaction`，作为 `PopoverAction`
++   entry .poster   `<video>` 上的 `poster`：占位图像，作为 `Url`
++   entry .preload   `<audio>` 和 `<video>` 上的 `preload`，作为 `Preload`
++   entry .readonly   `<input>` 和 `<textarea>` 上的 `readonly`：`Presence`
++   entry .referrerpolicy   `<a>`、`<area>`、`<iframe>`、`<img>`、`<link>` 和 `<script>` 上的 `referrerpolicy`，作为 `ReferrerPolicy`
++   entry .rel   `<a>` 和 `<area>` 上的 `rel`：链接类型，作为 `Tokens`
++   entry .rel2   `<link>` 上的 `rel`：链接类型，作为 `Tokens`
++       `#Link` 对象将每种链接类型作为预设标签提供（`Link.Stylesheet`、`Link.Icon`、…）。
++   entry .required   `<input>`、`<select>` 和 `<textarea>` 上的 `required`：`Presence`
++   entry .reversed   `<ol>` 上的 `reversed`：`Presence`
++   entry .rows   `<textarea>` 上的 `rows`，作为 `PositiveInt`
++   entry .rowspan   `<td>` 和 `<th>` 上的 `rowspan`，作为 `PositiveInt`
++   entry .sandbox   `<iframe>` 上的 `sandbox`，作为 `Sandbox`
++   entry .scope   `<th>` 上的 `scope`，作为 `ThScope`
++   entry .selected   `<option>` 上的 `selected`：`Presence`
++   entry .shadowrootclonable   `<template>` 上的 `shadowrootclonable`：`Presence`
++   entry .srcer   `<template>` 上的 `shadowrootcustomelementregistry`：`Presence`
++   entry .srdf   `<template>` 上的 `shadowrootdelegatesfocus`：`Presence`
++   entry .shadowrootmode   `<template>` 上的 `shadowrootmode`：`open` 或 `closed`，作为 `Openness`
++   entry .shadowrootserializable   `<template>` 上的 `shadowrootserializable`：`Presence`
++   entry .shape   `<area>` 上的 `shape`，作为 `Shape`
++   entry .size   `<input>` 和 `<select>` 上的 `size`，作为 `PositiveInt`
++   entry .sizes   `<img>` 和 `<source>` 上的 `sizes`，作为 `SourceSizeList`
++   entry .sizes2   `<link>` 上的 `sizes`：图标尺寸，作为 `Sizes`
++   entry .slot   所有元素上的 `slot`：影子树插槽名，作为 `Textual`
++   entry .span   `<col>` 和 `<colgroup>` 上的 `span`，作为 `PositiveInt`
++   entry .spellcheck   所有元素上的 `spellcheck`：`true` 或 `false`，作为 `Truth`
++   entry .src   `<audio>`、`<embed>`、`<iframe>`、`<img>`、`<input>`、`<script>`、`<source>`、`<track>` 和 `<video>` 上的 `src`，作为 `Url`
++   entry .srcdoc   `<iframe>` 上的 `srcdoc`：内联文档，作为 `Srcdoc`
++   entry .srclang   `<track>` 上的 `srclang`，作为 `Language`
++   entry .srcset   `<img>` 和 `<source>` 上的 `srcset`，作为 `SrcSet`
++   entry .start   `<ol>` 上的 `start`：第一项的编号，作为 `Integral`
++   entry .step   `<input>` 上的 `step`，作为 `Decimal`
++   entry .style   所有元素上的 `style`：内联 CSS，作为 `Css`
++   entry .tabindex   所有元素上的 `tabindex`，作为 `Integral`
++   entry .target   `<a>` 和 `<area>` 上的 `target`，作为 `Target`
++   entry .target2   `<base>` 上的 `target`：默认浏览上下文，作为 `Target`
++   entry .target3   `<form>` 上的 `target`，作为 `Target`
++   entry .title   所有元素上的 `title`：提示性文本，作为 `Textual`
++   entry .translate   所有元素上的 `translate`：`yes` 或 `no`，作为 `Affirmation`
++   entry .type   `<a>` 和 `<link>` 上的 `type`：所链接资源的 MIME 类型，作为 `Mime`
++       由于 `type` 是关键字，写作 `` `type` = … ``。
++   entry .type2   `<button>` 上的 `type`：`submit`、`reset` 或 `button`，作为 `ButtonType`
++   entry .type3   `<embed>`、`<object>` 和 `<source>` 上的 `type`，作为 `Mime`
++   entry .type4   `<input>` 上的 `type`，作为 `InputType`
++       很少直接写：`#Input` 为每种类型提供一个预设标签（`Input.Email`、`Input.Range`、…）。
++   entry .type5   `<ol>` 上的 `type`：编号样式，作为 `OlType`
++   entry .type6   `<script>` 上的 `type`，作为 `ScriptType`
++   entry .usemap   `<img>`、`<input>` 和 `<object>` 上的 `usemap`：图像映射引用，作为 `HashName`
++   entry .value   `<button>` 和 `<option>` 上的 `value`，作为 `Textual`
++   entry .value2   `<data>` 上的 `value`：机器可读的值，作为 `Textual`
++   entry .value3   `<input>` 上的 `value`，作为 `InputValue`
++   entry .value4   `<li>` 上的 `value`：该项的序号，作为 `Integral`
++   entry .value5   `<meter>` 和 `<progress>` 上的 `value`，作为 `Decimal`
++   entry .width   `<canvas>`、`<embed>`、`<iframe>`、`<img>`、`<input>`、`<object>`、`<video>` 和 `<svg>` 上的 `width`，作为 `PositiveInt`
++   entry .wrap   `<textarea>` 上的 `wrap`：`soft` 或 `hard`，作为 `Softness`
++   entry .writingsuggestions   所有元素上的 `writingsuggestions`：`true` 或 `false`，作为 `Truth`
++   entry #doctype   此方言的 `Document[Html]` 所带的 `<!doctype html>` 文档类型声明
++   entry #Interactive   交互内容类别，作为标签名的并集
++       `<a>`、`<audio>`、`<button>`、`<details>`、`<embed>`、`<iframe>`、`<img>`、`<input>`、`<label>`、`<select>`、`<textarea>` 和 `<video>`。
++       类别是类型，因此 `Html of Interactive` 是任何交互元素。
++   entry #Flow   流内容类别：可以放在 `<body>`、`<div>` 或 `<li>` 中的一切
++       每个标题、每个短语元素、分节元素，以及块级元素（`<address>`、`<blockquote>`、`<details>`、`<dialog>`、`<div>`、`<dl>`、`<fieldset>`、`<figure>`、`<footer>`、`<form>`、`<header>`、`<hr>`、`<main>`、`<menu>`、`<ol>`、`<p>`、`<pre>`、`<table>`、`<ul>`、`<search>`）。
++       `Html of Flow` 是大多数代码表示一段页面内容所需的类型，多段则用 `List[Html of Flow]`。
+
+@ 0 7 0 181c3465c6090587095e9838c9b441ba
++         `Topic` 为 `"area"` 的 `Tag.Void`，接受 `alt`、`coords`、`shape`、`href`、`target`、`download`、`ping`、`rel` 和 `referrerpolicy`。
++         它的四个成员预设了 `shape` 属性，因此 `Area.Rect` 序列化为 `<area shape="rect">`。
++     entry .Default   `shape="default"` 区域：整幅图像
++     entry .Rect   `shape="rect"` 区域，`coords` 为左、上、右、下
++     entry .Circle   `shape="circle"` 区域，`coords` 为圆心 x、圆心 y、半径
++     entry .Poly   `shape="poly"` 区域，`coords` 为顶点坐标对的列表
+
+@ 0 77 0 1c84463243d10d141ee48b48c9cf2901
++   entry #Article   `<article>`：自成一体的作品，包含流内容
++   entry #Aside   `<aside>`：附带内容，包含流内容
++   entry #Audio   `<audio>`：声音；透明的，另加 `<source>` 和 `<track>` 子项
++       接受 `src`、`crossorigin`、`preload`、`autoplay`、`loop`、`muted` 和 `controls`。
++       规范中其子项取决于 `src` 是否存在的规则不是类型：两种形式都能编译。
++   entry #B   `<b>`：引人注意但不增加重要性的文本，包含短语内容
++   entry #Base   `<base>`：文档基础 URL 和默认链接目标；空标签，位于 `<head>` 中
++       接受 `href` 和 `target`；规范要求至少有一个，这一点未强制。
++   entry #Bdi   `<bdi>`：为双向格式化而隔离的文本，包含短语内容
++   entry #Bdo   `<bdo>`：具有显式方向的文本，包含短语内容；`dir` 是必需的
++   entry #Blockquote   `<blockquote>`：引用的段落，包含流内容；`cite` 给出其来源
++   entry #Body   `<body>`：文档的内容，包含流内容
++       自动闭合且可插入：解析器在作为整个文档读取的内容周围补上它，并在输入结束时闭合它。
++   entry #Br   `<br>`：换行；空标签
++   entry #Button   `<button>`：按钮，包含短语内容
++       边界标签：解析器不允许在其外部打开的格式化元素延续到其内部。
++       接受 `type`、`disabled`、`form`、`formaction`、`formenctype`、`formmethod`、`formnovalidate`、`formtarget`、`name`、`value`、`command`、`commandfor`、`popovertarget` 和 `popovertargetaction`。
++   entry #Canvas   `<canvas>`：可编写脚本的位图；透明的，因此可容纳后备内容
++       接受 `width` 和 `height`。
++   entry #Caption   `<caption>`：表格的标题，包含流内容；是 `<table>` 的第一个子项
++   entry #Cite   `<cite>`：作品的标题，包含短语内容
++   entry #Code   `<code>`：一段计算机代码，包含短语内容
++   entry #Col   `<col>`：表格列；空标签，位于 `<colgroup>` 内；`span` 覆盖多列
++   entry #Colgroup   `<colgroup>`：一组列，包含 `<col>` 元素
++       其子项之间只能出现空白（`Html.Mode.Whitespace`），并且它是可插入的，因此直接出现在 `<table>` 中的 `<col>` 会获得一个。
++   entry #Data   `<data>`：带有机器可读 `value` 的内容，包含短语内容
++   entry #Datalist   `<datalist>`：`<input list=…>` 的预定义选项，包含短语内容和 `<option>`
++   entry #Dd   `<dd>`：`<dl>` 中的描述，包含流内容；自动闭合
++   entry #Del   `<del>`：被删除的文本；透明的，带有 `cite` 和 `datetime`
++   entry #Details   `<details>`：展开控件：一个 `<summary>`，然后是流内容
++       接受 `open` 和 `name`，后者将多个组合为互斥手风琴。
++   entry #Dfn   `<dfn>`：术语的定义实例，包含短语内容
++   entry #Dialog   `<dialog>`：对话框，包含流内容；接受 `open` 和 `closedby`
++   entry #Div   `<div>`：通用容器，包含流内容
++   entry #Dl   `<dl>`：描述列表，包含 `<dt>`、`<dd>` 和 `<div>` 组
++       其子项之间只能出现空白，并且它会自动闭合。
++   entry #Dt   `<dt>`：`<dl>` 中的术语，包含流内容；自动闭合
++   entry #Em   `<em>`：重读强调，包含短语内容
++   entry #Embed   `<embed>`：外部应用程序或交互内容；空标签
++       接受 `src`、`type`、`width` 和 `height`。
++   entry #Fieldset   `<fieldset>`：一组表单控件：一个可选的 `<legend>`，然后是流内容
++       接受 `disabled`、`form` 和 `name`。
++   entry #Figcaption   `<figcaption>`：插图的说明文字，包含流内容
++   entry #Figure   `<figure>`：带有可选 `<figcaption>` 的自成一体的内容，包含流内容
++   entry #Footer   `<footer>`：其最近祖先分节的页脚，包含流内容
++   entry #Form   `<form>`：表单，包含流内容
++       接受 `action`、`method`、`enctype`、`accept-charset`（写作 `acceptCharset`）、`autocomplete`、`name`、`novalidate` 和 `target`。
++   entry #H1   `<h1>`：一级标题，包含短语内容
++   entry #H2   `<h2>`：二级标题，包含短语内容
++   entry #H3   `<h3>`：三级标题，包含短语内容
++   entry #H4   `<h4>`：四级标题，包含短语内容
++   entry #H5   `<h5>`：五级标题，包含短语内容
++   entry #H6   `<h6>`：六级标题，包含短语内容
++   entry #Head   `<head>`：文档的元数据，包含 `#Metadata` 内容
++       其子项之间只能出现空白；它会自动闭合，并且是可插入的，因此出现在文档开头的 `<title>` 会被包上一个 `<head>`。
++   entry #Header   `<header>`：其最近祖先分节的介绍性内容，包含流内容；自动闭合
++   entry #Hgroup   `<hgroup>`：带有副标题的标题，包含 `<p>` 以及 `<h1>` 到 `<h6>`
++   entry #Hr   `<hr>`：主题分隔；空标签
++   entry #I   `<i>`：以另一种语气表达的文本，包含短语内容
++   entry #Iframe   `<iframe>`：嵌套的浏览上下文，没有内容
++       接受 `src`、`srcdoc`、`name`、`sandbox`、`allow`、`allowfullscreen`、`width`、`height`、`referrerpolicy` 和 `loading`。
++       它不接受子项，但不是空元素：它序列化为 `<iframe …></iframe>`，带有规范要求的结束标签。
++   entry #Img   `<img>`：图像；空标签
++       接受 `src`、`alt`、`srcset`、`sizes`、`crossorigin`、`usemap`、`ismap`、`width`、`height`、`referrerpolicy`、`decoding`、`loading` 和 `fetchpriority`。
++       通过 `Unattributive`，`alt` 用 `img.alt` 读回，`width` 用 `img.width` 读回（一个 `Optional[Int]`）。
+
+@ 0 6 0 05d1a780c5a956330487759043b38ec8
++   entry #Ins   `<ins>`：插入的文本；透明的，带有 `cite` 和 `datetime`
++   entry #Kbd   `<kbd>`：用户输入，包含短语内容
++   entry #Label   `<label>`：表单控件的说明，包含短语内容；`for` 指名该控件
++   entry #Legend   `<legend>`：`<fieldset>` 的说明，包含短语内容和标题
++   entry #Li   `<li>`：列表项，包含流内容；自动闭合；`value` 设置它在 `<ol>` 中的序号
++   entry #Link   `<link>`：指向外部资源的链接；为每种 `rel` 都带有预设的空标签

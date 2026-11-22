@@ -1,0 +1,14 @@
+orthant 2 language
+
+@ 0 1 0 1c5d06c046089a3c18bde1312a5fa62f
++ # `SN-728` — 缺少 `Tactic[JsonRpcError]`（已退役）
+
+@ 0 2 0 1a537637d484d5a0090a985cc99411f5
++ 此错误已不复存在。
++ 保留本页面是为了不让该代码被重复使用，并使旧版本中对它的引用仍能被解析。
+
+@ 0 1 0 1a08cb6777f7bfef175fcbc06499ad14
++ ## 后来如何
+
+@ 0 2 0 1e35e17e81266d34118aa4bbfe3aa93a
++ Obligatory 的 `rpc` 宏不再抛出此错误：Soundness 采用 bolt 代码时，源代码中没有任何地方报告它，因此没有给它分配代码。

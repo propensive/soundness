@@ -1,0 +1,1797 @@
+orthant 2 language
+
+% 0 1 0 0f04ec4b9ac2d4270a232409219e1f6b
+
+% 0 1 0 1d8e8b9b6df897c60b37185cecc51b16
+
+% 0 1 0 0b5938ce7315323607e1922cbc4d93e2
+
+@ 0 1 0 16a2418f4768c50e17d260c62787f987
++ info   结构化并发：受监管的任务、promise、取消、重试和虚拟机事件
+
+% 0 1 0 0ca6d61ddd9511ea1cdae38f1414f6fe
+
+@ 0 5 0 092655dfa0becd181d9291a1362e0f48
++     _Parasite_ 让并发工作具有普通代码块的形状。
++     每个任务都在一个拥有它的**受监管作用域**内派生，而该作用域直到其任务全部了结才会完成：任务不能比启动它的代码活得更久，任务中的失败会到达汇合它的代码，取消一个作用域会取消其下的一切。
++     因此，并发程序的结构在其嵌套中一目了然。
+
+@ 0 7 0 17bedbf742fb03ca0119af453d9ea6b7
++     核心类型很少。
++     `supervise` 打开一个作用域并引入一个 `Monitor`，这是每一次挂起（等待、睡眠、让出）都需要的能力。
++     `async` 派生一个 `Task`，作为作用域中监视器的子任务；`task` 与之相同但带有名称，而 `daemon` 派生发后即忘的工作，作用域结束时会将其取消。
++     任务的 `await` 返回其结果，或者通过调用者的 `Tactic` 交付其主体抛出的错误，该错误仍保有类型；取消或超时以 `Async.Error` 的形式到达。
++     `Promise` 是一个稍后提供的值，可能来自另一个线程，一方等待它，另一方兑现它。
+
+% 2 1 0 1c87e544bad5b93d02f97675e9f8f038
+
+% 3 1 0 0177da77819900901e2486dbef5d507e
+
+% 4 1 0 05fd99038f13bc471c414b78e51bb33d
+
+% 5 1 0 161672863c3b5cfc0eedb4f9cfc1c91d
+
+% 6 1 0 163040b3086bbfc802548054429d5a11
+
+% 0 1 0 03165a42e74b3e190211c1b579e78b99
+
+% 2 1 0 179610eb5e37e7ee1ae4b9aa17921b76
+
+% 0 1 0 101d18c042acd1c71161a4fdae7ea144
+
+% 0 1 0 1c55d1003a1cd276051d45d739f17181
+
+% 0 1 0 0487f5ec90c7438e0a08d901f8c00042
+
+% 1 1 0 19aa31b5449c726b1b8b7110d3455f79
+
+@ 0 11 0 028f078ad4b187c21eadf49b2230e5fd
++     有两项选择通过按名称导入 given 来做出，`import soundness.*` 不会代为做出其中任何一项，因为 `import pkg.*` 从不导入 given。
++     **线程模型**是来自 `threads` 对象的一个 `Threading`：`virtualThreads` 在 JVM 虚拟线程上运行每个任务，`platformThreads` 在平台线程上运行，`adaptiveThreads` 在 JVM 拥有的任何一种线程上运行，`pooledThreads` 在可复用的载体线程上运行，用于细粒度的扇出，而 `javascriptThreads` 在单一线股上及早运行，用于事件循环。
++     来自 `probates` 包的**遗嘱认证**决定父任务主体完成时仍在运行的子任务的命运：`awaitProbate` 等待它，`cancelProbate` 取消它，`failProbate` 在父任务汇合时抛出 `Async.Error`，`panicProbate` 则引发 panic。
++     每一次挂起还需要作用域中有一个 `Tactic[Async.Error]`，由 `strategies.throwUnsafely` 或 `safely` 代码块提供。
+
+@ 0 5 0 05cc93ae0803d1521773a03246fdc9dc
++     **取消**是协作式的。
++     `task.cancel()` 在任务*暂停*之处中断它，如 `snooze`、`await`、`attend`，并在它*让出*之处停止它：即在本不会暂停的主体中调用 `relent()` 的地方。
++     `sleep` 是不可中断的暂停，无论发生什么都会等满整个期限；被取消的任务随后在下一个 `snooze` 或 `relent()` 处停止。
++     既不暂停也不让出的任务会一直运行到完成。
+
+@ 0 6 0 0a0f7af91ef2aee21e46c3c6e60d55b4
++     **错误**沿两个方向传递。
++     任务主体通过自己的 `Tactic` 抛出错误，错误以主体所声明的类型到达 `await`（`Task[Int] emits CueError`）；守护进程没有汇合点，因此它的失败会交给作用域中的 `Probate`，或被外围的 `contain { … }.protect { … }` 区域容纳，或升级到线程的未捕获异常处理函数，`Vm.intercept[Fault]` 在那里看到它。
++     暂时性的失败通过 `retry` 在来自 `retryTenacities` 包的 `Tenacity` 下重试。
+
+@ 0 3 0 0c3f88674ab9faf71c909550d1b4eb58
++     任务之间的**共享状态**使用 `rudiments` 库的原子单元和 `Mutex`（`Atomic[Int]`、`Atomic.Ref[T]`、`Mutex`）编写，它们的文档在那里；parasite 自己的 `Promise` 和 `Timeout` 构建在它们之上。
+
+@ 0 4 0 1db8a1d91d9be7b206dee6b1fa176b04
++     在底层，`Supervisor` 派生和停驻 `Strand`，它们在 JVM 和 Scala Native 上是线程，在事件循环上是运行队列中的条目；`Supervisor` 就是全部的平台接缝。
++     `Threading` given 分发一个 `Supervisor`，而 `supervise` 在它之上建立一棵以 `Monitor` 为节点的树的根。
++     该库的源代码集如下：
+
+@ 0 13 0 1d830bc28948717f00b208d1b4a70d19
++     - `parasite.core`：一切平台中立的内容：`supervise`、`async`、`task`、`daemon`、`Task`、`Promise`、`Monitor`、`Worker`、`Probate`、`Timeout`、`Tenacity`、`retry`，`threads`、`probates`、`retryTenacities`、`supervisors` 和 `unsupervised` 这些 given，`PlatformSupervisor`、`JavascriptSupervisor` 和抽象的 `PoolingSupervisor`，以及 `Vm` 拦截 `Shutdown` 和 `Fault`（它们需要 JVM 才会触发）。
++     - JVM 上的 `parasite.core` 增加了 `VirtualSupervisor`（Loom 虚拟线程）、`AdaptiveSupervisor`（JVM 支持时使用虚拟线程，否则使用平台线程）和 `PooledSupervisor`（虚拟线程载体池）。
++     - Scala Native 上的 `parasite.core` 在平台线程之上声明同样的三个名称，因为 Native 没有 Loom：`VirtualSupervisor` 和 `AdaptiveSupervisor` 派生平台线程，`PooledSupervisor` 将它们池化，这正是池化节省最多的地方。
++     - `parasite.jvm`：基于 JVM 管理 bean 的 `GarbageCollection`（`Vm.intercept[GarbageCollection]`）和 `Heap`。
+
+@ 0 8 0 0c525426f66aeac80852f9675a461ebe
++     除了 `Root`、`ThreadSupervisor` 和 `emits` 类型别名之外，一切都导出到 `soundness` 总括包中，这三者通过 `parasite.Root`、`parasite.ThreadSupervisor` 和 `parasite.emits` 访问；`threads`、`supervisors` 和 `unsupervised` 对象以及 `probates` 和 `retryTenacities` 包与总括包自身的同名对象和包合并，因此用户写下 `import soundness.*`，然后按名称导入一个线程模型和一个遗嘱认证。
++     通过这些 given 之一访问全局监管器的公共类或对象，要用 `uses` 子句声明这一点，即 `object Main uses parasite.threads`，因为监管器是一种能力。
+
+% 0 1 0 0b30bad04a0176020515f8c74e05e076
+
+% 0 1 0 1a7472dea3a55aea1bf65f9694c58caa
+
+% 0 1 0 005785eafe647448022da931f3d403d5
+
+% 0 1 0 1f616ee6996b280f1b82ac55481111fc
+
+% 0 1 0 1f1932bf4b4524c7149be91eee5800cd
+
+% 0 1 0 1b7835fd35626fb718d015cd94812a52
+
+% 0 1 0 13e40615ec93d7231761136d66258183
+
+@ 0 1 0 02146096468c509b08e818b0671b2f02
++ entry .supervise   打开一个受监管作用域：一个根 `Monitor`，任务在其下派生和汇合
+
+% 1 1 0 050f3828d0ed40de0135b96bc6330b1c
+
+@ 0 5 0 11b7c8956fa0dc330d6de5c0fecf2dd2
++       `supervise(block)` 在作用域中有一个新的 `Monitor`（基于 `Threading` given 所分发的监管器的一个 `Root`）的情况下求值该代码块，并返回代码块的结果。
++       该监视器正是 `async`、`task`、`daemon`、`await`、`snooze` 以及其他所有挂起所需要的，因此每个任务最终都源于一个 `supervise`；该作用域是一棵树的根，树的分支是在其下派生的任务，每个任务都是作用域中最内层监视器的子任务。
+
+@ 0 3 0 0bc18e607440866d09f608ec0bb2c76e
++       它需要一个 `Threading`（按名称从 `threads` 导入）和一个 `Codepoint`，其结果是 `Tactic[Async.Error] ?=> result`，因此在调用它的地方作用域中必须有一个 `Tactic[Async.Error]`，由 `strategies.throwUnsafely` 或 `safely` 代码块提供。
+
+% 0 1 0 14116fcaa006993f068c95fd1ec862a2
+
+% 1 1 0 08d9458eb73012351c93056f35e51984
+
+@ 0 1 0 17123fb404c6647a1624cd5bb7e11453
++         label 一个空的作用域
+
+% 1 1 0 1072d1d1fd0fb0aa13816acd16a90010
+
+% 0 1 0 1808f1bc7a8d73be1e8552eecae778a7
+
+% 0 1 0 187825beab6c18ac06b9a8f2767a7289
+
+% 0 1 0 10f1b0ee07db2add00695d4d9ebf519f
+
+% 0 1 0 0798179fd46066390d73f0f2d8a2bf3e
+
+% 1 1 0 0303efffea63588502988f82044b17d7
+
+% 0 1 0 07e7100702bf8c990a7742427f66cfca
+
+% 1 1 0 01d52a165bd404831ae6430df8497f20
+
+@ 0 1 0 1e5c985b1237167a01c93190f63e7b79
++         label 一个任务，已汇合
+
+% 1 1 0 1b8e4167bcfa3df718482da7b544ae46
+
+% 2 1 0 1dba25fff79a96fa0a42d69b31d41cd5
+
+% 0 1 0 10149774b6e4866a08a866cb8153339d
+
+% 0 1 0 0434809cb4fe6e4d10c48759522703c1
+
+% 1 1 0 0669094f2dcb42ea0f7fe6002f264dbf
+
+@ 0 1 0 0635b852429bd229032893471b28c7d9
++         label 子任务的子任务
+
+% 1 1 0 04e81f12023b0479146082c9cdc1a0e7
+
+% 2 1 0 19c1bd2475744b0305391133b316f474
+
+% 3 1 0 1b56899b14b899d3022102583a5d8147
+
+% 0 1 0 1196e31942c3da301d90e32379512fff
+
+% 0 1 0 031576eb8236968118852ca3a67b330f
+
+% 0 1 0 1aca4ecdc3202f491be58fe331b472b9
+
+% 1 1 0 16bb20bcbc9db5d115a0cd82ec189e28
+
+@ 0 1 0 19448b1e3bbb7a4c1bc02e4af2420662
++         label 父任务遗忘、由遗嘱认证汇合的子任务
+
+% 1 1 0 098090ab95d013ec0155d28ba6781707
+
+% 2 1 0 172e8ea2be56a2e80391864fc0de96cf
+
+% 3 1 0 0af911824730d65b0322b42db5114223
+
+% 0 1 0 01ef5f69c8471c790011c46a55f30a5a
+
+% 0 1 0 19be6ad1d4e4ed7a096b0408dae92b9c
+
+% 0 1 0 0b2bb134b85073ab1dcc039ef1d6445a
+
+% 0 1 0 114d5b4418b78e120e5cdc7980964050
+
+% 0 1 0 04cf785d1d6cf951175d64b84a0d0072
+
+% 0 1 0 05324ab952d132031fa7821cd90c1137
+
+% 1 1 0 1a277342ea9dfdc5113023e785963c91
+
+@ 0 5 0 178ee7d6586be3dc1f94436719b3fee8
++       父任务直到其子任务完成后才会完成，因此最后一帧中的 `await` 只在内层任务完成后才返回；在 `probates.awaitProbate` 下父任务会等待它，而在 `probates.cancelProbate` 下则会取消它。
++       根本身不执行任何清理：其子任务在每个父任务完成时由遗嘱认证整理，而 `supervise` 在代码块返回时返回。
+
+% 1 1 0 1e2b44699fe6eb8f1c92fdca8ec688ba
+
+% 1 1 0 13f8fb2ba405195a0266669581316f55
+
+% 1 1 0 10fa5b3070d031ec18c31ac4e5e57324
+
+% 1 1 0 1198d43569e32b1209456e71047d55cd
+
+@ 0 1 0 0b183906a9d467da1d3bc95535a2e28d
++ entry .async   派生一个任务作为作用域中监视器的子任务，并返回其句柄
+
+% 1 1 0 0553be4b15ad8dd81735ebca7d1f387c
+
+@ 0 7 0 0990e146f5321e080da5c147c13f5b1b
++       `async(body)` 在作用域中监管器的一条新线股上启动主体（在 `threads.virtualThreads` 下是一个虚拟线程），并立即返回一个 `Task[result]`。
++       主体是一个上下文函数，接收一个 `Worker`（任务自己的监视器，因此嵌套的 `async` 会成为它的子任务）和一个 `Tactic[error]`，其中 `error` 是主体所抛出的错误类型的联合，其推断方式与同步的 `raises` 完全相同。
++       句柄的类型以 `Task[result] emits (error | Async.Error)` 的形式携带该联合，因此 `await` 会通过调用者的 `Tactic` 交付抛出的错误，该错误仍保有类型。
+
+% 2 1 0 16b60a40480960fa0a4f8ed18d0602ff
+
+% 3 1 0 0b5314df08d7fe2603a88b037b6becfa
+
+% 4 1 0 037e23e2843ba4490d8bd7dc8b170a9b
+
+% 5 1 0 018aa8e6a44d481013d53cbaa8529f0e
+
+% 6 1 0 17fcbefe7d9e8f9918d83a0798c04b30
+
+% 8 1 0 0441da5430f56a1f1ce552f78e10d649
+
+% 10 1 0 0c36f69a857bcb991e88a6d2472b4d4e
+
+% 0 1 0 0fa341e506c4ad061fc8705205abbc20
+
+% 0 1 0 0869f69c985f88f519762e2a36e8191e
+
+% 0 1 0 0f0d7613324c05db191c9b533c10c8d8
+
+% 0 1 0 1e216b4fdcb8b19d11a272cdb0ee8633
+
+% 1 1 0 177c2db543e45bf70151cd3238ed4c05
+
+@ 0 8 0 085ef2bb6891a899065581137db2c019
++       它需要作用域中有一个 `Monitor`、一个 `Probate.Shared` 和一个 `Codepoint`。
++       主体可以捕获监视器、其他任务句柄、普通值以及任何 `Durable` 能力（日志记录器、连接），但不能捕获外围的 `Tactic` 或 `Emit`，它们属于安装它们的那个栈：应通过主体自己的战术抛出错误，错误会到达 `await`。
++       独占资源（`Producer`、有状态的解析器、打开的句柄）同样不能被捕获；应在主体内部打开它，或者用 `transfer` 移交它。
++       主体的战术是一个 `AsyncTactic`，它抛出纯粹的错误，而不是跨线程打破一个受栈限制的边界；工作者把它记录为失败的结果。
+
+@ 0 2 0 0185b5c4484779201f9137b75b84f594
++       主体在调用 `async` 的那个线程的 `Stdio` 重定向下运行，因此宿主围绕客体的 `Stdio.divert` 会覆盖客体启动的每一个任务。
+
+% 1 1 0 13ec6c19cd61fbac1bd720da6a459e76
+
+% 1 1 0 017f7c55b650eb61080424fadb52be61
+
+% 1 1 0 05b5606c47eef5a614f85bf2dc534b29
+
+% 0 1 0 04bae107bbf62b4400fa6e06f74a5a45
+
+% 1 1 0 15e258da9a9ece0a18bd6f8f1b24d5e2
+
+@ 0 7 0 015191b34d8307301a2284d0b7eb7eba
++ entry .task   带名称的 `async`：`task(n"worker")(body)`
++     与 `async` 相同，但带有一个 `Name[Async]`，它成为任务的 `Monitor#name`，以及其 `Monitor#stack` 中的一段。
++     名称在代码编译时按照 `Async.Rules` 进行检查：它以字母开头，只包含字母、数字、`-` 和 `_`，因此永远不会带有构建栈路径所用的分隔符（`:`、`/`、`@`、`.`）。
++     具名任务让运行中的程序清晰可读：监视器转储显示的是 `virtual://server//connection-4//reader`，而不是一个匿名的线程编号。
+
+% 2 1 0 0e2ace4fb560cb081ef436416898ee39
+
+% 3 1 0 01122e47edb841a4095ca531c6b35cf7
+
+% 4 1 0 193af1ba499d4db20e73c554f79e26e5
+
+% 5 1 0 1c8c52bb457600cf0086c09b70645b58
+
+% 6 1 0 022734c02a8d5eb607b84916b9436e91
+
+% 0 1 0 084b6d70a9e248330db7a5da1d369080
+
+% 2 1 0 09c132595624ae5618601d8e8631109d
+
+% 0 1 0 1291d567e6b7492a1b695b1c304cdfb4
+
+% 1 1 0 0330586609ddd00f170e8e77bf65420c
+
+@ 0 1 0 176deae0d34853c2023a02931ce63e47
++ entry .daemon   派生发后即忘的工作，作用域结束时将其取消
+
+% 1 1 0 02d8aa0c0dfcb1a5018d3d43e7ab49cc
+
+@ 0 4 0 0575419718e425280880ca62be185e20
++       `daemon(body)` 启动一个后台任务（监听器、轮询循环），它从不被汇合：它一直运行，直到自己完成或者父任务完成；父任务完成时，无论父任务的遗嘱认证对普通子任务施行何种方针，都会取消它。
++       结果是一个带有 `attend()` 和 `cancel()` 的 `Daemon` 句柄。
+
+% 2 1 0 0200884bee24609b1cc07e429d0a6a58
+
+% 3 1 0 165dba99e08953f60492e75b5849a5aa
+
+% 4 1 0 177c5591b524a44d062b7d85d435c3f2
+
+% 5 1 0 1bd6aaa0af85766213210030e02c0e58
+
+% 6 1 0 1436e43a16c5afed07416ae6693bc3da
+
+% 8 1 0 1d8bfcfdfd2b53301b46c01af66a96ef
+
+% 9 1 0 01329c2e3b70c4db1ab24ce3e809b4f2
+
+% 1 1 0 0cb6a7377109d5121a849f4883689727
+
+% 0 1 0 0b0da39ca8ac65421ec796298588bf83
+
+% 1 1 0 1a9c4f33138db0b10a5c278604e360e3
+
+@ 0 7 0 10845f2a3c290491001f7a37b96c6d26
++       守护进程的主体是*卫生的*：它是一个纯上下文函数（`?->{}`），因此它可以捕获普通值并打开自己的能力，但不能捕获来自外围作用域的任何能力，如 `Tactic`、`boundary.Label`、文件句柄，因为它们的生命周期可能在工作者之前结束。
++       由于没有可以交付错误的汇合点，抛出的错误会使工作者失败，并交给作用域中的 `Probate#trap`：`contain { … }.protect { … }` 区域可以接受它，否则它会升级到线程的未捕获异常处理函数，`Vm.intercept[Fault]` 在那里观察到它。
++       没有任何东西会被悄无声息地丢弃。
+
+@ 0 1 0 1fdaaebcd94a43e21ddb10803032392d
++       它需要作用域中有一个 `Monitor`、一个 `Probate.Shared` 和一个 `Codepoint`。
+
+% 1 1 0 0cbc83d0389bf3790c6fa023af65c392
+
+% 1 1 0 1ec86bcfc7eb8d970dfeb33321702c4e
+
+% 1 1 0 065e07f7dde3eabf0fb16ed1d2908e9e
+
+@ 0 1 0 0ed1cefd1fa3947714cd0a1ad081bb5a
++ entry .transfer   派生一个拥有独占资源的任务，该资源由调用者移交
+
+% 1 1 0 0c06a73d0c90d65910f66d506cca186e
+
+@ 0 7 0 060e6d8f38c37b3015116758405e19b4
++       任意 `resource^` 上的扩展：`resource.transfer(body)` 和 `resource.transfer(name)(body)`。
++       任务主体只能捕获共享的能力，因此独占资源（要喂给数据的 `Producer^`、要泵送的 `Stream^`、要运行的循环对象）无法被闭包捕获。
++       它转而被*消耗*：调用者不能再使用它，而主体以第一个上下文参数接收它，这是一个 `Task.Owned[resource]` 载体，其 `apply()` 以一个新鲜的独占引用产生该资源。
++       另外两个上下文参数是 `Worker` 和 `Tactic[error]`，与 `async` 相同。
+
+% 2 1 0 1b5606150a71a46c1ff2cb1dbc717db0
+
+% 3 1 0 10fc163c6d1d35930759c1e9293acb31
+
+% 4 1 0 00ff72eef9e5f9401f6a2806b4d5dd2a
+
+% 5 1 0 10e4fe3e6173ec4d1c8fa331f7dc433f
+
+% 6 1 0 19a56be5caf50be20c9b45bf835f8013
+
+% 3 1 0 1f88d3a5d8e76f78198711b50df14fcb
+
+% 0 1 0 1dbdb52dc4e77c7d06b3a44229413f99
+
+% 0 1 0 0ca4128940e2f0fe1a360648ed340765
+
+% 0 1 0 09b08c93142ae15b17d5c984a70fefd3
+
+% 0 1 0 0f2c62d16c9f76930eb3ced4e460b932
+
+% 0 1 0 05f18dc934b199ad063116d94fa384ce
+
+% 0 1 0 00ae841ef5ea47b00eb90a6ec228180d
+
+% 1 1 0 1fe7ce47d3214642006014acf4f18800
+
+@ 0 3 0 00e4dd11db1ec7940b63bebf588a5770
++       应在移交生产者*之前*取得读取端（`producer.iterator`），因为移交之后就无法再从它那里取得任何东西。
++       结果类型与 `async` 的相同，即 `Task[result] emits (error | Async.Error)`。
+
+% 1 1 0 15633445ab143c70168d3fdc41c82c17
+
+% 1 1 0 04dda7059a47ce64030d83e7c9fd79c6
+
+@ 0 5 0 034b131fe5227e091fc959a4b6ff2e95
++ entry .monitor   作用域中的 `Monitor`，作为一个值：`monitor.name`、`monitor.stack`、`monitor.cancel()`
++     对最内层 `Monitor^` 的透明内联召唤：在任务主体中，它是任务自己的 `Worker`（类型为 `Monitor`），直接位于 `supervise` 之下时则是 `Root`。
++     `monitor.name` 是具名任务的名称，`monitor.stack` 是它经由各父任务的完整路径，而 `monitor.cancel()` 取消当前任务。
+
+@ 0 8 0 1740bb4702d550a5015fa4a6d04ab117
++ entry .relent   在本不会暂停的主体中的一个取消点
++     任务正常运行时 `relent()` 什么都不做；如果任务已被取消，它会在那里抛出 `InterruptedException`，于是主体停止而不产生值，句柄的 `await` 抛出 `Async.Error(Cancelled)`。
++     从不暂停的工作（例如对数据的长循环）通过调用它主动提供取消点，通常每次迭代调用一次；既不让出也不暂停的主体无法被取消，会一直运行到完成。
++     它需要作用域中有一个 `Worker`，因此只能在任务主体内调用，并且它也计入 `Worker#relentlessness`。
+
+% 2 1 0 04cb9243826b78ee00c132482fc7cdf5
+
+% 3 1 0 0ed2ebea5545c8651a73a030bb9e481e
+
+% 4 1 0 0d6042a7bb6c9bfd1b9b623a7e6ab0c9
+
+% 5 1 0 0bdc778326533ef1198dec4e54321082
+
+% 6 1 0 1d8857f00475cb9216824dc87ff55d20
+
+% 8 1 0 005fe24846112d740af4dfc7416fc72a
+
+% 0 1 0 0ea19bb3239b87bd02f692476d15c7d4
+
+% 0 1 0 170c83660dd53373070ade442146f17e
+
+% 0 1 0 12b18b9da1057aec0e03dc68627675e1
+
+% 0 1 0 1a23f8f148464cd713b15f4f2f84d39d
+
+% 0 1 0 1880bda0730213cc0017fdf8ef03714d
+
+% 1 1 0 000ae23ef16b937b1562ab93564aac62
+
+@ 0 4 0 044feab355a9da6710aaafe28b95e369
++ entry .cancel   取消作用域中的监视器
++     `cancel()` 就是 `monitor.cancel()`：在任务主体中，它取消任务本身，该任务的 `await` 随后抛出 `Async.Error(Cancelled)`；在 `Root` 之下它什么都不做。
++     取消了自身的任务在下一次暂停或 `relent()` 处停止。
+
+@ 0 10 0 118646ca0e6d90cf02e9d7ee9a23bdf1
++ entry .snooze   暂停一段时长或直到某个时刻，若被取消则立即醒来
++     一个取消点：`snooze(2.0*Second)` 暂停两秒，`snooze(now() + 2.0*Second)` 暂停到从现在起两秒之后；被取消的任务会以 `InterruptedException` 立即从两者中醒来，这使其 `await` 抛出 `Async.Error(Cancelled)`。
++     参数可以是任何 `Schedulable`，如 `quantitative` 时间、`aviation.Timespan` 或 `aviation.Instant`，而时长或时刻的类型表明所指的是哪一种。
++     只有在按名称选定了一个单位之后（`abstractables.millisecondsAbstractable` 或 `epochMillisecondsAbstractable`），裸 `Long` 才会被接受；如果作用域中既有时长单位又有时刻解读，它会因歧义而被拒绝。
++     它需要作用域中有一个 `Monitor`。
+
+% 2 1 0 0c343e33fbce5dfc10e38d5d16a643a6
+
+% 3 1 0 123e956de5b68e1005699da6d3ec4631
+
+% 4 1 0 04ce0c1403a3f85f0b072c2a763948f0
+
+% 5 1 0 045c8787a853d3590103383c8ff01408
+
+% 6 1 0 0f855d49c1ca983d060a0f970b7df2de
+
+% 8 1 0 1b69ab818d0a46bd033967354c2826ce
+
+% 0 1 0 0d79beab36fb8a6a16ea3186d0acc708
+
+% 0 1 0 05e4b6c3914849191efe4fe6a9421b76
+
+% 1 1 0 12f6228ef62896b911fb563854ab2b9f
+
+@ 0 3 0 0704b91ae4bad2fe18c764a97d4fb5bd
++     在 `JavascriptSupervisor` 下，snooze 会立即完成，因为不阻塞事件循环就无法延迟。
++     *snooze* 是闹钟上的贪睡按钮，第二次闹铃可以提前打断它；而 `sleep` 则会一觉睡到底。
+
+@ 0 6 0 08b811b6701d99b81923194e483e1cab
++ entry .sleep   暂停一段时长或直到某个时刻，总是等满整个期限
++     它不是取消点：提前醒来（无论是虚假唤醒，还是取消所传递的中断）都会针对剩余的时间重新停驻，并消耗该中断，使下一次停驻不会被它打断。
++     任务的已取消状态会保留，因此它仍会在下一个 `snooze` 或 `relent()` 处停止。
++     参数可以是任何 `Schedulable`，与 `snooze` 相同，并且它需要作用域中有一个 `Monitor`。
+
+% 2 1 0 0fe87125f459aa1013383fd6050198a8
+
+% 3 1 0 0fd00a81d56e65730acffcee4889f3fa
+
+% 4 1 0 16e11043fa91e016031e31770d8c309f
+
+% 5 1 0 19f2f884cc08f9fc1b4e814940a2142b
+
+% 6 1 0 06499f7348ec10c812bd1f77025d15a6
+
+% 8 1 0 0ad8f0f5d05cd42b0fb1a261a7ebf817
+
+% 0 1 0 186f23d34a2943651b0a729968da3bec
+
+% 0 1 0 08725cfc8ba721281607a9cb18d6ac89
+
+% 1 1 0 1510355f9eeccb0c0f61a48cfcf300c3
+
+@ 0 2 0 182197317f3bf2820f742c982b11a881
++     这两种暂停只在一点上不同，即取消能否提前结束它们；它们的名称是为了让人记住，而不是去查阅。
+
+% 0 1 0 15d6d2800841da9e1c6e709ce05d6a7d
+
+% 1 1 0 0a47f914ed53260906bd03717b3d64ff
+
+@ 0 1 0 0549da2c3318c5d600e74b1a34afff19
++       label 在暂停之处被中断
+
+% 1 1 0 182628244fa94a4506e0b7da0259607a
+
+% 0 1 0 119ae55bd9f4790a17bca6e4f5c3c415
+
+% 1 1 0 0d4dada8ae3b4e290aaea1a63a696c15
+
+% 2 1 0 04e0a8ffb7cc380909e2f1b2b88a683e
+
+% 0 1 0 083da325c932fbfc10ff4d7edbfef4bb
+
+% 0 1 0 02158b3edc1d7df505f95270765b90f4
+
+% 0 1 0 116f097b58d7bf3e0553257ee05a6f5d
+
+% 2 1 0 0d43be25a4b6a10d0047d40ce610a519
+
+% 1 1 0 0cc55b21c906a617129046cc43d24de7
+
+@ 0 1 0 1e681cf6e79c43a01ce12d3c45fb5c71
++       label 在让出之处被停止
+
+% 1 1 0 12944ff48551cb690432c1781d5ee4e3
+
+% 1 1 0 04ab673a4f4d477b0051fb3bc265efdb
+
+% 2 1 0 0383818c353e2f801e906a2284d01d81
+
+% 0 1 0 0a7c8792664542461bbc86df26db9a3c
+
+% 0 1 0 12cad200d87825f6065e59cfd0e4912c
+
+% 0 1 0 1ac8b9bbcc94e8451c4d4b0daf6d1018
+
+% 0 1 0 0e3a1e5970a0a94611274bcb9945e870
+
+% 0 1 0 00fc80522718cac01437241186610c1a
+
+% 2 1 0 190ba3fd8f27e8fa06a3a594cb9b385c
+
+% 0 1 0 0472326144a49ce71767be845f62f575
+
+% 1 1 0 11e767d9efb47d1a0f4b85a0051bf1dd
+
+@ 0 6 0 03658e3852f3a9de15d29464ac59a481
++ entry .concurrent   在各自的任务中强制求值 `Chain` 的每个单元，使阻塞的源不会阻塞消费者
++     `Chain[result]` 上的扩展：`stream.concurrent` 是一个元素相同的链，其中“是否还有下一个单元？”这一问题在一个任务中提出并等待，从而强制求值一个因实时源而阻塞的单元发生在它自己的线股上。
++     链的其余部分以同样的方式惰性地包装。
++     它需要一个 `Monitor` 和一个 `Probate.Shared`，如果执行强制求值的任务被取消，则抛出 `Async.Error`。
+
+@ 0 1 0 15fd54c603f364c612e27d647ec4060e
++ entry .concurrently   在有限数量的任务中运行编号的作业，并按作业顺序返回结果
+
+% 1 1 0 102ed8216b1589d7045719d9ea87d425
+
+@ 0 7 0 1c77acdace4b047407f15a8f52448d0d
++       `concurrently(count, parallelism)(job)` 在至多 `parallelism` 个任务中运行 `job(0)` 到 `job(count - 1)`，每个任务从一个共享计数器中取下一个索引，所有作业完成后，以按作业索引的 `Array[result]` 返回全部结果。
++       这是针对一批小作业的有界扇出：一个任务就是一个线程，其启动和汇合要花费几微秒，因此派生的代价只付出 `parallelism` 次而不是 `count` 次；只要元素数量超过核心数且每个元素的代价都很低，就应优先采用这种形式，而不是为每个元素调用一次 `async`。
+
+% 2 1 0 029ff94fe45712e31e3af49c4b6e8016
+
+% 3 1 0 1ec6e19bd873f00e164eb77a06a6ba6a
+
+% 4 1 0 158681ba0d0492ca1e228de09bf9a276
+
+% 5 1 0 17be6f0c429daa7412827526d0d1b02a
+
+% 6 1 0 0736f41a5ee35e77127b64db01ed7e17
+
+% 8 1 0 0a70ed584e9b739a0b450069aaba743a
+
+% 0 1 0 1f2cc576b0593fdb0fc3d155968c0e63
+
+% 1 1 0 05b92fca68a2dc6b0ed13dcbee491dbf
+
+@ 0 6 0 067728dbbf28728201443580f1cc86ee
++       在较早的作业被认领之前，任何作业都不会运行，因此负载会自行平衡：慢的作业占住它的任务，其他任务则继续处理其余的作业。
++       作业的异常会使其所在的任务失败，并在汇合处浮现，就像从 `await` 中浮现一样。
++       零个作业不启动任何任务；作业少于 `parallelism` 时，只启动与作业数量相同的任务。
++       作业的类型是 `Int ->{caps.any.only[Durable]} result`，因此它只能捕获任务主体可以捕获的东西。
++       它需要一个 `Monitor`、一个 `Probate.Shared`、一个 `Codepoint` 和一个 `ClassTag[result]`。
+
+@ 0 1 0 076d35bbf17e6936184984a9bb068ebd
++ entry .retry   在作用域中的 `Tenacity` 下反复求值一个代码块，直到它成功或放弃
+
+% 1 1 0 1c776061f9eb0ef31400a3bcb1ca9255
+
+@ 0 7 0 0e7d581cd971f95e16383f244fe04167
++       `retry(body)` 运行主体，并向其借出两个操作：`persevere()` 请求在 `Tenacity` 规定的延迟之后再尝试一次，`surrender()` 立即放弃。
++       返回一个值即为成功。
++       时间表，即每次尝试之前等待多久以及何时停止，是一个 `Tenacity` given，按名称从 `retryTenacities` 导入，或者用 `Tenacity.exponential` 或 `Tenacity.fixed` 以及 `limit` 构建；尝试次数用尽时抛出 `Tenacity.Error`，指明进行了多少次尝试。
++       它需要一个 `Monitor`，因为延迟是一次 `snooze`，因此被取消的任务会在下一次延迟时放弃。
+
+% 2 1 0 095d8d7f3c4a586b17a6212c4ca068d8
+
+% 3 1 0 18d08dde63b75635108d79ad63975117
+
+% 4 1 0 0ce815a51fa7d71b0495e9330adf7850
+
+% 5 1 0 03b6d7879a6c030d040ff83c4367e7a7
+
+% 6 1 0 1e5a8d95dfeb9e9018d42bdf28e0a58e
+
+% 0 1 0 1e584f3ed9c28922132a771abd922a74
+
+% 0 1 0 13e88d4e818157431c6c690cbc52f87e
+
+% 0 1 0 140918b45358b0fb1cc3a678e83fb535
+
+% 0 1 0 0588b1af9b78c097198d5f2636868591
+
+% 0 1 0 1a5ba632e79762a411a82b599af88a16
+
+% 2 1 0 08a66a3ade86a5510be37673ba736baa
+
+% 0 1 0 10e3362d9e0bc4d918faad165a6d7e55
+
+% 0 1 0 00f50d1897b6665d18ee2308bbb7950f
+
+% 0 1 0 146f70b4eb10b4d6136d8c433bd1d388
+
+% 1 1 0 1725c3ec3b5d3c6501d03512a1a580e0
+
+@ 0 2 0 168afedd6b76d53a0d539dc38223bf31
++       因此，主体负责区分值得重试的失败和永远不会成功的失败，其余的由时间表决定。
+
+% 1 1 0 1215ffb905649b9904bdd1347d2e28e7
+
+% 1 1 0 033bc02c0529034b11a5b0af24dea8c8
+
+@ 0 1 0 0a7eda08355af69300c08e281cb173cd
++ entry .contain   在一个区域内捕获从发后即忘工作者中逃逸的异常：`contain { … }.protect { … }`
+
+% 1 1 0 0c5b2531ea2045f21e462d7e59a5b281
+
+@ 0 8 0 0da279bfe638b83e13525d1ad8c81fb1
++       `contain(handler)` 构建一个 `Containment`，这是一个 `Probate`，其 `protect(body)` 在主体的范围内安装它：在其中派生的 `daemon` 或被遗弃的任务会把从中逃逸的错误交给处理函数，即一个从 `Error` 到 `Remedy` 的偏函数。
++       `Accept` 消耗该错误，`Reject` 把它交给外围的遗嘱认证，而 `Escalate(other)` 则交出一个替代品；处理函数不匹配的错误也会向外传递，因此 containment 随嵌套而组合，一直到根，在那里未被接受的错误会到达线程的未捕获异常处理函数。
++       子任务命运的方针沿用外围遗嘱认证的方针，不作改变。
+
+% 2 1 0 187ebb673c1fa66617ffda1364b01fb7
+
+% 3 1 0 17bf1640d757e852113e093964a10bf5
+
+% 4 1 0 02a8880327f734560f93fbb352498250
+
+% 5 1 0 066b0706a92af9371e4b187a662f34dc
+
+% 6 1 0 1226639b79f0d0550507dba364b81273
+
+% 8 1 0 192a1d1729d8abb4160b26d2f7254189
+
+% 10 1 0 13706cb99b44c08b15b7c55259643b34
+
+% 0 1 0 12bd77e5ae40d35f03f814d50576717e
+
+% 0 1 0 00b061d527e1723d0ed1d80ad2e6fa3d
+
+% 0 1 0 10668dddf3dbacb90364827279b84605
+
+% 0 1 0 1ae5e6a73febdd4b0be9a1e832d582dc
+
+% 1 1 0 0bf56b97a94816e903e82a1f161213ef
+
+@ 0 4 0 19007cf81e168a091642e956ac37a7ca
++       这不同于 `contingency` 中有类型的 `trap`/`handle`，它们处理调用栈上已声明的、*发出的*错误：守护进程无法把错误交付给它们，而 `contain` 是对守护进程所抛出内容的兜底。
++       它需要作用域中有一个 `Probate.Shared`，后者成为链的外层环节。
+
+% 1 1 0 06288e7b91a56d41099a8ec631b2fcd5
+
+% 2 1 0 07c33cb78045374915f906091bd271c4
+
+% 1 1 0 0bba3568ab56d829018186fce06b63f7
+
+@ 0 6 0 1c95f864e1fd235808f07e2ef419917a
++ entry .intercept   为目标上的某个事件注册一个动作：`Vm.intercept[Shutdown](…)`
++     任何带有 `event is Interceptable onto target` given 的值上的扩展：每当事件发生时，动作就会运行，事件作为上下文值提供，直到返回的 `Hook` 被取消。
++     parasite 提供的目标和事件是 `Vm.intercept[Shutdown]`、`Vm.intercept[Fault]`、`Vm.intercept[GarbageCollection]`（在 `parasite.jvm` 中），以及适用于任何引用的 `value.intercept[Destruction]`。
+
+% 2 1 0 1fe891952dbd7d6413e8ac9c231a8018
+
+% 3 1 0 00da62059b52a9e50653d14c2ad9d759
+
+% 0 1 0 0998ee29bc56218c0cc759bd70975346
+
+% 0 1 0 1c6ab6f9433cfd7a0c28bac0ac8d18cc
+
+% 0 1 0 154be730e6151683125166cefcb51704
+
+% 1 1 0 005caee4ee7bd97015083ae89f75fac4
+
+@ 0 7 0 1712224bfa1c396800c89925f3f45acd
++ entry .emits   `Task[result] emits error`：主体可能抛出 `error` 的任务
++     一个中缀类型别名，把“可以通过旁路通道产生这些错误”具体化。
++     对于 `Task`，`Task[result] emits error` 是细化 `Task[result] { type Error <: error }`，即 `async` 返回的类型；该上界使错误保持协变，因此仅以 `Async.Error` 失败的任务可以用在期望 `emits CueError` 的地方。
++     对于其他任何东西，它是义务 `Emit[error] ?=> left`，是 `raises` 较弱的同类。
++     它不导出到 `soundness` 总括包：应写作 `parasite.emits`，或者让 `async` 的结果类型被推断出来。
+
+@ 0 1 0 19ad2cb68ce5aec50f8922dccfd70670
++ entry .Monitor   监管树中的一个节点：每一次挂起都需要的能力
+
+% 1 1 0 0282d8e552c748c80f234e77a4847014
+
+@ 0 5 0 1cff0d542a9308ff1a6fec79eab16d5f
++       `Monitor` 是一个拥有任务的作用域。
++       `supervise` 创建 `Root`，而每个任务都是一个 `Worker`，它本身也是一个监视器，因此监视器构成一棵树，映照出派生它们的代码的嵌套结构。
++       等待、睡眠、让出和派生都以上下文参数的形式接收一个 `Monitor^`，因此可能阻塞的方法会在其签名中说明这一点，正如可能失败的方法会声明 `raises`；`monitor` 召唤最内层的那一个。
+
+@ 0 5 0 189e7855c97d4ec21de702c71312c8df
++       监视器是一种 `Durable`（共享的）能力：在其下派生的每个任务都捕获它，每次汇合都会再次传递它，因此对同一个监视器的两次使用从不被分离，但任务句柄和监视器本身都不能离开 `supervise` 代码块。
++       任务主体只能捕获持久的能力，这就是来自外围作用域的 `Tactic` 不能在其中使用的原因。
+
+% 2 1 0 11eca40ec06d7c110ed0f073b7df48e6
+
+% 3 1 0 0612736d07b7aa5908ed9c5989fd9f26
+
+% 4 1 0 1898b3be2a5df9e4143af0b7dd6846ce
+
+% 5 1 0 0815f2421ed1c69e08a12b9dc9d93bd8
+
+% 6 1 0 15bc57038b9ca1ea0558185b309efdab
+
+% 1 1 0 058de2d2e5a9c2f50a146c80c92f432e
+
+% 2 1 0 0f4673baff633d0a1840696322b2c8b3
+
+% 0 1 0 1ed9b38f710fc1c2125f7d74b7f526cb
+
+% 0 1 0 19a16e1ce0a517340c40a464c5e85165
+
+% 0 1 0 0cc654e5376cd9e80f969cead06eb899
+
+% 1 1 0 16aa1cdcea52fcb31bcdf9a5204be4b8
+
+@ 0 3 0 0f06e09968e5c4a10926168b1d4c16b6
++       它的 `#promise` 在作用域完成时被了结，`#attend` 等待这一点，`#cancel` 取消它。
++       它是 `Findable` 和 `Resultant` 的：它的 `Result` 类型是作用域产生的东西（对于根是 `Unit`）。
+
+% 1 1 0 1a89c62baf13f85f152176be85be89b6
+
+% 0 1 0 084d438609b19e060b3eb5d55567df7c
+
+% 1 1 0 027946063c507eef07b2f741c2a9e08c
+
+% 0 1 0 05b373f3b2d0d98206da8a301830f347
+
+@ 0 27 0 0cbbac169f9647a0176959dfa20b341a
++   entry #promise   作用域完成时以其结果了结的 promise
++   entry #name   作用域的名称（如果有）：`task` 的名称，或者对于根而言是监管器的名称
++   entry #chain   派生本作用域及其每个祖先时所在的代码点，最内层的在前
++       对于 `Root` 为空；工作者的链是它自己的 `Codepoint`，后接其父任务的链。
++   entry #stack   作用域经由其各祖先的完整路径，以文本表示
++       根渲染为 `virtual:`（其监管器的名称）；工作者渲染为 `virtual://parent-name@file:line//child-name@file:line`，每个任务的名称（未命名时只有其代码点）以 `//` 连接。
++       计算它要遍历整条父链，默认的监管器除非需要线程名称，否则从不对它求值。
++   entry #daemon   本作用域是否为发后即忘：对于 `Daemon` 和 `Root` 为 `true`
++       遗嘱认证的子任务命运方针适用于此值为 `false` 的子任务；守护进程子任务在其父任务完成时总是被取消。
++   entry #attend   等待作用域完成，没有结果也没有错误
++       在作用域中的 `Monitor` 下，把调用方线股停驻在 `#promise` 上，作用域完成、失败或被取消时返回。
++       如果调用方任务在此期间被取消，它会抛出 `InterruptedException`。
++   entry #ready   作用域是否已完成、失败或被取消
++   entry #cancel   取消作用域及其下的一切
++       对于 `Worker`，这会在其线股暂停之处中断它，将其标记为已取消，使下一次 `relent()` 停止它，并等待线股结束；对于 `Root`，它什么都不做。
++   entry #supervisor   本作用域的任务所运行的线股所属的 `Supervisor`
++       继承自根：`supervise` 代码块的每个任务都在其 `Threading` 所选择的监管器上运行。
++       类型为 `Supervisor^{this}`，因为监管器是监视器所保留的一种能力。
++   entry #snooze   让调用方线股暂停一段时长，时长可以是任何 `Abstractable across Durations` 类型
++       包级 `snooze` 背后的方法；`Worker` 覆盖了它，若任务被取消，则在暂停之前或之后立即抛出 `InterruptedException`。
+
+@ 0 1 0 16ad287389b74b4017a2f5de43e627ab
++ entry .Worker   作为监视器的任务：派生的主体在其下运行的那个树节点
+
+% 1 1 0 0a90f99ff0cf87400d84d8cbccaeaaea
+
+@ 0 6 0 109b0e62f72486740a5444439e2d455c
++       每个 `Task` 和 `Daemon` 都是一个 `Worker`：一个抽象类，在构造时把自己注册为其父监视器的子节点，在首次需要时在监管器上派生一条线股，在其上运行 `#evaluate`，把结果记录为 `Fulfillment` 并了结 `#promise`；了结严格发生在其状态终结且遗嘱认证的 `cleanup` 运行之后，因此一次返回了的 `attend` 能保证汇合所能保证的一切。
++       在任务主体中，`monitor` 就是该工作者。
+
+@ 0 7 0 0463b87a145e126a176769d1e0223bea
++       失败路径经过精心设计。
++       主体的失败会在尝试其他任何事情之前被保存下来；`trap` 抛出异常的遗嘱认证不会让工作者留在其父节点的注册表中，也不会让其 promise 未被了结；任何 trap 都不接受的错误会在了结之后被重新抛出，从而到达线程的未捕获异常处理函数，而不是消失。
++       该路径需要的每个类都在第一个工作者诞生时加载，这样在长期运行的进程中晚些时候失败的类加载（守护进程底下的 jar 被替换、线股在读取中途被中断）就无法毁掉出错的证据。
+
+@ 0 3 0 0b2d6b8694abc6da1acfe1f0f90e43f5
++       用户通过 `async`、`task` 和 `daemon` 派生工作者，而不是自己构造；下面的成员是主体可以对自己的工作者做的事，以及父任务可以观察到的子任务的情况。
+
+% 1 1 0 00427648b0819816095113bcf83fe71d
+
+% 1 1 0 0c453391f0d5032206b23d3a54323a20
+
+% 1 1 0 1aea9ab53d8798d9149389648a61f4cd
+
+% 0 1 0 15cbf2798f1820191eb1ff5bc3da2633
+
+@ 0 45 0 0878141ff6be540019b5bec1bfff5b56
++   entry #promise   工作者结束时以主体结果了结的 promise
++   entry #chain   本工作者的派生位置，后接其祖先的代码点
++   entry #evaluate   主体，在工作者的线股上以工作者为参数运行一次
++   entry #supervisor   父任务的监管器，类型为 `Supervisor^{this}`
++   entry #apply   结果，若工作者尚未完成则为 `Unset`
++       `worker()` 不等待地读取 `#promise`。
++   entry #relentlessness   自工作者启动以来经过的毫秒数，除以 `relent()` 调用的次数
++       一个粗略的仪表，衡量主体主动提供取消点的频率：长期运行而 relentlessness 很高的主体，是无法被及时取消的主体。
++   entry #delegate   对每个活跃的非守护进程子任务施行一个方针，并取消守护进程子任务
++       `worker.delegate(child => …)` 是 `Probate#cleanup` 访问已完成父任务遗留下来仍在运行的子任务的方式：每个守护进程子任务都被取消，而 lambda 决定其他每个子任务的命运（`probates.awaitProbate` 等待它，`probates.cancelProbate` 取消它）。
++   entry #stack   工作者经由其各父任务的路径，形如 `supervisor://name@site//name@site`
++   entry #relent   一个取消点：立即返回，若工作者已被取消则抛出 `InterruptedException`
++       计入 `#relentlessness`；如果在工作者完成或失败之后调用，则引发 panic，因为那时不应还有主体在运行。
++   entry #snooze   暂停一段时长，若工作者已被取消，则在暂停之前或之后抛出 `InterruptedException`
++   entry #map   一个对本工作者的结果应用函数的任务
++       `worker.map(f)` 就是 `async(f(worker.join()))`：一个新任务，是作用域中监视器的子任务，它汇合本工作者并变换其结果。
++       该函数只能捕获任务主体可以捕获的东西。
++       需要一个 `Monitor` 和一个 `Probate.Shared`。
++   entry #bind   一个在本工作者的结果上运行产生任务的函数并汇合其结果的任务
++       `worker.bind(f)` 就是 `async(f(worker.join()).join())`，即任务上的单子绑定；`Task.monad` 是由它构建的 `mercator.Monad[Task]`。
++   entry #cancel   取消工作者：中断其线股，将其标记为已取消，并等待线股结束
++       已经完成或失败的工作者不受影响，而取消一个已取消的工作者只是等待它。
++       取消的效果只触发一次，并且只在已取消状态可见之后触发，因此被取消唤醒的汇合者永远不会看到过时的状态。
++       在主体开始之前就被取消的工作者永远不会运行主体。
++   entry #result   若工作者已完成则返回结果，不等待
++       如果主体尚未结束，抛出 `Async.Error(Incomplete)`；如果它被取消，抛出 `Async.Error(Cancelled)`；如果它失败，则重新抛出原始异常。
++       需要一个 `Tactic[Async.Error]`。
++   entry #join   原始的、无类型的汇合：等待工作者并返回其结果，原样重新抛出失败
++       `join()` 无限期等待；`join(duration)` 若期限先到，则抛出 `Async.Error(Timeout)`。
++       失败主体的异常按原样重新抛出，因此静态错误只是 `Async.Error`；有类型的汇合是 `Task#await`，它经过 `#deliver`。
++       需要一个 `Monitor` 和一个 `Tactic[Async.Error]`。
++   entry #deliver   有类型的汇合：结果，或者通过调用者的战术交付主体抛出的错误
++       `deliver[error]()` 和 `deliver[error](duration)` 等待工作者，然后返回其结果；或者以主体抛出的错误（重建为 `error`，对于通过主体的 `AsyncTactic` 抛出的任何错误而言这是可靠的）通过作用域中的 `Tactic[error | Async.Error]` 中止；或者抛出 `Async.Error(Cancelled)` 或 `Async.Error(Timeout)`；或者重新抛出一个真正未受检的 throwable。
++       `Task#await` 就是以任务自己的 `Error` 类型调用它。
+
+@ 0 1 0 1162ad5397a0a09f11b579ad1789a454
++ entry .Root   监管树的根：`supervise` 引入的监视器
+
+% 1 1 0 05351dec8801ae1202d0d1fd4f66b87f
+
+@ 0 5 0 0b7b8f6496d3f9d211ea85daf92d9f3a
++       `Root(supervisor)` 是一个 `Monitor`，其 `Result` 为 `Unit`，没有父节点，`chain` 为空，`stack` 是监管器的名称，`cancel()` 什么都不做。
++       它的生命周期就是 `supervise` 代码块，因此它不是全局能力；`unsupervised.orphanMonitor` 是唯一一个生命周期与进程相同的根，用于在任何作用域之外阻塞。
++       它不导出到 `soundness` 总括包：要直接构造一个，应写作 `parasite.Root`。
+
+% 1 1 0 154e5bdf88babf0c04fc34d8af2beb67
+
+% 1 1 0 05415526ffc61ff31355152eeda1113a
+
+@ 0 1 0 0793af0b85bfef16011d544b96751c45
++   entry #shutdown   取消根的每个活跃子任务
+
+@ 0 1 0 0d5d0a954dc822470ba831611628b194
++ entry .Supervisor   执行策略：线股如何被派生、停驻、睡眠和中断
+
+% 1 1 0 027908cfd07f33b3141b6ed9176799ce
+
+@ 0 6 0 1be44091b9d971361e690d642817d379
++       线股可以*挂起*的每一种方式都经由其监管器，因此监管器就是全部的平台接缝：针对不同执行模型的后端（例如基于 WASI 可等待集合的事件循环）就是一个由 `Threading` given 选出的 `Supervisor` 实现，parasite 中的其他任何部分都不接触平台。
++       提供的实现有 `PlatformSupervisor`、`VirtualSupervisor`、`AdaptiveSupervisor`、`PooledSupervisor` 和 `JavascriptSupervisor`，每一个都是某个 `threads` given 分发的值。
+
+@ 0 5 0 0a67e29a605d1eb6001c7cac3111ce6d
++       监管器是一种 `Durable` 能力：派生和停驻都是效应，而池持有活跃的线程。
++       全局单例是静态能力，因此访问其中之一的公共类或对象要声明 `uses parasite.threads`（或按名称声明该监管器）。
++       自定义监管器必须允许 `park` 的虚假唤醒：每个调用者都会在循环中重新检查其条件，正如 `LockSupport.park` 所要求的。
+
+% 1 1 0 1f99ae6ffda49ce718a45d4a96e87ca4
+
+% 0 1 0 0580976b364331dd0202ebcac8a2f577
+
+% 1 1 0 04e601f336e3a0c319ba9ea917465e6d
+
+@ 0 11 0 143679bbe41df4810d20eec96abdba43
++   entry #name   监管器的名称，即其下每个 `Monitor#stack` 的第一段：`virtual`、`platform`，等等
++   entry #fork   在新线股上启动一个代码块，并附带一个在需要时计算线股名称的 thunk
++       名称是一个 thunk，因为计算工作者的 `stack` 要遍历整条父链，而 `VirtualSupervisor` 从不对它求值；`PlatformSupervisor` 把它设为线程的名称。
++   entry #strand   调用方线股的身份，作为一个等待者，之后的 `Strand#unpark` 可以释放它
++   entry #park   挂起调用方线股，直到它被取消停驻，或者直到某个期限
++       `park(blocker)` 等待 `unpark`；`park(blocker, deadline)` 还会在期限（以 `System.nanoTime` 为基准）过去时返回。
++       两者都可能虚假地返回。
++   entry #sleep   让调用方线股挂起若干纳秒，没有唤醒通道
++   entry #interrupted   检查并清除调用方线股的取消中断状态
+
+@ 0 8 0 14fd26704ec6ad2c11235ba8a2f37297
++ entry .ThreadSupervisor   每个 JVM 和 Native 监管器共用的、以线程为基础的挂起原语
++     一个 `Supervisor`，其 `strand()` 是包装为 `Strand.Threaded` 的当前 `Thread`，其 `park` 是 `LockSupport.park` 和 `parkNanos`，其 `interrupted()` 是 `Thread.interrupted()`，其 `sleep` 反复停驻直到期限（因为 `parkNanos` 可能提前返回，可能是虚假唤醒，也可能是由于先前的 `unpark` 留下的许可），只有在线程被中断时才会提前停止。
++     只有 `name` 和 `fork` 留给子类实现。
++     它不导出到 `soundness` 总括包：自定义的基于线程的监管器应扩展 `parasite.ThreadSupervisor`。
+
+@ 0 5 0 1b9b422753328b9d165ad7a572f336a8
++ entry .PlatformSupervisor   在新的平台线程上运行每个任务
++     `PlatformSupervisor.fork` 为每个任务启动一个 `java.lang.Thread`，以工作者的栈命名。
++     名为 `platform`；由 `threads.platformThreads` 选择，也是 `supervisors.globalSupervisor` 和 `unsupervised.orphanMonitor` 背后的监管器。
++     在 Scala Native 上，`VirtualSupervisor` 和 `AdaptiveSupervisor` 也是通过它派生线程的。
+
+@ 0 7 0 0574974327f8500d17067be1f7adf48d
++ entry .VirtualSupervisor   在虚拟线程（JVM）或平台线程（Native）上运行每个任务
++     在 JVM 上，`fork` 就是 `Thread.ofVirtual().start(…)`：一个 Loom 虚拟线程，代价低到可以大量派生，它需要 Java 21，在较旧的 JVM 上会在运行时以 `UnsupportedOperationException` 失败。
++     在没有 Loom 的 Scala Native 上，该对象以相同的名称存在，并派生平台线程，因此为 `threads.virtualThreads` 编写的代码在源代码层面是兼容的：请求的是廉价的并发，于是以可用的最廉价方式予以满足。
++     名为 `virtual`。
+
+@ 0 7 0 17a246eca9c7f99f159c329efe65c0b9
++ entry .AdaptiveSupervisor   JVM 支持时使用虚拟线程，否则使用平台线程
++     在 JVM 上，它用一个空操作的虚拟线程探测一次，此后若探测成功，则通过 `VirtualSupervisor` 派生，若探测抛出 `UnsupportedOperationException`，则通过 `PlatformSupervisor` 派生；只有这种确定性的结果会被缓存，因此暂时性的失败无法把进程固定在平台线程上。
++     无法决定自己运行于哪个 JVM 的应用程序应通过 `threads.adaptiveThreads` 使用它。
++     在 Scala Native 上，它派生平台线程，与 Loom 之前的 JVM 完全一样。
++     名为 `adaptive`。
+
+@ 0 7 0 08066ece0f5537501b72131bbec78297
++ entry .PooledSupervisor   在可复用的载体线程池上运行任务
++     `PoolingSupervisor` 的实例，由 `threads.pooledThreads` 选择。
++     在 JVM 上，它的载体是虚拟线程，因此阻塞其载体的任务的代价不过是一个停驻的虚拟线程；在 Scala Native 上，载体是平台线程，在那里跨任务复用线程是任务代价能够低于一次线程启动的唯一途径，因此节省得更多，而阻塞的任务会占住一个平台线程直到它继续运行。
++     名为 `pooled`。
+
+@ 0 1 0 0e5ec9b7d78a317e1d2a7329ee2f69a5
++ entry .PoolingSupervisor   把任务交给空闲载体线程，而不是为每个任务启动一个线程的监管器
+
+% 1 1 0 0c2724a959d3dcc70c2f8b195e829e57
+
+@ 0 5 0 1533ef69dbc355ec1a568dfb23bbe99a
++       有空闲载体在等待时，`fork` 把任务交给它，只有在没有空闲载体时才启动一个新的载体；完成任务的载体会把自己停驻在空闲列表上，等待下一个任务。
++       交接的代价是几百纳秒，而线程的启动和汇合要花费几微秒，因此细粒度的扇出（每个元素一个任务，循环中的派生加汇合）不再被线程创建所主导。
+
+@ 0 5 0 04989591a74ef61717f250c5079ed940
++       该池永远不会饥饿：通过 `park` 或其他任何方式（JDK I/O、`Thread.sleep`、`synchronized` 代码块）阻塞的任务会保留其载体，下一次 `fork` 会启动另一个载体，因此最坏情况恰好是每个任务一个线程，没有固定大小，没有任务需要在其中等待的队列，也没有补偿逻辑。
++       超过 `idleLimit`（默认为 256）的空闲载体会退役，这限制了突发之后池的内存占用。
+
+@ 0 8 0 1f5e2d6330a2195808ccdd80b8ef0126
++       取消是一次握手：每个任务条目运行一个小型状态机，因此针对某个任务的中断会在任务已挂载时投递，或推迟到它挂载时投递，从不泄漏给在同一载体上接着运行的任务。
++       代价在于任务没有自己的线程（线程局部变量在一个载体所运行的各任务之间持续存在，线程转储显示的是载体，而 `Monitor#stack` 显示的是任务），以及在一个任务上设置的线程上下文类加载器可能被下一个任务看到，因此加载类或资源的代码应从一个已知的类加载器开始，而不是从线程的类加载器开始。
++       任务的 `Thread.currentThread` 在其整个运行期间保持稳定。
+
+@ 0 2 0 033b424e4540f95808441fe15d75fe3d
++       子类提供 `spawn`（如何启动载体线程），并可以覆盖 `idleLimit`；`PooledSupervisor` 是每个平台上的实例。
+
+% 0 1 0 1ee6ec36f11c35ae067f026d9cc8c97e
+
+% 1 1 0 1cf10a55eb90812c14cb4599c195f904
+
+@ 0 7 0 060a13f47748da4e0fe6bd354759b0f1
++   entry #active   当前正在运行任务的载体的数量
++       静止的池中没有这样的载体；不回到这一状态的池中有一个从未结束的任务。
++   entry #idling   停驻着等待任务的载体的数量
++   entry #fork   把代码块交给一个空闲载体，或者启动一个新的载体
++   entry #strand   若调用者是载体，则为调用方载体的线股，否则为当前线程的线股
++   entry #park   短暂自旋，然后停驻调用方载体，并遵从先前的 unpark 留下的许可
+
+@ 0 9 0 07a8b620c233204b1855f3d7d7b43a46
++ entry .JavascriptSupervisor   面向 JavaScript 事件循环的单线程及早模型
++     每个派生的任务都在 `fork` 时于调用方线股上运行到完成，因此这样的任务所了结的每个 promise 在任何人等待它之前就已完成，永远不需要停驻。
++     这是事件循环的模型，事件循环没有阻塞并恢复的原语，不过它在任何平台上的运行方式都完全相同。
++     它的上限是单线程的结构化并发：没有并行，也没有交错，因此等待一个尚无已完成任务了结的 promise（一个永远不会结束的等待）会引发 panic 而不是死锁，`sleep` 和 `snooze` 立即完成，`interrupted()` 总是 `false`。
++     名为 `javascript`；由 `threads.javascriptThreads` 选择。
+
+% 2 1 0 1c97b132c1b7230214be0e75754632b0
+
+% 3 1 0 01489d544de4870f13a53b3222ffecf8
+
+% 0 1 0 1fc7454c929f44400c8217de0d536154
+
+% 1 1 0 041f1e87319373441ce8421e29d1d9a1
+
+% 2 1 0 02e24bb418c3cfb71a057e322b2fdb44
+
+% 4 1 0 0268aa48cf356ff8057da97ddfed2494
+
+% 0 1 0 11d69d0e3b528799007e353aacae31da
+
+% 0 1 0 063e578bd55f023600864a5dedb6a5c4
+
+% 0 1 0 1aa46a67eca0261913e3bae5482ba62d
+
+% 1 1 0 0771a650f48928860c24dacb974e9f88
+
+@ 0 1 0 1df7e649760ba2ee13bb9800ccbc6a3d
++ entry .Threading   监管器的选择，作为一个能力 given：`threads.virtualThreads`
+
+% 1 1 0 14c39ac024023020193bedb7caa03350
+
+@ 0 4 0 180248977a50cba91177a5c513553a36
++       `Threading` 分发 `supervise` 代码块建立其树所依托的 `Supervisor`，通过按名称导入某个 `threads` given 来选择。
++       它是一种 `Durable` 能力，因为它分发监管器；它也是 `Findable` 的，因此以 `summon[Threading]` 召唤。
++   entry #supervisor   作为作用域之根所依托的监管器
+
+@ 0 1 0 00d76c90785c9b4903725f2c0614f9b0
++ entry .Strand   监管器所派生的执行单元的句柄：中断、汇合、取消停驻
+
+% 1 1 0 012924990fb597b90947208bccfbdf82
+
+@ 0 7 0 1b429c7a9a111eb715436343591d2069
++       监管（`Worker#cancel`）和唤醒（`Promise`）所需要的最小接口。
++       在 JVM 和 Scala Native 上，线股包装一个 `Thread`（`.Threaded`）；及早监管器使用唯一的 `.Eager`；而池化监管器的线股是它的载体和任务条目。
++       `unpark` 位于这里而不是 `Supervisor` 上，因为 `Promise` 的唤醒一方运行时作用域中没有 `Monitor`，并且可能在外来的线股上运行：线股必须能够自行唤醒。
++       `Promise` 把它的等待者保存在 `Set[Strand]` 中，因此同一线程上的两个句柄是相等的。
+
+% 1 1 0 0f610201fe442e4614d29f0111c08932
+
+@ 0 4 0 12cc5438bbc8097505fc52216b6c8f09
++   entry .Eager   在 `JavascriptSupervisor` 下于派生时运行到完成的任务的线股
++       中断、汇合和取消停驻它都什么也不做：按其构造，没有正在运行的东西可以取消、等待或唤醒。
++   entry .Threaded   基于 `java.lang.Thread` 的线股
+
+% 1 1 0 10f97e7cffa3533218cf8b0c9aaa2326
+
+@ 0 7 0 0bf462228d57824c00588c9df8e7376b
++         `interrupt()` 就是 `thread.interrupt()`，`join()` 就是 `thread.join()`，`unpark()` 就是 `LockSupport.unpark(thread)`。
++         两个 `Threaded` 线股在其线程相等时相等，无论它们是如何获得的。
++     entry #thread   底层的线程
++   entry #interrupt   请求取消该线股
++   entry #join   阻塞直到线股终止
++   entry #unpark   把线股从 `Supervisor#park` 中释放
+
+@ 0 1 0 170f6db8ee0fe60a08499f994262916d
++ entry .Task   已派生计算的句柄：可等待其结果，也可将其取消
+
+% 1 1 0 1b9e31d576161c9c05fa2da0fbbcab5b
+
+@ 0 7 0 101b2685e31eaf6f0885a5de66f4a538
++       `Task[result]` 是 `async` 和 `task` 的返回值：作用域中监视器之下的一个 `Worker`，在监管器的一个线股上运行其主体。
++       它的 `Error` 类型成员承载主体可能抛出的错误的并集，由 `emits` 别名细化，因此 `async(abort(CueError(1)))` 是一个 `Task[Nothing] emits (CueError | Async.Error)`，而 `await` 通过调用者的 `Tactic[Error | Async.Error]` 交付抛出的错误，该错误仍保有类型。
++       `Async.Error` 总是可能出现的——取消、超时、在 `probates.failProbate` 下未完成的子任务——因此它在 `await` 处被加上。
+
+% 2 1 0 0a4e322a42173ae109300dfad1c95459
+
+% 3 1 0 1b05bd0ab0b86a0408b5aec30fb771b3
+
+% 4 1 0 1007167095e81f091cb9c489d354f8b5
+
+% 5 1 0 14658fd305a274890a7fa1cdd44337eb
+
+% 6 1 0 1e1ee148945c2acd1e7b12629cf850fb
+
+% 8 1 0 09586b28fbe26bd71a02b314f56fec29
+
+% 0 1 0 1035aa5865114ac403852cb116419df7
+
+% 0 1 0 147e8107a0d90f320893921d1674a637
+
+% 0 1 0 06d57b5f2e2d3b280306fd000c23324b
+
+% 0 1 0 1b46eb161e902ee61e108c3f55696c3c
+
+% 0 1 0 11b5ac1a66c4e81505e8a8fd7a680c80
+
+% 1 1 0 186fb8f289bd60cd1e31a6f88c64737f
+
+@ 0 5 0 1d65bce61913f55e180fc6a08664b4b8
++       任务可以组合：`map` 和 `bind` 从一个任务派生出另一个，`List[Task[result]]` 的 `sequence` 是一个按顺序给出其全部结果的任务，集合的 `race()` 给出第一个结果并取消其余任务，而 `Task.monad` 使 `Task` 成为一个 `mercator.Monad`。
++       任务句柄是一种捕获其监视器的共享能力，因此它不能离开派生它的那个 `supervise` 代码块。
+
+% 1 1 0 0f537d91372791730fc172b7a6021a9f
+
+% 1 1 0 0feb341967a67ca70cf0be55a760839a
+
+% 1 1 0 152301d210d8d051165518401eead9ca
+
+% 0 1 0 06118b4c5f79d25406ceb8b1edef69cf
+
+@ 0 6 0 146a792a56242338012a57c68585e68d
++   entry .apply   根据主体和可选名称构造任务：`async` 和 `task` 调用的就是它
++       `Task[result, error](body, name)` 在作用域中的 `Monitor`、`Codepoint` 和 `Probate.Shared` 之下构建 worker，其中 `Error = error`。
++       主体是 `Worker` 的函数，只能捕获 `Durable` 能力。
++       应使用的形式是 `async` 和 `task`，因为它们还会提供主体的 tactic。
++   entry .Owned   被 `transfer` 的资源到达其任务主体所经由的载体
+
+% 1 1 0 1a4f5bc9135ba5660d6180345519173f
+
+@ 0 17 0 05e01440a0c154890c0f6d06e6a4eb95
++         一个纯值，包装了派生者所消耗的独占资源，作为主体的第一个上下文参数接收：`producer.transfer: (producer, _, _) ?=> producer().put(…)`。
++         它只能由 `transfer` 构造。
++     entry #apply   该资源，每次访问时都是一个新的独占引用
++   entry .monad   `mercator.Monad[Task]`，使任务可以与通用的单子组合子组合
++       解析时需要作用域中有 `Monitor` 和 `Probate.Shared`：`point` 是 `async`，`bind` 是 `Task#bind`，`apply`（map）是 `Task#map`。
++       它产生的任务在同一个监视器作用域内绑定和等待。
++   entry .sleep   在一段时长之后或某个瞬时完成的任务：单子形式的 `snooze`
++       `Task.sleep(0.5*Second)` 即 `async(snooze(time))`，用于与 `bind`/`map` 组合而不挂起调用方线股；接受任何 `Schedulable`。
++       需要 `Monitor`、`Probate.Shared` 和 `Codepoint`。
++   entry .sequence   一个给出 `List[Task[result]]` 中每个结果的任务，按列表顺序排列
++       `List[Task[result]]` 上的扩展方法：`tasks.sequence` 是一个依次汇合每个任务并产生顺序相同的 `List[result]` 的任务，因此结果的顺序不说明完成的顺序；这些任务本来就在并行运行。
++       被取消或失败的成员会在该序列的 `await` 处抛出错误。
++       需要 `Monitor` 和 `Probate.Shared`。
+
+% 2 1 0 04e5c73ed365f17900d61f4dee325d6f
+
+% 3 1 0 0bd28caa90e446630675a351cd8990b3
+
+% 4 1 0 10d4e94ac6e6114916907f0fa247ee60
+
+% 5 1 0 1b6be028c54ca1e503f86dce45c8f197
+
+% 6 1 0 0139d2f5a5f542d800ef2012cea1367e
+
+% 8 1 0 0efe9efc54d244e00ce80435ca975177
+
+% 0 1 0 167fee35c1996bfd1c1ab2c9728a8c1b
+
+% 1 1 0 14cd0d0a2c9d26b410a0942ebb46ebd9
+
+@ 0 6 0 09ea812e4248e41512c318c9e27789e9
++   entry .race   一组任务中的第一个结果，并取消其他任务
++       任何 `Traversable by Task[result]` 集合——`List`、`Sequence`——以及 `Iterable[Task[result]]` 上的扩展方法：`tasks.race()` 等待一个 promise，每个任务都向它提供自己的结果，返回第一个提供的结果，并在 `finally` 中取消所有任务，因为其他结果已不再需要。
++       已经完成的任务会立即胜出。
++       需要 `Monitor`、`Probate.Shared` 和 `Tactic[Async.Error]`。
+
+% 2 1 0 19ad3dfb06afa4eb07d5317f453a8096
+
+% 3 1 0 076364713802f97311dc347c23ac26fe
+
+% 4 1 0 1937137c798ce2141fb307b04ced211a
+
+% 5 1 0 1bc22b54dd3c83290cbd6aa63ac76c67
+
+% 6 1 0 0e844db8d7484c111b52f44fc57aeec1
+
+% 8 1 0 1f578c5a187503aa1d733c1464b555b5
+
+% 0 1 0 1201097df4d35df70cdf731899b8b26a
+
+% 1 1 0 09d1cd4a0d10a630066616fb3b4a2c51
+
+@ 0 15 0 060f119602f96bae15e247c8cdc5fa08
++   entry #Error   主体可能抛出的错误，在 `await` 处交付；最宽为 `Hazard`
++   entry #ready   任务是否已完成、失败或被取消
++   entry #attend   等待任务了结，不返回结果，也不抛出错误
++   entry #cancel   取消任务：在它暂停之处中断它，在它让出之处停止它
++       已经结束的任务不受影响。
++       该调用会等待任务的线股结束，因此返回时主体已没有任何部分在运行；随后其 `await` 抛出 `Async.Error(Cancelled)`。
++   entry #await   等待结果，通过调用者的 tactic 交付抛出的错误
++       `task.await()` 无限期等待；`task.await(duration)` 若在期限到达时任务尚未了结，则抛出 `Async.Error(Timeout)`，并在此时放弃该任务而不取消它。
++       两者都需要 `Monitor` 和 `Tactic[Error | Async.Error]`：主体抛出的错误以主体的 `Error` 类型到达，取消以 `Async.Error(Cancelled)` 到达，在 `probates.failProbate` 下遗嘱认证发现未完成的子任务以 `Async.Error(Incomplete)` 到达。
++       任务可以被等待任意多次；之后的汇合直接返回已交付的值。
+
+% 2 1 0 1f7228e43fec742f07b92807c1b50a6f
+
+% 3 1 0 0ae6ddc0f8e5d4121f8a33c572e55500
+
+% 4 1 0 06ab4d89c890f1d90f9f476fb5a9de47
+
+% 5 1 0 1accfbe4c67d62c400b7ea8862208303
+
+% 6 1 0 02d23f6b07ebe3c41771a9791058ec8d
+
+% 8 1 0 160349f7a78cd7aa0ac8ec5341294101
+
+% 10 1 0 0793875fc716649b17012238b15120b0
+
+% 0 1 0 173dcfc7938355200c77bed39d21d548
+
+% 0 1 0 05f62cf736f8131b01c78c29a0a06054
+
+% 1 1 0 1defe6515c2af9ba1d57e2e4ea856edc
+
+@ 0 5 0 10887d2d8960af4a1648ac2739d7a4e6
++   entry #bind   一个将产生任务的函数应用于本任务的结果并汇合所得任务的任务
++       `task.bind(n => async(n + 4))` 是作用域中监视器的一个新子任务；该函数只能捕获任务主体可以捕获的内容。
++       需要 `Monitor` 和 `Probate.Shared`。
++   entry #map   一个将函数应用于本任务结果的任务
++       `async(3).map(_ + 1).await()` 为 `4`。
++       需要 `Monitor` 和 `Probate.Shared`。
+
+@ 0 1 0 162e893ecdd219e00faed99aa7a00739
++ entry .Promise   稍后提供的值，可能来自另一个线程：一方等待，另一方兑现
+
+% 1 1 0 1fb0976ce16867dd1373a375f366c481
+
+@ 0 5 0 014ab5f08a5ef6420d608e5a8530a1a9
++       `Promise[value]` 起初是未完成的；`fulfill` 或 `offer` 以一个值将其了结，且恰好一次，`cancel` 不带值将其了结，而 `await` 将调用方线股停驻，直到它被了结。
++       了结会唤醒每个等待者，争用时也不会丢失任何东西：多个并发的 `fulfill` 中恰好有一个成功，而已了结的 promise 完全不需要比较并设置。
+
+% 2 1 0 09430f18c0e0a8ef03813e8cb246f6c7
+
+% 3 1 0 07e1e3553381ff301f94413785f31b59
+
+% 4 1 0 00fd6b140ae6a74f04e05b88c4a8b3ce
+
+% 5 1 0 1a2deab7e8e2136f05d2d956a845da8c
+
+% 6 1 0 0ee3001de48fc3491cb24544fc5bb867
+
+% 8 1 0 04d5b97b9f6242570f358fc4ceee8822
+
+% 9 1 0 0c0fbedbb3beb3a9126bb1abf7d68231
+
+% 0 1 0 1f50fd87001a99f308d6f7270c456629
+
+% 1 1 0 10a4a711ef93a68708c54ca4791b0ae9
+
+% 0 1 0 1a8d0f7ff90a869c0196e30cbaa45bc2
+
+% 0 1 0 0357353f795fb4ef1cf850053fce7aac
+
+% 0 1 0 08e2dbd29e909eb6108d0481beaf67ed
+
+% 1 1 0 1f309da82f09d20909f674c90dd29b9c
+
+@ 0 5 0 0b606d844aea5f7e107584825cb0ca4c
++       promise 只有凭其身份才有意义（等待者停驻在它上面），因此它是一个使用引用相等的普通类。
++       等待的一方（`await`、`attend`）需要 `Monitor`，因为它会挂起；了结的一方（`fulfill`、`offer`、`cancel`）什么都不需要，因此可以从任何地方了结 promise——回调、外部线程、关闭钩子。
++       `Worker` 的 `promise` 就是观察任务完成的方式。
+
+% 1 1 0 0da3666996ad3b4e07ebff9aa111c0e4
+
+% 1 1 0 0c7d31f9730ce8bd087d8844801240c0
+
+@ 0 30 0 0cd2d377d15addbc1a41e2e7850b36d2
++   entry .State   promise 的三种状态：未完成并带有其等待者、已完成并带有一个值，或已取消
++       `Incomplete(waiting)` 保存停驻在该 promise 上的线股；`Complete(value)` 和 `Cancelled` 是终止状态。
++   entry #cancelled   promise 是否已被取消
++   entry #apply   该值，若 promise 未完成则为 `Unset`，不会等待
++   entry #ready   promise 是否已了结，无论是因为值还是因为取消
++   entry #complete   promise 是否持有一个值
++   entry #task   以 `Task` 表示的 promise 完成：单子形式的 `await`
++       `promise.task` 即 `async(promise.await())`，用于与 `bind`/`map` 组合而不挂起调用方线股。
++       需要 `Monitor`、`Probate.Shared` 和 `Codepoint`。
++   entry #fulfill   以一个值了结 promise，若它已经了结则抛出 `Async.Error`
++       若它持有值则抛出 `Async.Error(AlreadyComplete)`，若它已被取消则抛出 `Async.Error(Cancelled)`，均通过作用域中的 `Tactic[Async.Error]`；否则写入该值并唤醒每个等待者。
++       传名参数恰好求值一次。
++   entry #offer   若 promise 仍未完成则以一个值将其了结，否则什么也不做
++       `#fulfill` 的宽容形式：多个并发提供中第一个胜出，其余被忽略，已取消的 promise 保持取消状态，且不抛出任何错误。
++       `race` 将它用于落败的任务。
++   entry #await   等待值，在取消或超时时抛出 `Async.Error`
++       `promise.await()` 将调用方线股停驻，直到 promise 了结，然后返回该值或抛出 `Async.Error(Cancelled)`；`promise.await(duration)` 在期限先到达时还会抛出 `Async.Error(Timeout)`。
++       已了结的 promise 会立即返回。
++       需要 `Monitor` 和 `Tactic[Async.Error]`，若调用任务在等待期间被取消则抛出 `InterruptedException`，因此等待 promise 的任务是可取消的。
++   entry #attend   等待 promise 了结，无论是因为值还是因为取消，不抛出错误
++       `promise.attend()` 在 promise 以任一方式了结后返回；`promise.attend(duration)` 在期限到达时静默返回，因此调用者需检查 `#ready`。
++       需要 `Monitor`。
++   entry #cancel   不带值地了结 promise，以 `Async.Error(Cancelled)` 唤醒每个等待者
++       已持有值的 promise 会保留该值；取消两次是无害的。
+
+@ 0 1 0 0226a61ea4d6f51c0ba75f3cfd594f6e
++ entry .Daemon   由 `daemon` 派生的发后即忘工作的句柄
+
+% 1 1 0 0074b4cd3382be2019556917dbb24bba
+
+@ 0 4 0 1ecedcdce771f92c137269c15e14451a
++       `Daemon` 是 `daemon` 标志为 `true` 的 `Worker`：它从不被汇合，因此不产生结果，无论父任务的遗嘱认证对普通子任务采用什么方针，都会取消它。
++       它的错误交给作用域中的 `Probate#trap`，若没有捕获器接受，则升级到未捕获异常处理函数（`Vm.intercept[Fault]`）。
+
+% 1 1 0 099e410dae8bffb113e3d0bea0e816f1
+
+% 1 1 0 13a4e8eb24b574d81bd6629348342265
+
+@ 0 5 0 0186529e34eefbd8039d683090dcc527
++   entry .apply   在作用域中的 `Monitor`、`Codepoint` 和 `Probate.Shared` 之下根据主体构造守护进程
++       应使用的形式是 `daemon`，因为它还会为主体提供不依赖标注的 tactic，并强制主体是卫生的。
++   entry #attend   等待守护进程结束，不返回结果，也不抛出错误
++   entry #cancel   取消守护进程并等待其线股结束
+
+@ 0 1 0 1d0122efa243a7fa111f28f89ac44f60
++ entry .Async   任务的命名平面，也是 `Async.Error` 的所在
+
+% 1 1 0 17034be9cfe74e4e0030649830213558
+
+@ 0 3 0 0b5bf70196fd03d518dfdf476b459ae8
++       `Async` 是一个密封的标记：任务的名称是 `Name[Async]`，在作用域中有 `import Async.nominative` 时写作 `n"worker"`，并在代码编译时依据 `.Rules` 检查。
++       它的伴生对象包含 `Async.Error`，即每次挂起都可能抛出的那个错误。
+
+% 2 1 0 08cf67bd7fadd11e08525cac995d08b0
+
+% 3 1 0 1564d691a0ec024206a51d37c92b1260
+
+% 1 1 0 01b9e96f6f08eda00c86f6402be195ac
+
+% 0 1 0 03f9daff0809179113d2a7430083f47d
+
+% 1 1 0 09b5a9f26559894a14a4623c7876d6c6
+
+% 1 1 0 0f37d63ce6c9530c119215c0ffbfe6d4
+
+@ 0 8 0 0aca090a1ebe80221a0a6b33f876081a
++   entry .Rules   任务名称的规则：一个字母，后接字母、数字、`-` 和 `_`
++       `MustMatch["[A-Za-z][A-Za-z0-9_-]*"]`：不含组合而成的 `Monitor#stack` 所依赖的分隔符（`:`、`/`、`@`、`.`），不含空白，且不为空，因此名称永远不会破坏该栈或由其派生的线程名称。
++       `Name[Async](t"bad/name")` 抛出 `Name.Error`，即 _the name bad/name is not valid because it must match [A-Za-z][A-Za-z0-9_-]*_，而 `n"bad/name"` 是编译错误。
++   entry .nominative   让 `Name[Async]` 遵守 `.Rules` 的 given；要使用 `n"…"` 需按名称导入它
++   entry .Error   在等待没有以值结束时抛出：已取消、未完成、已完成、超时
+
+% 1 1 0 0c07d4d62368c9a61a669e995c8e4ae0
+
+@ 0 6 0 0ed945905b53dfc107e86e76aab0a171
++         通过每个 `await`、`fulfill` 和 `supervise` 都需要的 `Tactic[Async.Error]` 抛出。
++         它的 `#reason` 说明是哪一种：`Cancelled` 来自等待已取消的任务或 promise，或兑现已取消的 promise；`Incomplete` 来自 `probates.failProbate` 下子任务仍在运行时父任务的 `await`，或者主体结束之前的 `Worker#result`；`AlreadyComplete` 来自两次兑现同一个 promise；`Timeout` 来自期限已过时的 `await(duration)`。
+
+% 0 1 0 136a5f198bdaf3ac1a788e9525f64741
+
+% 0 1 0 0a9c20ea134f3fa702331949e4fc1ca4
+
+% 0 1 0 1483d7674d516abb1cf447f9b7b6208e
+
+% 0 1 0 1df60d93a8a4f5a7099b4ba309ce3cad
+
+% 0 1 0 007d86684f8769fe09636d5f556d8a87
+
+% 0 1 0 1ddbe24ca96966e71e52f5d6ca9d7a17
+
+% 0 1 0 1cd8e4ff097f1a1000f2b5f2d634402f
+
+% 0 1 0 0d59ceb3fc1b73e716b392328eaa7b72
+
+% 0 1 0 02125690b11d560710feb200e65921bd
+
+@ 0 2 0 0a5b1d6d8a453ce9193693e1edb1575d
++     entry #reason   等待失败的原因，作为 `Async.Error.Reason`
++     entry .Reason   四种原因：`Cancelled`、`Incomplete`、`AlreadyComplete`、`Timeout`
+
+% 0 1 0 0f0c06beeb68e4ca19dd934fb64b22c4
+
+@ 0 4 0 143cbd47e45048161229702abb81982f
++           由 `.communicable` 呈现为 _the operation was cancelled_、_the task was not completed_、_the promise was already completed_ 和 _the operation timed out_，即该错误的消息。
++       entry .communicable   将每个原因呈现为错误的消息
+
+@ 0 1 0 12cb21e1e22349350eb00b3bda1636b1
++ entry .AsyncTactic   任务主体借以抛出错误的 `Tactic`：它抛出错误，而不是跳出边界
+
+% 1 1 0 1660ec49adb857e20d7fbd5d1da056f4
+
+@ 0 10 0 196c39e1b32962c7024516286c5c7b9c
++       由 `async`、`task` 和 `daemon` 作为主体的 `Tactic[error]` 提供。
++       与 `contingency` 中基于边界的战术不同，它从不跳出受栈限制的标注，那样的标注无法跨越到 worker 的线程：`record` 和 `abort` 都抛出纯错误，worker 的 `try`/`catch` 将其存储为 `Fulfillment.Failed`，然后它在 `Task#await` 处或向 `Probate#trap` 交付，仍保有类型。
++       `certify()` 什么也不做，`diagnostics` 捕获一条堆栈跟踪。
++       用户只会作为主体 tactic 的类型遇到它。
++   entry #diagnostics   为抛出的错误捕获诊断信息
++   entry #record   抛出该错误
++   entry #abort   抛出该错误
++   entry #certify   什么也不做：没有需要认证的累积状态
+
+@ 0 1 0 0f023e8e49c215461389fab5c30d4de0
++ entry .Probate   针对任务未完成的子任务和逃逸错误的方针
+
+% 1 1 0 0b2ba136c09d5a11141a5d97f35f5504
+
+@ 0 6 0 0b03d049fd66bfbf155c01b8ef8bbc5b
++       `Probate` 有两部分。
++       `cleanup(worker)` 通过它对 `Worker#delegate` 的处理方式，决定父任务主体完成时仍在运行的子任务的命运：`probates` 包中的四个遗嘱认证分别会等待它、取消它、抛出 `Async.Error(Incomplete)` 或引发 panic。
++       `trap` 决定从发后即忘的 worker——`daemon`，或被父任务放弃的任务——逃逸出来的错误的命运，默认将其升级，从而不丢弃任何东西；`contain { … }.protect { … }` 会在派生工作的地方附近覆盖它。
+
+@ 0 3 0 07f7fec5ebc6fb9e084ea7e447c69178
++       遗嘱认证是普通的特质，而不是能力，因此 `given … : Probate` 是纯的，导入它不会捕获任何东西；`Shared` 是 worker 所保留的带捕获类型的形式。
++       由于 `import soundness.*` 不导入任何 given，需要按名称选择一个：
+
+% 2 1 0 1b48575a9b6cccc00e7b64ff97913701
+
+% 3 1 0 12f9b655596085320e170adf579820cc
+
+% 1 1 0 03e56afae33d2c3b1d67e08d35159064
+
+% 1 1 0 045862bfead4efd619f94274dd0fc679
+
+@ 0 4 0 1b64edda51d885d30dcdef7ea3bf3ab6
++       选择哪一个取决于子任务做什么：修改状态的工作需要 `awaitProbate`，使每个子任务都运行到结束；纯工作可以采用 `cancelProbate`；而设计上会等待其派生的每个任务的代码需要 `failProbate` 或 `panicProbate`，使遗忘的 `await` 成为错误，而不是一次静默的等待。
+
+% 0 1 0 1c79dc2f188b950015a1f3d82d171e9f
+
+% 1 1 0 10c3d091de30b0aa09cab1c539262799
+
+% 2 1 0 00f06e416ec9f376167ae3f76e20a28f
+
+@ 0 9 0 0aa158879d1a54b6166a2567d227b647
++   entry #cleanup   父任务完成时未完成子任务的命运
++       在正在完成的 worker 自己的线股上、其 promise 了结之前调用，传入要整理其子任务的 worker；`worker.delegate(child => …)` 访问每个仍在运行的非守护子任务，守护进程则被无条件取消。
++   entry #trap   从发后即忘的 worker 中逃逸的错误的命运；默认为 `Remedy.Escalate(error)`
++       在 worker 的 promise 了结之前调用。
++       `Accept` 消费该错误，`Reject` 让原错误向外传播，`Escalate(other)` 传播一个替代错误；在链的末端，未被接受的错误会在 worker 的线股上重新抛出，到达未捕获异常处理函数。
+
+@ 0 6 0 12c20e7fa9c87d2c080056f00f201848
++   entry .Shared   只捕获 `Durable` 能力的 `Probate`
++       `Probate^{caps.any.only[anticipation.Durable]}`：由于 worker 是共享的 `Monitor`，`Worker` 所保留的东西必须是共享的，因此每个 `(using Monitor^, Shared)` 签名都接收这种类型的遗嘱认证。
++       `probates` 中的纯遗嘱认证显然符合，而闭包捕获了 `Tactic` 的 `failProbate` 是唯一需要该捕获的一个；闭包捕获了独占资源的遗嘱认证不能交给任务。
+
+@ 0 1 0 1ad1fde52cb8082b1f54d66eeacc9c88
++ entry .Containment   `contain` 所构建的 `Probate`：一个处理其逃逸异常的区域
+
+% 1 1 0 1a3dcd639cea65f20d0553e318777487
+
+@ 0 4 0 077d5c65dec4a71e165208ffc60546fc
++       将 `cleanup` 原样委托给外围的遗嘱认证，并用处理函数覆盖 `trap`：匹配到的错误若为 `Remedy.Accept` 则停止传播，`Reject` 将原错误传给外围遗嘱认证的捕获器，`Escalate(other)` 传递替代错误，而未匹配的错误也会交给外围的捕获器，因此容纳可以嵌套。
+
+% 1 1 0 04574a6cf451a70e0b65fb220b3b2a52
+
+@ 0 5 0 1fad493f9ebbcf3705b1afe90c9ad7f2
++   entry #cleanup   外围遗嘱认证的子任务命运方针
++   entry #trap   处理函数对其匹配的错误给出的补救，否则交给外围遗嘱认证
++   entry #protect   以此容纳作为作用域中的 `Probate.Shared` 运行一个代码块
++       `contain { case … => … }.protect { daemon(…) }`：在该代码块中派生的守护进程和被放弃的任务会将其逃逸的异常路由到这里。
+
+@ 0 5 0 0aa57e633b9803a511d48f65d60043ae
++ entry .Remedy   捕获器对逃逸错误的决定：接受它、拒绝它，或升级为另一个错误
++     `Accept` 消费该错误（作为副作用处理，例如记录日志）并停止传播；`Reject` 将原错误传给外围的捕获器；`Escalate(error)` 同样拒绝，但以另一个纯的、线程安全的错误代替它传播。
++     普通的 `Probate#trap` 会升级它收到的错误，因此未处理的逃逸永远不会被丢弃。
+
+@ 0 6 0 1752f1dfdd727eb200f9c4139cb22918
++ entry .Fulfillment   worker 的生命周期：初始化、活动、已完成、已交付、失败或已取消
++     `Initializing` 表示线股尚未开始执行主体；`Active(startTime)` 表示正在运行；`Completed(duration, value)` 表示已有结果但尚无人汇合；`Delivered(duration, value)` 表示第一次汇合之后，因此之后的汇合会跳过状态转换；`Failed(error)` 带有主体抛出的错误或异常；以及 `Cancelled`。
++     时长以毫秒计。
++     worker 将其状态保存在其中之一中；除此之外它不对外暴露。
+
+@ 0 4 0 1f17bd04f7da234b0cf53ec09ed60bb1
++ entry .Perseverance   一次 `retry` 尝试的结果：坚持、放弃，或带值成功
++     `Persevere` 请求再尝试一次，`Surrender` 以 `Tenacity.Error` 放弃，`Prevail(value)` 表示成功。
++     `retry` 在内部用它将主体的选择带出其边界。
+
+@ 0 3 0 052ce8205e4bb2a01e719e9588208043
++ entry .Observation   被观察为 `Fresh` 或 `Stale` 的值
++     一个有两个分支的枚举，`Fresh(observation)` 和 `Stale(observation)`，供想要说明其返回内容是否为最新的读取方使用。
++     parasite 中目前没有任何东西会产生它。
+
+@ 0 2 0 1adb23b52023d7db19cdfba742af953b
++ entry .Transgression   针对违规的三种处置：`Dispose`、`Escalate`、`Cancel`
++     一个有三个分支的枚举。
++     parasite 中目前没有任何东西会使用它。
+
+@ 0 1 0 1f196f67a02410860a3a1108c81765f6
++ entry .Tenacity   重试计划：每次尝试前等待多久，以及何时停止
+
+% 1 1 0 13702ac8a90b49fc12c850458d4bb94e
+
+@ 0 5 0 10991bfcbc67ea170f13be4d02c6740a
++       `retry` 在作用域中的 `Tenacity` 之下运行其代码块。
++       `delay(attempt)` 是给定尝试之前的暂停时长，以纳秒计（`Prim` 是第一次尝试，从不等待），或者抛出 `Tenacity.Error` 以停止。
++       `Tenacity.exponential` 和 `Tenacity.fixed` 构建两种常见形状，`limit` 限制尝试次数，而 `retryTenacities` 包中有六个可以按名称导入的现成计划。
++       重试计划是纯的：它不持有任何能力。
+
+% 2 1 0 14d346edf209efe011f1301cf762220b
+
+% 3 1 0 0cf6b3cac8647725075ac57cb4af9526
+
+% 0 1 0 01c14d9711455ebc112e2e9650365bab
+
+% 1 1 0 046869506c22092614d8e2f106a4d72a
+
+% 1 1 0 1545f497c0954cc30fac24b54647f946
+
+% 1 1 0 1a041ac99aacea2d18d7999d7b3b4030
+
+@ 0 8 0 0b8c55fba2b0190300341ba8e4d7699c
++   entry .exponential   几何退避：无延迟，然后是 `initial`，然后是 `initial*base`、`initial*base²`……
++       `Tenacity.exponential(initial, base)`，初始延迟可以是任何 `Abstractable across Durations`：第一次尝试立即进行，第二次等待 `initial`，之后每次等待前一次的 `base` 倍。
++       在被 `limit` 限制之前没有上限。
++   entry .fixed   第一次之后的每次尝试之前都使用相同的延迟
++       `Tenacity.fixed(duration)`；`Tenacity.fixed(0L)` 立即重试，`fixedNoDelay…` 系列 given 就是如此。
++   entry .Error   在 `retry` 用完尝试次数或其主体放弃时抛出
+
+% 1 1 0 033c07b563e6489a1a5f3534b74a6518
+
+@ 0 7 0 0f14bf9ad0fdb64a08f7de74df5fbae7
++         错误 `↯/s.69.1`：_aborted repeated evaluation after `count` attempts_。
++         在达到 `limit` 或主体调用了 `surrender()` 时，通过 `retry` 所需的 `Tactic[Tenacity.Error]` 抛出。
++     entry #count   进行了多少次尝试
++   entry #delay   一次尝试之前的暂停，以纳秒计，或者抛出 `Tenacity.Error` 以停止
++   entry #limit   相同的计划，在 `n` 次尝试之后放弃
++       `tenacity.limit(5)` 在第六次尝试时抛出 `Tenacity.Error`。
+
+@ 0 1 0 181eca8b07b0594217854a9c78dfc7aa
++ entry .Schedulable   `snooze` 和 `sleep` 共用的约束：一段时长或一个瞬时，表示为从现在起的纳秒数
+
+% 1 1 0 031437c5e8b7f6a1166f23865066dad5
+
+@ 0 6 0 1ca4cfe0e527394405f3888a0253dae2
++       一个类型类，其 `nanoseconds(value)` 说明以 `Self` 表示的暂停应持续多久。
++       它的两个伴生 given 涵盖任何 `Abstractable across Durations to Long` 类型（`.duration`：通用形式已经是纳秒计数）和任何 `Abstractable across Instants to Long` 类型（`.instant`：要唤醒的纪元毫秒数），因此 `quantitative` 时间、`aviation.Timespan` 和 `aviation.Instant` 都无需转换即可接受。
+
+@ 0 7 0 0ba2b858afe68f8a1dafd2175aafb548
++       裸 `Long` 在按名称选定单位之前两者都不是——对时长使用 `abstractables.millisecondsAbstractable`、`nanosecondsAbstractable` 或 `microsecondsAbstractable`，对瞬时使用 `epochMillisecondsAbstractable`。
++       如果作用域中同时有时长单位和瞬时解读，它会同时满足两个 given，并因歧义而被拒绝，这正是目的所在：调用处没有任何东西能说明本意是哪一个，而在纳秒解读下不加限定的 `snooze(200L)` 几乎会立即返回。
+
+% 2 1 0 0be5aa725a478b4d06b88c118787f34e
+
+% 3 1 0 10c5b9e8733f398b0e37fc1685b5b68f
+
+% 4 1 0 070f895fd4dde19707711b575dafa202
+
+% 5 1 0 09ff93ef3d5b27030af5d628798deadb
+
+% 6 1 0 130b74f7b492a4061e296777f415593e
+
+% 0 1 0 0b78a915063968591f7338f44c86803a
+
+% 2 1 0 0e4572dffd0e818d02ef17ca7ae2128d
+
+% 0 1 0 07984f1cc990dd5b1d63a5d6ae3a466c
+
+% 1 1 0 1502f46d5bcfc657176e448800629038
+
+@ 0 4 0 0c64b64dfe70792d122cdaa0998f660b
++   entry .duration   任何 `Abstractable across Durations to Long` 类型都是 `Schedulable`，作为时长
++   entry .instant   任何 `Abstractable across Instants to Long` 类型都是 `Schedulable`，作为唤醒的瞬时
++   entry #nanoseconds   此值所表示的暂停应从现在起持续多少纳秒
++   entry #remaining   扩展方法 `value.remaining`：即其 `nanoseconds`
+
+@ 0 1 0 0a337c3cadccf74314048c24d96ae5a7
++ entry .Timeout   在期限到达时运行一个动作的看门狗，除非它先被推迟
+
+% 1 1 0 1d7d21bc2f68c8830f2ff45ec956da5a
+
+@ 0 6 0 0a39785e73cb0a821e0f3bed4380a186
++       `Timeout(duration)(action)` 启动一个受监管的看门狗任务，它会睡眠到期限，然后运行该动作，仅一次。
++       `nudge()` 将期限推迟到从现在起的该时长之后，因此在每次出现活动迹象时——例如连接上的每个请求——都被推迟的超时，只会在相应时长的静默之后触发；`alive` 说明它是否尚未触发，`reset()` 重新启动已触发的超时。
++       它是一个 `Durable` 能力，由看到活动的任何任务推迟，期限是原子的。
+
+% 2 1 0 0b19655895374c431a8b817db10b5d4b
+
+% 3 1 0 0c9c543f7de36dfc1af0984e6481dfe4
+
+% 4 1 0 1675d0dffa0333d214aac01045961f8b
+
+% 5 1 0 1a494c10a4933faa17de49daeabe6a19
+
+% 6 1 0 183b4327b9a141421994f4c38dc40a7d
+
+% 8 1 0 145fe9b901badb811d5cf7b5f1022e07
+
+% 0 1 0 1f0ef4965b58096602a62547096ae02d
+
+% 0 1 0 06d3d8277228a5281c0bb8378ea1fd7d
+
+% 0 1 0 0fbaa495789dac9300d4e6063954f46e
+
+% 0 1 0 0f67f27a954774a9091bb0a02089712f
+
+% 0 1 0 0b7aecd6eb59485b0e42baa02d87f794
+
+% 0 1 0 18b7301b84b484331395ce9f4bc986e9
+
+% 1 1 0 1855a99be3b957390dd74d336f980acf
+
+@ 0 7 0 08768651db0b261d0ffc31248324666d
++       该动作在看门狗任务上运行，因此与任何任务主体一样，它只能捕获 `Durable` 能力。
++       构造需要 `Monitor` 和 `Probate.Shared`；看门狗是该监视器的一个子任务，名为 `timeout`。
++   entry .apply   启动一个给定时长的超时，并给出触发时要运行的动作
++   entry #alive   超时是否尚未触发
++   entry #nudge   若超时仍未触发，将期限延长到从现在起的该时长之后
++   entry #reset   以新的期限和看门狗重新启动已触发的超时
+
+@ 0 1 0 0e9cec37ee2aa46202c941a6f2cc35a9
++ entry .Interceptable   `intercept` 背后的类型类：如何在某个目标上为某个事件注册动作
+
+% 1 1 0 08e8699d075ae68515eec17f874b6338
+
+@ 0 5 0 0b07d3c7891a7e62171cc5c0f6caf5bf
++       `event is Interceptable onto target` 说明 `target.intercept[event](action)` 如何注册该动作，以及之后如何将其移除：`register` 返回注销函数，由所得的 `Hook` 调用。
++       实例有 `Shutdown.interceptable`、`Fault.interceptable` 和 `GarbageCollection.interceptable`，都作用于 `Vm`，以及作用于任意值的 `Destruction.interceptable`。
+
+% 0 1 0 146e320bab2e8d62136cc17e92d809f8
+
+% 0 1 0 1cfb32b57b4ce56302f3fa083f0fd5ce
+
+@ 0 1 0 1dfb865a34740f051af5d994b94b977d
++   entry #register   在某个目标上为事件注册动作，返回将其注销的函数
+
+@ 0 1 0 07069f0f18b975270ac89f529896907c
++ entry .Hook   一个已注册的拦截，取消即可停止它
+
+% 1 1 0 12140ea839f34b74190cec19a33ac6b1
+
+@ 0 3 0 0dffcb11ab5b0b871727ddb62cdd4904
++       `intercept` 返回一个 `Hook`；`hook.cancel()` 注销该动作，此后该事件不再运行它。
++       `Hook(unregister)` 包装任意注销函数。
++   entry #cancel   注销该动作
+
+@ 0 1 0 06400591c240199c10f62b0aee303958
++ entry .Shutdown   VM 关闭：`Vm.intercept[Shutdown](action)` 在退出时运行该动作一次
+
+% 1 1 0 1983995e67ce14c81ab1c1c0d0a33e46
+
+@ 0 5 0 1c45a9db7fe482e31090cdae53900909
++       一个 JVM 关闭钩子：该动作在 `System.exit` 时、最后一个非守护线程结束时，或在收到 `SIGINT`/`SIGTERM` 时运行，服务器正是在这里删除它所监听的套接字文件，使过时的文件永远不会迎接下一个进程。
++       钩子在各自的线程上并发运行，没有确定的顺序，动作抛出的异常会被吞掉，因此一个钩子永远不会阻止其他钩子运行。
++       `Hook#cancel` 会将其移除。
+
+% 2 1 0 1a5977990d86f64f176db3ba8fa7c356
+
+% 3 1 0 11989804a0a3dbeb1ea4785c6fa8f5ad
+
+% 0 1 0 13543761c23cbb3e0fad13c7007e8fc5
+
+% 0 1 0 02d41cb9632ba548005120aafedff247
+
+% 2 1 0 170832a4f94d25e1125fb029a2f65dbb
+
+% 3 1 0 193b128efd4f8af90960948041e220dd
+
+@ 0 1 0 1f4a002f1c0257f7079e4be54a63b3a0
++   entry .interceptable   `Shutdown is Interceptable onto Vm.type`：注册一个 JVM 关闭钩子
+
+@ 0 1 0 03155629fd40952906605c0bd19c8a0f
++ entry .Fault   从无人拥有的线程中逃逸的异常：死亡的守护进程、被升级的捕获器错误
+
+% 1 1 0 07e7f2ad5f2db32a026f253f36a09165
+
+@ 0 6 0 1a5c977d7961176006f7a40f278658cc
++       `Vm.intercept[Fault](action)` 将该动作安装为 JVM 的默认未捕获异常处理函数（一个共享的处理函数，带有动作注册表），因此对于每个使线程结束的异常它都会运行：没有任何 `Probate#trap` 接受其错误的 `daemon`、被父任务放弃的任务，或者 parasite 之外的任何线程。
++       当守护进程的错误无法到达派生它的代码的处理函数时——派生它的代码已经继续执行——程序就在这里处理意外情况。
+
+% 2 1 0 1fdc284a594e804202902bf9a465412d
+
+% 3 1 0 0fc584626fab930b15db1a7b3a9a4353
+
+% 0 1 0 1e302db2d5fd33b411c1eb0d39ffff7e
+
+% 0 1 0 1cf64f50ad1d56b80dd92b74f2886df8
+
+% 0 1 0 0c5f038b58c0135a14b26c2f956a4f71
+
+% 2 1 0 17e1d8ebefdf0dae1f90179c0249483a
+
+% 3 1 0 1adc58df7caca7410912647f429d2a45
+
+% 1 1 0 1daba01e42037bf505aa6f596fe4ac36
+
+% 1 1 0 1c92155a014ade620818c50587de015c
+
+@ 0 3 0 152e6c873acb30a11c5805e5e9bea0f0
++   entry .interceptable   `Fault is Interceptable onto Vm.type`：将该动作加入未捕获异常注册表
++   entry #thread   死亡的线程
++   entry #error   该异常，包装为 `fulminate.Error`
+
+@ 0 1 0 1481477be18184bf102e3a4561dbd027
++ entry .Destruction   值变得不可达：`value.intercept[Destruction](action)` 在回收器回收它时运行
+
+% 1 1 0 03b9019cb12f125b0cb68d529e95f70a
+
+@ 0 5 0 1a5ee5b2b420eaf60d1a40af52bb4221
++       将该动作注册到 `java.lang.ref.Cleaner`，因此它在值变为虚可达之后运行，就像终结器那样，但不会使值复活。
++       该动作不能引用该值，否则它永远不会被回收。
++       取消 `Hook` 会清除该注册而不运行该动作。
++   entry .interceptable   `Destruction is Interceptable onto any value`：注册一个清理器动作
+
+@ 0 1 0 038e0e849c7a33040eba62124ffbf422
++ entry .GarbageCollection   JVM 回收器的一次运行：`Vm.intercept[GarbageCollection](action)` 观察每一次
+
+% 1 1 0 02014cc2d41d57bc076be07e6f839b91
+
+@ 0 3 0 03bd6361a3854dd5196518e275246770
++       位于 `parasite.jvm` 中。
++       对于 JVM 回收器 bean 通知的每次回收，该动作都会收到一个 `GarbageCollection`：运行的是哪个 `Collector`，是什么 `Cause` 触发了它，以及回收前后每个内存池的已用字节数。
+
+% 2 1 0 0de9aba83f593ca91acdb767492758e5
+
+% 3 1 0 120de4f8157f56291c92d913a1f81e3a
+
+% 0 1 0 0776b1f2f26985ed0e7c8f07274f8913
+
+% 0 1 0 1ff242ee9f4ccede02a59717bb6a4c6d
+
+% 0 1 0 1a621c3d779a7e3616f100fd76482972
+
+% 2 1 0 039d1e0cd22d8b8a0884a966dba3a26c
+
+% 3 1 0 030d58ca6d4d964f167533aa21b80e41
+
+@ 0 2 0 1b0a110b9de938fc1da68e46d5665df7
++   entry .interceptable   `GarbageCollection is Interceptable onto Vm.type`：监听每个回收器 bean
++   entry .Collector   运行的回收器：G1、Parallel、CMS 或 Serial 的某一代，或 `Other(name)`
+
+% 1 1 0 1debd8bc2b0fd9631d2713af988b192f
+
+@ 0 5 0 126a8fec62795a54092f66ce8151c33f
++         `G1YoungGeneration`、`G1OldGeneration`、`G1Concurrent`、`PsScavenge`、`PsMarkSweep`、`ParNew`、`ConcurrentMarkSweep`、`Copy`、`MarkSweepCompact`，以及用于该枚举不认识的回收器名称的 `Other(name)`。
++     entry .unapply   按 JVM 对回收器的命名进行匹配，未知的为 `Other(name)`
++   entry .Cause   回收运行的原因：分配失败、`System.gc()`、自适应调节……，或 `Other(cause)`
+
+% 1 1 0 1ff51a1b4571984c153a349bec4a34dc
+
+@ 0 11 0 1d9274f700d918ae19b9dac5ff697469
++         `AllocationFailure`、`SystemGc`、`GcLocker`、`Metadata`、`Ergonomics`、`CmsInitialMark`、`CmsFinalRemark`、`FullGc`、`HeapInspection`、`NoGc`、`G1EvacuationPause`、`G1HumongousAllocation`，以及用于该枚举不认识的原因的 `Other(cause)`。
++     entry .unapply   按 JVM 对原因的文本描述进行匹配，未知的为 `Other(cause)`
++   entry #run   回收的序号，作为 `Ordinal`
++   entry #collector   运行的是哪个回收器
++   entry #cause   是什么触发了回收
++   entry #bytes   每个内存池在回收前后的已用字节数，按池名称索引
++   entry #before   回收之前所有内存池已用字节数之和
++   entry #after   回收之后所有内存池已用字节数之和
++   entry #reduction   回收释放了多少字节：`before - after`
+
+@ 0 1 0 1f5890285a8ab6d913a266dd88c37ac5
++ entry .Heap   JVM 堆，以使用中的字节数表示
+
+% 1 1 0 0c8516c0650cc113125dbe0b12da87b5
+
+@ 0 3 0 0e4b1fcaf9fd7ad50e105a7a0d604fb5
++       位于 `parasite.jvm` 中。
++       `Heap.used` 对 JVM 管理 bean 报告的每个堆内存池的已用字节数求和。
++   entry .used   当前在堆的各内存池中使用的字节数
+
+@ 0 1 0 14131b9460436a5013995f085186a28c
++ entry .threads   线程模型，每个都是需按名称导入的 `Threading` given
+
+% 1 1 0 11551e000e0227e912cf52b5220c8377
+
+@ 0 6 0 1ea5e8341c9cb9e612e7e661c343f656
++       `supervise` 代码块以哪个监管器作为其树的根，由作用域中的 `Threading` given 决定，而这一选择从不是隐式的：`import soundness.*` 不会引入其中任何一个，需要按名称导入一个。
++       `threads` 是对象而不是包，因为它的 given 是能力，而能力类型的字段必须位于本身是能力的对象中；访问其中之一的公共类或对象要声明 `uses parasite.threads`。
+
+% 2 1 0 07ce85fddc58e08b08ce81aa20462a98
+
+% 3 1 0 0b152e90a3f1813b03a6555a4b59726e
+
+% 4 1 0 1d099fe20a509304100e05a6e1d5b01d
+
+% 1 1 0 0007b448e87440ac1f614f0cade11615
+
+@ 0 3 0 0d1372f1805487430604c094b5c31a3d
++       `virtualThreads` 适合确知自己运行在 Java 21 上的 JVM 应用程序；`adaptiveThreads` 适合无法决定其 JVM 的应用程序；`pooledThreads` 适合细粒度的扇出；`platformThreads` 适合每个任务都需要一个平台线程的代码；`javascriptThreads` 适合事件循环。
+
+% 1 1 0 116b740a3ef057671b4f6fddd938b25a
+
+% 1 1 0 1d4a65add82a12030b4f7289114238b2
+
+@ 0 11 0 094a779777b6704e0a2c66c1068d1713
++   entry .platformThreads   每个任务都在一个新的平台线程上：`PlatformSupervisor`
++   entry .virtualThreads   每个任务都在一个虚拟线程上：`VirtualSupervisor`
++       需要 Java 21，在更旧的 JVM 上会在运行时失败；在没有 Loom 的 Scala Native 上派生平台线程。
++   entry .adaptiveThreads   JVM 支持时使用虚拟线程，否则使用平台线程：`AdaptiveSupervisor`
++   entry .pooledThreads   任务运行在可复用的载体线程上：`PooledSupervisor`
++       用于细粒度的扇出，此时每个任务启动一个线程的开销会占主导；任务没有自己的线程，因此线程局部变量会在同一载体运行的各个任务之间保留。
++   entry .javascriptThreads   任务在派生时及早运行，在单一线股上：`JavascriptSupervisor`
++       Scala.js 的模型，带有单一线股的局限：没有交错执行，睡眠瞬间完成，而在任何已完成任务都无法结束的等待上会引发 panic。
+
+@ 0 1 0 018db5cb4c97eeac152d1ce672a12593
++ entry .supervisors   全局监管器，作为 given
+
+% 1 1 0 0580f10a363140d90e880dc4a4fe848f
+
+@ 0 4 0 1483b3125d8c2ffc149639115a0b8d67
++       一个包含 `globalSupervisor` 的对象，这是一个 `Supervisor` given，供直接需要监管器值而不是 `Threading` 的代码使用。
++       它的 given 是能力，因此访问其中之一的公共定义要声明 `uses parasite.supervisors`。
++   entry .globalSupervisor   `PlatformSupervisor`，作为 `Supervisor` given
+
+@ 0 1 0 10a4f3507023ff1707b3c62f09ef9e45
++ entry .unsupervised   用于在任何 `supervise` 作用域之外阻塞的进程生命周期监视器
+
+% 1 1 0 0167c28cf676c9b01c9d16b0bbfca4af
+
+@ 0 4 0 119f1a434489ef361df33d883e125db1
++       一个刻意设计、需显式导入的逃生舱口，用于不可能存在监管作用域的调用处——守护进程的生命周期、进程生命周期内的等待：`orphanMonitor` 是基于 `PlatformSupervisor` 的 `Root`，它停驻调用方平台线程，不监管任何东西。
++       只要阻塞区域已经有作用域，就应优先使用 `supervise`。
+
+% 2 1 0 0c39b2a175e82d0c00dcad50ff1a5ca0
+
+% 3 1 0 05c523be4a157c0f022b0040e3b50543
+
+% 0 1 0 0a8f4f91ba957db61a44a74663fb2e30
+
+% 1 1 0 17cbeeb759e786f4049b40aa5f9e5b77
+
+% 0 1 0 14aa5b64b27ad33e0e60020c088ac000
+
+% 0 1 0 044f5d4d8463b8e40e5e85232f336888
+
+% 0 1 0 16cc184cc40174da1fdca1e677aed5a5
+
+% 1 1 0 11faefc942d7632004fd3ba776c6f02f
+
+% 1 1 0 0c117eae24267a0b0522a3ddc740a434
+
+@ 0 1 0 1e4f9d2950b8ba8a155a9c12903e3c77
++   entry .orphanMonitor   基于 `PlatformSupervisor` 的、没有作用域的根 `Monitor`
+
+@ 0 1 0 107ac79c188cb83408f298e7dfbafcf7
++ entry .probates   四种完成方针，每个都是需按名称导入的 `Probate` given
+
+% 1 1 0 0223b62fa5d2502801120b7dc506e9a1
+
+@ 0 4 0 03c020fa6efb8b3112f9bdb02b6b34ad
++       遗嘱认证决定父任务的主体完成时，父任务如何处理仍在运行的子任务，每个 `async`、`task` 和 `daemon` 都要求作用域中有一个遗嘱认证；`import soundness.*` 不会引入任何遗嘱认证。
++       守护子任务在每种方针下都会被取消；各方针的区别在于对普通子任务的处理。
+
+% 2 1 0 0dca3bcb980f8c6a0db50229c0f6597a
+
+% 3 1 0 1eb0ea445078ee4d047dae6114e0561d
+
+% 4 1 0 1face8857bf4090202ce709c6f2aee98
+
+% 5 1 0 07a66bbec9f461a70139af7fd03a1f69
+
+% 6 1 0 11fc3ca310fcf81f054544a2b744412a
+
+% 0 1 0 1d10db6a57f937290b6d625048e8095a
+
+% 2 1 0 0634fa2f00d27c9c16f2af0478a0a821
+
+% 0 1 0 189f085fae4a522019413f0ecfe89ff3
+
+% 0 1 0 00f32367fa4ed0af03489a430aa117ca
+
+% 0 1 0 0e102d37a0c29e41175dd3aede87d43f
+
+% 0 1 0 0340382fa4eeb3ef11291fbdc28cc8c6
+
+% 0 1 0 023bc31516e84ffa020658361d02e57c
+
+% 0 1 0 04a09b8e5a323be61aa971e1923599e4
+
+% 0 1 0 1b1eb071fd47f1290829f8a0f60f221f
+
+% 1 1 0 1b60e700bf3b8d830c03b253bf5a4ff0
+
+@ 0 4 0 0baf7773bc0d027703f4dcd43cccde19
++       修改状态的工作需要 `awaitProbate`，使每个子任务都运行到结束；纯工作可以采用 `cancelProbate`，在其恰好所在之处停止；而设计上会等待其派生的每个任务的代码需要 `failProbate` 或 `panicProbate`，使遗忘的 `await` 成为错误——受检或不受检——而不是一次静默的等待。
+
+% 1 1 0 13d7e8d3c3cdcf5500e186cf53d26663
+
+@ 0 10 0 10a7c1c69143d50f19b0411e25768825
++   entry .awaitProbate   父任务在完成之前等待每个未完成的子任务
++       子任务在正在完成的 worker 自己的线股上被等待；父任务的 `await` 只有在每个子任务都了结之后才会返回。
++   entry .cancelProbate   父任务取消每个未完成的子任务
++       子任务在其暂停之处被中断，在其让出之处停止；父任务的结果不受影响。
++   entry .panicProbate   未完成的子任务会引发 panic：_asynchronous child task did not complete_
++   entry .failProbate   未完成的子任务通过作用域中的 `Tactic` 抛出 `Async.Error(Incomplete)`
++       唯一会捕获某些东西的遗嘱认证——即周遭的 `Tactic[Async.Error]`——因此在导入它的地方，作用域中需要有一个这样的 tactic；错误在父任务的 `await` 处出现。
+
+@ 0 1 0 0925414e7041adc9197eca8f35ed8c49
++ entry .retryTenacities   六种重试计划，每个都是需按名称导入的 `Tenacity` given
+
+% 1 1 0 04d396aef614fe5808709a270baa6955
+
+@ 0 4 0 16e7e757d8f4b4d7120fc7b47d0bb5d6
++       `retry` 需要作用域中有一个 `Tenacity`，而 `import soundness.*` 不提供任何重试计划。
++       指数计划从十毫秒开始，每次尝试增长为 1.2 倍；`fixedNoDelay` 计划立即重试。
++       每种都有无上限的版本（`…Forever`），或者限制为五次或十次尝试的版本，超过之后 `retry` 抛出 `Tenacity.Error`。
+
+% 2 1 0 09b14ae46ad1e12f179bafed58f3db7a
+
+% 3 1 0 0d4002e647dd38dc11f697d627ebbee5
+
+% 0 1 0 168808e166e2bb5404e25cccd9984669
+
+% 1 1 0 19b99099e2a92d0a0b68ab677fcddcf1
+
+% 1 1 0 1357450fdefb48a302cee704afc68e5e
+
+% 1 1 0 1d080d28a9f2fffa144a27574d0e56be
+
+@ 0 6 0 118c8b7586d406de0bd478af7da7b711
++   entry .exponentialForeverTenacity   十毫秒，每次尝试增长为 1.2 倍，没有上限
++   entry .exponentialFiveTimesTenacity   十毫秒，每次尝试增长为 1.2 倍，最多五次尝试
++   entry .exponentialTenTimesTenacity   十毫秒，每次尝试增长为 1.2 倍，最多十次尝试
++   entry .fixedNoDelayForeverTenacity   立即重试，没有上限
++   entry .fixedNoDelayFiveTimesTenacity   立即重试，最多五次尝试
++   entry .fixedNoDelayTenTimesTenacity   立即重试，最多十次尝试

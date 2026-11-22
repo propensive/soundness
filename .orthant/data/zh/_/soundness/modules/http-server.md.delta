@@ -1,0 +1,351 @@
+orthant 2 language
+
+@ 0 1 0 14f7a4b0968f752d1374b9050643bbef
++ ## HTTP 服务器
+
+@ 0 1 0 02ed9263154c2802081b650b8e2f33e5
++ ### 概述
+
+@ 0 4 0 1717cb4fe121a05b1342ee527d6e1d13
++ HTTP 服务器就是一个处理函数：一个从请求到响应的函数，在某个端口上提供服务。
++ 只需一个表达式就能运行一个服务器。
++ 处理函数读取作用域内的请求，匹配它的方法和路径，并返回一个带类型的响应，响应的 `Content-Type` 由它所携带的值决定。
+
+@ 0 3 0 03a230637c800a8d0f7ed167f18ab653
++ 服务器使用现代的 HTTP/1.1，支持 keep-alive、流水线、分块正文、TLS、`100-continue` 和协议升级，每个连接一个虚拟线程。
++ 在 TLS 握手协商出 HTTP/2 的任何连接上，它使用 HTTP/2。
+
+@ 0 4 0 1820331f53d4d8ac06db3e97fe12512b
++ 两种相邻的协议位于 HTTP/1.1 之上。
++ [WebSocket](https://en.wikipedia.org/wiki/WebSocket) 把请求升级为消息流，并作为状态机处理。
++ HTTP/2 在一个连接上承载多个请求，供浏览器以及要求它的 gRPC 风格的协议使用。
+
+@ 0 1 0 184d8a81202afda80bbc70d25fd52f3b
++ ### 关于提供 HTTP 服务
+
+@ 0 5 0 04a2fb9f54ba16cd012eacc955545b2c
++ 服务器框架往往以控制反转的形式出现：用于路由的 DSL、控制器类、注解处理器，以及一个调用应用程序的运行时，而不是反过来。
++ 底层的协议比这些框架所暗示的更简单。
++ 请求到达，响应被计算出来。
++ 带类型的语言可以直接表达这一点：路由就是普通的模式匹配，内容协商就是[类型类]。
+
+@ 0 4 0 0e9a7292010422211759160c57bd2138
++ 在这里，处理函数是一个代码块，其余的一切都是值。
++ 说明了自己需要什么、可能以什么失败的处理函数，具有[诚实签名](../../philosophy/honest-signatures.md)，这就是服务器无需套接字就能测试的原因。
+
+@ 0 2 0 1389fd265fd7fdf9122e0ac2e854dcf3
++ 一切都来自 `soundness` 包。
++ 服务器运行所依赖的[并发](concurrency.md)上下文位于作用域内：
+
+% 2 1 0 195f42fac2b49d891b636c5e9a854c2e
+
+% 0 1 0 1bca28db88d8e18d0fbcefeaacfc679c
+
+% 0 1 0 043dfcd8bd81c19b0632f778285bd52b
+
+% 0 1 0 0d72380027637f36161a75b41303b8f1
+
+% 0 1 0 126ea9b3e0450b920c7880db223bf337
+
+% 0 1 0 026901931200bf591262a034768d6b95
+
+% 0 1 0 0189ca70729c68090dc6a72473b09ed5
+
+% 0 1 0 07e2cd564ae26ae60d2bca9b2ff8480e
+
+% 0 1 0 0db1a0ecc5cc04ab14e285e7be2d415a
+
+% 0 1 0 1002601e5c5dc4540f182d5a2321f2b1
+
+% 0 1 0 0cac328595c4173e1ea47b6f00edbe51
+
+% 0 1 0 1a5f0810171768050438e8ec953a7a2e
+
+% 1 1 0 19860bffbad0a9f915356f72c7757ae8
+
+% 2 1 0 0d319a2b6604f7aa00c8337e177f9257
+
+@ 0 8 0 0dd2c1bcb90148381293b6a220ac82f7
++ column  导入
++ column  决定
++ row  `threads.virtualThreads`、`probates.awaitProbate`  服务器的任务如何运行，以及它们的作用域结束时它们会怎样
++ row  `webserverErrorPages.minimalErrorPage`  处理函数失败时向客户端发送什么
++ row  `logging.silentLogging`  不记录请求；[日志](logging.md)介绍了其他选择
++ row  `formatting.compactJsonFormatting`  JSON 正文如何写出
++ row  `charsets`、`codepages`、`textSanitizers`  字节如何变成文本，文本如何变成字节
++ row  `strategies.throwUnsafely`  错误作为异常抛出
+
+% 1 1 0 00d220a17931d83c1076bb5625270c62
+
+@ 0 1 0 04167019274a50a00e83c769460d6a6e
++ 本页的示例会绑定端口，因此它们只被编译而不被运行。
+
+@ 0 1 0 1cdad8bb6b5449a80fc9901b4aec3ec2
++ ### 服务器
+
+@ 0 4 0 1e889bdc876034311b3f40977ec45146
++ `SocketServer` 在一个端口上监听，并为每个请求运行处理函数。
++ 调用 `handle` 时绑定端口，`handle` 返回的服务在被取消时停止服务器。
++ 该服务运行在外围 `supervise` 的任务上，因此这个代码块与服务器持续同样长的时间。
+
+@ 0 2 0 131e13cbbc77fba911132c9921e204e7
++ 在处理函数中，`request` 就是当前请求，带有它的方法、目标、头部、cookie 和正文。
++ 因此路由就是一个 `match`：
+
+% 0 1 0 12705ff5e291290d17fbc8389d59ef4a
+
+% 1 1 0 0d625f7e41cde2400b295dd6c23b3d7b
+
+@ 0 1 0 049eb9e542367fe1100ef7c9cf0df22f
++   label 对每个请求给出同一个响应
+
+% 1 1 0 1a2ddd127c29551918e47c210cf89608
+
+% 0 1 0 05ed98063c4897ff0a93b9f6f6b9a784
+
+% 0 1 0 05db821c52f6f83a0a1923d471246c79
+
+% 0 1 0 189e4987f95bff151c6c460029b5ef35
+
+% 1 1 0 009972d2b60c78ab0c86863f0cbe07c3
+
+@ 0 1 0 0d1ca09b261aaff30fccd459cc73172e
++   label 按请求的目标路由
+
+% 1 1 0 0ea0b9701425725e17f4ca75cad0b14d
+
+% 0 1 0 008f68c508fcdda61e77a5f26460212b
+
+% 0 1 0 00a718fa45aed9860374b8b3eb93ad5f
+
+% 0 1 0 0e423d575fca47920401920097bdb49e
+
+% 0 1 0 0d932cfd06edad330f1f7777e2e1c685
+
+% 0 1 0 06d1c0ece2192af2083df7281d2197a3
+
+% 0 1 0 11240013a30c41e307ff93afe3a66b01
+
+% 0 1 0 00cf5d679d3c93b71aa0caa28d796236
+
+% 0 1 0 18eafb32caed3dd50f976e787bd035ca
+
+% 1 1 0 136d267ff733a60e0f6246170d49df5f
+
+@ 0 1 0 0bb40ce3a12105b00388708edd706b55
++ ### 响应
+
+@ 0 3 0 12d1c36ea3f078a1152acf04586526e0
++ `Http.Response` 接收一个状态、以具名参数形式给出的头部，以及一个正文。
++ 正文可以是任何具有 `Servable` 实例的类型，例如文本、字节、[HTML](html.md) 或 [JSON](json.md)。
++ 实例提供媒体类型，因此所提供的内容与它的标示不可能不一致：
+
+% 2 1 0 036404a69675ac3e1722b354c3164475
+
+% 0 1 0 0d81ff7b5bbd096f1990571f08454930
+
+% 0 1 0 159c4580549f96b5148d048430bd0977
+
+% 1 1 0 107e75f55f5d17a41a274413b97cf36b
+
+@ 0 2 0 1169e89d408c6f6316e97ccddb06a78f
++ 头部的检查方式与[请求](http-client.md#headers)相同：头部的值必须具有该头部所接受的类型。
+
+@ 0 1 0 0cb4171ec9d3b1c91da3b3faf2dc80e2
++ 下表是每种正文所使用的 `Content-Type`：
+
+% 2 1 0 02dd469dd79e2e6304ccf02818b772b3
+
+@ 0 1 0 15476bd81e07f9b810a8dd6a387a425f
++ column  正文
+
+% 0 1 0 105af2c6b13e1ae509d4d944a1546280
+
+% 0 1 0 0f458091bb6b11391962f9dd167fd79d
+
+% 0 1 0 1fdd5a659a9a2bc51077acaba8d31660
+
+% 0 1 0 013eea4f5d271689178f4e8177fa15bf
+
+% 0 1 0 11c352c121752010167e76c519c5b726
+
+% 0 1 0 0f57f548ca52eb660d0f4bfb6ff40a55
+
+% 0 1 0 1df60738087858931dd320b4d1b708ae
+
+% 0 1 0 1505d33848a2f2b300636453fc6f14ed
+
+% 0 1 0 14e9b44cafd919c10e2dc84a332cad1f
+
+% 0 1 0 19803a916dd8cade16ecfd2b641b150a
+
+% 0 1 0 0b64bf21897055751230f81109f096c3
+
+@ 0 1 0 1cb5e6096521495f14d201c58a09d028
++ row  任何其他具有 `Media` 实例的类型  它所声明的媒体类型
+
+% 1 1 0 06ff51f5838a3d2b1da4d1f945d67913
+
+@ 0 3 0 1964fcf613c51fc10483fbf9a435a598
++ 各格式类型的实例位于 `servables` 包中。
++ [媒体类型](media-types.md#types-that-know-their-media-type)介绍了自定义类型如何声明媒体类型。
+
+@ 0 5 0 1fe3a5699dfd48e90abc0353ebe4d350
++ `Redirect`、`NotFound` 和 `NoCache` 把内容包装成常见的响应形态。
++ 请求的正文用 `as` 读作带类型的值，无论它是 [multipart](media-types.md#multipart) 上传还是[表单提交](forms.md#submissions)。
++ `basicAuth` 用凭据保护响应，[OAuth](oauth.md#in-a-web-application) 则用令牌保护响应。
+
+@ 0 1 0 184e4e38a8923a1e03a88491eb60916a
++ ### 请求正文与响应正文
+
+@ 0 3 0 0a0105dd164ccd6a172fdbeb6a4f0f5d
++ 请求的正文是一个[流](streams.md)，而不是必须在处理函数运行之前到达的一块字节。
++ 大的上传在接收时就被消费，响应的正文从它的流中一次一块地分帧，因此两者都不会被保存在内存中。
+
+@ 0 3 0 145eec82bd3942e0032b205762de4772
++ 正文属于处理函数的作用域。
++ 它属于连接，而连接会结束。
++ 因此，想在响应之后保留正文的处理函数要用 `memoize` 显式地把它读入内存。
+
+@ 0 1 0 11b702a92a07c8941d391a6571d0a215
++ ### WebSocket
+
+@ 0 4 0 08d1715ef62d17e81893237536dccd01
++ 通过返回一个 `webSocket` 处理函数，请求被升级为 WebSocket，该处理函数把连接当作状态机。
++ 每条到来的消息产生一个回复、一次状态变化，或会话的结束。
++ 消息是带类型的：原始帧、文本，或通过 JSON 承载的任何类型。
+
+% 2 1 0 1acf9449bc301b360156870b56bdc9b6
+
+% 0 1 0 010b5d7f53d462de03a95bbdce7075c0
+
+% 0 1 0 0ac1e8c71a692db810c1b3a76f2a44e4
+
+% 1 1 0 177cb01156ffd05a112e6bbe962f1a79
+
+% 0 1 0 07f9d8e79e2cc5ed14638af9b2260e82
+
+% 0 1 0 13f167f743d0e6300a6a4ce5830310d7
+
+% 1 1 0 1a7d4f64fbfc2fe91b0c40d1c1826c25
+
+@ 0 1 0 1e919b398d70ad1d073366adf9efbbe0
++ 处理函数用一个 `Control` 回答每条消息：
+
+% 2 1 0 0f35e073ced9e1321369c3b61fe4be81
+
+@ 0 7 0 0a6bb327088c2d9b0a7d54cc8cdc0ea6
++ column  回答
++ column  发送消息
++ column  之后
++ row  `Control.Reply(message, state)`  是  继续
++ row  `Control.Continue(state)`  否  继续
++ row  `Control.Conclude(message, state)`  是  关闭
++ row  `Control.Terminate`  否  立即关闭
+
+% 1 1 0 10964ec1206eb3c61fa47cfdcb39ba22
+
+@ 0 2 0 1f4a6227c767a78e010ba064769c5664
++ 处理函数的状态（这里是 `()`）从一条消息传递到下一条。
++ 在状态是可选的且被省略的地方，沿用之前的状态。
+
+@ 0 3 0 003008adfc616df40b4a43fb1f79e318
++ 实现处理了该协议的各种棘手之处：掩码、分片、ping 和 pong、UTF-8 验证，以及关闭代码。
++ 它符合 [Autobahn](https://github.com/crossbario/autobahn-testsuite) 测试套件。
+
+% 0 1 0 037f66e0ef500ad31c647fe59b3467b6
+
+@ 0 2 0 1ca59c731b5df50106ae9fc3f9fb574f
++ 带有 TLS 的监听套接字通过 ALPN 提供 `h2`，然后是 `http/1.1`。
++ 连接所使用的协议取决于它到达的方式：
+
+% 2 1 0 02c685511a472b5c1a56be3e3100e1cc
+
+@ 0 6 0 0d35f20d56a7e14009056f35fd935fb5
++ column  连接
++ column  协议
++ row  明文，连接到 `SocketServer`  HTTP/1.1
++ row  TLS，协商出 `h2`  HTTP/2
++ row  TLS，协商出 `http/1.1` 或未协商  HTTP/1.1
++ row  基于先验知识的明文 h2c，经由 `Http2.Endpoint`  HTTP/2
+
+% 1 1 0 0ce8f591b55f6b920e4194466cc6b61d
+
+@ 0 2 0 062f166fd0fc245e04c1358018576208
++ 处理函数的契约不变，因此现有的应用程序无需修改即可提供 HTTP/2 服务：
+
+% 2 1 0 1920c4649d69ecd3199d8c7a2ac943b9
+
+% 0 1 0 015d6da35936d6511d5becfe4dcb697f
+
+% 0 1 0 0c590f8110bc40f30701b0ae64390238
+
+% 0 1 0 011cd343e1779fc11a84f6c90e839f2b
+
+% 1 1 0 179923f119b1ee021775079cd1bf7ab9
+
+@ 0 7 0 08a177da851ad9d509b86ccbf98ab5f7
++ 客户端发起的每个流都在它自己的虚拟线程上处理，因此共用一个连接的请求会并发运行。
++ 该引擎实现了流量控制、尾部，以及完整的 [HPACK](https://datatracker.ietf.org/doc/html/rfc7541) 头部压缩。
++ 它容忍它不处理的帧类型，例如 `PRIORITY`、`PUSH_PROMISE` 和扩展，而不会使连接失败。
++ [流](streams.md#tuning-backpressure)介绍了它的流量控制如何施加背压。
+
+@ 0 3 0 066e3a20059edbd70099f0f12eb45edd
++ 基于先验知识的明文 h2c 是服务之间使用的方式。
++ 它经由 `Http2.Endpoint` 进行，后者也是 [HTTP 客户端](http-client.md)的一种传输层，并承载建立在其上的 [gRPC](rpc.md) 支持。
+
+@ 0 1 0 0494b666dd79d8be1ac0fd4b2327e12e
++ ### 前端
+
+@ 0 2 0 18f975cd7a965f3a0e4ed6db02cdf982
++ 明文 HTTP/1.1 连接由两种前端之一提供服务。
++ 选择由调用 `handle` 时作用域内的 `Frontend` given 决定：
+
+% 2 1 0 037d6d3a9cd37681038ab691bd946774
+
+@ 0 5 0 1bc219304e7e21a903f6c02e1514e2d9
++ column  前端
++ column  运行处理函数的位置
++ column  阻塞的处理函数会拖住
++ row  `frontends.threadPerConnectionFrontend`，默认  在其连接的虚拟线程上  只有它自己的连接
++ row  `frontends.reactiveFrontend`  内联在一组固定的选择器线程之一上  该循环上的每个连接
+
+% 1 1 0 0944fce97e8373c2103c90a229d6dfd1
+
+@ 0 3 0 08600e34fdc581e716cb610dd91185fc
++ 在默认前端上，处理函数可以阻塞：在[数据库](database.md)、文件或另一个服务上阻塞。
++ 响应式前端是一个事件循环，其中每个选择器线程在每次被唤醒时为一批就绪的连接提供服务：
+
+% 2 1 0 028938bb7b8001610a5647bc03208622
+
+% 0 1 0 1c5fa89f3bd3476205a02f1c1fc315bf
+
+% 0 1 0 0238cfddcc431ab11af03ce3bc4ecb8a
+
+% 1 1 0 165d80476a5367860b151e51e87858aa
+
+% 0 1 0 19dd4242bda50d0f137c7dc8eb4d78ad
+
+% 1 1 0 0b8ee5a75411e6d21c31396178a40533
+
+@ 0 3 0 1b68691cc01517b00379552849917a70
++ 响应式前端处理小请求的速率约为默认前端的一倍半，并且每个请求分配的内存更少，因为不需要为每个请求调度任何东西。
++ 在回环基准测试中，它与 Netty 和 Undertow 持平。
+
+@ 0 6 0 1db08eebb6271abe1831ce6fd3944249
++ 代价在于它的契约。
++ 阻塞的处理函数会拖住该循环上的每个连接。
++ 因此，响应式前端适合根据已有内容计算响应的处理函数，或把工作交给其他任务、根据内存中的内容作答的处理函数。
++ 循环无法内联处理的请求会被交给一个虚拟线程，并通过默认路径处理：分块或过大的正文、`Expect: 100-continue` 以及协议升级。
++ 因此 WebSocket 处理函数在两种前端下都能工作。
+
+@ 0 1 0 0a15ebad305c934c1527dd3a42e83d7a
++ ### 相关
+
+@ 0 7 0 1f108b6a2619ed081933c0b95227a35c
++ - [HTTP 客户端](http-client.md)使用同一套方法、状态和头部的词汇发出请求。
++ - [HTML](html.md) 和 [JSON](json.md#json-over-http) 介绍最常提供的正文。
++ - [表单](forms.md)渲染 HTML 表单并读取其提交内容。
++ - [套接字](sockets.md)是其下的一层。
++ - [守护进程](daemons.md)让服务器作为服务持续运行。
++ - [MCP](mcp.md)、[网页](pages.md)、[模式](patterns.md)和[密码学](cryptography.md)介绍服务器所托管、匹配和保护的内容。

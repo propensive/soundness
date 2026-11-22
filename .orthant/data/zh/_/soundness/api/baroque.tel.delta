@@ -1,0 +1,280 @@
+orthant 2 language
+
+% 0 1 0 0f04ec4b9ac2d4270a232409219e1f6b
+
+% 0 1 0 0acd985fca7d839c13845c8c9a4936f2
+
+% 0 1 0 0b5938ce7315323607e1922cbc4d93e2
+
+@ 0 1 0 1015a776fc6b793b06a9a32c9c806981
++ info   任意数值分量类型（包括物理量）上的复数，使用未装箱的双精度数
+
+% 0 1 0 0ca6d61ddd9511ea1cdae38f1414f6fe
+
+@ 0 4 0 08c85e3aae820eda0fed53c726d6b53b
++     _Baroque_ 提供 `Complex`，一种复数，其实部和虚部可以是具备某个运算所需算术的任何类型：`Int`、`Double`、有理数 `Q64` 或一个量，因此复阻抗或复速度在每一次求和与求积中都保持其单位。
++     `i` 是虚数单位，类型为 `Complex[Double]`。
+
+% 2 1 0 16d3af3012851a871a34ddcf0563aac1
+
+% 3 1 0 105d725a584aea14130cac19b7ff1f1b
+
+% 0 1 0 0b76cac599b366c61f87578fd49502ff
+
+% 0 1 0 0edcd0fe5fb031d21d36bf4b03dc2b44
+
+% 0 1 0 1eedcb1fb8a95eff0501e1721f96116a
+
+% 0 1 0 1c50227687bcd83f0df938ba3167f7a2
+
+% 1 1 0 056fd88217c5d65b1d7cff18466d0006
+
+@ 0 7 0 11be897b92902a4a001e0cc9aa4aded3
++     算术并不定义在 `Complex` 本身上，而是通过 symbolism 的类型类实现：`Complex` 的伴生对象持有 `Addable`、`Subtractable`、`Multiplicable`、`Divisible` 和 `Negatable` 的 given，它们恰好在分量具有相应运算时存在，其结果是以分量的结果类型为分量的复数。
++     两个复长度的积是复面积；英寸与英尺之和是以米为单位的复长度。
++     每个 given 都在隐式作用域中，因此除 `soundness.*` 之外无需任何导入。
+
+@ 0 6 0 0f54cab076181aba086386d1220e9c2b
++     构造器、访问器和算术都是 `inline` 的，并在调用处解析分量的运算：分量底层为 `Double` 的 `Complex`——`Double` 本身、量、`F64`——以两个原始双精度数存储（`Complex.Doubles`），其他的则以两个引用存储（`Complex.Boxed`）。
++     因此，对两个 `Complex[Double]` 执行 `c*d` 会编译为四次乘法、一次加法、一次减法和一次分配，没有装箱。
+
+@ 0 2 0 117252b61533f9821dc5d28c6ec96f54
++     该库只有一个源集 `baroque.core`，它可以为每个平台编译，其两个名称都导出到 `soundness` 总括包中。
+
+% 0 1 0 07f6671b83868ae906ae120ec739bb85
+
+% 0 1 0 18531ac1d3356e520b6001814c7ff7d0
+
+% 0 1 0 1746e6085ecbcd3601cd60f091689818
+
+@ 0 1 0 0d76a5a26a77de7408e64bee4e737bb2
++ entry .Complex   由任意类型的两个分量构成的复数，分量支持哪些算术，它就支持哪些
+
+% 0 1 0 0d66ee75ebc1a706051aa7278dbe12c1
+
+@ 0 6 0 070f0707a86cf63c0885f06ba92b7f41
++       `Complex[component]` 持有同一类型的实部和虚部。
++       它是一个密封抽象类，有两种表示，按分量的运行时类选择：`Complex.Doubles`，两个原始 `Double` 字段，用于底层为 `Double` 的任何分量；`Complex.Boxed`，两个引用，用于其他一切。
++       选择由 `.apply` 作出，并由 `.real` 和 `.imaginary` 读回，因此泛型代码和双精度专用代码在这一点上总是一致；用户从不需要指名任一子类。
+
+% 2 1 0 11fdd9f6956df17f07326eb3383c21ee
+
+% 3 1 0 1819d1f5106c764a189b87a48430ff7f
+
+% 0 1 0 1cea18ad8d6d0dd60b93ba374fe3662b
+
+% 0 1 0 1eb8986fdeb704541c9b430509e80426
+
+% 0 1 0 1f71786e104a9dd40a909c5d498ed39e
+
+% 0 1 0 0fe01996149186f809f78441f47cd474
+
+% 0 1 0 068b6a6033d53c8501626866aef16478
+
+% 0 1 0 01ab83c04a624bc00932b90204f3f864
+
+% 0 1 0 0417aa0789429c4c18fe718b047a5e2a
+
+% 0 1 0 1702c648f0b6465702da700b84847b6d
+
+% 1 1 0 17c15b31b2d9fbd70e2ba8c82c52419d
+
+@ 0 5 0 10b88bcb096469b30ddf315ec6c1bd5c
++       算术通过 symbolism 的运算符实现，其 given 位于这个伴生对象中：`.addable`、`.subtractable`、`.multiplicable`、`.divisible` 和 `.negatable`，以及用于在任一侧乘以实数的 `.multiplicableByDouble` 和 `.doubleMultiplicable`。
++       每一个只要求其公式对分量所需的东西，分量类型也可以不同，只要它们的运算有定义：
+
+% 2 1 0 0edf486869404d6c1186301e6be7e5e4
+
+% 3 1 0 1e02ed92f35e3ee60b860a7ca6f12095
+
+% 0 1 0 1f762de9e3afd13c1ea327c2ae57f6f2
+
+% 0 1 0 0b9646b8535197551d667cf73ed71d37
+
+% 1 1 0 08fd9d3d8195189b144e483fc6017c01
+
+@ 0 3 0 0c531911405132341ca10b86050d84d0
++       复数显示为 `1 + 3ℐ`（`.showable`），检视为 `1+3i`（`.inspectable`）；极坐标形式是 `.modulus` 和 `.argument`，用接受 `Angle` 的双参数 `.apply` 可以由它构建复数。
+
+% 0 1 0 0657aefa113a029318e7a46ec62091aa
+
+% 0 1 0 19bc8308e6c6c1820f6e37a338b37b2c
+
+% 0 1 0 041b0ec338ca52a10a6e38c6ab592acd
+
+% 0 1 0 1e3f3e9573007ac21400308391000119
+
+@ 0 1 0 053621ce4251d95a19d78e8d0d625105
++   entry .Doubles   分量底层为 `Double` 的复数的表示
+
+% 1 1 0 1221134b643219f51b8c91aacb52da03
+
+@ 0 8 0 19f0cf458704afa705876d319e60fb2f
++         两个原始 `Double` 字段，用于 `Complex[Double]`、复数量，以及任何具有 `Underlying[component, Double]` 证据或运行时值为双精度数的其他分量类型。
++         分量类型在这里是幻影类型：`.real` 和 `.imaginary` 将字段转换回该类型。
++         相等性和哈希比较这两个双精度数。
++         由 `Complex.apply` 构建，从不直接构建。
++     entry #real        实部，作为原始 `Double`
++     entry #imaginary   虚部，作为原始 `Double`
++   entry .Boxed   分量底层不是 `Double` 的复数的表示
+
+% 1 1 0 0ed8aaf4431570d81254989d6da5a72a
+
+@ 0 10 0 09901bc89681b2ca16816fd0b1c62521
++         两个指向分量值的引用，用于 `Int`、`Q64` 和任何其他分量类型。
++         相等性和哈希比较这两个分量。
++         由 `Complex.apply` 构建，从不直接构建。
++     entry #real        实部
++     entry #imaginary   虚部
++   entry .apply   由实部和虚部，或由模和一个 `Angle` 构造复数
++       `Complex(real, imaginary)` 接受同一类型的两个分量并选择表示：当已知分量底层为 `Double`（通过 `Underlying` 证据，或本身就是 `Double`）时选择 `Complex.Doubles`，否则对值进行类型测试，回退到 `Complex.Boxed`。
+
+@ 0 3 0 096dd5ae4b1d5a961645fa4306b69c60
++       `Complex(modulus, argument)` 是极坐标形式：模可以是任何能乘以 `Double` 的分量，辐角是 `hypotenuse` 的 `Angle`。
++       结果是以积类型为分量的复数，即 `modulus*cos(argument)` 加上 `modulus*sin(argument)ℐ`。
+
+% 2 1 0 0a2a3636dfe415311dbb6acb6f4bd83a
+
+% 3 1 0 156d37751c94aba6052db4368ad0d10d
+
+% 0 1 0 158f83fb3eea4eee1e840468310626a5
+
+% 0 1 0 126dfade298138ad090b137a125a24cf
+
+% 1 1 0 1f1c7f47229441f0190d77784eea6e9e
+
+@ 0 14 0 0192dad667a20c42047a84d8e141e185
++   entry .unapply   将复数解构为实部和虚部
++       总是匹配，因此 `val Complex(re, im) = z` 和 `case Complex(re, im) =>` 对两种表示都有效。
++   entry .real   复数的实部，类型为其分量类型
++       `Complex[component]` 上的内联扩展方法。
++       若分量静态地已知底层为 `Double`，它就是一次不带类型测试的字段读取；否则对表示进行匹配。
++   entry .imaginary   复数的虚部，类型为其分量类型
++       `Complex[component]` 上的内联扩展方法，读取方式与 `.real` 相同：分量静态地已知底层为 `Double` 时是一次字段读取，否则对表示进行匹配。
++   entry .modulus   复数的绝对值 √(re² + im²)，单位与分量相同
++       一个内联扩展方法。
++       它要求分量能与自身 `Multiplicable`，积能与自身 `Addable`，和是 `Rootable[2]`，其类型是平方根的结果类型：复长度的模是一个长度。
+
+% 2 1 0 0d4c0a23d99d5da507cfc61e3b62f839
+
+% 3 1 0 1d95ab62d2c9f05b1d29f0009ab6ba47
+
+% 0 1 0 0be8bb25a8f03a43023c7b5679d4596b
+
+% 0 1 0 09506d337ca3809a17ba7f60f0ef1203
+
+% 1 1 0 00c2eccb3e9d4fbc0727c0fdf2ba6d8e
+
+@ 0 5 0 121bb0ef6e704e3c1206038a2704d600
++   entry .argument   复数相对于正实轴的角度，作为 `Angle`
++       一个内联扩展方法，计算为两部分各自除以 `.modulus` 后的 `atan2`，因此它需要 `.modulus` 所需的一切，并且分量除以模应得到普通的 `Double`——这对数和量都成立，因为单位会相消。
+
+% 2 1 0 13ec3799d2197ff500faf3ba4581dcbb
+
+% 3 1 0 0723635f84817932167e2201c7118816
+
+% 0 1 0 0c680d44a7d4c64a0e0c943459cfc764
+
+% 1 1 0 0b8a953a0cc4b26b0a77ed0a5a498b37
+
+@ 0 9 0 13e7cff8f4ace1cd15453b91f74c2d04
++   entry .sqrt   复数的主平方根，由其极坐标形式求得
++       一个内联扩展方法：模为 `.modulus` 的平方根、辐角为 `.argument` 的一半，用极坐标形式的 `Complex.apply` 构建。
++       它需要 `.argument` 所需的一切，并且模本身有一个能乘以 `Double` 的平方根；复面积的平方根是复长度。
++   entry .unary_~   共轭复数 `~z`：实部不变，虚部取负
++       一个前缀运算符，以名称 `conjugate` 编译。
++       它要求分量是 `Negatable`，结果的分量类型是分量与取负结果的并集，对于数和量来说就是分量本身。
+
+% 2 1 0 0b92b9a0aee3ed7d09747a7a85ef47f6
+
+% 3 1 0 0c829afa5e8adcee08ccf60b2be1d60c
+
+% 0 1 0 03e0b0e6549b161f1801c60b467be897
+
+% 1 1 0 102e5e5353faa42c11b67f254da6a024
+
+@ 0 4 0 0cb6f6436989bad9186380063c3f53e5
++   entry .showable   将复数显示为 `1 + 3ℐ`，省略为零的部分
++       适用于任何 `Showable`、`Zeroic`、与自身 `Commensurable` 且 `Negatable` 的分量的内联 given。
++       虚部为零时只显示实部，实部为零时显示 `3ℐ`，虚部为负时以减号书写：`1 - 3ℐ`。
+
+@ 0 4 0 09a969d5a8c1a28e073707a389f276a3
++       `Distributive` 的分量——单位跟随数值的量，或者混合单位的 `Quanta`，如英尺和英寸——会将其各部分放在单位之内一起显示：`(1.00 + 9.00ℐ) m·s¯¹`，或 `(1 + 2ℐ) yd, 2 ft, (6ℐ) in`。
++       显示 `Double` 分量需要作用域中有一个 `Decimalizer`。
+
+% 2 1 0 1228bb424c9f0f4f19772215a3b29f81
+
+% 3 1 0 1dcee0f62f76cfd8102d22764962bc51
+
+% 0 1 0 12c5bd5ff86b4f601c8977cee6888885
+
+% 0 1 0 0ca15c10ee71f5b80cc147c7aa82fb1e
+
+% 0 1 0 0f8ae8a286f7074c0d5ec7d5915a6fd5
+
+% 1 1 0 1e2030e260958d2a04843c208b6b2fa7
+
+@ 0 15 0 148829fc4fa3dc0a0a367de1180fb0d0
++   entry .inspectable   将复数检视为 `1+3i`，各部分按其自身的检视方式呈现
++       适用于任何 `Inspectable` 的分量。
++       两部分用 `+` 连接，若虚部的检视结果以 `-` 开头则用它连接，后面跟上 `i`：`1.0-3.0i`。
++   entry .addable   当分量可以相加时，逐部分地将两个复数相加
++       一个内联 given：只要 `a is Addable by b to r`，`Complex[a] + Complex[b]` 就是 `Complex[r]`，因此不同单位的复长度相加得到一个复长度。
++       分量由宏生成的 `AddOp`（如量所具有的）优先于其 `Addable`。
++   entry .subtractable   当分量可以相减时，逐部分地将两个复数相减
++       一个内联 given：只要 `a is Subtractable by b to r`，`Complex[a] - Complex[b]` 就是 `Complex[r]`。
++   entry .multiplicable   将两个复数相乘，(a + bℐ)(c + dℐ) = (ac − bd) + (ad + bc)ℐ
++       一个内联 given。
++       它要求分量能 `Multiplicable` 到某个积类型，且该积类型能与自身 `Addable` 和 `Subtractable`；结果是以积的和类型与差类型为分量的复数，因此复数米乘以复数秒是以米·秒为单位的复数。
+
+% 2 1 0 0db57c121874efcf153a0bac86d94a42
+
+% 3 1 0 193c4b7c71d07d0902b705381d0f2ea7
+
+% 0 1 0 1b09df9b0dd5debc02ffb2143b854f31
+
+% 1 1 0 11a02d285840030905e0ddb48b0a6d0e
+
+@ 0 6 0 0fc42a7ddad679ce0a3827c3fa4c76c6
++   entry .multiplicableByDouble   在右侧将复数乘以实数 `Double`，如 `i*1.8`
++       适用于任何能被 `Double` `Multiplicable` 的分量的内联 given；每一部分都乘以该标量。
++   entry .doubleMultiplicable   在左侧将复数乘以实数 `Double`，如 `2.0*z`
++       适用于 `Double` 能被其 `Multiplicable` 的任何分量的内联 given；每一部分都乘以该标量。
+
+% 2 1 0 008a168bbeaef25d0291cf648562c474
+
+% 3 1 0 1650ce7195b7a4fd11229b467fb39832
+
+% 0 1 0 1c297b0dc414cb4c1e7c31369a9505bd
+
+% 1 1 0 1ccde5a10636e6140b076f660edcb26f
+
+@ 0 5 0 05a9e121b8cf48e41ffa83193c71702c
++   entry .divisible   将两个复数相除，分子分母同乘除数的共轭
++       一个内联 given。
++       商为 `(ac + bd)/(c² + d²) + (bc − ad)/(c² + d²)ℐ`，因此它要求两种分量类型可以相乘、被除数的分量是 `Negatable`、积可以相加，且被除数的和可以除以除数的和。
++       复数米除以复数英尺得到一个无量纲的复数。
+
+% 2 1 0 06917ea097a5c4631a7516e8c71c5f46
+
+% 3 1 0 0ca5844fcb05dcea020fb26862949c3d
+
+% 0 1 0 17b284f5531f46a7061cc6c077cb913a
+
+% 1 1 0 1fc8eb7338ff346315d29049b487a84b
+
+@ 0 3 0 1f00bda28ac86dbd1238f6b889ea38b0
++   entry .negatable   将复数的两部分都取负，即 `-z`
++       适用于任何 `Negatable` 分量的内联 given；结果是以取负结果类型为分量的复数。
+
+@ 0 3 0 0042a4f5c986401a0f3e1a60a0c54830
++ entry .i   虚数单位 `Complex(0.0, 1.0)`，用于将复数写成 `a + b*i`
++     一个 `Complex[Double]`，因此通过 `Complex.multiplicableByDouble`，`i*1.8` 就是 `Complex(0.0, 1.8)`，复数也可以写成一个和：
+
+% 2 1 0 07829b18cd73abd81a7ec140c833c160
+
+% 3 1 0 0684733f51d8bc1e1d162c2a41971fcd
+
+% 0 1 0 00cc1e258790df0c19d7cd7b7aa4d837
+
+% 1 1 0 076500bad941afb7160a8195bb5dcd91

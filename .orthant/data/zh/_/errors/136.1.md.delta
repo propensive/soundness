@@ -1,0 +1,45 @@
+orthant 2 language
+
+% 0 1 0 1f2d50a97e27975513bbd3392115d7f8
+
+@ 0 1 0 0b119d4ee899af6e0e2ca3a32b4ec22c
++ 当 ZIP 归档操作无法完成时抛出。
+
+@ 0 1 0 1d8ed6a2d2412a231ea0d46e12dff5b7
++ ## 原因
+
+@ 0 3 0 0f9eb93eb93db2a004f24ce33dbd3fc1
++ Zeppelin 按路径管理 ZIP 条目。
++ 此错误报告重复或缺失的路径，以及无效的条目名称。
++ 消息是 `the ZIP operation failed because $reason`。
+
+@ 0 1 0 0982d44e8aec0bbd176df78e68656684
++ ## 变体
+
+% 0 1 0 0a7c55b4c0ac40601a46d9fdcd155626
+
+@ 0 16 0 109e4b1f7c05f65e1954c533fa0f305d
++ column  代码
++ column  原因
++ column  含义
++ column  消息
++ column  解决方法
++ row  `↯/s.136.1.1`  `DuplicateEntry`  正在添加的条目与归档中已有的某个条目路径相同。  `[↯/s.136.1.1] the ZIP operation failed because the path /hamlet/act1.txt is a duplicate entry`  选择另一个路径，或先删除已有的条目。
++ row  `↯/s.136.1.2`  `NotFound`  某个操作引用了归档中不存在的条目路径。  `[↯/s.136.1.2] the ZIP operation failed because path /hamlet/act1.txt was not found in the ZIP file`  读取前先列出条目；检查路径中的拼写错误。
++ row  `↯/s.136.1.3`  `InvalidName`  条目名称对于 ZIP 条目无效，例如包含该格式不允许的字符。  `[↯/s.136.1.3] the ZIP operation failed because the name hamlet\act1 is not valid for a ZIP entry`  将名称清理为有效的条目路径。
++ row  `↯/s.136.1.4`  `UnsupportedMethod`  条目采用的压缩方法既不是 *stored* 也不是 *deflate*。  `[↯/s.136.1.4] the compression method 12 is not supported`  用 deflate 重新压缩归档，或以不压缩的方式存储该条目。
++ row  `↯/s.136.1.5`  `MissingEocd`  找不到中央目录结束记录，因此无法定位归档的索引。  `[↯/s.136.1.5] no end-of-central-directory record could be found`  该文件不是 ZIP 归档，或其尾部缺失。请检查它是否已完整下载。
++ row  `↯/s.136.1.6`  `TruncatedArchive`  归档在其声明的某个结构完整之前就结束了。  `[↯/s.136.1.6] the ZIP archive ended unexpectedly`  该文件不完整。请重新获取。
++ row  `↯/s.136.1.7`  `BadSignature`  某条记录的开头不是该格式在此处要求的四字节签名。  `[↯/s.136.1.7] an expected record signature (67324752) was absent`  归档已损坏，或偏移量是根据损坏的索引计算出来的。在索引不可用时，通过扫描恢复条目或许可行。
++ row  `↯/s.136.1.8`  `Zip64Error`  无法解释 ZIP64 扩展，这些扩展承载原始格式无法容纳的过大尺寸和偏移量。  `[↯/s.136.1.8] the ZIP64 metadata could not be interpreted`  归档使用 ZIP64 的方式不受此读取器支持，或元数据已损坏。
++ row  `↯/s.136.1.9`  `WriteUnsupported`  归档以 `Write` 授权打开，而以 `Zip` 打开并不提供该授权。  `[↯/s.136.1.9] ZIP archives cannot yet be opened for writing`  从条目构建一个新的 `Zipfile` 并写出（`path.write(Zipfile(entries))`），而不是为了修改而打开现有归档。
++ row  `↯/s.136.1.10`  `AlreadyExists`  创建归档时发现该路径上已存在内容。  `[↯/s.136.1.10] an archive already exists at this path`  选择另一个路径，或传入 `CreateFlag.Replace` 以有意覆盖。
++ row  `↯/s.136.1.11`  `CannotWrite`  无法写入归档，原因由底层文件系统报告。  `[↯/s.136.1.11] the archive could not be written: permission denied`  详细信息中带有操作系统的解释；据此处理。
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 1 0 004f241cb4a4ed0405cb108ee75b2611
++ ## 另请参阅
+
+@ 0 1 0 10dca2f394721a9b023e9944aad3cdec
++ - 源代码：`lib/zeppelin/src/core/zeppelin.Zip.scala`

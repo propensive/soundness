@@ -1,0 +1,153 @@
+orthant 2 language
+
+@ 0 1 0 0141ab70aa7784f41e44f694bd889c1c
++ ## 总览
+
+@ 0 2 0 1b72ed9ebf92ddcb073c3a303abd44fb
++ Soundness 是一个由许多部分组成的库，这些教程每篇讲一个主题。
++ 这里按读者可能正在做的事情对它们进行分组。
+
+@ 0 8 0 10a91004d6525a330a00b7c359e5c96b
++ 每篇教程都按顺序逐步构建其示例，示例的输出显示在示例下方，与示例实际产生的输出一致。
++ 在示例本应失败的地方，显示的则是编译器的错误或抛出的错误。
++ 具有精确含义的词，例如[类型类]或[策略]，在术语表中有定义，术语表会在使用该词的地方出现。
++ 每篇教程都以相关教程的列表结尾，大多数还会链接到其设计背后的理念：[构造即安全](../../philosophy/safety-by-construction.md)、[直接风格](../../philosophy/direct-style.md)、[诚实签名](../../philosophy/honest-signatures.md)等等。
+
+@ 0 1 0 02a54c7d1934e7ef12fa63a30dec9230
++ ### 基础
+
+@ 0 27 0 072ede9fee7a74810f6bc5556b401006
++ - [文本](text.md)——书写、切分、搜索和渲染文本，以及属于文本的类型
++ - [字符](characters.md)——编码、Unicode 属性、宽度和字素簇
++ - [数字](numbers.md)——受检算术、位操作、精度、序数和有界数
++ - [数学](mathematics.md)——复数、向量、矩阵和置换
++ - [可选值](optional-values.md)——不用 `Option` 表示缺失，以及它的代价
++ - [错误](errors.md)——声明代码可能失败、选择策略，以及恢复
++ - [集合](collections.md)——集合类型，以及它们如何与标准库互通
++ - [模式](patterns.md)——正则表达式和 glob，在代码编译时检查
++ - [插值](interpolation.md)——编写自己的插值器
++ - [名称](names.md)——依照一个规则平面验证的标识符
++ - [解码](decoding.md)——将文本转换为类型化的值，并在模式中提取它们
++ - [显示](display.md)——显示和检视值
++ - [派生](derivation.md)——为积类型和和类型派生类型类实例
++ - [注解](annotations.md)——在编译时读取注解
++ - [通用数据](generic-data.md)——一种所有格式都可以经由它转换的表示
++ - [记录](records.md)——由规范得到的类型化记录
++ - [目录](catalogs.md)——为类型的每个字段提供一个值，按路径寻址
++ - [光学组件](optics.md)——更新嵌套的不可变值
++ - [位标志](flags.md)——以位表示的标志集合
++ - [布隆过滤器](bloom-filters.md)——概率性的成员判定
++ - [缓存](caching.md)——LRU 缓存和会过期的值
++ - [UUID](uuid.md)——生成、解析和组合 UUID
++ - [随机性](randomness.md)——随机值、分布和可复现的运行
++ - [版本管理](versioning.md)——版本和清单
++ - [差异比较](diffing.md)——差异、补丁和演化
++ - [树](trees.md)——绘制为图示的树和图
++ - [图](graphs.md)——构建、排序、折叠和绘制图
+
+@ 0 1 0 0c3fdb91ee4355d602451db1fcde1d8e
++ ### 数据格式
+
+@ 0 15 0 1b98f74fbd9340c61d016cf949bfc213
++ - [JSON](json.md)——解析、类型化访问、构建、schema 和验证
++ - [YAML](yaml.md)——解析、标签、锚点和编码
++ - [XML](xml.md)——节点、命名空间、XPath 和 schema
++ - [CBOR](cbor.md)——类似 JSON 的二进制编码，带有标签和诊断记法
++ - [CSV](csv.md)——行、表头和格式，解码为 case class
++ - [TEL](tel.md)——基于缩进的数据语言、其 schema 及编辑
++ - [Protocol Buffers](protobuf.md)——消息、字段和兼容性
++ - [Markdown](markdown.md)——解析、渲染和写回
++ - [Base 编码](base-encoding.md)——Base64、十六进制及其他字母表
++ - [二进制数据](binary-data.md)——描述和读取二进制布局
++ - [压缩](compression.md)——压缩值和流
++ - [归档](archives.md)——ZIP、tar 和 ar
++ - [哈希](hashing.md)——摘要、校验和与快速哈希
++ - [密码学](cryptography.md)——加密、签名、密钥和证书
++ - [媒体类型](media-types.md)——媒体类型，以及知道自己媒体类型的类型
+
+@ 0 1 0 1689e237f50aa752011f26db5b7c1b53
++ ### 时间、量与区域设置
+
+@ 0 8 0 070db1ad81efa60c180a73390ca39a2b
++ - [时间](time.md)——日期、时间、瞬时、时区、历法、重复和格式化
++ - [量](quantities.md)——单位、量纲和换算，在编译时检查
++ - [货币](money.md)——金额、拆分、价格和税
++ - [地理](geography.md)——角度、罗盘方位和位置
++ - [化学](chemistry.md)——元素、分子、化学式和方程式
++ - [颜色](colors.md)——色彩空间、混合、距离和调色板
++ - [国际化](internationalization.md)——翻译和区域设置
++ - [断字](hyphenation.md)——为单词断字和划分音节
+
+@ 0 1 0 0b85f5f5e2adb8710707c5fdcb1e276d
++ ### 文件系统、进程与环境
+
+@ 0 14 0 1ae832d3e305efd104c4cb1a1210c24b
++ - [路径](paths.md)——构建、关联和解构路径
++ - [文件系统](filesystem.md)——文件、目录、访问和监视
++ - [环境](environment.md)——变量、属性、目录和机器
++ - [流](streams.md)——读取、写入和组合数据流
++ - [进程](processes.md)——定义、运行命令并用管道连接它们
++ - [并发](concurrency.md)——受监管的任务、取消和 promise
++ - [日志](logging.md)——日志记录器、级别和路由
++ - [类路径](classpath.md)——资源、类加载器和服务
++ - [打包](packaging.md)——依赖按哈希获取的精简 JAR
++ - [守护进程](daemons.md)——带有快速客户端的长时间运行的应用程序
++ - [容器](docker.md)——构建和读取镜像，以及与守护进程通信
++ - [Git](git.md)——仓库、提交、分支和远程仓库
++ - [SSH](ssh.md)——主机密钥、传输层和远程命令
++ - [数据库](database.md)——声明、存储和查询
+
+@ 0 1 0 166b6a2affdcaab40edc80374b4322dc
++ ### 网络与 Web
+
+@ 0 23 0 19a004f0d9fab2d7120c1e0efe071fcd
++ - [网络地址](network-addresses.md)——URL、主机名、IP 地址和端口
++ - [套接字](sockets.md)——服务端、客户端、TLS 和会话
++ - [HTTP 客户端](http-client.md)——请求、头部、正文和会话
++ - [HTTP 服务器](http-server.md)——服务器、响应、WebSocket 和 HTTP/2
++ - [RPC](rpc.md)——基于 JSON-RPC、gRPC 和服务器发送事件的接口
++ - [电子邮件](email.md)——撰写和发送
++ - [OAuth 2](oauth.md)——令牌和凭据
++ - [OpenAPI](openapi.md)——由文档生成的类型化客户端
++ - [服务发现](service-discovery.md)——通告和浏览服务
++ - [Web 自动化](web-automation.md)——驱动浏览器
++ - [HTML](html.md)——构造、检查、渲染和解析 HTML
++ - [网页](pages.md)——由范式构成的完整页面
++ - [浏览器 DOM](dom.md)——对页面进行类型化的脚本编写
++ - [CSS](css.md)——编写、验证和渲染样式表
++ - [表单](forms.md)——渲染和处理表单
++ - [SVG](svg.md)——形状、路径、变换和文档
++ - [图表](charts.md)——序列、图表种类和渲染
++ - [标注布置](label-placement.md)——避开障碍物的标注
++ - [图像](images.md)——像素、画布和转换
++ - [音频](audio.md)——读取、写入、录制和播放
++ - [字体](fonts.md)——加载、度量和子集化
++ - [PDF](pdf.md)——创建、读取和编辑文档
++ - [数学标记](mathematical-markup.md)——MathML 树
+
+@ 0 1 0 047910004af6227e0f33566e3eb383cd
++ ### 命令行与终端
+
+@ 0 6 0 1df12b0b26a04bce02517e0107e6933f
++ - [命令行应用程序](cli.md)——入口点、参数、标志、补全和帮助
++ - [终端](terminal.md)——带样式的文本、输入、菜单和布局
++ - [终端仿真](terminal-emulator.md)——向终端输入并检视它
++ - [表格](tables.md)——以任意宽度将值制成表格
++ - [仪表](gauges.md)——以仪表显示状态
++ - [语法高亮](syntax-highlighting.md)——高亮、类型和补全
+
+@ 0 1 0 04e11eaca150d9d30c18fcb6b9b52374
++ ### 编译器、工具与智能体
+
+@ 0 11 0 1e99dd85d04d07b1187175207dc4aa24
++ - [编译](compiler.md)——配置和运行编译器，以及生成制品
++ - [元编程](metaprogramming.md)——given、类型层面的值和展开
++ - [分阶段执行](staging.md)——引用、拼接和 rig
++ - [测试](testing.md)——套件、测试、对比和基准测试
++ - [调试](debugging.md)——会话、断点和单步执行
++ - [堆栈跟踪](stack-traces.md)——捕获、名称还原和解析跟踪
++ - [外语互操作](foreign-interop.md)——加载外来接口并在其中导航
++ - [语言服务器协议](lsp.md)——定义和运行服务器
++ - [ACP](acp.md)——智能体客户端协议
++ - [MCP](mcp.md)——模型上下文协议
++ - [语言模型](llm.md)——对话、工具和结构化回答

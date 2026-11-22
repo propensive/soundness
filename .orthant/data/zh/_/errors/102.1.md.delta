@@ -1,0 +1,39 @@
+orthant 2 language
+
+% 0 1 0 03436614c831c1f70dfe1f0f885feb1b
+
+@ 0 2 0 1dfe712c90d7e34b0ad23b490143cafe
++ 当 DNS-SD 服务发现（`syndesis`）无法通告、浏览或解析，或者服务、实例或 TXT 值无效时抛出。
+
+@ 0 1 0 1d8ed6a2d2412a231ea0d46e12dff5b7
++ ## 原因
+
+@ 0 4 0 13488b490aeb2a1806fa0aa6bd0efbbd
++ `Discovery.Service`、`Discovery.Instance` 和 `Discovery.Txt` 在构造时验证其各部分；通告会探测其名称，并在冲突过多后放弃；解析会在超时时限内等待实例的记录；后端必须能够启动。
++ 消息为 `service discovery failed because $reason`。
+
+@ 0 1 0 0982d44e8aec0bbd176df78e68656684
++ ## 变体
+
+% 0 1 0 0a7c55b4c0ac40601a46d9fdcd155626
+
+@ 0 11 0 1bdfeeb0968780850977d0e272a22d8b
++ column  代码
++ column  原因
++ column  含义
++ column  消息
++ column  解决方法
++ row  `↯/s.102.1.1`  `Conflict`  直到达到重命名上限，另一台主机始终在认领通告尝试的每一个名称。  `[↯/s.102.1.1] service discovery failed because the name Hamlet._fury._tcp.local could not be claimed after repeated conflicts`  选择一个不同的实例名称，或停止另一个通告方。
++ row  `↯/s.102.1.2`  `Timeout`  实例的 SRV、TXT 或地址记录未在解析的超时时限内到达。  `[↯/s.102.1.2] service discovery failed because the instance Hamlet._fury._tcp.local did not resolve before the timeout`  该实例可能已离开网络；请重新浏览，或延长超时时限。
++ row  `↯/s.102.1.3`  `InvalidName`  实例标签为空，或者标签或名称超出了 DNS 限制（标签 63 个八位组，名称 255 个八位组）。  `[↯/s.102.1.3] service discovery failed because the name is not a valid DNS-SD name`  缩短该标签；它可以包含任何 UTF-8 字符，包括点和空格。
++ row  `↯/s.102.1.4`  `InvalidTxt`  TXT 键为空、不是可打印的 ASCII，或包含 `=`；或者某个 `key=value` 对超过 255 个八位组。  `[↯/s.102.1.4] service discovery failed because the TXT entry a=b is not valid`  键是简短的可打印 ASCII 名称；把 `=` 放在值中，并将较长的值拆分到多个键上。
++ row  `↯/s.102.1.5`  `InvalidService`  服务名称为空、长于十五个字符，或以 DNS 形式所添加的下划线开头。  `[↯/s.102.1.5] service discovery failed because the service name _fury is not valid`  给出不带下划线的注册服务名称：`fury`，而不是 `_fury`。
++ row  `↯/s.102.1.6`  `Unavailable`  后端无法启动：套接字响应器没有找到支持多播的接口，或无法加入 mDNS 组。  `[↯/s.102.1.6] service discovery failed because no service discovery backend could be started`  检查主机的网络接口，以及端口 5353 能否以复用方式绑定。
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 1 0 004f241cb4a4ed0405cb108ee75b2611
++ ## 另请参阅
+
+@ 0 1 0 0aac7d226d20ddd91529b8334ee1c1cf
++ - 源代码：`lib/syndesis/src/core/syndesis.Discovery.scala`

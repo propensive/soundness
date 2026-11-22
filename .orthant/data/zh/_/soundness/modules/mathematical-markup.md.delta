@@ -1,0 +1,321 @@
+orthant 2 language
+
+@ 0 1 0 1a6950842f0215bf01e8cfc4ee7f95bb
++ ## 数学标记
+
+@ 0 1 0 02ed9263154c2802081b650b8e2f33e5
++ ### 概述
+
+@ 0 5 0 1c42e11eb1e8852d15e8e2cf661e51a1
++ 网页上的数学是 [MathML](https://www.w3.org/TR/MathML-Core/)：由行、分数、上下标和根式构成的呈现树，由浏览器原生渲染。
++ 这里将这棵树建模为类型化的值，可以从 XML 读回，并嵌入 [HTML](html.md) 中。
++ 手写 MathML 令人无法忍受，因此还提供了 *Ergo*：一种单行简写，解析后得到同一棵树，也可以从树序列化回来。
+
+@ 0 1 0 1d95da685f40fffa1842050fa634640c
++ ### 关于书写数学
+
+@ 0 5 0 06a08d98c21cb7d7039b429e802dc6fd
++ 方程是一棵树，MathML 如实地表达了这一点。
++ 但它表达这一点所用的字符，大概是方程本身的十倍。
++ `x²` 是 `<msup><mi>x</mi><mn>2</mn></msup>`，一个求根公式要写好几行，没有人能把它当作数学来读。
++ 其他选择则以另一种方式更糟。
++ TeX 紧凑而富有表现力，但需要庞大的渲染器，产生的东西浏览器无法内省。
++ 图片则完全丢失了内容。
+
+@ 0 5 0 1d1b8e9ea7f000140643b51ceff318ba
++ Ergo 走的是中间路线。
++ 它是一种紧凑的线性记法，每种结构角色对应一个字形，解析为 MathML 并能序列化回来。
++ 源码保持可读，输出是真正的文档树，往返转换是精确的。
++ 由类型化的值而非字符串构建的标记，对于一种很容易出现细微错误的记法来说，就是[构造即安全](../../philosophy/safety-by-construction.md)。
+
+@ 0 2 0 0b06ec799f702f4d092e1ad9c9b5f2f1
++ 一切都来自 `soundness` 包。
++ 其他导入为错误选择一个[策略]，为读取选择一个 [XML schema](xml.md)，并让示例可以打印其结果：
+
+% 0 1 0 05f2ae76781bc53c0f28815590cdc90c
+
+% 0 1 0 1bca28db88d8e18d0fbcefeaacfc679c
+
+% 0 1 0 0b36b930fa0746280e96aefd2dd1cfb2
+
+% 0 1 0 126ea9b3e0450b920c7880db223bf337
+
+% 0 1 0 0db1a0ecc5cc04ab14e285e7be2d415a
+
+% 0 1 0 0d2427c27ad8baeb0c18f94adb6d4425
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 1 1 0 02a8d4cb9fa86f7a19de906d90204517
+
+@ 0 1 0 12cfafeaa19a318617db5fe18bd28001
++ ### MathML 树
+
+@ 0 2 0 0e0c00f5042f85b21198ee11a3affea3
++ 元素是以标签命名的值，`Math` 是根。
++ 以下是 Ergo 会写出的元素：
+
+% 2 1 0 018fdc78be47a2690c1b4cd0dc56e563
+
+@ 0 17 0 154495c04ce9f0e9172e8945bd22abe0
++ column  值
++ column  元素
++ column  含义
++ row  `Mi`  `<mi>`  标识符
++ row  `Mn`  `<mn>`  数
++ row  `Mo`  `<mo>`  运算符
++ row  `Mrow`  `<mrow>`  组
++ row  `Mfrac`  `<mfrac>`  分数
++ row  `Msqrt`  `<msqrt>`  平方根
++ row  `Mroot`  `<mroot>`  n 次根
++ row  `Msup`  `<msup>`  上标
++ row  `Msub`  `<msub>`  下标
++ row  `Msubsup`  `<msubsup>`  下标和上标
++ row  `Mover`  `<mover>`  上置标
++ row  `Munder`  `<munder>`  下置标
++ row  `Munderover`  `<munderover>`  下置标和上置标
++ row  `Mtable`, `Mtr`, `Mtd`  `<mtable>`, `<mtr>`, `<mtd>`  表、行、单元格
+
+% 1 1 0 077ff183c21bc32017dbb989ecb48a09
+
+@ 0 2 0 05bab62880037cdc0940ab14025913d5
++ 其他元素，例如 `Mtext`、`Mspace`、`Mstyle` 和 `Mpadded`，以同样的方式建模。
++ `in[Xml]` 渲染一个 `Math`：
+
+% 2 1 0 027c2c85248fbe1a009c2623fa77cdae
+
+% 3 1 0 0f85fbf15d243daa02dbe00502a19fce
+
+% 4 1 0 1f11228101bc9401077d739a6405a576
+
+% 0 1 0 01caeecd15b326dc196c43fc8ed3fa45
+
+% 1 1 0 0d688f377aded3330cdbf16bc4eff672
+
+@ 0 2 0 0b0f7ae5d67af730105042c6a625a66e
++ MathML 文本可以用 `read[Math]` 读回，文档往返后保持不变。
++ 模型不解释的属性会被保留，而不是被丢弃：
+
+% 2 1 0 02f36abb6b3ec49512dd3fdcc9c526e7
+
+% 3 1 0 0b64a8c87941fced07eeca0152809c7e
+
+% 4 1 0 12cdaba7d6d544ea15eb1a21e4923acb
+
+% 0 1 0 1d18f15d9cbaa28304529fbf1cf95ad9
+
+% 0 1 0 1fb3b0fd35758877002846816de76e2c
+
+% 1 1 0 140efc8bd34c959912738f9a8c8ca715
+
+@ 0 2 0 0fc0381729555101158bb117c86672ab
++ 不是 `<math>` 的根元素会抛出 `Mathml.Error`，其中指明实际找到的是什么：
+
+% 2 1 0 18b9d9760ad6163d1e1736aa485987bb
+
+% 3 1 0 0ee5602eb38c197e18ff68aa3ec5a7fb
+
+% 4 1 0 1a6cfb64533166e51848c6b401c5d898
+
+% 5 1 0 12ac04a499b50492135b863844f7a3c3
+
+% 0 1 0 128a397b23219ac2155e97b29e39d950
+
+% 1 1 0 079a066dc0fff24c1fc3f510be93c4e8
+
+@ 0 2 0 1c574b477b96d5471aa72a420091d546
++ `html` 将表达式作为外来元素嵌入 HTML 树中，`Mathml.Reader.read` 则再将其提取出来。
+
+@ 0 2 0 15483eb552c8f3c11c5171ea23263a89
++ `Math` 还有一个 `display`，它是块级或行内的。
++ 它决定浏览器是把表达式排版为独立显示的方程，还是排在连续的文本中。
+
+% 0 1 0 1517b50e185acdef064cd38654861934
+
+@ 0 4 0 0e3de43cf9ebcc781e2f151a0e9bd238
++ Ergo 表达式由一对括号界定，**第一个字符**决定 `(`、`[`、`{` 或 `⟨` 中的哪一对在整个表达式中充当分组。
++ 此后*其他*每种括号都是字面运算符。
++ 一段分组内容是一个 `<mrow>`，运算符的操作数一律是“一个原子或一个分组单元”。
++ 这是求根公式：
+
+% 2 1 0 1d0f20efee9d8185066116dfd4510e2b
+
+% 3 1 0 171518f04ee91baa16c8acc8507cfc60
+
+% 4 1 0 1a9fbbe28cbd7d1c10db5d74c9d034ed
+
+% 0 1 0 1416f399b5f33e390097a61e2acf877e
+
+% 0 1 0 04fd0abd3e8d786e0df85b5462d370c2
+
+% 1 1 0 038c85687c7ce3d602cc37ac9333dc64
+
+@ 0 1 0 16f1cad30d3ab248081df6fa58fd599d
++ 词法单元遵循三条规则，空格是分隔符，渲染时什么也不产生：
+
+% 2 1 0 08f5025503d304a01d81308ea32f9ce3
+
+@ 0 6 0 038bb4234351caaa111d253b6e98735d
++ column  连续的
++ column  成为
++ column  示例
++ row  字母  一个标识符，`<mi>`  `sin` 是 `<mi>sin</mi>`；`x y` 表示 *x·y*
++ row  数字，允许内部有 `.`  一个数，`<mn>`  `3.14`
++ row  任何其他字符  一个运算符，`<mo>`  `=`
+
+% 1 1 0 17de0128f1db391f1d9f187f6a97e81b
+
+@ 0 1 0 0e697105f570fcdf008b2d21dd7afe06
++ ### 结构字形
+
+@ 0 4 0 0f467312d238f42905927d78bd108482
++ 上下标和极限附着在其左侧的原子上，分数的结合比上下标松。
++ 紧挨在 `√` 之前、中间没有空格的指数原子构成 n 次根。
++ 三种表格引导符各自都是自定界的，其主体是一个组，组的子项就是各个元素。
+
+% 2 1 0 1718f7036e4fd3b21e70304139b2f928
+
+@ 0 16 0 1f229d46959dea831b254bab0e341874
++ column  字形
++ column  角色
++ column  元素
++ column  示例
++ row  `↗`  上标  `<msup>`  `x↗2` 是 *x²*
++ row  `↘`  下标  `<msub>`  `x↘i` 是 *xᵢ*
++ row  `↘` 和 `↗`  两者，作用于同一个基  `<msubsup>`  `x↘i↗2` 是 *xᵢ²*
++ row  `↑`  上置标或上限  `<mover>`
++ row  `↓`  下置标或下限  `<munder>`
++ row  `↓` 和 `↑`  两者，作用于同一个基  `<munderover>`  `∑↓(i = 1)↑n`
++ row  `/`  分数  `<mfrac>`  `a/b`
++ row  `√`  平方根  `<msqrt>`  `√x`
++ row  指数之后的 `√`  n 次根  `<mroot>`  `3√x` 是 *∛x*
++ row  `⋱`  矩阵  `<mtable>`  `⋱(((1)(2))((3)(4)))` 是一个 2×2 矩阵
++ row  `⋯`  行向量  单行的 `<mtable>`
++ row  `⋮`  列向量  单列的 `<mtable>`
+
+% 1 1 0 10d049ccb04b03f30e9be7dd168c61b7
+
+@ 0 2 0 1366b934e4811a5103e875e89f357fab
++ 大型运算符不需要特殊语法。
++ `∑` 是普通的运算符，`∑↓(i = 1)↑n` 为它加上下方和上方的极限：
+
+% 2 1 0 02120c9c880a8f29004f91d5ecf6713e
+
+% 3 1 0 002aa72dbc234ba211cc5deb631c691d
+
+% 4 1 0 140eef1ae32d2b1011f356aacc442cfd
+
+% 0 1 0 1369b6a541357e1b02f81439e8bcaa0f
+
+% 1 1 0 1abb8005f6300731047dcc4680033638
+
+@ 0 2 0 0840f33e3105708c07561fc21a2469e5
++ 缺少操作数的运算符字形会退化为字面运算符，因此 `(↗)` 写出一个字面的 ↗，而不是失败。
+
+@ 0 1 0 0fb5b24b8663f89c1372289c1d8868c9
++ ### 属性指令
+
+@ 0 3 0 1dd5230525dd37a01697cef66412f3bc
++ 每个 MathML Core 呈现属性都有一个指令字形。
++ 指令是*后缀*的，绑定到紧挨在其左侧的原子或括号组上。
++ 多个指令可以直接并列：`=◆⇿` 在 `=` 上同时设置 `largeop` 和 `stretchy`。
+
+@ 0 5 0 07fb4820bb160c05085278c02ada4f4d
++ 枚举属性和布尔属性对每个值都有一个单独的字形，不接受参数。
++ 布尔值的真是 `⇿`，假是 `↮`。
++ 由于它们从不接受组，`=◆(a)` 是带有 `largeop="true"` 的 `=`，*乘以* `(a)`。
++ 取值开放的属性，即长度、颜色和整数，在当前的分组括号中接受其值，按原样读取。
++ 在 `(` 分组下，`x●(red)` 设置 `mathcolor="red"`。
+
+@ 0 2 0 1b5470ab4995d54f120ad1008a5ebc15
++ 分组决定指令作用于什么。
++ `(x↗2)●(red)` 为整个上标着色，而 `x↗2●(red)` 只为 `2` 着色：
+
+% 2 1 0 17c183485bcad13316655b410e373f58
+
+% 3 1 0 192568db444deeda1bcbdc165c222bd7
+
+% 4 1 0 1df161c6ae86249b0f20fb89384f0c43
+
+% 0 1 0 0f5fa05b0cce901912e04aeab1ffba06
+
+% 0 1 0 0709a94492d80ee502cecbd6d2d6470c
+
+% 1 1 0 03f5b5af88e5939d1d6aec0d885114e6
+
+% 2 1 0 0d319a2b6604f7aa00c8337e177f9257
+
+@ 0 27 0 1038cd3bbd50b6d20c85ac54f655f0b1
++ column  字形
++ column  属性
++ column  含义
++ row  `⧆` / `⧄`  `displaystyle`  显示样式，或行内/文本样式
++ row  `⌄[±n]`  `scriptlevel`  相对的上下标大小；`+n` 表示缩小
++ row  `◻` / `▭`  `display`  块级或行内，用于根元素
++ row  `●[colour]`  `mathcolor`  前景色
++ row  `▨[colour]`  `mathbackground`  背景色
++ row  `⟑[length]`  `mathsize`  字号
++ row  `⦱`  `mathvariant`  直立，取消自动斜体
++ row  `⊩` / `⫣`  `dir`  从左到右或从右到左
++ row  `⊰` / `⊹` / `⊱`  `form`  前缀、中缀或后缀运算符
++ row  `∥` / `∤`  `fence`  标记为定界符
++ row  `▮` / `▯`  `separator`  标记为分隔符
++ row  `⇿` / `↮`  `stretchy`  允许拉伸以适应周围内容
++ row  `⋈` / `⋊`  `symmetric`  围绕轴对称拉伸
++ row  `◆` / `◇`  `largeop`  在显示样式中视为大型运算符
++ row  `⧳` / `⧯`  `movablelimits`  显示时极限在上/下方，行内时为上下标
++ row  `⧔[length]` / `⧕[length]`  `lspace` / `rspace`  运算符两侧的间距
++ row  `⟰[length]` / `⟱[length]`  `maxsize` / `minsize`  拉伸的界限
++ row  `↔[length]`  `width`  盒子的步进宽度
++ row  `⍏[length]` / `⍖[length]`  `height` / `depth`  基线上方和下方的范围
++ row  `↕[length]`  `voffset`  填充内容的垂直偏移
++ row  `═[length]`  `linethickness`  分数线的粗细；`0` 表示无
++ row  `◠` / `⌢`  `accent`  将上置标视为紧贴的重音符号
++ row  `◡` / `⌣`  `accentunder`  将下置标视为紧贴的重音符号
++ row  `⚙[type]`  `actiontype`  遗留属性；在 Core 中未定义
+
+% 1 1 0 0ef87af5b6d3ce8c0f0c810b17d19b5f
+
+@ 0 4 0 11bac2dcdfc5fea61e0cba954bb6e4e9
++ 范围是 MathML Core，因此它所舍弃的 MathML 3 系列没有字形：表格属性，例如 `columnalign`、`rowspan` 和 `frame`，因为 Core 保留了表格*元素*，但没有定义这些属性；`<menclose>` 及其记法；`<ms>` 的引号属性；以及初等数学元素 `<mstack>`、`<mlongdiv>` 等。
+
+@ 0 1 0 1439c50a39c9c0240a4e0f7a83d88384
++ ### 序列化回来
+
+@ 0 2 0 0f68cf9e33ff98c912e9812a24cf7b03
++ `Ergo.serialize` 将 MathML 树转换回 Ergo。
++ 两者在 Ergo 子集上互为逆运算：解析得到的表达式经序列化再解析，会得到同一棵树：
+
+% 2 1 0 0fb811d37afef5350072caf6f9ed5a1b
+
+% 3 1 0 0b054f58a8cbb34512868b3066384e75
+
+% 4 1 0 099a9fadc7782164171b10ba8b1f80c0
+
+% 0 1 0 00fecea8341d12f5063b273b691c0b77
+
+% 1 1 0 1cdc512a62e8092d1b7b998f4b43451a
+
+@ 0 2 0 09739c35774104fc0b2f252debfcccbf
++ 该子集之外的元素，例如 `<mtext>`，会被以 `Ergo.Error` 拒绝，而不会被近似地序列化，因此往返转换是一种保证，而不是一种希望：
+
+% 2 1 0 1e5c0acba46d064810186c79fa842254
+
+% 3 1 0 0f899872a93a5b7e0c0f59ea91508e93
+
+% 4 1 0 14d7aec7ad04375c06f39002c3c315dc
+
+% 5 1 0 04dfc9531b032fae047d1350c7b8dc4a
+
+% 0 1 0 1a75fde9ad80e83f1b702dc334713718
+
+% 1 1 0 149460b0aed94c6d0bf75fb5b2d61281
+
+@ 0 1 0 0a15ebad305c934c1527dd3a42e83d7a
++ ### 相关
+
+@ 0 4 0 0600b75cd647e61004f8094012dc8b5c
++ - [HTML](html.md) 描述了嵌入 `Math` 的文档。
++ - [XML](xml.md) 描述了 MathML 渲染成和读取自的 `Xml`。
++ - [化学](chemistry.md) 排版另一类公式。
++ - [数学](mathematics.md) 对标记所显示的量进行计算。

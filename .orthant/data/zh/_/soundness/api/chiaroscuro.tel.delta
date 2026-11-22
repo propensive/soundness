@@ -1,0 +1,440 @@
+orthant 2 language
+
+% 0 1 0 0f04ec4b9ac2d4270a232409219e1f6b
+
+% 0 1 0 015587dc09e5240f1c3b9da7d11009cd
+
+% 0 1 0 0b5938ce7315323607e1922cbc4d93e2
+
+@ 0 1 0 1c84feaa32907a2a1fe8e8afd1e6cbb4
++ info   两个值的结构化比较：分解为字段和元素，并将差异并置
+
+% 0 1 0 0ca6d61ddd9511ea1cdae38f1414f6fe
+
+@ 0 7 0 06a482676938ebbc142192fd321d7ff0
++     _Chiaroscuro_ 是失败断言背后的对比。
++     测试框架会把“expected X but found Y”打印为两个 `toString`，让读者用肉眼比较其差异；而它会**分解**两个值——case class 分解为字段，集合分解为对齐的元素，可选值分解为存在或缺失，文本分解为字符——再将两个分解结果**并置**，因此报告是一棵标出了不同叶节点的树：相差二的年龄、替换了一个元素的列表、改动字符以条带标出的文本。
+
+% 2 1 0 12b5f1b9e578ecca18217aca2a9fced0
+
+% 3 1 0 1789a3743ce0b10d0cd595cde64af9e1
+
+% 0 1 0 18ee8e1ba585b2ee198a70721d374a1a
+
+% 0 1 0 1793b50cb06822170a8fc5a992ff2606
+
+% 0 1 0 1d03397bdfa2a6701f08105fec460a3b
+
+% 0 1 0 1d88fb3a5acb32d7199216a6c07d94f2
+
+% 1 1 0 1ec392da29f79cb719b3da357f191860
+
+@ 0 12 0 02e802d2770cb3430bc951e6ad989278
++     三个类型类完成这项工作。
++     `Decomposable` 把一个值变为 `Decomposition`——`Primitive` 叶节点、具名字段组成的 `Product`、元素组成的 `Sequence`，或包装其变体的 `Sum`——它为任何 case class、枚举、集合或可选值派生，其余每个叶节点都通过 `Inspectable` 渲染，因此失败显示的正是 `.inspect` 所显示的内容。
++     `Contrastable` 把两个值变为 `Juxtaposition`——`Same`、`Different`（带有可选的差值，如 `+2`）或由带标注的子节点组成的 `Collation`——它同样是派生的，并为数字（报告带符号的差值）、集合（报告每一方独有的元素）、异常和文本提供了手写的基础实例。
++     序列通过 dissonance 的 diff 对齐，因此插入显示为一次插入，而不是其后每个元素都不同；改动的元素显示为一次替换，并细分到发生改动的字段。
++     `Similarity` 是这种细化中可插拔的“足够相似，可以配对”的概念。
+
+@ 0 3 0 12dd21e70cfaf98401556c7039f669e6
++     当宿主请求时，probably 测试框架的诊断引擎对失败的相等断言的两侧调用 `contrast`，将 `Juxtaposition` 记录为 `Verdict.Detail.Compare`，并为宿主将其展平为 `TestEvent.CompareRow`；`Harness#capture` 记录经过 `decompose` 的值。
+
+@ 0 8 0 00ec618bc72d58741aadfefc3cfe6c2c
++     该库有两个组件。
++     `chiaroscuro.core`（JVM、Scala.js 和 Scala Native）包含类型类和这两种树；`chiaroscuro.render` 添加了 `JuxtapositionPalette` 和 `teletypeables.juxtapositionTeletype` given，后者将 `Juxtaposition` 渲染为供终端使用的带样式差异表。
++     所有内容都导出到 `soundness` 总括包；`teletypeables` 选择包与总括包自身的同名包合并，其 given 需按名称导入，因为 `import soundness.*` 不会导入 given——而 escapade 会以无样式方式渲染任何 `Showable` 值，所以忘记导入的调用点会打印枚举的文本，而不是编译失败。
+
+% 0 1 0 126d4430e82066a01dde3a794048ac94
+
+% 0 1 0 1f42fa97c9d7c76d1df0f2012427b25b
+
+% 0 1 0 179c3dfbc1570928005eea298ec5f5b9
+
+% 0 1 0 16a2f7c83ee0afd21ee464348f8cf9b8
+
+% 0 1 0 190bcb346d1952440bc4c807d0b1fbe7
+
+@ 0 4 0 18f0580a3fd4a0311ab259cd569e01b9
++ entry .decompose   `value.decompose`：通过其 `Decomposable` 得到的该值的 `Decomposition`
++     适用于任何具有 `Decomposable` 的值的扩展方法，而 `Decomposable` 几乎可为一切类型派生：`24.decompose` 是 `Decomposition.Primitive(t"Int", t"24", 24)`，case class 则是由其字段组成的 `Decomposition.Product`。
+
+% 2 1 0 1bfd96e88f98567f0bc1ae4881a64a0f
+
+% 3 1 0 0d6cbc7cb1b42088065f8462e1310302
+
+% 0 1 0 13620d89823384a20318b636c938c1ca
+
+% 0 1 0 13ab68abd3ec972d046f93df4d3756a1
+
+% 0 1 0 11d713e744499b761dbeaef323566385
+
+% 1 1 0 07850df4413837521a290d6eb00f417b
+
+@ 0 5 0 0efc1195c04da1801da03158c8d80f54
++ entry .contrast   `left.contrast(right)`：通过其 `Contrastable` 并置的两个值
++     适用于任何具有 `Contrastable` 的值的扩展方法，`Contrastable` 可为 case class、枚举、集合以及任何 `Decomposable` 或 `Showable` 的类型派生。
++     左侧值是期望值，右侧值是观测值，失败断言的渲染正是这样标注它们的。
++     相等的值给出 `Juxtaposition.Same`。
+
+% 2 1 0 1895662e49632ca318ac0aed7c628892
+
+% 3 1 0 011fae6348486b630bf33a6b6270422e
+
+% 0 1 0 100106d4c74317970ea37c930a2a4d09
+
+% 0 1 0 096451e2e98252af02b846c1db830f6e
+
+% 0 1 0 1664ec68d1b3e7a40e5b7ac08256aa2c
+
+% 1 1 0 084bd78f5c5f2086036f9aa1de3955aa
+
+@ 0 1 0 08c99927e68572ef1236e92ed3470cbb
++ entry .Contrastable   某类型的两个值如何并置为表示其差异的 `Juxtaposition`
+
+% 1 1 0 0197d54baa4fdd8500c7b6a1ce514c85
+
+@ 0 8 0 0356eab8aae182831252446f418fcd2f
++       `contrast` 背后的类型类。
++       它的 `.derived` given 按以下顺序解析：该类型的 `Contrastable.Foundation`（为数字、集合、异常、文本以及 `Decomposition` 本身手写的实例）；case class 派生，逐字段并置为以字段名标注的 `Collation`；枚举派生，并置两个变体的分解结果；否则并置两个值的 `Decomposition`，集合、可选值和嵌套结构用的就是这种方式。
++       只有 `Showable` 的类型会落到 `Foundation.showable`：相等时为 `Same`，否则为两个显示文本组成的 `Different`。
+
+% 2 1 0 17dda7fe8e3da6bd0c5240af887505ca
+
+% 3 1 0 0554d95459b75cc81b31d9e5b40d27c9
+
+% 5 1 0 0e1822c9d2f3759c1a3a5a450a36a6a3
+
+% 0 1 0 14de558d96c494be1d01889e976c936b
+
+% 0 1 0 025192f232bc27981161de3f06a3913f
+
+% 0 1 0 148b6d6ef1bf1b0a05f46389bbb040d8
+
+% 0 1 0 15ef5f70f7dbf9c91e5db456ce6caafa
+
+% 1 1 0 1371f82e68cbe4b119f8abc7258995b1
+
+@ 0 2 0 01ddb704aee77eef14ddb6c3e8b8c8e8
++       `Contrastable` 是纯类型类；`#contramap` 通过一个映射到本类型的函数，为另一种类型构造一个实例。
+
+% 1 1 0 0f6a28305b1ad1e312df2dbc54b0858e
+
+% 1 1 0 052c5336ee96b4f91e68f12363bad9ed
+
+% 1 1 0 185fe01db0b7376f11786f70b351231b
+
+@ 0 3 0 0ee0e3d0aba61ce1037ec8c1c041419f
++   entry .derived   为任何类型派生 `Contrastable` 的 inline given，位于隐式作用域中
++       先是基础实例，然后是积类型，然后是和类型，最后是按分解。
++   entry .Derivation   针对积类型和和类型的 `Contrastable` 的 wisteria 派生
+
+% 1 1 0 19ef5cc12073914c103a6371450433cf
+
+@ 0 7 0 1c96475c9a7e80b90d1f705d04dc2fdd
++         一个 `Derivable[Contrastable]`：`conjunction` 将 case class 逐字段并置为 `Collation`（两者相等时为所显示值的 `Same`），`disjunction` 按变体的分解结果并置枚举。
++         通过 `.derived` 使用，而不直接调用。
++     entry .conjunction   case class，逐字段
++     entry .disjunction   枚举，按其变体
++   entry .Foundation   手写的实例，以及调用方自己的实例所扩展的特质
+
+% 1 1 0 1bd6284d6fa330d11fe510d6007dc942
+
+@ 0 6 0 17d3369d292927ee143b2a1d446fdf67
++         作为**特质**，`Contrastable.Foundation` 是只有一个抽象方法 `#juxtaposition` 的 `Contrastable`；`.derived` 在任何派生之前先尝试 `Foundation`，因此其对比不应是结构化的类型（具有标识的类型，或差值有意义的数字）在其伴生对象中提供一个。
++         作为**对象**，它持有标准的基础实例，每个都位于隐式作用域中，并从 `Contrastable.Protofoundation` 继承优先级最低的 `showable`。
+
+% 0 1 0 136a5f198bdaf3ac1a788e9525f64741
+
+% 0 1 0 0a9c20ea134f3fa702331949e4fc1ca4
+
+% 0 1 0 04a1a934086c0b401f08a9325263c73d
+
+% 0 1 0 07b1eb30182ba34702c408ecac6e6446
+
+% 0 1 0 14782ddf9a35854914e427c1fb97b4fd
+
+% 0 1 0 02125690b11d560710feb200e65921bd
+
+@ 0 21 0 10368be9c9509f0a0a2d521e1d5de3ea
++     entry .decomposition   两个 `Decomposition`，结构化地并置
++     entry .int   两个 `Int`：`Same`，或带有带符号差值的 `Different`
++     entry .short   两个 `Short`，同 `.int`
++     entry .byte   两个 `Byte`，同 `.int`
++     entry .long   两个 `Long`：`Same`，或带有带符号差值（`+2` 或 `-3`）的 `Different`
++     entry .float   两个 `Float`，同 `.double`
++     entry .double   两个 `Double`：带有保留四位有效数字的带符号差值的 `Different`
++         两侧都显示到足以区分它们的小数位数；差值为正时带加号显示。
++     entry .set   元素为 `Showable` 的两个 `Set`：每一方独有的元素
++         差值对仅在右侧的元素记为 `+{4}`，对仅在左侧的元素记为 `-{1}`，两者都有时记为 `-{1}╱+{4}`，超过五个元素的集合会被省略。
++     entry .exception   两个 `Exception`：类和消息相同时即相同
++     entry .string   两个 `String`，同 `.text`
++     entry .text   两个 `Text`，逐字符比较
++         字符用 dissonance 的 diff 对齐，因此插入或删除显示为一处，而不是其后每个字符都不同；结果是一个名为 `Text` 的 `Collation`，其子节点都是单个字符，终端渲染器将其显示为两行条带。
++     entry #juxtaposition   两个值的并置
++   entry .Protofoundation   `Foundation` 伴生对象的基础，持有优先级最低的 `showable` given
+
+% 1 1 0 0f2f7d70dfef86731aba7837c69a3d70
+
+@ 0 20 0 0048d6f4f6790c650c8a0a2b4d798170
++         `Contrastable.Foundation` 从这里继承 `showable`，因此每个基础实例的优先级都高于它。
++     entry #showable   任何 `Showable` 类型：相等时为 `Same`，否则为两个显示文本组成的 `Different`
++   entry .nothing   将每一对都报告为 `Same` 的 `Contrastable`，显示左侧值的分解结果
++       内联；需要该类型的 `Decomposable`。
++       用于需要 `Contrastable` 但没有可比较内容的位置。
++   entry .juxtaposition   并置任意形状的两个 `Decomposition`，并为结果给出类型名
++       相等的引用为 `Same`；两个 `Primitive` 按其文本为 `Different`；两个 `Sequence` 通过 `.comparison` 对齐；两个 `Product` 是基于其字段名并集的 `Collation`，一侧缺失的字段与空白比较；两个 `Sum` 比较其变体（不同时同时给出两个类型名，`Circle/Square`）；形状不同的两个分解结果按种类为 `Different`，`<product>`/`<sequence>`。
++   entry .comparison   用 diff 对齐两个分解结果数组，得到由带标注的行组成的 `Collation`
++       每一行以其索引标注：两侧索引相同的元素为 `3`，索引不同时为 `³╱₂`（上标为左，下标为右），插入为 ` ╱₂`，删除为 `³╱ `。
++       被替换的元素会递归并置，因此一个字段改动的记录显示为该字段的差异。
++       diff 是窗口为十的 dissonance `rdiff`。
++   entry #juxtaposition   该类型两个值的并置
++   entry #contramap   通过映射到本类型，为另一种类型构造 `Contrastable`
+
+@ 0 1 0 0667fdee091d968a1e40d5b793f692f2
++ entry .Decomposable   如何将一个值拆分为用于显示的 `Decomposition`
+
+% 1 1 0 02523ca6969c1d2f0f6d10a5d658ce37
+
+@ 0 12 0 0ece32430decb2821742795c5f1cad47
++       `decompose` 背后的类型类，也是 `Harness#capture` 和断言宏用来渲染失败两侧的类型类。
++       它的 `derived` given 按以下顺序解析：该类型的 `Decomposable.Base`（`Text`、`Int`、`String`、`Decomposition`）；case class 派生，得到由具名字段组成的 `Product`；枚举派生，得到 `Sum`；`Any`、`AnyRef` 和 `Matchable` 作为 `Any` 叶节点；`Optional` 作为名为 `Optional` 的 `Sum`，包装其值或显示为 `∅` 的 `Unset` 叶节点；其余每个叶节点都通过 `Inspectable`，其派生总会成功，因此 `Char` 渲染为 `'a'`，`Double` 不会被作用域中的 `Decimalizer` 舍入，两者都没有的类型会落到 `Inspectable` 带标记的 `toString`。
++       伴生对象的 `.list`、`.sequence` 和 `.frozenArray` 逐元素分解集合。
++       伴生对象从 `Decomposable2` 继承 `derived`、`primitive`、`any` 和 `Derivation`，从 `Decomposable3` 继承 `fallback`。
+
+% 2 1 0 081017c8f0ea86ca0bdd21ad2c2b7663
+
+% 3 1 0 0ca5be12fc0f35ed154ba53c46604823
+
+% 5 1 0 1a3896417d5f22c9073a30173677e671
+
+% 0 1 0 0542b8184bdc1bec15d462b0eb41b8bc
+
+% 0 1 0 07824561bd64858108d74732513ecd0c
+
+% 0 1 0 020f4d6c2fe8d4e01ff3b6eb6a309b0a
+
+% 0 1 0 1d603c94b960b7651d85805b8fdc3e39
+
+% 1 1 0 0534803debaafcd6194250ac05739831
+
+@ 0 3 0 0f003d5b90e58f241b8865e57fd9f6dd
++       分解通过 `Inspectable` 而非 `Showable` 渲染叶节点：测试失败是给程序员读的，因此应当显示 `.inspect` 所显示的内容，`Showable` 与 `Inspectable` 不一致的类型按后者分解。
+
+% 0 1 0 1e5655353a7565ec1c5e7e4df538da8b
+
+% 0 1 0 0332d6654a61f09c00ecbd613acb4263
+
+% 0 1 0 03ec24798555039b13e1fae02f0e6f64
+
+@ 0 1 0 0efb013b712c58ee1bbe6cead4c29521
++   entry .Base   手写的叶节点实例，以及调用方自己的实例所扩展的特质
+
+% 1 1 0 04885834aa82e14b1b78eb1183a9fca0
+
+@ 0 11 0 0f258563d09c1b6d0437c730d2538aa8
++         作为**特质**，`Decomposable.Base` 是 `derived` 在任何派生之前先尝试的 `Decomposable`；作为**对象**，它持有标准的叶节点。
++     entry .text   `Text`，作为名为 `Text` 的 `Primitive`
++     entry .int   `Int`，作为名为 `Int` 的 `Primitive`
++     entry .string   `String`，作为名为 `String` 的 `Primitive`
++     entry .decomposition   `Decomposition` 作为其自身
++     entry #decomposition   一个值的分解结果
++   entry .list   元素可分解的任何 `List`，作为名为 `List` 的 `Sequence`
++   entry .sequence   元素可分解的任何 `Sequence`，作为名为 `Sequence` 的 `Sequence`
++   entry .frozenArray   元素可分解的冻结 `Array[element]^{}`，作为名为 `Array` 的 `Sequence`
++   entry #decomposition   一个值的分解结果
+
+@ 0 1 0 082952b9d271d97711fa8b6137d37d63
++ entry .Decomposable2   `Decomposable` 伴生对象的基础特质，持有 `derived`、`primitive`、`any` 和 `Derivation`
+
+% 1 1 0 0786a7edc332de870508415256423bfa
+
+% 2 1 0 0f045a3bb88908001ecae41f6d48f1ae
+
+@ 0 13 0 090ac6401e70020b1ea274ade003bb70
++       一个优先级层：其成员以 `Decomposable.derived`、`Decomposable.primitive`、`Decomposable.any` 和 `Decomposable.Derivation` 访问，伴生对象从这里继承它们。
++   entry #derived   为任何类型派生 `Decomposable` 的 inline given，位于隐式作用域中
++       以 `Decomposable.derived` 访问。
++       先是 Base，然后是积类型，然后是和类型，然后是 `Any`，然后是 `Optional`，最后是 `Inspectable`。
++   entry #primitive   将每个值通过 `toString` 渲染为给定类型名的 `Primitive` 的 `Decomposable`
++   entry #any   将每个值通过 `toString` 渲染为名为 `Any` 的 `Primitive` 的 `Decomposable`
++       当无法为测试结果类型派生更好的实例时，断言宏使用它。
++   entry #Derivation   针对积类型和和类型的 `Decomposable` 的 wisteria 派生
++     entry .conjunction   case class，作为按标注组织其字段的 `Product`
++     entry .disjunction   枚举，作为包装其变体分解结果的 `Sum`
+
+@ 0 1 0 1083006c00e5b9731b9c2791c072eb1c
++ entry .Decomposable3   `Decomposable` 伴生对象中优先级最低的层，持有 `fallback`
+
+% 1 1 0 1b0ac97c22c4739c00aa4549f328ccfb
+
+% 2 1 0 17ad12e17de2720f03d300093fa3a237
+
+@ 0 2 0 072273ae073726910a828ffa99c5cb5c
++       以 `Decomposable.fallback` 访问，伴生对象从这里继承它。
++   entry #fallback   优先级最低的 given：适用于任何类型，通过 `toString` 得到名为 `Any` 的 `Primitive`
+
+@ 0 1 0 0aff1b7d1fb326a913abd4f9296ca260
++ entry .Decomposition   为显示而拆分的值：叶节点、字段组成的积、序列或和
+
+% 1 1 0 154ec192984b74e0015d820f6879d845
+
+@ 0 8 0 1eb0d3243d4a38c21485d9a6edc12851
++       四个分支：`Primitive(typeName, value, ref)` 是带有渲染文本的叶节点；`Product(name, values, ref)` 是按标注组织字段的 case class；`Sequence(name, values, ref)` 是集合的元素；`Sum(name, value, ref)` 是包装其变体的枚举或 `Optional`。
++       每个分支都把原始值保存为 `#ref`，`Contrastable.juxtaposition` 首先比较它，因此相等的引用无需遍历即为 `Same`。
++       `#text` 将树渲染为多行并缩进；`#short` 是单行摘要（序列为 `[..3..]`，积为类型名）；`.inspectable` 使 `inspect` 与 `#text` 相同。
+
+% 1 1 0 01148bc8b605070e1cae945243793930
+
+% 1 1 0 1d3287596afb0b4c099aa326caec57cf
+
+@ 0 11 0 05da326df0defc3701c3709f14953c52
++   entry .apply   从可选的 `Decomposition` 构造一个 `Decomposition`，缺失时为 `Unset` 叶节点
++   entry .inspectable   将分解结果渲染为其 `#text`
++       手写而非派生：派生实例的匿名类会被 Scala.js 管线拒绝。
++   entry #ref   原始值
++   entry #text   渲染为多行的树，每一层缩进两个空格
++       积的字段显示为 `name:`，其值在下方；序列的元素从零开始编号；和在其变体前显示为 `Name.`。
++   entry #text2   单行渲染：`Name(field: value, …)`、`[a, b]`、`Name:value`
++   entry #short   单行摘要：叶节点的文本，序列为 `[..n..]`，积为其名称
++   entry #multiline   以给定缩进，将多行渲染追加到作用域中的 `TextBuilder`
+
+@ 0 1 0 15aec9304fa4aab91269bdd15f01c813
++ entry .Juxtaposition   比较两个值的结果：相同、不同，或由带标注的差异组成的整理结果
+
+% 1 1 0 1223b87c75a9e0b00bb6f833edcf7e5c
+
+@ 0 7 0 047c6b281ce257df1e81946ecb1bb0c4
++       `Same(value)` 是两侧共用的一个文本；`Different(left, right, difference)` 包含期望文本、观测文本以及可选的差异摘要（`+2`、`-{1}╱+{4}`）；`Collation(typeName, comparison, left, right)` 是带标注的子并置列表——积为字段名，序列为索引标注，文本为每个字符一个——并带有两侧的完整文本。
++       子节点全为单个字符的整理结果是文本比较，终端渲染器将其显示为两行条带，而不是表格。
+
+% 2 1 0 0268004a0807d4bb0ba58c5998a385bd
+
+% 3 1 0 1827d6f0b59844371179fe81c943b4a6
+
+% 0 1 0 08bde9157142745b024b85e8e9462dfc
+
+% 0 1 0 1e9930e3a81ad59f06672c69df255d30
+
+% 0 1 0 14f36b342393adfd0a7f39ac49abf293
+
+% 0 1 0 1c829767ddb8bd0904240fd1fac28125
+
+% 1 1 0 160b0c9a335ee5351f4079279e4df84c
+
+@ 0 3 0 0063aebf1fc9f3090845b25eefe700a2
++       probably 框架为宿主将并置结果按先序连同深度展平为 `TestEvent.CompareRow`；`teletypeables.juxtapositionTeletype` 为终端渲染它。
+
+% 1 1 0 1c500a0372e0b0f9151a3c4aee3e47b0
+
+% 1 1 0 14948d5aa0a125d10c21546847a228e6
+
+% 0 1 0 01c2cfadf2b8540c1dcbf66165383509
+
+@ 0 3 0 05ef101b9e5ff4b6089094e3b755f694
++   entry #singleChar   两侧是否都至多一个字符：文本比较的子节点的形状
++   entry #leftWidth   期望一侧的字符宽度，对整理结果的子节点求和
++   entry #rightWidth   观测一侧的字符宽度，对整理结果的子节点求和
+
+@ 0 1 0 1b7dfaaa4a7857741d768fe595b62651
++ entry .Similarity   两个值是否足够相似，可以显示为一次替换，而不是一次删除加一次插入
+
+% 1 1 0 14176038f4cc6b3a03e2cc3b2d753dd6
+
+@ 0 6 0 1eb47fa2d5173fb70b3f140b48f415e4
++       仅凭比较只能说出*相同*或*不同*，因此两个序列的原始 diff 会把改动的元素报告为一次删除，旁边是一次无关的插入。
++       `Similarity` 是用于细化的类型类，它把被删除的元素与被添加的元素配对——例如标识符相同而某个字段改动的记录——使两者显示为一次替换，并细分到发生改动的字段。
++       它是逆变的，因此超类型的实例也适用于其子类型；`.generic` 即相等。
+
+% 1 1 0 13098005430c736d06ef43c37255897b
+
+@ 0 2 0 1ef102bde4b77d8710708fd0ee52da20
++   entry .generic   适用于任何类型的 given：相等时即相似
++   entry #similar   两个值是否相似
+
+@ 0 1 0 028ce282952db318064fedba60332a75
++ entry .JuxtapositionPalette   渲染并置结果所用的颜色，位于 sRGB 中
+
+% 1 1 0 0ba251c740d8cfc71e1eb2705a2c71db
+
+@ 0 7 0 14cda3fc1092097e14a25076576e4f7d
++       一个 `Palette`（iridescence），具有差异表所需的角色：`#unaccented` 用于线条和边距，`#informative` 用于未改动的值，`#subdued` 用于弱化，`#positive` 用于期望一侧，`#negative` 用于观测一侧，此外还有继承的 `foreground` 和 `background`。
++       它是真正的特质而非结构化细化，因为结构化选择需要运行时反射，而 Scala Native 没有。
++       `teletypeables.juxtapositionTeletype` given 将其作为上下文参数接收；probably 框架不再负责渲染，因此宿主需自行提供。
+
+% 2 1 0 02d67dbe14e1ea6803341fb1b56ba080
+
+% 3 1 0 19eb8d1aac21f6061824d3e4e2ecc24a
+
+% 2 1 0 12cbfa40ef44b7f40009bdbceccab15f
+
+% 3 1 0 01fa08153fac0e8a1e00d9d70da8091e
+
+% 4 1 0 1677048267bd74b201eb7accc38df207
+
+% 5 1 0 1156b60285bb9c8f1b19b8671c421975
+
+% 6 1 0 0cd88d540a9854920b3c72e04041c19a
+
+% 7 1 0 114e52f568addeb31f5d93f0787bfc8f
+
+% 8 1 0 15807b95465068f201a0a48c350a50ba
+
+% 9 1 0 09e5414c6e2d755010a0a279f8f6cfcb
+
+% 1 1 0 1610c22efc75b187171d332ec16e20d6
+
+% 0 1 0 06dc077bc012490f10547a2c3d729c96
+
+@ 0 6 0 026d5bcd00d66d5d13c77e84a14ee8c7
++   entry #Form   颜色形式：`Srgb`
++   entry #unaccented   线条、边距和表格边框
++   entry #informative   两侧相同的值
++   entry #subdued   弱化的文本
++   entry #positive   期望一侧
++   entry #negative   观测一侧
+
+@ 0 1 0 05c623e377e40ce81e96194f073fad3c
++ entry .teletypeables   `Juxtaposition` 的终端渲染，一个需按名称导入的 given
+
+% 1 1 0 07bc8316976990400c7453da5828fefb
+
+@ 0 4 0 1bdc977aa4e63fa3133b4a0c9e3f3158
++       位于 `chiaroscuro.render` 中。
++       该 given 不在 `Juxtaposition` 的隐式作用域中，而 escapade 会以无样式方式渲染任何 `Showable` 值，因此未导入它的调用点会悄无声息地降级——打印 `Collation(Text,List(…))`——而不是编译失败。
+
+% 2 1 0 1b3290796740ca260cbf87dd79a4a2b4
+
+% 3 1 0 1125c907f85303a30fb5558ef8ad73f0
+
+% 0 1 0 11ad1264a616272912da5271c03e7538
+
+% 0 1 0 1c58b5179ed796c41c6345855147b3ee
+
+% 0 1 0 1e9dd25e19f6f6dd08c050b2345e61b9
+
+% 2 1 0 0ebe17494b92cb9b088c5065b5775be9
+
+% 3 1 0 10414af9b94339f20636059841b03e0e
+
+% 4 1 0 17935d861245f6b00b46fdff58d76f4f
+
+% 5 1 0 11a23503e9f8b68900c4d1b7742db2e9
+
+% 6 1 0 1809b695ae43b1541ddd6229bcee58a8
+
+% 7 1 0 1a68a249a91130d40f08ac109b146033
+
+% 8 1 0 172affde7f97b3b10b214015e60419f4
+
+% 9 1 0 1c283fca2ba23a4518d8600c01931aaa
+
+% 0 1 0 02c03398e24afec00d296dc701242c02
+
+% 0 1 0 0de34cdf4cdfe81800941312d992a7f2
+
+% 1 1 0 1fa3895dc089e47915255db672a72aba
+
+@ 0 8 0 1c4799bef1f7929c184b07cf9f8cdf79
++   entry .juxtapositionTeletype   将 `Juxtaposition` 渲染为带样式的终端文本
++       需要 `Text is Measurable`（用于列宽）和 `JuxtapositionPalette`。
++       `Same` 渲染为 _The value `v` was expected_；`Different` 渲染为 _The result `right` did not equal `left`_；由单个字符组成的 `Collation` 渲染为两行条带，期望值在上、观测值在下，不同的字符高亮显示，边距中显示字符偏移量，在 110 列处换行；其他任何 `Collation` 渲染为表格，包含标注树、`Expected` 列、`Observed` 列，以及存放每处差异（或两段不同文本的 Levenshtein 距离）的 `Details` 列。

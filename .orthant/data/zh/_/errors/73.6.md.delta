@@ -1,0 +1,42 @@
+orthant 2 language
+
+% 0 1 0 1bc754d2e778c69a15b91caa7fa0a128
+
+@ 0 1 0 0ad69af0389d574605401f25b185d497
++ 当 Aviation 无法解析时区数据库（TZDB）文件时抛出。
+
+@ 0 1 0 1d8ed6a2d2412a231ea0d46e12dff5b7
++ ## 原因
+
+@ 0 4 0 07ce5f0a5cd88a02010c65bfe68175b9
++ `Tzdb.Error` 在读取 IANA TZDB 时抛出。
++ 每个变体标明了损坏或意外内容的种类。
++ 消息会报告行号：`the timezone could not be parsed at line $line: $reason`。
+
+@ 0 1 0 0982d44e8aec0bbd176df78e68656684
++ ## 变体
+
+% 0 1 0 0a7c55b4c0ac40601a46d9fdcd155626
+
+@ 0 13 0 05b649f1a707f3a502ab3c4fcb788e15
++ column  代码
++ column  原因
++ column  含义
++ column  消息
++ column  解决方法
++ row  `↯/s.73.6.1`  `CouldNotParseTime`  该行中的某个时间值无法解析。  `[↯/s.73.6.1] the timezone could not be parsed at line 42: could not parse time 25:00`  修复源 TZDB 文件，或使用另一份副本。
++ row  `↯/s.73.6.2`  `UnexpectedRule`  在解析器不期望出现 `Rule` 行的地方出现了一行。  `[↯/s.73.6.2] the timezone could not be parsed at line 42: unexpected rule`  确认该文件遵循文档所述的 TZDB 结构。
++ row  `↯/s.73.6.3`  `UnexpectedLink`  `Link` 行出现在意外的位置。  `[↯/s.73.6.3] the timezone could not be parsed at line 42: unexpected link`  确认该文件遵循文档所述的 TZDB 结构。
++ row  `↯/s.73.6.4`  `UnexpectedZoneInfo`  时区信息行出现在不该出现的地方。  `[↯/s.73.6.4] the timezone could not be parsed at line 42: unexpected zone info`  确认该文件遵循文档所述的 TZDB 结构。
++ row  `↯/s.73.6.5`  `UnparsableDate`  该行中的某个日期字段无法解析。  `[↯/s.73.6.5] the timezone could not be parsed at line 42: the date could not be parsed`  修复出错的那一行。
++ row  `↯/s.73.6.6`  `BadZoneInfo`  时区信息行的内容在结构上无效。  `[↯/s.73.6.6] the timezone could not be parsed at line 42: bad zone information: [ Elsinore Hamlet Yorick ]`  确认该行各列的数量和顺序正确。
++ row  `↯/s.73.6.7`  `BadName`  某个名称（时区或规则）在语法上无效。  `[↯/s.73.6.7] the timezone could not be parsed at line 42: the name verona/Juliet! is not valid`  只使用 TZDB 语法允许的字符。
++ row  `↯/s.73.6.8`  `NoTzdbFile`  在类路径上找不到所指名的 TZDB 文件。  `[↯/s.73.6.8] the timezone could not be parsed at line 0: the zonefile europe could not be found on the classpath`  确保 TZDB 资源已打包到类路径上；Aviation 发行版提供了这些资源。
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 1 0 004f241cb4a4ed0405cb108ee75b2611
++ ## 另请参阅
+
+@ 0 1 0 16d615c5fcec4f8919f3545a78d6afc4
++ - 源代码：`lib/aviation/src/core/aviation.Tzdb.scala`

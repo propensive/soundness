@@ -1,0 +1,48 @@
+orthant 2 language
+
+% 0 1 0 05885e2853993b0f08e275fc0ae3147d
+
+@ 0 1 0 0ea48090c54705db1743463c78ba096e
++ 当 OpenAPI 文档格式错误或无法解释时抛出。
+
+@ 0 1 0 1d8ed6a2d2412a231ea0d46e12dff5b7
++ ## 原因
+
+@ 0 3 0 1f00cfdb7f33b2521161c20780640b56
++ Apoplexy 读取 OpenAPI 规范以派生有类型的客户端。
++ 此错误涵盖不符合 OpenAPI schema 的文档、无法解析的引用，以及超出 Apoplexy 所建模子集的构造。
+
+@ 0 1 0 0982d44e8aec0bbd176df78e68656684
++ ## 变体
+
+% 0 1 0 0a7c55b4c0ac40601a46d9fdcd155626
+
+@ 0 3 0 17c5dabcf166ec4616e8785a29a4a26d
++ column  代码
++ column  原因
++ column  消息
+
+% 0 1 0 1f4ea5d380ca4c5f08932ae19612c439
+
+% 0 1 0 04b0bfbfdec540e60fc24362ceca7020
+
+% 0 1 0 175165c6c94ad27a095df8a036a5d122
+
+% 0 1 0 13dba2e5b77752170540cda5500566df
+
+% 0 1 0 119e0d47a07c5bc3155a1abe51fa3d59
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 1 0 0a3dc9137d3cf72f0228e7373e7a2cbf
++ ## 解决方法
+
+@ 0 3 0 02c66f24e7a815181467c2179f77eb63
++ 无法解析的引用通常意味着某个 `$ref` 指向了文档之外，而这样的引用不会被跟随。
++ 若某个构造不受支持，排除该操作后规范可能仍然可用。
+
+@ 0 1 0 004f241cb4a4ed0405cb108ee75b2611
++ ## 另请参阅
+
+@ 0 1 0 088fba3ae1c21af416fe06c63296e490
++ - 源代码：`lib/apoplexy/src/core/apoplexy.OpenApi.scala`

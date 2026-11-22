@@ -1,0 +1,148 @@
+orthant 2 language
+
+@ 0 1 0 03e11e70016f3c9e06b420d724906b93
++ # 方法命名约定
+
+@ 0 5 0 0adab9a619d1f8cc0fe657a8151b4bb3
++ 本文档定义了在整个代码库中一致使用的具名工厂方法和初始化方法的规范含义。
++ 至于名称*为何*如此选择，包括构成短语的方法、单词长度的类型参数以及在整个命名空间中的唯一性，参见[命名](../philosophy/naming.md)和[优雅的行文](../philosophy/elegant-prose.md)。
+
+@ 0 1 0 03d183e4e326b30919e360b515dd8617
++ ## 标准名称
+
+@ 0 1 0 15bdca24cb76d3bf12dff81f81950fea
++ 每个名称只有一个含义；下面各节完整给出每个名称：
+
+% 2 1 0 05111a77653eae0513c69c39cf24d309
+
+@ 0 12 0 0e1142eed29bfea40ff65219120a1c2f
++ column  名称
++ column  地位
++ column  含义
++ column  示例
++ row  `apply`  标准  默认工厂，尽可能使用
++ row  `build`  标准  由调用方提供的回调驱动的组装  `Data.build`、`Text.build`、`Specification.build`
++ row  `create`  标准  在外部系统中创建一个资源  目录、文件、套接字、FIFO
++ row  `make`  标准  在已有 `apply` 旁边，由动态命名的输入构造
++ row  `initialize`  标准  为可重复操作的一次运行提供全新上下文  `Hash.initialize`、`Aes.initialize`
++ row  `init`  非标准  仅用于 `Git.init`，沿用 `git init` 命令  `Git.init`
++ row  `construct`  非标准  仅用于 `wisteria.ProductDerivation.construct`  `ProductDerivation.construct`
++ row  `of`  非标准  将类型收窄为 `X of Y` 的私有强制转换
+
+% 1 1 0 0f33c31fcdee626301644907633d969a
+
+% 0 1 0 17a0192866c35e6b00588126be21f3f3
+
+@ 0 3 0 194f1dfb395f601919e8db1318a5e76e
++ 标准的 Scala 工厂方法。
++ 尽可能使用它。
++ 本文档中的所有其他名称之所以存在，都是因为无法使用 `apply`，通常是由于与已有 `apply` 的重载解析冲突。
+
+% 0 1 0 1587cb14a269644a11f50580bfb3040b
+
+@ 0 2 0 1b4ef045e70539751d169607489ca6c5
++ 通过调用方提供的、驱动构造的回调来组装实例。
++ 两种具体形式是：
+
+@ 0 6 0 0732f7cd3592b8bf1056d759a3a43a21
++ - **分配 → 修改 → 冻结**：分配一个可变的中间结构，交给调用方的 lambda 填充，然后冻结为不可变的结果。
++   示例：`Data.build`、`Array.scribe`、`Text.build`。
++ - **由回调驱动、从源数据组装**：调用方提供一个函数，指定如何从源值中提取或转换字段。
++   示例：`Specification.build`、`Addressable.build`。
+
+@ 0 2 0 132ea1f351cdc8be119bc29194023d6d
++ 在这两种形式中，调用方都通过函数参数控制组装过程，而不是直接提供完成的值。
+
+% 0 1 0 0f0f0e2fb7f320fa1cc5a63efc05fc2c
+
+@ 0 4 0 05087d5dcc2e87cd0df908e02785ea74
++ 在外部系统中创建一个资源，并且总是有副作用。
++ 用于文件系统资源（目录、文件、套接字、FIFO）。
++ 它是 `apply`/`build` 在非纯操作上的对应物。
+
+% 0 1 0 1873a23489c3c36b0f199470c3d85b28
+
+@ 0 4 0 072c23fdde042b491ce667733c2a2e64
++ 由动态命名的输入构造值，对应于 `applyDynamicNamed` 的一个实现。
++ 其他工厂也可以使用带动态名称的参数，而 `make` 用于已经存在另一个非动态 `apply` 方法的情况。
+
+% 0 1 0 09dadde8cb66d43d047503c45ea29022
+
+@ 0 7 0 0bac543749c63a2019f4c54eac969217
++ 为可重复的操作返回一个全新的操作上下文。
++ 示例包括一次新的哈希摘要运行（`Hash.initialize`）、一个密码算法实例（`Aes.initialize`）、一个打开的文件传输（`Openable.initialize`），或一个新会话（`McpServer.initialize`）。
++ 该操作可以是纯的，也可以涉及资源获取；统一这些情形的是，结果代表一个可以从头重新开始的操作的单次使用的开端。
+
+@ 0 1 0 1a58b0e6bb5f83d00fed5a36a97e4ad0
++ ## 非标准名称
+
+% 0 1 0 15dad777cf39f0a4010ae37861b9fb27
+
+@ 0 2 0 1855054d6b9a80c70c3839961d6576b4
++ 仅用于 `Git.init`，它沿用 `git init` CLI 命令的命名。
++ 其他地方都优先使用 `initialize`。
+
+% 0 1 0 1e92a0c0e4f46ce8181792b70b39f4d0
+
+@ 0 3 0 18e5aff42653ad911f8af18a8862e953
++ 专门保留给 `wisteria.ProductDerivation.construct`。
++ 这是用于编译时类型类派生的刻意特例，不遵循一般的工厂命名方案。
+
+% 0 1 0 14e2e0a3a949744e08288c970ed8c21a
+
+@ 0 4 0 0e5462cb1c2bad5a14d377b49f92ad18
++ 仅用作将类型收窄为幻影参数化形式 `X of Y` 的实例方法。
++ 其方法体总是一次强制转换（`asInstanceOf`），返回类型字面上就是 `this.type of topic`。
++ 这些方法对各自的包是私有的。
+
+@ 0 1 0 09851360f6913ae00e36d0bb49639d4a
++ ## `unsafe` 前缀
+
+@ 0 5 0 1c3e739d695f9de00fe56df7961f0db7
++ 以 `using` 参数接受 `vacuous.Unsafe` 的方法是受门控的：其调用方必须持有该令牌，实践中这意味着写出 `(using Unsafe)` 或位于 `unsafely` 块内。
++ 每个这样的方法都以 `unsafe` 前缀加一个大写字母命名，如 `unsafeBuffer`、`unsafeAttested`、`unsafeChild`，这样边界在调用处就可见，而不只在签名中可见。
+
+@ 0 4 0 0a3b769253dacf9919964dd01c8de7ea
++ 这一点是经过检查的。
++ Consequent 规则 `S1.1` 对每个组件都是 `strict`，因此名称普通的受门控方法会使构建失败。
++ 当名称无法加前缀时，该方法会被重命名而不是豁免：`Regex.apply(parts)(using Unsafe)` 变成了 `Regex.unsafeFrom(parts)`。
+
+@ 0 3 0 036ec849c45cffc50eaa0c7faba0005c
++ 有两种定义不在该规则范围内，因为两者都没有可以加前缀的名称：构造函数，以及按类型召唤的 `given`。
++ 两者仍然受门控，而关于门控为何可靠的论证应写在它们旁边的注释中。
+
+@ 0 2 0 02fd982e0c8f66941ead3185c26de225
++ 反过来，即带 `unsafe` 前缀的方法必须受门控，是 `S1.2`，目前它只是建议性的而非严格的。
++ 有八个定义违反了它：
+
+% 2 1 0 0fe376c0e9ac1b3618138b344e57a631
+
+@ 0 4 0 03cdb97f92610b2210661354d2888e58
++ column  组件
++ column  定义
++ row  proscenium  `Array.unsafeFrozen`、`Array.unsafeJvm`
++ row  vacuous  `Optional.unsafeGet`（对扩展方法组私有）
+
+% 0 1 0 03baf2dc658d817f0cf9d236a3d8bd2c
+
+@ 0 1 0 04a20e72f90900330a4a0c029413c786
++ row  octogenarian  `Git.Revision.unsafe`、`Git.Tag.unsafe`、`Git.Branch.unsafe`、`Git.Hash.unsafe`
+
+% 1 1 0 1c0e93a3adfa6c2814bd846956d56b4d
+
+@ 0 1 0 04d3eea5f681c6011b566c011fc7a9ac
++ （自环境策略清理以来，`archimedes.Ergo.unsafeInterpolate` 已受门控。）
+
+@ 0 8 0 125d0e603d9b774006380070d124d5eb
++ 为它们加上门控是需要的，并作为后续工作跟踪，而不是被拒绝：一次试验发现这一改动波及数百个调用处，其中相当一部分是冒号块调用（在缩进的实参上调用 `Array.unsafeFrozen:`），不经重构就无法再接受一个参数列表。
++ `Optional.unsafeGet` 需要先做自己的改动：它位于一个带有 `using Optionality[optional.type]` 子句的扩展方法组中，显式的 `(using Unsafe)` 会绑定到那个前导子句上，因此该方法必须先离开该组才能加上门控。
+
+@ 0 3 0 0cd3d8201553f7c51ec5e69b9ac52c78
++ 在此之前，统计将它们计为 `unsafe-ungated`，这才是可靠的记录：只要编译器已经在同一文件中的某个外层位置报告过问题，`S1.2` 警告就会被丢弃。
+
+@ 0 2 0 00480bd6a9cd8336001ec06974cbccb7
++ 前缀是一个标记，而不是许可证。
++ 它表明某个保证到此为止，这是论证其为何可靠的开端，而不是终点。
+
+@ 0 3 0 1e60644f1f450d7e0a0431151fd8460a
++ `unsafely` 本身不在范围内：前缀必须是一个完整的词，即单独的 `unsafe`，或 `unsafe` 后跟一个大写字母，因此提供令牌的块在构造上就被豁免，而直接命名为 `unsafe` 的方法则不被豁免。

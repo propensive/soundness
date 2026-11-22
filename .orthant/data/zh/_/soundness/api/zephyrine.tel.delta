@@ -1,0 +1,2212 @@
+orthant 2 language
+
+% 0 1 0 0f04ec4b9ac2d4270a232409219e1f6b
+
+% 0 1 0 18dbedbffd0608e41131c56a64aade5b
+
+% 0 1 0 0b5938ce7315323607e1922cbc4d93e2
+
+@ 0 1 0 09bb07969539992115f498a5ac10ee09
++ info   流式内核：供解析器使用的游标、拉取和推送端点、管道、生产者，以及缓冲方针
+
+% 0 1 0 0ca6d61ddd9511ea1cdae38f1414f6fe
+
+@ 0 9 0 00df25393621e96d046476702bd5a409
++     _Zephyrine_ 是每个 Soundness 解析器和序列化器所依托的层。
++     它提供三样东西：**`Cursor`**，即解析器逐个元素读取时所透过的视图，它位于单个连续缓冲区之上，无论来源如何分块，缓冲区都从来源重新填充；**流式内核**，其中 `Stream` 是拉取端点，`Intake` 是推送端点，`Duct` 是可附加到任意一方的同步转换，`Conduit` 是数据在线程之间传递的唯一地点，需求（`Credit`）作为背压消息；以及 **`Producer`**，即序列化器写入的数据汇，同一段写入代码既可以同步驱动它（`Producer.collect`），也可以把它作为数据块流驱动（`Producer.apply`、`Producer.sink`、`Producer.utf8`）。
+
+@ 0 8 0 0e1f5334f58691850281c77e5c0beed8
++     各格式库都在 `Cursor` 之上解析：jacinta 的 JSON 解析器、stratiform 的 TEL 解析器、locomotion 的 Protobuf 解析器、breviloquence 的 CBOR 解析器、xylophone、ypsiloid 和 honeycomb 都扩展 `Cursor.Snapshot`，把游标的缓冲区、读取位置和写入端保存在自己的字段中，以便热循环驻留在寄存器中，并在每次重新填充、标记和出错时同步回游标。
++     协议解析器（telekinesis 的请求头解析器）则直接使用游标，通过 `peek`、`expect`、`seek`、`hold`、`mark` 和 `grab`。
++     在写入一侧，这些格式通过 `Producer[Text]` 或 `Producer[Data]` 渲染，因此 `show`、`emit` 和 `lend` 共享同一个写入器。
+
+% 2 1 0 0f80be650e46d8ac00e141a266e1d8b6
+
+% 3 1 0 1ed13503f06ab03d070bc2101881a854
+
+% 0 1 0 1a361e006e56d2a017a44f7643e1c822
+
+% 0 1 0 0bcca23d01aba20200e1ef0cfd962dec
+
+% 0 1 0 1b41216440506a06118b0d1053185fcc
+
+% 0 1 0 061d1a993b1606d905d93e750ea6ab13
+
+% 0 1 0 0d4c8c83be44b6c30388cb707ef5e5de
+
+% 0 1 0 0b6385aad408743f1681326d939b8235
+
+% 0 1 0 11c38e6a2dd6133112472d5948d2ddce
+
+% 0 1 0 0b3a2051513e306915f98cd2d62abe6b
+
+% 1 1 0 101712720c2fc0460c7a4de45607bbae
+
+@ 0 9 0 0268b620fec4c8bf0d260ec1f343a1a7
++     `Cursor` 可以构建在整个值之上（`Cursor(data)`，对于 `Data` 是零拷贝的）、由数据块组成的 `Iterator` 或 `Chain` 之上、`Stream` 之上，或加载器 thunk 之上，它的媒介可以是任何 `Addressable`：`Data`（字节游标）、`Text`（字符游标），或者冻结的记录数组。
++     **阻塞前瞻隐患**支配着活动连接上的每个解析器：`more`、`finished`、`peek` 和 `next()` 在缓冲区耗尽后会从来源重新填充，而重新填充会阻塞，直到来源产出数据；在消息边界处停止、且消息之间没有流结束标志的解析器，必须先用 `peek`（或 `expect`）再用 `advance()` 消耗最后的定界符，后者从不重新填充，并用 `available`、`take` 或显式长度限定其读取。
+
+@ 0 6 0 0ad07e99bc0a85801099a9ea8d210990
++     流在消费者的线程上组合，不使用队列：`stream.via(stage)` 附加任何具有 `Ductile` 实例的值（`Charset`、`Codepage`、压缩方案、密码算法模式），而终端操作（`memoize`、`drain`、`gather`、`chunks`、`records`）则排空并关闭它。
++     `Stream` 是独占的能力：它由一个所有者读取一次，使用它的模块在编译时启用捕获检查和分离检查，因此给流起别名，或在消耗性操作之后读取它，都是编译错误。
+
+% 2 1 0 1b7dbbd35afd48db00eca600ed9d7545
+
+% 3 1 0 029b5ab2fcd24a9e047bdfb400aab76e
+
+% 4 1 0 034690b84adb4c4c08c5427c009a93e7
+
+% 0 1 0 0b1e22680a708fa418dc46e682b2353f
+
+% 0 1 0 0fa7d1ff594903310b01de83c23aa37e
+
+% 0 1 0 1898f01a23411eee051dbf8517cf14ae
+
+% 0 1 0 11215e13a8ca98f71ec999d65bf577c9
+
+% 1 1 0 17c6de075f876b340a413706b1dce7b7
+
+@ 0 3 0 0f0a38f1033cc4971f105366098ff8e3
++     每个阶段都通过作用域中的 `Buffering` given（除非提供了其他的，否则为 `Buffering.standard`）确定其缓冲区大小：每个暂存块 4096 字节、2048 个字符或 256 条记录，每次异步传输十六个暂存块，管道深度为十六。
+
+@ 0 8 0 1638e9e6f784cddb19d79650dadb4fb5
++     这个库是一个组件 `zephyrine.core`，适用于 JVM、Scala.js 和 Scala Native，`Words.load` 背后的 SWAR 字读取按平台提供：`core-jvm` 通过字节数组 `VarHandle` 读取一个字，`core-portable` 则通过移位与按位或。
++     导出列表中的一切都位于 `soundness` 总括包中，选择包 `lineation` 和 `parsing` 与总括包自身的同名包合并。
++     `Region` 和 `Slate` 有意*不*导出（它们带依赖类型的内联扩展无法经由导出转发器保留），内核的内部组件 `Utf8`、`Words`、`WordLoad`、`Blockpool`、`Handoff` 和 `Freelist` 也不导出：它们以 `zephyrine.Region`、`zephyrine.Utf8` 等形式访问。
+
+@ 0 5 0 18c457fa3a6c6b37150cf8216c3d56ab
++     以下 given 要按名称导入，因为 `import soundness.*` 一个也不会导入：跟踪行和列的 `Lineation`（`import lineation.linefeedChar` 或 `linefeedByte`；伴生对象中的默认值 `Lineation.untrackedChars`/`untrackedData` 不跟踪任何东西），以及 `import parsing.trackPositions`，它使能感知位置的解析器为 `locate` 记录源码位置。
+
+@ 0 8 0 12c3395bc766b2771b73e158db46d06b
++     索引规则：`Cursor` 的缓冲区通过 `lend` 读取，它借出一个带品牌的 `Interval in region.type` 的 `Region`，因此消费者能构造的每个索引都在范围内；或者（对于把缓冲区快照到字段中的可信热循环）通过位于 `Unsafe` 令牌之后的 `unsafeBuffer`/`unsafePos`/`unsafeWriteEnd` 三件套读取，其引用只在下一个可能重新填充、压缩或扩大缓冲区的操作之前有效。
++     内核中的每次 `readUnchecked` 和 `charAt` 读取，都由一条注释说明保持索引在范围内的不变式；消费者代码应优先使用带品牌的组合子。
+
+% 0 1 0 153247f8b348ebd40e705f58039e9471
+
+% 0 1 0 1726f3cf462785a00f14ad44bc115d1e
+
+% 0 1 0 0a7dc94a9bd824db1aa26e7cc17841dd
+
+% 0 1 0 10fdcd9d80aa2ed3020efe4ad0a8404b
+
+% 0 1 0 0bc492e6ab3c47c20a2e976c24e82bee
+
+% 0 1 0 091e05a08d5d57fa1d1abf41a15c5c71
+
+% 0 1 0 002a6679fa9b5dbf08b628e42b43f3ce
+
+@ 0 1 0 127c1d5291f2714503c3467c2cfec076
++ entry .Cursor   位于带缓冲的字节、字符或记录序列之上的位置，前进时从来源重新填充
+
+% 1 1 0 0040035dcff8e09c03082b7e76fb8628
+
+@ 0 7 0 0673ff06876ab7dd1442e6451071d53e
++       `Cursor[data, cap]` 从单个连续缓冲区中一次读取一个元素，当读取位置越过末尾时从来源重新填充该缓冲区，因此无论来源如何分块，解析器看到的都是一段不间断的元素序列。
++       `data` 是媒介（`Data`、`Text` 或冻结的 `Array[record]^{}`），`cap^` 是加载器的捕获集：对于位于值、迭代器、链或流之上的游标为 `{}`，否则为流式加载器所取用的能力，因此位于读取文件的加载器之上的游标无法离开该文件的作用域。
+
+@ 0 6 0 12e070a41e5913ba1a6407b649e0c430
++       游标是有状态的能力：裸 `Cursor` 引用只能查询 `position`、`line`、`column` 和 `available`，而每个导航方法（`advance`、`next`、`more`、`seek`、`hold`、`mark`、`cue`、`take`……）都需要工厂方法返回的独占 `Cursor[…]^`。
++       它是 `caps.Mutable`，因此消费者可以把它保存在字段中（池化的解析器就是这样做的）；构建在迭代器或流之上的游标最好内联使用，作为 `consume` 参数，而不是绑定后重复使用。
+
+% 0 1 0 14116fcaa006993f068c95fd1ec862a2
+
+% 1 1 0 08d9458eb73012351c93056f35e51984
+
+@ 0 1 0 02d60e86e434af1a01b6b31bd404094c
++         label 位于两个文本数据块之上的游标
+
+% 1 1 0 1eee380d333c907b0b7c4ffb90d86de4
+
+% 2 1 0 1198519f745b1d141bb1c0ee3a8f04a4
+
+% 4 1 0 09f175e27742be040b22c99efbe0b6af
+
+% 0 1 0 1fb976375fbe706c019d3dc38286852b
+
+% 1 1 0 06629bbd6a2cd2ad03a36308ee7de194
+
+@ 0 1 0 136f0c51afbd1f881159704368e0fa57
++         label 前进到定界符，物化出键
+
+% 1 1 0 0e0a680150b0671f0338c6b2f27b865f
+
+% 2 1 0 18fbe4006ea7e7db0640636e84505fc6
+
+% 4 1 0 02b1cefc679a12381caa27e2acf9dc14
+
+% 6 1 0 1e4353086b79a20010b7153a92d60aab
+
+% 7 1 0 0fad1fda4c6c9b3c1777c33b6f5ff936
+
+% 8 1 0 067d46182ced17ac1742c37e2c581ed0
+
+% 9 1 0 1714ca0bee3581d106705ebd6c0de8d2
+
+% 1 1 0 1cc5a40788a937511420f0706ce92370
+
+@ 0 1 0 0570a98e949f59aa1b7faddb6280c298
++         label 获取快照，向前看，然后恢复
+
+% 1 1 0 1c1e892fdb28e09518ce0c13abf0aadd
+
+% 2 1 0 114492c6be3eb70502318985b1a0e9c3
+
+% 4 1 0 1f0a7f5df0af92de0c4c4f4d898248e0
+
+% 6 1 0 18d5fc49a088138602149710a20220ff
+
+% 7 1 0 14028cd2c20d13a009d2ff5922eb0044
+
+% 8 1 0 049eeaf61424c9c30a79f9a460d6aa26
+
+% 9 1 0 15c1188fbcfae9540740de3045b164bd
+
+% 11 1 0 0c1084d4073b23fb09d8e101ce56b67d
+
+% 0 1 0 1c96db370f86f81a1eb2baba343f6440
+
+% 1 1 0 1b97c1e937eeb34618b0f25f891c7238
+
+@ 0 1 0 06d7a061eb6b7635176d849fd8982d27
++         label 跨越数据块边界，消耗分隔符和值
+
+% 1 1 0 15999a96f54097f80708d5038c79b74f
+
+% 2 1 0 0abaf8246e1922e717f8591cb5bc2d69
+
+% 4 1 0 149e9d09d0470f3a0404848511607e4e
+
+% 6 1 0 014488ed3ecee3ee04806d37ec45a414
+
+% 7 1 0 18663d8f50cbd5b808cce5195ef80d95
+
+% 8 1 0 059c921162fc65ef161d55d881da2eea
+
+% 9 1 0 0ae3f49379269c371ad4aae001bcff13
+
+% 11 1 0 109902ddc68856c7115c8f46a43bfcf1
+
+% 0 1 0 06423604434873721d64050c09a528d9
+
+% 0 1 0 169ef4a47ca0be3a142009e8c89cc619
+
+% 0 1 0 0579a9332b05c64116fe5d893634e205
+
+% 0 1 0 1ea641e4b6b290f703fd17a9e062e8d4
+
+% 0 1 0 17a747f24527600119568592d51f9f76
+
+% 0 1 0 05324ab952d132031fa7821cd90c1137
+
+% 1 1 0 1a277342ea9dfdc5113023e785963c91
+
+@ 0 5 0 04a898bd49965ba61855e86b20048e7b
++       标记只能在 `#hold` 内部获取，它从 hold 开始处起固定缓冲区，使压缩无法丢弃已标记的区域；在 hold 之外，游标可以自由丢弃它已经越过的内容。
++       `#grab` 把两个标记之间的元素物化为一个值，`#clone` 把它们复制到构建器中，`#slice` 借出存储，`#cue` 返回到一个标记。
+
+@ 0 9 0 0563083b7d528e5a01edbb39dcec2fc1
++       **阻塞前瞻隐患。**
++       每个询问元素是否存在的操作（`#more`、`#finished`、`.peek` 和 `#next`，后者末尾的 `more` 在消耗之后运行）在缓冲区耗尽后都会从来源重新填充，而重新填充会阻塞，直到来源产出数据或结束。
++       对于有限输入，这既及时又无害；但在消息之间没有流结束标志的活动连接上（HTTP keep-alive，任何请求/响应协议），解析器绝不能越过消息的最后一个元素向后看，因为在得到应答之前，对端不会再发送任何东西。
++       先用 `.peek` 再用 `#advance` 消耗最后的定界符（`.expect` 和 `#take` 就是这样做的），并用 `#available`、`#take` 或显式长度限定读取。
+
+@ 0 6 0 0efe04e20f0ea0a6150e4b74c2f9143d
++       只有当作用域中的 `Lineation` 处于活动状态时，才跟踪行和列：`import lineation.linefeedChar`（或 `linefeedByte`）在 `\n` 处计数行；伴生对象中的默认值 `Lineation.untrackedChars` 和 `untrackedData` 不跟踪任何东西，每次前进也没有任何开销。
++       执行批量扫描并一步推回位置（`#unsafeAdvanceBy`）的解析器，要自己负责更新行和列（`#unsafeBumpLine`、`#unsafeBumpColumn`、`#unsafeSetColumn`）。
+
+% 0 1 0 0e43ff4645197ca60e9485bf71ddb137
+
+% 0 1 0 0c0c39b9fc77a47c00fdc646841c8b22
+
+% 1 1 0 16d5cf3ed43b3ef9142f469d2e21f634
+
+% 0 1 0 0722f80cc97e2c5503d8f18ae5e70d87
+
+% 1 1 0 09a43d63ac6a493919002e859082e6d4
+
+@ 0 4 0 0bc823017c1495140dc17c3731a9d65a
++   entry .apply   位于值、由数据块组成的迭代器或链、流，或加载器 thunk 之上的游标
++       五个工厂方法，每个都需要媒介的 `Addressable`（对于 `Data`、`Text` 和记录数组，位于隐式作用域中）以及针对其元素类型的 `Lineation`（除非按名称导入了跟踪型的，否则解析为不跟踪的默认值）：
+
+@ 0 18 0 187ecf837a438faa18002625cc115e61
++       - `Cursor(value)`：位于整个值之上的预填充游标。
++         暴露其底层存储的媒介（`Data`）会被原地借用，不做复制，此时游标是*静态的*：它从不写入其缓冲区，从不拉取，并且可以被 `#repoint`。
++         其他任何媒介都复制一次。
++       - `Cursor(iterator)`：位于由数据块组成的 `murmuration.Iterator` 之上，每次重新填充拉取一个。
++         在这种形式下，游标的 `Operand` 和 `Target` 成员是抽象的，因此直接调用 `clone` 或 `seek` 时要转换其参数（`' '.toByte.asInstanceOf[cursor.addressable.Operand]`）；按媒介提供的扩展 `peek`、`expect` 和类型化缓冲区不受影响。
++       - `Cursor(chain)`：位于由数据块组成的惰性 `Chain` 之上，每次重新填充至多强制求值一个单元。
++       - `Cursor(stream)`：位于被消耗的 `Stream[data] over Credit` 之上（需要一个 `Buffering`）。
++         当它自己没有任何活动内容时，游标以 `Buffering` 的 `window` 为额度，原地读取流的下一个区域，不做复制；当一个 hold 跨越重新填充时，它以一次复制把该区域转移到自己的缓冲区中。
++         额度限定了任何上游阶段每次填充所产出的量，因此在解析任意大的输入的整个过程中，内存保持有界。
++       - `Cursor(load)`：位于 thunk `() ->{cap} Optional[data]` 之上的透明内联工厂方法，该 thunk 逐个产出数据块，并在末尾产出 `Unset`；thunk 的捕获集成为游标的 `cap`。
+
+% 2 1 0 0761b8f9f014e7ae1f97cb5ff6395263
+
+% 3 1 0 15e01bc1b240d8de18a47b72823cc84a
+
+% 4 1 0 0aa61e9371bbe1da154d1456e1351533
+
+% 0 1 0 1b4ac8db708a882610cac2dd8fe21569
+
+% 0 1 0 083cc20347ede2eb1415f4b7fb3c701e
+
+% 0 1 0 0615560c593bea2313725ffdd5427a40
+
+% 0 1 0 1e043af386b2abca11cc54bcc136b913
+
+% 1 1 0 17e1351176515b490dbdc0deee42a20f
+
+@ 0 3 0 167f425bf069fc7f03c4270350350f3c
++       每个游标都预先加载它的第一个非空数据块，因此 `unsafeDatum` 和 `peek` 在任何 `next()` 之前就是有效的。
++   entry .Mark   流中的绝对位置，在 hold 内部获取，用于返回或从中复制
+
+% 1 1 0 140a489c668316aa0c707f9468199172
+
+@ 0 10 0 13cc49125bcf5f1a177c63198e58f971
++         一个不透明的 `Long`：调用 `Cursor#mark` 时的绝对流偏移量。
++         标记在压缩之后依然有效，因为它们是流位置而不是缓冲区索引，但标记只能在 `Cursor#hold` 内部获取，后者使其区域保持在缓冲区中。
++         两个标记界定一次 `grab`、`clone` 或 `slice`，`cue` 返回到一个标记。
++         `Mark.Initial` 是位置零；`Mark(absolute)` 根据偏移量创建一个标记。
++         标记按偏移量比较。
++         `Mark` 也在包层级导出，即 `zephyrine.Mark`。
++     entry .Initial   流开始处的标记：偏移量零
++     entry .apply   位于绝对流偏移量处的标记
++     entry .comparable   标记按其绝对偏移量比较和排序
++   entry .Offset   打包进一个 `Long` 的行和列，在 lineation 处于活动状态时为每个标记记录
+
+% 1 1 0 0d5a9315dfab9e8d1c2edd87b094d603
+
+@ 0 16 0 05499e1bb8987f520aa836b5813f12e6
++         `Offset(line, column)` 把两个序数打包进一个 `Long`；`Cursor#offset(mark)` 查找获取某个标记时所记录的偏移量，从而使 `cue` 在恢复位置的同时恢复行和列。
++         偏移量按其打包值比较。
++         `Offset` 也在包层级导出，即 `zephyrine.Offset`。
++     entry .apply   由行和列（均为序数）构成的偏移量
++     entry .comparable   偏移量按其打包值比较
++   entry .absolute   `Mark` 的绝对流偏移量，表示为 `Long`
++   entry .line   `Offset` 的行，表示为序数
++   entry .column   `Offset` 的列，表示为序数
++   entry .Held   表明 hold 已打开的见证，`mark` 需要它
++       一个无状态的令牌：`Cursor#mark` 接受一个 `using Cursor.Held`，只有 `Cursor#hold`（以及 `.lookahead`）提供它，因此只能在压缩无法丢弃已标记区域的地方获取标记。
++       一个共享实例 `.shared` 服务于每个 hold。
++   entry .shared   每个 hold 所提供的唯一 `Cursor.Held` 实例
++   entry .Loader   加载器 thunk 类型：`() => Optional[data]`，每次调用一个数据块，末尾为 `Unset`
++   entry .Filler   直接写入游标缓冲区、绕过数据块协议的重新填充策略
+
+% 1 1 0 1377ddaa311f9cde01d72750185b718f
+
+@ 0 9 0 1c36bcfe35c134f91caace4d51d41686
++         `fill(storage, offset, space)` 在 `offset` 处向游标的缓冲区写入至多 `space` 个元素，并返回写入的数量；未获得任何授予时返回 `0`（游标会重试），流结束时返回 `-1`。因此拉取端点的区域以一次复制转移到游标中，而不是先物化为数据块再复制一次。
++         `block` 是增长提示：游标在每次填充之前把缓冲区扩大到 `writeEnd + block`。
++         流工厂方法 `Cursor(stream)` 会安装一个 filler。
++     entry #block   增长提示：游标在每次填充之前腾出多少空间
++     entry #fill   在 `offset` 处写入至多 `space` 个元素，返回数量、`0` 或 `-1`
++   entry .Lender   其来源还能借出一个区域以供原地读取、无需复制的 filler
+
+% 1 1 0 1320dc7b0bf6b0a60eb1e18552ff4d15
+
+@ 0 9 0 017708ddadd01ab606065d2a197a6042
++         `borrow()` 暴露来源的下一个区域：`lentStorage`、`lentStart` 和返回的数量（未获得任何授予时为 `0`，末尾为 `-1`），只要游标自己的缓冲区中没有活动内容，游标就原地读取它。
++         该区域在下一次 `borrow` 或 `fill` 之前一直有效，因此回收其块的来源绝不会覆盖游标仍在读取的块。
++     entry #borrow   借出来源的下一个区域，返回其数量、`0` 或 `-1`
++     entry #lentStorage   上一次借出区域的存储
++     entry #lentStart   上一次借出区域在其存储中的起点
++   entry .Delimiter   要批量查找的字节序列，其 Horspool 跳转表只计算一次
+
+% 1 1 0 02d3ebec915d1eec1b93b95286bcdf30
+
+@ 0 6 0 1e6dabe96957fdf518161e9c3f79daea
++         多部分边界、归档签名、行终止符：`Cursor.Delimiter(bytes)` 只构建一次移位表，`#find` 探测每个候选窗口的最后一个字节，并按该表移位，因此在与定界符不相似的数据上，它大约每 `length` 个字节才访问一个，而不是访问每个字节。
++         `Cursor[Data]` 用 `.distance` 在其缓冲区中查找定界符，而 `streamOf(cursor, delimiter)` 把下一次出现之前的一切作为流借出。
+
+% 2 1 0 0527a54c79af99331e6f5d96f163155a
+
+% 3 1 0 1db9b791cecd8fa2156fd80a1babf94b
+
+% 0 1 0 1549dce1def0d2b3146a423ec9cc1b2e
+
+% 0 1 0 1146535748ba383f1db426cab6ec2def
+
+% 0 1 0 03ee34e908d10c3b07d8bad4b3e003d7
+
+% 0 1 0 02a4108514ac612e0f4a2d2c516e6d9c
+
+% 1 1 0 189aeb3a6c0540140fde980cdc7198e0
+
+@ 0 5 0 15dd5c2b8ac8ba3f0cd8232201ae0f36
++     entry .apply   位于字节序列之上的定界符，构建其跳转表
++     entry #bytes   定界符的字节
++     entry #length   定界符的长度，以字节计
++     entry #find   定界符首次完整地出现在 `from` 到 `end` 之内的起始索引，或 `-1`
++   entry .Snapshot   解析器本地的游标缓冲区、位置和写入端副本，作为内联特质
+
+% 1 1 0 1fbbfd74aa5f127209f9f512e574bdb7
+
+@ 0 10 0 11fee544a326e29f18f1a2288e025550
++         快速的解析器不会通过游标读取每个元素：它把缓冲区引用（`cells`，一个真正的 `byte[]` 或 `char[]`）、读取位置（`pos`）和写入端（`bufEnd`）的副本保存在 JIT 会放进寄存器的普通字段中，只在重新填充、标记、切片和出错时与游标同步。
++         `Snapshot[medium, operand]` 就是作为内联特质的这套协议：它的主体被复制进每个解析器，并替换 `operand`，因此 `Snapshot[Data, Byte]` 给出一个 `byte[]` 字段，`Snapshot[Text, Char]` 给出一个 `char[]` 字段，这是普通特质无法表达的特化。
++         解析器就是接收者（`this` 是解析器），它不需要语言标志，游标作为中性的 `AnyRef`（`cursor0`）保存，并带有独占视图访问器，因此池化的解析器可以在每次重置时重新指向它。
+
+@ 0 12 0 1ad9b34f9fe279fc14c16be0733ffdb8
++         解析器遵循的受保护协议：赋值 `cursor0` 并调用 `syncFrom()` 以开始；在 `more` 成立时用 `peek` 和 `advance()` 读取；在任何参考位置的游标操作之前调用 `syncTo()`，在任何可能压缩、扩大或接管缓冲区的操作之后调用 `syncFrom()`。
++         有两个钩子是抽象的，**必须**实现：`reconcile()`（在每次重新填充之前调用，跟踪位置的解析器在这里用 `reconcileLineation()`、`reconcileUtf8()` 或 `reconcileUtf16()` 让游标的 lineation 追上进度；否则为 `()`）和 `resynced()`（在每次 `syncFrom()` 之后调用，用于从缓冲区的规模派生任何东西的解析器；否则为 `()`）。
++         它们有意是抽象的：被复制的主体对接收者所*覆盖*的成员的调用，绑定到特质自己的副本，而不是覆盖版本，因此带有默认主体的钩子永远不会到达解析器的版本。
++         出于同样的原因，覆盖特质的任何具体成员都会悄无声息地出错。
+
+% 2 1 0 17b8d1219efadb020ff9921e4b0e1741
+
+% 3 1 0 126edc8a61d27e5417aa0fe0be6ddae3
+
+% 0 1 0 16d0b8d93ebde3f70d610bfd5afa9856
+
+% 0 1 0 0af6916fbc1d22970789a0dcf4e6c574
+
+% 0 1 0 1295ee07e53232691913609221edf1d2
+
+% 0 1 0 1e78f0d3ab3f305110ddc04b3e5d5213
+
+% 0 1 0 182512513b894d7d0ecda81752a03302
+
+% 0 1 0 090d902d0c69365e101aeb65f7dab874
+
+% 0 1 0 0c46ffd0de5cd32605f4f2fb6f89bfef
+
+% 0 1 0 07d79b22a652cdd41a01ec534d7074bb
+
+% 0 1 0 10d438ce3180769004a593df6ad2c34a
+
+% 0 1 0 0ea79135712f96aa068c8eab109c3d90
+
+% 0 1 0 1b297eb480de8fab0c9b2082fa8bbf1e
+
+% 0 1 0 10a4a6aa7d401586113f0ee7cba440c3
+
+% 1 1 0 00bafd71a563e782109ae4ec1b6ee081
+
+@ 0 18 0 021f1c1bf3b16ccd00a716c44c32ce8c
++         快照可以位于整个输入之上而根本不需要游标（`cells` 是输入自己的数组，`cursor0` 为 null）；此时输入在 `bufEnd` 处结束。
++         jacinta、xylophone、stratiform、ypsiloid、honeycomb、locomotion 和 breviloquence 都扩展它。
++     entry #position   下一个元素的绝对流偏移量：每个错误所报告的内容
++         `base + pos`，其中 `base` 在每次 `syncFrom()` 时重新锚定，因此位置在压缩之后依然有效。
++         它和 `#more` 一样是公共的：解析器的驱动程序会对一次完成的解析询问这两者。
++     entry #more   是否还有另一个元素可用，缓冲区耗尽时从来源重新填充
++         `pos < bufEnd || moreSlow()`：慢路径同步到游标，调用钩子 `reconcile()`，向游标请求更多内容，然后同步回来，因此 JIT 把快路径保持为一次寄存器比较。
++         受 `Cursor` 上所述的阻塞前瞻隐患约束。
++   entry .peek   当前元素，表示为 `Datum`，游标结束时为 `Datum.End`
++       字节游标和字符游标上 `Cursor[data, cap]` 的扩展（其他任何媒介都是编译错误）。
++       它不做分配：字节以无符号形式提升（`0..255`），字符按其编码提升，因此结果可以直接与 `Char` 或 `Byte` 字面量比较，比较编译为一次 `int == int`。
++       它可能为获取被检查的元素而阻塞（任何匹配都需要该元素存在），但从不越过它读取。
+
+% 2 1 0 0a01207cec9dc98e064f41bcf9a09f15
+
+% 3 1 0 0bccbbd57d28df751dfc71d83f1e99fb
+
+% 0 1 0 0444ed26c5433cf81bb38909ee743192
+
+% 0 1 0 10497d7e8165cf701fce30f631816da2
+
+% 1 1 0 0e8cbb6aa406fe5b0d3edaebcb9c1f9d
+
+% 1 1 0 0f02dce95f3efa5500b7f5c800a29698
+
+% 0 1 0 005827d1cba5a0a71130d4585bfd1b61
+
+% 1 1 0 1d5bbf7d0f13ede9101a816ee3dbb7de
+
+@ 0 7 0 087f9213c7c9d14c0cfe0bd5e4822689
++   entry .expect   把当前元素与一个字符匹配，越过它前进，或抛出给定的错误
++       字节游标和字符游标上的扩展。
++       `cursor.expect('H')(Mismatch())` 在不匹配或流结束时通过作用域中的 `Tactic[error]` 抛出 `failure`，否则用 `advance()`（绝不用 `next()`）消耗该元素，因此在 keep-alive 流上消耗消息的最后一个定界符，不会为其后的字节强制进行阻塞的重新填充。
++       对于两种媒介，目标都是 `Char`，因此 `Cursor[Data]` 不需要 `.toByte`。
+
+% 2 1 0 05cf6eb1911db1380fa9ae3428c81351
+
+% 3 1 0 018b8aa7defb93131d0774aab3a2e672
+
+% 4 1 0 1b1edd67ef1d62cb06757fd8f4701de8
+
+% 1 1 0 08a97ad9339449050a755c2ce70902c5
+
+% 0 1 0 07f2ea9c28761f2a111da12946df9139
+
+% 0 1 0 0245d0794ea30c5807e391d6064030a2
+
+% 0 1 0 02324d0db4831b830abd00ccdb319023
+
+% 0 1 0 16ccbfe5ef38be4e0c18f6b734f1d37a
+
+% 0 1 0 00913ac6438b1d0d0c690ed090f92ce8
+
+% 1 1 0 1cb431e2018b20aa17264f3debe70cd3
+
+@ 0 5 0 0bcd86867152240c029e8879c6999cd3
++   entry .lookahead   在 hold 内部运行一个动作，并把游标恢复到进入时的位置
++       任何游标上的扩展：一种不消耗的前瞻。
++       在动作内部获取的标记可通过隐式的 `Cursor.Held` 使用，无论结果如何，游标在退出时都会被 cue 回去，因此后续解析看到的是相同的元素。
++       在外层 hold 内部，外层的标记会被保留。
+
+% 2 1 0 1205aaa834a49dbf020d894eaa95b19d
+
+% 3 1 0 1768e321bafb04d0137d300de0b99564
+
+% 0 1 0 1a54513798c566c9110629848a01d1f7
+
+% 0 1 0 190a741a68588d331d851fe7534b522e
+
+% 0 1 0 099963c6acb35bdf0dcb79b8115f38bb
+
+% 1 1 0 0ee33f8e4e20a410133a179ddb921a25
+
+@ 0 73 0 057bcfc0d8010c981085315efd2d24a9
++   entry .unsafeDataBuffer   `Cursor[Data]` 当前的底层存储，表示为 `scala.Array[Byte]`
++       `#unsafeBuffer` 的类型化形式，位于 `Unsafe` 令牌之后：该引用只在下一个可能压缩或扩大缓冲区的游标操作之前有效，调用者要负责在 `unsafePos` 到 `unsafeWriteEnd` 的范围内对它进行索引。
++   entry .distance   `Cursor.Delimiter` 在缓冲区中首次出现的位置位于 `Cursor[Data]` 前方多远，或 `-1`
++       批量搜索已缓冲的区域；游标不移动，也不重新填充任何东西，因此与 `#seek` 不同，它不会在活动流上阻塞。
++       一次一无所获的扫描，应当消耗已缓冲字节中除最后 `delimiter.length - 1` 个之外的全部（它们可能是跨越重新填充的定界符的前缀），并在更多数据到达后再次搜索，这正是 `streamOf(cursor, delimiter)` 所做的。
++   entry .unsafeTextBuffer   `Cursor[Text]` 当前的底层存储，表示为 `scala.Array[Char]`
++       与 `.unsafeDataBuffer` 相同，但用于字符游标。
++   entry #addressable   媒介的 `Addressable` 实例，一个被跟踪的值，命名了它的 `Storage`、`Operand` 和 `Target`
++   entry #lineation   构建游标时所用的 `Lineation`
++   entry #repoint   把静态游标重新指向另一个借用的区域，并重置所有位置
++       只有用 `Cursor(value)` 构建在暴露底层存储的媒介（`Data`）之上的游标才能被重新指向；其他任何游标都会 panic。
++       这是每个连接一个游标的惯用法：服务器直接从其累积缓冲区中解析每个请求头，而无需分配游标或把请求头复制出来。
++       存储与工厂方法接受的是同一种中性载体（`storage: AnyRef`，对于 `Data` 是 `scala.Array[Byte]`），并且在读取它的解析完成之前，该区域必须保持不被写入。
++   entry #advance   消耗当前元素，而不触及来源
++       递增位置（lineation 处于活动状态时，还递增行或列）。
++       它不做检查：位置可能停在缓冲区末尾之后一位，因为下一次 `more`、`peek` 或 `next()` 会在读取缓冲区之前强制重新填充。
++       因此它是对边界安全的原语：这是*不*可能引发重新填充而消耗一个元素的唯一方式，在活动流上于消息边界处停止的解析器，必须用它来消耗最后的定界符（`.expect` 和 `#take` 就是这样做的）。
++   entry #unsafeAdvanceWith   越过一个已经读取的元素前进，并复用它进行 lineation 跟踪
++       用于刚从 `#unsafeBuffer` 读取了当前元素的扫描循环：所提供的操作数用于行和列的跟踪，而不必重新加载。
++   entry #unsafeBumpPos   把位置前进 `by` 个元素，不更新 lineation
++       供驻留在寄存器中的扫描循环使用的批量前进原语：调用者自己跟踪换行符，并用 `#unsafeBumpLine`、`#unsafeBumpColumn` 和 `#unsafeSetColumn` 一步完成 lineation 的校准。
++   entry #unsafeBumpLine   把行计数器增加 `by`，列保持不变
++   entry #unsafeBumpColumn   把列计数器增加 `by`；不得跨越换行符调用
++   entry #unsafeSetColumn   在批量前进越过一个包含换行符的范围之后，直接设置列
++   entry #next   前进，并报告是否还有剩余：`advance(); more`
++       还有元素剩余时返回 `true`，来源耗尽后返回 `false`。
++       它末尾的 `more` 在缓冲区耗尽后会因重新填充而阻塞，因此绝不能用它消耗活动流上消息的最后一个元素；在那里应先用 `peek` 再用 `advance()`。
++   entry #more   当前位置是否有元素可用，缓冲区耗尽时重新填充
++       热路径是一次比较 `pos < writeEnd`；只有在缓冲区耗尽时，才由非内联的慢路径重新填充。
++       它会阻塞，直到来源产出数据或结束。
++   entry #finished   来源是否已耗尽：`!more`
++   entry #position   下一个元素的绝对流位置，表示为序数
++   entry #available   当前位置之后已缓冲的元素数量，不重新填充
++       活动流上的解析器在这个界限之内读取，因为越过它读取会引发重新填充。
++   entry #line   `Lineation` 跟踪行时，当前的行，表示为序数；否则为 `Prim`
++   entry #column   `Lineation` 跟踪行时，当前的列，表示为序数；否则为 `Prim`
++   entry #lineActive   所配置的 `Lineation` 是否处于活动状态，在构造时缓存
++       热循环中的调用者测试这个值，而不是 `lineation.active`，后者对每个元素都是一次接口分派。
++   entry #remainder   从当前位置起所有未消耗内容组成的惰性 `Chain`
++       首先是已缓冲的尾部，作为一个数据块，然后是加载器在被拉取时产出的数据块。
++       由调用者驱动：构造时不拉取任何东西，因此在得到应答之前扣留数据的协议（WebSocket 升级）不会因构建该链而死锁。
++       游标的位置移动到其缓冲区的末尾。
++   entry #unsafeBuffer   原始的底层存储，位于 `Unsafe` 之后
++       游标当前正在读取的 `addressable.Storage`，它可能是游标自己的缓冲区，也可能是其来源借出的区域。
++       只在下一个可能重新填充、压缩或扩大缓冲区的操作之前有效。
++       把它快照到字段中的解析器会把它一次性转换为具体的数组类型（`Cursor.Snapshot` 就是这样做的），从而让 JIT 把该引用保持在寄存器中；改为通过 `addressable.storageAddress` 读取，则每个元素都要付出一次接口调用和一次拆箱的代价。
++       类型化形式是 `.unsafeDataBuffer` 和 `.unsafeTextBuffer`。
++   entry #unsafePos   缓冲区中的读取索引，位于 `Unsafe` 之后
++   entry #unsafeWriteEnd   缓冲区中有效元素的数量，位于 `Unsafe` 之后
++   entry #lend   把可读区域连同带品牌的区间借给一个 lambda
++       元素 `pos until writeEnd` 的边界安全视图：lambda 接收一个 `Region[data]` 和一个 `Interval in region.type`，因此它能构造的每个索引都在范围内，无需 `Unsafe`。
++       只在调用期间有效。
++       对于不跨游标操作缓存缓冲区的扫描循环，这是首选的边界。
+
+% 2 1 0 0db25a50303fad74132cf466b82749f9
+
+% 3 1 0 18d0e2939156e99a0e774d1f0a451ebe
+
+% 0 1 0 05bebe825de5b534074fb77797c3da14
+
+% 0 1 0 1361aa329a62d9460225b89adcc0e3f9
+
+% 0 1 0 0da4a454f4783db61bc354934833a939
+
+% 1 1 0 07dea33af408330a10bd8db2c835ba4b
+
+@ 0 17 0 07366bf5b1bad56d100353ca61ead952
++   entry #unsafeAdvanceBy   把位置前进 `n` 个元素，不做 lineation 跟踪
++       用于自己维护位置副本的解析器：在重新填充、标记或切片时把位置推回游标。
++       当 `#lineActive` 成立时，调用者要负责更新行和列。
++   entry #unsafeDatum   当前元素，通过 `Addressable` 实例读取，位于 `Unsafe` 之后
++       只有在游标未 `finished` 时才有效；在末尾读取会看到过时的存储。
++       `peek` 是安全的形式。
++   entry #lay   应用于当前元素的 lambda，游标结束时为 `otherwise`
++   entry #let   如果有当前元素，就对它运行一个 lambda
++   entry #process   如果有当前元素，就对它运行一个 lambda，并丢弃其结果
++   entry #seek   前进到下一个等于目标的元素，并报告是否找到
++       停在匹配的元素*上*，不消耗它，找到之后也不做任何重新填充。
++       目标是媒介的 `Operand`（因此持有由迭代器工厂方法创建的游标的调用者要写 `' '.toByte.asInstanceOf[cursor.addressable.Operand]`）；它只拆箱一次，并以原始类型比较，字节与同值的 ASCII 字符相匹配。
++       在活动流上，找不到目标的搜索会一直重新填充，直到来源结束。
+
+% 2 1 0 1fea7dac174b8e45001f96402a557322
+
+% 3 1 0 09ae73c7cbc802700634290e7e366bab
+
+% 4 1 0 18ab0c0fdc8497e90abc48ee2c22c556
+
+% 0 1 0 11989e62a2df63e21bf4005a4f832a30
+
+% 0 1 0 1858fa87a12934a90b17c1602d2a841a
+
+% 0 1 0 02243260e5db3f420e7b8169d7677fc0
+
+% 1 1 0 10bb93eccc678dd304bf3e9c99e0452e
+
+@ 0 19 0 12c785e8e91c44a118a618b0b288b398
++   entry #consume   逐个元素匹配一个字面量字符串，在第一次不匹配时运行 `otherwise`
++       一个宏：`cursor.consume(fail())("--")` 展开为字面量每个字符各一次 `next()` 和比较，该字面量必须是常量。
++       每个字符都在一次 `next()` *之后*比较，因此调用时游标必须停在字面量之前的那个元素上，调用之后停在字面量的最后一个字符上。
++       每一步都使用 `next()`，因此对于活动流上消息的最后几个字节，它是不安全的。
++   entry #mark   当前位置，表示为 `Cursor.Mark`，在 hold 内部获取
++       需要一个 `Cursor.Held`，只有 `#hold` 和 `.lookahead` 提供它。
++       lineation 处于活动状态时，行和列记录在标记旁边的未装箱并行数组中，以便 `#cue` 恢复它们。
++   entry #offset   获取标记时所记录的行和列
++   entry #cue   把游标返回到一个标记，并恢复其行和列
++       标记必须位于当前 hold 之内，因为只有被 hold 的区域才保证仍在缓冲区中。
++   entry #hold   在缓冲区从当前位置起被固定的情况下运行一个动作，从而可以获取标记
++       从最外层 hold 开始直到它结束，压缩都不得丢弃 hold 起点之后的任何内容，因此在其内部获取的每个标记都仍在缓冲区中；嵌套的 hold 共享外层的固定。
++       当最外层 hold 返回时，各 hold 被关闭，标记被释放。
++       跨越很长区域的 hold 会把整个区域保留在内存中。
+
+% 2 1 0 0c48be4092731f6000debc11acfc3d0d
+
+% 3 1 0 0b0979899640366c0f5d9ddd97031bec
+
+% 0 1 0 126f32416c53c0a207baf119ae5a7e0c
+
+% 0 1 0 0998547a8d7401f100f30c508b01dc94
+
+% 0 1 0 0e46b2ce119920e7019b86e365947431
+
+% 0 1 0 0575ef83f2f765eb07228b018bccc031
+
+% 0 1 0 1ac897f5df117e691f4a214b4741d1e6
+
+% 1 1 0 0fafaad054550f6d0d8d78de629f5656
+
+@ 0 12 0 17ac0f7905e501b914d9bbb07a576bc0
++   entry #grab   两个标记之间的元素，物化为媒介的一个值
++       标记重合或顺序颠倒时为空值。
++       两个标记都必须位于当前 hold 之内。
++   entry #slice   把两个标记之间的存储、偏移量和长度借给一个 lambda，零拷贝
++       lambda 不得保留该存储引用，因为调用之后压缩可能使它失效。
++   entry #clone   把两个标记之间的元素复制到媒介的 `Target` 类型的构建器中
++       对于 `Text`，目标是 `java.lang.StringBuilder`；对于 `Data`，目标是 `ByteArrayOutputStream`。
++   entry #take   接下来的 `length` 个元素，作为一个值，如果来源先结束，则为 `otherwise`
++       它在消耗每个元素之前确保该元素已就绪，并且在最后一个元素之后从不重新填充，因此对于活动流上消息的最后几个字节是安全的（WebSocket 帧的掩码和随后的载荷，每个数据块到达一个字节）。
++       如果流提前结束，则产出 `otherwise`。
+
+% 2 1 0 1edd031546d76c22145e169c9b159303
+
+% 3 1 0 18f4bc235974bf5b06b95215af4cfadb
+
+% 0 1 0 0629f2130df3c5a70af5c335efbd9a06
+
+% 0 1 0 1d4429040fd7bcde03c86de4f6ce09cb
+
+% 1 1 0 16e45596e57b532c181210b06c0fd462
+
+@ 0 1 0 02496442c420a4e91780ca02dfe48155
++ entry .Datum   由 `peek` 读取的字节或字符，或 `Datum.End`，可直接与 `Char` 或 `Byte` 字面量比较
+
+% 1 1 0 0cfdeb10af4341fa02c95829211d8c57
+
+@ 0 5 0 0178302b588333bc1f818781b34d4a85
++       从 `internal` 导出的不透明 `Int`：一个无符号字节（`0..255`）、一个字符的编码，或者表示游标已耗尽的哨兵值 `Datum.End`（`-1`），这是唯一一个不能由字节或字符得出的 datum。
++       它与原始 `Int` 不同，因此算术运算或字节与字符的混淆不会悄无声息地发生；与字面量的比较通过专用的 `CanEqual` given 进行，仍然编译为一次 `int == int`。
+
+% 2 1 0 0f66a77e15ab97c91466361948c3384d
+
+% 3 1 0 0c20e5f8931a66f91646401882f6539a
+
+% 0 1 0 11463cbf7b94676b18aeb50c0c00fddf
+
+% 0 1 0 1829b243a84bb9150de5ff040607445b
+
+% 0 1 0 0f4cab95d5e3ff6a1510b6e8fb718688
+
+% 0 1 0 117f670a057f22bd0c4a3c41c275f8de
+
+% 1 1 0 05d0941fd10e7ae90f62f5eb397ee1bf
+
+% 0 1 0 044f074a4ef7b1151e0cdc621e822040
+
+@ 0 1 0 0c1a29f569b77d281011eee00c720fc3
++ entry .Credit   细粒度的背压需求：消费者还能接受多少个元素
+
+% 1 1 0 17ba2c3f42d873211b7ad0b73217db65
+
+@ 0 6 0 179c24062fbcc4f40afd861859306b1f
++       从 `internal` 导出的不透明 `Long`（`<: Long`，因此捕获检查把它视为不被跟踪的值）：它是媒介 `Operand` 类型元素（字节、字符或记录）的数量，而不是字节数，因此经过一个改变媒介的 `Duct` 后，其含义会改变，`Duct#translate` 执行这种转换。
++       `Credit(Long.MaxValue)` 表示无界需求。
++       它是内核工厂方法所构建的每个端点的 `Transport`（`Stream[Data] over Credit`），`Regulation.credit` 是它的算术。
+
+% 2 1 0 0f7be773163bef4e067abb54809240b5
+
+% 3 1 0 12e59f97355384880b37a4b5469e65a6
+
+% 0 1 0 1b215ced3d9f2a3d05a03f694e467934
+
+% 0 1 0 1114ffe4ae11ff4c0a033b465101fd15
+
+% 1 1 0 0727000874e27ccf0252fc8cb163f4c3
+
+% 0 1 0 020d8ce913c36163144e3d42c2ac5aa6
+
+% 0 1 0 07ba1173fb1267f51c858c97add79fb6
+
+@ 0 3 0 044627c2f82382e708158afdda360843
++ entry .Mark   `Cursor.Mark`，在包层级导出
++     不透明的标记类型从 `Cursor` 伴生对象中 `export`，因此既可以作为 `Cursor.Mark` 访问，也可以作为 `zephyrine.Mark` 访问；参见 `Cursor.Mark`。
+
+@ 0 3 0 1637184c88790eee1d2e2510071bf6e1
++ entry .Offset   `Cursor.Offset`，在包层级导出
++     打包的行列类型从 `Cursor` 伴生对象中 `export`，因此既可以作为 `Cursor.Offset` 访问，也可以作为 `zephyrine.Offset` 访问；参见 `Cursor.Offset`。
+
+@ 0 1 0 158e8bda3751b38e1f6d79b1292a5383
++ entry .Addressable   流式媒介的类型类：它的元素、存储、构建器，以及它们之间的复制
+
+% 1 1 0 0c38b618d939d781143819e7564e4b9e
+
+@ 0 11 0 1f62278d266f6be8181259d73855e64e
++       `medium is Addressable` 使 `Cursor`、`Stream`、`Intake`、`Duct` 或 `Producer` 可以对 `Data`、`Text` 和记录数据块通用。
++       它命名三个类型：`Operand`，即元素（`Byte`、`Char` 或记录类型）；`Storage`，即可变缓冲区（`scala.Array[Byte]`、`scala.Array[Char]` 或擦除后的 `scala.Array[AnyRef]`）；以及 `Target`，即构建器（`ByteArrayOutputStream`、`StringBuilder`、`ArrayBuffer`）。它还提供在值、其存储和构建器之间移动元素的原语。
++       实例位于伴生对象中，因此无需导入即可解析：`Data` 为 `.bytes`，`Text` 为 `.text`，`Array[Text]^{}` 为 `.texts`，`Array[Data]^{}` 为 `.frames`，带有 `ClassTag` 的其他任何 `Array[record]^{}` 为 `.boxed`。
++       `Data` 和 `Text` 的实例是 `inline given`，因此在编译时解析到其中之一的热路径调用处会降级为直接的数组访问。
+
+@ 0 2 0 1379f9e352e3afa90930f37cf63e3aca
++       媒介精确地命名其类型：带品牌的 `Data & Sized[16]` 不是媒介，因此要交给 `Cursor(…)`、`Stream(…)` 或 `stream` 的值应标注为 `: Data`。
+
+@ 0 4 0 001bc50602f749f31e0d748f8dd94aeb
++       存储协议是带捕获类型的：`allocate` 铸造一个新的独占缓冲区，写入者以 `Storage^` 的形式接受它，读取者则以只读视图的形式接受它。
++       内核的消费者很少直接调用这些原语（`Region`、`Slate` 和各端点包装了它们），但 `Stream`、`Intake` 或 `Duct` 的实现会调用。
+
+% 1 1 0 1b99ee04296f319216bc36cd8645607c
+
+% 1 1 0 1b4985ac8c0c651c1fcf0ca36b71f3f1
+
+@ 0 41 0 1918b991a06b94080d1081b2350b0496
++   entry .bytes   `Data is Addressable`：位于 `scala.Array[Byte]` 中的字节，由 `ByteArrayOutputStream` 构建
++       它暴露其底层数组（`#backing`），因此 `Data` 数据块以引用方式借给游标、流或管道，从不复制，`assemble` 以一次复制连接各部分。
++   entry .text   `Text is Addressable`：位于 `scala.Array[Char]` 中的字符，由 `java.lang.StringBuilder` 构建
++       `String` 不是 `char[]`，因此文本数据块没有可暴露的底层存储，会被复制到缓冲区中；`assemble` 通过 `String.join` 连接各部分，并精确确定结果的大小。
++   entry .boxed   对于任何带有 `ClassTag` 的引用元素类型，`Array[element]^{} is Addressable`
++       记录媒介：数据块是冻结的记录数组，工作存储是擦除后的 `scala.Array[AnyRef]`，额度按记录计数（`Substrate.Boxes`）。
++       元素必须擦除为引用类型，`ClassTag` 使物化后的数据块成为真正的 `element[]`。
++       `Text` 和 `Data` 元素不是 `<: AnyRef`，它们有专用的实例 `.texts` 和 `.frames`。
++   entry .texts   `Array[Text]^{} is Addressable`：文本记录（行、词法单元）的数据块
++   entry .frames   `Array[Data]^{} is Addressable`：字节记录（帧、消息）的数据块
++   entry #Storage   可变缓冲区类型：`scala.Array[Byte]`、`scala.Array[Char]` 或 `scala.Array[AnyRef]`
++   entry #empty   媒介的空值
++   entry #substrate   存储的物理表示方式，供 `Buffering` 确定缓冲区大小
++   entry #blank   一个新的构建器，按提示确定大小
++   entry #build   构建器所持有的值
++   entry #length   值中元素的数量
++   entry #address   值中某个序数处的元素
++   entry #clone   把值中两个序数之间（含两端）的元素复制到构建器中
++   entry #grab   值中两个序数之间的元素，作为一个新值
++   entry #allocate   铸造一个包含 `size` 个元素的新的独占缓冲区
++   entry #storageSize   缓冲区的容量
++   entry #storageAddress   缓冲区中某个索引处的元素
++       当实例未在编译时解析时，它擦除为一次返回 `Object` 的接口调用外加一次拆箱，这就是热循环改为一次性转换缓冲区的原因。
++   entry #storageUpdate   在某个索引处向独占缓冲区写入一个元素
++   entry #append   向构建器追加一个元素
++   entry #copyChunk   把值中从某个偏移量开始的 `len` 个元素复制到缓冲区的某个偏移量处
++   entry #transfer   把 `len` 个元素从一个缓冲区复制到另一个缓冲区
++   entry #materialize   从缓冲区某个偏移量处复制 `len` 个元素得到的新值
++   entry #cloneStorage   把缓冲区某个偏移量处的 `len` 个元素复制到构建器中
++   entry #assemble   按顺序把大小精确的各部分连接为一个长度为其总和的值
++       `memoize` 的终端操作：默认实现通过新的存储和 `materialize` 复制；`Data` 和 `Text` 覆盖它，只复制一次。
++   entry #backing   当媒介不可变且其表示就是它的 `Storage` 时，值自身的存储
++       `Data` 返回它的数组；`Text` 返回 `Unset`，调用者需要复制。
++       绝不能通过暴露的底层存储写入：构建在它之上的游标是静态的，借出它的流会报告 `regionStable`。
+
+@ 0 5 0 15dffed321deef4a16355deb20c52dd4
++ entry .Substrate   缓冲区的物理表示方式：`Bytes`、`Chars` 或 `Boxes`
++     `Bytes` 和 `Chars` 有确定的内存占用；`Boxes`（由堆上记录组成的缓冲区）以引用计数，因此其内存使用没有确定的上界，`Buffering.standard` 把它们的大小定得更小（每个暂存块 256 个，而字节为 4096 个、字符为 2048 个）。
++     `Addressable` 实例命名它的 substrate。
+
+@ 0 1 0 1d6e1174e66ed72a1dee531fbbe086bd
++ entry .Buffering   每个阶段在分配缓冲区时所参考的上下文大小方针
+
+% 1 1 0 0ea95d31498abbc30016d9017a63e057
+
+@ 0 10 0 145592ba13cfebc10fc134fe0f882f9f
++       `Buffering` 是纯粹的大小方针（它不捕获任何东西），每个阶段在构造时参考它一次，因此自适应的实例能看到每个新阶段，但从不调整一个活动阶段的大小。
++       `.standard` 位于隐式作用域中；把另一个绑定为局部 given 即可重新调整管线。
++       它的成员：`#capacity(substrate)`，即暂存块（驻留在缓存中：4096 字节、2048 个字符、256 条记录）；`#transfer(substrate)`，即跨越异步边界的块（十六个暂存块，因为每次都要付出一次同步交接的代价）；`#depth`，即 `Conduit` 在写入者和读取者之间保留的余量传输块数（16）；`#window(substrate)`，即游标向它原地读取的流请求的额度（一个暂存块）；以及 `#recycle`，即管道中已排空的块是否返回给其写入者（开启）。
+
+% 2 1 0 04cb73c31d700277130320a15a88d677
+
+% 3 1 0 1c722302c25757e91604e0b4bcab9051
+
+% 0 1 0 024902c67eb3f2481356eb44773a021e
+
+% 0 1 0 025260768bd965100012c31f580fa4c0
+
+% 0 1 0 17b05650567989c80dc6102662e099b1
+
+% 0 1 0 137c39f2935db98705daa689782d0326
+
+% 1 1 0 02a99b69a5ac436303e344b863ff163d
+
+@ 0 4 0 12b2bce03a81b23318fb9f148083da3b
++       管道中在途的数据以大约 `2*depth + 1` 个传输块为界；在深度非常浅时，交接吞吐量会骤降，而对于步调一致的生产者和消费者，吞吐量在默认值附近趋于平稳，因此突发较多的管线会把 `depth` 覆盖为以传输块计的突发大小。
+
+% 1 1 0 0b84a37af9d7e6d31d4ec3bc311c5c39
+
+% 1 1 0 122ffc7f0d2e90c5099d4ab71f9b9951
+
+@ 0 10 0 1a009d95629a1d3a13edf882d181d598
++   entry .standard   默认方针：每块 4096 字节、2048 个字符或 256 条记录，深度 16
++   entry #capacity   某个 substrate 的暂存块大小：阶段为自己的缓冲区分配的大小
++   entry #depth   `Conduit` 在其写入者和读取者之间持有的传输块数量
++   entry #transfer   跨越异步边界的块的大小；默认为十六个暂存块
++   entry #window   游标向它原地读取的流请求的额度；默认为一个暂存块
++       借用的区域不占用缓冲区，因此更大的窗口只意味着更少的填充次数，以及两次填充之间更长的批量扫描，其上限由额度允许上游阶段产出的量决定。
++   entry #recycle   `Conduit` 是否把已排空的传输块回收给其写入者；默认开启
++       关闭它会恢复严格的逐块分配，或者在测量中隔离池的影响。
+
+@ 0 1 0 034a7382e59275a50242929229ac66ba
++ entry .Lineation   决定哪个元素结束一行的方针，使游标能够跟踪行和列
+
+% 1 1 0 0d78daa0a0cb41dd1832faa97d89248b
+
+@ 0 5 0 064a545dadd521361d1caa109bc70490
++       `Lineation by Operand` 有 `active`，表示是否进行跟踪，以及 `track(datum)`，表示该元素是否结束一行。
++       `Cursor` 在构造时读取一次 `active`，因此未激活的行划分在每次前进时没有任何开销。
++       伴生对象的 `.untrackedChars` 和 `.untrackedData` 是隐式作用域中的默认值，不跟踪任何内容；进行跟踪的方针位于 `lineation` 选择包中，按名称导入。
+
+% 2 1 0 00c15a6cc755fcc31b02d51e4b8f8feb
+
+% 3 1 0 106fd24e8bf0be4a0c41e07a9c70c16d
+
+% 0 1 0 01abe52853067b410f9ac12aec26ffcf
+
+% 0 1 0 1dad14e2d4dfa6cb18065a1f3095df63
+
+% 0 1 0 0a6ead42316ff2dc1ea9949c49847696
+
+% 0 1 0 05c049afdb015b5d0810b4ac3e76e507
+
+% 1 1 0 0def2ee77eb328f51f9ea1dfce784c24
+
+% 0 1 0 03c1b3395f867e3b142c7381a7e754c8
+
+@ 0 4 0 02ad7679fc052414103504bf9cbc9dbe
++   entry .untrackedChars   字符游标的默认值：不跟踪行和列
++   entry .untrackedData   字节游标的默认值：不跟踪行和列
++   entry #active   此方针是否跟踪行
++   entry #track   一个元素是否结束一行
+
+@ 0 1 0 1f7155e55039b1760347c33a08427c8e
++ entry .lineation   行跟踪方针，每一个都是按名称导入的 given
+
+% 1 1 0 1dcc49d3fe0b657b0fa1cdbe58ed1f7c
+
+@ 0 3 0 0cd56b2e4f0a342815c6c49e5db77674
++       `import soundness.*` 不会引入其中任何一个：除非按名称导入其中之一，否则解析到的是不跟踪的伴生对象默认值，而词法上导入的 given 优先于伴生对象中的 given。
++       每一个都是 `inline given`，因此对每个元素的检测会内联到游标的 `advance` 中。
+
+% 2 1 0 12d034253277223e0a9ef89c087b027e
+
+% 3 1 0 1113cea576f9ef82042b16146d71c921
+
+% 4 1 0 188fda242bb52ade0f6cb89d163c9e66
+
+% 0 1 0 167bad68329d48bc193ddf4de7681a1e
+
+% 0 1 0 10afb423d6c84f7e11e0b81f2642e0a9
+
+% 0 1 0 0f536cf9882d3acf00f4bd5e9233f451
+
+% 0 1 0 04d164c2a3fe74c200a2caad78cf9cfc
+
+% 1 1 0 0c797ae017ae344c19b0968d1983729d
+
+@ 0 4 0 1d8cbdb088f121b809070d3d0853556a
++   entry .linefeedChar   字符游标的行在 `\n` 处结束
++   entry .carriageReturnChar   字符游标的行在 `\r` 处结束
++   entry .linefeedByte   字节游标的行在字节 10 处结束
++   entry .carriageReturnByte   字节游标的行在字节 13 处结束
+
+@ 0 1 0 07f9adb6c75f89190d5d2e9d80d00fdd
++ entry .PositionTracking   所有感知位置的解析器共用的开关，用于记录源码位置
+
+% 1 1 0 14885fab8221db06128841481136ddd0
+
+@ 0 6 0 1682c7b203e46b790e549a6f81e463b5
++       `On` 或 `Off`。
++       伴生对象的 `.default` 是 `Off`，因此 jacinta、stratiform、xylophone、ypsiloid 和 honeycomb 的通用 `read`/`load` 入口在解析时不进行跟踪，也不付出任何代价；`import parsing.trackPositions` 用 `On` 覆盖它，同一个 `read` 随后产生的值可以由 `locate` 解析为源码位置。
++       （它命名为 `PositionTracking` 而不是 `Tracking`，以免在 `import soundness.*` 下与 contingency 的 `Tracking` 冲突。）
+
+% 0 1 0 0dddc834632989ef133b2b864e2c3216
+
+% 0 1 0 0fae750822f8307d1f2ef21f1f1d9cf1
+
+@ 0 1 0 168f07c171e3b50c193ba0ae5f518f43
++   entry .default   伴生对象默认值：`Off`
+
+@ 0 1 0 19eb4e885bf1ab3b07c5da7c3fe6c912
++ entry .parsing   开启位置跟踪的 given，按名称导入
+
+% 1 1 0 0bef2dac4588a34407890ee0fb438cc9
+
+% 1 1 0 129f526836097231016708ddcda3f573
+
+% 2 1 0 0bc97b6e16268c230d2159d6da92bed9
+
+% 0 1 0 1cdc57769a14db061e8c86d90120bb16
+
+% 0 1 0 0cbd6cb6c2cd1b8d020d1f35618e7660
+
+% 1 1 0 09653e6b0c1b8fcc052b68788d4d391d
+
+@ 0 1 0 0e0a79665822a85913e444d5c668ffb1
++   entry .trackPositions   `PositionTracking.On`：感知位置的解析器记录源码位置
+
+@ 0 1 0 0d90c73d4a2193b10d10947cd3bfb63a
++ entry .Positionable   把解析得到的值与寻址其节点的路径类型以及每个路径解析到的位置联系起来
+
+% 1 1 0 00cf4de232e2825a166831655d8e33f9
+
+@ 0 8 0 065c9db5203022ca0ad3594c4425bcc4
++       例如 `Json is Positionable by JsonPointer to Json.Ast.Position`：`Operand` 是路径类型，`Result` 是具体的 `Format.Position`。
++       统一的 `locate` 和 `locateKey` 扩展通过它分派，因此每种支持跟踪的格式都以相同的方式提供位置查找。
++       在作用域中没有 `parsing.trackPositions` 时解析得到的值不携带位置，每次查找都是 `Unset`。
++   entry #Result   该格式解析到的位置类型，一个 `Format.Position`
++   entry #locate   路径所寻址节点的位置，或 `Unset`
++   entry #locateKey   与路径最后一段匹配的键的位置，或 `Unset`
+
+@ 0 4 0 0f27f1fd55b15305156560c57b0e888c
++ entry .locate   解析得到的值中路径所寻址节点的源码位置，或 `Unset`
++     任何具有 `Positionable` 实例的值上的扩展；路径类型由该实例确定（`Json` 由 `JsonPointer` 定位）。
++     路径无法解析，或者值在解析时没有进行位置跟踪时，结果为 `Unset`。
+
+% 2 1 0 00a024433d47710b0573b43dfbea91cb
+
+% 3 1 0 1a39726494b63d55076de6ebe6531c6d
+
+% 0 1 0 13f9e480a6c9c27310d328742295d6da
+
+% 0 1 0 0323f27fc4985e0804a43d7947f66e41
+
+% 1 1 0 1ed7e4e174629fc20d371ebb8c7095ec
+
+% 0 1 0 0805a5b706e5d2bd03813f5b40795c70
+
+% 0 1 0 03c287662b1545331db4b9ac12e03a10
+
+% 1 1 0 14c268f9ce1517101cd971d43398b628
+
+@ 0 2 0 008194125c221b8509b9de847c66fc5c
++ entry .locateKey   路径最后一段所指定的对象键或映射键的源码位置，或 `Unset`
++     与 `locate` 相同，但针对的是键而不是它的值。
+
+@ 0 1 0 1fd084e7b11911fd0b9d8716f8a7292d
++ entry .Format   已解析格式的名称，以及其解析错误所携带的位置类型和问题类型
+
+% 1 1 0 12b33cba8485bede1a2454234ce2b1cb
+
+@ 0 3 0 057d004c2cece05c1a96ad7e71ca9e31
++       每个格式对象（jacinta 的 `Json`、stratiform 的 `Tel` 等）都是一个 `Format`，它指定自己的 `Position`（在源码中的何处）和 `Issue`（哪里出了错）类型，使 `Parse.Error` 能够统一地报告 `the JSON was not valid at line 3, column 7 because …`。
+
+% 0 1 0 042d0ae504c0c6270f1c89b10840ccad
+
+@ 0 1 0 1e41c8018a6ad29017292f11b0d8bd9a
++   entry .Position   在源码中发现错误的位置
+
+% 1 1 0 1eb14a5775f72c7a097edabb7a6a87e9
+
+@ 0 12 0 1507aceb0a19adb402293324ae556163
++         `describe` 渲染该位置；`offset` 和 `length` 默认都是 `Unset`，给出一个字符范围；`span` 是公共错误 API 所暴露的统一 `Span`，由偏移量和长度构造，除非某个跟踪行的实现覆盖了它。
++     entry #describe   该位置，渲染为文本
++     entry #offset   字符偏移量（如果已知）
++     entry #length   受影响范围的长度（如果已知）
++     entry #span   该位置，作为一个 `Span`
++   entry .Issue   输入中出了什么错
++     entry #describe   该问题，作为一条消息
++   entry #name   格式的名称，即它在错误消息中的写法
++   entry #Position   格式的位置类型
++   entry #Issue   格式的问题类型
+
+@ 0 1 0 07cf99f6122476491b4d466f0b65d63d
++ entry .Parse   每个格式解析器都会抛出的错误
+
+% 1 1 0 1b8e1c7c800172841523b8a2519e3643
+
+@ 0 9 0 0e711355b5a5a062017e3b92d0265999
++       `Parse.Error(format, position, issue)` 是错误 `↯/s.60.2`，_the `name` was not valid at `position` because `issue`_，带有该格式自己的位置类型和问题类型；`#span` 把位置暴露为一个 `Span`。
++       每个构建在内核之上的解析器都通过 `Tactic[Parse.Error]` 抛出它。
++   entry .Error   错误 `↯/s.60.2`：_the `format` was not valid at `position` because `issue`_
++     entry #format   拒绝该输入的格式
++     entry #position   输入被拒绝的位置
++     entry #issue   被拒绝的原因
++     entry #span   该位置，作为统一的 `Span`
+
+@ 0 4 0 0d22a781d489f7e21cbb1eb8d17fceac
++ entry .Formatting   序列化器输出格式配置的标记特质
++     缩进、换行、末尾换行符之类。
++     每种格式定义自己的子类型，带有适合它的参数（YAML 禁止用制表符缩进；HTML 的空白是结构性的），并在其 `formatting` 命名空间中提供可导入的实例。
+
+@ 0 1 0 02b3e577fdd588e5026d6984c193e18f
++ entry .Truncation   在交付全部内容之前就结束了的流
+
+% 1 1 0 1c5dbc85f96387071d77ed6f57d6954a
+
+@ 0 6 0 1c5ef2dde2ec18b81bd7f1b947f272f0
++       它以数据的状态命名，而不是以抛出者命名：`Spring` 的拉取以及 turbulence 的 `Streamable`、`Writable` 和 `Sink` 都会报告它，因此它与 `Stream` 和 `Spring` 放在一起。
++       turbulence 重新导出了它，因此 `Truncation` 通过 `import soundness.*` 和 `import turbulence.*` 都能解析。
++   entry .Error   错误 `↯/s.60.1`：_the stream was cut prematurely after `total`_
++     entry #total   流被截断时已经交付了多少
+
+@ 0 1 0 0221e497196125c801fd2c36b5346b4b
++ entry .Expanse   一段字节区域的随机访问视图，用于按位置访问的格式
+
+% 1 1 0 061285e266a03f2213d916db1f882985
+
+@ 0 8 0 133f06f3c368a04b0ec8123f770fdef0
++       ZIP 中央目录、PDF 交叉引用表和内存映射文件按偏移量读取，而不是顺序读取；`Expanse` 是在任何能提供范围读取的介质之上的 `size` 和 `read(offset, length)`，这种介质可以是文件通道、内存缓冲区，或接受 `Range` 请求的 HTTP 资源。
++       实现自行声明其生命周期规则（在一个作用域内保持资源打开，或在每次读取时重新获取）。
++       代表一个打开资源的实现以被跟踪的 `Expanse^` 形式借出。
++       `streamOf(expanse, offset, length)` 把它的一个范围作为流读取，每次一个传输块。
+
+% 0 1 0 118fa1efcd363acb0d47825882e44b5d
+
+% 1 1 0 0b1cd4f040a58a33093ee503f640f668
+
+@ 0 2 0 198ef93c5b508f0c0c47f2adb186f4b9
++   entry #size   该区域的字节长度
++   entry #read   从 `offset` 开始的 `length` 个字节，作为 `Data`
+
+@ 0 1 0 0f123abb5eef47bd018ff94920bf28d2
++ entry .Malleable   字节还可以就地替换的 `Expanse`，如内存映射文件的字节
+
+% 1 1 0 150d4afb9c9b5c5b1c49b72fa5836e0a
+
+@ 0 2 0 054ba14542ea1c5c0856db4c15115364
++       区域是固定的：`write` 不能超出 `size`。
++   entry #write   用 `data` 替换 `offset` 处的字节
+
+@ 0 1 0 1c77d82579912cf11ff143118ab1e7b4
++ entry .Spring   可重新物化的流来源：每次拉取都在相同内容之上创建一个新的、独占的端点
+
+% 1 1 0 02115936965a0b930121c676ab4811ac
+
+@ 0 6 0 02071cebebe3086a02c2f77d9d00b932
++       `Stream` 只能读取一次；`Spring[medium]` 可以被拉取任意多次，每次 `apply()` 都给出一个覆盖相同内容的新流。
++       它是一个特质而不是函数类型，因为 lambda 不能把一个新的作用域能力作为结果创建出来，而方法的结果会在每个调用点重新定级；又由于 `apply` 接受一个 `Tactic[Truncation.Error]`（拉取是报告来源被截断的地方），它不是单一抽象方法，因此 spring 写作匿名类。
+
+% 2 1 0 19b1263e7b7df9d71a6c27850597ffa1
+
+% 3 1 0 0be701dcc4b1b2f40dd64cf1b1681da6
+
+% 4 1 0 07468e4087cbab570c6f4930bd98e186
+
+% 0 1 0 181c89a3a3c9eff71379d302524ae8b3
+
+% 0 1 0 01695849077b5cc30440a2ef48c02fbe
+
+% 0 1 0 11f896df7461384f0b65ce24a38b5dad
+
+% 1 1 0 17b175ebad885ace0f6da2c3ce0ea8b5
+
+@ 0 1 0 15de867e149d64bb0eece21b2f630b82
++   entry #apply   覆盖该内容的新流，如果被截断则抛出 `Truncation.Error`
+
+@ 0 1 0 013119bf19f8054f0ba3487acd7aab57
++ entry .Stream   管道的拉取端点：一个缓冲区，其可读区域以零拷贝方式借给一个消费者
+
+% 1 1 0 041abf34c52003ef1dac8a85d4dcec1d
+
+@ 0 6 0 1d8a70897e9e8c7a1c7db42e2f1e30cc
++       读取 `Stream[medium] over transport` 的方式是：以消费者准备接受的数量调用 `#refill(demand)`，读取它报告的区域（通过 `#lend`，或通过 `#unsafeStorage` 从 `#start` 到 `#limit`），然后用 `#skip` 越过已读的部分。
++       不复制任何内容，也不保留任何内容；不进行 refill 的消费者不提出任何需求，这使得背压就是调用的缺席。
++       `transport` 是需求类型，内核的工厂所构建的一切都使用 `Credit`。
+
+@ 0 9 0 15092141a7af154c0649dcfc10c7f6cb
++       流是一种独占能力：refill、skip 或 close 都需要工厂返回的 `Stream[…]^`，它作为 `consume` 参数传给组合子，而在 `via`、`pump`、`memoize` 或任何其他消耗性操作之后再使用它是编译错误。
++       流可以通过对一个值、一条链或一个数据块迭代器调用 `.apply`、通过 `stream` 扩展、通过 `Conduit`、通过对游标或区域调用 `streamOf`，以及通过 turbulence 的 `Streamable` 实例构建；用 `via`/`viaDuct` 变换，用 `truncate`/`discard` 限定范围，用 `pump` 连接到一个入口，并由一个终端操作（`memoize`、`drain`、`gather`、`chunks`、`chain`、`records`）排空，终端操作会关闭它们。
+
+% 2 1 0 1b3a7c95bb3f5ccc09a865319ee87c5f
+
+% 3 1 0 028dc691747421761e7b180d2e9c1ca6
+
+% 0 1 0 0118432fc424a220047be4bef12e3f73
+
+% 0 1 0 0de9305be7d8f5be1ef586db4d80b999
+
+% 0 1 0 114d27d8ffad0a4d18276c55ed13cc4e
+
+% 0 1 0 1a65f575378e5dd90314af00771028ac
+
+% 0 1 0 0b222ef96d8a1f301fd292d18a3463db
+
+% 0 1 0 025e640c913cf9d0057353815a2ecccd
+
+% 1 1 0 0667119edf779d7811554fdff348f722
+
+@ 0 8 0 14184198831ca91e0101086b8f2a5a5c
++       实现一个流：提供 `storage0`（缓冲区，作为 `AnyRef`）、`start`、`limit`、`skip` 和 `refill`，并覆盖 `close` 以释放来源；测试套件中的 `Recorder` 包装另一个流并记录它所见到的需求，是最小的形态。
++       `Stream` 扩展 `ExclusiveCapability, Stateful` 而不是 `Mutable`，这样实现可以捕获它的来源（迭代器、队列、套接字）；代价是保存在独占字段中的流是只读的，因此包装器通过一个中立的 `AnyRef` 载体持有其上游，并在访问器中重新声明所有权。
+
+% 1 1 0 0f76380d67c0d9d80dd2a54d715f0f60
+
+% 1 1 0 16df8353429aa48b1a926d479b63dec2
+
+% 1 1 0 072e7ec5845e07b705c7f3c6324b3fe6
+
+% 0 1 0 171d7620a4c610b00930843ef35c4564
+
+% 1 1 0 1ed0753ff5c250f103c4b303be64b37b
+
+@ 0 30 0 14d0bd302ccc73b80cc05b727f595faa
++   entry .apply   覆盖单个值、一条惰性数据块链或一个数据块迭代器的流
++       `Stream(value)` 是单区域的内存流：`Data` 按引用共享（它的区域范围是稳定的，因此扇出可以共享它们），其他任何介质在第一次 refill 时复制一次。
++       `Stream(chain)` 每次 refill 最多强制求值一个单元，因此需求驱动生产，恰好达到链的惰性所允许的程度。
++       `Stream(iterator)` 适配一个由数据块组成的 `murmuration.Iterator`，每次 refill 在需求允许的范围内暴露一个数据块；迭代器自身的生产不受流的控制，它的捕获与流自身的捕获一同保留。
++   entry #addressable   该介质的 `Addressable` 实例
++   entry #Transport   需求类型：内核构建的一切都使用 `Credit`
++   entry #refill   确保至少有一个元素可读，生产量不超过 `demand` 所允许的数量，并返回可读的数量
++       必要时阻塞。
++       仅当 `demand` 不允许任何数量时返回 `0`，在流结束时返回 `Unset`，其他情况下返回 `limit - start`。
++       区域中仍未消耗的元素会被报告，而不再生产更多：未被 skip 的区域会被报告，而不会被扩展。
++   entry #lend   以零拷贝方式把可读区域及其带品牌的区间借给一个 lambda
++       lambda 接收一个 `Region[medium]` 和一个覆盖 `start until limit` 的 `Interval in region.type`，因此它能构造的每个索引都在范围内。
++       仅在下一次 `refill` 或 `close` 之前有效。
++   entry #unsafeStorage   原始的底层存储，位于 `Unsafe` 之后
++       用于按引用共享区域范围的扇出管道，以及索引运算超出区域组合子能力的内核。
++       从无类型的 `storage0` 进行的转换是可靠的，因为 `Addressable` 实例对每种介质都是唯一的。
++   entry #start   存储中第一个可读元素的索引
++   entry #limit   最后一个可读元素之后一位的索引
++   entry #skip   消耗区域中的 `count` 个元素而不物化它们
++   entry #regionStable   较早的区域范围在之后的 refill 后是否仍然有效；除非被覆盖，否则为 `false`
++       对于 `refill` 只会扩展、`skip` 只会前移的单个固定缓冲区（`Stream(value)`、`streamOf(expanse, …)`），它为真，因此扇出可以按引用共享范围而不必复制。
++       重用其缓冲区的流绝不能声明它。
++   entry #close   释放流的资源，向上游传播到整条链
+
+@ 0 4 0 161d5b40e0219c3f1146a7da0bb7c877
++ entry .stream   `value.stream` 或 `iterator.stream`：以流畅的写法得到内存中的拉取流
++     两个扩展：在任何 `Addressable` 值上为 `Stream(value)`；在由数据块组成的 `murmuration.Iterator` 上为 `Stream(iterator)`。
++     值的类型必须准确地指明介质（`: Data`，而不是带品牌的 `Data & Sized[n]`）。
+
+% 2 1 0 080df36b773f75c118ae971d896610c4
+
+% 3 1 0 1aab7df39d965c56192e16bae9bcee1a
+
+% 4 1 0 06716235d73e93f912bacb99ac4669e9
+
+% 0 1 0 1c5b97c24680db870d73755175ce873a
+
+% 0 1 0 1c0d3157fe8c901b15b930f050a3db64
+
+% 0 1 0 0841063399fbdbef1fd9c23daa375f84
+
+% 1 1 0 02efd1c148d839d807ded3b798308a84
+
+@ 0 1 0 0174011a768130b2019b52a6b20885b6
++ entry .Intake   管道的推送端点：一个缓冲区，其可写区域以零拷贝方式借给一个生产者
+
+% 1 1 0 1a8882a2dcee1ba401c29fea91a8cf1f
+
+@ 0 8 0 16eb301caa98f9d704b2e545122352d1
++       `Intake[medium] over transport` 报告它当前的 `#demand`，即它能接受多少，并通过基本协议 `#reserve`/`#unsafeBuffer`/`#mark`/`#commit` 写入：写入者预留连续的空间，直接写入存储中 `mark` 处，然后提交。
++       `#put`、`#push` 和 `#absorb` 是建立在该协议之上的 final 循环，又由于 `Intake` 扩展 `Producer`，针对 `put`/`push` 编写的序列化代码无需改动就能驱动管道。
++       `#finish` 结束流（恰好一次），`#flush` 传播缓冲的数据而不结束流，`#fail` 中止，在下一个异步边界把错误传播给读取者。
+
+@ 0 4 0 0e800e99a1dadb2c0af67961c8e743e0
++       入口可以用 `accepting`/`acceptingDuct` 变换为另一种类型的入口，用 `pump`（消耗流）或 `ingest`（把流交还）输入整个流，并由 `Conduit` 为跨线程管道的写入线程构建。
++       实现一个入口意味着提供 `demand`、`buffer0`、`mark`、`reserve`、`commit` 和 `finish`。
+
+% 2 1 0 0f1485e9907a7a6e16049abface3ad23
+
+% 3 1 0 09356ea711311e0d09bd119221b15075
+
+% 4 1 0 019b4ecdd9039b8f0581e14212016243
+
+% 6 1 0 08343c66237c808d12a99eb9af295aee
+
+% 7 1 0 1730aa11dbabd5ea13600468a2304827
+
+% 0 1 0 14a1c9e9619c69440d1984add2658069
+
+% 0 1 0 160c77780c7d0f5d02f5d34110df5c7e
+
+% 0 1 0 00360ed7642d03d6057868baa5f3c03c
+
+% 1 1 0 1517187fe4c83cd00aeeba99b99c3299
+
+% 1 1 0 18454649d59a46751d276d3449da6f0d
+
+% 0 1 0 127f5cd70a2338820e5b52260ff146be
+
+% 1 1 0 09082623fdce1b9d027c95c91225f7bb
+
+% 1 1 0 13c9893028fd84d1173ec38bb351ad3e
+
+@ 0 21 0 07ea99d7b1703b5916b461f3728661ff
++   entry #addressable   该介质的 `Addressable` 实例
++   entry #Operand   元素类型：`addressable.Operand`
++   entry #Transport   需求类型
++   entry #demand   此入口当前报告的需求：作为限制上游生产的参考
++       按请求计算，从不缓存；真正阻塞的是 `reserve`。
++   entry #reserve   确保至少有一个元素的连续可写空间，必要时阻塞，并返回空间大小
++       `min` 是一个请求：实现可以返回更少（写入者对 `reserve`/`commit` 循环），但也可以把一个大的请求当作大小提示，`Conduit` 就会相应地创建更大的传输块。
++   entry #unsafeBuffer   存储，从 `mark` 到预留空间为止可写，位于 `Unsafe` 之后
++       仅在下一次 `commit`、`flush` 或 `finish` 之前有效。
++   entry #mark   下一个元素写入处的索引
++   entry #commit   声明已在 `mark` 处写入 `count` 个元素；可能同步地把它们级联到下游
++   entry #flush   立即把缓冲的数据传播到下游，而不结束流
++   entry #finish   结束流：刷新，输出任何终端阶段状态，释放下游；只调用一次
++   entry #fail   中止：把错误传播到下游，使各阶段释放资源；它会在读取者处被重新抛出
++   entry #absorb   通过 reserve/commit 循环，从某个偏移量起复制存储中的 `count` 个元素
++   entry #put   通过 reserve/commit 循环写入一个完整的值，或从某个序数起写入它的 `size` 个元素
++       可被覆盖：异步边界会改为按引用传递一个大的不可变数据块，`Conduit` 的入口就是这样做的。
++   entry #push   写入一个元素
+
+@ 0 1 0 03cb2a2c7baf72df17ae21fae04f9912
++ entry .Conduit   异步边界：一个供写入线程使用的入口和一个供读取线程使用的流
+
+% 1 1 0 0bbb2854115f380b0ae329598c949189
+
+@ 0 10 0 1b4f123df29133830c6a743678ee3b59
++       `Conduit[medium]()` 产生 `(intake, stream)`，每一端始终只有一个线程接触。
++       数据以块为单位穿过一个有界的无锁环（`Handoff`），因此快于读取者的写入者会在 `reserve` 中停驻，这就是跨线程背压，而空闲容量就是入口作为 `demand` 报告的额度。
++       它是管道中唯一同步的组件；其他每个阶段都是位于某一侧的单一所有者状态。
++       至少一个块长、且其介质暴露底层存储（`Data`）的数据块按引用穿过，不做复制；较小的写入合并成传输块，读取者把传输块交还给写入者重用（`Buffering#recycle`），在 conduit 结束时再交还给共享的 `Blockpool`。
++       生产者的 `fail(error)` 会在读取者下一次 `refill` 时被重新抛出。
+
+% 2 1 0 05ceec52fe58e8a90783362e47c574e7
+
+% 3 1 0 16e5dbf21b41b09217329db0b4cf93f4
+
+% 4 1 0 1ebeed6afb039ae6159cbbf0ef8675bf
+
+% 1 1 0 1b051369c5ecbac71bdde5a6a0bc2e5c
+
+% 2 1 0 1bdd9fb62bf462340ada7ef468fb9356
+
+% 3 1 0 1e7029d19d6382601cc98005572697f5
+
+% 4 1 0 1621fdb544ca12340c9a0205debabc5f
+
+% 0 1 0 0a35f0aba06068c009b25aa85100c0b5
+
+% 2 1 0 0097b737bcb26f45139a48f6bd537338
+
+% 0 1 0 1014eb47d89cb9701d8a7cc648fa5273
+
+% 0 1 0 088ca3711ac5f64312b2b56dc4d5f95e
+
+% 0 1 0 08e718551e4d10830720237ab3b03a41
+
+% 0 1 0 06e787397d846135173236ca01d345f1
+
+% 0 1 0 01f8e1c7f64be372050f199b48580669
+
+% 0 1 0 03645c946ce2c81613dc507925cabfcf
+
+% 1 1 0 081dbae6d269ab2f0364ac1e4365a248
+
+@ 0 6 0 1fc754e9fb5a923510c93315c18a5b84
++       在这个边界上，线程方式决定吞吐量：空闲核心上的少量管道在平台线程上运行最快，它们的自旋预算无需内核切换就能完成大多数交换；而在高负载下（管道多于核心），两个端点都应运行在虚拟线程上，使每次停驻都以纤程的方式在载体池上挂起。
++       需要一个 `Buffering`（用于块大小、传输上限、深度和回收方针）。
+
+% 0 1 0 09f373a5d6d577ab1f4fabf973c3f2ee
+
+% 1 1 0 0ddc2d922006915314ae3b7df0cde4c8
+
+% 1 1 0 0f84c267b216b8e20ff4a243abc0951d
+
+@ 0 1 0 1375fc3156be0cf312c7e849211621af
++   entry .apply   共享一个环的新写入者入口和读取者流，作为一对
+
+@ 0 1 0 1c6d121ca1c27d1e1b11bda0f233690d
++ entry .Duct   同步的变换阶段，可以用 `viaDuct` 附加到流上，或用 `acceptingDuct` 附加到入口上
+
+% 1 1 0 0504bf4efc305ea416497795a3151921
+
+@ 0 6 0 1cfec6a3ced28a75097d0d20ca03d3e0
++       `Duct[operand, result]` 是一个缓冲区到缓冲区的内核：`#step` 把源 `Region` 的可读范围变换到目标 `Slate` 的可写空间中，返回它消耗和生产了多少；`#flush` 在上游结束后输出终端状态；`#translate` 把下游需求（以 `result` 元素计）转换为向上游提出的需求（以 `operand` 元素计）。
++       同一个实例可用于两种附加方向，因为无论需求从哪个方向报告，都会经过转换。
+
+@ 0 11 0 0f3f77ccfa5f0d710d313fd9b99b019d
++       `step` 必须遵守的约定：给定至少一个输入元素和至少 `#quantum` 个元素的输出空间，它至少消耗或生产一个元素；它暂时无法变换的输入（所提供输入末尾的一个不完整原子）会被消耗并保存在 duct 自身的状态中，绝不会跨越多次 step 保持未消耗。
++       状态可能保留超出一次 step 空间的输出的 duct（解压器）必须覆盖 `flush`，它会被反复调用，直到返回 `0`。
++       `translate` 不能造成饥饿：只要 `demand` 允许至少 `quantum` 个元素，转换结果就至少允许一个；它还必须处理无界额度而不溢出（向上取整的除法写作 `n - n/2`）。
++       转换是保守的界限，而不是精确的算术：多余的部分保留到下一次传输，这使得比例不可预知的 duct（压缩）成为可能。
+
+% 2 1 0 053082ae6cfc105307d2e49cde396556
+
+% 3 1 0 1ab7d8d4ec8caedf117bdfd01c3a448c
+
+% 4 1 0 07efc7abb207dfef1945730625cc208f
+
+% 0 1 0 01f6a2c49c4b045e18ac643bf17811d9
+
+% 0 1 0 1c728c49341b2d1d0cbeb2b48394bf93
+
+% 0 1 0 0e2dad5c39a34f901f36c8983471e7a1
+
+% 0 1 0 14bc6bedb7885a681b37758bea8ea258
+
+% 0 1 0 14cafdbd19f0023401353183999d0db5
+
+% 0 1 0 07640f76279679a617989a8016a95069
+
+% 0 1 0 18e710159cc938ec17ec014be8c22df2
+
+% 0 1 0 1939a9b894808cd81fc093de087c60e4
+
+% 0 1 0 09dd9d277bc506f51231b7cd352025b6
+
+% 0 1 0 12da11f99b1b0b4d0ef7ef14c7b28411
+
+% 0 1 0 0d5d962fcf227a8e0f1a5ee9411b7163
+
+% 0 1 0 119ae55bd9f4790a17bca6e4f5c3c415
+
+% 0 1 0 1ce8d976c1db239c1d064033c11e3615
+
+% 0 1 0 0434a4af7b627d0d178628d5144cbbad
+
+% 0 1 0 0ab5a3f91c5a37b01a5ce611d10222aa
+
+% 0 1 0 017f60c1650511761007ab72aad18b10
+
+% 0 1 0 1b0fe2e377d583190829e49e3dbc3e91
+
+% 0 1 0 1b5ac14e7d368d3501cc97b68b527625
+
+% 0 1 0 0d4ecb7453aeec8d1241f2caba64fdae
+
+% 0 1 0 029581c67bfd27e70ec6b4a2d60cbb47
+
+% 1 1 0 0f627e00fc372399054a061ff5af5709
+
+@ 0 8 0 0aafc09aa709a8fd06f10d8f0f114e23
++       duct 是单一所有者的可变状态（压缩器、不完整原子），因此它是一种有状态的能力：`step`、`flush` 和 `close` 是需要独占引用的 `update` 方法，而 `translate`、`quantum` 和 `regulation` 是纯查询。
++       它的两个 `Addressable` 实例是普通成员 `#input` 和 `#output`，而不是 given，这样同一介质的 duct 不会看到两个有歧义的实例。
++       包装基于偏移量的 JDK API（字符集编解码器、密码算法、压缩器）的内核，在其边界上通过 `Region.borrow`/`Slate.borrow`，或通过位于 `Unsafe` 之后的 `unsafeRaw`，把带品牌的区间放宽回偏移量。
+
+% 1 1 0 1a548c2f47b23fda0a3ef9c1b855cac6
+
+% 1 1 0 128a045a0d0ac4b80ae6d7722faa3fb8
+
+% 1 1 0 0ce428425c81860b1efb459f82f67195
+
+% 1 1 0 09c492df64c71d91095003df81debc56
+
+@ 0 1 0 09fae5abf46a14551d413a0c1e4fb1f9
++   entry .Progress   `step` 返回的未装箱（已消耗，已生产）对
+
+% 1 1 0 1740da87cab6165a121c37e39f7157cd
+
+@ 0 30 0 036d7c23be285ff5064243007eb419a9
++         一个打包了两个 `Int` 的不透明 `Long`，因此一次 step 不分配任何内存：`Duct.Progress(consumed, produced)` 构造它，`consumed` 和 `produced` 读回其中的值。
++     entry .apply   消耗了 `consumed` 个输入元素、生产了 `produced` 个输出元素的进度
++     entry .consumed   该 step 消耗了多少个输入元素
++     entry .produced   该 step 生产了多少个输出元素
++   entry .feed   在一个完整的值上驱动 duct，就像它是一个流的唯一区域
++       `Duct.feed(value, duct)` 在该值的存储上运行 `step`（介质暴露底层存储时直接使用它，否则先复制一次），直到输入被消耗完，把输出累积到该介质的构建器中，然后调用 `flush` 和 `close`；它是 `stream.viaDuct(duct)` 针对完整值的对应物，没有端点，没有额度计算，也没有 refill 循环。
++       需要一个 `Buffering`，用于输出窗口。
++       `compress[Gzip]` 和 `encode[Base64]` 就是这样在手头的值上运行流式内核的。
++   entry #input   操作数介质的 `Addressable` 实例
++   entry #output   结果介质的 `Addressable` 实例
++   entry #Transport   下游需求类型
++   entry #Upstream   向上游提出的需求类型
++   entry #regulation   下游需求类型的 `Regulation`
++   entry #translate   把下游需求转换为此 duct 向上游提出的需求
++   entry #quantum   `step` 为保证进展所需的最小输出空间；默认为 `1`
++       对于最小输出原子为两个元素的 duct（十六进制编码器、输出代理对的 UTF-8 解码器），为 `2`。
++   entry #sizing   流式驱动器为此 duct 分配的输出窗口；默认为暂存块
++       内核每次调用都要付出很大固定开销（一次 JNI 跨越）并且会扩张输入（解压）的 duct，会把它覆盖为传输块，使固定开销分摊到十六倍的输出上。
++   entry #step   把源区域的可读范围变换到目标 slate 的可写空间中
++   entry #flush   在上游结束后输出终端状态；反复调用，直到返回 `0`
++       默认返回 `0`。
++       能够保留超出一次 step 的未交付输出的 duct（解压器）必须覆盖它：第一个 `0` 被视为流的结束。
++   entry #close   在管道用完 duct 之后释放其资源
+
+@ 0 1 0 0b10b102f989d80a14910dbe10fa4bd0
++ entry .Ductile   使阶段描述符（字符集、代码页、压缩方案）可以作为 duct 附加
+
+% 1 1 0 14f88a6a043e39bb075fb3b1dec1b7f3
+
+@ 0 9 0 1e39da691eccc94b055580f0ff97d69f
++       `stage is Ductile by in to out over transport` 表示该值描述一个阶段，`duct(stage)` 为它构建 `Duct`，另有成员 `Upstream`（向上游提出的需求类型，几乎所有情况下都是 `Credit`）。
++       `stream.via(stage)` 和 `intake.accepting(stage)` 召唤它，因此 `Charset`、`Codepage`、`Gzip` 或某种密码模式可以直接附加，而 `Duct` 本身已经是一个阶段，而不是对阶段的描述，它用 `viaDuct`/`acceptingDuct` 附加，没有实例。
++       伴生对象持有 `.charset`（字节到文本）和 `.codepage`（文本到字节）；压缩库和密码学库提供各自的实例。
++       实例不是 `Typeclass.Pure`：它可能捕获其 duct 抛出错误时所经由的内容，因此作为带捕获的证据传递。
+
+% 2 1 0 1df60f1a4c506e5b0a9ee458c7579de5
+
+% 3 1 0 180ce050582c4a57164a3b0f60cda93d
+
+% 1 1 0 0d1f8497cbba54791224f580b43e14fc
+
+% 1 1 0 1e8df8b21f74db690d88e65730c9e5bf
+
+% 0 1 0 08c3da08f4303f1b0452fc3d476e3bbe
+
+% 0 1 0 010aff897097917d0eea9c233a07b5c3
+
+% 0 1 0 10ef8daf6c4f66480a2c906decd99ed7
+
+% 1 1 0 08c81535a2f6536b1b009a782fd472f6
+
+% 1 1 0 00da09e238104c7815d8dc8328bb94fa
+
+% 1 1 0 00122de11fcabae40fe2cf4c45bbf4d1
+
+% 1 1 0 1aa717014bd9b944096917c69d60cdb7
+
+@ 0 15 0 1223f23c0f2a4b0e0580f1d4a3252d54
++   entry .Instance   完全确定的实例类型，指明全部五个成员：`Instance[stage, in, out, transport, upstream]`
++   entry .charset   作为阶段的字符解码：`Charset is Ductile by Data to Text over Credit`
++       字节在内部暂存，因此跨越多次 refill 被拆开的多字节字符会被保留，格式错误的输入则通过字符集的 `TextSanitizer` 替换，与整值解码完全相同。
++       UTF-8 使用手写的内核：ASCII 段一次放宽八个字节，多字节序列以严格的有效性内联解码；只有遇到格式错误的输入时才回退到 JDK 解码器。
++       星界字符会输出一个代理对，因此该 duct 的 quantum 是 `2`。
++   entry .codepage   作为阶段的字符编码：`Codepage is Ductile by Text to Data over Credit`
++       流结束时被拆开的代理对和无法映射的字符会被替换，与整值编码一致。
++       需求按编码器每个字符最坏情况下的字节数转换，下限为一。
++   entry #Transport   所构建 duct 的下游需求类型
++   entry #Upstream   该 duct 向上游提出的需求类型
++   entry #duct   为一个阶段构建 duct，消耗该阶段；需要一个 `Buffering`
+
+@ 0 1 0 066c6e1dfe900c0c13de129c00243d33
++ entry .Regulation   需求类型的算术：它允许多少、如何被消费、如何打包进一个 `Long`
+
+% 1 1 0 07f9f3130f13b5ff07fcb3e837b93a7b
+
+@ 0 13 0 125c1cf2cf2155bd10d03f5bfb3ca7ce
++       需求值不作为消息传递：一个阶段在被请求时通过转换其下游的需求（`Duct#translate`）计算自己的需求，最终落到异步边界处的共享状态上。
++       `encode`/`decode` 把每种需求类型打包进一个 `Long`，因此无论类型如何，共享状态都是一个原子值。
++       伴生对象持有 `.credit` 和 `.pace`。
++   entry .credit   `Credit is Regulation`：初始为无界，允许的数量限制在 `0..Int.MaxValue` 之内
++   entry .pace   `Pace is Regulation`：`Halted` 不允许任何数量，其他值允许全部；`Measured` 要求泵自行控制节奏
++   entry #initial   尚未报告任何需求时的需求
++   entry #grant   一个需求允许多少个元素，作为 `Int`
++   entry #spend   针对它生产了 `count` 个元素之后的需求
++   entry #measured   该需求是否要求泵在块之间自行控制节奏
++   entry #encode   打包进 `Long` 的需求
++   entry #decode   从 `Long` 中解包得到的需求
+
+@ 0 4 0 041fa0d67bddc4361d1770eec3d9a53f
++ entry .Pace   粗粒度的背压需求：`Free`、`Measured` 或 `Halted`
++     用于无法有效计数元素的数据汇：`Free` 要求上游自由发送，`Measured` 要求它在块之间自行控制节奏，`Halted` 要求它停止生产，直到需求再次被轮询。
++     `Regulation.pace` 是它的算术。
+
+@ 0 8 0 0897470f1deaad9b1ccd39c6d916fe01
++ entry .Records   由解析得到的记录组成的流：`Stream[Array[record]^{}] over Credit`
++     每个区域都是由记录组成的冻结数组数据块，因此额度按记录计数，`Buffering` 按引用数量确定缓冲区大小。
++     记录是不可变值，按引用穿过阶段边界和线程边界（记录自身不能持有活动的端点）；记录类型必须擦除为引用类型，接纳它的 `Addressable` given（`Addressable.boxed`、`texts` 或 `frames`）在构造流时起作用。
++     `records` 遍历这种流中的记录，`memoize` 把它们物化为一个冻结数组。
+
+% 2 1 0 092affa8483ef9fb0efa93531f4c5154
+
+% 3 1 0 1de60199d07bcdf607ea501ce73c8443
+
+% 5 1 0 0ecc8c96325182ae0f984e9112941dac
+
+% 0 1 0 1dcb51ed6c17a2b60a742515079b522e
+
+% 0 1 0 0748e31aab97c69d1934a64fb55e865a
+
+% 1 1 0 19fb5f86cc60fb52156efe81e2eac2e5
+
+@ 0 1 0 0035b3c95f71826f15e639f5eee552e1
++ entry .via   `stream.via(stage)`：通过一个具有 `Ductile` 实例的阶段拉取的另一种类型的流
+
+% 1 1 0 1e57636bec6a2eef1c0e435beb595901
+
+@ 0 6 0 1d0fe19e3fd93447180bf67b8cac8d20
++       拉取式组合：结果的 refill 通过该阶段转换需求，并从被消耗的上游拉取，完全在消费者的线程上进行。
++       阶段可以是任何具有 `stage is Ductile by in` 实例、且其 `Upstream` 就是该流传输类型的值：`Charset`、`Codepage`、压缩方案、密码模式。
++       需要一个 `Buffering`。
++       把有效需求转换为不允许任何数量的需求的阶段违反了约定，它会 panic，而不是陷入活锁。
+
+% 2 1 0 1a9a1e11a0bff7420ddfde2ea94fd10d
+
+% 3 1 0 14ceef6df6b8a52c084a47ba42d9a481
+
+% 4 1 0 056187e4436c19871c86decdacd5d005
+
+% 1 1 0 0db1633309bd6df21d41fe4371fccf12
+
+% 0 1 0 0c1d2768b51d4005161e6ff04bdafd6e
+
+% 0 1 0 1f162c84acc472110d23ef9d598b0166
+
+% 1 1 0 144f2ba1f196f6ee18378f237fcf6292
+
+@ 0 3 0 0fcbbb8b806ba9d8068b5edab64e112e
++       `soundness` 总括包中的转发器是手写的，因为合成的导出转发器在捕获检查下会丢失依赖的 `ductile.Result` 细化；它的行为完全相同。
+
+% 1 1 0 1e9d80c0d9b3d91a1841dd221db54cc6
+
+% 1 1 0 181b7211140ee50815451ac1c7868a0a
+
+@ 0 1 0 0f05192ad32249eb1d605444270fce7a
++ entry .viaDuct   `stream.viaDuct(duct)`：直接通过一个 `Duct` 拉取的另一种类型的流
+
+% 1 1 0 0aa763f0f7274bca146feb4ba20a452e
+
+@ 0 6 0 1c825539a97d0c3a019d6c7d7e84ded9
++       `Duct` 是一个阶段，而不是对阶段的描述，因此它不需要 `Ductile` 实例：duct 类型已经说明了它的操作数、结果和两种传输类型。
++       duct 和流都被消耗；关闭结果会关闭两者。
++       改为经由 `Ductile` 就意味着要在 duct 自身的类型上实例化它，而这是捕获检查无法表达的。
++       对于一个名为 `Doubler` 的 `Duct[Data, Data]`，`bytes.stream.viaDuct(Doubler()).memoize` 就是加倍后的字节。
+
+% 1 1 0 189b6babec88c20f09f4a721f8d1c4a0
+
+@ 0 1 0 189e8896ea5c042b1d2143a6351764eb
++ entry .pump   `stream.pump(intake)`：在调用线程上把拉取链排空到推送链中
+
+% 1 1 0 1d5ef6506c4282e11a26360b1b42ee6e
+
+@ 0 6 0 11ba0722df02d5d20a108e6f196d2c68
++       泵循环轮询入口的需求，以此 refill 流，并把区域传输到入口中；这是数据从管道的拉取侧穿到推送侧的唯一位置。
++       两个端点都被消耗，泵结束时流被关闭，因此入口收集到的内容必须用别的方式读取，或者通过把入口交还的 `ingest` 读取。
++       向已满的 `Conduit` 泵送时会停驻，直到读取者将其排空。
+
+% 2 1 0 012b7eb830824dc21853870ed2200c34
+
+% 3 1 0 14ed1730740411c81670165e43767cef
+
+% 4 1 0 00a150835584b1f0085692408bf07260
+
+% 6 1 0 161e50faf6efb6ad125fa5036a7d6ae9
+
+% 7 1 0 03a41cc157a1425e0224bf3dc3d2a51f
+
+% 0 1 0 0cdc50a213e5d7160e08ba61cc8e935c
+
+% 0 1 0 1cda2817fb1139d60b1c4761314aa7f9
+
+% 1 1 0 0a452dcca35dacbd1811203cae330de3
+
+% 0 1 0 0cd6b4122744d80e0ab4f3edf09ee5a9
+
+@ 0 1 0 1341722eb23b43d40faa5e63bab0036a
++ entry .ingest   `intake.ingest(stream)`：接收整个流并返回入口，其类型为调用者自己的类
+
+% 1 1 0 1691f1cd32608f65067b842df60f5518
+
+@ 0 4 0 16dc1801a7395a9d1c707c0b6ff67fd0
++       与 `stream.pump(intake)` 相同，但在流耗尽、入口结束之后，入口会被交还，因此它收集到的内容可以通过返回的那一个引用读取（`Gather().ingest(bytes.stream).data`），始终不存在第二个引用。
++       流被消耗并关闭。
+
+@ 0 1 0 16fc237c48d7c0f41190e46be9a19fe4
++ entry .accepting   `intake.accepting(stage)`：通过一个具有 `Ductile` 实例的阶段推送的另一种类型的入口
+
+% 1 1 0 09417d5d9e7d2fa90dd6346fec30c745
+
+@ 0 4 0 17be4762823202c508344be7ddfd33c9
++       推送式组合：结果报告转换后的需求，它的提交通过该阶段同步地进入被消耗入口的可写区域。
++       同一个阶段值既用于 `via` 也用于 `accepting`；只有附加方式不同。
++       需要一个 `Buffering`。
++       总括包中的转发器是手写的，原因与 `via` 的相同。
+
+% 2 1 0 055dab4120e2055518f71093f6318d2e
+
+% 3 1 0 0d5520df907d0d220f3884f95fb73d55
+
+% 4 1 0 0a97a5bdb93e87ea0e62dc17cbbceb6f
+
+% 6 1 0 1f019140dc4faccb0745a2109e89df86
+
+% 7 1 0 0d7dc2fdbc29778108a1d6b6eef152be
+
+% 0 1 0 1928a6cf2760935d14fc223ebc6396b1
+
+% 0 1 0 0d4c1a22efd3ed870d53d4b33f389bc6
+
+% 0 1 0 09030135f338f3160c7123c2ac5b4c39
+
+% 0 1 0 0ec798575009b76f14c460baa23e1976
+
+% 1 1 0 1ab2d96abb2c454f1766eb5edd1350d3
+
+% 1 1 0 17184e48c8a653c30b056ce0fe6b7a8c
+
+% 0 1 0 04abc9ad8ebd1d4d1378659c9d3f964d
+
+@ 0 1 0 0c160f2c913badfa06e3ca2414002865
++ entry .acceptingDuct   `intake.acceptingDuct(duct)`：直接通过一个 `Duct` 推送的另一种类型的入口
+
+% 1 1 0 077795e7c938ac0e1b2af817de9bf426
+
+@ 0 2 0 095daeb31a0604a610307a17a5a04498
++       与 `accepting` 相同，用于手头已有的 `Duct` 而不是描述符。
++       duct 的 `flush` 在结果结束时运行，它的 `close` 在结束或失败时运行。
+
+@ 0 1 0 0a3fc23996d9c5850ee1e58097d3c609
++ entry .drain   `stream.drain(operation)`：把一个操作应用于每个相继的区域及其带品牌区间的终端操作
+
+% 1 1 0 036894de7e2110cf1884e81ac7114626
+
+@ 0 4 0 00ee2ac2684866f0086fb27fab6804cd
++       排空并关闭流，把每个区域作为 `Region[medium]` 连同一个 `Interval in region.type` 借给 `operation`；该操作不能在调用之后保留该区域。
++       每次 refill 都请求一个传输块的额度，因此较大的区域不会被切成许多部分 refill。
++       需要一个 `Buffering`。
+
+% 2 1 0 0309abd42e17d07d064b8fb8e0e76c3e
+
+% 3 1 0 07571f813da9f544049f18575492fb75
+
+% 0 1 0 0ad9be060c40f7b017c05c257f106424
+
+% 0 1 0 108f2fe17546d2751eafdcb27c12aa2e
+
+% 0 1 0 1ee3fea9fd48edb918046136d122d84f
+
+% 0 1 0 184559d96310fc730648529c3e0e054f
+
+% 1 1 0 0426730cfa55f24b047f5d2a93b32317
+
+% 0 1 0 15d6a6418ec1ae420c1cfd5a0f3cf4d8
+
+% 1 1 0 173a5d9d4487f16f034b3af58978b737
+
+@ 0 1 0 0e70c1ddbeb2c98e1fbc4ea9a0c35df6
++ entry .memoize   `stream.memoize`：把流排空为其介质的一个不可变值
+
+% 1 1 0 0a0a0d96fed9ec56020716d8b6487c34
+
+@ 0 6 0 14fa176b8cf7cbfc1dd5e90b3b2cf42b
++       它是惰性列表隐式缓存的显式、有界的替代：流被排空一次并关闭，结果被冻结，可以自由共享。
++       每个区域按其确切大小复制一次，各部分在最后连接一次（`Addressable#assemble`），因此在一个区域中交付的值复制一次，其他情况复制两次。
++       空流产生该介质的 `empty`。
++       对于记录流，结果是包含所有记录的一个冻结数组。
++       需要一个 `Buffering`。
+
+% 2 1 0 0e4de8826b860a361657b5a9e96ad287
+
+% 3 1 0 08a57ea6053431c40b8b6e372d86d242
+
+% 0 1 0 083fd92bea86153711677ae6375e552f
+
+% 1 1 0 05d771059d39452908536cfeb12d2f52
+
+@ 0 1 0 1d79e58a8c3f06421be40f52b470ab0d
++ entry .gather   `stream.gather(initial)(operation)`：让累加器依次穿过每个区域的终端操作
+
+% 1 1 0 04ab26780e33db740790ce5b751ddb79
+
+@ 0 4 0 01a79a39dbd1f60c01ab2e0b2d729843
++       它是 `drain` 的累积版本：操作接收当前状态以及每个区域和它的带品牌区间，流被排空并关闭后返回最终状态。
++       与对集合按元素折叠不同，它暴露整个区域，因此字节归约在数组上运行，没有逐元素的装箱。
+
+% 2 1 0 1881bc5a0849a4cf1310d33bc1e1c089
+
+% 3 1 0 09c9ff5c7a0c31aa17a41d42141301de
+
+% 0 1 0 0b26c023580ed19d17b371cd8db71042
+
+% 0 1 0 0ed59ec2279dc7c612414dfd7a4757a1
+
+% 0 1 0 1d61665714eeb666089651b3ccc6bc8a
+
+% 0 1 0 08105365b7c6eee512da4e8b940360e9
+
+% 0 1 0 169c63e23b3fd31a145aca275b0e3e8f
+
+% 0 1 0 11d8c8d29b9310740fb17e44304efeb5
+
+% 1 1 0 07e5b38de320879f1990165002de4303
+
+@ 0 5 0 09c28a9c06b161fa0b54a6018be05212
++ entry .truncate   `stream.truncate(count)`：前 `count` 个元素，然后是流的结束
++     上游的剩余部分在 `close` 时未经读取就被释放。
++     它计数的是介质的元素（字节、字符或记录），而不是集合元素，这就是它不借用 `take` 这个名称的原因。
++     它与 `discard` 组合成一个切片，与 `via` 组合成一个有界的管道。
+
+% 2 1 0 1101933133fa517011859fb0d59a0626
+
+% 3 1 0 1063ca69bf7343100543951e9b3ef1b0
+
+% 0 1 0 19b0ccb0d7efe6220da1e50fc1fa4669
+
+% 0 1 0 02ca7f1429c144d00d7da298da2fef1d
+
+% 1 1 0 07a6af35deaefdeb0bd6cf97c818b851
+
+@ 0 3 0 047eea0183bdf8e20f684f1a7b388097
++ entry .discard   `stream.discard(count)`：跳过前 `count` 个元素，然后原样传递其余部分
++     被跳过的元素在第一次 `refill` 时拉取并丢弃。
++     它计数的是介质的元素，而不是集合元素，这就是它不叫 `drop` 的原因。
+
+@ 0 6 0 0f0dcd526720771614d4bef3122079fa
++ entry .chunks   `stream.chunks`：已物化数据块的单消费者迭代器，每次 refill 一个
++     这是让流内容与其他值交错（头部之间的归档载荷、边界之间的各部分）而无需物化整个流的桥梁。
++     迭代器拥有该端点：它在报告耗尽时关闭流，因此消费者必须将其排空，或用其他方式关闭流，才能释放上游。
++     需要一个 `Buffering`。
+
+@ 0 6 0 0efe136dcda116641269f05d6173946e
++ entry .chain   `stream.chain`：每次 refill 一个已物化数据块的惰性 `Chain`，严格由需求驱动
++     构造时不拉取任何内容，每个被强制求值的单元最多拉取一次 refill。
++     这是为尚未转换到内核的消费者准备的、经过审核的桥梁：`Chain` 是纯的，因此它无法携带其单元所闭包的端点能力，越过这一点之后，所有权规则即被暂停，每个被强制求值的数据块都会被保留。
++     优先使用内核的终端操作（`memoize`、`drain`、`gather`、`chunks`）。
+
+@ 0 4 0 1cdc423088e08cac100e16d1d43b62db
++ entry .records   `stream.records`：按顺序遍历 `Records[record]` 流中记录的迭代器
++     对记录流的逐元素访问，跨越它的各个区域。
++     迭代器拥有该端点，并在报告耗尽时关闭流。
++     逐记录的组合子来自 `Iterator` 接口；热循环的区域级访问用 `drain`/`gather`。
+
+% 2 1 0 02e98f23d1f6552c0196b99264dbc03c
+
+% 3 1 0 0735fae2e3bc9af402c0b02e08735d95
+
+% 5 1 0 0d098ca9ad0c6373054f672e3ad38faa
+
+% 0 1 0 0575bc7e3b034d3610a8165c7a58210d
+
+% 1 1 0 1bb5c81e222bff0016366e64047c0471
+
+@ 0 1 0 192fe115e953cca31b39d72a11817303
++ entry .streamOf   借出游标的一部分（按长度或直到某个分隔符）或 `Expanse` 的一个范围的流
+
+% 1 1 0 102a6c2d771c5cb60d76dd73251166f3
+
+@ 0 1 0 1e9c696e8554c2ac058902f7377d979b
++       三个工厂，每个都产生一个 `Stream[…] over Credit`：
+
+@ 0 18 0 08b3bd2abbcfa4c7092d7b369774e93a
++       - `streamOf(cursor, length)`：游标接下来的 `length` 个元素（如果是 `Unset`，则为全部剩余元素），以零拷贝方式从游标自己的缓冲区暴露；skip 流会使游标前进。
++         游标是被**借出**的，而不是被消耗：关闭流后游标仍然打开，停在边界处，供调用者继续使用。
++         这是较长解析中一段有界载荷的形态：下一个流水线请求之前的 HTTP 正文，下一个头部之前的归档条目。
++         借出的流处于活动状态时，调用者不能接触游标，而且批量 skip 会绕过行划分，因此只借出行划分未激活的游标。
++       - `streamOf(cursor, delimiter)`：`Cursor[Data]` 中下一次出现 `Cursor.Delimiter` 之前的字节，用 `distance` 批量查找。
++         可能是跨越下一次填充的分隔符开头的字节被保存在私有的临时区域中，并与下一个区域连接起来搜索。
++         流结束时，游标位于分隔符之后，或者在输入先结束时已耗尽；调用者用 `finished` 区分这两种情况。
++       - `streamOf(expanse, offset, length)`：`Expanse` 的一个范围，按消费者的需求每次读取一个传输块，因此未被消耗的载荷没有任何开销，任意长度的载荷都能在有界内存中以流的形式传输。
++         它的区域是稳定的（每次 refill 都装入一个新的不可变数据块）。
++         需要一个 `Buffering`。
+
+% 2 1 0 0e32f7033ebef72406c9948b813a0658
+
+% 3 1 0 1c1d5fb5b9e095d31266a5935c788e0a
+
+% 0 1 0 084c27bd53c3e7e30103a10d05f55364
+
+% 0 1 0 0e395b278a2aae19131520815ce68b77
+
+% 0 1 0 19dfaf4082522fc91307592b916c50eb
+
+% 1 1 0 1b0fd0da36faf9f21d2260276235c55f
+
+% 0 1 0 1c2aa085c77d996000a32eeb0335fd73
+
+% 0 1 0 06612eacd74232070366e417a603cace
+
+@ 0 1 0 09cfd3a4f74fa71212c296fec8fcf7c7
++ entry .Producer   序列化器分段写入的数据汇：同步驱动、作为块的通道，或作为推送式数据汇
+
+% 1 1 0 1ad5c29212e602160c9508556b4599d1
+
+@ 0 12 0 08cf82727e4da472103b62286825ec1f
++       `Producer[medium]` 接受 `#put(value)`、`#put(value, offset, size)` 和 `#push(element)`，其中 `Operand` 对 `Producer[Text]` 是 `Char`，对 `Producer[Data]` 是 `Byte`。
++       同一段生产代码可以用三种方式运行而无需重复：`.collect` 同步地把它运行到一个构建器中并返回完整的值（`show` 和 `encode`）；`.apply` 创建一个 `Channel`，它把块暂存到一个有界队列中，由另一个纤程通过 `Channel#iterator` 排空（流式传输的 HTTP 正文）；`.sink` 在调用线程上内联地把每个块交给一个消费者（文件、套接字、`OutputStream`）。
++       `.utf8` 和 `.lendUtf8` 是文本生产者，它们的块以 UTF-8 字节交付，在字符到达时即被编码；`.Emission` 根据请求格式的推送形式所用的介质，在 `sink` 和 `utf8` 之间选择。
++       它们在连续写入的过程中，都不会为每次 `put` 分配内存。
++       `Intake` 是一个 `Producer`，因此针对它编写的代码无需改动就能驱动管道。
+
+% 2 1 0 02ebb0b6de9512ad1c1c0b4d1549fd1f
+
+% 3 1 0 13c3ab3787471e971eca795c39fb4090
+
+% 4 1 0 1ca01cf3b6f054d8020c6ea55dabfe42
+
+% 0 1 0 1be0ae514c3a41d905625d8a07c6d115
+
+% 0 1 0 03839f6bb68318350dc9cce65f20c976
+
+% 0 1 0 1608fcf438bec9970a964d82fd2aa277
+
+% 0 1 0 0095432741e90cfd128848fbe08f8456
+
+% 0 1 0 0243e68486416607057c6935c24c0938
+
+% 0 1 0 1e70307c74f8603400b061b84ec15963
+
+% 0 1 0 0852be1a59f30ce9051dfddd5147cedc
+
+% 1 1 0 12def620b083a10a0cd1ab11ce36602d
+
+@ 0 5 0 11c218bef339a1751431286a972f9399
++       生产者是一种有状态的能力：写入需要工厂交给主体的独占 `Producer[…]^`，写入方法都是 `update` 方法。
++       字节级的 `.Utf8Writer` 是较低层的写入器，文本格式的推送形式用它直接编码并转义到租用的字节块中，因此文档永远不会先构建为 `Text` 再重新编码。
+
+% 1 1 0 13f8298ac4e15bc700fb7aad8cf0f68e
+
+% 1 1 0 1452d2448fc1ea7c10dea4fdb47b549d
+
+% 1 1 0 1c78c1d3cfa17d271cec52fa1e94c5a5
+
+@ 0 8 0 0989da1096a90b190a5bb073854b5f45
++   entry .Bytes   元素固定为 `Byte` 的 `Producer[Data]`：二进制编码器写入的形态
++   entry .apply   流式生产者：块在背压下排队，并通过它的迭代器排空
++       `Producer[medium](block, depth)` 创建一个 `Channel`：`put`/`push` 填充一个包含 `block` 个元素的暂存块（默认为 `Buffering` 对该介质的容量），每个填满的块进入队列，`Channel#iterator` 排空该队列。
++       队列中有 `depth` 个块（默认为 2）时，`put` 会阻塞，因此生产代码必须在与消费者不同的纤程上运行；`finish()` 刷新最后一个不完整的块并结束迭代器。
+
+% 2 1 0 19dfd6303a2eeff50b7d3bfa57d5d59b
+
+% 3 1 0 089e2688d7c9e21e1ef357af44d5e478
+
+% 1 1 0 1a7334ce87e9a14e10c0dce3e2fd7446
+
+% 2 1 0 0713c7c819b4c67b1899770234e7e064
+
+% 3 1 0 03af42a65b6268e5186962f534ba1396
+
+% 4 1 0 154b9abf56e78dfc025d4cac26298b6a
+
+% 2 1 0 1a85a57fbeeb07860ed416a422b9f47d
+
+% 0 1 0 0029f9fa7fc7c0581f751f98d5c9c62e
+
+% 0 1 0 1fb917b526d33adc0483b00f51f927ed
+
+% 0 1 0 09b08c93142ae15b17d5c984a70fefd3
+
+% 0 1 0 18a9aa70c31566a1091d1240f1befc79
+
+% 0 1 0 05f18dc934b199ad063116d94fa384ce
+
+% 0 1 0 032f2740c0d8d1841218ae445525f448
+
+% 1 1 0 0dbc8aecd04775f01184ea3f6c9a6b3f
+
+@ 0 5 0 1ca6707347ad1df70be3c84075cca187
++   entry .collect   针对一个生产者同步运行主体并返回完整的值
++       `Producer.collect[Text](hint)(body)`：没有并发，没有数据块缓冲区，也没有流式路径的单线程死锁风险。
++       提示值决定初始构建器的大小，默认为 256，因为构建器在填充时会倍增，而较大的初始大小要由每个小的输出全额承担。
+
+% 2 1 0 03ff2b3762d16f7407dae4a0988bd40e
+
+% 3 1 0 1c7b3267c5d3b33a0ccfb0988f65dc41
+
+% 0 1 0 12709bb12042415215aa0ac9f4fde739
+
+% 0 1 0 08de0925e3f87d0401ed5d81d39a581e
+
+% 1 1 0 04f21a59b7b17c6e148028fc8222bd09
+
+@ 0 7 0 15f31910c8b4ee740066d22d607c4f92
++   entry .sink   针对一个生产者运行主体，该生产者把每个填满的块内联地交给一个消费者
++       `Producer.sink[medium](deliver, block)(body)`：同步的流式形式，是生成器写入 `OutputStream` 的模型。
++       每个暂存块在填满时就在调用线程上交给 `deliver`，因此消费者在输出完成之前就能分段看到它，没有纤程，也没有队列；最后一个不完整的块在 `body` 返回后刷新。
++       拉取式消费者（迭代器、HTTP 正文）则需要 `.apply` 的通道。
++       需要一个 `Buffering`。
+
+% 2 1 0 1bb35cc4aa750dac0a1ada70a588c014
+
+% 3 1 0 04e4d0c2c68641ba1c6c6ba3774ed428
+
+% 0 1 0 1c6acd8db6275ce10039d903d27d8670
+
+% 0 1 0 0f19fb1fb4ad1933129603b4d07fe4b8
+
+% 0 1 0 1294604e285400fd11ec24a0248dde08
+
+% 0 1 0 0c4a08acd7536ef5156b8018d4dded4f
+
+% 1 1 0 074d99231a530fa81461a62b61e10286
+
+@ 0 1 0 08deb1726435f67c1a4b1265534b54e4
++   entry .Staged   各流式生产者共用的暂存机制：一个元素块，填满时发布
+
+% 1 1 0 044636c7eedb585b1ba7176b7b09ad34
+
+@ 0 10 0 184cc9b8ddb605850fcdca96ae78ed99
++         `Channel` 和 `Sink` 之上的抽象类：写入填充一个包含 `block` 个元素的块，每个填满的块（以及在 `finish` 时最后一个不完整的块）被物化并交给受保护的 `publishChunk`，子类把它实现为一次入队或一次消费者调用。
++         用户通常不会扩展它；`.apply` 和 `.sink` 构建这两个子类。
++     entry #addressable   该介质的 `Addressable` 实例
++     entry #put   通过暂存块写入一个值，或从某个序数起写入它的 `size` 个元素
++     entry #push   写入一个元素
++     entry #finish   发布最后一个不完整的块
++   entry .Channel   `Producer.apply` 构建的流式生产者：块排队，供另一个纤程上的迭代器读取
+
+% 1 1 0 0574e174285073ed030e96a23221b59e
+
+@ 0 23 0 160dce6361138d3d066fc5c271533ba7
++         `Channel[medium, operand]` 把每个填满的块放入一个容量为 `depth` 个块的有界 `ArrayBlockingQueue`，队列已满时停驻生产者；`#iterator` 是读取者的视图，每次调用都得到一个只覆盖该队列的新迭代器，因此它在生产者被转移到其纤程之后仍然有效。
++         `#finish` 把结束标记放入队列。
++     entry #iterator   读取侧的视图：已排队块的迭代器，在 `finish` 之后结束
++         它是一个 `def`，每次调用都在队列上创建一个新迭代器；迭代器由消费线程拥有，在块发布时取走它们，在有块到达或生产者结束之前一直停驻。
++     entry #finish   发布最后一个不完整的块并结束迭代器
++   entry .Sink   `Producer.sink` 构建的推送式生产者：每个填满的块被内联地交给一个消费者
++   entry .Lending   借得一个已填满块的消费者的类型：`(region: Region[medium]) => (Interval in region.type) => Unit`
++       块的存储作为带品牌范围的 `Region` 借出，仅在调用期间有效（与 `Stream#lend` 的规则相同），因此不复制任何内容；必须保留这些字节的消费者用 `region.materialize(range)` 自行物化它们。
++   entry .lendUtf8   块以 UTF-8 字节区域借出的文本生产者，在字符到达时即被编码
++       `Producer.lendUtf8(lending, block)(body)`：字符被直接编码到一个 `block` 字节的字节块中（默认为 `Buffering` 的字节容量），每个填满的块被内联地借给 `lending`，因此文本序列化器把字节写入套接字时，无需为每个块物化一个 `Text` 再重新编码，也无需复制该块。
++       孤立的代理项编码为 U+FFFD，与 `String.getBytes` 的做法相同。
++       字节块和字符临时区域从 `Blockpool` 租用，并在主体结束时归还。
++   entry .utf8   块以新的 UTF-8 `Data` 交付的文本生产者，消费者可以保留它们
++       `.lendUtf8` 的拥有式形式：每个块被物化并传给 `deliver`。
+
+% 2 1 0 02050f6632da72ea1a24a498a56c4d64
+
+% 3 1 0 0b30a5cbcd47d06d1a9e3e4fefd42cb2
+
+% 0 1 0 1c67461e74b010b90053b626c86e69cd
+
+% 0 1 0 064377d05ceb92a41b617865faf51022
+
+% 0 1 0 0d032be5b12c1a9b1497630ffc093c88
+
+% 0 1 0 0e6c0d81c348fad108a1653c9b8e3315
+
+% 1 1 0 081cb956b3fecea61810e45522c99c68
+
+@ 0 1 0 165c17e84866ba5a1068c8774856c23e
++   entry .Utf8Sink   `lendUtf8` 和 `utf8` 背后的生产者：编码到租用字节块中的 `Producer[Text]`
+
+% 1 1 0 155eb420489f34e11cf408f5d3584b81
+
+@ 0 8 0 09e656f55175a2481831f3a7a9efdd26
++         编码经由 JDK 的 UTF-8 `CharsetEncoder`，其 ASCII 路径是向量化的：字符被扩展到一个重用的临时区域中，再编码到字节块里，字节块填满时通过 `Lending` 发布。
++         末尾的高代理项在调用之间保留，格式错误的代理对编码为 U+FFFD。
++     entry #put   写入一段文本，或从某个序数起写入它的 `size` 个字符
++     entry #push   写入一个字符
++     entry #finish   编码待处理的尾部，发布最后一个块，并把缓冲区归还给池
++   entry .Utf8Writer   文本格式推送形式的字节级写入器：一遍完成 UTF-8 编码和转义，写入租用的块
+
+% 1 1 0 0d1116325a817e1011110df205d0ccea
+
+@ 0 6 0 1dc3668120ca75110f120716e4361bf7
++         `Utf8Writer(lending, block)` 把 UTF-8 直接编码到从 `Blockpool` 租用的字节块中，同时用格式的转义表转义每个字符串，并像 `lendUtf8` 那样把每个填满的块借给 `lending`。
++         通过它写入的序列化器从不为输出构建 `Text`，因此没有任何内容被编码两次；它是 JSON、XML 和 TEL 的字节写入器背后的模型，共享它是为了让每种格式只需提供自己的转义。
++         用 `.lend` 写入，它在主体返回时刷新。
+
+@ 0 7 0 1efc56cd993bfdc303eaf7d8671f3ebe
++         它的方法都是 `update` 方法：`#ascii` 用于已知为 ASCII 的文本（标记）；`#name` 用于文档中重复出现的名称，通过一个按同一性或相等性匹配的已编码名称缓存；`#text` 用于无需转义的文本；`#escaped` 用于把 `Escapes` 表中列出的每个 ASCII 字符替换为其实体的文本；`#bytes` 用于已编码的字节；`#byte` 用于一个字节；`#long` 用于十进制整数；以及 `#finish`。
++         孤立的代理项编码为 U+FFFD，但在 `name` 中除外，那里 `String.getBytes` 写入 `?`（格式良好的名称不包含孤立代理项）。
+
+% 2 1 0 1cd755b065789a2718ffc71456102bbd
+
+% 3 1 0 1087154c5e95b1270145882b53492464
+
+% 0 1 0 186a1163c1e4f0a306875f1bbfb28817
+
+% 0 1 0 0e1078e26fe505bb07bf75439e0e9d8d
+
+% 0 1 0 07cf68bfa1638ab3104712a3056f33f5
+
+% 0 1 0 163ea8536e2057bd1db29a18b46d3fd3
+
+% 0 1 0 0b9bc8bea61407290d73b61813d91ada
+
+% 0 1 0 0ff24f426449ea9f17c19a63e3b417d9
+
+% 0 1 0 12bd722714fd5b171e951408c887e519
+
+% 1 1 0 0f3a63c306baf55a077f1b8e3693b3f8
+
+@ 0 2 0 1189383ce67012a20cb244b0bdc5023e
++     entry .NameSlots   写入器名称缓存中的槽数：256
++     entry .Escapes   转义表：对每个 ASCII 字符，替换它的实体（如果有）
+
+% 0 1 0 0f0c06beeb68e4ca19dd934fb64b22c4
+
+@ 0 19 0 0cb079722df70226059bf433367dd62f
++           由 `.escapes` 构建：`codes` 对每个 ASCII 字符保存零（该字符原样写入）或其实体从一开始的编号；`offsets` 和 `data` 保存各实体的字节。
++           它是纯的、扁平的，因此编码循环对每个字符只检测一个字节。
++       entry #codes   对每个 ASCII 字符，为零或从一开始的实体编号
++       entry #offsets   各实体在 `data` 中的边界
++       entry #data   各实体的字节，连接在一起
++     entry .escapes   把列出的每个 ASCII 字符替换为其实体的转义表
++     entry .lend   通过一个借出每个块的写入器用主体写入，然后刷新
++         `Producer.Utf8Writer.lend(lending, block)(body)`；块大小默认为 `Buffering` 的字节容量。
++     entry #byte   写入一个字节
++     entry #ascii   写入已知为 ASCII 的文本，每个字符一个字节
++     entry #bytes   写入 `source(from until end)`，即已编码为 UTF-8 的字节
++     entry #text   以 UTF-8 写入文本，不做任何转义
++     entry #name   以 UTF-8 写入一个名称，经由最近写入名称的缓存
++     entry #escaped   以 UTF-8 写入文本，把 `Escapes` 表列出的字符替换为其实体
++     entry #long   写入一个十进制整数
++     entry #finish   刷新最后一个块并把缓冲区归还给池；写入器随即用尽
++   entry .Emission   文本序列化器推送形式可以交付的介质：`Text` 块或 UTF-8 `Data` 块
+
+% 1 1 0 18e89a2bd3f7ab841e01058769e75b79
+
+@ 0 9 0 1b474fc0c756b437001ea9b92d060e2b
++         格式的 `emit[medium](value, deliver)` 召唤 `medium is Emission`，因此序列化器只需针对 `Producer[Text]` 编写一次：`.text` 经由 `.sink` 运行它，`.data` 经由 `.utf8` 运行它。
++     entry .text   经由 `Producer.sink` 交付 `Text` 块
++     entry .data   经由 `Producer.utf8` 交付 UTF-8 `Data` 块
++     entry #run   针对一个文本生产者运行主体，交付该介质的块；需要一个 `Buffering`
++   entry #Operand   元素类型：对 `Producer[Text]` 是 `Char`，对 `Producer[Data]` 是 `Byte`
++   entry #put   写入一个完整的值，或从某个序数起写入它的 `size` 个元素
++   entry #push   写入单个元素
+
+@ 0 1 0 009970c27e46b24619d179c96b3ee21f
++ entry .Region   介质存储中边界安全的片段：一个不透明引用，其范围以带品牌的区间随行
+
+% 1 1 0 1099deb72c6bff83162740f748b64735
+
+@ 0 8 0 1cb6350a147f51e7035af2066ca918ba
++       `Region[medium]` 不提供直接访问：没有长度，也没有原始的索引读取。
++       它的有效范围以 `Interval in region.type` 的形式随它一起借出，而带品牌序数的唯一生产者是这里受信任的组合子，因此 `apply` 是全函数：没有边界检查，也没有 `Optional`。
++       一个区域加上它的范围只是一个引用和一个 `Long`，不分配内存，取代了内核过去在流和管道中传递的 `(storage, offset, length)` 三元组。
++       有效性是时间上的，持续到借出方下一次重新填充或重用为止，品牌无法表达这一点；这仍然是 `Stream#lend` 和 `Cursor#lend` 的单一所有者规程。
++       `Slate` 是可写的对应物。
+
+@ 0 5 0 132055082efba6ab1afe939893c59a34
++       `Region` 没有导出到 `soundness` 总括包（它的依赖类型内联扩展方法无法在导出转发器中保留）：在命名它的地方写 `import zephyrine.Region` 或 `import zephyrine.*`。
++       访问方法是伴生对象中的扩展方法，通过隐式作用域找到，因此 `region(index)`、`region.visit(range)` 和 `region.materialize(range)` 读起来就像实例方法。
+
+% 2 1 0 0c33c39d8c3be3381d9a73506ac96211
+
+% 3 1 0 08db894386602548033d182f9db52281
+
+% 0 1 0 1df0f05853ba78f70161207f33f1ca57
+
+% 0 1 0 1b652508ccbaf18c09f30d88b07b9e9b
+
+% 0 1 0 0302243a9440da621c9a3d4b95d5a0c9
+
+% 0 1 0 0792e1beadfa35cc0cda6220c272630f
+
+% 0 1 0 1bab2ae3d0b34bd310b6392fa5ca4782
+
+% 0 1 0 1c2da7794ade2edc18f6044231ce0fe5
+
+% 1 1 0 10a8c9b33d9e3bf707c25d83a5fd9587
+
+@ 0 3 0 0c33b8a619fb3a361817d72a9340db0b
++       在内核中，先把品牌拓宽掉（`val interval: Interval = range`），区间自身的内联操作才能生效，因为内联器看不透这个细化。
+
+% 1 1 0 0c680235f99088a30612c1f4d33752e9
+
+% 1 1 0 00d118ec3800dbe70005c47ac8a84c67
+
+@ 0 21 0 0b5dc797580f50b5153a86dc5c818905
++   entry .over   受信任的构造器：在一块存储上借出一个区域，其范围被限制在存储的真实范围内
++       `Region.over[medium, result](storage, offset, limit)(lambda)`，需要该介质的 `Addressable`：区域绑定到一个稳定的名称，lambda 接收它及其带品牌的区间，即被限制在存储之内的 `offset until limit`，因此全函数性的不变式由构造本身确立。
++   entry .apply   带品牌序数处的元素：全函数，没有边界检查
++   entry .visit   按顺序对一个区间中的每个带品牌序数运行一个 lambda
++   entry .visit8   每次对八个连续序数运行一个 lambda，并用第二个 lambda 处理尾部
++       这是展开的热循环对派生索引问题的回答：`+1`..`+7` 的算术在这里一次证明，用户代码只会看到带品牌的序数。
++   entry .materialize   从一个区间复制出的介质新值
++   entry .cloneTo   把一个区间复制到该介质 `Target` 类型的构建器中
++   entry .transfer   复制一个区间中能放入石板空间的部分，返回数量
++   entry .unsafeRaw   原始存储，位于 `Unsafe` 之后，供索引算术超出组合子能力的内核使用
++       压缩器的反向引用之类：调用者重新承担边界的责任。
++   entry .borrow   借出字节区域的原始数组以及区间的偏移和长度，供 `(array, offset, length)` 形式的 API 使用
++       `Region[Data]` 上的扩展方法：`OutputStream.write`、`ByteBuffer.wrap`、`Deflater.setInput` 和摘要的 `update` 接收的三元组由构造保证在范围内，因此不需要 `Unsafe`；数组只在调用期间可见，调用既不能保留它，也不能在三元组之外索引。
+
+@ 0 1 0 08f4c2b5c7d7967e0a0eedc6ff4481c9
++ entry .Slate   `Region` 的可写对应物：管道的输出存储，通过带品牌的序数写入
+
+% 1 1 0 108f4d08958a59470d78a1e0281941df
+
+@ 0 6 0 1713e466eb23eff80cd8a5e176920963
++       `Slate[medium]` 用 `update` 代替 `apply`，品牌规程相同：`slate(index) = element` 在带品牌的序数处写入，`visit` 遍历一个区间，`borrow` 借出原始字节数组以及区间的偏移和长度，供填充三元组的 API（`Deflater.deflate`、`InputStream.read`）使用。
++       `Slate.over` 在独占存储上借出一个石板。
++       与 `Region` 一样，它没有导出到总括包：`import zephyrine.Slate`。
+
+% 2 1 0 0f2c870cec1e68c01f156dd8e92dbe3c
+
+% 3 1 0 045de9dae6f305630f8d6aa36d945d12
+
+% 0 1 0 02d1f364f37b02bc186d7c872472a6ec
+
+% 0 1 0 1cb5235d0a3db3b41c4465ae630b3aec
+
+% 0 1 0 031b59592320e74a0dcfd0a4f7c382e1
+
+% 0 1 0 0a149f0063d0750012c68e2c9a78e92f
+
+% 0 1 0 070876b5bd4168e302499e641950bdb8
+
+% 1 1 0 126c2be984a36c0803bc09d1faff1814
+
+% 1 1 0 1ba75285fb5c67cf1c1369496b3494aa
+
+% 1 1 0 107206c8b3d3c9c018684c604e973d0c
+
+@ 0 5 0 0f32f5333c45088f098f342e0426d43c
++   entry .over   在独占存储上借出一个石板，其范围被限制在存储的真实范围内
++   entry .update   在带品牌的序数处写入一个元素
++   entry .visit   按顺序对一个区间中的每个带品牌序数运行一个 lambda
++   entry .unsafeRaw   原始的独占存储，位于 `Unsafe` 之后
++   entry .borrow   独占地借出字节石板的原始数组以及空间的偏移和长度
+
+@ 0 1 0 138bd8aa65b773dc0bf5313bcef0d759
++ entry .Utf8   字节缓冲区上的严格 UTF-8，供扫描字节、只为保留的切片物化文本的解析器使用
+
+% 1 1 0 1887c4cbb57141cb0d6ff0a0ffe9438e
+
+@ 0 5 0 0e7ca348e4e33a9f06676b4fe17ee76c
++       解码是严格的，与 `Ductile.charset` 的内核一样：过长形式、编码的代理项以及大于 U+10FFFF 的值都是格式错误的，从不替换，因此解析器可以拒绝错误的输入，而不是悄悄把 U+FFFD 带进文档。
++       全 ASCII 的切片只需一次数组复制，通过 JDK 的 Latin-1 `String` 构造器完成。
++       没有导出到总括包：通过 `zephyrine.Utf8` 访问。
+
+% 2 1 0 03985dcb7bad7471182ec71e09f85a26
+
+% 3 1 0 0cc15b401b34de8803e96b95578470d1
+
+% 0 1 0 06fb58b5fa7e90950891f445924ba6da
+
+% 0 1 0 00cf5ea19209fe4b04b295a6e887a4f2
+
+% 0 1 0 0d3989befcc3a7531bf0a22f707f4c73
+
+% 0 1 0 06e192147399102a1100dc98e9ecdd84
+
+% 1 1 0 0dccaba506c76798049d9c4dc540a89a
+
+% 0 1 0 15083a8c8fb269db0652695c16f8deb3
+
+@ 0 12 0 1623612443cab11b06c86f8fe57626db
++   entry .Malformed   `point` 对无效序列的结果：`-1`
++   entry .Incomplete   `point` 对被末尾截断的有效前缀的结果：`-2`
++       还有更多输入的调用者重新填充后重试。
++   entry .width   首字节开始的序列中的字节数：1 到 4，不能作为首字节的字节为 0
++       续字节、过长首字节 C0 和 C1，以及 F5 到 FF 都不能作为序列的首字节。
++   entry .continuation   一个字节是否为续字节，即 `10xxxxxx`
++       统计一个区间中*不是*续字节的字节，就能统计其中的码点。
++   entry .point   从某个偏移开始、完全位于 `end` 之前的序列的码点，或者 `Malformed` 或 `Incomplete`
++   entry .asciiEnd   一个区间中第一个非 ASCII 字节的偏移，若没有则为区间末尾，每步扫描八个字节
++   entry .ascii   调用者已知为 ASCII 的区间的文本：一次复制，不做验证
++   entry .decode   一个字节区间的文本，若不是有效的 UTF-8 则为 `Unset`
++   entry .append   把一个字节区间的文本追加到 `StringBuilder`，若无效则不追加任何内容并返回 `false`
+
+@ 0 1 0 039eb356eeeab7e104349eb218e22465
++ entry .Words   字节缓冲区上的 SWAR 原语：把八个字节作为一个字读取，并逐通道分类
+
+% 1 1 0 1cb1c9571ae4ae43127457a24ff00840
+
+@ 0 8 0 0f48a5a1e9dfc58904a4137b0fae29a2
++       `load` 把八个字节读作一个小端序 `Long`（通过平台的 `WordLoad`），掩码用经典的“含零字节”算术对每个通道分类，因此扫描停止字节时每步前进八个字节。
++       每个掩码在满足测试的每个通道中都设置了最高位；一个被标记通道的借位可能溢出到它上面的通道，因此只有*最低*的被标记通道是精确的，即 `first` 报告的那个，也是扫描唯一需要的那个。
++       这些测试对 ASCII 通道有效：自身最高位已设置的通道由 `nonAscii` 标记，关心它的扫描必须单独处理。
++       没有导出到总括包：通过 `zephyrine.Words` 访问。
+
+% 2 1 0 04a78af3b455f7ae12c4516a63e0f503
+
+% 3 1 0 0226e654180d41b21e19ac5accacf155
+
+% 0 1 0 14b3fc831dad771d1e34007d6c826509
+
+% 0 1 0 1863f385c60c483313702480ae8b1753
+
+% 0 1 0 0945a251802226bc05468440365c0375
+
+% 0 1 0 02db0b51040520df0b89a42b46778271
+
+% 1 1 0 044f9c965e4729de087bb56277435cde
+
+% 0 1 0 076001865b6fef7e09b6e419d189177a
+
+% 0 1 0 19955bd8c72b65c91ec204255c62bd24
+
+@ 0 9 0 02aee1792d09b6d804496e454bb2b88b
++   entry .HighBits   每个通道的最高位：`0x8080808080808080L`
++   entry .EveryByte   每个通道为一：`0x0101010101010101L`
++   entry .load   从某个索引开始的八个字节，作为小端序 `Long`
++   entry .replicate   复制到全部八个通道的字节值，作为 `matches` 和 `below` 的比较值
++   entry .zeroes   一个字中为零的通道
++   entry .matches   一个字中等于某个复制字节的通道
++   entry .below   一个字中小于某个复制字节的通道，两者都是 ASCII
++   entry .nonAscii   一个字中含有非 ASCII 字节的通道
++   entry .first   非零掩码中最低的被标记通道在字内的偏移
+
+@ 0 1 0 00c44fbc43ef66b4038a198f7269bb17
++ entry .WordLoad   平台在字节缓冲区上的小端序 64 位读取，位于 `Words.load` 之后
+
+% 1 1 0 1daa0fffe1481b231a7e722904df0d2d
+
+@ 0 6 0 1314ce79b147738c1f97b2019d8e20bc
++       无论平台如何都是小端序，因此 `Words.first(mask)` 在各处都是 `numberOfTrailingZeros(mask) >> 3`。
++       JVM 变体（`core-jvm`）通过字节数组视图 `VarHandle` 读取字；Scala.js 和 Scala Native 变体（`core-portable`）用移位和按位或组装它，因为两者都没有 `java.lang.invoke`。
++       没有导出到总括包。
++   entry .get   从某个索引开始的八个字节，作为小端序 `Long`
+
+@ 0 1 0 17c490d06d11996214590a7158dd3a96
++ entry .Blockpool   进程范围内有界的已用传输块池，在各个管道和写入器之间共享
+
+% 1 1 0 1515464603b99c5210577bbbca7e6d68
+
+@ 0 9 0 178e6f6f058c7f6d1acd36b020501137
++       每个 `Conduit` 的 `Freelist` 背后的二级缓存：空闲列表在一个管道的生命周期内于一个写入器和读取器之间回收块，而这个池*跨越*生命周期携带它们，因此短命的管道、`Utf8Sink` 或 `Utf8Writer` 从前任的块中取得自己的块，而不是重新分配。
++       块按存储类别和确切的物理大小入池，每个类别的保留量限制在约 16 MiB（下限四个块，上限 256 个）。
++       多生产者、多消费者，两种操作都不阻塞，尽力而为：`poll` 未命中意味着调用者自行分配，超出上限的 `offer` 会被丢弃。
++       内容从不被读取：重用的块在发布前会被覆盖。
++       没有导出到总括包。
+
+% 1 1 0 064819271936cce91be5f2b161072e22
+
+% 0 1 0 18c754ef829de52511696a710495f40b
+
+@ 0 3 0 0adba4a814d2870d10ce8631fa09f8fe
++   entry .offer   缓存某个类别和确切物理大小的已用块，若该类别已达上限则丢弃
++       提供者必须完全放弃这个块。
++   entry .poll   恰好属于此类别和物理大小的池中块，或者 `null`，此时调用者自行分配
+
+@ 0 1 0 021d3a7987e27fa3195cc6b6fbb28fbe
++ entry .Handoff   有界的单生产者、单消费者交接环：`Conduit` 背后的交换机制
+
+% 1 1 0 06963f381ac1dc7c1464d0a7f33b714b
+
+@ 0 7 0 1dce8018e5faecb912d2683c21089494
++       恰好一个线程调用生产者操作（`offer`、`finish`），恰好一个线程调用消费者操作（`take`、`drain`、`close`）。
++       两侧在停驻前都会短暂自旋，因此步调一致的生产者和消费者交换条目时无需内核切换；唤醒握手采用 Dekker 模式，因此不会错过唤醒。
++       中断即取消：停驻的一侧抛出 `InterruptedException`，与阻塞队列的行为相同。
++       它的保证来自 volatile 发布顺序，而不是别名分析。
++       没有导出到总括包；parasite 的队列也建立在它之上。
+
+% 1 1 0 11ba1634f54d7d3a05e96398df5f631b
+
+@ 0 11 0 0dd3de458555885d0a28649aefc16776
++   entry #width   环的槽位数：一次 `drain` 能移动的最大突发量
++   entry #size   近似的占用量，用于建议性的需求计算；绝不用于同步
++   entry #free   近似的空闲槽位数
++   entry #offer   生产者侧：先自旋再停驻，直到有槽位空出，除非消费者已关闭，此时条目被丢弃
++   entry #finish   生产者侧：不会再提供更多条目；幂等
++   entry #drain   消费者侧：一步把所有缓冲的条目收入调用者拥有的数组，阻塞直到至少有一个到达
++       返回移动的数量：只有在生产者已结束且环已排空时才为零。
++       每次突发只有一次 `head` 发布和一次生产者唤醒，而 `take` 循环对每个条目都要各付一次。
++   entry #take   消费者侧：下一个条目，或者在生产者已结束且环已排空时为 `null`
++   entry #close   消费者侧：停止接收，排空缓冲的条目（释放停驻的生产者），并丢弃之后提供的条目
+
+@ 0 1 0 12b9ca3d61f9a03319998c779c99cb17
++ entry .Freelist   有界的单生产者、单消费者已用块池：管道的返回路径
+
+% 1 1 0 133be1f0a61ad5c818abcb4a159fde8f
+
+@ 0 6 0 012d53b7e16107e30add4cf0548a3534
++       让 `Conduit` 的读取器把排空的块交还给写入器重用，而不是在写入器新建一个块的同时把它丢给回收器。
++       恰好一个线程提供（读取器），一个线程轮询（写入器），两者都从不阻塞：这是尽力而为的缓存，不是会合点，因此写入器永远不会因池为空而停滞，否则会与停驻等待同一个写入器的读取器形成死锁。
++       没有导出到总括包。
+
+% 1 1 0 00564f65e64a85a71d6a17b5d4b4989b
+
+@ 0 2 0 15a25002047bbd1e051158f3d45aba7b
++   entry #offer   缓存一个已用块，返回是否被接受；池满时拒绝
++   entry #poll   一个可重用的缓存块，若池为空则为 `null`
+
+@ 0 1 0 19e0016da50ee0a80d6e189b8a3cb7d6
++ entry .internal   `Credit` 和 `Datum` 不透明类型以及 `consume` 宏的所在
+
+% 0 1 0 1c18810b564d59e609a88422cf8dd919
+
+% 1 1 0 0f71597c1b0bc6cb112bae74ffdfb433
+
+@ 0 16 0 116ce23e42a07f260e3e1f35f4eac33b
++       不供直接使用：`Credit` 和 `Datum` 从这里导出到 `zephyrine` 包，`consume` 是 `Cursor#consume` 背后的宏。
++   entry .Credit   需求类型；参见 `zephyrine.Credit`
++     entry .apply   `count` 个元素的额度
++     entry .count   额度授予的元素数，作为 `Long`
++   entry .Datum   预览的元素类型；参见 `zephyrine.Datum`
++     entry .End   耗尽的游标的哨兵值
++     entry .apply   把一个无符号字节或一个字符提升为 `Datum`
++     entry .datumByte   `Datum == Byte` 比较
++     entry .byteDatum   `Byte == Datum` 比较
++     entry .datumChar   `Datum == Char` 比较
++     entry .charDatum   `Char == Datum` 比较
++     entry .datumDatum   `Datum == Datum` 比较
++     entry .asInt   底层的 `Int`；一旦泄漏出去，区别就会丢失
++     entry .isEnd   产生此数据的游标是否已耗尽
++   entry .consume   `Cursor#consume` 背后的宏：字面量的每个字符一次 `next()` 和一次比较

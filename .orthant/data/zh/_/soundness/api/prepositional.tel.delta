@@ -1,0 +1,377 @@
+orthant 2 language
+
+% 0 1 0 0f04ec4b9ac2d4270a232409219e1f6b
+
+% 0 1 0 1b6bde0239bc4951097da3e3730ac427
+
+% 0 1 0 0b5938ce7315323607e1922cbc4d93e2
+
+@ 0 1 0 010f293732436540014ce82cfad94cc5
++ info   细化类型类类型成员的介词，使类型读起来像一个短语
+
+% 0 1 0 0ca6d61ddd9511ea1cdae38f1414f6fe
+
+@ 0 9 0 0e1c4fc317507b6d0092cc2d2074138c
++     _Prepositional_ 提供了一套词汇，使 Soundness 的类型可以写成一个短语，如 `Path on Linux`、`Text is Decodable in Json`、`Quantity is Multiplicable by Duration`，而不是把类型构造器应用于按位置排列的参数。
++     每个介词都是一个中缀类型别名，恰好细化其左侧类型的一个抽象类型成员：`in` 设置 `Form`，`on` 设置 `Plane`，`by` 设置 `Operand`，`to` 设置 `Result`，依此类推。
++     由于每个介词细化的是*不同的*成员，介词可以依次应用而无需嵌套，顺序任意，并且只需提及签名所关心的成员：`Text is Decodable` 是一个完整的类型，`in Json` 则使它更窄。
+
+@ 0 10 0 059821c19b3f73ca0a124103764cc0da
++     这个库分为两半。
++     十二个单成员的**特质**声明了介词所细化的成员：`Formal`（`Form`）、`Planar`（`Plane`）、`Operable`（`Operand`）、`Resultant`（`Result`）、`Topical`（`Topic`）、`Original`（`Origin`）、`Domainal`（`Domain`）、`Transportive`（`Transport`）、`Targetable`（`Target`）、`Contrastive`（`Contrast`）、`Limited`（`Limit`）和 `Locative`（`Locus`）。
++     类型类混入它所需要的那些特质。
++     然后由十二个**介词**细化它们：`in`、`on`、`by`、`to`、`of`、`from`、`across`、`over`、`onto`、`against`、`under` 和 `at`。
++     每个介词都有界限，只能应用于声明了该成员的类型，因此介词不能附加到没有它的位置的类型上；两个例外是 `in` 和 `over`：`in` 的形式可以是任意种类的类型构造器，而这两者都没有界限，可以附加到任何类型上。
+
+@ 0 4 0 1ba4a00f5459723c1510d34f678b38a4
++     第三部分是 `Typeclass`，即每个 Soundness 类型类的基础。
++     它声明了 `Self`，即实例所*针对*的类型，由前导部分的 `is` 细化：`Text is Decodable` 就是 `Decodable { type Self = Text }`。
++     `Typeclass.Pure` 是其中的一个子集，编译器已验证其实例不持有任何能力。
+
+% 2 1 0 12e111a7995e727012dff9e23a8dfc47
+
+% 3 1 0 06b61271454d5603124549fe4fbbaae3
+
+% 0 1 0 12741c6c8b2002b71f03569e1086213c
+
+% 0 1 0 09ebefb62083b2fa17915bbde0bfe0c4
+
+% 0 1 0 0b6136de51c8879a160cfd0d84ce7e12
+
+% 0 1 0 0529aaba4f77957702cce82b9e25f91c
+
+% 0 1 0 189f1f6bfc8e4414001094222353b888
+
+% 0 1 0 1f9a1276a4ff7e840667624fe65b787d
+
+% 1 1 0 114514f45c21fe45123ed309aa8559cc
+
+@ 0 5 0 027ddb21761224ac0a3339f2a8bf37e9
++     类型类的使用者看到的只有 `is`、`Self` 和介词的名字；特质对类型类的作者才重要，由作者选择声明哪些成员。
++     类型类的*定义*混入特质；它的*使用*读起来像散文。
++     不过，编译器报告的是脱糖后的形式，不匹配会被描述为 `{ type Form = Json }` 而不是 `in Json`，这是唯一一处方向相反的转换。
+
+@ 0 3 0 0865eb73f6c365e11d3596b213683a4b
++     类型一次构建一个子句，每个子句都是前一个类型已经允许的细化。
++     每一步找到的都是同一个 given；变化的是调用者对它了解多少：
+
+% 0 1 0 15d6d2800841da9e1c6e709ce05d6a7d
+
+% 1 1 0 0a47f914ed53260906bd03717b3d64ff
+
+@ 0 1 0 18f5fae12e4c842d017a6bb9474b7c9a
++       label 裸类型类：一个实例，所有成员仍是抽象的
+
+% 1 1 0 10f32c74842e95fd17356aa69115c386
+
+% 0 1 0 0db032160c4d309d0b4881fa8a57aa61
+
+% 1 1 0 1044b435f8b46e7c01903e52c2952406
+
+@ 0 1 0 117b7b9483787ee604f08d5dea8728ae
++       label `is` 确定主体：一个针对 `Int` 的实例
+
+% 1 1 0 15535005bf3c95330c37f0a4edb4981e
+
+% 0 1 0 13c176a64ef02e4a0dda846634710447
+
+% 1 1 0 1dadf51596446294112a6b7c48e1e1cc
+
+@ 0 1 0 1235e8506348aaaf1f41041d0bfaa4dc
++       label `in` 确定形式：一个针对 `Int` 的 JSON 实例
+
+% 1 1 0 0c8643cfe9b863921f482d71a6419422
+
+% 0 1 0 05f56f2e4fadf5ed12ea3e9076d1d9e8
+
+% 1 1 0 0aee77b3bb75bd551d87cced67b89558
+
+@ 0 1 0 146bf1b15b81c0a31e314ecb914b7b33
++       label `to` 确定结果，短语就完整了
+
+% 1 1 0 157270bceadac5fe0621a6bdcca691e0
+
+% 0 1 0 11356368476315fd18493dfa638e897e
+
+% 0 1 0 00064eef15ae4f6d1d9a867767870d4b
+
+% 0 1 0 0472326144a49ce71767be845f62f575
+
+% 1 1 0 11e767d9efb47d1a0f4b85a0051bf1dd
+
+@ 0 2 0 129e8cbf07d8a4d90392c0fcaa18f353
++     只有在最后一帧中，才知道 `serialise` 的结果是 `Text`：通过 `anySerialiser`，它是抽象的 `Result`。
+
+@ 0 5 0 1a82ede6380cf909020beacac67a9cf9
++     这个库是单个源集 `prepositional.core`，除了 `beneficence`（用于 `Findable`）之外没有依赖，也没有平台特定的部分；它可以为 JVM、Scala.js 和 Scala Native 编译。
++     一切都导出到 `soundness` 总括包，并且由于每个 Soundness 模块都用 `-Yimports:java.lang,proscenium` 编译，把主体与其类型类连接起来的 `is` 总是无需导入就在作用域中。
+
+% 0 1 0 0d4692314cf8d55d0c2d50e831c56de5
+
+% 0 1 0 11f8511efb713a5c1b01341ea3c0f63e
+
+% 0 1 0 0b74d0521d436f4f0d9a7132b863a9da
+
+% 0 1 0 143c676353fbfca1154e6cdc8badcf69
+
+% 0 1 0 00b1e4fcb9729b700d1a2418c995ea32
+
+@ 0 1 0 0e5ce4a49d46c5291d1ed48524f24401
++ entry .Typeclass   每个 Soundness 类型类的基础：针对某个 `Self` 类型的实例
+
+% 1 1 0 12da22310dec40e408c4f696fad0f6e1
+
+@ 0 6 0 025b14facb2bf6f415d00ca2f56c3b52
++       `Typeclass` 声明了一个抽象类型成员 `#Self`，即其实例所*针对*的类型。
++       前导部分的中缀 `is` 细化它，因此 `Text is Decodable` 就是类型 `Decodable { type Self = Text }`，而上下文界限 `[value: Decodable in Json]` 要求一个 `Self` 为 `value`、`Form` 为 `Json` 的实例。
++       每个 Soundness 类型类，如 `Showable`、`Encodable`、`Comparable`、`Traversable`，都扩展它，并同时扩展它需要的其他成员所对应的介词特质。
+
+% 2 1 0 077a2281d64e40610fea7310319f362c
+
+% 3 1 0 0e830e0ffabdcc77191fc829ea31d46b
+
+% 0 1 0 1f93daea9fdf15580b76a4d67ec9862b
+
+% 0 1 0 060ecd15f4861d0e0a115ee4451e8ce3
+
+% 0 1 0 14f10a94036b9a6c033e3a9c8600f921
+
+% 0 1 0 08cc9cdb38fbc82a05e90ee3b2eefdf7
+
+% 0 1 0 11bab719318291b118e3e3100f3af2d4
+
+% 0 1 0 187e56c23294864b13bb83cc68448e52
+
+% 1 1 0 06f0326c2a995a131fa4f7aba6287a13
+
+@ 0 6 0 09e1b789091659ea1d200dbe13352a8f
++       `Typeclass` *不是*纯类型：许多实例由能力构建而成，例如用于抛出错误的 `Tactic`、编码器或后端，并保留它们，因此它们的捕获会被跟踪，而不是被假定不存在。
++       只持有数据和逻辑的实例应改为扩展 `.Pure`，由编译器验证。
++       它也不是能力类，因此在伴生对象或 `given` 中持有实例，并不会使持有者成为能力。
+
+@ 0 4 0 0634f28f45e4001f1a1faaf270532724
++       `Typeclass` 扩展了 `Findable`，这是 beneficence 的标记特质，用于值以上下文值的形式提供的类型（`System`、`Environment` 和 `Calendar` 也带有它），因此类型类实例被视为需要查找而不是构造的东西。
+
+% 0 1 0 1460ee10f8b4d41914ff0d7de9307554
+
+@ 0 10 0 04df7ad56a2a205503b64998d28ee042
++   entry .Pure   编译器已验证其实例不持有任何能力的类型类
++       `Typeclass.Pure` 扩展了 `Typeclass` 和 `scala.caps.Pure`，因此主体引用了能力的实例会在定义处被拒绝：这里的纯粹性是一个经过检查的事实，而不是一个断言。
++       比较、算术、哈希和集合遍历的类型类，即只用其参数进行计算、别无其他的类型类，都扩展它；实例可以正当地保留 `Tactic`、文件系统或编码器的类型类则仍使用普通的 `Typeclass`。
++       纯实例如果仍必须持有一个解析作用域内的能力，就在一个标有 `@caps.unsafe.untrackedCaptures` 的字段中指明它，这比为整个实例放弃纯粹性更窄，也更便于 grep。
+
+% 2 1 0 0d8f5a5f1ec3d56d0ce9932ee5653d1a
+
+% 3 1 0 18e575d6d9c5524e04a229b9d84a7f11
+
+% 0 1 0 0c04ab70c8041c9d1752e02edc13afe8
+
+% 0 1 0 1a89ef00fdda4f3d06e688b8595a8c82
+
+% 0 1 0 04931ba785cdcc71017bb643e7645ebd
+
+% 1 1 0 18096b0b86ca39960d5ff298feb6dcb8
+
+@ 0 1 0 0555fa31860099da1be2079f5f9fba46
++   entry #Self   类型类实例所针对的类型；由 `is` 细化
+
+@ 0 1 0 0301bbc19cf1fbf513a5b47d7e0a8e1f
++ entry .Formal   声明 `Form` 成员，由 `in` 细化
+
+% 1 1 0 0a61ea3abc2924dd0b023f4fa0f6fe7e
+
+@ 0 6 0 16223df6cb8ba0e30e9f849c2d7ff54e
++       当类型类的实例特定于某种*形式*（一种格式、一种表示或一种形状），并用 `in` 选择时，类型类就扩展 `Formal`：`Text is Decodable in Json`、`Int is Encodable in Tel`、`Ordinal in xs.type`。
++       该成员可以声明为 `<: AnyKind`，此时 `in` 可以应用一个未应用的类型构造器（`self is Convertible in Map`）。
++   entry #Form   实例所特定的形式、格式或表示
+
+@ 0 1 0 013b8ae48e009d311822735f49f5cb32
++ entry .Planar   声明 `Plane` 成员，由 `on` 细化
+
+% 1 1 0 1b6837ad0abcbaba02f53d9dfbea5bc7
+
+@ 0 6 0 0a2b1c739ee465cb1acfd9eb0fec7f9d
++       *平面*是值所在的空间：路径的文件系统（`Path on Linux`、`Path on Classpath`）、类加载器的搜索空间，或绘制图所依据的节点。
++       类型类或值类型扩展 `Planar`，以便 `on` 可以指明平面；galilei 的文件系统方针（`CreateNonexistentParents`、`DeleteRecursively`）也是 `Planar`，以便为每个文件系统选择一种方针。
++   entry #Plane   值所在的空间，例如文件系统或类路径
+
+@ 0 1 0 1f328689769672fa065f200ee842ea53
++ entry .Operable   声明 `Operand` 成员，由 `by` 细化
+
+% 1 1 0 056e90a944768668074cdf756a8aff34
+
+@ 0 5 0 00914b316193eacc1f5ef3a595feb29d
++       *操作数*是一个操作所接受的另一个类型：二元运算符的右侧（`Quantity is Multiplicable by Duration`）、集合的元素类型（`List[Int] is Traversable by Int`），或查找的参数。
++       它是使用最广泛的成员，有四十多个类型类扩展它。
++   entry #Operand   操作所接受的另一个类型：右操作数、元素或参数
+
+@ 0 1 0 095d16d66c7d80f90e341a70e7f1fff0
++ entry .Resultant   声明 `Result` 成员，由 `to` 细化
+
+% 1 1 0 0bc6f19533fca9d00ac06a582c95f49b
+
+@ 0 5 0 0590aaad3e4090ee17e3e8dbcd25d80b
++       *结果*是操作所产生的东西：`Quantity is Multiplicable by Duration to Quantity`、`self is Mandatable to result`、`Text is Decodable in Json to Record`。
++       操作返回的类型取决于实例的类型类会声明 `Result`，由调用者用 `to` 选择或读取它。
++   entry #Result   操作产生的类型
+
+@ 0 1 0 1aa564916058a7a20f6f53481ddca0d5
++ entry .Topical   声明 `Topic` 成员，由 `of` 细化
+
+% 1 1 0 1b418f4692cdc5bb1c992107361befdc
+
+@ 0 5 0 00b8c9f466aefb2b1af5754941362c82
++       *主题*是值*关于*或*属于*的东西：HTML 元素的标签（`Html of "br"`）、`ambience.Property` 实例读取的属性、`Recurrent` 描述的事件、找到 `Annotated` 实例的字段。
++       它是供字面量类型或幻影类型使用的成员，这类类型对值进行分类，但并不包含在值中。
++   entry #Topic   值所关于的东西：标签、名称、分类
+
+@ 0 1 0 181ced6e330af6f608f837ad8b6381fe
++ entry .Original   声明 `Origin` 成员，由 `from` 细化
+
+% 1 1 0 032391ea31b342be1ac451c660cbea9c
+
+@ 0 4 0 177072582ecc4a9817c2ea41bd4a4106
++       *来源*是值或证明的出处：`self is Distinct from (Int | String)`（vacuous）、由 `Specification` 构建的 polyvinyl `Record`、字段源自另一个类型的 `Intensional` 记录。
++   entry #Origin   值或证明所源自的类型
+
+@ 0 1 0 08cfa2d3f007e9341451e8ad0dd567d2
++ entry .Domainal   声明 `Domain` 成员，由 `across` 细化
+
+% 1 1 0 0759fbfaafc057eb1b9b280ff7db8980
+
+@ 0 5 0 1ebc77250215505d109a4a5d52eec4a9
++       *领域*是值所涵盖的整个空间：`Abstractable across Paths to Text` 使任何路径类型都能在整个路径家族上抽象，而 cacophony 的 `Pcm` 和 `Recording` 在信号的领域上是 `Domainal`。
++       这个介词读作“遍及……的领域”。
++   entry #Domain   值所涵盖的家族或空间
+
+@ 0 1 0 1978a4eeada5c0c615770fd6b8930f8b
++ entry .Transportive   声明 `Transport` 成员，由 `over` 细化
+
+% 1 1 0 15675af8b815f4831f0ac5ce71f38d2a
+
+@ 0 6 0 155f619366d18d110b6efb64760589d7
++       *传输*是承载值或度量值所依据的东西：流的额度（`Streamable by Data over Credit`）、时间线（`Instant over Unix`）、`Parsable` 读取所依据的格式、superlunary 的 `Stageable` 值所跨越的阶段。
++       `over` 与 `in` 一样，是两个对所细化的类型没有界限的介词之一，因此可以附加到任何类型上；打算与它一起使用的类型扩展 `Transportive`。
++   entry #Transport   承载值的东西：额度、时间线、格式
+
+@ 0 1 0 0b6128cd8104327c084d3b9f5b1ed134
++ entry .Targetable   声明 `Target` 成员，由 `onto` 细化
+
+% 1 1 0 0bd979ad1b354c250a3573f09926c521
+
+@ 0 5 0 079b8d155728fc2b044cecdf21c424fa
++       *目标*是操作落到的地方：telekinesis 的 `Fetchable` URL 所解析到的主机加路径目标、parasite 的 `Interceptable` 信号被路由到的注册表、obligatory 的 `Associable` 会话所关联的响应。
++       它与 `Result` 的不同在于，它是一个目的地，而不是一个产物。
++   entry #Target   操作落到的目的地
+
+@ 0 1 0 047babc0896f0ed41f8c6c511f563db3
++ entry .Contrastive   声明 `Contrast` 成员，由 `against` 细化
+
+% 1 1 0 025d92d396a0fef8183ec139541e6d37
+
+@ 0 4 0 0fe388e9418bf1c00d4eb7c1fd6f77c0
++       *对照*是值与之比较的东西：hypotenuse 的 `Commensurable` 有 `Int is Commensurable against Double`，即比较两种不同数值类型的类型类。
++   entry #Contrast   值与之比较的类型
+
+@ 0 1 0 14a5c395e1b4a0fb076d62471dc9f26b
++ entry .Limited   声明 `Limit` 成员，由 `under` 细化
+
+% 1 1 0 1e649a08efd8c17e15002c4b4d94940f
+
+@ 0 4 0 1d61f86c77339e65152f89f27943b59a
++       *限制*是约束值的界限：nomenclature 的 `Nominative` 在一组规则之下为值命名（`plane is Nominative under Rules`），而 adversaria 的 `Annotated` 字段是在其外围类型之下找到的。
++   entry #Limit   约束值的界限、规则集或外围结构
+
+@ 0 1 0 17483894e95a034b1b45fe9feac63d27
++ entry .Locative   声明 `Locus` 成员，由 `at` 细化
+
+% 1 1 0 040555bc9330a2dc1f8b999195382ba2
+
+@ 0 4 0 1d81c1bcb732379501dfb2ba3ef25eea
++       *位置*是值所在之处：apoplexy 的 `Api` 提供服务的路径（`Api at "/"`）、distillate 的 `Decodable` 实例进行解码的位置、phoenicia 的 `Typesettable` 文本排版的位置。
++   entry #Locus   值所在的地点、位置或地址
+
+@ 0 8 0 06d9641288c1928a1e620795db886955
++ entry .in   `refined in form`：细化 `Form` 成员
++     `refined in form` 就是 `refined { type Form = form }`，是表示格式或表示形式的介词：`Text is Decodable in Json`、`value is Encodable in Tel`、`Ordinal in xs.type`（denominative 的受限索引）。
++     它有意不设界限，其 `form` 参数接受任何种类，因此声明为 `<: AnyKind` 的 `Form` 可以用一个未应用的类型构造器细化，如 `self is Convertible in Map`。
++     由于没有界限，它也会附加到没有 `Form` 成员的类型上，产生一个无人读取的细化：打算与 `in` 一起使用的类型类应扩展 `Formal`。
+
+% 2 1 0 013db7d6f0d3c4911bf482b6bf61d04c
+
+% 3 1 0 06b0e4f10b690642113b278f9c581439
+
+% 0 1 0 07887918dfb308061e8fcc6deefb9046
+
+% 1 1 0 0b3c4d754ba337431c527a9b9a35418d
+
+@ 0 5 0 1c0ac36284bc5ba4028dc068d48d9fc3
++ entry .on   `refined on plane`：细化 `Plane` 成员
++     `refined on plane` 就是 `refined { type Plane = plane }`，用于扩展 `Planar` 的类型：`Path on Linux`、`Path on Classpath`、作为 `Findable on Classpath` 的 `Classloader`。
++     界限是强制的，因此 `on` 不能附加到没有 `Plane` 的类型上。
+
+% 2 1 0 0402ac012ff307371afccb1712ebfe67
+
+% 3 1 0 0cb72841df98175e113bc169c1f5d3b8
+
+% 0 1 0 17682f4fbd49c80a1acba083740efbea
+
+% 1 1 0 129c89e7a3b460ba1c340051a876ba32
+
+@ 0 4 0 1f713589632111b40de9ef93c4b38151
++ entry .by   `refined by operand`：细化 `Operand` 成员
++     `refined by operand` 就是 `refined { type Operand = operand }`，用于扩展 `Operable` 的类型：`Quantity is Multiplicable by Duration`、`List[Int] is Traversable by Int`、`Data is Streamable by Data`。
++     操作数是操作所接受的*另一个*类型。
+
+@ 0 4 0 087e9ccb1076c46103981c6e07e96f78
++ entry .to   `refined to result`：细化 `Result` 成员
++     `refined to result` 就是 `refined { type Result = result }`，用于扩展 `Resultant` 的类型：`Int is Addable by Int to Int`、`Optional[Text] is Mandatable to Text`。
++     按照惯例，它写在短语的最后，因为它指明产出的东西。
+
+% 2 1 0 0ca2fa888e1357b214b582ea6aefacfd
+
+% 3 1 0 0574a096f9752c9202329c1914482f19
+
+% 0 1 0 01aa86944a0fec90009b99e85349847b
+
+% 1 1 0 119cecb016b796af0fb73b887846d297
+
+@ 0 4 0 1617dd0a5dd9aa9a0e0414e76d190175
++ entry .of   `refined of topic`：细化 `Topic` 成员
++     `refined of topic` 就是 `refined { type Topic = topic }`，用于扩展 `Topical` 的类型：`Html of "br"`、`Property of "java.home"`、`Typeface of "sans-serif"`。
++     主题通常是对值进行分类的字面量类型。
+
+@ 0 4 0 01183b3e7603df9e15dee311d46b74fa
++ entry .from   `refined from origin`：细化 `Origin` 成员
++     `refined from origin` 就是 `refined { type Origin = origin }`，用于扩展 `Original` 的类型：`Int is Distinct from String`（vacuous 对一个类型不是某个联合成员的证明）、`Record from Specification`（polyvinyl）。
+
+@ 0 4 0 02f705e9b5c0d38008cafacbac0b28f6
++ entry .across   `refined across domain`：细化 `Domain` 成员
++     `refined across domain` 就是 `refined { type Domain = domain }`，用于扩展 `Domainal` 的类型：`Abstractable across Paths to Text`、`Instantiable across Urls from Text`。
++     领域是实例作为整体所涵盖的一个类型家族。
+
+@ 0 5 0 12c6f39c80e7cde90e3126e6aec4a4e6
++ entry .over   `refined over transport`：细化 `Transport` 成员
++     `refined over transport` 就是 `refined { type Transport = transport }`：`Streamable by Data over Credit`、`Instant over Unix`、`Html.Element of "ul" over "li"`。
++     它与 `in` 一样没有界限，因此可以附加到任何类型上；打算与它一起使用的类型扩展 `Transportive`。
+
+@ 0 4 0 0ff9c8512828831d0efa2f64f301f4eb
++ entry .onto   `refined onto target`：细化 `Target` 成员
++     `refined onto target` 就是 `refined { type Target = target }`，用于扩展 `Targetable` 的类型：telekinesis 的 `Fetchable` URL `onto` 其目标，parasite 的 `Interceptable` 信号 `onto` 其注册表。
+
+@ 0 3 0 07d16f342d4760f90395faf38d35cdd9
++ entry .against   `refined against contrast`：细化 `Contrast` 成员
++     `refined against contrast` 就是 `refined { type Contrast = contrast }`，用于扩展 `Contrastive` 的类型：`Int is Commensurable against Double`。
+
+@ 0 5 0 07e13338b53e917d0b3dc6bebd551cf3
++ entry .under   `refined under limit`：细化 `Limit` 成员
++     `refined under limit` 就是 `refined { type Limit = limit }`，用于扩展 `Limited` 的类型：`plane is Nominative under Rules`（nomenclature）、`Dot.Id is Nominative under Dot.Identifier["a valid DOT identifier"]`（acyclicity）、在其外围类型之下的 adversaria `Annotated` 字段。
+
+@ 0 4 0 0c28950cf6ae1e7d1340f726a33d7cae
++ entry .at   `refined at locus`：细化 `Locus` 成员
++     `refined at locus` 就是 `refined { type Locus = locus }`，用于扩展 `Locative` 的类型：`Api at "/"`（apoplexy），distillate 的 `Decodable` 实例 `at` 其解码的位置。
+
+@ 0 3 0 1bd7d7c97c4e74c70b23f8382ef31c83
++ entry .Prepositional   这个库的标记对象；它没有成员
++     一个空对象，它的存在只是为了让 `prepositional` 包有一个稳定的、具名的项可供引用。
++     它不在代码中使用。

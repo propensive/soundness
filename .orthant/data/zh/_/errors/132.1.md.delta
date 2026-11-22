@@ -1,0 +1,43 @@
+orthant 2 language
+
+% 0 1 0 153de41bd09c25380541ca71f38329fb
+
+@ 0 3 0 0c8b9690abaf8f6f1b9ee08f139b6ecd
++ 当 Yossarian 在 PTY 流中遇到它无法处理的 ANSI 转义码时抛出。
++ 每个变体指明一种具体的转义格式错误。
+
+@ 0 1 0 1d8ed6a2d2412a231ea0d46e12dff5b7
++ ## 原因
+
+@ 0 4 0 0a6a51f1a949915f12a0adf0c9539c81
++ Yossarian 在处理 PTY 流时解码终端转义序列。
++ 当某个序列格式错误，或引用了超出支持范围的参数时，解析就会以此错误终止。
++ 消息为 `an ANSI escape code could not be handled because $reason`。
+
+@ 0 1 0 0982d44e8aec0bbd176df78e68656684
++ ## 变体
+
+% 0 1 0 0a7c55b4c0ac40601a46d9fdcd155626
+
+@ 0 13 0 19f3db4153a37fa41004d92be9ef784e
++ column  代码
++ column  原因
++ column  含义
++ column  消息
++ column  解决方法
++ row  `↯/s.132.1.1`  `BadSgrParameters`  SGR（Select Graphic Rendition，选择图形再现）参数序列无效。  `[↯/s.132.1.1] an ANSI escape code could not be handled because [38;9 is not a valid SGR parameter sequence`  检查转义序列的生成方：SGR 参数是以分号分隔、位于文档规定范围内的整数。
++ row  `↯/s.132.1.2`  `BadCsiParameter`  某个 CSI 命令收到了超出其可接受值的参数。  `[↯/s.132.1.2] an ANSI escape code could not be handled because 99 is not a valid CSI parameter for the H command`  把参数限制在该命令允许的范围内。
++ row  `↯/s.132.1.3`  `NonintegerSgrParameter`  本应是数字的 SGR 参数不是数值。  `[↯/s.132.1.3] an ANSI escape code could not be handled because abc is not a numerical SGR parameter`  在 SGR 序列中，`;` 分隔符之间只输出纯数字的参数。
++ row  `↯/s.132.1.4`  `BadColor`  256 色或调色板参数引用了超出有效范围的颜色索引。  `[↯/s.132.1.4] an ANSI escape code could not be handled because 300 is not a valid color number`  使用 0 到 255 之间的颜色索引（基本调色板为 0 到 15）。
++ row  `↯/s.132.1.5`  `BadOscParameter`  OSC（Operating System Command，操作系统命令）使用了无法识别的参数。  `[↯/s.132.1.5] an ANSI escape code could not be handled because 999 is not a recognized OSC parameter`  使用文档所列集合中的 OSC 参数。
++ row  `↯/s.132.1.6`  `BadCsiCommand`  对于给定的参数，CSI 序列的终止字符不是可识别的 CSI 命令。  `[↯/s.132.1.6] an ANSI escape code could not be handled because Z (with parameter 1) is not a valid CSI command`  针对所涉及的参数集，使用文档规定的 CSI 终止字节。
++ row  `↯/s.132.1.7`  `BadCsiEscape`  CSI 序列中出现了不允许出现在该处的字符。  `[↯/s.132.1.7] an ANSI escape code could not be handled because @ is not valid in a CSI escape sequence`  CSI 序列只允许文档规定的中间字节和参数字节；请检查生成方。
++ row  `↯/s.132.1.8`  `BadFeEscape`  `ESC` 之后的字符不是有效的 Fe（C1）转义。  `[↯/s.132.1.8] an ANSI escape code could not be handled because Q is not a valid Fe escape`  在 `ESC` 之后使用文档规定的 C1 引导字符（`[`、`]`、`P` 等）。
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 1 0 004f241cb4a4ed0405cb108ee75b2611
++ ## 另请参阅
+
+@ 0 1 0 0e13a7f6aae749ab160e79bdf2b666bc
++ - 源码：`lib/yossarian/src/core/yossarian.Pty.scala`

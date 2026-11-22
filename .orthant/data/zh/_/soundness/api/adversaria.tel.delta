@@ -1,0 +1,492 @@
+orthant 2 language
+
+% 0 1 0 0f04ec4b9ac2d4270a232409219e1f6b
+
+% 0 1 0 1ab20f68cead03490767b70c7469eac7
+
+% 0 1 0 0b5938ce7315323607e1922cbc4d93e2
+
+@ 0 1 0 0d12f61c13f3f4761e8e23d0695090a5
++ info   以类型类实例形式读回的静态注解，以及按名称访问的字段，全部在编译时解析
+
+% 0 1 0 0ca6d61ddd9511ea1cdae38f1414f6fe
+
+@ 0 5 0 0addd7b81e0a81d20397017ae4882c8b
++     _Adversaria_ 读取 Scala 的静态注解，而使用者无需编写宏。
++     为某个类型召唤 `Annotated`，就能得到该类型本身、其字段或密封层次结构各变体上的注解，这些注解在代码编译时计算，不使用运行时反射；查询以介词风格书写，用 `by` 按注解类型缩小范围，用 `on` 按字段缩小范围，用 `under` 缩小到和类型的各个变体。
+
+% 2 1 0 17409d87417e9fbd1676627049efd4d3
+
+% 3 1 0 1a652ad6abd860e81cfa3984e2eeb970
+
+% 0 1 0 1dc7d242730fc8b105ceb408073084fa
+
+% 0 1 0 062d691f6a3932451ca247b8067de5df
+
+% 0 1 0 0e8a2550102d8cbb16f820e881897ab8
+
+% 0 1 0 1a999fd94f92588905ca91de91227927
+
+% 0 1 0 1709b8b51cb3fac41d1cd5e14aa31d94
+
+% 1 1 0 1b185b476541d2d80e8ccb64a60d250a
+
+@ 0 5 0 1946702c51a4464f169f965eccd35c3c
++     本库还定义了 `@name`，即每种 Soundness 序列化格式都遵从的注解，用于在线上重命名字段或变体，并配有供格式派生读取的 `relabelling` 和 `variantRelabelling`；以及 `Dereferenceable`，它通过代码编译时生成的访问器表在运行时按名称访问记录的字段，每个访问器都是一个 panopticon `Lens`。
+
+@ 0 4 0 02a0eb7451d25adc0259797f8eeec046
++     本库只有一个源集 `adversaria.core`，适用于所有平台；`adversaria.examples` 组件存放测试夹具，不会发布。
++     一切都导出到 `soundness` 总括包，实例以 given 形式放在类型类的伴生对象中，因此除 `soundness.*` 外无需任何导入。
+
+% 0 1 0 06764d421883c3a3136579227568f7bc
+
+% 0 1 0 1c6ce453daa642d80ca5a4d3592c2f37
+
+% 0 1 0 19eeb8a244209f1019e103a332e6b71f
+
+% 0 1 0 1d66646cd768ff9510c386df7cc1bba6
+
+% 0 1 0 058eb3e91b28ea7b0bd1f9ed65b2d3aa
+
+% 0 1 0 07e34ab3aff1cba012c2f18bad49357a
+
+% 0 1 0 0855cc034f87a7211dfd2116b901a6d7
+
+@ 0 1 0 1c898b1fc2f535e70366c7ab67b1bcb9
++ entry .Annotated   一个类型类，其实例保存某个类型、其字段或其变体上的静态注解
+
+% 1 1 0 1cd08353ffcebe6e031aabe82d677b59
+
+@ 0 3 0 1c36b8bb6a41677c0039f56e721857d1
++       `Annotated` 实例从不手写：伴生对象中的透明内联 given `.annotations` 会为所请求的任何内容生成一个。
++       请求是一个介词式类型：
+
+@ 0 6 0 10c9d638cfefa6611b79f1636c08b9d6
++       - `T is Annotated`——类型 `T` 本身及其字段上的每个注解；
++       - `T is Annotated by A`——只取注解类型为 `A` 的那些（这是子类型检查，因此 `by marker[Person]` 会排除 `marker[Play]`）；
++       - `T is Annotated on "field"`——只取所指名的字段，其名称会对照 `T` 的主构造器进行检查；
++       - `Annotated under S`——密封类型或枚举 `S` 的每个变体上的注解。
+
+@ 0 5 0 1f74ce350bbc601e19360f8986cacb8b
++       实例的精确类型取决于答案，这就是该 given 为透明的原因：针对字段的查询得到带有 `fields`、`annotations` 和 `apply()` 的 `Annotated.Fields`；恰好匹配一个字段的查询得到 `Annotated.Field`，它还知道该字段的名称，并提供指向它的透镜；而 `under` 查询得到 `Annotated.Subtypes`。
+
+@ 0 1 0 19af3b659ca08f180da898a793587cba
++       缩小范围的过程最好一次看一个介词：
+
+% 0 1 0 14116fcaa006993f068c95fd1ec862a2
+
+% 1 1 0 08d9458eb73012351c93056f35e51984
+
+@ 0 1 0 0620cf401100f7d2159e95ece44a7ab5
++         label 类型及其字段上的每个注解
+
+% 1 1 0 07a9fdef0411fb271f81dd0365700e68
+
+% 0 1 0 0372c512018921351b3cb09f7966473a
+
+% 0 1 0 1365e394211dc4f40af11cbfbb357f01
+
+% 1 1 0 0b5f91780017f5301768aff9e6d02891
+
+@ 0 1 0 09b7e81fd2dcfc3d1a47a5ef51ba654d
++         label `on`：某一个字段的注解
+
+% 1 1 0 1b9d9650bd0a88bd1c69ce9f78ff49c1
+
+% 0 1 0 17251f57382801231b0a46a6f74086f0
+
+% 0 1 0 0f3ed3871c47d8c902e9f22b33cac3af
+
+% 1 1 0 1997eb499f1c3225026db5a70b56cf3f
+
+@ 0 1 0 025b3511b81deeb700c48fc876b35421
++         label `by`：该字段上只取一种注解类型
+
+% 1 1 0 1f0260be5f452b2c06c3eb8de4d5d99e
+
+% 0 1 0 19e5d59cbe71600a09794d3347dabbb4
+
+% 0 1 0 1de7b9c4c5242f2a157279af791deb0b
+
+% 1 1 0 06a6fc45ddced8c815f45e351b0b85d3
+
+@ 0 1 0 002e7b3112f795f6016e3bf3872adf03
++         label 单独使用 `by`：唯一带该注解的字段，以及指向它的透镜
+
+% 1 1 0 088c6a50dccb200307e30053ca2f45e5
+
+% 0 1 0 1aefca58e8ffa4f319df7aa0a8f2e183
+
+% 0 1 0 066c986c304ad9201c3592b35ed4ed8c
+
+% 0 1 0 05324ab952d132031fa7821cd90c1137
+
+% 1 1 0 1a277342ea9dfdc5113023e785963c91
+
+@ 0 3 0 0540b947a560e2ba1cc65c9edf533c31
++       注解在生成的代码中由其语法树重建，因此注解的参数应当是字面量、对稳定值的引用或嵌套的构造器调用；参数无法重建的注解会被悄无声息地略去。
+
+% 0 1 0 0e7126df0e74030e198b5852443db7e6
+
+% 0 1 0 0a730037bdec3496033584b78cb6cb73
+
+% 0 1 0 01c97d97f390103e0fc3db25fc36a2fd
+
+@ 0 7 0 0fa1ed63dc818ae41b1247b0752359af
++   entry .annotations   在代码编译时为任何请求生成 `Annotated` 实例
++       伴生对象中的一个透明内联 given，因此位于隐式作用域中：`summon[T is Annotated by A on "field"]` 以注解类型（未给出 `by` 时为 `StaticAnnotation`）、主体、字段（`Plane`）和变体根（`Limit`）展开它。
++       它的结果类型是 `Annotated.Fields`、`Annotated.Field` 和 `Annotated.Subtypes` 中符合答案的最精确者。
++   entry .Fields   针对某个类型及其字段的查询所得的实例：按字段名给出它们的注解
+
+% 1 1 0 02dcacd72cb2ecfb0576100c756c126b
+
+@ 0 4 0 0a62e0bcc6f47ceb03323ec39dbd25a5
++         当答案不是单个字段时，`summon[T is Annotated]` 或 `summon[T is Annotated by A]` 所给出的结果。
++         `#fields` 把每个带有*任何*类型注解的字段映射到它所带的、请求类型的注解，因此只带其他注解的字段会以空集合出现；`fieldAnnotations` 会把它们过滤掉。
+
+% 2 1 0 14b01588491d20851799c2d600b5018a
+
+% 3 1 0 116c2b1be0f43c6f13587f2df1279ddd
+
+% 0 1 0 1ab3fa13f5baf28a12cfc8340403c0c7
+
+% 0 1 0 0ede700e3ea8fd1b07bf2df2be9f02fe
+
+% 0 1 0 032045589c8ad00d0b11b2ecbfbe4f0d
+
+% 0 1 0 04400c4dd7cfa73916891abdd5fea302
+
+% 1 1 0 10137073963945a41944232c13f6fa00
+
+@ 0 2 0 17d362b72caff7920f509d9ce3a92b21
++     entry #fields   每个带注解字段的名称，及其所带的请求类型的注解
++   entry .AnnotatedFields   宏所构建的具体 `Annotated.Fields`
+
+% 1 1 0 080d5b1b12e2c83a08aa8b72b46d7fb8
+
+@ 0 11 0 12a5adcde8f33f3418ce25ea92ff8da5
++         保存宏所找到的类型自身的注解和各字段的注解。
++         它是 `summon[T is Annotated]` 返回的结果，因此它的成员就是调用者所用的成员。
++     entry #fields   每个带注解字段的名称，及其所带的请求类型的注解
++     entry #annotations   类型本身上所带的请求类型的注解
++         如果 `Play` 不带 `unique`，无论其字段带什么，`summon[Play is Annotated by unique].annotations` 都是空集合。
++     entry #apply   注解：类型本身上的，或用 `on` 指名的字段上的
++         `summon[Play is Annotated]()` 给出类型自身的注解；对于带 `on "field"` 的查询，或恰好匹配一个字段的查询，它给出该字段的注解。
++   entry .Field   恰好匹配一个字段的查询所得的实例：该字段的名称，以及指向它的透镜
+
+% 1 1 0 1a7d85417d6be4a21d4d5ac033b9830c
+
+@ 0 5 0 198632c5a238b2a51ccaf91b0257d05d
++         当所请求的注解恰好位于一个字段上——只有一个字段带 `A` 时的 `summon[T is Annotated by A]`，或任何用 `on` 指名字段的查询——实例就是一个 `Field`，它知道该字段的名称和类型。
++         找到“被标记为标识符的字段”通常是读取或写入它的前奏，因此它提供一个透镜：
+
+% 2 1 0 0daae4f54dbaea7f1078ff9ace2260e5
+
+% 3 1 0 0b668c46b4add02502614ab37f65c279
+
+% 0 1 0 06432f38bf00ee631d4643e36a75fa0e
+
+% 0 1 0 178ac87c4a799abe0e35c7498d97b93a
+
+% 0 1 0 122f9131109b176e0d5b68730b4d4786
+
+% 0 1 0 12565b64c51d31f20eba98566047b0f5
+
+% 0 1 0 10f59677baff4d8f0503dee7d8786b74
+
+% 0 1 0 17bf2860565557bd05f26b842a4c5f1f
+
+% 1 1 0 14f19afd362c4b8301ad5edf3cbcad23
+
+@ 0 9 0 1eb3f50f08b19bbe134c1c99a665ffd6
++         如果有多个字段带该注解，实例就只是 `Annotated.Fields`，`field` 和 `lens` 无法编译：实例的类型记录了匹配是否唯一。
++     entry #field   那个带注解字段的名称
++     entry #lens   指向带注解字段的 panopticon `Lens`，用于读取或更新它
++         在使用处召唤，那里已知主体是一个积类型：panopticon 根据主体解析以字面量类型表示的字段名。
++         `lens(value)` 读取该字段；`lens.update(value, replacement)` 返回替换了该字段的副本。
++   entry .AnnotatedField   当一个字段匹配时宏所构建的具体 `Annotated.Field`
+
+% 1 1 0 144543654ab94fd417a6f72918928517
+
+@ 0 4 0 15bbcc3a8036f0dd1836722ce80f24a0
++         一个 `Annotated.AnnotatedFields`，其 `Unique` 类型为 `true`，`Topic` 为该字段的类型，`Target` 为以字面量类型表示的字段名。
++     entry #field   那个带注解字段的名称
++   entry .Subtypes   `under` 查询所得的实例：密封类型每个变体上的注解
+
+% 1 1 0 1dd02c8f0576325b0720748fadd6cacd
+
+@ 0 2 0 1b385630b1d3b8d3099c84922ad09e6e
++         `summon[Annotated under S]` 把密封特质或枚举 `S` 的每个直接子类型的名称映射到它所带的请求类型的注解。
+
+% 2 1 0 132084da35a8a4890c3a2bf20d1a9d7b
+
+% 3 1 0 183392130dea2b480c856008174c8493
+
+% 0 1 0 156647999ad5e7ae016e1f213fda6c47
+
+% 0 1 0 1ba4c2b48955459206d19b90af16c26e
+
+% 0 1 0 1b72244dd7120f49179d2e2499d95bfc
+
+% 0 1 0 1de6a7996c2ccda31f085c47c618a59a
+
+% 0 1 0 0752d9de35ad9bf41a4e5a2e14d256af
+
+% 0 1 0 0cef7f688b127c98192ef14459c03dd7
+
+% 0 1 0 1d581c5dc260fa920709f3a63205d029
+
+% 1 1 0 1bfb46816aa4c0da0cc3416685f0915a
+
+@ 0 7 0 174205eca10578921ee18705fdf631c2
++     entry #subtypes   每个变体的名称，及其所带的请求类型的注解
++     entry #apply   每个变体的名称及其注解：与 `#subtypes` 相同的映射
++   entry .AnnotatedSubtypes   宏所构建的具体 `Annotated.Subtypes`
++     entry #subtypes   每个变体的名称，及其所带的请求类型的注解
++     entry #apply   每个变体的名称及其注解
++   entry #Operand   查询所要求的注解类型，未指名时为 `StaticAnnotation`
++   entry #Unique   查询是否恰好匹配一个字段，以字面量 Boolean 类型表示
+
+@ 0 1 0 0b2064783d0a619f106624f04d968ffe
++ entry .Dereferenceable   一个类型类，用于按名称访问记录中同一类型的字段值
+
+% 1 1 0 0022273973c9e3e819f164682b27cabb
+
+@ 0 6 0 01756697aa163baf1776c10ea8b0fa56
++       `entity is Dereferenceable to value` 列出 `entity` 中类型符合 `value` 的字段，并按名称读取、更新或修改其中之一，所用的访问器表在代码编译时生成，而不是借助运行时反射。
++       实例是伴生对象中的内联 given，因此对任何类型都位于隐式作用域中。
++       所有字段都是 `Int` 的记录可以 `to Int` 解引用；任何记录都可以 `to Any` 解引用，覆盖每个字段。
+
+% 2 1 0 06777103dc7ac9331a3997d3ef0dbcdc
+
+% 3 1 0 15322da2ac18f14e06ad68dd90cee5e1
+
+% 0 1 0 13bf25ce7eff184a03bb4a20c77d2b98
+
+% 0 1 0 0fa9670c1f0d57260d31026b23753845
+
+% 0 1 0 1c5a29edf567b07312d09fad510b750b
+
+% 0 1 0 119beaa9dc11608a0482bf1702c09bf6
+
+% 0 1 0 0d5b5d4b6923ca5a0ce562a90109bcf3
+
+% 0 1 0 15fd74b10435a4931c5b967c5457d46a
+
+% 1 1 0 10172c2bb894fc561cd69e793b4c1f5e
+
+@ 0 6 0 02ef8f7e50fff0d500bb505770e49ba9
++       读取覆盖类型正确的每个字段成员，包括对象的 `val`。
++       写入需要透镜，而只有当主构造器参数的类型接受实例 `Result` 类型的每个值时才有透镜：在类体中计算的 `val` 没有可写入的东西，以 `to Any` 解引用的记录中的 `Long` 字段也无法接受任意的 `Any`，因此两者都可读，但对它们而言 `#lens`、`#update` 和 `#modify` 给出 `Unset`。
+
+% 0 1 0 0972479d436bc73c08f3c988e6e86988
+
+@ 0 17 0 1c1a1586e643f2e41237ac576141c1c9
++   entry #names   类型符合实例 `Result` 的字段的名称
++   entry #select   所指名字段的值
++       `select(entity, name)` 通过生成的访问器读取该字段。
++       名称必须是 `#names` 之一；其他名称会在运行时因缺少键而失败，因此对来自程序外部的名称，应先检查 `#names`（或使用 `#members`）。
++   entry #values   每个此类字段的值，按声明顺序
++   entry #lens   指向所指名字段的 panopticon `Lens`，若无法写入则为 `Unset`
++       当名称不是字段、不是主构造器的参数，或其类型比 `Result` 更窄时，结果为 `Unset`。
++       透镜用主构造器重建记录，替换其中一个字段。
++       作为光学组件，它可以与任何其他光学组件组合。
++   entry #update   替换了所指名字段的记录副本，若无法写入则为 `Unset`
++       `update(entity, name, value)` 就是应用 `lens(name)`，因此它在与 `#lens` 相同的情形下为 `Unset`。
++   entry #modify   对所指名字段应用一个函数后的记录副本，或 `Unset`
++       `modify(entity, name)(lambda)`：`numbers.modify(letters, t"gamma")(_*10)`。
++       在与 `#lens` 相同的情形下为 `Unset`。
++   entry #members   每个此类字段，以从名称到值的映射表示
+
+% 1 1 0 102cc740627cdc8416bb66e7900b1f5c
+
+% 2 1 0 02aa246971c6448f16a4f54fa6031ff7
+
+% 0 1 0 1e4d1b3d47884c59028c90b9da89e869
+
+% 0 1 0 19d6d21b764701481e6ce9d36bb831f7
+
+% 0 1 0 157e2392e43335a20847600907dd4d00
+
+% 1 1 0 0227b775d455e7a31a3e217dabc2ad8d
+
+@ 0 4 0 05746f3532372cc10a934755fabd704b
++ entry .membersOfType   记录中具有所要求类型的每个字段的值
++     作用于任何值的扩展方法：`record.membersOfType[Int]` 就是其 `Dereferenceable to Int` 实例的 `values`，按声明顺序排列。
++     它让通用渲染器或模板引擎无需类型转换就能读取一个值中某一类型的字段。
+
+% 2 1 0 1a9d40b5c36733f909130497e5549178
+
+% 3 1 0 056ff300d42418f500ca91b1d975e022
+
+% 0 1 0 1b08f1d3d34757af19ee8997683feafc
+
+% 0 1 0 1745ca4081ebb3a801f54fc2b51bec72
+
+% 0 1 0 1f39f96ab1e7638a07e068a8df1779d2
+
+% 0 1 0 0e9866d7f499eb301225bbe4c4549f57
+
+% 0 1 0 0bc104bb7c6a270a1795a3793b4dd603
+
+% 1 1 0 17c7d292a419875b1e199ef1ded049d8
+
+@ 0 4 0 1198b85311a9458d1a2b39b3e42c5b94
++ entry .fieldAnnotations   某个类型每个字段上某一类型的注解，略去不带该注解的字段
++     `fieldAnnotations[T, A]` 就是 `T is Annotated by A` 的 `fields`，去掉了不带 `A` 的字段，以 `Text` 形式的字段名为键。
++     对于实例不基于字段的类型，它返回空映射，因此调用者无需对实例的种类进行匹配。
+
+% 2 1 0 164ec4c064b173ec0ac399e04fcdf764
+
+% 3 1 0 0b39ef053ede20541bf0f9d4fd91ac56
+
+% 0 1 0 17305efd8249231919ddc8d4dfce8653
+
+% 0 1 0 065000de2d877f4105123c61cd56dffd
+
+% 0 1 0 1e52a81f6146ca2e06088da84f358e06
+
+% 0 1 0 1a10ff6d07f9bb121b7d65a6a312dbc1
+
+% 1 1 0 12e8b36caebf467e1e4591702f7acdc5
+
+@ 0 2 0 1f4c1905eb8340d5082fabbdea2a1992
++     裸注解会把其类型参数推断为 `Any`，因此 `marker[Any]` 查询能看到它，而 `marker[Text]` 查询看不到。
+
+@ 0 4 0 11de2889b7815c9c15732daa78f7af93
++ entry .subtypeAnnotations   密封类型每个变体上某一类型的注解，略去不带该注解的变体
++     `subtypeAnnotations[S, A]` 就是 `Annotated by A under S` 的 `subtypes`，去掉了不带 `A` 的变体，以变体名为键。
++     和类型各分支的重命名就构建在它之上。
+
+% 2 1 0 0818e7f36af152c113cee543cfe5a56f
+
+% 3 1 0 0dd0c5a4e8b9acb517815638677b6952
+
+% 5 1 0 05742b208678e5f702fd6b9e76f76f30
+
+% 6 1 0 0b0919f8206b0c740b14231b38d3c293
+
+% 7 1 0 15ca32bef108a8220d0e46ac6447b7f3
+
+% 8 1 0 07f24bead0f94d100d26ed0e0e94c9a9
+
+% 0 1 0 0133178a1dc0adc81033c70664dc888e
+
+% 1 1 0 0e8e64d0e2decd440b38dc066d8dc5cd
+
+@ 0 5 0 05fa3f9a301d16cb05009dd36a2f1371
++ entry .relabelling   某个类型的字段在某一格式中的序列化名称，取自其 `@name` 注解
++     `relabelling[T, Format]` 把 `T` 中每个带 `@name` 注解的字段映射到它在 `Format` 中所用的名称：`@name[Format](…)` 覆盖适用于所有格式的裸 `@name(…)`。
++     不带 `@name` 的字段不出现在其中，保留自己的名称。
++     每种 Soundness 格式的派生都读取它，因此一个注解同样适用于 JSON、XML、YAML 及其他格式。
+
+% 2 1 0 0b5ea9573fcc93ad07bec257ea0ccddf
+
+% 0 1 0 0a2594f7567a506400567644eca60925
+
+% 1 1 0 0f58c80c534d8b5f103d58cd312cb56f
+
+@ 0 2 0 14358df5cee447600bef1ac4e627189a
++     在 JSON 下，JSON 专用的重命名和裸重命名都适用；在 XML 下，只有裸重命名适用：
+
+% 0 1 0 15d6d2800841da9e1c6e709ce05d6a7d
+
+% 0 1 0 0144aefbb412cc910cb5e0e8078c5b1a
+
+% 1 1 0 19f6edb98b6bb3461a9db162f0cb4e31
+
+% 0 1 0 0fea5cad7d0cb123138db36d612bdcb0
+
+% 0 1 0 0e266c52b3892fa71b23797a881b0b65
+
+% 1 1 0 175cf261c196cc9d10d55b39e836a90e
+
+% 0 1 0 189081ad4fb2333f1772f65e6b68690a
+
+% 0 1 0 0472326144a49ce71767be845f62f575
+
+% 1 1 0 11e767d9efb47d1a0f4b85a0051bf1dd
+
+@ 0 4 0 0621a1d7229af2e3193365d21546a5be
++ entry .variantRelabelling   和类型各变体在某一格式中的序列化名称，取自其 `@name` 注解
++     与 `relabelling` 相同，但针对枚举的分支或密封特质的子类型：每个被重命名的变体的名称映射到它在 `Format` 中的判别字段值，`@name[Format](…)` 覆盖裸 `@name(…)`。
+
+% 2 1 0 153f7022d7fddefe19f092c552ab3e22
+
+% 3 1 0 0941d0557bfd03f81ceab8c27dd062a8
+
+% 5 1 0 16360726b34cb29c11b4cc3203b2ae10
+
+% 6 1 0 197c26396a4f50e7153e1872dd4ff6ce
+
+% 7 1 0 1f26e52ef81b29d80f4e343d14f67e9d
+
+% 8 1 0 0b8a66883833cf8c1774504374224ea7
+
+% 0 1 0 0891e925d6486a4b0f6bccc1a00a6936
+
+% 1 1 0 12c9865a149c47fd0ad78cdec41fa1ae
+
+@ 0 6 0 0ec224082bfc65e20ae03caa9e8fc727
++ entry .annotatedFields   某个类型中带有某一注解的字段的名称
++     `annotatedFields[T, A]` 是 `T` 中带 `A` 注解的字段名称的 `Set`，作为派生编译时构建的字面量。
++     当派生只需知道*哪些*字段被标记时——如 xylophone 的 `@attribute` 和 `@unqualified`——就需要这种形式，它不构造任何注解实例，而 `fieldAnnotations` 会把每个字段的注解构建成 `Map` 中的一个 `Set`。
+
+% 2 1 0 1953583d034b2db01f94838b76ac5d67
+
+% 3 1 0 184cbbe896d3106511d56226c1dfcce9
+
+% 0 1 0 1c2e1b6c4007221a1bcad49eb466dde4
+
+% 0 1 0 02dd1dd1f680647e086aa5c1f73a467d
+
+% 1 1 0 1a4762b562c18afe18baa94e0a220d62
+
+@ 0 4 0 0a288702e6b8383a127746cf80c393cf
++ entry .typeAnnotation   某个类型本身上某一类型的注解，如果有的话
++     `typeAnnotation[T, A]` 是注解类型 `T`（而不是其字段）的那个 `A`，在请求处重建一次，否则为 `Unset`。
++     它读取类上注解的载荷，例如 xylophone 的 `@xmlns("urn:x")`。
+
+% 2 1 0 178f33f827fcf3050b1510004815da17
+
+% 3 1 0 16a51f7ea9e114610e4ed5fb0262cc81
+
+% 0 1 0 10ae4daf2dc79bf9016304a4b99df4dc
+
+% 0 1 0 0eea18bf11db429e08a9954ba2777d91
+
+% 1 1 0 06cdc902e1ab52de070fddcd5614856b
+
+@ 0 1 0 08c0c46d74f7ed0e1b6a012c7567a8d3
++ entry .name   `@name(t"…")`：在序列化中重命名字段或变体，针对所有格式或某一格式
+
+% 1 1 0 0ab7ffb7809e9bdd067269560a1eff51
+
+@ 0 5 0 0347fa76f9fcc3c80ea10f988f038ccd
++       一个静态注解。
++       `@name(t"first_name")`（推断为 `name[Any]`）在每种序列化格式中重命名字段或变体；`@name[Json](t"first_name")` 只在 JSON 中重命名。
++       一个字段上可以有多个针对不同格式的 `@name`，特定于格式的注解会在其格式中覆盖裸注解。
++       派生通过 `relabelling` 和 `variantRelabelling` 读取它们。
+
+% 2 1 0 1e8662ba4bccbaae016274db45c8d85c
+
+% 3 1 0 17ce87b21baf27851794c8366539c71a
+
+% 0 1 0 0da77e22d5eda0ad1ac7df2c589d7ee8
+
+% 1 1 0 0bc76045a00c62a8011e5529ef9033b0
+
+@ 0 1 0 1735ec2b07c6caea13d3e08569f34773
++   entry #name   字段或变体在序列化中所用的名称
+
+@ 0 1 0 1dab3f56564aaaf9050beea8bb27caf5
++ entry .internal   构建 `Annotated` 和 `Dereferenceable` 实例的宏
+
+% 0 1 0 1c18810b564d59e609a88422cf8dd919
+
+% 1 1 0 0f71597c1b0bc6cb112bae74ffdfb433
+
+@ 0 4 0 195f5720096ed97203bd38d7df80c017
++       不供直接使用：该对象存放 `Annotated.annotations` 和 `Dereferenceable` given 背后的宏实现。
++   entry .general   `Annotated` 背后的宏：收集查询所要求的注解
++   entry .dereferenceable   `Dereferenceable` 背后的宏：生成访问器表和透镜表

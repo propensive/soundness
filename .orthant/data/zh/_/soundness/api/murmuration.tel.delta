@@ -1,0 +1,1005 @@
+orthant 2 language
+
+% 0 1 0 0f04ec4b9ac2d4270a232409219e1f6b
+
+% 0 1 0 0891d2e1337ca82f081ff30029930b5d
+
+% 0 1 0 0b5938ce7315323607e1922cbc4d93e2
+
+@ 0 1 0 1707d965dc0205e5096e83fedd21dd99
++ info   集合类型类、构建于其上的操作，以及一次性的 `Iterator`
+
+% 0 1 0 0ca6d61ddd9511ea1cdae38f1414f6fe
+
+@ 0 10 0 07471364d7c8990d0d23b9d5ec4f334f
++     _Murmuration_ 是 Soundness 集合的词汇：一组类型类说明集合*能做什么*——被遍历、按自身形状重建、被映射、被反转、被转换为另一种形状、被检测成员——再加上针对这些类型类只编写一次的操作，因此无论接收者是 `List`、`Set`、`Map`、`Chain`、冻结的 `Array`、`Text`（按其字符遍历）还是 Java 集合，`map`、`filter`、`bind`、`fold`、`group`、`sweep` 等操作的读法都相同。
++     集合*类型*本身——`List`、`Sequence`、`Set`、`Map`、`Ledger`、惰性的 `Chain` 以及冻结的 `Array[element]^{}`（其中 `Data` 即 `Array[Byte]^{}`）——是 proscenium 对标准库结构的不透明包装；murmuration 提供赋予它们各自这套词汇的实例，以及词汇本身。
+
+@ 0 11 0 1b02f0491494335e1c0b0f1d09ff017c
++     该设计分为三层。
++     `Traversable` 为值的元素生成一个全新的一次性 `Iterator`，这是操作为了*读取*集合唯一需要的东西。
++     `Reshapable` 是重建关系：根据源形状和新的元素类型，它选出自然的结果形状并构建之，因此对 `Set` 调用 `filter` 得到 `Set`，对 `Map` 调用 `remap` 时若结果是对则得到 `Map`、否则得到 `List`，而对 `Text` 调用 `filter` 得到 `Text`。
++     它的子特质 `Reshapable.Stable` 标记保持顺序的形状，对顺序敏感的操作（`sort`、`order`、`distinct`、`zip`、`excerpt`、`span`、`batched`、`trace`）都要求它，因此这些操作在 `Set` 和 `Map` 上诚实地*不存在*，而不是被定义为做某种任意的事。
++     `Mappable` 是第三层：`map` 由它而非 `Traversable` 驱动，这样 `Map` 映射的是它的*值*并保留键，而 `remap` 是成对的形式。
+
+% 2 1 0 192638d7db14765119e6de67f849760e
+
+% 3 1 0 1f9e4c20b5acab5700d15337dcb7c9de
+
+% 0 1 0 1be519899da4252c095f41fc1efce63f
+
+% 0 1 0 0088be0e17ed730304eb277b1216f6bc
+
+% 0 1 0 1f41e4b7f38ec3c80be56d3090332f6f
+
+% 0 1 0 087b331951ae1551061929a4aa74a6ab
+
+% 0 1 0 034e345c2e53cf401f223cdae09b4462
+
+% 0 1 0 0472e440aa8b064207deeb48f847df61
+
+% 0 1 0 0b1e8e6199587cee1740bc485c411bb8
+
+% 0 1 0 014cbb0209f74ae40d58f53608f54d0d
+
+% 0 1 0 1388e03c75def0b7100390a5efc42703
+
+% 0 1 0 0b098e941c0f51b002f089ca74b1ebad
+
+% 0 1 0 10b9d2d10750ef77168f00c92fab9aea
+
+% 0 1 0 1ef85ef4642802ff1f98923cf82fa517
+
+% 1 1 0 14d99f67fe4c02dd181aab9a1a251c86
+
+@ 0 1 0 1c213780242f712a10fda9b18eac3e34
++     在第一次遇到意外之前，有几条词汇规则值得了解：
+
+@ 0 37 0 04e8b566d9caae5301013189c8c49419
++     - **名称。** `bind` 是单子绑定；`flatMap` 是同一个操作，之所以存在只是因为 `for` 推导式会脱糖为它。`each`（在 rudiments 中）是循环，`foreach` 出于同样的脱糖原因而存在。`fold` 即标准库的 `foldLeft`，`trace` 即其 `scanLeft`，`sweep` 即其 `collect`，`group` 即其 `groupBy`，`batched` 即其 `grouped`，`excerpt` 即其 `slice`，`deduplicate` 即其 `distinctBy`，`has` 即其 `contains`，`flat` 即其 `flatten`，`keep`/`skip`（rudiments）即其 `take`/`drop`，`order` 即其 `sortBy`，`except` 即其 `diff`。没有 `filterNot`：写作 `filter(!predicate(_))`。
++     - **按值和按谓词重载。** 若一个方法既可以接受用于比较的值，也可以接受要应用的谓词，则只要元素类型允许，两者都以同一个名称提供。`count` 和 `where` 是例外：元素类型是路径依赖的，值重载会与每个 lambda 产生歧义，因此统计某个元素的惯用写法是 `count(_ == value)`。
++     - **代价要确认，而不是隐藏。** 代价比其名称所暗示的更高的操作——`List` 上的 `size` 和 `last`、`Chain` 上的 `size`、`List` 上按位置的 `at`——以 denominative 的 `dysasymptotics` 包中一个具名 given 为门控（`import dysasymptotics.linearSize`、`linearAccess`、`unboundedSize`），在接受该代价的文件或代码块中*按名称*导入。`nil`（是否为空）在任何地方都是 O(1)，从不设门控。不要用 `.stdlib` 绕过门控：在代价合适的地方打开它。
++     - **转换**写作 `xs.to[List]`、`xs.to[Set]`、`pairs.to[Map]`、`chars.to[Text]`、`xs.to[Array]`（rudiments 的 `to`，基于 `Convertible`）：即*方括号*形式，以类型来命名形状。标准库带圆括号的 `xs.to(List)` 只在标准库接收者上保留，因为它们自身有一个成员 `to`。（早先的 `transmute[T]` 就是这个操作的临时名称；现在它是 `to[T]`。）
++     - **排序要指明其算法。** `sort` 和 `order`（rudiments）需要作用域中有一个 `SortAlgorithm` given，通过按名称导入 `sortingAlgorithms` 中的某一个来选择——没有默认值，导入两个则产生歧义——还需要元素或键的 `Comparable`。
++     - **标准库是一道边界。** 对任何不透明集合调用 `xs.stdlib` 会暴露底层结构而无需复制，而 `List.from(…)`、`Set.from(…)` 等则用于返回。每一次这样的跨越都可以用 grep 找到，这让程序的其余部分得以留在全函数词汇之内。`java.lang.Iterable`、`java.util.Iterator`、`java.util.Map` 和 `java.util.Enumeration` 也有 `Traversable` 实例，因此 `javaList.to[List]` 根本不需要转换。
++     - **数组不是集合。** 冻结的 `Array[e]^{}` 是 `Traversable`、`Reshapable` 和 `Convertible`，因此可以被读取、映射和转换，但它通过复制来编辑（`define`、`omit`、`Array.concat`、`Array.thaw`/`Array.freeze`，位于 proscenium 和 denominative 中），而不是通过类似 `List` 的接口；可变的 `Array[e]^` 用 `sort()` 就地排序。
+
+@ 0 6 0 0be15dda3f703cf3017485c41a3440ac
++     该库唯一的具体类型是 `Iterator[element]`：对某个源的一次性、无分配、经分离检查的拉取，它在整个 Soundness 中取代了 `scala.Iterator`。
++     `Traversable.traverse` 产生它，每个操作消耗它，因此它主要是内部通货；但对于从外部世界恰好读取一次的任何东西——套接字的帧、进程的行、终端的按键——它也是诚实的类型，而 Soundness 中的名称 `Iterator` 现在就指这个类型。
+
+@ 0 8 0 0b6681cd297da5f41f9b9b1164dafc04
++     `murmuration.core` 是单个源集，可编译到 JVM、Scala.js 和 Scala Native。
++     它位于 denominative 和 vacuous *之下*，因此这里的任何东西都不了解 `Ordinal` 或 `Optional`：返回 `Optional` 的操作（`head`、`last`、`find`、`where`、`reap`）或接受 `Ordinal` 的操作（`each`、`at`、`indexed`）都在 rudiments 中基于这些相同的类型类定义。
++     所有内容都导出到 `soundness` 总括包，rudiments 也会重新导出它们，因此用户只需写 `import soundness.*`（或 `import rudiments.*`，切勿同时写两者——重复导出会使每个操作都产生歧义）；`sortingAlgorithms` 选择包与总括包自身的同名包合并。
+
+% 0 1 0 1a285f1b9a4e3b5202fb08c6f0de9c2d
+
+% 0 1 0 04635bc9908a882d0a77f6aee5a58e98
+
+% 0 1 0 035c1ee2fff408c606c92bda1485d739
+
+% 0 1 0 1f3e71f7021938cd19b3669605c54189
+
+% 0 1 0 1a5a16a134e12dd803ff7dd0e5e0e554
+
+% 0 1 0 1937552efbee812107700684c6af4a56
+
+@ 0 1 0 09547eaeb1fd9a5b19819a7873df94df
++ entry .Traversable   其元素可以按顺序访问的类型，写作 `Self is Traversable by Operand`
+
+% 1 1 0 0f221ec0d0dc3c5916e090ef680863c2
+
+@ 0 8 0 112b1e229349039a1850ba03f991dcee
++       `Traversable` 是操作为了*读取*集合唯一需要的东西。
++       一个实例说明元素是什么（它的 `Operand`，用 `by` 绑定：`List[Int] is Traversable by Int`、`Map[k, v] is Traversable by (k, v)`、`Text is Traversable by Char`），以及如何为它们生成一个全新的一次性 `Iterator`（`#traverse`）。
++       murmuration 和 rudiments 中每个只做读取的操作——`exists`、`fold`、`count`、经由 `Inclusive` 的 `has`、`head`、`find`、`each`，以及 `map`、`filter`、`bind`、`group` 和 `sort` 的输入端——都将它作为证据接收，一个新形状只要提供一个实例即可获得整套词汇。
+
+% 2 1 0 1d0f6b9051d8f0f000221592202f2d82
+
+% 3 1 0 0f5cbcdd1d17514705678c49458307bf
+
+% 5 1 0 1ffe28fe05f5cb77110c0f94b24d7c88
+
+% 7 1 0 14d69e59fc5738631d20b4bbb8cd483b
+
+% 0 1 0 091947093952925610fe32c2b041640b
+
+% 0 1 0 156fa35b54dd806e1a8d9e46fcfbf0c4
+
+% 0 1 0 19fae3e75e893c3f1078993a867c5a3e
+
+% 1 1 0 055905dab405d65503209117054a2594
+
+@ 0 7 0 00d963c90e27957701c8c40fa0e9c1dd
++       不透明的 `List`、`Chain`、`Sequence`、`Set`、`Map`（作为对）和 `Ledger`（作为对），冻结数组 `Array[e]^{refs}` 及其 `Sized` 形式，任何 `scala.Iterable`（`.iterable`，优先级较低），以及 Java 的 `Iterable`、`Iterator`、`Map` 和 `Enumeration` 都有实例。
++       它们都位于这个伴生对象中，因此无需导入即可解析。
++       集合实例是*子类型参数化*的（`list <: List[element]`），因此类型为 `List[e] & Populated` 的接收者——`List(a, b)` 字面量、`occupied` 的结果——与普通接收者一样能匹配它们。
+
+@ 0 4 0 1cc36b2cd399c0cb0f054deb96a1e6bd
++       由于 `Text` 是 `Traversable`，每个泛型操作都适用于文本，而同名的仅限文本的扩展方法会在总括包中产生歧义：这就是 gossamer 贡献*实例*（通过 `traversableTextual`、`reversibleTextual`）而非相互竞争的扩展方法的原因。
+
+@ 0 4 0 13958ceb5766f45b07271b49247453ad
++       `traverse` 返回的迭代器是独占的（`Iterator[Operand]^`）：遍历是借用，并被恰好一个操作消耗。
++       因此 `Iterator` 有意*不*是 `Traversable` 本身——它不能被遍历两次——而是用它自己的成员 `to[List]` 排空。
+
+% 1 1 0 10ab2975acb3b6441182c41eb7887ac7
+
+% 0 1 0 0b630511969c641f04e15ff128af9906
+
+% 0 1 0 00ca6c0b3b952d2f12aa01b08c98bdfd
+
+@ 0 31 0 1a18e2aa2c9cda001eb99f239771db71
++   entry #traverse   按顺序遍历值的元素的全新一次性 `Iterator`
++       该迭代器是独占的（`Iterator[Operand]^`），由请求它的操作消耗；它是内部通货，当调用者想手动拉取时，rudiments 的 `xs.iterator` 会暴露它。
++   entry .list   不透明的 `List`，逐个元素；也匹配 `List[e] & Populated`
++   entry .chain   惰性的 `Chain`，随着迭代器前进按需拉取元素
++   entry .sequence   带索引的 `Sequence`，逐个元素
++   entry .set   不透明的 `Set`，按其自身的（无序）迭代顺序
++   entry .map   不透明的 `Map`，作为其 `(key, value)` 对遍历
++       对是 `Operand`，因此 `map.fold`、`map.filter`、`map.remap` 和 `map.count` 看到的是条目；`map.map` 则经由 `Mappable` 看到值。
++   entry .ledger   按插入顺序排列的 `Ledger`，作为按插入顺序排列的 `(key, value)` 对
++   entry .frozenArray   冻结数组，通过任意只读引用读取
++       `(Array[element]^{refs}) is Traversable by element`，在 `refs` 上捕获多态，因此静态冻结的 `Array[e]^{}`、装箱的捕获变量和 `any.rd` 引用都能匹配。
++       在分离检查下，通过共享引用读取是可靠的，因为分离检查排除了在读取者别名之处存在活跃写入者的情况。
++   entry .sizedFrozenArray   `Sized[length]` 冻结数组，由其自身的实例处理
++       `(Array[element]^{refs} & Sized[length]) is Traversable by element`。
++       之所以是单独的实例而不是对 `.frozenArray` 的拓宽，是因为以捕获类型为上界的类型变量会被展开为 `array^{any.rd}`，从而无法满足为纯数组声明的证据；在 `Self` 中写明品牌可使形状保持精确。
++   entry .javaIterable   任何 `java.lang.Iterable`——`java.util.List`、`Set`、`Collection` 等
++       子类型参数化，因此 `java.util.ArrayList[Int]` 或 `jar.Attributes` 也能解析。
++       `javaList.to[List]` 和 `javaList.each(…)` 不需要 `asScala`。
++   entry .javaIterator   `java.util.Iterator`，接管其剩余元素
++   entry .javaMap   `java.util.Map`，作为 `(key, value)` 对遍历
++       两个参数都是不变的（与 `.javaIterable` 不同）：双参数的子类型参数化实例会让编译器推测性地把无关的不透明类型当作 Java 映射。
++       `jar.Attributes` 这样的子类型要先标注为 `java.util.Map[Object, Object]`。
++   entry .javaEnumeration   `java.util.Enumeration`，接管其剩余元素
+
+@ 0 1 0 13126ddf3ba59c621c0bc91b6011db22
++ entry .Traversable2   持有低优先级 `Iterable` 实例的父特质
+
+% 0 1 0 1c18810b564d59e609a88422cf8dd919
+
+% 1 1 0 0f71597c1b0bc6cb112bae74ffdfb433
+
+@ 0 7 0 0f5ae8cb78bfbb0916f71cbdc8505649
++       不供直接使用：`object Traversable` 继承它，使覆盖一切的 `scala.Iterable` 实例排在伴生对象中各别名专属实例之下，否则编译器会对别名接收者报告歧义。
++   entry #iterable   任何 `scala.Iterable[element]` 都是 `Traversable by element`
++       原始标准库集合（`Vector`、`Range`、`IndexedSeq` 等）的回退，通过它们自身的 `iterator` 实现。
++       优先级低于 `Traversable` 伴生对象中的每个实例。
+
+@ 0 1 0 1aa2138d9e41b40e18c66dc3209f53d7
++ entry .Reshapable   源形状如何从新元素重建自身，写作 `Self is Reshapable by Operand to Result`
+
+% 1 1 0 1e19a6116bfa1ca116924088298b4db8
+
+@ 0 9 0 0c8ceba3f91aaa4a19562ad0eb8e894c
++       `Reshapable` 是每个变换操作背后的重建关系：`remap`、`bind`、`filter`、`sweep`、`group`、`partition`、`flat` 等通过 `Traversable` 读取其源，并将产生的迭代器交给 `#reshape`，由后者构建结果。
++       实例按*（源形状，新元素类型）*选择，这使结果可以比类层次结构所允许的更精确：任意元素的 `List` 是 `List`；任意元素的 `Set` 是 `Set`；由对重建的 `Map` 是 `Map`（`.map`），由其他任何东西重建则是 `List`（`.mapToList`），而当对顺序敏感的操作要求 `Stable` 结果时，则是 `Ledger`（`.mapToLedger`）；`Text` 由其自身的字符重建，而不能由其他任何东西重建。
+
+% 2 1 0 0c91ccd0d51be41b102f93e6501bc4db
+
+% 3 1 0 0484998a788fa574062018b3aaac3d9f
+
+% 0 1 0 121e215f69f8c9c004d253050505088a
+
+% 0 1 0 03d3762e3d8e731c0c524998940e9e26
+
+% 0 1 0 15b4a0f15a22e5b1086071cc6bb0abb9
+
+% 0 1 0 0e1dc7b3cc72b16511d1c52a8ddf8fbd
+
+% 1 1 0 0857b5468d40dbd21ea41c567851a659
+
+@ 0 6 0 197b89ee19f47fcd185935affa20e1a3
++       `.Stable` 标记其形状保持顺序的实例。
++       含义依赖于顺序的操作——`sort` 和 `order`、`distinct`、`deduplicate`、`zip`、`excerpt`、`span`、`trace`、`batched`、rudiments 的 `indexed`——要求 `Reshapable.Stable`，因此它们在 `Set` 或 `Map` 上不存在：已排序的集合在输出时会再次丢失顺序，编译器会直接指出这一点。
++       `partition` 和 `sweep` 有意*不*是 `Stable` 的，因为从无序形状中收集是有意义的。
+
+@ 0 4 0 095260220e2cc21a1beccb2a04f0afb2
++       `reshape` 接受一个*捕获*迭代器（`Iterator[Operand]^`），因为操作产生的迭代器会捕获调用者的 lambda。
++       除 `.chain` 以外的每个实例都会急切地将其排空，因此没有任何东西逃逸；链是有意为之的例外，保留了源的惰性。
++       自己编写的严格实例通过 `.build` 只需一行：
+
+% 2 1 0 1421f6a0872817ec095c6543113b3e77
+
+% 3 1 0 056caa0c350d94171376dc74d5188940
+
+% 5 1 0 060c521468933d9a120802f99a90349c
+
+% 7 1 0 18ae2c7776f6e70609b262c4f23f3b64
+
+% 0 1 0 15a3bdb578956ba217983677ad54c0c1
+
+% 0 1 0 1534c12fe50da5591ab15e5c407956f6
+
+% 1 1 0 1331f49d409a03e61f171ed914913705
+
+% 1 1 0 1731862c531cfb4309f54d9951093716
+
+% 0 1 0 0f80b1fd9477341711f7253537702eb5
+
+@ 0 30 0 0cf25efa5730535f1476509f60e2f163
++   entry #reshape   从新元素的迭代器构建 `Result`
++       该迭代器是独占的，并可能捕获产生其元素的 lambda；严格实例会在调用内部将其完全消耗。
++   entry .Stable   其形状保持元素顺序的实例的子特质
++       由 `List`、`Sequence`、`IndexedSeq`、`Chain`、冻结数组、`Ledger` 以及（重建为 `Ledger` 或 `List` 的）`Map` 实例继承，而 `.set` 和 `.map` 不继承它。
++       要求 `self is Reshapable.Stable by e to r` 的操作因此在无序接收者上不可用，这就是 `Set(3, 1, 2).sort` 无法编译、而不是返回一个顺序任意的集合的原因。
++       这个名称说的是*形状*保持顺序，而不是排序算法是稳定的；后者请参阅 `SortAlgorithm`。
++   entry .list   `List` 重建为新元素类型的 `List`（稳定）
++       在源上子类型参数化（`list <: List[element]`），因此 `List[e] & Populated` 接收者也能重建；结果是普通的 `List[element2]`，因为变换可能使其变空。
++   entry .set   `Set` 重建为 `Set`（无序，不稳定）
++   entry .sequence   `Sequence` 重建为 `Sequence`（稳定）
++   entry .indexedSeq   标准库 `IndexedSeq` 重建为 `IndexedSeq`（稳定）
++   entry .chain   `Chain` 惰性地重建为 `Chain`，在被强制求值时从迭代器拉取
++       唯一的非严格实例：迭代器逃逸到链中，链会 memoize 它已拉取的内容。
++       因此对无限链调用 `naturals.filter(_%2 == 0)` 没有问题。
++   entry .frozenArray   冻结的 `Array[e]^{}` 重建为全新的冻结 `Array[e2]^{}`
++       需要新元素类型的 `ClassTag`。
++       重建的数组是全新的，因此冻结它在构造上即已满足。
++   entry .map   由 `(key2, value2)` 对重建的 `Map` 是 `Map[key2, value2]`
++       优先级最高的 `Map` 实例：结果为对的 `remap` 和成对 `bind` 仍保持为 `Map`。
++       不是 `Stable` 的；稳定的对重建会落到 `.Fallback` 的 `mapToLedger`。
++   entry .ledger   由对重建的 `Ledger` 是 `Ledger`，且理所当然是稳定的
++       插入顺序是 `Ledger` 的身份，因此它具备全部对顺序敏感的接口：`ledger.order(…)`、`distinct`、`trace`、`zip`。
++   entry .Fallback   `Map`/`Ledger` 优先级阶梯的中间一级
+
+% 1 1 0 1c74e22dd7ad454019852514d7a026a4
+
+@ 0 11 0 1ab86cf37532b49f1468ffb423299696
++         `Reshapable` 伴生对象的父特质，因此其实例的排位低于伴生对象自身声明的实例，高于 `.Fallback2` 的实例。
++         当 lambda 的结果不是对，或要求稳定结果时，这一阶梯无歧义地决定 `Map` 或 `Ledger` 重建为什么。
++     entry #mapToLedger   `Map` 的稳定对重建产生 `Ledger`
++         `Map[k, v] is Reshapable.Stable by (k2, v2) to Ledger[k2, v2]`：无序的 `Map` 无法诚实地接收对顺序敏感的结果，但按插入顺序排列的 `Ledger` 可以，因此 `ages.order(_(1))` 是按排序后顺序迭代的 `Ledger`。
++         优先级低于 `.map`，因此普通的 `filter` 或 `remap` 仍然重建为更廉价的 `Map`。
++     entry #ledgerToList   由非对元素重建的 `Ledger` 是 `List`，保持顺序
++   entry .Fallback2   最低一级：由非对重建的 `Map` 是 `List`
+
+% 1 1 0 1fe4966112bc98f71131490e53edef12
+
+@ 0 9 0 15a6b9f428f5a69e1b5957f552becc55
++         `.Fallback` 的父特质，持有必须输给其他所有 `Map` 实例的实例。
++     entry #mapToList   由非对元素重建的 `Map` 是 `List`（稳定）
++         `ages.remap { (name, age) => name }` 是 `List[Text]`——比标准库的 `Iterable` 更精确的结果。
++   entry .build   将迭代器排空到标准库的 `Builder` 中，并返回其构建的结果
++       严格的重建，用于基于标准库构建器编写自己的实例：`Reshapable.build(elements, sci.Vector.newBuilder[e])`。
++       之所以公开，只是因为伴生对象中的实例都是 lambda；这是该层与构建器相接的唯一之处。
+
+@ 0 1 0 1e5b029f0227e9d018db5f1fe8b3bb4c
++ entry .Mappable   保持形状的 `map`：一个容器、其 lambda 所见之物，以及映射后的容器
+
+% 1 1 0 1b8ae71a21e2b40302835fbd62e0b9bd
+
+@ 0 7 0 13f414dfa45acd96177bbee953db9922
++       `map` 由 `Mappable` 驱动，而不是由 `Traversable` 加 `Reshapable` 驱动，原因只有一个：`Map` 应当映射其*值*并保留键，而遍历会把 `(key, value)` 对交给 lambda。
++       一个实例仅根据容器就确定了 lambda 接收什么（`Operand`：元素，或对于 `Map` 而言的值），以及映射后容器的构造器（`Result[_]`，种类为 `* -> *`，这就是它不是 `Resultant` 类型类的原因）。
++       两者都在 lambda 展开之前确定，因此 `xs.map(_.field)` 能推断出元素类型。
+
+% 2 1 0 0a4318a35f6d8b260dd4db208e6df901
+
+% 3 1 0 0a7b944d7147457d18c87dcd8db2d4e2
+
+% 0 1 0 0c7f051a6bc3a71919dd5fbade694774
+
+% 0 1 0 19d74ea84c7637c003d6e1ba8c56e7f1
+
+% 0 1 0 1ced897bb1fc7daa157579b3b2585dd0
+
+% 0 1 0 0a03ceedc35f551c1532fea910e1d203
+
+% 1 1 0 0c544889e9675e0f0ec03a4240605288
+
+@ 0 7 0 0cc3b2e03aed85d00ca3e4edfddc0c52
++       实例是子类型参数化的（`container <: List[element]`），正是这一点使其能匹配 `List[e] & Populated` 接收者和总括包的重新导出别名；原始标准库集合会回退到 `.Fallback` 的 `iterable`，并映射为 `List`。
++       由此带来一个陷阱：经由回退到达的标准库 `scala.collection.immutable.Map` 映射的是其*条目*而不是值，因此本意是使用 Soundness 的 `Map` 的文件应确保该名称解析为 `proscenium.Map`（在 `import soundness.*` 下即是如此，除非某个标准库 `Map` 导入遮蔽了它）。
+
+@ 0 2 0 177abcd663b6598f050d21d1e700be44
++       扩展方法 `map` 是普通的 `def` 而不是 `inline`：在捕获检查下，内联扩展方法会在每个调用点重新推断结果，并泄漏新鲜能力。
+
+% 0 1 0 08f0c9a68a026667118de2d07994ea57
+
+% 0 1 0 11614d68039f3171099550c133e4dcb7
+
+% 1 1 0 11d99a0a366baf45040de3fea49d6063
+
+@ 0 9 0 0c5845e0054824960c12ad9f7dff0d70
++   entry #Result   映射后容器的构造器，应用于新的元素类型
++   entry #map   通过 lambda 将每个 `Operand` 映射到 `Result[element2]` 中
++   entry .list   `List` 映射为 lambda 结果的 `List`
++   entry .set   `Set` 映射为 `Set`（通过 `Set.map` 原语，其结果是纯的）
++   entry .sequence   `Sequence` 映射为 `Sequence`
++   entry .chain   `Chain` 惰性地映射为 `Chain`
++   entry .map   `Map` 映射其值并保留键：`Operand` 是值，`Result[v2] = Map[key, v2]`
++   entry .ledger   `Ledger` 按插入顺序映射其值并保留键
++   entry .Fallback   针对原始标准库集合的低优先级实例
+
+% 1 1 0 168900d215f9820e19113f5751af2ee9
+
+@ 0 5 0 192e86ab2ef5f3431668a27399b238ca
++         `Mappable` 伴生对象的父特质，因此其唯一实例输给伴生对象中声明的每个别名实例。
++     entry #iterable   任何 `scala.Iterable[element]` 都映射为 `List[element2]`
++         让 `.map` 在区间、向量和其他原始集合上继续可用，如同旧的泛型 `map` 一样。
++         以这种方式到达的标准库 `Map` 以 `(key, value)` 为操作数。
+
+@ 0 1 0 06341c7aa52f30c119e718810af67172
++ entry .Convertible   转换为所请求的形状，写作 `Self is Convertible in Form to Result`
+
+% 1 1 0 0452b19383b814a913c2395ec0e299da
+
+@ 0 5 0 01ee5a4a8134c22b1e960fe3593173c4
++       `Convertible` 是 rudiments 的 `xs.to[Form]` 所解析的对象：`Form` 指明目标——一个未应用的构造器，如 `List`、`Set`、`Map`、`Sequence`、`Chain`、`Array`、`java.util.List`，或一个真类型，如 `Text`——而 `Result` 是隐式搜索为其推导出的完全应用的结果。
++       `Form` 声明为 `<: AnyKind`，因此一个 `to` 可同时服务于两种种类，这与标准库接受 `Factory` 的 `to(List)` 不同。
+
+% 2 1 0 1a96fbf38667cca71958484d212bc9d4
+
+% 3 1 0 015602978ad9ecba0e8638922ca54992
+
+% 0 1 0 171fd8391c198d24091110fc3e6d0e4e
+
+% 0 1 0 0ab17e324dc05b401056b402f6407e02
+
+% 0 1 0 134bc0cbfd154e37148e046e3143e85c
+
+% 0 1 0 12bdc99007053e6c1f3500ae40fffcfb
+
+% 0 1 0 084b7d0def00ae42027152b359671d3b
+
+% 0 1 0 197af6e21c1f81cc0d3759234f8648a8
+
+% 1 1 0 063433958fde02f3075dddebe6afefc6
+
+@ 0 4 0 040f220342af675c1539185a70c7612e
++       这里的每个实例都由 `Traversable` 派生，因此任何可遍历的东西——Soundness 集合、`Text`、Java 集合、具有自身 `Traversable` 实例的值——都可以转换为这些形状中的任何一种，无需更多实例。
++       *到* `Text` 这类类型的转换由该类型（gossamer）在其自身的伴生对象中提供。
+
+@ 0 7 0 17fa132c64feccef006cf17289b05f2a
++       写法：`xs.to[List]`（方括号）是标准形式。
++       带圆括号的 `xs.to(List)` 只在标准库接收者自身的成员 `to` 胜出的地方保留；在 `Set`、`Array` 或 `Data` 接收者上，圆括号形式甚至可能产生歧义，而方括号形式就是解决办法。
++       `Iterator` 不是 `Traversable`，因此也不是 `Convertible`：它用自己的成员 `iterator.to[List]` 排空。
++       扩展方法 `to` 是 `transparent inline` 的，因此在没有任何东西固定期望类型的地方（断言中的 `xs.to[List] == List(1, 2)`），比较可能需要先将接收者绑定到一个带类型的 `val`。
+
+% 1 1 0 130acd2536eab34609632c133810a017
+
+@ 0 16 0 19999a8c3c682cfe10e45f8c8c1e6e26
++   entry #Form   所请求的形状：类型构造器（`List`、`Map`）或真类型（`Text`）
++   entry #convert   从值构建 `Result`
++   entry .list   将任何 `Traversable` 转换为其元素的 `List`
++   entry .set   将任何 `Traversable` 转换为其元素的 `Set`
++   entry .sequence   将任何 `Traversable` 转换为 `Sequence`
++   entry .indexedSeq   将任何 `Traversable` 转换为标准库的 `IndexedSeq`
++   entry .chain   将任何 `Traversable` 转换为 `Chain`，从遍历中惰性拉取
++   entry .map   将任何由 `(key, value)` 对构成的 `Traversable` 转换为 `Map`
++   entry .ledger   将任何由 `(key, value)` 对构成的 `Traversable` 转换为按插入顺序排列的 `Ledger`
++   entry .javaList   将任何 `Traversable` 转换为全新的可变 `java.util.ArrayList`
++       Java 边界：`xs.to[java.util.List]` 直接从遍历构建平台集合，调用点无需标准库桥接，接收方 API 完全拥有该结果。
++   entry .frozenArray   将任何 `Traversable` 转换为冻结的 `Array[element]^{}`
++       需要元素的 `ClassTag`。
++       构建的数组是全新的，因此没有写入者能在其构造之后存活，结果是纯的。
+
+@ 0 1 0 0a055b3eec914279176bde8cb0a2215a
++ entry .Inclusive   其值可以检测某个值是否为其成员的类型，写作 `Self is Inclusive by Operand`
+
+% 1 1 0 058a294b33544b791a6a6ea95a678537
+
+@ 0 7 0 1f816abbd046a4e41234ae7e763ca89d
++       支撑 `collection.has(value)`。
++       被查询的类型是实例的 `Operand`，固定为集合*确切*的元素类型，因此 `list.has(wrongType)` 是编译错误，`map.has(key)` 也是：`Map` 的元素是 `(key, value)` 对，而某个*键*是否存在属于 `Applicable` 的 `defines`（rudiments），而不是成员关系。
++       `List`（单次线性遍历，因此不设门控）、`Set`、`Sequence`、冻结数组、裸 JVM 数组、任何 `scala.Iterable`（`.Fallback`）都有实例，在 gossamer 中还有 `Text` 以 `Char` 为操作数的实例；子字符串包含则改用 `subsumes`。
+
+% 2 1 0 0e0bfab39f2a6ca7116bd49c8d287ae0
+
+% 3 1 0 0db292a94c898f1718fdc316fae734f6
+
+% 0 1 0 0ccfc7ec384f76081a6699fed8829efc
+
+% 0 1 0 018739793ebe523f012aef02aac16261
+
+% 0 1 0 14c8dd3af96b41f8132d056fa206c14b
+
+% 1 1 0 12467a4778f2fc9910bdd19bd55f1aa8
+
+% 0 1 0 1766782e2edaa124148105c8d14dedfd
+
+@ 0 6 0 06c592deac17c2ef198334d0ff226bc3
++   entry #has   `value` 是否出现在元素之中
++   entry .Element   `scala.Iterable` 的确切元素类型，以匹配类型表示
++       `Element[collection]` 将 `Iterable[element]` 归约为 `element`，`.Fallback` 的实例正是借此精确地固定被查询的类型，而不是通过协变将其拓宽为 `Matchable`。
++   entry .Fallback   持有 `scala.Iterable` 实例的低优先级父特质
+
+% 1 1 0 1a9189a503caa34002de5658b054849f
+
+@ 0 8 0 0830e21a54a359350630239c69f2121f
++         `Inclusive` 伴生对象的父特质，因此对不透明集合进行未细化的 `X is Inclusive` 查询时，不会与各别名专属实例产生歧义报告。
++     entry #iterable   任何 `scala.Iterable` 都是 `Inclusive by` 其确切元素，通过 `exists` 实现
++   entry .frozenArray   冻结的 `Array[element]^{}` 是 `Inclusive by element`，通过线性扫描
++   entry .sequence   `Sequence` 是 `Inclusive by` 其元素
++   entry .set   `Set` 是 `Inclusive by` 其元素，通过哈希
++   entry .list   `List` 是 `Inclusive by` 其元素，通过一次线性遍历（不设门控）
++   entry .array   裸 `scala.Array[element]` 是 `Inclusive by element`
+
+@ 0 1 0 1120171a024521df1797a5f0330e800a
++ entry .Intersectable   抽象接收者上的集合代数：`intersect` 和 `except`
+
+% 1 1 0 1b0162f5f04f82330eff0cdd4e8ed23e
+
+@ 0 4 0 07acda36a63cee5406c8e6927480205d
++       `left.intersect(right)` 保留两者都有的元素，`left.except(right)` 移除 `right` 的元素（即标准库的 `diff`）。
++       并集不在这里：对于无序且元素唯一的形状，并集就是普通的拼接，symbolism 的 `Concatenable` 已将其提供为 `left + right`，单个元素则用 `:+` 添加。
+
+% 2 1 0 0fc2ec50ff2731dc098084332023c15f
+
+% 3 1 0 097e412e404593530e591b4004912bce
+
+% 0 1 0 0edade6d66df18b11d9120d6f4b4e61b
+
+% 0 1 0 1fbcc088a2d8aa16170e5d7ff49b261d
+
+% 0 1 0 13453fe2f09839171c05094c9333420a
+
+% 0 1 0 1d2751bfaeb84df60f0114d1d3aee03c
+
+% 1 1 0 069fde203ebdaa1001b034f6610ead9b
+
+@ 0 2 0 03d534063c4d8f050eb29e0b7bc96d16
++       唯一的实例 `.set` 有意不是子类型参数化的：交集可能使非空接收者变空，因此 `& Populated` 品牌不能在其后保留。
+
+% 0 1 0 1ddbbfbe492ef9250cf8d12186d3cde4
+
+% 0 1 0 1637b10357a1f34114f405893b9f7c89
+
+@ 0 3 0 1e37ad30dafffcd21844dbca1d71a12f
++   entry #intersect   `left` 和 `right` 中都存在的元素
++   entry #except   去除 `right` 的元素后的 `left`
++   entry .set   `Set[element] is Intersectable`，以另一个 `Set[element]` 为其 `Operand`
+
+@ 0 3 0 1d5dae510fbcce350f35d6360b0c151d
++ entry .intersect   `left.intersect(right)`：两者都有的元素，适用于任何 `Intersectable`
++     基于 `self is Intersectable by operand` 的扩展方法；在 `Set` 上，`right` 是元素类型相同的另一个 `Set`，结果也是 `Set`。
+
+@ 0 3 0 005d4144f37ded2c17b7d055ec9f361d
++ entry .except   `left.except(right)`：去除 `right` 的元素后的 `left`，适用于任何 `Intersectable`
++     即标准库的 `diff`，换了一个读起来像句子的名称。
++     在 `Set` 上，`right` 是元素类型相同的另一个 `Set`。
+
+@ 0 1 0 16e2dc045f5c11970a1d85dfdda3b3d8
++ entry .Keyed   带键容器的接口：`keys` 和 `values`，其类型由容器决定
+
+% 1 1 0 1718d2c5feb31d0f182422818c135a25
+
+@ 0 5 0 1363e2b5aedf6d1419fd241e3d7a3f51
++       比标准库的 `Iterable` 结果类型更好：`Map` 的键是 `Set`（唯一且无序），`Ledger` 的键是 `List`（插入顺序是其身份），而两种容器的值都是 `List`。
++       结果类型以细化的形式声明在实例上（`type Keys = Set[key]`），因此扩展方法可以将它们绑定为类型参数，总括包的导出转发器也能重现它们。
+
+% 2 1 0 1f5c4f85fba4421e049b1d3c165c32d1
+
+% 3 1 0 0ce91d829c5453d80d63fc89e1931e56
+
+% 0 1 0 0e8a216ad2d662781cbead46d96c033b
+
+% 0 1 0 10b3eee46c536de2157744e5399d00a8
+
+% 0 1 0 160a2a226c66382714a95d11688ca684
+
+% 1 1 0 1b365f0f893b5f380187eb2ce38075bf
+
+% 0 1 0 10a990ba0ead939b1c3ef58b749999a6
+
+% 0 1 0 1496c32569592f0b18813a5d8d596cc9
+
+@ 0 6 0 05306075db6ea60e0a74fecb36324d4a
++   entry #Keys   `keys` 返回的类型：对 `Map` 为 `Set[key]`，对 `Ledger` 为 `List[key]`
++   entry #Values   `values` 返回的类型：两者都是 `List[value]`
++   entry #keys   容器的键，类型为 `Keys`
++   entry #values   容器的值，类型为 `Values`
++   entry .map   `Map[key, value] is Keyed`，其中 `Keys = Set[key]`，`Values = List[value]`
++   entry .ledger   `Ledger[key, value] is Keyed`，其中 `Keys = List[key]`，`Values = List[value]`，两者都按插入顺序排列
+
+@ 0 2 0 18655f1f5f24fa1b0d0f7238bc127c77
++ entry .keys   `container.keys`：任何 `Keyed` 容器的键，类型为其 `Keys` 类型
++     对 `Map` 为 `Set[key]`，对 `Ledger` 为按插入顺序排列的 `List[key]`。
+
+@ 0 1 0 0de325d3bad9cd02026bdb873ea74545
++ entry .values   `container.values`：任何 `Keyed` 容器的值，以 `List` 表示
+
+@ 0 1 0 01a2a7a033269f681a52df5a141c8a23
++ entry .Reversible   顺序反转，写作 `Self is Reversible to Result`，统一适用于集合和文本
+
+% 1 1 0 0132785018fc478c0a882ec789712a8b
+
+@ 0 5 0 10cba66ac6dde6b01391fa390db4a537
++       一个 `reverse` 扩展方法同时服务于 `List`、`Sequence` 和每种文本类型，因为 gossamer 贡献的是一个 `Reversible` *实例*（`reversibleTextual`，发布在每种文本类型的伴生对象中），而不是一个相互竞争的仅限文本的扩展方法，后者会在总括包中与这个扩展方法冲突。
++       `Set` 和 `Map` 没有实例：反转无序形状毫无意义，因此 `set.reverse` 无法编译。
+
+% 2 1 0 0c0a9750ac15119f149c09a514ba36c4
+
+% 3 1 0 0cdfe47ffe9183511d8a585caba22588
+
+% 0 1 0 1a24080da4443ef31548595df69afc57
+
+% 0 1 0 035b86af272009890495558b55e7517e
+
+% 1 1 0 19ea45c89e2ee9560d3647a81348fd41
+
+@ 0 3 0 14fa3f8e9c91a1af1c186f762350ad28
++       实例是子类型参数化的，因此 `List[e] & Populated` 也能反转，而 `Result` 在扩展方法处被绑定为普通的类型参数，以便总括包的转发器能够重现它。
+
+% 0 1 0 13d3f41e9879d785037a12fac7db19b2
+
+@ 0 3 0 190e13673dd7da821b2a022b0b53b069
++   entry #reverse   元素顺序相反的值
++   entry .list   `List` 反转为 `List`
++   entry .sequence   `Sequence` 反转为 `Sequence`
+
+@ 0 3 0 1f0f11ba36921b81151a50ea74f9aadf
++ entry .reverse   `value.reverse`：按相反顺序排列的元素，适用于任何 `Reversible` 值
++     列表和序列反转为其自身的形状；`Text`（或通过 gossamer 实例的任何文本类型）按其字符反转。
++     在 `Set` 和 `Map` 上不存在。
+
+@ 0 1 0 1312eaacd86ca11d1b12050625f804ff
++ entry .SortAlgorithm   排序算法：依据比较器将一个临时数组排好序
+
+% 1 1 0 1dcd1b8f581f810713a06232025a0b9f
+
+@ 0 7 0 1278890f9f48db220e7c9c0d66ea29ea
++       算法不过是依据 `java.util.Comparator` 对元素数组排序的一种方式，而这个特质也仅此而已。
++       每个进行排序的操作——rudiments 在集合上的 `sort` 和 `order`，以及可变数组上的 `sort()`——都是这一点再加上把元素放进数组和取出数组的安排，因此算法不以它所服务的集合为参数。
++       （它曾经是；但每个实现无论如何都会把接收者排空到数组中，而唯一不这样做的那个实现要慢五到七倍。）
+
+@ 0 3 0 0552cdbdaa5af2791a7718b93955fad7
++       由哪个算法排序，取决于作用域中的 `SortAlgorithm` given，通过按名称导入 `sortingAlgorithms` 中的某一个来选择。
++       有意没有默认值：作用域中没有算法时 `sort` 无法编译，有两个时则产生歧义。
++       这六种算法是：
+
+% 0 1 0 16a4f2fae7bcd8cc1df54f58ca7e7d4d
+
+@ 0 11 0 0f62a81cc6f4f6e30e6af1432f65d2f8
++       column  算法
++       column  稳定
++       column  就地
++       column  自适应
++       column  说明
++       row  `timsort`  是  否  是  JDK 自身用于对象的 `Arrays.sort`，即标准库 `sorted` 背后的实现
++       row  `powersort`  是  否  是  以近乎最优的二叉归并树（Munro 和 Wild，2018）取代 Timsort 的归并方针，并采用飞驰归并；适用于部分有序的数据
++       row  `quicksort`  否  是  否  三数取中选取枢轴，采用 Hoare 划分，少于十二个元素时使用插入排序，递归深度限制在 log₂(n) 帧以内
++       row  `heapsort`  否  是  否  没有二次方的最坏情况
++       row  `insertionSort`  是  是  是  只在极小的输入上才值得使用
++       row  `bubbleSort`  是  是  是  只在极小的输入上才值得使用；一趟没有交换即停止
+
+% 1 1 0 10d385cc7010deb509ec03d48cf72f47
+
+@ 0 4 0 1dbe0b33841e7c880ba3f39e852a9a0a
++       稳定性——相等的元素是否保持其源顺序——是算法的属性，而不是类型的属性：在 `timsort` 下，`pairs.order(_(0))` 会让相等的对保持原有顺序，在 `quicksort` 下则未必。
++       不要将它与 `Reshapable.Stable` 混淆，后者说的是*形状*保持顺序。
+
+@ 0 4 0 18a37f322bd3d39e10643a1b868f451a
++       这些算法是普通方法，有意不是 `inline`：JIT 对一个共享的紧凑循环的内联效果，好于每个调用点各一份副本，后者经测量更慢（十万个元素时为 6.68 ms 对 5.59 ms）。
++       自定义算法就是这个类型的任意值，绑定为局部 given。
+
+% 0 1 0 09dc3cccb0117b5107733e5440e728af
+
+@ 0 1 0 050b7b719b4472fc1712417adb2202e3
++   entry #sort   按 `comparator` 的规定就地对 `array` 排序
+
+@ 0 1 0 0c328a13d444c85d0c56efaf523131c6
++ entry .sortingAlgorithms   六种排序算法，每种都是一个按名称导入的 given
+
+% 1 1 0 0ffa8e3bac106388107c0a9d86934936
+
+@ 0 5 0 055efd024c4acd9105126835a1dfbaa7
++       Soundness 中的每种排序——`sort`、`order` 和就地的 `sort()`——都接受一个 `SortAlgorithm`，而这一选择从不是隐式的：`import soundness.*` 不会引入其中任何一个，要在进行排序的文件或代码块中按名称恰好导入一个。
++       作用域中有两个会使每次排序都产生歧义，这正是有意用来表达：除非在调用点另有说明，程序只用一种算法排序。
+
+% 2 1 0 1d950552daf21c31020acfaf20a48fd7
+
+% 3 1 0 000fac4c4473ff8006aa1349c353f8a5
+
+@ 0 1 0 1ab60bd163dc97ce197400bb39afd0ec
++         label 未选择算法
+
+% 1 1 0 14a99d0470363c3d189863fb94372535
+
+% 2 1 0 1cabd36d423cd2cc1ac7edeb81237746
+
+% 1 1 0 1df7488ae340999510cac7bf3d905c73
+
+% 1 1 0 1c6df09a68dadf9b16cc1ab4f0fd1555
+
+@ 0 1 0 1876dc4be7e5cbaf0219ab712b0b4acf
++         label Timsort，JDK 自身的算法
+
+% 1 1 0 07aa7f16b61b8406175e8e224ac7d316
+
+% 2 1 0 07c901f53fa4981d0a88876d374d2c0b
+
+% 0 1 0 0e0a6fe1e0aaead2044fcde6d6bcaf4f
+
+% 0 1 0 162a0f8b732c42e818a567b8066baa94
+
+% 1 1 0 11555639494f8500182507c5aafe4cd5
+
+@ 0 1 0 0e03382901a7ab6f1da5149c93d3c3b1
++         label Powersort，用于对部分有序的数据进行稳定排序
+
+% 1 1 0 0fddc1096968e95a01e6a7adedc2f41c
+
+% 2 1 0 14f167f8794d5e6417e240574a70d165
+
+% 0 1 0 19a17354efe9b465082a15b7c81a8a73
+
+% 0 1 0 17ccf2e82fa2503a032e6d50dc3d22db
+
+% 1 1 0 1ea95117c06d8009169d3fe6b9b1e4e6
+
+@ 0 1 0 0390263352d8d68616664b60602e880f
++         label 两个导入产生歧义
+
+% 1 1 0 13cacc83f2a8dc4505258fdd9a7b26d2
+
+% 2 1 0 14371aa04e6331b20cad638c524e4ecd
+
+% 0 1 0 1022ce49e5cc631c007407ba48b3dcf6
+
+% 1 1 0 1f53216e80140db00a287ce4c6af1ae5
+
+% 1 1 0 13f71e1f478ff30e17f947e07fd6584f
+
+% 2 1 0 19df307d5af04ff109a1a03c3ed2e522
+
+@ 0 5 0 078ed96dc810f7e8056278ef099b0d92
++       当程序的某一部分需要与其余部分不同的算法时，惯用做法是在代码块作用域内导入。
++       排序本身还需要元素（在 `order` 下则是键）的 `Comparable`：数字和字符都有，`Text` 需要选定一种排序规则，而顺序仍由标准库 `Ordering` 定义的类型则通过 `Comparable` 伴生对象中的桥接来排序。
+
+% 0 1 0 00bf30526ba7bede10e5660e4f742dd8
+
+@ 0 10 0 08e60d913d5b6c0a1e0b275046668e0c
++   entry .timsort   JDK 用于对象的 `Arrays.sort`：自适应、稳定，即标准库的 `sorted`
++   entry .powersort   Powersort：以近乎最优的顺序归并 Timsort 的游程，并采用飞驰；稳定
++       Munro 和 Wild 2018 年的算法。
++       已经有序的输入是一个游程，在发现这一点的那次扫描中即完成排序，完全不分配归并缓冲区。
++   entry .quicksort   三数取中的快速排序，就地进行；不稳定
++       Hoare 划分，少于十二个元素时使用插入排序，递归进入较小的一侧，因此深度限制在 log₂(n) 以内。
++   entry .heapsort   堆排序，就地进行，没有二次方的最坏情况；不稳定
++   entry .bubbleSort   冒泡排序，稳定；对已排序的输入只需一趟
++   entry .insertionSort   插入排序，稳定；只在极小的输入上才是正确的选择
+
+@ 0 4 0 1f9b1bc6f99d9bd11404bf121d496c78
++ entry .has   `collection.has(value)`：某个值是否在元素之中
++     基于任何 `Inclusive` 接收者的扩展方法。
++     被查询的类型是确切的元素类型，因此不能对 `Map` 调用 `has(key)`——键不是元素；那是 `defines`（rudiments）。
++     `List(1, 2, 3).has(2)`、`Set(t"a").has(t"b")`、`t"hello".has('e')`。
+
+@ 0 6 0 151ff11e90e930b504a34ed5becc75e5
++ entry .map   `xs.map(lambda)`：保持形状的映射，在 `Map` 上映射值
++     由 `Mappable` 驱动，在扩展方法处召唤，因此在 lambda 展开之前，其参数已是具体的元素类型（`xs.map(_.field)` 能推断）。
++     `List` 映射为 `List`，`Set` 映射为 `Set`，`Chain` 惰性地映射为 `Chain`，`Map` 映射为键相同、值经过映射的 `Map`，`Ledger` 同样按顺序映射，任何原始的 `scala.Iterable` 映射为 `List`。
++     要以对的形式处理 `Map` 的条目，请使用 `remap`。
+
+% 2 1 0 154e7abbaae8d8c4032db567cca25a4f
+
+% 3 1 0 0f04b0c624a3d00a1db04f71559980de
+
+% 0 1 0 0d22450aed04275c06e9b84a3f2c47b0
+
+% 0 1 0 1aee958ce2b24ae91577dbffe3481763
+
+% 1 1 0 1f2442ff6559596007089423eaa97f5d
+
+@ 0 5 0 1bace0d32c10ca370fff3e41e12d18b3
++ entry .remap   `xs.remap(lambda)`：成对映射，通过 `Reshapable` 重建
++     lambda 接收每个被遍历的元素——对于 `Map` 即 `(key, value)` 对——结果采用 `Reshapable` 为源和新元素推导出的任何形状：结果为对的 `Map` 仍是 `Map`，结果不是对的则变为 `List`，而在 `List` 上 `remap` 就是 `map`。
+
+% 2 1 0 0c823e7191e848651f6e35a69ba114ca
+
+% 3 1 0 1f67e248d0a10d6d16f3c6f6c30737d4
+
+% 0 1 0 1ee540adf156cfc415b80041f2bd6fb9
+
+% 0 1 0 0176b61a84618b2c179b4226cc6391e7
+
+% 1 1 0 1d502dbcd82cec031c0ca82a9e7b3b04
+
+@ 0 6 0 0a793260a1620577061fd9fb6b30f855
++ entry .subsumes   `xs.subsumes(ys)`：`ys` 是否作为连续片段出现在 `xs` 之中
++     对 `Text` 而言是子字符串检测（gossamer 的重载通过 `indexOf` 走捷径），对任何 `Traversable` 也是同样的问题：`List(1, 2, 3, 4).subsumes(List(2, 3))` 为真，`List(1, 2, 3, 4).subsumes(List(2, 4))` 为假，空子序列总是存在。
++     两边必须具有相同的类型；类型为 `& Populated` 的字面量接收者，不先绑定为普通 `List` 就无法对 `List.empty` 进行询问。
+
+@ 0 5 0 0a7444b2852be8aa1069a3e56b6d658b
++ entry .bind   `xs.bind(lambda)`：单子绑定，展平返回集合的 lambda
++     标准库称为 `flatMap` 的操作的首选名称。
++     lambda 可以返回任何 `Traversable`——形状不同也没关系，`List(1, 2).bind(n => Set(n))` 是 `List`——结果按接收者的形状重建。
++     `flatMap` 是同一个操作，用的是 `for` 推导式脱糖所用的名称。
+
+% 2 1 0 07b7f4ff665362ca038cb46a9adc5dfd
+
+% 3 1 0 010b5fdd6e2f1dab007aae8ae90c8f4b
+
+% 0 1 0 0d54c5109887e7df03910ab398cab456
+
+% 1 1 0 17d3bd1f0a8c0c8b12349b563dcd3d28
+
+@ 0 3 0 0fe9078b2bda8bc51467ac475455a398
++ entry .flatMap   与 `bind` 相同的操作，用的是 `for` 推导式所要求的名称
++     保留它只是为了让 `for a <- xs; b <- f(a) yield …` 能够脱糖；在显式调用点请写 `bind`。
+
+@ 0 3 0 13cc18a23e4206ed106182a13ca05ebe
++ entry .filter   `xs.filter(predicate)`：满足谓词的元素，保持源的形状
++     没有 `filterNot`：写作 `filter(!predicate(_))`。
++     `Set` 过滤为 `Set`，`Chain` 惰性地过滤为 `Chain`，`Map`（按其对）过滤为 `Map`，`Text` 过滤为 `Text`。
+
+@ 0 4 0 0750aeaa53ccf32d070e06f8d31513d5
++ entry .withFilter   `for` 推导式守卫所脱糖为的 `filter`；严格求值
++     有意采用严格求值，与标准库惰性的 `WithFilter` 载体不同：否则在捕获检查下，被捕获的谓词就必须贯穿每个脱糖阶段。
++     `for n <- xs if n > 1 yield n` 按预期工作；其他任何代码都不应调用它。
+
+@ 0 3 0 1f5c3a47db33b2270da2ae39c121b998
++ entry .foreach   `xs.foreach(lambda)`：访问每个元素；为 `for` 循环而存在
++     `for (x <- xs) do …` 循环所脱糖为的名称。
++     在显式调用点，循环是 rudiments 的 `each`，它还将元素的序数作为上下文值提供。
+
+@ 0 1 0 069d824f1191c36001a6ebf9bec47c9f
++ entry .exists   `xs.exists(predicate)`：是否有某个元素满足谓词，遇到第一个即停止
+
+@ 0 5 0 0ffccb966480d24a136ebda55306047e
++ entry .fold   `xs.fold(initial)(lambda)`：从左到右在元素上累积状态
++     即标准库的 `foldLeft`，状态的类型由 `initial` 固定（不提供标准库 `fold` 那种拓宽到超类型的做法）。
++     `List(1, 2, 3).fold(0)(_ + _)` 为 `6`；在空接收者上结果为 `initial`。
++     `Map` 在其 `(key, value)` 对上折叠，因此 lambda 写作 `{ case (acc, (k, v)) => … }` 或使用双参数模式。
+
+@ 0 4 0 19247e50fc8041701428f062626c71d9
++ entry .count   `xs.count(predicate)`：满足谓词的元素个数
++     只有谓词形式：由于元素类型是路径依赖的，接受值的重载会与每个 lambda 参数产生歧义，因此统计某个元素写作 `xs.count(_ == value)`。
+
+@ 0 4 0 015c148456ebde1611cc3c1f6f39e596
++ entry .flat   `xss.flat`：去除一层嵌套，保持外层源的形状
++     内层值可以是任何 `Traversable`，因此 `List[Set[e]]` 展平为 `List[e]`，`List(List(1, 2), List(3)).flat` 为 `List(1, 2, 3)`。
++     即标准库的 `flatten`。
+
+@ 0 4 0 0fc4350d79b17a2211986029eb136f06
++ entry .trace   `xs.trace(initial)(lambda)`：折叠的每个中间状态，初始状态在前
++     即标准库的 `scanLeft`，保持源自身的形状：`List(1, 2, 3).trace(0)(_ + _)` 为 `List(0, 1, 3, 6)`。
++     对顺序敏感，因此要求 `Reshapable.Stable`，在 `Set` 和 `Map` 上不存在。
+
+@ 0 6 0 03620b53d3f663a60b1eff930cbb47bb
++ entry .excerpt   `xs.excerpt(from, until)`：按位置取出的一段元素，不含末端，且是全函数
++     即标准库的 `slice`，按 `Int` 位置：`List(1, 2, 3, 4, 5).excerpt(1, 3)` 为 `List(2, 3)`。
++     超出源范围的边界会被钳制，而不是失败——`List(1, 2).excerpt(5, 9)` 为空，`List(1, 2, 3).excerpt(2, 99)` 为 `List(3)`。
++     要求 `Reshapable.Stable`。
++     按序数划分的位置片段（`before`、`upto`、`from`、`after`、`keep`、`skip`）属于 rudiments 的 `Segmentable` 词汇。
+
+@ 0 4 0 1f391054285c37bf1dda9a285fd474ba
++ entry .zip   `xs.zip(ys)`：按位置配对的元素，在较短的一边结束时停止
++     `ys` 可以是任何 `Traversable`；这些对按 `xs` 的形状重建，该形状必须是 `Reshapable.Stable`。
++     `List(1, 2, 3).zip(List(t"a"))` 为 `List((1, t"a"))`。
++     与位置配对属于 rudiments 的 `indexed`。
+
+@ 0 4 0 12bde49ab2a95789106826ced557cc2e
++ entry .group   `xs.group(lambda)`：按函数为元素设键，得到一个由各组构成的 `Map`，各组保持源的形状
++     即标准库的 `groupBy`：`List(1, 2, 3, 4).group(_%2)` 为 `Map(1 -> List(1, 3), 0 -> List(2, 4))`。
++     每个组都按接收者自身的形状重建，因此对 `Set` 分组得到由 `Set` 构成的 `Map`。
+
+@ 0 3 0 0ed3bb634b9f3bf40e81f7c5c9717165
++ entry .distinct   `xs.distinct`：去除重复元素，每个元素保留首次出现的那一个
++     保留哪一次出现取决于位置，因此它要求 `Reshapable.Stable`，在 `Set`（没有重复）或 `Map` 上如实地不可用。
+
+@ 0 3 0 0021219d71f2fb221037d25f4b3bd0d4
++ entry .deduplicate   `xs.deduplicate(key)`：`key` 的每个值对应的第一个元素，按首次出现的顺序
++     即标准库的 `distinctBy`：`List(10, 43, 22, 71, 52).deduplicate(_%10)` 为 `List(10, 43, 22, 71)`。
++     与 `distinct` 一样，它依赖位置，因此受 `Stable` 门控。
+
+@ 0 4 0 0d350fc7bf36acf0193c7ecdaaaf3949
++ entry .span   `xs.span(predicate)`：满足谓词的最长前导游程，以及其余部分
++     `List(1, 2, 3, 1).span(_ < 3)` 为 `(List(1, 2), List(3, 1))`。
++     两侧各自独立遍历，因为一个迭代器不能被消费两次。
++     它对顺序敏感，因此受 `Stable` 门控。
++     不考虑位置的划分见 `partition`。
+
+@ 0 4 0 191bbcbfe81d4a0f0d7451ee979276cb
++ entry .partition   `xs.partition(predicate)`：满足谓词的元素，以及不满足的元素
++     与 `span` 不同，归属与位置无关，因此对 `Set` 或 `Map` 的划分是有意义的：`Set(1, 2, 3, 4).partition(_%2 == 0)` 为 `(Set(2, 4), Set(1, 3))`；在 `List` 上，两侧都保持各自的顺序。
+
+@ 0 6 0 17ef383ec07742c51df9b1b999f39db2
++ entry .sweep   `xs.sweep { case … }`：通过偏函数，一遍完成过滤和映射
++     即标准库的 `collect`：`List(1, 2, 3, 4).sweep { case n if n%2 == 0 => n*10 }` 为 `List(20, 40)`。
++     它不受 `Stable` 门控——从 `Set` 中收集是有意义的。
++     偏函数带有能力注解，因此通过 `Tactic` 抛出错误的分支主体也被接受；它被及早应用，不保留任何东西。
++     它的单结果兄弟是 rudiments 的 `reap`。
+
+@ 0 5 0 1e09b53c89f65eaa02c9f46b3e9b870d
++ entry .batched   `xs.batched(size)`：每批至多 `size` 个元素的连续批次，作为源形状的 `List`
++     即标准库的 `grouped`：`List(1, 2, 3, 4, 5).batched(2)` 为 `List(List(1, 2), List(3, 4), List(5))`，最后一批可能较短。
++     批次的边界取决于顺序，因此它受 `Stable` 门控。
++     它命名为 `batched` 而不是 `chunked`，因为后者是 turbulence 的字节流操作。
+
+@ 0 1 0 01b62bd34b0b38541597fa76ac81d9c8
++ entry .Iterator   对元素来源的一次性、经分离检查的拉取；Soundness 的 `Iterator`
+
+% 1 1 0 1609825cd81c41460b8656b59ddf0a29
+
+@ 0 6 0 1ae0c4ffe7ccc5e61429ef456d43ff40
++       `Iterator[element]` 是集合层的内部通货——`Traversable.traverse` 产生它，每个操作都消费它——也是从外部世界恰好读取一次的任何东西的诚实类型：套接字的帧、进程的输出行、终端的按键、随着每个载荷打开而读出的归档条目。
++       在整个 Soundness 中它取代了 `scala.Iterator`：在 `import soundness.*`（或 `import rudiments.*`）之下，裸名 `Iterator` 就是这个类型，标准库的迭代器写作 `scala.collection.Iterator`。
+
+@ 0 5 0 141e9e0beadae4dc023fb3a350d7e3d7
++       与标准库的不同，它经过捕获检查和分离检查，并且无法索取一个不存在的元素。
++       它扩展了 `caps.Stateful`，因此类型为 `Iterator[e]^` 的值是独占的：推进它的方法是 `update def`，接管它的组合子是 `consume def`，对已被消费的迭代器的第二次使用无法通过编译。
++       不存在 `hasNext`/`next()` 这一对。
++       读取它的三种诚实方式是：
+
+@ 0 10 0 1fddbad34ca44d2f1b2fb58c7df94d49
++       - **终结操作**——`#each`、`#fold`、`#exists`、`#all`、`#count`、`#size`、`#seek`、`#chain`、`#to`——它们就地排空迭代器；`each` 就是循环；
++       - **`#next`**，用于把迭代器保存在字段中的有状态消费者（一个 `Stream` 源、一个事件泵）：一次调用推进一步，产生 `element | Iterator.Exhausted`，调用方在得到元素之前先匹配 `.Exhausted`；
++       - **移动风格** `#pull`，用于需要元素、也需要在元素之间停下的权利的手写循环：它消费迭代器，产生 `.Exhausted` 或拥有该迭代器的 `.Cursor`；`cursor.value` 读取元素，`cursor.pull` 消费游标以推进。
++         没有任何分配：游标就是迭代器引用，哨兵值是 `null`。
+
+% 2 1 0 0ae402df9f893ccf0f78ec63e65e1583
+
+% 3 1 0 114f8a43ec6912a40aa39794b5ed826f
+
+% 0 1 0 1709ea217859561f070ccd0be4079829
+
+% 0 1 0 1195191c56d033171f3b44b002c51a41
+
+% 0 1 0 05becf99cdad422a0419ddec6a8a892c
+
+% 0 1 0 1edbd9ab68dcb67906cabdf96b309f02
+
+% 0 1 0 194c9226093233d100c57e17576fc8f5
+
+% 0 1 0 055b6cd883364d4f1969058438b5bab8
+
+% 1 1 0 1c51d53e5da44d8c0ab875429461eedf
+
+@ 0 3 0 1ea8d12f765ad03d12446f9ccd1230a2
++       在同一个表达式中先读 `value` 再 `pull`，用带类型的模式分支，并在每一步重新绑定句柄；重用已拉取的游标，或在没有游标时读取 `value`，都会被编译器拒绝。
+
+@ 0 6 0 09f52fbf69a805371b3e692274e736ac
++       惰性组合子——`#map`、`#filter`、`#sweep`、`#keep`、`#skip`、`#zip`、`#indexed`、`#trace`、`#excerpt`、`#batched`、`#deduplicate`、`#distinct`、`#concat` 和 `#flatMap`——消费它们所变换的迭代器，并*共享*给它们的 lambda，因此结果的捕获集会指名该 lambda（`Iterator[e2]^{lambda, caps.any}`）：lambda 之后仍然可用，而捕获了独占值的 lambda 也会使结果成为独占的。
++       流水线每次增加一个消费阶段：
+
+% 2 1 0 085c42ac5caea65a1e0425dbcc4cdbf2
+
+% 3 1 0 0b1589019964adca1190721d6004a77b
+
+@ 0 1 0 145cbc791c6eb15c062a16c20e621fd3
++         label 一个源
+
+% 1 1 0 1ed3bf238f3e8bcc04fde1cb5cdac1df
+
+% 0 1 0 15046cef68c11b6e0eed6d5865ec295d
+
+% 1 1 0 13bec071edaeffa613b48f17523156c6
+
+@ 0 1 0 02bc193ff75532be02b6165d881ce0fd
++         label 惰性地变换
+
+% 1 1 0 16c587019b34de0c1d86275f68705641
+
+% 0 1 0 1f895b7ddf66a69c1dcb9bc590d4787f
+
+% 1 1 0 03463ec896b16083102240f59dc635d9
+
+@ 0 1 0 0bfd837f81d1117c14ed6ed72cede13b
++         label 过滤，仍然是惰性的
+
+% 1 1 0 16ecdae5ca2696880599fb0d0bf83691
+
+% 0 1 0 068180f8b38ca72d196d34b9a3c6b418
+
+% 1 1 0 0271a8b53c7d31e20c5ff17ba508e050
+
+@ 0 1 0 0b15aa5f981c206400a5cb329ace2fc8
++         label 用偏函数收集
+
+% 1 1 0 0a02b01ded68a784096ae41a6b80b487
+
+% 0 1 0 0db20e410275b9d30dddb1d5c4f8ca53
+
+% 1 1 0 11428f488bea1303119f04c6274d3611
+
+@ 0 1 0 1e778057112990f318d41083e66994d4
++         label 排空到一个形状中
+
+% 1 1 0 026d48fcaf0665c6032d5b564d9b4371
+
+% 0 1 0 180b8df27f2cf2fb08f8b8b363f19fb6
+
+% 1 1 0 17b6c66f7ecca8e213e7252a13b284a6
+
+% 2 1 0 0a3de3bd82442bad12a0e3fa543321e8
+
+@ 0 7 0 1324e48e7a667955067d173b915fa632
++       实现写作 `new Iterator[e]:`，带两个成员，其余的都继承而来：`update def advance(): Boolean` 移到下一个元素并把它物化到一个 `var` 中，`def current: e` 是一次普通的、未装箱的读取。
++       两者都仅限于本包和实现者访问，因此调用方不可能在没有推进的情况下读取 `current`。
++       类不能把新鲜的迭代器保存在 `val` 中（"hides enclosing instance"）：应在工厂中铸造它并捕获局部变量，在共享状态上每次访问时重新创建它，或者把它作为构造器参数接收。
+
+@ 0 5 0 1ff87c8384d484c0101e8965b1179685
++       `Iterator` 有意*不是* `Traversable`：遍历是借用，而把独占的迭代器借入一个比调用活得更久的结果，正是分离检查所禁止的。
++       因此它用自己的 `#to` 成员而不是通用的 `to` 排空，并且 `#flatMap` 的 lambda 返回一个*集合*（任何 `Traversable`），从不返回迭代器——lambda 无法通过函数类型交回一个新铸造的能力。
+
+@ 0 3 0 0b418698304f9d0407f78d17fab67638
++       只在边界处才触及标准库和 Java：`.from` 在进入时包装 `scala.collection.Iterator`、`java.util.Iterator` 或 `java.util.Enumeration`，而 `#stdlib` 把一个迭代器交给坚持要求它的 API。
+
+% 1 1 0 1ae3f8f6254437bd0ee01f0f14ae70fe
+
+% 1 1 0 024da96a1531c097141c4f797c1e2637
+
+@ 0 10 0 171095cc2b11484e16a4d327a0c3cf17
++   entry .Exhausted   表示“没有更多元素”的哨兵值，既是类型也是值
++       一个不透明类型 `<: Matchable & caps.Pure`，以 `null` 为底层表示，因此没有任何代价，同时也是该类型的值。
++       它的写法仿照 vacuous 对 `Unset` 的写法（本模块位于 vacuous 之下，无法指名 `Unset`）：只要 `element` 是纯的，联合类型 `element | Iterator.Exhausted` 就是纯的，并且 `.nn` 不会去掉它。
++       在 `#next` 循环或 `#pull` 匹配中首先匹配它——`case Iterator.Exhausted =>`；`CanEqual` 实例使它能用 `==` 与任何值比较。
++   entry .exhaustedEquality   `CanEqual[value, Exhausted]`，使 `next() == Iterator.Exhausted` 通过类型检查
++   entry .equalityExhausted   `CanEqual[Exhausted, value]`，方向相反的同一比较
++   entry .Cursor   位于一个存在的元素之上的线性令牌，拥有它所来自的迭代器
+
+% 1 1 0 1ef25d731ffdd798187651677835e89d
+
+@ 0 84 0 13c587ce9936193f083c75c9c24ae996
++         `Cursor[element]^` 就是迭代器引用本身，它是不透明的，因此无法伪造；它以 `Stateful` 为上界，因此 `match` 可以对照 `.Exhausted` 检验它（`case cursor: Iterator.Cursor[Int]`；在模式中给类的类型参数加上反引号）。
++         `.value` 读取元素，`.pull` 消费游标以推进，产生下一个 `.Pull`。
++         分离检查会拒绝在被拉取之后使用的游标。
++     entry .apply   把被消费的迭代器包装为游标；即 `Iterator#pull` 成功时的返回值
++     entry .value   游标所在的元素，读取时不推进
++     entry .pull   消费游标并推进：下一个游标，或 `Exhausted`
++   entry .Pull   `Exhausted | Cursor[element]^`：`pull` 产生的东西
++   entry .array   遍历一个 JVM 数组的迭代器，在它运行期间没有写入方触及该数组
++       `Iterator.array(array)` 作用于 `scala.Array[e]^{caps.any.rd}`，冻结数组的 `Traversable` 实例使用它。
++       原始类型的元素会像标准库的数组迭代器那样被装箱。
++   entry .empty   没有元素的迭代器
++   entry .apply   `Iterator(a, b, c)`：遍历给定元素的迭代器
++   entry .range   `Iterator.range(start, end)` 或 `(start, end, step)`：从 `start` 到 `end`（不含）的整数
++       `step` 为负时，范围向下计数：`Iterator.range(10, 0, -3)` 产生 `10, 7, 4, 1`。
++   entry .fill   `Iterator.fill(n)(element)`：`element` 重新求值 `n` 次
++   entry .tabulate   `Iterator.tabulate(n)(lambda)`：从 `lambda(0)` 到 `lambda(n - 1)`
++   entry .continually   `Iterator.continually(element)`：`element` 无休止地重新求值
++   entry .iterate   `Iterator.iterate(initial)(lambda)`：先是 `initial`，然后一次又一次地应用 `lambda`
++   entry .from   包装标准库的 `Iterator`、`java.util.Iterator` 或 `java.util.Enumeration`
++       从标准库和 Java 进入的边界：一次性源剩余的元素由这个迭代器接管。
++       标准库重载会消费它的参数。
++   entry #pull   消费迭代器：位于第一个元素之上的 `Cursor`，或 `Exhausted`
++       移动风格。
++       它是 `consume def`，因此调用之后迭代器就不存在了，只剩下游标（如果有）；`cursor.value` 读取，`cursor.pull` 推进。
++   entry #next   推进并产生下一个元素，源耗尽后产生 `Exhausted`
++       用于把迭代器保存在字段中的有状态消费者，线性令牌无法存在于那里。
++       没有不带 `hasNext` 的 `next`，因为它们是同一次调用：匹配 `case Iterator.Exhausted => … case value: Int => …`。
++       耗尽之后，每次调用都再次产生 `Exhausted`。
++       `Text` 这样的不透明元素类型无法在匹配中做类型检验；在那里使用 `#option` 或 `#seek`。
++   entry #each   访问每个剩余元素，排空迭代器
++   entry #fold   在剩余元素上累积一个状态，排空迭代器
++   entry #exists   是否有某个剩余元素满足谓词，在该处停止
++       在第一个匹配处停止，因此其后的元素仍然保留。
++   entry #all   是否每个剩余元素都满足谓词，在第一个不满足的元素处停止
++   entry #count   有多少剩余元素满足谓词，排空迭代器
++   entry #seek   满足谓词的第一个元素，交给一段后续代码；其余元素不被消费
++       `iterator.seek(predicate)(absent)(present)`：用两段后续代码而不是 `Optional` 结果，因此元素以它自身的类型到达调用方，无需检验，也无需强制转换（本模块无法指名 `Optional`；rudiments 的 `find` 就是 `seek(p)(Unset)(identity(_))`）。
++       匹配之后的元素仍然保留：`Iterator(1, 2, 3, 4).seek(_ > 1)(-1)(identity(_))` 为 `2`，留下 `3, 4`。
++   entry #option   下一个元素，作为标准库的 `Option`，供通过闭包拉取的惰性标准库形状使用
++   entry #chain   剩余元素，作为惰性的 `Chain`，在被强制求值时一次拉取一个单元
++       这是唯一能让迭代器比它的所有者活得更久的形状：链会 memoize 它已拉取的内容，而且没有任何东西记录它从中拉取的迭代器，因为 `Chain` 是纯的。
++   entry #to   `iterator.to[List]`、`to[Set]`、……：排空到给定形状的集合中
++       通过 `Reshapable`，形状以类型构造器指名。
++       它是成员而不是通用的 `to`，因为迭代器不是 `Traversable`（遍历是借用，而独占的迭代器不允许借用）；它是成员而不是伴生对象上的扩展方法，因为 rudiments 在词法作用域中的通用 `to` 会优先于扩展方法。
++   entry #size   还剩多少元素，通过排空它们得出
++   entry #map   每个剩余元素经过 lambda，惰性地；消费接收者
++   entry #filter   满足谓词的剩余元素，惰性地；消费接收者
++   entry #sweep   通过偏函数一遍完成过滤和映射，惰性地
++   entry #flatMap   每个元素映射为一个*集合*，依次产生其中的元素
++       lambda 返回任何 `Traversable`——`List`、`Set`、`Text`——从不返回迭代器，因为 lambda 无法通过函数类型交回一个新铸造的能力；内层遍历在结果推进时于此处打开。
++       `Iterator(1, 2, 3).flatMap(n => List.fill(n)(n)).to[List]` 为 `List(1, 2, 2, 3, 3, 3)`。
++   entry #zip   本迭代器的元素与另一个的元素配对，在较短的一方结束时停止；消费两者
++   entry #indexed   每个元素与它从零开始的位置配对，位置为 `Int`
++       是 `Int` 而不是 `Ordinal`，因为 denominative 位于本模块之上；集合上 rudiments 的 `indexed` 会转换为序数。
++   entry #keep   前 `n` 个元素，或满足谓词的最长前导游程；惰性地
++       `keep(3)` 是标准库的 `take`，`keep(_ < 7)` 是它的 `takeWhile`。
++   entry #skip   前 `n` 个元素之后的一切，或满足谓词的前导游程之后的一切
++       `skip(2)` 是标准库的 `drop`，`skip(_ < 2)` 是它的 `dropWhile`。
++   entry #trace   折叠的每个中间状态，初始状态在前；即标准库的 `scanLeft`
++   entry #excerpt   从位置 `from`（含）到 `until`（不含）的元素
++   entry #deduplicate   每个键的首次出现，按首次出现的顺序
++   entry #distinct   每个元素的首次出现，按首次出现的顺序
++   entry #batched   每批至多 `n` 个元素的连续批次，每批是一个 `List`；最后一批可能较短
++   entry #concat   本迭代器的元素，然后是另一个的元素；消费两者
++       即标准库的 `++`。
++   entry #stdlib   排空本迭代器的 `scala.collection.Iterator`；通往标准库和 Java 的边界
++       消费本迭代器：从此由标准库视图拥有它。
++       该视图的类型是纯的，正如每个标准库迭代器那样，因此可以交给 `IterableOnce` 工厂和 JDK API。
++       与每个 `.stdlib` 一样，这是一个带标记的桥接；只要存在原生形式（`#to`、`#each`、`#chain`），就优先使用它。

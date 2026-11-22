@@ -1,0 +1,264 @@
+orthant 2 language
+
+% 0 1 0 0f04ec4b9ac2d4270a232409219e1f6b
+
+% 0 1 0 0f6e36f2a51eb75f17ecabade6985971
+
+% 0 1 0 0b5938ce7315323607e1922cbc4d93e2
+
+@ 0 1 0 0ecdba4b6f176732094d93641cda7721
++ info   Java 的路径、URL、瞬时和时长标准类型，作为 Soundness 概念的表示
+
+% 0 1 0 0ca6d61ddd9511ea1cdae38f1414f6fe
+
+@ 0 9 0 1f942e205b18ce5415dfbd88fb14e4c0
++     _Diuretic_ 让 JVM 自己的类型代表 Soundness 所抽象的概念。
++     anticipation 把每个概念命名为一个领域，即 `Paths`、`Urls`、`Instants`、`Durations`，而产生或接受路径、URL 或瞬时的 API 只要求一个能从该领域的通用表示 `Instantiable`、或能 `Abstractable` 为该通用表示的类型：路径或 URL 的通用表示是文本，瞬时的是以纪元毫秒计的 `Long`，时长的是以纳秒计的 `Long`。
++     Diuretic 为 `java.io.File`、`java.nio.file.Path`、`java.net.URL`、`java.time.Instant`、`java.util.Date` 和裸 `Long` 提供了这些实例，因此同时接触两个世界的程序可以直接传递值，而无需手工转换。
+
+@ 0 8 0 05db768f3b8e110805af07679c290829
++     每个实例都是一个对象，即 `JavaIoFile`、`JavaNioPath`、`JavaNetUrl`、`JavaTimeInstant`、`JavaUtilDate`、`JavaLongInstant`、`JavaLongDuration`，它们既是 `Abstractable`（`.genericize`，把 Java 值转为其通用表示），又是 `Instantiable`（`.apply`，把通用表示转为 Java 值）。
++     它们都不在隐式作用域中，因为这些 Java 类型没有 Soundness 能够添加内容的伴生对象：每个实例都作为 given 出现在 anticipation 的某个选择包中，即 `instantInterfaces`、`durationInterfaces`、`pathInterfaces` 和 `urlInterfaces`，并按名称导入，因为 `import instantInterfaces.*` 不会导入 given。
+
+% 2 1 0 18784b2633da657c1c7bcd5d2b02b746
+
+% 3 1 0 1db73ce7ff7743a1113551b456f1ea82
+
+% 0 1 0 0fec6cbef0d0f6741696d32ab34bc4ff
+
+% 0 1 0 1ab1db3247debc8f18db2130f5192406
+
+% 0 1 0 16673f91ad61ea77084fea8b67da137a
+
+% 0 1 0 09b61dc4a082ae69024c85c406ecdf85
+
+% 0 1 0 1de1af9f01f8115a12c8508b628e6093
+
+% 0 1 0 1e8f943973a0501019f7716091956ca4
+
+% 1 1 0 0ea7bc43f80e6c8604794d22dca04080
+
+@ 0 3 0 1be12df2f7080ddc1a056fa45b949ea0
++     两个 `Long` 实例刻意不对称，以符合各自的领域：`JavaLongInstant` 计的是自纪元以来的毫秒数，而 `JavaLongDuration` 计的是纳秒数。
+
+@ 0 5 0 07e469372689c53d1602ba67098b8c6b
++     该库只有一个源集 `diuretic.core`，它需要 JVM 的 `java.io`、`java.nio.file`、`java.net` 和 `java.time` 包。
++     它的七个对象被导出到 `soundness` 总括包，它为 anticipation 选择包贡献的 given 也在那里镜像，因此用户只需写 `import soundness.*`，再加一个按名称的导入。
++     这些 given 本身声明在 `anticipation` 包中，并随该包一起编写文档。
+
+% 0 1 0 0096fefc9cb1ad13188f4a7db63833ac
+
+% 0 1 0 17ab5b84ea3244ad108c0b15ead1e019
+
+% 0 1 0 0547ad9bbcd3dd050c64f2a99795b618
+
+% 0 1 0 0b187556d463b1df13c0df95e7bc88fb
+
+% 0 1 0 0ea153813f892a56128abb4510f5b068
+
+% 0 1 0 019b2165bca4bb8e1a80a35be8bdab0f
+
+@ 0 1 0 1a911bf6445f9f561f5dd4e8fea13a00
++ entry .JavaIoFile   作为路径的 `java.io.File`：抽象为其绝对路径文本，从文本实例化
+
+% 1 1 0 0d7d55e176d6853704420b9ac5c4ec5a
+
+@ 0 4 0 06c7dfdb55227cd513dc3cbefc2deee6
++       一个对象，它是 `java.io.File is Abstractable across Paths to Text` 和 `java.io.File is Instantiable across Paths from Text`。
++       它作为 given `pathInterfaces.javaIoFile` 提供，按名称导入，从而使任何产生路径的 API 都能返回一个 `File`。
+
+% 2 1 0 1eedbffb7e40308a07a5da77f0cf2c35
+
+% 3 1 0 1b1d6b9154e244bd1825f09be34ca781
+
+% 0 1 0 1937a1507552b49819a8baef9a558fd8
+
+% 0 1 0 04d110c49ef33be11057429fbb9c614d
+
+% 0 1 0 023b039de968335e078364ccf5259fe3
+
+% 1 1 0 0ee67744432ca35f164b1525c13a0cfc
+
+@ 0 3 0 0c9e8fee4f27c5541933d5d6280ae7d5
++       抽象总是给出绝对路径，因此相对的 `File` 会相对于 JVM 的工作目录解析。
++       通过 `javaIoFileRepresentative`，`java.io.File` 也是一个 `Representative of Paths`。
+
+% 1 1 0 00feece0a8df7bda02456a9bd0a4532d
+
+% 0 1 0 05c5d2cc555d8e2d0e8cfb728a4123a4
+
+@ 0 4 0 14a6d8b7c975c5c3191629501cda1eea
++   entry .apply        路径文本对应的 `java.io.File`，相当于 `new File(path)`
++   entry .genericize   文件的绝对路径，作为文本
++       即 `getAbsolutePath`：相对文件相对于工作目录解析，不跟随符号链接。
+
+@ 0 1 0 17ebbf72bfb8d5e20ebb917bd2603cd1
++ entry .JavaNioPath   作为路径的 `java.nio.file.Path`：抽象为其绝对路径文本，从文本实例化
+
+% 1 1 0 1add54a8651bfeb400614c06cf8117f9
+
+@ 0 3 0 070174ec96fa5231135f4ac8b2bd91e0
++       一个对象，它是 `java.nio.file.Path is Abstractable across Paths to Text` 和 `java.nio.file.Path is Instantiable across Paths from Text`。
++       它作为 given `pathInterfaces.javaNioPath` 提供，按名称导入。
+
+% 2 1 0 17cc3784c613805803eafef34c1e6203
+
+% 3 1 0 0861b03e2daaf68405f0467f1a34364d
+
+% 0 1 0 1dc3da7c008fb4f117e2428d65bc9dea
+
+% 0 1 0 0e4c6cca595d2141128bbbe41ada4e8b
+
+% 0 1 0 1d273d6594c2847c05407937bf266aea
+
+% 0 1 0 05e01478bd59a9d3012096233ef0f57f
+
+% 1 1 0 17a75d09d85c8cff1347eb3ef821b6e9
+
+@ 0 4 0 1f80dab1984dd6551cf53437f627b075
++       实例化使用 `Paths.get`，它会规范化多余的分隔符，因此 `/tmp//example` 抽象回来是 `/tmp/example`。
++       抽象总是给出绝对路径。
++       通过 `javaNioPathRepresentative`，`java.nio.file.Path` 也是一个 `Representative of Paths`。
+
+% 1 1 0 151f924c637ab27305d4dd246cca81bc
+
+% 0 1 0 0ef8ccf21e9bb91d18fd16aa8394bb5a
+
+@ 0 4 0 1c911b4083ac56df02e1713b457d48b8
++   entry .apply        路径文本对应的 `java.nio.file.Path`，通过 `Paths.get` 得到
++   entry .genericize   路径的绝对形式，作为文本
++       即 `toAbsolutePath`：相对路径相对于工作目录解析；除了 `Paths.get` 已做的之外，路径不再规范化，也不跟随符号链接。
+
+@ 0 1 0 0ce790316f138a36138a8a54ac8ba5d0
++ entry .JavaNetUrl   作为 URL 的 `java.net.URL`：抽象为其文本，从文本实例化
+
+% 1 1 0 11fe801e259291fe04ae9ceed3bcb7a3
+
+@ 0 3 0 1762b50f433659211a3e94d3d381e6a9
++       一个对象，它是 `java.net.URL is Abstractable across Urls to Text` 和 `java.net.URL is Instantiable across Urls from Text`，作为 given `urlInterfaces.javaNetUrl` 提供，按名称导入。
+
+% 2 1 0 1e44fa1556f4a97f13eefc06daa55bfb
+
+% 3 1 0 14d371afd3b164330919ef547d92cd69
+
+% 0 1 0 122ec393712e0e9a1e87b53a34b21441
+
+% 0 1 0 011bfca5ce4545c312e017ea8cda522e
+
+% 0 1 0 0ff08c7d08b2b9aa0961be8c3e8239a0
+
+% 1 1 0 0fdcdaa53d891967199db65308a7cea1
+
+@ 0 1 0 133b4274cd2568281fd9a06e33201fa9
++       端口、路径和查询字符串在往返中保持不变。
+
+% 0 1 0 1239d8c416dc753117c18d4544a7b78a
+
+@ 0 6 0 126d5fe5689221a30db66f8dcdea3ee3
++   entry .apply        通过 `java.net.URI` 从文本解析出的 `java.net.URL`
++       即 `URI(text).toURL()`，这是未被弃用的途径：格式错误的文本会像 Java API 那样抛出 `URISyntaxException` 或 `MalformedURLException`，而不是抛出 Soundness 错误，因此来自程序外部的文本应当先验证，例如验证为 `HttpUrl`。
++   entry .genericize   URL 的文本，即 `toString` 给出的结果
+
+@ 0 1 0 0351866a6332c6420257b83e308caca9
++ entry .JavaTimeInstant   作为瞬时的 `java.time.Instant`：与以纪元毫秒计的 `Long` 相互转换
+
+% 1 1 0 092f2a7e426f92cf0295e3cc304269d4
+
+@ 0 4 0 0d57bcc9b541eae710551f28697ae653
++       一个对象，它是 `java.time.Instant is Abstractable across Instants to Long` 和 `java.time.Instant is Instantiable across Instants from Long`，作为 given `instantInterfaces.javaTimeInstant` 提供，按名称导入，从而使从文件或时钟读取的时间能以 `java.time.Instant` 的形式到达。
+
+% 2 1 0 1e0e867dd6ff456703a1ee12a84c24fe
+
+% 3 1 0 1c835755ea3a0b491cdbf266ec86aab8
+
+% 0 1 0 1607a2d7c848bf4d0588ca26aaa1be01
+
+% 0 1 0 0325dffe58180f32178f218872b508a1
+
+% 0 1 0 00ebc172cd543cd00f6ef7957b48f28a
+
+% 1 1 0 16d2b942a738edfd01c35884f9dff7d7
+
+@ 0 2 0 1c7171b5096750d61d71a3aac2445c93
++       通用表示的精度为毫秒，因此 `.genericize` 会截断 `java.time.Instant` 中不足一毫秒的部分。
++       纪元之前的瞬时为负数。
+
+% 1 1 0 1f0a72396f27c60603c7b405fafaee7c
+
+% 0 1 0 1325dc7d93eb17630096bac18e675441
+
+@ 0 4 0 1da6623411c1c0a800d36149244b37f4
++   entry .apply        由自纪元以来的毫秒数得到的 `java.time.Instant`，通过 `Instant.ofEpochMilli`
++   entry .genericize   瞬时自纪元以来的毫秒数，通过 `toEpochMilli`
++       截断任何不足一毫秒的部分；对于离纪元太远、无法以毫秒数放入 `Long` 的瞬时，会像 `toEpochMilli` 那样抛出 `ArithmeticException`。
+
+@ 0 1 0 1a7a26612760279c0ef332605b51d19a
++ entry .JavaUtilDate   作为瞬时的 `java.util.Date`：与以纪元毫秒计的 `Long` 相互转换
+
+% 1 1 0 12e6d950defccf3908d01a1ab25e3a56
+
+@ 0 4 0 093a443a423525ae0bd50889b8fe34a4
++       一个对象，它是 `java.util.Date is Abstractable across Instants to Long` 和 `java.util.Date is Instantiable across Instants from Long`，作为 given `instantInterfaces.javaUtilDate` 提供，按名称导入，用于那些仍然接受 `Date` 的旧版 Java API。
+
+% 2 1 0 0925ecf4277e72180724ece1bb12a851
+
+% 3 1 0 06c4283d005ba7091dc9537a7cab610a
+
+% 0 1 0 1a78c2a507bd8470028066af681c5fd3
+
+% 0 1 0 1635c553600112cf0fab67e2c5b654b9
+
+% 1 1 0 1c1739ef139a54b218fb37d5420d41b7
+
+% 1 1 0 144b8784f96ab55f0c90a9c089645411
+
+@ 0 2 0 1c8cc44103c725850b0fbc131d480612
++   entry .apply        由自纪元以来的毫秒数得到的 `java.util.Date`
++   entry .genericize   日期自纪元以来的毫秒数，通过 `getTime`
+
+@ 0 7 0 0300f29ed22b529106c23a4e44b13c6b
++ entry .JavaLongInstant   作为瞬时的裸 `Long`，计自纪元以来的毫秒数
++     一个对象，它是 `Long is Abstractable across Instants to Long` 和 `Long is Instantiable across Instants from Long`，两者都是恒等转换，作为 given `instantInterfaces.javaLongInstant` 提供，按名称导入。
++     正是它让瞬时能够以原始的 `System.currentTimeMillis` 形式接收或给出。
++     注意它与 `JavaLongDuration` 的不对称，后者的 `Long` 计的是纳秒。
++     它的成员 `apply` 和 `genericize` 都原样返回其参数。
+
+% 2 1 0 0219aafb5e24b23911b6b58fc04138cb
+
+% 3 1 0 1fd254dca2384ef81b6db789d2e7aaab
+
+% 0 1 0 11c16afe874c18021c3200275a3db184
+
+% 0 1 0 12e4516775cfdb9812747ca946e89ff0
+
+% 1 1 0 00c9bc0414ff6bd116b1df0e1971a519
+
+@ 0 7 0 1dd5738dbe99514c08564014f808b73b
++ entry .JavaLongDuration   作为时长的裸 `Long`，计纳秒数
++     一个对象，它是 `Long is Abstractable … to Long` 和 `Long is Instantiable … from Long`，两者都是恒等转换，作为 given `durationInterfaces.javaLongDuration` 提供，按名称导入，从而使超时或休眠可以以原始的 `System.nanoTime` 差值给出。
++     该 `Long` 是**纳秒**数，即 `Durations` 的通用表示，而不是像 `JavaLongInstant` 那样的毫秒数。
++     它的成员 `apply` 和 `genericize` 都原样返回其参数。
+
+% 2 1 0 0457acb3c52c565a074667412ae77bf9
+
+% 3 1 0 0eeca76978e40b780695d59d6da02b59
+
+% 0 1 0 183c7fcaeef0552905a3cc3c2399f799
+
+% 0 1 0 1da931a4bdd0b4ca0fd4204700fa73f1
+
+% 1 1 0 120102d56928233e0c9f023ef91ec604
+
+@ 0 3 0 0b83addad93c1a980d8bbb515a9f3d68
++     裸 `Long` 没有单位，因此在需要以毫秒或秒计的时长时，可以改用 anticipation 的 `abstractables` 包中按单位划分的 given；同一时间作用域中只能有一个 `Long` 时长实例。
+
+@ 0 5 0 1c50d340881696d91b9ad6b7ddf7b0c7
++ entry .javaIoFileRepresentative   `java.io.File` 是 `Representative of Paths` 的证据
++     一个擦除的 given，使得以 `[path: Representative of Paths]` 为界的方法可以接受 `java.io.File`。
++     它是 `diuretic` 包中的顶层 given，不在任何伴生对象中（`java.io.File` 没有 Soundness 能够添加内容的伴生对象），因此必须按名称导入：`import diuretic.javaIoFileRepresentative`。
+
+@ 0 5 0 07c90b40e15905751dfec453d061e552
++ entry .javaNioPathRepresentative   `java.nio.file.Path` 是 `Representative of Paths` 的证据
++     一个擦除的 given，使得以 `[path: Representative of Paths]` 为界的方法可以接受 `java.nio.file.Path`。
++     它是 `diuretic` 包中的顶层 given，不在任何伴生对象中，因此必须按名称导入：`import diuretic.javaNioPathRepresentative`。
++     由于它是擦除的，只能在擦除的位置（例如上下文界定）中被召唤。

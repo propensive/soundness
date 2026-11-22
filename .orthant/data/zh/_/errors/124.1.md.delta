@@ -1,0 +1,56 @@
+orthant 2 language
+
+% 0 1 0 0292e2dfdcb7403215d50f7937088a37
+
+@ 0 1 0 18ea679750e0b63e1ac591e5ad022f4d
++ 当 MCP（Model Context Protocol，模型上下文协议）操作失败时抛出。
+
+@ 0 1 0 1d8ed6a2d2412a231ea0d46e12dff5b7
++ ## 原因
+
+@ 0 5 0 1da40d407528f8151f08bdc1000ae14f
++ Synesthesia 的 MCP 运行时把传入的请求分派给用户定义的工具、提示词和资源。
++ 当分派或参数绑定失败时，就会抛出此错误。
++ 构造器接受一个 `reason: Reason`；渲染出的消息为 `the MCP operation failed because $reason`。
+
+@ 0 1 0 0982d44e8aec0bbd176df78e68656684
++ ## 变体
+
+% 0 1 0 0d261b202fafd66c1819ac48206e009b
+
+@ 0 2 0 003f897fd98523f313caf2ca9eacbe13
++ 请求中的方法名与任何已注册的工具或提示词都不匹配——这是生成的分发器中的通配回退。
+
+@ 0 1 0 15f7d839cef425ef1c8e7003f24eaf0d
++ **示例。** `[↯/s.124.1.1] the MCP operation failed because the method name does not match any registered tool or prompt`
+
+@ 0 2 0 018dac47dae614dc033a43f70abc6059
++ **解决方法。** 核实方法名与服务器接口上声明的某个方法一致；检查是否有拼写错误或大小写不一致。
+
+% 0 1 0 151173fdde9da43e049d114e7aabc530
+
+@ 0 2 0 14ec6ac1062967510b093ca9194d005e
++ 资源请求中的 URI 与服务器接口声明的任何 URI 模式都不匹配。
+
+@ 0 1 0 166c122f7dc9293513cddfa9e59ca3f7
++ **示例。** `[↯/s.124.1.2] the MCP operation failed because the URI does not match any registered resource`
+
+@ 0 2 0 0cd6bb8ca21cccda17d3400908bf2c95
++ **解决方法。** 确认该 URI 与接口上用 `@resource(...)` 声明的某个模式匹配。
+
+% 0 1 0 1bd74ee9c69bbb43112ca4b13c8f1102
+
+@ 0 2 0 15d16cc4c9e48dd1183fb6b5561887d8
++ 工具方法的某个必需参数不在请求的输入映射中。
+
+@ 0 1 0 17fb25ff8d0cc2130e2550f8ca2c32cc
++ **示例。** `[↯/s.124.1.3] the MCP operation failed because a required parameter was not present in the input`
+
+@ 0 3 0 17cfd0b3841963e91476d5137830770b
++ **解决方法。** 在 JSON-RPC 参数对象中发送所有必需参数，或在服务器接口中把该参数标记为可选。
+
+@ 0 1 0 004f241cb4a4ed0405cb108ee75b2611
++ ## 另请参阅
+
+@ 0 1 0 19d4132abcd44a2619fb7809055aa7ca
++ - 源码：`lib/synesthesia/src/core/synesthesia.Mcp.scala`

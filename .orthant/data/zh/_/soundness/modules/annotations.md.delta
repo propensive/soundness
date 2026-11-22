@@ -1,0 +1,448 @@
+orthant 2 language
+
+@ 0 1 0 0be26bd1e7f1b04c037738e58aeba05c
++ ## 注解
+
+@ 0 1 0 02ed9263154c2802081b650b8e2f33e5
++ ### 概述
+
+@ 0 4 0 00b43f9e9883090116c0b8a11827e7dc
++ Scala 的[静态注解](https://docs.scala-lang.org/scala3/reference/other-new-features/annotations.html)把元数据附加到类型和字段上。
++ 语言没有提供读回它们的普通方式，要读取它们通常意味着编写宏。
+
+@ 0 3 0 0de229a2cd1ee9fa10c8c25e55868f99
++ 这里通过一个[类型类]读取它们。
++ 为某个类型召唤 `Annotated`，就能得到该类型上、其字段上或密封层次结构各变体上的注解。
++ 答案在[编译时]求出，[运行时]不涉及反射，使用方也无需编写宏。
+
+@ 0 2 0 1ac2e182458633991ab6588883d89317
++ `@name` 注解用于在每种序列化格式中重命名字段，它在这里定义，并通过这种方式读取。
+
+@ 0 1 0 0767f0aa57654d0e00737f1e21bc7a8e
++ ### 关于注解
+
+@ 0 3 0 0abf6f4b5b80e0f51be1b6893d7661f8
++ 注解是放置某些元数据的恰当位置。
++ 线上名称位于它所重命名的字段上，标记位于它所区分的分支上。
++ 注解就在它所描述的事物旁边，并随之一起移动。
+
+@ 0 2 0 04d8d700fee5baec18006c2ba0abbce7
++ 注解在 Scala 中用得不多，因为它们难以读取。
++ 运行时反射既慢又没有类型，而在编译时访问需要精通引用和拼接。
+
+@ 0 4 0 0a5846638f4b66f11cc278104768cbf8
++ `Annotated` 类型类隐藏了这套机制。
++ 请求说明想要什么：哪种类型的注解，位于哪个字段上，属于哪个类型。
++ 编译器以值的形式提供答案。
++ 拼错的字段名或错误的类型都是编译错误，这就是[构造即安全](../../philosophy/safety-by-construction.md)。
+
+@ 0 2 0 0d4a86d72c7bf8530bee6e539f01ffee
++ 所有内容都来自 `soundness` 包，第二个导入让示例能打印结果：
+
+% 2 1 0 1ac8246fb79068c101a1474fc737cb6e
+
+% 0 1 0 1bca28db88d8e18d0fbcefeaacfc679c
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 1 1 0 02a8d4cb9fa86f7a19de906d90204517
+
+@ 0 1 0 16a88183e1d10e2210adbcad2b1908e9
++ ### 读取注解
+
+@ 0 2 0 1b4317a04ca6dfe412768be2261675fa
++ 注解是一个扩展 `StaticAnnotation` 的普通 case class。
++ 示例使用其中三个，以及一些带有它们的定义：
+
+% 2 1 0 03171844df3c388d10c42552da3af530
+
+% 0 1 0 0f4b995fb32b420a1ca96a7d02439e8d
+
+% 0 1 0 1a6fd7032f1d56c100ac763533a4b823
+
+% 0 1 0 0c1d580858569fcc1cbeadad5d3060c0
+
+% 0 1 0 009332a33ea3ee660d98ede325655db9
+
+% 0 1 0 19915447f0678efa11e8b28cbfc67229
+
+% 0 1 0 14c1a310a765f774167f07a2b058c015
+
+% 0 1 0 0f7a67827f97f5ad03c7960e4848ee84
+
+% 1 1 0 116bd6528ce8e21e007843a645b7d4dd
+
+@ 0 1 0 16424772ff3accfc1becb3a54436e408
++ 通过指明类型和字段来召唤字段的注解：
+
+% 2 1 0 09ae3f0ea3819b711433f214302d7498
+
+% 3 1 0 0ffdb433ea98ef0919bf8303b84626fd
+
+% 4 1 0 0d4b91adce2b351d1722d46d4dad1f75
+
+% 0 1 0 0af567d1afa10341083931c10ebf0438
+
+% 1 1 0 1619c803dc69e7551d2aedf2285d314a
+
+@ 0 1 0 0a456f3cf649862f1480d9a1e1a6c4ad
++ `by` 把查询限定为一种类型的注解：
+
+% 2 1 0 1ebf9bd56d5f679e1f2d32fcc41e358c
+
+% 3 1 0 0f033c3a393072ea11cba8775f43abe5
+
+% 4 1 0 0b1684cc49824081169717d4a1aa1213
+
+% 0 1 0 0cb570b2bfdd1cac1bc847e3753d4460
+
+% 1 1 0 11bd12c909bf292a18d98b58714662b4
+
+@ 0 1 0 03a867660af53c821683df7d02b1d3d0
++ 普通形式给出类型本身上的注解：
+
+% 2 1 0 05f0768ce1880b610afadb7b48c730db
+
+% 3 1 0 16101371c72d2ece039087cd14ea6fb7
+
+% 4 1 0 1c882556b63e7e59091586befbfbc71d
+
+% 0 1 0 0895ffe9bb48c93a1cba3614aa6952b5
+
+% 1 1 0 0f8a38c792344da70e7cf9f082d9c3d4
+
+@ 0 2 0 0ec0823efc26806a0e62724e907aaec3
++ `fields` 一次给出所有带注解的字段。
++ 没有所请求类型注解的字段不会出现在映射中：
+
+% 2 1 0 1182cd7da61377e10d3a5257fc1a273f
+
+% 3 1 0 1ad53cfc0ab153e10ea67be7e77b604f
+
+% 4 1 0 054b8f26063833f204434d8a57c5b4cc
+
+% 0 1 0 1f5ff6b8a7c4ddf2005aec49e42a656a
+
+% 1 1 0 149fec9ed92add8d15feeab7a2877439
+
+@ 0 2 0 00c34e98651d182a1fcc635f504ceddf
++ 答案在代码编译时计算出来，在编译后的程序中是一个常量。
++ 没有注解的字段得到一个空集合，根本不是字段的名称也是如此：
+
+% 2 1 0 1b66dafd320d48b2047aed88968f2aae
+
+% 3 1 0 13cc5ff2259b895c076eb7f7788e39ac
+
+% 4 1 0 18312c2a365785d40790eebef69476df
+
+% 0 1 0 1b62750460e6d47a0f86f9015b5391c6
+
+% 0 1 0 08473e3d548c434a08c4c9f39aa7c842
+
+% 1 1 0 1e22a3b936fe29fa100bc696c9764ff5
+
+@ 0 1 0 0c2fbd66016a17e90db8984a8fdda292
++ ### 查找带注解的字段
+
+@ 0 2 0 17e02add7d9836e116eaf018008d4896
++ 问题常常是反过来的：*哪个*字段带有这个注解？
++ 当恰好只有一个字段带有它时，召唤出的实例知道它的名称：
+
+% 2 1 0 0f8058d677286c5c1e70b9348753fca6
+
+% 3 1 0 047e29e053a846be195a78e30dcd9dca
+
+% 4 1 0 163ce027bdecb6a600de76ac6c338e51
+
+% 0 1 0 00fccaebef5159b50d01f7920ffe959a
+
+% 1 1 0 08ba084811ef657d1573306f4bc5ed7e
+
+@ 0 2 0 1d662a401c99646917ab9add761d1449
++ 查找字段通常是读取或写入它的第一步，因此实例还提供一个指向它的[透镜](optics.md#lenses-as-values)：
+
+% 2 1 0 0b93180978fa058f194f88829fbc589e
+
+% 0 1 0 10faa57fb663289d073643178fdb3d3b
+
+% 1 1 0 0848f93c2693c8870c019ed81a1daf94
+
+% 3 1 0 001674a9f24efd1311010dcaa29b5fb7
+
+% 4 1 0 1c1f7d5e745ca5160de8f74c1dc1dd74
+
+% 5 1 0 1989cefa5301a54319fd1a7fa5816fcb
+
+% 0 1 0 0cbbf9cd315bafc40f99258692bb709e
+
+% 0 1 0 0fd504180ea9f8b11431bd13ee529338
+
+% 0 1 0 12204f5a9827538701ec6c59977febd7
+
+% 1 1 0 095070ea880cef651d097eee5bcf6928
+
+@ 0 3 0 00e9a4761108fc521ca0ce486b959747
++ 序列化库就是这样在没有被告知名称的情况下找到“标记为标识符的字段”的。
++ 如果有多个字段带有该注解，`field` 就不可用，因为实例的类型记录了匹配是否唯一。
+
+@ 0 1 0 0aa8af291695b581085ddf1e3ae9d077
++ ### 密封类型的变体
+
+@ 0 2 0 13df3585119b5ab01b906f963c8d7966
++ [枚举]或密封特质的各个分支用 `under` 查询。
++ 结果把每个变体的名称映射到它的注解：
+
+% 2 1 0 02ff8da8ec20f81a19c20a998d0c2f29
+
+% 0 1 0 0be42c5e934b3b501e25bca0c26cd4ec
+
+% 0 1 0 0e7a2839191937d71b9d625ac0681ddc
+
+% 0 1 0 0d0adb268a15c68712b7ba2e35c97f21
+
+% 0 1 0 1701c349a32ad66114dd3ee5a70682a8
+
+% 0 1 0 0f0e01927a755c1a007819ce12ac7dc2
+
+% 1 1 0 06871dbe01d6dce016d1fe9eebe752d0
+
+% 3 1 0 025c51a6bd13f49e0c0f41701022640a
+
+% 4 1 0 162695465a78089d03b6260b71bdbd3e
+
+% 5 1 0 0029d6d3b6bf17c10e04161389ce2426
+
+% 0 1 0 1b471124de6f36b40e5032401c4ef872
+
+% 1 1 0 06c345e714c7f29810daf9fc4f3e5e29
+
+@ 0 1 0 14952affebf8f481042969c9165bf436
++ 以下是各种查询形式，以及各自给出的结果：
+
+% 2 1 0 1f4a4a0c77055aea1defbb7fa1af868f
+
+@ 0 9 0 19ae0c4319831e0c0da02288514f1dcc
++ column  查询形式
++ column  成员
++ column  返回
++ row  `T is Annotated`  `apply()`  类型 `T` 上的注解
++ row  `T is Annotated on "f"`  `apply()`  字段 `f` 上的注解
++ row  `T is Annotated by A on "f"`  `apply()`  字段 `f` 上类型为 `A` 的注解
++ row  `T is Annotated by A`  `fields`  每个字段到其类型为 `A` 的注解的映射
++ row  `T is Annotated by A`，恰有一个字段匹配  `field`、`lens`  该字段的名称，以及指向它的透镜
++ row  `Annotated under T`  `subtypes`  `T` 的每个变体到其注解的映射
+
+% 1 1 0 010ed93be120a541064a69f7b0218e91
+
+@ 0 1 0 008708f7234c96c20f6584d14f57061d
++ ### 带参数的注解
+
+@ 0 1 0 176b1dcf8c6cd53610ca554938d221c7
++ 注解可以接受类型参数，查询可以按它进行筛选：
+
+% 2 1 0 003f0e74c47cd4880fd7db21bc567dbe
+
+% 0 1 0 0afc9df64976139c0439f90ef24ac987
+
+% 0 1 0 17514da2d263ee260964fa793e19aa86
+
+% 1 1 0 0c18aef0c6091fed0098a0068f25f8c1
+
+% 3 1 0 10329fa2ec2df4fb0e766c480ac62b6a
+
+% 4 1 0 16ebcd0afb69393111abfde5fa62c482
+
+% 5 1 0 08f0136bbc7e2d0e15113db779694eab
+
+% 0 1 0 17de4d5507723b9c00daa692e616aebc
+
+% 0 1 0 08772ff2fd9368d31b42bb4a88634ecf
+
+% 1 1 0 0340ed58f678660305b6217d0f2f1067
+
+@ 0 2 0 1dc43ba1d7f4cb6506d9017366d40433
++ 字段 `two` 带有一个标记，但没有针对 `Person` 的标记，因此第一个查询为它给出空集合。
+
+@ 0 2 0 08b1910b0ece35f50c2c4ca40d2af154
++ 单独的 `@marker(1)` 被推断为 `marker[Any]`。
++ 对 `marker[Any]` 的查询能看到它，对 `marker[Person]` 的查询则看不到。
+
+@ 0 1 0 129b9ca60bb7ec7c100faba6aa88bdbf
++ ### `@name` 注解
+
+@ 0 3 0 1a302ba7df4373080111c5313e2d18c8
++ `@name` 注解在这里定义，每种序列化格式都遵从它。
++ 它在线上重命名字段或变体。
++ 不带类型参数时，它适用于所有格式。
++ 带类型参数时，它只适用于一种格式：
+
+% 2 1 0 10f351ab4247dac006d89b24822b6fad
+
+% 0 1 0 0136154c7ce32de81f00b5e87d14a633
+
+% 1 1 0 0cc2caf674e3201b136076467ba3d3b6
+
+@ 0 2 0 05bfd561fe5e91f604a5aa3c32c1d1d0
++ 格式的[派生]通过 `relabelling` 读取这些注解。
++ 它把每个被重命名的字段映射到其序列化名称，针对某一格式的重命名会覆盖不带参数的默认值：
+
+% 2 1 0 12b251447a9d95a91a76a51f6526bebc
+
+% 3 1 0 173b7a3f06f496ec13b70db5331dc07f
+
+% 4 1 0 0fa0a8edf10f88b30a2e3ce47213cad9
+
+% 0 1 0 18c4ef056cdcce6a0d2229083b988f63
+
+% 0 1 0 1e937459c98d1ebe1cf0ec31d8a3aee2
+
+% 1 1 0 00d654a3460a8d9c0ce94c61fa6827c9
+
+@ 0 2 0 1527562588c8302516765601ea54bb72
++ 这就是为什么一个注解可以同样用于 [JSON](json.md#renaming-fields)、[XML](xml.md)、[YAML](yaml.md) 等格式。
+
+@ 0 2 0 081f3850474a93b016a99f6c21740075
++ 有四个函数为派生读取注解。
++ 在每个函数中，映射只包含带有所讨论注解的字段或变体：
+
+% 2 1 0 124a51c97e96d0f004130050add43472
+
+@ 0 7 0 0a6ba0b7beaabe5b0b7b943849431350
++ column  函数
++ column  读取
++ column  返回
++ row  `relabelling[T, F]`  `T` 字段上的 `@name`  每个被重命名的字段到其在 `F` 中名称的映射
++ row  `variantRelabelling[T, F]`  `T` 变体上的 `@name`  每个被重命名的变体到其在 `F` 中名称的映射
++ row  `fieldAnnotations[T, A]`  字段上类型为 `A` 的注解  每个字段到其 `A` 集合的映射
++ row  `subtypeAnnotations[T, A]`  变体上类型为 `A` 的注解  每个变体到其 `A` 集合的映射
+
+% 1 1 0 1f768ea30584ece20e868f178e3bbb19
+
+@ 0 1 0 15326abc96bd60860ce5802a72a60488
++ 后两个是前两个背后的通用形式。
+
+@ 0 1 0 0e790e9cbba1d51c186d1fdc2ba6759c
++ ### 按名称访问字段
+
+@ 0 2 0 17afae2b3e8cee3e0cade3e7299001a2
++ case class 的字段也可以在运行时按名称访问。
++ 这种映射在代码编译时生成，而不是通过反射。
+
+@ 0 4 0 0e01c32eb5eedf600370dcaa4cda486f
++ `Dereferenceable` 给出字段的名称、按名称取得的单个字段的值，以及作为映射的整个记录。
++ 实例以字段产出值的类型为参数。
++ 所有字段都是 `Int` 的记录可以解引用为 `Int`。
++ 任何记录都可以解引用为 `Any`，它涵盖所有字段。
+
+% 2 1 0 1453dd24c5836b2401c7f4db553414a9
+
+% 0 1 0 01d276d0040ec8290e6f64db9543f519
+
+% 0 1 0 15b7be4f4a9d4aa80f83297d1346f52f
+
+% 0 1 0 1f8e82a62403cf791e21390ad53f3c9f
+
+% 1 1 0 1396ccf72b4692bc0834e14df2ae1dac
+
+% 3 1 0 1cdcc00ec6f51c850eee4fe37f76b45c
+
+% 4 1 0 06edeb055c275c4d08f2f9f3a41efc7f
+
+% 5 1 0 054c5718628335080cb0608fa1d92eea
+
+% 0 1 0 1c17d589112169e31ae746da3bb77a02
+
+% 0 1 0 17256a412a367aa607a870afa119b96f
+
+% 0 1 0 12d4561d7cc4f70517d09bc09cab282c
+
+% 1 1 0 0ac275903d194bf511c3c5ce508d51a7
+
+@ 0 1 0 1bcc5a100dcefb761d2ed3763b89e2f6
++ 名称和成员来自一个映射，不按声明顺序排列。
+
+@ 0 2 0 0b1dcf78c4eda17e00324cbf021755d2
++ `membersOfType` 从任何记录中挑出某一类型的值。
++ 通用渲染器或模板引擎可以用它读取值的字段，而无需类型转换：
+
+% 2 1 0 1da28bcccf87488c051a337e702a1b7a
+
+% 3 1 0 036ce448caec758f0ba8eff90bbbdfe5
+
+% 4 1 0 1660cb095ddb418e1d439d771ddd8127
+
+% 0 1 0 0df9d6df879a148e00e9c6c9f240ac32
+
+% 1 1 0 0f1941b708c97cc91d0e9253548ebed3
+
+@ 0 3 0 0402aeeb39a92b5f0b9d5636fd14d922
++ 每个访问器都是一个[透镜](optics.md)，因此按名称找到的字段既可以读取，也可以写入。
++ `update` 替换具名字段，`modify` 对它应用一个函数。
++ 二者都给出一个新记录，如果该名称不是构造器参数，则给出 `Unset`：
+
+% 2 1 0 1d0dd3acc168e3891ec55da2ba5695b4
+
+% 3 1 0 15ddb0389d42e06a103b16f3c14c6e5b
+
+% 4 1 0 02936296aa0195841b03e54dd2918e48
+
+% 0 1 0 1e35b80c9ee11e090731b1b7281ca89b
+
+% 0 1 0 010d33b906ad536e06625b889c5db961
+
+% 0 1 0 17d018923568a0c00d30bb9921e8564c
+
+% 1 1 0 16ab0a4421e39d1c00d839fd16fd0aca
+
+@ 0 3 0 0f8891e3817be9311cf4b360c496bfd0
++ 只有当字段的类型接受实例产出的每一个值时，该字段才可写。
++ 解引用 `to Any` 的记录的字段可以读取，但不能写入，因为 `Any` 不能放进 `Long`：
+
+% 2 1 0 084273d2e9d0cda31a7c591e33d4ed35
+
+% 0 1 0 01b7da61c25f6b5002ad042101756328
+
+% 1 1 0 0dea52613748698511969eeae87b3494
+
+% 3 1 0 049081a39defc4f913c591a0518c49db
+
+% 4 1 0 1e0f934ce4fdcfd30ff26e34552dc1f7
+
+% 5 1 0 1b949efab0a730fb0a5704bfdf306d0d
+
+% 0 1 0 1a6e126cc0ba2de5073ef79b4ed1b567
+
+% 0 1 0 0d427dafb91c9f7c142f449df159207b
+
+% 1 1 0 114cb050f83143b10e369ca8c3e438c4
+
+@ 0 1 0 16c5dd520ff3ea41098fb3dea0d9245b
++ 以下是 `Dereferenceable` 的成员，针对解引用 `to R` 的类型为 `T` 的记录：
+
+% 2 1 0 1cf6a04bb406c27b1d37b333bf06ebc3
+
+@ 0 8 0 026cb44cad6a37f31a0268cb0ed72a7a
++ column  成员
++ column  返回
++ row  `names(record)`  字段名称
++ row  `select(record, name)`  具名字段的值，作为 `R`
++ row  `members(record)`  每个字段名称到其值的映射
++ row  `lens(name)`  指向具名字段的透镜，或 `Unset`
++ row  `update(record, name, value)`  替换了该字段的新 `T`，或 `Unset`
++ row  `modify(record, name)(lambda)`  对该字段应用了函数的新 `T`，或 `Unset`
+
+% 1 1 0 007e0167eac975c40de117ac559db86b
+
+@ 0 3 0 0d3760b73a5e4c5703e167d8858be435
++ 这种映射是一张编译好的访问器表。
++ 访问一个字段只需一次方法调用，而类型中不存在的名称在构建这张表的地方就会被发现，而不是由一次在运行时失败的反射查找发现。
+
+@ 0 1 0 0a15ebad305c934c1527dd3a42e83d7a
++ ### 相关
+
+@ 0 9 0 0bba0fddb1dae0b81424bea48f5bdc95
++ - [JSON](json.md#renaming-fields)、[XML](xml.md)、[YAML](yaml.md) 和其他格式遵从 `@name`。
++ - [光学组件](optics.md)介绍了访问带注解字段和具名字段所用的透镜。
++ - [派生](derivation.md)介绍了查阅注解的生成的类型类实例。
++ - [元编程](metaprogramming.md)介绍了这个类型类使之不再必要的宏。
++ - [CBOR](cbor.md)、[Protobuf](protobuf.md)、[数据库](database.md)和 [MCP](mcp.md) 读取字段和方法上的注解。

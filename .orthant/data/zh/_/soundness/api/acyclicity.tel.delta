@@ -1,0 +1,1204 @@
+orthant 2 language
+
+% 0 1 0 0f04ec4b9ac2d4270a232409219e1f6b
+
+% 0 1 0 008e1f784f0ea89e0b486934b5cd6e3e
+
+% 0 1 0 0b5938ce7315323607e1922cbc4d93e2
+
+@ 0 1 0 1383faeae4adb4080e61292bc56ab0aa
++ info   以值表示的有向图：构造即无环，可排序、搜索、编辑和绘制
+
+% 0 1 0 0ca6d61ddd9511ea1cdae38f1414f6fe
+
+@ 0 10 0 1d09c200a0743abc1d5a382f99d1081d
++     _Acyclicity_ 将有向图——构建系统、任务调度、类型层次或包依赖的形状——表示为不可变值，并提供这类图所需的操作：拓扑排序、可达性、传递闭包与传递归约、围绕某个节点切片，以及保持图无环的编辑。
++     其核心类型是 `Dag`，一种**不可能含有环**的图：构造它的每种方式要么检查一次（并抛出 `Dag.Error`），要么在构造上保持无环，因此 `linearized`、`reduction` 和 `traversal` 都没有失败模式。
++     与之并列的有 `Digraph`，即可能含有环的一般有向图，通过唯一的检查步骤 `acyclic` 转换为 `Dag`；以及 `Topology`，一种就地编辑的图，在边加入时实时维护其拓扑排序，冻结后则是为快速查询而布局的形式。
+
+@ 0 4 0 0e4f4b05976bf1c71e58f3a8e0b7b471
++     每条边都被解读为一个**依赖**：`a -> b` 表示 `a` 依赖于 `b`，因此节点的 `successors` 是它的依赖，`predecessors` 是依赖它的节点，`sources` 是不依赖任何节点的节点（构建从这里开始），`sinks` 是没有任何节点依赖的节点。
++     拓扑排序将每个节点列在其依赖*之后*。
+
+% 2 1 0 1274911920eac4e90516e5c24d99db2f
+
+% 3 1 0 1d0bbfbb915120701de533c396886dae
+
+% 4 1 0 0fa0866463feaebf1387532d08ee92d3
+
+% 0 1 0 00dc49615b68038b076b440b44ff49e9
+
+% 0 1 0 1efc6000b7ab7f1f17c768ad6344a4e5
+
+% 0 1 0 1054864bcc5cae0e1f4fc16dded9fe31
+
+% 0 1 0 1b0e4a7ab1e5a70a1654e93f014475cf
+
+% 0 1 0 1811c80c432602cd0b19cef7402e54fe
+
+% 0 1 0 17b92fc472a2e25e027d257be1098433
+
+% 1 1 0 1fa13d8ca714123e033408a2752fd1d0
+
+@ 0 8 0 0e1408e577dba0871ff050811c6d722f
++     所有这些，以及其他任何图形状的东西——`Hasse` 图、`Map[node, Set[node]]`、`Ledger`——都通过 `Nodal` 类型类（一个节点集合以及每个节点的后继）共享同一套词汇；`Bidirectional` 用于同时存储前驱的表示，`Topological` 用于其值不可能含有环的表示，`Reachable` 和 `Invertible` 则用于具有原生搜索或反转的表示。
++     包级扩展方法（`nodes`、`edges`、`sources`、`sinks`、`cycle`、`acyclic`、`reachable`、`closure`、`invert`，以及用于 `Topological` 图的 `linearized`、`reduction`、`traversal` 和 `layered`）针对这些类型类只编写一次，因此 `Hasse` 或 `Map` 对它们的回答与 `Dag` 完全一样。
+
+@ 0 6 0 1d2a54b62fcfe3210fdd95c21566fadb
++     `Dag` 或 `Digraph` 只存储正向，因此查找节点的前驱需要扫描每条边。
++     需要这一点的操作——`predecessors`、`ancestors`、`lineage`、`bypass`、`bypassAll` 和 `-`——以 `Dysasymptotic.LinearScan` 为门控，通过 `import dysasymptotics.linearScan` 确认；`subgraph` 会为有界的节点选择重建整个映射，以 `Dysasymptotic.LinearSize` 为门控（`import dysasymptotics.linearSize`）。
++     冻结的 `Topology` 保存两个方向，两者都不需要。
+
+@ 0 3 0 068a6215d0ecd87d104b3042c676e91d
++     `Dag` 通过 `Dot` 绘制为 GraphViz DOT 文档，对 `Dag[Text]` 使用 `dag.dot`；`dendrology` 库在终端中绘制任何 `Topological` 图，而 `Dag#layered` 将图排列为交叉最少的分层，供其使用。
+
+@ 0 4 0 1297e7fbab5fc9121e7b684c36985cb7
++     该库是一个源集 `acyclicity.core`，为每个平台编译，并导出到 `soundness` 总括包，其中 `rankings` 选择包与总括包自身的同名包合并。
++     用户唯一需要按名称导入的 given 是 `rankings.balancedRanking`；其余一切都从伴生对象中解析。
+
+% 0 1 0 01c5bf2c3b34e767126003078b82ca17
+
+% 0 1 0 09822351b46e7fcb013aa62611cea364
+
+% 0 1 0 1241e73184f3274a06697282313e5756
+
+% 0 1 0 0077bba20955ca741d3560bf3052e456
+
+% 0 1 0 177a99173680c2511d605cdb4703ecfd
+
+% 0 1 0 1d3d92a38a1f62ff1dc5918bbba917e4
+
+@ 0 1 0 0453b8d2265aaeea124f09a2ee3c2532
++ entry .Dag   以持久值表示的有向无环图，其拓扑排序不会失败
+
+% 1 1 0 078bcc33f02b9c74006f218f688b0339
+
+@ 0 9 0 1d184d73491bbfdf1d526c836787a52c
++       `Dag[node]` 是不含环的有限有向图，以不可变值表示：一个按插入顺序排列的映射，从每个节点映射到它所指向的节点集合——在依赖解读下，即它的依赖。
++       每个边的目标本身都是节点，因此悬空边无法表示。
++       无环性在创建值时确立一次：工厂方法 `Dag(…)` 进行检查（抛出带 `Reason.Cyclic` 的 `Dag.Error`），`acyclic` 以同样的检查转换 `Digraph`，而 `Dag(topology)` 消耗一个 `Topology`，后者按不变式就是无环的。
++       之后的每次编辑要么不可能产生环（`-`、`remove`、`bypass`、`subgraph`、`descendants`），要么检查唯一可能产生环的路径（`add`），要么在可能出现环时返回 `Digraph`（`+`、`++`、`map`、`flatMap`）。
+
+% 2 1 0 0510829b9cd2acfe0f08a039dde547a7
+
+% 3 1 0 0c7372920e835d311b635c66432cb7cf
+
+% 4 1 0 0c8b4ec5b809754c1c959b71d069dcb3
+
+% 2 1 0 12f2d463060d4a720018608e88e5d22d
+
+% 0 1 0 09f1c02660438a961eae4d85d147187d
+
+% 0 1 0 0e7169ab3172885f0bf266c5fb86f1bf
+
+% 0 1 0 0bb74aec98086c951c68682cc636f720
+
+% 0 1 0 19187da2abe90c360b8563ab92bb763b
+
+% 0 1 0 1c221c224d0126e51960efb6ecbf7549
+
+% 1 1 0 03224e52d9ba28780aa25013916809e1
+
+@ 0 5 0 12cf7da2fcb498c416da6c21005dd6cd
++       无环性带来的是没有失败模式的 `linearized`、`reduction` 和 `traversal`，以及让泛型扩展方法也能拥有它们的 `Topological` 实例。
++       作为集合，`Dag` 就是按拓扑顺序排列的节点（`traversable`），因此可以使用 `dag.has(n)`、`dag.size`、`dag.each(…)` 和 `dag.map(…)`；`map` 返回 `Digraph`，因为两个节点可能被重命名为同一个，从而闭合一个环。
+
+@ 0 1 0 1c0b1ad24977e5d4165c840e6c0ef76a
++       `Dag` 可以一次一条边地构建：
+
+% 2 1 0 1632a10a225eb6481d979c4f9e877cea
+
+% 3 1 0 003418e81c4da5da0b01ce908aa448e0
+
+@ 0 1 0 175295e7ea332ca8163b1948421b555f
++         label 第一条边：两端都成为节点
+
+% 1 1 0 151578f181255acd1f41b34167396589
+
+% 0 1 0 12444ca0bfa953041d33ffc1015ae68a
+
+% 0 1 0 1681235dcc22a7e30a27bb096fdb53bc
+
+% 1 1 0 1273b84443a8dba10903d539a7a59b75
+
+@ 0 1 0 1618f06a594638c30c5436fbed626b38
++         label 第二个依赖，在添加时检查
+
+% 1 1 0 0c57f87ccfd3733409debd4b44eb5489
+
+% 2 1 0 0c9df9f4686045ed1104d512b4631e8b
+
+% 0 1 0 19bf79bf9341852c0ce45a3c7b258cee
+
+% 1 1 0 11bc5226287162190ab063b5d3d6de04
+
+@ 0 1 0 11cdf5496fe1fdd01b55bbf9f1a77f9e
++         label 与顺序相悖的边，被拒绝
+
+% 1 1 0 0b3e0618ec0606cd0439306534d1e2e1
+
+% 2 1 0 07dc0a08eefea9ed194fc975720f8243
+
+% 0 1 0 175581fcb7dad0e00ac4ed2b823e9468
+
+% 1 1 0 19fe7d1105bdc63514c5b4833ee82ad2
+
+@ 0 1 0 05347775224b114c01dd575cea874ebf
++         label 可能闭合环的边改为返回 Digraph
+
+% 1 1 0 1225af99f70f56b11c82f8682a86599f
+
+% 2 1 0 0e0b3d4f66e39333100c743b25b65dfb
+
+% 0 1 0 055b137a563a483f0789b7b1e174a520
+
+% 1 1 0 1926ba355f229c540a14df1bfee3929c
+
+% 2 1 0 0b8c9b72709e82920485e0d90038209a
+
+@ 0 6 0 021bf427447e71591ac728de9791a566
++       每次带检查的 `add` 的代价是新边目标的可达范围，因此包含许多边的图应通过一次 `Dag(edges*)` 调用构建（一次 O(n + e) 检查），而不是对 `add` 做折叠；需要多次编辑的图最好解冻为 `Topology`，就地编辑后再冻结。
++       依赖可达性的整图查询——`closure`、`reduction`——经由冻结形式的位矩阵，因此以这种方式查询不止一次的图最好用 `#freeze` 冻结一次并保留下来。
+
+@ 0 2 0 1a7d86c1cce9e8be172316aa194a6ca2
++       两个 `Dag` 在邻接关系相等时相等，与节点给出的顺序无关；`Dag` 不是 `case class`，因此没有 `unapply` 或 `copy`。
+
+% 0 1 0 103ced421355708b056760dffcd7be34
+
+% 0 1 0 146458c90f0a62db0e2954fd0c82fb90
+
+% 1 1 0 138628e246dd70420ef319e68dc693e2
+
+% 1 1 0 17560cfc915bce6610e3ce52e17ac0e2
+
+@ 0 3 0 052bf73956276a2f04b4e6c7f6107a38
++   entry .apply   从边、从节点及其后继、从节点集合和函数、从 `Map` 或从 `Topology` 构造 `Dag`
++       共有五个构造方法，其中四个会检查环，发现环时抛出 `Dag.Error`（`Reason.Cyclic`）：
+
+@ 0 10 0 08febf81e8eb56da074c2658f9f1acc2
++       - `Dag(a -> b, a -> c, …)` 仅从边构造：每条边的两端都成为节点，按首次出现的顺序排列。
++       - `Dag(a -> Set(b, c), b -> Set(), …)` 从每个节点及其依赖集合构造；没有自身条目的后继成为无依赖的节点。
++       - `Dag(nodes)(node => dependencies)` 从节点集合和函数构造；集合之外的后继成为节点。这个构造方法将其 `Tactic[Dag.Error]` 作为普通上下文参数接收，而不是通过 `raises` 子句。
++       - `Dag(adjacency)` 从 `Map[node, Set[node]]` 构造，节点集合对每个目标闭合。
++       - `Dag(topology)` 从 `Topology[node]^` 构造，后者被**消耗**：拓扑按不变式就是无环的，因此不做检查，也没有 `Dag.Error`，且该句柄不能再次使用。
+
+% 2 1 0 01fab4b7e55be2f0168049757bc2f790
+
+% 3 1 0 18a71727b22985331ab568c260d8ebc1
+
+% 4 1 0 0f95a60d0d3ec0801a698f03d05343f2
+
+% 0 1 0 0224a9f865586c4601ebf71bf6ffd3ff
+
+% 0 1 0 162ddb4c66cc982c03f426d071787f28
+
+% 0 1 0 05fc5cf6bc7b32bf1ca2519a43261a19
+
+% 0 1 0 0a5a12615d506bc814f0a1b657dfc835
+
+% 1 1 0 08d9f46d8158503e0da5dfad7eebdf78
+
+@ 0 7 0 01361f89b63144d80e8a712addbeedb2
++       `Dag(1 -> 2, 2 -> 3, 3 -> 1)` 抛出 `Dag.Error`；以相同参数调用 `Digraph(…)` 则构造出有环图，对其调用 `cycle` 即得到见证。
++   entry .dot   将 `Dag[Text]` 表示为 GraphViz DOT 有向图，每个节点的文本作为其标识符
++       `Dag[Text]` 上的扩展方法：一个 `Dot.Digraph`，每条边对应一条边语句 `"a" -> "b"`。
++       节点的文本为其 DOT 节点命名，因此必须是有效的 DOT 标识符——非空，不含双引号和换行符——不满足的节点会抛出 `Name.Error`；作用域中必须有 `Tactic[Name.Error]`。
+
+% 2 1 0 142175d0a418955c10b3b838ef593741
+
+% 3 1 0 1c31ccc38036d0a014cce1eb63bb9761
+
+% 4 1 0 1e5c5ad2648f78c618abe33958e3f965
+
+% 0 1 0 079e9eb45aca5b6103eecb5ad85a41f7
+
+% 1 1 0 082fe2d3fe2d5db213edee3f388becdc
+
+@ 0 3 0 068afed3c42ca5ef157f4f3e4a52d0ac
++       其他节点类型的图通过 `map(_.show).acyclic.dot` 渲染（`map` 返回 `Digraph`，因为两个节点可能显示为同一个）。
++   entry .Error   当图操作发现环或被问及图中没有的节点时抛出
+
+% 1 1 0 1f5dad71370b9c4f1369dd0711865c2e
+
+@ 0 8 0 175206fc8bd72de019afb1a7b13ab524
++         错误 `↯/s.72.1`，_the DAG operation failed because `reason`_，原因在其中编号。
++         `Reason.Cyclic`（191.2，_the graph contains a cycle_）由带检查的工厂方法 `Dag(…)`、任何图上的 `acyclic`、目标已能到达其源的边上的 `Dag#add`，以及同样情形下的 `Topology#add` 抛出；被编辑的图保持不变。
++         `Reason.NodeMissing(node)`（191.1，_the node `node` is not present in the graph_）由 `reachable`、`descendants`、`ancestors` 和 `lineage` 针对图中没有的节点抛出——在 `Dag`、`Digraph` 上以及通过泛型扩展方法都是如此——节点以其 `toString` 渲染。
+
+% 0 1 0 136a5f198bdaf3ac1a788e9525f64741
+
+% 0 1 0 0a9c20ea134f3fa702331949e4fc1ca4
+
+% 0 1 0 1c4d260429f2a0a0171138b586d3341f
+
+% 0 1 0 1b9eabd3ccfd9e7305eb11e32f4ce846
+
+% 0 1 0 07163e601f85e5cb1bbef385cdfb273e
+
+% 0 1 0 02125690b11d560710feb200e65921bd
+
+@ 0 28 0 1f44c93f2e7a8a7d081e5024c56ef80f
++     entry .Reason   操作失败的原因：`Cyclic` 或 `NodeMissing(node)`
++         一个带有 `number` 的枚举（`NodeMissing` 为 1，`Cyclic` 为 2），每个分支都是错误消息所引用的 `Clarification`。
++     entry .communicable   将原因渲染为其消息
++     entry #reason   `Dag.Error.Reason`：`Cyclic` 或 `NodeMissing(node)`
++   entry .nodal   `Nodal` 实例：`Dag` 的节点以及每个节点的后继
++       通过伴生对象处于隐式作用域中。
++       `nodes` 是按给出顺序排列的节点，`successors(n)` 是 `n` 指向的节点（对图中没有的节点为空），而 `has` 是映射查找，从不扫描。
++   entry .bidirectional   `Bidirectional` 实例，以 `Dysasymptotic.LinearScan` 为门控
++       `Dag` 只存储正向，因此其前驱来自每个值计算一次的转置，计算时扫描每条边。
++       因此该实例需要一个 `Dysasymptotic.LinearScan`，通过 `import dysasymptotics.linearScan` 确认，这正是泛型 `predecessors` 扩展方法在 `Dag` 上所需要的。
++       冻结的 `Topology` 无需门控即可回答同样的问题。
++   entry .topological   证明 `Dag` 不含环的标记
++       `Topological` 实例，处于隐式作用域中。
++       正是它让 `Dag` 能通过泛型扩展方法使用 `linearized`、`reduction`、`traversal` 和 `layered`，以及使用 `dendrology` 图示。
++   entry .traversable   将 `Dag` 视为其节点的集合，按拓扑顺序排列
++       `Traversable` 实例，因此 `dag.each`、`dag.fold`、`dag.to[List]` 及其余集合词汇看到的节点中，每个节点都位于其依赖之后。
++   entry .inclusive   `dag.has(node)`：节点是否在图中
++   entry .countable   `dag.size` 和 `dag.nil`：节点数量，以及是否没有节点
++   entry .mappable   `dag.map(lambda)`：重命名节点，返回 `Digraph`
++       `Mappable` 实例，其中 `Result[node2] = Digraph[node2]`：两个节点可能映射为同一个，这会合并它们的边并可能闭合一个环，因此在 `acyclic` 检查之前结果不是 `Dag`。
+
+% 2 1 0 1b4c63c32161e80b0d77be0a36a2c5e5
+
+% 3 1 0 192ccc2eb982bb000940ec2edf93574a
+
+% 4 1 0 194dc891aec9795110420587eb6166a7
+
+% 0 1 0 1c1a8f1546929eb51d0e8a3e0b688aae
+
+% 0 1 0 190b3c3d887531d910697bed222292b2
+
+% 1 1 0 072032395a9c145f173cd462bee92bf6
+
+@ 0 12 0 0c7d45739ba5b13f176108ef89f3a446
++   entry #nodes   以集合表示的所有节点
++   entry #successors   节点所指向的节点：它的依赖；对不存在的节点为空集
++   entry #edges   以 `(from, to)` 对表示的每条边：`from` 依赖于 `to`
++   entry #sources   没有后继的节点：不依赖任何节点的节点
++       构建或安装从这里开始。
++       其作用域是整个图，因此无需确认。
++   entry #sinks   没有前驱的节点：没有任何节点依赖的节点
++       对边做一次遍历，无需 `Dysasymptotic.LinearScan`：问题针对整个图，而不是单个节点。
++   entry #linearized   按拓扑顺序排列的节点：每个节点都位于它所依赖的一切之后
++       每个值计算一次并保留。
++       在彼此之间没有路径的节点之间，顺序就是节点给出的顺序，因此是稳定的。
++       它不会失败：`Dag` 不含环。
+
+% 2 1 0 17c9df318ffa30980f1906328f37cb01
+
+% 3 1 0 1daa7491bd5985820be104882202e146
+
+% 4 1 0 03b4ab1ff12a59b00193acec7d0c1311
+
+% 0 1 0 1a6db0c1b43dbb61073f75e7b36d28d1
+
+% 1 1 0 0d333251944c5e28079bca9e2acaaaaa
+
+@ 0 9 0 108ec1f9752a08de1241acf22c58624e
++   entry #invert   每条边都反转后的同一个图，仍是 `Dag`
++       反转每条边保持无环性，因此结果是一个 `Dag`，其源是本图的汇；`invert.invert` 与原图相等。
++   entry #digraph   以 `Digraph` 表示的同一个图，用于可能产生环的操作
++   entry #freeze   本图的冻结 `Topology[node]^{}`，为查询而布局
++       构建一个节点已按拓扑顺序排列的 `Topology` 并将其冻结。
++       冻结形式保存邻接关系的两个方向，因此 `predecessors` 无需确认，且一旦构建了可达性矩阵，就能在 O(1) 内回答 `reaches`；`Dag` 上的 `closure` 和 `reduction` 都经由它。
++       需要以这种方式反复查询的图应冻结一次。
+
+% 2 1 0 009a95dccfff6a501d873aff8777f4b8
+
+% 3 1 0 05b093c15a5d24af17d8c03e8ef592e9
+
+% 4 1 0 023a10251e6fee9502492cc39e9e6314
+
+% 0 1 0 02dda2b4568fb31c177351a82b15ca76
+
+% 0 1 0 18743ec22773412e1ba91d89c7fa7210
+
+% 0 1 0 0bce0e93c533b9fd1ba9b2ca407e68bf
+
+% 0 1 0 0bb43092b913781104c8350dc97a0238
+
+% 1 1 0 17886b6487361a890c2cf3d76db75776
+
+@ 0 11 0 00737322962a30f3177da851661d436e
++   entry #thaw   保存本图节点和边的可编辑 `Topology[node]^`
++       与 `Topology(dag)` 相同：一个全新的、独占所有的拓扑，用 `add`、`remove` 和 `bypass` 就地编辑，并通过 `Dag(topology)` 或 `Topology.freeze` 作为 `Dag` 交还。
++       这是进行大量编辑的合适形式：在那里每次编辑约耗时一微秒，而 `Dag#add` 的检查代价与可达范围成正比。
++   entry #including   如果节点不存在，则添加该节点（不带边）后的图
++   entry #add   添加边 `from -> to` 后的图；如果会闭合环，则抛出 `Dag.Error`
++       `from` 依赖于 `to`。
++       一条边闭合环的唯一方式是 `to` 已经能到达 `from`（或 `from == to`），这通过搜索 `to` 的可达范围来检查——因此代价是该可达范围的大小，而不是整个图的大小。
++       新的目标成为节点。
++       结果是 `Dag`；`+` 是不带检查的形式，返回 `Digraph`。
+
+% 2 1 0 07cb1bc2157857a7163705c3d420fb3f
+
+% 3 1 0 0b3675013278b7120d112d6e4fc4c030
+
+% 4 1 0 0d3e5c9946ef1c821b11fdacaa83f696
+
+% 0 1 0 0de0abe1cb6d3a5e14369f9b44de45bf
+
+% 0 1 0 08560fb08c72c5c30b2d6e6170f7afb4
+
+% 0 1 0 1754467b2e184e551048625ad2a22cdb
+
+% 1 1 0 1748dc2b47f1bf4a0682efe64092a415
+
+@ 0 16 0 127f59dd203b173904c654f7aa7e600d
++   entry #+   `dag + (from -> to)`：不经检查添加边，结果为 `Digraph`
++       结果可能含有环，因此是 `Digraph`；`acyclic` 将其检查后变回 `Dag`，若有环，`cycle` 会给出见证。
++       `add` 是带检查的形式。
++   entry #++   `dag ++ other`：两个图的节点和边的并集，结果为 `Digraph`
++       两个无环图可能合并成一个有环图，因此结果是 `Digraph`。
++   entry #remove   移除边 `from -> to` 后的图，两个节点都保留
++       如果该边不存在，则图不变。
++       移除边不可能产生环，因此结果是 `Dag`。
++   entry #-   `dag - node`：删除该节点以及以它为任一端的每条边
++       需要 `Dysasymptotic.LinearScan`（`import dysasymptotics.linearScan`），因为指向该节点的边要通过转置找到。
++       依赖该节点的节点失去这个依赖，且不会获得其他依赖；`bypass` 是会重新连接它们的形式。
++   entry #bypass   删除节点，并将依赖它的每个节点重新连接到它的每个依赖
++       经过该节点的每条路径都得以保留：每个前驱都获得每个后继作为直接依赖。
++       这不可能产生环，因为每个前驱原本就经由该节点到达每个后继。
++       需要 `Dysasymptotic.LinearScan`。
+
+% 2 1 0 1bb5605e17c2b32801a05bd8e7984de3
+
+% 3 1 0 19e3c991cf90d5ed0ae0668bff72ec1d
+
+% 4 1 0 1dbe153da1025115126649f70469aa31
+
+% 0 1 0 19877de71de69ee10465826305d991a2
+
+% 2 1 0 004c0adadec701491334a77b825aff89
+
+% 0 1 0 0c2d64177b1feaef050d95aed39e9521
+
+% 0 1 0 1404e7af9c3f6acb0ef1a2c74f407ba1
+
+% 1 1 0 020245654d723338085c91dddf538f55
+
+@ 0 33 0 1179639e3e2b49da04a3e23761100d2c
++   entry #bypassAll   依次绕过多个节点，使穿过一串这类节点的路径得以保留
++       接受一个节点的 `Set` 而不是谓词——lambda 参数无法与节点区分——并依次绕过它们，因此 `Dag(1 -> 2, 2 -> 3, 3 -> 4).bypassAll(Set(2, 3))` 保留边 `1 -> 4`。
++       需要 `Dysasymptotic.LinearScan`。
++   entry #subgraph   由节点集合导出的子图：这些节点及它们之间的边
++       需要 `Dysasymptotic.LinearSize`（`import dysasymptotics.linearSize`）：有界的节点选择会重建整个映射。
++       指向集合之外节点的边会被删除，而不是重新连接。
++   entry #flatMap   用一个图替换每个节点，结果为 `Digraph`
++       对每条边 `a -> b`，`lambda(a)` 的每个节点都指向 `lambda(b)` 的每个节点，而 `lambda(a)` 的节点保留其内部自身的边。
++       结果可能含有环，因此是 `Digraph`。
++   entry #reachable   节点能到达的一切，包括它自身；对不存在的节点抛出 `Dag.Error`
++       节点的传递依赖，以集合表示，通过带已访问集合的迭代搜索得到，因此十万个节点的链既不会使栈溢出，耗时也不会超过其可达范围。
++       `Dag.Error(NodeMissing)` 仅对图中没有的节点抛出。
++   entry #descendants   节点能到达的子图，包括它自身；对不存在的节点抛出 `Dag.Error`
++       即 `subgraph(reachable(node))`，无需确认：该节点之下一切的导出子图。
++   entry #ancestors   能到达节点的子图，包括它自身；对不存在的节点抛出 `Dag.Error`
++       传递地依赖该节点的一切，连同它们之间的边。
++       需要 `Dysasymptotic.LinearScan`，因为它遍历转置。
++   entry #lineage   节点能到达的一切以及能到达它的一切所构成的子图
++       `ancestors` 和 `descendants` 合在一起的导出子图。
++       需要 `Dysasymptotic.LinearScan`，并对不存在的节点抛出 `Dag.Error`。
++   entry #closure   使每条隐含的边都显式化：凡存在路径之处都有一条边
++       传递闭包，经由冻结形式的可达性矩阵计算，耗时 O(e·n/64)，而集合并运算的代价则是所有可达范围之和。
++       `closure.reduction` 即 `reduction`，`reduction.closure` 即 `closure`。
++   entry #reduction   具有相同可达性的最小图：删除每条可由更长路径推出的边
++       传递归约，即依赖图通常的绘制形式。
++       任意长度的路径所隐含的每条边都会被删除，而不仅是长度为二的路径所隐含的边，并且只保留图中原有的边。
++       在冻结形式上，以 Aho、Garey 和 Ullman 的方法对其位矩阵进行计算。
+
+% 2 1 0 117f1e8eaa1fc4fc0c9fd6f60c67f587
+
+% 3 1 0 0e3e7177482074851da3f00554f14150
+
+% 4 1 0 0902979b0a104f0806ff61ad4bac3fc7
+
+% 0 1 0 08e2d4cd82c99d7a1f659e8e30940e0c
+
+% 1 1 0 1c6484897c9f35fe05027cd95d123fbf
+
+@ 0 14 0 1e297f24c5d79af41b96826d6db106d0
++   entry #layered   为绘制而分层排列的图，以 `Layering` 表示
++       每个节点被分配到一层，依赖在被依赖者之上，并对每一层排序，以减少它与相邻层之间连线的交叉——这是 Sugiyama 的分层方法，正如 GraphViz 的 `dot` 所绘制的那样。
++       作用域中的 `Ranking` 决定层次：伴生对象的默认值 `Ranking.LongestPath` 将每个节点放在其最深依赖的下一层；`import rankings.balancedRanking` 则将每个有依赖者的节点下拉到其最浅依赖者的上一层。
++       `dendrology` 的 `LayeredDagDiagram` 渲染这一结果。
++   entry #traversal   为每个节点计算一个值，由其依赖的值求得
++       `dag.traversal[result]((dependencyValues, node) => …)` 按拓扑顺序访问节点，因此每次 lambda 调用都会以 `Set` 的形式看到该节点后继已计算出的值，最终返回从每个节点到其值的 `Map`。
++       这是依赖图上大多数工作的形状——构建的代价、传播的约束、累积的传递集合——无需手写递归或维护已访问集合。
+
+% 2 1 0 180a71981f83f3ec0f5a0fadf648c3d2
+
+% 3 1 0 09d9b647c4c3e9e507faab8bbac80069
+
+% 4 1 0 1ffebb7e50dd9621166f31eee98c6f92
+
+% 0 1 0 1104c0ff55edb29a11b3de599a67a60c
+
+% 0 1 0 15bc83114de814cd1ebf55f8b011b9f3
+
+% 1 1 0 12f00919e72f9c491d366648077cb10e
+
+@ 0 1 0 146fe0a8e11f923d0e4e4374c3fb1a4b
++ entry .Digraph   以持久值表示的、可能含有环的有向图
+
+% 1 1 0 10274f4b5f87a9b20d98a1ff7a4e2ef0
+
+@ 0 6 0 0aead5b77e0f9b440545fe2d9120a06f
++       `Digraph[node]` 是有限有向图，表示为一个按插入顺序排列的映射，从每个节点映射到它所指向的节点集合——在依赖解读下，即它的依赖。
++       每个边的目标都是节点，因此构造方法会闭合节点集合，悬空边无法表示。
++       `Digraph` 不预设任何无环性：它是 `Dag` 的不带检查的编辑（`+`、`++`、`map`、`flatMap`）所返回的结果，是 `explore` 从后继函数物化出来的结果，也是图在 `acyclic` 检查之前的形态。
+
+% 2 1 0 0e03941634b58d0e0c2950f554a4dce5
+
+% 3 1 0 0498016ac7a09e2300eef044d9826e38
+
+% 4 1 0 0373615bac3d0eed16335e0b09a63484
+
+% 0 1 0 017a0466c4d7f3270e665a03509a7ac2
+
+% 0 1 0 0634abf204e97ac80dfab06b24b7b604
+
+% 0 1 0 19a800a899bf5668127a6d32ed06d3ad
+
+% 0 1 0 1114713fa73ded8403c6035315692123
+
+% 1 1 0 18b8208684773f9d1046f85de18b798f
+
+@ 0 7 0 0d157504e2493ce6027a74e8cfe4ca38
++       由于可能存在环，`Digraph` 没有 `linearized`、`reduction`、`traversal` 或 `layered`：`acyclic` 以 O(n + e) 检查图一次，返回具有这些操作的 `Dag`，否则抛出 `Dag.Error`（`Reason.Cyclic`）。
++       `Dag` 提供的其余一切——节点和边的查询、编辑方法、可达性和切片、`closure` 和 `invert`——`Digraph` 也都提供，其中 `reachable`、`closure` 和各种切片在有环图上也是全函数（使用已访问集合，而不是递归）。
++       作为集合，它就是按给出顺序排列的节点。
+
+@ 0 4 0 03104183eb413b5f076d9a916c109485
++       由于只存储正向，`-`、`bypass`、`bypassAll`、`ancestors`、`lineage` 和 `Bidirectional` 实例需要 `Dysasymptotic.LinearScan`（`import dysasymptotics.linearScan`），`subgraph` 则需要 `Dysasymptotic.LinearSize`。
++       两个 `Digraph` 在邻接关系相等时相等。
+
+% 1 1 0 019760dfa385a31c14e93d6eb3701d6d
+
+% 0 1 0 1ca38419924f4189004ae5bc9198f51c
+
+@ 0 52 0 067cfa077dc6fac701fd1e35064f136f
++   entry .apply   从边、从节点及其后继、从节点集合和函数或从 `Map` 构造 `Digraph`
++       与 `Dag.apply` 相同的四种形式，但不检查环，也不抛出错误：`Digraph(a -> b, …)` 从边构造（两端都成为节点，按首次出现的顺序排列），`Digraph(a -> Set(b, c), …)` 从每个节点及其后继构造（没有条目的后继成为节点），`Digraph(nodes)(node => successors)` 从节点集合和函数构造，`Digraph(adjacency)` 从 `Map[node, Set[node]]` 构造，并对每个目标闭合。
++   entry .nodal   `Nodal` 实例：`Digraph` 的节点以及每个节点的后继
++       通过伴生对象处于隐式作用域中；`has` 是映射查找。
++   entry .bidirectional   `Bidirectional` 实例，以 `Dysasymptotic.LinearScan` 为门控
++       前驱来自每个值计算一次的转置，计算时扫描每条边，因此该实例需要 `import dysasymptotics.linearScan` 才能解析。
++   entry .traversable   将 `Digraph` 视为其节点的集合，按给出顺序排列
++   entry .inclusive   `graph.has(node)`：节点是否在图中
++   entry .countable   `graph.size` 和 `graph.nil`
++   entry .mappable   `graph.map(lambda)`：重命名节点，合并任意两个被合并节点的边
++   entry #nodes   以集合表示的所有节点
++   entry #successors   节点所指向的节点；对不存在的节点为空集
++   entry #edges   以 `(from, to)` 对表示的每条边
++   entry #sources   没有后继的节点：不依赖任何节点的节点
++   entry #sinks   没有前驱的节点：没有任何节点依赖的节点
++       对边做一次遍历；无需确认，因为问题针对整个图。
++   entry #invert   每条边都反转后的同一个图
++   entry #digraph   本图自身
++       使针对 `Dag`/`Digraph` 接口编写的代码可以向两者之一索取其 `Digraph`。
++   entry #including   如果节点不存在，则添加该节点（不带边）后的图
++   entry #add   添加边 `from -> to` 后的图，不经检查
++       新的目标成为节点。
++       `+` 以对的形式接受边。
++   entry #+   `graph + (from -> to)`：添加该边
++   entry #++   `graph ++ other`：两个图的节点和边的并集
++   entry #remove   移除边 `from -> to` 后的图，两个节点都保留
++   entry #-   `graph - node`：删除该节点以及以它为任一端的每条边
++       需要 `Dysasymptotic.LinearScan`。
++   entry #bypass   删除节点，并将它的每个前驱重新连接到它的每个后继
++       经过该节点的每条路径都得以保留。
++       需要 `Dysasymptotic.LinearScan`。
++   entry #bypassAll   依次绕过多个节点
++       接受节点的 `Set`，而不是谓词；穿过一串被删除节点的连通性得以保留。
++       需要 `Dysasymptotic.LinearScan`。
++   entry #subgraph   由节点集合导出的子图：这些节点及它们之间的边
++       需要 `Dysasymptotic.LinearSize`。
++   entry #reachable   节点能到达的一切，包括它自身；对不存在的节点抛出 `Dag.Error`
++       在有环图上也是全函数：`Digraph(1 -> 2, 2 -> 1).reachable(1)` 为 `Set(1, 2)`。
++   entry #descendants   节点能到达的子图，包括它自身；对不存在的节点抛出 `Dag.Error`
++   entry #ancestors   能到达节点的子图，包括它自身；对不存在的节点抛出 `Dag.Error`
++       需要 `Dysasymptotic.LinearScan`。
++   entry #lineage   节点能到达的一切以及能到达它的一切所构成的子图
++       需要 `Dysasymptotic.LinearScan`；对不存在的节点抛出 `Dag.Error`。
++   entry #cycle   图中的一个环（如果有）：每个节点指向下一个，终点即起点
++       对无环图为 `Unset`；否则是一个 `List`，其首尾节点相同，且每对相邻节点都是一条边。
++       通过深度优先搜索找到，该搜索也能发现经由先前分支已完成的节点所闭合的环。
++   entry #acyclic   经过一次检查后以 `Dag` 表示的图；如果有环，则抛出 `Dag.Error`
++       O(n + e)，仅一次：它返回的 `Dag` 不再检查。
+
+@ 0 1 0 1399406f0ec3bfa40aed37ffd7de496e
++ entry .Topology   就地编辑、实时维护其拓扑排序的图；冻结后是用于查询的形式
+
+% 1 1 0 14c0311bcb8109a700e29d7194e8b285
+
+@ 0 6 0 01d8a1c12aee506509063ab8f31ea4ce
++       `Topology[node]` 是通过独占所有的句柄就地编辑的有向无环图。
++       它的名称来自它独有的维护对象：节点的拓扑排序，借助 Pearce 和 Kelly 的算法在每次 `add` 中保持有效，该算法只触及新边两端之间的节点，并**拒绝**会闭合环的边，使图保持不变。
++       因此它按不变式就是无环的，`linearized` 只是读取该顺序。
+
+@ 0 8 0 19f43beedd69053f1d30319fb6d52fad
++       与 `Array` 一样，可变性体现在捕获集上：`Topology[node]^` 可编辑，而 `Topology.freeze` 消耗它并给出 `Topology[node]^{}`，在其上无法调用 `add`、`remove` 和 `bypass`，任何东西都永远不会改变。
++       冻结形式是用于查询的形式——它带有 `Nodal`、`Bidirectional`、`Topological`、`Reachable` 和 `Invertible` 实例——并在密集数组中保存邻接关系的两个方向，同时维护源和汇，因此 `predecessors` 无需 `LinearScan` 确认。
++       它的可达性矩阵在首次使用时以 O(e·n/64) 构建，能在 O(1) 内回答 `reaches`，并服务于 `closure` 和 `reduction`。
+
+% 2 1 0 1270d04cd845d3e01c9117ee234fa8ab
+
+% 3 1 0 046121344f8bc6f2016025d6d157147f
+
+@ 0 1 0 00e0ed58b2d20f961a16c69c7a3a5618
++         label 一个空拓扑，独占所有
+
+% 1 1 0 0ceeaf35cf5c928113ae584a29ac1aa0
+
+% 2 1 0 0997af9905a5a45c1b2521f163d60dc5
+
+% 0 1 0 02ce6eba7307d25d02a353deb222e43a
+
+% 1 1 0 117c5c6faa118efa1407762530016796
+
+@ 0 1 0 074b50152e68ada80f05fc30107d4779
++         label 一条边：两个节点都加入顺序，依赖在前
+
+% 1 1 0 1726f1c777cd02e30fdb60c6a3b37fbc
+
+% 2 1 0 1cbd9e1b30f7b1ed1c6e35094c63c5a9
+
+% 3 1 0 1b11212fd314cc201a5d06a25cbcd0d6
+
+% 0 1 0 09dd85113ce4971905bdb4f787322a10
+
+% 1 1 0 0d1c079a4dcfd275009a7ee8e99783ec
+
+@ 0 1 0 0223cc3da4cd8a26140430f12b2592dc
++         label 在已有节点之下添加依赖：顺序被修复，而不是重建
+
+% 1 1 0 104fad5f6afaa416042caaa1187a379e
+
+% 2 1 0 105126f2875fea74087cb84a03396e67
+
+% 3 1 0 1819ca3508dc5a400675545dd7f7b359
+
+% 4 1 0 1c6f09908ec7165902f6e399faf51627
+
+% 1 1 0 14c1f193f3fc4d1d063b73eeae2c5114
+
+% 2 1 0 0c76782d85cfd564092bac86eb01316f
+
+@ 0 1 0 08ce3a4d07f5e84b1e45d5882b604f39
++         label 会闭合环的边以 Dag.Error 被拒绝，且什么都不改变
+
+% 1 1 0 1062eb4d5adb8a5c0f1dcc20523c0499
+
+% 2 1 0 1fb757549f7b350818d0bf799c15b604
+
+% 3 1 0 0a42b5e0021c13a012fdb822dc62c66d
+
+% 4 1 0 018b00e544cc53050926cf22e0918ba7
+
+% 0 1 0 0afcc391fc4391a016accdd21a4cd153
+
+% 1 1 0 1afa32a78154f8480695e36d6b53b636
+
+% 2 1 0 07ec0a2e5e3c5a5e13f3233718d1fe3a
+
+@ 0 1 0 0de69960b282db7c02e16f0e52ad0638
++         label 冻结会消耗句柄：结果可以查询，但永远不能编辑
+
+% 1 1 0 1f32f79a161e1b6a11549c858014edf4
+
+% 2 1 0 0ab096fccbdb550d00c14471530d22af
+
+% 3 1 0 1fd005add02b3b59068d8b8e0e2cac25
+
+% 4 1 0 1262436c5e1714c508f73f3e3a291487
+
+% 0 1 0 0704f0c450d954bf153d3f2453bb6ff6
+
+% 0 1 0 04aa7e576e3fb64d1b132b1c1b78a1eb
+
+% 0 1 0 128ecf57f2c5baba13b43d2ec13771b6
+
+% 1 1 0 0668bab4398b048514ff321ffc49c0b8
+
+% 2 1 0 170e121bee6bde2c1948b839bb2ccf0e
+
+@ 0 7 0 11bcdf04f8f3c2e418150881a738547b
++       可编辑的 `Topology` 适用于增量增长或变化的图——发现任务的构建系统、接收作业的调度器：一条边的代价远低于一微秒，而带检查的 `Dag#add` 的代价是其目标的可达范围。
++       编辑完成后，句柄被交出，交给 `Topology.freeze` 或 `Dag(topology)`，使结果再也不能在背后被编辑；`snapshot` 在不交出句柄的情况下取得一个 `Dag`，而 `Topology(frozen)` 或 `dag.thaw` 会生成一个全新的可编辑副本。
++       签名中裸写的 `Topology[node]` 指可编辑的 `^` 形式。
+
+@ 0 5 0 1f3e1062accaafc01547673061cfee32
++       矩阵按编辑修订号缓存：冻结句柄无法编辑，因此会保留它；而自上次以来被编辑过的可编辑句柄每次调用都会重新计算——这就是 `closure`、`reduction` 和 `reaches` 适用于冻结形式的原因。
++       节点键被装箱，并通过开放寻址表进行哈希，因此泛型键的代价与以它们为键的 `HashMap` 相当。
+
+% 1 1 0 1d103d9f483f2981023b8887603ff5e1
+
+% 1 1 0 0f07103bff2312fb144991f50d51e602
+
+% 2 1 0 0d884a4116c59d0f012c1d936eed5831
+
+@ 0 18 0 0df249dd7190c21f09e181937dc9244d
++   entry .apply   一个新的空拓扑、冻结拓扑的可编辑副本，或 `Dag` 的可编辑副本
++       `Topology[node]()` 是一个空的可编辑 `Topology[node]^`。
++       `Topology(frozen)` 将 `Topology[node]^{}` 复制为一个全新的可编辑拓扑——这是编辑冻结图的方式，冻结图本身不能改变——而 `Topology(dag)` 解冻一个 `Dag`，与 `dag.thaw` 相同。
++       两种副本都按拓扑顺序添加节点，因此没有边需要重新排序。
++   entry .freeze   消耗一个可编辑拓扑，并以 `Topology[node]^{}` 的形式返回其冻结版本
++       `Topology.freeze(topology)` 是从可编辑拓扑产生冻结拓扑的唯一途径（`Dag#freeze` 自行构建）。
++       句柄被**消耗**：每个写入者都在静态上退役，因此留存的引用无需复制即可放弃其独占性，且编辑方法在其上不再可调用。
++   entry .nodal   冻结的 `Topology[node]^{}` 的 `Nodal` 实例
++       其节点按拓扑顺序排列，每个节点的后继来自其出边列表，`has` 通过哈希探测实现。
++       这些实例仅针对冻结形式：可编辑句柄不是 `Nodal`。
++   entry .bidirectional   冻结拓扑的 `Bidirectional` 实例，无需确认
++       前驱从拓扑保存的入边列表中读取，因此与 `Dag` 不同，不需要 `Dysasymptotic.LinearScan`。
++   entry .topological   证明冻结拓扑不含环的标记
++   entry .traversable   将冻结拓扑视为其节点的集合，按拓扑顺序排列
+
+% 0 1 0 1d76b4c42331b0e90b046320a2d201c5
+
+@ 0 49 0 1eda70ef0cb16e8f0a1f0bf13debe14f
++   entry .countable   `frozen.size` 和 `frozen.nil`
++   entry .grown   将 `Int` 数组复制到更大的数组中；实现的辅助方法
++       不供直接使用。
++       增长辅助方法位于伴生对象而不是类中，这样分离检查器只看到它们的参数。
++   entry .grownLongs   将 `Long` 数组复制到更大的数组中；实现的辅助方法
++   entry .grownRefs   将 `AnyRef` 数组复制到更大的数组中；实现的辅助方法
++   entry .grownFlags   将 `Boolean` 数组复制到更大的数组中；实现的辅助方法
++   entry .hash   将高位折叠到低位后的键哈希值；实现的辅助方法
++   entry #size   拓扑当前的节点数
++   entry #edgeCount   拓扑当前的边数
++   entry #has   节点是否在拓扑中，通过哈希探测
++   entry #add   添加一个节点，或添加边 `from -> to`；如果会闭合环，则抛出 `Dag.Error`
++       仅用于可编辑句柄。
++       `add(node)` 在节点不存在时将其添加到顺序末尾，并返回其内部 id；`add(from, to)` 添加该边（`from` 依赖于 `to`），并添加不存在的任一节点。
++       如果 `to` 的排位已在 `from` 之下，则什么都不移动；否则，对位于两者之间的 `from` 的依赖者和 `to` 的依赖重新排序——如果该搜索在 `from` 的依赖者中遇到了 `to`，则这条边会闭合环：通过作用域中的 `Tactic[Dag.Error]` 抛出 `Dag.Error`（`Reason.Cyclic`），图保持原样。
++       重复的边会被忽略。
++   entry #remove   删除一个节点以及以它为任一端的每条边
++       仅用于可编辑句柄。
++       未知节点会被忽略。
++   entry #bypass   删除一个节点，并将依赖它的每个节点重新连接到它的每个依赖
++       仅用于可编辑句柄。
++       不可能需要重新排序，因为每个依赖者的排位都已在每个依赖之上。
++   entry #reachable   节点能到达的一切，包括它自身；对不存在的节点为空集
++       对出边列表进行深度优先遍历；与 `Dag#reachable` 不同，不存在的节点返回空集，而不是抛出错误。
++   entry #reaches   一个节点是否能到达另一个节点，一旦可达性矩阵存在即为 O(1)
++       `frozen.reaches(from, to)`：矩阵中的单个位，矩阵在首次使用时构建，并在冻结句柄上保留。
++       任一节点不存在时为 `false`。
++   entry #edges   以 `(from, to)` 对表示的每条边
++   entry #successors   节点所指向的节点；对不存在的节点为空集
++   entry #predecessors   指向节点的节点，从为其保存的入边列表中读取
++       无需确认：拓扑存储两个方向。
++   entry #sources   没有后继的节点，随图的变化而维护
++   entry #sinks   没有前驱的节点，随图的变化而维护
++   entry #linearized   所维护的拓扑排序，依赖在前：一次读取，O(n)
++   entry #nodes   以集合表示的所有节点
++   entry #closure   使每条隐含的边都显式化，以 `Dag` 表示，由可达性矩阵得出
++       用于冻结句柄。
++       矩阵中每个节点的行成为其后继集合。
++   entry #reduction   具有相同可达性的最小图，以 `Dag` 表示，由可达性矩阵得出
++       用于冻结句柄。
++       Aho、Garey 和 Ullman 的方法：按排位降序访问节点的后继，同时对它们的行做累积并集，以 O(degree·n/64) 判定每条边，因此千节点图的归约只需不到一毫秒。
++   entry #invert   每条边都反转，作为另一个冻结拓扑
++       反转后的顺序对反转后的边是有效顺序，因此副本无需重新排序；`frozen.invert.linearized` 即 `frozen.linearized.reverse`。
++   entry #snapshot   当前图的持久 `Dag`，无需交出句柄
+
+@ 0 1 0 1debea7c1393f1fe01e972a2eb8647bb
++ entry .Nodal   有限有向图的类型类：一个节点集合以及每个节点的后继
+
+% 1 1 0 1b73dd8c614f48911c07a8fcf5832fa6
+
+@ 0 6 0 044ff32276691d5d1dd04519228baa52
++       `graph is Nodal by node` 表示 `graph` 类型的值是以 `node` 为节点的有限有向图：它能枚举其 `nodes`，回答任意节点的 `successors`——即它指向的节点，在 Soundness 通篇使用的依赖解读下（`a -> b` 表示 `a` 需要 `b`），就是它的依赖——并以原语而非扫描的方式说明它是否 `has` 某个节点，因此缺失节点检查绝不会是 O(n)。
++       边的方向由契约而非实例确定：拓扑排序将节点列在其后继之后。
+
+@ 0 5 0 0615de7f80d8d8270aabeb336e3f09de
++       `Dag`、`Digraph`、冻结的 `Topology[node]^{}` 和 `Hasse` 都有实例（各在其自身的伴生对象中），这里还为任意 `Map[node, Set[node]]` 和 `Ledger[node, Set[node]]` 提供了实例，因此普通的依赖映射无需转换即可回答包级扩展方法——`nodes`、`edges`、`sources`、`sinks`、`cycle`、`acyclic`、`reachable`、`closure` 和 `invert`：
+
+% 2 1 0 0b556780c1fea89a1e68e361a0dd57f2
+
+% 3 1 0 09ab602f365045a11cb1b7a45cfe9abc
+
+% 4 1 0 06188bfff561dd9e05e1ae1ce4138503
+
+% 0 1 0 0ca8fc206c4856b810751b5374ee66e0
+
+% 0 1 0 06cbcf7e46e6e18b1e4ee04665ac613a
+
+% 0 1 0 04e12c93b13f22a10231ac035188d7b1
+
+% 0 1 0 17976642edc6f77e0a44da81b93f5f3c
+
+% 1 1 0 0257d77bbd1d6a330e2fc1cee0963020
+
+@ 0 7 0 0c33c6f898e28765078a7ca5cad95150
++       这些方法返回 `murmuration.Iterator`，这是每种表示都能产生的最廉价的东西；扩展方法将它们转换为 `Set` 和 `List`。
++       自定义实例若持有标准库迭代器，可用 `Iterator.from(…)` 包装它。
++       后继*函数* `node => Iterable[node]` 有意不是 `Nodal`——它没有有限的节点集合，也没有可判定的 `has`——而 `explore` 会将其物化为 `Digraph`。
++       同时存储前驱的表示通过 `Bidirectional` 表明这一点，其值不可能含有环的表示则通过 `Topological` 表明。
+
+% 0 1 0 1656e9850ca5c5721b1613290655bbab
+
+% 1 1 0 1435e72a355ae7050dcfe00527b97061
+
+% 2 1 0 062ad445da57118e123f2eb789678c5b
+
+% 0 1 0 01b525e1083a34bf00b0675a26b195fa
+
+@ 0 11 0 1f81bdffa7890b3b036327d72005e674
++   entry .map   任意 `Map[node, Set[node]]` 的 `Nodal` 实例
++       通过类型类的伴生对象处于隐式作用域中，因为 `Map` 属于 proscenium。
++       不在键集合中的目标**不是**节点：该实例按原样报告映射，而 `Digraph(adjacency)` 是对目标闭合节点集合的构造方法。
++       该实例对子类型参数化，因此细化的映射类型也能匹配。
++   entry .ledger   任意 `Ledger[node, Set[node]]` 的 `Nodal` 实例
++       与 `.map` 相同，针对 `Ledger`：其键就是节点，保持其顺序，缺失的键没有后继。
++   entry #nodes   以迭代器表示的所有节点
++   entry #successors   节点所指向的节点，以迭代器表示；对不存在的节点为空
++   entry #has   图是否包含某个节点，无需扫描其节点
+
+@ 0 1 0 09b9af0e0eb3cda217bde524a10bc9ba
++ entry .Bidirectional   能直接回答节点前驱的图的类型类
+
+% 1 1 0 05a58afc43e63ba2038369e1353f3428
+
+@ 0 7 0 1078316c8a5be73b139fca8c41f5e902
++       `graph is Bidirectional by node` 表示该图无需扫描每条边，就能回答哪些节点指向某个节点——在依赖解读下，即依赖它的节点。
++       冻结的 `Topology` 和 `Hasse` 存储两个方向，具有不带门控的实例。
++       `Dag` 或 `Digraph` 只存储正向，其实例以 `Dysasymptotic.LinearScan` 为门控：在那里查找一个节点的前驱需要对每条边做转置，这一代价超出了问题本身的范围，`import dysasymptotics.linearScan` 让程序对此作出确认。
++       包级 `predecessors` 扩展方法需要此实例。
+
+% 1 1 0 1426f86b62a80ffb1eb9b25b8da2df7b
+
+@ 0 1 0 0db7e4ba7759a94b13f1cc0a66c885ca
++   entry #predecessors   指向节点的节点，以迭代器表示
+
+@ 0 9 0 068840296a747b220a1a1a0e64dfc9d7
++ entry .Topological   其值不可能含有环的图类型的标记类型类
++     `graph is Topological` 证明该类型的值允许拓扑排序——即不含有向环——且是**在构造上**如此：`Dag`、冻结的 `Topology[node]^{}` 和 `Hasse` 各有一个实例，因为它们都只能通过检查或不变式构建。
++     该实例是一个标记，绝非对一般类型做运行时检查的结果：`Digraph` 只有通过 `acyclic` 才会成为 `Topological`，而 `acyclic` 返回的是 `Dag`。
++     扩展方法 `linearized`、`reduction`、`traversal` 和 `layered` 需要它，`dendrology` 图示也需要它，因此有环图根本没有这些操作，而不是拥有会抛出错误的操作。
+
+@ 0 1 0 0d71086775dcea4c03d1c1497c76e6e2
++ entry .Reachable   拥有自己的可达性搜索的图的类型类
+
+% 1 1 0 0ef1e4541d6b01b402af770132fc2581
+
+@ 0 7 0 19d9aaaff0350ffd17b315ad4d0cdeb3
++       `graph is Reachable by node` 以集合的形式给出从某个节点可达的一切，包括该节点本身——它对有环的输入也是全函数，借助已访问集合而不是递归实现，因此它自身从不抛出错误；调用它的 `reachable` 扩展方法只在图中没有该节点时抛出 `Dag.Error`。
++       原生实例属于冻结的 `Topology`，它遍历自己的边列表；任何其他 `Nodal` 图都通过 `.generic` 进行通用搜索，扩展方法把它作为其上下文参数的默认值，因此 `Map` 或 `Hasse` 不需要自己的实例。
+
+% 1 1 0 001bef3025c9b4ab0e3c076507f6c117
+
+@ 0 7 0 0d6941d6984bc89c0ed414b4c3fcddb6
++   entry .topology   冻结的 `Topology[node]^{}` 的 `Reachable` 实例
++   entry .generic   适用于任何 `Nodal` 图的 `Reachable`，通过其后继进行深度优先搜索
++       它是一个方法而不是 given：`reachable` 和 `closure` 扩展方法把它作为其 `using` 参数的默认值，使得无需嵌套的 given 搜索就能找到它——对于 `Map` 这样的不透明接收者，嵌套搜索会看到被展开的别名，从而匹配不到任何东西。
++       为自己的图类型召唤 `Reachable` 的代码可以直接调用它。
++   entry #reachable   一个节点所能到达的一切，包括它自身
+
+@ 0 1 0 1088e3fcb002086a067e60742d6e3d7b
++ entry .Invertible   能够反转每条边的图的类型类，以及反转后得到的类型
+
+% 1 1 0 0a515c266fda9f4a13f6806c8b4d779a
+
+@ 0 6 0 1fa5c41987cc5b521d50b8482e18f279
++       `graph is Invertible by node to result` 给出每条边都反转后的图，作为最适合承载它的类型的值：`Dag` 反转为 `Dag`，因为反转每条边保持无环性；`Hasse` 通过交换它存储的两个方向，以 O(1) 反转为 `Hasse`；冻结的 `Topology` 反转为另一个冻结的 `Topology`；其他任何 `Nodal` 图则通过 `.generic` 对其边进行折叠，反转为 `Digraph`，`invert` 扩展方法把 `.generic` 作为其上下文参数的默认值。
+
+% 1 1 0 02da5cb91b3dfc160610a9ebadeea64a
+
+@ 0 8 0 134bf918e22bd9211b0abe0d88000d84
++   entry .digraph   `Digraph` 反转为 `Digraph`
++   entry .dag   `Dag` 反转为 `Dag`：反转每条边保持无环性
++   entry .topology   冻结的 `Topology[node]^{}` 反转为另一个冻结的 `Topology`
++   entry .hasse   `Hasse` 通过交换它存储的两个方向，以 O(1) 反转为 `Hasse`
++   entry .generic   适用于任何 `Nodal` 图的 `Invertible`，结果是 `Digraph`
++       它是一个方法而不是 given，理由与 `Reachable.generic` 相同：扩展方法把它作为默认值，从而避免不透明接收者会使之失效的嵌套 given 搜索。
++   entry #invert   每条边都反转后的图，作为实例的 `Result`
+
+@ 0 1 0 0a994124a910710d10d9be509c962c3b
++ entry .Hasse   偏序的哈斯图：每个元素的直接覆盖，省略了蕴含的比较
+
+% 1 1 0 0ff1957d24e40d9a021ab675f35232f9
+
+@ 0 4 0 1951c5ac087eecd61a67c29df0c1ec50
++       `Hasse(elements)(lessOrEqual)` 接受一个集合和一个序关系（`lessOrEqual(a, b)` 表示 `a ≤ b`），并计算覆盖关系：对每个元素，给出紧挨在它之上的元素（`parents`）和紧挨在它之下的元素（`children`），省略已经由某条路径蕴含的每个比较。
++       以整除关系排序的 12 的因数：
+
+% 2 1 0 14f34b7f1b0d2bae0a691627461fcb82
+
+% 3 1 0 17593b537489f40b0ddbcfc62b871837
+
+% 0 1 0 168e731b9af96dd606cf98d674faa2a5
+
+% 0 1 0 013cdb2ca6d8ea6b06079f6dcf173faa
+
+% 0 1 0 11b9093ef1a93ae312af4364dcdda11d
+
+% 0 1 0 14500b39e072ded30c5dd54b3a112c14
+
+% 0 1 0 19e6ce6c04dfcc6e0e39e61ad6447660
+
+% 0 1 0 0600e8a0ef8b13bf0582055e83e88962
+
+% 1 1 0 12fc5b47f34389931350f9c880c75d47
+
+@ 0 6 0 10c68232887118211233b265fe8add1c
++       元素逐个插入；每次插入时，从当前的极大元向下找到它的直接父元素，从当前的极小元向上找到它的直接子元素，一旦某次比较排除了整棵子树就将其剪除，并且每次比较都会被记忆，因此所比较的远少于全部有序对。
++       在该关系下等价的两个元素（彼此 ≤ 对方）会被合并：后来的成为先前那个的别名，对任何一个的查询都同时代表两者。
+
+@ 0 6 0 19c1e417acb221591fbfa48f21072edb
++       `Hasse` 本身就是一个图，每个元素指向它所覆盖的元素，因此它是 `Nodal`、`Bidirectional`（两个方向都有存储）和 `Topological`（偏序没有环）的：`divisors.linearized` 从底部到顶部排列，它的 `sources` 是其极小元，`sinks` 是其极大元，`dendrology` 的图示可以直接绘制它。
++       `dag` 是作为 `Dag` 的同一关系，而 `Poset#dag` 通过 `PartiallyOrdered` 实例构建一个 `Dag`。
+
+% 1 1 0 098d97fcc07568990ac6993cdf9a90f8
+
+% 1 1 0 02ad02c8ae13287719703d57e76f83c1
+
+@ 0 24 0 124a42d23fe2ce341b91e988cb44834b
++   entry .apply   集合在 `lessOrEqual` 关系下的哈斯图
++       `Hasse(elements)((a, b) => a ≤ b)`。
++       该关系必须是偏序（自反、在合并等价元素的意义下反对称、传递），结果才是覆盖关系；对每个有序对，它最多被调用一次。
++   entry .nodal   `Nodal` 实例：`Hasse` 的元素，每个指向它所覆盖的元素
++   entry .bidirectional   `Bidirectional` 实例：元素的前驱就是它的覆盖，直接读取
++       两个方向都有存储，因此不需要 `Dysasymptotic.LinearScan`。
++   entry .topological   证明 `Hasse` 不含环的标记：偏序不可能有环
++   entry #parents   紧挨在某元素之上的元素：它的覆盖
++   entry #children   紧挨在某元素之下的元素：它所覆盖的元素
++   entry #elements   所有元素，作为集合
++   entry #maxima   之上没有任何元素的元素
++   entry #minima   之下没有任何元素的元素
++   entry #dag   作为 `Dag` 的覆盖关系，每个元素指向它所覆盖的元素
++       不需要检查：偏序的覆盖关系是无环的。
++       `hasse.dag.edges` 就是 `hasse.edges`。
++   entry #invert   向上读取的同一关系：每个元素指向覆盖它的元素
++       O(1)：交换存储的两个方向。
++       `invert.children(x)` 就是 `parents(x)`。
++   entry #bottom   一个新元素，挂在当前每个极小元之下，一次扫描完成，无需比较
++       用于根据构造已知小于一切的值——类型中的 `Nothing`——使它无需与每个元素比较。
++       它成为唯一的极小元，此前的每个极小元现在都覆盖它。
++   entry #top   一个新元素，挂在当前每个极大元之上，一次扫描完成，无需比较
++       `#bottom` 的对应物：类型中的 `Any`。
++       它成为唯一的极大元。
+
+@ 0 1 0 1e340dcf1732dd781255bbcb6faed80e
++ entry .PartiallyOrdered   带有偏序的类型的类型类：`compare(left, right)` 即 `left ≤ right`
+
+% 1 1 0 0ee8378262e87a7f19297ead0bdc7297
+
+@ 0 3 0 1d9152626944c2980bc55e6a12c70140
++       `element is PartiallyOrdered` 为 `Poset` 提供 `compare(left, right): Boolean`，读作 `left ≤ right`。
++       该关系应当是自反、反对称和传递的；它不必关联每一对元素。
++       given 写成一个 lambda：
+
+% 2 1 0 04b278f0197365e00812914d35f8c6cf
+
+% 3 1 0 04510a37fce13ec909a92bde067c9e91
+
+% 0 1 0 061a99e7c0f79b661bbd3fa21095342a
+
+% 0 1 0 0cdf762b9299282b1dfd9277410c8d1e
+
+% 1 1 0 031f8ed40c28be5703ef64769ebc3d8c
+
+% 1 1 0 14345edbec4460f01cb02cca09384ff9
+
+@ 0 1 0 0f7067c654a86b11078ad4e4f3ce016a
++ entry .Poset   带有 `PartiallyOrdered` 实例的元素集合，以及其覆盖关系的 `Dag`
+
+% 1 1 0 13ab337c5520ecf9116781670655d34b
+
+@ 0 4 0 1c69a211605357aa016081dc2d1f4f97
++       `Poset(elements*)` 持有一个元素集合，其元素类型是 `PartiallyOrdered`，而 `dag` 是作为 `Dag` 的该序的哈斯图，每个元素指向紧挨在它**之上**的元素（它的覆盖），通过 `Hasse` 用该序的 `compare` 构建，它会剪除比较，之后也不需要约简。
+
+% 2 1 0 134d23e26ea27bdd0fab566c74481052
+
+% 3 1 0 11a8924604c5ea2706e2d7f5fa1b5525
+
+% 0 1 0 117d4d711593115e0bb3c98a751e02a3
+
+% 0 1 0 0c18a5313278106408138a9156a70973
+
+% 1 1 0 1afe11ce23b95e4a1d0951afac7ae5d7
+
+@ 0 3 0 1216e07a119eae68032f52d656568609
++       注意方向：`Poset#dag` 指向上方（指向覆盖），而 `Hasse#dag` 指向下方（指向被覆盖者）；使用同一关系的 `Hasse` 是更丰富的值，具有两个方向以及极大元和极小元。
+
+% 0 1 0 1e72f1a44ab56fdd0f932c6e469b55ff
+
+% 0 1 0 0e8c0d381270e4000e008af3312bc62f
+
+@ 0 3 0 18f48b0e6c35ce281ea93d8aab30a9c8
++   entry .apply   由给定元素组成的 `Poset`
++   entry #elements   这些元素，作为集合
++   entry #dag   作为 `Dag` 的覆盖关系，每个元素指向紧挨在它之上的元素
+
+@ 0 1 0 1422d1b2040d815e03f7b106cf902542
++ entry .Layering   为绘制而分层排列的图，依赖在依赖者之上，并减少了交叉
+
+% 1 1 0 18faf5cadc99b2a01f9bb633de3ecc4f
+
+@ 0 10 0 1ff7f4e6144eddbd1a55224d3f3e5861
++       `Dag#layered`（以及任何 `Topological` 图上的 `layered` 扩展方法）的结果。
++       每个节点被分配到一层——按 `Ranking.LongestPath`，位于其最深依赖之下一层，因此源点共享第 0 层；或者在 `import rankings.balancedRanking` 下，被拉低到其最浅依赖者之上的那一层——跨越多于一层的边会在中间的每一层经过一个 `Layering.Vertex.Virtual`，因此结果中的每条连线都连接相邻的层。
++       然后对每一层的顶点排序，以减少把它与相邻层相连的连线之间的交叉，方法是交替进行加权中位数扫描和相邻换位，最多二十四次扫描，或直到绘图成为平面图为止——这就是 GraphViz 的 `dot` 所用的 Sugiyama 方法。
+
+% 2 1 0 011fc43eb3bfbcfe11e0d9b1a0fcfc4f
+
+% 3 1 0 1ddd18da55df890917197ec6fc3be282
+
+% 4 1 0 1627a028719e2afa1f66925f4d6eb71f
+
+% 0 1 0 1765edbf8c9a2fb70eaffba3ba435450
+
+% 0 1 0 0e948f0aec81affc1603fb8deff3e36a
+
+% 0 1 0 02c6ec41e9f1471f0a656aa23d1dd259
+
+% 0 1 0 1d16642fd557254813cb289af7cedbb2
+
+% 0 1 0 034cc5718e0b7596040571422d3c4cc0
+
+% 0 1 0 03e7b7e82d629d4b156dfc855cd17eb4
+
+% 0 1 0 135fa14995a0f6a90598eb3e00ef12cc
+
+% 1 1 0 011859498c315a1d190b5bd2635ff884
+
+@ 0 2 0 04293f7e3a01e6301d9ee152031e8c5b
++       `dendrology` 的 `LayeredDagDiagram` 为分层分配列并渲染它；其他绘图方式可以直接使用 `layers` 和 `links`。
+
+% 0 1 0 0c339bb1bbac2c4e0e068edb2a68bf97
+
+% 1 1 0 0a259ebc7c9ce0b40699c7f6df823bc2
+
+@ 0 10 0 1ceb9f67a85c604b0c693d1925daedaa
++   entry .Vertex   层中的一个槽位：图的一个节点，或一条较长的边穿过的点
++       一个枚举：`Real(value)` 是图的一个节点，而 `Virtual(source, target)` 是从 `source` 到 `target`、跨越多层的边穿过这一层的地方。
++       绘图会给虚拟顶点分配一列，并让边从它穿过。
++   entry #layers   各层，自上而下，每层是按绘制顺序排列的 `Layering.Vertex` 列表
++   entry #links   `links(i)` 把第 `i` 层连接到第 `i + 1` 层，表示为各自层内位置组成的对
++       每条连线都连接相邻的层：跨越更多层的边在其虚拟顶点处断开。
++   entry #rank   每个节点所在的层，作为 `Map`
++   entry #position   每个节点在其层内的位置，作为 `Map`
++   entry #crossings   整个分层中相互交叉的连线对数
+
+@ 0 1 0 1094fd9276da52ee198bac275abd244b
++ entry .Ranking   `layered` 如何把每个节点分配到层：`LongestPath` 或 `Balanced`
+
+% 1 1 0 0d974163f6826cc712df9bfbaf6bbc6a
+
+@ 0 7 0 03ecf45d4f2796bb121e510f0c201cc3
++       一个枚举，作为上下文值被 `Dag#layered`、`layered` 扩展方法和 `dendrology` 的 `LayeredDagDiagram` 接受。
++       `LongestPath` 把每个节点放在其最深依赖之下一层，因此所有不依赖任何东西的节点共享第 0 层。
++       `Balanced` 以此为起点，再把每个有依赖者的节点拉低到其最浅依赖者之上的那一层，从而缩短从只供给某个深层节点的源点出发的长边。
++       伴生对象的 `default` 是 `LongestPath`；`import rankings.balancedRanking` 优先于它。
+
+% 1 1 0 090bb18592fc745818aab1e6b7c707ae
+
+% 1 1 0 03967fc2ccb77ba60dc6f0dbc5fbf4f1
+
+@ 0 1 0 07c6aea46f275721107d26393b1ddf24
++   entry .default   `Ranking.LongestPath`，在没有导入任何 given 时适用的 given
+
+@ 0 1 0 1b6e7a777c3080c013f02823bccb2552
++ entry .rankings   `layered` 的两种分层方针，作为可按名称导入的 given
+
+% 1 1 0 1486050ed3913d9813638e506553b2ba
+
+@ 0 3 0 13e91e8e3a6d497b05aa734d9d7ea985
++       `import soundness.*` 从 `Ranking` 伴生对象解析出 `Ranking.LongestPath`；按名称导入其中之一会显式地选择一种方针，而 `balancedRanking` 是选择 `Balanced` 的唯一途径。
+
+% 2 1 0 01fec0fcd095bf8f01b47613a40856a2
+
+% 3 1 0 0e4e35438cbc81f809b6c526a9d0fb70
+
+% 4 1 0 11df5012ae5c0f6f06a4d360ec311e99
+
+% 0 1 0 107cd6b5f8c4da6e0877fca1d99c87f5
+
+% 0 1 0 0d856b813ae39cf819b0f022a1b1c8cd
+
+% 0 1 0 089291606c717a3d016864dc0e369b01
+
+% 1 1 0 1457b6966938a98b02b875ad3f7d84b1
+
+@ 0 3 0 143a315c5ed3157a0804ee78c1e6a333
++       没有这个导入时，`deep.layered.rank(5)` 为 0。
++   entry .longestPathRanking   `Ranking.LongestPath`：每个节点位于其最深依赖之下一层
++   entry .balancedRanking   `Ranking.Balanced`：每个有依赖者的节点被拉低到其最浅依赖者之上的那一层
+
+@ 0 1 0 1dec89a7021ce0bd1135703cec9f475e
++ entry .Dot   作为值的 GraphViz DOT 文档，由标识符、边和属性构建，并序列化为文本
+
+% 1 1 0 196b0ed07efe1530144f255c143c453e
+
+@ 0 6 0 18925c26ceb8cc921117a36549d0d547
++       `Dot` 是一个有两个分支的枚举：`Graph`（无向）和 `Digraph`（有向），每个分支持有一个可选的名称、是否为 `strict`（没有重复的边），以及它的 `Dot.Statement`。
++       伴生对象的 `digraph`、`strictDigraph`、`graph`、`strictGraph` 和 `subgraph` 构建它们，而语句由 `Name[Dot.Id]` 标识符借助扩展运算符构建：`-->`（有向边）、`--`（无向边）、`:=`（赋值）和 `id(key -> value, …)`（带属性的节点）。
++       `serialize` 写出 DOT 文本。
+
+% 2 1 0 08489056c59de60802c6c65a030fe7f4
+
+% 3 1 0 0ea00241ea4572f808d7dca5c41f9c83
+
+% 4 1 0 057be87d840da39e0b6bb5d9af9f5352
+
+% 0 1 0 13af4cc3af32ed68076e71060a727f50
+
+% 0 1 0 1d8e7470bfcb6fef0581a3656e24283e
+
+% 0 1 0 1c53e12de0a0215c1b99361dffa7f7d1
+
+% 0 1 0 0dcfaffb02554c951144eed8bca4d4a0
+
+% 0 1 0 0e07471248a4d8f31bd87be8e56380ca
+
+% 0 1 0 1d26812238659b7007bc5323e4299c05
+
+% 1 1 0 07895e7a272113e708e54581b1e69977
+
+@ 0 5 0 1cefd2c58c11c9d313a79f6bc7b26a1c
++       每个标识符都以双引号括起写出，因此 `Dot.Identifier` 规则是宽容的：任何不含双引号和换行符的非空文本都可以。
++       对于其他任何文本，`Name[Dot.Id](text)` 抛出 `Name.Error`（需要一个 `Tactic[Name.Error]`），而 `n"…"` 字面量在代码编译时检查。
++       `Dag[Text]` 通过 `dag.dot` 渲染，它构造一个每个依赖一条边的 `Dot.Digraph`。
+
+% 1 1 0 15e53a43261ab90116835f476b6ee3d3
+
+@ 0 15 0 072abebb333756d918a4817841488d7d
++   entry .digraph   由给定语句组成的有向图，具名或匿名
++       `Dot.digraph(id, statements*)` 或 `Dot.digraph(statements*)`；不是 strict 的。
++   entry .strictDigraph   标记为 `strict` 的具名有向图：重复的边会被合并
++   entry .graph   由给定语句组成的具名无向图
++   entry .strictGraph   标记为 `strict` 的具名无向图
++   entry .subgraph   一条 `subgraph { … }` 语句，具名或匿名，嵌套在图中或作为边的目标
++       `Dot.subgraph(id, statements*)` 或 `Dot.subgraph(statements*)`。
++       边可以以子图为终点：`a --> Dot.subgraph(b, c)`。
++   entry .--   `a -- b`：一条无向边语句，从一个标识符到一个标识符或子图
++   entry .-->   `a --> b`：一条有向边语句，从一个标识符到一个标识符或子图
++   entry .:=   `a := b`：一条赋值语句，写出为 `"a" = "b"`
++   entry .apply   `id(key -> value, …)`：声明一个带属性的标识符的节点语句
++       `Name[Dot.Id]` 上的扩展方法：`a(t"color" -> t"red")` 写出为 `"a" [ color="red" ]`。
++       没有属性时，它声明一个裸节点。
++   entry .Target   边的右侧：是否有向、它的目的地，以及一个可选的链式目标
+
+% 1 1 0 1e380526f22192980cc4ec506685eaed
+
+@ 0 17 0 0b70ed4bad8e84040cb379dd031c1268
++         一个 case class，带有 `directed`、`dest`（一个标识符或一个 `Statement.Subgraph`）和 `link`，后者是用于 `a -> b -> c` 这类链的又一个 `Target`。
++         `-->` 和 `--` 运算符会构建它；很少需要手写。
++     entry #directed   该边是否以 `->` 而不是 `--` 绘制
++     entry #dest   目的地：一个 `Name[Dot.Id]` 或一个 `Statement.Subgraph`
++     entry #link   链在这个目标之后的又一个目标，如果有的话
++   entry .Property   节点的一个 `key="value"` 属性
++     entry #key   属性的名称
++     entry #value   属性的值，以双引号括起写出
++   entry .Statement   图的一条语句：节点、边、赋值或子图
++       一个枚举：`Node(id, attrs*)`、`Edge(id, rhs: Target, attrs*)`、`Assignment(id, id2)` 和 `Subgraph(id: Option[Name[Dot.Id]], statements*)`。
++       伴生对象的构造器和 `Name[Dot.Id]` 上的运算符会构造它们；`Subgraph` 也可以作为边的目标。
++   entry .serialize   `Dot.serialize(tokens)`：把词法单元列表排布为带缩进的 DOT 文本
++       实例方法所使用的底层写出器：花括号开启和关闭缩进块，`;` 结束一行，`[` 和 `]` 括起属性，其他词法单元以空格分隔。
++   entry .Id   DOT 标识符的命名平面：`Name[Dot.Id]`
+
+% 1 1 0 1beeecc130464784191606e3cf685254
+
+@ 0 11 0 0a18ef402a74527d0131840e607cc835
++         一个密封的标记类型。
++         `Name[Dot.Id]` 同样可以命名节点、边的端点、赋值的一侧或（子）图，并由这个对象中的 given `nominative` 约束到 `Dot.Identifier`：`Name[Dot.Id](text)` 在运行时检查（抛出 `Name.Error`），而 `n"…"` 在代码编译时检查。
++     entry .nominative   把 `Name[Dot.Id]` 约束到 `Dot.Identifier` 规则的 given
++   entry .Identifier   DOT 标识符必须满足的规则：非空，不含双引号，也不含换行符
++       一条 `nomenclature` 规则。
++       标识符总是以双引号括起写出，因此不需要转义其他任何东西；它的失败消息是 _must be a valid DOT identifier_。
++   entry #serialize   图的 DOT 文本，带缩进，以换行符开头
++       `Dag(t"a" -> t"b").dot.serialize` 为 `"\ndigraph {\n  \"a\" -> \"b\"\n}"`。
++   entry #add   追加了更多语句的图
+
+@ 0 5 0 0aacba1d0623776b02b020e9fd1ba652
++ entry .explore   `start.explore(dependencies)`：从一个节点出发进行探索，把后继函数物化为 `Digraph`
++     任何值上的扩展方法。
++     函数 `node => Iterable[node]` 自身没有有限的节点集，因此它不是 `Nodal`；`explore` 从 `start` 向外遍历，对到达的每个节点调用一次该函数，并给出所找到的一切组成的图。
++     该函数可能会绕回自身，因此结果是 `Digraph`，由 `acyclic` 检查它。
+
+% 2 1 0 0b31083e3950a22f09123f352b79f6cd
+
+% 3 1 0 1e6749b3bcb1bf840e201c40effa932b
+
+% 4 1 0 0cffe0d99a0ff75e169902db1d27e718
+
+% 0 1 0 034fcaa2bf30d57303a3fa1642797d5f
+
+% 1 1 0 1d28b99d798fdbbf158e2a4b66d3f2a7
+
+@ 0 4 0 0bffc6af09ac25261fca97930ae0dc45
++ entry .nodes   任何 `Nodal` 图的每个节点，作为集合
++     通用的扩展方法，适用于任何 `graph is Nodal by node`：`Map[node, Set[node]]`、`Ledger`、`Hasse`、冻结的 `Topology` 或两种图类型中的任何一种（它们以方法的形式提供同样的名称，且优先）。
+
+@ 0 1 0 1f6c1e97141ab1a40354f6029a5f6abe
++ entry .successors   任何 `Nodal` 图中某个节点所指向的节点：它的依赖，作为集合
+
+@ 0 1 0 1172705babe7f3881c40dd7932ba797d
++ entry .edges   任何 `Nodal` 图的每条边，作为 `(from, to)` 对
+
+@ 0 2 0 01d576d8ef439190163d9dfa199ff9fa
++ entry .sources   任何 `Nodal` 图中没有后继的节点：那些不依赖任何东西的节点
++     作用范围是整个图，因此在只有前向的表示上也不需要确认。
+
+@ 0 3 0 11e8390d710aa35b0ae5dfba00bafe37
++ entry .sinks   任何 `Nodal` 图中没有前驱的节点：那些没有任何东西依赖的节点
++     对每条边遍历一次，因此不需要 `Bidirectional` 实例，也不需要确认：这个问题针对的是整个图，而不是某一个节点。
+
+@ 0 4 0 046c856d195232c5103d9d33737c0977
++ entry .predecessors   指向某个节点的节点，适用于任何 `Bidirectional` 图
++     需要一个 `graph is Bidirectional by node`：对冻结的 `Topology` 或 `Hasse` 不设门控，而对 `Dag` 或 `Digraph` 则以 `Dysasymptotic.LinearScan`（`import dysasymptotics.linearScan`）为门控，因为它们必须转置每条边才能给出答案。
+
+@ 0 2 0 0c14be402bf0d6ff0e983e9244df94f3
++ entry .cycle   任何 `Nodal` 图中的一个环（如果有的话）：每个节点指向下一个，在起点处结束
++     对无环图为 `Unset`。
++     通过深度优先搜索，对任何图都是全函数。
+
+@ 0 2 0 1409cb2dbbec2e0209f7e90ddb0049f0
++ entry .acyclic   经过一次检查后，把任何 `Nodal` 图作为 `Dag`；如果有环则抛出 `Dag.Error`
++     O(n + e)，只做一次；节点集对每个边目标封闭。
+
+% 2 1 0 146511835c1956541dc59e8655ee983a
+
+% 3 1 0 137df9e45d805ca215f857751c8b9a21
+
+% 4 1 0 099a6de0e1aa82100e63ec4ffe5b7d43
+
+% 0 1 0 022f36ed379b9ab6199e3705b1230f7e
+
+% 1 1 0 1a80505f8d1c34da01b7aef3b97f1148
+
+@ 0 1 0 0301a029fe7ff8e203638e2a12141f1b
++ entry .digraph   复制到 `Digraph` 中的任何 `Nodal` 图，其节点集对每个边目标封闭
+
+@ 0 5 0 0cc6f0a7d5e170da1554083d1c23b51b
++ entry .reachable   任何 `Nodal` 图中某个节点所能到达的一切，包括它自身
++     只在图（按实例的 `has` 判断）中没有该节点时抛出 `Dag.Error`（`Reason.NodeMissing`）；搜索本身对有环图也是全函数。
++     拥有自己 `Reachable` 实例的图（冻结的 `Topology`）以原生方式搜索，其他图则通过 `Reachable.generic` 搜索。
+
+@ 0 4 0 1acd6f5f7035d25c0da41d19a847e97e
++ entry .closure   把任何 `Nodal` 图中蕴含的每条边都显式化，作为 `Digraph`
++     每个节点进行一次可达性搜索，通过图的 `Reachable` 实例或通用搜索；在结果中，节点不指向它自身。
++     `Dag#closure` 和冻结 `Topology` 的闭包是更快的形式，借助位矩阵实现。
+
+@ 0 3 0 0e9d407af17c304103c93d35de58eec6
++ entry .invert   每条边都反转后的任何 `Nodal` 图，类型由其 `Invertible` 实例指定
++     `Dag` 反转为 `Dag`，`Hasse` 反转为 `Hasse`，冻结的 `Topology` 反转为另一个，其他任何东西——`Map`、`Ledger`——则通过 `Invertible.generic` 反转为 `Digraph`。
+
+@ 0 4 0 185eb3adc419b8d117daa2c533937309
++ entry .linearized   任何 `Topological` 图的节点，按拓扑顺序排列：每个节点都在其后继之后
++     适用于 `Dag`、冻结的 `Topology` 或 `Hasse`；`Digraph` 在被 `acyclic` 转换之前没有这个操作。
++     互不相关的节点之间的顺序遵循实例的 `nodes`，因此按插入顺序排列的表示会给出稳定的顺序。
+
+@ 0 2 0 1bb7dd2a5df7e2d30cf75c64298f044b
++ entry .reduction   与任何 `Topological` 图具有相同可达性的最小图，作为 `Dag`
++     借助为这次调用构建一次的冻结 `Topology` 的位矩阵。
+
+@ 0 4 0 0d304768da4d16b01c5df45345da0a26
++ entry .traversal   根据后继的值，为任何 `Topological` 图的每个节点计算一个值
++     `graph.traversal[result]((successorValues, node) => …)`：节点按拓扑顺序访问，因此每次调用都能看到已为该节点的后继计算出的值，结果是一个从每个节点到其值的 `Map`。
+
+@ 0 4 0 056c02855927aa2b00998fafccc2e3ef
++ entry .layered   排列为交叉最少的各层的任何 `Topological` 图，作为 `Layering`
++     使用作用域中的 `Ranking`（默认为 `Ranking.LongestPath`；用 `import rankings.balancedRanking` 更改）。
++     `Dag` 以外的图会被转换一次，不加检查，因为 `Topological` 证明了它没有环。

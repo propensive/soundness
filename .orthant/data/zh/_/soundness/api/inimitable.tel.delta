@@ -1,0 +1,173 @@
+orthant 2 language
+
+% 0 1 0 0f04ec4b9ac2d4270a232409219e1f6b
+
+% 0 1 0 1e1d180f2d06b6cf03a7e2c4c32ef25e
+
+% 0 1 0 0b5938ce7315323607e1922cbc4d93e2
+
+@ 0 1 0 0c79fcb9c99bb15116d4276462082f34
++ info   作为格式正确的值的 UUID：可以生成、写作经检查的字面量，或以带类型的错误进行解析
+
+% 0 1 0 0ca6d61ddd9511ea1cdae38f1414f6fe
+
+@ 0 6 0 17956fbe1da8649700504779ce186b54
++     _Inimitable_ 把 [UUID](https://en.wikipedia.org/wiki/Universally_unique_identifier)（一种足够唯一、无需协调即可分配的 128 位标识符）表示为已知格式正确的 `Uuid` 值。
++     字符串可以一直保存一个格式错误的标识符，直到某处解析它并失败；`Uuid` 则不会。
++     用 `uuid"…"` 写出的字面量在代码编译时检查，运行时解析的文本会抛出带类型的 `Uuid.Error`，而标识符的两个 64 位半部和十六个字节可以直接获取。
+
+% 2 1 0 1297b56df900fc8604f937b9c1e3a7fd
+
+% 3 1 0 128270408b7eb3e01c001cc58682f4e3
+
+% 0 1 0 0323f27fc4985e0804a43d7947f66e41
+
+% 0 1 0 090d70cddcbe0a981c3955a735e166c5
+
+% 0 1 0 055a1ba2c68be4150589e0e1f079b2c1
+
+% 0 1 0 0cb21e82a9b1ae3818249283e6d0fec2
+
+% 0 1 0 185b51a993d5f83f1469b901b0a0d57c
+
+% 0 1 0 124db967bd75d01a0b1f9f096fb1a06b
+
+% 0 1 0 01c6c86a2e358b1c1e45d99af2b307f0
+
+% 1 1 0 012c53dd5fa3164715b6f12642db67fa
+
+@ 0 6 0 11853f8d18a036fc0cea59f7bb4808a5
++     `Uuid` 通过其伴生对象中的 given 显示、编码和解码为其规范的带连字符文本，因此 `as[Uuid]` 无需任何导入即可从文本读取一个 UUID。
++     对于在 `Uuids` 领域上泛型的使用者（`[uuid: Instantiable across Uuids from Text]`），使 `Uuid` 成为该领域代表的实例是 `uuidInterfaces.soundnessUuid`，这个 given 必须按名称导入，因为 `import uuidInterfaces.*` 不会导入 given；它声明在 `anticipation` 包中。
+
+@ 0 2 0 08e5ae18824579d81a593ef78ad9b24e
++     本库只有一个源集 `inimitable.core`，适用于所有平台。
++     一切都导出到 `soundness` 总括包。
+
+% 0 1 0 0d2f65ed52a733c71c3edae14a1d4284
+
+% 0 1 0 0b02ceef1a4fe8e50394670b2b36fafc
+
+@ 0 1 0 1824a6144f353f340b36feb184077eac
++ entry .Uuid   一个 128 位的通用唯一标识符，以其两个 64 位半部表示
+
+% 1 1 0 0d09c9a43601f4d014b65f97459ecc5f
+
+@ 0 5 0 1dcf837e0617b42313e36dbc7a975305
++       `Uuid` 是一个 case class，由其最高和最低有效的 64 位 `#msb` 和 `#lsb` 组成。
++       它可以用 `Uuid()` 新建，即从 `java.util.UUID.randomUUID` 取得一个随机（版本 4）标识符；可以用 `uuid"…"` 以字面量写出；可以从文本解析，用 `.parse`（抛出 `Uuid.Error`）或 `.extract`（给出 `Optional`）；也可以直接从其两个半部构建。
+
+@ 0 1 0 1a01088173aea14903ce128e13b4e226
++       伴生对象也是一个提取器，因此模式可以匹配作为有效 UUID 的文本：
+
+% 2 1 0 072034875836d5aa002bea5a08995952
+
+% 3 1 0 073023ce76f27dc01ccf192f60fdf449
+
+% 0 1 0 10cb0856fd036f9e0c358bfee458c332
+
+% 0 1 0 0767d48afe8fef5006b0d983abef1a5f
+
+% 0 1 0 108211a64af5c4ad15bc97f5c3aecf76
+
+% 1 1 0 17504f391b40996b0b490e74c2363c1d
+
+@ 0 4 0 11a4bc68cbc53ee50640542dbd19aa53
++       `Uuid` 通过 `#text`、`show`、`encode`、`inspect` 以及在消息中呈现为其规范的小写带连字符形式；`uuid.in[Data]` 给出其十六个字节，高位半部在前，每个半部均为大端序。
++       `#^` 和 `#unary_~` 把它当作其本来的位模式处理，用于从其他标识符派生出一个标识符。
+
+% 0 1 0 16f04f54aedec6230b592ac91aefbd49
+
+% 0 1 0 19f0e99cd0b9c4041fc37a5e1773bfed
+
+@ 0 7 0 1461b176a2b6a19f0b2a26e353b3966d
++   entry .apply   一个新的随机 UUID
++       从 `java.util.UUID.randomUUID` 取得一个版本 4 标识符。
++       每次调用都给出一个新的；`jvmInstanceId` 则是每个运行中的程序只取一次的标识符。
++       case class 构造器 `Uuid(msb, lsb)` 从两个半部构建一个 UUID。
++   entry .parse   从文本读取 UUID，如果文本不是 UUID 则抛出 `Uuid.Error`
++       接受 `java.util.UUID.fromString` 所接受的形式：由连字符分隔的五组十六进制数字。
++       需要一个 `Tactic[Uuid.Error]`。
+
+% 2 1 0 1bfc80f8639b74f7036aa8a69982b111
+
+% 3 1 0 1065a02dad35869809f993de9213ea14
+
+% 0 1 0 12a618ab3fc8ab800817fdfca2fcb19c
+
+% 0 1 0 0e7f21646ad12c53110d625a2d2f0bdb
+
+% 1 1 0 15858c53d9b9a5271ad3e777a9291077
+
+@ 0 15 0 0b6f89103b154dfe005e2d81c058e8dd
++   entry .extract   从文本读取 UUID，如果文本不是 UUID 则为 `Unset`
++       与 `.parse` 相同，但不需要战术：格式错误的文本给出 `Unset`。
++       这也是伴生对象 `unapply` 背后的方法，因此 `case Uuid(id) =>` 匹配有效的文本。
++   entry .decodable   从文本解码 `Uuid`，如果格式错误则抛出 `Uuid.Error`
++       需要一个 `Tactic[Uuid.Error]`，因此 `t"…".as[Uuid]` 通过作用域内的策略抛出错误。
++       它与伴生对象的所有 given 一样位于隐式作用域中。
++   entry .showable   把 UUID 显示为其规范的带连字符文本
++   entry .inspectable   把 UUID 检视为其规范的带连字符文本，与 `show` 相同
++       规范形式已经完整显示了两个半部，形状也一望即知，因此调试呈现无需再添加任何内容。
++   entry .communicable   在消息中把 UUID 呈现为其规范文本
++   entry .encodable   把 UUID 编码为其规范的带连字符文本
++   entry .encodableInData   把 UUID 编码为其十六个字节，高位半部在前
++       每个 64 位半部都以大端序写出。
++       通过 `uuid.in[Data]` 使用它：单纯的 `uuid.encode` 会与 `Text` 编码产生歧义。
+
+% 2 1 0 0fec794f0dad2c331129d7f2eaa87313
+
+% 3 1 0 06fe6fd66971e8b10f0ebdcb46e43ddc
+
+% 0 1 0 0ca1d077f46fd2041331f1f7a410e8c8
+
+% 1 1 0 05b0f17dadc80ea41b8a89550d00e37a
+
+@ 0 1 0 18fe6c681cbe63561baa9c05f2dc3ae5
++   entry .Error   当文本不是有效的 UUID 时抛出
+
+% 0 1 0 0eb601d2d8703d0a0cbc3f0c257d69cf
+
+@ 0 15 0 05c5e3189dfb521519e71614aca0a8ba
++         错误 `↯/s.47.1`：_`badUuid` is not a valid UUID_。
++         由 `Uuid.parse` 以及从文本解码 `Uuid` 时抛出。
++         `uuid"…"` 插值器以编译错误的形式报告相同的消息。
++     entry #badUuid   解析失败的文本
++   entry #msb   最高有效的 64 位
++   entry #lsb   最低有效的 64 位
++   entry #java   以 `java.util.UUID` 表示的 UUID，供需要它的 API 使用
++   entry #text   规范的小写带连字符形式，例如 `a0cb16f0-d41e-4c28-862f-bd6164bbcc8c`
++   entry #unary_~   UUID 的按位取反，写作 `~uuid`
++       反转全部 128 位；结果通常不是有效的版本 4 标识符，这只对检查版本位的使用者有影响。
++   entry #^   两个 UUID 的按位异或
++       逐位组合两个半部。
++       由于异或是其自身的逆运算，`(a ^ b) ^ b == a`，因此它是从另外两个标识符派生出稳定标识符、并从结果中恢复其中任一个的廉价方式。
+
+@ 0 4 0 0405fd11a6f9f9c91a2befb5510a3de4
++ entry .uuid   `uuid"…"` 插值器：一个在代码编译时检查的 UUID 字面量
++     一个宏，在编译时解析字面量，并展开为以两个半部为常量的 `Uuid(msb, lsb)`，因此运行时不进行任何解析。
++     格式错误的字面量会导致编译错误：_not-a-uuid is not a valid UUID_。
++     该插值器不接受任何替换。
+
+% 2 1 0 02e5054b42fd4d3b04e96ccc1295e389
+
+% 3 1 0 16738013ba57579e03072c064d53000b
+
+% 0 1 0 0789aea081483de5113864ad0094eb44
+
+% 1 1 0 1a06198b71ff91a01c5bef249bd85443
+
+@ 0 4 0 11b2ac67eed70a310f51fd01f4c4c9f5
++ entry .jvmInstanceId   每个运行中的程序只取一次的 UUID，用于标识本进程
++     一个惰性值，首次读取时用 `Uuid()` 生成，此后在程序的整个生命周期内保持不变，因此它能把一个运行中的实例与另一个区分开来，无论是在日志中，还是在必须指明其所有者的锁或消息中。
+
+@ 0 1 0 1bde3917f187c91b11a7531f724c17ac
++ entry .internal   `uuid"…"` 插值器背后的宏
+
+% 0 1 0 1c18810b564d59e609a88422cf8dd919
+
+% 1 1 0 0f71597c1b0bc6cb112bae74ffdfb433
+
+@ 0 2 0 062abcb811f2f2890e691c611bfe5559
++       不供直接使用。
++   entry .uuid   在编译时解析 `uuid"…"` 字面量

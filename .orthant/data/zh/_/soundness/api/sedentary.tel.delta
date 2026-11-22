@@ -1,0 +1,856 @@
+orthant 2 language
+
+% 0 1 0 0f04ec4b9ac2d4270a232409219e1f6b
+
+% 0 1 0 1f26b2fe3e14e5f7088d3b4c175c365b
+
+% 0 1 0 0b5938ce7315323607e1922cbc4d93e2
+
+@ 0 1 0 1c16381874b6ce4b05859b9cfe64e3af
++ info   基准测试、压力测试与性能剖析：引用的代码被分阶段执行到它自己的 JVM 中，经过测量，并与套件的测试并列报告
+
+% 0 1 0 0ca6d61ddd9511ea1cdae38f1414f6fe
+
+@ 0 3 0 012e34336760e39e17f2bb7e92dfcdf7
++     _Sedentary_ 测量代码，而不是检查代码。
++     它提供三种测量，每种都写在 probably 的 `Suite` 中、与其测试并列，并在同一份报告中报告，使用相同的名称、轴和选择方式：
+
+@ 0 9 0 11cf43cdbdc2856000b9670278ca8173
++     - `Bench` 测量**速度**：一个操作被串行重复执行时耗时多少，连同其离散程度、置信区间、每次操作的内存分配，以及在给定 `OperationSize` 时以每秒字节数或字符数计的吞吐量；
++     - `Stress` 测量**负载下的行为**：操作在许多工作者上并发运行一段挂钟时间窗口，以 `Strain` 报告内存分配、堆峰值、保留的存活集、垃圾回收和延迟百分位数，并可选择扫描或搜索工作者数量，以求最佳的持续吞吐量（`StressSearch`）；
++     - `Profile` 测量**时间花在哪里**：操作在进程内的 JFR 记录下运行，其最热的方法以 `Hotspots` 报告。
+
+@ 0 5 0 0f22099b6bf660fc0087712e6567858f
++     每项测量的主体都是一个**引用表达式**，即 `'{ … }`。
++     它经由 superlunary 被分阶段执行：与被测代码一起编译进一个 JAR，部署到一个 `BenchmarkDevice`，并在它自己的 JVM 中运行，该 JVM 有固定的堆、选定的垃圾回收器，并可选择限制处理器数量，因此套件中的其他任何东西——它的其他测试、运行器自身的内存分配、已被别的代码预热过的 JIT——都不会扭曲测得的数字。
+
+% 0 1 0 15d6d2800841da9e1c6e709ce05d6a7d
+
+% 0 1 0 1a8ec18672c39e03185024ae675e9c25
+
+% 0 1 0 0472326144a49ce71767be845f62f575
+
+% 0 1 0 1ce8fe6ca033a15a0bd38efcfa5b98d2
+
+% 0 1 0 14f9c325451410601fe228db57704df4
+
+% 0 1 0 1fc8caa31dddf31c0d4ed3cae383aa63
+
+% 0 1 0 0323f27fc4985e0804a43d7947f66e41
+
+% 0 1 0 0903c101a1f971dc12f4a0673dd6f4e1
+
+% 0 1 0 1411f34d13fb367d1e0236b786102c0b
+
+% 0 1 0 12c5c459f0fc46b61a922ccc93d29672
+
+% 0 1 0 191a0fd4f8a251131c9d7a016bb964e6
+
+% 0 1 0 12529c28d31d0fcf17cafc1eb81421bf
+
+% 0 1 0 1f78934eb5688b3f16d90cfb3b1f049e
+
+% 0 1 0 0a9de0b62369958e032f3dc0052472d9
+
+% 0 1 0 154a6d555d0f44ef12243490f2e3c002
+
+% 0 1 0 056f1ac8a1c9ad26123215ad85983717
+
+% 0 1 0 1843236fdfc18fac158057dd2d605479
+
+% 0 1 0 12be52dc5624b9eb00b72854b81f9b20
+
+% 1 1 0 1833a1df3256efc61155dc3945dd8d60
+
+% 0 1 0 15105d63343e192d1872da7926b4326e
+
+% 1 1 0 000805341c7b77281b0c03a61f8cc24f
+
+% 0 1 0 0e18c842d278db9609d81229cecc3fe8
+
+% 0 1 0 12543df6075bfe2803e9e2f83ad463d6
+
+% 0 1 0 1a33ee6b4a3bba2500aa229743c7c755
+
+@ 0 7 0 118511a351f18faa11173ab78dbd30d5
++     每项测量从它所在的 `Suite` 中获取它的上下文值（一个 `Runner`、针对其结果种类的 `Inclusion`、`Testable` 和 `Codepoint`），其余的则来自导入：构建测量所需的 `Classloader` 和 `Environment`，分阶段执行它所需的 `System`、`TemporaryDirectory` 和 `Stageable`（superlunary 的 `embeddings.automaticEmbedding`），运行它所用的 `BenchmarkDevice`，以及针对 `Compiler.Error` 和 `Rig.Error` 的战术。
++     `Stress` 还需要一个 parasite 的 `Threading`，它选择工作者所运行的线程种类。
+
+@ 0 4 0 06e62bce0ec5f59e031034c877ea07f2
++     运行器未选中的测量会在被分阶段执行**之前**跳过，因此它不耗费任何编译，也不启动任何 JVM；每项测量都根据其元数据声明一个预期时长，因此宿主可以在运行开始前为它做预算。
++     宿主的时长乘数（fume 的 `--scale`）会同等地延长或缩短每个声明的目标时长。
+
+@ 0 8 0 0613270b94ba206e192267689cbba3d3
++     引用主体中的代码在测量被分阶段执行时编译，而不是在它被写下的地方编译，这会带来一些后果。
++     用 `summonFrom` 或 `summonInline` 解析实例的内联方法——比如一个派生的解码器——只能看到写在引用**内部**的导入，看不到文件顶部的导入：要么把导入写在主体中，要么在外部把实例绑定到一个 `val` 并引用它。
++     透明宏 given 在引用内部根本无法展开，因此应把这样的调用放在一个普通方法中，再调用该方法。
++     来自引用外部的值通过 `$value` 拼接进来，并经由 superlunary 的 `References` 传到测量 JVM，因此仅在数据上不同的单元格共享同一次编译。
+
+@ 0 3 0 07ac2b9c5ac91e0a0bea8ec198d03d9a
++     该库是单个源集 `sedentary.core`，仅用于 JVM：它需要 JDK 21 或更高版本（用于整个进程的内存分配统计）、设备上的 `java` 启动器，以及供 `Profile` 使用的 JFR。
++     所有内容都导出到 `soundness` 总括包。
+
+% 0 1 0 1e8353f0c43d5b3b07311113a8d31d6d
+
+% 0 1 0 102fa0e45724c85c160dd7297d73167e
+
+% 0 1 0 116db7830ea9abe510135f70a907a796
+
+% 0 1 0 1d64177c115587a61e8aeceaf8805642
+
+% 0 1 0 0b5d107b1fde7d8c0dc330c508197801
+
+% 0 1 0 137ad897da74db3b0e04a695c15c6072
+
+% 0 1 0 10852e3d88251052161caa863c1d3d57
+
+% 0 1 0 105e179156f6caa51777b036d513c751
+
+% 0 1 0 1a1be6ac033dcd7b0624cab3102429d4
+
+@ 0 1 0 1a42784ce3d92da61ae1f80c4f2b3f65
++ entry .Bench   基准测试执行框架：在它自己的 JVM 中为一个引用的操作计时，可单独计时，也可跨一个或两个轴
+
+% 1 1 0 1fa8f0965b76ec661a05d01816a30621
+
+@ 0 4 0 19ada0f251fe8a6a129a5133c0fe001a
++       `Bench` 是 superlunary 的一个 `Rig`，它把引用的代码分阶段执行到一个 JAR 中，部署到作用域内的 `BenchmarkDevice`，并在那里为它计时。
++       它只构造一次，通常在套件的 `run()` 顶部，然后应用于一个名称和若干设置，得到一个 `Bench.Plan`；这个计划再应用于一个引用主体，或者 `over` 一个或两个轴展开：
+
+% 2 1 0 0c88283e290f75180846223bb3dfa605
+
+% 3 1 0 168ba10efc5247501f26ca4f977a7980
+
+% 4 1 0 065fd54bc74b1bc914fefc3a3cfaaae3
+
+% 5 1 0 0b7a6e486e32887808b94c2b3d119650
+
+% 6 1 0 14a2c1800a6118510329558f1958e311
+
+% 7 1 0 0c48a76f74897ae30c4ff04f5bb895c3
+
+% 8 1 0 1a4977a9361811f9150698a4a26c482a
+
+% 9 1 0 1bbe80933d01774304eea9219846f05a
+
+% 10 1 0 1bb479cc3e71c18111b190f0a526558e
+
+% 11 1 0 0b7e9cea22e94edc0b5d76e9745ade70
+
+% 13 1 0 1ed8762558edf06e17d62ab8f80d766e
+
+% 0 1 0 180f63698d353f231d3d1bcee4189c31
+
+% 0 1 0 078568442019b1a9173dcaa1f22a9acc
+
+% 0 1 0 1e47356470d92fcb1d0ff4f5c807aa7f
+
+% 1 1 0 0369626ffe19ab66037ad0660bee5100
+
+% 0 1 0 194765c16c6d665019b32f897b412e1b
+
+% 0 1 0 0a33aaabb07321d6042a33e8984f6c65
+
+% 0 1 0 118dc962e44081d302a26cf5a5654df0
+
+% 0 1 0 1c8e64c1ca3e3c3414b733c4e69f04c0
+
+% 0 1 0 0b72eccefc8f574c1b0a69645fc70b8c
+
+% 0 1 0 168f78d5b3b6d2790a3294e27ae5c328
+
+% 0 1 0 1801d498ca999b760675c7168d2f443b
+
+% 0 1 0 121fccede81b4f291443c0bdc3db40f7
+
+% 0 1 0 08ae23dd5a5ea6d6084725977f5467f5
+
+% 0 1 0 015e10686e23b02d0e138d266ddac898
+
+% 0 1 0 09dbae3b95a9d00102529567c620b6a0
+
+% 0 1 0 00424f7e1cdbd11008cb16648fcc48b3
+
+% 0 1 0 179aa060674bf1800e53c5d7c28261db
+
+% 0 1 0 0942b31982e342ef09ea2d2735121fea
+
+% 0 1 0 115279f87d0d69380b41c3342b282296
+
+% 1 1 0 01cf3f2cfcb8b2060a7b69463589ac36
+
+@ 0 11 0 194ae79c3c50abba0fc1779739c896a7
++       每个单元格都以同样的方式测量。
++       主体被绑定一次，成为它自己的方法，先不计时地运行十次，然后以逐次翻倍的批量运行，直到一个批次耗时至少 `target/iterations`；接着是 `warmups` 个完整批次，把批量朝该时长调整，并由它们速率的中位数确定批量。
++       然后运行 `iterations` 个计时批次，每两个批次之间请求一次垃圾回收，并从 JVM 的线程内存分配计数器读取这些批次期间的内存分配。
++       每次操作的结果都被写入一个 JIT 无法看穿的数据汇，因此值未被使用的主体不会被消除；重复 2³⁴ 次后仍然什么都测不到的主体会被判为疑似死代码而失败。
++       每个单元格的结果是 probably 的一个 `Benchmark`：总时间和平均时间、最小值、最大值、标准差、置信区间、每次操作分配的字节数，以及在给定 `OperationSize` 时一次操作的大小和速率。
+
+@ 0 7 0 09f4a0442d1cb12a1ef774deb2a25c03
++       构造器的参数固定测量 JVM 的配置。
++       `heap` 同时设置 `-Xms` 和 `-Xmx`（采用 `-Xmx` 语法，如 `t"256m"`；默认是固定的 `1g`）；`cpus` 把它限制为该数量的处理器（它在各平台上的效果见 `BenchmarkDevice#invoke`）；`gc` 以 `-XX:+Use<gc>GC` 语法指定垃圾回收器（`t"G1"`、`t"Z"`；默认是 `Serial`，它单线程、确定性的停顿适合微基准测试）。
++       运行纤程运行时或大量虚拟线程的主体应当请求 `gc = t"G1"`，以及与对手自己的执行框架所用大小相同的堆。
+
+@ 0 2 0 199ad109a3db72350bc1d9ad6b0e5258
++       `Bench` 在构造之处需要一个 `Classloader`、一个 `Environment` 和一个 `BenchmarkDevice`。
++       基准测试行由 fume 的 `--bench` 开关选择。
+
+% 1 1 0 0fc2368eae29db751af35f142748e3af
+
+% 1 1 0 1f0be51406acad4f16518b610b4ce975
+
+% 0 1 0 0e403d9e5d6f2a3418dd853ada1269fc
+
+% 1 1 0 0424f690b7e606e015fcd5366f8fde2e
+
+@ 0 1 0 142373299b764d8c1f1ccf3cec19424a
++   entry .Plan   一个已命名、已配置的基准测试，等待它的引用主体或要展开的轴
+
+% 1 1 0 186f339183e2551003c893de75c3de53
+
+@ 0 2 0 16dda84513dbfaab10cfa75a92973ca6
++         `Plan` 是 `Bench#apply` 的返回值：基准测试的名称、标签和设置，连同将要运行它的 `Bench`。
++         它有三种用法：
+
+@ 0 5 0 1016b90878ba8a681fc38d22ba606702
++         - 直接应用于一个引用主体，即 `plan('{ … })`，进行单次测量；
++         - `over` 一个或两个轴展开，主体把每个轴值（或每对值）映射到一个引用主体，每个值进行一次测量——渲染为一行单元格，两个轴时渲染为交叉表；
++         - 先用 `sized` 为每个单元格给定一个 `OperationSize`，然后再 `over` 展开。
+
+@ 0 2 0 1ab107c8d90ff6e40ac9a4070790131b
++         观察一个计划如何增长：单次测量，然后每种实现一次测量，然后每种实现和每个输入一次测量，每个单元格按其输入确定大小。
+
+% 2 1 0 0dda004d987de2720908baa7841e0e4d
+
+% 3 1 0 00c46d8a90f1145e15f87479f43581b2
+
+% 1 1 0 147cde430ef7ec391f9a15f41aff2bcd
+
+@ 0 1 0 0b5397b6f7e0196f09a7d4485170274d
++           label 单次测量
+
+% 1 1 0 12e1f8a52ca3f393103bbd8d8f877cc7
+
+% 0 1 0 104403956ec9806b03193f1763a4bbae
+
+% 0 1 0 0a12d0b765427bfd0f865bf1021662a7
+
+% 1 1 0 18362320d373d6990c879862612f6dd5
+
+@ 0 1 0 194eae04b05e96c4191ce63d44d8ba4c
++           label 每种实现一次测量，与基线比较
+
+% 1 1 0 14f277f60f1cb8400de684ef55b005ae
+
+% 2 1 0 0e535bc6591f2ac80bb989fe2a2f99ec
+
+% 0 1 0 0c9f4125313dbbf6009a0aeee0e396c2
+
+% 0 1 0 05b0a463719f4f18010619f803b9963f
+
+% 0 1 0 0639917274254f39093aeeaec2a36063
+
+% 1 1 0 011c05e1705d1fd91910f89f8d865430
+
+@ 0 1 0 13c3139364b3b8a31b148d0faf33a212
++           label 每种实现和每个文档一次测量，每个按其文档确定大小
+
+% 1 1 0 08542b0bcd2177a8065d8c7257acba45
+
+% 2 1 0 167c8df4c5de5b6e09f2c70c85de88ee
+
+% 0 1 0 0525edb0503a5a191865fb0bdc0901e8
+
+% 0 1 0 1bb2dbe2f3233b560d500a86c57f6ce2
+
+% 0 1 0 13400330a2dfb5630263942350a4c984
+
+% 0 1 0 10e76d2c2b29565e174f67ab0e320537
+
+% 0 1 0 1940d26a898cd59c070fa55acd386cd2
+
+% 1 1 0 02ed7059a6e2a970004cbad4051f965e
+
+% 0 1 0 04719a2cdfefd91e14fe0fa75b6e4fb6
+
+% 0 1 0 01752734f8d2128a1db183fb54714d6e
+
+% 1 1 0 0d1e1e129980b1540f59a0618cb30fe4
+
+% 0 1 0 02b3f8837790cfd507f6579e8f350178
+
+% 1 1 0 04a05fba78c94a9105eab767b48627ad
+
+% 1 1 0 15f916aeae550be3198d58aa0afe3867
+
+@ 0 5 0 039e33188b2841d0021edb6f69528d91
++         计划的每个单元格都各自被分阶段执行和分派，但分阶段执行出的树相同的单元格——那些仅在用 `$` 拼接进来的值上不同的单元格——共享同一次编译，每个不同的实现只编译一次。
++         拼接进主体的值经由 superlunary 的 `References` 传递，每次运行提取一次。
++     entry .Uniaxial   一个计划，它在一个轴上的每个单元格都被给定各自的 `OperationSize`
+
+% 1 1 0 1a9fec72808f21bd133d6d3ebe7286ea
+
+@ 0 11 0 1e3568db8f26111600b6e0afff944c71
++           `Plan#sized` 对一个单值函数返回的结果。
++           它的 `#over` 测量一个轴上每个有定义的值，按 `#size` 确定每个单元格的大小；函数对其给出 `Unset` 的单元格回退到计划自身的 `operationSize`。
++       entry #plan   为每个单元格提供设置的计划
++       entry #size   某个轴值对应单元格的大小，或表示使用计划自身大小的 `Unset`
++       entry #over   对一个轴上每个有定义的值进行一次测量，每个按 `#size` 确定大小
++           与单轴的 `Bench.Plan#over` 相同。
++           主体是从轴值到引用主体的偏函数：它未定义的值是该行中的一个空缺，探测它时不会分阶段执行任何东西。
++           如果计划的 `baseline` 在该轴的值之中，那个单元格就被报告为其他单元格与之比较的锚点。
++     entry .Biaxial   一个计划，它的每个交叉表单元格都被给定各自的 `OperationSize`
+
+% 1 1 0 0f8394cbc60800db14b4f3a4ecc194e4
+
+@ 0 28 0 062595539d48454517fd017fb628ac9e
++           `Plan#sized` 对一个双值函数返回的结果。
++           它的 `#over` 测量两个轴上每个有定义的组合，按 `#size` 确定每个单元格的大小，在函数给出 `Unset` 之处使用计划自身的 `operationSize`。
++       entry #plan   为每个单元格提供设置的计划
++       entry #size   某对轴值对应单元格的大小，或表示使用计划自身大小的 `Unset`
++       entry #over   对两个轴的每个有定义的组合进行一次测量，每个按 `#size` 确定大小
++           与双轴的 `Bench.Plan#over` 相同。
++           主体是从一对轴值到引用主体的偏函数，因此无意义的组合会留作空缺。
++           `baseline` 先在第一个轴的值中查找，然后在第二个轴的值中查找。
++     entry #bench   分阶段执行并运行该计划各项测量的 `Bench`
++     entry #name   基准测试的名称，为一个 `Message`
++     entry #tags   为选择和排除而标注基准测试的标签，例如 `slow`
++     entry #target   目标测量时间，为以纳秒计的 `Long` 计数
++         传给 `Bench#apply` 的 `target`，作为通用时长。
++         它被分配到各个计时批次中，并在使用前按运行器的时长乘数缩放。
++     entry #operationSize   一次操作的大小，用于吞吐速率，或为 `Unset`
++     entry #iterations   每个单元格运行多少个计时批次：未设置时为五个
++     entry #warmups   计时批次之前有多少个完整的校准批次：未设置时与 `#iterations` 相同
++     entry #confidence   所报告置信区间的百分位：未设置时为 95
++     entry #anchor   其单元格作为其他单元格比较对象的轴值，或为 `Unset`
++     entry #comparison   其他单元格如何与锚点比较：probably 的一个 `Baseline`
++         比较哪个统计量（`Min`、`Mean` 或 `Max`），是作为速率还是作为时间，以及比较是几何的还是算术的；`Baseline()` 比较几何平均速率。
++     entry #apply   对一个引用主体进行单次测量
++         `plan('{ … })` 分阶段执行主体，在计划的设备上运行它，并在报告中加入一个 `Benchmark`；除非运行器没有选中它，那样就什么都不分阶段执行。
++         主体是任意类型的引用表达式，在上下文中有 superlunary 的 `References` 和分阶段执行用的 `Quotes` 的情况下构建。
+
+% 2 1 0 0dc99f54069f8fd0193629dfafa1f661
+
+% 3 1 0 0c392f2c064107b7131ff7b6399a84aa
+
+% 4 1 0 11a42567c4d8344a1b4264cb60ec73cb
+
+% 0 1 0 137cc79651f187010240b5a9a8b1d647
+
+% 0 1 0 1bfa8d33794acead0ed6300dde116a62
+
+% 1 1 0 18d2e7571d3f26cf18782cc5a23c9365
+
+@ 0 14 0 09cf3d8f70dbc4520d44a62afe2c88bf
++     entry #sized   按每个单元格的一个或多个轴值，为它给定各自的 `OperationSize`
++         `plan.sized((value: A) => …)` 返回一个 `Bench.Plan.Uniaxial`，`plan.sized((left: A, right: B) => …)` 返回一个 `Bench.Plan.Biaxial`，然后由它们的 `over` 测量各轴。
++         在不同长度的文档上测量的解析器会报告每个文档的大小，使得各单元格的时间虽不可比，速率却可比。
++         函数对其给出 `Unset` 的单元格使用计划的 `operationSize`。
++         lambda 的参数类型必须写出，以便选中正确的重载。
++     entry #over   对一个轴上每个有定义的值，或两个轴的每个组合，进行一次测量
++         `plan.over(axis)(body)` 接受一个 `Axis`（`Axis(t"limit")(1000, 4000)`）和一个从它的每个值到引用主体的偏函数；`plan.over(first, second)(body)` 接受两个轴和一个以值对为参数的偏函数，并渲染为交叉表。
++         枚举的伴生对象可以代表一个包含其全部分支的轴——`plan.over(Summation)`——两个位置皆可。
++         主体未定义的值或值对会留下一个空缺，发现它时不会分阶段执行任何东西；运行器未选中的单元格会在分阶段执行之前被跳过。
+
+% 2 1 0 050ee8629b31b49919491d02a6f4500a
+
+% 3 1 0 0ec6041e0ca8ed7f15553a751625eac3
+
+% 4 1 0 0696b6deedefe5a900eaedf4ae74e03e
+
+% 0 1 0 013a450c45c33b19165b4ec1614a5d9b
+
+% 0 1 0 1d3d91ae096bea4e05d54415f7598fa6
+
+% 0 1 0 0a504752dded7f98128ccc94c2da3129
+
+% 0 1 0 01116eadf6457d0919e83e429bb68c4e
+
+% 0 1 0 19288318648803fe1bc203919348690e
+
+% 0 1 0 19600315cf8732cb0435a077841769a3
+
+% 0 1 0 0b5b6edd91829e9f16adfd8a0a76cfdc
+
+% 1 1 0 0b91ab95e9cc16df19a362d76c69718d
+
+@ 0 3 0 1c50901c65247d0d17430f9df3e59413
++         这里两个单元格共享同一次编译，因为它们仅在拼接进来的 `limit` 上不同。
++         每个单元格都共享计划的 `operationSize`；`#sized` 为每个单元格给定各自的大小。
++   entry .Error   当基准测试设备无法部署、运行或移除一项测量时抛出
+
+% 1 1 0 0601ed45c1a1f7f41c5cff5fc0d8546a
+
+@ 0 5 0 0a313933cb25f88000bf8db55e1f2ce9
++         错误 `↯/s.10.1`：_unable to run benchmarks_。
++         当把分阶段执行出的 JAR 复制到设备、启动测量 JVM 或移除 JAR 失败时，或者当测量 JVM 以非零状态退出时，由 `BenchmarkDevice` 抛出。
++         `Bench`、`Stress` 和 `Profile` 会把它转换为 superlunary 的 `Rig.Error`，原因为 `Staging` 或 `Invocation`，因此套件看到的是 `Rig.Error`。
+
+@ 0 13 0 0294ba6a39fb24660ff47f006004137a
++         `LocalhostDevice` 把分阶段执行的输入作为命令行参数传给测量 JVM，因此拼接进一个非常大的值（一兆字节或更大的语料库）的主体可能超出操作系统的参数长度限制，并以此错误失败。
++   entry #heap   测量 JVM 的固定堆大小，为 `-Xmx` 文本，或表示 `1g` 的 `Unset`
++   entry #cpus   测量 JVM 可使用的处理器数量，或表示全部处理器的 `Unset`
++   entry #gc   测量 JVM 的垃圾回收器，写法如 `-XX:+Use<gc>GC`，或表示 `Serial` 的 `Unset`
++   entry #Result   分阶段执行的调用的结果类型：输出本身
++   entry #Form   分阶段执行的输入和输出所采用的形式：`Text`
++   entry #Target   分阶段执行产生的东西：已部署 JAR 的 `Path on Linux`
++   entry #Transport   拼接进来的值如何为测量 JVM 编码：`Json`
++   entry #apply   命名并配置一个基准测试，返回一个要应用于主体的 `Bench.Plan`
++       `bench(name, tags*)(target, operationSize, iterations, warmups, confidence, baseline, comparison)`：
+
+@ 0 17 0 0db2a1e140fa863d19e04768d3caa957
++       - `name` 是一个 `Message`，即 `m"…"`，`tags` 为选择而标注基准测试（`n"slow"`，它需要按名称导入标签平面的 `Nominative`：`import soundness.{nominative, taggingNominative}`）；
++       - `target` 是测量时间，可以是任意时长（`1*Second`、`50*Milli(Second)`）；
++       - `operationSize` 是一次操作的大小，通常是诸如 `4096*Byte` 的量，由 `OperationSize.conversion` 转换，用于得出吞吐量数字；
++       - `iterations` 是计时批次的数量（默认五个），`warmups` 是校准批次的数量（默认与 `iterations` 相同）；
++       - `confidence` 是置信区间的百分位：80、85、90、95（默认）、96、97、98 或 99；
++       - `baseline` 是一个轴值，对于 `over` 某个轴展开的计划，其单元格作为比较的锚点；`comparison` 是比较的方式，为 probably 的一个 `Baseline`。
++   entry #stage   把被测代码构建成一个 JAR，并部署到设备上
++       把分阶段执行的代码与 superlunary 的执行器捆绑在一起作为入口点，以一个全新的 UUID 为 JAR 命名，然后调用设备的 `deploy`。
++       构建或部署失败时抛出 `Rig.Error`，原因为 `Staging`。
++       `Bench`、`Stress` 和 `Profile` 都以同样的方式分阶段执行；套件从不自己调用它。
+
+@ 0 1 0 0971a444cb9ba9e80c2c87934ce848fc
++ entry .Stress   压力测试：在一个窗口内并发运行一个引用的操作，报告内存、垃圾回收和延迟
+
+% 1 1 0 17b43318962557c70d7f5a5a093113fc
+
+@ 0 7 0 0ba1ba0ddd7a6f850380b9405d341481
++       `Bench` 为在单个线程上重复执行的一个操作计时，而 `Stress` 在 `concurrency` 个工作者上同时运行该操作，每个工作者重复执行它，直到一个挂钟时间窗口关闭；它报告吞吐量数字所掩盖的东西，作为 probably 的一个 `Strain`：工作者数量、完成的操作数和所用时间、总内存分配（以及由此得出的每次操作的内存分配）、堆峰值、垃圾回收后保留的存活集、垃圾回收的次数和时长，以及一次操作的第 50、90、99 和 99.9 百分位延迟，这些延迟来自一个精度约为 3% 的对数线性直方图。
+
+% 2 1 0 0c5632446d90c9280c473b3878b0b6d9
+
+% 3 1 0 10d6990922f5b6090a6bace2819c7684
+
+% 4 1 0 1b0444d1f78dada40bbbceec2d1309b9
+
+% 5 1 0 148d24bcfcb98d740b61a42b75b2a93e
+
+% 6 1 0 1b023298762149cd1c37ea36f949e088
+
+% 7 1 0 0e6a62d31221a37001d3d8b81dd92c0c
+
+% 8 1 0 19fa19239c519a0c1e1776080f7633d9
+
+% 9 1 0 0d980df55aa723e11afbd020742c12eb
+
+% 10 1 0 1cbfaec232b19044170cf93718d5be21
+
+% 11 1 0 094e75bfd1188a0411714df7f8b8f7d7
+
+% 0 1 0 0501b13bd2211d43198087765cafdd33
+
+% 2 1 0 177f5eeaa38e141d08211076ed168377
+
+% 0 1 0 063588d4267db2ba1be3eb3c918c0a53
+
+% 1 1 0 195a4018785235671e201aee7120ff42
+
+% 0 1 0 1ce43691b8ac4cab0da5299cf6553178
+
+% 0 1 0 1f662383de99f12915b87410a26dbeed
+
+% 0 1 0 0bdef44397527184019c66356db144a4
+
+% 1 1 0 1c318f1b27cc792715891085f8566a2a
+
+% 0 1 0 045fd5dbc1645960178e73576b044668
+
+% 1 1 0 0338d8900365daf9175752f80ed0c9a7
+
+% 1 1 0 17fef7a8af285ebf171f5c4ca943bc0f
+
+@ 0 4 0 052f739eda17aac91ed09eb84bf46c1f
++       单个窗口是一次测量。
++       `#apply` 的三项设置会把它变成对工作者数量的搜索，每个窗口的数量由一个 `StressSearch` 根据之前各窗口的结果选择，每个窗口都作为测试的 `N` 轴上的一个单元格报告，因此一次搜索在一个测试中读作一条随 `N` 变化的曲线，而不是许多个测试：
+
+@ 0 12 0 1cf4ddb3c9ec394a0e3efa23bcd648cf
++       - `sweep` 把工作者数量从 `concurrency`（默认为一）开始翻倍，直到 `sweep`，并在某个窗口耗尽内存或把超过一半的时间花在垃圾回收上时提前停止——因此在受限的堆中，最后一行就是该堆所能承受的最大并发数；
++       - `threshold` 和 `compliance` 一起给出时，搜索**容量**：至少 `compliance` 百分比的操作在 `threshold` 内完成的最大工作者数量，先以二分搜索精确到约 12%，再在一个三倍长的窗口上确认，确认后的行标记为 `sustained`；
++       - `refine` 寻找**最优**数量，而不是 2 的幂或最大的达标数量：即吞吐量在最佳值 5% 以内的最小数量——有峰值的曲线的峰值，或趋于平坦的曲线的拐点——在延长的窗口上重新测量，并标记为 `sustained`。
+
+@ 0 5 0 177ac85618ebbe4c104e3af3473a2f85
++       工作者的线程是作用域内的 `Threading` 所派生的那种：在 `threads.virtualThreads` 下，高并发的测量会把它的工作者多路复用到载体线程池上，就像一个大规模并发的应用程序那样。
++       无论哪种方式，内存分配都会被完整统计。
++       操作抛出异常的工作者会使它所在的窗口失败，并在标准错误上报告一次，而不是为每个工作者打印一份跟踪信息。
+
+@ 0 4 0 00092d16cd4d51641fe64777697ded1a
++       构造器的 `heap`、`cpus` 和 `gc` 像 `Bench` 那样固定测量 JVM 的配置；测量尾延迟的饱和多线程工作负载应选择 `gc = t"G1"`，以免 Serial 垃圾回收器的全局停顿主导第 99 百分位。
++       压力测试行由 fume 的 `--stress` 开关选择，而不是 `--bench`。
+
+% 0 1 0 0d553e4a50ec2ffd0d2d4e429e3f68d2
+
+% 0 1 0 1c72aea31cb3ed901de16e442bd5ffa4
+
+% 1 1 0 1b772b4549d3d32d121f67a9efbf845b
+
+@ 0 9 0 0d9cc64db05c2acc10e5c0b3bd4cae72
++   entry #heap   测量 JVM 的固定堆大小，为 `-Xmx` 文本，或表示 `1g` 的 `Unset`
++   entry #cpus   测量 JVM 可使用的处理器数量，或表示全部处理器的 `Unset`
++   entry #gc   测量 JVM 的垃圾回收器，写法如 `-XX:+Use<gc>GC`，或表示 `Serial` 的 `Unset`
++   entry #Result   分阶段执行的调用的结果类型：输出本身
++   entry #Form   分阶段执行的输入和输出所采用的形式：`Text`
++   entry #Target   分阶段执行产生的东西：已部署 JAR 的 `Path on Linux`
++   entry #Transport   拼接进来的值如何为测量 JVM 编码：`Json`
++   entry #apply   对一个引用主体运行压力测试：单个窗口、一次扫描、一次容量搜索或一次精化
++       `stress(name, tags*)(target, concurrency, sweep, threshold, compliance, refine)(body)`：
+
+@ 0 8 0 0917700994ea5353108986174cdf4f22
++       - `target` 是每个窗口的长度，可以是任意时长，按运行器的时长乘数缩放；`threshold` 是延迟标准而不是一段时间长度，因此不缩放；
++       - `concurrency` 是工作者数量，或搜索的初始数量（默认为一）；
++       - `sweep` 是搜索可以达到的最大工作者数量（没有它的容量搜索为 1024）；
++       - `threshold` 和 `compliance`（一个百分比）一起设定一个延迟目标；只给出其中之一是编程错误，会引发 panic；
++       - `refine` 搜索最优的工作者数量。
+
+@ 0 5 0 1ca59d92009242a601f7560083c527b0
++       主体是一个引用表达式，与 `Bench.Plan#apply` 相同。
++       测试在任何东西运行之前就声明它的 `N` 轴，以 `concurrency` 和 `sweep` 为界，因此宿主可以在列表中提供 `N` 约束；它的预期时长对于单次测量是一个窗口，对于搜索则大致与 `sweep` 成对数关系。
++       耗尽内存的窗口不会被报告；其他每个窗口都会被报告，包括失败的确认。
+
+% 2 1 0 0183f411203548ab144de5ae655cb0e1
+
+% 3 1 0 0ad6bba58ffa1e9c13c9048938e7a847
+
+% 4 1 0 183d14a1fffbd70d041c467695816135
+
+% 0 1 0 0787c35b8b1aeb46028377f3b06dc97d
+
+% 0 1 0 13f11a5c042c9e061c2889397b0650b3
+
+% 0 1 0 156cfb84ebbf3ad71e15b9b5a7e79a51
+
+% 1 1 0 12abbb71609e956c1163d0b64680b89c
+
+@ 1 2 0 1c003e8d559922221275caaec12a9b9d
++   entry #stage   把被测代码构建成一个 JAR，并部署到设备上
++       与 `Bench#stage` 相同：失败时为 `Rig.Error`，原因为 `Staging`。
+
+@ 0 1 0 1453596b77fff71a0c828f7b03abd0bc
++ entry .StressSearch   根据之前的各窗口，为 `Stress` 搜索的每个窗口选择工作者数量
+
+% 1 1 0 0dbb760731e1219007356174b544725f
+
+@ 0 3 0 0cd324935e3d10f302a2e92055bf4ac9
++       带 `sweep`、带 `threshold` 和 `compliance`，或带 `refine` 的 `Stress` 所执行的搜索。
++       它在测量 JVM 内部运行，从分阶段执行的循环中调用，但它是一个普通的类，因此无需分阶段执行任何东西，就能针对模拟的工作负载测试一次搜索：
+
+% 2 1 0 04e1c0bd91af91841d4fe29a51d41fc7
+
+% 3 1 0 12aca7ea61edca5802106ec8e50b99d6
+
+% 0 1 0 1decf38be3a89b90130724b706331eeb
+
+% 0 1 0 0e1408fe951bf02d0ba77b069828815d
+
+% 0 1 0 1cd448f9dc5840ca00ae2482faccbc9c
+
+% 0 1 0 0e0e34dbd91f0743135b504087a6644e
+
+% 0 1 0 06df997f6a0a9d1b171dbbeb1fdaf892
+
+% 0 1 0 04be5aaa9aa14b0c0caf616d3db12fbc
+
+% 1 1 0 0abd30175b0aa56e04c79264ea0804ae
+
+@ 0 3 0 1116a2614e1fba671aa16585fbb2ca28
++       构造器接受初始工作者数量、最大数量、是否有延迟目标（SLO），以及是否精化。
++       每次搜索都以一次**爬升**开始，把数量翻倍，即使上限不是 2 的幂，也恰好落在上限上：
+
+@ 0 16 0 0e486af33fe771e405baea83f72b4a06
++       - 没有 SLO 时，爬升就是一次普通扫描的全部，在达到上限时，或在某个耗尽内存或发生抖动的窗口处停止。普通扫描没有胜出者。
++       - 有 SLO 时，爬升在第一个未达到目标的窗口处停止，最大达标数量与最小不达标数量之间的边界以二分搜索精确到约 12%。最大达标数量在一个延长的窗口上确认；如果确认失败，则每次下调约 12%，最多三次。如果连第一个窗口都未达标，搜索就在那里停止，没有胜出者。
++       - 有 `refine` 时，在爬升（以及任何边界搜索）之后，它在最快的可行数量周围的间隙中取半探测，直到间隙在约 6% 以内——先是**峰值**，然后是**拐点**，即在最快值的 `.Plateau` 以内的最小数量——并在延长的窗口上重新测量拐点、拐点之下的数量和峰值。它们之中在最快的重新测量值 5% 以内的最小者胜出。如果峰值的重新测量值低了超过 5%，说明该峰值是一个侥幸的窗口：重新测量值取代最初的测量值，搜索重新开始，最多 `.Restarts` 次。失败或未达到 SLO 的窗口会限定探测的范围，但永远不是候选项。
+
+% 0 1 0 1727f9716b5975e80840a6bc7d0a7f80
+
+@ 0 19 0 1da1ed1c889683c8037ea2bc8466d00d
++   entry .MaxProbes   在峰值周围、以及再在拐点周围，用于探测的窗口数上限：12
++   entry .Plateau   最佳吞吐量的一个比例，数量的吞吐量在此范围之内即与最佳一样好：0.05
++   entry .Restarts   精化搜索在发现侥幸峰值后重新开始的次数：2
++   entry .Phase   搜索所处的阶段，从爬升直到完成
++       `Ascent` 把数量翻倍；`Boundary` 以二分搜索查找 SLO 边界；`Peak` 和 `Knee` 在精化搜索中探测最优值；`Confirmation` 在延长的窗口上重新测量候选项；`StepDown` 在确认失败后每次退回约 12%；`Done` 结束搜索。
++   entry #done   搜索是否已完成，因而不应再运行任何窗口
++   entry #current   下一个窗口应运行的工作者数量
++   entry #extended   下一个窗口是否为确认窗口，其运行时间是目标的三倍
++   entry #winner   胜出窗口的序数，从零开始计数所有已记录的窗口，或为 -1
++       普通扫描，以及没有任何确认成立的搜索，都没有胜出者。
++       `Stress` 把胜出窗口的行标记为 `sustained`。
++   entry #record   记录刚以 `#current` 个工作者运行的窗口的结果
++       `record(throughput, ok, exhausted)`：窗口的吞吐量，以每纳秒的操作数计；它是否可行——没有失败、没有耗尽内存、没有抖动，并且在有 SLO 时达到 SLO；以及它是否耗尽了内存或发生了抖动，这会结束普通扫描的爬升。
++       然后搜索选择下一个 `#current`，或者结束。
+
+@ 0 1 0 00ec4294954df0f00e8b2dbd8ae9ebbe
++ entry .Profile   性能剖析：在 JFR 下运行一个引用的操作，以直方图报告它最热的方法
+
+% 1 1 0 05e9fb05f87525e00ba9bb00894fb622
+
+@ 0 7 0 0b85ae0c935ed2771a1bebb46d8cfdbf
++       `Bench` 测量一个操作运行得多快，`Stress` 测量它如何扩展，而 `Profile` 测量它的时间花在哪里。
++       主体在一个线程上重复运行目标时长，同时进程内的 JFR 记录每毫秒对执行进行一次采样，并一并记录本地方法的样本，因此受本地代码（比如 zlib）制约的流水线不会被忽略。
++       每个样本的顶层帧——实际正在执行的方法，即它的**自身时间**——被计数，最热的方法以 probably 的 `Hotspots` 报告，渲染为一个直方图，方法按包着色。
+
+% 2 1 0 168cf28ca4a274210149c825641b6d1f
+
+% 3 1 0 0b96a50727d69f1800943beecb4ed5c6
+
+% 4 1 0 009e6974bc7a9d140bbf23ef4574deda
+
+% 5 1 0 18e448b035937a540e9aaf2336a5be23
+
+% 6 1 0 050ac6c00150ee6a0071377a02c910d9
+
+% 7 1 0 16ae5bccd631ddd2106bf5280164e632
+
+% 8 1 0 04cda3c8fefacda11ea91cb47d89acbf
+
+% 9 1 0 0fda860b103ee822025be249c33e4968
+
+% 10 1 0 16f6be2650747dcb16cb4a7b3e2f0561
+
+% 11 1 0 04cd20177a936df817cb3bf7d15c7916
+
+% 13 1 0 048b6e179a3ed06913389570cd560dc0
+
+% 0 1 0 06cf456b7492c4f21084d8d5df471c5a
+
+% 1 1 0 1fab5f48dd2f72f50de12638b0765be0
+
+% 0 1 0 04d3020ceb42d0761788b109d89e9d23
+
+% 0 1 0 1423069f1c30b7c30ed5b0c3a7bc2e63
+
+% 1 1 0 190ca94a7debe5a21a8cffeaa8db0cfa
+
+% 0 1 0 1f5b12279f6e806905fe807d2b53f3f0
+
+% 1 1 0 10f2c4c485c01a6604f8a727dc5fb3b8
+
+% 1 1 0 1e73af66dfd2c3fc07c5133d601755ba
+
+@ 0 6 0 125785145ec5f854142d5e3ef5b76695
++       JFR 的执行采样器只观察可运行的线程，因此这是一个 CPU 性能剖析：停驻或等待中花费的时间不会出现。
++       不过它对每个线程采样，因此主体派生的线程会与它一起被剖析。
++       构造器的 `heap` 和 `cpus` 像 `Bench` 那样固定测量 JVM 的配置；性能剖析总是使用设备的默认垃圾回收器。
++       性能剖析行由 fume 的 `--profile` 开关选择：仅有 `--bench` 不会运行它们。
+
+% 0 1 0 115fbdc33a1fefee14498e416da9bb9e
+
+% 1 1 0 1a667f14b1126ddd04f250c229b712f1
+
+@ 0 11 0 134f42024d28626c1f0afab0103f1f9d
++   entry #heap   测量 JVM 的固定堆大小，为 `-Xmx` 文本，或表示 `1g` 的 `Unset`
++   entry #cpus   测量 JVM 可使用的处理器数量，或表示全部处理器的 `Unset`
++   entry #Result   分阶段执行的调用的结果类型：输出本身
++   entry #Form   分阶段执行的输入和输出所采用的形式：`Text`
++   entry #Target   分阶段执行产生的东西：已部署 JAR 的 `Path on Linux`
++   entry #Transport   拼接进来的值如何为测量 JVM 编码：`Json`
++   entry #apply   在目标时长内剖析一个引用主体，报告它最热的方法
++       `profile(name, tags*)(target, frames, inclusive)(body)`：`target` 是记录多长时间，可以是任意时长，按运行器的时长乘数缩放；`frames` 是所报告方法数量的上限（默认 25）；`inclusive` 为样本栈上每个不同的方法计数一次，而不仅仅是它的顶层帧。
+
+@ 0 8 0 17b115bc28d0ec220683d50a36942ab9
++       包含式性能剖析给出每个方法所占的时间份额，这些时间花在它**或它所调用的任何东西**中，从而能找到隐藏在被调用方内部或分散在多个被调用方之间的开销——比如一个内联进生成的循环中的字符串构造器——而自身时间直方图会把这些开销归到别处。
++       于是各份额之和超过整体，最外层的帧显示接近 100%。
++       方法名和类名以源代码形式报告，编译器的名称编码已被还原。
++   entry #stage   把被测代码构建成一个 JAR，并部署到设备上
++       与 `Bench#stage` 相同：失败时为 `Rig.Error`，原因为 `Staging`。
+
+@ 0 1 0 122794e79e95a63b07b8a9c22352b6fb
++ entry .BenchmarkDevice   测量 JVM 运行的地方：本地机器，或通过 SSH 访问的主机
+
+% 1 1 0 07ebe0009706e42a1b23ae3aa2fd361d
+
+@ 0 4 0 0eec77e39b3a2d5611a42db0baded16a
++       `BenchmarkDevice` 部署一个分阶段执行出的 JAR，启动一个 JVM 以给定的输入运行它，返回它的输出，并移除该 JAR。
++       `Bench`、`Stress` 和 `Profile` 在构造时都把它作为上下文值接收，因此套件只需选择一次设备，作为一个 given：
+
+% 2 1 0 10d7391824e4ce2b1f83f5f065aef55a
+
+% 3 1 0 19b473b41b6079ef1e1980051d70f277
+
+% 5 1 0 092e880b2ec25e050b994ee4e695c432
+
+% 6 1 0 1d222192963f8caf07ee966263868b39
+
+@ 0 5 0 150170a6d7d8f68b18f19c0f208737a2
++       `LocalhostDevice` 在本地机器上运行 JVM；`NetworkDevice` 用 `scp` 把 JAR 复制到远程主机，并用 `ssh` 运行它，它的 `session` 把每个操作多路复用到一条 SSH 连接上。
++       位于安静、专用的 Linux 机器上的设备给出最稳定的数字，也是唯一一种 `cpus` 会把进程固定到核心上的设备。
++       每个操作失败时都抛出 `Bench.Error`。
+
+@ 0 3 0 1063f6e53d5ed12504854a8dbaa2469f
++       测量 JVM 启动时使用固定的堆（除非给定 `heap`，否则 `-Xms` 和 `-Xmx` 都是 `1g`），堆被预先触碰，有两个 JIT 编译器线程，并且除非给定 `gc`，否则使用 Serial 垃圾回收器。
+
+% 0 1 0 0abd61e249b9fe3213519bde9da1b082
+
+% 1 1 0 142520e7623eaa2104e26498485df1ae
+
+% 0 1 0 1a66efb3a26dc89b12bcf0a066996bdd
+
+@ 0 5 0 18deae3f757311da0a3ae58bf5db33a3
++   entry #deploy   使一个分阶段执行出的 JAR 在设备上可用，名称取自它的 UUID
++       如果无法把 JAR 复制到那里，则抛出 `Bench.Error`。
++   entry #invoke   在设备上的一个全新 JVM 中以一个输入运行分阶段执行出的 JAR，并返回其输出
++       如果 JVM 无法启动或以非零状态退出，`invoke(path, input, heap, cpus, gc)` 抛出 `Bench.Error`。
+
+@ 0 12 0 0d46d42e97863bef09c5e0bce3718825
++       - `heap` 以 `-Xmx` 语法（`t"256m"`）覆盖固定的堆大小，同时作用于 `-Xms` 和 `-Xmx`；未设置时为 `1g`。受限的堆能显示一个工作负载在一小块固定的内存中能承受什么。
++       - `cpus` 用 `-XX:ActiveProcessorCount` 把 JVM 限制为该数量的处理器，这决定了垃圾回收线程和 JIT 线程的数量，以及根据可用处理器数量推导出的每个线程池的大小。在 Linux 的 `NetworkDevice` 上，进程还会用 `taskset` 被固定到该数量的核心上；在其他地方，包括 macOS 上的 `LocalhostDevice`，平台线程仍会在所有核心上调度，因此该限制只是建议性的。
++       - `gc` 以 `-XX:+Use<gc>GC` 语法指定垃圾回收器（`t"G1"`、`t"Parallel"`、`t"Z"`）；未设置时为 `Serial`。
++   entry #undeploy   从设备上移除一个分阶段执行出的 JAR
++       如果无法移除该 JAR，则抛出 `Bench.Error`。
+
+@ 0 1 0 097e7cc8b54c0fe00a5482d4c9c12d95
++ entry .LocalhostDevice   在本地机器上运行每个测量 JVM 的基准测试设备
+
+% 1 1 0 07662c9930f20a1106fadc9524e71572
+
+@ 0 4 0 1cba31ac24d3473c07c8ed11a8aca0d6
++       部署和移除 JAR 都是空操作，因为分阶段执行出的 JAR 已经在本地文件系统上，`invoke` 直接启动路径上的 `java`。
++       测量 JVM 的标准错误被继承，因此它的诊断信息——失败工作者的堆栈跟踪——会在发生时就出现，而且不会填满一个未被排空的管道而使执行框架停滞。
+
+% 2 1 0 02132e0249c0dadf1a3ddde244232650
+
+% 3 1 0 1a18b33033f475aa05dd98d4f4b53a08
+
+% 5 1 0 1afc4338cf4fb2cf1538dcd1b114d693
+
+% 6 1 0 07d5980d7bfad05e124deefd1b958767
+
+@ 0 4 0 16d9d7f28344f7cb1f35fe9d0982c6f1
++       分阶段执行的输入作为命令行参数传给 JVM，因此拼接进一兆字节或更大的值的主体可能超出操作系统的参数长度限制，并以 `Bench.Error` 失败。
++       在 macOS 上 `cpus` 限制只是建议性的，因为它没有与 `taskset` 等价的东西。
+
+% 1 1 0 0eea005aad54e9d419c56fd77ed0e9aa
+
+@ 0 5 0 19adf6255f6a40670d1d2ec09ddfbc80
++   entry .deploy   什么也不做：分阶段执行出的 JAR 已经在本地
++   entry .invoke   在本地机器上用 `java` 运行分阶段执行出的 JAR，并返回其标准输出
++       如果 JVM 无法启动或以非零状态退出，则抛出 `Bench.Error`。
++       关于 `heap`、`cpus` 和 `gc`，见 `BenchmarkDevice#invoke`。
++   entry .undeploy   什么也不做：分阶段执行出的 JAR 留在分阶段执行写入它的地方
+
+@ 0 1 0 00141e54bb7a9ba81969bf3628524c5e
++ entry .NetworkDevice   位于远程主机上、以某个用户身份通过 SSH 访问的基准测试设备
+
+% 1 1 0 1174d52bb656028709ddde43c660a8da
+
+@ 0 4 0 0ef39549f06042a90044d63ff156a905
++       `NetworkDevice(user, host)` 用 `scp` 把每个分阶段执行出的 JAR 复制到 `host` 上该用户的主目录，用 `ssh` 和 `java` 在那里运行它，之后再移除它。
++       它依赖本地的 `ssh` 和 `scp` 命令，以及该用户的 SSH 配置和密钥：连接必须无需提示即可完成认证。
+
+@ 0 4 0 18a8d1c9da2e94191f3907a4327e915c
++       如果所需的数字不能受开发者自己机器的干扰，就应使用远程 Linux 机器作为设备；它也是唯一一种 `cpus` 限制会用 `taskset` 把测量 JVM 固定到核心上的设备。
++       每个操作都要付出一次 SSH 握手的代价；`session` 只付出一次：
+
+% 2 1 0 040dee9e7f16903c17a27882d36a591f
+
+% 3 1 0 0fe593e3c1c3e4871691cf151e63684c
+
+% 4 1 0 1248ed009b41a26209ccdee9d672c3c7
+
+% 5 1 0 1aba592ed6482619173da2c18b5d53f2
+
+% 1 1 0 08179c3df5912f8c1f58536a294a48ae
+
+% 0 1 0 08a5eb3653039a1f1945c53b0a78e4c9
+
+% 0 1 0 0ead24f05c6609861ccf2c152613cc92
+
+% 0 1 0 08e1bc1e308592700b6608717e244480
+
+% 0 1 0 1c4527fe1977b09e18a89092ac5ef160
+
+% 1 1 0 17882ae01ed89f39014280b3bc87d5d0
+
+@ 0 2 0 06373b73e07431400580430d0b9b89c3
++       伴生对象中的 `NetworkDevice.sessional` given 使这成为可能，它需要作用域内有一个 `Tactic[Bench.Error]`，用于打开连接。
+
+% 0 1 0 0def39e27e4a60500e00090257aec6c0
+
+% 0 1 0 073f750f4a52a9c2124713f133474230
+
+% 1 1 0 0f2a673c734893690608cb542b5cea3a
+
+@ 0 5 0 0cd756025db6fbaa1d0019c18b14d788
++   entry .sessional   让 `device.session` 打开一条到 `NetworkDevice` 的多路复用 SSH 连接
++       `NetworkDevice` 的 `Sessional` 实例，位于隐式作用域中：一个 `NetworkDeviceSessional`，用作用域内的 `Tactic[Bench.Error]` 构建，在无法打开主连接时抛出错误。
++   entry .Session   把每个操作多路复用到一条 OpenSSH ControlMaster 连接上的基准测试设备
+
+% 1 1 0 0dbf2cb8f598376f1ac6c3df42b08266
+
+@ 0 21 0 1f8cc2ccec86a2231e76d82c6035445e
++         `NetworkDevice` 的 `session` 借给它的代码块的设备。
++         它在与其 `NetworkDevice` 相同的主机上部署、运行和移除 JAR，但通过的是一条只打开一次的主连接的控制套接字，因此没有任何操作需要付出自己的 SSH 握手。
++         它不直接构造：会话打开连接、借出该设备，并在代码块结束时关闭连接，无论代码块是正常返回还是抛出异常。
++     entry #deploy   通过共享连接把一个分阶段执行出的 JAR 复制到主机
++         如果复制失败，则抛出 `Bench.Error`。
++     entry #invoke   通过共享连接在主机上运行一个分阶段执行出的 JAR，并返回其输出
++         与 `NetworkDevice#invoke` 相同，但没有自己的握手。
++         抛出 `Bench.Error`。
++     entry #undeploy   通过共享连接从主机上移除一个分阶段执行出的 JAR
++         如果移除失败，则抛出 `Bench.Error`。
++   entry #user   登录主机时所用的用户名
++   entry #host   远程主机，为一个 `Hostname`
++   entry #deploy   用 `scp` 把一个分阶段执行出的 JAR 复制到主机上该用户的主目录
++       如果复制失败，则抛出 `Bench.Error`。
++   entry #invoke   用 `ssh` 和 `java` 在主机上运行一个分阶段执行出的 JAR，并返回其输出
++       如果连接失败或 JVM 以非零状态退出，则抛出 `Bench.Error`。
++       在主机上，`cpus` 限制既设置 JVM 的处理器数量，又用 `taskset` 把进程固定到该数量的核心上，因此主机上必须有该命令。
++       见 `BenchmarkDevice#invoke`。
++   entry #undeploy   用 `ssh` 从主机上移除一个分阶段执行出的 JAR
++       如果移除失败，则抛出 `Bench.Error`。
+
+@ 0 1 0 0d7f11ce0222053510d5c21e46e1c557
++ entry .NetworkDeviceSessional   在 `NetworkDevice` 上打开限定作用域的 SSH 会话的 `Sessional` 实例
+
+% 1 1 0 0291a8e46d3e431f06aa53461dca0b88
+
+@ 0 6 0 0a610454e33dd9d1194655cdfaa927b6
++       一个具名的实例类，通常不手工编写：`NetworkDevice.sessional` 提供它，`device.session` 使用它。
++       它的 `#session` 打开一条到主机的 OpenSSH ControlMaster 连接（只认证一次，控制套接字位于 `/tmp` 下），把一个 `NetworkDevice.Session` 借给代码块，并在代码块结束时关闭主连接，无论代码块是正常返回还是抛出异常。
++       它接受一个 `Tactic[Bench.Error]`，在无法打开连接时抛出；关闭连接失败则被忽略。
+
+% 1 1 0 1856e314226bf7401eba0264cc93ceda
+
+@ 0 6 0 1e0a4febb4434e52022d1809ac9a5425
++   entry #Self   会话的目标：`NetworkDevice`
++   entry #Result   会话借给其代码块的东西：一个 `NetworkDevice.Session`
++   entry #session   打开一条主连接，把一个 `NetworkDevice.Session` 借给代码块，然后关闭它
++       通过 `session` 扩展方法调用，即 `device.session: session ?=> …`，而不是直接调用。
++       代码块的结果可以离开会话；会话设备本身则不应离开，因为它的连接在代码块结束时就被关闭了。
+
+@ 0 1 0 1d7a3c228792696e13f64a4f8d67be41
++ entry .OperationSize   一次被测操作的大小，它把时间转换为吞吐速率
+
+% 1 1 0 007ae37fce5360fc180805ec21e14eea
+
+@ 0 4 0 193808a6dd68ea4b1c3f0ed62748b06e
++       处理数据的基准测试在被告知每次操作处理多少数据时，除了报告每次操作的时间之外，还会报告它的速率——每秒的兆字节数或字符数。
++       大小通常以一个量给出，由 `.conversion` 把它转换为 `OperationSize`：
+
+% 2 1 0 121c04bcab8e71d718fe549d348ff0c9
+
+% 3 1 0 1ceed2796d9ea1780881021b096ab645
+
+% 4 1 0 1cc1eaeb75b51284026ea0a35a546fef
+
+% 0 1 0 10c05c64b3454b3304d95998ab704c70
+
+% 0 1 0 03643882053a944d04ea9e9188faed74
+
+% 1 1 0 0154b7195b9639381cdf42cc6346a721
+
+@ 0 3 0 1a57474d218dbf6c0c29c519f301ad8c
++       大小以公制词头渲染（`4.2 MB`），速率同样如此（`MB/s`）。
++       对于各单元格处理不同数据量的基准测试，用 `Bench.Plan#sized` 给出每个单元格的大小，使得各单元格的时间虽不可比，速率却可比。
+
+% 1 1 0 1ff036ee7b762dcd1f8b74968b944c74
+
+% 1 1 0 0f4d91832331b0db07efa69913f3c5cb
+
+@ 0 9 0 0679515f859c527c19d07984bfbe8c7d
++   entry .conversion   把一个 `Quantity` 转换为 `OperationSize`，用于 `Bench#apply` 的 `operationSize`
++       任何度量的 `Quantity` 都可以转换，由作用域内的 `Decimalizer` 以该量的单位每秒来渲染大小，以及在平均时间已知后渲染速率。
++       该 given 是 `inline` 的，因此渲染在传入量的地方展开，调用方的单位和词头 given 都可见：非内联的转换渲染 `4194304*Byte` 时会丢失它的单位或词头。
++   entry #sizeText   一次操作的大小，渲染为便于阅读的形式：`4.2 MB`
++   entry #rateText   给定一次操作以秒计的平均时间，渲染速率：`120 MB/s`
++   entry #value   以基本单位（字节或字符）表示的大小数值，用于绘制图表

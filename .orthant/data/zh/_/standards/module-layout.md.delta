@@ -1,0 +1,29 @@
+orthant 2 language
+
+@ 0 1 0 08a75dd5f46ceef21888820fdb82c5ed
++ # Soundness 模块布局标准
+
+@ 0 1 0 168477d6c167de2a1bc6797dbe55c63f
++ _（桩——范围待评审；完整内容随后补充。）_
+
+@ 0 2 0 0c7e2be44269cbf71f98b7eb09b62714
++ 本标准将规定 Soundness 模块在磁盘上如何布局，以及其命名空间如何组织。
++ 它将涵盖以下约定：
+
+% 0 1 0 0a7c55b4c0ac40601a46d9fdcd155626
+
+@ 0 8 0 1d59784e3f5cd4b806cdeba1eac75758
++ column  位置
++ column  存放内容
++ row  `src/core`  库本身
++ row  `src/test`  测试
++ row  `src/bench`  基准测试
++ row  `src/<variant>`  可选的集成
++ row  `<module>.<Type>.scala`  一个顶层类型，以其命名
++ row  `<module>_core.scala`  包级别的 given 和扩展方法，伴生对象优先
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 5 0 08afcf11b77ae23d083b2a4f0e8e5f49
++ 它还将介绍 `soundness_<module>_core.scala` 重新导出文件，该文件把模块的公共接口提升到 `soundness` 总括包中，以及哪些内容导出、哪些内容保持内部的规则。
++ 其中一部分已在 Consequent Style 的可定位性规则（`L1`–`L5`，参见 [`syntax.md`](syntax.md)）中有所涉及；本标准将把这些结构约定集中到一处。

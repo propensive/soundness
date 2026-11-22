@@ -1,0 +1,55 @@
+orthant 2 language
+
+% 0 1 0 113a51a0265b242f149c7b4fbd75d0cf
+
+@ 0 1 0 022d53b9c0ce7a0b0463cdcb67b66d38
++ 当 Aviation 无法解析时间戳字符串时抛出。
+
+@ 0 1 0 1d8ed6a2d2412a231ea0d46e12dff5b7
++ ## 原因
+
+@ 0 4 0 04fc51cf560781d500e9d3ccd09ac65a
++ Aviation 的时间戳解析器期望 ISO-8601 风格的时间戳。
++ 构造器记录出错的 `value` 以及一个表明解析在哪一步失败的 `reason: Reason`；渲染出的消息为 `the time $value could not be parsed because $reason`。
+
+@ 0 1 0 0982d44e8aec0bbd176df78e68656684
++ ## 变体
+
+% 0 1 0 15942d5a1f413b541d517eb81a1a1b5f
+
+@ 0 2 0 00eeefdae2a273b401010a4cc6a76a0f
++ 输入完全不符合预期的 ISO-8601 时间戳模式。
+
+@ 0 1 0 0a39f76c0f9849071dde88c38d8e251c
++ **示例。** `[↯/s.73.9.1] the time not-a-timestamp could not be parsed because the input did not match the expected timestamp format`
+
+@ 0 2 0 102997522e79412919f3e89f4ed2eb39
++ **解决方法。** 以 ISO-8601 形式（`YYYY-MM-DD[T ]HH:MM:SS`）提供时间戳；对非标准输入进行预处理。
+
+% 0 1 0 03e608574f3232ae0a4be5b002480ea7
+
+@ 0 3 0 1f16de59956dbc531d6e9a121dcb8675
++ 输入符合时间戳模式，但其中某个数值部分无法解析为整数（内部抛出了 `Number.Error`）。
+
+@ 0 1 0 0d349958f19f48470f87428053c963b0
++ **示例。** `[↯/s.73.9.2] the time 2024-XX-15T14:30:59 could not be parsed because a numeric component could not be parsed as an integer`
+
+@ 0 2 0 166d3c58c7d41b871ff4db7f31acc6dc
++ **解决方法。** 确认每个部分（年、月、日、时、分、秒）都是普通的十进制整数。
+
+% 0 1 0 178c1d9c25626ddb13c59acae65983b8
+
+@ 0 2 0 127e2439b0a3012e0c433e5699c5c650
++ 某个日期或时间部分超出了其有效范围——例如 13 月、32 日或 25 时（内部抛出了 `Moment.Error`）。
+
+@ 0 1 0 00a751945fa005620c40389aff728de8
++ **示例。** `[↯/s.73.9.3] the time 2024-13-15T14:30:59 could not be parsed because a date or time component was outside the valid range`
+
+@ 0 3 0 0ed982eef14ef72d1392930c827c0497
++ **解决方法。** 在格式化之前验证各部分的值，或者从一个把它们限制在合法范围内的历法计算出这些值。
+
+@ 0 1 0 004f241cb4a4ed0405cb108ee75b2611
++ ## 另请参阅
+
+@ 0 1 0 1b685d9cf86d9fb51dd03ae5247b6c58
++ - 源代码：`lib/embarcadero/src/containerd/embarcadero.Timestamp.scala`

@@ -1,0 +1,737 @@
+orthant 2 language
+
+@ 0 1 0 078d39ffe598271e087f34120d0fcd54
++ ## 派生
+
+@ 0 1 0 02ed9263154c2802081b650b8e2f33e5
++ ### 概述
+
+@ 0 7 0 129e13b7f0bf874a1a39c104df77e6f7
++ 这些库中随处可见的派生编解码器，例如从 case class 得到的 [JSON](json.md) 编码器、从字段得到的 [CSV](csv.md) 行以及从结构得到的摘要，全都由同一个派生引擎产生。
++ 它为任何*积类型*（即 case class）生成一个[类型类]实例，其实例组合各字段的实例；或为任何*余积类型*（即[枚举]或密封特质）生成实例，其实例根据变体进行分派。
++ 类型类的作者只需写一次这两条组合规则，每个用户定义的类型就都免费获得了实例。
+
+@ 0 3 0 02872111f72cbbad1ae4208445651f12
++ 对类型类的使用者而言，[派生]是不可见的。
++ 定义一个 case class 就足够了。
++ 对类型类的作者而言，它是两个方法：一个说明字段如何组合，另一个说明如何区分变体。
+
+@ 0 1 0 13da955ebeb416e9156cce727676ff67
++ ### 关于派生
+
+@ 0 5 0 04e22dc122332dbf04ca44842896f1f0
++ 大多数类型类在大多数数据类型上的实例都是机械的。
++ case class 的 `Show` 显示每个字段。
++ `Eq` 比较每个字段。
++ JSON 编码器将每个字段编码在其名称之下。
++ 手写它们是会逐渐走样的样板代码。
++ 为每个类型类编写宏需要大多数库所不具备的专业知识。
++ 真正需要的是对两条一般规则的陈述——积类型进行组合，余积类型进行选择——每个具体实例都由此得出。
+
+@ 0 3 0 0c763521cf1daacb16ffff82de3f218f
++ 这里的引擎是 Magnolia 的继任者，它恰好提供了这一点，方式是普通的继承，而不是编写宏。
++ 派生使[小型 API](../../philosophy/small-apis.md) 成为可能：一个类型类只需要两条规则，而不是为每个类型各写一个实例。
+
+@ 0 3 0 13ace7eeb6e5bc951b470519303cc725
++ 所有内容都来自 `soundness` 包。
++ 第二个导入引入字段的 `label`，总括包中它的名称与某个浏览器元素的名称相同。
++ 第三个导入允许对派生所产生的字段数组进行索引，第四个导入为错误选择一个[策略]：
+
+% 2 1 0 1fae809b3ff69e6310c7614153ed674f
+
+% 0 1 0 1bca28db88d8e18d0fbcefeaacfc679c
+
+% 0 1 0 0f222d90cb9ae22d0bb3b3b92f61fc75
+
+% 0 1 0 065602687d307d73103e811667609571
+
+% 0 1 0 0db1a0ecc5cc04ab14e285e7be2d415a
+
+% 1 1 0 136db627b754cbf6014cc8648b37c4d8
+
+@ 0 2 0 1f317c8fe50bb8781174a0a35767610c
++ 本页的示例由库中一个经过编译的测试 `wisteria_doccheck.scala` 检查。
++ 它们在这里不会运行。
+
+@ 0 1 0 19951c500d2f74f60b5f8bd5022f72ca
++ ### 积类型、和类型与类型类
+
+@ 0 1 0 1c21e16922f0a2a10d580237361b33b7
++ 两个词承担了大部分分量，即*积类型*和*和类型*：
+
+% 2 1 0 0ff134c08f7da7ef0ba339cd117b5234
+
+@ 0 6 0 0976b55c9694ed86176fc1e692992c39
++ column  种类
++ column  这样一种类型
++ column  例如
++ column  组成部分
++ row  积类型  由其他类型的值组成的固定序列  case class、枚举分支、元组、单例  *字段*
++ row  和类型  从一组固定且互不相交的类型中所做的单一选择  枚举、密封特质  *变体*
+
+% 1 1 0 00e84d41ff740c4810f536f0c8de0e6c
+
+@ 0 2 0 185bae055e7355931ae0057f6cebad5a
++ 积类型的字段有固定的类型、规范的顺序和标注。
++ 积类型与和类型在范畴论意义上互为对偶，相应地，字段与变体也是如此。
+
+% 2 1 0 0fbdce7147dce29b08a1a35236110f83
+
+% 0 1 0 00cddb461ef03cfe0b4951203772e1c8
+
+% 0 1 0 1891d01767329f8c028043f3d88b26b0
+
+% 0 1 0 0a2ee9eaac26da48036e4d94794100b1
+
+% 0 1 0 084a27c170ddc53f1de429c2bc8efca4
+
+% 0 1 0 0f1372a54aa025e11b4f976597c7f47c
+
+% 0 1 0 0a3a1ed0cc27ec640502781a811553d4
+
+% 1 1 0 14079e73180231960d6aee1d6ac3086a
+
+@ 0 3 0 1f72dd0e3ce142a311857691e9020a04
++ 这里 `Temporal` 是一个和类型，其变体是 `Date` 和 `DateTime`。
++ `Date`、`Time` 和 `DateTime` 是积类型，`day`、`month` 和 `year` 是 `Date` 的字段。
++ `Month` 是一个和类型，它的十二个变体本身就是积类型：即单例，也就是没有字段的积类型。
+
+@ 0 5 0 0da86cfe5000674111ddc8c9f3afb20c
++ 类型类沿着一条相关的界线划分。
++ 当类型参数出现在抽象方法的*返回*类型中时，该类型类是*生产者*。
++ 它产生该类型的新实例，并且可以是协变的。
++ 当类型参数出现在方法的*参数*中时，该类型类是*消费者*。
++ 已有的实例被交给它，它可以是逆变的。
++ 没有任何东西被耗尽。
++ 这个词只说明值的传递方向：
+
+% 2 1 0 1d1e5b246fad8fbf154f73ad4ddb4635
+
+% 0 1 0 1947713d711de50e1d0ce906682bf8ad
+
+% 1 1 0 170786eb51f77d7e04b5abd8e2a8ce73
+
+% 0 1 0 1d8f97a86842d4ff0765129e6e98a73c
+
+% 0 1 0 11ef007aa88b074a0a2b611342f486f4
+
+% 1 1 0 1116f3a723f98fbc06a2ca9fc319c5c7
+
+@ 0 2 0 1afd5e3e9c467398097357192f2ba933
++ 这一区别之所以重要，是因为两者的派生方式不同。
++ 消费者对它得到的值的字段进行折叠。
++ 生产者没有可供折叠的值，必须构建一个。
+
+@ 0 1 0 07690399cba00d300da069ef15bb9393
++ ### 派生类型类的实例
+
+@ 0 4 0 053f67396c5588221e5fdfc4db5344d6
++ 类型类通过扩展 `Derivation`（或者在只有 case class 才有意义时扩展 `ProductDerivation`），并为积类型实现 `conjunction`、为余积类型实现 `disjunction`，来获得派生能力。
++ 下面是一个完整的类 Show 类型类，连同使其便于调用的扩展方法：
+
+% 2 1 0 00605460fcbe600218a26ec9bf12f339
+
+% 0 1 0 05a7a9f9eba8976a07a373a02a35bb8d
+
+% 1 1 0 0cf4362be643988008597cfd2da751d9
+
+% 0 1 0 0bd2bfb3b203cee21f1ee633876c9a9c
+
+% 0 1 0 1432a907607f5822186d1f169b72997f
+
+% 0 1 0 156a6647c3ae68de0c832c1eac00ec29
+
+% 0 1 0 031c5847b77b26051df1cb5c97c0d195
+
+% 1 1 0 1c8888c8504467e001246cd45b233c99
+
+% 0 1 0 15e7cbac4fdfd12b0b84b2193320fe9c
+
+% 0 1 0 0c944b30404a0b1a1c37acd3eeed07cf
+
+% 0 1 0 1445d07492b5a8681287c34d7a3f28ca
+
+% 0 1 0 053c054ae420d55905b149bc80219921
+
+% 1 1 0 0416364f6847bc840cab01b43189b710
+
+% 1 1 0 13ac8b59f287ad0a0d3a438331b2efd5
+
+% 0 1 0 0b82098b329f29a31e26274be1a90d31
+
+% 2 1 0 14fd4019417d651f0a5382a277ac585f
+
+% 0 1 0 0b7f81916698dab901f74a5413f0e99e
+
+% 1 1 0 1ef3043076d7dd611239d676374be041
+
+@ 0 3 0 09bc2814fe93408e173077d5ddb0b075
++ `fields` 对积类型的字段进行折叠，并为每个字段提供其 `label`、位置，以及其类型对应的类型类 `contextual` 实例。
++ `variant` 根据余积类型的实际分支进行分派。
++ 这就是一个类型类为派生付出的全部代价。
+
+@ 0 2 0 1d6f72d53b08cec11a41c4a352dc7b8f
++ `fields` 和 `variant` 是一小组原语中的两个，下面各节将依次介绍：
+
+% 2 1 0 09f2bf8563707d7514056cd23c3d595d
+
+@ 0 15 0 08c85d1389daa4d2014554aab22f680f
++ column  原语
++ column  用于
++ column  作用
++ row  `fields(value)`  `conjunction`  对积类型的字段及其值进行折叠
++ row  `contexts[derivation]()`  `conjunction`  在手头没有值的情况下对积类型的字段进行折叠
++ row  `build[derivation]`  `conjunction`  由每个字段的一个值构造积类型
++ row  `construct`  `conjunction`  给定类型构造器的 `pure` 和 `bind`，在其内部构造积类型
++ row  `dereference`  `contexts` 的 lambda  从积类型中提取当前字段
++ row  `variant(value)`  `disjunction`  根据值的变体进行分派
++ row  `delegate[derivation](label)`  `disjunction`  分派到某个标注所指的变体
++ row  `complement(other)`  `variant` 的 lambda  将另一个值收窄到同一变体，结果为 `Optional`
++ row  `choice[derivation]`  `disjunction`  在代码编译时说明是否每个变体都是单例
++ row  `choices[derivation]`  `disjunction`  在手头没有值的情况下对每个变体进行折叠
++ row  `singleton[derivation](label)`  `disjunction`  给出某个标注所指的单例
++ row  `variantLabels[derivation]`  `disjunction`  列出各变体的标注
+
+% 1 1 0 01b3e12ab88ee0f701bfeaf2a10a1bda
+
+@ 0 5 0 0a5869489c482d861f69d8e74d5407b5
++ `[field] => field => …` 语法是一个*多态 lambda*，值得花点时间说明，因为它是唯一陌生的部分。
++ 它与多态方法的关系，恰如普通 lambda 与普通方法的关系。
++ `def transform(field: Field): Text` 对应的 lambda 是 `Field => Text`，而 `def transform[field](field: field): Text` 对应的 lambda 是 `[field] => field => Text`。
+
+@ 0 6 0 0a27705dc9cf7a0b021af1c9442f122f
++ 之所以需要它，是因为每个字段都有不同的类型，而方法体对这些类型一无所知，只知道唯一要紧的一点：`field` 的两次出现指的是*同一个*类型。
++ 这就足够了，因为这意味着与字段一同提供的 `contextual` 实例恰好是该字段类型的 `Presentation[field]`，因而可以应用于它。
++ 对于一个看不到其类型的值，派生的方法体没有其他办法对它做任何事。
++ 这也是参数性让这些方法体几乎能自己写出来的原因。
+
+@ 0 3 0 051e4ac83ca8a3510651448cd22fe5e7
++ `contexts` 是同样的折叠，只是没有可供折叠的值，它只给出每个字段的类型类实例。
++ `typeName`、`tuple` 和 `singleton` 描述正在为之派生的积类型，因此派生可以为元组省略类型名，或为单例省略括号。
+
+@ 0 1 0 10a122cb0ffecd8d1a70b45c925ae828
++ ### 使用派生实例
+
+@ 0 2 0 064257bc5a5a80d10c3f4ddf8f15091e
++ 当上面的对象处于作用域中时，任何 case class 或枚举都有一个 `Presentation`。
++ 它会被自动解析，也可以用 `derives` 子句显式请求：
+
+% 2 1 0 0ef82e36d14deadc14ff67f7c1ff50d3
+
+% 3 1 0 05c90970037e27fb0fc52935d3581e2c
+
+% 4 1 0 184079d7748eee6014722571e53dba57
+
+% 0 1 0 0f1038dcf87704011ae3a2fea0beb612
+
+% 0 1 0 1bab9f09487bda041dccb37986adab09
+
+% 1 1 0 04bd0b1fc227a1e104476c4a9db8c685
+
+@ 0 2 0 0bdc701749d8ef1617c2165685491efd
++ 这里 `presented` 是 `t"Person(name=Hamlet, age=30)"`。
++ 嵌套结构会递归派生。
++ 由 case class 组成的 case class 不需要任何额外的东西。
+
+@ 0 1 0 0cbf8985499bd96304d11ba3310dc8f2
++ ### 派生能看到什么
+
+@ 0 2 0 05e1736083815be505d32154d2bbbcca
++ 在 `conjunction` 内部，每个字段携带的不只是它的值，而且正在为之派生的类型也可以被描述：
+
+% 2 1 0 1123dbde5dd67b7f18fd349b830b1bc7
+
+@ 0 10 0 170e4de23917ac0609aa1e46739d7607
++ column  值
++ column  可用于
++ column  给出
++ row  `label`  任何访问字段或变体的原语的 lambda  字段或变体按书写形式的名称
++ row  `index`  任何访问字段或变体的原语的 lambda  它的位置
++ row  `contextual`  任何访问字段或变体的原语的 lambda  其类型对应的类型类实例
++ row  `default`  `fields`、`contexts`、`build` 和 `construct` 的 lambda  字段声明的默认值，或 `Unset`
++ row  `typeName[derivation]`  派生  正在为之派生的类型的名称
++ row  `tuple[derivation]`  派生  该类型是否为元组
++ row  `singleton[derivation]`  派生  该类型是否为单例
+
+% 1 1 0 19b0664d1adeab0b16d8c47a93b7f8e0
+
+@ 0 5 0 034e97a92f72fd9f1e35a26f75a24358
++ 因此，派生可以产生提及结构本身的东西，而不只是对结构进行折叠的东西。
++ 这里它通过 `contexts`，在手头没有值的情况下，产生积类型各字段的标注。
++ 由于派生组合的是积类型各字段的实例，每个字段类型都需要一个实例，即使它是平凡的，例如 `Text` 或 `Int` 的标注，它们没有标注：
+
+% 2 1 0 14090825326366a00bd12389b6641e88
+
+% 3 1 0 084059c4416cbac21dd35bba75f49664
+
+% 4 1 0 00e9312e07146e0019a32de30bf9e28e
+
+% 0 1 0 1128c1bb43fb92f6116926a230161844
+
+% 0 1 0 0c2778e19afdae7705ea53bb13ed141e
+
+% 0 1 0 0264a5b24b1b33e117bb044dfc92976c
+
+% 0 1 0 00a0c32aa7b174de0d63f43baec3b72a
+
+% 0 1 0 1fe86e8c122a8a02080643cc196b01bb
+
+% 0 1 0 0e4dc1c716e9764101b9e2f9adb76014
+
+% 0 1 0 0a133700ca1b63bf1f58014378a8dedc
+
+% 0 1 0 1d641ad51e1829090d8b406ab3c2775b
+
+% 0 1 0 1b646e1851b1a04e07e9037c4977bb6b
+
+% 0 1 0 16f3a4c806c68aff1cf518168136804e
+
+% 0 1 0 0168110163e3ff4f009c33f665016d07
+
+% 0 1 0 1b3466dfbba8dc9a011aa5ccfc235520
+
+% 1 1 0 1c8552557689031717b262ba2d4e5e65
+
+@ 0 4 0 0b123b0ba73b6430143ee33167406fa5
++ `Labels.derived[Person].labels` 是 `List(t"name", t"age")`，而 `Labels.derived[Empty].labels` 是空列表。
++ 空积类型是没有字段的积类型，单字段积类型也不是特殊情况。
++ 两者都由同一条规则派生，而这正是手写实例通常出错的地方。
+
+@ 0 2 0 09240facfea25c7d0bff713e1969e915
++ 在 `disjunction` 内部，`variant` 将值收窄到它的实际分支，因此方法体的类型是该分支而不是和类型，并且该分支自己的标注可用作判别字段。
+
+@ 0 1 0 0bbeee57432607f212d23a7f482be1c9
++ ### 产生值而不是消费值
+
+@ 0 4 0 0b78d71e33419b6c00d8323d306bc016
++ 生产者没有可供折叠的实例，因此它不用 `fields`，而是用 `build`，后者构造积类型的一个新实例。
++ 它的 lambda 接收每个字段的类型类实例——这是唯一能够产生方法体看不到其类型的值的东西——并返回该字段的值。
++ 下面是一个完整的逗号分隔字段解析器：
+
+% 2 1 0 1b78d63700cb29ad0ab61ef656199b7c
+
+% 3 1 0 1d7edf66d4091325021bccf5b8f74570
+
+% 4 1 0 1b00514bd37d40b40b9cbd9285e6ca43
+
+% 0 1 0 0a908368cad7135a0232db50cb41375f
+
+% 0 1 0 02c3a84a2c58f8401699b5fabe751559
+
+% 0 1 0 16b176e6c4bf9f4e024194f937a20ede
+
+% 0 1 0 052a0f183375453e1190562388ca9191
+
+% 0 1 0 124c597ee9dbcf2917d60aab8c8896d4
+
+% 1 1 0 00ead7af0f3cf6e919ba3682ddc7093e
+
+% 1 1 0 1898a724b20b95e91fb78006674f8e0a
+
+% 0 1 0 13efe12eb3006853194e86f611fd98c9
+
+% 0 1 0 0aebc90b9474becb14efbe3c3f7b89e4
+
+% 0 1 0 059e4f9eb36325ef0485ed1e0cc0b975
+
+% 0 1 0 19de638f40ca6efa01218be3aa34d0ce
+
+% 1 1 0 090597856788be991e455c9b3e829c03
+
+@ 0 3 0 084f7b943600993419ea09c7493bb346
++ `Parsing.derived[Person].parse(t"Hamlet,30")` 是 `Person(t"Hamlet", 30)`。
++ `Parsing` 是一个独立的类型类，而不是 `read` 所寻找的 `Readable`，因此 `t"Hamlet,30".read[Person]` 无法编译。
++ 它的实例通过 `derived` 获得。
+
+@ 0 4 0 060ece4aa4073c140b678eb1996a8c7d
++ 和类型的对应物是 `delegate`，它接收要构建的变体的标注，并分派到该变体的实例。
++ `variant` 可以从它得到的值中读出答案。
++ `delegate` 则被告知要产生哪个变体，因此标注通常来自输入，这里是 `Date:` 或 `DateTime:` 前缀。
++ 不指向任何变体的标注会抛出 `Variant.Error`：
+
+% 2 1 0 04837da082bf28090b2d41a10b07fc66
+
+% 3 1 0 00ec81263d74598805a4c71fd7819d95
+
+% 4 1 0 175381fa5b009a77023721815dbc4478
+
+% 0 1 0 1430ba7b863ae10118bae5f44a91adae
+
+% 1 1 0 180197c6db0b1238017272bc966f5df8
+
+% 0 1 0 0cca3f709f8849db17555619152063f8
+
+% 0 1 0 0375c71c173bcc831a7aca760fb27b0d
+
+% 1 1 0 0197ea8e285fc7741e336a980b66fd1f
+
+% 0 1 0 1d6e03ed1cc391b1060bc9d2d7e186ae
+
+% 0 1 0 01b3d00947807eac06fe7e399146f8b8
+
+% 0 1 0 103a182768afd3690793ec87d0524373
+
+% 0 1 0 0741241eb125a36f15ddf9556ea21498
+
+% 1 1 0 0b8d6f59806d4c5007b391b148f7ece3
+
+@ 0 3 0 03f98c56f274d2340173c9afc47bfa93
++ 当产生的值被包装在类型构造器中时，例如返回 `Optional` 的解析器或返回 `Attempt` 的解码器，`construct` 接收该构造器的多态 `pure` 和 `bind` 操作，并让各字段穿过它。
+
+@ 0 1 0 0e7c45ae36d22aff1e6dab93969b8d26
++ ### 作用于两个值的类型类
+
+@ 0 5 0 11f78fb857a1f67303a00198f9e089dc
++ 有些类型类接收同一类型的两个值。
++ 等价关系就是显而易见的一例。
++ 对左侧值的字段进行折叠很容易。
++ 难点在于右侧值的对应字段。
++ 手动完成这件事意味着要构建由左侧字段、右侧字段和实例组成的并行数组，而一旦这些值与为其赋予类型的 lambda 分离，它们的类型就会被擦除，只有类型转换才能把它们重新拼在一起。
+
+@ 0 6 0 056870ba7fd827e4147a708e007990e8
++ `dereference` 和 `complement` 避免了这一点。
++ 在 `contexts` 内部，`dereference` 是从积类型到当前字段的函数，其类型就是该字段的类型，因此可以从*两个*值中取出同一个字段，并交给同一个 `contextual` 实例。
++ 对于和类型，`complement` 在 `variant` 内部完成对应的工作。
++ 它取回另一个值，并将其收窄到同一分支。
++ 它返回一个 [`Optional`](optional-values.md)，因为两个值不一定是同一个变体，如果不是，就没有具有有意义类型的值可以返回：
+
+% 2 1 0 1891740d8018e56d014630dddace9814
+
+% 3 1 0 1d18dd74af370f2f0aace9c53f33c1ca
+
+% 4 1 0 13ffae21194ad797001df2a7a9a8ba2c
+
+% 0 1 0 1d7d609f112ab4ec069d87a38a9a2239
+
+% 0 1 0 0b87a6e35561e8110710d6f6c5a43f19
+
+% 0 1 0 0e2fa0afe27e69f310320942a7e7c84f
+
+% 0 1 0 016d43139bfa741a18219f2adc4f5317
+
+% 0 1 0 1376b369cbd3b0d41348797e29764cdb
+
+% 0 1 0 09ec8a96b14f09c21850a828263eb794
+
+% 1 1 0 1d98724717e4421818010738edddd818
+
+% 0 1 0 0f6543aa0e7613ba0afe444df9033b31
+
+% 0 1 0 08e1a0de6ce03d8d0a81d9b01ce6edfb
+
+% 0 1 0 10e7ed485659c224067cd7946e217708
+
+% 0 1 0 13de8ad1dd6a37180cdaff5ffa6459a9
+
+% 0 1 0 1d2b07bc3514219b15749164b3a07184
+
+% 0 1 0 0e034489cce1667c13430e9d32cb27d4
+
+% 1 1 0 0fd6a658b6c7b8100964dbeb3dce7fa4
+
+% 0 1 0 1fc546e73cc33c361132750f14ccde60
+
+% 0 1 0 167ded4573a4e03f1e0c39da9f60ae72
+
+% 0 1 0 0c5c33f12a814fb71b1661a4955ec384
+
+% 0 1 0 0159bc42ad913a540af8899dd8402431
+
+% 1 1 0 070973e29b53f06903008b4f412c6dda
+
+@ 0 3 0 110bb90d8b88ab6e0cc7b0f924e2c705
++ `Equivalence.derived[Person].equal(Person(t"Hamlet", 30), Person(t"HAMLET", 30))` 是 `true`，因为 `Text` 的实例忽略大小写。
++ 不同的变体比较为不相等。
++ 相同的变体通过两者共享的实例进行比较。
+
+@ 0 1 0 0435ef359a541fe40f86291d15815a38
++ ### 由单例组成的枚举
+
+@ 0 4 0 05b5d63091ed01661d861680e253c2fc
++ 所有分支都是单例的枚举是名称之间的直接选择，不带数据，它支持一般和类型所不支持的东西。
++ `choice` 在[编译时]报告是否如此，因此派生可以将自己限制在这类枚举上，并用自己的消息拒绝其余的：
+
+% 2 1 0 0017346e3796d9cc19ff3ca9b41ec5d8
+
+% 0 1 0 067316cc8cea139712bc03ca4ff03ac6
+
+% 0 1 0 19ee1d525fd825f201fd60426eb58323
+
+% 0 1 0 1a4e400ff13db9df18e9f67ce37d045e
+
+% 0 1 0 19a8c4fa3d8b48101fc4f3e4a950333e
+
+% 0 1 0 185dcf79e29f13dc03730982932703ce
+
+% 0 1 0 11eed12a18b9aa0f057a9cb30be0ca8f
+
+% 0 1 0 0a1e4e894b9b24a40de869610fb6729f
+
+% 1 1 0 13c9616c235fc44b0939724b96bf6d97
+
+% 0 1 0 1ac2eabfa14b4cd80ee2d37e1f827fe0
+
+% 0 1 0 1095b21144d5594d0f0bbb99c61cf1cd
+
+% 0 1 0 104ee0147cf138be1a9a28db47457ee8
+
+% 1 1 0 199bd127ba62fc6105635e7de854b8b0
+
+@ 0 3 0 043742d3e52be35e0cece53dd30cd011
++ `Naming.derived[Month].name(Month.Mar)` 是 `t"Month.Mar"`。
++ `inline if` 很重要。
++ 它迫使 `choice` 在代码编译时求值，因此 `scala.compiletime.error` 分支要么被消除，要么被到达，而到达它会使构建失败。
+
+@ 0 4 0 131b3d0e317a59c319b721a957edc6b6
++ 对于这样的枚举，`singleton` 将标注转换回它所指的值，`variantLabels` 列出各标注，而 `choices` 对每个变体进行折叠，无需一个用来分派的值。
++ 这正是产生 *schema* 而非实例的派生所需要的。
+
+@ 0 1 0 062e0f77a85b372f021198926dae0ef4
++ ### 字段默认值
+
+@ 0 5 0 1cc3bc51cd7ab8d10aac67867efff3f8
++ case class 可以为其字段提供默认值，而解码器通常需要它们。
++ 输入中缺少的字段应当采用作者写下的默认值，而不是失败。
++ 在 `fields`、`contexts` 和 `build` 的 lambda 中，可以使用上下文中的 `Default[Optional[field]]`，调用 `default` 会得到一个 `Optional[field]`：即声明的默认值，或在字段没有默认值时为 `Unset`。
++ 下面是一个容忍末尾列缺失的解析器：
+
+% 2 1 0 1465f703cf8aa8da09c549b39f547f73
+
+% 3 1 0 12b3240be882ff20182b1b06ac50d277
+
+% 1 1 0 11fbab526cc88d1908b66312e2428bc1
+
+@ 0 1 0 0d589d77ccf3fcc90dc3983d982d3558
++   label 每一列都必须存在
+
+% 1 1 0 1bc16c3c28c9c1cc1ddd0084e8d0f9c8
+
+% 0 1 0 0eb23f017f3667730d0ae6db60a28948
+
+% 1 1 0 039120970543f2cd0fc88a2552995cc8
+
+% 2 1 0 1627edef7985fc010f2914046a4a4ea0
+
+% 4 1 0 0f350bc64db2fbf5117f8b21c12e3c97
+
+% 5 1 0 08c0ea4b7c013a8411c8886e026725b7
+
+% 6 1 0 157860b7844ca0840a4255edc6872fba
+
+% 7 1 0 1e33f7ad12cd527a1b91bb699732582b
+
+% 0 1 0 1cc4f93273b759961610bef56f39dc95
+
+% 1 1 0 1f1fb43e54e0ba7f012801bd7cf99ca9
+
+@ 0 1 0 0b353a7f269d6fae15695d4b2731dc3e
++   label 缺失的列采用字段的默认值
+
+% 1 1 0 05678e5a5a6211a313b76a6591654c48
+
+% 0 1 0 1ce773d30838b8e411527c6cb31ea08e
+
+% 1 1 0 11e0e50aca6c3b001f96c65979cd2432
+
+% 2 1 0 00ca732ffb1c9f281287a84e0adf2cf1
+
+% 4 1 0 1c65a588078c3ebc0fcba6e38a6c5b7a
+
+% 5 1 0 1fe16c5c027e46bd0a30453a65832f5b
+
+% 6 1 0 12c8980cab55bd9c02a74ec56acf07d4
+
+% 7 1 0 1e304b9b2a13e4401627f076bf52cea9
+
+% 0 1 0 000063c7414ce2ba0cf79a677d87b774
+
+% 0 1 0 1511963bf68eb96905febe9cd157ca5f
+
+% 0 1 0 0f8180e7e2a3367d1650ff2e372b7ce0
+
+% 0 1 0 09218bac97ece4f0059f433571942c76
+
+% 0 1 0 1294acccdf035114113d954a59a4bf98
+
+% 1 1 0 0df9b80d699822271a77c903299355f6
+
+% 1 1 0 136d267ff733a60e0f6246170d49df5f
+
+@ 0 1 0 1c9fffa602f48ffa0eb9d5d6dbe810b3
++ `LenientParsing.derived[Settings].parse(t"primary")` 是 `Settings(t"primary", 3)`。
+
+@ 0 1 0 182e98668116a9490f563bd794b5b67f
++ ### 编解码器之外的派生
+
+@ 0 3 0 01b134780964f7741904f0aa88cd5179
++ 引擎中没有任何东西是专属于编码的。
++ 任何实例按结构组合的类型类都以同样的方式派生，包括算术类型类，它们逐字段组合积类型的两个值：
+
+% 2 1 0 0d3511bdb1c5aea41509d7cafe956194
+
+% 0 1 0 077c50034f1d0a3409e40e87dc9b5bda
+
+% 0 1 0 1b8d3012606ff7951fab82ee87a98c1f
+
+% 0 1 0 048d1df099ce34b71fe81d2e378f9b7a
+
+% 1 1 0 0d17dad0236d4bf105767689620ff59d
+
+@ 0 3 0 10f67e29b15e633512081cd7e6439318
++ 这里 `sum` 是 `Pair(t"Rosencrantz", 25)`。
++ `Pair` 上的加法就是每个字段上的加法，因此 `Text` 被连接，而 `Int` 被求和，并且完全没有为 `Pair` 编写任何实例。
++ `Subtractable`、`Multiplicable` 及其同类遵循同样的规则。
+
+@ 0 1 0 1e8f7bd676b06afc043047efad45f3f1
++ ### 派生失败时
+
+@ 0 5 0 0872badad6651b671664ac3e20ad241a
++ 一个类型类可能合理地为积类型派生，却不为余积类型派生，反之亦然。
++ 扩展 `ProductDerivation` 而不是 `Derivation` 就表明了这一点，此时将它应用于和类型是一个指明不匹配之处的编译错误，而不是[运行时]的意外。
++ 完全没有 `Mirror` 的类型，例如普通特质或非 case class 的类，同样会在派生之处失败，那里的消息可以说明缺少了什么。
+
+@ 0 1 0 1126a41ad3edb2a60d339386c12d5209
++ 有三种失败足够常见，值得一提：
+
+% 2 1 0 010c74de0f039c1f02a18a3f1ae2fcc2
+
+@ 0 6 0 03ab37d431e5ba2a0f0e894bfbc14533
++ column  症状
++ column  常见原因
++ column  修正
++ row  一条以 "given instance derived in trait Derivation does not match type…" 结尾的长消息  多态 lambda 的类型变量没有上界  写 `[variant <: derivation]`，而不是 `[variant]`
++ row  与 `Product` 的类型不匹配  `conjunction` 的类型参数缺少其上界  添加 `<: Product`
++ row  字段看起来没问题的类型找不到实例  *那些*字段中有一个缺少实例  编译一次对 `derived` 的显式调用，它会指出是哪一个
+
+% 1 1 0 15dcd635dd10d80d100e3e25f1ae4710
+
+@ 0 3 0 05abf72563ce9523178758ae37827467
++ 递归类型是一种特殊情况。
++ 它无法就地派生，因为派生在进行到一半时将不得不召唤它自己。
++ 在该类型的伴生对象上用 `derives` 子句定义实例，就能打破这个循环：
+
+% 2 1 0 10cf936a504727da0575f827cc779f37
+
+% 3 1 0 191704584123f9c50251b8718fd9ebe7
+
+% 4 1 0 1d33fee99afa12fd003742b448cfdb3d
+
+% 0 1 0 0d4c8f2d5bae9f3b18d95ad3918894d7
+
+% 0 1 0 1b24d5f92ed99f3d15a5baad3db29001
+
+% 0 1 0 16883fcd32e349bc1b3856c7f77af7aa
+
+% 0 1 0 0c2e211188e873200c10bf3453e55937
+
+% 1 1 0 1f0dfda2ec88d6c514a1ae8dd3becb82
+
+@ 0 1 0 1b492aa0f8c9a8f30a66626144dcd146
++ 这里 `tree` 是 `t"Branch(left=Leaf, value=1, right=Leaf)"`。
+
+@ 0 1 0 165acc2c54a12b4f166e4f76a6753af9
++ ### 在候选实例之间选择
+
+@ 0 4 0 1df2a4f2aeafa55010cb61590857bd91
++ 派生实例来自从 `Derivation` 继承的 `given`，因此它的优先级低于伴生对象体中写出的任何 `given`。
++ 这通常正是所需要的，但偶尔不是。
++ 当派生实例与手写实例真正产生歧义时，调整优先级往往只是在别处制造另一个歧义来解决这一个。
+
+@ 0 3 0 1e37ffa77a2288c216a974e041b35d31
++ 可靠的修正是让选择变得显式，而不是对其排序。
++ 将相互竞争的 `given` 改为普通方法，并编写一个 `derived`，用 `scala.compiletime.summonFrom` 按顺序在它们之中选择：
+
+% 2 1 0 01084b1a8c0897f61a7600d8a263782e
+
+% 0 1 0 181376be612138a01f68592fb8f79467
+
+% 0 1 0 05af1413c44d3e8a141f88a5eb2ba004
+
+% 0 1 0 10aa1605b58286d61d9a789edeec0543
+
+% 0 1 0 14b14ce0c8b4166b0051c00c74d39fc2
+
+% 0 1 0 0ef66dc579f4b42e190393ff8b590ac4
+
+% 0 1 0 1472af835932af910c1059170161e812
+
+% 0 1 0 0c60621a95f85f651b39a612fce34c3f
+
+% 0 1 0 1c9fa785f04ec1531d496bfa89872e2a
+
+% 2 1 0 1ba10a1ac64969a4149e532aa4cb7d6e
+
+% 0 1 0 043dcaf2edd921321bd3a4513a610115
+
+% 1 1 0 1b21208ee433b41a0925095da7a1912f
+
+% 2 1 0 1525a46c87e9e0571e7d21b8e7c42b7a
+
+% 3 1 0 1078baf283ba951004ee4fb58e66e04b
+
+% 4 1 0 198b208e6f86732f10342477ea0cf641
+
+% 0 1 0 05dfb73c142fecf6123fe55fe1083e01
+
+% 0 1 0 1afcf955a509b7be127acb2b3f7ad772
+
+% 1 1 0 002b572e320090940d1e57b1e461f964
+
+@ 0 7 0 0d608623556292e808a0bd6bdac974bb
++ 第一个通过 `Person` 所派生的 `Presentation`。
++ 第二个通过 `Double` 所拥有的 `Showable`。
++ 直白地读：如果存在 `Presentation` 就使用它；否则使用 `Showable`，它被引入右侧的作用域；否则回退。
++ 源代码中的顺序*就是*优先级，这就是为什么它比一个由隐式作用域构成的格更容易推理。
++ 这里的类型参数首字母大写是有原因的。
++ 在 `summonFrom` 模式中，小写的类型名会被读作一个新的模式变量，而不是该 given 自己的参数。
+
+@ 0 4 0 052345f62648f6dd05c651fa4ea565ac
++ 同样的技巧可以提供派生而不将其暴露出去。
++ 在一个普通对象而不是伴生对象上定义 `conjunction` 和 `disjunction`，并在需要实例的地方显式地对它调用 `derived`，就像上面的 `ParsingSums` 和 `LenientParsing` 那样。
++ 这样，除非被明确请求，否则不会有任何东西进入隐式搜索。
+
+@ 0 1 0 11b930712c05d9c6150f4f708985be1f
++ ### 逐字段实例
+
+@ 0 3 0 0f199a512736ac2e0852cf8c5f4a7573
++ 偶尔，某个类型的某个字段需要与默认不同的实例：为某一列使用特殊的编解码器，或为某条路径进行覆盖。
++ `specifically` 通过指明路径来构建这样一个覆盖映射，这些路径会对照类型的实际结构进行检查：
+
+% 2 1 0 0173f6aa1886f22213ea5be35cd90c24
+
+% 3 1 0 18a731c680bfb1c2016e76fd3a9ff92c
+
+% 4 1 0 097921e949ef1ab60fb1e90b07811f18
+
+% 0 1 0 13c5dbe80c7a43400a12fa801e4bb4cb
+
+% 0 1 0 17d909b654b1e5ea18f5278ba0d8c9ae
+
+% 0 1 0 0fabceb583b79ec91ae5642b20237d8e
+
+% 0 1 0 14e134f289e218050506a5ca40ad1525
+
+% 0 1 0 1f3277de94e53b0e01ca0d29cbd7b77a
+
+% 0 1 0 026901931200bf591262a034768d6b95
+
+% 0 1 0 00d466240c5589fd07f18248d224d225
+
+% 1 1 0 08bea616c737ab860256118039828499
+
+@ 0 4 0 0f8394ca0756d32c02e4138986686140
++ 这里 `encoded` 是 `{"hero":{"name":"Othello","age":40},"villain":{"name":"IAGO","age":28}}`。
++ 拼错的路径，或与其字段类型不符的实例，都是编译错误。
++ 支持覆盖的派生会在它访问的每个字段处查询该映射，就像 [JSON](json.md) 和[目录](catalogs.md)所做的那样。
+
+@ 0 1 0 0a15ebad305c934c1527dd3a42e83d7a
++ ### 相关
+
+@ 0 11 0 036af1802448937c1f186d4693cb9bf0
++ - [JSON](json.md)、[CSV](csv.md)、[XML](xml.md) 以及其他格式都以这种方式派生它们的编解码器。
++ - [注解](annotations.md)介绍了派生在重命名字段时读取的 `@name` 注解。
++ - [目录](catalogs.md)和[光学](optics.md)介绍了 `Specific` 以及作为其键的字段路径。
++ - [元编程](metaprogramming.md)介绍了引擎之下的编译时工具。
++ - [通用数据](generic-data.md)介绍了一种适用于任意形状结构的派生编解码器。
++ - [小型 API](../../philosophy/small-apis.md) 解释了为什么两条规则胜过为每个类型各写一个实例。
++ - [显示](display.md)和[数字](numbers.md)为 case class 派生它们的实例，而[错误](errors.md)介绍了派生失败时的诊断。

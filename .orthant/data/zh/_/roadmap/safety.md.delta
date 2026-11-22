@@ -1,0 +1,381 @@
+orthant 2 language
+
+@ 0 1 0 01c7cb95a5e831a91c0c521ea72c99aa
++ # 能力与效应
+
+@ 0 6 0 1c6b63aec3a98d84047132d6260e5ae3
++ 诚实签名的诚实程度取决于其执行力度。
++ 捕获检查使签名关于效应的承诺可以验证；分离检查使变更在构造上就是安全的；`raises` 机制使失败在类型中可见。
++ 三者都已是默认设置——构建中 447 个模块里有 435 个启用分离检查编译——但默认并不等于保证。
++ 每一次 `caps.unsafe` 调用都是检查器被手动否决的地方，每一处都是对安全性声明的一张未兑现的欠条。
+
+@ 0 9 0 193a84f9df03ab5f0e8c03414653464e
++ 因此，逃生舱口是这条路线的核心度量。
++ 有些是真正的技术债，有已知的清退方法；另一些则受阻于捕获检查器本身的缺陷或缺口——这些由我们来修复，因为 Soundness 按设计就是用 Proscala 编译器构建的。
++ 只要能力或效应检查需要，编译器就可以修改；`rep/` 目录为每一类阻塞问题保存了最小复现，`rep/STATUS.md` 说明哪些已修复、哪些仍未解决、哪些已向上游报告。
++ 唯一的约束是对外的兼容性：无论 Proscala 做什么，Soundness 发布的制品都必须能被主线 Scala 编译器读取。
++ 当对 `caps.unsafe` 的 grep 不再返回任何结果，并且这一可读性保证得到强制执行而非仅仅假定时，这条路线即告结束。
+
+@ 0 2 0 0df5a7de4c0e774f146e091da36d7339
++ 2026-10-07 在 `lib/` 上测得 1485 个可见的舱口，另有大致同样数量隐藏在具名包装之后：
+
+% 2 1 0 1ebfb6768706bc6109c31252bcec103d
+
+@ 0 12 0 0027dafa4aad33b81878eee484f4c5c0
++ column  舱口
++ column  类别
++ column  数量
++ row  `untrackedCaptures`  可见  505
++ row  `unsafeAssumePure`  可见  511
++ row  `unsafeAssumeSeparate`  可见  419
++ row  `unsafeErasedValue`  可见  50
++ row  `Array.unsafeFrozen`  包装  283
++ row  `Array.unsafeJvm`  包装  205
++ row  `Array.frozen`  包装  151
++ row  `unsafeMutable`/`unsafeImmutable`  包装  ~40
++ row  `!!`  包装  30
+
+% 1 1 0 099946063bedaa331e6425010783c420
+
+@ 0 2 0 11de6e3e0b4c67cd110e86249f64c0db
++ 剩余部分不是一个问题，而是九个，难度也各不相同。
++ 按根本原因，可分为以下几类：
+
+% 2 1 0 02606fecf890c71716aa29f72753a464
+
+@ 0 12 0 189511042cf62bd40b68dd24134e2b48
++ column  类别
++ column  数量
++ column  清退方式
++ row  `var`/`val` 字段上的 `@untrackedCaptures`（437 个 var；其中约 270 个为基本类型、`Optional` 或不可变集合类型）  505  `safety-1` 的方法，逐个模块进行
++ row  测试执行框架中的 `unsafeAssumeSeparate`（tmux 驱动、`await`、`recur`）  236  每个执行框架一个借出形式的辅助方法（`safety-9`）
++ row  JSON-RPC 绑定中的派生锚点 `unsafeAssumePure(Json.…Derivation.derived)`  103  战术共享之后的字段纯度规则（`safety-8`）
++ row  SAM 闭包捕获了战术的密封编解码器 given  ~125  诚实的 `^{tactic}` given 形式，由 `safety-8` 解除阻塞
++ row  独占战术重叠 `unsafeAssumeSeparate(json.as[…])` 以及 contingency 自身中的三处密封  ~60  `safety-8`
++ row  self/回调/句柄的洗白（`unsafeAssumePure(this)`、RPC 代理、存储的回调）  ~60  逐处设计
++ row  被洗白为 `() -> …` 的传名元素编解码器 thunk  ~46  可命名的传名捕获（`safety-10`）
++ row  用于擦除证据的 `unsafeErasedValue`  50  机械处理，若 `compiletime.erasedValue` 足够
++ row  分阶段执行、quote 与宏（quote 之墙）  ~27  编译器侧
+
+% 1 1 0 1b24c0dbbc6b330b09572886e3c1705e
+
+@ 0 1 0 0c0d9dd5db7d32ca0190c6fa32c2b6a2
++ 本路线的各项条目及其时间范围和硬性依赖；[`status.tel`](status.tel) 记录了每一项的进展：
+
+% 2 1 0 1a49486c3b4d2d2d15f5c2c51b85eebd
+
+@ 0 16 0 001899cdbad52d0d196c6a17622bf585
++ column  条目
++ column  标题
++ column  时间范围
++ column  依赖
++ row  safety-1  清退 `untrackedCaptures`  近期
++ row  safety-2  每个剩余舱口都注明原因  近期
++ row  safety-3  `rep/` 在固定版本的工具链上运行  近期
++ row  safety-4  零逃生舱口  中期 → 远期  safety-8, safety-10
++ row  safety-5  分支是资产，而非陷阱  远期
++ row  safety-6  无豁免的分离检查  远期
++ row  safety-7  度量整个逃逸面，而非一次一个 grep  近期
++ row  safety-8  战术是共享能力  近期  safety-3
++ row  safety-9  测试执行框架不做密封  近期 → 中期
++ row  safety-10  传名参数可在捕获集中命名  中期  safety-3
++ row  safety-11  评估 3.10 系列所修复的问题  近期 → 中期  safety-3
++ row  safety-12  能力标准  近期
+
+% 1 1 0 13db5320d118f5480b5793462fe33b3b
+
+@ 0 1 0 19afaa45c8a8c1381bde4883abe140bf
++ ## safety-1：清退 `untrackedCaptures`
+
+@ 0 2 0 117b1ab886816b5a02d05f743954b7cb
++ 时间范围：近期
++ 基线：385 处（2026-10-21 测得；2026-10-08 为 484；2026-10-07 为 507；2026-09-25 为 468；2026-08-01 为 288）
+
+@ 0 17 0 136eb77bbe0b2b5c1c8aab17a8790535
++ 清退方法有文档记载，且是机械性的：被标注的类变为 `caps.Mutable`，变更方法变为 `update def`，使用方持有 `X^`，相互的反向引用被展平。
++ 其中 437 个标注位于 `var` 上，其中约 270 个是不属于 `Mutable` 的类中的基本类型、`Optional` 或不可变集合——缺少分类器的纯数据。
++ 最先处理的是已部分迁移的模块（xylophone 的 `Xml` 解析器、sibylline 的 `Llm`、stratiform 的 `Tel`、zephyrine 的核心），然后按规模处理其他模块。
++ 88 个 `AnyRef | Null` 字段则不同：每一个都是偷偷绕过检查器的能力句柄，每一个都是一个设计问题，而不是批量清理的对象。
++ 第一次清理（去掉所有基本类型上的标注，让编译器报错）在 140 个中只找到 2 个可以移除：其余的保护的是非 `Stateful` 类中的 `var`，或被闭包捕获的局部变量，而让一个类成为 `Stateful` 会把只读和 `update def` 的规程带给它及其调用方——所以该方法每次变更只处理一个类。
++ 第一个是 `profanity.Board` 及其六个表面（以及表面会读取其尺寸的 `Terminal`），它移除了 22 个标注和三个分离密封，换来一个带标签的纯度密封（`Stdio.print` 在接口上是只读的）；`rep/DECISIONS.md` 记录了该方法的实际过程，包括塑造它的两条规则：只读方法不得使用捕获的不纯 thunk，工厂方法必须返回新鲜的 `X^`，否则每个持有者都会变成只读别名。
+
+@ 2 1 0 1ef2d469040a060b14bd3c2c3ff2fa86
++ 完成条件：
+
+% 0 1 0 1f6f0038c39163ff163d95deb0bd73ed
+
+@ 0 1 0 13e9552d0eb80870035839ffe97036db
++ ## safety-2：每个剩余舱口都注明原因
+
+@ 0 2 0 099f4e9d1d569e591f27b66b26654f54
++ 已完成：#2306（2026-10-21）
++ 基线曾为 419 个 `unsafeAssumeSeparate`、511 个 `unsafeAssumePure`、50 个 `unsafeErasedValue`（2026-10-07 测得；2026-09-25 为 416、502 和 50；2026-08-01 为 323、273 和 45）；其中只有 37 个引用了 `rep/`，2 个引用到具体案例。
++ 2026-10-21 时舱口数量为 218、289、35，以及 381 个 `untrackedCaptures`，每一个都有标签；`etc/check-escape-count.py --tags` 按标签读取剩余部分，其棘轮将 `untagged` 保持为零。
+
+@ 0 8 0 0300020d9feaba971ded1e1e3a10fbed
++ 每一处要么现在就能修复，要么受阻于某个有名可指的问题。
++ 分类通过一套封闭的原因标签词汇使这一区别变得明确，这些标签定义在能力标准（`safety-12`）中，每一个都对应一个 `rep/` 案例或标准中的一节——`[tactic-overlap]`、`[field-purity]`、`[by-name-capture]`、`[quote-wall]`、`[curried-cft]`、`[js-expandsams]`、`[iarray-opacity]`、`[fresh-in-lambda]`、`[registry-lifetime]`、`[test-harness]` 等等。
++ 舱口在相邻的注释中带上其标签；普查（`safety-7`）按标签统计剩余部分，由此决定分支的处理队列，并且在未标注数量被棘轮降至零之后，对任何未标注的位置报错。
+
+@ 0 2 0 13a881e95f2cc2d91a2f980ad6388e1c
++ 完成条件：`lib/` 中每一处剩余的 `caps.unsafe` 都带有原因标签，由普查脚本报告零个未标注位置来验证——`python3 etc/check-escape-count.py --tags`。
+
+@ 0 1 0 038c7138fd40e3b10f39cd12aa8501be
++ ## safety-3：`rep/` 在固定版本的工具链上运行
+
+@ 2 1 0 0b7d5ace6225104206e8ccbf391a069b
++ 时间范围：近期
+
+@ 0 9 0 03b95c4488d1df8c0386d3bdc42c2903
++ 队列只有在其条目可以运行时才算是队列。
++ 直到 2026-10-07，`rep/compile.sh` 还在获取一个原版 3.8.4 编译器，探测脚本指向的是本地构建的工作树，所以没有任何案例在构建实际使用的分支版本下重新运行过——而且分支的选择启用修复（`-Z…`）从未被传入，因此一个已修复的案例仍可能显示为红色。
++ `rep/toolchain.sh` 现在用缓存的发布版本运行 `dotc`，并从 `build.mill` 读取 `-Z` 标志；每个案例和探测套件都在其下重新运行，`rep/STATUS.md` 记录判定结果。
++ 本条目原先指出的 `capturing-raises` 类问题已于 2026-07-06 在源头修复（环境战术作为 `caps.Unscoped`）并能编译；现在占主导的是独占战术重叠（`safety-8`）和传名捕获缺口（`safety-10`）。
+
+@ 0 2 0 1b522c6d5497df511f25c11145ec8e04
++ 完成条件：`rep/STATUS.md` 为固定版本下的每个案例记录了判定，且探测套件和每个已校准的案例在干净的检出中按预期运行通过。
+
+@ 0 1 0 01e7de354fbdd46a0273a4e1f54a5cec
++ ## safety-4：零逃生舱口
+
+@ 0 3 0 01996f7c07f8cddd1d450025857f2b50
++ 时间范围：中期 → 远期
++ 依赖：safety-8、safety-10
++ 基线：共 928 处（2026-10-21 测得；2026-10-07 为 1485；2026-09-25 为 1436；2026-08-01 为 929）
+
+@ 0 1 0 1517b914591e3df40b95a240d30e4998
++ 阻塞问题修复后，剩余部分将被清零。
++ grep 就是信号。
+
+@ 2 1 0 14b625c5827357bc0b5e7d9f84f52a02
++ 完成条件：
+
+% 0 1 0 13c77e5a6bb58be609892811b1fa93c7
+
+@ 0 1 0 0e0da2a4829a9a5c1e83b0fbd8a1ffd1
++ ## safety-5：分支是资产，而非陷阱
+
+@ 2 1 0 0750a37f4f9676d10380c7a834002907
++ 时间范围：远期
+
+@ 0 5 0 130610219ce42159006bbe717d65df5c
++ 用 Proscala 构建是一项设计决策，而非技术债：能够自由修复捕获检查器，才使零逃生舱口成为可能。
++ 保证这种自由安全的是下游的可读性——每个已发布的制品都能被用主线 Scala 编译器构建的项目使用——以及对每个上游版本的变基，其代价是已知的，而不是令人畏惧的。
+
+@ 0 6 0 0d4758a3f06ca5870c2b155b83aa51c0
++ Soundness 发布的制品引用了一个分支独有的库符号——`scala.Spreadable`（proscenium 的 `multiSpreads` given）；`scala.caps.SharedUnscoped` 曾由环境战术自 `safety-8` 起携带，直到 #2328 使它们成为纯值，现在已不再被引用——它随分支补充的 `proscala-library` jar 一起发布。
++ 因此，主线使用方需要在类路径上包含该 jar；下面的可读性测试必须说明这一点，或者使其变得不必要。
+
+@ 0 2 0 1ede65794dd5ffd11454e2495a3d0e23
++ 完成条件：一个 CI 测试从主线 Scala 项目中使用已发布的 Soundness 制品，且 `rep/` 记录了变基流程以及最近两次变基的实测代价。
+
+@ 0 1 0 03d3a8e15bb00a6c05516b991ab98741
++ ## safety-6：无豁免的分离检查
+
+@ 0 4 0 06fbcd2acc5562f71c30a858c5ecda33
++ 时间范围：远期
++ 基线：447 个模块中有 12 个从 `settings.sep` 降级——11 个降为普通选项，1 个降为 `settings.cc`——每一个都在 `build.mill` 中附有原因注释（2026-10-21 测得；2026-10-07 为 464 个中 81 个；2026-09-25 为 424 个中 87 个）
+
+@ 0 7 0 10e2335bd652acdb1fe36f3ce34c2ac1
++ 分离检查现在是默认设置：自 #2202 起，`Component`、`Tests` 和 `Benchmarks` 都以 `settings.sep` 编译，除非它们覆盖 `checking`，因此一个模块不受检查只可能是因为显式声明，而不会是因为遗漏。
++ 剩下的十二个各自指明了阻塞原因——一个以字段形式持有独占载荷数组的套件对象（对手库的基准测试）、在被抑制的来源下重新检查的 WASI 后端、orthodoxy 的 `NoPadding` 测试——而最终状态是一个都没有。
++ 每一个都在其 `rep/` 案例变绿后，通过单次探测（`rep/probe-suite.sh`、`rep/probe-core.sh`）切换。
+
+@ 0 1 0 14e9272e31392a5b15ca133dbcf2784c
++ 完成条件：`build.mill` 中没有任何组件以弱于 `settings.sep` 的设置编译。
+
+@ 0 1 0 0d58307660767b1601142856b09349f0
++ ## safety-7：度量整个逃逸面，而非一次一个 grep
+
+@ 2 1 0 177df81bb783710c1129de8ac02f7630
++ 时间范围：近期
+
+@ 0 6 0 02f2b7b906fc2fa81b2fc171e62fab73
++ 本路线要清除的逃生舱口过去是手工统计的，其基线在两次测量之间就会过时：`safety-4` 的 929 是 2026 年 8 月测得的，在有人重新运行 grep 之前就已漂移到 1400 以上。
++ 有两个棘轮正确地覆盖了逃逸面的一部分，逐文件且强制执行——`etc/check-while-count.py` 针对 `while`、`readUnchecked` 和 `charAt`，`etc/check-stdlib-count.sh` 针对 `xs.stdlib` 桥接，但只对核心源码给出一个汇总数字——其余部分都未被度量。
+
+@ 0 11 0 07de880aa2dddb620f8a7456ab7bcd76
++ flare 插件（在 `etc/tools` 中固定版本，由 `.pyrocosm/flare/config.tel` 配置，通过 `flareToolchain` 中的 `-P:flare:` 选项在每个受检查的组件上启用）提供了普查：配置中的每条规则都在源码上计数——已声明的逃逸（`unsafely`、`caps.unsafe` 家族、每个以 `unsafe` 为前缀的名称、每个由该令牌把关的方法）、绕过编译器信任的写法（`asInstanceOf`、`.nn`、`@unchecked`、`???`、兜底的 catch 子句）、偏读取，以及流式内核本应限定使用的命令式结构。
++ `make unsafety` 运行 `flare metrics --dry-run` 并打印结果；`flare metrics` 将其逐个提交地记录在 git notes 中，因此趋势保存在 git 里，而不是路线图的某个段落中。
++ 有一条规则已经起到门控作用：`S1.1`，即接受 `(using Unsafe)` 的方法必须命名为 `unsafe…`，否则构建失败；其逆规则 `S1.2` 仅作建议，违反它的八个定义列在 `doc/standards/naming.md` 中。
+
+@ 0 7 0 05d9c1dd65e2b0780551fef8f9deee28
++ 门控已经存在：`etc/check-escape-count.py` 由 `make build`（以及 `make check-escapes`）运行，在 `etc/escape-baseline.tsv` 中为每个文件保存一份基线，统计四种 `caps.unsafe` 舱口、隐藏捕获的数组包装（`Array.unsafeFrozen`、`Array.unsafeJvm`、`Array.frozen`、`!!` 擦除证据运算符）、把能力移过检查器的类型转换，以及没有原因标签的舱口——其 `--update`/`--totals` 语义与 `check-while-count.py` 相同，另有 `--tags` 按原因标签（`safety-2`）列出剩余部分，其封闭词汇表位于脚本中。
++ 它于 2026-10-09 首次设定，并于 2026-10-21 重新设定：
+
+% 2 1 0 083dba319a53a06e02afa5d7f66593ad
+
+@ 3 1 0 1c646d6a318a9aec0cd4c03977aaddc1
++ column  列
+
+% 0 1 0 026c7839bedb00f418e621b84fef5625
+
+% 0 1 0 0aeb4d4aca2112921f19361456d03ca6
+
+% 0 1 0 1eaba987b6f5ca2505b986e9edec36c2
+
+% 0 1 0 1eb7f01b78fc38291388a165dfc13355
+
+% 0 1 0 181d839950587e230f73151ef71cea31
+
+% 0 1 0 001dd397441b20621dedd44940c85060
+
+% 1 1 0 07e8f192bb3086c8158917cf549dcf25
+
+% 0 1 0 0f7bc8b23e2cc61a0a7a71a700e2b483
+
+% 1 1 0 15a24f07c8f06785039e050362285ea1
+
+% 0 1 0 013e0e54bcec410d0ed872c8351637ab
+
+% 1 1 0 0e7190db6875cd84179acf13019ced62
+
+% 0 1 0 11ee15eebdf6b84c0f4b1e59571c4c49
+
+% 1 1 0 0e327398a0367fd50d31c0b4b734cfab
+
+% 0 1 0 013e0e54bcec41100ed872c8351637ae
+
+% 1 1 0 1a8d3941e55362f41027beddc68832fe
+
+% 0 1 0 1df1b03967935acd15e77ed58231b5e9
+
+% 1 1 0 11983f8add5e7c73077066e983a2f90a
+
+% 0 1 0 0de10594519ffecd097249e35e56fe6c
+
+% 1 1 0 0234fb6966cfa5c40cd7b035f8ad7fdc
+
+% 0 1 0 051c7a3b91294873180b7106202e49ec
+
+% 1 1 0 06a1b435fe427d0c1ae771bfd73444f5
+
+% 0 1 0 0dfc4dee4dd55b85082511523f679178
+
+% 1 1 0 185b30220bc5a3431f2edbe42b8dc90a
+
+% 0 1 0 00526481a1e5a6610fd24572fa3b8b76
+
+% 1 1 0 00cdec08fcf0657906ad04e9f244f738
+
+% 0 1 0 167b22ff591b6d2c0e5825ae46487802
+
+% 0 1 0 130f682d84805d9511a39c06da790f1c
+
+% 1 1 0 12d29749db93de0e0180609ec18289b2
+
+@ 0 5 0 0f07abc70dc668450673bdda1b237e81
++ `xs.stdlib` 棘轮于 2026-10-26 并入：桥接按文件统计，核心源码和测试源码一视同仁（旧脚本排除了测试，而其中有 1000 处使用，还漏掉了 `. stdlib` 续行形式），基准测试除外。
++ 三个形状列把剩余部分当作队列来读，第四列统计 `core-3` 的导入；`--stdlib` 按桥接之后的内容列出剩余部分。
++ 各列及其初始计数如下：
+
+% 2 1 0 1f348fcfe012db540ac165a0896c8269
+
+@ 0 8 0 192b00f110beb97c18b54fc6b0c6567d
++ column  列
++ column  统计对象
++ column  初始值
++ row  `stdlib`  桥接的每一次使用  1859
++ row  `stdlibGate`  绕过 dysasymptotic 门控的写法：`xs.stdlib.head`、`.stdlib(i)`、尺寸读取  464
++ row  `stdlibRound`  往返转换：`xs.stdlib.toList`、`Array.from(xs.stdlib)`  310
++ row  `stdlibIterator`  通过桥接获取的迭代器  62
++ row  `collectionImport`  直接的 `scala.collection` 导入  340
+
+% 1 1 0 1f3980007cb1390a113e59519f34d5ae
+
+@ 0 1 0 1aac23c1e79f094514db6c52ccf93d10
++ 剩下的工作是把 `while` 棘轮并入。
+
+@ 0 3 0 195a5e36b5a8169b017fea908bad5019
++ 完成条件：每次发布都记录普查，`safety-1`、`safety-2` 和 `safety-4` 从普查而不是手工运行的 grep 读取基线，并且逐文件门控已取代 `etc/check-while-count.py`。
+
+@ 0 1 0 1d0e277801fe1eed1168376d7fbc6ff8
++ ## safety-8：战术是共享能力
+
+@ 0 3 0 088836575af765b219e94b888988efbe
++ 已完成：#2195（2026-10-07）；grep 的最后一处命中是 `Emit.scala` 中描述旧密封的注释，已在 #2306 中改写
++ 依赖：safety-3
++ 基线：`lib/*/src/core` 中约 60 个独占战术重叠密封，其中 3 个在 contingency 中；下游有 103 个派生锚点和约 125 个密封的编解码器 given（2026-10-07 测得）
+
+@ 0 8 0 0790976c15a82e590532ebb7bb55b322
++ `contingency.Emit`——因而也包括 `raises` 背后的能力 `Tactic`——是一个 `caps.ExclusiveCapability`，这是 7 月间作为“保守分类”选定的。
++ 它是剩余部分中最大的单一根本原因。
++ 为 `Json#as` 召唤的编解码器会捕获环境战术，而 `as` 又以 using 参数的形式接受同一个战术：在一次调用中两次使用同一个*独占*能力，分离检查会拒绝这种做法（`rep/sepcheck-probes/p15`）。
++ 每个 `unsafeAssumeSeparate(json.as[…])` 都是这个错误，而 JSON-RPC 绑定中的派生锚点也出于同样的原因，在派生内部放弃了诚实的、以战术为参数的形式。
+
+@ 0 11 0 176c53f23b51150806ffc8ddfd1c6ae8
++ 战术本质上是共享的——许多编解码器合理地为同一个战术取别名——而抛出错误是一种非消耗性的效应。
++ `caps.SharedCapability` 让每个 `raises`/`emits` 捕获都继续被跟踪，只是让同一战术的别名免于重叠检查；这样一来，会变更状态的战术（累积、`Foci`）就必须在内部是顺序执行的，这正是 `Monitor` 和 parasite 队列已经采取的立场。
++ 环境策略去掉 `caps.Unscoped`（不相关的分类器无法组合，`p16`）；在固定版本上，最小的 `raises` 形状已不再需要它（`rep/shared-unscoped`，GREEN）。
++ 切换由探测把关：先是 contingency，以基于 Soundness 的 `capturing-raises` 案例作为关口；如果完整形状撞上层级之墙，分支会先添加一个既共享又豁免层级的分类器，然后再继续切换。
++ 接着是 jacinta（`as` 去掉其未使用的战术参数）、使用方的批量清理（sibylline、tarantula、orthodoxy、breviloquence、ethereal、`abort`-thunk 密封），以及锚点。
+
+@ 0 12 0 078dfbe0ce5d2129089a72b6a92eba42
++ 状态：`Emit` 已是共享的，策略是普通的 `Tactic`；九个模块中的重叠密封已经消失（`unsafeAssumeSeparate` 419 → 350）。
++ 层级之墙在一种形状中幸存了下来——在派生的字段 thunk 内召唤 `strategies.throwUnsafely`（`rep/sepcheck-probes/p17`，在 3.10 上相同）——这是面向用户的，因此分支为环境策略增加了 `caps.SharedUnscoped`（proscala `sharedunscoped`），并为共享战术在每次 `Sessional` 借出中暴露出的 `normalizeLocalCaps` 崩溃增加了 `rootclassify`；两者都随 3.9.1-dev-p18 发布。
++ （#2328 后来让 Soundness 不再使用 `SharedUnscoped`：环境策略是*纯*值，正如上游的 `canThrowAny` 一样，而 `Emit` 是 `caps.Control`；参见 `rep/DECISIONS.md`。）
++ 曾尝试改用一个共享的*全局*策略值，但被否决：包不能导出能力，`object strategies` 会迫使每个用户对象加上 `uses soundness.strategies`，而且能力类的实例无法被类型化为纯的（`rep/DECISIONS.md`）。
++ 派生锚点（现为 `[field-purity]`）仍然存在。
+
+@ 0 1 0 1c63386602657f16155eabf3aed00aaf
++ 完成条件：`Emit extends caps.SharedCapability`；`git grep -c 'unsafeAssumeSeparate' -- lib/contingency` 为 0；不再有 `[tactic-overlap]` 标签。
+
+@ 0 1 0 0d73e1c344d6108a0b26f89398fcbede
++ ## safety-9：测试执行框架不做密封
+
+@ 0 2 0 0dbf3bb02108b3ac0aabcb8dc99f9c8d
++ 已完成：#2224（2026-10-09），在 #2212 和 #2217 之后
++ 基线曾为 `lib/*/src/test` 中 236 个 `unsafeAssumeSeparate`（2026-10-07 测得）：exoskeleton 63、zephyrine 50、facsimile 38、galilei 29、turbulence 19
+
+@ 0 7 0 027d321f80f6828d169802d49c937c6d
++ 所有 `unsafeAssumeSeparate` 位置中一半以上位于测试套件中，几乎都没有注释，形状只有少数几种：tmux 补全驱动（`Bash.tmux()(Tmux.completions(…))`）、`async(…).await()`、`recur()` 和 `gather.data`。
++ 测试和库一样经过捕获检查，所以这是真正的剩余问题，而且是最机械的一批：每个执行框架一个借出形式的辅助方法（coaxial 接缝——一个启动/停止特质和一个 `transparent inline` 借出——已在 syndesis 中得到验证），以及一个不会把 `Monitor` 与句柄互为别名的 `Task#await`，前提是先针对每种形状做一次探测，弄清检查器反对的是什么。
+
+@ 0 1 0 191cdacbeed713a11dab017c54d7baed
++ 完成条件：`git grep -c unsafeAssumeSeparate -- 'lib/*/src/test'` 为 0。
+
+@ 0 1 0 13e559f148109f3d11c736d6ae212d3f
++ ## safety-10：传名参数可在捕获集中命名
+
+@ 0 3 0 03bb8ef3a1ef221e1aaaa610dca2066d
++ 时间范围：中期
++ 依赖：safety-3
++ 基线：61 个标记为 `[by-name-capture]` 的舱口（2026-10-21 测得；2026-10-07 时 jacinta、spectacular、gastronomy 和 turbulence 中约有 46 个纯 thunk 密封）
+
+@ 0 8 0 1c8eb6bf45a0b9ac03462fea6cbd1fb7
++ 传名参数（`inner: => (X is Codec)^`）不是稳定引用，因此一个其实例保留了该参数的 given 无法声明 `^{inner}`，只能被密封为纯的 `() -> …` thunk——即 Phase-6 形式，注释如实，但终究是一个密封。
++ 这种形状是承重的：given 解析会合成该 thunk，而递归派生依赖于它的延迟，因此没有任何源码层面的形式能同时保留两者。
++ 这是编译器的缺口（`rep/DECISIONS.md` 中的“upstream candidate #5”）：传名参数应当可以作为其合成 thunk 的捕获集来命名。
++ 先做一个自包含的 `rep/byname-capture` 案例；其次是分支的修改；再附上案例向上游报告。
+
+@ 0 1 0 070d7556c14ec34e01287629d0082bb3
++ 完成条件：`rep/byname-capture` 在固定版本下能够编译，且不再有 `[by-name-capture]` 标签。
+
+@ 0 1 0 021da96dadf4ee9a01c47868085700ac
++ ## safety-11：评估 3.10 系列所修复的问题
+
+@ 0 2 0 1f035d6d1dcef9530e3a11f62f316eeb
++ 时间范围：近期至中期
++ 依赖：safety-3
+
+@ 0 11 0 05f0de97e568419b1653b7ba524a1001
++ 分支在 3.9 之外还维护着一个 3.10 行，而上游的捕获检查器自 3.9 分支点以来已有变化——截至 2026 年 8 月，对 `cc/` 和 `scala/caps` 有 65 次提交：在覆盖、case class 和方法应用中的 `consume`，分类器 `only`/`except` 以及结果能力中的分类器，LocalCap 泄漏检测，装箱状态修复。
++ 其中一些可能无需修改分支就能消除这里的某些类别（执行框架的形状、更细的战术分类、legerdemain 的 Query 解码器中的 `?1` quote 泄漏）；另一些则恰恰触及 Soundness 所依赖的东西（`Unscoped` 的收紧；reach 能力被移除）。
++ 评估靠测量，而不是猜测：在 3.10 发布版本上对整棵树做一次干净的门控构建，在两行上运行整个 `rep/` 语料库和探测套件，并作为 `rep/STATUS.md` 的第二列记录下来，再为每个类别编译一个只在 3.10 上解除密封的哨兵值。
++ 决策——切换经过认证的行，还是把特定提交向后移植到 3.9——由这张表得出。
+
+@ 0 2 0 14a1c5181671b45c15aacc6b81c383b7
++ 完成条件：`rep/STATUS.md` 为每个案例和探测都有一个 3.10 列，且路线图记录了关于行的决策。
+
+@ 0 1 0 0de0bcbdac4379dd076200bcced51122
++ ## safety-12：能力标准
+
+@ 2 1 0 0d9e9d699e9141ba10cf3789ce7ed95c
++ 时间范围：近期
+
+@ 0 7 0 1481653866e4d46319be8221b09cb1ef
++ 使捕获检查和分离检查切实可行的方法——一个类型何时是 Exclusive、Shared、Unscoped、Mutable 或 Pure，以及它们之间的格陷阱；诚实 given 的操作手册（`(tactic: Tactic[E]) => ((X is TC)^{tactic})`，用显式的捕获证据代替上下文界定）；新鲜结果在何处可以、何处不可以产生；`consume` 和借出接缝；测试可以做什么、不可以做什么——目前只作为条目存在于 `rep/DECISIONS.md` 这份 2400 行的日志中。
++ 它们应当放在 `doc/standards/capabilities.md` 中，连同 `safety-2` 所依赖的标签词汇以及每个标签唯一认可的舱口形式，并在 `doc/philosophy/capture-checking.md` 中给出指向它的链接。
+
+@ 0 2 0 09f18ea7d845b7fc1860f65ace511957
++ 完成条件：`doc/standards/capabilities.md` 存在，定义了普查所识别的每个标签，且 `rep/DECISIONS.md` 的方法章节链接到它，而不是重复其内容。

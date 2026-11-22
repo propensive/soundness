@@ -1,0 +1,143 @@
+orthant 2 language
+
+@ 0 1 0 106a4523943e569304e25e3ed1a03c55
++ # 中缀类型
+
+@ 0 12 0 1b187bd43a1fdc9307a82dd2c06605f0
++ Soundness 处处使用中缀类型，使类型读起来像一个短语，而不是一团方括号。
++ 它们写成介词和动词——`Path on Linux`、`Html of "br"`、`Text is Decodable in Json`、`Quantity is Multiplicable by Duration`、一个 `raises HttpError` 或 `logs ExecEvent` 的方法——让签名用平实的语言说出一个值是什么、一个操作需要什么，这是让代码读起来像[优雅的散文](elegant-prose.md)的一部分。
++ 它们真正的力量在于可以[组合](composability.md)：每一个都为类型添加一个子句而无需嵌套，因此 `Html.Element of "ul" over "li" in Whatwg` 的构建方式与一段英语描述完全相同，而同一个 `of`、`in`、`by` 或 `over` 无论出现在哪里都表达同样的含义。
++ 理解了一个这样的类型的读者，可以类推读懂下一个；编写者可以依次说出各个部分来描述一个精确的类型，而不必组装一个深度参数化的类型。
+
+@ 0 1 0 1c7bd5f570572279183fcbc50c97ddec
++ ## 工作原理
+
+@ 0 2 0 1e1bf1adafa25b550e5e5d27378ffac2
++ 每个介词都是一个类型别名，细化一个类型成员。
++ `in` 设定 `Form`，`on` 设定 `Plane`，`by` 设定 `Operand`，`to` 设定 `Result`：
+
+% 2 1 0 0a3df684de560fff0d4b8eb2b00c0562
+
+% 3 1 0 0f3a125fff11041918dd93bbf3878ae9
+
+% 4 1 0 030c16e6e39be4991a9fdaab5e4afb5d
+
+% 0 1 0 1d5d9e707fe0ada50cf575c783e452c4
+
+% 0 1 0 05efabe8b7e73b2503618d9a2ca651aa
+
+% 0 1 0 080bd845c627aa000c78c57eceee71a0
+
+% 0 1 0 14a7a79b32edc6600882c9bb36df5e8a
+
+% 1 1 0 0d83cb08ce19efe112195f97b969972f
+
+@ 0 2 0 1e0987335cab534b05380b1fbf31d327
++ 这就是全部机制。
++ 因为每个介词细化的是*不同的*成员，所以它们可以依次应用而无需嵌套，顺序也无关紧要：
+
+% 2 1 0 030a110766d416d610571db6d2994c25
+
+% 3 1 0 0ff3ee90f6f72488084d6dccd7b000de
+
+% 4 1 0 0af939135b405f2801f67018b84da68c
+
+% 0 1 0 0fb6a82d35c6d65e08ba5ec18939021e
+
+% 0 1 0 15554d82c81fd691118c9a77e608b965
+
+% 0 1 0 0a2a2f80e83aef561494cc52ab2ef156
+
+% 1 1 0 11d2afd3e28e6048128c0d794dce417b
+
+@ 0 2 0 012a8ed522fb026a13adfb3e4c9eb2f1
++ 这组介词数量少且固定，每个介词处处保持同一含义：`over` 总是传输方式，`by` 总是操作数，`on` 总是平面。
+
+% 0 1 0 0a7c55b4c0ac40601a46d9fdcd155626
+
+@ 0 16 0 0b7c4fed747e3de7077648114648e0b8
++ column  介词
++ column  细化
++ column  所命名的
++ column  示例
++ row  `in`  `Form`  形式或格式  `Text is Decodable in Json`
++ row  `on`  `Plane`  平面  `Path on Linux`
++ row  `of`  `Topic`  主题  `Html of "br"`
++ row  `by`  `Operand`  操作数  `Quantity is Multiplicable by Duration`
++ row  `to`  `Result`  结果  `Text is Extractable to Int`
++ row  `from`  `Origin`  来源  `Ordinal is Optical from Yaml`
++ row  `over`  `Transport`  传输方式  `value is Streamable by Data over Credit`
++ row  `across`  `Domain`  领域  `Xml is Instantiable across HttpRequests`
++ row  `onto`  `Target`  目标  `Http.Client onto Origin["http"]`
++ row  `against`  `Contrast`  对照  `Aes[256] over BlockCipher.Cbc against BlockCipher.Pkcs7`
++ row  `under`  `Limit`  限制  `Tar is Nominative under Rules`
++ row  `at`  `Locus`  位置  `value is Decodable in Json at Json.Focus`
+
+% 1 1 0 13386474ce3c48a51bf7497908e7fef5
+
+@ 0 1 0 0167c0eab2af1f2f086d3e4a8aa69241
++ ## 另一种写法的代价
+
+@ 0 1 0 1130aa6323a3cd741e708c998c351e09
++ 同样的类型，按常规写法：
+
+% 2 1 0 12447cf3f3ecad87049cea40e2a465e8
+
+% 3 1 0 18f7e451aba2759d009736ff874b1898
+
+% 4 1 0 0737e30e6ccac50a145dd3d85123f82c
+
+% 0 1 0 0898652a95445ba01ad78444cd9d30c6
+
+% 0 1 0 1a47321b8fd4c1a012a8a33f07bd7861
+
+% 0 1 0 10432b0bcb872a860db1c35c8ee27e5e
+
+% 1 1 0 1a76458bf0c8c55f1e3402c338afbf2b
+
+@ 0 1 0 0b18e533ee96d8ee0a3bb95bcf8ee0ec
++ 三个问题，中缀形式都避免了。
+
+@ 0 3 0 003e2395844199371045b7eb102bed34
++ **位置承载含义。**
++ 在 `Element["ul", "li", Whatwg]` 中，读者必须知道第一个参数是标签，第二个是允许的子元素，第三个是规范。
++ 在 `Html.Element of "ul" over "li" in Whatwg` 中，介词把这些说了出来。
+
+@ 0 4 0 086393719a25e98504d3774758b0d3bd
++ **每个参数都必须提供。**
++ 常规的类型构造器要么接受全部参数，要么一个都不接受，因此部分指定的类型需要为每个未提及的位置写一个通配符。
++ 中缀形式只提及它所约束的东西：`Text is Decodable` 是一个完全合格的类型，而 `in Json` 将它收窄。
+
+@ 0 3 0 18d9ba4ea4717eeb181835e936c861cf
++ **扩展是破坏性变更。**
++ 给 `Element[…]` 添加第四个类型参数会使每一处使用失效。
++ 添加第四个细化则只是添加一个介词，现有代码无需提及它。
+
+@ 0 1 0 0adc6f59495157dc008d9185c67e66b0
++ ## 读起来别扭的地方
+
+@ 0 1 0 0e8c224a0b726c420d0a3f7e71ac6c1c
++ 这一约定并非没有失效的情形，其中两种值得了解。
+
+@ 0 4 0 17b184d0f01ac7da02100a58fd1cc6a9
++ 子句很多的类型可能很长，而一个长的中缀类型跨行换行时很别扭——`(value is Streamable by Data over Credit) { type Transport = Credit }` 无论按谁的标准都不是散文。
++ 出现这种情况时，答案通常是一个命名的别名，而不是一个更长的短语。
+
+@ 0 5 0 101a2de97981623e0ecbaae479028550
++ 此外，一个介词的好坏取决于它所引发的类比。
++ `over` 表示“传输方式”，在 `Stream[Data] over Credit` 中读来自然，在 `Instant over Unix` 中就不那么自然了，因为时间线并不传输任何东西。
++ 词汇量小到足以让这类勉强之处显而易见，它们被接受而不是被隐藏——另一种选择是更大的词汇量，其中每个词用得更少、记得更差。
+
+@ 0 1 0 18fb3b6af40b29071ae31ebdd8b6a2c8
++ ## 代价
+
+@ 0 3 0 11d65db4c15472f90399495df585913a
++ 中缀类型令人陌生。
++ 来自普通 Scala 的读者在中缀位置上只见过 `A => B` 和 `A & B`，别的不多，因此 `Text is Decodable in Json` 在看起来像一个类型之前，先像好几样别的东西。
++ 这一代价集中在前期，只付一次。
+
+@ 0 4 0 12066019a77a9fcb1a29e4ccc64d4ddf
++ 错误消息是更持久的代价：编译器报告的是*脱糖后的*细化，因此不匹配是以 `{ type Form = Json }` 而非 `in Json` 来描述的，读者必须自己完成这一语法本想替他们省去的翻译。
+
+@ 0 2 0 1156763ef15ece801ae39e250cccb9e9
++ 关于它所服务的属性，另请参阅[可组合性](composability.md)；关于它所追求的阅读体验，另请参阅[优雅的散文](elegant-prose.md)。

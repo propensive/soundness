@@ -1,0 +1,34 @@
+orthant 2 language
+
+@ 0 1 0 0df6dd72c62ee0d3050edcc758a339d9
++ # `↯/s.87.3` — 没有 `Encodable in Query` 实例
+
+@ 0 2 0 1c38a6d5fb35c64704ca47c8548d470f
++ 当某个值没有描述它如何成为查询参数的实例时，在编译时抛出。
+
+@ 0 1 0 1d8ed6a2d2412a231ea0d46e12dff5b7
++ ## 原因
+
+@ 0 2 0 1d715ade9bece6e4090a4b6f44403d5f
++ 值通过 `Encodable in Query` 实例进入查询字符串，因此没有该实例的类型无法被编码。
+
+@ 0 1 0 1dde240f21b5409104721a1bcf5ec317
++ ## 示例消息
+
+% 1 1 0 1abf28c8819c4a100ba2af9cc74b39c0
+
+% 0 1 0 02537b88d2a9764301fa1580ca7f6ee3
+
+% 1 1 0 19edf33b8ca6aade0e85aa8d5f61643e
+
+@ 0 1 0 0a3dc9137d3cf72f0228e7373e7a2cbf
++ ## 解决方法
+
+@ 0 1 0 01b75708e81af6de1c15c4914ec91350
++ 为该类型定义一个实例，或者把值转换为一个具有该实例的类型。
+
+@ 0 1 0 004f241cb4a4ed0405cb108ee75b2611
++ ## 另请参阅
+
+@ 0 1 0 0a4fea4398cc22eb06d923a346595883
++ - 源代码：`lib/legerdemain/src/query/legerdemain.internal.scala`

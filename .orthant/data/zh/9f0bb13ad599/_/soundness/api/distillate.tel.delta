@@ -1,0 +1,47 @@
+orthant 2 language
+
+@ 0 30 0 0642d31c7b12f98a19ed76289a4256e7
++   entry .int   从十进制文本解码 `Int`，区分无法解析和超出范围
++       需要一个 `Tactic[Number.Error]`。
++       用 `Integer.parseInt` 解析，因此文本必须是可带符号的十进制整数，两侧不能有空格。
++       不是整数的文本以 `Reason.Unparseable` 抛出 `Number.Error`；超出 `Int` 范围的整数以 `Reason.OutOfRange` 抛出它。
++   entry .byte   从十进制文本解码 `Byte`，区分无法解析和超出范围
++       需要一个 `Tactic[Number.Error]`。
++       不是整数的文本以 `Reason.Unparseable` 抛出 `Number.Error`；超出 −128 到 127 的整数以 `Reason.OutOfRange` 抛出它。
++   entry .short   从十进制文本解码 `Short`，区分无法解析和超出范围
++       需要一个 `Tactic[Number.Error]`。
++       不是整数的文本以 `Reason.Unparseable` 抛出 `Number.Error`；超出 `Short` 范围的整数以 `Reason.OutOfRange` 抛出它。
++   entry .long   从十进制文本解码 `Long`，区分无法解析和超出范围
++       需要一个 `Tactic[Number.Error]`；用 `java.lang.Long.parseLong` 解析。
++       不是整数的文本以 `Reason.Unparseable` 抛出 `Number.Error`；超出 `Long` 范围的整数以 `Reason.OutOfRange` 抛出它。
++   entry .double   从文本解码 `Double`，无法解析时抛出 `Number.Error`
++       需要一个 `Tactic[Number.Error]`；用 `java.lang.Double.parseDouble` 解析，因此指数、`NaN` 和 `Infinity` 按 Java 的规则被接受。
++   entry .float   从文本解码 `Float`，无法解析时抛出 `Number.Error`
++       需要一个 `Tactic[Number.Error]`；用 `java.lang.Float.parseFloat` 解析。
++   entry .char   把文本的第一个字符解码为 `Char`
++       不需要战术。
++       第一个字符之后的文本被忽略，也不检查文本是否为空：宜改用 `As[Char]`，它只匹配恰好一个字符的文本。
++   entry .boolean   根据作用域中任何 `Truth` 拼写、不区分大小写地解码 `Boolean`，抛出 `Truth.Error`
++       需要一个 `Tactic[Truth.Error]`，并收集作用域中的每个 `Truth`（`Every[Truth]`）。
++       文本先去除首尾空白并转为小写，然后依次交给每种拼写；没有任何拼写能识别的文本会抛出 `Truth.Error`。
++       位于 `Truth` 伴生对象中的 `Truth.trueFalse` 总在作用域中，每导入一个 `truths` given，就在它之外增加一种拼写，而不是替换它。
+
+@ 0 18 0 16885b2e9230ab0910a207397079e908
++   entry .stringText   把 `String` 转换为 `Text`
++   entry .irrefutable   `String` 先转换为 `Text`，再用 `Text` 的 `Irrefutable` 转换
++   entry .textString   把 `Text` 转换为 `String`
++   entry .ident   把任何值转换为其本身
++   entry .byteShort   把 `Byte` 拓宽为 `Short`
++   entry .byteInt   把 `Byte` 拓宽为 `Int`
++   entry .byteLong   把 `Byte` 拓宽为 `Long`
++   entry .byteFloat   把 `Byte` 拓宽为 `Float`
++   entry .byteDouble   把 `Byte` 拓宽为 `Double`
++   entry .shortInt   把 `Short` 拓宽为 `Int`
++   entry .shortLong   把 `Short` 拓宽为 `Long`
++   entry .shortFloat   把 `Short` 拓宽为 `Float`
++   entry .shortDouble   把 `Short` 拓宽为 `Double`
++   entry .intLong   把 `Int` 拓宽为 `Long`
++   entry .intDouble   把 `Int` 拓宽为 `Double`
++   entry .floatDouble   把 `Float` 拓宽为 `Double`
++   entry #unapply   转换一个值；它不会失败
++   entry #contramap   来自新类型的不可反驳转换，先应用一个纯函数

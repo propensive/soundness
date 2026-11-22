@@ -1,0 +1,1294 @@
+orthant 2 language
+
+% 0 1 0 0f04ec4b9ac2d4270a232409219e1f6b
+
+% 0 1 0 095928856a7b87c9003c19e125c116bf
+
+% 0 1 0 0b5938ce7315323607e1922cbc4d93e2
+
+@ 0 1 0 0ab9b4e793d8620f0360221cd123c3d0
++ info   终端表格：列会换行、截断或折叠以适应宽度，并以选定的样式绘制
+
+% 0 1 0 0ca6d61ddd9511ea1cdae38f1414f6fe
+
+@ 0 6 0 07c8ec3f64fbd260183c44fb32c515d5
++     _Escritoire_ 把表格数据渲染为文本，供终端或日志使用，认真处理格式字符串做不到的部分：把内容参差不齐的各列放进固定的宽度。
++     每一列声明一种**尺寸策略**——作为段落换行、以省略号截断、保持固定宽度，或在空间不足时完全折叠——布局引擎在各列之间协商宽度，在允许换行处结合连字符断词进行换行，并用作用域中选定的 `Table.Style` 以制表框字符绘制结果。
+
+@ 0 7 0 099bf17699c0603d09f9f104b8a0ed99
++     三种类型把表格从定义带到文本。
++     `Scaffold` 说明如何把行类型放入各个 `Column`——标题、内容、对齐、尺寸——它不持有数据。
++     `Tabulation` 是按脚手架排列好的数据：单元格的文本，不再引用行类型。
++     `Grid` 是适配到某一宽度的 tabulation，列在这一步可能缩小或消失，`Grid#render` 则给出各行文本。
++     `tabulation` 扩展为 case class 派生脚手架——每个字段一列，标题取自字段名——并一步完成应用：
+
+% 2 1 0 1c3c8d7641c3f563143392f9774375fb
+
+% 3 1 0 1be9bf7f82fa416300ecb43cb486e17e
+
+% 4 1 0 1daa686917ff022c1dd36492ec2edf93
+
+% 5 1 0 000ef79821b8cd6d058181be67717b10
+
+% 6 1 0 16990b46201f130f04b8a7638afe083f
+
+% 8 1 0 174949716ea3a4a902ea3a36cf56fd16
+
+% 0 1 0 0a933c99969146971adbeaff0d952e13
+
+% 0 1 0 0bdd87296f72401b14056af9e197f6cc
+
+% 0 1 0 0cb201a1a7e5888c1061dc4977756647
+
+% 0 1 0 0d4cc19e4ed8877a19cc6bbd56648ba5
+
+% 0 1 0 1928acc9c6f2122d1df7445f4aca7428
+
+% 0 1 0 10f6c0240f02f2a705538c8d31fbf9f0
+
+% 0 1 0 1ae9ecd62d2a9feb09e794a025b4d9d1
+
+% 0 1 0 1a08a429a3ab57f71dbcd27abb2979ad
+
+% 1 1 0 18afac828d31cd7a0795ddb0031c5988
+
+@ 0 2 0 1bc6747350bd78f7192800a52cfc8d77
++     布局表格需要四个上下文值，其中三个通过按名称导入 given 来选择，因为 `import soundness.*` 不导入任何 given：
+
+@ 0 8 0 0d4c11a38e758cb0180f62cb2bc77f82
++     - 一个 `Table.Style`，来自 `tableStyles` 包——线条、角和填充；
++     - 一个 `Attenuation`，来自 `columnAttenuation`——没有任何列排布能适应宽度时如何处理：`ignoreAttenuation` 照样渲染，`failAttenuation` 抛出 `Table.Error`；
++     - 一个 `Text is Measurable`，来自 hieroglyph 的 `textMetrics`——一个字符有多宽，从而使 `wideCharacterWidthMetric` 按 CJK 文本占两格的字形计算其尺寸；
++     - 一个 `Hyphenation`，来自 polysyllabic，除非导入 `hyphenations.englishHyphenation`，否则回退为不断词。
+
+@ 0 4 0 06088f054990026607cb291e9ac59484
++     单元格类型是元素为 `Char` 的任意 `Textual`：`Text`，或用于颜色和样式的 escapade `Teletype`，此时单元格的宽度是其可见宽度，而不是转义码的长度。
++     表格是 `Printable` 的，因此 `Out.println(table)` 会按终端自身的宽度为其布局。
+
+@ 0 7 0 035a5b3d3f75435310fe574fa344dfe5
++     本库只有一个源码集 `escritoire.core`，为 JVM、Scala.js 和 Scala Native 构建。
++     除 `Layout` 和 `Cells` 外，一切都导出到 `soundness` 总括包；这两者是增量布局引擎自己的词汇，以 `escritoire.Layout` 和 `escritoire.Cells` 命名；三个选择包 `tableStyles`、`columnAttenuation` 和 `columnar` 与总括包中同名的包合并（总括包的 `columnar` 镜像了除 `ParagraphOrBreak` 外的每种策略，后者以 `escritoire.columnar.ParagraphOrBreak` 命名）。
+
+% 0 1 0 1533ba9a29e0837e05db9d84f90e1060
+
+% 0 1 0 0654786614c3936a0ed4b258ec28fe33
+
+% 0 1 0 0714919cbb0535390fb3f75ed5409dac
+
+% 0 1 0 0e190ac85cab1872158b6732c0e5e9f3
+
+% 0 1 0 08aac7f4e8505b5d0a1d38fd36dec3fa
+
+% 0 1 0 0acadc7925c00f6b05e7fb5c71f5da09
+
+% 0 1 0 1fb4685c37dd819d126e4427ef269fc0
+
+@ 0 1 0 186f893db4258575159952949d4cdcb1
++ entry .Scaffold   如何把行类型放入各列：不持有数据的表格定义
+
+% 1 1 0 0ad772aeafca1b3617c541337ccf2dfa
+
+@ 0 5 0 13cf69a209f26bd41947094245e5571e
++       `Scaffold[row, text]` 是一个有序的 `Column[row, text]` 列表，用 `Scaffold[row](columns*)` 构建：行类型需给出，文本类型——`Text` 或 `Teletype`——则由标题推断。
++       它是数据之前的阶段：`#tabulate` 把它应用到 `List[row]` 上，生成一个 `Tabulation`；`#layout` 只根据标题求解列宽，供逐行接纳数据的表格使用。
+
+% 2 1 0 0f4149b848f5baf200f30e6d4c9a750f
+
+% 3 1 0 032480b63252201705113db01b1201db
+
+% 4 1 0 1e5bc76c94dbc19a09b80c5279a9497e
+
+% 5 1 0 0a25cac0393d3a9113c6c0e30b8270c7
+
+% 6 1 0 156f791df8f1b80514f9ab3f3d06e044
+
+% 8 1 0 0f7b5df121917c241731d1da2bacc239
+
+% 0 1 0 05dd48c5e8f0a3a2163bdecd6d8b193c
+
+% 0 1 0 09bc0e714a96f3f2010eaac0ef5ae138
+
+% 1 1 0 1f99f7c6115c03371a96a563695153e3
+
+% 0 1 0 13fdd414253f330913c545a2056fb514
+
+% 0 1 0 1597df9ff60f7ac817ffe0247a785546
+
+% 1 1 0 1cc41f59339d113612c4955002f54d81
+
+@ 0 4 0 0803097aa840cfce17637153262cb5e8
++       某个类型的 `Tabulable` 实例是一个返回其脚手架的函数，因此列不是其字段的类型——从 schema 读取的记录，或计算出的显示列——可以通过提供一个实例来制表。
++       为 case class 派生的实例会构建一个每个字段一列的脚手架。
+
+% 1 1 0 032a86194560c7860e1141455ac2f106
+
+% 1 1 0 150cf24210914690152e681b3e9aad8e
+
+% 1 1 0 02aadae0a18d7bad17a9a03bf5e40f31
+
+@ 0 24 0 02c8541d9fc4e7bd0f5d25717623c16e
++   entry .apply   `Scaffold[row](columns*)`：由给定各列按顺序构成的脚手架
++       行类型是唯一的显式类型参数；文本类型由各列推断，所有列共用同一文本类型。
++       写成 `t"…"` 的标题生成 `Scaffold[row, Text]`；写成 `e"…"` 的标题生成 `Scaffold[row, Teletype]`。
++       该方法在两个类型参数列表之间接受一个擦除的 `Void` 参数，这只是为了能够只给出行类型而不给出文本类型。
++   entry #columns0   传给构造器的各列
++       构建脚手架所用的重复参数；`#columns` 是以数组形式给出的相同各列，布局引擎读取的正是它。
++   entry #columns   各列，以数组形式按顺序给出
++   entry #titles   标题单元格，共一行，每个标题被切分为若干行
++       标题可以包含 `\n`，从而形成多行标题；各标题被保存为单元素列表，以便像任何一行那样被测量和渲染。
++   entry #cells   经各列表述的一行，尚未进行任何布局
++       `scaffold.cells(row)` 从行中读取每一列的内容，把每个切分为若干行并测量其宽度，得到一个 `Cells[text]`。
++       这些单元格与任何宽度无关，因此可以用 `Layout#accommodates` 对照 `Layout` 进行检验，用 `Layout#extend` 接纳，之后再据此渲染。
++       需要一个 `Text is Measurable`。
++   entry #layout   仅由标题得出的某一宽度下的布局
++       `scaffold.layout(width)` 仅根据标题的宽度诉求求解列宽，供增量构建的表格使用：此后每一行用 `#cells` 表述，再用 `Layout#extend` 接纳，只有当该行的单元格超出布局已见过的范围时才重新求解宽度。
++       作用域中需要一个 `Table.Style`、一个 `Text is Measurable` 和一个 `Attenuation`。
+
+% 2 1 0 0a4e0130f39777230b9a5b284669ba00
+
+% 3 1 0 1f9c6d572d99634716a7200b6589a799
+
+% 4 1 0 0ac1f2f5bcaa87321a6cee6aad92ff60
+
+% 5 1 0 019cdfdc7944953d1875ac2f3bdf29b3
+
+% 6 1 0 0fd0126b046b38b10ee4d1385de47f61
+
+% 8 1 0 178d970dc95073b110e79ec24a6354ac
+
+% 9 1 0 12567b76eecab5b31ff61933855e6e54
+
+% 0 1 0 1aabe5dc8dd9c08d08e78dbc28afdf0a
+
+% 0 1 0 065fc42d5e73752e10e305f0a46eb3b1
+
+% 0 1 0 14443d6e4b917b4e0687c7d4091e91b4
+
+% 0 1 0 0bc9a9e06b8026e317e42d57188c9208
+
+% 0 1 0 1c603a6e5fb78e4c159b91a58652087e
+
+% 1 1 0 1b256aedaec410cd1bf1d49fc63afe41
+
+@ 0 4 0 0c33ddfa64a14ade051236ae8e000ba1
++   entry #tabulate   应用到数据上的脚手架：一个 `Tabulation`
++       `scaffold.tabulate(rows)` 一次性把每一行的每一列读成文本，并记录每一行的单元格装饰，因此结果仅以其 `Row` 类型成员引用行类型。
++       行数在构建 tabulation 时只取一次。
+
+@ 0 1 0 16e5c43b2c514e561bc0330455edda74
++ entry .Column   表格的一列：它的标题、如何从行中读取单元格，以及如何确定尺寸
+
+% 1 1 0 0557c6ce0ab8bcb4138503d1f9b19622
+
+@ 0 4 0 15b9300eba125c04110460fbdec7eed6
++       `Column[row, text]` 由以下部分构成：一个标题、一个从行到单元格文本的函数 `#get`、水平和垂直对齐方式、一种 `Columnar` 尺寸策略，以及一个可选的、作用于整个渲染后单元格的逐行 `#decorate`。
++       工厂方法 `Column.apply` 是创建列的常用方式；case class 构造器则要求显式给出每个字段。
+
+% 2 1 0 11b1789dad1e720319df90e33df20d3b
+
+% 3 1 0 1e23ffd19478818811fe238001204a40
+
+% 5 1 0 09f467296f15370c14474a4b406b41d6
+
+% 0 1 0 0735403db3d8866212fc89930ee2a1b5
+
+% 0 1 0 0c190945140937950b5334aebd736637
+
+% 0 1 0 085e11c0e92c2c061131cebbc2031e39
+
+% 0 1 0 1d5583d6e492b43e1c71df13ab47ca38
+
+% 0 1 0 1b5878396222e05e048afc64dec266e4
+
+% 1 1 0 03dabe431fce24d207cdad5e7b9d94c1
+
+@ 0 4 0 1fbb6521811ddeb519b3875b4f4b47ef
++       lambda 的结果不必是文本：标题确定了文本类型，值通过该类型的 `Show` 显示，因此 `_.age` 给出一列以文本显示的 `Int`。
++       除非给出 `textAlign` 或 `verticalAlign`，默认对齐方式来自 `Column.Alignment[cell]`——数字右对齐，文本左对齐。
+
+% 1 1 0 0f5ad073c14a9b9112a1cdcf37372a23
+
+% 1 1 0 096d0ba24084c2ef0a29bfce5f8c59ea
+
+% 1 1 0 0cda5ed0e31c2ccd1e7fe3527d953176
+
+@ 0 6 0 07f16acfce9ae77a1102251eabb74558
++   entry .apply   `Column(title, textAlign, verticalAlign, sizing, decorate)(get)`：创建一列
++       第一个参数列表是标题和四个可选设置；第二个是从行到单元格值的函数，该值通过标题的 `Textual` 类型的 `Show` 显示。
++       `textAlign` 和 `verticalAlign` 默认为单元格类型给定的 `Column.Alignment`（未定义时为 `topLeft`）；`sizing` 默认为 `columnar.Paragraph`；`decorate` 默认不做装饰。
+
+@ 0 3 0 19b3bf3f887550b61ef40c173df847ef
++       `decorate` 是一个从行到对渲染后单元格的可选变换的函数——在对齐之后，内容和填充一起变换——因此 `Teletype` 表格可以按行为整个单元格绘制背景，填充部分也会被绘制：
+
+% 2 1 0 059beb5c4ddb65ba1087e86b2a4c6622
+
+% 3 1 0 130d093f823229c80fe45e4dfa4ff64d
+
+% 5 1 0 184f6f4f0e8e74fe098a646fc42b0bcb
+
+% 0 1 0 0cac9ec5634d4f46112fc40f2df5f30c
+
+% 0 1 0 1c94a3eebac7e4091da800c020dd43b0
+
+% 0 1 0 0db6d05ecd08f0650dfe3ea2d3d6f6ef
+
+% 0 1 0 1c7e2b6baf7058fc19c7b67bed0c7a2e
+
+% 0 1 0 1a370630b445212719da4ea3b65218a2
+
+% 1 1 0 0c42fea1f322cf541a4d8bdb3f4c7d2f
+
+@ 0 4 0 05e4621897b799e21c3ef6820b9e555e
++       行类型由 lambda 推断，或显式给出为 `Column[Person, Text, Text](t"Name")(_.name)`，其三个类型参数依次是行、单元格值和文本类型。
++   entry .Alignment   单元格类型的默认文本对齐和垂直对齐
+
+% 1 1 0 16ec30c3096a105b0634eca98d6ad2a0
+
+@ 0 6 0 0b48c95074446f950f26e428d35535fc
++         `Column.Alignment[cell]` 是在 `Column.apply` 既未给出 `textAlign` 也未给出 `verticalAlign` 时，一列 `cell` 值所采用的对齐方式：`Byte`、`Short`、`Int` 和 `Long` 右对齐，`Text` 左对齐，全部顶端对齐。
++         这些 given 位于伴生对象中，因此一列 `Int` 无需导入即右对齐；其他任何类型的默认值都是 `topLeft`。
++         它在单元格类型上是逆变的，因此针对 `Any` 的对齐方式适用于所有类型。
+
+% 2 1 0 1ec2d955ba95b00312f4e19a44156de4
+
+% 3 1 0 12053bc4cb4aa54d080c5da5a2c09b9d
+
+% 2 1 0 154bbffdbd406e7e08281b5343c93cce
+
+% 0 1 0 09d91827be7882e51c6b831e0a3b9838
+
+% 0 1 0 01db5c232c2b009a01bf2ee72d19b9d3
+
+% 1 1 0 1058f95304f4d6df1336876734d6f75f
+
+@ 0 25 0 0283022d080cdde10c0ecffdea677e7a
++     entry .topLeft   左对齐、顶端对齐：没有自身对齐方式的类型的默认值
++     entry .byte   `Byte` 单元格右对齐
++     entry .short   `Short` 单元格右对齐
++     entry .int   `Int` 单元格右对齐
++     entry .long   `Long` 单元格右对齐
++     entry .text   `Text` 单元格左对齐
++     entry #text   水平对齐：`Left`、`Right`、`Center` 或 `Justify`
++     entry #vertical   垂直对齐：`Top`、`Middle` 或 `Bottom`
++   entry #title   列的标题，采用表格的文本类型
++   entry #get   某一行的单元格文本
++       从行到单元格的函数，结果已显示为文本。
++       在用 `Column.apply` 创建的列中，它是 lambda 与单元格类型的 `Show` 的复合。
++   entry #textAlign   单元格的各行在列宽内如何放置
++   entry #verticalAlign   当其他单元格把一行撑高时，较矮的单元格位于何处
++   entry #sizing   决定该列对宽度诉求的 `Columnar` 策略
++   entry #decorate   对渲染后单元格的逐行变换，`Unset` 表示没有
++       由渲染器在对齐和填充之后应用于整个单元格，包括其间隔，因此在这里绘制的背景会从边缘到边缘覆盖单元格，而线条保持不加装饰。
++       渲染器对样式一无所知：该函数使用表格自身的文本类型。
++   entry #contramap   从另一种行类型读取的同一列
++       `column.contramap(lambda)` 把为一种行类型定义的列适配到任何 `lambda` 能由之生成该行的类型，并保留标题、对齐、尺寸和装饰。
++       一次定义的列正是以此服务于每个能提供其值的类型：
+
+% 2 1 0 1716170d519c666d00426226fd43c0e4
+
+% 3 1 0 118137077992d9750ff3221bc17777da
+
+% 5 1 0 0424ba4d38d02fb817ae0e1d3c184a65
+
+% 0 1 0 1710987aa763233a12f8ea48d417f67a
+
+% 0 1 0 02df3ca5f32b5bd8155d22148c4f3680
+
+% 1 1 0 09f2700158de481f005d7dc115d9bb1c
+
+@ 0 3 0 156bf7bbed29b2a61e22c9d87876fa0e
++   entry #retitle   换了标题的同一列
++       用于共享的表格定义中某个调用方想要不同标题的情形。
++       为 case class 派生的 `Tabulable` 用它给每个字段的列加标题。
+
+@ 0 1 0 097cf5f8e7936e9410e5dda4d4d62fc3
++ entry .Columnar   列尺寸策略：列如何诉求宽度，以及单元格如何适配宽度
+
+% 1 1 0 06dd487dc8259f1a013b2b6688529fea
+
+@ 0 5 0 126c4ecca2e4ef5d1dbc709678d76e43
++       `Columnar` 回答两个问题。
++       `#flex` 根据该列将要显示的所有行的汇总 `Metrics` 描述该列对表格宽度的诉求——其最小宽度和自然宽度、它对剩余空间的需求，以及它能否完全折叠。
++       `#fit` 随后把一个单元格的各行安排进表格最终确定的宽度：换行、切断、以省略号缩短，或保持原样。
+
+@ 0 7 0 0514a8fe66de1a5905d6084bb09739bb
++       诉求仅是汇总度量的函数，而汇总度量是各行自身度量的最大值折叠，因此布局可以携带汇总值，通过把新行的单元格折叠进来以接纳它，并通过 `#accommodates` 得知某一行何时完全无法改变该列。
++       所提供的策略位于 `columnar` 包中：`Paragraph`、`ParagraphOrBreak`、`Fixed`、`Shortened` 和 `Collapsible`。
++       这一概念是开放的：自定义策略就是一个扩展 `Columnar` 并实现 `flex(metrics, maxWidth)` 和 `fit` 的对象或类。
+
+@ 0 3 0 1e413edd5687623a06499fd664254f18
++       宽度由 tessellate 的 `Flex.solve` 求解：只要各列的最小值之和放不进宽度，就丢弃等级最低的可折叠列；余下的列再按权重在各自界限内按比例分配宽度。
+
+% 1 1 0 03716a0d61bc0e910a6bfb4b2119572d
+
+% 1 1 0 1cda5137271126701c8af3b62e016f5c
+
+@ 0 18 0 167319ef49a50cac0bed215b0a6393aa
++   entry .metrics   若干行的汇总固有宽度
++       `Columnar.metrics(lines)` 是各行 `Flow.metrics` 的最大值折叠：一个 `Metrics`，其 `min` 是最宽的不可断开单词，`natural` 是最宽的行。
++       每种策略的诉求都由它派生。
++       需要一个 `Text is Measurable`。
++   entry #flex   根据内容度量得出的该列对宽度的诉求
++       抽象形式 `flex(metrics, maxWidth)` 返回一个 tessellate `Flex`：该列的最小宽度和自然宽度、分配剩余空间时的权重、可选的最大值，以及它是否折叠，并附有一个表示折叠难易程度的等级。
++       接受行数组的重载会先用 `Columnar.metrics` 测量它们。
++   entry #accommodates   某个单元格是否已在该列的汇总诉求之内
++       当接纳一个固有宽度为 `cell` 的单元格不会改变诉求——从而也不会改变求解出的宽度——时，`accommodates(aggregate, cell)` 为真：默认情况下，即其最小宽度和自然宽度都在汇总值之内时。
++       诉求与内容无关的策略会把它覆盖为 `true`，`columnar.Fixed` 就是如此。
++   entry #fit   一个单元格的各行，按该列确定的宽度排布
++       `fit(lines, width, textAlign)` 给出单元格在 `width` 下显示的各行：根据策略换行、切断、缩短或保持不变。
++       需要一个 `Text is Measurable` 和一个 `Hyphenation`，换行类策略在软断点处使用后者。
+
+@ 0 1 0 0a4015177a533e4608d86863f262e1e9
++ entry .columnar   各种尺寸策略，每个都是可在 `Column` 的 `sizing` 中指定的 `Columnar`
+
+% 1 1 0 001c6a9016030d801c5074159e08cad4
+
+@ 0 4 0 015c4ee1d2532c3a0d0aaa94ee0443a5
++       可以赋予列的策略，写作 `sizing = columnar.Paragraph`。
++       它们是对象和 case class，而不是 given，因此 `columnar.Paragraph` 是在列上指定的；这个包的存在只是为了把这五个名称放在一起。
++       每个 `Column` 默认为 `Paragraph`。
+
+@ 0 5 0 1fd7e0ca8fee1f150d7ff8a6df87ae62
++       表格过窄时先牺牲哪一列，由各策略共同决定：`Collapsible` 列在其他任何列被压缩之前就被丢弃，阈值最高的先丢；`Paragraph` 列缩小到其最长单词的宽度；`Fixed` 列从不变动。
++       宽度低于各最小值之和时，由作用域中的 `Attenuation` 决定如何处理。
+
+% 2 1 0 054026c74a041d8f0594813067e0b13f
+
+% 1 1 0 08d9458eb73012351c93056f35e51984
+
+@ 0 1 0 0507dbfb6e78679212b4d09427049036
++         label 四列，宽度足以容纳全部
+
+% 1 1 0 1f16c9492479bbfc1d8bb797f4d28dfa
+
+% 0 1 0 1808f1bc7a8d73be1e8552eecae778a7
+
+% 0 1 0 005e222dbd25f2d2051a12a129516222
+
+% 0 1 0 10ae11b7cd79fc430a817a2c431e17fa
+
+% 0 1 0 01ab3e628e2569af1d53b50b294be591
+
+% 0 1 0 1d32d0a653503b0617ccfc7fdc17876c
+
+% 0 1 0 0b720ddcee37421b1f6b71fad8964cad
+
+% 0 1 0 1158d1ee4590c91002c1cf394d8458dc
+
+% 0 1 0 0ca047fc40646cfc0d671c109389e25b
+
+% 0 1 0 095d49149687c8840e8dacd9ed2f5b31
+
+% 0 1 0 1e6a62d8ab955360047302060286fee1
+
+% 0 1 0 1c708dddfaa5c7f41fb6619975d05f80
+
+% 0 1 0 1ee50527a28a9b861406f328bfb27e52
+
+% 0 1 0 11d29021897434ea15b2a22261487afb
+
+% 0 1 0 128748c668ca2bd71f3948b5ff2c89b2
+
+% 1 1 0 07dbc942c065af100461933a737fc0c1
+
+@ 0 1 0 0a09a81f3dcbd9e9035b0ec0e04da198
++         label 更窄：最易折叠的标识符列最先被丢弃
+
+% 1 1 0 1ada8590e5d9ce951f38b8798cc3f879
+
+% 0 1 0 1934c501c05d223100702cf5011292c2
+
+% 1 1 0 0ce406f58ae96a31126e7a9299eb6212
+
+@ 0 1 0 1f08d76234bb391509ce642a3ace22a1
++         label 再窄一些：描述列换行，因为段落列会先于低阈值的可折叠列收缩
+
+% 1 1 0 0a2ea88228bcbe0714159f25cb8837aa
+
+% 0 1 0 14c8357ec235a03c073f4ad4f70fb4bd
+
+% 1 1 0 044e78c215e9b0a71f3553355a1f1fa3
+
+@ 0 1 0 1e90a930e0e8e46d0d82deb6b3bf12a4
++         label 最窄时，行数列也被丢弃，只剩名称和换行后的描述
+
+% 1 1 0 1236c97b55ce37a11c976ce308d9abff
+
+% 0 1 0 0338ff5ac3b993b91242835383eba058
+
+% 1 1 0 1bf991069964165518af02c262661706
+
+% 2 1 0 1e077409cb89f9890611e67c37cb31fa
+
+% 1 1 0 044ea6d591bc7a141c88b52f6d5a9f9b
+
+% 1 1 0 0eec5046767cbe731ba2298f19e0086f
+
+@ 0 14 0 114924438bcca27e0f990064751c1335
++   entry .Paragraph   在单词边界处换行；可以缩小到最长单词的宽度，但从不超过最长行的宽度
++       默认策略。
++       它的诉求是 `Flex.content`：最小值为最宽的不可断开单词，自然宽度为最宽的行，权重等于两者之差，因此需要吸收更多内容的列会占用更多剩余宽度。
++       单元格用 `Flow.wrap` 适配，它在空格处以及作用域中 `Hyphenation` 给出的软断点处断开，且从不低于最小值：比宽度更长的单词会溢出，而不会被切断。
++   entry .ParagraphOrBreak   尽可能在单词边界处换行，宁可在单词中间切断也不溢出
++       弹性范围在单个单元格宽到其自然宽度之间，因此没有最长单词这一下限：在足够的压力下，比其最宽单词更窄的单元格会用 `Flow.chop` 适配，在宽度处切断各行，而 `Paragraph` 在这种情况下会溢出。
++       适用于换行效果差却又不能溢出的标识符、URL 或哈希列。
++       它没有在总括包的 `columnar` 包中镜像，因此要写全名 `escritoire.columnar.ParagraphOrBreak`。
++   entry .Fixed   恰好 `fixedWidth` 宽的列，与内容无关，超出部分以省略号缩短
+
+% 1 1 0 04b3a6e54a31b32816ce612144768a23
+
+@ 0 3 0 19895faf7531634715f3327bedf6eea2
++         该列的诉求刚性地固定在 `fixedWidth`，并且它接纳每个单元格，因为其宽度与内容无关；比宽度更长的单元格用 `Flow.shorten` 缩短，并以 `ellipsis` 结尾（除非另行给出，否则为 `…`）。
+
+% 2 1 0 0a5c25c6509bc736150b967d5614e2e8
+
+% 3 1 0 1443911d7ee360661b7e130f8c6b6ee4
+
+% 4 1 0 04a9949514b7f4dc101169577292b593
+
+% 5 1 0 1a274662a76c000a11a3cb650316931c
+
+% 6 1 0 07ba6fc13d8b4723176a7ac9cb4be9d3
+
+% 0 1 0 1f34de467f7a85a71bb142beaf713df3
+
+% 0 1 0 1877e07315af70d41f8890f954653e03
+
+% 1 1 0 17e7b11b56fccf401348b255c9462f0e
+
+@ 0 3 0 08d7fc6e80f6961f0a34aee6471203df
++     entry #fixedWidth   宽度，以单元格计
++     entry #ellipsis   缩短后的单元格的结尾文本：默认为 `…`
++   entry .Shortened   弹性范围在单个单元格宽到其自然宽度之间；超出确定宽度的部分以省略号截断
+
+% 1 1 0 1128db5dbeb5872c10f0d02f446d3066
+
+@ 0 7 0 0054b19fac2002d30ca16d24269cf17b
++         与 `Fixed` 一样，放不下的单元格会以省略号缩短，但宽度是协商而非固定的：该列诉求其自然宽度，可以缩小到单个单元格宽，并按两者之差的比例获取剩余宽度。
++         `fixedWidth` 是该字段的名称，但并不是诉求的界限。
++     entry #fixedWidth   构造该策略时所用的字段
++     entry #ellipsis   缩短后的单元格的结尾文本：默认为 `…`
++   entry .Collapsible   刚性地保持其自然宽度，但在空间不足时从表格中完全丢弃
+
+% 1 1 0 04e6f4a8fbd45d1f02e4341cd5e4fa10
+
+@ 0 5 0 00d8bc6178cbd5691b7b91aaea526861
++         该列恰好诉求其自然宽度，从不换行；当各列最小值之和放不进表格宽度时，可折叠列会被逐一丢弃，`threshold` 最高者先丢，直到其余各列能放下为止。
++         被丢弃的列不占用填充，也没有线条。
++         阈值只在彼此之间比较才有意义，因此表格中的可折叠列按阈值排序：
+
+% 2 1 0 07210a736482574011441052ffb53ea0
+
+% 3 1 0 0fc4c770ec58ca5f0b77a4ac41b94548
+
+% 4 1 0 095ae08837b61744066543167d71f33e
+
+% 5 1 0 09e2ca62c93c29721ba166d81205a9cb
+
+% 6 1 0 0f280dc4db892a3104a69afd2a203c88
+
+% 8 1 0 1819a4da142194c404845b49d46fd620
+
+% 0 1 0 0eee517777d7d4a80ca270d7320ce348
+
+% 1 1 0 082d8a8a18f888e3160c41afb3f89601
+
+% 0 1 0 160cd6177b032e08161b934045eaec10
+
+% 0 1 0 185172cd372f257405ccbaa6fd04a960
+
+% 0 1 0 1320f329659aa52c0d72d83eebf33fc5
+
+% 0 1 0 124ba8310c717c161af266b571b68b2c
+
+% 1 1 0 1d7d4e797b9a8b1d0140e64645386b75
+
+@ 0 1 0 08b23285abf54b7e148b5af9c64a1f43
++     entry #threshold   介于 `0` 和 `1` 之间：该列折叠的难易程度，越高越先折叠
+
+@ 0 1 0 1f6137fa530e9ef606d5d2a9341795dd
++ entry .Tabulation   按脚手架排列好的数据：单元格的文本，可在任意宽度下布局
+
+% 1 1 0 11345f57ffb54bd31bcbadce0f198614
+
+@ 0 5 0 112d17664124374d0d3afb4bc289704b
++       `Tabulation[text]` 是 `Scaffold#tabulate`（或 `tabulation` 扩展）由一个行列表生成的结果：每个单元格都已读成文本并切分为若干行，标题同样如此，另有每一行的装饰，行类型只作为 `#Row` 类型成员保留下来。
++       它与任何宽度无关：`#grid` 把它适配到某一宽度，`#layout` 则在不渲染的情况下求解宽度。
+
+% 2 1 0 1ecbcdbdc6db018811d8f46ec2e36f97
+
+% 3 1 0 1ca7b69f0bfced04035f1ca0bca69935
+
+% 4 1 0 0dd4820d7cb0fde10b7cd1e59cd6b5ae
+
+% 5 1 0 0ef23bac71bcfcb110640da5c6ab0747
+
+% 6 1 0 1c15b595355a9c0b169d0e5220d257ee
+
+% 8 1 0 00515848cfda9fad1292156fed00b111
+
+% 5 1 0 1f9bd3aaf70f887e0c99225205c32eda
+
+% 0 1 0 1b67d5af736278e513743a77366ff6e0
+
+% 0 1 0 1746775bdd709a191a15be972bb7fea3
+
+% 0 1 0 0bbdabd5b5efcf790eb431c6289c98b0
+
+% 1 1 0 13fa4905c4d736b61189f141d8ab70b5
+
+@ 0 3 0 10d8b4da85e699ae14eae9a58f819416
++       tabulation 通过 `.printable` 成为 `Printable`，因此 `Out.println(tabulation)` 会用作用域中的样式、度量、衰减方式和断词规则，按终端宽度为其布局。
+
+% 1 1 0 00714b1e281bb8db17c2ced00d3bcd3d
+
+% 0 1 0 1a068b2df139f5b01d502af0b09eac40
+
+% 1 1 0 0536447c4a20415b14970f03d53a54f4
+
+@ 0 23 0 1adbd874e7f0a2410b16350c54f03142
++   entry .printable   按终端宽度打印 tabulation
++       `Printable` given，它按 `termcap.width` 为表格布局，并通过文本类型自身的 `Printable` 打印每一行。
++       它需要作用域中有一个 `Table.Style`、一个 `Text is Measurable`、一个 `Attenuation` 和一个 `Hyphenation`，以及文本类型的 `Printable`。
++   entry #Row   生成该 tabulation 所用的行类型
++   entry #columns   脚手架的各列
++   entry #titles   标题行：每个标题的各行
++   entry #rows   每一数据行：每个单元格的各行
++   entry #dataLength   行数，在构建 tabulation 时统计一次
++   entry #decorations   每一行的逐列装饰，与 `#rows` 对齐；为空表示没有
++       在构建 tabulation 时求值，这是行值仍然存在的最后时刻。
++   entry #layout   根据标题和每一行的诉求，在某一宽度下求解出的列宽
++       `tabulation.layout(width)` 把每一行的单元格折叠进各列的汇总诉求，并一次性求解宽度，得到一个 `Layout`。
++       它的 `widths` 就是 `#grid` 渲染时使用的宽度。
++       需要一个 `Table.Style`、一个 `Text is Measurable` 和一个 `Attenuation`。
++   entry #grid   适配到某一宽度的 tabulation：一个其 `render` 给出各行文本的 `Grid`
++       `tabulation.grid(width)` 像 `#layout` 那样求解布局，把每个单元格适配到其所在列的宽度，并构建一个由两个分节——标题和各行——组成、共用相同宽度的 `Grid`。
++       如果在所有可折叠列都已丢弃之后，各列最小值之和仍超过 `width`，就会通知作用域中的 `Attenuation`：`columnAttenuation.failAttenuation` 抛出 `Table.Error`，`ignoreAttenuation` 则让表格溢出。
++       需要一个 `Table.Style`、一个 `Text is Measurable`、一个 `Attenuation` 和一个 `Hyphenation`。
+
+@ 0 1 0 0e22b3ea3c15208c18048050e9a7f69a
++ entry .Grid   适配到某一宽度的表格：以某种样式、按确定列宽排列的若干行分节
+
+% 1 1 0 00c501401e9a49c11e10af9d2f8592cd
+
+@ 0 5 0 101774de23f5d44a07e6c14d24e6b20a
++       文本之前的最后一个阶段。
++       `Grid[text]` 是一个 `Table.Section` 列表——每个分节是共用列宽的一串 `Table.Row`——外加用于绘制它们的 `Table.Style`。
++       `Tabulation#grid` 生成一个含两个分节（标题和数据）的网格；`#render` 把它绘制为由各行构成的 `Chain`，分节之间有一条线，四周是样式的顶线和底线。
+
+% 2 1 0 092b3d09d4cc014007c1cb4025b904fe
+
+% 3 1 0 09a7ddf98732fe9803281bbb30cd2609
+
+% 4 1 0 11403dd6ee13d8e601440286f6ae596d
+
+% 5 1 0 115841f681753e9f0023da675d56d13a
+
+% 6 1 0 0943881071d320691f3ee1eb4aa52b8a
+
+% 8 1 0 0ad60f9609fa8c4f07acfc6d02603abd
+
+% 0 1 0 1dee97abd17142e21f28c06cb952d17a
+
+% 0 1 0 10c11ccd5a8dea4a062bb23c21c5dfb3
+
+% 0 1 0 0d9e0785fd10999d15ac727c40f55ebb
+
+% 1 1 0 03c5423c9a472566137d46c0232732e1
+
+@ 0 1 0 0cda048cd1c5789b09c450ea6eea8091
++       网格通过 `.printable` 成为 `Printable`，因此可以直接打印。
+
+% 1 1 0 11d0fb94e45637fc0a7a7b93d109b719
+
+% 1 1 0 0e9a7ab812d3c8ab126136cb51e2eb9f
+
+% 1 1 0 13a100aa32ae45951227d185f42c9046
+
+@ 0 21 0 1ccb62efffcbbe7f0d43a1fce2e372d3
++   entry .printable   打印网格，每个渲染行占一个终端行
++       `Printable` given：用换行符连接 `render` 的结果，每一行通过文本类型自身的 `Printable` 打印。
++       需要一个 `Text is Measurable` 和文本类型的 `Printable`。
++   entry .rowLines   对照各列宽度得到的一行的可视行
++       `Grid.rowLines(style, widths, row)` 共 `row.height` 行：每个单元格填充到所在列的宽度并垂直对齐，包上样式的填充，若单元格带有装饰则加以装饰，再用样式的边缘字形连接起来。
++       间隔填充属于单元格，因此装饰会从边缘到边缘覆盖单元格，而线条保持素净。
++       由 `Grid#render` 和 `Layout#lines` 使用。
++   entry .rule   横跨给定宽度各列的一条水平线
++       `Grid.rule(style, widths, above, below)` 绘制一条与各列及其装框总宽相等的线，在每个与列边缘相交之处使用连接字形；`above` 和 `below` 说明哪一侧有相邻的列，因此顶线只有向下的分支，底线只有向上的分支，标题下方的线则两者兼有。
++       线的粗细相应地取样式的 `topLine`、`bottomLine` 或 `titleLine`。
++   entry #sections   各分节，按顺序排列，每个分节带有其各行及共用的宽度
++   entry #style   绘制网格所用的样式
++   entry #render   以文本行表示的网格
++       一个 `Chain[text]`：样式的顶线（如果有）、每个分节的各行（分节之间有一条线），以及底线（如果有）。
++       需要一个 `Text is Measurable`。
+
+@ 0 1 0 0031ca1d6b9043fd0fd4891f26225cf5
++ entry .Layout   表格确定下来的列宽，以及求解它们所依据的诉求
+
+% 1 1 0 0bfe58a789b298cf19974c50a0038367
+
+@ 0 8 0 0a32731d8c18bbdc13d5dad9ccc5959a
++       `Layout[row, text]` 是介于测量表格和渲染表格之间的值：哪些列保留了下来（`#survivors`，附带其宽度）、求解它们所依据的汇总诉求，以及求解时的宽度和样式。
++       它是不可变且增量的：表述为 `Cells` 的一行先用 `#accommodates` 检验——若在每一列的汇总值之内，它就不会改变任何列——再用 `#extend` 接纳，后者在没有变化时给出同一布局，否则给出重新求解的布局。
++       之后各行用 `#lines` 逐行渲染；当一行中没有单元格需要换行时，无需渲染即可从 `#height` 得知其高度。
+
+@ 0 5 0 16d4adca32d96d9d145ae6f80bd552be
++       这是 `Tabulation#grid` 背后的引擎，为逐行构建或显示的表格——不断增长的日志、不断重绘的屏幕——而公开，在这些场合为每一行重新布局整张表会造成浪费。
++       `Scaffold#layout` 仅根据标题生成第一个布局。
++       `Layout` 没有导出到 `soundness` 总括包，因此在必须写出该类型之处，要写作 `escritoire.Layout`。
+
+% 2 1 0 0da178ca35c6642d100af13cd380b491
+
+% 3 1 0 0cf69e3a2bfe2408081352c8499c1f15
+
+% 4 1 0 1b19f9ee650f318d12bdf92f08e0acae
+
+% 5 1 0 17c616517b28026d1bc8c08c90bc8451
+
+% 6 1 0 1e44d93c4ef8c1f908c7c250fc60b916
+
+% 8 1 0 0ec55c6d3955d1d203f48ac622b4c47b
+
+% 9 1 0 1b00b63163bf2c8d1d75c37ad66a958f
+
+% 1 1 0 1e44b10e0876b88909392ddcb68bc7de
+
+% 0 1 0 15435f1a707d242708708f2f1db47140
+
+% 0 1 0 096a0f437ab1fe9f021fdd15d6476d5c
+
+% 0 1 0 1f0350717c5fc7840c9101e3e14ca4cb
+
+% 0 1 0 11ec26587e55e3660a7470d55042df43
+
+% 1 1 0 028ac0f034713aa9062abaf1495b1f0a
+
+% 1 1 0 117c261f2f35d258097b705c62845d88
+
+% 0 1 0 07561285f8f13f5e0b4d73a7c5c109e5
+
+% 1 1 0 19c256660f1ee591183e4b390f66793e
+
+@ 0 52 0 0bc5b7315d3eca5410019b731a459f26
++   entry .nothing   空的汇总值，每列一个，供尚未接纳任何内容的布局使用
++   entry .aggregate   按某一行的单元格逐列扩展后的汇总值
++       `Layout.aggregate(aggregates, cells)` 是两者逐元素的 `Metrics.max`，因此结果的诉求至少不小于其中任何一个。
++   entry .solve   根据汇总诉求在某一宽度下求解列宽
++       `Layout.solve(columns, titles, aggregates, width, style)` 根据每一列的汇总值向其 `Columnar` 索取 `Flex`，丢弃完全不能占用宽度的列（例如每个单元格都为空的 `Paragraph` 列），扣除样式的装框宽度，再由 tessellate 的 `Flex.solve` 折叠并分配其余部分。
++       如果保留下来的列的最小值之和仍超过宽度，就以表格所需的最小宽度和实际宽度调用作用域中的 `Attenuation`。
++       需要一个 `Text is Measurable` 和一个 `Attenuation`。
++   entry #columns   求解布局所针对的各列
++   entry #titles   标题行的单元格
++   entry #aggregates   求解宽度所依据的逐列汇总诉求
++   entry #width   求解布局时的宽度
++   entry #survivors   保留下来的列，以 `(index, width)` 对按顺序给出
++       因折叠而被丢弃的列不在其中；`#widths` 是每对中的第二个元素。
++   entry #style   样式，装框宽度根据其填充和线条计算
++   entry #widths   保留下来的各列的宽度，按顺序排列
++   entry #cells   经布局各列表述的一行
++       与 `Scaffold#cells` 相同：该行在每一列中的内容，切分为若干行并经过测量。
++   entry #accommodates   某一行的单元格是否都在各列的汇总诉求之内
++       当根据每一列的 `Columnar#accommodates`，接纳该行不会改变任何列的诉求时为真；此时 `#extend` 返回的正是这个布局本身。
++   entry #extend   本布局，或者折叠进该行单元格后重新求解的布局
++       如果 `#accommodates` 成立，`layout.extend(cells)` 就是 `layout` 本身，否则是在相同宽度下对经单元格扩展的汇总值执行的 `Layout.solve`。
++       重新求解可能使每个宽度保持原样——对一个已被宽度限死的列提出更宽的诉求不会改变任何东西——这一点由 `#stable` 检测。
++       需要一个 `Text is Measurable` 和一个 `Attenuation`。
++   entry #resize   在另一宽度下求解的相同诉求
++   entry #stable   两个布局是否以相同宽度显示相同的列
++       比较 `#survivors`：当一个因新行而扩展的布局相对于绘制已有各行时所用的布局是稳定的，重绘就可以跳过已经绘制的行。
++   entry #tableRow   适配到保留各列宽度的一行单元格，以 `TableRow` 给出
++       `layout.tableRow(cells, decorations)` 用每个保留列的 `Columnar#fit` 适配其各行，把每列与其装饰配对（按列位置从 `decorations` 中读取，超出其末尾则为 `Unset`），并测量该行的高度。
++       需要一个 `Text is Measurable` 和一个 `Hyphenation`。
++   entry #lines   对照布局渲染的一行：其各行文本
++       `layout.lines(cells, decorations)` 是作用于 `#tableRow` 之上的 `Grid.rowLines`：该行的可视行，带有样式的边缘，以 `List` 给出。
++       不需要装饰时传入 `Nil`。
++   entry #height   一行的高度（以行计），在可能时无需渲染即可得出
++       自然宽度能放进所在列的单元格不会换行，因此其行数就是它本来的行数；只有必须换行的单元格才需要实际适配才能得知。
++       一行的高度取最高的单元格。
++   entry #titleLines   对照布局渲染的标题行
++   entry #topRule   标题上方的线，若样式没有顶线则为 `Unset`
++   entry #titleRule   标题与各行之间的线
++   entry #bottomRule   最后一行下方的线，若样式没有底线则为 `Unset`
+
+@ 0 1 0 0ec157371fdc31dc1ffa4bf99ff75457
++ entry .Cells   一行的单元格，以各自将要显示的行表示，并附有每个单元格的固有宽度
+
+% 1 1 0 04459079ac9403a30aa7ed3648a01443
+
+@ 0 5 0 0a60d8a01842c7eb01b879d36cda9d3c
++       `Cells[text]` 是由行值一次性表述的一行——每一列的内容切分为若干行，以及每个单元格的 `Metrics`（其最长单词和最长行）——且与任何宽度无关，因此布局可以用 `Layout#accommodates` 检验它，用 `Layout#extend` 接纳它，并按最终确定的任何宽度渲染它。
++       `Scaffold#cells` 和 `Layout#cells` 由一行生成它；`Cells.of` 则由已切分好的行生成。
+
+@ 0 2 0 01e9484c8b6675831a02c35485539dfc
++       `Cells` 没有导出到 `soundness` 总括包：它是布局引擎自己的词汇，在程序直接驱动 `Layout` 之处以 `escritoire.Cells` 访问。
+
+% 1 1 0 1bf2745827140ca11637086fa357772b
+
+@ 0 5 0 09e26f703a2ed38d1020bf6c69fb2acc
++   entry .of   由已切分的行，或经由各列从一行生成的单元格
++       `Cells.of(lines)` 测量每个单元格的各行；`Cells.of(columns, row)` 则先从行中读取每一列的内容。
++       两者都需要一个 `Text is Measurable`。
++   entry #lines   每个单元格的各行，按列排列
++   entry #metrics   每个单元格的固有宽度，按列排列
+
+@ 0 1 0 1afb71c47d68fc9313a5774f964970ce
++ entry .Columnation   排成若干列的扁平列表，就像 `ls` 列出目录那样
+
+% 1 1 0 0b5d9690b7fd87ee1d96ee5e3c89b4cc
+
+@ 0 5 0 03755ed03e65aa281c28c0e47b69aa8e
++       并非每种按列排布的文本都是表格。
++       由短条目构成的列表——文件名、图例中的条目——最好像 `ls` 排布目录那样阅读：宽度允许多少列就排多少列，每个条目占一个单元格，没有线条，也没有标题。
++       `Columnation.layout` 为文本值列表做这件事；`columnate` 扩展则是作为列表方法的同一操作。
+
+% 2 1 0 085520feec2df4f81a42503ded675462
+
+% 3 1 0 0ffad1b447eaae590d2bf6580fddfb43
+
+% 4 1 0 03376ea00520011906e1ac5250b25b94
+
+% 0 1 0 0101b07e86b55daa086adea1b4471053
+
+% 0 1 0 0adb5616908bde7b066482567bcb10df
+
+% 1 1 0 05edaf3adca1c7bd0cd142f38b58f1d7
+
+% 0 1 0 1446c8f20319f7a90544060b25fb8aa3
+
+@ 0 12 0 080320126412540f1aa4fe705433c969
++   entry .layout   在某一宽度下排成尽可能多列的条目，每行一个文本行
++       `Columnation.layout(items, width, gap, uniform, downward, align)` 选择最大的列数，使每一列的内容都能与其他列并排放下，相邻列之间隔 `gap` 个单元格（默认为两个）。
++       优先采用等宽列——每列与最宽条目等宽——但当落在某些列中的条目恰好较窄时，也接受多一列的布局；此时剩余宽度会朝着均等的方向重新分配，任何列都不会超过最宽条目的宽度。
++       `uniform = true` 只考虑等宽布局；`downward = true` 沿每一列向下而不是沿每一行横向读取条目；`align` 在列内填充每个单元格，左对齐的行在其最后一个条目之后不带尾随填充。
++       比宽度更宽的条目仍占据单独一列，没有条目则不产生任何行。
++       需要一个 `Text is Measurable`。
+
+@ 0 4 0 032b6dd650fe0b970a219ebbaad352bf
++ entry .columnate   `items.columnate(width)`：排成尽可能多列的文本列表，每行一个文本行
++     `List[text]` 上的一个扩展，适用于元素为 `Char` 的任意 `Textual` 文本，它以相同参数调用 `Columnation.layout`：`gap`（默认为 2）、`uniform`、`downward` 和 `align`（默认为 `TextAlignment.Left`）。
++     需要一个 `Text is Measurable`。
+
+% 2 1 0 0e7d00ae53db530a1a47ade535d07ded
+
+% 3 1 0 19c8239f1edf0c0c0111a20072503359
+
+% 4 1 0 1b017a3ce5fadea618929e83cf1bf835
+
+% 0 1 0 190a5b6e9007f2e617c1fae1d3b3a2fb
+
+% 0 1 0 1390c8fe0c491cd4046960afb18070e6
+
+% 0 1 0 01a3af942173c13d0d79201d80d95cf2
+
+% 0 1 0 16d5edd67043601e1aac056bfa822d3a
+
+% 1 1 0 0c9e62515a913b061f8c945ca876758d
+
+@ 0 7 0 12d4c1f2a951913117c27896fe20c9a0
++ entry .tabulation   `rows.tabulation`：按元素类型的 `Tabulable` 制表的列表，或按其 `Tabular` 制表的值
++     两个扩展。
++     在 `List[row]` 上，`rows.tabulation` 需要一个 `row is Tabulable[text]`——为任何 case class 派生，并为 `Int`、`Double` 和 `Text` 提供——并给出把脚手架应用于各行所得的 `Tabulation[text]`。
++     在任意值上，`value.tabulation` 需要一个 `value is Tabular[text]`，它从值本身同时提供脚手架和各行。
++     文本类型由实例推断，或给出为 `rows.tabulation[Text]`。
+
+% 2 1 0 09103ff98c007bcf12f622df2b10e572
+
+% 3 1 0 14572310d18ddf1e0563fff8a11b7a6e
+
+% 4 1 0 1429e9389e94118d18d2d61c41f1d940
+
+% 5 1 0 1521453040be78e00668c920671bf8b4
+
+% 6 1 0 16baaadfaf46c19a09c82b390deb2da4
+
+% 8 1 0 12e10e68635ad90914af806a9a6745f9
+
+% 0 1 0 153366e790c43c4019b33ebfcf6570b1
+
+% 0 1 0 09fbf520876774db16cf7119b8e37a31
+
+% 1 1 0 0bfcc9d75a6a77d514b44d823c9574d8
+
+@ 0 1 0 0c47fb8f3bdea26a1a72ebe62dcf93dc
++ entry .Tabulable   一个类型类：类型如何放入各列，使其列表可以制表
+
+% 1 1 0 03f5dfe5c405d61e1c6d84245fb9ebad
+
+@ 0 8 0 001dc88ebdaf431c044292867d6a8690
++       `row is Tabulable[text]` 是一个返回该类型 `Scaffold[row, text]` 的函数 `#table()`；`#tabulate` 把它应用到列表上。
++       它的伴生对象为任何 case class 派生实例——每个字段一列，每列的标题是把字段名拆开驼峰并首字母大写的结果（`linesOfCode` 变为 `Lines Of Code`），除非作用域中针对该类型的 `Table.Relabelling` 另有规定——并为 `Int`、`Double` 和 `Text` 提供实例，每个都是单独一列无标题的列。
++       字段的列就是字段类型自身的 `Tabulable` 脚手架，用 `Column#contramap` 适配到记录上，因此 case class 类型的字段会依次贡献该类型的各列。
+
+% 2 1 0 00f0833e57cb05540ca8d390d63ae212
+
+% 3 1 0 02665e3c438129761f74d934ba58db04
+
+% 4 1 0 10d6ade31d68f2a60a20b0569223921e
+
+% 5 1 0 00cdc2fedb82eff6112a933d9dc85d18
+
+% 6 1 0 1ba099b59eace20102c3045219dad201
+
+% 8 1 0 036763a341a22bd71e231455266dfa4a
+
+% 0 1 0 0cb87fe46047e4c31f447933b7e952ab
+
+% 1 1 0 1cd5f24293bdd17b1ae2b62c5ca7e766
+
+@ 0 1 0 198e514cf1cfbb6812ffcc9783e17419
++       自定义实例是列不等于其字段的类型的接缝：
+
+% 2 1 0 09c864bde7d45a7e1f5f31ee9475acec
+
+% 3 1 0 13b8fce14cda7dcc03c174445fcaf84d
+
+% 5 1 0 11a93fb44c0c63140d65cc0024284657
+
+% 0 1 0 1c5bbb395f608e0808899c97e264ce21
+
+% 0 1 0 18cd771cc8e8dfb30665a18088515510
+
+% 1 1 0 16374e28dd338be4000ae60aef4e8049
+
+@ 0 2 0 1a2891397b70614c18a5a524fc56effc
++       只派生以 `Text` 为单元格的实例：`Teletype` 表格需要手写为 `Scaffold`。
+
+% 1 1 0 1fe79681b46ba7f3151f61be72112e35
+
+% 0 1 0 19471b843a9b1a4313446d19a24a66ff
+
+% 1 1 0 11022a05d60ca920162e754f336802c0
+
+@ 0 1 0 05f17f0a5b58c54513682b1a63108560
++   entry .JoinTabulable   为积类型派生的实例，基于其各字段的列
+
+% 1 1 0 1d6c5ad79e269a8b074d55726266842d
+
+@ 0 18 0 1d85e65eb2ac618005c8018a8ac0db98
++         派生过程所构建的类：一个 `Tabulable[Text]`，其脚手架就是给定的各列。
++         用户通常不会直接指明它；由 `conjunction` 创建。
++     entry #table   合并后各列的脚手架
++   entry .conjunction   为 case class 派生实例，每个字段一列
++       每个字段的 `Tabulable` 给出其各列，这些列被适配到记录上，并根据字段的标注重新加标题——若作用域中有 `Table.Relabelling[derivation]` 则通过它，否则拆开驼峰并首字母大写。
++       继承自 wisteria `ProductDerivation` 的 `derived` given 调用的正是它，因此 case class 无需任何注解即可制表。
++   entry .int   将 `Int` 表示为一列无标题、右对齐、可折叠的列
++       该列在阈值 `0.3` 处折叠，因此在压缩一个含多个字段的记录时，单独的数字最先被舍弃。
++   entry .double   将 `Double` 表示为一列无标题、右对齐、可折叠的列
++       需要作用域中有一个 `Decimalizer`，由它决定显示几位小数。
++   entry .text   将 `Text` 表示为一列无标题、左对齐的段落列
++   entry #table   该类型的脚手架
++   entry #tabulate   应用于该类型列表的脚手架：一个 `Tabulation`
++       脚手架只惰性构建一次，并在每次调用中复用。
+
+@ 0 1 0 07fdddede2dd914e1bc8c064f03844f4
++ entry .Tabular   一个类型类：本身就是表格的值，同时提供其列和行
+
+% 1 1 0 0131919259ce44d6009b765cbe44621c
+
+@ 0 5 0 0bc38037935b732b1bc8b36781298d5b
++       `Tabulable` 为某个类型的*列表*制表，而 `value is Tabular[text]` 为包含其各行的单个值制表：`#table` 给出其 `#Element` 类型的脚手架，`#rows` 提取各元素，`#tabulate` 把前者应用于后者。
++       报表对象、查询结果或矩阵都可以通过提供一个实例来制表，然后经由 `tabulation` 扩展调用 `value.tabulation`。
+
+% 0 1 0 14cf5b0f7cd386ae154b325859c91b76
+
+% 1 1 0 076129e3dbb377c706a737d356bc0735
+
+@ 0 4 0 11ec415a9f41b87b13762a839f9f1714
++   entry #Element   该值各行的行类型
++   entry #table   该值各行的脚手架
++   entry #rows   该值的各行，以 `Element` 列表给出
++   entry #tabulate   以 `Tabulation` 表示的该值：`table(value).tabulate(rows(value))`
+
+@ 0 1 0 121792c0835d63381047c7ab2a1e49d0
++ entry .Table   渲染后表格的命名空间：其单元格、行、分节和样式，以及 `Table.Error`
+
+% 1 1 0 1d9c2610075da2f1025644e482225de1
+
+@ 0 4 0 080122ef88e152320fa74953abaaeffe
++       `Table` 是一个命名空间，而不是类型：表格定义是 `Scaffold`，按其排列的数据是 `Tabulation`，适配后的结果是 `Grid`。
++       `Table` 存放绘制网格所用的各个部件（`Cell`、`Row`、`Section`）、绘制所用的 `Style`、为派生列重命名的 `Relabelling`，以及表格放不下时抛出的 `Error`。
+
+% 1 1 0 18245c07c19fc87c025b4eaa570c242f
+
+% 1 1 0 08ac4623f24de3261236ba8714246cde
+
+@ 0 1 0 15efd5fe6440b7f404b22a587de8aaa1
++   entry .Error   表格需要的宽度超过了给定的宽度
+
+% 1 1 0 13c64e7422b4aa3b1fe310c77283c596
+
+@ 0 8 0 00811b578b51571c068459730e20db4b
++         _the table required a minimum width of `minimumWidth`, but only `availableWidth` was available_。
++         当所有可折叠列都已丢弃之后，保留下来各列的最小宽度加上样式的装框宽度仍超过网格或布局所要求的宽度时，通过 `columnAttenuation.failAttenuation` 抛出。
++         这一界限是实实在在的：`Paragraph` 列永远不能比其最长单词更窄，因此描述列中含有 `Statically-checked` 的表格，其宽度不能小于该单词的宽度加上其余部分。
++         在 `ignoreAttenuation` 之下，这个错误永远不会抛出，表格会改为溢出。
+
+% 2 1 0 1678493ba205a3a20f9080eaa791a75e
+
+% 3 1 0 076b4200ea0a8cb209b08fe1f6e114af
+
+% 4 1 0 011f6d213f9a682c0faf0a7119f00436
+
+% 5 1 0 02f17a392685209c10738e4ace138e8d
+
+% 0 1 0 19dca18fec62fa2c0915fdaab9366f6a
+
+% 0 1 0 042c7f5eddbd6eb81fde4c13f24bb080
+
+% 0 1 0 1ffe5c415422113702a4a9b03386f84a
+
+% 0 1 0 074cb3daeb2bac671b9b9c2132727c65
+
+% 0 1 0 10668dddf3dbacb90364827279b84605
+
+% 0 1 0 1fe95e04628d69d902bfb9092fe2aa4b
+
+% 1 1 0 19c650f5c79797251faa76176f18cb4f
+
+@ 0 2 0 1b787198aa7d471009d76340f5614bea
++     entry #minimumWidth   表格各列全部能放下的最窄宽度
++     entry #availableWidth   要求表格适配的宽度
+
+@ 0 1 0 1414895c1ddb502a1456fd705f93cbbb
++   entry .Cell   渲染后的一个单元格：其适配后的各行、宽度、对齐方式和装饰
+
+% 1 1 0 0b5b192f1f0494480011d8135555d2e2
+
+@ 0 3 0 0452a5c779584ad70bac5cc01f8b5984
++         `Layout#tableRow` 适配单元格之后渲染器对它的记录：它在所在列宽度下显示的各行、行数、对齐方式及其装饰。
++         `Grid` 或 `Layout` 的用户在 `Row` 中看到它们；其他任何东西都不会创建它们。
+
+% 0 1 0 0a69cc2976d15e111ff6bc44f2184551
+
+@ 0 9 0 1d721a5df34263d01f119498b34a53c2
++     entry #width   列确定下来的宽度，以单元格计
++     entry #span   单元格跨越的列数；始终为 `1`
++     entry #lines   适配后的各行
++     entry #minHeight   行数
++     entry #textAlign   每一行如何填充到该宽度
++     entry #verticalAlign   当行高于 `minHeight` 时各行所处的位置
++     entry #decorate   应用于每个渲染行的变换，或 `Unset`
++     entry #apply   某一索引处的行，调用方已按 `minHeight` 检查过该索引
++   entry .Row   由适配后的单元格构成的一行，附带其行数高度
+
+% 1 1 0 01e83dd3cede32ad08989e93b96bd865
+
+@ 0 3 0 1fb3144f25849e38198c4b9a0b85fd4c
++         由 `Layout#tableRow` 创建，由 `Grid.rowLines` 渲染。
++         行的高度是其最高单元格的行数，较矮的单元格按其垂直对齐方式放置在其中。
+
+% 0 1 0 116b240365aeef2f161801b468515628
+
+% 1 1 0 19c6bbfca8ad0a6d021a7a733d2fa05d
+
+@ 0 5 0 16cdc910f92ba7be0cab12b34824cc6d
++     entry #cells   适配后的单元格，每个保留列一个
++     entry #title   这是否是标题行
++     entry #height   该行占据的可视行数
++     entry #apply   某一列索引处的单元格
++   entry .Section   共用列宽的一串行
+
+% 1 1 0 1083d41494980b170ad5c2c57d0af3ef
+
+@ 0 3 0 1882c036e97ed7c61f8f2fca8bf2c6db
++         `Grid` 是分节的列表，每两个分节之间绘制一条线。
++         `Tabulation#grid` 以相同宽度生成两个分节——标题和数据；每个分节的行都对照该分节自己的 `widths` 渲染。
+
+% 1 1 0 1575eaf3883b166b1a099395ea7c99b1
+
+@ 0 3 0 1590c183f9c3a58e06dd7ba2d45b13d0
++     entry #widths   该分节各行所适配的列宽
++     entry #rows   各行，惰性地以 `Chain` 给出
++   entry .Style   绘制表格所用的线条、角和填充
+
+% 1 1 0 197a508a5a57297001599647d4f08502
+
+@ 0 6 0 13d6dd5dba11bd6d055f7c62216179b1
++         `Style` 说明每个单元格两侧各有多少填充；用哪种粗细的线——`Blank`、`Thin`、`Thick` 或 `Double`，或者用 `Unset` 表示完全没有线——绘制顶边、底边、标题下方的线、外侧边和内部列边；以及由哪个 `LineCharset`（`Default`、`Rounded` 或 `Ascii`）提供字形。
++         `tableStyles` 包中的六种样式涵盖了常见的选择；自定义样式就是在局部给出的一个 `Style` 值。
+
+@ 0 3 0 003b78a55ef773171593fd24f15b7fab
++         样式是一个上下文值：`Tabulation#grid`、`Scaffold#layout` 和各 `Printable` given 都接受一个样式，而 `import soundness.*` 不引入任何样式，因此需要按名称导入 `tableStyles` 中的某个 given。
+
+% 2 1 0 128dbd9f2c98837b054971c3baa3a692
+
+% 3 1 0 19c13802f1b329310d9ce34cae072d76
+
+% 0 1 0 1df9e0cdb273238d0289668a0347f8df
+
+% 0 1 0 1ae3d9f893e21b8e07020f237ffcaf7f
+
+% 1 1 0 1670080bce36129e0a50bdcdc22364c6
+
+@ 0 3 0 004f7b32eb8ea83002489ce0fcbd8adb
++         `Blank` 与 `Unset` 不同：`Blank` 顶线绘制为一个空行，保留表格的垂直间距，而 `Unset` 什么也不绘制。
++         带样式的 `Teletype` 内容在每种样式中都按其可见宽度布局。
+
+% 0 1 0 0d3a2cbc8f3d6c5b094da7c81299bf57
+
+% 1 1 0 0ba4d0bdebcb60b613bc4638f35370d9
+
+@ 0 10 0 19e906402cfd8a7205f0fe814106363a
++     entry #padding   每个单元格内容左右两侧的单元格数
++     entry #topLine   顶边的粗细，`Unset` 表示没有顶边
++     entry #bottomLine   底边的粗细，`Unset` 表示没有底边
++     entry #titleLine   标题与各行之间那条线的粗细，`Unset` 表示没有
++     entry #sideLines   左右外侧边的粗细；`Blank` 表示没有
++     entry #innerLines   列之间边线的粗细；`Blank` 表示没有
++     entry #charset   绘制线条所用的字形集：`Default`、`Rounded` 或 `Ascii`
++     entry #columnCost   一列增加的装框宽度：其两侧的填充和一条边
++     entry #cost   给定列数的装框宽度：各列的开销加上收尾的边
++   entry .Relabelling   覆盖派生表格从字段名得到的列标题
+
+% 1 1 0 11637f8e1f26852519c1d957778011ea
+
+@ 0 5 0 0a7818469f6d8b651f7e492e0c6b7d18
++         `Relabelling[target]` 是一个从字段名到所需标题的函数 `#relabelling()`，供为 `target` 派生的 `Tabulable` 查询：映射中指明的字段采用映射后的标题，其他字段则采用拆开驼峰并首字母大写的名称。
++         在派生之处的作用域中有一个 given 就足够了；该 trait 在其目标上是协变的，因此针对超类型的重新标注适用于其子类型。
+
+% 2 1 0 0998b877742fad331769518095dd6358
+
+% 3 1 0 0606af2da98ed383058b56b8df5ffc9d
+
+% 4 1 0 18fffb517059ddb90d02af10134741d3
+
+% 5 1 0 007592fd79472c551975019da01e4060
+
+% 6 1 0 0bf86d6bb649dd331f3e5d4a77f1e9a0
+
+% 8 1 0 1872d32dc08fa5c30f0923ac6db8a1ff
+
+% 0 1 0 1ea399f97a94e0a215a7ed0446376a78
+
+% 0 1 0 085f4f4bf3dd92bc0be6df7de671526f
+
+% 1 1 0 0d1c317203c3c31a0768a0fbcabfb462
+
+% 0 1 0 161798c74f8e8f74066f72a21cca1ffe
+
+@ 0 3 0 1c20d3c2fe905c3810964c545b05e6fe
++     entry #relabelling   从字段名到标题的映射
++         只调用一次并缓存；映射中没有的字段保留其派生标题。
++     entry #apply   某个字段名对应的标题，若映射中没有指明则为 `Unset`
+
+@ 0 1 0 175531554e2e8f13120cef02c838f6c9
++ entry .Attenuation   表格各列放不进给定宽度时如何处理
+
+% 1 1 0 06a8e325cbbc46ba0dd7ce04cda3a8cf
+
+@ 0 7 0 1cd9b847a9e55c041e098a96e39c02cd
++       当即使丢弃了所有可折叠列，表格所需的最小宽度仍超过实际宽度时，`Layout.solve` 会以这两个宽度调用 `Attenuation`。
++       这是一种方针，而不是由库固定下来的行为：写入文件的报表没人会看到列被弄乱，因此需要失败；交互式显示中用户可以加宽窗口，因此需要照样渲染。
++       这两种方针就是 `columnAttenuation` 包中的 given，需按名称导入；每次 `grid`、`layout`、`extend` 和 `resize` 都需要作用域中有其中之一。
+
+% 1 1 0 098e1dbf0fb6648a08e03fdfa4d3d415
+
+% 1 1 0 05d79cc39dd275a419b9c3b55bc8ff92
+
+@ 0 1 0 09736303e5339f940debcfe184e9fc32
++   entry #apply   以表格所需的最小宽度和可用宽度调用
+
+@ 0 1 0 0b7cc8d4da01974118882d16100dca51
++ entry .columnAttenuation   表格放不下时的两种方针，每种都是一个需按名称导入的 given
+
+% 1 1 0 1c60b8536f776713151cfaadb71cfc5e
+
+% 1 1 0 129f526836097231016708ddcda3f573
+
+% 2 1 0 0bc97b6e16268c230d2159d6da92bed9
+
+% 1 1 0 067cf51cd6536cf5114d37a57402baae
+
+% 1 1 0 11e8a22fbadf82c30229d8d2d55d36a4
+
+@ 0 5 0 0a09fcc5df60bee10d178cbeb58ead70
++       `ignoreAttenuation` 照样在宽度允许的范围内尽量渲染表格，且不会失败，因此选择它无需处理错误；`failAttenuation` 宁可抛出 `Table.Error` 也不产生误导性的结果，因此需要作用域中有一个 `Tactic[Table.Error]`——`recover`、`safely` 或 `strategies.throwUnsafely`。
++       不导入的话两者都不在作用域中，因为 `import soundness.*` 不导入任何 given。
+
+% 0 1 0 12a33ae65ce44b370c91c9f43b59baa7
+
+% 1 1 0 01fe6d3f165dc39b1730ca685925d016
+
+@ 0 7 0 15b5f964e0a741021c4141a5bb244d43
++   entry .failAttenuation   表格放不下时抛出 `Table.Error`
++       一个从 `Tactic[Table.Error]` 到捕获它的 `Attenuation` 的上下文函数，因此导入该 given 也就要求在表格布局之处有该战术。
++       错误携带所需的最小宽度和可用宽度。
++   entry .ignoreAttenuation   照样渲染表格，超出宽度
++       得知表格放不下时什么也不做：保留下来的列保持其最小宽度，各行超出所要求的宽度。
+
+@ 0 1 0 023ae57f100c5c371a10eff64c97be3a
++ entry .tableStyles   六种现成的表格样式，每种都是一个需按名称导入的 given
+
+% 1 1 0 16b2f2af4972eaf518024ac765b83532
+
+@ 0 3 0 1a30d33dbe85af1d04d689c4568e7308
++       制表框的绘制由作用域中的 `Table.Style` given 选择，而且这一选择从不是隐式的：`import soundness.*` 不引入其中任何一个，需要按名称导入。
++       同一张表格在六种样式下的效果：
+
+% 2 1 0 1af3453ca8730d5f0c26b557e1f321a2
+
+% 3 1 0 1362fc11a94297c40dbd29532fc52714
+
+% 4 1 0 0679ace4905d57a919c3fb0114b6ef9a
+
+% 2 1 0 0a39c0a79a98347209cbd0118637da64
+
+% 4 1 0 09f908ef9a5543ef196a29005ef0547a
+
+% 5 1 0 13eb0ad9d87244530dc55918a7b95778
+
+% 1 1 0 13b6574b0ce8d5cd0db290e720262e46
+
+% 2 1 0 02534176a96c8b0c186dfffa6f1daf35
+
+% 0 1 0 13563984c42cfb9614ebeba62a577d2a
+
+% 1 1 0 1dfeac7ecce8bbeb100e438c5ed4f402
+
+% 2 1 0 0185533d60613d921462c8ca2787d761
+
+% 0 1 0 19553389edd59bcb0640c004cbc6ea56
+
+% 1 1 0 0122fdb9f215c52c083e1853c591f57a
+
+% 0 1 0 0e60d91504b1554f13a77ad5caf7d466
+
+% 0 1 0 07aa1c07de347efb1827c123b90199c6
+
+% 0 1 0 09f18bc181aee3e31fca864317f1064f
+
+% 0 1 0 0b541a8d9e5eea2803aee1f394990811
+
+% 0 1 0 1547473fbc86976c0842ea068851e7f2
+
+% 0 1 0 1e771c0b413f3e210a07fcfd36d599e1
+
+% 0 1 0 17d879d7be8270e10e36028e2eeda5c0
+
+% 1 1 0 10fa8d3ca1d4596c0f517b8e82037ef7
+
+% 2 1 0 1ed51d07c91432d90b3dc5617bfc718e
+
+% 0 1 0 1f8b34474e85522a0a9145f99c2d095a
+
+% 1 1 0 1a9d933ca2dc92ee1b4d7d5efd6caefd
+
+% 0 1 0 0814c6a7953579240497149b8ae10393
+
+% 0 1 0 0b00da2589fdfa2708c3334339f49e4d
+
+% 0 1 0 148b71cfb44202c5122c7cb15e361174
+
+% 0 1 0 0eaad8ab4a286554144a5413158c0c97
+
+% 0 1 0 189e055d6850129818de5c260944ec78
+
+% 0 1 0 156b692f90fb488f11f20accce9516f9
+
+% 0 1 0 09a4571d16ae92d20331184dea6b563d
+
+% 1 1 0 06210e63e5bf5d3704bf758e04809535
+
+% 2 1 0 08e9fc68da2fe9d80f232768f28f2f2c
+
+% 0 1 0 04f1f84475e3bbb31857f0d0d9748c0c
+
+% 1 1 0 074002f0648e052f0c5da28c2ee2abc7
+
+% 1 1 0 1a0557f3cdbfc6c81591cec54facc84f
+
+% 1 1 0 162952dd784305ca11b576f82f02fae5
+
+% 2 1 0 0e73d5549e2300db1daaafa6f1736346
+
+% 3 1 0 1f17c20487eaf32f05a130bcd147d2ba
+
+% 4 1 0 07cdcbabe8dd637f13db551c2a5dafc4
+
+% 1 1 0 14df755ca0c96bed13230f2a8873d2c2
+
+% 0 1 0 1663d25d0c3fdc771fc0613084d608d1
+
+% 1 1 0 052ab5edc1c5a53a1b36c8d3d54c7ed4
+
+% 2 1 0 09424f56406982b31b6a920c388378d4
+
+% 0 1 0 15095dde40d6dbff12352129d2f06538
+
+% 1 1 0 08c97684fab165650d306f7922830b45
+
+% 0 1 0 14ddc487a6feff3c1b5a2bafb3493848
+
+% 1 1 0 0491dd816ec88a4a0284873dcdaf8f52
+
+% 2 1 0 110e4bf5aeca63261edf33b4afd378b5
+
+% 0 1 0 0c631bda6fe23b980501043abb67887a
+
+% 1 1 0 0df106ef07a423fd0733b809ca96aceb
+
+% 0 1 0 0dac36ff7bea52e6153f98fe1f80f62d
+
+% 1 1 0 135ec5837037683c18323f3429d93d17
+
+% 2 1 0 0413200090607bc41fdbe6c4f51a4a69
+
+% 0 1 0 1195dc1266cf29500f9dea72dc7e596e
+
+% 1 1 0 12dde3c08a999ff6060edeb3317be5f6
+
+% 1 1 0 10f5ba6f9852ec3a1bb3d00cf40c6897
+
+% 2 1 0 050c9229527e74bd099910bbfb057d5c
+
+% 3 1 0 1f95c5cdb1a54cdb096eba700d5db4b4
+
+% 4 1 0 040390d3fc3729611a836678906c70b9
+
+% 1 1 0 06ee91f4c98efe8c1cd849b9caf57231
+
+% 2 1 0 0fb3060a8198217c0ccfd1eb4d15db06
+
+@ 0 1 0 0f5e091dfc0c7e7a19d55ee32a305ba2
++       自定义样式则是绑定为局部 given 的一个 `Table.Style` 值。
+
+% 1 1 0 04cdd2954a74ae4306f31d18cdd77f9a
+
+@ 0 14 0 1a754cf3dea95e3c1253ef9d5f4d9f53
++   entry .thickTableStyle   粗的顶边、底边和侧边；细的标题线和列边；方角
++   entry .thinRoundedTableStyle   全部使用细线，配以圆角
++   entry .horizontalTableStyle   细的顶线、底线和标题线；没有竖线
++       单元格保留其填充，因此在原本是边线的位置，各列之间以两个空格分隔。
++   entry .midOnlyTableStyle   标题下方一条细线；表格上下各一个空行
++       顶线和底线是 `Blank` 而不是不存在，因此表格保留了带边框表格应有的垂直间距，但不绘制边框。
++   entry .verticalTableStyle   细的侧边和列边；没有水平线
++       水平线是 `Blank`，因此每条都是一行边线短桩：上方为 `╷`，下方为 `╵`。
++   entry .minimalTableStyle   标题下方一条细线，别无其他
++       顶线和底线是 `Unset`，因此表格由其标题行、一条线和各行组成。
+
+@ 0 8 0 1427dc48855fcea81e2dc08904f52889
++ entry .TextAlignment   单元格的各行在列宽内如何放置：tessellate 的 `Alignment`
++     `TextAlignment` 是 `tessellate.Alignment` 的别名，值 `TextAlignment` 即 `tessellate.Alignment`，因此各分支以 `TextAlignment.Left` 的形式命名。
++     `Left` 在右侧填充；`Right` 在左侧填充；`Center` 把填充分到两侧，多出的一格放在右侧；`Justify` 把空格分散到单词之间，使除最后一行外的每一行都达到满宽——即报纸的排版方式，适合散文列，不适合其他任何列。
++     每个分支都有一个执行填充的 `pad(content, width, last)`，`last` 说明该行是否是单元格的最后一行，`Justify` 会让最后一行保持参差。
+
+% 2 1 0 01f41f52f60330951879d5b129b4dfde
+
+% 3 1 0 13b7c178a3752d360fc537edbe43ddec
+
+% 4 1 0 10258df820161faf19ad0c15da42dfa3
+
+% 0 1 0 05c19e16da48abc80f3703ec2316bc1b
+
+% 0 1 0 007fbf1e4cbb9bf21c7368e36bc20247
+
+% 0 1 0 07bfe80b3b763c7c0ecb581be49abb46
+
+% 0 1 0 14ddb12460c63c6f148e06e30e045aae
+
+% 1 1 0 0c68b523c7d2cba00957571a1d7f5a18
+
+@ 0 5 0 0df185897b4a3888029b99aef2733af0
++ entry .VerticalAlignment   当另一个单元格把一行撑高时单元格所处的位置：tessellate 的 `Alignment.Vertical`
++     `tessellate.Alignment.Vertical` 的别名，其分支为 `Top`、`Middle` 和 `Bottom`。
++     换行的单元格会把整行撑高，该行中的其他单元格按其所在列的 `verticalAlign` 位于额外高度的顶部、中部或底部；`Top` 是每种类型的默认值。

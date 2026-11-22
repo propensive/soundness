@@ -1,0 +1,337 @@
+orthant 2 language
+
+% 0 1 0 0f04ec4b9ac2d4270a232409219e1f6b
+
+% 0 1 0 09cbac8af64cca111f523c05306fffdd
+
+% 0 1 0 0b5938ce7315323607e1922cbc4d93e2
+
+@ 0 1 0 103a904729db1d011e11b9a57aa4e175
++ info   以 case class 表示的定宽二进制布局，由派生的类型类从字节中读取
+
+% 0 1 0 0ca6d61ddd9511ea1cdae38f1414f6fe
+
+@ 0 6 0 1cd33b5b10c56028140188541b9a262f
++     _Polaris_ 通过把字节映射到 Scala 类型来读取结构化二进制数据，即文件头、网络数据包和设备协议中的定宽记录。
++     字段均为定长数值类型（`B32`、`U16`、`S64`……）的 case class *就是*一个二进制布局：每个字段的类型说明了它的宽度及其解释方式，派生按声明顺序组合它们并计算出每个偏移量，因此不存在需要与规范保持同步的下标运算。
+
+% 2 1 0 1c2ad74512ccb1f51e7145c0ca3b72e7
+
+% 3 1 0 161d47b011669c0c01d8765722849a1a
+
+% 5 1 0 16c3f9719ab0d235151492185c61e48c
+
+% 7 1 0 028da08a0ef7f4da08128d79734deafd
+
+% 8 1 0 1fdc5c0f91f083530499aa90df74b2a5
+
+% 0 1 0 1d4a329bc89775530ea5c6c433ef9b84
+
+% 0 1 0 04e594a8aeb47ad5072081b065a6447e
+
+% 0 1 0 0708bf558873885b1095289b326d44eb
+
+% 0 1 0 07715eefd2188c950644914a4a949b3a
+
+% 0 1 0 08e28ddc53a8290c0b9b5de5af22a391
+
+% 0 1 0 01e41fe9c3432470173975e4f1ad10a0
+
+% 1 1 0 1730089acb2ac3fe0a629312c82d29c6
+
+@ 0 6 0 156018afcf720612097017fbdb143b7e
++     `Debufferable` 是用于读取的类型类，它为十六种定长和普通数值类型提供实例，并可为积类型派生；`Unpackable` 位于它之上，是 `unpack` 和 `unpackFrom` 所解析的类型类，涵盖单个值以及带数量前缀的此类值数组。
++     `Sextant` 是读取位置，一种由 `sextant { … }` 块引入的可变能力，使接连的 `unpack` 依次推进读取字节。
++     `Bufferable` 是用于写入的类型类，以同样的方式为积类型派生。
+
+@ 0 3 0 0f13131089ff02b31e8edc2d01c5c8c7
++     所有多字节数字都按大端序读取。
++     读取不会针对布局进行边界检查：读取超出字节末尾会抛出平台的 `ArrayIndexOutOfBoundsException`，因此对于不可信的输入，应先根据 `byteWidth` 检查其长度。
+
+@ 0 2 0 1b3e8826b3f3c2c115eda0f35bc4df81
++     该库只有一个源集 `polaris.core`，它为所有平台编译。
++     所有内容都导出到 `soundness` 总括包。
+
+% 0 1 0 1e99a68f3a13f4b01ebaf9bb80becb1b
+
+% 0 1 0 0458fc73c6faf8ef1e4364774861601e
+
+% 0 1 0 18421c7989c65eaf105980ecdc46258e
+
+% 0 1 0 1dc07a79636d637f09481912bb693347
+
+@ 0 1 0 163c478cdfe00aac0263e811a56445d5
++ entry .Sextant   字节数组中的读取位置：接连的 `unpack` 所推进的可变能力
+
+% 1 1 0 195df160d6729e6100f0141ef4b8fa6c
+
+@ 0 6 0 1da2292f3cc822a302fe95c2b07b37fb
++       `Sextant` 是 `Data` 之上的游标，以航海者用来读取位置的仪器（六分仪）命名。
++       它是一种*能力*：它持有一个可变的偏移量，因此通过它解包是一种副作用；它是 `caps.Mutable`，因此只有独占引用（`Sextant^`）才能推进它。
++       两个读取者共享同一个位置，就会各自消耗对方期望读取的字节，而捕获检查器会阻止六分仪被别名引用或逃出引入它的块。
+
+@ 0 2 0 148a92ef422446070a4891999708dd53
++       获得它的常用方式是 `Data` 上的 `sextant { … }` 扩展方法，它在偏移量 0 处创建一个六分仪，并将其作为上下文值传给块，`unpack` 在块中找到它：
+
+% 2 1 0 1176a3b4b87e08e103f64b21c9e651c1
+
+% 3 1 0 1131f92c2c665092153b14d092aaf759
+
+% 0 1 0 123a919e2a1521ab1b1b69356eaf0dd7
+
+% 2 1 0 0a776139e96a8d82089815302a730c86
+
+% 0 1 0 1ddebf43c097c95b026b9c597aaa57bf
+
+% 0 1 0 0bb458fb892c730e14615277165dbd2f
+
+% 0 1 0 1b8926e3e876645813e7ad0227cd43f8
+
+% 1 1 0 100a75981895c429020b570bb5aafda9
+
+@ 0 3 0 11af4f717ad9e5101d9139fe5b556235
++       `Sextant(bytes, initialPosition)` 直接构造一个六分仪，从 `initialPosition`（默认为 0）开始。
++       它是 `Findable`，因此在编译时搜索作用域内能力的操作能看到它。
+
+% 0 1 0 0389495f23863fd4114352f29c876024
+
+% 1 1 0 043341d63486eadb1c43796fec48c33d
+
+@ 0 7 0 11f3752cd4642a2e13d65b99ff90dba6
++   entry #offset   当前读取位置，即从数据开头算起的字节下标
++       每次 `unpack` 都使它前进所读值的宽度，因此对于记录了某一节起始位置的格式，它指明下一次读取从哪里开始。
++   entry #advance   把读取位置向前移动若干字节，而不读取它们
++       这是一个 `update` 方法，因此需要六分仪的独占引用：它用于跳过填充，或跳过此读取者不需要的字段。
++       字节数不会针对数据长度进行检查；之后超出末尾的读取会抛出异常。
+
+@ 0 4 0 16c22ea65cacb0b419d39e470736b82e
++ entry .sextant   以这些字节上的 `Sextant` 运行一个块，从偏移量 0 开始
++     `Data` 上的扩展方法：`data.sextant { … }` 在字节开头创建一个 `Sextant`，并把它作为上下文 `Sextant^` 传给块，因此块内的每次 `unpack` 都读取下一个值并越过它。
++     返回块的结果；六分仪不会逃出该块。
+
+% 2 1 0 13685c49a3596f731af58bc867b3243a
+
+% 3 1 0 1403721f9d627ff903ebc470c1aae95e
+
+% 0 1 0 0b8dd91f168f9f411604f405a1d497f3
+
+% 0 1 0 042ceab7dc8b776904abe6c283b8d2e5
+
+% 1 1 0 1600cb0237cfc65408bde456bed1c805
+
+@ 0 5 0 073547ae56a6d6ba059e1cb430b13697
++ entry .unpack   从作用域内的 `Sextant` 读取某个类型的下一个值，并越过它
++     `unpack[T]` 解析 `T is Unpackable`，并通过上下文中的 `Sextant^` 读取。
++     对于 `Debufferable` 类型，结果是值本身，六分仪前进该值的宽度；对于冻结数组 `Array[T]^{}`，结果是从数量到数组的函数，数组在数量已知时读取，且不会移动调用者的六分仪。
+
+% 2 1 0 1dfd7966c029244809727cfba8d974b5
+
+% 3 1 0 0a6721b047fcd7181b2f1204a919c2d4
+
+% 0 1 0 1fdcb482e4ee8fa80144b2c2e3ad482a
+
+% 0 1 0 0fef4b35ee9da589046e932543227729
+
+% 0 1 0 09077f0a2d3eb8af1bbafb7c49c0bc4c
+
+% 0 1 0 13c7830be363e96c097e6d0c01f16ffd
+
+% 0 1 0 17c2a8953184dff305917e0ff6154f89
+
+% 0 1 0 16895e3f0af4c58d128d038d0e51374a
+
+% 1 1 0 1f49531429cb7bc81e0f5ba3f202c733
+
+@ 0 1 0 0dd5dd11df8d33361c2553bdfdf80388
++     读取超出数据末尾会抛出 `ArrayIndexOutOfBoundsException`。
+
+@ 0 4 0 03bb1240aafa7eb70deb2cfa5c3f082c
++ entry .unpackFrom   从字节中某个偏移量处读取所选类型的值
++     `Data` 上的扩展方法：`bytes.unpackFrom[T](offset)` 在 `offset` 处创建一个 `Sextant`，并通过它解包一个 `T`，适用于单次读取，此时使用 `sextant { … }` 块显得繁琐。
++     与 `unpack` 一样，数组类型得到一个从数量到数组的函数。
+
+% 2 1 0 1b860fa6acd49d58037fc0982688c900
+
+% 3 1 0 0f40d7cfcad580e116ba12d63a03001c
+
+% 0 1 0 097c6da54be58c1213b257fd8c88c9b9
+
+% 0 1 0 031a107a366d51ae1dcf9491d1e99e78
+
+% 1 1 0 070d160dde7f930602066cb24629405f
+
+@ 0 2 0 0780fbbe3fc2a5e90b761c93e5ee940e
++     数字按大端序读取；读取超出字节末尾会抛出 `ArrayIndexOutOfBoundsException`。
+
+@ 0 3 0 1e42cf37419187e80007b6ebe534d3be
++ entry .byteWidth   `Debufferable` 类型所占的字节数，无需手头有值
++     `byteWidth[T]` 就是 `T` 的 `Debufferable#width`：数值类型为 1、2、4 或 8，派生的积类型则为其各字段宽度之和，包括嵌套的记录。
+
+% 2 1 0 141e98f499f1f8871d90dada3b726ec2
+
+% 3 1 0 19689daa9e9bcdc7027f2f7dc92e0743
+
+% 5 1 0 1bd67e2f4a60e3df1f0f1f3ed69440a5
+
+% 7 1 0 15c243291c50b3211ffe840b90dd08db
+
+% 8 1 0 060159b02f74a8e515d1d85b94873361
+
+% 0 1 0 19a8379502353d32002a98f68a34eb21
+
+% 0 1 0 18ede67eb0ac1f791e63883251302a3b
+
+% 1 1 0 17bd52a34f8919c817c693837832941e
+
+@ 0 1 0 04f97d587a8ea2eb0b0999a80e683afc
++ entry .Debufferable   可从字节读取的定宽类型的类型类
+
+% 1 1 0 00285643dae6b9ec0c24fa9429eb6111
+
+@ 0 4 0 05d328707a1504a91b743f2e696ff647
++       `T is Debufferable` 说明两件事：`#width`，即一个 `T` 所占的字节数；以及 `#debuffer`，它从 `Sextant` 读取一个值并使其前进该宽度。
++       伴生对象为定长位类型（`B8`–`B64`）、有符号和无符号整数（`S8`–`S64`、`U8`–`U64`）以及 Scala 的 `Byte`、`Short`、`Int` 和 `Long` 提供实例，全部按大端序。
+
+@ 0 3 0 10907f2955d5b2f70d060c47de5a212a
++       case class 根据其字段的实例派生自己的实例，字段按声明顺序读取；类型本身是派生记录的字段贡献其全部宽度，因此布局可以组合：
+
+% 2 1 0 031513b8415209391d716f545f826489
+
+% 3 1 0 05fc8dfc172113501a32ea3b120d3812
+
+% 0 1 0 1fdd7b5d876af13f1375c1df5811816d
+
+% 0 1 0 093c6418b1f1700a18f1408c98a066b3
+
+% 0 1 0 19f5a982f5ed769b1178f02b5cab27cd
+
+% 0 1 0 05382fa3d6e7556f0114762520bf6b64
+
+% 1 1 0 0e0efd2aced3a71f14e341467866d41d
+
+@ 0 4 0 1cc1283acc28c920045ba906b7c4a6ab
++       不是定宽字段之积的布局，例如压缩存储的颜色，或对某些字节有自己解释方式的类型，用 `.apply` 定义实例。
++       只有积类型可以派生：和类型没有派生，因为二进制布局没有标准的标签。
+
+% 0 1 0 0b13c66425e1e9af02701f31336a7aef
+
+% 0 1 0 0530e3b0af9686c915294e9d54ef4407
+
+@ 0 4 0 0685db29a5fbb5a41661dbcb6d55dbd7
++   entry .apply   由字节宽度和一个以字节及偏移量为参数的函数创建实例
++       `Debufferable(width)((bytes, offset) => …)` 从 `bytes` 中的 `offset` 处开始读取一个值，之后实例使六分仪前进 `width`。
++       原始类型的实例就是这样写的。
+
+% 2 1 0 10e6cd3262e804841da714aa06019370
+
+% 3 1 0 0f647d6a609c0e9b031fa88b43128aa8
+
+% 0 1 0 0d18e47f1119b2200b93055586d0584a
+
+% 0 1 0 0eea53aebcf56b79079aa2d188561520
+
+% 0 1 0 09ff443a9b96e04514ef739c5cfa7270
+
+% 0 1 0 010627f547b111d20edfa81f496df6a0
+
+% 0 1 0 07e985f315e8fe64076748f5854e7339
+
+% 1 1 0 1c1ba8a1e3cfbf2614cf21c5caf1f23b
+
+@ 0 17 0 0ee623b99a171e721ed138521b65c898
++   entry .b8   读取一个字节，作为 `B8`
++   entry .b16   按大端序读取两个字节，作为 `B16`
++   entry .b32   按大端序读取四个字节，作为 `B32`
++   entry .b64   按大端序读取八个字节，作为 `B64`
++   entry .s8   读取一个字节，作为有符号的 `S8`
++   entry .s16   按大端序读取两个字节，作为有符号的 `S16`
++   entry .s32   按大端序读取四个字节，作为有符号的 `S32`
++   entry .s64   按大端序读取八个字节，作为有符号的 `S64`
++   entry .u8   读取一个字节，作为无符号的 `U8`
++   entry .u16   按大端序读取两个字节，作为无符号的 `U16`
++   entry .u32   按大端序读取四个字节，作为无符号的 `U32`
++   entry .u64   按大端序读取八个字节，作为无符号的 `U64`
++   entry .byte   读取一个字节，作为 `Byte`
++   entry .short   按大端序读取两个有符号字节，作为 `Short`
++   entry .int   按大端序读取四个有符号字节，作为 `Int`
++   entry .long   按大端序读取八个有符号字节，作为 `Long`
++   entry .Join   派生为积类型构建的实例：总宽度和一个读取器
+
+% 1 1 0 1ef2a5fffbd880710548274c9ea2c999
+
+@ 0 11 0 1c3f9e9a1ee0e6620b9ae87d37e80ba5
++         由 `.conjunction` 构建，`Debufferable.derived` 为 case class 调用它：它的宽度是各字段宽度之和，它的读取器通过同一个六分仪依次读取每个字段并构造积类型的值。
++         用户代码通常不直接指名它。
++     entry #width   积类型的总宽度，以字节计
++   entry .conjunction   根据积类型各字段的实例为其派生实例
++       `ProductDerivable` 派生中积类型的那一半，由 `Debufferable.derived` 调用；用户代码写 `Debufferable.derived`，而不是调用它。
++   entry #width   此类型的值所占的字节数
++   entry #debuffer   从 `Sextant` 读取一个值，并使其前进 `#width`
++       接受独占的 `Sextant^`，因为读取会移动它的位置。
++       手写的实例必须把参数声明为 `Sextant^`。
+
+@ 0 1 0 0d5651f804986d570528d6cbcd12db54
++ entry .Unpackable   `unpack` 可读取内容的类型类：单个值，或按数量读取的数组
+
+% 1 1 0 14e8748307678f7f0d857d5bf35eb401
+
+@ 0 5 0 15cfe83f9f0bfffa01937f3b8a0f70cd
++       `unpack` 和 `unpackFrom` 解析 `T is Unpackable`，它的 `#Wrap` 类型说明结果的形状：对于任何 `Debufferable` 类型，结果是值本身（`.debufferable`）；对于冻结数组 `Array[T]^{}`，结果是 `Int -> Array[T]^{}`，即从数量到数组的函数（`.frozenArray`）。
++       后者使带数量前缀的一节可以用一次调用读取，数量一旦已知即可提供：
+
+% 2 1 0 101f2d23ff7aec9f19c67154b2e9f42c
+
+% 3 1 0 03d6052d347a526b17a25650fa63a1c0
+
+% 0 1 0 1aa256b3c3eaba231e857ad3a82b9acc
+
+% 2 1 0 1ffa999e06af01e805f159fb93195e92
+
+% 0 1 0 1a99a969f45d1da400ca55945ef59f24
+
+% 0 1 0 16978b100aa45a800899f2518d562014
+
+% 1 1 0 1486b42c8dbc4b3814d509addd9d5223
+
+% 1 1 0 04e4339749d5334b05c8e37331dacb86
+
+% 1 1 0 18c9444f483bbfd410ea04b02fd30f1f
+
+@ 0 11 0 181db71a9f151f93186df0ea0b445e65
++   entry .frozenArray   读取元素为 `Debufferable` 的冻结数组，作为从数量出发的函数
++       为任何具有 `Debufferable` 和 `ClassTag` 的 `T` 提供 `Array[T]^{} is Unpackable`。
++       它的结果记录数据和起始偏移量，每次被应用时都创建一个新的六分仪，因此该函数是纯的，可以应用多次，并且从不推进调用者的六分仪：在数组之后继续读取的读取者必须用 `advance` 越过它。
++   entry .debufferable   读取任何 `Debufferable` 类型的单个值
++       为每个 `T is Debufferable` 提供 `T is Unpackable`，结果为值本身，并使六分仪前进该类型的宽度。
++   entry #Wrap   结果的形状：值本身，或从数量出发的函数
++   entry #Result   `unpack` 给出的结果类型：`Wrap[Self]`
++   entry #unpack   从 `Sextant` 读取，得到 `Wrap[Self]`
+
+@ 0 1 0 17534bcf3c7c8ca61019df5e28fc9780
++ entry .Bufferable   可写入字节的定宽类型的类型类
+
+% 1 1 0 0d13d52abe5441de08b35195ea4a1bb6
+
+@ 0 4 0 0e2cfb1d5cf5552218c2fb42fb34e609
++       `Debufferable` 的写入对应物：`T is Bufferable` 说明一个 `T` 所占的 `#width`，以及通过 `Sextant` 写入一个值的 `#sextant`。
++       积类型用 `Bufferable.derived` 根据其字段的实例派生自己的实例，与 `Debufferable` 相同，因此一个布局只需声明一次即可用于两个方向。
+
+@ 0 2 0 0108aef959994f7f1b3d47846c385dc3
++       伴生对象目前没有为数值类型声明实例，因此在提供这些实例之前，派生的积类型没有可组合的字段实例。
+
+% 1 1 0 194264aa4963e1fa063450dc9f63064d
+
+@ 0 1 0 1af25351a8d860560fdc0b0659848eb4
++   entry .Join   派生为积类型构建的实例：总宽度和一个写入器
+
+% 1 1 0 098a8491887f78cf17111b4bb46f3356
+
+@ 0 9 0 17ad53ac0996101712b994363cc3dd4d
++         由 `.conjunction` 构建，`Bufferable.derived` 为 case class 调用它：它的宽度是各字段宽度之和，它的写入器通过同一个六分仪依次写入每个字段。
++         用户代码通常不直接指名它。
++     entry #width   积类型的总宽度，以字节计
++   entry .conjunction   根据积类型各字段的实例为其派生实例
++       `ProductDerivable` 派生中积类型的那一半，由 `Bufferable.derived` 调用。
++   entry #width   此类型的值所占的字节数
++   entry #sextant   通过 `Sextant` 写入一个值
++       接受独占的 `Sextant^`；手写的实例必须这样声明其参数。

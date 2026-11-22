@@ -1,0 +1,452 @@
+orthant 2 language
+
+% 0 1 0 0f04ec4b9ac2d4270a232409219e1f6b
+
+% 0 1 0 125ae7665200e2a914e74bc72a026102
+
+% 0 1 0 0b5938ce7315323607e1922cbc4d93e2
+
+@ 0 1 0 19bd1eba853dc933140a1c8ccc0bfa14
++ info   在运行时编译并在别处运行的引用 Scala 代码：在全新的 JVM 中，或在隔离的类加载器中
+
+% 0 1 0 0ca6d61ddd9511ea1cdae38f1414f6fe
+
+@ 0 6 0 0033f9887f745b8e007b1159d1f1ece8
++     _Superlunary_ 推广了 Scala 的分阶段执行，使引用的代码（`'{…}`）在一个不同的*环境*中运行，而不是在同一程序的下一个阶段中运行。
++     `Rig` 说明编译后的代码如何部署和调用；它的 `dispatch` 方法接受一个引用块，把外围作用域中的值拼接进去，在运行时编译该块（每个调用点和树一次），把它送出去，运行它，再把答案带回来。
++     跨越边界的值由 `Stageable` 编码：对 `Jvm` rig 编码为 JSON，对 `Isolation` 编码为 `Pojo` 树。
+
+@ 0 4 0 1c9cd72aad2f58500197974053e8f717
++     由于两边一起编译，并由引用和拼接划定界线，它们之间的约定由编译器检查：引用内部不能写对本地堆对象的引用，而没有可传输形式的拼接值会在该块编译时被拒绝。
+
+% 2 1 0 1913e625ebd53a2f1d102a8246667744
+
+% 3 1 0 0ff65ad39b01043b1773b11b319e14f0
+
+% 4 1 0 1464cac3a345ee091a7e01358cccaae1
+
+% 5 1 0 194600c3334a259f1c9ba1b579bcc5b9
+
+% 6 1 0 023d84276c4c28670c95be47f7536faf
+
+% 7 1 0 18d3e8ee9f44fae70648771c6533c3b8
+
+% 8 1 0 11ea57d6e53cf5c21c27c0f70493a8f8
+
+% 9 1 0 0c6820158125e44c069dfeb9a4724fdf
+
+% 10 1 0 1dc3c4cb44c83a4e0661b50241fe15c6
+
+% 0 1 0 136d50fc521554bf050295dc2bf1207c
+
+% 0 1 0 19b4303499d6d81403007fa6014b71c3
+
+% 1 1 0 0cdf2688d6f8db8806a476ff16550453
+
+% 0 1 0 07d5757425de94a81d22699652c85a0e
+
+% 0 1 0 0aacfa1522acc28e10baaffb7a6614a4
+
+% 1 1 0 0ee6c6e9a406b648185051b09b5d1d56
+
+% 2 1 0 0357517b82309d5602c0b6692d2b14e9
+
+@ 0 1 0 02f7326984c26cff173274037ccb5bb3
++     把计算移到别处，改变的是它在哪里运行，而不是如何调用它：
+
+% 2 1 0 06f87dd4b6c72fcd00af539ce073e543
+
+% 0 1 0 1429c53f065a172715abc2fb1a8fe7cf
+
+% 1 1 0 08ca38ad23f20c410d3fb806e0b26784
+
+% 0 1 0 071bd5a78d7864ab1529cdac2455dbfa
+
+% 0 1 0 002ab7643f35c462052f5ca1ea68f2be
+
+% 0 1 0 1fa81f55d6c0988d1a44ce6c01e5e918
+
+% 0 1 0 0ba4f458a1b963d306bdfe10934076d3
+
+% 1 1 0 0814e81fb6bb2ea81021658399b884a3
+
+% 0 1 0 13e415a11a2dcf490b9c189a1faf3d15
+
+% 1 1 0 05a55bc5ab65f0c30c2a1c016789c1e2
+
+% 2 1 0 1c0459c96e34f0900dc7d8d03fa045da
+
+% 3 1 0 05590843598303260a951f4dd7c4a9a6
+
+% 4 1 0 1a8b0418ac4e523b0f4b472a3fbd8480
+
+% 0 1 0 015178b95712df0b0fadac82b208a90e
+
+% 1 1 0 1b34251ce332c39119f2500abd1a522d
+
+% 0 1 0 1b366cd3d3bfd07618de59c1bda7514b
+
+% 1 1 0 189df5411b454a6d1bef487e145c91be
+
+% 2 1 0 1c9c9288e488b30d0418f4fab82d9a2d
+
+% 3 1 0 00e5113240e30e1104a550c6b1447a72
+
+% 4 1 0 04502acb2621179a0b175c4db70eef0c
+
+% 1 1 0 0df187667d535dbf000c6f5ae5734546
+
+% 1 1 0 11e767d9efb47d1a0f4b85a0051bf1dd
+
+@ 0 5 0 1fd38d6064e36b85177151cd25d587db
++     用 `${…}` 拼接的值由 `embeddings.automaticEmbedding` 转换为 `Expr`，它需要按名字导入：`import soundness.*` 不会导入 given。
++     分派还需要作用域中有一个 `System` 和一个 `TemporaryDirectory`，并会抛出 `Compiler.Error`（分阶段执行的代码没有编译通过）和 `Rig.Error`（它无法被编组、分阶段执行或调用）。
+
+@ 0 1 0 077df09bc24708d50aa8247034b55636
++     这个库有两个源集：
+
+@ 0 4 0 1d522d731028692b141ad0c926ccd325
++     - `superlunary.core`：`Rig`、`Stage`、`Stageable`、`References` 和 `embeddings` 包，即构建任何 rig 所用的机制。
++     - `superlunary.jvm`：两个提供的 rig，`Jvm` 和 `Isolation`，以及 `Executor`，即 `Jvm` 子进程运行的入口点。
+
+@ 0 3 0 037ec3ef33f416d808852c7117881aca
++     一切都导出到 `soundness` 总括包，`embeddings` 选择包与总括包自己的同名包合并。
++     `apoplexy.Executor` 有意不导出，因为它会在那里与 `superlunary.Executor` 冲突；总括包中的 `Executor` 就是这一个。
+
+% 0 1 0 1a1be6ac033dcd7b0624cab3102429d4
+
+% 0 1 0 1baa33a70778d164032906fcfc68708e
+
+% 0 1 0 02128ec949f9b7be0f354d34e7651c11
+
+% 0 1 0 1a11f24e31e6bda30ff320361a2feaf7
+
+% 0 1 0 1833065ab0e64951054da38ca6bd7e02
+
+@ 0 1 0 1f249867105a2b921d174b47e27cd26c
++ entry .Rig   引用的代码可以为之编译并在其中运行的环境，用 `dispatch` 在那里运行一个块
+
+% 1 1 0 1f815aacf229fa271579486f49c74c1e
+
+@ 0 5 0 1f009051f0aadcd71f4ee2d8726da00d
++       rig 是分阶段计算的*所在之处*，以值的形式表示。
++       在 rig 看到任何东西之前，`dispatch` 就完成了困难的部分：如果引用块尚未编译就编译它，捕获它的拼接输入，并把它们编码为一个可传输的 `Form`；留给 rig 的工作很窄：让编译输出在其环境中可用（`#stage`），并在那里用编码后的输入运行它，带回编码后的输出（`#invoke`）。
+
+@ 0 7 0 043c16b3fad40bf91dbdcd6561889d92
++       实现要声明它的 `#Result` 类型（裸输出、`Optional` 或 `Task`，视环境而定）、它的 `#Transport` 和 `Form`、它的 `Target`（`#stage` 产生的东西，例如 `LocalClasspath` 或 `Classloader`）、用来编译的 `scalac`，以及这两个方法。
++       它用一个 `Classloader` 构造，分阶段执行的代码针对该类加载器的类路径编译并与之链接；通常是 rig 自己的 `Classloader[MyRig.type]`，因为在运行测试的宿主下，线程的上下文加载器可能是宿主的。
+
+% 2 1 0 0f9236785be5a5111ec808a4bac4833e
+
+% 3 1 0 12ce2dcc1470f49604270588a8aa2e4a
+
+% 0 1 0 07b750cd940b39ca13b1331c684c2c28
+
+% 1 1 0 0c350a5776ffba69126c55b22df55c94
+
+% 1 1 0 05e58c57513ff4fb1664b4fb5914cddd
+
+% 0 1 0 1c10ae8ea0d413f20cfb67313bfbbbad
+
+% 0 1 0 13ddf368f52a986116efc3ff52f323bf
+
+% 0 1 0 0a3debdd4cc4e6020d1451ce690219e7
+
+% 0 1 0 0e013a6e59e2b96201a7e91544db7d84
+
+% 0 1 0 0bafaa11c49c79f401de2e36d8b245ab
+
+% 0 1 0 159c65501156777809a8452c9d07c5aa
+
+% 0 1 0 1651fbdfe04be88f0b8494344c0ae8b7
+
+% 0 1 0 13ff6a086bea7b8213651543f0eeddfd
+
+% 0 1 0 0986994199ee963f01c67683b01391a2
+
+% 0 1 0 0ea6833ee74b6bdf13f7c9b256042b06
+
+% 0 1 0 05f514d4043c49a714d5ba091b16d8bb
+
+% 0 1 0 14836629a989b53501b6ac6b0ab6a80f
+
+% 1 1 0 02dc927f3c4079d012837fe4e9986ff3
+
+@ 0 1 0 1d2ba59ee7af444a00bc4c01cc5cbd2c
++       `Jvm` 和 `Isolation` 是两个提供的 rig。
+
+% 0 1 0 0ac42fdbdcee73cc1df57ee22a5a4e4e
+
+% 0 1 0 1e0eeaba4144df0417821b2ea28d5910
+
+% 0 1 0 0797b40c9c07aea30aedcabaec2132db
+
+% 0 1 0 060f87355957d91f16c4482d6fc28a2a
+
+@ 0 7 0 153035ce633a3cb30cddf0e0756ec280
++   entry #dispatch   编译一个引用块，在这个 rig 的环境中运行它，并返回其结果
++       `rig.dispatch('{ … })` 接受一个块，该块在给定拼接所分配到的 `References` 和一个 `Quotes` 时，构建一个 `Expr[output]`。
++       它需要一个 `Codepoint`（为调用点自动提供）、一个 `System`、一个 `TemporaryDirectory`（每次编译的类写到这里，并在关闭时删除），以及一个与 rig 的 `Transport` 和 `Form` 相匹配的 `Stageable`（在 `Stageable` 的伴生对象中找到），并会抛出 `Compiler.Error` 和 `Rig.Error`。
+
+@ 0 6 0 0365a9214c5dfe890795ce5c9a7e26a9
++       编译结果按调用点*以及*分阶段树结构的指纹缓存：一个内联调用点在每次使用时可能展开为不同的树，每棵不同的树编译一次，而只在拼接的数据上不同的调用共享同一次编译。
++       用 `${…}` 拼接的值每次分派求值一次，每个槽位反序列化一次，无论分阶段执行的代码读取它多少次，即使在热循环中也是如此，因此提取出的实例在各次求值之间共享。
+
+% 2 1 0 1b2823796027b4f41baf2210edb8d70d
+
+% 3 1 0 0cfd0246ee1617c319cf2cd99f95848e
+
+% 1 1 0 10f090fe19e7ee750458b0e6da583f6b
+
+% 0 1 0 19cc96edc586318316b31ec0030d2a58
+
+% 1 1 0 18d2e44f5ae6e0a902f514d7402244b5
+
+% 2 1 0 11a49945cdcaa667008a1719ef796cf1
+
+% 0 1 0 12a618ab3fc8ab800817fdfca2fcb19c
+
+% 0 1 0 1cf4664307464f100bbb951c649b1048
+
+% 0 1 0 1f3918a79623b6a81645e18b9fd2c5e4
+
+% 0 1 0 120063d0c1700d1100425aa1b548a6d8
+
+% 0 1 0 00c0cd05c50528e917c7a3eb2930eb29
+
+% 1 1 0 1f16d72baf61f1521193ddef082f7594
+
+@ 0 18 0 17f59580061d1db611bb8d6c040013fb
++       引用内部使用的名字根据引用外部的导入解析，但只有静态前缀如此：其他一切都必须通过拼接跨越。
++   entry #stage   把某个目录中已编译的类作为 `Target` 提供给环境
++       每次新的编译调用一次，参数是写入其类的目录。
++       本地 rig 可以只指明该目录（`#classpath`）；真正的远程 rig 则必须部署它。
++       失败为 `Rig.Error`。
++   entry #classpath   编译输出目录的类路径，加上 rig 自己的类加载器的条目
++       `classpath(out)` 把该目录放在最前面，后面是加载 `Rig` 本身的类加载器的条目，因此分阶段执行的代码与分派它的代码链接到相同的库。
++   entry #Result   `dispatch` 对某个输出类型返回的东西：输出本身，或其包装
++   entry #Transport   每个拼接值和结果被编码成的类型：`Json`、`Pojo`……
++   entry #settings2   分阶段执行编译器的设置，来自 `scalac` 的命令行参数
++       用于为分阶段树计算指纹的探测编译；调用者通常不需要。
++   entry #compiler2   用于为分阶段树计算指纹的分阶段执行编译器，基于 rig 的类加载器
++       调用者通常不需要。
++   entry .Error   当值无法跨越 rig 的边界，或分阶段执行的代码无法运行时抛出
+
+% 1 1 0 0d0b4eb54570f6a91209a004679e93bc
+
+@ 0 7 0 1909d3c7e5847cef0b5800d9b5833c0e
++         错误 `↯/s.121.1`：_failed to perform a remote operation because `reason`_。
++         这是围绕分阶段执行代码的编组和部署的失败，而不是代码本身的失败；无法编译的分阶段块会改为抛出 `Compiler.Error`。
++         原因是 `Rig.Error.Reason` 的分支之一。
++     entry #reason   远程操作失败的原因
++     entry .Reason   远程操作失败的原因：序列化、反序列化、分阶段执行或调用
++         一个枚举，每个分支都有一个补全错误代码的编号：
+
+% 0 1 0 1682596b9e5a64c91ea7da6dc8713ea7
+
+@ 0 4 0 0f05ca2e342788f71a13a5a1ab147c4e
++         column  分支
++         column  代码
++         column  消息
++         column  备注
+
+% 0 1 0 08a349de1f5a8dfc19573bdb9f4cdb42
+
+% 0 1 0 07949be926908a641545f1d60c1bbef1
+
+@ 0 1 0 087060fd9f944ecd1ffa63e519d8b646
++         row  `Unknown`  3  _of an unknown reason_  在结果解码失败时抛出
+
+% 0 1 0 05efc6b0b89aad241637613bed735114
+
+@ 0 1 0 06acc338bcba120512fa891a0584e886
++         row  `Invocation`  5  _the staged code could not be invoked_  例如 `Jvm` rig 的子进程失败时
+
+% 0 1 0 02125690b11d560710feb200e65921bd
+
+@ 0 7 0 1b3e06d5b8f02ffa09e95dc25abd7d99
++ entry .Jvm   在全新的 JVM 子进程中运行所分派代码的 rig
++     一个 `Target` 为 `LocalClasspath`、值以 JSON 文本跨越的 `Rig`：分阶段执行的类被编译到一个临时目录中，每次分派都启动 `java -classpath … superlunary.Executor`，以编码后的输入为参数，并从其标准输出读取编码后的结果。
++     它提供完全的隔离，代价是每次调用都要付出一次 JVM 启动时间。
++     失败的子进程会抛出原因为 `Invocation` 的 `Rig.Error`。
+
+% 2 1 0 10d9656e8d58a3241cf1dfebcbf5cca9
+
+% 3 1 0 13c1e2be20887dc713aab62b35b99fb9
+
+% 4 1 0 0dce0bf6bf41734805c600e7fc533183
+
+% 5 1 0 196f28c3d08492be005a77b5ede5eb50
+
+% 6 1 0 11a39c7c9dad62760843caefc49dbf4b
+
+% 7 1 0 04576b0c69ea6c0f12efddb3ef53f4be
+
+% 8 1 0 012d70567ca831790bd4be47a2c7d635
+
+% 9 1 0 15bc32c6d79170df0d69959819a79539
+
+% 10 1 0 0c03d29a6f39a86e1e140eb30f28ad2b
+
+% 0 1 0 18de35fb2c79ea020b03e2a41b8e5a43
+
+% 0 1 0 1b67abe90669cd140d01b93503a50586
+
+% 1 1 0 1227a1599bfb6e250c670d4fcb8f5874
+
+% 0 1 0 0a97428dfa31e4281abc2ed688b6b30a
+
+% 0 1 0 1793afec63ff31bb10d4ed032a08912b
+
+% 1 1 0 10caa98a5112035b14ba0323ac218158
+
+% 2 1 0 1ea6eac6d2ee4fbe1867dd7cc08b2cff
+
+@ 0 3 0 1830bd394d6ce56e04bf8f92570beb8f
++     拼接值和结果需要 `Encodable in Json` 和 `Decodable in Json` 实例（为 case class 派生）。
++     它用 Scala 3.6 和 `-experimental` 分阶段执行，针对加载它的类加载器的类路径。
+
+@ 0 5 0 1aabe4c6599d3063165bff063cd1bf18
++ entry .Isolation   在本进程中、在隔离的类加载器下运行所分派代码的 rig
++     一个 `Target` 为 `Classloader`、值以 `Pojo` 树跨越的 `Rig`：分阶段执行的类由一个基于输出目录和 rig 自身类路径的子优先（`Classloader.Delegation.Preferential`）类加载器加载，并被直接调用。
++     它廉价且受控，没有进程启动开销，但分阶段执行的代码共享 JVM、它的堆和它的线程。
+
+% 2 1 0 156343929089fa99094a2d6193c9ffd5
+
+% 3 1 0 038ae74f50b147370a8ceed58dff0890
+
+% 4 1 0 1644b347a2da04e41fea74ba7c1343b6
+
+% 5 1 0 19391cfb355247f3064b58eab87e6ae3
+
+% 6 1 0 10d10991bb46f2531b19241a1ad899cc
+
+% 7 1 0 1583f59b8a3618381771ac29f3cfdf49
+
+% 8 1 0 0245f0ccd8fda8c1173db157dc017d50
+
+% 9 1 0 0fa53c3ccfa841b41c01aa0cc18f5690
+
+% 10 1 0 149a88e2e974830e1a343a7c3be30b24
+
+% 0 1 0 1372ea20a082415f11748ee9d7f9baa1
+
+% 0 1 0 115c35964ad1b73705fe7fe17d7ebf55
+
+% 1 1 0 14c32fd694ced42f1f1dd16eacf2d127
+
+@ 0 1 0 017cde8f3f0c4c2e183677bfed526976
++     拼接值和结果需要 `Encodable in Pojo` 和 `Decodable in Pojo` 实例。
+
+@ 0 1 0 0e36c1ce1f42426516f4e13a764bdb1e
++ entry .Stage   一个已编译、已部署的分阶段计算，即 rig 的 `invoke` 所接收的形式
+
+% 1 1 0 07aebaadafbc813e0852245e7dd4d355
+
+@ 0 5 0 1ea832d3a7db40080e4719c6b19b2d34
++       一个 case class，包含 `stage` 产生的 `#target` 和 `#remote`；rig 用一个从编码输入到编码输出的函数调用 `#remote`，该函数是真正在环境中运行代码的部分，而 `#remote` 在它的两侧完成编码和解码。
++   entry #target   编译后的代码被分阶段放置到的地方：一个类路径、一个类加载器、一次部署
++   entry #remote   运行计算，参数是把编码输入转为编码输出的函数
+
+@ 0 1 0 0f69250917c6126e0dce387e4a7a91bd
++ entry .Stageable   值如何跨越 rig 的边界：它们的 `Transport` 以及发送过去的 `Form`
+
+% 1 1 0 0486583738a3c58e1206c6c19d6b3566
+
+@ 0 5 0 02f98b8050d647d01a6d8ec78e84a98a
++       一个有四个内联操作的类型类：`#embed` 把拼接值编码为 `Transport` 值，`#serialize` 把这些值的数组变成发送过去的单个 `Form`，`#deserialize` 把它读回来，`#extract` 把 `Transport` 值解码为它的类型。
++       `dispatch` 需要 `Transport` 和 `Form` 与其 rig 相匹配的实例；两个提供的实例都在伴生对象中，因此无需导入。
+
+% 0 1 0 0609671197ccaaba0de98e70ffdcec21
+
+% 0 1 0 197b441283a152171671e3d669be8289
+
+@ 0 12 0 0ae94cc3bd5d510d18b9e19757088edf
++   entry #Transport   单个值的编码形式：`Json` 或 `Pojo`
++   entry #embed   通过值的 `Encodable` 实例把它编码为 `Transport`
++   entry #serialize   把传输值的数组合并为发送过去的单个 `Form`
++   entry #deserialize   把收到的 `Form` 拆回为传输值的数组
++   entry #extract   通过值的 `Decodable` 实例把传输值解码为它的类型
++   entry .json   把值作为 JSON 传输，以 `Text` 形式的单个 JSON 数组发送：`Jvm` rig 的形式
++       格式错误的数组会抛出原因为 `Deserialization` 的 `Rig.Error`，无法解码的值则抛出原因为 `Unknown` 的错误。
++       每个值都需要 `Encodable in Json` 和 `Decodable in Json`。
++   entry .pojo   把值作为 `Pojo` 树传输，以它们的数组发送：`Isolation` rig 的形式
++       每个值都需要 `Encodable in Pojo` 和 `Decodable in Pojo`；数组按原样传递，中间没有文本。
+
+@ 0 1 0 114d33d8313527e7180b72578b9fbe37
++ entry .References   一个分阶段块的拼接值，在嵌入时分配到一个数组中
+
+% 1 1 0 054cfa2a09452e6d157e64ede93722c0
+
+@ 0 5 0 16e54dc1c63909b3099fd0cdee6f1a69
++       在 `dispatch` 主体中，每个拼接值都由 `embeddings.automaticEmbedding` 嵌入作用域中的 `References`，后者为它分配一个槽位；分阶段执行的代码从 rig 绑定为 `#array` 的数组中读取该槽位。
++       这是 rig 的机制，通常不直接使用。
++   entry .apply   一个基于某种传输类型的新的空引用集合
++   entry .Boxed   一个已提取的传输值，记忆在其数组槽位中
+
+% 1 1 0 07a9b34bf71928aa1a2a74479a05ed93
+
+@ 0 10 0 1d525118323d4b8d1ae81b79de1728dc
++         首次使用时，槽位中原始的传输值被替换为其解码值的 `Boxed`，因此在循环中读取的拼接每个 JVM 只解码一次，而不是每次迭代都解码。
++     entry #value   解码后的值
++   entry #Transport   所持有值的传输类型
++   entry #update   绑定分阶段执行的代码读取值所用的引用数组
++   entry #array   传输值的引用数组，在拼接任何值之前绑定
++       如果在 rig 绑定它之前读取，就会以 panic 失败；rig 总是先绑定它。
++   entry #current   迄今已分配的值的数量
++   entry #allocate   添加一个传输值，返回其槽位编号
++   entry #apply   已分配的值，作为按槽位顺序排列的数组
+
+@ 0 1 0 11878462eece726310ffffdec8338dc1
++ entry .embeddings   把拼接值带入分阶段执行代码的转换，一个需要按名字导入的 given
+
+% 1 1 0 01aca7a7d604241c108eb1ea4cc28f93
+
+@ 0 3 0 00007546bddd808a0a85aecb03d21e2c
++       `dispatch` 块中的 `${value}` 拼接需要把 `value` 变成 `Expr`，这个转换就是 `automaticEmbedding`。
++       `import soundness.*` 不会导入 given，因此要按名字导入它。
+
+% 0 1 0 18315661a642cc4713beb70855b927f5
+
+% 1 1 0 06e1f9e27e2e381a09e64b718299b319
+
+% 2 1 0 1760ad5d3beaa6f203656ffc6c6791f0
+
+% 1 1 0 108291f25d73a97603917c9afdae70ca
+
+@ 0 5 0 0afbeb0aab46779e1d3ae4fce5b15f14
++   entry .automaticEmbedding   把拼接值转换为读取其传输槽位的 `Expr`
++       一个内联的 `Conversion[value, Expr[value]]`，需要 `dispatch` 主体提供的 `References` 和 `Stageable`，以及一个 `Quotes`。
++       它通过 `Stageable` 嵌入值，为它分配一个槽位，并返回读取该槽位并在首次使用时解码的代码，把解码后的值记忆为 `References.Boxed`。
+
+@ 0 4 0 086e4078846c15f705b3b125323fca41
++ entry .deleteOnShutdown   把一个目录排入队列，在 JVM 退出时连同其内容一起删除
++     rig 用它处理每次编译的输出目录。
++     由一个关闭钩子依次排空队列，而不是每个目录一个钩子，因此有大量分派的运行在清理时不会耗尽文件描述符限制。
++     删除时的错误被忽略。
+
+@ 0 1 0 1ac364c161fc46d0090d20622783815c
++ entry .Executor   `Jvm` rig 的子进程运行的入口点：对其参数调用分阶段执行的代码
+
+% 1 1 0 019faf128d64c14408eebf208eb2352b
+
+% 2 1 0 1213a7cdc0e436300eb6cb8db84f337f
+
+@ 0 7 0 1ca1b576ee0b17070e3cbdb702519d38
++       位于 `superlunary.jvm` 中；不供直接使用。
++       `main` 加载编译后的类 `Generated$Code$From$Quoted`，把它应用于第一个参数，并打印结果，同时抑制其他所有标准输出，使只有结果到达父进程。
++       这就是 `soundness` 总括包中的 `Executor`；`apoplexy.Executor` 不导出，以避免冲突。
++   entry .run   把分阶段执行的代码应用于编码后的输入，返回编码后的输出
++   entry .main   对第一个参数运行分阶段执行的代码，只打印其结果
+
+@ 0 1 0 1b2c27cd69f1f0b619546602fd424093
++ entry .Executor2   另一个子进程入口点，从 `INPUT_PARAMETERS` 读取输入
+
+% 1 1 0 12c0d74587eb52421488cac3488f77e6
+
+% 2 1 0 002d201bc93f8a0a17180f37958661fa
+
+@ 0 3 0 03d47ef02d404eaf105caf3758cf6e85
++       不供直接使用。
++       与 `Executor` 类似，但从 `INPUT_PARAMETERS` 环境变量而不是参数中获取编码后的输入，并且什么也不打印。
++   entry .main   对 `INPUT_PARAMETERS` 中的输入运行分阶段执行的代码

@@ -1,0 +1,34 @@
+orthant 2 language
+
+@ 0 1 0 1d0d6fd53af4629e191b65cb0d8617e2
++ # `↯/s.87.1` — 查询参数类型不匹配
+
+@ 0 1 0 0b261f512e8e7f60178296253e9d81cb
++ 当具名查询参数被赋予错误类型的值时，在编译时抛出。
+
+@ 0 1 0 1d8ed6a2d2412a231ea0d46e12dff5b7
++ ## 原因
+
+@ 0 2 0 0d9143ea14afc310101ba79e1574f76a
++ Legerdemain 从具名实参构建查询字符串，并对照参数所声明接受的类型检查每个值。
+
+@ 0 1 0 1dde240f21b5409104721a1bcf5ec317
++ ## 示例消息
+
+% 1 1 0 1abf28c8819c4a100ba2af9cc74b39c0
+
+% 0 1 0 085d5a399543d76913b55222d82aa3d0
+
+% 1 1 0 05607fcb155e876f05bd2fe2b8eb86a8
+
+@ 0 1 0 0a3dc9137d3cf72f0228e7373e7a2cbf
++ ## 解决方法
+
+@ 0 1 0 09aa7dd34ea02a931ee35dd3f7863ca1
++ 提供所声明类型的值，或者修改该参数的声明。
+
+@ 0 1 0 004f241cb4a4ed0405cb108ee75b2611
++ ## 另请参阅
+
+@ 0 1 0 0a4fea4398cc22eb06d923a346595883
++ - 源代码：`lib/legerdemain/src/query/legerdemain.internal.scala`

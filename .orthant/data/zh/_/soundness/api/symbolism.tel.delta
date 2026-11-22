@@ -1,0 +1,934 @@
+orthant 2 language
+
+% 0 1 0 0f04ec4b9ac2d4270a232409219e1f6b
+
+% 0 1 0 1861fb3ffe250f090b0aa3a7d3bbee3c
+
+% 0 1 0 0b5938ce7315323607e1922cbc4d93e2
+
+@ 0 1 0 0adc043bef3ff3a40219512bf50337e4
++ info   以类型类表示的算术运算符，每个都指明其操作数和结果类型，以及全序比较
+
+% 0 1 0 0ca6d61ddd9511ea1cdae38f1414f6fe
+
+@ 0 7 0 001b83d42d668e8e09180a441f4c462d
++     _Symbolism_ 定义了算术运算符 `+`、`-`、`*`、`/` 和前缀 `-`，开方运算 `sqrt` 和 `cbrt`，以及单位元 `zero` 和 `one`；它们不是任何类型的方法，而是通过类型类解析的扩展方法。
++     每个二元类型类都指明其左操作数（`Self`）、右操作数（`Operand`）和结果（`Result`），因此对于操作数和结果类型不同的类型，算术也能有意义：长度乘以长度是面积，瞬时加上时长是瞬时，一个量除以另一个量得到的类型是两个操作数都无法预料的。
+
+% 2 1 0 06d3b9172c5afd120a63ddb63ad54368
+
+% 3 1 0 14cbead5e68dfd381a5c6b8cf87d35e8
+
+% 0 1 0 0e16b1647b03e4900f19da2be178677f
+
+% 0 1 0 0a86a05adaba2a0313a09db73cbe289c
+
+% 0 1 0 0dc7c045468bfc75153f12ccdd1b7994
+
+% 0 1 0 1c4e6d6936b9abec1c7c632a2cbdb611
+
+% 0 1 0 05962f2826310a920cadc29354dfb6fa
+
+% 0 1 0 1a789eba38bc0b530a3409d0b8e528f1
+
+% 0 1 0 16730851737b8e3c04c5026f48616e9c
+
+% 0 1 0 0b32d95916ee02200f4603770be1d06b
+
+% 1 1 0 02bccdb920c57ab406902be6bead479f
+
+@ 0 7 0 1304fdc7a498e4171a98ade7c2dcc31d
++     把实例的类型读出来就能了解它的全部：`Money is Addable by Money to Money`——一个 `Money` _可以被_一个 `Money` _加成_一个 `Money`。
++     这些类型类包括：用于各运算的 `Addable`、`Subtractable`、`Multiplicable`、`Divisible`、`Negatable` 和 `Rootable`；用于加法和乘法单位元的 `Zeroic` 和 `Unital`；`Concatenable`，它使每个可连接的类型都成为 `Addable`，因此集合和文本可以用 `+` 连接；`Quotient`，用于通过 `/:` 提取器拆开一个分数；以及 `Comparable`，一种返回 `Comparison` 的全序三路比较，集合通过它进行排序并查找极值。
+
+@ 0 4 0 06fd0409a45e2f3604643f5268089531
++     基本数值类型的实例是带有 `inline` 方法的单例对象，因此两个 `Double` 上的 `a + b` 会编译为单条机器指令，不分配实例，也不装箱。
++     `AddOp`、`SubOp`、`MulOp` 和 `DivOp` 类型类是实现同样内联的一种较旧的选择启用途径，运算符仍会首先查询它们。
+
+@ 0 5 0 03b235cda1773ea80d28345f2d419e4d
++     Symbolism 是 quantitative 的量纲算术、mosquito 的向量和矩阵、hypotenuse 的定宽数字以及 aviation 的瞬时和时长背后的机制。
++     它只有一个源集 `symbolism.core`，可为所有平台编译，所有内容都导出到 `soundness` 总括包。
++     每个实例都位于其主体类型或其类型类的伴生对象中，因此都不需要导入。
+
+% 0 1 0 18badcd7039d9c39129c5998a01d86df
+
+% 0 1 0 0137e19ffb39a5f91f53e450d96038d1
+
+% 0 1 0 1bc12d1c772357b51e8e7bd3fe28c449
+
+% 0 1 0 0ae57ce3c3193ca21a5f2acac50cd4d6
+
+@ 0 6 0 143c6a2488f000331af1baa532d3ae7e
++ entry .+   通过两个值的类型对应的 `Addable` 实例把它们相加
++     `left + right` 是任何类型上的扩展方法，需要作用域内有 `left is Addable by right`；其类型是该实例的 `Result`。
++     在内联调用时，它首先查找这两个类型的 `AddOp`，否则调用 `Addable` 实例的 `add`。
++     由于右操作数是类型参数，右侧的裸字面量不会取左操作数的类型：与 `U64` 相加的整数字面量要写成 `count + (1: U64)`。
+
+% 2 1 0 0fcdf602c22056460e96f0fa54f8627c
+
+% 3 1 0 1ac4396c2d6a7dee1489b85f7f0e2a60
+
+% 0 1 0 01ff953220b689400919171295187cf4
+
+% 0 1 0 15bb3993525ac8331e45585e8d406dd2
+
+% 0 1 0 034b888e64fa8c1f0b08d55c456b666b
+
+% 1 1 0 1cc1c3b5310fadb810591d611661e3b4
+
+@ 0 2 0 02c902eeb94ebc091975fe87598fc650
++     把没有实例的值相加是编译错误，而不会回退到 `toString` 拼接。
+
+@ 0 4 0 1340769e512b6d0b0e80ffa1b4ae4cac
++ entry .-   通过两个值的类型对应的 `Subtractable` 实例，从一个值中减去另一个值
++     `left - right` 是任何类型上的扩展方法，需要作用域内有 `left is Subtractable by right`，返回该实例的 `Result`。
++     与 `+` 一样，存在 `SubOp` 时优先使用它。
+
+% 3 1 0 003634b81f983696178c4bb0becf942c
+
+% 4 1 0 05eaf87b495956ff1d78b80bf4c3621c
+
+% 0 1 0 0eea05f8d99cca701679a5039fb41c2f
+
+% 1 1 0 06d39eab07a051721c5db5cb7f77a10d
+
+@ 0 6 0 1cfe96953583e1f915decbdab16ef0e2
++ entry .*   通过两个值的类型对应的 `Multiplicable` 实例把它们相乘
++     `left*right` 是任何类型上的扩展方法，需要作用域内有 `left is Multiplicable by right`，返回该实例的 `Result`；正因如此，长度乘以长度可以是面积，而长度乘以数字仍是长度。
++     存在 `MulOp` 时优先使用它。
++     任何与自身 `Concatenable` 且 `Zeroic` 的类型都可以乘以 `Int`，表示重复，因此 `t"ab"*3` 是 `t"ababab"`。
+
+% 2 1 0 18e2dfe922aa50e403548eed9fb784f9
+
+% 3 1 0 11ec7ff3dcd869e5166e493e53eb6721
+
+% 0 1 0 0ab5e0fbf2b703cf1d5806cbc8ab6948
+
+% 0 1 0 1a13fd007aff231610d27a05474e455d
+
+% 1 1 0 117d53596954edfd0158dd4fc6f4881a
+
+@ 0 5 0 176e927d44fc8d4512a96934bdc56353
++ entry ./   通过两个值的类型对应的 `Divisible` 实例，用一个值除另一个值
++     `left/right` 是任何类型上的扩展方法，需要作用域内有 `left is Divisible by right`，返回该实例的 `Result`。
++     整数除法会截断，与基本运算符一样；`Int` 除以 `Double` 得到 `Double`。
++     存在 `DivOp` 时优先使用它。
+
+% 3 1 0 013d822fa0c63d6a191036d4bc758a37
+
+% 4 1 0 09c7e1aeda257739023f0d84afb78384
+
+% 0 1 0 1dc0d4719231858e1785fa7735a6eaed
+
+% 0 1 0 0356a2c08ce5f03a03811a3253f0561a
+
+% 1 1 0 0f73be644b09e1520cdf748d60bfe8db
+
+@ 0 4 0 1e37432a85b56c9013c20c0f4a920e5b
++ entry .unary_-   通过值的类型对应的 `Negatable` 实例对它取负，即前缀 `-`
++     `-value` 是任何类型上的扩展方法，需要作用域内有 `value is Negatable`，返回该实例的 `Result`。
++     `Byte` 或 `Short` 取负后仍是其自身类型，并像基本类型那样回绕。
+
+% 2 1 0 138eb749007778e60a23214f7e725145
+
+% 3 1 0 063b274c1aad97b915b322cee6b1be88
+
+% 0 1 0 0cb6847491cd419705c3648504b5d29d
+
+% 0 1 0 19cb0afc4e7140ce1a37694ee62dd5a3
+
+% 0 1 0 0ef44c411610aee61fc45ddfc3026e45
+
+% 0 1 0 12c7e154ec8e9dd71211f7dce1fa0cf8
+
+% 1 1 0 14c36c7016710afa1cc93dd484dc7e73
+
+@ 0 4 0 1816d7c931c911190f0efc44f3f2e2ca
++ entry .sqrt   通过值的 `Rootable[2]` 实例求它的平方根
++     任何具有 `Rootable[2]` 的类型上的扩展方法，返回该实例的 `Result`。
++     在 `Double` 或 `Float` 上，它内联为 `Math.sqrt`，不做任何分配。
++     `Int` 没有实例，因为它的平方根一般不是 `Int`：`16.sqrt` 是编译错误。
+
+% 2 1 0 1cbf542b31721eb1034450ee9de4fd4c
+
+% 3 1 0 0cf0a10ba408c9c7039b3bb8a54fe472
+
+% 0 1 0 10807e93ab26a6fc178aa57c71b388c6
+
+% 0 1 0 1eec60b42573e24b1f640aff321f90a3
+
+% 0 1 0 1bdb3c427c1522451a2c0fad5fbeae0e
+
+% 1 1 0 0c46250625a72b1e005913d910b82dc3
+
+@ 0 3 0 0821ba72a6b25615063bf290f601d680
++ entry .cbrt   通过值的 `Rootable[3]` 实例求它的立方根
++     任何具有 `Rootable[3]` 的类型上的扩展方法，返回该实例的 `Result`；在 `Double` 或 `Float` 上，它内联为 `Math.cbrt`。
+
+% 2 1 0 123026e4f53d01e115434a79ca7e472c
+
+% 3 1 0 10ad3bc700cf006503dd2baab18e8892
+
+% 0 1 0 135a5c580c71aa5b047c66084c45d1f2
+
+% 1 1 0 03fa26364ed08519023c832ca5983cea
+
+@ 0 3 0 073fd6d05b41cafc01bcb207305ce1ff
++ entry .zero   某个类型的加法单位元，写作 `zero[Int]`
++     `zero[T]` 需要作用域内有 `T is Zeroic`。
++     它是求和或重复连接的起点，也是泛型算法需要初始值时的来源。
+
+% 2 1 0 05b66885e2b190651168f573ea957abd
+
+% 3 1 0 03067fcf1afcb8870726567b37b6d5eb
+
+% 0 1 0 0fef75edd79509a61cff098683676fa9
+
+% 0 1 0 0de6bf3677170b700bad10bed8e48653
+
+% 0 1 0 0a12d213abde7c6b072e4a640c3bf087
+
+% 1 1 0 103ef2d82a064e3d0427e6d2bf6cfe80
+
+@ 0 1 0 115a1f8a152c69c019a24b6b863e0270
++ entry ./:   通过 `Quotient` 拆开分数的提取器，`numerator /: denominator`
+
+% 1 1 0 1bc98f746d55c7b8092b78de459f20b5
+
+@ 0 2 0 0cacfb56cb964c4814f127df9f5ee7a4
++       一种模式，匹配任何具有 `Quotient` 实例的值，并绑定其分子和分母；实例无法分解的值不匹配。
+
+% 2 1 0 000d31cd86646f331c4090433f3d43fa
+
+% 3 1 0 14c549ad32d0847e1b21cf1f736c164b
+
+% 0 1 0 0e5826d3da3d30c103535e26ed9850a5
+
+% 0 1 0 0b791519c46f44a7041f2214a0a8a295
+
+% 0 1 0 1315cf185bf45b84146a9f6a0601e2f0
+
+% 0 1 0 0404d4411a8179ee049adc364679bd72
+
+% 0 1 0 191d4a3c4e30e0c21ed3853ba93fbfc2
+
+% 0 1 0 0d389405fb62a66a0f7e2b5c09cf42de
+
+% 0 1 0 0b72e296f6608ae114abd9958390779c
+
+% 0 1 0 07ef0ac74f1876850a87a43e50b1025c
+
+% 0 1 0 1750964329dda9ef0e9d8028c88fe459
+
+% 0 1 0 183240fcffa65318024e7901a38190f0
+
+% 0 1 0 1692623ea65e7d5914447e02156122a7
+
+% 1 1 0 14617045670db1510baeb6feb0b9121f
+
+@ 0 1 0 0a8687ab07008c001d753338d8ebc1e8
++   entry .unapply   如果值的 `Quotient` 能够分解它，就把它分解为分子和分母
+
+@ 0 1 0 0daba5718467923004af18eddd6d6271
++ entry .Addable   `+` 的类型类：一个 `Self` 可以被一个 `Operand` 加成一个 `Result`
+
+% 1 1 0 1663371680dc2bde0a8319a6ff96a160
+
+@ 0 5 0 05ae9b11b2472e3d061f630e43ec6109
++       `+` 扩展方法背后的类型类。
++       它的三个类型成员说明了一切：实例 `Money is Addable by Money to Money` 把两个 `Money` 相加得到一个 `Money`，而 `Instant is Addable by Duration to Instant` 把时长加到瞬时上。
++       结果是实例的成员，而不是运算符的参数，因此一个 `+` 就能服务于所有组合。
+
+% 2 1 0 1f8529da4736245b17948c2d39a39790
+
+% 3 1 0 15617c77d2e4f07f0b9f3563ca981bef
+
+% 5 1 0 106f1d97b0f46b7710d0cd17d48eb298
+
+% 7 1 0 0a529f9e895b110115aecbb2520d748d
+
+% 0 1 0 0d578706d94c3e8e0173ca9459b0a3f8
+
+% 0 1 0 1b834b1787c2b18f08fb727e99586bd7
+
+% 0 1 0 0578de8800a3155b0e78a738fb1818d9
+
+% 1 1 0 1abb05b9d33034fd1a0a2092b2070248
+
+@ 0 2 0 1d0e5489653c0d0f0f77781bf274db46
++       类型逐个实例地获得其算术，每个运算符在其实例存在时即可使用：
+
+% 0 1 0 14116fcaa006993f068c95fd1ec862a2
+
+% 1 1 0 08d9458eb73012351c93056f35e51984
+
+% 0 1 0 17f1e21452daca120e8f42702861ec61
+
+% 1 1 0 01efe4ddc63cc62711e12fdb40e2d008
+
+% 2 1 0 0fd006c6720bb9b41c2057c5d9479bf1
+
+% 0 1 0 0300295f4abdaf0805ddb097916ce520
+
+% 1 1 0 0e01a652835172d10e85cd93181778e6
+
+% 0 1 0 0f27b586f383b2f51761a60ecc6f45c9
+
+% 1 1 0 1f51414240273dd50a3fe9a07b4482df
+
+% 2 1 0 17ad311edf5fc5f714717219ef90862a
+
+% 4 1 0 0ab73e52aa4cb7e50fc2606737274190
+
+% 5 1 0 109a883e4e2e62de06652a996b99d25a
+
+% 6 1 0 1b9f8e6646f96bff1368023df484205d
+
+% 0 1 0 024485cfd206f65503280ddb76e45145
+
+% 1 1 0 0fbeb44cfd56692e115d52c366b8ea86
+
+% 0 1 0 15d4fc05e6d4641a1cdbb361f7d0e015
+
+% 1 1 0 1b0614a364e110191f35b636997184bd
+
+% 2 1 0 09cc44f2383419df01a6130a641386ff
+
+% 4 1 0 09b0091e23f138fd1a3a3b2cda8366b2
+
+% 5 1 0 1239586768c8d8410567ecbda8a6b36a
+
+% 6 1 0 102b614c8e712e1c092a290c581d80f5
+
+% 0 1 0 1d3bf118b9b8910a12cf3e6a1ff450c9
+
+% 0 1 0 031e923452f92003085533f39c728578
+
+% 0 1 0 0742d9df8973350f097d3efea7165e13
+
+% 0 1 0 05324ab952d132031fa7821cd90c1137
+
+% 1 1 0 1a277342ea9dfdc5113023e785963c91
+
+@ 0 6 0 1233005096be334b0bd1b09e7fc72743
++       实例应放在主体类型的伴生对象中，在那里无需导入即可找到。
++       基本类型的实例（`Int`、`Long`、`Double`、`Float`、`Short`、`Byte`，以及任一顺序的 `Int` 与 `Double`）是伴生对象中的单例对象，其 `inline def add` 使 `a + b` 成为一条指令。
++       `Short` 或 `Byte` 相加后仍是其自身类型，溢出时回绕。
++       每个 `Concatenable` 类型都通过 `.concatenable` 成为 `Addable`。
+
+% 0 1 0 09201a2e5addfb43047d502b0377ccfb
+
+% 0 1 0 16710fc88531dae71c6010f7250374cd
+
+% 0 1 0 189486f3e13c4f7114ad6f7dc2f965e9
+
+@ 0 28 0 1cf15fc9ae00424f1028a473cfc83104
++   entry .apply   由两个操作数的函数构造的 `Addable` 实例
++       `Addable((left, right) => …)` 构造一个 `augend is Addable by addend to result`，三个类型都从期望类型推断，就像 given 的声明类型所提供的那样。
++   entry .DoubleAddition   `Double + Double` 实例，内联为一条指令
++   entry .FloatAddition   `Float + Float` 实例，内联为一条指令
++   entry .LongAddition   `Long + Long` 实例，内联为一条指令
++   entry .IntAddition   `Int + Int` 实例，内联为一条指令
++   entry .IntDoubleAddition   `Int + Double` 实例，结果为 `Double`
++   entry .DoubleIntAddition   `Double + Int` 实例，结果为 `Double`
++   entry .ShortAddition   `Short + Short` 实例，回绕为 `Short`
++   entry .ByteAddition   `Byte + Byte` 实例，回绕为 `Byte`
++   entry .double   `Double + Double` 的 given，类型声明为 `DoubleAddition` 以便内联
++       它以该对象的单例类型声明，这使内联器能把 `add` 解析为该对象的 `inline def`；类型声明为特质的 given 则会通过特质分派。
++   entry .float   `Float + Float` 的 given，类型声明为 `FloatAddition` 以便内联
++   entry .long   `Long + Long` 的 given，类型声明为 `LongAddition` 以便内联
++   entry .int   `Int + Int` 的 given，类型声明为 `IntAddition` 以便内联
++   entry .int2   `Int + Double` 的 given，类型声明为 `IntDoubleAddition` 以便内联
++   entry .int3   `Double + Int` 的 given，类型声明为 `DoubleIntAddition` 以便内联
++   entry .short   `Short + Short` 的 given，类型声明为 `ShortAddition` 以便内联
++   entry .byte   `Byte + Byte` 的 given，类型声明为 `ByteAddition` 以便内联
++   entry .concatenable   使每个 `Concatenable` 类型都成为 `Addable`，因此 `+` 可以连接列表、集合、映射和文本
++       对于任何 `left is Concatenable by right`，给出一个操作数和结果都相同、调用 `concat` 的 `Addable`。
++       `List(1) + List(2)`、`set + other` 和 `text + more` 正是这样通过同一个 `+` 工作的。
++   entry #Augend   左操作数的类型：`Self` 的别名
++   entry #Addend   右操作数的类型：`Operand` 的别名
++   entry #add   把加数加到被加数上，得到实例的 `Result`
+
+@ 0 1 0 1f26df8d88a1089e0d649f1656cab2c2
++ entry .Subtractable   `-` 的类型类：一个 `Self` 可以被一个 `Operand` 减成一个 `Result`
+
+% 1 1 0 1a51d983434d71510116edc334461cc6
+
+@ 0 3 0 1313ca3715fe360a1ea5a173b317e707
++       二元 `-` 扩展方法背后的类型类，其结果类型是实例的成员：例如 `Instant is Subtractable by Instant to Duration`，而瞬时减去时长仍是瞬时。
+
+% 2 1 0 0b2af35dae3694cd182ed5848389ca9b
+
+% 3 1 0 1bdc247c31bc5f6e188284d8a3e97f75
+
+% 5 1 0 1388f6b1c0ad7add1ad6a023b1109b91
+
+% 7 1 0 1106f41356606a7803dfaf35561c877b
+
+% 0 1 0 04b0755bae945ab216f3d64f18e41ad2
+
+% 0 1 0 0a9a6b1a8305d66d179e8d5a12475211
+
+% 0 1 0 0b435b44129212280b0a47723999db16
+
+% 1 1 0 09c92dd01c2ca9840d71f4eb3e0bd93c
+
+@ 0 2 0 0f1a9e92ab4e9263059cdaa828ade88f
++       基本类型的实例是带有 `inline def subtract` 的单例对象；`Short` 或 `Byte` 相减后仍是其自身类型。
+
+% 0 1 0 09201a2e5addfb45047d502b0377ccfd
+
+@ 0 16 0 156256010cb56ae217cab906cf35668f
++   entry .apply   由两个操作数的函数构造的 `Subtractable` 实例
++   entry .DoubleSubtraction   `Double - Double` 实例，内联为一条指令
++   entry .FloatSubtraction   `Float - Float` 实例，内联为一条指令
++   entry .LongSubtraction   `Long - Long` 实例，内联为一条指令
++   entry .IntSubtraction   `Int - Int` 实例，内联为一条指令
++   entry .ShortSubtraction   `Short - Short` 实例，回绕为 `Short`
++   entry .ByteSubtraction   `Byte - Byte` 实例，回绕为 `Byte`
++   entry .double   `Double - Double` 的 given，类型声明为 `DoubleSubtraction` 以便内联
++   entry .float   `Float - Float` 的 given，类型声明为 `FloatSubtraction` 以便内联
++   entry .long   `Long - Long` 的 given，类型声明为 `LongSubtraction` 以便内联
++   entry .int   `Int - Int` 的 given，类型声明为 `IntSubtraction` 以便内联
++   entry .short   `Short - Short` 的 given，类型声明为 `ShortSubtraction` 以便内联
++   entry .byte   `Byte - Byte` 的 given，类型声明为 `ByteSubtraction` 以便内联
++   entry #Minuend   左操作数的类型：`Self` 的别名
++   entry #Subtrahend   右操作数的类型：`Operand` 的别名
++   entry #subtract   从被减数中减去减数，得到实例的 `Result`
+
+@ 0 1 0 0b73b35ca0ada8700761792216a2515d
++ entry .Multiplicable   `*` 的类型类：一个 `Self` 可以被一个 `Operand` 乘成一个 `Result`
+
+% 1 1 0 1e4ba23bfd80ba0b090db9d419c89ded
+
+@ 0 3 0 03b6dfdc3cbee4851724b8c3fd35754f
++       `*` 扩展方法背后的类型类。
++       操作数和结果可以与左操作数不同：向量乘以 `Int` 是向量，在 quantitative 中长度乘以长度是面积。
+
+% 2 1 0 12f7157a6370663505cd6ef459a795aa
+
+% 3 1 0 023a7f1cf6d870260e90659c3cb9e7ed
+
+% 5 1 0 0a706183bcca45b00ed57ddf375b56a9
+
+% 7 1 0 0df878b4427bf50e09c3cff6aa18b8f2
+
+% 0 1 0 1ddd3201b781212b1e2766b5cbae2aed
+
+% 0 1 0 0bf7e8a092a4ec5b16ca621c39f96257
+
+% 0 1 0 0e19eb81436eb88f017033629fd7769b
+
+% 1 1 0 043e0a9c9fad44ec00ec311d94c7876c
+
+@ 0 3 0 0117d6b72670ed6b0c3327f7a8c0dd1d
++       基本类型的实例是带有 `inline def multiply` 的单例对象。
++       任何与自身 `Concatenable` 且 `Zeroic` 的类型，都可以通过 `.concatenable` 乘以 `Int`，表示重复。
+
+% 0 1 0 09201a2e5addfb42047d502b0377ccfa
+
+@ 0 17 0 1c11295dc351e8ea0793745c0ba9ad9c
++   entry .apply   由两个操作数的函数构造的 `Multiplicable` 实例
++   entry .DoubleMultiplication   `Double*Double` 实例，内联为一条指令
++   entry .LongMultiplication   `Long*Long` 实例，内联为一条指令
++   entry .IntMultiplication   `Int*Int` 实例，内联为一条指令
++   entry .FloatMultiplication   `Float*Float` 实例，内联为一条指令
++   entry .ShortMultiplication   `Short*Short` 实例，回绕为 `Short`
++   entry .ByteMultiplication   `Byte*Byte` 实例，回绕为 `Byte`
++   entry .double   `Double*Double` 的 given，类型声明为 `DoubleMultiplication` 以便内联
++   entry .long   `Long*Long` 的 given，类型声明为 `LongMultiplication` 以便内联
++   entry .int   `Int*Int` 的 given，类型声明为 `IntMultiplication` 以便内联
++   entry .float   `Float*Float` 的 given，类型声明为 `FloatMultiplication` 以便内联
++   entry .short   `Short*Short` 的 given，类型声明为 `ShortMultiplication` 以便内联
++   entry .byte   `Byte*Byte` 的 given，类型声明为 `ByteMultiplication` 以便内联
++   entry .concatenable   重复：与自身可连接且 `Zeroic` 的值乘以一个 `Int`
++       对于任何以自身 `Concatenable` 为自身且 `Zeroic` 的类型，`value*n` 是该值的 `n` 个副本从 `zero` 开始连接的结果，因此次数为零（或更小）时得到零值。
+
+% 2 1 0 10f33ed5263e6cce085b76de71d3e570
+
+% 3 1 0 0b86be096314745915f796d86e522690
+
+% 0 1 0 19487392ae3367d602eb46bf1ad4d6ca
+
+% 0 1 0 076d56d11172fa6807996f14801df631
+
+% 1 1 0 1ce0dd107e7622931e1b18875b8582a5
+
+@ 0 3 0 0ee8f21b41ff258503cb71af958b63c9
++   entry #Multiplicand   左操作数的类型：`Self` 的别名
++   entry #Multiplier   右操作数的类型：`Operand` 的别名
++   entry #multiply   把被乘数乘以乘数，得到实例的 `Result`
+
+@ 0 1 0 19abfe59cc307ebe1349e8ec18fd0c67
++ entry .Divisible   `/` 的类型类：一个 `Self` 可以被一个 `Operand` 除成一个 `Result`
+
+% 1 1 0 1a63a85b6973f61010b18b43dca198cc
+
+@ 0 2 0 1fc3eceb96f7f09c1daf72af952a8f02
++       `/` 扩展方法背后的类型类，其结果类型是实例的成员：在 quantitative 中，距离除以时间是速度。
+
+% 2 1 0 071d1763dd89f99919b9525d972b5eff
+
+% 3 1 0 08b375183530399c1dbe7f0ebffac65e
+
+% 5 1 0 0d5723e1f0146a451e4d3a7356bb1378
+
+% 7 1 0 07165ef010d0b525014430159b84ddeb
+
+% 0 1 0 12598c4154016f090eea6b98aa9f1cc5
+
+% 0 1 0 1fe2e345b33a893213fb4eeb2dc905b4
+
+% 0 1 0 1f7e5d1aa4b851c90ea4a72200ac7df0
+
+% 1 1 0 10f783c4ae44c2d208b29f43fc06e7cc
+
+@ 0 3 0 075bc8ab29271555186a902da2d60196
++       基本类型的实例是带有 `inline def divide` 的单例对象。
++       每种整数类型除以自身得到自身（截断），除以 `Double` 得到 `Double`；`Double` 或 `Float` 可以除以 `Int`，`Float` 除以 `Double` 得到 `Double`。
+
+% 0 1 0 09201a2e5addfb47047d502b0377ccff
+
+@ 0 30 0 1ece6c43fbece21f13c2e0391f7f3368
++   entry .apply   由两个操作数的函数构造的 `Divisible` 实例
++   entry .DoubleDivision   `Double/Double` 实例，内联为一条指令
++   entry .DoubleIntDivision   `Double/Int` 实例，结果为 `Double`
++   entry .FloatDivision   `Float/Float` 实例，内联为一条指令
++   entry .FloatIntDivision   `Float/Int` 实例，结果为 `Float`
++   entry .FloatDoubleDivision   `Float/Double` 实例，结果为 `Double`
++   entry .LongDivision   `Long/Long` 实例，截断
++   entry .LongDoubleDivision   `Long/Double` 实例，结果为 `Double`
++   entry .IntDivision   `Int/Int` 实例，截断
++   entry .IntDoubleDivision   `Int/Double` 实例，结果为 `Double`
++   entry .ShortDivision   `Short/Short` 实例，截断为 `Short`
++   entry .ShortDoubleDivision   `Short/Double` 实例，结果为 `Double`
++   entry .ByteDivision   `Byte/Byte` 实例，截断为 `Byte`
++   entry .ByteDoubleDivision   `Byte/Double` 实例，结果为 `Double`
++   entry .double   `Double/Double` 的 given，类型声明为 `DoubleDivision` 以便内联
++   entry .double2   `Double/Int` 的 given，类型声明为 `DoubleIntDivision` 以便内联
++   entry .float   `Float/Float` 的 given，类型声明为 `FloatDivision` 以便内联
++   entry .float2   `Float/Int` 的 given，类型声明为 `FloatIntDivision` 以便内联
++   entry .float3   `Float/Double` 的 given，类型声明为 `FloatDoubleDivision` 以便内联
++   entry .long   `Long/Long` 的 given，类型声明为 `LongDivision` 以便内联
++   entry .long2   `Long/Double` 的 given，类型声明为 `LongDoubleDivision` 以便内联
++   entry .int   `Int/Int` 的 given，类型声明为 `IntDivision` 以便内联
++   entry .int2   `Int/Double` 的 given，类型声明为 `IntDoubleDivision` 以便内联
++   entry .short   `Short/Short` 的 given，类型声明为 `ShortDivision` 以便内联
++   entry .short2   `Short/Double` 的 given，类型声明为 `ShortDoubleDivision` 以便内联
++   entry .byte   `Byte/Byte` 的 given，类型声明为 `ByteDivision` 以便内联
++   entry .byte2   `Byte/Double` 的 given，类型声明为 `ByteDoubleDivision` 以便内联
++   entry #Dividend   左操作数的类型：`Self` 的别名
++   entry #Divisor   右操作数的类型：`Operand` 的别名
++   entry #divide   把被除数除以除数，得到实例的 `Result`
+
+@ 0 1 0 1d2b09d9a4d03fa412b423306cd2fc24
++ entry .Negatable   前缀 `-` 的类型类：一个 `Self` 取负得到一个 `Result`
+
+% 1 1 0 18da6ba8eab7ba571e2eee4c357f3298
+
+@ 0 2 0 12796fdf465eebcf1c921451ef3c8a5d
++       `unary_-` 扩展方法背后的类型类。
++       结果是实例的成员，因此一个类型取负后可以得到另一个类型，就像无符号数取负可能得到有符号数一样。
+
+% 2 1 0 1aa453b2d4e42cbd10eb34a1a5dfd6d8
+
+% 3 1 0 17add86c51613302081ec3513a5f7d7a
+
+% 5 1 0 1a9317f56cf13d261f94c35fcae7483d
+
+% 7 1 0 1d946a085293b4af0a98db75cbd33566
+
+% 0 1 0 123e380402734dc815c93c0dc8b6a151
+
+% 0 1 0 1ba358446f44fe8f14d32ffc8e731064
+
+% 0 1 0 0746cebb1a0ddeb4038608a27106ffad
+
+% 1 1 0 106c539c7cd2ce1914b54713f9adb30d
+
+@ 0 5 0 02fa7ff1abffca811600fe76648a5633
++       基本类型的实例是带有 `inline def negate` 的单例对象，因此 `Double` 上的 `-a` 是一条指令；`Short` 或 `Byte` 取负后仍是其自身类型。
++       通过实例取负的泛型代码，应在 `summonFrom` 模式中绑定实例，而不是调用 `summonInline[…].negate`；后者把实例的类型定为特质，即使对于基本类型也会通过擦除后的方法装箱。
+
+% 0 1 0 1e3b0d154788a55e033a7e149e34da8c
+
+@ 0 14 0 017a4300b34f61ab0d10fe633b78ea06
++   entry .apply   由操作数的函数构造的 `Negatable` 实例
++   entry .DoubleNegation   `-Double` 实例，内联为一条指令
++   entry .FloatNegation   `-Float` 实例，内联为一条指令
++   entry .LongNegation   `-Long` 实例，内联为一条指令
++   entry .IntNegation   `-Int` 实例，内联为一条指令
++   entry .ShortNegation   `-Short` 实例，回绕为 `Short`
++   entry .ByteNegation   `-Byte` 实例，回绕为 `Byte`
++   entry .double   `-Double` 的 given，类型声明为 `DoubleNegation` 以便内联
++   entry .float   `-Float` 的 given，类型声明为 `FloatNegation` 以便内联
++   entry .long   `-Long` 的 given，类型声明为 `LongNegation` 以便内联
++   entry .int   `-Int` 的 given，类型声明为 `IntNegation` 以便内联
++   entry .short   `-Short` 的 given，类型声明为 `ShortNegation` 以便内联
++   entry .byte   `-Byte` 的 given，类型声明为 `ByteNegation` 以便内联
++   entry #negate   对值取负，得到实例的 `Result`
+
+@ 0 1 0 1b19e9b82d0d083a081097fc4ad62ee7
++ entry .Rootable   字面量次数开方的类型类：`Rootable[2]` 支持 `sqrt`，`Rootable[3]` 支持 `cbrt`
+
+% 1 1 0 1bc8f9e2742a65c31a821966efacdbbb
+
+@ 0 3 0 07f9a90ecd878b40031d47996e1f8a68
++       `Rootable[degree]` 求其类型参数所指次数（一个字面量 `Int`）的方根：`Rootable[2]` 支持 `sqrt`，`Rootable[3]` 支持 `cbrt`。
++       也可以提供任何其他次数的方根，并召唤或直接使用它。
+
+% 2 1 0 162e31646f9a6fb01c943a3b08a7ae1f
+
+% 3 1 0 0f0c3e32762434a6085c53430ba9a4b4
+
+% 0 1 0 0a02ba1e7f5f923011b87672119d7146
+
+% 0 1 0 0dc1d4cfbb04899f0628afb9ba0c0cb1
+
+% 1 1 0 1a5d0bb2c69e2f881dc1977b2b47337a
+
+@ 0 2 0 17c1db7a6636e8880599dfc2fd9fad2f
++       `Double` 和 `Float` 的实例是单例对象，其 `inline def root` 直接调用 `Math.sqrt` 或 `Math.cbrt`。
++       整数类型没有实例。
+
+% 0 1 0 09e8d0ca78c15b2a1dcbf6ebebd2a93a
+
+% 0 1 0 166027e08375b0ca12fa99c00270d7e8
+
+@ 0 10 0 0e25929c19cc48c103f494259a253a07
++   entry .apply   由操作数的函数构造的、具有字面量次数的 `Rootable` 实例
++   entry .DoubleSquareRoot   `Double` 的平方根，内联为 `Math.sqrt`
++   entry .DoubleCubeRoot   `Double` 的立方根，内联为 `Math.cbrt`
++   entry .FloatSquareRoot   `Float` 的平方根，通过 `Math.sqrt`
++   entry .FloatCubeRoot   `Float` 的立方根，通过 `Math.cbrt`
++   entry .sqrt   `Double` 平方根的 given，类型声明为 `DoubleSquareRoot` 以便内联
++   entry .cbrt   `Double` 立方根的 given，类型声明为 `DoubleCubeRoot` 以便内联
++   entry .sqrtFloat   `Float` 平方根的 given，类型声明为 `FloatSquareRoot` 以便内联
++   entry .cbrtFloat   `Float` 立方根的 given，类型声明为 `FloatCubeRoot` 以便内联
++   entry #root   值的方根，得到实例的 `Result`
+
+@ 0 1 0 1ef889ed7c9385a11ecffb6a4caf45d4
++ entry .Zeroic   类型的加法单位元的类型类，写作 `zero[T]`
+
+% 1 1 0 08956924a4492f3a1fc9b62b5734004a
+
+@ 0 4 0 11cc372b9a5221b7016c77536ab47ff6
++       `Zeroic` 实例提供一个加上它不会改变任何东西的值：数值类型的 `0`、空 `String`，以及用户定义类型所称的零。
++       泛型求和与重复都从它开始，`Multiplicable.concatenable` 需要它来重复一个可连接的值。
+
+% 2 1 0 1c485740d5d4da5904cf1c6fdc8b5740
+
+% 3 1 0 159a33707cba0dba0eec92d94037ca67
+
+% 5 1 0 018feac95a950e4b1d45c88fae5bc532
+
+% 7 1 0 0a21db7cf1d1134610088bd3f904e0fb
+
+% 0 1 0 10fd872dcaa286890b079990fc4ab073
+
+% 0 1 0 0da75b470227f574017f087edbfa667c
+
+% 0 1 0 0893566d65d7d2a3194384a16d23e70a
+
+% 1 1 0 0833bdfd452204ca0ae725d78bf82a19
+
+% 0 1 0 0aefe5d534db9c83077b0182b465ebe4
+
+% 0 1 0 1a2b45b14481f50813b158b985ac0dd4
+
+@ 0 8 0 0a507541a53ae8a90e14bb63e1681739
++   entry .long   `Long` 类型的零，内联
++   entry .int   `Int` 类型的零，内联
++   entry .short   `Short` 类型的零，内联
++   entry .byte   `Byte` 类型的零，内联
++   entry .double   `Double` 类型的零，内联
++   entry .float   `Float` 类型的零，内联
++   entry .string   空 `String`，内联
++   entry #zero   该类型的加法单位元
+
+@ 0 1 0 17d0c4d86fd2df641f3afc6aca8b129e
++ entry .Unital   类型的乘法单位元（即其 `one`）的类型类
+
+% 1 1 0 116f05d91714fbc31c8ca791912076c9
+
+@ 0 2 0 0869082e7574486d09f05af4abbbd861
++       `Unital` 实例提供一个乘以它不会改变任何东西的值，对数值类型而言是 `1`。
++       实例实现受保护的 `makeOne`，调用者读取 `#one`。
+
+% 2 1 0 09b01ab20abea3a30ca4567e3249e68d
+
+% 3 1 0 1f7181cff3b514af06dd92f27b635cce
+
+% 0 1 0 04a30710583a6ea717f57244166c0575
+
+% 0 1 0 104a570d866063b50a84280ffe8c7e83
+
+% 0 1 0 1c6e571a4db1518c00e290dce3eaea0a
+
+% 0 1 0 1c898526aed9e6861f1530c835d8e0d8
+
+% 0 1 0 1f46cc18732e8f5c1036f2bfd26be020
+
+% 0 1 0 0bb891b03dedfb9204feb8f85de41781
+
+% 1 1 0 129db91e5194dc510e3d654a95233992
+
+% 0 1 0 060b4f04a018a0a70f7e9f6c7281912b
+
+@ 0 7 0 1fc214a66a2095c4191ff58c07e7a464
++   entry .long   `Long` 类型的一
++   entry .int   `Int` 类型的一
++   entry .short   `Short` 类型的一
++   entry .byte   `Byte` 类型的一
++   entry .double   `Double` 类型的一
++   entry .float   `Float` 类型的一
++   entry #one   该类型的乘法单位元
+
+@ 0 1 0 1d13a1705a4d6924007107235ba627de
++ entry .Concatenable   连接两个值的类型类，同时也为它们提供 `+`
+
+% 1 1 0 05b5c2700537fe3d1d74dca6bdc526fa
+
+@ 0 5 0 12dcf17ae263a6f105c737172d06c5b4
++       `Self is Concatenable by Operand to Result` 把两个值首尾相接。
++       每个可连接的类型都通过 `Addable.concatenable` 成为 `Addable`，因此正是这些实例让 `+` 能够连接集合，并取代了标准库的 `++` 和 `:::` 写法；与自身可连接且同时 `Zeroic` 的类型可以乘以 `Int`，表示重复。
+
+% 2 1 0 1ebb40dbb5b4bbce172452e1d5ec4bd6
+
+% 3 1 0 0d3428a3c7153b5d022e14cd81ab1844
+
+% 0 1 0 1b88aed01bcba1211f58dd7e7d4b7d85
+
+% 0 1 0 05b4ad2ce8d8ef8c02b5e3fdd0641590
+
+% 0 1 0 1650a2559e1d02a41cd5c5b90f7d027e
+
+% 1 1 0 153c1c0f85569c7a1ff8f3cb7ac1a766
+
+@ 0 2 0 1d257d5a659b920b159b0b6f0e31f6af
++       集合的实例位于这个伴生对象中，因为集合定义在 symbolism 之下，它们自己的伴生对象无法容纳这些实例。
+
+% 1 1 0 18a1aee744ffd67816f30c39d585ce01
+
+@ 0 14 0 017c4e554e679054148786ad1b0ae4ca
++   entry .list   把两个 `List`（无论是否带有非空品牌）连接为普通 `List`
++       两个操作数都可以是 `List[element]` 的任意子类型，因此带品牌的非空列表在任一侧都能匹配；结果是普通的 `List[element]`，因此不会有品牌泄漏到结果中。
++   entry .sequence   把两个 `Sequence` 连接为普通 `Sequence`
++   entry .chain   惰性地连接两个 `Chain`，不强制求值任何一个
++   entry .set   两个 `Set` 的并集
++   entry .map   连接两个 `Map`，键相同时右操作数的值胜出
++       偏向右侧，与标准库的 `concat` 相同，也与 `Set` 相同，后者的并集就是连接。
++   entry .ledger   连接两个 `Ledger`，键相同时右操作数胜出
++   entry .frozenArray   把两个冻结数组连接为一个新的冻结数组
++       需要元素类型的 `ClassTag`。
++       结果是新分配的、长度为两者之和的数组，在两个操作数都复制进去后冻结。
++   entry #concat   把操作数接到值的末尾，得到实例的 `Result`
+
+@ 0 1 0 071b144af96ad28e0806f00dd6ac1e07
++ entry .Quotient   分数值的类型类：分子比分母
+
+% 1 1 0 1cef3fa996d638830f093840bfddecd2
+
+@ 0 4 0 1f2858d7841b1dda02fe2ac7359b5d5d
++       `Quotient` 实例把值分解为它的 `Topic`（分子）和 `Transport`（分母），`/:` 提取器正是据此匹配的。
++       分解是可选的，因此不是真分数的值（例如分母为零的值）不必匹配。
+
+% 2 1 0 0c9319faaf3d0cc306932dfc5ff9f005
+
+% 3 1 0 0d7a68bc6c173fe500eff20efb30b096
+
+% 0 1 0 025e53d24c25f59c04d37c83a19074c7
+
+% 0 1 0 1a3b19770ee82ae2141ccfb95a2deb7d
+
+% 0 1 0 10b17c320ba0e0570b8c366edeb8c035
+
+% 0 1 0 0cfb2ebc50d7b72906e8778cb66aa65d
+
+% 0 1 0 0b5b9542b67e71a90ab06d3b251395fe
+
+% 0 1 0 0255cbf8babb22de0bb87d7f1ea3d1f3
+
+% 0 1 0 0a04ed26fd30e5a51acd601cccee7ceb
+
+% 0 1 0 04d89369db732d480601d57067d94693
+
+% 1 1 0 0e8f41192e5581491db520085c671360
+
+% 0 1 0 0668c7f8cc45ac3905ac4853700aa815
+
+@ 0 3 0 074393dd6286feef0c4ccecfe204d43d
++   entry #Numerator   分子的类型：`Topic` 的别名
++   entry #Denominator   分母的类型：`Transport` 的别名
++   entry #decompose   值的分子和分母（如果有的话）
+
+@ 0 1 0 1f3cf5b3bef1224404049a2d139d15e4
++ entry .Comparable   对某个类型的两个值进行全序三路比较，给出 `Comparison`
+
+% 1 1 0 020839fdfd4579d50111ab983b3eba4b
+
+@ 0 4 0 0e7402f1e611ed0b064980954fbcd91f
++       `Comparable` 实例比较其类型的两个值，返回 `Comparison.Less`、`Same` 或 `More`。
++       集合正是通过它，借助对其而言是抽象的元素类型，进行排序（`sorted`、`order`）、查找极值和界定范围；它在运行时分派，这与 hypotenuse 的 `Commensurable` 不同，后者在每个 `<` 或 `>` 处静态解析。
+
+% 2 1 0 19a2851ddd763d410e62b8d318a8a270
+
+% 3 1 0 1f0bc0d3ada10ae50870ee5687913aa6
+
+% 0 1 0 03acb1aa915ee0e0132e7efa19323fb7
+
+% 0 1 0 1884c74ce07dff421c2be55f5bf0e339
+
+% 0 1 0 02c9e5d767e069ae0cd20ead366d378e
+
+% 0 1 0 04ea0984f63a6c7415403cb34c4fde50
+
+% 0 1 0 06f1b593f518bac11cfa11665e7183ac
+
+% 0 1 0 12f2c81b1e1080670071b4e43fe6ba01
+
+% 1 1 0 12a5b9b5e6e74cb30d5e911cd4640d64
+
+@ 0 5 0 015520fb72aa094d0a5abd5e0eccecff
++       基本类型的实例通过 `java.lang` 的装箱类方法进行比较，因此 `Double` 和 `Float` 采用 JDK 的*全*序——`NaN` 排在所有其他值之后，`-0.0` 排在 `0.0` 之前——而不是 `<` 运算符的偏序。
++       列表按字典序比较，真前缀在前；二元组先比较第一个元素，再比较第二个。
+
+@ 0 4 0 02b1dc3316857d0f047bc9f13a2fcb3e
++       任何在作用域内有标准库 `Ordering` 的类型，都通过一个低优先级的桥接（`Comparable2#ordering`）成为 `Comparable`，因此第三方类型无需繁琐操作即可排序；原生实例总是优先于它。
++       反过来，`#ordering` 为少数坚持要求 `Ordering` 的标准库 API 构造一个 `Ordering`。
+
+% 0 1 0 06b588a7651e523f0a28d8501581a2fd
+
+@ 0 1 0 03d75f42a07d7281045b676780220785
++   entry .apply   由返回 `Comparison` 的函数构造的 `Comparable` 实例
+
+% 1 1 0 133ab6d6f58f357f1680b91c98a289c7
+
+% 2 1 0 0e08421cc566621c14ff337e18bfe8fe
+
+% 4 1 0 1a67193cadaa56ef1aba53c34b3bfebd
+
+% 0 1 0 0704441b557c34331925c202616af78a
+
+% 0 1 0 1e754cc6e3f47fba06fad0aa215a7a2a
+
+% 1 1 0 00f88528ae70d8691e0351197237443c
+
+@ 0 4 0 12cd97be94d98c410d99525d31f22c6b
++   entry .less   由严格小于谓词构造的 `Comparable` 实例，如同 `Ordering.fromLessThan`
++       适用于天然写作 `<` 的比较。
++       对于在第一次比较中不是更小的值，会交换操作数再应用一次谓词：这是从 `Boolean` 结果恢复三路结果的代价。
+
+% 2 1 0 058041f3fb07de2116dcaf5fc1434e24
+
+% 3 1 0 15f12311caa86d921409d65f300e58ed
+
+% 4 1 0 0ad0d2a902f585ce02452c840de80f69
+
+% 0 1 0 17d08e1995267ffc0309b96de28634ce
+
+% 1 1 0 0589734d4425c2dc1c9a8cdd8133361d
+
+@ 0 26 0 0aea00e846f3f09b1d95aa9249a3eb52
++   entry .int   按数值比较 `Int`
++   entry .long   按数值比较 `Long`
++   entry .double   按 JDK 的全序比较 `Double`：`NaN` 在最后，`-0.0` 在 `0.0` 之前
++   entry .float   按 JDK 的全序比较 `Float`：`NaN` 在最后，`-0.0` 在 `0.0` 之前
++   entry .char   按 UTF-16 代码单元比较 `Char`
++   entry .byte   按数值比较 `Byte`，视为有符号值
++   entry .short   按数值比较 `Short`
++   entry .boolean   比较 `Boolean`，`false` 在 `true` 之前
++   entry .list   按字典序比较 `List`，真前缀在前
++       需要元素类型的 `Comparable`。
++       由元素第一次不同的位置决定；如果一个列表先耗尽，它就排在另一个之前。
++   entry .pair   先比较二元组的第一个元素，再比较第二个
++       需要每个元素类型的 `Comparable`。
++   entry #compare   比较两个值，给出 `Comparison.Less`、`Same` 或 `More`
++   entry #less   左值是否在右值之前
++   entry #atMost   左值是否在右值之前或与之相等
++   entry #greater   左值是否在右值之后
++   entry #atLeast   左值是否在右值之后或与之相等
++   entry #same   两个值是否比较为相等
++   entry #min   两个值中较小的一个；比较相等时取左值
++   entry #max   两个值中较大的一个；比较相等时取左值
++   entry #ordering   与此比较一致的标准库 `Ordering`
++       用于标准库 API 坚持要求 `Ordering` 的接缝处，例如 `TreeMap` 的键顺序。
++       它是方法而不是 given，因为 given 会与 `Ordering` 桥接 `Comparable2#ordering` 形成循环。
++   entry #on   通过把另一个类型投影到此类型上来比较它，如同 `Ordering.by`
+
+% 1 1 0 033b9bf11a75d739011a7e322559c4d7
+
+% 2 1 0 0549ef18534e55c11e9845e634db7825
+
+% 0 1 0 0a4d74c49ca30e9a09fa549eddb9e89f
+
+% 0 1 0 1bc4ba25a78ffc4c0a2345b5806020e4
+
+% 1 1 0 07518cccdbb0e1ef1b824c483540e07b
+
+@ 0 1 0 156784d6740a70f2115f611f63fe1605
++ entry .Comparable2   `Comparable` 伴生对象中低优先级的一半：来自 `Ordering` 的桥接
+
+% 0 1 0 1c18810b564d59e609a88422cf8dd919
+
+% 1 1 0 0f71597c1b0bc6cb112bae74ffdfb433
+
+@ 0 3 0 178d6817ddb5310b114a32c0a6defdb5
++       不供直接使用：`object Comparable` 扩展了它，使其 given 能在 `Comparable` 的隐式作用域中找到，但总是让位于原生实例。
++   entry #ordering   使任何在作用域内有标准库 `Ordering` 的类型成为 `Comparable`
+
+% 1 1 0 03bfe56a351ca355090409451552ecd0
+
+% 2 1 0 0e2bfee5047bf07c1bfb65547d6a7b11
+
+% 4 1 0 0fba172fa1da0f3f1e08fbff3b96d3a1
+
+% 0 1 0 087236d2e5250e32196e9c1f811de45d
+
+% 0 1 0 111c8b81fb8db947044276b1eebc79c5
+
+% 1 1 0 180f0b43f83654f016126ea5d8a38677
+
+@ 0 1 0 13921c48f4d70c4d1279c1f6958e5d90
++ entry .AddOp   `Addable` 的便于内联的对应物，`+` 会首先查询它
+
+% 1 1 0 007bc452a5fb6b491998088ae6407a77
+
+@ 0 4 0 04bbb32e888879dd1b8e2cd53f822e3d
++       一种类型类，其 `op` 是 `inline def`，因此以具体类型给出的实例（通过 `transparent inline given`）会把其主体内联到 `+` 中，不经分派。
++       `+` 扩展方法在内联过程中会先查找这样的实例，然后才回退到 `Addable` 实例；quantitative 使用的就是这条途径。
+
+@ 0 3 0 0d2b8ced41d99b6815d223957bfa7cb3
++       作为单例对象、带有 `inline def add` 并以该对象自身的单例类型给出的 `Addable` 实例，同样可以内联；基本类型的实例就是这样工作的，这也是新实例更简单的模式。
+
+% 1 1 0 0057f41bb086e7981de6e7457978e07f
+
+@ 0 1 0 1810333234913f6c12cbecb657eb331e
++   entry #op   把右操作数加到左操作数上，在调用处内联
+
+@ 0 1 0 058f2daa93bc5b331fdd53976440a096
++ entry .SubOp   `Subtractable` 的便于内联的对应物，`-` 会首先查询它
+
+% 1 1 0 1c8a606d7ba4be3110a852da1421be74
+
+@ 0 3 0 12dd69bb751b0542115d165037586082
++       与 `AddOp` 相同，用于减法：以具体类型给出的实例会把其 `inline def op` 内联到 `-` 中，优先于 `Subtractable` 实例。
++   entry #op   从左操作数中减去右操作数，在调用处内联
+
+@ 0 1 0 137bead5265fd8cc031cc3ba8454ea47
++ entry .MulOp   `Multiplicable` 的便于内联的对应物，`*` 会首先查询它
+
+% 1 1 0 19593cb81d89d76117a6e2749d997f59
+
+@ 0 3 0 1964cd9ca27fe75708a3f18008d8c0a8
++       与 `AddOp` 相同，用于乘法：以具体类型给出的实例会把其 `inline def op` 内联到 `*` 中，优先于 `Multiplicable` 实例。
++   entry #op   把左操作数乘以右操作数，在调用处内联
+
+@ 0 1 0 0b8c341ded567cac0c8181bb10b2bce2
++ entry .DivOp   `Divisible` 的便于内联的对应物，`/` 会首先查询它
+
+% 1 1 0 13274cef5ffe43350deb729d940c9db9
+
+@ 0 3 0 16e7b8f7f29883370635ac4baf33a243
++       与 `AddOp` 相同，用于除法：以具体类型给出的实例会把其 `inline def op` 内联到 `/` 中，优先于 `Divisible` 实例。
++   entry #op   用右操作数除左操作数，在调用处内联

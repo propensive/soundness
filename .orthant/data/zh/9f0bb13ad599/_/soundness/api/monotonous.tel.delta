@@ -1,0 +1,36 @@
+orthant 2 language
+
+@ 0 1 0 163676075f1e9927052753894fd4a055
++   entry .Bits   编码的每个字符所承载的位数，作为类型：`Serialization.Bits[Hex]` 是 `4`
+
+% 0 1 0 0d2aab38ee569ecc0f5bcc34eb049c93
+
+@ 0 6 0 0a795d45706928b61794a1ff1025f7ee
++       `Alphabet(chars, padding)` 是创建字母表的唯一方式，且 `chars` 必须是字符串字面量，因为它在调用编译时受到检查：它必须恰好有该编码所需的 `2^bits` 个字符，当 `padding` 为 `true` 时再加一个填充字符；任何字符都不得出现两次；每个字符都必须是 ASCII。
++       违反其中任何一条的字母表无法通过编译，因此错误的字母表不可能在运行时存在。
++       字母表是纯的（`caps.Pure`），因此不能捕获能力。
+
+@ 0 30 0 015632a6793362c212292f7dcfd8400f
++   entry .serialization     把字节作为流阶段通过字母表，得到文本
++       让 `via(alphabet)` 把 `Stream[Data] over Credit` 序列化为 `Stream[Text] over Credit` 的 `Ductile` given。
++       需求按该基数的精确算术换算，因此下游请求 1024 个十六进制字符时，会向上游请求 512 个字节；如果字母表带填充，填充在流结束时写出。
++   entry .deserialization   把文本作为流阶段通过字母表，得到字节
++       让 `via(alphabet)` 把 `Stream[Text] over Credit` 反序列化为 `Stream[Data] over Credit` 的 `Ductile` given。
++       它需要一个 `Tactic[Serialization.Error]`，用于不在字母表中的字符，且该实例会捕获这个战术。
++       在数据块之间拆分的组和填充会被携带过去。
++   entry .apply        `Alphabet("…", padding)`：由字符串字面量得到的字母表，其大小和字符在编译时检查
++       第三个参数给出 `#tolerance`。
++       编码取自预期类型，或写作 `Alphabet[Hex]("…", false)`。
++   entry #chars        按值的顺序排列的编码字符，若有填充字符则随后是填充字符
++   entry #bits         每个字符所承载的位数，取决于编码：`Hex` 为 4，`Base64` 为 6
++   entry #padding      输出是否用 `#chars` 的最后一个字符填充到完整的一组
++   entry #tolerance    反序列化时额外接受的字符，映射到它们所代表的值
++       严格字母表的这一项为空。
++       对包容字母表而言，它通常是另一种大小写的严格字母表的逆，例如 `hexUpperCase` 的就是 `hexStrictLowerCase.inverse`。
++   entry #apply        某个值对应的字符，从零开始
++   entry #invert       某个字符的值，或在给定位置的 `Serialization.Error`
++       `alphabet.invert(position, char)` 在 `#inversions` 中查找该字符；没有值的字符会抛出 `Serialization.Error(position, char)`，因此它需要一个 `Tactic[Serialization.Error]`。
++   entry #inverse      字母表接受的每个字符，映射到其值
++       字母表自身的字符（若有填充字符，则其值排在最后一个之后）以及它的 `#tolerance`，合为一个 `Map`。
++   entry #inversions   以字符码为索引的稠密表形式的 `#inverse`，无值处为 `-1`
++       惰性地只计算一次，使得反序列化对每个字符读取数组而不是 `Map`。

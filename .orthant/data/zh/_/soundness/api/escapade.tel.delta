@@ -1,0 +1,1375 @@
+orthant 2 language
+
+% 0 1 0 0f04ec4b9ac2d4270a232409219e1f6b
+
+% 0 1 0 12e6ee15bca9573801fbd813c0b7684c
+
+% 0 1 0 0b5938ce7315323607e1922cbc4d93e2
+
+@ 0 1 0 0be3b6862367ee3a1c1e188f3e9c6125
++ info   作为值的带样式终端文本：`e"…"` 插值器、`Teletype`，以及按能力进行的 ANSI 渲染
+
+% 0 1 0 0ca6d61ddd9511ea1cdae38f1414f6fe
+
+@ 0 6 0 0110ccde9efada670c51a4ef4f3eef48
++     _Escapade_ 使带样式的终端输出成为一个**值**，而非一串转义码。
++     `Teletype` 是为每个字符携带样式（颜色、字重、下划线、超链接）的文本，用 `e"…"` 插值器构建，只在输出的那一刻才渲染，并按接收终端能显示的内容渲染：在支持的终端上是 24 位颜色，在较旧的终端上是 256 色中最接近的颜色，而当输出根本不是终端时则是纯文本，因此日志文件绝不会被转义序列填满。
+
+% 2 1 0 02b05ff14a5b09fe1fd5286c9840394f
+
+% 3 1 0 06e59ae605cb368d19d4cc728486f9b3
+
+% 0 1 0 1ba47d70455b82081d6c1d958e9c2376
+
+% 0 1 0 1741cdbd47a7e3d31d676356f5258446
+
+% 0 1 0 134293621e3230700df8fc972c91c51c
+
+% 0 1 0 17af18a733920eb91dfbdde294802826
+
+% 0 1 0 0d5301e227c50d560b0d0d0d00096a1f
+
+% 1 1 0 09a1ceaea9b4409805c5103bf349f191
+
+@ 0 9 0 1f2dd018b0e73c8515fff366121094dc
++     在 `e"…"` 中，代入的 `Bold`、`Italic`、`Underline`、`Strike`、`Reverse`、`Conceal`、`Faint`、`DoubleUnderline`、`BlinkSlow`、`BlinkFast` 或 `Overline` 标记，`Fg` 或 `Bg` 颜色，任何 `Chromatic` 颜色，`Escape` 对或 `Hyperlink`，后跟一个括号括起的跨度——`(…)`、`[…]`、`{…}`、`<…>` 或 `«…»`——就为该跨度设置样式，并且跨度可以嵌套：每次代入都是对当前 `TextStyle` 的一次*变换*（一个 `Stylize` 实例），压入栈中并在闭括号处弹出，因此内层颜色结束处会重新让位于外层颜色，这是原始 ANSI 无法表达的。
++     任何其他值都作为文本代入，通过其 `Teletypeable` 或 `Showable` 实例，如果它本身已是 `Teletype`，则保留其自身样式。
++     未闭合的括号是编译错误。
+
+@ 0 4 0 1aee52d9453e6d2f1c590eaa761a1061
++     `Teletype` 是 `Textual`，因此 gossamer 对 `Text` 所做的一切——`keep`、`skip`、`pad`、`fit`、`cut`、`join`、`trim`、`upper`、`words`、`lines`、`reverse`，……——都可用于它，并保留样式；它也是 `Printable`，因此 `Out.println` 通过作用域中 `Stdio` 的 `Termcap` 渲染它。
+
+@ 0 1 0 02e881c0e2bfbd4a1c37c9b9fc5586eb
++     该库分为四个源集：
+
+@ 0 11 0 0a1be32d62d466601a55f51be0a9645a
++     - `escapade.csi`——`csi` 对象，它把光标、擦除和 SGR 控制序列拼写为 `Text`；以及 `unstyled`，它从已包含控制序列的文本中剥除所有控制序列。
++       它只依赖 gossamer。
++     - `escapade.core`——`Teletype`、`e"…"` 插值器及其 `Ansi` 机制、样式标记、`Fg`、`Bg`、`TextStyle`、`Stylize`、`Teletypeable`、`Colorable`、`Imprintable`、`Ribbon`、`Hyperlink`、`Escape`、原始的 `escapes` 表，以及 `displayableTypes` 包。
++     - `escapade.io`——`writables` 包：写入 `Out` 和 `Err` 的 `Teletype` 记录流。
++     - `escapade.graphics`——`teletypeables` 包：任何 `Graphical` 图像都渲染为半块字符。
+
+@ 0 6 0 1873a653de032dc51ebd3ff840d138a5
++     所有内容都导出到 `soundness` 总括包，`displayableTypes`、`writables` 和 `teletypeables` 选择包也与总括包自身的选择包合并，因此用户写 `import soundness.*`，并按名称导入这些包的 given，因为 `import soundness.*` 不会导入 given。
++     五个较新的标记（`Faint`、`DoubleUnderline`、`BlinkSlow`、`BlinkFast`、`Overline`）和 `StyleWord` 不在总括包的导出之列，需通过 `escapade` 包本身访问。
+
+% 0 1 0 0444b9c30814563b1589dd3a224259b9
+
+% 0 1 0 1f1661d4a89015b70efde10a37972828
+
+% 0 1 0 074be95cd05f5c5e0d78e473a58b7f62
+
+% 0 1 0 1d5bff472ab01a471cdd15218bb5cd90
+
+% 0 1 0 1e40dc82965501951d1eab6b90ab727d
+
+% 0 1 0 0d4332607fc8de4910b882b382e9a56b
+
+@ 0 1 0 18b5dac61ae7066406bce8cb43933a56
++ entry .Teletype   为每个字符带有样式的文本，在输出时按终端能力渲染
+
+% 1 1 0 1418e333e7177df916330aa96536029c
+
+@ 0 6 0 0f5da005ba2f783e065b6311d201b481
++       `Teletype` 是 `e"…"` 插值器生成的值：它的 `#plain` 文本，以及每个字符的一个 64 位 `StyleWord`，其中打包了前景色、背景色和十一个属性标志，以稠密方式（每个字符一个字）或以等样式的游程（`#boundaries` 标记每个游程的起点）存放。
++       超链接（OSC 8）和原始转义插入按位置保存在文本旁边，因此纯文本恰好就是终端将显示的内容，其长度就是它所占的宽度。
+
+@ 0 4 0 065d12c1af6500b21a9f8381744ea09e
++       在用 `Termcap` 调用 `#render` 之前，什么都不会渲染：不支持 ANSI 的终端得到纯文本，支持 256 色的终端得到色立方中最接近的颜色，真彩色终端则得到 24 位颜色。
++       `Printable` given 为 `Out.println` 完成这件事，所用的是作用域中 `Stdio` 报告的 `Termcap`。
+
+% 2 1 0 0504c9e0dfa456f1033110b58f77e5bf
+
+% 1 1 0 08d9458eb73012351c93056f35e51984
+
+@ 0 1 0 1dee2477bfc5b4d201b717d245700aa0
++         label 纯文本
+
+% 1 1 0 0bdb923ebadbc59a04da393b231d3fde
+
+% 2 1 0 02a3d2e7a43bfbdd10b4f60027713e29
+
+% 3 1 0 0e4711172956f16b1e29600951cf5db9
+
+% 0 1 0 1f86cba6b547ce4b0cdf13556734f5ba
+
+% 0 1 0 17a87fef7c9b4e91192008ae6019cd99
+
+% 1 1 0 07a632d27e03c95f1c05fe05b3925801
+
+@ 0 1 0 0339c4fb3265f07e1d4df8b2d9c90149
++         label 粗体跨度
+
+% 1 1 0 1e0a50658e1d11fe13c63e00ff751363
+
+% 2 1 0 062785c4ca6d182a00dd78e4b647e9d8
+
+% 3 1 0 04da62e8acf7d52810e4f9180cbf5dd0
+
+% 0 1 0 015ff152a32fe45c048058ffaf919b0e
+
+% 0 1 0 042b2b0809e679bc0d68d136a2be0a3c
+
+% 1 1 0 0aec91136e877155118caeca5b1b8af5
+
+@ 0 1 0 0b14858377d52a5c0dd65cd9de60ef0e
++         label 嵌套在其中的彩色跨度
+
+% 1 1 0 159c9f9c2405670408fcb53ff8698b7e
+
+% 2 1 0 0eb51ccaf966beb1108c897daf6e356f
+
+% 3 1 0 0d933f48d6ffa3fd0a93bdb4855ebaff
+
+% 0 1 0 119b1fa47cf4525d103a0530267fbeeb
+
+% 0 1 0 11aa82e89e09cc3d0f509715e042709d
+
+% 1 1 0 016599a98176ef97154ccf16d4dcbc7f
+
+@ 0 1 0 06c407c10190dd6e1cc8bd5e28cec731
++         label 包裹整行的超链接
+
+% 1 1 0 189c3eb1ef4b05720ebd288b13859151
+
+% 2 1 0 1c16dcab7b0bfef20ec415d2d2422488
+
+% 3 1 0 09e6ef058054fa1806eb64c3ed664899
+
+% 0 1 0 0423f7d94a0a83d70dfd23197aae8a39
+
+% 0 1 0 1bfb264b8f0ad35909e13b10f8241872
+
+% 0 1 0 1ae710dd7f50730700eb0668e040be34
+
+% 0 1 0 19cfbd9dc5eabb6c0b43ec8d7a1efaf7
+
+% 1 1 0 1731fe5aeaba4c88053a4bcc588f551d
+
+% 1 1 0 1a277342ea9dfdc5113023e785963c91
+
+@ 0 7 0 15c1e9a214e29bb407921686bd8c8225
++       `Teletype` 是 `Textual`（`.textual`），因此 gossamer 的词汇都适用于它，并保留样式：`keep`、`skip`、`pad`、`fit`、`center`、`trim`、`chomp`、`cut`、`words`、`lines`、`upper`、`lower`、`reverse`、`contains`、`starts`、`offsetOf`，等等。
++       两个 teletype 用 `+` 或 `#append` 连接，`List[Teletype]` 用 `join` 拼合，`#dropChars` 和 `#takeChars` 按字符数从任一端截取。
++       相等性在所有字段上按结构判定；比较（`.comparable`）则在 `Collation` 下按纯文本进行。
+
+@ 0 5 0 102219b05edfc2f80d3466374ec63c0d
++       构造方式：`Teletype(text)` 用于无样式文本，`Teletype.styled(value)(transform)` 用于样式统一的值，`e"…"` 插值器用于任何带标记的内容，`Teletype.Builder` 用于逐块累积。
++       case class 的构造函数接受原始数组，供已经计算出这些数组的代码使用，例如 `teletypeables` 中的 given。
+
+% 1 1 0 11a17c293b457be90d4e9c06e73a5e3e
+
+% 1 1 0 139fbab0e07542a40b616582f86597bb
+
+% 1 1 0 04d3547c77570d6e09beba3f3adf6c16
+
+% 1 1 0 0fc054638cb1f8261540779a79e67120
+
+@ 0 45 0 0243952e0ed78f990037c6a9036074cf
++   entry .SparseThreshold   稠密样式数组被压缩为游程的比例：`2`
++       由插值器或 `Builder` 构建的 teletype 为每个字符保留一个样式字，除非文本长度至少是其样式游程数的两倍，此时改为存储游程。
++       这一选择只影响内存和速度，绝不影响渲染结果。
++   entry .add   `left + right`：两个 teletype 相接，用于 `Teletype` 不被视为 `Textual` 的场合
++       `Addable` given 由 `NotGiven[Teletype is Textual]` 守护，因此当 `.textual` 在作用域中时，它让位于 gossamer 自身针对文本值的 `+`，而两者都等同于 `#append`。
++   entry .concatenable   `Concatenable` given：`concat(left, right)` 即 `left.append(right)`
++   entry .measurable   teletype 的显示宽度即其纯文本的宽度
++       样式和超链接不占用任何单元格，因此在任何 `Text is Measurable` 度量下（例如 `textMetrics.uniformMetric` 或东亚宽度度量），teletype 的度量结果与其 `#plain` 相同。
++   entry .reversible   `teletype.reverse`，保留每个字符的样式
++       委托给 gossamer 的 `reversibleTextual`，放在伴生对象中，使 `rudiments` 唯一的 `reverse` 无需导入即可找到它。
++   entry .traversable   让 `keep` 和 `skip` 的谓词形式逐字符遍历 teletype
++       委托给 gossamer 的 `traversableTextual`：`e"hello world".keep(_.isLetter)` 通过遍历找到边界，再通过 `segment` 重建，因此样式得以保留。
++   entry .textual   `Textual` given：`Teletype` 是字符为 `Char` 的文本
++       gossamer 针对文本值的每个扩展方法都通过这个实例适用于 teletype。
++       它的 `Show` 类型成员是 `Teletypeable`，因此通用文本操作代入 teletype 的值是通过其 `Teletypeable` 而非 `Showable` 显示的。
++       对字符做 `map` 会让每个样式字保持原位，而 `segment` 即先 `dropChars` 再 `takeChars`。
++   entry .empty   空 teletype：没有文本，尾部样式为默认值
++   entry .joinable   `parts.join`：将多个 teletype 相接，采用平衡树而非左折叠
++       每次 `append` 都会复制两个操作数，因此对 `n` 个部分做左折叠会把第一个部分复制 `n` 次，拼合一份长诊断信息曾是二次复杂度的；这里的拼合将各部分对半分开，每个部分只复制约 `log n` 次。
++       `append` 满足结合律并丢弃空部分，因此结果与左折叠完全相同。
++   entry .printable   `Printable` given：`Out.println(teletype)` 通过 `Stdio` 的 `Termcap` 渲染它
++       `print(teletype, termcap)` 即 `teletype.render(termcap)`，因此输出的转义序列取决于标准输出实际是什么终端。
++   entry .cuttable   `teletype.cut(delimiter)`：按文本切分，每一段保留自身样式
++       gossamer 的 `cut` 背后的 `Cuttable by Text` given，可选地限制段数。
++       `e"a,b,c".cut(t",")` 是三个带样式的段，`e"".cut(t",")` 是只含一个空 teletype 的列表。
++   entry .comparable   teletype 在作用域中的 `Collation` 下按纯文本排序
++   entry .apply   `Teletype(text)`：不带样式的文本
++   entry .styled   `Teletype.styled(value)(transform)`：以统一样式呈现的 `Showable` 值
++       先显示该值，再对默认 `TextStyle` 应用 `transform`，并让每个字符都采用得到的样式，就像 `Teletype.styled(42.0)(_.copy(fg = Chroma(0xffd600)))` 对 `Double` 的渲染所做的那样。
+
+% 2 1 0 099afc25fa63e6a7199b48c54507cba7
+
+% 3 1 0 01904ce269da51270ca22c78a9f76eb0
+
+% 4 1 0 15645a5eb6e28c7c191dead00319eec2
+
+% 0 1 0 164de14e795e71560582a7f13d6e4cd9
+
+% 1 1 0 1ee3db4f6fe74a6e03aa25c0d4847ffc
+
+@ 0 6 0 1bafd1bb4c6f9494020d9714d29dc9d8
++   entry .compressIfBeneficial   当文本足够长、值得压缩时，把稠密样式数组转换为游程
++       返回该文本的 `(styles, boundaries)` 对：如果游程不能节省空间（按 `.SparseThreshold` 判断），则原样返回数组并附带空的 boundaries，否则返回游程样式及其起始位置。
++       供那些用自己的样式数组构建 teletype、并希望得到插值器本会选择的表示形式的代码使用。
++   entry .Builder   把 teletype、文本和字符累积为一个 `Teletype`
+
+% 1 1 0 0c9df2414ddc605a0b627cce27ca1a88
+
+@ 0 5 0 0e2f89dee107380c0a4e0c7e468c89e5
++         一个 `gossamer.Builder[Teletype]`，即 `Teletype.textual.builder` 返回的东西，也是 teletype 的 `Text.build` 式构造所用的东西：在 `Teletype.Builder().build` 中，`append` 添加一个 `Teletype`、一个 `Text`（无样式）或一个 `Char`，结果会在有益时压缩为游程。
++         随着各部分被追加，超链接和插入会移到它们的新位置。
+
+% 2 1 0 16bc4a085a14b939059ea1950cad4f71
+
+% 3 1 0 08854d240bcc3445099582f8de767d86
+
+% 0 1 0 1f12969d681da0f50f181188b3cdbede
+
+% 0 1 0 1e956f33e0edf4c01f862af5cbe18116
+
+% 0 1 0 156bfe37f1b522870286e45096cd108e
+
+% 0 1 0 005a4bbfc439d66e05be5edac506ad53
+
+% 0 1 0 06e0e45c04ad73ba0b9ecb9af58210eb
+
+% 1 1 0 012a540dfdb4fd15195c086e7e9418da
+
+@ 0 55 0 05804edce1b1d5cc1fedd33c5734fa8a
++     entry #length   到目前为止已追加的字符数
++   entry #plain   不带任何样式的文本：恰好是终端显示的那些字符
++   entry #styles   样式字：每个字符一个外加一个尾部样式，或每个游程一个
++       在稠密形式中，`styles` 有 `plain.length + 1` 个条目，最后一个是尾部样式（最后一个字符之后生效的样式）；在稀疏形式中，`#boundaries` 中每个游程一个条目，外加尾部样式。
++       应通过 `#styleAt` 读取，而不要按索引读取。
++   entry #hyperlinks   OSC 8 超链接，按每个超链接开始的字符位置存放
++       `e"hi ${Hyperlink(t"https://x.test")}[click]".hyperlinks(3)` 是 `t"https://x.test"`。
++       该位置样式字中的 `HyperlinkChange` 标志标记链接开始之处，结束处的标志标记链接结束之处。
++   entry #insertions   在每个位置的字符之前输出的原始转义序列
++       `Escape(on, off)` 代入留下的内容：在其跨度开始处的 `on` 序列和结束处的 `off` 序列，各按位置存放，并由 `#render` 在支持 ANSI 的终端上原样输出。
++   entry #boundaries   每个样式游程的起始位置，稠密形式下为空
++       存在时 `boundaries(0)` 总是 `0`；游程 `i` 覆盖从 `boundaries(i)` 到下一个边界或文本末尾的范围。
++       `#isDense` 即它是否为空。
++   entry #isDense   样式是否按每个字符一个存放，而非按游程存放
++   entry #styleAt   某位置字符的样式字，位置等于长度时为尾部样式
++       `styleAt(p)`，其中 `0 ≤ p ≤ plain.length`：位于 `p` 的字符的打包 `StyleWord`（作为 `Long`），在稀疏形式中通过对游程的二分查找得到；当 `p` 等于文本长度时为尾部样式。
++       `(teletype.styleAt(0) & StyleWord.Bold) != 0` 检测第一个字符是否为粗体。
++   entry #trailingStyle   最后一个字符之后生效的样式
++       `#append` 沿用的样式，也是拼合跨越边界时携带的样式。
++       对于 `e"$Bold(abc)def"`，它是 `0L`，即默认值，因为粗体跨度已经闭合。
++   entry #asSparseArrays   以游程表示的样式：稀疏形式的 `(styles, boundaries)` 对
++       对已是稀疏形式的 teletype 为常数时间，对稠密形式则需扫描字符。
++       `#append` 用它合并两种不同形式的 teletype。
++   entry #explicit   真彩色渲染，其中每个转义字符都写为 `\e`，便于检视
++       `e"$Bold(x)".explicit` 是可见文本 `t"\e[1mx\e[22m"`：即面向真彩色 xterm 的渲染，其中控制字符被替换为 `\` 和 `e` 两个字符，用于测试和调试输出。
++   entry #append   本 teletype 后接另一个 teletype 或无样式文本
++       `append(that: Teletype)` 连接两者，把第二个的超链接和插入按第一个的长度平移，并合并相邻的等样式游程；`append(text: Text)` 以 `#trailingStyle` 添加文本。
++       追加空操作数时原样返回接收者。
++       `+` 与之相同，通过 `.add` 实现。
++   entry #dropChars   去掉前 `n` 个字符的 teletype，使用 `Rtl` 时去掉最后 `n` 个
++       `e"abcdef".dropChars(2)` 是 `e"cdef"`，`dropChars(2, Rtl)` 是 `e"abcd"`，所保留字符的样式、超链接和插入都移到其新位置。
++       去掉的数量超过长度时得到 `Teletype.empty`；去掉非正数个时得到接收者本身。
++   entry #takeChars   teletype 的前 `n` 个字符，使用 `Rtl` 时为最后 `n` 个
++       `e"abcdef".takeChars(3)` 是 `e"abc"`，`takeChars(3, Rtl)` 是 `e"def"`。
++       结果的尾部样式为默认值。
++       取的数量至少为长度时得到接收者本身。
++   entry #render   带有 ANSI 转义序列的文本，面向 `Termcap` 所描述的终端
++       当 `termcap.ansi` 为 false 时，结果即 `#plain`。
++       否则逐个游程遍历样式字，只输出相邻样式之间的*差异*，每处差异一个 SGR 序列（`\e[1;38;2;255;0;0m`）；当 `termcap.color` 为 `ColorDepth.TrueColor` 时颜色为 24 位 `38;2;r;g;b`，否则为 256 色立方中最接近的颜色（`38;5;n`）；超链接变为 OSC 8 序列，插入则在其位置原样输出。
++       尾部样式在末尾输出，因此在跨度内部结束的 teletype 也会被重置。
+
+% 2 1 0 1e769c7463b426c00989fd1e77f4f2f7
+
+% 3 1 0 0f734393a81689c9170e041656f64e35
+
+% 0 1 0 0f2b60008299b0bd103ecfd98862a9f8
+
+% 0 1 0 11834ad8ce51e5d615004429199a7546
+
+% 0 1 0 09d30e833df5e4180b0c04ee0824af57
+
+% 1 1 0 0c78c63c8c34cf5009d573cce5f49c0d
+
+@ 0 3 0 0b9615b2f7e8a3331216e162cc870334
++ entry .e   `e"…"` 插值器：作为 `Teletype` 的带样式文本，其括号在代码编译时检查
++     `e"…"` 由字面文本和代入值构建 `Teletype`。
++     代入值分为两类，由为其类型找到的 `Insertion[Ansi.Input, T]` given 决定：
+
+@ 0 7 0 1013726fa71cb596154e32ae83d97a14
++     - **标记**值——任何具有 `Stylize` 实例的东西（`Bold`、`Italic`、`Fg(…)`、`Bg(…)`、诸如 `WebColors.Red` 的 `Chromatic` 颜色、`Escape`）或 `Hyperlink`——如果紧跟 `(`、`[`、`{`、`<` 或 `«`，就为直到匹配闭括号的跨度设置样式，否则作用于外围跨度的剩余部分；
++     - **文本**值——保留自身样式的 `Teletype`，或任何 `Teletypeable` 或 `Showable` 值，作为文本显示。
++       文本值之后的括号是普通文本：`e"${42}(text)"` 是 `42(text)`。
+
+% 2 1 0 0f3839f7faff06800b23997ecd5ee1eb
+
+% 3 1 0 119e9224db4131f41ca11ffa17342bce
+
+% 0 1 0 16b1e8a699683c2603436a8d3c0e98cb
+
+% 0 1 0 0ce98308a17b89630c0bc20e79ced589
+
+% 0 1 0 170fd1ac079115ef07b8d083ee35ee2e
+
+% 1 1 0 079ff81ee2d0620c1b318f46f642a52f
+
+@ 0 7 0 14ee792157e3e3ef133564d3b190752b
++     跨度可以嵌套并恢复：每次标记代入都会变换当前的 `TextStyle`，闭括号则恢复它之前生效的样式，因此上例中 indigo 结束之处会重新让位于 gold。
++     跨度内部种类不对的闭括号是普通文本（`e"$Bold(a]b)"` 把 `a]b` 设为粗体）。
++     未闭合的跨度是编译错误 _the closing brace does not match an opening brace_；既没有 `Stylize`、也没有 `Teletypeable` 或 `Showable` 实例的值是编译错误 _can't substitute T into an e-interpolator_。
+
+@ 0 4 0 1046e94653df871e0eef637be1e6adbe
++     标记代入之前紧挨着的两个反斜杠会取消它：在 `e"x\\${Bold}(text)"` 中，反斜杠被消耗，标记不起作用，`(text)` 是字面文本。
++     常用的文本转义（`\n`、`\t`、`\\`、`\u…`）以及表示字面 `$` 的 `$$` 与在 `t"…"` 中一样适用。
+
+@ 0 3 0 13f1a93d0f12a869044859b9ab1a77e8
++     该插值器是一个宏：它在编译时对字面部分运行同一个 `Ansi.Runtime` 状态机以发现括号错误，并生成一系列 `Ansi.Runtime.parse` 和 `insert` 调用，在运行时构建 `Teletype`。
+
+@ 0 3 0 07a17d1a22c93fa6141566c60a84aace
++ entry .Bold   使跨度变为粗体的标记：`e"$Bold(text)"`（SGR 1）
++     一个 case object，其 `Stylize[Bold.type]` 实例（`Ansi.bold`）在当前 `TextStyle` 中设置 `bold`。
++     在纯文本 `Termcap` 上它不渲染任何内容。
+
+@ 0 1 0 125797b5369ccf7e1212abbf4021a173
++ entry .Italic   使跨度变为斜体的标记：`e"$Italic(text)"`（SGR 3）
+
+@ 0 1 0 09a38040ef7276dd03bb4fab5d918dc2
++ entry .Underline   为跨度加下划线的标记：`e"$Underline(text)"`（SGR 4）
+
+@ 0 1 0 130b9979d9e04e821968222b8d07b919
++ entry .Strike   为跨度加删除线的标记：`e"$Strike(text)"`（SGR 9）
+
+@ 0 1 0 0fc61e6e71f1ab451b414fb924aa7dff
++ entry .Reverse   交换跨度前景色与背景色的标记：`e"$Reverse(text)"`（SGR 7）
+
+@ 0 3 0 0a3d079c1ef75f4e1ce7832ea1592654
++ entry .Conceal   隐藏跨度中字符的标记：`e"$Conceal(text)"`（SGR 8）
++     这些字符仍在 `Teletype#plain` 中，仍占据各自的单元格；遵守 SGR 8 的终端会以不可见的方式绘制它们。
+
+@ 0 2 0 01cb24706d6c5c0817631a1d7c329152
++ entry .Faint   使跨度变暗的标记：`e"$Faint(text)"`（SGR 2）
++     以 `escapade.Faint` 访问：它不在总括包的导出之列。
+
+@ 0 2 0 1bbf3ad659f3c84c0d4edc69e6d1865f
++ entry .DoubleUnderline   为跨度加双下划线的标记：`e"$DoubleUnderline(text)"`（SGR 21）
++     以 `escapade.DoubleUnderline` 访问：它不在总括包的导出之列。
+
+@ 0 2 0 0501e787ec711bab0471c4992ff10644
++ entry .BlinkSlow   使跨度缓慢闪烁的标记：`e"$BlinkSlow(text)"`（SGR 5）
++     以 `escapade.BlinkSlow` 访问：它不在总括包的导出之列。
+
+@ 0 2 0 05ba1e57a4f23bdf06e617b1db635028
++ entry .BlinkFast   使跨度快速闪烁的标记：`e"$BlinkFast(text)"`（SGR 6）
++     以 `escapade.BlinkFast` 访问：它不在总括包的导出之列。
+
+@ 0 2 0 026d6fae83c247e71c26fe965273c946
++ entry .Overline   为跨度加上划线的标记：`e"$Overline(text)"`（SGR 53）
++     以 `escapade.Overline` 访问：它不在总括包的导出之列。
+
+@ 0 1 0 0934875f570be20f1dc282fb25c4c3c8
++ entry .Fg   前景色，用于 `e"${Fg(color)}(text)"` 和 `Colorable`
+
+% 1 1 0 07dda9017860f0381a5d7a16b70669a4
+
+@ 0 6 0 0ee48434103117790cd835a54d407786
++       `Fg(color)` 把一个 `Chroma`（24 位颜色）包装为前景色。
++       `Fg.apply` 接受任何 `Chromatic` 值（iridescence 的 `Color in Srgb`、`WebColors` 条目、`rgb"…"` 字面量、`Chroma`），因此 `Fg(WebColors.Red)` 与 `Fg(Chroma(255, 0, 0))` 相同。
++       它的 `Stylize` 实例（`Ansi.fg`）为跨度设置当前样式的前景色；直接代入 `e"…"` 的 `Chromatic` 值通过 `Ansi.chromatic` 起同样的作用，因此 `e"${WebColors.Red}(text)"` 根本不需要 `Fg`。
+
+% 2 1 0 0418e818a153754606597e6fe125016e
+
+% 3 1 0 1c6460fc1f31cbe713a8e94e27c249c4
+
+% 0 1 0 0e6007ad7a3edd0c1a849c33b2529dff
+
+% 0 1 0 0cbf301c4417c7d10ae5cc233867f04b
+
+% 1 1 0 1ef8ab920285c6d01149468f29df04ba
+
+% 2 1 0 1af1100d489ce38e13ea4f727390f3a1
+
+% 1 1 0 0f82e5be2f8e3eb70d68694c8f6719ad
+
+@ 0 7 0 0bf66c0e04b70743029b979f10228765
++   entry .apply   对任何 `Chromatic` 颜色使用的 `Fg(color)`
++   entry #color   该颜色，作为 `Chroma`
++   entry #bg   作为背景色的同一颜色
++   entry #ansi   针对某一色深设置此前景色的 SGR 序列
++       对 `ColorDepth.TrueColor` 为 `\e[38;2;r;g;bm`，对其他任何色深为 `\e[38;5;nm`，其中取 256 色立方中最接近的条目（灰色取 24 级灰阶，纯黑为 `16`，纯白为 `231`）。
++       `Teletype#render` 输出相同的代码。
+
+@ 0 1 0 04e692bb2d75bbc602c095f6af561aa9
++ entry .Bg   背景色，用于 `e"${Bg(color)}(text)"`
+
+% 1 1 0 04a78d8620cbe2341c76d52e9ab3d3f2
+
+@ 0 4 0 004af1a0606f5ebf1c05efc7fe17e739
++       `Bg(color)` 把一个 `Chroma` 包装为背景色；`Bg.apply` 接受任何 `Chromatic` 值。
++       它的 `Stylize` 实例（`Ansi.bg`）为跨度设置当前样式的背景色，而 `#highContrast` 选出在其上最易读的前景色（黑或白），`Ribbon` 正是这样为其标注着色的。
+
+% 2 1 0 03dfee9c200bdee601121c342b7e8457
+
+% 3 1 0 0381ec2eef04dd5b04defe8157226ab9
+
+% 0 1 0 1497dc98274a209a1baed4f6cc3456ff
+
+% 0 1 0 09c4cd1764e261e301b19866811148f4
+
+% 1 1 0 1dac57c4315798461b2758d7f027e803
+
+% 1 1 0 16a173baa957d37f031cc1285d481390
+
+% 0 1 0 0b752ea8107c5fae03e65401cdb00718
+
+@ 0 10 0 0b74bfeb4122d55416c6a8f5df47d832
++   entry .apply   对任何 `Chromatic` 颜色使用的 `Bg(color)`
++   entry #color   该颜色，作为 `Chroma`
++   entry #fg   作为前景色的同一颜色
++   entry #highContrast   黑或白作为前景色，取与此背景对比更强者
++       当背景的亮度（`0.21·red + 0.72·green + 0.07·blue`）不超过 128 时为白色（`Chroma(0xffffff)`），否则为黑色。
++       `Bg(Chroma(0, 0, 0)).highContrast` 是白色；`Bg(Chroma(255, 255, 255)).highContrast` 是黑色。
++   entry #ansi   针对某一色深设置此背景色的 SGR 序列
++       真彩色下为 `\e[48;2;r;g;bm`，否则为 `\e[48;5;nm`，取 256 色立方中最接近的条目。
+
+@ 0 1 0 1881bc4c203dc01d1b86e1ae70f2a95c
++ entry .TextStyle   单个字符的样式：其颜色和十一个属性标志，作为一条记录
+
+% 1 1 0 12a28b789364824d19cfabba1f2d91b1
+
+@ 0 5 0 001e186c7e72fe3b164e467c3f6307b1
++       `Stylize` 变换所编辑的记录。
++       每个字段都有默认值——`Unset` 颜色和 `false` 标志——因此变换用 `copy` 书写：`Stylize(_.copy(bold = true, fg = Chroma(0xff0000)))`。
++       `e"…"` 插值器在解析时维护一个由它们组成的栈，每打开一个跨度就压入一个，并把每个打包成一个 `StyleWord`（`#styleWord`），用于它所覆盖的字符。
+
+% 2 1 0 05c6b42823578c970b5588f469af5ac5
+
+% 3 1 0 16d193d643da4e680987edfa28d20f9e
+
+% 0 1 0 11cf30fb88e99b36043611b1e3c972ad
+
+% 0 1 0 11709ea418d1b11a1169b1811043f6a1
+
+% 1 1 0 109adb20996a2fb4162b80c076e755f3
+
+% 1 1 0 086a3bd75fd21d331b8ba46333549151
+
+% 1 1 0 0fbbb7dc2a3e4ef5084b138b04fd589d
+
+@ 0 22 0 0e0f12a67606094511601ea4bb2283ea
++   entry .esc   转义字符 `'\u001b'`
++   entry #fg   前景色，或表示终端默认值的 `Unset`
++   entry #bg   背景色，或表示终端默认值的 `Unset`
++   entry #italic   文本是否为斜体
++   entry #bold   文本是否为粗体
++   entry #reverse   前景色与背景色是否交换
++   entry #underline   文本是否有下划线
++   entry #conceal   文本是否隐藏
++   entry #strike   文本是否有删除线
++   entry #faint   文本是否变暗
++   entry #doubleUnderline   文本是否有双下划线
++   entry #blinkSlow   文本是否缓慢闪烁
++   entry #blinkFast   文本是否快速闪烁
++   entry #overline   文本是否有上划线
++   entry #styleWord   打包进一个 `Long` 的样式，即 `Teletype#styles` 所存放的形式
++       前景色的 24 位位于低位字节并带 `FgSet` 标志，背景色的 24 位位于其上并带 `BgSet`，每个属性一位：即 `StyleWord` 所说明的布局。
++       `TextStyle().styleWord` 是 `0L`，即默认值。
++   entry #addChanges   向缓冲区追加把此样式变为另一样式的 SGR 序列
++       `addChanges(buffer, next, colorDepth)` 只输出此样式与 `next` 之间的差异，与 `StyleWord.emitDiff` 相同；`Teletype#render` 也以同样方式逐个游程工作。
+
+@ 0 1 0 0b5d45a651e1ccb91819b360357935a4
++ entry .Stylize   使类型可在 `e"…"` 中用作标记的类型类：对当前样式的一次变换
+
+% 1 1 0 05a3f7be3016c1d10320147ab34c6935
+
+@ 0 5 0 02ba229e745277d90ce5fcd1ba48eda3
++       `Stylize[T]` 即 `Substitution[Ansi.Input, T, "esc"]`：一个 `Insertion`，其标注 `esc` 告诉插值器，代入在括号之前的 `T` 会打开一个带样式的跨度。
++       实例用 `Stylize(lambda)` 书写，其中 lambda 把生效的 `TextStyle` 映射为跨度的样式——这是变换而非绝对设置，因此标记可以依赖于它所遇到的样式：
+
+% 2 1 0 135c3445faa9e6781717f58c31b5de68
+
+% 3 1 0 030d109cb9bcb9431fc03c6e826ebe72
+
+% 0 1 0 0dc9060de04b5c3819b0c54b06149312
+
+% 0 1 0 07d07eae133d44a101bacbe3e160f0bf
+
+% 0 1 0 0ebb372f42ac582414961240a9a61e53
+
+% 1 1 0 17235d63c14fa3301d5a7b03fd423016
+
+@ 0 5 0 187c8042aec669701554339071c387a7
++       given 写成从值到标记的函数（`_ => Stylize(…)`），因此值的字段可以影响样式，就像 `Ansi.fg` 从 `Fg` 中读出颜色那样。
++       十一个标记、`Fg`、`Bg`、每个 `Chromatic` 颜色以及 `Escape` 的实例位于 `Ansi` 的伴生对象中，而 `Hyperlink` 是同一标注的代入，它打开的是 OSC 8 链接而非样式。
+
+@ 0 1 0 1ca436dded4a8ef31c863d9e534bb558
++       `Stylize(lambda)` 本身返回插值器所消耗的 `Ansi.Input.Markup`。
+
+% 1 1 0 1e515d90c92ab42802362b5dc395c0d4
+
+% 0 1 0 169394a0d60add5e1a0ea3b724abdcc7
+
+@ 0 4 0 0cb83adbb1fabb8d05623617273efebc
++   entry .apply   `Stylize(lambda)`：把 `TextStyle -> TextStyle` 变换应用于跨度的标记
++       把 lambda 包装为 `Ansi.Input.Markup`，即 `Stylize[T]` 实例对每个代入的 `T` 返回的值。
++       lambda 接收跨度开始处生效的样式，其结果为跨度中的字符设置样式。
+
+@ 0 1 0 1b77d7a9d883fa961d3fe031455ded46
++ entry .Escape   用于包裹跨度的一对原始转义序列：`Escape(on, off)`
+
+% 1 1 0 004d44c6b26bed401d5e4aa1878363d7
+
+@ 0 7 0 1832640b4af46dad14aa4decfa1bdde6
++       `Escape` 是类型 `Ansi.Input.Escape`，用 `Escape(code, reset)` 构建：转义字符之后用于开启某项功能的文本，以及再次关闭它的文本（默认为空）。
++       在括号之前代入 `e"…"` 时，`on` 序列插入在跨度开始处，`off` 序列插入在跨度结束处，两者都由 `Teletype#render` 在支持 ANSI 的终端上原样输出，在纯文本终端上则被丢弃；没有括号时只插入 `on`。
++       `escapes` 对象提供了现成的标准 SGR 序列对。
+
+% 2 1 0 04c61fb3ead55c68098638092ddfe1d6
+
+% 3 1 0 0f16b94b9d32258f05f135d5038e265d
+
+% 4 1 0 1d6a302324a341bc0153108d07401e7c
+
+% 0 1 0 0d32f6f6f81de5941047d510255467f9
+
+% 0 1 0 1d12e1409181c22d0e8ccc1f187b630c
+
+% 1 1 0 13f52457acbc04ef1c3073da41ae18fd
+
+@ 0 3 0 0c9e60c81b4166f40738b302f34e7ac9
++       与 `Stylize` 标记不同，`Escape` 对样式栈是不透明的：它不更新 `TextStyle`，因此 `Teletype#styleAt` 不知道它的存在，嵌套的样式跨度也不会恢复它。
+
+% 0 1 0 1f37094899b6d96c0dfa03d35bc11478
+
+@ 0 4 0 11b3b0099bb665590b15f1dc284451b4
++   entry .apply   `Escape(code, reset)`：由各转义字符之后的文本构成的转义序列对
++       `code` 插入在跨度开始处，`reset`（默认为 `Unset`，即没有序列）插入在跨度结束处；两者书写时都不带开头的转义字符，由 `e"…"` 解析器在记录插入时添加。
+
+@ 0 1 0 0c4527b3c19b25f00abab1b39c989665
++ entry .Hyperlink   附加到跨度上的 URL，作为 OSC 8 终端超链接：`e"${Hyperlink(url)}[text]"`
+
+% 1 1 0 12bb68d1adcfa9c90d6e4243d548e251
+
+@ 0 4 0 02c12902ce24f7f506b4c9826fb80d9c
++       在括号之前代入时，该跨度在支持 OSC 8 的终端上成为可点击的链接：`#render` 在开始处输出 `\e]8;;url\e\\`，在结束处输出 `\e]8;;\e\\`，纯文本 `Termcap` 则只显示文本。
++       链接的位置保存在 `Teletype#hyperlinks` 中，链接内部的带样式跨度两者兼有。
+
+% 2 1 0 0b579daf1c27fe51082677ee730a4fec
+
+% 3 1 0 0ebd9537d673071c109335c14d7f8738
+
+% 0 1 0 1145ccd73894f0221ce3fac7d1bc17f9
+
+% 0 1 0 1b194814da1aafe10d1f788fad6f6e33
+
+% 1 1 0 13b414ddf23f44fd097bdf835f4a8158
+
+@ 0 1 0 1938113036382b0f0164da50358efebb
++   entry #url   链接的目标，作为文本
+
+@ 0 1 0 010980e168f5d3bc1632a219601fb267
++ entry .Ansi   `e"…"` 背后的机制：`Stylize` 实例、解析器状态及其运行时
+
+% 1 1 0 154f15dc0849a8851e285fb5b0b023ba
+
+@ 0 6 0 1799bcda5256dacc1f38cbfcd4d7f997
++       `Ansi` 容纳构建 `e"…"` 插值器所需的一切。
++       它的伴生对象携带标记和颜色的 `Stylize` given（因此无需导入即可解析）、代入所变成的 `Input`、解析器累积的 `State`、驱动解析器的 `Runtime`，以及格式错误的插值所抛出的异常 `Ansi.Error`。
++       通过 `e"…"` 为文本设置样式的程序无需接触其中任何部分；不借助插值器生成 teletype 的代码可以直接驱动 `Runtime`。
+
+% 2 1 0 1844206c2b9b0f310069181a3d5272e2
+
+% 3 1 0 014e8c3cdd4b6e4916d1d20123fa270b
+
+% 0 1 0 1124d8ab83d968e014fe678d76b4694f
+
+% 0 1 0 0d4b9639ee70d50c120f6da4fbfa3cda
+
+% 0 1 0 167c769ba8411b641628375e3049e8a3
+
+% 0 1 0 1926ce3308da6b701bed5688101828f5
+
+% 1 1 0 11dee49b1a9f1b6e0923992f5c89b80d
+
+@ 0 3 0 12bc2c2eadcfe4ba1b6089c430e16514
++       `Ansi.strip(text)` 从文本中移除所有 ANSI 转义序列；`unstyled`（位于 `escapade.csi`）是 `Text` 上更严格的扩展方法，只匹配完整的 CSI 序列。
+
+% 1 1 0 15f615ac20e39e0a176f1917b9b56706
+
+% 1 1 0 1faaeb88e18fdd8d0adaeb49f8e01ebe
+
+% 0 1 0 05465ff4eb3d7b84125bbb44bad84e06
+
+@ 0 36 0 068b7d26ae00c1bd034015f6dc60cf08
++   entry .Transform   `TextStyle -> TextStyle` 函数：`Stylize` 实例所产生的东西
++   entry .strip   移除了所有 ANSI 转义序列的文本
++       匹配 `\e[` 后跟参数以及 `@`–`~` 范围内的结束字节，并删除每处匹配，留下本会被打印出来的字符。
++       通常更宜使用 `unstyled` 扩展方法：它只匹配完整的 CSI 序列（`csi.pattern`）。
++   entry .escape   `Escape` 的 `Stylize` 实例：在跨度两侧插入原始序列对
++   entry .chromatic   任何 `Chromatic` 颜色的 `Stylize` 实例：跨度的前景色
++       `e"${WebColors.Red}(text)"` 无需 `Fg` 包装即可把文本着为红色；`rgb"…"` 字面量或 `Chroma` 也同样适用。
++   entry .bg   `Bg` 的 `Stylize` 实例：跨度的背景色
++   entry .fg   `Fg` 的 `Stylize` 实例：跨度的前景色
++   entry .bold   `Bold` 的 `Stylize` 实例
++   entry .italic   `Italic` 的 `Stylize` 实例
++   entry .underline   `Underline` 的 `Stylize` 实例
++   entry .strike   `Strike` 的 `Stylize` 实例
++   entry .conceal   `Conceal` 的 `Stylize` 实例
++   entry .reverse   `Reverse` 的 `Stylize` 实例
++   entry .faint   `Faint` 的 `Stylize` 实例
++   entry .doubleUnderline   `DoubleUnderline` 的 `Stylize` 实例
++   entry .blinkSlow   `BlinkSlow` 的 `Stylize` 实例
++   entry .blinkFast   `BlinkFast` 的 `Stylize` 实例
++   entry .overline   `Overline` 的 `Stylize` 实例
++   entry .hyperlink   `Hyperlink` 的代入：跨度成为 OSC 8 链接
++       与 `Stylize` 一样标注为 `esc`，因此其后的括号会打开一个跨度，但该跨度是链接帧而非样式帧。
++   entry .Input   代入 `e"…"` 的值所变成的东西：文本、标记、原始转义序列对或超链接
++       一个有四个分支的枚举。
++       `TextInput(text: Teletype)` 是作为文本显示的值，追加时其样式与当前样式组合；`Markup(transform: Transform)` 是 `Stylize` 值，等待下一个字符决定它是否打开一个跨度；`Escape(on: Text, off: Text)`（即包别名 `Escape` 所指的类型）是原始序列对；`Hyperlink(url: Text)` 打开一个链接。
++       `Runtime.insert` 把其中之一送入 `State`。
++   entry .Pending   标记、链接或转义代入，正等待查看其后是否跟有括号
++       解析器的单个词法单元前瞻，是一个枚举：`Style(transform)`、`Link(url)` 或 `Escape(on, off)`。
++       由下一个字符来决定：开括号压入一个帧，反斜杠取消它，其他任何字符则把它应用于外围跨度的剩余部分。
++   entry .Frame   解析器栈上一个打开的跨度，连同将闭合它的括号
+
+% 1 1 0 0faaddd67729630313dbab3d614552b2
+
+@ 0 6 0 1d348731b3c3ec5d035c151e2342eb2f
++         一个枚举：`Style(bracket)` 表示带样式的跨度，`Link(bracket)` 表示超链接，`Escape(bracket, off)` 表示原始转义序列对，它记住跨度闭合时要插入的 `off` 序列。
++         每个帧都知道自己等待的闭括号，因此其他种类的闭括号是普通文本。
++     entry #bracket   结束此跨度的闭括号：`)`、`]`、`}`、`>` 或 `»`
++   entry .State   插值器填充的可变累加器：文本、样式、链接、插入以及打开的跨度
+
+% 1 1 0 0e7a4834c8fb2882195ffc89314aac25
+
+@ 0 26 0 1363609da0e313f001bac08626dfe5ab
++         每次插值由 `Runtime.initial` 创建一个 `State`，由 `Runtime.parse` 和 `Runtime.insert` 送入内容，再由 `Runtime.complete` 转换为 `Teletype`。
++         它是可变的，且只能使用一次：手工构建 teletype 的程序应优先使用 `Teletype.Builder`，它是同样的累加器，只是不做括号解析。
++     entry #plain   到目前为止的字符
++     entry #styles   到目前为止每个字符的样式字
++     entry #hyperlinks   到目前为止已打开的超链接，按位置存放
++     entry #insertions   到目前为止的原始转义序列，按位置存放
++     entry #last   等待其括号的代入（如果有）
++     entry #stack   打开的跨度，最内层在前
++     entry #styleStack   每个打开的样式跨度之外生效的样式，最内层在前
++     entry #currentStyle   下一个字符将采用的样式
++     entry #linkArmed   下一个字符是否打开或关闭一个超链接
++     entry #appendChar   以当前样式添加一个字符
++     entry #appendChars   添加文本，每个字符都采用当前样式
++     entry #appendTeletype   添加一个 teletype，每个字符自身的样式与当前样式组合
++         内层样式在其设置了颜色之处胜出，两者的属性标志都会保留，如 `StyleWord.combine` 所定义；teletype 的超链接和插入会平移到新位置。
++     entry #addInsertion   记录一个在某位置字符之前输出的原始转义序列
++     entry #pushStyleFrame   打开一个带样式的跨度：保存当前样式并应用一次变换
++     entry #pushLinkFrame   在当前位置打开一个超链接跨度
++     entry #pushEscapeFrame   打开一个原始转义跨度，插入其 `on` 序列
++     entry #popFrame   闭合最内层的跨度，恢复样式或插入 `off` 序列
++     entry #applyOnce   对当前样式应用一次变换，没有需要闭合的跨度
++   entry .Runtime   解析器：把字面部分和代入送入 `State`，并完成它
+
+% 1 1 0 1d46b7d012d93ace10a70709b5db15c7
+
+@ 0 3 0 011802b2d08c496e1b83a708586f97a5
++         `e"…"` 宏生成对这些函数的调用，它也在编译时对字面部分运行这些函数以发现括号错误。
++         每个函数都接受 `State`，修改它并返回它，因此调用可以串联。
+
+% 2 1 0 17014290f52fc33418984c48e95c14ba
+
+% 3 1 0 1b72fa7c9af232300bdaccf6a8d7986d
+
+% 0 1 0 1b9699fc291896c10ba7cbab9d31393f
+
+% 0 1 0 1ba876f30b86b5ae0f06000e4c1c3fa4
+
+% 0 1 0 0f6d92739e470e7511e564bb2579b8df
+
+% 0 1 0 0552c56a3a7ff755111c2fab759b1cbb
+
+% 0 1 0 0a1e2aff6f0059fd03a85cd5453e9820
+
+% 1 1 0 0f242530f9efd253067c2f88caa70051
+
+@ 0 18 0 04e199e5ea38ee601d13eca4de111a0e
++     entry .initial   一个新的空 `State`
++     entry .parse   把插值的一个字面部分送入状态
++         先用该部分的第一个字符解决任何待定的代入（开括号压入一个帧；反斜杠取消；其他任何字符则应用一次），然后反复扫描最内层帧的闭括号，追加直到它的文本并弹出该帧，同时解码文本转义（`\n`、`\t`、`\u…`）。
++         错误的转义会抛出 `Ansi.Error`。
++     entry .insert   把一个代入送入状态
++         `TextInput` 会立即追加；`Markup`、`Escape` 和 `Hyperlink` 则成为待定代入，由下一次 `parse` 解决。
++     entry .skip   送入一个空的文本输入，它既不解决任何内容，也不追加任何内容
++         当代入的标记被前面的 `\\` 取消时，宏为它生成的就是这个。
++     entry .complete   完成的 `Teletype`，如果仍有打开的跨度则为 `Ansi.Error`
++         当帧栈不为空时抛出 `Ansi.Error`：_the closing brace does not match an opening brace_；否则追加尾部样式，在有益时把样式压缩为游程，并返回 teletype。
++   entry .Error   格式错误的插值所对应的异常：未闭合的跨度或错误的文本转义
+
+% 1 1 0 08fb2eecd5ece8c71b9b97eec5e8caad
+
+@ 0 5 0 03588e2fbefc75df1a64af423638d6b2
++         一个 `Exception`，其消息是 `escapade: ` 后接 `#detail`。
++         `e"…"` 宏在编译时运行解析器，并把同样的细节报告为编译错误，因此在运行时它只会因直接驱动 `Runtime` 而出现。
++     entry #detail   出了什么问题，作为 `Message`
++   entry .Escapes   每个样式属性如何拼写为转义序列：该特质，以及 `Standard` SGR 拼写
+
+% 1 1 0 13a9da9f260278a20ce51abff1138e98
+
+@ 0 14 0 02a236fddb6f5bc0031b5ef51c8db31c
++         一个 `Findable` 特质，每个属性一个方法，返回开启或关闭该属性的序列，另有 24 位前景色和背景色各一个方法。
++         `Escapes.Standard` 是普通的 SGR 拼写（粗体为 `\e[1m` 和 `\e[22m`，前景色为 `\e[38;2;r;g;bm`）。
++         `Teletype2#render` 把它作为上下文值接受；`Teletype#render` 则根据 `Termcap` 自行拼写序列。
++     entry .Standard   标准 SGR 序列：`\e[1m`/`\e[22m`、`\e[3m`/`\e[23m`，等等
++     entry #bold   开启或关闭粗体的序列
++     entry #italic   开启或关闭斜体的序列
++     entry #underline   开启或关闭下划线的序列
++     entry #reverse   开启或关闭反显的序列
++     entry #conceal   开启或关闭隐藏的序列
++     entry #strike   开启或关闭删除线的序列
++     entry #foreground   设置 24 位前景色的序列
++     entry #background   设置 24 位背景色的序列
+
+@ 0 1 0 1d54cf96bb95393a0aa67dfdc638a726
++ entry .Ansi2   `Ansi` 的低优先级父类，容纳文本代入的 given
+
+% 1 1 0 1c79c43919e8499b10633cb7ec1d7cd3
+
+% 2 1 0 0a80b12fc9f389441d0be6b2c4a504d1
+
+@ 0 9 0 03ddbb13c6b8dad8066cad889e4e563f
++       不供直接使用：`Ansi` 扩展它，使 `Ansi.teletype`（把任何 `Teletypeable` 或 `Showable` 值作为文本接纳的代入）的优先级低于 `Ansi` 自身声明的标记代入。
++       值如果有 `Teletypeable`，就通过它显示，否则通过其 `Showable` 显示。
++   entry #TeletypeSubstitution   代入 `e"…"` 的标注为 `t` 的 `Substitution`，由一个到 `Teletype` 的函数构成
++     entry #embed   把一个值包装为其 `Teletype` 渲染结果的 `Ansi.Input.TextInput`
++   entry #teletype   把任何 `Teletypeable` 值（否则为 `Showable` 值）作为文本接纳进 `e"…"`
++       由 `Ansi` 继承，因此它作为 `Ansi.teletype` 无需导入即可从隐式作用域解析，优先级低于所有标记代入。
+
+@ 0 1 0 15194d31384840c701c2e772c5dc839c
++ entry .Teletypeable   渲染为 `Teletype` 的值的类型类：`Showable` 是纯文本，而它带样式
+
+% 1 1 0 0abdf9ae3fbfc4621d5c4e04e33fa613
+
+@ 0 6 0 1af25b5f504ff39d1dd36bb8a093a258
++       `value.teletype` 把值渲染为带样式的文本，就像 `value.show` 把它渲染为纯文本一样。
++       伴生对象中的实例涵盖 `Teletype` 本身、`Text`、`Message`（其嵌套引用部分为黄色斜体）、`Option`、`Double`（黄色，通过作用域中的 `Decimalizer`）、`Error`（其消息）和 `Throwable`（其简单类名，红色），而每个 `Showable` 值都回退到其纯文本渲染；具有 `Colorable` 实例的类型以该颜色渲染。
+
+@ 0 3 0 10a3dd1df19216a61fa9a91edcb20a7e
++       `e"…"` 插值器和 `Teletype.textual` 实例用 `Teletypeable` 显示代入的值，因此为一个类型提供实例，就能在它被插值的任何地方为它设置样式：
+
+% 2 1 0 10d3ef41eec523f31169ec712cbc7aae
+
+% 3 1 0 11c67fc1118cacf91e9dd7952464a2a5
+
+% 0 1 0 1edca8e6fd6da4df14f577715151619b
+
+% 0 1 0 17545a4f8f1b65480324b1cc69a58ef3
+
+% 0 1 0 123327b655a8fb250add690f7bcdb730
+
+% 0 1 0 16ed9912ffa8e0f9190d34f3a940a825
+
+% 0 1 0 1bab3445d010e19700c2e4f824f174b8
+
+% 1 1 0 1f515f557577e15513fbb3a6671c70dc
+
+@ 0 2 0 1045ee6844931abd0f34b31f08b82406
++       其他库在 `teletypeables` 包中添加实例——这里是 `Graphical` 图像，digression 中是异常和堆栈跟踪，urticose 中是 URL——按名称导入。
+
+% 0 1 0 1cf48d0096b3d1e70be11d14a61a9b53
+
+% 1 1 0 1574710f9d070fc1134e5d1125e828cf
+
+% 0 1 0 06e484c27909c65315b1d92c719f7a9f
+
+@ 0 20 0 082e61fa5e202c3210f2dfcdccbf1238
++   entry .teletype   `Teletype` 就是它自身的渲染结果
++   entry .text   `Text` 渲染为无样式文本
++   entry .message   `Message` 渲染时，其引用部分为斜体黄色，嵌套引用还会加粗
++       消息逐层折叠：第 0 层为纯文本，第 1 层引用（`m"the file $path"` 中的 `$path`）为斜体 `Chroma(0xefe68b)`，更深的嵌套为粗斜体 `Chroma(0xffd600)`。
++   entry .option   `Option` 渲染其值，或文本 `empty`
++   entry .colorable   同时具有 `Showable` 和 `Colorable` 实例的值以其颜色渲染
++       这是一个带优先级的 given，而非两个平级的 given：若为两个，同时具有两种上游实例的类型会同时匹配两者，产生歧义。
++       这个 given 优先选择 `Colorable`，而 `Teletypeable2#showable`（一个较低优先级的持有者）是纯文本回退。
++   entry .error   `Error` 渲染为其 `Message`
++   entry .double   `Double` 以黄色渲染，由作用域中的 `Decimalizer` 格式化
++   entry .throwable   `Throwable` 渲染为其简单类名，红色
++       即类的二进制名称中最后一个 `.` 之后的那串字符，颜色为 `Chroma(0xdc133b)`；完整的堆栈跟踪渲染见 digression 的 `teletypeables`。
++   entry #teletype   值的渲染结果
++   entry #contramap   通过一个映射到本类型的函数，得到另一类型的实例
++       `summon[Text is Teletypeable].contramap[Int](_.show)` 通过文本实例渲染 `Int`。
+
+@ 0 1 0 180e0bf02514b5b2019678d6f42dcee8
++ entry .Teletypeable2   `Teletypeable` 的纯 `Showable` 回退的低优先级持有者
+
+% 1 1 0 1aac45806cbdaba41e1bdb94529cd8dc
+
+% 2 1 0 19b8c99effa5cc5d1e2245711231eb89
+
+@ 0 3 0 014249f5d5347aed090c182a36ce44ea
++       不供直接使用：`Teletypeable` 的伴生对象扩展它，使 `#showable` 的优先级低于 `Teletypeable.colorable`。
++   entry #showable   任何 `Showable` 值都渲染为无样式文本，即 `Teletype(value.show)`
+
+@ 0 4 0 18c7d29c2766693116d8a9dc99aee536
++ entry .teletype   `value.teletype`：通过其 `Teletypeable` 实例渲染为 `Teletype` 的值
++     任何具有 `Teletypeable` 实例的值上的扩展方法。
++     `42.teletype` 通过 `Showable` 回退渲染，`m"…".teletype` 以消息样式渲染，具有 `Colorable` 实例的值则以其颜色渲染。
+
+@ 0 1 0 0843460f3b5af8121e9f758202d26ec4
++ entry .Colorable   为值指定前景色、使其以该颜色渲染的类型类
+
+% 1 1 0 0275e0fdacdd1d3112643befcfffa299
+
+@ 0 3 0 0504fd87728775c71db88f29039bb991
++       具有 `Colorable` 实例的类型通过 `Teletypeable.colorable` 渲染为其 `show` 文本，颜色由 `#color` 给出，无需自己的 `Teletypeable`。
++       颜色可以对整个类型固定，也可以按值选择：
+
+% 2 1 0 1e64f1947c2be2871f5bd547eb22277b
+
+% 3 1 0 09352fc1ea1aadb71bc787fc838fa35c
+
+% 0 1 0 15817c99929647b61f0f867d893ecbe1
+
+% 0 1 0 0bf9614bbf65f6cb0ccf80fe9396c6fc
+
+% 0 1 0 0dd8d1f7c537a319027f05e652d9acaf
+
+% 0 1 0 1ef47a8fa92bede6137c137d331540ee
+
+% 0 1 0 0fb8a2bb8b618b6c1d792370c4d00431
+
+% 0 1 0 09a5907cb020ac3c0ba146049be7f5d6
+
+% 0 1 0 0f8e4ae474d3ed1f085110b00b93cf86
+
+% 0 1 0 104d582a449e9a610f5d7c0365eadf3e
+
+% 0 1 0 11af76b90336a64d1fd4d7da12a409e2
+
+% 0 1 0 12a97137edf3b2f413e696085e1f8504
+
+% 1 1 0 1dc574daca7df0b80a411b185a96dd5c
+
+% 1 1 0 1b7ef1a0b54c4ef1004c0076a244e498
+
+% 1 1 0 18d8c6b9657833880bad3b049a9ac109
+
+@ 0 5 0 004952de6301e796125dea944bc26079
++   entry .apply   由固定的 `Chromatic` 颜色或按值选择颜色的函数构成的实例
++       `Colorable[T](color)` 为每个 `T` 着同样的颜色；`Colorable[T](chooseColor)` 接受一个 `T -> color`，适用于任何 `Chromatic` 颜色类型。
++       第二种形式中类型参数要显式给出，因为函数的参数类型不会从结果推断出来。
++   entry #color   值的颜色，作为 `Fg`
+
+@ 0 1 0 0d59a0653ac5449e069bc117aa3e3ae1
++ entry .Imprintable   可分解为字素单元格的内容的类型类，每个单元格带有一个 `StyleWord`
+
+% 1 1 0 1ba873213767a77b02a389652c2fbde5
+
+@ 0 6 0 050e4bd06f88339904c75a445c9da0f0
++       终端界面逐个单元格地放置内容，而一个单元格容纳的是一个*字素*——宽的 CJK 字形或 ZWJ 表情符号占一个单元格，组合标记不占单元格——而不是一个 `Char`。
++       `cells(content)(lambda)` 对每个字素调用一次 `lambda`，并传入为它设置样式的样式字：对于 `Text`、`Ascii` 和 `Writing`，是默认样式；对于 `Teletype`，是字素第一个字符的样式，因此颜色在分解后得以保留。
++       这些实例位于伴生对象中，因此这些类型中的任何一个都无需导入即可印刻。
+
+% 2 1 0 0996fa4a9e0a45d41831ef6bd4818216
+
+% 3 1 0 1e6a1224926e04671895da7a1f500032
+
+% 0 1 0 028f056814588a2f1fbead73a3277123
+
+% 0 1 0 19b5611049c47d7e0d1b10f964a7dcc5
+
+% 0 1 0 1ad502b9df11a991175517a537793300
+
+% 0 1 0 0e3749996e7d7fe91c140ac220118e52
+
+% 1 1 0 08c518c5aaefe4cf0a1e39866e8b034a
+
+% 1 1 0 1b128bec802ff8e701844b2f2c8bccf5
+
+@ 0 5 0 1c01f3e11d5e0b0a092f5b0f5502b9a7
++   entry .text   `Text` 每个字素印刻一个单元格，采用默认样式
++   entry .writing   hieroglyph 的 `Writing` 以默认样式印刻其字素
++   entry .ascii   `Ascii` 文本每个字符印刻一个单元格，采用默认样式
++   entry .teletype   `Teletype` 以每个字素第一个字符的样式印刻该字素
++   entry #cells   对内容的每个字素单元格调用一个函数，并传入其样式字
+
+@ 0 1 0 11ce6afc9408c5f80204d46ded37b165
++ entry .Ribbon   一行带箭头形衔接的彩色标签，用作状态行或面包屑导航
+
+% 1 1 0 1a9d06c5750e71981874766462eff2e9
+
+@ 0 5 0 129c7ecc5b0104cf0c6e9ab69cbf295c
++       `Ribbon(colors*)` 接受背景颜色，`#fill(parts*)` 把每个部分放在对应的背景上——以 `Bg#highContrast` 的黑色或白色显示——后面跟着该背景颜色的 powerline 箭头字形（U+E0B0），使每一段看起来都指向下一段，就像 powerline 提示符那样。
++       该字形需要带有 powerline 符号的字体。
++       没有颜色时，各部分以空格连接。
+
+% 2 1 0 062b1bf14555e77c0d3921d4a7958299
+
+% 3 1 0 1a65149d28c732090a56bafee7968a3f
+
+% 0 1 0 1c763ae1224f2cd00feb0e1ee74cd034
+
+% 0 1 0 00ee06fbabd222c915979f6606a3994d
+
+% 1 1 0 1467117ee39a1ca20b9dcfaccb6bc31b
+
+% 2 1 0 06d85c1d2dab5ce2066bbbd68fa1845d
+
+@ 0 5 0 1c06e25afd7c4b7117cd4943fdc9194f
++   entry .apply   由任何 `Chromatic` 颜色构造的 `Ribbon(colors*)`，每种颜色都包装为一个 `Bg`
++   entry #colors   各个背景，每段一个
++   entry #fill   按顺序放在各背景上的部分，用箭头字形连接
++       超出颜色数量的部分会被丢弃（两者是配对 zip 的），最后一段的箭头指向终端的默认背景。
+
+@ 0 1 0 1b543e5e1773931d1f9252c32ede35de
++ entry .escapes   十六色终端的原始 SGR 序列，作为 `Escape` 对
+
+% 1 1 0 18fafa06046c9887068220d43e13fad9
+
+@ 0 5 0 09c4db8f3481181205748d8de3b886b2
++       经典终端的颜色和属性，每个都是 `e"…"` 中一个跨度所用的 `Escape(on, off)` 对，供那些想要使用终端*自己的*调色板（`escapes.foreground.Red` 是用户主题中的红色）而不是自己选择 `Chroma` 的程序使用。
++       带 24 位颜色的 `Fg` 或 `Bg` 是通常的选择；这些则用于与周围 shell 的调色板保持一致。
+
+% 2 1 0 01f5ec873a734bbe1adf8f21aa6348cf
+
+% 3 1 0 1c20192e9fb2df2d09805556346d8c43
+
+% 0 1 0 06c99da698e8f1771df3240943a1d8d3
+
+% 1 1 0 09e2c1ff6612920403b95a84fbac48b2
+
+% 0 1 0 0e77b46befcb15da1166e480ca42e540
+
+@ 0 1 0 1c0a73ecf205da1e1d1b699acdd7252e
++   entry .foreground   十六种前景色，SGR 30–37 和 90–97，各自由 SGR 39 重置
+
+% 1 1 0 1d66b8d655eab7bc0ba4b49e9181edd1
+
+@ 0 3 0 0d58b9f2af81e3220a607b9fcec5e831
++         `Black`、`Red`、`Green`、`Yellow`、`Blue`、`Magenta`、`Cyan` 和 `White` 是 SGR 30 到 37；八种 `Bright…` 是 SGR 90 到 97。
++         每种都以默认前景 `[39m` 结束。
+
+% 0 1 0 1bb6f9f9d65c16261ee67d6f0011660d
+
+% 0 1 0 0384c66e2a118e3b1fecc5862ee07ddc
+
+% 0 1 0 061695692c2bde0b0004de722c7a04ce
+
+% 0 1 0 162c7528fcb821d90a74265d385ea196
+
+% 0 1 0 0dc5506f8191c110135d6f5b374fe5bf
+
+% 0 1 0 15335555bc8ed9780cbc8c91b05a184d
+
+% 0 1 0 005ed933bdc874bc0eaa7ea99cf68fdb
+
+% 0 1 0 147f90588153ea4618b72ce755aca365
+
+% 0 1 0 0e39d86b22d2f00a1fa1dab48f0db137
+
+% 0 1 0 127e19bff8096a1808a7a3a9b163aa16
+
+% 0 1 0 189973da78a2b7ee00c03bb7bb764ff8
+
+% 0 1 0 01c579b74503020c03c210d708b7ad05
+
+% 0 1 0 0c4a861b2970dfdc022e0630c4074596
+
+% 0 1 0 0e4e4c3fcc2781ad05a4f5c71f575017
+
+% 0 1 0 1ee40edf65a793871d7b157f29adefb1
+
+@ 0 2 0 194b6f90a47f58b7135687a614f9d6ff
++     entry .BrightWhite   SGR 97，不过它的重置是 `[49m`（默认背景），而不是 `[39m`
++   entry .background   十六种背景色，SGR 40–47 和 100–107，各自由 SGR 49 重置
+
+% 1 1 0 10ce9d8c5c0840f6039ded0cd321f690
+
+@ 0 2 0 060e9ae8532f156b137f9f750a73a322
++         `Black` 到 `White` 是 SGR 40 到 47；八种 `Bright…` 是 SGR 100 到 107。
++         每种都以默认背景 `[49m` 结束。
+
+% 0 1 0 1ff664825bff1ef91200079d0381d952
+
+% 0 1 0 07c430f6afb4970e13064fb43250f121
+
+% 0 1 0 0a55fff1b1cee6de131e68a02fea7812
+
+% 0 1 0 1a6bdfb1825b2aac1d8db08b3bcf14da
+
+% 0 1 0 1204baf80734c9e30676f9893ac05904
+
+% 0 1 0 1972bfde4231e24b1fd616bfb3ca8b91
+
+% 0 1 0 049e43bc436b7d8f01c408d7a0670320
+
+% 0 1 0 18befae106f6f3190bd0b715591d16aa
+
+% 0 1 0 17a30b87ce752ecf06c577d79ca80615
+
+% 0 1 0 1af6cfdd3b6dd93a0dcc7b6b49c98ac2
+
+% 0 1 0 09e87f5f984e85750eec31925fe24612
+
+% 0 1 0 0b17075ee2e0e3e6039e1b646baaa2f6
+
+% 0 1 0 13f6e982d9cfc2de01a0590f9fc1adec
+
+% 0 1 0 0f9b688c881a3718064eb04b45faf9d5
+
+% 0 1 0 1d86005f1b37ae6800d6a42149b1b753
+
+% 0 1 0 1d705ad90879ef431bd80ef775bfc30a
+
+@ 0 1 0 0bae50777e43cc3c0e778027ac0ca14f
++   entry .styles   属性对：粗体、细体、斜体、下划线、闪烁、反显、隐藏、删除线
+
+% 1 1 0 0071f170f57db5b8085eab6f6614fda4
+
+@ 0 25 0 1e957b7d81989c300a05a4a9e4a63772
++         每个都是开启该属性的 SGR 代码与关闭它的代码配成的一对：`Bold` 是 `[1m`/`[22m`，`Light`（暗淡）是 `[2m`/`[22m`，`Italic` 是 `[3m`/`[23m`，`Underline` 是 `[4m`/`[24m`，`SlowBlink` 是 `[5m`/`[25m`，`FastBlink` 是 `[6m`/`[25m`，`Reverse` 是 `[7m`/`[27m`，`Conceal` 是 `[8m`/`[28m`，`Strike` 是 `[9m`/`[29m`。
++         标记 `Bold`、`Italic` 等通过样式栈做同样的事，是通常的选择。
++     entry .Bold   SGR 1，由 22 重置
++     entry .Light   SGR 2（暗淡），由 22 重置
++     entry .Italic   SGR 3，由 23 重置
++     entry .Underline   SGR 4，由 24 重置
++     entry .SlowBlink   SGR 5，由 25 重置
++     entry .FastBlink   SGR 6，由 25 重置
++     entry .Reverse   SGR 7，由 27 重置
++     entry .Conceal   SGR 8，由 28 重置
++     entry .Strike   SGR 9，由 29 重置
++   entry .Reset   SGR 0：所有属性和颜色恢复为默认值
++   entry .EraseLine   `[0K`：从光标处清除到行尾
++       其 `off` 序列是 `[0m`，因此用作跨度时，它还会在结束处重置样式。
++   entry .title   设置终端窗口标题的 OSC 0 序列
++       `escapes.title(t"build")` 是一个没有重置的 `Escape`，因此代入时不带括号：`e"${escapes.title(t"build")}"`。
++   entry .link   包裹在 OSC 8 超链接中的文本，作为原始 `Text`
++       `escapes.link(url, text)` 接受任何 `Abstractable across Urls to Text` 的 URL 类型，返回两侧带有链接序列、已渲染好的文本。
++       要在 `Teletype` 中放置链接，请使用 `Hyperlink`，它在渲染之前一直是一个值。
+
+@ 0 1 0 0d2469af2e7d1b26141eb64b40c84490
++ entry .csi   ANSI 控制序列——光标移动、擦除、滚动、SGR——以 `Text` 拼写
+
+% 1 1 0 1e037f4bf60396c109faddc44cb853ed
+
+@ 0 7 0 03aa830d65f7199904d91b20ab2cf049
++       `csi` 是控制序列引导符 `\e[`，这个对象按 ECMA-48 助记符拼写每个标准序列：`csi.cuu(3)` 把光标上移三行，`csi.el()` 擦除该行，`csi.sgr(1, 31)` 设置红色粗体。
++       每个结果都是包含控制字符的普通 `Text`，可直接写入终端；`Teletype` 自己渲染其样式，不需要这些。
++       `escapade.csi` 源集只容纳这个对象（以及 `unstyled`），仅依赖 gossamer，因此移动光标的库无需依赖 escapade 的其余部分。
+
+% 2 1 0 020e76db8902a8ac01cdee439b184841
+
+% 3 1 0 153be19d389860dd12718c7f051f33a9
+
+% 0 1 0 04082790638bbace1286c52f411053d5
+
+% 0 1 0 11287874a7c3dd1702a9ec3c43983c30
+
+% 0 1 0 14bbcdc629f9f0780a83ef1dfce8b95a
+
+% 0 1 0 17592cf3cd4625210e1d54c62aa22040
+
+% 1 1 0 0a0a2ed3f662272d1cd3ec8a31b246d6
+
+@ 0 2 0 0fb737a1ad698c20146417125f280bf7
++       计数参数是 `Optional` 的：`Unset`（默认值）会省略它，终端将其读作 `1`。
+
+% 0 1 0 10990aa6c3b0cb640c1377874cbaa8ba
+
+@ 0 23 0 09b71518b2dceece01f995f45a8442b7
++   entry .esc   转义字符，作为文本：`\e`
++   entry .csi   控制序列引导符：`\e[`
++   entry .pattern   匹配一个控制序列的正则表达式：`\e[`、参数和一个结尾字母
++       匹配所有 CSI 序列，而不仅仅是 SGR，因此光标移动和擦除也能匹配。
++       `unstyled` 会删除它的匹配项。
++   entry .cuu   光标上移 `n` 行（CUU，结尾字节 `A`）
++   entry .cud   光标下移 `n` 行（CUD，`B`）
++   entry .cuf   光标前移 `n` 列（CUF，`C`）
++   entry .cub   光标后移 `n` 列（CUB，`D`）
++   entry .cnl   光标移到下方第 `n` 行的行首（CNL，`E`）
++   entry .cpl   光标移到上方第 `n` 行的行首（CPL，`F`）
++   entry .cha   光标移到当前行的第 `n` 列（CHA，`G`）
++   entry .cup   光标移到第 `n` 行第 `m` 列（CUP，`H`）；两者都默认为 `1`
++   entry .ed   在显示区中擦除（ED，`J`）：`0` 擦到末尾，`1` 擦到开头，`2` 全部擦除，`3` 连同回滚缓冲区一起擦除
++   entry .el   在行中擦除（EL，`K`）：`0` 擦到行尾，`1` 擦到行首，`2` 擦除整行
++   entry .su   把页面上滚 `n` 行（SU，`S`）
++   entry .sd   把页面下滚 `n` 行（SD，`T`）
++   entry .hvp   水平和垂直位置（HVP，`f`）：与 `cup` 相同，但两个参数都必须给出
++   entry .dsr   设备状态报告（DSR，`6n`）：要求终端报告光标位置
++   entry .scp   保存光标位置（SCP，`s`）
++   entry .rcp   恢复保存的光标位置（RCP，`u`）
++   entry .sgr   选择图形再现：`csi.sgr(1, 31)` 为 `\e[1;31m`
++   entry .dectcem   显示（`true`）或隐藏（`false`，默认值）光标：`\e[?25h` 或 `\e[?25l`
+
+@ 0 8 0 196107167323b3a31094ff0c031e4727
++ entry .unstyled   `text.unstyled`：删除了所有 ANSI 控制序列的文本
++     这是 `escapade.csi` 中作用于 `Text` 的扩展方法，它删除 `csi.pattern` 的每个匹配项，留下假如转义序列生效时会被打印出来的字符——所有 CSI 序列，而不仅仅是 SGR 序列，因此输出到被捕获的流中的光标移动或行擦除会随样式一起消失。
++     它与 `Teletype` 方向相反：`Teletype#plain` 读取以结构化方式构建的 teletype 的内容，而 `unstyled` 则从转义序列已经是字符的文本出发，例如子进程的输出。
+
+% 2 1 0 187dac050be52c0a1d4fe86fabc08522
+
+% 3 1 0 047e9e54315dc69315ef214f6c4ddeb5
+
+% 0 1 0 01d5a2669a6f76f2040d3fcefca69e16
+
+% 0 1 0 1d8ad4d0c6ce2e61130fdc4bb9f2371b
+
+% 0 1 0 0f86d660cc56d6c90c4aeba4b65a34cf
+
+% 1 1 0 032e492a772136fd09eeba9dcd60d62d
+
+@ 0 1 0 0e63dadb9961027907ee40009ccd2bcc
++ entry .displayableTypes   让更多类型可以打印到 `Out` 和 `Err` 的 given，按名称导入
+
+% 1 1 0 08e002a522f372a20e9e823cd0869861
+
+@ 0 6 0 17465899bf3634ef1aad3bf58588a71d
++       一个选择包，与总括包的 `displayableTypes` 合并：`import displayableTypes.ansiMessagePrintable` 让 `Out.println(m"…")` 打印一个引用部分带有样式的 `Message`。
++   entry .ansiMessagePrintable   `Message` 是 `Printable` 的，通过 `Teletypeable.message` 渲染
++       `Out.println(m"the file $path was not found")` 在终端上把引用部分渲染为黄色斜体，在 `Termcap` 不支持 ANSI 的地方则以纯文本打印。
+
+% 2 1 0 09be078e5ff90e43003c1b1cba39be10
+
+% 3 1 0 005d9f3e76fa64e106179c68b99e292d
+
+% 4 1 0 08e00eaf6f624539050ffe1587cd9f44
+
+% 5 1 0 12dafef2c578e9be05a9c361602e01df
+
+% 6 1 0 1fdff587f36c4fc809fd8c08d3088333
+
+% 0 1 0 189470332ea0b07e0961fb91d9c719ee
+
+% 0 1 0 0dfe9b66f52db7881f5bf338debde06f
+
+% 1 1 0 1abacbe91ccc4a6b162e8c1c3c849f8b
+
+@ 0 1 0 09946c846ce9454c02511c5e950610bb
++ entry .writables   写入标准输出和标准错误的 `Teletype` 记录流，按名称导入
+
+% 1 1 0 197a981750ae29c512cff6c687433408
+
+@ 0 4 0 133fb495bce642d7112f04c56ccc0d18
++       `escapade.io` 中的一个选择包，与总括包的 `writables` 合并。
++       teletype 流在装箱的媒介上传输（`Array[Teletype]` 的窗口），每条记录在到达时通过 `Out.print` 或 `Err.print` 打印，由 `Stdio` 的 `Termcap` 渲染。
+
+% 2 1 0 0ad676887dd3b6f309b04cfefba8b35c
+
+% 3 1 0 07da800aefe93dc10d14c6b293b1f8c5
+
+% 4 1 0 13b6c7274c87268f0b84bc7f7980572f
+
+% 5 1 0 1511c78b6f650ea1192a1d8eea8ca7c8
+
+% 6 1 0 0481902f36a58a7c083b32ae1cecafd2
+
+% 0 1 0 1f5b362253dbea8907db7b747d1958c1
+
+% 0 1 0 058beb76104b39ff1954f7699b833229
+
+% 0 1 0 04f0a3b41e75614f095c374af8918bd5
+
+% 1 1 0 120426dc8ee3cdd91c20c2e0ef45380f
+
+@ 0 2 0 06cebf5a43554e9d0fdb4732facd34b0
++   entry .outTeletypeWritable   `Out` 可由 teletype 记录 `Writable`，每条记录在到达时打印；需要一个 `Stdio`
++   entry .errTeletypeWritable   `Err` 可由 teletype 记录 `Writable`，每条记录在到达时打印；需要一个 `Stdio`
+
+@ 0 1 0 0c48ef500ee8888f06b96aed2e5e9adb
++ entry .teletypeables   为其他库中的类型提供的 `Teletypeable` 实例，按名称导入
+
+% 1 1 0 16e945a0534b2bf80aec513010b874e1
+
+@ 0 8 0 1df4fa9b1ccc35bf1bc8f52742dfdd4c
++       一个选择包，与总括包的 `teletypeables` 合并，其他库会用自己的成员扩展它（`exceptionTeletype`、`urlTeletype`、`juxtapositionTeletype`）。
++       Escapade 自己的成员位于 `escapade.graphics` 中，用于渲染任何图像。
++   entry .graphicalTeletype   任何 `Graphical` 值都渲染为由半块字符组成的 `Teletype`，每个单元格两个像素
++       每个终端单元格都是一个上半块 `▀`，其前景是一行的像素，背景是下一行的像素，因此高度为 `h` 的图像占 `h/2` 行，每行的单元格数等于其宽度，每行之后有一个换行。
++       高度为奇数的图像的最后一行会被丢弃。
+
+% 2 1 0 08d59863cb20ab8b15756047a545abd7
+
+% 3 1 0 16085ea702b919b41b27565a7389731e
+
+% 4 1 0 0397aec36c6e9ae80c9223db3a3943c0
+
+% 5 1 0 1a801ea33434ca7213b54ad6147ee654
+
+% 6 1 0 06d167795e2ffd2b0ed730b5ffec2d00
+
+% 0 1 0 02f1986fa25dfdca1a0a31a36e565ba9
+
+% 0 1 0 0eec002bfdd2ea441d7f8408f4df7c87
+
+% 1 1 0 126d0457c6c73a8e0e56d5f318dec569
+
+@ 0 8 0 0568958b8650f1010e8723488f2f7450
++ entry .StyleWord   打包在一个 `Long` 中的单个字符的样式：两个 24 位颜色和十二个标志位
++     `StyleWord` 是不透明类型 `escapade.internal.StyleWord`，在此处导出。
++     低 24 位存放前景的 RGB，第 24 到 47 位存放背景的 RGB；第 48 位（`FgSet`）和第 49 位（`BgSet`）表示各自是否已设置，第 50 到 61 位依次是 `Bold`、`Faint`、`Italic`、`Underline`、`DoubleUnderline`、`BlinkSlow`、`BlinkFast`、`Reverse`、`Conceal`、`Strike`、`Overline` 和 `HyperlinkChange`，每个都是伴生对象上用于掩码的 `Long` 常量。
++     `StyleWord.Default` 是 `0L`，`StyleWord(raw)` 包装一个 `Long`，`TextStyle#styleWord` 把一条记录打包为一个样式字。
+
+@ 0 10 0 16d65a178c76a5f8012260b80becb942
++     由于它擦除为 `Long`，`Array[StyleWord]` 就是未装箱的 `long[]`；伴生对象的 `classTag` given 让单元格网格可以分配这样的数组。
++     扩展方法读取它：`raw`、`fgRgb`、`bgRgb`、`hasFg`、`hasBg`、`isBold`、`isFaint`、`isItalic`、`isUnderline`、`isDoubleUnderline`、`isBlinkSlow`、`isBlinkFast`、`isReverse`、`isConceal`、`isStrike`、`isOverline` 和 `hasHyperlinkChange`；也编辑它：`withFg(rgb)`、`withBg(rgb)`、`clearFg`、`clearBg`、`withBit(bit)`、`withoutBit(bit)` 和 `applyTransform(mask, bits)`。
++     `StyleWord.combine(outer, inner)` 是嵌套 teletype 的样式在外层样式之下合并的方式——内层颜色在已设置之处优先，两者的标志都保留——而 `StyleWord.emitDiff(buffer, prev, next, depth)` 写出把一种样式变为另一种样式的 SGR 序列，这正是 `Teletype#render` 在各游程之间输出的内容。
+
+% 2 1 0 118cfba251edcdce135f9bd893142698
+
+% 3 1 0 019e8fe70ba1696a193c6a05c595b0ae
+
+% 0 1 0 1386cf3abf476abc0583d94daef9c064
+
+% 0 1 0 06bdad0785fa5abc0e388d2d2fee3004
+
+% 0 1 0 0ac0e7b146fde8b30596829af9afdcce
+
+% 1 1 0 030924de2764d3c50333b715508d916d
+
+@ 0 1 0 0f613671d8e577800392dc0ef893b0e3
++     以 `escapade.StyleWord` 访问：它不在总括包的导出之列。
+
+@ 0 8 0 149793b947ce15e6182fac7fc90f5a83
++ entry .CharSpan   打包在一个 `Long` 中的半开字符位置范围
++     `CharSpan` 是不透明类型 `escapade.internal.CharSpan`，在此处导出。
++     `CharSpan(start, end)` 把两个 `Int` 打包为一个 `Long`，其排列方式使跨度在比较时（`CharSpan.comparable`）首先按起点比较；`CharSpan.Nowhere` 是位于 `Int.MaxValue` 的空跨度。
++     扩展方法 `start`、`end` 和 `nil` 读取它，`trimLeft(n)`、`takeLeft(n)` 和 `shift(n)` 截取或移动它，当什么也不剩时都返回 `Nowhere`。
++     它是按位置跟踪带样式区域的代码的构建块；`Teletype` 表示本身使用的则是游程边界。
+
+@ 0 1 0 1e3286868bc620591baf21a75e730936
++ entry .internal   `e"…"` 宏以及 `Teletype` 背后的打包表示
+
+% 1 1 0 1d2ce22b7b7118f412b9971e34e3f487
+
+% 2 1 0 1fac81232e1088a20b5470df2d1c52e3
+
+@ 0 9 0 09f01e918e6906af17b7032ed02de9a2
++       不供直接使用：这个对象的存在是为了让宏和不透明类型有一个稳定的归属。
++       `CharSpan` 和 `StyleWord` 从这里导出到 `escapade` 包，它们在那里的页面有完整的说明。
++   entry .eMacro   `e"…"` 背后的宏：在编译时检查括号，并输出运行时解析
++       读取字面量各部分，为每个代入的类型召唤一个 `Insertion[Ansi.Input, T]`，在编译时对各部分运行 `Ansi.Runtime`，使未闭合的跨度成为编译错误，并拼接出等价的 `parse` 和 `insert` 调用链，以 `complete` 结束。
++       标记代入之前的 `\\` 会被消费，该标记则被跳过。
++   entry .CharSpan   一个 `Long` 中的半开位置范围；参见 `escapade.CharSpan`
+
+% 1 1 0 13910e2fd28c5cd61d4a9eb508c506f7
+
+@ 0 1 0 0934acbf68360d6a003808a74767abea
++         `CharSpan(start, end)`、`CharSpan.Nowhere` 和 `comparable` given。
+
+% 0 1 0 10d906a8607f5e7f18161e81586a051f
+
+@ 0 14 0 19d141eb6453eff5038231ca5f9068d0
++     entry .comparable   跨度按其打包后的 `Long` 排序：先按起点，再按终点靠后者在前
++     entry .Nowhere   位于 `Int.MaxValue` 的空跨度
++   entry .start   `CharSpan` 的第一个位置
++   entry .end   `CharSpan` 最后一个位置之后的位置
++   entry .nil   `CharSpan` 是否为空
++   entry .trimLeft   从其框架前部移除 `n` 个位置后的 `CharSpan`
++   entry .takeLeft   截取到其框架前 `n` 个位置的 `CharSpan`
++   entry .shift   向右移动 `n` 个位置的 `CharSpan`
++   entry .AnsiStyle   以 64 位集合表示的样式：每个属性一个*设置*位和一个*值*位，外加两个 24 位颜色
++       `Teletype2` 所用的表示，是一个 hypotenuse 的 `B64`。
++       粗体、斜体、下划线、删除线和隐藏各有一位表示此样式是否设置了它，另一位表示设置成什么，因此 `update(changes)` 可以只应用某次更改所提及的属性；`indexes` 为各位置命名。
++   entry .indexes   `AnsiStyle` 的标志和颜色字段的位位置，以 `Interval` 和掩码表示
+
+% 1 1 0 00b78f17f75dde54039317b8faa5a983
+
+@ 0 39 0 0aa18670d5d9514510ad4e13205e7ce0
++         每个属性都有一个 `Set…` 位置，表示样式是否提及它，其后的位置存放它的值；颜色是 24 位的 `Interval`，各自前面有其 `Set…` 位。
++         掩码为 `update` 选取若干组位。
++     entry .SetBold   表示样式设置了粗体的位
++     entry .Bold   存放粗体值的位
++     entry .SetItalic   表示样式设置了斜体的位
++     entry .Italic   存放斜体值的位
++     entry .SetUnderline   表示样式设置了下划线的位
++     entry .Underline   存放下划线值的位
++     entry .SetStrike   表示样式设置了删除线的位
++     entry .Strike   存放删除线值的位
++     entry .SetConcealed   表示样式设置了隐藏的位
++     entry .Concealed   存放隐藏值的位
++     entry .SetForeground   表示样式设置了前景的位
++     entry .Foreground   前景色的 24 位
++     entry .SetBackground   表示样式设置了背景的位
++     entry .Background   背景色的 24 位
++     entry .Changes   所有表示样式设置了某项的位
++     entry .FlagChanges   五个属性标志的 `Set…` 位
++     entry .Mask   五个属性标志的值位
++     entry .FgMask   前景色的各位
++     entry .BgMask   背景色的各位
++   entry .setBold   `AnsiStyle` 是否设置了粗体
++   entry .bold   `AnsiStyle` 所设置的粗体值
++   entry .setItalic   `AnsiStyle` 是否设置了斜体
++   entry .italic   `AnsiStyle` 所设置的斜体值
++   entry .setUnderline   `AnsiStyle` 是否设置了下划线
++   entry .underline   `AnsiStyle` 所设置的下划线值
++   entry .setStrike   `AnsiStyle` 是否设置了删除线
++   entry .strike   `AnsiStyle` 所设置的删除线值
++   entry .setConcealed   `AnsiStyle` 是否设置了隐藏
++   entry .concealed   `AnsiStyle` 所设置的隐藏值
++   entry .setForeground   `AnsiStyle` 是否设置了前景
++   entry .foreground   `AnsiStyle` 所设置的前景，以 `Chroma` 表示
++   entry .setBackground   `AnsiStyle` 是否设置了背景
++   entry .background   `AnsiStyle` 所设置的背景，以 `Chroma` 表示
++   entry .changed   `AnsiStyle` 是否设置了任何东西
++   entry .update   在其上应用了另一个样式的更改的 `AnsiStyle`
++   entry .StyleWord   打包在一个 `Long` 中的字符样式；参见 `escapade.StyleWord`
+
+% 1 1 0 0e20b8de5ba3a2c31d1506859619bf92
+
+@ 0 51 0 08fd74af5ceaa446007d743740917627
++         不透明类型、其位掩码常量、`Default`、`classTag` given、`apply`、`combine` 和 `emitDiff`，以及读取和编辑样式字的扩展方法。
++     entry .FgMask   低 24 位：前景的 RGB
++     entry .BgMask   第 24 到 47 位：背景的 RGB
++     entry .FgSet   第 48 位：已设置前景
++     entry .BgSet   第 49 位：已设置背景
++     entry .Bold   第 50 位
++     entry .Faint   第 51 位
++     entry .Italic   第 52 位
++     entry .Underline   第 53 位
++     entry .DoubleUnderline   第 54 位
++     entry .BlinkSlow   第 55 位
++     entry .BlinkFast   第 56 位
++     entry .Reverse   第 57 位
++     entry .Conceal   第 58 位
++     entry .Strike   第 59 位
++     entry .Overline   第 60 位
++     entry .HyperlinkChange   第 61 位：在此字符处有超链接开始或结束
++     entry .FlagsMask   所有标志位，从 `FgSet` 到 `HyperlinkChange`
++     entry .Default   `0L`：没有颜色，没有属性
++     entry .classTag   让 `Array[StyleWord]` 以未装箱的 `long[]` 形式分配的 `ClassTag`
++     entry .apply   `StyleWord(raw)`：作为样式字的 `Long`
++     entry .combine   在外层样式之下合并的内层样式：内层颜色在已设置时优先，否则用外层的；标志取两者
++     entry .emitDiff   向缓冲区追加把一种样式变为另一种样式的那一个 SGR 序列，按某个颜色深度
++         对于被清除的颜色，输出 `39`/`49`；对于改变了的颜色，输出 `38;2;r;g;b` 或 `38;5;n`（以及 `48…`）；对于每个翻转了的标志，输出其开启或关闭代码；它们以 `;` 连接在一个 `\e[…m` 中。
++         两种样式相同时，不写入任何东西。
++     entry .raw   以 `Long` 表示的样式字
++     entry .fgRgb   前景的 24 位 RGB
++     entry .bgRgb   背景的 24 位 RGB
++     entry .hasFg   是否已设置前景
++     entry .hasBg   是否已设置背景
++     entry .isBold   是否设置了粗体标志
++     entry .isFaint   是否设置了暗淡标志
++     entry .isItalic   是否设置了斜体标志
++     entry .isUnderline   是否设置了下划线标志
++     entry .isDoubleUnderline   是否设置了双下划线标志
++     entry .isBlinkSlow   是否设置了慢速闪烁标志
++     entry .isBlinkFast   是否设置了快速闪烁标志
++     entry .isReverse   是否设置了反显标志
++     entry .isConceal   是否设置了隐藏标志
++     entry .isStrike   是否设置了删除线标志
++     entry .isOverline   是否设置了上划线标志
++     entry .hasHyperlinkChange   此处是否有超链接开始或结束
++     entry .withFg   前景设为某个 RGB 值的样式字
++     entry .withBg   背景设为某个 RGB 值的样式字
++     entry .clearFg   没有前景的样式字
++     entry .clearBg   没有背景的样式字
++     entry .withBit   设置了某个标志位的样式字
++     entry .withoutBit   清除了某个标志位的样式字
++     entry .applyTransform   掩码下的各位被替换后的样式字
+
+@ 0 1 0 03841310746f397c13cea678e63c4a0f
++ entry .Teletype2   较早的带样式文本表示：纯文本，外加每个字符一个 `AnsiStyle`
+
+% 1 1 0 1a128e27182334811e71b34e7d67b3ea
+
+% 2 1 0 1ed190f9b6f01ffe0c38fe2419585460
+
+@ 0 9 0 0d672e87490023cf0ac4bc6a336aa52f
++       不供直接使用：`Teletype` 才是库所渲染、插值器所构建的表示。
++       `Teletype2(plain, ansi)` 把文本与一个 `internal.AnsiStyle` 更改集数组配对，可用 `+` 相加（`.addable`），并通过作用域中的 `Ansi.Escapes` 渲染。
++       它是 `escapade` 包的顶层成员，但没有导出到总括包。
++   entry .addable   `left + right`：文本和样式数组分别拼接
++   entry #plain   文本
++   entry #ansi   每个字符的样式更改集
++   entry #render   带有转义序列的文本，由作用域中的 `Ansi.Escapes` 拼写

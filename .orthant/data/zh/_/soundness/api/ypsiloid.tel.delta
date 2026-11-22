@@ -1,0 +1,1631 @@
+orthant 2 language
+
+% 0 1 0 0f04ec4b9ac2d4270a232409219e1f6b
+
+% 0 1 0 1d0d8ca941a31ee70408ad32cbc2dc15
+
+% 0 1 0 0b5938ce7315323607e1922cbc4d93e2
+
+@ 0 1 0 0214c8453750cfed17af47e6d60e67d9
++ info   解析为有类型的值并可渲染回去的 YAML：文档、路径、编解码器和 `y"…"` 字面量
+
+% 0 1 0 0ca6d61ddd9511ea1cdae38f1414f6fe
+
+@ 0 7 0 0128a72293a0d31703cb49c464d77029
++     _Ypsiloid_ 处理 YAML 的方式与 Soundness 处理 JSON 的方式相同：文本解析为 `Yaml` 值，`Yaml` 解码为 case class（或任何具有 `Decodable in Yaml` 的类型），也能从它编码回来，而 `y"…"` 插值器书写的 YAML 会在代码编译时受到检查。
++     解析器覆盖了实际使用中的这门语言：块样式和流样式、三种标量引用方式、带截断指示符的块标量、标签、锚点和别名、指令以及多文档流；`Yaml` 则可以用 `show` 渲染回整洁、可重新解析的块样式文本。
+
+@ 0 5 0 18eb69c022983355006b86281def88e9
++     核心类型是 `Yaml`，即一个文档：一棵不可变的树（`Yaml.Ast`），在开启位置跟踪解析文档时，还附带一个索引，从中可以恢复任意节点的行和列。
++     文档中的节点由 `YamlPath` 寻址（与 JSON Pointer 相同的 RFC 6901 转义，写作 `#/a/b`），解码错误正是借此说明它发生在_哪里_，`locate` 也借此找到节点的源码位置。
+
+% 2 1 0 10b088ef36c5bd93168e18f2f616e1b2
+
+% 3 1 0 12e7f0036e7d3fb41f07f4afb744d5e5
+
+% 4 1 0 05a392bbea2c8ddc0e73ca91cac5eddf
+
+% 0 1 0 11c5e85304224b291919158842bfcc37
+
+% 2 1 0 07369ca7273e357d12f70de4115af217
+
+% 0 1 0 12f48d4397330d0e1830511436b2f200
+
+% 0 1 0 1d2f5ba770af861417eadb0f93db5c41
+
+% 0 1 0 018df32a66755b81072501e976745a09
+
+% 1 1 0 1e289d3441566c0b0b0ffdecd97892d3
+
+@ 0 8 0 03451fdf9c3e4e750dc67e75aed5838e
++     解码采用其他所有格式都使用的派生（wisteria 的派生，基于 `Decodable in Yaml` 和 `Encodable in Yaml`），因此记录不需要任何注解：`@name` 重命名字段或变体在线上的名称，枚举借助一个判别字段编码，该字段的名称由作用域内的 `discriminables` given 给出，而 `Optional` 或 `Option` 字段会把缺失的键或 `null` 读作 `Unset`/`None`，具体方针由 `optionalityOptions` 包调整。
++     在累积式策略（`validate`）下，解码会收集文档中的每一个错误，每个错误都标记上一个 `Yaml.Focus`（它的路径，以及对于有跟踪的文档，它的位置），而不是在第一个错误处停止。
+
+@ 0 5 0 17c547bc817ecd3307371a524bf2b0e1
++     记录还可以带有_直接_解析器和打印器（`Yaml.Parsable` 和 `Yaml.Printable`），它们直接从解析得到的树上读取字段，并在不构建树的情况下写出文本：`derives Yaml.Direct` 把两者派生到伴生对象中，而 `import codecs.direct` 为作用域内的每个记录选择直接路径（`codecs.derived` 和 `codecs.strict` 是另外两种模式）。
+
+@ 0 1 0 077df09bc24708d50aa8247034b55636
++     这个库有两个源码集：
+
+@ 0 6 0 030f6dd187537efb0bb9921d0311a5d6
++     - `ypsiloid.core`：`Yaml` 及其内部的一切、`YamlPath`、`y"…"` 和 `yp"…"` 插值器，以及选择包 `formatting`、`optionalityOptions`、`discriminables`、`dynamicAccess` 和 `conversions`。可编译到 JVM、Scala.js 和 Scala Native。
++     - `ypsiloid.http`：`postables`、`servables` 和 `construables` given，它们让 `Yaml` 作为 `application/yaml` 请求体或响应体传输。
+
+@ 0 7 0 0e51d3c6b3c40e3018400f84c3183729
++     有几个 given 是选择，必须按名称导入，因为 `import soundness.*` 不会导入 given：`formatting.blockYamlFormatting` 启用 `show` 和 HTTP 编码，`dynamicAccess.dynamicYaml` 启用 `yaml.field` 访问和 `yaml.field = value` 更新，编码或解码和类型需要 `discriminables.yamlByTypeDiscriminable`（或 `…ByKind…`），而 `parsing.trackPositions`（来自 zephyrine）开启位置跟踪。
++     所有内容都导出到 `soundness` 总括包，选择包在那里与其他格式的选择包合并。
+
+% 0 1 0 085bf2d0276d003f0660c91fe77fcc54
+
+% 0 1 0 12c3866784f7c7c417874414782cf51c
+
+% 0 1 0 1c8e84636d7bb7281d87a4ca699f575d
+
+% 0 1 0 042a927df2aa0d9b048d0ace9ac048e4
+
+% 0 1 0 0e265cd0376176bb1cb8c20c86a5204e
+
+@ 0 1 0 044f4bb1f2be96e11bf61b1a2aa131ed
++ entry .Yaml   一个 YAML 文档：一棵不可变的树，用 `as` 解码，通过透镜更新，用 `show` 渲染
+
+% 1 1 0 1f7d324046f346dd12b77385e4c612b8
+
+@ 0 5 0 1338d267587be13b1d906e1d217886f6
++       `Yaml` 包装解析得到的树（`#root`，一个 `Yaml.Ast`），如果解析时 `parsing.trackPositions` 在作用域内，还包装一个 `#positionIndex`，`locate(path)` 从中找到任意节点的行和列。
++       它由 `text.read[Yaml]`、`data.read[Yaml]`、`y"…"` 字面量、`value.in[Yaml]` 或 `Yaml.make(field = …)` 产生，由 `#as` 消费，`#as` 把它解码为任何具有 `Decodable in Yaml` 的类型。
+
+% 2 1 0 1cd4cbfa57671f1511601280a48b779c
+
+% 3 1 0 0e2c6ad7f613f45b153823017bd740d2
+
+% 4 1 0 1ad245904164345812ca45acba6eb126
+
+% 5 1 0 113a9ada597ed58a032d1a8a95f83c33
+
+% 1 1 0 18e48abd5d11822406275060e2c54a4e
+
+% 2 1 0 09621152b30aaf7c1f9157e21c2240a5
+
+% 0 1 0 130a7ec3f188c872100f2979b6c6548c
+
+% 0 1 0 131b807994bfd51811b98fa4b2adf1a2
+
+% 0 1 0 05784f9e48fdd56e07082a1bffe5a351
+
+% 0 1 0 0846fa03d2a4d886085d80c38b3098fd
+
+% 0 1 0 084ddf1c12b224b113af4f95f3c9c707
+
+% 0 1 0 08207439c1c43e141c75f1faf502a3a1
+
+% 1 1 0 0207864e7070362d0dece850b3d66535
+
+@ 0 3 0 10ab3fb3c6a8fca70ece824a386a3a18
++       文档是一个值：每次更新（`#update`、`#updateDynamic`、`lens`）都构建一个新的 `Yaml`，并让旧的保持原样。
++       两个文档的树在结构上相等（`Yaml.Ast.deepEquals`）时，它们就相等，无论位置如何。
+
+@ 0 5 0 0e4f116c4d3bbab014d87392905b7eb6
++       读取：`.decodable` 和 `.aggregable` 解析文本，`.aggregableData` 不经转码地解析字节，而 `.aggregableAll` 把以 `---` 分隔的流读取为 `List[Yaml]`。
++       流式来源在到达时就被解析，从不先拼接起来，因此大文件无需整体保存在内存中即可解析。
++       解析会抛出 `Parse.Error`，其问题是一个 `Yaml.Ast.Issue`，指明出了什么错以及在哪里。
+
+@ 0 5 0 1d5529f08fbd18480bb9bb8ada9fc6b4
++       解码：`#as` 以及基本类型、集合、`Option`/`Optional` 和派生的编解码器会抛出 `Yaml.Error`（形状错误的值为 `Reason.NotType(found, expected)`，缺失的字段为 `Reason.Absent`），并跟踪一个 `Yaml.Focus`，因此累积式策略会在每个错误的路径处报告它。
++       简写：`text.read[Person in Yaml]` 一步完成读取和解码，`person.in[Text over Yaml]` 一步完成编码和渲染。
+
+@ 0 5 0 0d05d6c50cd38cc1010a61d5d51424f0
++       渲染：`show` 需要作用域内有一个 `Yaml.Formatting`（`formatting.blockYamlFormatting`，唯一的一个），并输出块样式：两个空格的缩进，空集合写作 `{}` 和 `[]`，字符串只在不会被误认为数字、布尔值或 null 时才写成纯标量，否则加双引号；这样选择是为了让文本重新解析后得到同一棵树。
++       `.emit` 一次渲染一个块，而 `.streamable` 使 `Yaml` 成为 `Stream[Text]`。
+
+@ 0 4 0 157573ea90f91a2c1bed74e53922464e
++       动态访问（`#selectDynamic`、`#applyDynamic`、`#updateDynamic`、`#update` 以及 `.lens` given）以 `Yaml is Dynamical` 为前提，`dynamicAccess.dynamicYaml` 把它授予一个作用域，`dynamically[Yaml]:` 把它授予一个代码块，因此 `doc.name` 永远不会被意外地误认为 `Yaml` 的成员。
+
+@ 0 5 0 0b8dfdc8b2d07efd033580bf75a89fff
++       每个类型都能触及的回退编解码器（`decodable`、`encodable`、`optional`、`optionalEncodable`、`encodableOver` 和 `aggregableIn`）继承自优先级层 `Yaml2`，直接编解码器的入口（`aggregableParsed`、`encodableOverPrinted` 以及两个 `codecs.strict` 失败项）继承自 `Yaml1`；它们在这些特质上有文档说明。
+
+% 0 1 0 1f2cb2afea28e87f1e5592d38c60d312
+
+% 0 1 0 0b7a15c9748b21171f2074cd664c8c1d
+
+% 1 1 0 0b2c93c8349311d801ccf433bf8d3aa6
+
+% 0 1 0 13c52c996820ed0d1459221f10c2e969
+
+% 0 1 0 064d04157cc1492c0c4ced497604ed1e
+
+@ 0 17 0 052f4e94fc3d9bbe02f93d73a7db3ba7
++   entry #root   文档的树，一个 `Yaml.Ast`
++       解析得到的树，供 `Yaml.Ast` 伴生对象中的访问器（`isObject`、`objectKey`、`arrayElement`、`string`……）使用，也供与其他树格式之间的桥接使用。
++       `Yaml.unseal` 是同一个节点，作为突破抽象的一个具名行为。
++   entry #positionIndex   有跟踪的解析所构建的位置索引，或 `Unset`
++       只在解析文档时 `parsing.trackPositions` 在作用域内才会填充；对于未跟踪的解析以及由值构建的每个 `Yaml`，它都是 `Unset`。
++       `locate(path)` 和 `locateKey(path)`（zephyrine 的 `Positionable` 扩展，通过 `.positionable`）正是遍历它来找到节点的 `Yaml.Ast.Position`。
++   entry #as   把文档解码为任何具有 `Decodable in Yaml` 的类型
++       `doc.as[Person]` 通过作用域内的 `Person is Decodable in Yaml` 解码：对于 case class 或枚举，它是派生的；对于基本类型、`Text`、`List`、`Set`、`Map[Text, _]`、`Option` 和 `Optional`，它是伴生对象的某个 given。
++       它抛出 `Yaml.Error` 并跟踪 `Yaml.Focus`：在 `strategies.throwUnsafely` 下，第一个错误就会抛出；在 `validate[Yaml.Focus]` 块下，每个错误都会被累积，每个焦点都带有字段的路径（`#/address/city`），对于有跟踪的文档，还带有它的源码位置，`#as` 在返回之前为每个已登记的焦点填入该位置。
+
+% 2 1 0 15015301203c1eec06cf06c75728c778
+
+% 3 1 0 0966984aa2158aa91b129e2fbc70eb0b
+
+% 4 1 0 05ca27befdc997ad1788fef807d83659
+
+% 0 1 0 0708fc4f50b5ca920d184bac07ff48d1
+
+% 0 1 0 1a2d0f72970e49d01ca3795f4ae9f3c1
+
+% 0 1 0 06fff591b2b92c8b168cc33d7ff098a4
+
+% 0 1 0 1c944975948c07eb0be2701fece91a6a
+
+% 1 1 0 1ab25955b9f1064c14b79b6f0b143ea0
+
+@ 0 6 0 0eb9f644e3d62a080272eaf3be6d3c00
++   entry #apply   `doc(index)` 是一个序列项；`doc(field)` 是一个映射值，或者是缺失值
++       `doc(1)` 是序列的第二项，根节点不是序列时会抛出带有 `Reason.NotType(found, Sequence)` 的 `Yaml.Error`。
++       `doc(t"name")` 是字符串键下的值；键缺失或根节点不是映射时，它是一个缺失的 `Yaml`（其根节点 `isAbsent`）。把缺失的文档解码为 `Option` 或 `Optional` 会得到 `None`/`Unset`，解码为其他任何类型则抛出 `Reason.Absent`。
+
+% 2 1 0 02e65292817fd45a0d774b1afd6c1721
+
+% 3 1 0 1d83e45764321d8804895c7bb59b0611
+
+% 4 1 0 1076452ed6d981d419ea1fd46e69dbc0
+
+% 0 1 0 07c761273c729c2e035958882bc45aa2
+
+% 0 1 0 0af26c38cd44da040100d7bd4e775b9b
+
+% 1 1 0 0254d975c6c4095f11bc80bf20d2e1b7
+
+@ 0 18 0 12001cb827a3f6a718f689ec79965f78
++   entry #selectDynamic   `doc.field`：按名称取得的映射值，需启用动态访问
++       `doc.name` 脱糖为 `selectDynamic("name")`，它就是以文本为键的 `#apply`，因此键缺失时得到的是缺失的文档，而不是错误。
++       它需要作用域内有 `Yaml is Dynamical`：`import dynamicAccess.dynamicYaml`，或一个 `dynamically[Yaml]:` 块。
++   entry #applyDynamic   `doc.field(index)`：以序列为值的字段中的一项
++       `doc.items(1)` 就是 `doc(t"items")(1)`：先按名称取字段，再按索引取项，字段不是序列时抛出 `Yaml.Error`。
++       需要 `Yaml is Dynamical`。
++   entry #update   `doc(index) = value`：替换了一个序列项的新文档
++       通过 `value` 的 `Encodable in Yaml` 对它编码，并返回文档的一个副本，其中位于 `index` 的项已被替换；索引越过末尾时序列保持原样。
++       根节点不是序列时抛出 `Yaml.Error`。
++       需要 `Yaml is Dynamical`。
++   entry #updateDynamic   `doc.field = value` 添加或替换一个映射条目；`= Unset` 删除它
++       `doc.age = 31` 脱糖为 `updateDynamic("age")(31)`：值通过它的 `Encodable in Yaml` 编码，结果是一个新文档，其中 `age` 若存在则被替换，否则被追加到末尾。
++       `doc.age = Unset` 删除该条目，对于不存在的键则不做任何事。
++       根节点不是映射时抛出 `Yaml.Error`。
++       需要 `Yaml is Dynamical`。
+
+% 2 1 0 1a1419b4b02fcb8c0b23cd75170cf4bc
+
+% 3 1 0 0aa893ffae4205400d1be53437f3b2ce
+
+% 4 1 0 052aedb7f4d9272d13e2f1fee39e2cde
+
+% 5 1 0 135fd59a43b3ecf404659f82867f564c
+
+% 0 1 0 05b423974bb715c51847ca7349fe613c
+
+% 0 1 0 17dee4b2bf04f7df0b860854726758a0
+
+% 0 1 0 0307b8544db4e72506e1dc18519dd40f
+
+% 1 1 0 1ec50315ae200b5516725702bc760eab
+
+@ 0 8 0 180f456d6ee9e5da0a7052e0e7c6d0d5
++   entry .apply   把一棵树包装成文档：`Yaml(ast)` 或 `Yaml(ast, positions)`
++       在一个节点之上构建 `Yaml`，可以附带有跟踪的解析所得的 `Yaml.PositionIndex`。
++       参数的类型是 `Any`，因为 `object Yaml` 扩展了 `Dynamic`（为了 `.make`），这抑制了构造器代理；值实际上必须是 `Yaml.Ast`。
++       对于已在手中的节点，`.ast` 是有类型的形式。
++   entry .ast   把 `Yaml.Ast` 节点包装成文档
++       `Yaml.ast(node)` 就是检查了节点类型的 `Yaml(node)`：光学器件和编解码器在替换了树的一部分之后，正是这样重建文档的。
+
+% 2 1 0 11ecc29c0aed7aac157415062c853869
+
+% 3 1 0 0ad8d3327b5c0758037b26b72b1a9389
+
+% 0 1 0 19a4c74648573bbf02fa8ae66012f864
+
+% 1 1 0 080135330bb01d230ad23ba64c470976
+
+@ 0 4 0 17ef56c6a4d975460dec8c7018496fe2
++   entry .unseal   文档内部的树，作为突破抽象的一个具名行为
++       `Yaml.unseal(doc)` 就是 `doc.root`：即 `Yaml.Ast`，用于借助 `Yaml.Ast.Sequence`、`Mapping`、`Str` 等提取器进行模式匹配，或用 `Yaml.Ast.deepEquals` 比较两次解析的结果。
+
+% 2 1 0 1239461f34d35bf000bf7f6bd8ae57fe
+
+% 3 1 0 13991127ed72613b162710bb3b943f82
+
+% 4 1 0 002212948307c1c21718b40b2da0dbbb
+
+% 0 1 0 0258461e74211c1c19e7021345efd19f
+
+% 0 1 0 089b53a8636118b302f3ffa43a055baa
+
+% 0 1 0 190dc2e37be2c8810919d531930a90af
+
+% 1 1 0 136d2eb7a34391ee1f94f941e0fa7fea
+
+@ 0 5 0 1765ab25193035520e2cff4bab092c56
++   entry .applyDynamicNamed   `Yaml.make(field = yaml, …)`：由具名参数构成的映射文档
++       `Yaml.make(name = t"Kate".in[Yaml], age = 30.in[Yaml])` 脱糖为 `applyDynamicNamed("make")(("name", …), ("age", …))`，并按书写顺序构建带有这些条目的映射；每个参数都已经是 `Yaml`，因此嵌套的映射要嵌套调用 `Yaml.make`。
++       唯一接受的方法名是 `make`。
+
+% 2 1 0 003871fc4905414f0eec05e7cac9778d
+
+% 3 1 0 13bc82a8dd0fb66b15ea6c16947f8289
+
+% 4 1 0 075947571faa8dba1b543ae125671723
+
+% 2 1 0 06d49e6868c23b361b2e008133c9245e
+
+% 0 1 0 19843350e1e735c70bb99714ae082d0f
+
+% 1 1 0 0c794dda82f6f3bd0829f4489819c0cb
+
+@ 0 10 0 078cccef73611a881084415c4ca49725
++   entry .showable   在给定 `Yaml.Formatting` 时，把文档渲染为块样式的 YAML 文本
++       `Yaml` 伴生对象中的 `Showable`，因此只要作用域内有 `Yaml.Formatting`（`import formatting.blockYamlFormatting`），`doc.show` 就能工作。
++       输出是保守的块样式，其选择是为了重新解析后得到结构相同的树：整数写作裸数字，小数通过 `Double.toString` 或写作 `.inf`、`-.inf`、`.nan`，布尔值写作 `true`/`false`，null 写作 `null`；字符串只在它是一串以字母开头、由字母、数字、`_` 和 `-` 组成、且不拼写布尔值或 null 的字符时才写成纯标量，否则加双引号（使用 `\"`、`\\`、`\n`、`\r`、`\t` 和 `\uXXXX` 转义）；映射和序列是两空格缩进的块集合，空的则写作 `{}` 和 `[]`。
++       文本总是以换行符结尾。
+
+% 2 1 0 11e37f7c9553bdaf123befec2a19032f
+
+% 3 1 0 0a70fdb68c3c569d1526d31aaec1b2c5
+
+% 4 1 0 13a6ebd6bc66d1fa1e8f52027bff7b77
+
+% 5 1 0 1bede710b434a43d1a831b536d69c307
+
+% 0 1 0 06abb0e796672d971420d824ae360190
+
+% 0 1 0 05128144eefb843c00791e3e06024593
+
+% 0 1 0 05304d35f2d69e6501f62360dc399bec
+
+% 0 1 0 03b2ce708b11c5580705a2e49c65b36b
+
+% 0 1 0 03b2ce708b11c5590705a2e49c65b36c
+
+% 0 1 0 0bfc3b0e7ea5ea1b0c829df367b24a10
+
+% 1 1 0 025f36634efffd30095f97cf4f9c49e6
+
+@ 0 11 0 1a105a387a26d638181ea4c395888c7e
++   entry .inspectable   文档在一行上的调试渲染：`yaml"name: Percy\nage: 30\n"`
++       不需要 `Formatting`，因此调试器或测试失败总能显示文档：即转义了换行符的块样式文本，包装为 `yaml"…"`，使文档能与持有相同字符的 `Text` 区分开来。
++   entry .emit   一次渲染文档的一个块，以迭代器的形式拉取，或推送给一个函数
++       `Yaml.emit(doc)` 是一个 `Iterator[Text]`，每被拉取一次就渲染树的后续条目，一旦某个块达到作用域内 `Buffering` 的容量，就在两个条目之间停下（一个很长的标量可能超出容量）。
++       `Yaml.emit(doc, deliver)` 是推送形式：它在调用方的线程上渲染，并在每个块填满时把它交给 `deliver`，这正适合写入文件、套接字或 `OutputStream`。
++       各块拼接起来恰好就是 `show` 渲染的内容。
++       两者都需要 `Yaml.Formatting` 和 `Buffering`。
+
+% 2 1 0 0f04110ac9ca92370adccf1ab61043e3
+
+% 3 1 0 0d2e4f8458139bda1910133d976e665e
+
+% 4 1 0 1bd2da3c4cae3ee012ff93d7830af7e9
+
+% 5 1 0 13ddb60a6c089faa07a3407fb3f0fe81
+
+% 0 1 0 1cfe894df37d86cc0ad108bef861a2fa
+
+% 0 1 0 086e4e85c767a6e71bc0243e66c0789a
+
+% 1 1 0 0447032ca98b05500e7f0a1279667eb1
+
+@ 0 27 0 0ad22f65cfeaca4c17b9888f7306695c
++   entry .streamable   作为 `Stream[Text] over Credit` 的文档，在被拉取时渲染
++       建立在 `.emit` 之上，因此流的数据块就是发射器的块；需要 `Yaml.Formatting` 和 `Buffering`。
++       正是它让 `Yaml` 能被写入任何接受流的文本数据汇。
++   entry .Formatting   渲染文档所依据的选项：目前只有块样式
++       `show`、`in[Text over Yaml]`、`.emit`、`.streamable`、`.abstractable` 以及 HTTP 的 given 都要求作用域内有 `Yaml.Formatting`（一个 `zephyrine.Formatting`）。
++       YAML 的块样式是固定的，并受往返转换的约束，因此这个特质目前不带任何选项；`formatting.blockYamlFormatting` 是唯一的实例，按名称导入。
++   entry .decodable   `Yaml is Decodable in Text`：`text.as[Yaml]` 把整个文本解析为一个文档
++       作为 `Yaml is Decodable in Text`，它就是 `text.as[Yaml]`：它在作用域内的 `PositionTracking` 下用 `Yaml.Parser` 解析整个文本（只有导入了 `parsing.trackPositions` 才会记录位置），对格式错误的输入抛出 `Parse.Error`。
++   entry .aggregable   在文本流到达时把它解析为一个文档
++       `text.read[Yaml]` 和 `stream.read[Yaml]` 背后的 `Yaml is Aggregable by Text`：`Chain[Text]` 会被拼接后整体解析，而 `Stream[Text] over Credit` 会被转码为 UTF-8，并在被拉取时送入解析器的游标，因此大文档从不整体保存，跨两个数据块的 `---` 标记仍然是一个边界。
++       需要 `Tactic[Parse.Error]`，并遵从作用域内的 `PositionTracking`。
++   entry .aggregableData   把字节流解析为一个文档，不经转码
++       `data.read[Yaml]` 以及读取文件或 HTTP 正文背后的 `Yaml is Aggregable by Data`：解析器基于 UTF-8 字节，因此字节按交付的样子读取，开头的字节顺序标记会被吸收。
++       需要 `Tactic[Parse.Error]`。
++   entry .aggregableAll   把以 `---` 分隔的流读取为 `List[Yaml]`，每个文档一项
++       `text.read[List[Yaml]]`：YAML 流中的每个文档，按顺序排列。
++       如规范所述，指令（`%YAML`、`%TAG`）只作用于紧随其后的文档，空文本得到空列表。
++       像 `.aggregable` 一样遵从 `PositionTracking`。
+
+% 2 1 0 18d1959754dc1dcf13b664e748065c0c
+
+% 3 1 0 088b6555b5714cb01aeea86d5690194a
+
+% 4 1 0 11af3eec742ca04d1e6bf443587a3e87
+
+% 0 1 0 1134632dfcc627970d5873de1f24332a
+
+% 1 1 0 1e30276c1245d76e1cd77a414c361898
+
+@ 0 71 0 1acfa3309096f2b505cc54342af39282
++   entry .aggregableDerived   `import codecs.derived`：即使作用域内有直接解析器，也走树路径
++       仅在 `Codecs.Derived` 下优先于 `.aggregableParsed`，并让读取经由 `.aggregableIn` 进行。
++   entry .aggregableStrict   `import codecs.strict`：直接解析器，否则是编译错误
++       在 `Codecs.Strict` 下，具有 `Yaml.Parsable` 的类型通过它直接读取，而没有的类型会遇到 `.aggregableStrictFailure`，它在使用处报告 _has no direct codec_ 并指明该类型，而不是回退到树路径。
++   entry .encodableOverDerived   `import codecs.derived`：即使作用域内有直接打印器，也走树路径
++   entry .encodableOverStrict   `import codecs.strict`：直接打印器，否则是编译错误
++       与 `.encodableOverStrictFailure` 配对，后者对没有 `Yaml.Printable` 的类型使编译失败，例如枚举，它没有积类型反射，因此没有派生的打印器。
++   entry .encodableOverData   `person.in[Data over Yaml]`：以作用域内的 `Codepage` 表示为字节的 YAML 文本
++       先通过 `in[Text over Yaml]` 编码，再经过 `Codepage`（例如 `codepages.utf8Codepage`）；`data.read[Person in Yaml]` 把它读回来。
++   entry .abstractable   作为 HTTP 正文的文档，内容类型为 `application/yaml`
++       `Yaml is Abstractable across HttpStreams to HttpStreams.Content`：正文是以作用域内 `Codepage` 表示的渲染文本，内容类型为 `application/yaml; charset=<encoding>`。
++       需要 `Yaml.Formatting`；`ypsiloid.http` 的 `postables` 和 `servables` given 是由同一渲染构建的 telekinesis 实例。
++   entry .instantiable   把 HTTP 请求或响应的正文读回为文档
++       `Yaml is Instantiable across HttpRequests from Text`：正文的文本像 `text.read[Yaml]` 那样被解析，在作用域内的 `PositionTracking` 下进行，并抛出 `Parse.Error`。
++   entry .yaml   `Yaml is Decodable in Yaml`：`doc.as[Yaml]` 就是文档本身
++       恒等解码器，因此 case class 中类型为 `Yaml` 的字段会让树的那一部分保持未解码，留待之后检视或解码。
++   entry .yamlEncodable   `Yaml is Encodable in Yaml`：文档编码为它自身
++       恒等编码器，与 `.yaml` 相对应：类型为 `Yaml` 的字段按原样拼接进映射，`Yaml.make` 也通过它接收参数。
++   entry .int   `Int is Decodable in Yaml`：整数或小数标量，截断为 `Int`
++       YAML 整数（`42`、`0x2A`、`0o17`）或小数（截断）读作 `Int`；其他任何节点都会登记一个带有 `Reason.NotType(found, Integer)` 的 `Yaml.Error`（对于缺失的字段则是 `Reason.Absent`），并以 `0` 继续，使同级字段能在 `validate` 块下累积各自的错误。
++       在 `throwUnsafely` 下，第一个错误就会抛出。
++   entry .long   `Long is Decodable in Yaml`：整数或小数标量，作为 `Long`
++       与 `.int` 相同。
++       超出 `Long` 范围的整数在树中以 `Bcd` 保存，在这里会被截断；要获得它的全部精度，请通过 `Yaml.unseal` 把它读作 `Yaml.Ast#bcd`。
++   entry .double   `Double is Decodable in Yaml`：小数或整数标量，作为 `Double`
++       `.inf`、`-.inf` 和 `.nan` 读作对应的 IEEE 值。
++       形状错误的节点登记 `Reason.NotType(found, Decimal)`，并以 `0.0` 继续。
++   entry .float   `Float is Decodable in Yaml`：小数或整数标量，作为 `Float`
++   entry .boolean   `Boolean is Decodable in Yaml`：布尔标量
++       只有 `true`/`false`（以 YAML 的任何一种拼写）才解析为布尔值；带引号的 `"true"` 是字符串，会登记 `Reason.NotType(Str, Bool)`。
++   entry .text   `Text is Decodable in Yaml`：字符串标量
++       带引号的标量、块标量、不解析为数字、布尔值或 null 的纯标量，或任何标记为 `!!str` 的标量。
++       数字不会被强制转换：`42` 登记 `Reason.NotType(Integer, Str)`；要得到文本，请写 `!!str 42` 或 `"42"`。
++   entry .string   `String is Decodable in Yaml`：字符串标量，作为 Java `String`
++   entry .unit   `Unit is Decodable in Yaml`：null 标量
++       `null`、`~`、空值，或任何标记为 `!!null` 的内容；其他任何节点登记 `Reason.NotType(found, Null)`。
++   entry .memory   `Memory is Decodable in Yaml`：来自整数标量的字节数
++       把节点读作 `Long`，并由它构造一个 `Memory`（rudiments 的字节数）。
++   entry .listDecodable   对于任何具有解码器的元素，`List[T] is Decodable in Yaml`
++       读取一个序列，按序数聚焦每个元素，因此元素的错误在 `#/items/2` 处报告。
++       不是序列的节点登记 `Reason.NotType(found, Sequence)`。
++       `List` 是 Soundness 自己的（不透明）列表，因此这是一个独立于 `.iterable` 的 given，后者涵盖标准库集合。
++   entry .setDecodable   `Set[T] is Decodable in Yaml`：读入 `Set` 的序列
++   entry .seriesDecodable   `Sequence[T] is Decodable in Yaml`：读入 `Sequence` 的序列
++   entry .iterable   任何具有 `Factory` 的标准库 `Iterable` 都可以从序列解码
++       针对 `scala.collection` 类型（`Vector`、`scala.List`……）的通用 given，通过它们的 `Factory` 构建；`.listDecodable`、`.setDecodable` 和 `.seriesDecodable` 是它针对 Soundness 自有集合的实例。
++   entry .map   `Map[Text, T] is Decodable in Yaml`：以文本为键读取的映射
++       每个键都必须是标量：字符串按原样取用，数字或布尔键渲染为文本，`null` 键变为 `t"null"`；集合键会以 `Reason.NotType(found, Str)` 中止。
++       不是映射的节点登记 `Reason.NotType(found, Mapping)`，并以空映射继续。
+
+% 2 1 0 187dd25b5bffbf5e03054c437db9f063
+
+% 3 1 0 07129a6f3c13100412378b1989c3a29d
+
+% 4 1 0 0419986cbdd77ebf011d08c981586a22
+
+% 0 1 0 0b50139662f54c161324b6b6448037cd
+
+% 1 1 0 109fe04cf50bbb9e1d9628856966d65a
+
+@ 0 34 0 19b3de8f579b5e0314ba5b937ed53138
++   entry .option   `Option[T] is Decodable in Yaml`，遵从 `optionalityOptions` 方针
++       缺失的键读作 `None`，除非作用域内有 `strictYamlAbsence`（此时为 `Yaml.Error(Absent)`）；YAML `null` 读作 `None`，除非作用域内有 `strictYamlNulls`（此时内层解码器会看到它，并且除 `Unit` 外对任何类型都会失败）；内层解码器拒绝的值是一个错误，除非作用域内有 `lenientYamlFaults`（此时为 `None`）。
++       这三项方针是 `in Yaml` 的 `Decodable.Absence`、`Nullity` 和 `Fault`，distillate 中的默认值是宽松的缺失、宽松的 null 和严格的错误。
++   entry .optionEncodable   `Option[T] is Encodable in Yaml`：`None` 编码为缺失
++   entry .intEncodable   `Int is Encodable in Yaml`：整数标量
++   entry .longEncodable   `Long is Encodable in Yaml`：整数标量
++   entry .integralEncodable   任何 `Integral` 类型都通过 `toLong` 编码为整数标量
++   entry .doubleEncodable   `Double is Encodable in Yaml`：小数标量，`.inf` 和 `.nan` 按 YAML 的写法拼写
++   entry .floatEncodable   `Float is Encodable in Yaml`：小数标量
++   entry .booleanEncodable   `Boolean is Encodable in Yaml`：`true` 或 `false`
++   entry .textEncodable   `Text is Encodable in Yaml`：字符串标量，在渲染需要时加引号
++       树按原样保存文本；由 `show` 决定它能否作为纯标量，还是必须加双引号，因此 `t"42"` 往返后是字符串 `"42"`，而不是数字。
++   entry .stringEncodable   `String is Encodable in Yaml`：字符串标量
++   entry .unitEncodable   `Unit is Encodable in Yaml`：`null` 标量
++   entry .listEncodable   `List[T] is Encodable in Yaml`：由各元素的编码组成的序列
++   entry .setAliasEncodable   `Set[T] is Encodable in Yaml`：一个序列，按集合的迭代顺序排列
++   entry .seriesAliasEncodable   `Sequence[T] is Encodable in Yaml`：一个序列
++   entry .iterableEncodable   任何标准库 `Iterable` 都编码为序列
++   entry .mapEncodable   对于任何具有 `Encodable in Text` 的键，`Map[K, V] is Encodable in Yaml`
++       键通过它们的 `Encodable in Text` 渲染为文本，成为字符串标量；值通过它们的 `Encodable in Yaml` 编码。
++       条目遵循映射的迭代顺序。
++   entry .discriminatedUnion   以任意名称的映射字段为键的 `Discriminable in Yaml`
++       `Yaml.discriminatedUnion[Shape](t"kind")` 就是和类型的变体在线上被命名的方式：`discriminate` 读取 `kind` 下的字符串，`rewrite` 在编码时添加或替换该字段，填入变体的名称，`variant` 则在变体自身的解码器运行之前把它剥离。
++       `discriminables` 包把两个常见的选择 `type` 和 `kind` 作为可导入的 given 提供；对于其他任何字段名，请调用它，并把结果绑定为一个局部 given。
+
+% 2 1 0 184b182b6e258f470a12ec0275a8ca8b
+
+% 3 1 0 1906a9ce531cbcdf1c80af49da1fdf3e
+
+% 4 1 0 0726afee39ff4dad07dbe8defcfb5568
+
+% 2 1 0 000bab8c145243510224c7e43c8eee95
+
+% 3 1 0 0adf95eb4b3275f704c512680b2081b4
+
+% 4 1 0 05950d897e2bf8500339ccf8c6482f02
+
+% 0 1 0 09c7f57a2d63104e0e71ddd2e8b09669
+
+% 0 1 0 1cf46dd188d3407405f2945b937a4c79
+
+% 1 1 0 05b23888426263c604a474b03fc2b8f6
+
+@ 0 6 0 050715945b4436040b5ab697ea44fe98
++   entry .positionable   `doc.locate(path)` 和 `doc.locateKey(path)`：节点的源码位置
++       zephyrine 的 `locate` 扩展背后的 `Yaml is Positionable by YamlPath to Yaml.Ast.Position`。
++       `locate` 给出位于某个 `YamlPath` 的值的位置，`locateKey` 给出持有该值的映射键的位置；对于未跟踪的文档（解析时没有 `parsing.trackPositions`）以及无法解析的路径，两者都是 `Unset`，对于根节点，`locateKey` 也是 `Unset`。
++       行和列都从 1 开始。
+
+% 2 1 0 1ec83dfd65b0fd570309cac6abd00636
+
+% 3 1 0 10fa4a71e1fe878606cb2719890710ef
+
+% 4 1 0 0f7cff86875458d61ad32b239f4e724f
+
+% 0 1 0 1cdc57769a14db061e8c86d90120bb16
+
+% 0 1 0 05f98e0bb0f14cdb1f237a9160991405
+
+% 0 1 0 110f751c8ce651890d616782501a6f05
+
+% 0 1 0 06f1c5193a09e6a51141c3d4dcf735a7
+
+% 1 1 0 08b5cb5221a1c36117c95831f9408c29
+
+@ 0 13 0 04cd522bbd9896e61e7229e5bcd67641
++   entry .interpolator   `y"…"` 背后的 given：在代码编译时解析的 YAML 字面量
++       `Yaml is Interpolable`，结果为 `Yaml`。
++       插值器接受什么，请参阅 `ypsiloid.y`。
++   entry .extrapolator   `case y"…" =>` 背后的 given：作为模式的 YAML 字面量
++       `Yaml is Extrapolable`：`y"…"` 模式按结构匹配文档，其中的 `$x` 空位把该位置上的节点绑定为一个 `Yaml`。
++       请参阅 `ypsiloid.y`。
++   entry .lens   `"field" is Lens from Yaml onto Yaml`：按标注把映射条目作为透镜
++       使 `doc.lens(_.inner.n = value)` 能够工作的 given：路径中的每个标注都是一个透镜，它的 getter 是 `#selectDynamic`，它的 setter 替换（或插入）该条目，因此嵌套的更新会在每一层重建映射，并返回一个新文档。
++       它以 `Yaml is Dynamical`（`dynamicAccess.dynamicYaml`）为前提，并需要 `Tactic[Yaml.Error]`。
++       所赋的值必须是 `Yaml`：用 `in[Yaml]` 编码它，或导入 `conversions.encodableToYaml`，以便直接赋予任何可编码的值。
+
+% 2 1 0 139b4c5b6637a64013f26f9ad3681e2f
+
+% 3 1 0 164b6a1b84ceef510ac185ac0deb76e9
+
+% 4 1 0 07168ea46f30457403dabc7ae8ef348a
+
+% 5 1 0 0a06584cbca6af3c06868f47c8a3c950
+
+% 6 1 0 146481280e455f151b1582830ad1d712
+
+% 0 1 0 0d5ccecbbce63eb0005561572df9b843
+
+% 0 1 0 0c2b61eb37bed9ac0a5a4a2c5432f55e
+
+% 0 1 0 01d011873b3e634a0c2b9f2b3564f811
+
+% 0 1 0 13a77b3b4aa789d10db3ef0594ed6ea0
+
+% 0 1 0 0bbf50a6e7fdf0f51ba990be532b2b73
+
+% 1 1 0 1f5e5f42300658d61616cc7ab2d45669
+
+@ 0 10 0 06193cb5ec8a98880f716ef094fcf36b
++   entry .ordinalOptical   `Ordinal is Optical from Yaml onto Yaml`：按位置取得的一个序列项
++       使 `doc.lens(_.items(Prim) = value)` 更新以序列为值的字段的第一项；越过末尾的序数，或不是序列的节点，都让文档保持不变。
++   entry .eachOptical   `Each is Optical from Yaml onto Yaml`：序列的每一项
++       `doc.lens(_.items(Each) = 0)` 把更新应用到序列的每一项，对于不是序列的任何东西都不做任何事。
++   entry .filterOptical   `Filter[Yaml] is Optical from Yaml onto Yaml`：谓词选中的各项
++       `doc.lens(_.items(Filter[Yaml](_.as[Int] > 15)) = 0)` 只更新谓词成立的项，其余各项保持原样。
+
+% 2 1 0 162138cc8e17f8041181792bd3251fc1
+
+% 3 1 0 0ceb13c6bb9c86310da4a8c589b8efc2
+
+% 4 1 0 126871836a9aaa121bdb1a18d903c8cc
+
+% 5 1 0 14dcf9053d61302d04a9381b93b951d6
+
+% 6 1 0 099105aa768d57011e50c8f070d15bbd
+
+% 0 1 0 0d7cc3952bcaf225025db1ccf7e3fea3
+
+% 0 1 0 1f27403983e982870fd9c93d1919cd56
+
+% 1 1 0 15698275119db0230c5f537f11e85f0b
+
+@ 0 27 0 1dd524c08b840b580a5cf1bdc8941e11
++   entry .primitive   节点的 `Yaml.Primitive` 种类：错误报告为 _found_ 的内容
++       `Yaml.primitive(ast)` 把节点归类为 `Null`、`Bool`、`Integer`、`Decimal`、`Str`、`Sequence` 或 `Mapping`；高精度的 `Bcd` 数字报告为 `Decimal`，缺失的节点报告为 `Null`。
++   entry .YamlString   树中字符串标量的 JVM 表示：`String`
++   entry .YamlInteger   整数标量的表示：`Long`，超出 `Long` 范围时为 `Bcd`
++   entry .YamlDecimal   小数标量的表示：`Double`，超过 17 位有效数字时为 `Bcd`
++   entry .YamlBoolean   布尔标量的表示：`Boolean`
++   entry .YamlNull   树中表示 YAML `null` 的哨兵值，与缺失的节点不同
++       这个对象及其单例类型。
++       YAML `null` 与缺失值（缺失的字段，表示为 `Unset`）必须保持区别，因为 `Optional` 字段在不同的方针下对待它们，所以 null 是这个哨兵值，而不是 JVM 的 `null`。
++       `Yaml.Ast.Null` 是对应的节点，`isNull` 是对应的检测。
++   entry .YamlSequence   序列的表示：长度为奇数的冻结 `Array[Any]`
++       序列和映射共用同一种数组表示，靠长度的奇偶性区分：序列数组的长度总是奇数，项数为偶数时用一个哨兵值填充。
++       `Yaml.Ast.sequenceLength` 给出真实的项数。
++   entry .YamlMapping   映射的表示：键和值交替排列的冻结 `Array[Any]`
++       长度总是偶数，即 `[k0, v0, k1, v1, …]`，按文档顺序排列。
++       键是节点，只有字符串键才能由 `Yaml#apply`、`YamlPath` 和派生的解码器寻址。
++   entry .PositionIndex   有跟踪的解析在树旁记录的、源码位置的扁平索引
++       一个由位置描述符组成的不透明冻结 `Array[Int]`，每个节点一个，其排列方式使得在任何描述符边界处切出的片段本身都是有效的索引。
++       只有 `parsing.trackPositions` 在作用域内时才会构建它，它作为 `Yaml#positionIndex` 携带，由 `.positionable` 遍历以回答 `locate` 和 `locateKey`；没有公开的方式直接读取它。
++   entry .Focus   解码错误发生的位置：它的 `YamlPath`，以及文档有跟踪时它的源码位置
+
+% 1 1 0 1bd46c3a967d0b9015549a78035fdced
+
+@ 0 4 0 14ffc6efe7012f370362650ea02f7bc0
++         `Yaml#as` 跟踪的焦点，使累积式策略能在每个错误所在之处报告它：`pointer` 是字段的路径（`#/address/city`，从根开始），`position` 是它的行和列；当文档有 `positionIndex` 时，`#withPosition` 为每个已登记的焦点填入它，否则为 `Unset`。
+
+% 2 1 0 127151345d3d955812bb9ae005bd3d4d
+
+% 3 1 0 06f27788d97735bf0a55b09649774a2d
+
+% 4 1 0 0d613a8f3fd16b1e0d41447f509ad8b3
+
+% 0 1 0 0c5e7da21545287f0200475c5c26fe72
+
+% 0 1 0 079224546a6c87c70db325ed7be30c2f
+
+% 0 1 0 0b45670b200971d0029006fbbde5e807
+
+% 0 1 0 0c76e6da84827bd1029b9d73ed16aeb7
+
+% 0 1 0 056661f221c689760705c0a04124abb1
+
+% 0 1 0 1bec820d92b8ed9c061b1cb2911abb6c
+
+% 0 1 0 1ccb69a10bd7dcf614719dbef4d0dc7c
+
+% 0 1 0 1b1514e39c4cd0891d2117d2f1181f36
+
+% 0 1 0 0d61d5cc56fb87080a7c852d06fed419
+
+% 1 1 0 133e3cddd4242a5b1596e27a71a3583f
+
+@ 0 6 0 1fc06564ac1ca5e813ad6f083dd904ea
++     entry #pointer   出错节点的路径，从根开始
++     entry #position   节点的源码位置，对于未跟踪的文档则为 `Unset`
++     entry #withPosition   一个副本，其 `position` 已根据某个文档的索引解析
++         `focus.withPosition(doc)` 就是把 `position` 设为 `doc.locate(pointer)` 的 `focus`；`Yaml#as` 会把它应用到每个已登记的焦点，因此处理函数很少需要这样做。
++   entry .Ast   树的节点：未装箱的标量、序列或映射，通过扩展方法检视
+
+% 1 1 0 07fc6f7d4e57c0e6013f7b0aeed820a7
+
+@ 0 8 0 1b168ada4ce061320470e283be4da4a8
++         `Yaml.Ast` 是基于 YAML 各种值的 JVM 表示的不透明类型：`String`、`Long`、`Double`、`Boolean` 或 `Bcd` 标量，`YamlNull` 哨兵值，表示序列或映射的冻结数组，以及表示缺失值的 `Unset`，因此标量的存储不带包装。
++         伴生对象就是全部 API：兼作模式匹配提取器的构造器（`Str`、`Integer`、`Sequence`……），作为扩展方法的谓词（`isString`、`isObject`……）和访问器（`string`、`arrayElement`、`objectIndexOf`……），用于结构比较的 `deepEquals`，以及解析所报告的 `Position` 和 `Issue` 类型。
+
+% 2 1 0 12f91a919dbdb998182858bddfb54c89
+
+% 3 1 0 125472d507e8d3c9187ec5c8673e7214
+
+% 4 1 0 134abc7d4f817db6113fc2c0023126c3
+
+% 0 1 0 1676aada3da7f5ee14a6d61366e7771a
+
+% 0 1 0 17afc517ae3eb63e19b508574616c426
+
+% 0 1 0 021e82497336572e12f0a89aa9021240
+
+% 0 1 0 0f07c1f573ab1aa61d9a8ef3a68eb3ff
+
+% 0 1 0 06af713f955fe5500df007cd82b916cc
+
+% 0 1 0 0decc8ae50b06f401c98cf70ff4a8e6a
+
+% 0 1 0 1a12fc32ecb0f8e114b58c6cfe378f0f
+
+% 0 1 0 01eaf633481877090f646482e7e75c3d
+
+% 1 1 0 0b5896b535cb06a61623af9e0896adc2
+
+@ 0 4 0 1aec19c4def2d80d02fbb44a4947cfc8
++         文档（`Yaml`）包装一个节点；大多数代码通过文档及其编解码器工作，只有在要按结构进行匹配，或要把高精度数字读作 `Bcd` 时，才会触及节点。
++         伴生对象也是 YAML 解析的 `Format`，名为 `YAML`，它的 `Parse.Error` 带有一个 `Yaml.Ast.Issue` 和一个 `Yaml.Ast.Position`。
+
+% 0 1 0 0b3060986179f3db1a547ce673d9103b
+
+% 0 1 0 1f3cf91c242f7b15103b43655ce639d6
+
+% 0 1 0 07878f1aaec1bf3b1c743feef0aaa515
+
+@ 0 74 0 1a4495f701a10fbd09b2a1aa42ffe122
++     entry .name   格式的名称 `YAML`，`Parse.Error` 消息就是这样报告它的
++     entry .showable   在给定 `Yaml.Formatting` 时，把节点渲染为块样式的 YAML 文本
++         与 `Yaml` 的 `showable` 是同一个发射器，作用于裸节点。
++     entry .inspectable   节点在一行上的调试渲染，后缀为 `ᵃˢᵗ`
++         与文档的检视方式相同，换行符被转义，另加一个上标 `ᵃˢᵗ`，使裸节点能与会包装它的 `Yaml` 区分开来。
++     entry .apply   把任意表示值包装为节点
++         `Yaml.Ast(value)` 接受 `Long`、`Double`、`Bcd`、`Boolean`、`String`、冻结的 `Array[Any]`、`YamlNull` 或 `Unset`；在种类已知时，有类型的构造器 `.Str`、`.Integer` 等更清楚。
++     entry .Null   `null` 节点
++     entry .Bool   `Yaml.Ast.Bool(true)` 构造布尔节点；`case Yaml.Ast.Bool(b)` 匹配布尔节点
++     entry .Integer   `Yaml.Ast.Integer(42L)` 构造整数节点；`case Yaml.Ast.Integer(n)` 匹配整数节点
++         提取器只匹配在 `Long` 范围内的整数；以 `Bcd` 保存的整数匹配 `.BcdValue`。
++     entry .Decimal   `Yaml.Ast.Decimal(3.14)` 构造小数节点；`case Yaml.Ast.Decimal(d)` 匹配小数节点
++     entry .BcdValue   以 `Bcd` 保存的高精度数字节点；在模式中匹配这样的节点
++         超出 `Long` 范围的整数，或超过 17 位有效数字的小数，会被解析为 `Bcd`，而不是被舍入；它构造或提取这样的值。
++     entry .Str   `Yaml.Ast.Str(t"x")` 构造字符串节点；`case Yaml.Ast.Str(text)` 匹配字符串节点
++     entry .Sequence   `Yaml.Ast.Sequence(items)` 由节点的冻结数组构造序列；也匹配序列
++         提取器以冻结的 `Array[Yaml.Ast]` 交出各项，不含表示中可能带有的填充哨兵值；项数为偶数时，构造器和提取器都会复制。
++     entry .Mapping   `Yaml.Ast.Mapping(entries)` 由键值对构造映射；也匹配映射
++         构造器接受冻结的 `Array[(Yaml.Ast, Yaml.Ast)]` 并把它展平；提取器按文档顺序交出这些键值对。
++     entry .sequenceLength   序列数组的项数，不含填充哨兵值
++         作用于表示（`Array[Any]`）的底层访问器；`arrayLength` 是作用于节点的同一操作。
++     entry .mappingSize   映射数组的条目数：其长度的一半
++     entry .foreachItem   对序列数组的每一项应用一个内联主体
++         供集合解码器使用的热路径循环，没有迭代器，索引也不装箱。
++     entry .foreachEntry   对映射数组的每个键和值应用一个内联主体
++     entry .deepEquals   两个节点的结构相等性，会遍历序列和映射
++         对同一文本的两次解析得到的是不同的数组实例；它按内容比较它们，`Yaml#equals` 使用的就是它。
++         数字按种类和值比较，因此 `Integer(1)` 与 `Decimal(1.0)` 不相等。
++     entry .deepHash   与 `.deepEquals` 一致的哈希，由 `Yaml#hashCode` 使用
++     entry .isAbsent   节点是否为缺失哨兵值：缺失的字段，或对缺失的键调用 `Yaml#apply` 的结果
++     entry .isNull   节点是否为 YAML `null`
++     entry .isLong   节点是否为 `Long` 范围内的整数
++     entry .isDouble   节点是否为以 `Double` 保存的小数
++     entry .isBcd   节点是否为以 `Bcd` 保存的高精度数字
++     entry .isNumber   节点是否为任意精度的整数或小数
++     entry .isString   节点是否为字符串标量
++     entry .isBoolean   节点是否为布尔标量
++     entry .isObject   节点是否为映射
++     entry .isArray   节点是否为序列
++     entry .arrayLength   序列节点的项数；对其他任何节点未定义
++         为了速度，访问器 `arrayLength`、`arrayElement`、`objectSize`、`objectKey` 和 `objectValue` 不做检查：请先检测 `isArray` 或 `isObject`，或使用会登记 `Yaml.Error` 的有检查的 `array`、`string`、`long` 等。
++     entry .arrayElement   序列节点中某个索引处的项，不做检查
++     entry .objectSize   映射节点的条目数，不做检查
++     entry .objectKey   映射节点中某个键值对索引处的键，作为 `String`，不做检查
++         键的 `String`；非字符串键会使类型转换失败，因此对于可能有其他种类标量键的映射，请使用 `objectIndexOf` 或对 `.Mapping` 进行匹配。
++     entry .objectValue   映射节点中某个键值对索引处的值，不做检查
++     entry .objectIndexOf   映射中某个字符串键的键值对索引，或 `-1`
++         只匹配字符串键的线性扫描；对于缺失的键以及不是映射的节点，结果为 `-1`。
++         这个索引供 `objectKey` 和 `objectValue` 使用。
++     entry .array   序列节点的各项，或一个已登记的 `Yaml.Error` 加一个空数组
++         需要 `Tactic[Yaml.Error]`：不是序列的节点登记 `Reason.NotType(found, Sequence)`（或 `Reason.Absent`），并以没有任何项继续。
++     entry .double   来自小数、整数或 `Bcd` 的节点，作为 `Double`；否则登记 `Yaml.Error`
++     entry .long   来自整数、小数或 `Bcd` 的节点，作为 `Long`；否则登记 `Yaml.Error`
++     entry .bcd   来自任意数字的节点，以全精度作为 `Bcd`；否则登记 `Yaml.Error`
++         无损地读取对 `Long` 来说过大、或对 `Double` 来说过于精确的数字的方法：`Yaml.unseal(doc).bcd.toBigDecimal`。
++     entry .string   来自字符串标量的节点，作为 `Text`；否则登记 `Yaml.Error`
++     entry .boolean   节点作为 `Boolean`；否则登记 `Yaml.Error`
++     entry .primitive   节点的 `Yaml.Primitive` 种类
++     entry .Position   源码位置：行和列（从 1 开始），以及节点的偏移量和长度
+
+% 1 1 0 16517a3fc7b9680f1bf5ce50bec124b5
+
+@ 0 10 0 134bbee2ed4b6b921189bb78c1998691
++           YAML 解析的 `Format.Position`，由每个 `Parse.Error` 携带，也由 `locate` 返回。
++           `line` 和 `column` 像编辑器显示的那样从 1 开始；`span` 是诊断所高亮的、从 0 开始的范围。
++           `describe` 渲染为 `line 2, column 10`。
++       entry #line   从 1 开始的行
++       entry #column   从 1 开始的列
++       entry #offset   从源码开头起算的字符偏移量，如果已知
++       entry #length   节点源码文本的长度，如果已知
++       entry #describe   作为文本的位置：`line 2, column 10`
++       entry #span   作为从 0 开始、长度为 `length` 个字符的 `Span` 的位置
++     entry .Issue   解析可能发现的问题，每种都有其消息
+
+% 1 1 0 152f15f51715856518b9bde543a2978b
+
+@ 0 18 0 1154a15b7fc10b59190d86ad4ed57828
++           YAML 解析的 `Format.Issue`：`Parse.Error` 的 `issue` 就是其中之一，`describe` 给出它的消息。
++           这些分支涵盖文档结构（文档之间缺少 `---`、`...` 之后还有内容、指令位置不当或格式错误、`%YAML` 重复或没有 `major.minor` 版本、`%TAG` 缺少句柄和前缀），节点属性（一个节点上有两个锚点或两个标签、别名上有锚点、未终止的逐字标签、`UndefinedTagHandle(handle)`、`UnknownAlias(name)`、节点开头出现保留指示符），块结构（缩进中有制表符、映射从 `---` 那一行开始、序列位于键所在的行、键缺少 `:`、多行的隐式键、一行上的链式值、续行缩进不足），带引号的标量（未终止的单引号或双引号、未终止、无效或被截断的转义、错误的十六进制数字、闭合引号之后的多余内容、多行标量中的文档标记），流集合（未终止的 `[` 或 `{`、空条目、应有 `,` 或闭合符、键和它的 `:` 不在同一行、内容缩进不足、流上下文中的文档标记），块标量（无效的头部、超出 1–9 或重复的缩进指示符、重复的截断指示符、缩进过度的开头空行、前面没有空白的头部注释），以及前面没有空白的注释。
+
+% 0 1 0 1347c58a42787fa91b2b19aa23e9089b
+
+% 0 1 0 16c0b404a7d26af80d6112a507e67420
+
+% 0 1 0 169a67029de3597111dd5ef561c10396
+
+% 0 1 0 045412dfde465a9c01b6523a99947589
+
+% 0 1 0 0d86740dc839cbc21d228ae5723842cd
+
+% 0 1 0 1325124b3afc2ca70063c3f620bd5dcc
+
+@ 0 2 0 129c79489b6abbff15c7d5ddcd138abb
++       entry #describe   问题的消息，例如 _the alias *name does not refer to a known anchor_
++     entry .Byte   解析器据以分派的 ASCII 字节常量
+
+% 0 1 0 1dbd995455f497aa1e6b704af81ae91c
+
+% 1 1 0 0cfae82a36adc9830abbf88f939f135b
+
+@ 0 3 0 0a4d454ddd19342e0e989ad501b29fa7
++           不供直接使用：为解析器的分派表所比较的字节值而命名的常量（`Colon`、`Minus`、`OpenBracket` 等）。
++   entry .Error   当文档无法解码为所要求的类型时抛出
+
+% 1 1 0 1083fe3b0cf7f553168ac5d0aeb681e2
+
+@ 0 9 0 0515ca665a6c951e01968543635ba6f1
++         错误 `↯/s.134.1`：_could not access the YAML value because `reason`_。
++         当节点形状错误或缺少必需字段时，由 `Yaml#as`、`Yaml#apply`、各种更新以及每个 `Decodable in Yaml` 抛出。
++         原因是以下两者之一：`Reason.NotType(found, expected)`（_the YAML value had type `found` instead of `expected`_，二者都是 `Yaml.Primitive`）和 `Reason.Absent`（_the YAML value was not present_）。
++         基本类型解码器登记错误后以一个哨兵值继续，因此在累积式策略下，有三个错误字段的记录会报告三个错误，每个都聚焦在各自的字段上；受控的构造从不在哨兵值上运行记录的构造器。
+
+@ 0 2 0 052feaaa0124c1a716e8494568b5faf8
++         解析失败不是 `Yaml.Error`：格式错误的文本会抛出 zephyrine 的 `Parse.Error`，带有一个 `Yaml.Ast.Issue` 和一个 `Yaml.Ast.Position`。
+
+% 0 1 0 0109a0417f4887e2035fb6c53fa01b33
+
+% 0 1 0 009656fc58dc334e0f89f24549e288e7
+
+@ 0 2 0 037e92a72eb8b1b21f1cbf1d14a712e6
++     entry #reason   值无法读取的原因：`NotType(found, expected)` 或 `Absent`
++     entry .Reason   两种原因：种类错误的节点，或缺失的值
+
+% 1 1 0 03e277bae24edb6e1f350eef62208f9e
+
+@ 0 7 0 0e936ae9c9875e91037681f65d232770
++           `NotType(found: Yaml.Primitive, expected: Yaml.Primitive)`（编号 1）是种类错误的节点，例如在应为整数的地方出现了字符串；`Absent`（编号 2）是映射中没有的字段，或在严格的可选性方针下的 `null` 或缺失值。
++           两者都是 `Clarification`，因此错误的编号是 `31.1` 或 `31.2`。
++       entry .communicable   把原因渲染为它的消息
++   entry .Primitive   节点的七个种类，错误用它们说明发现了什么、期望的是什么
+
+% 1 1 0 08ca8cca139f2a2a11d1c0f423738faf
+
+@ 0 5 0 1e0cc947306fdb140d914e2341183d21
++         `Null`、`Bool`、`Integer`、`Decimal`、`Str`、`Sequence` 和 `Mapping`。
++         `Yaml.primitive(node)` 对节点进行归类；`Bcd` 数字是 `Decimal`，缺失的节点是 `Null`。
++     entry .communicable   在消息中渲染基本种类的名称
++   entry .Direct   记录的直接解析器和打印器的 `derives` 载体
+
+% 1 1 0 009789d88eabde241dee1b50d096bd88
+
+@ 0 7 0 008f7e321d7228d21b7e8c3cf13d879c
++         `case class Config(…) derives Yaml.Direct` 把 `Config` 的 `Yaml.Parsable` 和 `Yaml.Printable` 一次性派生到它的伴生对象中，在那里它们服务于每一次 `read[Config in Yaml]` 和 `in[Text over Yaml]`，无论有没有 `import codecs.direct`（否则它会在每次使用时重新派生），并且优先于它，因为伴生对象中的实例优先于导入。
++         以 `Self` 为类型的类型类本身不能出现在 `derives` 子句中，这就是这个参数化载体存在的原因；`Parsable` 和 `Printable` 中的 `.declared` 会把它拆开。
+
+% 2 1 0 05cb1563abaadfaa15e202bac203291f
+
+% 3 1 0 116f853c75c6539b1a42b14d0ee85920
+
+% 4 1 0 184b3cd584ffeb78148ef3b3a77eaaa7
+
+% 0 1 0 14227f9931bcb39c051f8bb27a242664
+
+% 0 1 0 1549984e4ca98bd403d825711ccbe19d
+
+% 0 1 0 09cedd63fe9f39ca1488f87cb9cb5d76
+
+% 1 1 0 0e898c958af186c612e17f25fadd11aa
+
+@ 0 4 0 0c591c821103ad60175af6e3f76cc321
++     entry .derived   为积类型派生一个 `Direct`：它的解析器和打印器，逐字段生成
++     entry #parsable   记录的直接解析器
++     entry #printable   记录的直接打印器
++   entry .Parsable   直接从解析得到的树上读取的类型，不必在每个节点外构建 `Yaml`
+
+% 1 1 0 0ef3e74adfc8042e0a301301531b1e68
+
+@ 0 10 0 1e7c4ce63990b77d19697fcdf2880f60
++         直接读取的选择启用接口：具有 `Yaml.Parsable` 的类型由 `read[T in Yaml]` 通过 `.aggregableParsed` 读取，而不是通过 `Decodable in Yaml`。
++         实例来自 `derives Yaml.Direct`，来自绑定为 given 的 `Parsable.derived[T]`，来自 `import codecs.direct`（每个积类型，在使用处派生），或来自桥接 `fromField` 和 `fromDecodable`。
++         `Parsable` 也是 `Yaml.Field`，因此记录的解析器也可以作为另一个记录内部的字段解析器。
++         直接解析器给出与树路径相同的结果和相同的聚焦错误，并遵从 `@name`、默认值和 `optionalityOptions` 方针。
++         `generated` given 继承自优先级层 `Parsable2`，并在那里有文档说明。
+
+% 0 1 0 14a1c4c16860b2260aebc2e25693a016
+
+% 1 1 0 18340ec162d509fc0d295b5dda850726
+
+% 1 1 0 1997a5954cd3841d067eef03b8e5f237
+
+@ 0 7 0 1832eb99da023202018c9e0179d61fc9
++     entry .derived   根据积类型的 `ProductReflection` 为它派生直接解析器
++     entry .fromField   由 `Yaml.Field` 得到的 `Parsable`：从总能解析的接口得到选择启用的接口
++     entry .fromDecodable   一个 `Parsable`，它通过 `Decodable in Yaml` 把节点作为 `Yaml` 解码
++         来自树世界的整体桥接：用于读取无法直接进行、但又必须满足 `codecs.strict` 的类型。
++     entry .declared   `derives Yaml.Direct` 的类型的解析器，取自其伴生对象的 `Direct`
++   entry .Field   从树的节点读取的值，派生的解析器就是这样读取每个字段的
+
+% 1 1 0 061e54ce96924d3802ba1c9d1804c5ab
+
+@ 0 8 0 0ddb4164275674ca08295c030e5f63cd
++         `Yaml.Parsable` 的总能解析的超类型：每个类型都有一个 `Yaml.Field`，包括伴生对象中针对基本类型、`Text`、`Unit`、`Option`、`Optional`、`List`、`Set`、`Sequence`、`Map[Text, _]` 以及任何标准库 `Iterable` 的 given，针对任何积类型的派生实例（`.product`），以及来自任何 `Decodable in Yaml` 的桥接（`.decodable`），因此派生的解析器可以读取任何字段类型。
++         `Field` 从 `(reader, node)` 读取，对于映射所缺少的键，节点是缺失哨兵值。
++         `product` 和 `decodable` given 继承自优先级层 `Field1` 和 `Field2`，并在那里有文档说明。
+
+% 0 1 0 0d9faa42677074af08476f8e3bd1a3bb
+
+% 1 1 0 0c82b4dd7259d53604ad2f70523e8b2b
+
+@ 0 11 0 1f1b1eff0ac7d6231f1454250ab7ab9d
++     entry #Transport   读取字段所依据的格式：`Yaml`
++     entry #Reader   读取字段时所经由的读取器：`Yaml.Reader`
++     entry #parse   从节点读取值；只传入读取器调用时，从缺失节点读取
++     entry .parseField   通过字段的 `Field` 读取一个字段，读取器以 `AnyRef` 的形式携带
++         供派生代码使用的边界调用点，派生代码无法在函数参数中持有以能力为类型的读取器。
++     entry .readerOf   从其 `AnyRef` 载体中取出的读取器
++     entry .lookup   映射节点中某个字符串键下的值，或 `null`
++         对于不是映射的节点，结果也是 `null`。
++         与树解码器的查找一样，只匹配字符串键。
++     entry .int   `Int is Yaml.Field`：整数或小数节点
+
+% 0 1 0 09c3e518abc980dd1cf6eb5754cee75b
+
+% 0 1 0 1ecfd89eab23d9ac1cbe27d293f4dc43
+
+% 0 1 0 136f9d666b32f8fa1361ac4b9a437fa9
+
+% 0 1 0 02364c9b9de7248f0c05ff23d9a80027
+
+@ 0 1 0 07b844636b6d8c51011453b7304cb985
++     entry .text   `Text is Yaml.Field`：字符串节点
+
+% 0 1 0 1a8fec41bfa5c82f1854d66aefb18451
+
+@ 0 12 0 1d5fc1c2015181a2055b8971222ac550
++     entry .unit   `Unit is Yaml.Field`：null 节点
++     entry .optional   `Optional[T] is Yaml.Field`，遵从 `optionalityOptions` 方针
++         与树解码器的 `Yaml.optional` 相同：缺失和 `null` 读作 `Unset`，除非作用域内有 `strictYamlAbsence` 或 `strictYamlNulls`；被拒绝的值是一个错误，除非作用域内有 `lenientYamlFaults`。
++     entry .option   `Option[T] is Yaml.Field`，遵从相同的方针，得到 `None`
++     entry .iterable   任何具有 `Factory` 的标准库 `Iterable`，来自序列节点，每一项按序数聚焦
++     entry .list   `List[T] is Yaml.Field`：序列节点
++     entry .set   `Set[T] is Yaml.Field`：序列节点
++     entry .series   `Sequence[T] is Yaml.Field`：序列节点
++     entry .map   `Map[Text, T] is Yaml.Field`：带有字符串键的映射节点
++   entry .Reader   直接解析器进行读取时所处的上下文：本次读取的战术和焦点
+
+% 1 1 0 02582c3dce9e1db6183ed09fa70118e9
+
+@ 0 15 0 03ac89965a128a0d0059f9b82c9c291c
++         `Yaml.Parsable` 通过 `Reader` 读取它的节点，`Reader` 持有本次读取的 `Tactic[Yaml.Error]` 和 `Foci[Yaml.Focus]`，因此实例无需构造，同一个解析器可服务于每一次读取。
++         它的标量方法通过战术登记种类错误或缺失的错误，然后像树解码器那样以一个哨兵值继续，使同级字段能累积各自的错误。
++         只有 `.aggregableParsed` 会创建它；手写的 `Parsable` 会接收到它。
++     entry #int   整数或小数节点，作为 `Int`；否则登记错误并得到 `0`
++     entry #long   整数或小数节点，作为 `Long`；否则登记错误并得到 `0`
++     entry #double   小数或整数节点，作为 `Double`；否则登记错误并得到 `0.0`
++     entry #float   小数或整数节点，作为 `Float`；否则登记错误并得到 `0.0f`
++     entry #boolean   布尔节点；否则登记错误并得到 `false`
++     entry #string   字符串节点，作为 `String`；否则登记错误并得到 `""`
++     entry #unit   检查节点是否为 `null`，否则登记一个错误
++     entry #shape   登记形状错误的节点（在应为序列或映射的地方出现了标量），然后继续
++   entry .Printable   根据字段直接写成 YAML 文本的类型，不构建树
+
+% 1 1 0 0c3134bbcf41336a0911e47aa75a42eb
+
+@ 0 8 0 0d2fe23ca3e7f6ef129728e49eec9954
++         直接写出的选择启用接口：具有 `Yaml.Printable` 的类型由 `in[Text over Yaml]` 通过 `.encodableOverPrinted` 写出，也由 `Printable.print` 和 `Printable.emit` 写出，而不是通过 `Encodable in Yaml` 和 `show`。
++         实例来自 `derives Yaml.Direct`，来自 `Printable.derived[T]`，来自 `import codecs.direct`，或来自桥接 `fromWritable` 和 `fromEncodable`。
++         文本与 `show` 为该值的树所渲染的完全相同。
++         `generated` given 继承自优先级层 `Printable2`，并在那里有文档说明。
+
+% 0 1 0 0aed4b9c9c3d5e150620104efac7f396
+
+% 1 1 0 16ede631f73c075703ad81af65df57dd
+
+% 1 1 0 0641919829278e3e17b3f0ef9498a8bc
+
+@ 0 5 0 11adc020b90c7b6314f66aa6918bd4b3
++     entry .derived   根据积类型的 `ProductReflection` 为它派生直接打印器
++     entry .fromWritable   由 `Yaml.Writable` 得到的 `Printable`
++     entry .fromEncodable   一个 `Printable`，它把值编码为树，并在原位写出这棵树
++     entry .declared   `derives Yaml.Direct` 的类型的打印器，取自其伴生对象的 `Direct`
++     entry .print   通过 `Printable` 得到值的完整 YAML 文本
+
+% 1 1 0 126d1845504fe2400da4ff9323f5cb68
+
+% 2 1 0 0c7bc8fe78286e70020f1c4a1cb4cca9
+
+% 0 1 0 0e3ea85a8a7d33b90596b0f230e7ff82
+
+% 0 1 0 082aa163bac3d4221e7ddc601aa143d9
+
+% 1 1 0 061735f34cb0755c05f361ffb8e321aa
+
+@ 0 4 0 169c319a7e8c08900543372c8adb2c44
++     entry .emit   以 `Buffering` 容量为块写出值的文本，把每个块交给一个函数
++         针对大值的推送形式：一旦文本达到容量，每个已完成的行就交给 `deliver`，因此从不构建整个值的文本。
++   entry .Writable   作为映射值、序列项或文档写出的值，派生的打印器就是这样写出每个字段的
+
+% 1 1 0 1b0f65fba968df581291bb24f6b621b0
+
+@ 0 8 0 1e5574a77f6b90e01bfd226ff1e85541
++         `Yaml.Printable` 的总能解析的超类型：每个类型都有一个 `Yaml.Writable`，包括伴生对象中针对基本类型、`Text`、`Unit`、`Option`、`Optional`、`List`、`Set`、`Sequence`、`Map` 以及任何标准库 `Iterable` 的 given，针对任何积类型的派生实例（`.product`），以及来自任何 `Encodable in Yaml` 的桥接（`.encodable`）。
++         `Writable` 把值作为 `key:` 或 `-` 标记之后应写的值写入 `Yaml.Out`，并通过 `#absent` 说明它是否应从映射中完全略去。
++         `product` 和 `encodable` given 继承自优先级层 `Writable1` 和 `Writable2`，并在那里有文档说明。
+
+% 0 1 0 0e18938cdda29ce00a3267e3d20c4cfe
+
+% 1 1 0 0b7b2e17c59ddda80c9e891ae8209019
+
+@ 0 4 0 02328be6ca2a56481fc25c6baf1e99ac
++     entry #absent   值是否从映射中略去：`Unset` 或 `None` 字段
++     entry #write   把值写入 `Yaml.Out`，作为标记之后应写的值，或作为文档
++     entry .writeField   通过字段的 `Writable` 写出一个字段，写入以 `AnyRef` 形式携带的写入器
++     entry .keyOf   把 `key:` 标记写入以 `AnyRef` 形式携带的写入器
+
+% 0 1 0 11259f7017a6e8d00fdd22978ac02243
+
+% 0 1 0 1c70a13b9e21bd1d0e95f5172f23deec
+
+% 0 1 0 1c206b4ef28661e51d72df995aaa872c
+
+% 0 1 0 1731fbd2a0bd81890bb4f7873f12cc54
+
+% 0 1 0 0dba5689e8e07f060e27314a5c31cf58
+
+@ 0 1 0 1d874e236ecbb1ff08f6881dc72eb50a
++     entry .text   `Text is Yaml.Writable`：纯标量或双引号，由 `show` 决定
+
+% 0 1 0 11380873112f7d221979410356c691d3
+
+@ 0 9 0 0e2fd59c9cba919f0c4271a5078fab11
++     entry .unit   `Unit is Yaml.Writable`：写出 `null`
++     entry .optional   `Optional[T] is Yaml.Writable`：`Unset` 为缺失，从映射中略去
++     entry .option   `Option[T] is Yaml.Writable`：`None` 为缺失
++     entry .iterable   任何标准库 `Iterable` 都写成块序列，为空时写作 `[]`
++     entry .list   `List[T] is Yaml.Writable`：块序列
++     entry .set   `Set[T] is Yaml.Writable`：块序列
++     entry .series   `Sequence[T] is Yaml.Writable`：块序列
++     entry .map   对于任何具有 `Encodable in Text` 的键，`Map[K, V] is Yaml.Writable`：块映射，为空时写作 `{}`
++   entry .Out   直接打印器写入的写入器：已写出的文本、缩进，以及等待其值的标记
+
+% 1 1 0 0b0132399818568707550de650037b55
+
+@ 0 7 0 18f2cd9f1ab39fb10e1b912ee71cd453
++         完全按照块发射器排列树的方式排列文本：`#key` 或 `#item` 写出 `key:` 或 `-` 标记，并把值留到它之后再写；随后标量写在同一行上，而非空集合写在下面各行，缩进加深一级，位于 `#open` 和 `#close` 之间。
++         一旦文本达到写入器的上限，每个已完成的行就被交出，因此 `Printable.emit` 可以一次一个块地写出值。
++         只有 `Printable.print` 和 `Printable.emit` 会创建它；手写的 `Writable` 会接收到它。
+
+% 2 1 0 0e9c179f18881ded0ec31413e50a86c6
+
+% 3 1 0 1c7f592ae4d507cc1b7e8c9fef2752f4
+
+% 0 1 0 0843c77b25fe644403e9a0df7c04b14f
+
+% 0 1 0 02ba4bca7ed46a51079322d4dc2410f5
+
+% 0 1 0 0e2d452d7fcfda58037b122277fa65e2
+
+% 0 1 0 09269c94ea3dcf0108769b249fbbafe1
+
+% 0 1 0 0324789defe21dfd128feb74e3a5dcf6
+
+% 0 1 0 1a8dc7550d7c1b7c0453af00c2b9c6b0
+
+% 0 1 0 0b3e0df251be8bce05fc10d52b4ecc1f
+
+% 0 1 0 0c1ecb925b292114168010d1c1fce27b
+
+% 1 1 0 167d11cbc293fdb8148c0f7773988e1a
+
+@ 0 13 0 03a636442b32cc27033a052eca91a2a5
++     entry #long   把整数作为应写的值写出
++     entry #double   把小数作为应写的值写出，`.inf`、`-.inf` 和 `.nan` 按 YAML 的写法拼写
++     entry #boolean   把 `true` 或 `false` 作为应写的值写出
++     entry #string   把字符串作为应写的值写出，是纯标量还是加双引号由 `show` 决定
++     entry #nullValue   把 `null` 作为应写的值写出
++     entry #empty   把 `{}` 或 `[]` 作为应写的值写出
++     entry #key   在当前缩进处写出映射条目的 `key:` 标记
++     entry #item   写出序列项的 `-` 标记
++     entry #open   在标记下面的各行开启一个非空集合，返回 `#close` 要恢复的内容
++         在文档顶层，没有应写的值，条目写在页边处。
++     entry #close   恢复 `#open` 返回的缩进
++     entry #tree   像块发射器那样，把 `Yaml.Ast` 作为应写的值写出
++   entry .FieldDerivation   积类型 `Yaml.Field` 的派生，是直接解析的幕后机制
+
+% 1 1 0 109300d85ad823d102be755760c94cae
+
+% 2 1 0 1737c542fa263b4710620f953a0dad98
+
+@ 0 4 0 000cdbf73abcdb49131e670f8d20cd8e
++         不供直接使用：由 `Yaml.Field.product` 和 `Yaml.Parsable.derived` 触及。
++     entry .conjunction   积类型的字段解析器：从映射的节点上读取每个字段
++     entry .FieldProductParser   派生的解析器最终成为的 `Field`，基于一个以 `AnyRef` 形式接收读取器的 lambda
++   entry .WritableDerivation   积类型 `Yaml.Writable` 的派生，是直接打印的幕后机制
+
+% 1 1 0 0a56dfadd90b740e088051de8b93cbb1
+
+% 2 1 0 1d8cf9b56ade53050f13136ee02663d9
+
+@ 0 4 0 09c4a19102e0768e139259b1f4b3da98
++         不供直接使用：由 `Yaml.Writable.product` 和 `Yaml.Printable.derived` 触及。
++     entry .conjunction   积类型的字段写入器：每个存在的字段写在它的 `key:` 标记之后
++     entry .WritableProductPrinter   派生的打印器最终成为的 `Writable`，基于一个以 `AnyRef` 形式接收写入器的 lambda
++   entry .Field1   持有 `Yaml.Field.product` 的优先级层
+
+% 1 1 0 1c987de824baee6b1573690c96c8885d
+
+% 2 1 0 121fdcc180d8cbcf1f15b69307c39088
+
+@ 0 6 0 09292b45e0ef47031ed806fe76fd9552
++         不供直接使用：`object Yaml.Field` 的一个父类，使派生的积类型解析器的优先级低于伴生对象自己的 given，而高于 `Decodable` 桥接。
++     entry #product   针对任何积类型、根据其 `ProductReflection` 派生的字段解析器
++         内联，位于 `Yaml.Field1` 中，因此直接解析器内部的嵌套记录本身也被直接读取，不为它分派任何编解码器。
++   entry .Field2   持有 `Yaml.Field.decodable` 的优先级层
+
+% 1 1 0 0dbe4a55b1686ff512bce85bddde5d54
+
+% 2 1 0 17e4eda90d502c1f0f701fdbeef7da1f
+
+@ 0 6 0 152a69a5c40a343c11aafeea19be9f8f
++         不供直接使用：`object Yaml.Field` 最低的父类。
++     entry #decodable   桥接：任何 `Decodable in Yaml` 都读取包装为 `Yaml` 的节点
++         位于 `Yaml.Field2` 中，优先级最低，因此没有自己的直接字段解析器的类型（枚举，或带有手写解码器的类型）仍然能在直接解析器内部读取，只对那一个字段走树路径。
++   entry .Writable1   持有 `Yaml.Writable.product` 的优先级层
+
+% 1 1 0 196216b99d2c0bc716b9d2d3e256edaa
+
+% 2 1 0 17d6575882ee87dc1e67823e76d055c4
+
+@ 0 3 0 1b7241ebd65e9b4f173009f8bb3c0414
++         不供直接使用：`object Yaml.Writable` 的一个父类。
++     entry #product   针对任何积类型的派生字段写入器，位于 `Yaml.Writable1` 中
++   entry .Writable2   持有 `Yaml.Writable.encodable` 的优先级层
+
+% 1 1 0 01c9c31ff8d666f30c24c7d61477ae5c
+
+% 2 1 0 0e771ea0ca88db600dca7701b1969e17
+
+@ 0 3 0 12ef5bd140c15eb615ca1a801896c333
++         不供直接使用：`object Yaml.Writable` 最低的父类。
++     entry #encodable   桥接：任何 `Encodable in Yaml` 都在原位写出它的树，位于 `Yaml.Writable2` 中
++   entry .Parsable2   持有 `Yaml.Parsable.generated` 的优先级层
+
+% 1 1 0 0177ffee425a2caa078a719809d5f8a5
+
+% 2 1 0 19b6c02a506eefd20693e06879ed97ab
+
+@ 0 7 0 0ef4d36ca17f83580161dd32b3d4655d
++         不供直接使用：`object Yaml.Parsable` 的父类，使 `import codecs.direct` 的优先级低于伴生对象中的实例或 `derives Yaml.Direct`。
++     entry #generated   `import codecs.direct`：在使用处为每个积类型派生的解析器
++         只在 `Codecs.Direct` 下、且只对具有 `ProductReflection` 的类型解析；枚举保持树路径。
++         伴生对象中的实例或 `derives Yaml.Direct` 优先于它。
++   entry .Printable2   持有 `Yaml.Printable.generated` 的优先级层
+
+% 1 1 0 0edce4bcb896248e0a949548de54b074
+
+% 2 1 0 138c7b3f5c180e861c8b6bf3bd1dabdb
+
+@ 0 2 0 1cc486da5448a9ab0b80290d5753898b
++         不供直接使用：`object Yaml.Printable` 的父类。
++     entry #generated   `import codecs.direct`：在使用处为每个积类型派生的打印器
+
+@ 0 1 0 176fcd50d53705ae0adae45fe355bfc3
++ entry .Yaml1   `object Yaml` 中存放直接编解码器入口的优先级层
+
+% 1 1 0 0d3593f206208f8813ee72ce1180cdcf
+
+% 2 1 0 0db8cc48c90030d400d2524178e58a37
+
+@ 0 17 0 05bb7e528574a97603eb2bfbbffddc5d
++       不供直接使用：它是 `object Yaml` 的父级，存放 `aggregableParsed`、`encodableOverPrinted` 以及两个 `codecs.strict` 失败，使具有直接编解码器的类型优先于 `Yaml2` 中的树编解码器取用它。
++   entry #aggregableParsed   在存在直接解析器时，通过它执行 `text.read[Person in Yaml]`
++       对于具有 `Yaml.Parsable` 的类型（即 `derives Yaml.Direct`、在其伴生对象中有实例，或在 `import codecs.direct` 下为积类型的类型），文档仍会被整体解析（YAML 的别名可以回指任何更早的节点，因此在持有整个文档之前无法读取任何记录），但随后记录的字段直接从树的节点读取，不会围绕其中任何节点构建 `Yaml`，也不会对每个字段分派编解码器。
++       错误携带的焦点和位置与树路径的相同。
++   entry #encodableOverPrinted   在存在直接打印器时，通过它执行 `in[Text over Yaml]`
++       对于具有 `Yaml.Printable` 的类型，文本通过 `Yaml.Printable.print` 直接从字段写出，不构建树；文本与树路径的相同。
++   entry #aggregableStrictFailure   `codecs.strict` 对没有直接解析器的类型给出的编译错误
++       它是内联的，并位于树条目之上，因此在 `Codecs.Strict` 下，任何 `.aggregableStrict` 未取用的类型都会到达这里并编译失败，同时指出该类型。
++   entry #encodableOverStrictFailure   `codecs.strict` 对没有直接打印器的类型给出的编译错误
+
+@ 0 1 0 1b879b89b8fce12b1a3cee3d92e9729f
++ entry .Yaml2   `object Yaml` 的最低优先级层：树编解码器和派生
+
+% 1 1 0 1509d40f7183251a0ecb0ae3b0f52b2f
+
+% 2 1 0 11d998c2b101b0030cd57c84b5cbef8c
+
+@ 0 21 0 0154ded40a29c9b208723117f7132e04
++       不供直接使用：它是 `object Yaml` 最低的父级，存放针对每种类型的回退 `decodable` 和 `encodable` given、`optional`、`optionalEncodable`、`encodableOver`、`aggregableIn` 以及两个派生对象。
++   entry #decodable   任意类型的 `Decodable in Yaml`，来自其文本解码器或通过派生得到
++       它作为 `[value] => value is Decodable in Yaml`，是内联的且优先级最低，为每种类型提供解码器：具有 `Decodable in Text` 的类型从 YAML 字符串标量读取（因此带有文本解码器的枚举按其名称读取），具有 wisteria `Reflection` 的类型（case class 或密封层次结构）由 `#DecodableDerivation` 派生。
++       case class 从映射中逐字段读取：映射缺少某个键时取该字段的默认值，没有默认值时抛出 `Yaml.Error(Absent)`；和类型从作用域中 `Discriminable in Yaml`（`discriminables.yamlByTypeDiscriminable`）指定的判别字段读取其变体。
++       `@name[Yaml](t"full_name")` 和裸 `@name` 注解会在线上重命名字段或变体。
++   entry #encodable   任意类型的 `Encodable in Yaml`，来自其文本编码器或通过派生得到
++       内联且优先级最低：具有 `Encodable in Text` 的类型编码为字符串标量，具有 `Reflection` 的类型由 `#EncodableDerivation` 派生，其中 case class 按字段顺序编码为映射，省略编码为缺失（`Unset` 或 `None`）的字段，和类型编码为其变体的映射，并由作用域中的 `Discriminable in Yaml` 添加判别字段。
++       `@name` 重命名在输出时与输入时一样适用。
+
+% 2 1 0 05df8af5104270d90b2bc030f3725221
+
+% 3 1 0 0ecbfae7a90d8bc019bac405a1dccabd
+
+% 4 1 0 0959c93c082228cb184b8aa6aa625c4d
+
+% 5 1 0 0e98daca6ee3531d140c4ee2c24a416c
+
+% 1 1 0 10ac75edd6ea97b11ccd8697a9fcd66d
+
+% 3 1 0 05a8496a680bfa950bd3cbd6606594f8
+
+% 4 1 0 1db08ff0d85f884a1c1c9415880d6d89
+
+% 5 1 0 0b934b0e4f1bcea817020a95c536f86a
+
+% 0 1 0 19185b83d136147d072c28bad180e8a9
+
+% 1 1 0 060bc4d3042b7b8c12a3d5c7dbefdeec
+
+@ 0 4 0 03d36fea4262c3f704d77576dfde04c8
++   entry #optional   `Optional[T] is Decodable in Yaml`：与 `.option` 相同，产出 `Unset`
++       对于类型为 `Optional[Int]`（或任何 `Mandatable to inner` 的 `value >: Unset.type`）的字段，适用同样的三种方针：缺失和 `null` 默认读作 `Unset`，类型错误的值是错误，除非导入了 `lenientYamlFaults`。
+
+% 2 1 0 01a8c8fed174cbf41a829ac4ecedcd46
+
+% 3 1 0 0b37423985f93b8c1aa57f32eab93d89
+
+% 4 1 0 14deb678b4c14f3d0fbba6254e51f918
+
+% 0 1 0 044c487d699586481700b3ec44ca98de
+
+% 0 1 0 18aae1ca0f3c449608756a0d57516cc8
+
+% 0 1 0 007382f27533bf6f1f4528acb2cf6a0e
+
+% 0 1 0 0cb407862da8a7350ffade9d65c64e68
+
+% 0 1 0 0c394ec49b4955470a094a00da593eda
+
+% 0 1 0 00a44b73b5e1e64516e3c24f9618b497
+
+% 1 1 0 13f23cd646f7645211501a4c18bd4a81
+
+@ 0 13 0 1d3880370ca1756916ffa8e2c0829afe
++   entry #optionalEncodable   `Optional[T] is Encodable in Yaml`：`Unset` 编码为缺失
++       `Unset` 字段编码为缺失节点，派生的映射会将其完全省略；存在的值通过内层的 `Encodable in Yaml` 编码。
++   entry #encodableOver   `person.in[Text over Yaml]`：一步完成编码为树并渲染
++       `read[Person in Yaml]` 在写入一侧的镜像：值的 `Encodable in Yaml` 构建树，作用域中的 `Yaml.Formatting` 渲染它，得到的文本与 `show` 渲染的完全相同。
++       具有 `Yaml.Printable` 的类型则取用 `.encodableOverPrinted`。
++   entry #aggregableIn   `text.read[Person in Yaml]`：通过树一步完成解析和解码
++       适用于任何具有 `Decodable in Yaml` 的类型的 `(value in Yaml) is Aggregable by Text`：文本（或流）被解析为 `Yaml` 并用 `as` 解码，因此它需要一个 `Tactic[Parse.Error]` 和一个 `Tactic[Yaml.Error]`。
++       具有 `Yaml.Parsable` 的类型则取用 `.aggregableParsed`，其优先级高于此项。
++   entry #DecodableDerivation   为积类型和和类型派生 `Decodable in Yaml` 的 wisteria 派生
+
+% 1 1 0 0fa01dae0cb9e7110ba0e0ff2ef59c15
+
+% 2 1 0 166e098dfe330e2504cb833079930b0f
+
+@ 0 9 0 015067784390e789043882f083db539f
++         不供直接使用：`Yaml.decodable` 对任何具有 `Reflection` 的类型都会到达它。
++         `conjunction` 派生积类型的解码器：每个字段在自己的焦点处读取，缺失的字段取其默认值或登记 `Absent`，构造过程受门控，使构造器永远不会在哨兵值上运行；`disjunction` 通过作用域中的 `Discriminable in Yaml` 派生和类型的解码器，未知或缺失判别字段的 `Variant.Error` 会被折叠为和类型焦点处的一个 `Yaml.Error`。
++     entry .conjunction   积类型的解码器，从映射中逐字段读取
++     entry .disjunction   和类型的解码器，按判别字段读取
++   entry #EncodableDerivation   为积类型和和类型派生 `Encodable in Yaml` 的 wisteria 派生
+
+% 1 1 0 1b47f030c1619ded1aa4c4452798a271
+
+% 2 1 0 09abe7f65c50ebac0faa56ae6332199d
+
+@ 0 5 0 101eac54384b01370d5d079f79033f45
++         不供直接使用：`Yaml.encodable` 对任何具有 `Reflection` 的类型都会到达它。
++         `conjunction` 把积类型按字段顺序写为映射，省略缺失的编码；`disjunction` 写出和类型的变体并添加判别字段。
++     entry .conjunction   积类型的编码器，编码为映射
++     entry .disjunction   和类型的编码器，添加判别字段
+
+@ 0 1 0 1edcd51b9cce269a0f055b2cd3ca99ce
++ entry .YamlPath   文档中节点的地址，写作 `#/a/0/b`，使用 JSON Pointer 转义
+
+% 1 1 0 01031578375f970d1db08b7308dfffa7
+
+@ 0 8 0 05b97668bb0c90aa066cd43c9e4e4625
++       `YamlPath` 通过从根开始的键和索引来指名节点：`YamlPath()` 是整个文档（`#`），`YamlPath()(t"servers")(Prim)(t"port")` 是第一个服务器的 `port`（`#/servers/0/port`）。
++       它是位于自己平面上的 serpentine 路径，因此用 `/` 或 `apply` 方法构建，用 `yp"…"` 插值器编写（在代码编译时检查），用 `as[YamlPath]` 从文本解码，用 `encode` 编码。
++       路径段使用 RFC 6901 的转义（`~0` 表示 `~`，`~1` 表示 `/`），因此把文档当作 JSON 时，路径就是同一节点的 JSON Pointer。
++       只有字符串映射键是可寻址的。
+
+@ 0 2 0 1497faae67820ea41a54451afb5ddc3c
++       路径是 `Yaml.Focus` 所携带的东西，因此累积的解码错误会写成 `#/age`；它也是 `locate` 在被跟踪的文档中查找节点源位置时所接受的东西。
+
+% 2 1 0 0455933ce53f230a1178df5b92256e50
+
+% 1 1 0 08d9458eb73012351c93056f35e51984
+
+@ 0 1 0 0e37a6e02fcaceea05257b0a4130b121
++         label 一个文档，解析时记录了位置
+
+% 1 1 0 1999497d5f290cac14f8b78b370002a5
+
+% 2 1 0 18412c62fe15cc0319c6b7b21d60b19a
+
+% 3 1 0 00e84ab971127b9418c2d7b9b1fdf42b
+
+% 4 1 0 1774477afe03bd981701d1b999139009
+
+% 6 1 0 0af0eb0269b74554110087ffa3979ae6
+
+% 1 1 0 05e8aac36550572611c7a53b89cbbc1c
+
+@ 0 1 0 1bea6d4c71ed304c19eb454f2ee6cb46
++         label 指向第一个服务器端口的路径
+
+% 1 1 0 0ab4792faf524ebe09e8f1d5d365bd97
+
+% 2 1 0 05bf45b0519617400b75f7e725927047
+
+% 3 1 0 11e9d38809f882130b83e315f064e1ff
+
+% 4 1 0 1b4584bec4698dc01ad0c582912f90fb
+
+% 6 1 0 132d862d69890f4519f9834723616ed7
+
+% 7 1 0 1b9bd2086f622606005952fb59bdb992
+
+% 0 1 0 17e219426ef9234d0cd15e6ccabca21b
+
+% 1 1 0 01c3daaf242b7e5e10d7349787af8137
+
+@ 0 1 0 05a4642e2969e48d090477d2a7fe9e68
++         label 该节点在源文本中的位置
+
+% 1 1 0 041a30bf4f982cbe1d8359daeb5b94fb
+
+% 2 1 0 0268effb54fe220c17e8a50f47a1796c
+
+% 3 1 0 046da1b9b8bd481e0f403a87bf336230
+
+% 4 1 0 08d1ec25a931228604617eb503606905
+
+% 6 1 0 0105204f691e902f1b794a526ca58f8d
+
+% 7 1 0 00544635c6916c331c2a09166c0a0792
+
+% 8 1 0 063a6b4c6cbb7d271233cdbd641234bd
+
+% 1 1 0 1fbfad3ad03e115907ec86174328f528
+
+@ 0 1 0 0b98dd5305f9605318f37a3358a724b3
++         label 节点本身，经导航并解码
+
+% 1 1 0 0bfcab7f6e47afcd0a7fb8c19bbd9888
+
+% 2 1 0 16a8e1d0f49217ac1007d562f60495fc
+
+% 3 1 0 1478450f1edd4fc41330b621bd93e676
+
+% 4 1 0 0ae8d0cb759145eb13b5e3c97823ec2e
+
+% 6 1 0 1f44852f41eb0bd814f76d895ad69b94
+
+% 7 1 0 1ddc835584a16408084dcd536837cfb8
+
+% 8 1 0 0f52cf210d410a3e1d9452bb87a3fbd3
+
+% 0 1 0 1271967b918e326415d259c3c733ef57
+
+% 1 1 0 081977c35b1369791e2a67c11e25e83e
+
+% 2 1 0 0a999c6a39654932041442241184edf8
+
+@ 0 2 0 025713f4c0a71e77040b47c3604ea05c
++       当文本不以 `#` 开头、片段不以 `/` 开头，或 `~` 后面不是 `0` 或 `1` 时，解码文本会抛出 `YamlPath.Error`。
+
+% 0 1 0 04f7ad819037c3f8164d522f86e7e86a
+
+% 1 1 0 10af99ba747cc2e910203e58f3cd433c
+
+% 0 1 0 071aa137f3f0031f05b0b4770db576ed
+
+@ 0 23 0 12ebbd1c0cc150a71d6dcf2bf66a0356
++   entry .Plane   YAML 路径的平面：即 `YamlPath` 本身
++   entry .navigable   作为路径段的 `Ordinal`：其从零开始的索引的文本
++       `YamlPath()(Prim)` 编码为 `#/0`，因此索引的写法与 JSON Pointer 相同。
++   entry .admissible   任何 `Ordinal` 都是可接受的路径段
++   entry .admissible2   任何 `Text` 都是可接受的路径段；转义在编码时进行
++   entry .filesystem   路径语法：以 `/` 分隔，`#` 表示自身，`..` 表示父级，使用 RFC 6901 转义
++       名为 `YAML`。
++       `escape` 把 `~` 变为 `~0`、把 `/` 变为 `~1`，`unescape` 则反之，因此包含这两个字符之一的键也是可寻址的。
++   entry .interpolable   `yp"…"` 背后的 given；参见 `ypsiloid.yp`
++   entry .decodable   从文本读取路径：`#`、`#/` 或 `#/a/b`
++       `t"#/a/b".as[YamlPath]`，抛出的 `YamlPath.Error` 带有错误所在的字符偏移量：文本不以 `#` 开头时为位置 0 处的 `ExpectedHash`，片段不以 `/` 开头时为位置 1 处的 `ExpectedSlash`，转义格式错误时为 `~` 处的 `BadEscape`。
++       路径段在读取时被反转义，空路径段被丢弃。
++       路径的伴生对象中还有一个匿名的 `Encodable in Text` given，因此 `path.encode` 渲染出 `#/a/b`（根则为 `#`），路径段经过转义。
++   entry .unsafeParse   在没有战术的情况下解码一个已被证明有效的路径
++       供 `yp"…"` 插值器使用，它已在编译时解析过字面量：`Unsafe` 令牌断言运行时的重新解析不会失败。
++   entry .divisible   `path / t"key"`：用文本路径段扩展的路径
++   entry .divisible2   `path / ordinal`：用索引路径段扩展的路径
++   entry .Error   当文本不是有效的 YAML 路径时抛出
+
+% 1 1 0 1d26370fe0f033aa19f94a8850ac95e1
+
+@ 0 6 0 1403027d7c47376f1e530ab5254a5489
++         错误 `↯/s.134.2`：_the YAML path was not valid because `reason`_。
++         由 `.decodable` 抛出，并由 `yp"…"` 插值器在代码编译时于确切的字符处报告。
++         `offset` 是在文本中发现错误的索引。
++     entry #reason   `ExpectedHash`、`ExpectedSlash` 或 `BadEscape`
++     entry #offset   错误在文本中的字符索引
++     entry .Reason   路径格式错误的三种方式
+
+% 1 1 0 1bddb00d6511c2dd0f0babcc48b248f9
+
+@ 0 7 0 0e97bd65abbd7b340e746d9a350f723a
++           `ExpectedHash`（编号 2）：_a YAML path must begin with '#'_。
++           `ExpectedSlash`（编号 3）：_a YAML path fragment must begin with '/'_。
++           `BadEscape`（编号 4）：_a '~' in a YAML path must be followed by '0' or '1'_。
++     entry .communicable   把原因渲染为其消息
++   entry #path   底层的 serpentine `Path on YamlPath`
++   entry #apply   `path(t"key")` 或 `path(ordinal)`：扩展一个路径段的路径
++       与 `/` 相同，只是作为方法：`YamlPath()(t"servers")(Prim)(t"port")`。
+
+@ 0 10 0 0edba9a5b77f8c2f15cd1f25c8a3d527
++ entry .y   `y"…"` 插值器：在代码编译时检查的 YAML 字面量，带有 `$` 占位；也可用作模式
++     `y"name: $name\nage: $age"` 是一个 `Yaml` 文档，其文本在代码编译时解析（格式错误的字面量是编译错误，其高亮正是模板中出错的确切跨度），其 `$` 占位在运行时填充。
++     处于值位置的占位接受任何 `Yaml`（或具有 `Encodable in Yaml` 的值，通过它编码）；纯标量内部的占位（`greeting: hello $name`）把值的文本拼接进字符串；而作为序列最后一个元素的 `$xs*` 把一个 `Iterable` 的各项展开到序列中（每项通过其 `Encodable in Yaml` 编码）。
++     没有编码器的值，或不在最后、不是 `Iterable` 的展开，是在占位处高亮的编译错误。
++     结果不携带位置。
+
+% 2 1 0 069e84a59d82eea61bb37d8edc91d5ab
+
+% 3 1 0 0a72ff7ff4ccc46411c710c62336bfa2
+
+% 4 1 0 192636d81c283ccb0b62db76c1faf00c
+
+% 2 1 0 00f505b5977fdfc716086145bdee8b14
+
+% 0 1 0 1ad7cdac55026673175edc020ebc20e7
+
+% 0 1 0 09de2ddcbeaf2a7e086d95a6ebb563f6
+
+% 0 1 0 1651633ab1be7c9f1ec5d7c65fc78bef
+
+% 0 1 0 004cbdb6de44020e077742172c6e549d
+
+% 0 1 0 0cf6363626a940a20bbd081b74ff0b02
+
+% 0 1 0 0d5c45be77eb80c61cc22f1e5ddaeade
+
+% 0 1 0 0e647005598b6313055dc8fd6c75ccd4
+
+% 0 1 0 096ac16adb8a9fa00682330d9776fac2
+
+% 1 1 0 07a259e5997241bd1fb37843d61e26b4
+
+@ 0 3 0 04072fcca866b7580c4fdddc934aecaf
++     在模式中，`case y"name: $n" =>` 匹配结构与字面量相同的文档，并把 `n` 绑定到占位处的节点，类型为 `Yaml`；没有占位的字面量按结构相等进行匹配。
+
+% 2 1 0 0a74c3ad605febc30803409d2c4870f9
+
+% 3 1 0 01d6f69d28488b4509aa896c1513529e
+
+% 4 1 0 0fd207f016a6c1511241ca449df9f93d
+
+% 0 1 0 1337a2a542ed3adb126c4d141148a3f2
+
+% 0 1 0 00ce88689107a696023b065dd42432e7
+
+% 0 1 0 12d7ff39898546740606521632477dd0
+
+% 1 1 0 14e13ba9f512de0e0604e7bc22c8b556
+
+@ 0 5 0 0059857b850a1f5a06a019bfc47f0892
++ entry .yp   `yp"…"` 插值器：在代码编译时检查的 `YamlPath` 字面量
++     `yp"#/servers/0/port"` 是该文本的 `YamlPath`，在代码编译时通过 `YamlPath` 自己的解码器解码，因此格式错误的路径是指向出错字符的编译错误：`yp"/servers"` 在 `/` 处被拒绝（_a YAML path must begin with '#'_），`yp"#/a~2b"` 在 `~` 处被拒绝。
++     该插值器不接受 `$` 替换。
+
+% 2 1 0 0cd1dd6b32e8783b017cc6b31eff1549
+
+% 3 1 0 086810ef3b64821b04515d4c4b563079
+
+% 0 1 0 17f5a684a426b18c0c0883e23778ba43
+
+% 0 1 0 165f094f69277ac10d4b6a1c1288270a
+
+% 1 1 0 0a112d042d85d5c412963de3fe85aac2
+
+@ 0 1 0 01509f6e2ded94240c6a516906383dad
++ entry .formatting   文档如何渲染：一个按名称导入的 given
+
+% 1 1 0 0f9a23bf979b91f601f6a41b1bcec9b8
+
+@ 0 2 0 1bdd09da5c14eb321dfa5ba8dfc2f49c
++       `show`、`in[Text over Yaml]`、`Yaml.emit` 和 HTTP given 需要作用域中有一个 `Yaml.Formatting`，而 `import soundness.*` 不会引入任何一个，因此这一选择总是显式的：
+
+% 2 1 0 027756a3ca1a5acf0e6d2786827d5149
+
+% 3 1 0 1079ccdcd3b8b45e10fc92d2e5562f39
+
+% 4 1 0 18416278aaaffad512c0a60ada1ea058
+
+% 5 1 0 0acef7a8988726911b989e0b6f5fe46e
+
+% 0 1 0 0988ef323304845104dfe8b8a5385fd1
+
+% 1 1 0 171fc357231024a3133dadd38028bad9
+
+@ 0 8 0 01ee872303904f0c1d58b81e4780be37
++       块样式是目前唯一的格式化方式；这个包之所以存在，是为了将来能在旁边添加流样式或带选项的格式化方式，而无需改动任何调用点。
++       在 `soundness` 总括包中，这个包与其他格式的 `formatting` 包（`indentedJsonFormatting`，…）合并。
++   entry .blockYamlFormatting   两空格缩进的块样式，空集合写作 `{}` 和 `[]`
++       默认且唯一的 `Yaml.Formatting`。
++       其输出的选择保证重新解析后得到同一棵树：标量的写法使解析器能把它们解析回同一种类，字符串只有在不会被误认为其他东西时才写成纯标量。
+
+@ 0 1 0 00750fd5d246e3e312b2b3246f557d30
++ entry .optionalityOptions   `Optional` 或 `Option` 字段如何读取缺失的键、`null` 或错误的值
+
+% 1 1 0 07545dd1c31188b51077f4abaa970aaa
+
+@ 0 5 0 1e1ed2ff01cb446109d5efdb6dad7724
++       三种相互独立的方针，每种都是一对 given，按名称导入其中一个；默认值（来自 distillate）为宽松的缺失、宽松的 null 和严格的错误。
++       它们同样支配 `Yaml.optional`、`Yaml.option` 以及直接的 `Yaml.Field.optional` 和 `Yaml.Field.option`。
++       在总括包中，这个包与其他格式的 `optionalityOptions` 合并，因此名称中带有 `Yaml` 以保持区分。
+
+% 2 1 0 08539d7b39f9fac6158a688a23033235
+
+% 0 1 0 1a64040dc63845e7121043dd67139bee
+
+% 1 1 0 18e1e17281ab535916c544b433820b5e
+
+% 2 1 0 10daf487394b362d0a7dfc1520c696de
+
+% 3 1 0 18028c8a797c631f0db117c5d6113570
+
+% 2 1 0 17c7e518b8b9df410c77e6bddcf66cd7
+
+% 0 1 0 1ca27e4057528e84133eb07a179322c6
+
+% 0 1 0 0f13b2d297538a76178b238c0f2d8947
+
+% 0 1 0 0309e14355e7383005ab8e7b0248e95a
+
+% 0 1 0 03c61282620ea78616295d7c855a951c
+
+% 0 1 0 07e253f3624b8da30eab6cc67e48a7b8
+
+% 1 1 0 07efe15c21df60c115ea8ae4dbd88690
+
+% 2 1 0 1756d680ec28f6a5077c212f83658f9d
+
+% 3 1 0 133db89c7e21d089012a04b69db5bd15
+
+% 0 1 0 1b304068ed8d2ddc192028286ab334d4
+
+% 2 1 0 12db348d5077cd141fe405d0edf3a1ef
+
+% 0 1 0 1c4594c3e0ccc4b80a0547246696c293
+
+% 0 1 0 10b09172fb6555b616dfbf7322563850
+
+% 0 1 0 08cf580088938a470696e6e0a7198fd8
+
+% 1 1 0 0c4b511dbe2f67191e7306802be6583a
+
+% 2 1 0 0af76077936f5100097a156d594d003f
+
+% 3 1 0 03d198faee4dda8a142bd64d7aefbc86
+
+% 0 1 0 06d67c447ad5ffea1029911f8d975292
+
+% 2 1 0 1a79e624038858391fb5bb84944d175e
+
+% 0 1 0 09cf5e054fd09c5c0abf8cb4bf48a985
+
+% 0 1 0 0793af297d81d277159e0c3a0cacd25b
+
+% 0 1 0 17f5b2fbd0fdd4d6187da5973c1ea22e
+
+% 1 1 0 0ee7add46e08edf207590826f772d947
+
+% 2 1 0 01bb6839ede799f81d9bc9317563e368
+
+% 3 1 0 1e4557722bdaad6707a253e01f9c9655
+
+% 0 1 0 004553ec98f23fbc12835eae2aced976
+
+% 2 1 0 0ceb24e9b899ed1006ff9754fbd46dec
+
+% 0 1 0 1ccf92c7773f6ccd12dbd6c294138d38
+
+% 1 1 0 05fe7decfc6399eb0e19d97ff82fcc5e
+
+% 2 1 0 1c8b034f77e2398a00a72c690b074459
+
+@ 0 8 0 07e0521a7613f480015a1905f0bd5fbd
++   entry .strictYamlAbsence   缺失的键是 `Yaml.Error(Absent)`，即使对 `Optional` 字段也是如此
++   entry .lenientYamlAbsence   缺失的键读作 `Unset` 或 `None`：默认
++   entry .strictYamlNulls   `null` 被交给内层解码器，除 `Unit` 外对任何类型都会失败
++   entry .lenientYamlNulls   `null` 读作 `Unset` 或 `None`：默认
++   entry .strictYamlFaults   内层解码器拒绝的值是错误：默认
++   entry .lenientYamlFaults   内层解码器拒绝的值读作 `Unset` 或 `None`
++       内层解码在 `tactic.tolerate` 下运行，因此在累积式策略下，该错误也不会被登记。
+
+@ 0 1 0 1d7d94b304b9fc5718c75151300ea5dd
++ entry .discriminables   和类型的变体在线上如何命名：通过 `type` 或 `kind` 字段
+
+% 1 1 0 028579f07827cb730fd6135b7ea40b3a
+
+@ 0 6 0 06e959c6caef313607543db7a6699337
++       编码或解码枚举或密封层次结构需要作用域中有一个 `Discriminable in Yaml`，而 `import soundness.*` 不会引入它；请按名称导入下列之一，或用 `Yaml.discriminatedUnion` 为其他字段构建一个。
++       变体的名称（或其 `@name`）作为字符串标量写在该字段下，与变体自身的字段并列；解码时先读取该字段，然后在变体的解码器运行之前将其剥除。
++       总括包把这个包与其他格式的同名包合并。
+
+% 2 1 0 1e5f9366842461bb02cdcb5a52a9c3d1
+
+% 3 1 0 1633353ba32ccb7d1ff7ebbc3c846b5d
+
+% 4 1 0 1d46735e8c60663810b88d76ea9495c5
+
+% 1 1 0 03ef21726064b27d151a0e22f05c7b44
+
+% 3 1 0 1b6a0d1d6d7b809d1cf61cf18fd75b75
+
+% 4 1 0 10cc1c5ade49260205f2734cffe0bf51
+
+% 5 1 0 1600afcf722ced4a099a04050887cca2
+
+% 0 1 0 0068d7efa3baacb61021362bc885c659
+
+% 1 1 0 1cbd1eea153a0f0c1ee35990bdfca9c5
+
+@ 0 2 0 02164e2c66e89931033f549fc591905f
++   entry .yamlByTypeDiscriminable   变体名称位于 `type` 字段下
++   entry .yamlByKindDiscriminable   变体名称位于 `kind` 字段下
+
+@ 0 1 0 1149eb61152317351925088cf20f5f4f
++ entry .dynamicAccess   启用 `doc.field` 读取和 `doc.field = value` 更新的 given
+
+% 1 1 0 1ffa6779dd83afc61e73867075c3b527
+
+@ 0 5 0 0c38f8c5fba2ce4914cdf1628a45d4fb
++       `Yaml#selectDynamic`、`#applyDynamic`、`#update`、`#updateDynamic` 和 `Yaml.lens` given 都以 `Yaml is Dynamical` 为门控，因此拼错的成员名是编译错误，而不是一次无声的字段查找。
++       导入 `dynamicYaml` 可将其授予某个作用域，或把代码块包裹在 `dynamically[Yaml]:`（或针对所有格式的 `dynamically:`）中，仅在该处授予它。
+
+% 2 1 0 0cae3c1356df26a504043263326de904
+
+% 3 1 0 1f5c34c630a49c911ccd13ae3abd79d7
+
+% 4 1 0 19b78f1f337df27700dd73fafafd15b4
+
+% 5 1 0 073cb8fe28f10fb516f8158b5ce55036
+
+% 0 1 0 1f0c443514ea8eb11e01017913ac87bb
+
+% 0 1 0 05670f506d953e4411dd43afd4381828
+
+% 1 1 0 0ed2a04af3d55e091ca6861be0641cdf
+
+@ 0 2 0 1fa126fcb69b2e8a0508855818efc040
++   entry .dynamicYaml   `Yaml is Dynamical`：在导入它的作用域中对文档进行动态成员访问
++       一个 erased given：它在运行时没有任何开销，只为存在于作用域中。
+
+@ 0 1 0 138c4197261fceef04019abf4c5f36c6
++ entry .conversions   让任何可编码的值都能通过透镜赋值的转换
+
+% 1 1 0 0441db24722861b41490612ec462b95c
+
+@ 0 5 0 170c10ce55073f7e0bfdf0e8e347fe72
++       `doc.lens(_.field = value)` 要求右侧是 `Yaml`；导入 `encodableToYaml` 后，任何具有 `Encodable in Yaml` 的值都会被就地转换，因此 `doc.lens(_.age = 31)` 能如预期那样书写，而不必写成 `doc.lens(_.age = 31.in[Yaml])`。
++       转换的作用范围限于该导入。
++   entry .encodableToYaml   适用于任何具有 `Encodable in Yaml` 的 `T` 的 `Conversion[T, Yaml]`
+
+@ 0 1 0 1c0794cfd3b44eb716f03002a20e8cbb
++ entry .postables   作为 HTTP 请求正文的文档，用于 `ypsiloid.http` 源集
+
+% 1 1 0 102a7ea4a9d4ae8703a22509718916d6
+
+@ 0 5 0 15cde5173f9cfc650c025966a739f7ed
++       与每个 telekinesis `Postable` 选择一样按名称导入：`import postables.yamlPostable` 让 `Yaml` 可以作为 `post` 或 `put` 的正文。
++   entry .yamlPostable   媒体类型为 `application/yaml; charset=UTF-8` 的 `Yaml is Postable`
++       正文是以作用域中的 `Codepage` 编码的渲染文本（`show`），因此 `Codepage` 和 `Yaml.Formatting` 都是必需的。
+
+@ 0 1 0 1277a2ec1182c86f042c82f74cbbb8cb
++ entry .servables   作为 HTTP 响应正文的文档，用于 `ypsiloid.http` 源集
+
+% 1 1 0 0da97d18db27677319bab95e0a1d761e
+
+@ 0 5 0 0e0a0de1299a16ca140fb42be12ce4e4
++       `import servables.yamlServable` 让处理函数可以用 `Yaml` 值进行响应；响应是渲染后的文本，作为定长正文，媒体类型为 `application/yaml; charset=UTF-8`。
++   entry .yamlServable   媒体类型为 `application/yaml; charset=UTF-8` 的 `Yaml is Servable`
++       需要作用域中有 `Codepage` 和 `Yaml.Formatting`。
+
+@ 0 1 0 0c8da4dd9ffc5de6151f7a1882986f5b
++ entry .construables   把 `application/yaml` 正文读作 `Yaml`，用于 `ypsiloid.http` 源集
+
+% 1 1 0 1c0b31f2b84c74a20d5383b011473ef1
+
+@ 0 3 0 04c309dd72f19bf6077e1063c209e658
++       `import construables.yamlConstruable` 告诉 gesticulate 的内容协商：媒体类型为 `application/yaml` 的正文被构造为 `Yaml`，因此该类型的请求或响应正文在到达时即被解析。
++       在 Scala.js 上不可用。
+
+% 0 1 0 1ea759b6169f018700c45ee2c15be266
+
+@ 0 1 0 04c92de5aa4c4f530f6e54aeac8819ca
++ entry .internal   `y"…"` 和 `yp"…"` 背后的宏实现
+
+% 1 1 0 1143f714a9375f9f1bf06031bca54bb2
+
+% 2 1 0 0ce38ebf4ed3f1f80994db9290a5e9b4
+
+@ 0 7 0 0747efa0d4b0d4501a76a15942b4389a
++       不供直接使用：该对象的存在是为了让宏有一个稳定的归属。
++       `y"…"` 用一个哨兵标记连接字面量的各部分，用真正的解析器解析结果，并把树中的哨兵识别为占位；解析错误的偏移量会通过各部分映射回模板的源跨度。
++   entry .interpolator   作为表达式的 `y"…"` 背后的宏
++   entry .extractor   作为模式的 `y"…"` 背后的宏
++   entry .yamlPath   `yp"…"` 背后的宏：在编译时解码字面量，并报告错误所在的字符

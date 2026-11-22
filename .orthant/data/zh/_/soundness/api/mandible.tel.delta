@@ -1,0 +1,693 @@
+orthant 2 language
+
+% 0 1 0 0f04ec4b9ac2d4270a232409219e1f6b
+
+% 0 1 0 1920c2d1eb1b711e11f86530cc5798cd
+
+% 0 1 0 0b5938ce7315323607e1922cbc4d93e2
+
+@ 0 1 0 03c7e18b61ef542106b726a70abea6aa
++ info   以值表示 JVM 类文件：方法、带模拟栈的字节码、声明表面和超类型闭包
+
+% 0 1 0 0ca6d61ddd9511ea1cdae38f1414f6fe
+
+@ 0 4 0 1db668b972be760e13c28d0f76c9e058
++     _Mandible_ 将 JVM 类文件——`scalac` 或 `javac` 输出的 `.class` 文件——读取为不可变的带类型值，让程序可以检视编译器和优化器实际产生的内容，而不是去臆测。
++     它通过 JDK 自带的 `java.lang.classfile` API 读取这些文件，并呈现一个类的三种视图，每种视图都是一个值：
+
+@ 0 10 0 135a1714c18750f41cd4d3fe5c9dc139
++     - `Classfile` 是**字节码**视图：类的方法，每个方法都有其 `Bytecode`，即一个 `Bytecode.Instruction` 列表，每条指令被解码为带类型的 `Bytecode.Opcode`，并携带它所来自的源代码行，以及对它运行后操作数栈的模拟。
++       它在终端上渲染为彩色表格，而 `disassemble` 会编译一个被引用的代码块并直接读回其字节码。
++     - `ClassSurface` 是**声明**视图：编译后的使用方所链接的名称、描述符、访问标志、超类型和泛型签名，不包含同一源代码的两次构建之间可以合理存在差异的任何内容。
++     - `ClasspathIndex` 基于一组保存在内存中的类加上一个类路径，将 JVM 内部类名解析为其 `ClassSurface`，并遍历一个类的超类型闭包。
+
+% 2 1 0 1d43f5285e1b8aee0306338a1a2e3411
+
+% 3 1 0 054d364bee67c2c01a357a9787bcb359
+
+% 0 1 0 14f9c325451410601fe228db57704df4
+
+% 0 1 0 1f983654f665ce53141df93c51bdaf88
+
+% 0 1 0 0241d3a9a95acaa908c9acf176572b87
+
+% 0 1 0 1291bede785a4b991d64c5560f01fcb1
+
+% 0 1 0 17542073aa1c969e02d761693a2945c4
+
+% 1 1 0 161779758abc7fe0134845eb51e2e93d
+
+@ 0 6 0 0ca39a28b286bc7d1cb12bae2628788c
++     类文件通过作用域中的 `Classloader` given 查找，该 given 按名称从 `classloaders` 包中选择（`import soundness.*` 不导入任何 given），也可以用 `read[Classfile]` 从任意字节流中读取。
++     该库只有一个源集 `mandible.core`，仅限 JVM：它依赖 `java.lang.classfile`、`disassemble` 所用的分阶段执行编译器以及 JVM 类路径。
++     所有内容都导出到 `soundness` 总括包。
+
+@ 0 3 0 039ac435d8a0dd2713fe2374eb40b8a8
++     将 `Bytecode` 渲染到终端需要作用域中有一个 `BytecodePalette`，即一个指定源代码引用、源代码行和栈轮廓所用颜色的 `Palette`；库不提供默认调色板，因此程序需要自行定义。
+
+% 0 1 0 13f6a90709bec59811f8f95538a20c67
+
+% 0 1 0 06fda04bfab89fe80f587a08b948b92f
+
+% 0 1 0 0cdd25c63e91a0931965c8f415d89465
+
+% 0 1 0 14fe61781865c78004a55228c07a7857
+
+@ 0 1 0 0059f7443a7ac1540a03af0e5c3c5f88
++ entry .Classfile   解析后的 JVM 类文件：它的方法、方法的字节码以及它的源代码属性
+
+% 1 1 0 0a29464758eebd2c08784f72bc91abfe
+
+@ 0 4 0 0e376ef40b3cd6730f32dd97eaa83baa
++       `Classfile` 包装一个 `.class` 文件的字节，在首次使用时通过 JDK 的 `java.lang.classfile` API 解析。
++       它可以通过作用域中的 `Classloader` given，按名称或类型在类路径上查找；由于它是 `Aggregable by Data`，也可以用 `read[Classfile]` 从任何字节来源——文件、资源、流——读取。
+
+% 2 1 0 1c809734db7b63ef0aa5e93c89dc2adc
+
+% 3 1 0 11873b6197d81c9301941987fc3e7e00
+
+% 4 1 0 1eb184e992b475c20e1ba886d5cd6079
+
+% 0 1 0 0aa67ed5acff682c175168de660c91fc
+
+% 0 1 0 183a0324b0ac44ba06edfe66574ff368
+
+% 1 1 0 11772f6f277968021ad02f925eb33306
+
+@ 0 6 0 19eb552dad69a5ab0bab9e135f83b9dc
++       它的成员是反汇编器和堆栈跟踪解析器所需的部分：`#methods`，每个都是一个 `Classfile.Method`，其 `bytecode` 按需解码；`#sourceFile`，即 `SourceFile` 属性；以及 `#sourceDebugExtension`，即 JSR-45 SMAP，它将内联代码的合成行号映射回代码的书写位置。
++       类的声明表面——字段、标志、超类型、签名——是单独的 `ClassSurface` 视图。
+
+@ 0 2 0 01bd82d2e693b76007d085202a970f31
++       `Classfile` 不持有任何能力：它的字节在构造时被复制进来，因此该值可以自由保留、共享和传递。
+
+% 1 1 0 185c8fe5dc4d9b481f7b12bd66d341fb
+
+% 1 1 0 0c5192e1f2ae001b0728d25ceea5eabc
+
+% 1 1 0 11d62d6ce8c98b4702fc105ec6175cd0
+
+@ 0 9 0 19e641142038b19b19a0af0566c05f3c
++   entry .Error   无法读取类文件时抛出
++       错误 `↯/s.88.2`：_there was an error reading the classfile_。
++       声明供类文件读取者抛出；`Classfile` 构造器本身会将解析推迟到首次使用某个成员时，而对于类加载器没有的类，`Classfile.apply` 给出 `Unset` 而不是抛出错误。
++   entry .aggregable   从任意字节流读取 `Classfile`，即 `read[Classfile]`
++       即 `Aggregable by Data` given，它让文件、类路径资源或任何其他 `Readable` 来源可以作为类文件读取：整个流被收集到一个 `Data` 中并加以包装。
++       直到使用结果的某个成员时，字节才会被解析。
+
+% 2 1 0 040aa88d4a78ab3d0d8e4aeb7bf2d722
+
+% 3 1 0 0a9f7ea877b540760aa5dacfa8d39623
+
+% 4 1 0 137cabb64dafeaf31fcaa00485ec9fca
+
+% 5 1 0 1b3d7d88f1e7123b1ad7f27d20eeca6e
+
+% 0 1 0 0fe6d59753759fcd04b7d21dbd7f4761
+
+% 1 1 0 1cb7ed36a2fa38860780db3d8ce26ba2
+
+@ 0 6 0 0a96ebace5d6a15412960394d4084581
++   entry .apply   通过作用域中的 `Classloader`，按资源名称或类型得到的类文件
++       `Classfile(name)` 通过作用域中的 `Classloader` given 读取位于 `name` 的类路径资源——带扩展名的 JVM 内部名称，如 `scala/Option.class`——而 `Classfile[T]` 通过 `T` 的 `ClassTag` 找到其类，并读取其二进制名称所指的资源，因此嵌套类会解析为 `Outer$Nested.class`。
++       当类加载器没有这样的资源时，两者都给出 `Unset`。
+
+% 2 1 0 1c8279000b2e18321d357c63df38677a
+
+% 3 1 0 06a2a920726a14d31644e9eb72e1fa2f
+
+% 4 1 0 0e189c0fa199af110e66364e1f55b106
+
+% 0 1 0 0c480d90f6383902082ef5016d54974c
+
+% 0 1 0 17f21b87f593c6d70cd3aa06d63d6455
+
+% 1 1 0 11986e170af019891864e06aad61cef5
+
+@ 0 19 0 0c76b21bd3c43c900f85a708be5eb40b
++       类型形式接收一个 `ClassTag`，因此它适用于类或对象的类型，但不适用于未应用的类型构造器；hellenism 中的 `Classloader[T]` 是与之对应的、用于查找类加载器本身的操作。
++   entry #sourceFile   `SourceFile` 属性：编译出该类的源文件名称
++       只有文件名，如 `Option.scala`，不含目录，与编译器记录的一致；当类文件没有这一属性时为 `Unset`，某些生成的类就没有。
++       它就是堆栈跟踪所报告的文件名，`Bytecode#sourceFile` 会将它带到渲染出的列表中。
++   entry #sourceDebugExtension   JSR-45 `SourceDebugExtension` 属性的文本（如果存在）
++       该属性的内容是一个 SMAP，即一种源码映射，它将编译器分配给内联代码的合成行号逐层转换回代码书写时所在的文件和行。
++       对于没有内联的类，它为 `Unset`。
++       堆栈跟踪解析器读取它，为内联的栈帧给出真实的调用处行号；digression 中的 `Smap.parse` 负责解码该文本。
++   entry #methods   类的方法，按类文件中的顺序排列，每个都是一个 `Classfile.Method`
++       构造器显示为 `<init>`，静态初始化器显示为 `<clinit>`，编译器的合成方法——lambda 体、桥接方法、默认值 getter——以其编译后的名称出现。
++       该列表在首次使用时计算一次，解析也在那时进行。
++   entry #Method   类文件中的一个方法，带有其名称和解码后的字节码
+
+% 1 1 0 08e1778932544c491db390c8d21c5ca3
+
+@ 0 4 0 17cdbfb757929f900309bbcdccfda5f0
++         `Classfile.Method` 由 `Classfile#methods` 创建，不直接构造。
++         它的 `#name` 是方法编译后的名称，`#bytecode` 将其 `Code` 属性解码为一个 `Bytecode` 值：每条指令及其偏移量、所属的源代码行，以及根据方法的栈映射帧模拟出的操作数栈。
+
+% 2 1 0 03389adfa4f5b8e70d7e96d582bec0fc
+
+% 3 1 0 062dac09fcb44991069db7b81e36844f
+
+% 0 1 0 066c7de4214f31cd1db1c856202b68b2
+
+% 0 1 0 06d9d2933d6fdd8f021b8f31f35ad741
+
+% 1 1 0 0adc9883aa2c8f190a148f07ac671cc9
+
+@ 0 12 0 1329127a4f67b4e009d1c50bd4b74172
++     entry #name   类文件中所写的方法名称
++         是编译后的名称而不是源代码中的名称：构造器是 `<init>`，诸如 `+` 的运算符是 `$plus`，lambda 体是 `$anonfun$…`。
++         digression 中的 `StackTrace.rewrite` 会将这样的名称转换回接近源代码的写法。
++     entry #bytecode   方法的 `Code` 属性解码得到的 `Bytecode`，抽象方法则为 `Unset`
++         将方法的每条指令解码为 `Bytecode.Opcode`，将分支目标解析为字节偏移量，并在其中贯穿一次对操作数栈的模拟：每条指令之后的栈由 `Bytecode.Opcode#transform` 计算，并在每个标签处根据方法的 `StackMapTable` 帧重置，因此分支目标处的栈是校验器所记录的栈，而不是顺序执行路径留下的栈。
++         `LineNumberTable` 中的行号附加在每行的第一条指令上。
++         没有代码的方法——抽象方法或本地方法——给出 `Unset`。
+
+@ 0 2 0 1c7d035f7e41001c13d668953ab0c2aa
++         结果携带类的 `sourceFile`，以及方法声明的 `maxStack` 和 `maxLocals`。
+
+@ 0 1 0 13b0f6677f9a2d9502c0fc9ab10e55bd
++ entry .Bytecode   一个方法的指令，每条都已解码、对应到其源代码行，并带有模拟的操作数栈
+
+% 1 1 0 073c54f03a31fd0f0c3606655f4c37ad
+
+@ 0 7 0 194935b86ba7ad96131b9431a10945a1
++       `Bytecode` 是一个方法解码后的 `Code` 属性：它的 `#instructions`，每条都是一个 `Bytecode.Instruction`，将带类型的 `Bytecode.Opcode` 与其字节偏移量 `offset`、它开始的源代码行 `line`，以及指令运行后的操作数栈 `stack`（一个 `Bytecode.Frame` 列表）配对；外加方法声明的 `#maxStack` 和 `#maxLocals`，以及类的 `#sourceFile`。
++       它由 `Classfile.Method#bytecode` 从类路径上的类产生，或由 `disassemble` 从当场编译的被引用代码块产生，也可以为了分析而由 `Instruction` 手工构建。
+
+% 2 1 0 0a59f980ac2275cd1a8eba398baa07bc
+
+% 1 1 0 08d9458eb73012351c93056f35e51984
+
+@ 0 1 0 1ed208c6190d0771065e9572b432d914
++         label 一个类文件，通过作用域中的类加载器找到
+
+% 1 1 0 15ed6fd5776675e613ca09fde5875982
+
+% 2 1 0 0650345239b0591e0d02277badf290a6
+
+% 3 1 0 12aa4bc1a48157c800d3608ac1610637
+
+% 5 1 0 113b93825f6be35306028addbac218fd
+
+% 1 1 0 1668aed0eb07e20209e2f836f53c23aa
+
+@ 0 1 0 0d6d6ad44d9c18cf0fe8b4005798ad57
++         label 按名称取得它的一个方法
+
+% 1 1 0 1818aa0219fbd45f099bcc19b6a63c7d
+
+% 2 1 0 125cf5e9dfb7c2e413e8569c3d9f9c4f
+
+% 3 1 0 12775983f52b2bd21c8746192aa01c7e
+
+% 5 1 0 018c8d2302fe042304aac8422a127b27
+
+% 6 1 0 0c94fb37988a701d051dc92fc7b3d01b
+
+% 7 1 0 1ec000f9e0ab1ad808c797769886a0b4
+
+% 1 1 0 1cf058140e7c1b45199a73397c809e3d
+
+@ 0 1 0 1a1646c18f26db8a1f6b53cbd997dbe2
++         label 它的字节码，以操作码列出
+
+% 1 1 0 007138b856d0d1f819aed33976a3bf16
+
+% 2 1 0 17b81819b84529f0196c0f176c62056f
+
+% 3 1 0 04dfad0fb1623cfc09bd218c252f4b1d
+
+% 5 1 0 111b8fe615b76b8a0013f254ec1134bf
+
+% 6 1 0 114a828d0e2b8e3f135355c6916e8ac3
+
+% 7 1 0 04d7ab91e608ace701a22f612037a384
+
+% 8 1 0 18d3c1801b87d4cb0f06c0b6bd5b4680
+
+% 0 1 0 1f3939f165a06de408c8c330fe7d3093
+
+% 1 1 0 0ec0d46c738358301839e3e9e1f3049e
+
+@ 0 1 0 1b41bc8c7636d36d1e2f64908ffb12dd
++         label 解码后的一条指令：它的偏移量、所在行以及它留下的栈
+
+% 1 1 0 1ecd2e923f0265820324c9c236fa7875
+
+% 2 1 0 1f8fbc31543f5d7f025c79d574899dc7
+
+% 3 1 0 1ca8cfaa15f99cf2110c0d21c246c698
+
+% 5 1 0 15b5a02e0bcdbf530bf62ccbe0e726e7
+
+% 6 1 0 16a19c8a9a5b9ff30dbf7bc87d940efe
+
+% 7 1 0 19c63d1ef51570011268d9ae614e9d1a
+
+% 8 1 0 1378dba0875d7491175a7732f5002fca
+
+% 0 1 0 0c0bc6cee4fd6562120fca717d2baf70
+
+% 0 1 0 0691ac112bf824661ffda58d5374d919
+
+% 1 1 0 1b87ae96f783dee9164b9110ce3d80db
+
+% 1 1 0 1a277342ea9dfdc5113023e785963c91
+
+@ 0 4 0 18cdc2947e7d4d4306bd79a7b666d269
++       操作数栈是模拟出来的，而不是测量出来的：`Bytecode.Opcode#transform` 按每个操作码的定义压入和弹出值，方法的 `StackMapTable` 则在每个分支目标处将其重置。
++       栈上的引用在压入它的指令指明了类时是 `Frame.L(className)`，否则是 `Frame.L(t"?")`。
+
+@ 0 5 0 1f89ddb201b172ea146083554b46acee
++       渲染需要作用域中有一个 `BytecodePalette`：`bytecode.teletype` 是一个四列表格，包含源代码位置、偏移量、操作码（按 `Opcode#cost` 着色）和栈，`bytecode.printable` 则将其打印出来。
++       `#linearize` 会跟随方法发出的静态调用和实际上静态的调用，进入被调用方的字节码，直到有限的深度，借此可以在一个列表中看到热路径的完整指令序列。
+
+% 1 1 0 0c3d64caef1b8ebf03167e4686319095
+
+% 1 1 0 0219988a0f395c471eeca045d951f59f
+
+% 0 1 0 135e3219365786e40fc64f2ec5bed0f0
+
+@ 0 13 0 14925e53763e03fe1f4123cb90860efc
++   entry .teletypeable   将字节码渲染为彩色表格：源代码行、偏移量、操作码和栈
++       即 `Teletypeable` given，需要一个 `BytecodePalette`。
++       每条指令一行：在指令开始一行之处显示源文件和行号（使用调色板的 `bytecode` 和 `sourceCode` 颜色），以下标形式显示字节偏移量，按 `Opcode#cost` 着色的操作码，以及用调色板的 `outline` 颜色勾出轮廓的模拟栈。
++       表格按 160 列排版。
++   entry .printable   打印字节码列表，作为 `Printable`
++       为打印到的终端渲染 `.teletypeable` 的表格；需要一个 `BytecodePalette`。
++   entry .stack   将模拟的操作数栈（一个 `List[Bytecode.Frame]`）渲染为一行
++       栈的 `Teletypeable` given，需要一个 `BytecodePalette`：各栈项从底部开始显示，用 `┊` 分隔，并用调色板 `outline` 颜色的 `┃` 勾出轮廓。
++   entry .Frame   操作数栈中的一个槽位或一个校验类型：基本类型、引用或数组
+
+% 1 1 0 044e26d387b207eb00f8d4b1748cb5b2
+
+@ 0 6 0 03c2507620580139018f4d827faeb127
++         各分支是 JVM 中基本类型的描述符字母——`Z`（boolean）、`B`（byte）、`C`（char）、`S`（short）、`I`（int）、`J`（long）、`F`（float）、`D`（double）——另有 `L(name)` 表示对某个类的引用（以其二进制名称表示，如 `java.lang.String`），`Array(frame)` 表示由另一种栈项组成的数组。
++         类未知的引用是 `L(t"?")`；校验器的特殊类型显示为 `L(t"null")`、`L(t"this")`、`L(t"top")` 和 `L(t"uninit")`。
+
+% 2 1 0 07b2249edebc56031ca2e5706f7ecc05
+
+% 3 1 0 0f9c5bf51f8e5b721bf4f6f53aa72804
+
+% 0 1 0 10733d2ec5a073f119f92e0544e55759
+
+% 0 1 0 1889a2308e8f03ed02630a3127988365
+
+% 1 1 0 1f367f4307b9933d03677630ab6bce60
+
+@ 0 16 0 018ae1aa61dbb49718a2bafd7146623e
++         `Frame` 显示为其字母，引用显示为 `*name`，数组显示为 `[frame]`。
++     entry .showable   渲染一个栈项：基本类型的字母，引用为 `*name`，数组为 `[frame]`
++     entry .parseOne   从描述符的某个位置读取一个类型，给出该栈项及其后的位置
++         `Frame.parseOne(descriptor, cursor)` 解码描述符从 `cursor` 开始的类型——一个字母、以 `[` 为前缀的数组或 `L…;` 形式的类——并将其与紧随其后的索引一起返回，供遍历方法描述符参数列表的调用者使用。
++         遇到意外字符会引发 panic，因为来自类文件的描述符必然格式正确。
++     entry .fromFieldDescriptor   字段描述符对应的栈项，如 `I` 或 `Ljava/lang/String;`
++         将整个字段描述符解码为一个 `Frame`，类名中的 `/` 被改写为 `.`。
++     entry .fromVerificationType   `StackMapTable` 校验类型对应的栈项
++         将 JDK 的 `VerificationTypeInfo` 映射为 `Frame`：简单类型映射为对应的基本类型，对象类型映射为 `L(name)`（当类为数组类时映射为数组栈项），`null`、`uninitializedThis` 和 `top` 映射为 `L(t"null")`、`L(t"this")` 和 `L(t"top")`，未初始化对象映射为 `L(t"uninit")`。
++   entry .Descriptor   解析为参数栈项和结果的方法描述符
+
+% 1 1 0 132d98d04b54df4d13383a47dc2b801c
+
+@ 0 4 0 0f11e8534c75f4a413866507cab74eca
++         `Bytecode.Descriptor.parse(t"(Ljava/lang/String;I)V")` 给出一个 `Descriptor`，其 `#args` 是栈项 `L(java.lang.String)` 和 `I`，其 `#result` 为 `Unset`，因为 `V` 表示 void。
++         指令解码器用它来得知一次调用弹出多少个操作数，以及是否压入结果。
+
+% 2 1 0 172990762da62a3a165c3c855d2016b7
+
+% 3 1 0 080240b85a770de91969ca25af8dc868
+
+% 0 1 0 1ebbb4a65eb9b04a07d7f11dfbe01931
+
+% 0 1 0 0538383d0f1b484d1c1294c70665cb84
+
+% 0 1 0 0b0861542f68fc2901216fb20435459e
+
+% 1 1 0 085379f3d453e151036c9d1c2f1c14d2
+
+@ 0 6 0 0fe0f13431bb7df303b013c64935eb3b
++     entry .parse   将 `(…)R` 形式的方法描述符读取为 `Descriptor`
++         文本必须以 `(` 开头；直到 `)` 的参数类型成为 `#args`，返回类型成为 `#result`，`V` 则为 `Unset`。
++         格式错误的描述符会引发 panic。
++     entry #args   参数类型，按顺序排列
++     entry #result   返回类型，`void` 则为 `Unset`
++   entry .Instruction   一条解码后的指令：其操作码、源代码行、执行后的栈和偏移量
+
+% 1 1 0 0acca7af543fe03505a3e764276d75f9
+
+@ 0 5 0 0a39c4f2aad7b39d0cc6f70a49ae8e7e
++         `Bytecode#instructions` 的元素。
++         `#line` 设置在每个源代码行的第一条指令上，其余指令为 `Unset`；`#stack` 是指令执行后模拟的操作数栈，模拟失效后为 `Unset`；`#offset` 是指令在方法代码中的位置（以字节计），分支目标和 `Bytecode#effectivelyStaticCalls` 引用的正是它。
+
+% 2 1 0 0acd5c45ba53ecf3117ef4b253d67aee
+
+% 3 1 0 172905d2326718e508a162c3e4611c87
+
+% 0 1 0 0eb794703f4b2887195115965d5f746f
+
+% 0 1 0 0d9c7ce7306c99f106052751fcc6a2cc
+
+% 1 1 0 1ec2304a72213dc6197777a0b0a9665e
+
+@ 0 5 0 13f83908bb87a2a3102c826c95072873
++     entry #opcode   指令，作为一个 `Bytecode.Opcode`
++     entry #line   此指令开始的源代码行，若它延续某一行则为 `Unset`
++     entry #stack   指令执行后模拟的操作数栈，栈顶在前（如果已知）
++     entry #offset   指令在方法代码中的字节偏移量
++   entry .Linearized   线性化列表中的一条指令，带有其内联深度和所来自的方法
+
+% 1 1 0 0c8b498c524ae3e9179e85eef2889833
+
+@ 0 13 0 0b83712bc0c07c151f6a6fceccf58540
++         `Bytecode#linearize` 返回的列表的元素。
++         对于方法自身的指令，`#depth` 为 `0`，每跟随一次调用进入被调用方就加一；`#source` 以 `owner.method` 的形式指明被调用方，在深度 `0` 时为空；`#instruction` 是指令本身。
++         `List[Linearized]` 在有 `BytecodePalette` 时渲染为一个缩进的列表。
++     entry .teletypeable   渲染线性化列表，每级深度缩进两个空格
++         `List[Bytecode.Linearized]` 的 `Teletypeable` given，需要一个 `BytecodePalette`：每行按其深度缩进，以调色板 `bytecode` 颜色显示的来源方法为前缀，后跟操作码。
++     entry #depth   指令位于多少层调用之内：在所列方法自身中为 `0`
++     entry #source   指令内联自的 `owner.method`，深度 `0` 时为空
++     entry #instruction   指令
++   entry .Opcode   将每条 JVM 指令表示为一个枚举分支，并解码其操作数
+
+% 1 1 0 12b00d07330c81810f0179c59f37e81d
+
+@ 0 11 0 1af2a1fedc5e1cb5019c4f0a34d3c62b
++         JVM 指令集的每个操作码对应一个分支，按操作码顺序排列，因此分支的 `ordinal` 就是其操作码编号：从 `Nop`（0）到 `Jsr`、`GotoW`（200）和 `JsrW`（201），保留的 `Breakpoint`、`Impdep1`、`Impdep2` 以及未分配的 `OpCb` … `OpFd` 填补空缺。
++         操作数被解码为字段：加载或存储指令携带其 `slot`；`Bipush`、`Sipush`、`Ldc`、`LdcW` 和 `Ldc2W` 携带其 `value`；每个分支指令携带其 `target`（字节偏移量）；`Tableswitch` 和 `Lookupswitch` 携带其跳转表；字段指令携带其 `owner`、`field` 和 `descriptor`；调用指令携带其 `owner`、`method` 和 `descriptor`（`Invokeinterface` 还携带其 `count`，`Invokedynamic` 只携带 `method` 和 `descriptor`）；`New`、`Checkcast`、`Instanceof` 和 `Anewarray` 携带其类；`Newarray` 携带其元素的 `Frame`；`Multianewarray` 携带其类和 `dimensions`；`Iinc` 携带其 `slot` 和 `const`。
+
+@ 0 3 0 0f6e06e27992daa60334be792de4af7d
++         类名是以 `.` 分隔的二进制名称，如 `java.lang.String`；`Invokedynamic` 的方法名用 `StackTrace.rewrite` 进行名称还原，因此 lambda 调用处显示为 `λ₁` 而不是 `$anonfun$1`。
+
+% 2 1 0 0578f2e46626a7d908e6e51b97693696
+
+% 3 1 0 04c249bad750aef2136a2945deee0c6e
+
+% 0 1 0 1ea1e5ad81a87c221ea210d0b1e8c9e2
+
+% 0 1 0 0b0504f0023cbf1717545514c5c37609
+
+% 0 1 0 06bb7a36435eaa7f0b3485f0ba9528fe
+
+% 0 1 0 13c21367a0473733000d0ddf7ba4d4b8
+
+% 1 1 0 185254f42342d7ea14965af8164bcc26
+
+@ 0 29 0 0a7849a705766a4c0754a877e44f2f0f
++         操作码是 `Showable` 的，显示为其助记符：复合名称的各部分之间用 `·` 分隔，常量和槽位用下标表示（`a·load₀`、`i·const₋₁`、`dup²∕₁`），后跟其操作数；它也是 `Teletypeable` 的，按 `#cost` 为助记符着色，并将操作数设为斜体。
++         这两个 given 都是匿名的，位于伴生对象中，因此总在作用域中。
++         `Opcode` 用 `.apply` 从 JDK 的指令模型读取。
++     entry .apply   将 `java.lang.classfile.Instruction` 解码为 `Opcode`
++         `Opcode(instruction, labels)` 将 JDK 的指令对象映射为其操作码对应的枚举分支，并解码其操作数。
++         `labels` 将代码中的 `Label` 映射为字节偏移量，使分支的 `target` 成为偏移量；标签不在映射中的指令得到 `0`。
++         解码器无法识别的操作码会引发 panic。
++     entry #cost   指令的大致相对开销，从 `0` 到 `3`
++         用于为列表着色的粗略分级：`0` 表示常量、加载、存储、栈重排和拓宽转换；`1` 表示算术、比较、条件分支以及静态或特殊调用；`2` 表示数组访问、字段访问、类型转换、无条件跳转、返回和虚方法调用；`3` 表示 switch、内存分配、监视器、`athrow`、接口调用和动态调用。
++     entry #describe   对指令作用的一行描述，适用于它所知道的操作码
++         用文字描述常量指令、压栈指令和保留的操作码——如 `push the int constant 1`——其余则给出 `unrecognized`。
++     entry #highlight   与指令的 `#cost` 对应的颜色，从青绿色（`0`）到深红色（`3`）
++     entry #transform   给定指令执行前的栈，得出执行后的操作数栈
++         即栈模拟：弹出指令所消耗的值，压入它所产生的值；`int` 结果为 `Frame.I`，`new` 创建的对象或加载的类类型字段为 `Frame.L(name)`，指令无法指明其类的引用为 `Frame.L(t"?")`，调用指令则压入方法的返回栈项（从其描述符解析得出）。
++         栈以栈顶在前。
++         对空栈执行 `Dup` 会失败；对长度不足的栈执行重排操作，栈保持不变。
++   entry .Error   当编译出的类文件无法打开或读取时，由 `disassemble` 抛出
+
+% 1 1 0 0b0df258ef9aae231687055ee5199136
+
+@ 0 27 0 03babe12e28e7cb018b6eb51597f592d
++         错误 `↯/s.88.3`，_the bytecode could not be extracted because …_，带有一个 `#reason`：当分阶段执行编译器没有留下可读取的类文件时为 `ClassfileMissing`（295.1，_the generated classfile could not be opened_），当文件被截断或其中找不到生成的方法时为 `ClassfileUnreadable`（295.2，_the generated classfile could not be read_）。
++         `disassemble` 需要作用域中有 `Tactic[Bytecode.Error]`。
++     entry .Reason   提取失败的原因：`ClassfileMissing` 或 `ClassfileUnreadable`
++         一个 `Clarification`，其 `number` 是错误的子编号：`ClassfileMissing` 为 `1`，`ClassfileUnreadable` 为 `2`。
++     entry .communicable   将 `Reason` 渲染为错误中嵌入的消息
++     entry #reason   原因
++   entry #sourceFile   编译出该方法所属类的源文件名称（如果有记录）
++   entry #instructions   方法的指令，按代码顺序排列
++   entry #maxStack   方法声明的最大操作数栈深度
++   entry #maxLocals   方法声明的局部变量槽位数
++   entry #embed   将列表的行号平移到某个 `Codepoint`，如同代码写在那里
++       `bytecode.embed(codepoint)` 将该代码点所在的行（减一）加到每条指令的 `line` 上，并用代码点源路径的最后一段替换 `sourceFile`。
++       `disassemble` 用它使在临时文件中编译的代码块的字节码，按该代码块书写时所在的文件和行来报告。
++   entry #linearize   跟随调用进入被调用方的字节码，深度和长度都有限制
++       `bytecode.linearize(resolver, maxDepth, maxInstructions)` 遍历指令，在每个 `Invokestatic` 处，以及每个经 `#effectivelyStaticCalls` 表明分派到已知类的 `Invokevirtual` 或 `Invokeinterface` 处，向 `resolver(owner, method, descriptor)` 请求被调用方的 `Bytecode`，并在调用指令之后、深一层的位置就地列出其指令。
++       对于找不到的方法，解析器返回 `Unset`，此时只列出调用本身。
++       `maxDepth`（默认为 `3`）限制嵌套层数，`maxInstructions`（默认为 `1000`）限制列表的总长度。
+
+% 2 1 0 05d36e433eaabfa61aa08aae7d3b6b8c
+
+% 3 1 0 1abef0dd8fda79c21154ef1e5990afa9
+
+% 0 1 0 04a2c75556fe475c1aaf0964ca749a91
+
+% 0 1 0 1a215e8d89df14ed160fd68af00264ea
+
+% 0 1 0 0b55426606d4529d0fef93dc799f45ce
+
+% 1 1 0 0acd3436adafb1001f88bd212115181a
+
+@ 0 9 0 1c97cdcff354dbec1ac31e53b6cf209a
++       基于类路径的解析器用 `Classfile` 编写：找到所有者的类文件，按名称查找方法，然后取其 `bytecode`。
++   entry #effectivelyStaticCalls   接收者为已知单例的虚方法调用和接口调用的偏移量
++       通过 `invokevirtual` 或 `invokeinterface` 发出的调用，如果在模拟的调用前栈中，其接收者恰好是该调用自身所有者类的 `Frame.L(owner)`——对 Scala `object` 的 `MODULE$` 的调用就是如此——那么它只能分派到该类，因此可以像静态调用一样被跟随。
++       结果是这类调用的字节偏移量集合；类未知（`L(t"?")`）或类不同的接收者会被排除，模拟栈太浅、容纳不下接收者的调用也会被排除。
+
+% 2 1 0 1c6ee6b38af9053318ecc87035a642eb
+
+% 3 1 0 0f813fa170d15ee1199d9acd052cb961
+
+% 0 1 0 0c3a76c92cd0350e199ea3d9252c8273
+
+% 0 1 0 126daffedd8154771896783ff889dbc9
+
+% 0 1 0 10865d9d3ad1149c1ed173aabd458e95
+
+% 0 1 0 02e7846a02a361b0198af25947f86c1a
+
+% 0 1 0 1d23daa4520abfe91f6a45ef54789a6d
+
+% 0 1 0 02226bc55860518c018088cccaccbd6b
+
+% 1 1 0 124744871c17df7f15d33de69c0104e4
+
+@ 0 1 0 002d1756b6843d201b8f45220e46169f
++ entry .ClassSurface   类的声明表面：编译后的使用方所链接的内容，仅此而已
+
+% 1 1 0 06acd5ee1df57f9e06ccf6131fe9e615
+
+@ 0 9 0 0cf0e61aad9d897c02dd4280957f2930
++       `ClassSurface` 是被约简为其**链接表面**的类文件：它的内部名称 `#name`、访问标志 `#flags`、`#superclass`、`#interfaces`、泛型签名 `#signature`，以及它的 `#members`——以 `ClassSurface.Member` 表示的字段和方法，每个都带有名称、描述符、标志、泛型签名、声明的异常和可内联的常量。
++       `Code`、`SourceFile`、`LineNumberTable` 和注解被有意丢弃：同一源代码的两次构建可能在所有这些方面都不同，而不改变使用方所绑定的内容。
++       这是用于比较各版本二进制兼容性的视图，因此成员按选择符排序，接口和异常按名称排序，而不是保持文件中的顺序，因为那只是编译的副产物。
+
+% 2 1 0 00218b28cefb5fdb01272fc2857b1d72
+
+% 3 1 0 0755e65faeb4a5451b19759e5ac2e6a0
+
+% 4 1 0 06fa97dc687e039307576ac074b01608
+
+% 5 1 0 1284b7d1484bb5711e80b8c30e38f195
+
+% 0 1 0 176a69fb4fea21211c019b20a7f96886
+
+% 0 1 0 07e486c19e15f39e0ff0126bbe581a6f
+
+% 0 1 0 110cef3df8ce92f40e7a0250e6f8dce0
+
+% 0 1 0 0112ae64943fee8e0c32c7f051254b94
+
+% 1 1 0 1eb5e4b35bd39d1a14094cbf4971e265
+
+@ 0 4 0 177236afcfc6c714092001875a42e7ee
++       名称是 JVM 内部名称，如 `java/lang/String`，与类文件中每处引用的写法一致。
++       嵌套类的可访问性从 `InnerClasses` 属性（`#innerFlags`）读取，因为类自身的标志会把 `protected` 成员类误报为包私有。
+
+% 0 1 0 1d224511c203446e118366df225969c4
+
+% 1 1 0 12cdd1818224a5b50c978cd7165f0eb1
+
+@ 0 2 0 0948083dd278dbca072a04d1ece9fa40
++   entry .Kind   成员是 `Method` 还是 `Field`
++   entry .Member   类的一个字段或方法，以 JVM 解析它的方式表示
+
+% 1 1 0 11be09e0a303b6fd058ac3c0be42f468
+
+@ 0 6 0 1c5b5df7dd1135321dd6aab27aa5d1d6
++         成员有一个 `#kind`、它的 `#name`、它的 `#descriptor`（如 `(I)V` 或 `Ljava/lang/String;`）、它的访问标志 `#flags`、一个可选的泛型签名 `#signature`、其声明的 `#exceptions` 排序后的内部名称（仅限方法），以及对于 `static final` 字段，其 `ConstantValue` 属性所携带的 `#constant`。
++         各谓词读取标志位；`#visible` 表示成员是否为 `public` 或 `protected`，这是包外使用方唯一能够链接的可访问性。
+
+% 2 1 0 14b37f02fe43256a1f7f99f54ff5e6bd
+
+% 3 1 0 05c821760b65fe4f043ebfbe04a4ce2f
+
+% 0 1 0 1490eb792f48dd291bb32b26f895ab12
+
+% 0 1 0 15bbcb3205fd987e0b7b1bbce6ae4351
+
+% 0 1 0 002a53229493bb3615547b7770ae379c
+
+% 1 1 0 042375988f7ceeae06cbe4c7bfd3290f
+
+@ 0 52 0 1fc5e6642d4a0a771965c0b5e94e51fb
++     entry #kind   `Kind.Method` 或 `Kind.Field`
++     entry #name   成员编译后的名称
++     entry #descriptor   JVM 描述符：方法的 `(params)result`，或字段的类型
++     entry #flags   `access_flags` 位掩码
++     entry #signature   泛型 `Signature` 属性，之所以保留，是因为擦除会丢失重新编译的使用方所需的信息
++     entry #exceptions   `Exceptions` 属性中的内部名称，已排序；字段为 `Nil`
++     entry #constant   `static final` 字段的 `ConstantValue`，形式为 `class:value`，例如 `java.lang.Integer:1`
++         常量的类与其值合在一起，因为作为 `Integer` 的 `1` 和作为 `String` 的 `"1"` 是不同的契约，尽管它们的 `toString` 相同。
++     entry #selector   成员在其类中的键：名称和描述符，方法以 `#` 为前缀，字段以 `.` 为前缀
++         标记符将同名的方法和字段区分开，描述符则将各重载区分开，因此一个选择符标识类中的一个成员。
++     entry #public   是否设置了 `ACC_PUBLIC`
++     entry #protect   是否设置了 `ACC_PROTECTED`
++     entry #priv   是否设置了 `ACC_PRIVATE`
++     entry #static   是否设置了 `ACC_STATIC`
++     entry #finl   是否设置了 `ACC_FINAL`
++     entry #abstrakt   是否设置了 `ACC_ABSTRACT`
++     entry #bridge   是否设置了 `ACC_BRIDGE`：编译器生成的桥接方法
++     entry #synthetic   是否设置了 `ACC_SYNTHETIC`
++     entry #visible   成员是否为 `public` 或 `protected`：可从其包外链接
++     entry #inlinable   使用方的编译器是否可能已将此字段的值复制到其自身的常量池中
++         对于有 `#constant` 的基本类型或 `String` 类型的 `static final` 字段为真：按照 JLS 的规则，编译器会在每个使用处内联这样的常量，因此改变其值不会破坏链接，但会改变使用方的行为，直到它们被重新编译。
++         任何其他字段上的 `ConstantValue` 都不会被内联，因此仅凭该属性不能作为判断依据。
++   entry .apply   将类文件的字节解析为其 `ClassSurface`
++       `ClassSurface(data)` 通过 `java.lang.classfile` 读取类文件，只保留链接表面。
++       字段连同其签名和常量一起读取，方法连同其签名和异常一起读取；成员按 `Member#selector` 排序，接口按名称排序。
++       字节不会被保留。
++   entry #name   类的内部名称，如 `scala/Option`
++   entry #flags   类的 `access_flags` 位掩码，与类文件中的记录一致
++   entry #superclass   超类的内部名称，`java/lang/Object` 本身则为 `Unset`
++   entry #interfaces   直接实现的接口的内部名称，已排序
++   entry #signature   类的泛型 `Signature` 属性（如果有的话）
++   entry #members   字段和方法，按 `Member#selector` 排序
++   entry #innerFlags   若此类是嵌套类，则为 `InnerClasses` 属性为它记录的标志
++       嵌套类自身的 `access_flags` 显示的是外部视角，在这一视角下 `protected` 成员类既不是 public 也不是 protected；它真正的可访问性记录在外围类为它准备的 `InnerClasses` 条目中，此成员将其读回。
++       顶层类则为 `Unset`。
++   entry #interface   该类是否为接口（`ACC_INTERFACE`）
++   entry #isFinal   该类是否为 final（`ACC_FINAL`）
++   entry #synthetic   该类是否由编译器生成（`ACC_SYNTHETIC`）
++   entry #access   决定可访问性的标志：存在 `#innerFlags` 时取它，否则取 `#flags`
++   entry #visible   按其 `#access` 标志，该类是否为 `public` 或 `protected`
++   entry #supertypes   直接指明的超类型，超类在前，然后是接口
++       这是 JVM 自身解析时遍历的顺序，也是 `ClasspathIndex#closure` 为继承成员建立键的顺序。
++   entry #member   具有给定 `Member#selector` 的成员，或 `Unset`
+
+@ 0 1 0 1fdeaf7b27a752361bd5211c699607b6
++ entry .ClasspathIndex   基于内存中的类加上一个类路径，将内部类名解析为其表面
+
+% 1 1 0 06e341d858b8af650a8e4b66438d8eb2
+
+@ 0 7 0 182ed94836703afd017f81134ee9ad8f
++       `ClasspathIndex` 为一组类可能引用的每个类回答“类 `name` 声明了什么？”。
++       它急切地保存所给定的类的表面——即某个版本自身的类，也就是正在被检视的类——并惰性地解析其他一切：通过一个基于类路径条目的 `URLClassLoader` 读取 `name.class`，该加载器以平台类加载器为父加载器，因此 JDK 自身的类也能被解析。
++       每次解析（包括失败的解析）都会被 memoize，这使得对许多类的超类型的遍历保持线性。
+
+% 2 1 0 054002a09b76f2dc023dd4b436fe2e3f
+
+% 3 1 0 085cb7c24c3851c3006e094d637cb326
+
+% 4 1 0 03da222b262deeb914968577b7996868
+
+% 5 1 0 1da5bcbecf2dfbdb0faeb2386b8987f7
+
+% 0 1 0 00ae0d8b35952d2a10f43d261365bdd1
+
+% 0 1 0 1c2652707cb4aa581fe38c93c1e045a7
+
+% 0 1 0 0e4836812a8b6f0912c47d36b467c705
+
+% 0 1 0 0e9f12b5a3c4717a066f0bb311992c58
+
+% 1 1 0 020e3deff035cef709aca679b32329bd
+
+@ 0 2 0 1dc0bec72e67f01413a938a8ead90901
++       内存映射中的类永远不会被类路径中靠前的同名类遮蔽。
+
+% 1 1 0 1f21c156bb72660015530e2764fe6f57
+
+@ 0 13 0 033b9b12569a696018a4d617534b3ebd
++   entry .apply   基于一个按内部名称组织的表面映射，加上以文本表示的类路径条目构建的索引
++       每个类路径条目都是一个目录或 JAR 路径，以文本表示；目录必须存在于磁盘上，加载器才会将其视为目录。
++       不存在的条目不解析任何内容。
++   entry #own   保存在内存中的类的内部名称，已排序
++   entry #apply   按内部名称得到的类的表面，若无任何来源能提供则为 `Unset`
++       先在内存映射中查找，然后从类路径读取类文件，两种情况下都会缓存结果。
++   entry #closure   一个类的传递超类型（最近的在前），以及无法解析的名称
++       `index.closure(name)` 从 `name` 出发，沿 `ClassSurface#supertypes` 广度优先遍历，不包括 `name` 本身，并返回一个对：按发现顺序排列的已找到的超类型，以及无法由任何来源解析的超类型名称。
++       无法解析的超类型会被报告而不是被跳过，因为缺少它，该类继承的成员集合就是未知的。
+
+@ 0 1 0 1f5d17bc75a5e71917755f495ad598d7
++ entry .disassemble   用分阶段执行编译器编译一个被引用的代码块，并读回其字节码
+
+% 1 1 0 19e5c3a46e445bcb19eaab9e6f5e598b
+
+@ 0 5 0 1626dbf68b358ceb07d6e0297294a858
++       `disassemble(code)` 接收一个 `Quotes ?=> Expr[Any]`——用 `'{…}` 引用的代码块——将其包装在一个方法中，用分阶段执行编译器将其编译到一个临时目录中，读取生成的类文件，并返回该方法的 `Bytecode`，其行号已由 `Bytecode#embed` 平移到调用处的 `Codepoint`，因此列表对应的是代码块书写时所在的文件。
+
+% 2 1 0 1ebea1f49f4186dc035f62b2df1f0f73
+
+% 0 1 0 0ff09fd85a6fbb540f3b2a2530c17d7e
+
+% 1 1 0 10f090fe19e7ee750458b0e6da583f6b
+
+% 1 1 0 05e58c57513ff4fb1664b4fb5914cddd
+
+% 2 1 0 0d740c43472456511a55524f839d8892
+
+% 3 1 0 0fb781dee5363c921de992195a62ea9a
+
+% 0 1 0 1f3918a79623b6a81645e18b9fd2c5e4
+
+% 0 1 0 18e4b8ddb94fc31a1dd1aaf921a535cb
+
+% 0 1 0 0a3d17916c429428124db4561ad17fd8
+
+% 1 1 0 10e5244114f9e317002c14f041ef2039
+
+@ 0 7 0 06d85db9398e524d02163ffdf721bf4b
++       它需要一个 `TemporaryDirectory` 存放编译器的输出，一个供编译器加载类所用的 `Classloader`（其 `java` 实例会交给分阶段执行编译器），以及一个 `Tactic[Bytecode.Error]`：没有出现类文件时抛出 `ClassfileMissing`，类文件无法读取或其中没有生成的方法时抛出 `ClassfileUnreadable`。
++       代码块在启用实验性语言标志的情况下，按 Scala 3.6 的设置编译。
++       编译需要一些时间，因此这是用于检视编译器及其优化器产出的工具，而不适用于热路径。
+
+% 1 1 0 164889fa4a4cd77802baa0335fdc34bf
+
+% 1 1 0 1628e7a70d63f47f1c59c27f741b0f74
+
+@ 0 7 0 12d4776dd6b12f2608a12ee3b7212695
++ entry .BytecodePalette   渲染字节码列表所用的颜色
++     一个 sRGB 的 `Palette`，除每个调色板都有的 `background` 和 `foreground` 之外，还有三种颜色：`bytecode`，用于源文件引用以及线性化指令所来自的方法；`sourceCode`，用于行号；`outline`，用于栈列的边框。
++     要将 `Bytecode`、`List[Bytecode.Frame]` 或 `List[Bytecode.Linearized]` 渲染为 `Teletype`，作用域中必须有一个 `BytecodePalette`；库不提供默认值，因此程序需要自行定义。
++     操作码的颜色不在调色板中：它们来自 `Bytecode.Opcode#highlight`，按开销决定。
+
+% 2 1 0 194d1b953f289ea403a034cbfdc9db20
+
+% 3 1 0 03b493b5e067e8d10778039f0c7d85c1
+
+% 0 1 0 15262b3c0efc50150dacc737d2489177
+
+% 0 1 0 045552636ab390d117494ddfc8a2cba6
+
+% 0 1 0 0a6456c0b2fcca4b02f1660cd5dd6ab5
+
+% 0 1 0 00d17034d10f3ded0d511e6670714786
+
+% 0 1 0 0a4e691ca0c0a1530e8bee20cc5d9987
+
+% 0 1 0 026b6231218d1fc405d618add8e05ef8
+
+% 0 1 0 0350c669f51e6ca4022fe3109f2ef3ce
+
+% 1 1 0 0ddde4d6f5685bcd1f708fbf94c6aa56
+
+@ 0 1 0 120832797b14c9750094e556927f9531
++ entry .internal   一个反汇编由 lambda 选定的方法的宏的所在之处
+
+% 0 1 0 1c18810b564d59e609a88422cf8dd919
+
+% 1 1 0 0f71597c1b0bc6cb112bae74ffdfb433
+
+@ 0 7 0 007ce0d31b3a1bf6042bcb045972ea21
++       不供直接使用。
++       其中保存着 `disassemble`，这是一个宏实现：给定一个作用于某类型的 `_.method` 形式的 lambda 和一个 `Classloader` 表达式，它拼接出一段通过 `Classfile` 查找该方法 `Bytecode` 的代码；目前没有任何公开的内联入口调用它。
++   entry .disassemble   该宏：从选定某个方法的 `target => Any` 得到该方法的字节码
++       对于不是简单成员选择的 lambda，以 _this type of lambda is not supported_（代码 91）中止。

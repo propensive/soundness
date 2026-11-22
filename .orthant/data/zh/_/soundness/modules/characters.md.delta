@@ -1,0 +1,406 @@
+orthant 2 language
+
+@ 0 1 0 0ead78806e5c6df90c8e1e9ad755a3b9
++ ## 字符
+
+@ 0 1 0 02ed9263154c2802081b650b8e2f33e5
++ ### 概述
+
+@ 0 6 0 164f2de68e8eeb0904c11cc288eb0b22
++ 文本与字节之间的边界是[字符编码](https://en.wikipedia.org/wiki/Character_encoding)，在这里，编码的选择是显式且有类型的。
++ `Codepage` 把文本转换为字节，`Charset` 则把字节转换回文本。
++ 两者都是[上下文值]，通过导入来选择，因此任何转换都不会在某个假定的默认值下进行。
++ 如何处理无法解码的字节是另一个选择，同样要显式地做出。
+
+@ 0 1 0 01a4db05b1711eb708890b50434e97d5
++ 程序有时也需要关于单个字符的信息：
+
+@ 0 6 0 069abf2867076bed1fa00684e25aff20
++ - 一个字符在终端中占多少列，其中“东亚宽”字符占两列；
++ - 一个字符的 Unicode 名称和属性；
++ - 它的上标和下标形式；
++ - [字素簇](https://unicode.org/reports/tr29/)边界，它们说明读者所感知的一个字符在哪里结束、下一个字符在哪里开始。
+
+@ 0 1 0 1afad3df47785dc4197bb8fb40bcd5cc
++ ### 关于字符
+
+@ 0 3 0 1fc6beb6d73cdfc218c20aada3697a41
++ 编码会失败，而大多数 API 会隐藏这种失败。
++ 用平台的默认字符集解码字节，会默默替换掉任何格式错误的内容。
++ 损坏的输入在下游某处变成了问号，而代码中没有任何地方记录假定了哪种编码。
+
+@ 0 3 0 1eb88acbce6eafab1dd511f5dacbf7f5
++ 同时，“一个字符”是个难以把握的概念。
++ 一个旗帜表情符号是两个码点。
++ 一个带重音的字母可能是一个或两个码点。
++ 一个宽表意文字在终端中占两列。
++ 一旦要度量或切分文本，这些细节就至关重要。
+
+@ 0 1 0 17ce8d85510bdc7a0964cb50c27e9371
++ 在这里，这些选择是分开的，并且每一个都要明确说明：
+
+% 2 1 0 147186596598c211068e8b4fb73f2c8b
+
+@ 0 5 0 19b1cdf5ecd19e3004378ed356c0fc65
++ column  选择
++ column  由谁做出
++ row  编码  一个 `Codepage` 或 `Charset` given，在使用之处导入
++ row  无法解码的字节如何处理  一个 `TextSanitizer` given
++ row  字符有多宽  一种度量方式，为显示而选择
+
+% 1 1 0 0a56dc9854da29121da9ad6d5d830044
+
+@ 0 4 0 1dccd3477c42e0eb0cd7853226f9d3b9
++ 把每一个都作为 [given] 指明，而不是默默采用默认值，就是字节与文本边界上的[声明式上下文](../../philosophy/declarative-context.md)。
++ 一切都来自 `soundness` 包，第二个导入让示例能够打印其结果：
+
+% 2 1 0 0f97771b69c464bb15189966989d8119
+
+% 0 1 0 1bca28db88d8e18d0fbcefeaacfc679c
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 1 1 0 02a8d4cb9fa86f7a19de906d90204517
+
+@ 0 1 0 174e339ee5ceabff091d520aa1b0e1c7
++ ### 编码与解码
+
+@ 0 2 0 1131eaff42dc878b181526af180d70d4
++ 在选定编码之前，文本无法变成字节。
++ 没有可以回退的默认值，因此作用域中没有 `Codepage` 时，转换无法编译：
+
+% 2 1 0 0c19cf77f4acee2a11648d736720a3ad
+
+% 3 1 0 0e0857ac76aa6bbe1f5aced66481fd49
+
+% 4 1 0 03ba3aae9838b2481b4f334be58599c5
+
+% 5 1 0 11cf7bc5cb60d0c61f3492e31c4f9458
+
+% 0 1 0 1c15639119888586004000cf32b556da
+
+% 1 1 0 02f325212a314ea105a500361bcdb171
+
+@ 0 2 0 12cc63692afc986616463bc940c2f643
++ 编码通过导入引入作用域。
++ 然后转换在文本与字节相遇之处发生，可以像这里一样显式进行，也可以在[流](streams.md)跨越该边界的任何地方进行：
+
+% 2 1 0 006ae92ba61faa780f1c0fe00156d40c
+
+% 0 1 0 0d72380027637f36161a75b41303b8f1
+
+% 0 1 0 043dfcd8bd81c19b0632f778285bd52b
+
+% 0 1 0 185507d5c88995961b13dd553740b513
+
+% 0 1 0 0e0095cd476a27a814342e0fc9a1374d
+
+% 1 1 0 1a3d6d27fcd2a3491239cf16f91080a3
+
+% 3 1 0 106fb0c41895c8c01689a32ba1583024
+
+% 4 1 0 0e9a32cc19b624a1120ff91491b6f789
+
+% 5 1 0 088406a951442d4b0b6cbfebac179445
+
+% 0 1 0 10ebe3a8bcc51b1c0fbf4d7459fa2180
+
+% 0 1 0 1774b6669db1f63512b29b52dc52259f
+
+% 1 1 0 13c1ddfb5aea7c441dc85b6d2b6171ec
+
+@ 0 1 0 120d03d389ebdf0f0bb21d9ff86302bc
++ 这四个字符是五个字节，因为 `é` 在 UTF-8 中占两个字节。
+
+@ 0 4 0 1a83b7f5d94f9d0f149e33adda23d5b4
++ 库提供了 UTF-8、两种字节序的 UTF-16、ASCII 和 ISO-8859-1。
++ JVM 所知的任何编码都可以用 `enc"…"` [插值器]指明，它会在[编译时]检查该编码是否存在。
++ 当请求编码器时，它还会检查该编码既能解码也能编码：
+
+% 2 1 0 08734b9484efc9140580584f663e45ca
+
+% 0 1 0 185593015c2cf3e60b9b0eb746f2b233
+
+% 1 1 0 0476810e68c91a701724aafe57fa16a0
+
+% 3 1 0 1b6c3cd183c31dcf0eb6f6ed3be19894
+
+% 3 1 0 16af7c0135b043f705b99ffeb5ac97fb
+
+% 4 1 0 11e21ea8e3e4d91a0b31e7458e39bf4a
+
+% 5 1 0 1ff55a334cb9215f1a6cddcbac0719fd
+
+% 0 1 0 1f0a9c0e435670ea1def75f3eb9d296d
+
+% 1 1 0 0b2a95eb965828c81ce642e2bc533b4c
+
+@ 0 1 0 145b79a37a5aa95408a6d4403c66a3ea
++ ### 错误的输入
+
+@ 0 2 0 070a8933311e996016d24e27883fc1f3
++ 当解码器遇到在其编码中无效的字节时，它会询问作用域中的 `TextSanitizer`。
++ 三种清理器分别选择失败、丢弃或替换：
+
+% 2 1 0 0ccac25f70a81e3003b067d70f409066
+
+@ 0 5 0 028449e8c962e8d901c8842dd2fef077
++ column  清理器
++ column  遇到错误字节时
++ row  `strictSanitizer`  抛出一个 `Charset.Error`，指明出错的位置
++ row  `skipSanitizer`  丢弃它们
++ row  `substituteSanitizer`  用 `?` 替换它们
+
+% 1 1 0 1be19673932ffaa21718a7eb1658c99c
+
+@ 0 2 0 06b818087f8a5c3904e118cb812f2a03
++ 这四个字节分别是一个连字符、一个双字节序列中缺少第二个字节的第一个字节，以及数字 `1` 和 `0`：
+
+% 2 1 0 0e32ff890e6db7f604297d49a8497533
+
+% 0 1 0 0db1a0ecc5cc04ab14e285e7be2d415a
+
+% 0 1 0 126ea9b3e0450b920c7880db223bf337
+
+% 0 1 0 0f625d66450c18e51678333273b2b348
+
+% 1 1 0 15215a33832ddbb00d462dd8cf7efec3
+
+% 3 1 0 0edc534a6a7fa2600f73aa5ec1d071c5
+
+% 4 1 0 159c5110228df33a1e767299b5faf800
+
+% 5 1 0 1dd1e2bfd5c095190eea00126d18b19f
+
+% 1 1 0 0aec10e0e6434631069d840d20311d4e
+
+% 0 1 0 1f848649d78e11cc128beddd7e28360c
+
+% 1 1 0 00f60f3f25f394b500477ca2d9d82ecc
+
+% 3 1 0 0af03f89983c59910f87551c7467dd71
+
+% 0 1 0 008dadf64b5a2bba08180e8c9e04eb47
+
+% 1 1 0 1fe3a446336ceab806bef0e52edc45dd
+
+% 3 1 0 09167125042efc0c0b374a9283ef5148
+
+% 0 1 0 062c7592d84854141c5f4cb7e9b18dfe
+
+% 0 1 0 06b2e6406598de9f0d68c7d0a6abf57a
+
+% 1 1 0 17d791fbeb1af7d21338beb4ef220bcc
+
+@ 0 3 0 02ca21782d96fc5012dab04028907dd4
++ 哪种行为正确取决于数据。
++ 严格适合应当绝对可信的输入，宽容适合从有损来源恢复的文本。
++ 无论哪种，选择都在导入处清晰可见。
+
+@ 0 3 0 16a61ec4dff2e414169a7f2c30ec6f2f
++ 第四种清理器两者兼顾。
++ `accrueSanitizer` 像跳过型清理器那样继续解码，但会记录每个错误。
++ 受损输入的全部内容都被恢复，*并且*每个错误序列都连同其出现的位置一起被报告。
+
+@ 0 3 0 017410b36dfd8a3e18bfcf579ac504ae
++ 这些错误[累积](errors.md#accumulating-failures)为一个由调用者选择的值，这里是一个收集位置和错误的错误类型。
++ `validate` 负责收集：它的第一个代码块说明每个错误如何加入累积结果，它的 `protect` 代码块则进行解码。
+
+% 2 1 0 0b7b7e8e65be6d3e18351589b1491e11
+
+% 0 1 0 10b3b1ef2cf3b8da12c8bbd0493dd4c8
+
+% 0 1 0 1c00773df835539103a7f253318b2916
+
+% 0 1 0 01f8e8ff0b2ce07d1e598d2b9bdfb45c
+
+% 0 1 0 10f562803b7218e000264fea7972fd8d
+
+% 0 1 0 05249cc2ff564a75031e4bf9dce3795e
+
+% 0 1 0 17753c68780d6bb81944c2e7e91ba355
+
+% 0 1 0 064c718192d79604077f1b9b7ae17093
+
+% 0 1 0 071cb829d18b172c0e01ffa74a78787d
+
+% 0 1 0 04b68f13292630100c24d6460f2a1679
+
+% 0 1 0 08c391e09a079b7a1917c82b89a4f527
+
+% 0 1 0 06b8e2850169c418018121869354f8e3
+
+% 1 1 0 06c19a606e8a652419349817824f7070
+
+@ 0 1 0 1c7459945beadceb0de89a52c986e0f8
++ `validate` 的结果就是累积结果，其中针对那一个错误序列有一个条目：
+
+% 2 1 0 14d07b6686dfb8bc0391030ba8759e1d
+
+% 3 1 0 154ea0f0a0d9f92201088b2aa080f804
+
+% 4 1 0 0d271be713847f1f1a9681786f89326c
+
+% 0 1 0 1298d4ebe9209a15068aefcead5c3d35
+
+% 0 1 0 15108be09c59b2941001b8c10e8eca57
+
+% 1 1 0 154f49210673628900aa202e88342d6c
+
+@ 0 2 0 15aa388b51a326d81722fc5e27e275cc
++ 这正是工具在导入一个来源不明的文件时所需要的：文本，以及一份出错位置的列表，而不是在两者之间二选一。
+
+@ 0 1 0 12b46dc11a9e8c811ca0e3e0c35bb1ba
++ ### 编码
+
+@ 0 2 0 1ca56111348ab7c617fc0da7130e4d02
++ `codepages` 和 `charsets` 包提供了程序可能需要的编码，每个都是一个具名的 given：
+
+% 2 1 0 075206b32d6f742f152c0a11bb560402
+
+@ 0 3 0 1245c08273ca42930de1ff38134eb2ca
++ column  编码
++ column  Codepage，用于编码
++ column  Charset，用于解码
+
+% 0 1 0 1a1bad521527b9df08b484aff5cb5f57
+
+% 0 1 0 10e1cf60705f473401e5c72c70d11502
+
+@ 0 2 0 0b4f31f389fd413c15bbd4582e055aac
++ row  UTF-16，小端序  `utf16LeCodepage`  `utf16LeCharset`
++ row  UTF-16，大端序  `utf16BeCodepage`  `utf16BeCharset`
+
+% 0 1 0 0f53c196ca9c3ee50da74e2e9f95fc93
+
+@ 0 1 0 055f9b25d879100c10e3318ab6002254
++ row  ISO-8859-1  `iso88591Codepage`  `iso88591Charset`，它总是跳过错误字节
+
+% 1 1 0 09f355e5b3a8bf491eff51d0c0f43621
+
+@ 0 1 0 05cb83fe09c9402d06b87bac709680c5
++ 其他所有字符集都使用作用域中的清理器。
+
+@ 0 4 0 082449aebc52c8e11a55221fa6e49f66
++ 编码和解码也可以作为[流](streams.md#composing-a-pipeline)的阶段工作。
++ 跨两个数据块拆分的多字节字符会被带过边界，而不会被损坏。
++ 这包括在数据块之间拆分的代理对，而朴素的实现恰恰会在这里丢失一个字符。
+
+@ 0 1 0 0ab485b6a6d037cd1879082c2f6cb948
++ ### 字符宽度
+
+@ 0 3 0 0ea3d93476c761ea1017b0e828060901
++ 在等宽显示中，字符并不总是一列宽。
++ `metrics` 扩展方法通过作用域中的度量方式来度量一个字符或一段文本。
++ `textMetrics` 包中有三种：
+
+% 2 1 0 0b1553ed0d547aee0068d00c72d71a06
+
+@ 0 7 0 1770636f7f892fd110884fc819e11bc1
++ column  度量方式
++ column  两列
++ column  零列
++ column  一列
++ row  `uniformMetric`  无  无  每个字符
++ row  `eastAsianScriptsMetric`  宽字符和全角字符  无  其他所有字符
++ row  `wideCharacterWidthMetric`  宽字符和全角字符  控制字符、组合标记和封闭标记、格式字符  其他所有字符
+
+% 1 1 0 0db929c24cb339970b41910cc09731f0
+
+% 2 1 0 08a7f2ed1d747c8615a9dad5db38053c
+
+% 0 1 0 08a0891502dbc209062f7e0983977a13
+
+% 1 1 0 1fed9a730338c4ad0065e5d00ad8992b
+
+% 3 1 0 049eeff74884b3d705c49a96fb61e75a
+
+% 4 1 0 1308231eb6ef62821ccfb2ba7eb45c1d
+
+% 5 1 0 03f05ff48663b4ed1564ddb10d6f4d71
+
+% 0 1 0 10f5397ae5e2051405789a7d6b3f4556
+
+% 0 1 0 0bca1d6d00921ab701bec85de9e7bef7
+
+% 1 1 0 0d85b4dadcc6e17f0a3e514605c71e68
+
+@ 0 2 0 0afede87fa7b5fbd03a344ae32bd5c8c
++ 文本的[填充与适配](text.md#padding-and-fitting)使用同一种度量方式，因此一列日文文本可以正确对齐，而单纯数字符则做不到。
+
+@ 0 5 0 0ea403bd3ef1addd15d156c85bfce8d0
++ 这一选择既影响正确性，也影响速度，这就是最彻底的度量方式没有直接作为默认值的原因。
++ 在 `uniformMetric` 下度量文本就是读取其长度，耗时为常数。
++ 在 `eastAsianScriptsMetric` 下度量文本则意味着检查每个字符并把宽度相加。
++ 当已知文本中不含宽字符时，统一度量方式不费任何代价就能给出相同的答案。
+
+@ 0 1 0 155ec7e1cdd7685814090b970e9dd149
++ ### Unicode 属性
+
+@ 0 2 0 092c33dae8591ee5017b2b0f744642d5
++ 字符可以回答关于自身的问题。
++ 它会报告自己的 Unicode 名称，并在 Unicode 有定义时给出其上标和下标形式：
+
+% 2 1 0 01ac5d210fdccb560510507e6fcb6574
+
+@ 0 10 0 0eeaea46c2f8861d030675b09e2990f1
++ column  成员
++ column  返回
++ row  `whitespace`  是否为空白字符
++ row  `control`  是否为 ISO 控制字符
++ row  `printable`  是否既不是空白字符也不是控制字符
++ row  `letter`、`digit`、`alphanumeric`  是否为字母、数字或两者之一
++ row  `majuscular`、`minuscular`  是否为大写或小写
++ row  `majuscule`、`minuscule`  其大写或小写形式
++ row  `description`、`designation`  其 Unicode 名称，一个 `Optional[Text]`
++ row  `superscript`、`subscript`  其上标或下标形式，一个 `Optional[Char]`
+
+% 1 1 0 0bfa03beaea5cef913ef70d9cb45eb3b
+
+% 3 1 0 101d1fa108bf4c151a1c45644676a2ce
+
+% 4 1 0 079cff745264e51a0ef7104b702249ec
+
+% 5 1 0 1a3511bbc4ad28fd0bd2d94a0718a062
+
+% 0 1 0 1f46df1623f2be930f214f268510f249
+
+% 0 1 0 0de65fbcd55eaed4188ebb97fc9f3866
+
+% 0 1 0 1c97ea1bb78b583a137f920eaa3f5aeb
+
+% 0 1 0 0c00c84a4e74b2280329c8a5bb2d464c
+
+% 1 1 0 01ca48ad4967b7491c81d1650573a06f
+
+@ 0 2 0 0b626d3663905b5016cb765d3695398b
++ 最后三个是[可选](optional-values.md)值。
++ `inspect` 把存在的值显示在角括号之间，把缺失的值（例如 `é` 的上标）显示为 `○`。
+
+@ 0 1 0 1e507141160a0344040f6cf56a8ad5a8
++ ### 字素簇
+
+@ 0 4 0 03d946e8089716851047b01b94ca6992
++ 读者感知为一个字符的东西可能由多个码点组成：一个旗帜、一个表情符号序列、一个带组合重音的字母。
++ `GraphemeBreak.boundaries` 按照 Unicode 的分段规则，找出一个这样的字符结束、下一个字符开始的位置。
++ 两个旗帜是四个码点、八个 `Char`，但只是两个字素：
+
+% 2 1 0 1ae794e90504d6a607613f40ea493c6e
+
+% 3 1 0 07ad6d66b1a58bc80f912235f6e388ed
+
+% 4 1 0 06909453f7331a331c1e5edeb876ddf3
+
+% 0 1 0 0d61de059d81b28e04b2698bbddfd99a
+
+% 1 1 0 0866df1f7bef8d9a095c72c81f928131
+
+@ 0 2 0 1677e48eb622d8f506e878d7e52fca3d
++ 在这些边界处截断或反转文本的代码永远不会把一个字符劈成两半。
++ [文本](text.md#graphemes-and-width)用 `Writing` 来计数和度量字素。
+
+@ 0 1 0 0a15ebad305c934c1527dd3a42e83d7a
++ ### 相关
+
+@ 0 1 0 007f8c90f5af7a6507dd8feec9e71a02
++ - [文件系统](filesystem.md)介绍读取文件名和文件内容所用的编码。

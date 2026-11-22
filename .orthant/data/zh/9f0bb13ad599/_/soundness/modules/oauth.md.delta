@@ -1,0 +1,53 @@
+orthant 2 language
+
+@ 0 1 0 05e22d0d0c4c952c1a616480d0d54f00
++ ### 识别用户
+
+@ 0 4 0 0f1186eb9790ecf8040de3bf966f6f31
++ OAuth 2 说明客户端可以做什么，但不说明用户是谁。
++ [OpenID Connect](https://openid.net/specs/openid-connect-core-1_0.html) 补充了这一点，形式是与访问令牌并列的 *ID 令牌*。
++ 它是一个由提供方签名的 [JWT](jose.md)，`Authorization` 把它按到达时的原样保存在 `identityToken` 中。
+
+@ 0 2 0 17ee95122d77c51e1b758d53b02e70ec
++ `Oidc.discover` 从提供方的 well-known URL 读取其端点以及其密钥的位置。
++ 随后，对于在该提供方处注册的客户端，提供方就是一个 `Issuer`：
+
+% 2 1 0 1676f28cb17211c618c8f10965429eea
+
+% 3 1 0 12416b93396d5f01074ee5e4ff7eacd5
+
+% 4 1 0 02f205f52fb10683093ec652b6425573
+
+% 0 1 0 10f3a48df498661a02c4d4f728eadb5c
+
+% 0 1 0 0e420dc0f15b9ffe1bcc5f9461b53f86
+
+% 0 1 0 1493e4beb236334d0483777a1c096a83
+
+% 0 1 0 06684d0c4899b42507981915848f35f1
+
+% 1 1 0 026380f622da0c1a04252c4ad06649dc
+
+@ 0 3 0 017155772118f2530999114569e9903e
++ `Oidc.identify` 验证 ID 令牌。
++ 提供方的密钥是一个 `Jwks`，令牌指名其中的一个。
++ 类型参数是读取这些密钥时所用的密码算法，因而也是唯一被接受的签名算法：
+
+% 2 1 0 015bcf69810dd9b51b518ff6bc627dd7
+
+% 3 1 0 0c0a6430dffcbe360ff5af91ba0b14ee
+
+% 4 1 0 1f5c2df64601e93815ea77fa019483cc
+
+% 0 1 0 01bf49b20b90b2e100bc44eec75f8da2
+
+% 0 1 0 0e11bb161cac60b512fd6ab7618e844c
+
+% 0 1 0 037312fb8cde11a7171d78bfe5dcc15d
+
+% 1 1 0 034cd2b7dbd9c2dc0010c2fde965e5be
+
+@ 0 4 0 0822b8853f541c4f10d7556f60389df7
++ 令牌必须由提供方签名，为此客户端签发，并且按作用域内的 `Clock` 处于其有效期内。
++ 如果授权请求附带发送了 *nonce*，令牌必须携带同一个 nonce，这把它与该请求绑定在一起。
++ 任何其他情况都会抛出 `OAuth.Error`，用户不会被识别。

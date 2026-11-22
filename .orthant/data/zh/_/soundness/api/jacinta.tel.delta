@@ -1,0 +1,2718 @@
+orthant 2 language
+
+% 0 1 0 0f04ec4b9ac2d4270a232409219e1f6b
+
+% 0 1 0 1d20724440cb8d66152c646816b18768
+
+% 0 1 0 0b5938ce7315323607e1922cbc4d93e2
+
+@ 0 1 0 0bea5823ded45c690e110e06b4e7fcef
++ info   作为有类型的不可变值的 JSON：可解析、构建、导航、与 Scala 类型相互转换，并能以流的形式输出
+
+% 0 1 0 0ca6d61ddd9511ea1cdae38f1414f6fe
+
+@ 0 8 0 18db12a9416a865d065b5c4d1114bdc0
++     _Jacinta_ 读写 [JSON](https://www.json.org/)。
++     它的核心类型是 `Json`，即一个不可变的文档（或文档中的任意值）：用 `read[Json]` 从文本或字节解析，用 `Json.make` 或 `j"…"` 插值器构建，按键和索引导航，并用 `as[T]` 转换为 Scala 类型，或用 `in[Json]` 从 Scala 类型转换而来。
++     这些转换是类型类 `Json.Encodable` 和 `Json.Decodable`，编译器根据 case class、枚举和 sealed 层次结构的形状为它们派生实例，因此记录无需手写任何代码即可转换为对象再转换回来，而数据与类型不匹配时会抛出 `Json.Error`，指明原因，并在可能时指明字段。
+
+% 2 1 0 02bd98843b81ecda1c8dd057466a3618
+
+% 3 1 0 17e2a008020ac8fe1e9f2b6ec287c192
+
+% 0 1 0 0323f27fc4985e0804a43d7947f66e41
+
+% 0 1 0 098392ca96d9bb94167323c7f9c2a04c
+
+% 0 1 0 18ee8e1ba585b2ee198a70721d374a1a
+
+% 0 1 0 19abe2ec09131ec207294a8ced389e79
+
+% 0 1 0 0d38c8e5f3abe58a03dd4cc4ff58f891
+
+% 0 1 0 1cda8a7dd9c0d58509ac67b9987dd424
+
+% 0 1 0 1b66d206664c53581ff58aa5ff96c020
+
+% 0 1 0 14fb1344611ef9d10937f4eb448d1c86
+
+% 1 1 0 1bab4866822c186301e3c020cecb100a
+
+@ 0 8 0 1f60de6f60c44cd71b468fdd33e479e0
++     文档完全可以不必构建：具有 `Json.Parsable` 的类型可以*直接*从词法单元流中读取（`Json.Parsable.derived`、`Json.Parsable.staged`、`Inlinable.parsable`，或用 `derives Json.Direct` 获得生成的解析器和打印器），而具有 `Json.Printable` 的类型可以通过 `in[Text over Json]` 和 `in[Data over Json]` 直接写成文本或字节。
++     导入 `codecs.direct`、`codecs.derived` 和 `codecs.strict`，可以为作用域内的每个记录在生成路径和基于树的路径之间做选择。
++     直接解析和打印让这个库的速度与最快的 JVM JSON 库只差一小段距离，同时每个值仍保持有类型。
+
+@ 0 4 0 05a17db2289dfded0a925397fb5655b5
++     大文档以流的形式处理：`Json.emit` 在纤程上序列化，并在文本产生时就交出文本；推送形式 `Json.emit[Text]`/`Json.emit[Data]` 在调用者的线程上交付数据块；`Json.lend` 则不经复制地借出写入器自身的缓冲区。
++     解析也是流式的：`Json` 是 `Aggregable by Data`，因此可以从 turbulence 能以流读取的任何来源读取。
+
+@ 0 7 0 077eefaa9415bc3402ef619ec21f70b8
++     除转换之外，这个库还提供：`JsonPointer`（RFC 6901 路径，用 `jp"…"` 书写）；当 `parsing.trackPositions` 在作用域内时，每个值的源码位置（`locate` 和 `locateKey`）；由 `dynamicAccess.dynamicJson` 或 `dynamically[Json]` 块许可的动态字段访问（`json.name`）；作用于文档的透镜和光学器件（`json.lens(_.a.b = …)`，以及 `optics` 包中的 `Each` 和 `Filter`）；决定超出 `Long` 或 `Double` 长度的数字如何处理的 `NumberMode`；以及 `Json.Provider`，它在代码编译时读取 JSON Schema 文档，并从匹配的 JSON 产生有类型的记录。
+
+@ 0 1 0 0b20078b7e7ded3518104830a387ab30
++     这个库分为六个源码集：
+
+@ 0 16 0 095dee269a5bf03d0a7cc2423bbd1d62
++     - `jacinta.core`：`Json` 及上述一切；`JsonPointer`、`NumberMode`、`Inlinable`、`j"…"` 和 `jp"…"` 插值器，以及选择包 `formatting`、`numberModes`、`optionalityOptions`、`discriminables`、`dynamicAccess` 和 `conversions`。可编译到 JVM、Scala.js 和 Scala Native。
++     - `jacinta.schema`：`JsonSchema`，即从 Scala 类型派生或从 JSON 读取的 JSON Schema 文档；`verify`，它根据某个类型的 schema 检查一个 `Json`，并返回有类型的结果，使其字段的导航经过编译时检查；以及 `@memo` 注解。
++     - `jacinta.optics`：`optics` 包，包括使 `json.lens(…)` 可用的 `jsonLens`，以及作用于数组的 `Each`、`Filter` 和序数光学器件。
++     - `jacinta.http`：仅限 JVM，包括 `postables`、`servables` 和 `construables` 包，它们把 `Json` 作为 `application/json` 请求体发送、作为响应提供，以及把 API 的 JSON 主体读取为 `Json`。
++     - `jacinta.time`：`encodables`、`decodables` 和 `parsables` 包，它们把 aviation 的 `Instant` 和 `Duration` 表示为整数毫秒。
++     - `jacinta.staged`：`InlinableStager`，即编译时机制，它让用户编写的 `Inlinable` 在生成的解析器被拼接时求值；其中没有任何内容需要手动调用。
+
+@ 0 7 0 08346a1d00e5749e19c94b2ae24fee0c
++     所有内容都导出到 `soundness` 总括包，这里的每个选择包都会与总括包中同名的包合并。
++     选择包中存放的是 *given*，而 `import soundness.*` 不会导入 given，因此每个都要按名称导入：`import formatting.indentedJsonFormatting`、`import numberModes.doubleNumberMode`、`import discriminables.jsonByKindDiscriminable`、`import dynamicAccess.dynamicJson` 等等。
++     `Json.Formatting` 是大多数代码必须选择的那个 given，因为 `show`、`emit` 和 HTTP 的 given 都需要它。
+
+% 0 1 0 1d2152a3928d9f851691f916cc6f9358
+
+% 0 1 0 061a77203fb7f0240a3078207d9d3e81
+
+% 0 1 0 19df02dd7d7682031f33db288688ee03
+
+% 0 1 0 161234bca78558f1089324f2fd0614f0
+
+% 0 1 0 13ea7e81f5f548760ffa1f837626e2a2
+
+@ 0 1 0 026e41c7fbbd4c96079da36bd92bd6be
++ entry .Json   不可变的 JSON 值，以及解析、构建、转换它并以流输出它的伴生对象
+
+% 1 1 0 0593cb63538646a51a4cd4b9adc35b5f
+
+@ 0 5 0 0f0923e15d11e54111244b6c15e30f40
++       `Json` 可以是任何 JSON 值（对象、数组、字符串、数字、布尔值或 `null`），也可以是*缺失*值，即访问对象中不存在的键时得到的值。
++       它是不可变的：每次更新都返回一个新的 `Json`。
++       两个文档的值相等时，无论键的顺序如何，它们都相等；一个整数与用小数点书写的同一数值相等。
+
+% 2 1 0 0e338a17538aa1b9072a1d79eedecbc7
+
+% 3 1 0 0d2393294ccc2b861a3c21807603dc3c
+
+% 4 1 0 10ad4af30ddd61480332899d417ff923
+
+% 5 1 0 1f871896ac3e75b70fac62482ebb4469
+
+% 0 1 0 1f463dc5dc23ed750b40974831f6ef65
+
+% 0 1 0 1e250b33fa579a461abe8a3c7a79683e
+
+% 0 1 0 19da6d8d7e3ea6ae10eba123d792e8e6
+
+% 0 1 0 15c9518ab06854081173378bbfcda3aa
+
+% 0 1 0 0be1ea50616e25cc06ac3dfe5011253c
+
+% 0 1 0 14d606000a000f871ef4d04fd1397b19
+
+% 1 1 0 1a95b1ca2ee7ef6e09a9d8b9ddb56a0a
+
+@ 0 6 0 1af883f182fea8f3084ad91ec7c1e6ea
++       **读取。** `Json` 是 `Aggregable by Data`（`.aggregable`），因此 turbulence 能以流读取的任何来源（`Text`、`Data`、文件、HTTP 主体）都可以 `read[Json]`，遇到格式错误的输入时通过 `Tactic[Parse.Error]` 抛出 `Parse.Error`。
++       当 `parsing.trackPositions` 在作用域内时，解析器还会记录每个值的行和列，可用 `locate` 和 `locateKey` 读回（`.positionable`）。
++       `read[T in Json]` 一步从 JSON 文本读取 `T` 类型的值：当 `T` 具有 `Json.Parsable` 时直接从词法单元读取，否则经由树读取。
+
+@ 0 7 0 00556aac8a2ca22709ef8e87299a4e44
++       **转换。** `as[T]` 通过 `Json.Decodable` 解码（`#as`），`value.in[Json]` 通过 `Json.Encodable` 编码。
++       伴生对象中有针对原始类型、`Text`、`Unit`（JSON `null`）、`Optional`、`Option`、`List`、`Set`、`Sequence`、`Map` 以及 `Json` 本身的实例，并为任何 case class、枚举或 sealed 层次结构派生实例（`.decodable`、`.encodable`）。
++       无法完成的转换会抛出 `Json.Error`；在累积式策略下，每个失败的字段都会被报告，并各自带有指明其 JSON 指针的 `Json.Focus`。
+
+@ 0 5 0 070d99b6016f09e213bf396c63366ac3
++       **构建。** `Json.make(a = …, b = …)` 从命名的 `Json` 参数构建对象（`.applyDynamicNamed`），`Json(value)` 包装一个原始值（`.apply`），而 `j"…"` 插值器按字面书写 JSON，在代码编译时检查，并带有用于已编码值、`*` 展开的集合和合并映射的空位（`.interpolator`）；同一个插值器也是一个模式（`.extrapolator`）。
+
+@ 0 6 0 03cc294f8e9647391fbc138b6d936021
++       **导航与更新。** `json(t"key")` 和 `json(index)` 选择一个字段或一个元素（`#apply`）。
++       导入 `dynamicAccess.dynamicJson` 后，字段可以作为成员读取，即 `json.name`，并用 `json.name = value` 设置，或用 `json.name = Unset` 删除（`#selectDynamic`、`#updateDynamic`）；经过 `verify` 针对某个类型检查的文档，其字段导航经过编译时检查，无需这样的导入。
++       更深层的更新用 `optics` 包中的 `json.lens(_.a.b = …)` 书写。
+
+@ 0 4 0 12082aebcddcb077125c1c62b592c822
++       **写出。** `show` 按作用域内的 `Json.Formatting` 把整个文档渲染为 `Text`（`.showable`；`formatting.compactJsonFormatting` 或 `formatting.indentedJsonFormatting`），`.emit` 以流输出它，`.lend` 借出写入器的缓冲区。
++       `Json` 还是 `Streamable by Text`、`Encodable in Text`、HTTP 主体（`.abstractable`）以及 `Inspectable`。
+
+% 2 1 0 1c81ccba59ca290e17532560a1b61825
+
+% 1 1 0 08d9458eb73012351c93056f35e51984
+
+@ 0 1 0 05f78b0540c9888e15949bbd6615e268
++         label 解析后的文档
+
+% 1 1 0 13163d984d78fad20fffd303a1806661
+
+% 2 1 0 1e9f29f2a80dc648192d50e654d209c7
+
+% 3 1 0 1c2b018c0cd7c18e1ba94fb1814e0455
+
+% 0 1 0 1a6f88364bcdcf7a12b543fbd0bd45d7
+
+% 1 1 0 1a8f05db56d23fb305523e8b8cea2d68
+
+@ 0 1 0 1c98a8b781dc6cb91250ced123d317a1
++         label 按键访问的字段
+
+% 1 1 0 05994c97230ec3b01eeb3eebd244cba3
+
+% 0 1 0 1995af221d664aba0de21e72f1ff054c
+
+% 1 1 0 0e65469fe71e5574013e39a377449f3b
+
+@ 0 1 0 1d09a888a3811b7b100cda332fa5aeeb
++         label 同一个字段，启用了动态访问
+
+% 1 1 0 0ea15984ea24b27803a0385e73a5f37f
+
+% 0 1 0 077990a899cf9f3116e8bda8edbc7330
+
+% 0 1 0 1464d0bf860f8a4b13dd9af5a4994837
+
+% 1 1 0 1e7a62761b5d12630a8680a423a8c12c
+
+@ 0 1 0 1fdad915d4900a511fb9c3c149a757c6
++         label 整个文档，解码为 case class
+
+% 1 1 0 0d8c2d6ba3a416450634fa4b7502b490
+
+% 0 1 0 04f0d78cdf7b631415250ce3ec09397d
+
+% 0 1 0 02b8c0faaf9ce7530d5c8e400b449be1
+
+% 1 1 0 163cd9e1f96ef53511bb316a9ebfdf81
+
+@ 0 1 0 18272ab12da8092310e50dd365317d50
++         label 一次更新，得到新文档
+
+% 1 1 0 09457f743a0d6a3f0a371ad775855a09
+
+% 0 1 0 18b2041adec90470127de9ac16c8c488
+
+% 1 1 0 1db5ca88e96858be075a5025fc1de020
+
+% 2 1 0 0db951a1657703761832c655e1d24ee4
+
+@ 0 4 0 146ac517b6688a961b8a2e14d7ef4000
++       伴生对象由一串混入（`Json1` 到 `Json4`）组装而成，它们按优先级排列其中的 given：直接解析器和打印器高于派生的编解码器，逐元素的实例高于通用回退。
++       它们的成员记录在这些混入的条目下；`object Json` 继承了它们。
++       每次读取背后的词法分析器是顶层的 `Parser`，它有自己的页面。
+
+% 0 1 0 02bf5e05a46d03f005fa1b11207f5d6c
+
+% 0 1 0 1b316b80f78379141149fb7ef044b574
+
+% 0 1 0 1c75699b95080a3203722bce3a7952bb
+
+% 0 1 0 165ca562a1253f280aad7efcc423e7e8
+
+% 0 1 0 1c6abe5019a5a1b018896581e12b633a
+
+% 0 1 0 0c44697e1c5c27b51796b71895c78b6f
+
+% 0 1 0 083ce8b7c9cf2bb511f05a9b58e1e2bb
+
+% 0 1 0 1ed67cda0c32e92a0787b7204879b260
+
+@ 0 9 0 17f578c3020391320f343826de466282
++   entry .apply   把原始值包装为 `Json`：`Json(42)`、`Json(t"text")`、`Json(true)`
++       `Json(value)` 从原始值创建一个 `Json`。
++       针对 `Int`、`Short`、`Byte`、`Long`、`Float` 和 `Double` 的重载以树自身的形式存储数字（整数存为 `Long`，`Float` 存为 `Double`），因为树中的原始 `Int` 会被读作打包的小十进制数，而不是整数。
++       `apply(value: Any)` 按原样接受其他任何值，因此它用于已经是树的表示形式的值（`String`、`Boolean`、`Json.JsonNull`），而不是任意 Scala 值，后者应当改用 `in[Json]`。
++       双参数形式 `Json(value, positions)` 把一个 `Json.PositionIndex` 附加到值上，就像跟踪位置的解析器所做的那样。
+
+% 2 1 0 1526adeae91fc2bd04312302dc766c81
+
+% 3 1 0 16f6a032f70be83e19ba7f04db83545f
+
+% 0 1 0 1577aa836c7a4cc614620f62b4d9e4f7
+
+% 0 1 0 1c5bc6bf89d957530b50e05f2b9e3bda
+
+% 0 1 0 0e13ff17864fa6581037eba5cddcfb0d
+
+% 1 1 0 0e2b14b8cb5bee891550d8db99c84800
+
+@ 0 8 0 1f4ad3855a99501c0c68b63ed4fb64e3
++   entry .ast   把 `Json.Ast` 节点包装为 `Json`
++       它是 `.unseal` 的逆操作：`Json.ast(node)` 是以给定树节点为根的文档。
++       `Json.ast(Json.Ast(Unset))` 是缺失的键所产生的缺失值。
++   entry .applyDynamicNamed   `Json.make(key = json, …)`：由命名的 `Json` 参数构建的对象
++       `Json` 是 `Dynamic`，它唯一的动态方法是 `make`：`Json.make(a = 1.in[Json], b = t"two".in[Json])` 构建对象 `{"a":1,"b":"two"}`，并保持参数的顺序。
++       每个参数都必须已经是 `Json`；导入 `conversions.encodableToJson` 后，任何 `Encodable in Json` 的值都可以直接传入。
+
+% 2 1 0 1799fb94c86141ea08c53cd737ad79eb
+
+% 3 1 0 1f2f3f6990d88b8b10adad6dd7144ceb
+
+% 1 1 0 1053fd0643bf9b4b1e235d624092d5e3
+
+% 0 1 0 02cb9b144db6714b145837f582d2b7d0
+
+% 0 1 0 00b9a848c01c01f80d98e3340234abfc
+
+% 0 1 0 13ed5eb1dca8ca0c1be1a98a21417ccb
+
+% 1 1 0 0c7c2dfbd87d19151535ff1536311567
+
+@ 0 5 0 0cbcb37d8a99d3581160905c784406a7
++   entry .unseal   `Json` 之下的 `Json.Ast` 树，用于直接检查其种类
++       打破 `Json` 抽象是一个刻意的、有名称的操作：`Json.unseal(json)` 是根 `Json.Ast` 节点，在它上面，`Json.Ast` 的谓词（`isLong`、`isDouble`、`isNumber`、`isString`、`isBoolean`、`isNull`、`isObject`、`isArray`、`isAbsent`）和 `primitive` 回答该值是什么。
+
+% 2 1 0 064d4b0cf144983b071ea77770259304
+
+% 3 1 0 11013baa94617e2612467fd56d8b1325
+
+% 4 1 0 12ce1e1a521c71841a5bfbd41a7b1f4e
+
+% 0 1 0 0a69ac88953efa6e0089799f8aeebb6d
+
+% 0 1 0 0e01f635c5e367c3189c674609284571
+
+% 0 1 0 0e4d7b7557b4ec010f51c01ed30750ff
+
+% 1 1 0 1024d4a33083857d17bbb4d3b0af62f3
+
+@ 0 12 0 08421f24e9fdd0df04e9aa28bbd38cd5
++   entry .emit   以流输出文档的文本：从纤程中拉取，或逐块推送给一个函数
++       有两种形式。
++       `Json.emit(json)` 在纤程上序列化，并返回一个 `Iterator[Text]`，在文本产生时就交出文本，因此大文档可以在完全渲染之前写入套接字或文件；它需要 `Json.Formatting`、`Monitor` 和 `Probate`，因此在 `supervise` 下运行。
++       推送形式 `Json.emit[medium](json, deliver)` 在调用者的线程上序列化，不使用纤程，每填满一个数据块就交给 `deliver`：`emit[Text]` 通过 `Producer[Text]` 交付文本，`emit[Data]` 交付由字节级序列化器直接写出的 UTF-8 字节，该序列化器一趟完成每个字符串的转义和编码，并从半字节渲染 BCD 数字，无需经过 `String` 往返。
++       媒介是一个 `Json.Emitter`，当 `deliver` 是无类型的 lambda 时需要给出类型参数。
++       推送形式需要 `Json.Formatting` 和 `Buffering`，后者的容量决定数据块的大小。
+
+% 2 1 0 027a867e5a9245ae1e480f5b2e8fb05f
+
+% 3 1 0 1e511c94c551be470f5876ed9796c375
+
+% 4 1 0 085f4f9bc9e38fb013a583e0ceecc20b
+
+% 0 1 0 093ab821d61fba4b078a63210a8e55bc
+
+% 0 1 0 1dfe7bdbf2cbdaea1da06ac1ccaab8bd
+
+% 0 1 0 1e48fef646e976e000522bb412f06ee9
+
+% 1 1 0 07459be2e19b007e0292fc3fa49ca394
+
+@ 0 8 0 0d08c10dae0b59341744b15cd5de0f16
++       每种形式渲染出的文本都与 `show` 相同。
++   entry .lend   推送式 `emit` 的借用形式：每个 UTF-8 数据块被借出，而非复制
++       `Json.lend(json)(lending)` 在调用者的线程上序列化为 UTF-8，并把每个填满的数据块作为 `Region[Data]` 借给 `lending`，同时附带一个带品牌的 `Interval`，证明每个索引都在范围内；数据块只在调用期间有效（即 `Stream.lend` 的规则），因此不复制任何内容。
++       必须保留字节的使用方自行将其具体化；`Json.emit[Data]` 就是常见情形下的这种使用方。
++       需要 `Json.Formatting` 和 `Buffering`。
+
+% 2 1 0 1ebd39677b31e1851f3c46cdeee31b7e
+
+% 3 1 0 072f219567bac1c207a66171d22acccd
+
+% 4 1 0 043da4d108508b0c136fc9b0b30edc62
+
+% 0 1 0 090500b811b7c8af0d8e28870bdd76fb
+
+% 0 1 0 026286b741a4d11708de5b3cbeb1bb22
+
+% 1 1 0 050bbeff7f47a1540f4320316c580b48
+
+@ 0 1 0 167bc3a709550b270dea4abc66ea0a4e
++   entry .Emitter   `Json.emit` 的推送形式如何到达其使用方：以文本或以 UTF-8 字节
+
+% 1 1 0 03e652d1602ca37b018620dc70ed2cf3
+
+@ 0 7 0 0cd389f4ced3cd5d18f6a167563550e9
++         `Json.Emitter[medium]` 是 `Json.emit[medium](json, deliver)` 所分派的类型类。
++         两个实例都在伴生对象中：`.text` 用于 `Text` 数据块，`.data` 用于 `Data` 数据块。
++         媒介由类型参数选择，即 `Json.emit[Data](…)`。
++     entry .text   通过 `Producer[Text]` 交付文本块
++     entry .data   交付 UTF-8 数据块，由字节级写入器借出的区域具体化而来
++     entry #emit   序列化文档，并按 `Buffering` 的容量把每个数据块交给 `deliver`
++   entry .Formatting   文档如何渲染：缩进单位（如果有），以及是否以换行结尾
+
+% 1 1 0 18a5cda86ddeefb015e369f68eed2550
+
+@ 0 7 0 02b17c62fa0903fa1480894eeb6d305d
++         `show`、`emit`、`lend`、`Streamable` 和 `Encodable in Text` 的 given、`in[Text over Json]` 以及 HTTP 的 given 都需要 `Json.Formatting`。
++         `#indent` 是每层嵌套的空白单位，或者为 `Unset` 表示最紧凑的单行 JSON；`#trailingNewline` 在末尾追加一个换行。
++         两种标准选择是 `formatting` 包中的 given，按名称导入：`formatting.compactJsonFormatting`（完全没有空白）和 `formatting.indentedJsonFormatting`（每层两个空格）。
++         它是一个 `zephyrine.Formatting`，因此通用的序列化器可以接受它。
+
+% 2 1 0 0aa9e804b3226c08008b2752cc60b2fa
+
+% 3 1 0 1581b9422710b9e912277bd606bc9136
+
+% 0 1 0 0be6ff261178615b004927e25e323b2a
+
+% 1 1 0 170534067064b5361800660a1122a6cd
+
+@ 0 26 0 03119d430dd14d9802f8b0b2da59e89c
++     entry .apply   具有给定缩进单位和末尾换行选择的格式设置
++     entry #indent   每层嵌套的空白单位，或为 `Unset` 表示单行输出
++     entry #trailingNewline   结束字符之后是否跟一个换行
++   entry .JsonString   JSON 字符串在树中的表示：`String`
++   entry .JsonNumber   JSON 数字在树中的表示：`Long`、`Double`、`Bcd` 或打包的 `Int`
++       约十五位以内的数字解析为 `Long` 或 `Double`；在默认的 `NumberMode` 下，更长的数字成为 `Bcd`（保留每一位数字）。
++       `Int` 形式是最多七个半字节的*打包*小型二进制编码十进制数，而不是整数，这就是 `Json(int)` 把 `Int` 拓宽为 `Long` 而不是原样存储的原因。
++   entry .JsonBoolean   JSON 布尔值在树中的表示：`Boolean`
++   entry .JsonNull   在树中表示 JSON `null` 的哨兵值，及其类型
++       它是一个独立的对象，而不是 JVM 的 `null`，从而使文档中显式的 `null` 与*缺失*值（`Unset`，即缺失的键所产生的值）互不相交；`Json.Ast.isNull` 用来检测它。
++   entry .JsonObject   对象在树中的表示：键和值交替排列的冻结 `Array[Any]`
++   entry .JsonArray   数组在树中的表示：冻结的 `Array[Any]`、`Array[Long]` 或 `Array[Int]`
++       异构数组是一个 `Array[Any]`，填充到奇数长度，以便与对象（总是偶数长度）区分；仅含数字的数组以打包 BCD 的 `Long` 或 `Int` 形式未装箱存储。
++   entry .aggregable   从 `Data` 流读取 `Json`：`source.read[Json]` 背后的 given
++       这个 `Aggregable by Data` 实例把任何流式来源（`Text`、`Data`、文件、响应主体）解析为 `Json`。
++       它需要一个 `Tactic[Parse.Error]`，在输入格式错误时抛出，并附带故障所在的行和列；还需要一个 `PositionTracking`：当 `parsing.trackPositions` 在作用域内时，会记录每个值的位置供 `locate` 使用；默认情况下什么都不记录，也没有任何开销。
++       单个内存数据块就地解析；流则在到达时逐步解析。
+
+% 2 1 0 0ed1ec60fe5a2d49096019af2a202419
+
+% 3 1 0 14fbe0023cbd776508b81cf96cb1a709
+
+% 4 1 0 1ec514f9a974cea0177e68f800470088
+
+% 0 1 0 1c30c632d38a561f01deb993f3f6861f
+
+% 1 1 0 1501fc74a8fc4dec0aaf76f3e2aa2da3
+
+@ 0 31 0 0eda654ac2bd4cee0fd855b9760f59bb
++   entry .showable   按作用域内的 `Json.Formatting` 把文档渲染为 `Text`
++       `json.show` 是获得文档文本的唯一途径：在 `formatting.compactJsonFormatting` 下是紧凑的，在 `formatting.indentedJsonFormatting` 下是缩进的。
++       数字按解析器所见的数位写出，因此文档往返时不会损失精度；字符串按 RFC 8259 转义。
++   entry .streamable   作为 `Stream[Text]` 的文档，在被消费时于纤程上序列化
++       这个 `Streamable by Text over Credit` 实例建立在 `.emit` 的拉取形式之上，因此需要 `Json.Formatting`、`Monitor` 和 `Probate`（即一个 `supervise` 块）。
++   entry .inspectable   调试渲染：紧凑文本，无论作用域内是什么格式设置
++       按照惯例，检查结果是单行的，因此它固定使用紧凑格式，而不是从调用处获取格式设置，也完全不需要 given。
++   entry .abstractable   作为 HTTP 主体的文档，采用作用域内 `Codepage` 的 `application/json`
++       这个 `Abstractable across HttpStreams` 实例的内容类型是来自 `Codepage` given 的 `application/json; charset=…`，主体是用该编码页编码的 `show` 结果，因此它也需要 `Json.Formatting`。
++       `jacinta.http` 的 `postables` 和 `servables` 包是显式的请求和响应 given。
++   entry .decodable   从文本得到 `Json`：从 `Text` 读取文档，抛出 `Parse.Error`
++       `Json is Decodable in Text` 从 `Text` 读取文档（`t"…".as[Json]`，或从另一种格式解码的记录中的 `Json` 字段），抛出 `Parse.Error`；superlunary 的分阶段 `Json` 值也是通过它进行 pickle 的。
++   entry .instantiable   从 HTTP 请求文本得到 `Json`，抛出 `Parse.Error`
++       这个 `Instantiable across HttpRequests from Text` 实例用于解析类型为 JSON 的请求体；它捕获作用域内的 `Tactic[Parse.Error]`。
++   entry .positionable   `json.locate(pointer)` 和 `json.locateKey(pointer)`：值在源码中的位置
++       这是 `Positionable by JsonPointer to Json.Ast.Position` 实例。
++       `locate` 是指针所指值的行和列（以及偏移量和长度），覆盖整个值：负数包括其符号，对象从左花括号延伸到右花括号；`locateKey` 是与指针最后一段匹配的*键*的位置，用于给拼错的字段名加下划线。
++       当指针无法解析（键缺失、索引越过末尾）时，两者都是 `Unset`；对于在 `parsing.trackPositions` 不在作用域内时解析的文档，两者总是 `Unset`。
+
+% 2 1 0 155d40df14522ece06514ca6a509e412
+
+% 3 1 0 0af69ed423c2d58d1a3cb0d3be6a7084
+
+% 4 1 0 04d85b434aea1a7f00bb7f15111cffd1
+
+% 0 1 0 1cdc57769a14db061e8c86d90120bb16
+
+% 0 1 0 0f7ea51247475e3b00aa61536dcb6477
+
+% 0 1 0 0d1d9c87286250f8090113673cf1cfbc
+
+% 0 1 0 06fcd6d15ccfc18209aa02541222cff3
+
+% 1 1 0 1af587480080dd360fff995ea95660f9
+
+@ 0 19 0 0f95942142bdd592110e60ef89c422d9
++   entry .interpolator   `j"…"` 背后的宏：在编译时检查的 JSON 字面量，带有有类型的空位
++       这是 `Json` 的 `Interpolable` 实例。
++       字面量在编译时解析，语法错误在出错的字符处报告。
++       空位 `$x` 替换为任何 `Encodable in Json` 的值；数组中的 `$xs*` 拼入集合（`Iterable`，或带品牌的 `List(…)` 字面量）的每个元素；对象字段之间的 `$map` 空位把一个 `Map[Text, Json]` 合并进该对象。
++       参见 `jacinta.j`。
++   entry .extrapolator   `case j"…" =>` 背后的宏：绑定其空位的 JSON 模式
++       这是 `Json` 的 `Extrapolable` 实例。
++       在 `match` 中，`case j"""{"a": $a}"""` 匹配具有这些字面键的对象，并把每个空位绑定到在该处找到的 `Json`；数组模式按长度匹配，末尾的 `$rest*` 把剩余元素绑定为一个 `Json` 数组。
++       形状不同的文档不匹配该分支。
++   entry .jsonEncodableInText   作为紧凑 `Text` 的文档，无论作用域内是什么格式设置
++       这个 `Encodable in Text` 实例即 `json.encode`：总是紧凑的，因此写在另一种格式中的 `Json` 字段是单行的。
++   entry .discriminatedUnion   用给定名称的字段标记变体的 `Discriminable`
++       `Json.discriminatedUnion[Shape](t"type")` 是键为 `type` 的 `Json.DiscriminantField`：形状为 `{"radius":1.0,"type":"Circle"}`。
++       `discriminables` 包中的 `jsonByTypeDiscriminable` 和 `jsonByKindDiscriminable` 就是针对 `type` 和 `kind` 的这种实例。
++   entry .Encodable   把值转换为 `Json` 的类型类，并携带它产生的形状
+
+% 1 1 0 03c6d4447081bf5816b12413e0ca4c90
+
+@ 0 7 0 018309372929f33603530ca8fd383d07
++         `T is Json.Encodable` 是一个 `Encodable in Json`，它还知道自己的 `Morphology`，即它所写内容的与格式无关的形状，因此从类型派生的 JSON Schema（`JsonSchema.derived`、`verify`）在构造上就与编解码器一致。
++         `value.in[Json]` 解析到的就是它。
++         伴生对象中有针对原始类型、`Text`、`Unit`、`Ordinal`、`Optional`、`Option`、`List`、`Set`、`Sequence`、`Map` 和 `Json` 的实例，并为任何 case class、枚举或 sealed 层次结构派生实例（`.encodable`）；具有 `Encodable in Text` 的类型编码为 JSON 字符串。
+
+@ 0 2 0 1da1e833213699ba1cdbc528189d3308
++         自定义实例用 `.apply` 构建，以 thunk 给出形状，以 lambda 给出编码，并应放在该类型的伴生对象中：
+
+% 2 1 0 10f56ba11949f4470b3d11c18f03f6d5
+
+% 3 1 0 0f9d805bdde3c2d410bcd1ab64ec16ac
+
+% 4 1 0 07ef3fb4df9337050756162d18f103c1
+
+% 2 1 0 140cb804efb123b60984d73b0275ce6d
+
+% 4 1 0 123da1c7ab11c1ff11595a04f3af5f23
+
+% 0 1 0 03ed632429cb2e9a1a1a9dc755f5123a
+
+% 0 1 0 0e4d22e2903e23cc047e6fb4ce794bb4
+
+% 0 1 0 1a06e9c65200294e065df30af9349ca4
+
+% 1 1 0 0bd31b4aeaedb1370630d17de5ae3260
+
+@ 0 2 0 0adcf9a52b1ee8e30cd0a7e29ce7ab44
++         派生的编码器对每个字段使用作用域内针对该字段类型的实例；若只想覆盖某一个字段，可以用 `Specific over Json.Encodable` 指明路径。
+
+% 1 1 0 0613585f5ab534bb1bfe7497916304d8
+
+% 0 1 0 1783b7ee37e793521ceeeb1ea1c6c8ae
+
+@ 0 7 0 0a651c5bce66b7660f80f75f8e151c27
++     entry .apply   由形状 thunk 和编码 lambda 构成的编码器
++         `Json.Encodable(() => shape)(value => json)`。
++         形状是一个显式的 thunk，因此递归派生可以推迟它；对于 schema 机制不应约束的任何内容，`Morphology.Any` 是诚实的形状。
++     entry #shape   该编码器所写内容的 `Morphology`
++     entry #Form   该编码器的目标格式：`Json`
++   entry .Decodable   从 `Json` 读取值的类型类，并携带它期望的形状
+
+% 1 1 0 190b8d9e790e233814942e87c0d21382
+
+@ 0 8 0 1eadeb2645b62e0b155df081b5bc5261
++         `T is Json.Decodable` 是一个 `Decodable in Json`，它还知道自己的 `Morphology`，因此 `verify` 和 schema 机制检查的正是解码器所读取的内容。
++         `json.as[T]` 和 `read[T in Json]` 解析到的就是它（后者经由树，除非 `T` 还具有 `Json.Parsable`）。
++         伴生对象中有针对原始类型、`Text`、`Unit`（只接受 `null`）、`Ordinal`、`Memory`、`Optional`、`Option`、`List`、`Set`、`Sequence`、`Map` 和 `Json` 的实例，并为任何 case class、枚举或 sealed 层次结构派生实例（`.decodable`）；具有 `Decodable in Text` 的类型通过它从 JSON 字符串解码。
+
+@ 0 4 0 13d92c67e6158a961672ef327688427e
++         每个实例都通过作用域内的 `Tactic[Json.Error]` 抛出 `Json.Error`：种类错误的值是 `NotType`，对象缺少的必需字段是 `Absent`，越过末尾的数组索引是 `OutOfRange`。
++         在累积式策略下，每个失败的字段都会连同其 `Json.Focus` 一起报告。
+
+% 2 1 0 18d65fc29b8664a803c33f0b6db411a7
+
+% 3 1 0 00cd5f8983f244000405fcdfba46a33f
+
+% 4 1 0 1c5627dd70ff57bf06dfde711533f4c5
+
+% 2 1 0 1ef37705db344e9a176aab26b2bc3341
+
+% 4 1 0 1106e977e69c4392161306fb4b02a219
+
+% 0 1 0 1d0c5b3ea5fe81731e5caf5bf5c7b630
+
+% 0 1 0 1dfde200ce9db517104096ecdf52c4b1
+
+% 0 1 0 030c8200786c6086127fde8e96dd023b
+
+% 1 1 0 034cc7ae74d0f8261692bab4e6f1d546
+
+@ 0 4 0 15eac6e12fbe8f6e09843ef4a983a4ad
++         既有 `Reflection` 又有手写 `Json.Decodable` 的 case class，在使用 `read[T in Json]` 时会通过派生被*直接*读取，从而与自定义解码器不一致；只需一行即可补救：在旁边写上 `given T is Json.Parsable = Json.Parsable.fromDecodable(…)`。
+
+% 1 1 0 0fe2ea739bc48d5c0efca54527e1f369
+
+% 1 1 0 0bc581c41a3a3f7c0f82945d81078243
+
+% 0 1 0 1868fc98b0df530602c4b073b8b1e2ec
+
+@ 0 51 0 0c665faa795172280d0464420a399147
++     entry .apply   由形状和解码函数构成的解码器
++         `Json.Decodable(shape)(json => value)`，其中解码函数可以是任何 `Decodable in Json`，或作用于 `Json` 的 lambda。
++         该 lambda 通过解析它时所用的战术抛出 `Json.Error`。
++     entry #shape   该解码器所读内容的 `Morphology`
++   entry .boolean   把 JSON 布尔值解码为 `Boolean`
++       对其他任何值抛出 `Json.Error(NotType(…, Boolean))`。
++       每个原始类型的解码器都捕获解析它时所用的 `Tactic[Json.Error]`。
++   entry .double   把 JSON 数字解码为 `Double`，接受任何数值形式
++   entry .float   把 JSON 数字解码为 `Float`
++   entry .long   把 JSON 数字解码为 `Long`；小数会被截断
++   entry .int   经由 `Long` 把 JSON 数字解码为 `Int`
++   entry .ordinalDecodable   把 JSON 数字解码为 `Ordinal`，从零开始计数
++   entry .text   把 JSON 字符串解码为 `Text`
++       对其他任何值抛出 `Json.Error(NotType(…, String))`：数字不会被悄悄地渲染为文本。
++   entry .string   把 JSON 字符串解码为 `String`
++   entry .unit   把 JSON `null` 解码为 `()`，不接受其他任何值
++       不是 `null` 的值抛出 `NotType(found, Null)`，缺失值抛出 `Absent`。
++   entry .jsonDecodable   `Json` 解码为它自身：`json.as[Json]`
++       它的类型是普通的 `Decodable in Json`，从而胜过 distillate 的通用恒等实例；嵌套在集合或 `Optional` 中的 `Json` 则改为经由 `.decodable`。
++   entry .option   解码 `Option[T]` 字段，与 `.optional` 相同，但产生 `None`
++       适用同样的三种 `optionalityOptions` 方针：缺失的键或 `null` 得到 `None`，否则得到 `Some`。
++   entry .optionEncodable   编码 `Option[T]`：`None` 编码为缺失，因此对象会省略该字段
++   entry .integralEncodable   把任何 `Integral` 类型编码为 JSON 整数
++   entry .textEncodableInJson   把 `Text` 编码为 JSON 字符串
++   entry .stringEncodable   把 `String` 编码为 JSON 字符串
++   entry .doubleEncodable   把 `Double` 编码为 JSON 数字
++   entry .intEncodable   把 `Int` 编码为 JSON 整数
++   entry .longEncodable   把 `Long` 编码为 JSON 整数
++   entry .booleanEncodable   把 `Boolean` 编码为 JSON 布尔值
++   entry .unitEncodable   把 `Unit` 编码为 JSON `null`
++   entry .ordinalEncodable   把 `Ordinal` 编码为从零开始的 JSON 整数
++   entry .jsonEncodable   `Json` 编码为它自身
++   entry .listEncodable   把 `List[T]` 编码为由其元素组成的 JSON 数组
++       需要一个 `T is Json.Encodable`，按名称传入，以便递归类型可以派生。
++   entry .setEncodable   把 `Set[T]` 按集合的顺序编码为由其元素组成的 JSON 数组
++   entry .seriesEncodable   把 `Sequence[T]` 编码为由其元素组成的 JSON 数组
++   entry .mapEncodable   把 `Map[K, V]` 编码为 JSON 对象，每个键编码为文本
++       键类型需要 `Encodable in Text`，值类型需要 `Json.Encodable`。
++   entry .array   在作用域内有 `Factory` 时，把 JSON 数组解码为任何 `Iterable` 集合
++       每个元素都在自己的 `Json.Focus`（`#/items/3`）处解码，因此在累积式策略下每个错误的元素都会被报告。
++       需要 `Tactic[Json.Error]` 和 `Foci[Json.Focus]`。
++   entry .listDecodable   把 JSON 数组解码为 `List[T]`
++   entry .setDecodable   把 JSON 数组解码为 `Set[T]`
++   entry .seriesDecodable   把 JSON 数组解码为 `Sequence[T]`
++   entry .map   把 JSON 对象解码为 `Map[K, V]`，每个键从文本解码
++       键类型需要 `Decodable in Text`；`Map[Text, Int]` 读取 `{"a": 1, "b": 2}`。
++   entry .Parsable   直接从 JSON 词法单元读取值、不构建树的类型类
+
+% 1 1 0 0177bc860a69bd2b1cfeba09546c9500
+
+@ 0 9 0 08d2b2f280ac38bd0baca2ef4022684d
++         `T is Json.Parsable` 从 `Json.Reader` 消费词法单元，而不是遍历一个 `Json`，因此 `read[T in Json]`（以及作用于任何流的 `read[T in Json]`）无需具体化树即可实例化 `T`，省去了内存分配、装箱和第二次遍历。
++         它是直接解析的选择启用接口：一个类型一旦具有实例，就会直接解析，实例可通过 `.derived`、`.staged`、`Inlinable.parsable`、`derives Json.Direct` 或 `import codecs.direct` 获得；没有实例的类型则一切照旧。
++         伴生对象中有针对原始类型的实例（`Json.booleanParsable` 及其同类），以及在元素已选择启用时针对 `Optional`、`Option`、`List`、`Set`、`Sequence`、`Map` 和任何 `Iterable` 的实例。
+
+% 2 1 0 1dd8690f65a998bc0abef6833609141b
+
+% 3 1 0 1ab4cd0029c171d10ecf07ed12fbea85
+
+% 4 1 0 0cb929fd04266d441d8b54bbb1eb5c32
+
+% 6 1 0 089972f66cfab88b1a3ddb0fe531b9b4
+
+% 0 1 0 10698e52d63f7cd81710258d8163f27b
+
+% 0 1 0 137e789fef27efee0a4d695dfe21b34d
+
+% 0 1 0 1670462e3ba9afd617aaf9b148bcc54b
+
+% 1 1 0 0d5a1b3c154f1bd91a2f2c09d21e206d
+
+@ 0 7 0 054e0cd72aa30db61cae6452ea15e3f2
++         手写实例用 `.apply` 从形状和一个以读取器为参数的函数构建；`.fromDecodable` 桥接已有的 `Json.Decodable`，这也是让自定义解码器胜过派生的方法。
++         `optionalityOptions` 方针对直接解析器的作用与对解码器相同，但有一个限制：只有当线上的值*种类*错误、解析器可以整个跳过它时，宽松的故障才会被容忍；种类正确但在内部失败的值已经被部分消费，仍然会抛出错误。
+
+@ 0 1 0 0c36d19d506018c71f8305c54e65f622
++         伴生对象从 `Json.Parsable2` 继承了 `generated`，即 `codecs.direct` 的 given。
+
+% 0 1 0 0b1f59fd93de0d21011ec18ce636bcc7
+
+% 0 1 0 1d93b3249556c2b407010390209b88cb
+
+% 1 1 0 0573ea2643b009e612c46ebd3c68c080
+
+% 1 1 0 1abeb5c89612631815004b89b3be2a08
+
+@ 0 53 0 10ef83d6ee95471d1ed323ec77b193db
++     entry .apply   由形状和一个以 `Json.Reader` 为参数的函数构成的解析器
++         `Json.Parsable(Morphology.Str)(reader => Celsius(reader.string()))`。
++         读取器自带 `Tactic[Parse.Error]`，因此函数体无需任何错误相关的词汇：格式错误或类型错误的词法单元会通过读取调用所处环境中的战术中止。
++     entry .derived   由 wisteria 派生的、针对 case class 或和类型的直接解析器，只需一行即可选择启用
++         `given T is Json.Parsable = Json.Parsable.derived`。
++         字段通过 `Json.Field` 回退链读取，因此嵌套记录也会直接解析；和类型的 `Discriminable in Json` 决定词法单元层面的分派方式。
++     entry .staged   在编译时生成的单态解析器，运行时没有任何解释性机制
++         它是 `.derived` 的分阶段执行对应物，语义完全相同：case class 通过有类型的局部槽位和打包字面量的键分派来解析，sealed 和类型则通过一串比较把其标签分派给各变体的解析器。
++         分阶段执行的和类型需要按字段区分的 `Discriminable`（`jsonByKindDiscriminable` 或其他 `DiscriminantField`）；其他形状在构造实例时失败。
++         方法内的局部类、柯里化的 case class、单例变体和泛型和类型仍使用 `.derived`。
++     entry .fromDecodable   具体化一个值并把它交给 `Json.Decodable` 的解析器
++         这是来自树的通用桥接：只有 `Json.Decodable` 的字段类型通过它解析；当自定义解码器必须胜过派生的直接解析器时，它也是一行即可的应急出口：`given T is Json.Parsable = Json.Parsable.fromDecodable(…)`。
++     entry .fromField   作用于任何 `Json.Parsing` 的名义 `Json.Parsable`
++     entry .declared   用 `derives Json.Direct` 生成的类型的解析器
++         这个 given 把作用域内的 `Json.Direct[T]`（即 `derives Json.Direct` 生成的伴生成员）读作 `T` 的 `Json.Parsable`。
++     entry .Direct   生成的解析器的基类
++         生成的代码以中立载体的形式接收读取器，能力在这个边界上断言；生成的解析器实现 `parseCarrier`。
++         不用于手写代码。
++     entry .parseField   从生成的代码中调用字段的解析器
++         这是供生成的解析器使用的支撑点，生成的解析器被拼接进用户模块，只能引用公共成员；不用于手写代码。
++     entry .absentField   字段的缺失值，供生成的代码使用
++     entry .optionality   作用于 `T` 解析器之上的 `Optional[T]` 解析器，应用 `optionalityOptions` 方针
++         线上的 `null` 和缺失的键都读作 `Unset`，除非作用域内的 `Nullity` 或 `Absence` 方针是严格的；在宽松的 `Fault` 下，种类错误的值被整个跳过并读作 `Unset`。
++     entry .boxed   作用于 `T` 解析器之上的 `Option[T]` 解析器，在 `.optionality` 产生缺失时得到 `None`
++     entry .iterable   作用于元素解析器之上的、针对任何 `Iterable` 集合的解析器
++         当 `Foci` 处于活动状态时，每个元素在自己的 `Json.Focus` 处解析，因此每个错误的元素都会累积；惰性的默认设置没有任何开销。
++     entry .dictionary   作用于值解析器之上的 `Map[K, V]` 解析器，每个键从文本解码
++     entry .discriminantField   按字段区分的和类型的标签字段，供分阶段执行的解析器使用
++         对于不是 `Json.DiscriminantField` 的 `Discriminable` 会引发 panic，因为对于其他形状，分阶段执行的和类型没有单一的向前扫描步骤。
++     entry .wireKeys   乘积类型的线上键，已应用 `@name` 重命名
++         这是供分阶段执行的解析器使用的支撑点。
++     entry .missing   对线上没有出现其键的必需字段抛出 `Json.Error(Absent)`
++     entry .focusing   在字段的 `Json.Focus` 处运行字段读取，没有活动的 `Foci` 时被编译消除
++     entry .assemble   通过 `Mirror`，从已填充的值缓冲区按位置构造乘积类型
++     entry .product   派生的乘积解析器的引擎：作用于各字段解析器之上的按键分派解析循环
++         它接受一个由 `(wire key, parser, declared default)` 三元组组成的 thunk，以及一个作用于已填充缓冲区的构造函数，通过 `Json.KeyTable` 分派读取对象：跳过未知的键，用默认值填充缺失的键，并在对象被完全消费后，在各自的焦点处累积每个缺失的必需字段。
++   entry .Parsing   `Json.Parsable` 和 `Json.Field` 的共同部分：带有形状的词法单元解析器
+
+% 1 1 0 0d903fc2281fd45715b2a544bcfb98b7
+
+@ 0 10 0 03090fde6c4998b21077249f93c88ee7
++         作用于 `Json`、带有 `Json.Reader` 的 `distillate.Parsable`。
++         两个子特质本身不添加任何内容：它们存在的目的是让二者互不为子类型，从而避免名义实例与字段回退相互竞争。
++         `#absent` 是该类型的字段在其键缺失时产生的值：除非被覆盖（`Optional` 为 `Unset`，`Option` 为 `None`），否则是一个错误；线上的 `null` 永远不会到达它。
++     entry #Transport   所读取的格式：`Json`
++     entry #Reader   所消费的读取器：`Json.Reader`
++     entry #shape   该解析器所读内容的 `Morphology`
++     entry #absent   缺失键的值：除非被覆盖，否则抛出 `Json.Error(Absent)`
++   entry .Field   直接解析的操作层面：如何读取一个类型的*字段*
+
+% 1 1 0 156b429437bda8d01ae3d5f143c4c9f3
+
+@ 0 30 0 01740ca750e205ce089770098c6d1980
++         乘积派生为每个字段解析的类型类：`Json.Field(parsing)` 适配任何 `Json.Parsing`（`.apply`）。
++         它的实例有用于逐元素情形的 `.fieldOptional`、`.fieldOption`、`.fieldArray`、`.fieldList`、`.fieldSet`、`.fieldSeries` 和 `.fieldMap`，以及通用回退 `.field`，因此即使只有外层类型选择启用，嵌套的乘积类型也会直接解析。
++         它刻意不是 `Json.Parsable` 的子类型，也不用于编写字段解析器以外的用途。
++     entry .apply   把 `Json.Parsing` 适配为字段解析器
++   entry .booleanParsable   直接读取 JSON 布尔值
++   entry .doubleParsable   直接把 JSON 数字读取为 `Double`
++   entry .floatParsable   直接把 JSON 数字读取为 `Float`
++   entry .longParsable   直接把 JSON 数字读取为 `Long`
++   entry .intParsable   直接把 JSON 数字读取为 `Int`
++   entry .textParsable   直接把 JSON 字符串读取为 `Text`
++   entry .stringParsable   直接把 JSON 字符串读取为 `String`
++   entry .jsonParsable   把一个完整的值读取为 `Json`，只具体化这一个值
++   entry .optionParsable   当 `T` 已选择启用时，`Option[T]` 直接解析
++   entry .arrayParsable   当元素已选择启用时，任何 `Iterable` 集合直接解析
++   entry .listParsable   当 `T` 已选择启用时，`List[T]` 直接解析
++   entry .setParsable   当 `T` 已选择启用时，`Set[T]` 直接解析
++   entry .seriesParsable   当 `T` 已选择启用时，`Sequence[T]` 直接解析
++   entry .mapParsable   当 `V` 已选择启用时，`Map[K, V]` 直接解析
++   entry .aggregableDerived   `import codecs.derived`：即使存在直接解析器，也经由树读取
++   entry .readableDerived   `import codecs.derived`：经由树读取整个 `Data`
++   entry .encodableOverDerived   `import codecs.derived`：即使存在打印器，也经由树写出
++   entry .aggregableStrict   `import codecs.strict`：直接读取，否则编译失败
++       与 `.aggregableStrictFailure` 构成一对：具有 `Json.Parsable` 的类型直接读取，没有的类型则产生一个指明该类型的编译错误，而 `codecs.direct` 在这种情况下会回退到树。
++   entry .encodableOverStrict   `import codecs.strict`：直接写出，否则编译失败
++   entry .Printable   把值的紧凑 JSON 文本直接写入写入器、不经过树的类型类
+
+% 1 1 0 094dd22fab0bfe1f1fffa059297e6610
+
+@ 0 5 0 18ee7a6352d523991a33146c925ec5b7
++         它是 `Json.Encodable` 的直接打印对应物：`T is Json.Printable` 把 `T` 逐个词法单元写入一个 `Json.Ast.Out`，即 `show` 背后的文本写入器或 `emit[Data]` 背后的字节级写入器。
++         只要格式是紧凑的，就会通过 `in[Text over Json]` 和 `in[Data over Json]` 使用它；它的接口包括显式实例、`Inlinable.printable[T]`、`derives Json.Direct` 和 `import codecs.direct`。
+
+% 2 1 0 181bd3b517cdc547003258b66d006733
+
+% 3 1 0 0e0cb30450acfbfc0edf1288426e050d
+
+% 4 1 0 016bf5d8c9570a181f6b5599a6210f32
+
+% 2 1 0 0e3a263ec67d17e411f1e8bb3f77ad65
+
+% 1 1 0 0f616d610914a8e707deb5d93142fb34
+
+% 0 1 0 1b74567aba270b5e1e643035bd50b47c
+
+% 0 1 0 10b0e31d43df4e1812f5695b9fa138aa
+
+% 1 1 0 09ffee23d53893d80c4ed7438fc29477
+
+@ 0 1 0 12535557c8835bb80088535047fb9d68
++         `.print` 完整渲染一个值，`.emit` 分块交出它的文本。
+
+@ 0 1 0 1eec7d6c2576d118128996e5ed695efc
++         伴生对象从 `Json.Printable2` 继承了 `generated`，即 `codecs.direct` 的 given。
+
+% 1 1 0 157cd583c9bb938413c9dc60a7953c54
+
+% 1 1 0 05a3378b5c67426d0e1af991e575eb04
+
+@ 0 19 0 1177a2899b238cc31796ef5ef96e7674
++     entry .print   通过值的 `Json.Printable` 得到它完整的紧凑 JSON 文本
++     entry .emit   按 `Buffering` 的容量分块得到值的文本，每块交给一个函数
++         `Json.Printable.emit(value, deliver)`：从不构建整个值的文本。
++     entry .fromEncodable   来自树的桥接：先编码值、再紧凑地写出其树的打印器
++     entry .declared   用 `derives Json.Direct` 生成的类型的打印器
++     entry .Direct   生成的打印器的基类；在中立载体之上实现 `write`
++     entry .writeAscii   写出一个 ASCII 字面量，供生成的代码使用
++         这是供生成的打印器使用的支撑点，生成的打印器被拼接进用户模块；不用于手写代码。
++         `.writeString`、`.writeLong`、`.writeDouble`、`.writeBoolean`、`.writeAst`、`.present` 和 `.writeField` 也是如此。
++     entry .writeString   写出一个带引号并已转义的 JSON 字符串，供生成的代码使用
++     entry .writeLong   写出一个整数，供生成的代码使用
++     entry .writeDouble   写出一个 `Double`，供生成的代码使用
++     entry .writeBoolean   写出 `true` 或 `false`，供生成的代码使用
++     entry .writeAst   紧凑地写出一棵 `Json.Ast` 树，供生成的代码使用
++     entry .present   字段编码后的树是否会被写出：缺失的编码会被省略
++     entry .writeField   通过名义 `Json.Printable` 写出一个字段，供生成的代码使用
++     entry #write   把一个值写入 `Json.Ast.Out`
++   entry .Parsable2   存放 `Json.Parsable.generated`（即 `codecs.direct` 解析器 given）的混入
+
+% 1 1 0 144cad91252274be1daaa343b4ddcb63
+
+% 2 1 0 13aee5105ddddbe01afb68df3dce16b7
+
+@ 0 7 0 113cec6f02b5c5c4196c091989ce2f88
++         不供直接使用；参见 `Json.Parsable`。
++     entry #generated   `import codecs.direct`：在记录需要时提供生成的解析器
++         在 `Codecs.Direct` 下，满足 `Inlinable.Generates` 的类型会在使用处获得生成的解析器，不是记录的类型则回退到派生路径。
++         它的优先级低于 `Json.Parsable.declared`，因此派生 `Json.Direct` 的类型使用它一次性生成的编解码器。
++   entry .Printable2   存放 `Json.Printable.generated`（即 `codecs.direct` 打印器 given）的混入
+
+% 1 1 0 1a13e1e7f82bbeff1e4811d41e704ed4
+
+% 2 1 0 00c53f007d8fad001504645daf3475a4
+
+@ 0 5 0 007fef51d28c6e3c030a88dbf0642f9f
++         不供直接使用；参见 `Json.Printable`。
++     entry #generated   `import codecs.direct`：在记录需要时提供生成的打印器
++         在 `Codecs.Direct` 下，记录会在使用处获得生成的打印器；不是记录的类型走派生路径。
++   entry .Direct   `derives Json.Direct` 的载体：一个类型的生成解析器和打印器，只生成一次
+
+% 1 1 0 0a314529409791941ed6c527b7b7df46
+
+@ 0 4 0 094e6a0b2d3aea530f26c698f6fde51d
++         `case class Play(…) derives Json.Direct` 把 `Play` 的 `Json.Parsable` 和 `Json.Printable` 一次性生成到其伴生对象中，`Json.Parsable.declared` 和 `Json.Printable.declared` 无需导入即可在那里找到它们。
++         以 `Self` 为类型的类型类不能出现在 `derives` 子句中，这就是这个参数化载体存在的原因。
+
+% 2 1 0 17b02b224864878f17432656df6cc6e5
+
+% 3 1 0 07e8ee423beb12a61baa48c9aae292c3
+
+% 4 1 0 1c37d5e5850b6d7f1d2b2721746d8df1
+
+% 1 1 0 09e95ecb3b447b7b14337615ec289628
+
+% 0 1 0 03674de687ae03560c1ca034a44b5075
+
+% 0 1 0 1567144059eeb4500962f15bba2b69dc
+
+% 0 1 0 0a191c1a8e152e281dfa56ad79e1fd10
+
+% 1 1 0 1bb0d27c3539d79a1d9a3633516abac5
+
+@ 0 4 0 0f53c8956bad442f05da84c5ad294391
++     entry .derived   通过 `Inlinable.parsable` 和 `Inlinable.printable` 生成解析器和打印器
++     entry #parsable   生成的 `Json.Parsable`
++     entry #printable   生成的 `Json.Printable`
++   entry .KeyTable   预先计算的对象预期键表，用于在不具体化键的情况下按键分派
+
+% 1 1 0 01ac91bcb2c5ddc90f7b29e0f65f343d
+
+@ 0 10 0 1137b5722c6a99061336bfb976939316
++         每个记录根据其线上键构建一次；`Json.Reader#keyIndex(table)` 根据它把下一个键解析为表索引、`.Unknown` 或 `.End`。
++         不超过十六个可打印 ASCII 字节的键打包成两个 `Long` 进行比较；其他键按名称比较。
++         这是手写解析器按键分派的最快方式。
++     entry .apply   由给定键按索引顺序构成的表
++     entry .Unknown   表中没有的键的索引：`-1`
++     entry .End   右花括号被消费后返回的索引：`-2`
++     entry #indexOf   按两个字确定的打包键的索引
++     entry #indexOfName   按名称确定的键的索引，或 `.Unknown`
++   entry .Reader   词法分析器的受限边界，`Json.Parsable` 通过它消费词法单元
+
+% 1 1 0 0c23d90ed3bceabe163fdd65609a8f8b
+
+@ 0 6 0 1d82ac4437f32ace05b2cef83addf515
++         `Json.Reader` 被交给 `Json.Parsable#parse`，它直接从输入读取 JSON，每次调用读取一个词法单元或一个结构步骤，并跳过前导空白。
++         它自带 `Tactic[Parse.Error]`，因此解析器函数体无需任何错误相关的词汇：格式错误的输入和类型错误的值会通过读取调用所处环境中的战术中止，并附带一个指明预期内容的 `Json.Ast.Issue`，例如 `ExpectedNumber`。
++         它是一个独占的、有状态的能力，在一次 `parse` 调用期间归其所有；它的任何部分都不得保留。
+
+% 2 1 0 1aabdced9c33592b0c2a062818cbc86c
+
+% 3 1 0 0d54c47e2813b78417998f6514e0c2c1
+
+% 0 1 0 0843c77b25fe644403e9a0df7c04b14f
+
+% 0 1 0 1979bf26ed5a84e118fb59819b19a259
+
+% 0 1 0 164d2af47ea010b1147c1de892e2e7e5
+
+% 0 1 0 15af009dc4945d531d3e58b61551c606
+
+% 0 1 0 1c2fd9b7da508e94042bfedc379491c8
+
+% 0 1 0 03d2b7a62bab0af40d7042186d840795
+
+% 0 1 0 1b66a53bb4809ff516a3989da26e052b
+
+% 0 1 0 182655fe863aee3b1da8b27b21828335
+
+% 0 1 0 092dcf1d0efb3da01e0379919f39145d
+
+% 0 1 0 05133a0337347beb09a8afc602525aa2
+
+% 0 1 0 0e60855f8b6a9c76044b0f8ae86d7718
+
+% 0 1 0 075512e4963b3c8000e090ed97c84ac1
+
+% 0 1 0 012d6e281740eb610e12709dffd9e6e6
+
+% 0 1 0 18322201cf4bf9c9119064ffd13879d0
+
+% 1 1 0 027c9d65592a75f5050dd089b70337c3
+
+@ 0 5 0 067375b2ec9791ca19564c9e017dbc3b
++         在 `#openObject` 之后，`#key` 依次产生每个键，并在右花括号被消费后产生 `Unset`；在 `#openArray` 之后，只要还有下一个元素，`#element` 就为 true。
++         `#value` 把一个完整的值具体化为 `Json`，`#skipValue` 跳过一个值，未知的键就是这样被跳过的。
++         数字的转换方式与 `Json.Ast` 访问器完全相同，因此直接读取和经由树读取产生相等的值。
+
+% 1 1 0 100d33ce2406f1b204772efcb401f7c6
+
+% 0 1 0 13c45f307dd236b30d9c6a71d9c17361
+
+@ 0 36 0 1d873e18786804c500ae95c11340703d
++     entry .KeyEnd   右花括号被消费后 `#keyWord` 的哨兵值
++     entry .KeyOpaque   无法就地扫描的键对应的 `#keyWord` 哨兵值
++     entry .keyNameOf   不透明键的驻留名称，供生成的解析器使用
++     entry #string   把一个 JSON 字符串消费为 `Text`
++     entry #boolean   消费一个 JSON 布尔值
++     entry #long   把一个 JSON 数字消费为 `Long`
++     entry #int   把一个 JSON 数字消费为 `Int`
++     entry #double   把一个 JSON 数字消费为 `Double`
++     entry #bcd   把一个 JSON 数字消费为 `Bcd`，保留每一位数字
++     entry #hasNull   下一个值是否为 `null`，不消费它
++     entry #primitive   根据第一个字节判断下一个值的种类，不消费它
++         在输入末尾或遇到不能开始任何值的字节时为 `Unset`；可选包装器在解析之前把它与字段的形状进行比较。
++     entry #nullValue   消费一个 `null`
++     entry #openObject   消费对象的左花括号
++     entry #key   打开的对象中的下一个键，或在右花括号被消费后为 `Unset`
++         消费分隔符和冒号，使读取器停在值处。
++     entry #keyIndex   根据 `Json.KeyTable` 解析的下一个键，不具体化它
++         即表索引、`Json.KeyTable.Unknown`，或在右花括号被消费后为 `Json.KeyTable.End`。
++     entry #keyWord   打包形式的下一个键，供把键与字面常量比较的解析器使用
++         即打包后的低位字（其高位字来自 `#keyWordHigh`）、`.KeyEnd`，或在键无法就地扫描时为 `.KeyOpaque`，此时调用者改用 `#keyIndex` 步骤。
++     entry #keyWordFirst   供生成的解析器使用的拆分协议中的第一个键步骤
++     entry #keyWordNext   供生成的解析器使用的拆分协议中的后续键步骤
++     entry #keyWordHigh   `#keyWord` 最近扫描的键的高位字
++     entry #openArray   消费数组的左方括号
++     entry #element   是否还有下一个数组元素：为 true 时停在该元素处，右方括号被消费后为 false
++     entry #value   消费一个完整的值，具体化为 `Json`
++     entry #skipValue   消费一个完整的值，不具体化它
++     entry #discriminant   后续对象中任意位置某个键的字符串值，读取器保持原位
++         这是用于判别字段的分派原语，该字段可能出现在对象中的任意位置；当对象没有这个键或其值不是字符串时为 `Unset`。
++     entry #fail   通过读取器的战术中止，附带一个定位于当前偏移量的 `Json.Ast.Issue`
++   entry .Focus   解码器在文档中的位置：一个 JSON 指针，以及一旦得知后的源码位置
+
+% 1 1 0 19dddf7aa8f128981caa4b36e27ac9c8
+
+@ 0 5 0 0185ac33250efad008ebb09091d7c0a8
++         Jacinta 的解码器和解析器在逐层深入时跟踪的焦点类型，使读取 `person.age` 时抛出的错误在 `#/person/age` 处报告。
++         在累积式策略下，每个错误的焦点通过 `prior` 读取；只有在错误真正被渲染时，`#withPosition` 才会填入源码中的 `Json.Ast.Position`（针对用 `parsing.trackPositions` 解析的文档），因此成功路径没有任何开销。
+
+% 2 1 0 13f1f4ca4dd74ff004ee40841f22a169
+
+% 3 1 0 0134ae3a78a54b471631f40dd2740c0e
+
+% 4 1 0 145924dde34db2b2002bdef91b377a9d
+
+% 6 1 0 1e95ae72ddd18fd50fcc8c8511717075
+
+% 0 1 0 189f89963dc28dc10a99fa6314dfb8a2
+
+% 0 1 0 1fb10d99fa04099503e4e9408ac1728f
+
+% 0 1 0 11412dfac4abac620dd4a3a78ae238d4
+
+% 0 1 0 0e4d8c9bd9908bf21996c53c71150c61
+
+% 0 1 0 007acb6de783c4e9081c74990c2bd8ac
+
+% 0 1 0 0db289832fd5c7e508b64ecc4e3c04fa
+
+% 0 1 0 1fc38eb58fce8d740c7009363e0e47d3
+
+% 0 1 0 143203f6adfbba1603ffb0917ce81f32
+
+% 0 1 0 15c566899a03f5c806662f9039b40d9b
+
+% 0 1 0 18b3956083c672ac03e3e936c3d23a21
+
+% 1 1 0 143a3a2e3b17e3390412808c996634cd
+
+@ 0 8 0 140688dc0e45b9a0188543c2d065dd83
++     entry #pointer   指向正在读取的值的 JSON 指针
++     entry #position   值的源码位置，在 `#withPosition` 找到后可用，否则为 `Unset`
++     entry #withPosition   在跟踪位置的文档中查出位置后的焦点
++   entry .PositionIndex   跟踪位置的文档中每个值的源码位置的紧凑记录
++       一个不透明的冻结 `Array[Int]`，由解析器在 `parsing.trackPositions` 下产生，由 `Json#positionIndex` 携带；`json.locate(pointer)` 读取它。
++       其中的任何内容都不需要手动访问。
++   entry .Ast   `Json` 之下的树：JSON 各种类的不透明联合，带有谓词、访问器和解析器
+
+% 1 1 0 004a6b6d5cc3cad6012576eec48136c4
+
+@ 0 9 0 195ea26bab878cc913471fca92d90023
++         `Json.Ast` 是 `Json` 所包装的表示：`String`、数字（`Long`、`Double`、`Bcd` 或打包的 `Int`）、`Boolean`、`Json.JsonNull` 哨兵值、对象（键和值交替排列的冻结 `Array[Any]`）、数组，或表示缺失值的 `Unset`。
++         `Json.unseal(json)` 暴露文档的根节点，`Json.ast(node)` 包装一个节点。
++         这个伴生对象中的扩展方法，即 `isX` 谓词、`.primitive`，以及访问器 `.string`、`.long`、`.double`、`.bcd`、`.number`、`.boolean`、`.array`、`.obj`、`.arrayLength`、`.arrayElement`、`.objectSize`、`.objectKey`、`.objectValue` 和 `.objectIndexOf`，在使用 `Json.Ast` 的任何地方都处于隐式作用域中，而不会进入总括包的命名空间。
+
+% 2 1 0 16e660fa2c6b744c037a76140a3c23de
+
+% 3 1 0 1c1f123a4b44264c0d9b1e546d2bd223
+
+% 4 1 0 0821da1446b9dadd0f8fa3942016a4a4
+
+% 0 1 0 106f35a7f06c75df136955ff00fb3666
+
+% 0 1 0 17afc517ae3eb63e19b508574616c426
+
+% 0 1 0 0abfd8ddea2847311d3fcb02560d54aa
+
+% 0 1 0 0545369a6464a62e0a86b22470f2c764
+
+% 0 1 0 021560dec0cedf471ec9ceb6a8a281ee
+
+% 0 1 0 07b6b4866c2671ab18399d6d47f1dd95
+
+% 1 1 0 17d6a2c273b7283114d3fa28d1334655
+
+@ 0 7 0 12fa72c9e905164f07fc9797d426cb35
++         谓词比原始种类更细：`.isLong` 和 `.isDouble` 区分两种数值表示，`.isBcd` 和 `.isSmallBcd` 区分两种打包表示，`.isNumber` 涵盖全部四种。
++         对种类错误的节点，访问器抛出 `Json.Error(NotType(found, expected))`，对缺失的节点抛出 `Absent`。
++         `Json.Ast` 也是 zephyrine 的一个 `Format`，这为它提供了每个解析错误都携带的 `Position` 和 `Issue` 类型。
++         `.parse` 中的底层解析器从字节构建树；普通的读取则经由 `read[Json]`。
+
+% 0 1 0 1e402834a9e85f5212a8982919cec48e
+
+% 0 1 0 0ad48ed24b943e171c813c2f780d3821
+
+@ 0 24 0 0418861971fdfb840548b5dcd7e680b5
++     entry .name   格式的名称，`JSON`
++     entry .apply   把已经是树的表示形式的原始值包装为 `Ast`
++     entry .obj   由并行的键数组和值数组构成的对象节点，或对象节点的键和值
++         有两个重载。
++         `Json.Ast.obj(keys, values)` 从并行数组构建对象节点；扩展方法 `node.obj` 以两个并行数组返回对象的键和值，对其他任何种类抛出 `Json.Error`。
++         该扩展方法会具体化两个新数组；只需少数几个条目时，应优先使用 `.objectKey` 和 `.objectValue`。
++     entry .arr   由其元素构成的数组节点
++     entry .bcdArr   打包 `Long` BCD 形式的数字数组
++     entry .smallBcdArr   打包 `Int` BCD 形式的数字数组
++     entry .arrayPad   填充偶数长度数组、使其能与对象区分的哨兵值
++         它从不属于数组的可见内容；`.arrayLength` 不计入它。
++     entry .parse   从 `Data` 或 `Data` 数据块的迭代器解析出一棵树
++         有四个重载，每个都采用作用域内的 `NumberMode` 并抛出 `Parse.Error`：作用于单个 `Data` 或被消费的 `Iterator[Data]`，各自带或不带 `holes`，后者接受 `j"…"` 插值器的空位标记。
++         它是 `read[Json]` 的底层引擎；公开的读取经由 `Aggregable` 实例。
++     entry .parserAggregable   从 `Data` 流读取裸 `Json.Ast`，抛出 `Parse.Error`
++     entry .showable   按作用域内的 `Json.Formatting` 把节点渲染为 JSON 文本
++         这是唯一的序列化器：`Json.showable` 和 `Json.emit` 都经由它。
++         数字直接从其 BCD 半字节写出，因此解析器所见的每一位数字都得以保留。
++     entry .inspectable   节点的调试渲染：其紧凑文本，标记为 `ᵃˢᵗ`
++         用于把裸节点与包装它的 `Json` 文档区分开。
++     entry .Out   `Json.Printable` 或序列化器写入的写入器：文本或 UTF-8 字节
+
+% 1 1 0 0fe04a524b44de661295599302302588
+
+@ 0 12 0 055f661740ec0194099295448080b380
++           一个独占的、有状态的能力，每种词法单元对应一个方法。
++           它的两个实现都是内部的：`show` 和拉取式 `emit` 背后的文本写入器，以及 `emit[Data]` 和 `lend` 背后的字节级写入器。
++           `Json.Printable#write` 的函数体接收一个这样的写入器并调用这些方法。
++       entry #ascii   写出已知为 ASCII 的字面量：标点、关键字、数字
++       entry #raw   原样写出文本，不做任何转义：用于缩进单位
++       entry #string   写出一个 JSON 字符串字面量，带引号并按 RFC 8259 转义
++       entry #long   写出一个整数
++       entry #bcdInt   把打包 `Int` BCD 数字写为规范的 JSON 数字文本
++       entry #bcdLong   把打包 `Long` BCD 数字写为规范的 JSON 数字文本
++       entry #bcd   把 `Bcd` 写为规范的 JSON 数字文本
++     entry .Position   值在源码中的位置：行和列，以及其偏移量和长度
+
+% 1 1 0 035d253a17159bc81cc14822a88e1f96
+
+@ 0 19 0 16697b2a6e59307d0f820aedcc7d26d4
++           JSON 的 `Format.Position`：`#line` 和 `#column` 从 1 开始；`#span` 是从 0 开始的范围。
++           `Parse.Error` 携带一个表示故障位置的 `Position`，`json.locate(pointer)` 为跟踪位置的文档中的值返回一个，覆盖整个值。
++       entry #line   从 1 开始的行号
++       entry #column   从 1 开始的列号
++       entry #offset   从输入开头算起的字符偏移量（如果已知）
++       entry #length   值的文本长度（如果已知）
++       entry #describe   位置的文本形式：`line 2, column 3`
++       entry #span   值的从 0 开始的跨度
++     entry .Issue   JSON 文本可能出现的问题：`Parse.Error` 携带的原因
++         每个分支都通过 `#describe` 给出一条消息：`EmptyInput`（_the input was empty_）、`UnexpectedChar`、`ExpectedTrue`、`ExpectedFalse`、`ExpectedNull`、`ExpectedSomeValue`、`ExpectedColon`、`InvalidWhitespace`、`ExpectedString`、`ExpectedHexDigit`、`PrematureEnd`（_the content ended prematurely_）、`NumberHasLeadingZero`、`SpuriousContent`（完整的值之后还有内容）、`LeadingDecimalPoint`、`NotEscaped`、`IncorrectEscape`、`MultipleDecimalPoints` 和 `ExpectedDigit`。
++         有四个只出现在直接解析路径上，因为在那里有类型的读取器知道自己期望什么：`ExpectedNumber`、`ExpectedBoolean`、`ExpectedObject` 和 `ExpectedArray`。
++     entry .AsciiByte   词法分析器匹配的字节常量
+
+% 1 1 0 14b6334a27ef0cb9014bf345c2755569
+
+% 2 1 0 1000e1b54f1b80dd10efc0a9cce8dc34
+
+@ 0 34 0 071c7d4ce99aa87a13d3c9734b9be197
++           不供直接使用：为解析器的字节级匹配而命名的 ASCII 码点（`Comma`、`Quote`、`OpenBrace` 等）。
++     entry .isNumber   节点是否为数字，采用四种表示中的任何一种
++     entry .isAbsent   节点是否为缺失值，即缺失的键所产生的值
++     entry .isLong   节点是否为以 `Long` 保存的数字
++     entry .isDouble   节点是否为以 `Double` 保存的数字
++     entry .isSmallBcd   节点是否为以最多七个半字节的打包 `Int` 保存的数字
++     entry .isBcd   节点是否为以 `Bcd` 保存的高精度数字
++     entry .isString   节点是否为字符串
++     entry .isBoolean   节点是否为布尔值
++     entry .isNull   节点是否为显式的 JSON `null`
++     entry .isObject   节点是否为对象
++     entry .isArray   节点是否为数组，采用任何一种表示
++     entry .isNumberArray   节点是否为以打包数字形式未装箱存储的数组
++     entry .isBcdIntArray   节点是否为打包 `Int` 形式的数组
++     entry .isBcdLongArray   节点是否为打包 `Long` 形式的数组
++     entry .primitive   节点的 `Json.Primitive`：`Number`、`Boolean`、`String`、`Object`、`Array` 或 `Null`
++         缺失的节点报告为 `Null`。
++     entry .arrayLength   数组节点中的元素个数，不计填充
++     entry .arrayElement   某个索引处的元素，具体化为节点
++         打包的数字如果是能够容纳的精确整数，就解码为 `Long`，否则解码为 `Double`。
++     entry .objectSize   对象节点中键/值对的个数
++     entry .objectKey   某个键值对索引处的键
++     entry .objectValue   某个键值对索引处的值
++     entry .objectIndexOf   通过线性扫描得到某个键的键值对索引，或 `-1`
++     entry .array   数组节点的元素，对其他任何种类抛出 `Json.Error`
++     entry .double   作为 `Double` 的节点，对非数字抛出 `Json.Error`
++     entry .bcd   作为 `Bcd` 的节点，对非数字抛出 `Json.Error`
++     entry .long   作为 `Long` 的节点，对非数字抛出 `Json.Error`；小数会被截断
++     entry .number   作为 `Long | Double | Bcd` 的节点，采用能精确容纳它的那种形式
++     entry .string   作为 `Text` 的节点，对非字符串抛出 `Json.Error`
++     entry .boolean   作为 `Boolean` 的节点，对非布尔值抛出 `Json.Error`
++   entry .Error   当一个值无法按所要求的类型读取时抛出
+
+% 1 1 0 1968c91e487df5210431d0ed44059a98
+
+@ 0 8 0 04c955a595b45ab41de1761f7319c2e8
++         错误 `↯/s.106.1`：_could not access the value because `reason`_，其中 `#reason` 是一个 `Json.Error.Reason`：`NotType(found, expected)`（_the JSON value had type `found` instead of `expected`_，二者都是 `Json.Primitive`）、`Absent`（_the JSON value was not present_：对象缺少的必需字段，或在 `as` 下越过数组末尾的值），以及 `OutOfRange`（_the array index is out of range_，来自 `json(index)`）。
++         每个 `Json.Decodable`、`Json.Parsable` 和 `Json.Ast` 访问器都通过作用域内的 `Tactic[Json.Error]` 抛出它；在累积式策略下，每个错误都会标记上失败字段的 `Json.Focus`。
+
+% 2 1 0 03aa92b955d118b11afdacc1b88dfd23
+
+% 3 1 0 00fefb005b7b7ab10ab2ed708af92dbb
+
+% 4 1 0 0f2a4ce4be461b6c04aa3cb19b7add14
+
+% 6 1 0 169e60c5a8921adf1efbe975c12b5c65
+
+% 0 1 0 1c060c585a34ce42078b84102bba6152
+
+% 0 1 0 187e23c95d5a1c4b049b84ae25aa5d89
+
+% 0 1 0 1d722d76ffad156a13c1eb43d6413247
+
+% 1 1 0 13835ca5be48e6c912d4465d662f56e2
+
+@ 0 3 0 1ef800bfc948271d1f8a700fd0252491
++         格式错误的 JSON *文本*是另一种错误：来自 zephyrine 的 `Parse.Error`，带有 `Json.Ast.Position` 和 `Json.Ast.Issue`。
++         `Json.Provider` 记录的字段则改为抛出 `Json.Provider.Error`。
+
+% 0 1 0 0a017b5db32129c002467580199d0498
+
+% 0 1 0 09fb8ea4ac3e98701f74f77309a803e7
+
+@ 0 1 0 0aa883656761c9d41904688a4a2dd031
++     entry .Reason   值无法读取的原因：`OutOfRange`、`NotType(found, expected)` 或 `Absent`
+
+% 1 1 0 1b9661a7d975c0ac0f8ffdfa2f4f15e0
+
+@ 0 5 0 1bc8dbfd3271cb5e1c69f99e08fa5ab6
++           一个枚举，每个分支有一个编号（1、2 和 3），由 `.communicable` 渲染。
++       entry .communicable   把每个原因渲染为消息
++       entry #number   原因在错误 `↯/s.106.1` 中的编号
++     entry #reason   `Json.Error.Reason`
++   entry .Primitive   JSON 值的六种类型：`Array`、`Object`、`Number`、`Null`、`Boolean` 和 `String`
+
+% 1 1 0 18c06b28ca8535141c960231ee0b2cc0
+
+@ 0 4 0 046f872d835839661713a7eca37e802a
++         它是 `Json.Ast.primitive` 报告的内容，也是 `Json.Error.Reason.NotType` 两侧所指明的内容。
++         `.communicable` 把它渲染为消息。
++     entry .communicable   把原始种类的名称渲染为消息
++   entry .DiscriminantField   标签是与变体自身字段并列的一个字段的标签联合形状
+
+% 1 1 0 12321a66138edc660dfd536c9f206f9b
+
+@ 0 10 0 04c766305992a3fe00501a094a2fadda
++         `{"radius": 1.0, "type": "Circle"}`：一个 `Discriminable in Json`，其标签是变体自身对象中位于给定标注下的一个字段。
++         `Json.discriminatedUnion(label)` 构建一个这样的实例，`discriminables.jsonByTypeDiscriminable` 和 `discriminables.jsonByKindDiscriminable` 是针对 `type` 和 `kind` 的实例。
++         直接解析通过有界的向前扫描找到标签，因此标签不必位于首位；这是 `Json.Parsable.staged` 对和类型唯一支持的形状。
++     entry #rewrite   把标签字段附加到变体的编码上
++     entry #discriminate   读取标签字段，没有时为 `Unset`
++     entry #variant   变体自身的字段，已去除标签
++   entry .DiscriminantWrapper   变体位于以其名称为键的单键对象中的标签联合形状
+
+% 1 1 0 1354b2836009894a1dd05f446299acbe
+
+@ 0 4 0 042318a45c2b8d8b0f6f1d921c359ab1
++         `{"Circle": {"radius": 1.0}}`：对流式处理最友好的形状，因为标签总是第一个词法单元。
++         `discriminables.jsonWrapperDiscriminable` 是适用于所有类型的实例；具有多个键的对象不是有效的变体，会抛出 `Json.Error(Absent)`，而不是猜测所指的是哪个键。
+
+% 2 1 0 14657e0db8d4c82d12f04d041f7322bf
+
+% 3 1 0 1f870ab7116189a900fecf478f36f24c
+
+% 4 1 0 00c105ce6329bac417dc9fd9a80058eb
+
+% 0 1 0 01bf1f32dff7d5561b0f416224eaaaf9
+
+% 0 1 0 064d9cf281bffad31da9d6a2a43059d9
+
+% 0 1 0 175d173166d6deb7103c0165a1683d56
+
+% 0 1 0 170832852def38050d0e2797ac9e1a2a
+
+% 0 1 0 15e9182a07f4c6f41c4b26a277833a93
+
+% 1 1 0 15d6688d02e367d317f4f5e4103c772d
+
+@ 0 4 0 14651bb316283e8506975237035308a9
++     entry #rewrite   把变体的编码包装进以其标签为键的对象中
++     entry #discriminate   单个键，对单键对象以外的任何内容为 `Unset`
++     entry #variant   单个键之下的值
++   entry .DiscriminantEnvelope   标签字段和载荷字段并列的标签联合形状
+
+% 1 1 0 15fe8636aa2b787e02e5e4124f0282be
+
+@ 0 16 0 1cdfe78751ffe4dc18832f1c810ed2ae
++         `{"type": "Circle", "value": {"radius": 1.0}}`，两个字段名由参数给出。
++         `discriminables.jsonEnvelopeDiscriminable` 是 `type`/`value` 实例。
++         直接解析不要求标签位于首位。
++     entry #rewrite   把变体的编码连同其标签封装进信封
++     entry #discriminate   标签字段的字符串值，或 `Unset`
++     entry #variant   载荷字段
++   entry #positionIndex   跟踪位置的文档的 `Json.PositionIndex`，或 `Unset`
++       只有在 `parsing.trackPositions` 处于作用域内时解析的文档才有它；`locate` 和 `locateKey` 读取它。
++   entry #apply   `json(t"key")` 选择一个字段，`json(index)` 选择一个数组元素
++       `json(t"key")` 产生该字段的值；当对象没有该字段时，产生一个缺失的 `Json`（它解码为 `Unset`，解码为其他任何类型时抛出 `Absent`）。
++       `json(index)` 产生从零开始的索引处的元素，越过末尾时抛出 `Json.Error(OutOfRange)`，对非数组抛出 `NotType(…, Array)`。
++       两者都接受一个 `Tactic[Json.Error]`。
++       对于经过 `verify` 针对某个类型检查的文档，`json(index)` 是一个宏，按 schema 为元素指定类型。
+
+% 2 1 0 09ee3e7fbaff7a7c061b1d6175161aec
+
+% 3 1 0 0e08a98c8c2aad1611f274ee56d4b1c6
+
+% 4 1 0 15f49316b97849c20ee786bb2a2ee777
+
+% 0 1 0 1a72f0d92d8c404f108f540d79a5ad34
+
+% 0 1 0 0041163d27bccefc00bbb9127853be2f
+
+% 0 1 0 14483f2f205a19d014ec531ecce88126
+
+% 1 1 0 1dddece4ed1f8f7318fda439bcdfe38b
+
+@ 0 7 0 01994b24482c838c04c28175e7d0031f
++   entry #selectDynamic   `json.field`：在启用动态访问时，把字段作为成员读取
++       这是一个宏。
++       对于普通的 `Json`，它需要作用域内有 `Json is Dynamical`（导入 `dynamicAccess.dynamicJson`，或位于 `dynamically[Json]` 块中），并在运行时读取字段，对缺失的键产生缺失的 `Json`；对于经过 `verify` 针对某个类型检查的文档，它检查该类型具有这个字段，不需要启用器，并按 schema 为结果指定类型。
++       在没有启用器的情况下访问未经验证的文档的字段，会产生一个说明这一点的编译错误。
+
+% 2 1 0 0c15ec755dd49a0a1e56e1e7a287f948
+
+% 3 1 0 1caf1f435a652fb01d1a710a0d0b39e8
+
+% 4 1 0 0ee7ba082ac455851c5d549a8873e7da
+
+% 1 1 0 0c69b0fe979693131d9854b01f8153b9
+
+% 0 1 0 1a61ea502936255417a4247fb74a7040
+
+% 0 1 0 1aec921c36050c781e5e6d1ae036ed3a
+
+% 0 1 0 182fe60298aa60ed06570d62829f8666
+
+% 1 1 0 1b5b66b2c5a4518f0b66dd8298c0c8db
+
+@ 0 11 0 053fd2e274a95341032f175d004e2f47
++   entry #applyDynamic   `json.field(index)`：在启用动态访问时，数组字段中的一个元素
++       `json.items(2)` 背后的宏：先选择字段，再选择元素，启用器规则和已验证文档的类型指定与 `#selectDynamic` 相同。
++   entry #update   `json(index) = value`：替换了一个数组元素的新文档
++       需要启用动态访问、一个 `Json.Error` 战术（对非数组抛出），以及一个 `Encodable in Json` 的值。
++   entry #updateDynamic   `json.field = value` 设置或替换一个字段，`json.field = Unset` 删除一个字段
++       有两个重载，都需要启用动态访问（`dynamicAccess.dynamicJson` 或 `dynamically[Json]` 块），并返回一个新文档：原文档保持不变。
++       值可以是任何 `Encodable in Json` 的内容。
++       两者都不会抛出错误：对非对象的 `Json` 应用任何一个都是编程错误，会直接抛出异常，而不是抛出 `Json.Error`。
+
+% 2 1 0 1b595f80a6f4c8761cb2491e694c9fe2
+
+% 3 1 0 0360f25227aa808e0c33627a6a508626
+
+% 4 1 0 175ce0d762a5070a09357b2552567a33
+
+% 5 1 0 1fb68b7ee70f241317efbcbab3fda54e
+
+% 1 1 0 0d69abb038e62a4113b3e4efe6e8e15a
+
+% 0 1 0 12fc171415de26ff1806b7e7d685692a
+
+% 0 1 0 07e9cf8804b1a02e09223daa8bf0e63a
+
+% 0 1 0 0ec3583bd81839440074c224b49c209b
+
+% 1 1 0 1284a1fee2a8e5501f66baee1b9f1761
+
+@ 0 6 0 18af94bc7740f8ba1a274236494ccf40
++   entry #as   把值解码为 Scala 类型：`json.as[Person]`
++       为该类型解析一个 `Decodable in Json`，即任何 `Json.Decodable`，因此包括原始类型、集合、`Optional`，以及通过派生得到的每个 case class 和和类型；它需要 `Tactic[Json.Error]` 和 `Foci[Json.Focus]`。
++       解码之后，对于跟踪位置的文档，在累积式策略下登记的任何错误的焦点都会补充上该值的源码位置。
++       在来源上调用 `read[T in Json]` 是一步完成的形式。
+
+% 2 1 0 04d23bc60579db9516d772ab32a36fdc
+
+% 3 1 0 1211269d579d675a0a31b655e64b6694
+
+% 4 1 0 15aff9e3ffdb6b22043d51670eabb885
+
+% 0 1 0 1a7632430ed1405e1931642babd375e1
+
+% 0 1 0 06aa2af5cb8c4cb6169a62c66e7f410b
+
+% 0 1 0 09510feb718a45bb1c00b7a61a04ea35
+
+% 0 1 0 02dd5e9c8e97319e0ad9aae3197c72b9
+
+% 1 1 0 1b088156da9b48471a07ade198bf7299
+
+@ 0 1 0 0fed892d257d1c1b0d9c7facaf85f422
++ entry .Json1   持有 `Json` 伴生对象中直接路径 given 的混入
+
+% 1 1 0 161dd79670a4dfeb0a3bed23610cbda6
+
+% 2 1 0 0f5281ddfcad73381cad84e17e22223e
+
+@ 0 16 0 0ef47631e76c3cbe1b95188f57460bf4
++       不供直接使用：`object Json` 的 given 优先级链中的一层，位于 `Json2` 之上。
++       持有 `aggregableParsed`、`readableParsed`、`encodableOverPrinted`、`aggregableStrictFailure` 和 `encodableOverStrictFailure`，文档见下文；`object Json` 继承它们。
++   entry #aggregableParsed   只要 `T` 有 `Json.Parsable`，就直接从流执行 `read[T in Json]`
++       直接读取路径，位于 `.aggregableDirect` 之上：输入（单个块或一个流）通过 `Json.Reader` 就地解析，实例直接读取的部分不会构建树。
++       在 `parsing.trackPositions` 下，解析错误携带真实的源码坐标。
++       需要一个 `Tactic[Parse.Error]` 和一个 `PositionTracking`。
++   entry #readableParsed   直接从整个 `Data` 执行 `data.read[T in Json]`，无需把它包装成流
++   entry #encodableOverPrinted   紧凑格式时，由 `Json.Printable` 直接写出 `value.in[Text over Json]`
++       位于 `.encodableOver` 之上：只要作用域内的 `Json.Formatting` 是紧凑的，具有 `Json.Printable` 的类型就直接写成文本，不经过树；缩进格式仍通过树渲染，生成的打印器不写缩进格式。
++   entry #aggregableStrictFailure   `codecs.strict` 对没有直接解析器的类型给出的编译错误
++   entry #encodableOverStrictFailure   `codecs.strict` 对没有直接打印器的类型给出的编译错误
+
+@ 0 1 0 1949eaa180486f4319d26b58c949da78
++ entry .Json2   持有 `Json` 伴生对象中派生路径和逐元素 given 的混入
+
+% 1 1 0 006b4a00cb8e24f81a884040af94de8f
+
+% 2 1 0 1292185f5011bec006e9defbbfd98de0
+
+@ 0 45 0 1ff572a940c1e25c03b46390b63d2141
++       不供直接使用：`object Json` 的 given 优先级链中的一层，位于 `Json3` 之上。
++       持有 `decodable`、`encodable`、`optional`、`optionalEncodable`、`bytes`、各个 `field…` 实例、`optionalParsable`、`encodableOver`、`encodableOverData`、`aggregableDirect` 以及三个派生对象，文档见下文；`object Json` 继承它们。
++   entry #optionalEncodable   编码 `Optional[T]`：`Unset` 编码为缺失，因此对象会省略该字段
++   entry #optional   解码 `Optional[T]` 字段：按作用域内的方针，缺失或 `null` 读作 `Unset`
++       缺失的键读作 `Unset`，显式的 `null` 读作 `Unset`，内部解码器拒绝的值会抛出错误。
++       每一项都是一个方针，在解析时从 given 读取：`Decodable.Absence in Json`、`Decodable.Nullity in Json` 和 `Decodable.Fault in Json`，默认值就是上述三种行为，备选则是 `optionalityOptions` 包中的 `strictJsonAbsence`（缺失时抛出 `Absent`）、`strictJsonNulls`（把 `null` 交给内部解码器）和 `lenientJsonFaults`（被拒绝的值在环境战术的 `tolerate` 下读作 `Unset`，因此不累积任何错误）。
++   entry #memory   把 JSON 数字解码为 `Memory`，即字节数
++   entry #fieldOptional   按作用域内的 `optionalityOptions` 方针直接读取 `Optional[T]` 字段
++   entry #fieldOption   直接读取 `Option[T]` 字段
++   entry #fieldArray   在作用域内有 `Factory` 时，直接读取任何 `Iterable` 集合字段
++   entry #fieldList   直接读取 `List[T]` 字段
++   entry #fieldSet   直接读取 `Set[T]` 字段
++   entry #fieldSeries   直接读取 `Sequence[T]` 字段
++   entry #fieldMap   直接读取 `Map[K, V]` 字段，每个键从文本解码
++   entry #optionalParsable   `T` 选择启用时，`Optional[T]` 可直接解析
++   entry #encodableOver   `value.in[Text over Json]`：通过树得到值的 JSON 文本
++       `read[T in Json]` 在写入一侧的镜像：编码为 `Json`，并像 `show` 那样按作用域内的 `Json.Formatting` 渲染。
++       只要存在 `Json.Printable` 且格式是紧凑的，`.encodableOverPrinted` 的优先级就高于它。
++   entry #encodableOverData   `value.in[Data over Json]`：同样的文本，以作用域内 `Codepage` 编码的字节
++   entry #aggregableDirect   通过树执行 `read[T in Json]`：解析整个输入，然后解码
++       适用于有 `Json.Decodable` 但没有 `Json.Parsable` 的类型的读取路径：输入被解析为 `Json`，再用 `as[T]` 解码。
++       需要一个 `Tactic[Parse.Error]`、一个 `Tactic[Json.Error]` 和一个 `PositionTracking`。
++       只要类型有 `Json.Parsable`，`.aggregableParsed` 就会胜出。
++   entry #decodable   通用的 `Json.Decodable`：`Json` 本身、文本编解码器，或根据类型形状的派生
++       `[value] => value is Json.Decodable`：值是 `Json` 本身；或具有 `Decodable in Text`，此时 JSON 字符串通过它解码；或是 case class、枚举或密封层次结构，由 `.DecodableDerivation` 派生。
++       类型伴生对象中手写的 `Json.Decodable` 优先级高于它。
++   entry #encodable   通用的 `Json.Encodable`：文本编解码器，或根据类型形状的派生
++       `[value] => value is Json.Encodable`。
++       具有 `Encodable in Text` 的类型编码为 JSON 字符串；case class 编码为由其字段组成的对象（按 `@name` 或 `@name[Json]` 重命名，`Optional`/`Option` 字段缺失时省略）；枚举或密封层次结构编码为它的变体，并按作用域内的 `Discriminable in Json` 加上标签。
++       类型伴生对象中手写的实例优先级高于它。
++   entry #DecodableDerivation   通过 wisteria 为 case class 或和类型派生 `Json.Decodable`
+
+% 1 1 0 036e83918b4a31571b4d9080b4557c7d
+
+@ 0 9 0 0960658680a1dce90609d80c958ed7f3
++         不供直接使用：由 `.decodable` 到达。
++         积类型从对象解码，每个字段在它自己的 `Json.Focus` 处读取，使每个缺失或类型错误的字段都会累积，同时应用 `@name` 重命名，并用声明的默认值填补缺失的键；和类型通过作用域内的 `Discriminable in Json`（`discriminables` 包，或类型伴生对象中的 `Json.DiscriminantField`/`DiscriminantWrapper`/`DiscriminantEnvelope`）读取鉴别符，并解码它所指明的变体。
++     entry .conjunction   积类型派生：每个构造器参数对应一个字段的对象
++     entry .disjunction   和类型派生：按作用域内的 `Discriminable in Json` 加标签的变体
++   entry #ParsableDerivation   为 case class 或和类型派生直接解析器（`Json.Field`）
+
+% 1 1 0 13c4c9db0b4f83061a600c62d5161ea0
+
+@ 0 9 0 1d0a2fe92fe1cc3a1313f239ad7d1958
++         不供直接使用：由 `Json.Parsable.derived` 和 `.field` 回退到达。
++         积类型通过 `Json.Parsable.product` 解析，借助 `Json.KeyTable` 按键分派；和类型按 `Discriminable in Json` 的形状选择词法单元层面的策略：`DiscriminantWrapper` 的标签是它的第一个词法单元，信封和字段的标签通过有界的向前扫描找到，其他任何 `Discriminable` 则具体化一个值再解码它。
++     entry .conjunction   积类型派生
++     entry .disjunction   和类型派生
++   entry #EncodableDerivation   通过 wisteria 为 case class 或和类型派生 `Json.Encodable`
+
+% 1 1 0 1c9408075f9ac236016b46f299bfa26a
+
+@ 0 5 0 0d9f03f3482401031aeeeb65a72a4e02
++         不供直接使用：由 `.encodable` 到达。
++         积类型编码为对象，省略编码结果为缺失的字段（`Unset` 或 `None`）；和类型编码其变体，并用作用域内的 `Discriminable in Json` 为其加上标签，按 `@name` 重命名变体。
++     entry .conjunction   积类型派生
++     entry .disjunction   和类型派生
+
+@ 0 1 0 12030e526a4e5b020b56873b90b4f620
++ entry .Json3   持有 `Json` 伴生对象中最低优先级回退的混入
+
+% 1 1 0 0c30961b75d5561d1a0498138f05f60d
+
+% 2 1 0 1043de4850346a7302577eb2499e2113
+
+@ 0 13 0 0afbb05cdf365ae3197a5cda5ad3329a
++       不供直接使用：持有通用的 `Json.Field` 回退 `field`，以及 `Json#as` 所解析的适配器 `decodableAtFocus`，文档见下文；`object Json` 继承它们。
++   entry #field   通用字段解析器：直接解析器、文本编解码器、派生，或通往树的桥接
++       与 `.decodable` 的顺序一致，使字段在两条路径上的线上格式完全相同：显式或派生的 `Json.Parsable`；读取 JSON 字符串的 `Decodable in Text`；由 `.ParsableDerivation` 派生的 case class 或和类型；最后是通过 `Json.Parsable.fromDecodable` 的任何剩余 `Json.Decodable`。
++       同时具有 `Reflection` 和自定义 `Json.Decodable` 的类型会在这里派生，与其解码器产生分歧；补救方法是在其伴生对象中放一个 `Json.Parsable.fromDecodable` 实例。
++   entry #decodableAtFocus   把任何 `Decodable in Json` 提升为携带 `Json.Focus` 的版本，供 `as[T]` 使用
++       优先级最低的 given，也是唯一产生 `Json#as` 所召唤的 `at Json.Focus` 形式的 given，因此以 `Decodable in Json` 为界的泛型调用者仍能解析。
+
+@ 0 1 0 02a9ad7300022851052a30431997d5b8
++ entry .Json4   持有 `Json.Provider` 的混入
+
+% 1 1 0 1f2e45874a295f250653458d7aa914df
+
+@ 0 4 0 1576d1c29b542ea51d24b3ce9027a1da
++       不供直接使用：`object Json` 伴生对象链中持有基于 JSON Schema 文档的类型提供器的那一层，文档见下文；`object Json` 继承它，因此它以 `Json.Provider` 的形式使用。
++   entry #Provider   基于 JSON Schema 文档的类型提供器：从匹配的 JSON 得到有类型的记录
+
+% 1 1 0 1dbd08e8c568ea4805dc08ee0cbf4dc2
+
+@ 0 7 0 0c91f57d7fb5cc24033b86e7c3dce355
++         `object Catalogue extends Json.Provider(schema)` 把一个在代码编译时读取的 JSON Schema 绑定到一个结构化类型的记录上，schema 根对象的每个属性对应一个字段，每个字段按其 schema 声明的类型读取。
++         `Catalogue.record(json)` 把一个 `Json` 变成这样的记录，`Catalogue.tuple(json)` 则把它变成一个命名元组，其元素一次全部读取。
++         schema 的类型是 `into[Json.Provider.Schema]`：一个 `Json`，或任何可读作 JSON 的东西，例如类路径资源（`cp"/schemas/x.json"`，需要作用域内有 `Classloader`）或 JSON 文本。
+
+% 0 1 0 0af85d2d4584af9d12bb8605bb68e43c
+
+% 0 1 0 1df5341098744f941cc2cd12aa621758
+
+% 0 1 0 06815e163f7fc80707491a0170cb6846
+
+% 0 1 0 148570702548156d11ae429d8a4dcd87
+
+% 0 1 0 16b286dec9a231491ff30ea03fbffeb7
+
+% 0 1 0 1b0416670fa21d3c171721d1fb5c12de
+
+% 0 1 0 0c08ca4eb4f6c0640d76689a5eb071e0
+
+% 0 1 0 0fbaee85e5db7e6a1aebd2e1cb951217
+
+% 0 1 0 1aa4683cfb21b1570f8af86d2a44d9c3
+
+% 0 1 0 1dd66e09a284bb491d172bf733255752
+
+% 0 1 0 0ae9c347196aec70057dca224f7c025e
+
+% 0 1 0 146c45aebb1aff521ab42c5d9e971758
+
+% 0 1 0 0a228b0b2212401c14a4b73b4554a776
+
+% 0 1 0 0cf14058733fdaaa18b4724b6736862f
+
+% 0 1 0 012505606fa35c621e4e55f96123ac4a
+
+% 0 1 0 0b5b6edd91829e9f16adfd8a0a76cfdc
+
+% 0 1 0 15f9908ba9d6814e1fc2f8134113ee83
+
+% 0 1 0 04e6d4d11ff7aaae105de61e06afb275
+
+% 0 1 0 17b5859336d4af7a1c174d07bc1bfef9
+
+% 0 1 0 16cd3b4a89f4153a0223e014fd6d1373
+
+% 0 1 0 0755e0758c1c42051d22ff59827e1025
+
+% 0 1 0 14d273c1fdf360aa1f5d376e28c577b0
+
+% 0 1 0 1d01165eed3b1a760a21c3bdfecf43f2
+
+% 0 1 0 120137392726cbbc006188b923e66a55
+
+% 1 1 0 1dff330499b789371865684bb4c73248
+
+@ 0 14 0 1e59db7e74b319651513f6efcf6347c6
++         schema 的 `required` 列表中的属性按其类型读取，文档省略它时抛出 `Json.Provider.Error(MissingValue(name))`；其他属性，或类型允许 `null` 的属性，读作 `Optional`。
++         `array` 读作其 `items` 类型的 `List`，带有 `properties` 的 `object` 读作嵌套记录，值由同一个 schema 描述的对象（`additionalProperties`，或单一类型的 `patternProperties`）读作 `Map[Text, T]`，名称不是标识符的属性则通过反引号括起的名称读取。
++         本地的 `$ref` 会被跟随，由对象组成的 `allOf` 会合并它们的属性，`anyOf`/`oneOf` 的备选项（或指明多个类型的 `type`）读作一个 Scala 联合类型，按实际值的种类选择。
++         字符串的 `enum`/`const`、`pattern`、`minLength`/`maxLength` 以及数字的边界在读取字段时检查，通过读取器 `.boundedInteger`、`.boundedNumber`、`.boundedString`、`.pattern` 和 `.enumeration` 完成，JSON 类型错误的值抛出 `JsonType(expected, found)`；每个错误都经过读取该字段的代码的 `Tactic`，因此对每个字段使用 `venture` 的 `validate` 会收集到所有问题。
+
+@ 0 6 0 03fe5e589c2d16f306bab06d3eccbeb7
++         保持为原始 `Json` 的有：无法按值的种类区分的备选项（`oneOf` 中的两种对象形状）、`not` 和 `if`、既没有 `properties` 也没有值 schema 的对象、没有 `items` 或使用元组形式 `items` 的数组、对另一个文档的引用，以及递归引用在其递归点处。
++         根不是带属性的对象时，是编译错误。
++         以每个 JVM 对象都有的方法命名的属性（`notify`、`toString`……）通过 `record.selectDynamic("notify")` 读取。
+
+@ 0 5 0 047ffc64f83102f91b1f20356a1ad57d
++         指明领域类型的格式——`date-time`、`email`、`hostname`、`ipv4`、`uri`、`uuid`……——读作调用处表示该领域的类型，通过导入其接口来选择：`emailAddressInterfaces.soundnessEmailAddress` 使 `email` 字段成为 `EmailAddress`，`uuidInterfaces.soundnessUuid` 使 `uuid` 字段成为 `Uuid`，依此类推。
++         这些读取器是此伴生对象中 `.Reader` 的 given。
+
+% 0 1 0 12be43def6cb9b2b09143400e2a12d26
+
+% 0 1 0 0cbe5fe870e09e150e8e8f3d947c6050
+
+@ 0 38 0 154cb939a8603267058e4f4fa56284d0
++     entry .Reader   提供器的可失败读取器的类型：抛出 `Json.Provider.Error` 的 `Intensional.Reading`
++         `Json.Provider.Reader[label, result]` 是对一个 `Json` 的读取，以 schema 的类型名或格式名作为标注，通过读取该字段的代码的 `Tactic[Json.Provider.Error]` 进行。
++         下面的每个读取器都是这种类型。
++     entry .boolean   把 `boolean` 属性读作 `Boolean`
++     entry .string   把 `string` 属性读作 `Text`
++     entry .integer   把 `integer` 属性读作 `Int`
++     entry .long   把格式为 `int64` 的 `integer` 读作 `Long`
++     entry .number   把 `number` 属性读作 `Double`
++     entry .json   把 schema 未限定为单一类型的属性读作原始 `Json`
++     entry .dateTime   通过作用域内的 `Instantiable across Instants` 读取 `date-time` 字符串
++     entry .date   通过作用域内的 `Instantiable across Dates` 读取 `date` 字符串
++     entry .time   通过作用域内的 `Instantiable across Times` 读取 `time` 字符串
++     entry .duration   通过作用域内的 `Instantiable across Durations` 读取 `duration` 字符串
++     entry .uriReference   把 `uri-reference` 字符串读作 `Text`
++     entry .email   通过作用域内的 `Instantiable across EmailAddresses` 读取 `email` 字符串
++     entry .idnEmail   通过作用域内的 `Instantiable across EmailAddresses` 读取 `idn-email` 字符串
++     entry .hostname   通过作用域内的 `Instantiable across Hostnames` 读取 `hostname` 字符串
++     entry .ipv4   通过作用域内的 `Instantiable across IpAddresses` 读取 `ipv4` 字符串
++     entry .ipv6   通过作用域内的 `Instantiable across IpAddresses` 读取 `ipv6` 字符串
++     entry .uri   通过作用域内的 `Instantiable across Urls` 读取 `uri` 字符串
++     entry .iri   通过作用域内的 `Instantiable across Urls` 读取 `iri` 字符串
++     entry .iriReference   把 `iri-reference` 字符串读作 `Text`
++     entry .uuid   通过作用域内的 `Instantiable across Uuids` 读取 `uuid` 字符串
++     entry .uriTemplate   把 `uri-template` 字符串读作 `Text`
++     entry .jsonPointer   把 `json-pointer` 字符串读作 `JsonPointer`，无法解析时抛出 `Unparsable`
++     entry .regex   把 `regex` 字符串读作 `Regex`，无法编译时抛出 `Unparsable`
++     entry .BoundedInteger   带有 `minimum`/`maximum` 边界的 `integer` 的读取器，抛出 `IntOutOfRange`
++     entry .boundedInteger   `BoundedInteger` 的 given
++     entry .BoundedNumber   带有边界（开或闭）的 `number` 的读取器，抛出 `NumberOutOfRange`
++     entry .boundedNumber   `BoundedNumber` 的 given
++     entry .BoundedString   带有 `minLength`/`maxLength` 的 `string` 的读取器，抛出 `LengthOutOfRange`
++     entry .boundedString   `BoundedString` 的 given
++     entry .Pattern   带有 `pattern` 的 `string` 的读取器，抛出 `PatternMismatch`
++     entry .pattern   `Pattern` 的 given
++     entry .Enumeration   带有 `enum` 或 `const` 的 `string` 的读取器，抛出 `NotPermitted`
++     entry .enumeration   `Enumeration` 的 given
++     entry .Primitives   不依赖 schema 的格式读取原语：提供器在其上添加字段
+
+% 1 1 0 152a4252c34eaa990704d58a8b6e9e35
+
+@ 0 23 0 14155eb60f0501f70cf50e45296293b2
++           一个基于 `Json` 的 polyvinyl `Specification`，其失败类型是 `Json.Provider.Error`。
++           `Json.Provider` 扩展它，带有自身字段的宏（OpenAPI 的 `record()`）在它之上构建记录。
++           它的方法是记录宏为访问、测试和枚举 JSON 值而调用的钩子。
++       entry #access   某个名称下的值；对象缺少该键时为缺失，而不是失败
++       entry #absent   值是否缺失或为 `null`；`null` 类型把字段标记为可选
++       entry #required   某个名称下的值，缺失时抛出 `MissingValue(name)`
++       entry #kind   值的种类，联合类型据此选择备选项
++       entry #elements   数组值的元素
++       entry #pairs   对象值的键/值对
++       entry #entries   某个名称下对象的键值对
++       entry #repeated   某个名称下数组的元素，缺失时为空
++       entry #unoffered   对种类不属于任何备选项的并集值抛出 `UnexpectedKind`
++     entry .fieldsOf   schema 根对象的字段，作为提供器的规范
++         对无法读取的 schema，通过其战术抛出 `Json.Error`；在宏展开时调用它的代码会把它包裹在 `safely(…).or(halt(…))` 中。
++     entry .memberOf   读取更大文档中某个节点所描述之值的成员
++         它的 `$ref` 相对于该文档解析，因此嵌入在文档中的 schema——OpenAPI 文档中引用 `#/components/schemas/…` 的响应 schema——会像单独存在时一样读取。
++         对象读作记录，由对象组成的数组读作重复记录。
++         `limit` 限定遍历最多跟随多少层引用，超过后把引用读作原始 `Json`。
++     entry .Schema   构建提供器所用的 schema：一个 `Json`，或任何可读作 `Json` 的东西
+
+% 1 1 0 0d23e164072c1fbe0c343db0c96e6593
+
+@ 0 8 0 1e20604ed06afca30543f0a45f8d184d
++           `Json.Provider` 的 `into[Json.Provider.Schema]` 参数通过这里的 given 转换其实参：`.json` 用于已解析的 `Json`，`.readable` 用于任何 `Readable to Json` 的来源，例如类路径资源或 JSON 文本，在代码编译时读取。
++           伴生对象从 `.Schema2` 继承 `readable`。
++       entry .json   作为 schema 的 `Json`
++       entry #json   schema 文档
++     entry .Schema2   持有较低优先级 `readable` 转换的混入
+
+% 1 1 0 0dd59583433b3f8b1e47313df8394549
+
+% 2 1 0 1de567ba9cf07ccc0afa2c9f48026f79
+
+@ 0 3 0 05b59acf213737370251f37c2f2df0ea
++           不供直接使用；参见 `Json.Provider.Schema`。
++       entry #readable   任何可读作 `Json` 的来源，作为 schema
++     entry .Error   文档不符合提供器的 schema 时抛出
+
+% 1 1 0 05317af05c72480e109c3edcc4ff50ca
+
+@ 0 10 0 0478e78cb7485c501c8640f5534c500d
++           错误 `↯/s.106.3`：_the JSON was not valid according to the schema because `reason`_，通过读取记录字段的代码的 `Tactic` 抛出，因此 `attempt`、`recover`、`validate` 和 `track` 都能看到它。
++           `#reason` 是一个 `Json.Provider.Error.Reason`：`JsonType(expected, found)`、`MissingValue(name)`（必需的属性缺失）、`IntOutOfRange(value, minimum, maximum)`、`PatternMismatch(value, pattern)`、`NumberOutOfRange(value, minimum, maximum)`、`LengthOutOfRange(value, minimum, maximum)`、`NotPermitted(value, permitted)`（不在 `enum` 中）、`UnexpectedKind(found, offered)`（种类不属于任何备选项的并集值）以及 `Unparsable(value, format)`（无法解析的 `json-pointer` 或 `regex`）。
++       entry .Reason   文档为何不符合，在错误 `↯/s.106.3` 中编号为 1 到 9
+
+% 0 1 0 1fa5966119e8ae1109b0dcda52a971aa
+
+@ 0 8 0 0ac9fded9838cecb03dac275f6f3e2ec
++             九种原因的枚举，由其伴生对象的匿名 `Communicable` 渲染为消息。
++         entry #number   原因的编号
++       entry #reason   `Json.Provider.Error.Reason`
++     entry #schema   构建提供器所用的 schema 文档
++     entry #fields   schema 的根属性，作为 polyvinyl 成员，抛出 `Specification.Error`
++         无法读取的 schema 会被抛出，`record`/`tuple` 宏在使用处以它的消息停止。
+
+@ 0 1 0 1f8870518c02f26111bf90565011b06c
++ entry .JsonPointer   RFC 6901 JSON Pointer：指向文档内部的路径，写作 `jp"#/a/0/b"`
+
+% 1 1 0 06a0c7c688c3a08d0a5c2db9a742c53b
+
+@ 0 6 0 071dfed93e05ee7f18a623266e83327f
++       `JsonPointer` 以 `JsonPointer` 平面上由键和数组索引组成的路径来命名文档中的一个位置：对象是平面的根，指针用 `#apply` 逐段构建，或用 `jp"…"` 插值器书写，后者在代码编译时检查它。
++       它编码为 `#/a/b`（空指针为 `#`），段中的 `~` 和 `/` 转义为 `~0` 和 `~1`，并从同样的文本解码，出错时抛出带有故障偏移量的 `JsonPointer.Error`。
+
+% 2 1 0 0cd6f7feac55858805af628469bf0d6c
+
+% 3 1 0 14c15e6e4c2f782d03adee02e7445b12
+
+% 4 1 0 1455cf2bfb8da60d125d9aeadb438b9a
+
+% 0 1 0 04339478942393060fdb4e2e412be765
+
+% 0 1 0 06b576b3f0358cd2057f00cf9e242ae9
+
+% 0 1 0 07fcee389214814a161305ff7e60896e
+
+% 0 1 0 19369422d506bcd8141c36c8b825cafd
+
+% 1 1 0 0791132f01ff96bc0338eb312e7eac15
+
+@ 0 3 0 050460148678322d08d45675951ff601
++       `Json.Focus` 用指针来指明错误抛出时所在的字段，`locate` 和 `locateKey` 用指针来定位被追踪文档中的位置，`Json.Provider` 用指针来跟随 `$ref`。
+
+% 0 1 0 1ea1b3f9841651b0131421cf67e695ea
+
+% 0 1 0 1dd6fb8a17bb6d1e1446fe17e6bdac6b
+
+@ 0 18 0 0d86aa3131805ca915315168ddb9b1fb
++   entry .Plane   指针路径的平面类型：`JsonPointer` 本身
++   entry .navigable   作为指针段的 `Ordinal`，渲染为从零开始的索引
++   entry .admissible   任何 `Ordinal` 都是允许的段
++   entry .admissible2   任何 `Text` 都是允许的段
++   entry .filesystem   作为 `Filesystem` 的指针平面：以 `/` 分隔，根为 `#`，使用 `~0`/`~1` 转义
++   entry .interpolable   `jp"…"` 背后的宏：在代码编译时解析的指针字面量
++       在展开时复用 `.decodable`，因此格式错误的字面量会在出错字符处成为编译错误：`jp"#/verona~2capulet"` 无法编译。
++   entry .decodable   从文本读取指针，出错时抛出带有故障偏移量的 `JsonPointer.Error`
++       文本必须以 `#` 开头（`ExpectedHash`），非空指针必须接着 `/`（`ExpectedSlash`），每个 `~` 后必须跟 `0` 或 `1`（`BadEscape`）。
++       带有 URL 的引用会被拒绝：库只跟随同一文档内的引用。
++   entry .unsafeParse   解码文本已知有效的指针，供插值器使用
++       接受 `Unsafe` 令牌：`jp"…"` 宏已在展开时解析过字面量，因此运行时的重新解析不会失败。
++   entry .divisible   `pointer / t"key"`：以键段扩展的指针
++   entry .divisible2   `pointer / ordinal`：以数组索引扩展的指针
++   entry .Error   文本不是有效的 JSON 引用时抛出
+
+% 1 1 0 0133047e45c870f106d2c325ba1b6048
+
+@ 0 6 0 0f6cd7912ff243a619b10b81b7ae4902
++         错误 `↯/s.106.2`：_the JSON reference was not valid because `reason`_，带有出错字符的 `#offset`，`jp"…"` 插值器用它来定位其编译错误。
++         原因有 `ExpectedHash`（_a JSON reference must begin with '#'_）、`ExpectedSlash`（_a JSON reference fragment must begin with '/'_）和 `BadEscape`（_a '~' in a JSON reference must be followed by '0' or '1'_）。
++     entry .Reason   引用为何无效：`ExpectedHash`、`ExpectedSlash` 或 `BadEscape`
+
+% 1 1 0 02ed9eb4b540b1920cc5ac5fe850136a
+
+@ 0 7 0 1146f5636c85ebe30883acf32427ecde
++           在错误 `↯/s.106.2` 中编号为 2、3 和 4，由 `.communicable` 渲染。
++       entry #number   原因的编号
++     entry .communicable   把每个原因渲染为消息
++     entry #reason   `JsonPointer.Error.Reason`
++     entry #offset   在引用文本中检测到错误处的字符索引
++   entry #path   作为 `Path on JsonPointer` 的指针
++   entry #apply   以键（`Text`）或索引（`Ordinal`）扩展的指针
+
+@ 0 1 0 06deae85eddb8ff71f576918b193761c
++ entry .NumberMode   对解析器快速路径而言过长的 JSON 数字如何处理
+
+% 1 1 0 05373a88087789c30663b216839dd04d
+
+@ 0 3 0 1665a780bfba12bb0f6bb911ef295bd1
++       最多约十五位数字的数字，无论采用哪种模式，都以相同方式解码为 `Long` 或 `Double`。
++       其余情况由模式决定，模式是一个 given，通过按名称导入 `numberModes` 包中的某一个来选择；`.default` 是 `Full`。
+
+@ 0 8 0 1c4f61b742c171fb01a874af21b35360
++       `Full` 保留每一位数字，把它们累积为二进制编码的十进制数（`Bcd`），代价是为该数字分配一次内存：这是默认模式，因为默默丢失数字不应是默认行为。
++       `Double` 丢弃溢出部分，用开头的数字计算 IEEE-754 `Double`——这是 Jawn、Circe、Jsoniter 和 Jackson 的做法——适用于同等条件的吞吐量比较，或已知处于双精度范围内的数据。
++       `Bcd` 同样丢弃溢出部分，但把原始的打包累加器作为 `Long` 输出，完全不分配内存：这个 `Long` 携带的是 BCD 半字节而不是数字的值，因此这些数字必须被视为不透明的。
+
+% 2 1 0 0c22387405fb97bb0b904b147ae60d4b
+
+% 0 1 0 0fb1cb441cea031803684f135a2f7439
+
+% 1 1 0 0834f067d532384d05a7ee237f6700bb
+
+% 2 1 0 136ce8ad9c70f7b81d09d9fe391579b5
+
+% 3 1 0 0f9cfdb15b693a311354285b0da41222
+
+% 0 1 0 1892927cc87c82910ed9b4e3935fcca8
+
+% 0 1 0 1c377db432e7559e1ccc28fde4db55f8
+
+% 0 1 0 1075188337b2a3690133bc29e76644b6
+
+% 1 1 0 16d130c4befa20100ea3dc5421bd39cb
+
+% 2 1 0 10cb61b6c05933c516e976ef4e8b09f4
+
+% 3 1 0 071272a9107f2f8501ddd954bc8e276e
+
+% 0 1 0 18551c27c7ec1e450025aa8e0b4f710c
+
+% 0 1 0 14a5a63dfd05de0c1f18e612709fc42f
+
+% 1 1 0 130216e84b61de07035445c617a4777e
+
+% 2 1 0 16c79121bbec9bb61e577c34dced562f
+
+% 0 1 0 100438f3e3ca07ad177b0f3579ad8c25
+
+@ 0 1 0 144f4e1a67a8d7d91ec5944c8dc0250c
++   entry .default   未导入任何模式时作用域内的模式：`Full`
+
+@ 0 4 0 16c968d10581a1ad122d5d14fa383478
++ entry .Bcd   hypotenuse 的二进制编码十进制数，在此导出：长 JSON 数字的精确形式
++     `export hypotenuse.Bcd`。
++     在默认的 `NumberMode` 下，位数超出 `Long` 或 `Double` 所能容纳的数字解析为 `Bcd`，`Json.Ast.bcd` 则把任何数字读作 `Bcd`。
++     它自己的页面在 `hypotenuse` 包中。
+
+@ 0 6 0 0af83277a18079db1a43023f097ffc52
++ entry .j   `j"…"` 插值器：在编译时检查的 JSON 字面量，支持空位、展开和合并
++     `j"""{"a": $x}"""` 是一个 `Json`，其语法在代码编译时已经检查过——例如末尾多余的逗号会在该字符处报告——其空位在运行时填充。
++     空位可以替换为任何 `Encodable in Json` 的值；在数组中，`$xs*` 拼接集合的每个元素；在对象的字段之间，`$map` 空位合并一个 `Map[Text, Json]`。
++     在 `match` 中，同一个插值器是一个绑定其空位的模式。
+
+% 2 1 0 0feb25d290e467950ee18400550879d9
+
+% 3 1 0 146eee44ba38c38501838c82057ff42c
+
+% 0 1 0 10b3cc7404c7981b04ce6c456331b843
+
+% 0 1 0 09ecb89c41ab418c0aa61168b826d51a
+
+% 0 1 0 057140e12f9972fe130d92f75b7bba52
+
+% 0 1 0 1b61a221916f6d2015ad19f3815dead0
+
+% 0 1 0 184453bdd45202ea06a3e5d20b066443
+
+% 0 1 0 07eb816bd3dc14171d1b085b6297512d
+
+% 0 1 0 14834d871c2853be031ed9df63599bc1
+
+% 0 1 0 1cbb2f4b05f6be0701adf2c35acb9f93
+
+% 0 1 0 03d05e39e035de6f1915b641b9db4c05
+
+% 0 1 0 13bcbf275356fb271e6b2778bb6d83f4
+
+% 1 1 0 1545a159f16981cb09bd554657caa88c
+
+@ 0 4 0 110045075cad50c312ddfdd3af98003d
++ entry .jp   `jp"…"` 插值器：在编译时检查的 JSON Pointer 字面量
++     `jp"#/verona/capulet"` 是一个 `JsonPointer`，在代码编译时解析，因此格式错误的指针——不以 `#` 开头，或带有错误的 `~` 转义——会在出错字符处成为编译错误。
++     这个插值器不接受替换。
+
+% 2 1 0 01330de50b446d7b07dc1463bfa79a73
+
+% 3 1 0 08a0413fbd18d1a5174c05f78143a87d
+
+% 0 1 0 17c0402aeefc23131427996f352bb7f3
+
+% 0 1 0 144e93d4a1ba752c0de661c947ed8330
+
+% 0 1 0 01643e6b54dfeb5813d808241f0f69f4
+
+% 1 1 0 085834c3423828d717e3bc40ec0da7b6
+
+@ 0 1 0 18e06af7b32de902006df1f1ecba6fa8
++ entry .formatting   两种标准的 `Json.Formatting`，每一种都是按名称导入的 given
+
+% 1 1 0 07087f3caaf4e8490ffdaae0105cc7f3
+
+@ 0 3 0 1f6bfc53a15f741908d22454dee6a789
++       `show`、`emit`、`in[Text over Json]` 以及 HTTP 相关的 given 都需要一个 `Json.Formatting`，而 `import soundness.*` 不会引入任何一种；需要按名称导入一种。
++       自定义格式为 `Json.Formatting(indent, trailingNewline)`。
+
+% 2 1 0 0f80c8375e5047011b99cced69b2164d
+
+% 0 1 0 0595e598221146b1165c699509e4abe3
+
+% 1 1 0 12b1f2e7519fc2c708515716d18d30a0
+
+% 2 1 0 0308e45cd2f79ed6011e3b3aee16bbab
+
+% 0 1 0 16076a93c42759c712b3abfdd00e89ad
+
+% 0 1 0 094f9f1fdca7e454089eac838d0fb300
+
+% 0 1 0 111d95d52c2ff33b11ad745df3b0669b
+
+% 1 1 0 0e5468dda34c539e0927db36e44bd2b2
+
+% 2 1 0 124a90d7384ad360019e9671381ff0cb
+
+% 0 1 0 04c30a63fd2859fc0136135e1abfa1bd
+
+% 0 1 0 045527b77fa78d66170a7e698386929c
+
+% 1 1 0 11b7ca06068d6ecb0bffa5f9ad97b18e
+
+% 2 1 0 1e51759e245a8ec00ccd5080a6bba20a
+
+@ 0 2 0 0f67f6b0deeba68b1e9c5ac6c343b352
++   entry .compactJsonFormatting   没有空白，没有末尾换行：`{"a":1}`
++   entry .indentedJsonFormatting   每层嵌套两个空格，成员之间换行，没有末尾换行
+
+@ 0 1 0 126e1420bfad52a001d00b87c1867b36
++ entry .numberModes   三种 `NumberMode`，每一种都是按名称导入的 given
+
+% 1 1 0 00c667b1d81867c31c699936b45abdd2
+
+@ 0 5 0 03e902b7cb817259119fb53f46aa0297
++       对 `Long` 或 `Double` 而言过长的数字如何解析：参见 `NumberMode`。
++       不导入时，默认为 `fullNumberMode`。
++   entry .fullNumberMode   每一位数字都作为 `Bcd` 保留；默认模式
++   entry .doubleNumberMode   开头的数字作为 `Double`，与 Jackson 和 Circe 的做法相同
++   entry .bcdNumberMode   原始的打包累加器作为不透明的 `Long`，不分配内存
+
+@ 0 1 0 1b6b944cca26b3260269bcd7e72b913f
++ entry .optionalityOptions   `Optional` 或 `Option` 字段如何读取缺失的键、`null` 或被拒绝的值
+
+% 1 1 0 0c635436c6735fc21de622e806180e9a
+
+@ 0 11 0 134ac8b18d41b2c51b7d36a22a5dd525
++       `Optional`（或 `Option`）字段要回答三个问题，每个都是一个带默认值的独立 given：缺失的键读作 `Unset`（`lenientJsonAbsence`，默认；`strictJsonAbsence` 抛出 `Json.Error(Absent)`）；显式的 `null` 读作 `Unset`（`lenientJsonNulls`，默认；`strictJsonNulls` 把它交给内部解码器，后者会像对待其他任何字段一样拒绝它）；内部解码器拒绝的值是一个错误（`strictJsonFaults`，默认；`lenientJsonFaults` 在环境战术的 `tolerate` 下把它读作 `Unset`，因此不累积任何错误）。
++       每一项都可以单独改变。
++       直接解析器和分阶段解析器遵循同样的方针，但有一个限制：只有当线上的值种类错误、解析器可以整体跳过它时，宽松的故障处理才会容忍它；种类正确但在其内部失败的值仍会抛出错误。
++       声明的默认值 `Unset` 与没有默认值无法区分，因此它不能满足严格的缺失方针。
+
+% 2 1 0 163f14948b92f63b19aa9e7bdbb92fa1
+
+% 0 1 0 1a64040dc63845e7121043dd67139bee
+
+% 1 1 0 18e1e17281ab535916c544b433820b5e
+
+% 2 1 0 10daf487394b362d0a7dfc1520c696de
+
+% 3 1 0 18028c8a797c631f0db117c5d6113570
+
+% 2 1 0 1d13c7ec1a8bf31e0014f08d4f0ced3c
+
+% 0 1 0 12b456e126bf3acd09a1191f0899d7e0
+
+% 0 1 0 178cf4adb014fd880bd8ae8e1a269bfa
+
+% 0 1 0 0a2e75481a97b7e31f0b4af842442674
+
+% 0 1 0 08cf580088938a470696e6e0a7198fd8
+
+% 1 1 0 0c4b511dbe2f67191e7306802be6583a
+
+% 2 1 0 0af76077936f5100097a156d594d003f
+
+% 3 1 0 03d198faee4dda8a142bd64d7aefbc86
+
+% 0 1 0 0005a1e84f5f49d71a7e315ad826f30f
+
+% 2 1 0 13305fb3c7230d6810bcb68956fd1e1e
+
+% 0 1 0 04a1d41166cf48e210df69e983d9dbf9
+
+% 0 1 0 09bcb0d6853524c7077803a92d1c2a43
+
+% 0 1 0 07e253f3624b8da30eab6cc67e48a7b8
+
+% 1 1 0 07efe15c21df60c115ea8ae4dbd88690
+
+% 2 1 0 1756d680ec28f6a5077c212f83658f9d
+
+% 3 1 0 133db89c7e21d089012a04b69db5bd15
+
+% 0 1 0 02484df4ea0a49621fbcff3bc0953b07
+
+% 2 1 0 110c68d17a10de601f2c31f0c6c5c6e1
+
+% 0 1 0 1b5d8d67bce0d7f1132cd9ee0649cb75
+
+% 0 1 0 01fada15b29248351d001b4e6b308dad
+
+% 0 1 0 17f5b2fbd0fdd4d6187da5973c1ea22e
+
+% 1 1 0 0ee7add46e08edf207590826f772d947
+
+% 2 1 0 01bb6839ede799f81d9bc9317563e368
+
+% 3 1 0 1e4557722bdaad6707a253e01f9c9655
+
+% 0 1 0 1e5b6278577d343009236a4e36b9335c
+
+% 2 1 0 14647245c1be288d15048176fe6ac1e5
+
+% 0 1 0 1619231e6b65d5c416b340edd2510c48
+
+% 1 1 0 19666fbc7f19052f0c2e208e6654a0da
+
+% 2 1 0 157f2552799a9ef206944e3391b3ecc4
+
+@ 0 6 0 1135b8ebeafa2bc506908a04abd420b1
++   entry .strictJsonAbsence   缺失的键抛出 `Json.Error(Absent)`，而不是读作 `Unset`
++   entry .lenientJsonAbsence   缺失的键读作 `Unset`；默认
++   entry .strictJsonNulls   `null` 交给内部解码器，由它拒绝
++   entry .lenientJsonNulls   `null` 读作 `Unset`；默认
++   entry .strictJsonFaults   内部解码器拒绝的值抛出错误；默认
++   entry .lenientJsonFaults   内部解码器拒绝的值读作 `Unset`，不累积任何错误
+
+@ 0 1 0 1f77f65868306f47068cda35de0c1b79
++ entry .discriminables   标签联合的标准线上形状，每一种都是按名称导入的 given
+
+% 1 1 0 16dbd94d31e3b82f1b1646d743d0383d
+
+@ 0 5 0 071d76a032447ef6133fcdb2bfc11e7a
++       枚举或密封层次结构编码为它的变体加上一个标签，作用域内的 `Discriminable in Json` 决定标签放在哪里。
++       默认情况下作用域内没有任何一种；需要按名称导入一种，或在类型的伴生对象中给出 `Json.DiscriminantField`、`Json.DiscriminantWrapper` 或 `Json.DiscriminantEnvelope`。
++       每一种都既可通过树也可通过直接解析工作；`Json.Parsable.staged` 只支持字段形状。
+
+% 2 1 0 0291a381d7b0f43a14550e9b5f52696c
+
+% 3 1 0 0cfc6a62a0a6f4e01b68ed7df3e4f82e
+
+% 4 1 0 0856bf498a8233b60a3e5e02657ddd59
+
+% 5 1 0 1ce4c6f8fb74bdd309b846ad9047f015
+
+% 0 1 0 1da16eceb39d1fde1b58c775e81e158a
+
+% 0 1 0 038481e8483316b510f11c01e67fb2d5
+
+% 0 1 0 16cb76c7068fad5a1a36161f492a167e
+
+% 0 1 0 0e7aa43b738bc6240282a300c2dd591a
+
+% 0 1 0 1c03ec27c5ccb6b6041f541d8356d7d7
+
+% 0 1 0 007fb93ee0e0224a1bcd1e0ea135643c
+
+% 1 1 0 145f348212bc9e3b0cd199b5005b6b52
+
+@ 0 6 0 1a9b698954e01e830e4651b81ca2b054
++       `@name` 重命名分支的标签值，就像它重命名字段一样。
++   entry .jsonByTypeDiscriminable   标签放在与变体自身字段并列的 `type` 字段中：`{"radius":1.0,"type":"Circle"}`
++   entry .jsonByKindDiscriminable   标签放在与变体自身字段并列的 `kind` 字段中：`{"radius":1.0,"kind":"Circle"}`
++   entry .jsonWrapperDiscriminable   变体放在以其标签为键的对象中：`{"Circle":{"radius":1.0}}`
++       对流式处理最友好的形状，因为标签总是第一个词法单元。
++   entry .jsonEnvelopeDiscriminable   一个 `type` 字段和一个 `value` 字段：`{"type":"Circle","value":{"radius":1.0}}`
+
+@ 0 1 0 11ecd6b32573a13c1bc2e9c4ca060712
++ entry .dynamicAccess   允许在未经验证的文档上使用 `json.field` 的 given
+
+% 1 1 0 1f30c0af9d94601c120d25c59ffcb42e
+
+@ 0 6 0 1c0bf6ea6ee4c3480747978701e63bb8
++       `Json` 是动态类型的，编译器对它的字段一无所知，因此把字段当作成员来读取会真正丢失检查，默认不启用。
++       `import dynamicAccess.dynamicJson` 在其作用域的剩余部分授予许可 `Json is Dynamical`；同样的许可可以用 `dynamically[Json]:` 限定在一个代码块内，或者用 `dynamically:` 对每种支持动态访问的格式生效。
++       对照某个类型 `verify` 过的文档无需两者即可导航其字段，因为 schema 授予了许可。
+
+% 2 1 0 1f53e96830a72f4b080a337e93a0480c
+
+% 3 1 0 11601f0b94a15c5f1b9aea7565c35323
+
+% 4 1 0 00dac38d6c77b9740d00dc2aaddd11ef
+
+% 0 1 0 06069bf80815a8e61a8e9d26187c8704
+
+% 0 1 0 05ccb8d973276bab0bcd9fa2c1846105
+
+% 0 1 0 00c4a12a659f75cf196b0674c805097c
+
+% 1 1 0 1fadaffd4409620802d3e8c899523d91
+
+@ 0 1 0 157f346b91ac7200010b0ce27b81cda3
++   entry .dynamicJson   `Json is Dynamical`：在其作用域内启用 `json.field`、`json.field = value` 和 `json.lens(…)`
+
+@ 0 1 0 050a1fcf2a92e1840f68b7996d4ba226
++ entry .conversions   从任何 `Encodable in Json` 值到 `Json` 的 `Conversion`，按名称导入
+
+% 1 1 0 0c51f078c5cfdd4c0b20d88f68a4b28e
+
+@ 0 4 0 0a3f97a49d2a495510c2a70945cfe7b4
++       导入 `conversions.encodableToJson` 后，具有编码器的值可以用在任何需要 `Json` 的地方——`Json.make(a = 1)`，或透镜赋值 `json.lens(_.name = t"x")`——而无需写 `.in[Json]`。
++   entry .encodableToJson   对任何 `Encodable in Json` 的 `T` 给出 `Conversion[T, Json]`
+
+@ 0 1 0 09fbfda1f1ec732904dd783331aece47
++ entry .postables   把 `Json` 作为 `application/json` 请求正文发送；仅限 JVM
+
+% 1 1 0 0950c52f0dc016411ef82f9a41edb3ba
+
+@ 0 3 0 06ea9ad95dcc65870be5b3c0aaab3b84
++       `jacinta.http`。
++       这个 given 需要一个 `Codepage` 和一个 `Json.Formatting`，用 `show` 渲染文档，以该代码页编码，媒体类型为 `application/json; charset=UTF-8`。
+
+% 2 1 0 135f34d244480be714b07065928e7d8e
+
+% 3 1 0 1fac54737130458e0325e18e28dc3f51
+
+% 4 1 0 13d200c00b3fe02a1307777e5c3504f6
+
+% 0 1 0 1d18ef6e6172b2cc122e3568b3e9c9fc
+
+% 0 1 0 0ecb5c3023f5baa314b248c9dd122458
+
+% 1 1 0 06bb2cb933115d3e0f9c789e2919b656
+
+@ 0 1 0 05b07e21a6a3bfb0010de69a31e33558
++   entry .jsonPostable   `Json is Postable`：由文档文本构成的请求正文，类型为 `application/json`
+
+@ 0 1 0 09a0ed1bb22e93b8197c2ff095663ce3
++ entry .servables   把 `Json` 作为 `application/json` 响应正文提供；仅限 JVM
+
+% 1 1 0 0e75c4e1dfaa4fb80d49de13841c5b14
+
+@ 0 3 0 09f7dda2565cb9410b0d84481b9ad27b
++       `jacinta.http`。
++       这个 given 需要一个 `Codepage` 和一个 `Json.Formatting`，用 `show` 把文档渲染为定长的响应正文。
++   entry .jsonServable   `Json is Servable`：由文档文本构成的响应，类型为 `application/json`
+
+@ 0 1 0 0678c6ed6abac20d0424710e04aca69c
++ entry .construables   把媒体类型为 `application/json` 的 API 正文读作 `Json`；仅限 JVM
+
+% 1 1 0 0fafc7c6e2b1f3760d301d89fc345dd6
+
+@ 0 2 0 16c6730876bf322e1f0f02736397652b
++       `jacinta.http`。
++       这个 given 让 API 描述（apoplexy 的 `Api`）能够从媒体类型为 `application/json` 的请求或响应构造 `Json`。
+
+% 0 1 0 198332a92f595922032e9f34dfa0a80a
+
+@ 0 1 0 036bc2557c6123ce14979fa6d6617f60
++ entry .optics   作用于 `Json` 文档的透镜和光学器件，每一种都是按名称导入的 given
+
+% 1 1 0 189345c06019766e1cdc3124e5e2bd4f
+
+@ 0 6 0 1ab376bebdd823a11acf1358ad1e4195
++       `jacinta.optics`。
++       正是它们让 `json.lens(…)` 得以工作：用于具名字段的 panopticon 透镜，以及深入数组的光学器件。
++       它们位于一个包中而不是 `Json` 的伴生对象中，这样缺少导入就是编译错误，而不是行为的悄然改变；`import optics.*` 引入全部（或 `import soundness.optics.*`，所有库的光学器件都在那里合并）。
++       透镜赋值还需要启用动态访问，而要赋一个普通值，还需要 `conversions.encodableToJson`。
+
+% 2 1 0 1c7ab9bb97765601032fe20c83630076
+
+% 3 1 0 1a125d7adacd5137063313a45de617f0
+
+% 4 1 0 1510f7c93239f0210b10081e7df28e81
+
+% 0 1 0 1d0c03267f34cd171a73e16e4cd6801b
+
+% 0 1 0 015b918db1adbea803d43755da82713a
+
+% 0 1 0 071d4bb8a658af7c078621eb7705fb38
+
+% 0 1 0 0d89a0ba07f883ae12b446da80290287
+
+% 0 1 0 0d6cc5788728285306cb5e43d54bcd0f
+
+% 0 1 0 15eb5b188c739ba1002637a4c21e4eae
+
+% 0 1 0 0078f758b43066181163c942e6577065
+
+% 0 1 0 13b364aed23e8f5217ad1e86f9917c6b
+
+% 0 1 0 0ec5cf8932b41c691b6f0c2e41cfed69
+
+% 0 1 0 0e111993eb52492f1eb6939073caba4f
+
+% 1 1 0 10d9dcdfdc1331c803e662eea019d711
+
+@ 0 8 0 1cb8b0f7b86219e61547e20e85fa23a3
++   entry .jsonLens   从 `Json` 到具名字段的透镜，供 `json.lens(_.name = …)` 使用
++       需要启用动态访问（`dynamicAccess.dynamicJson`）和一个 `Tactic[Json.Error]`；读取缺失的字段得到一个缺失的 `Json`，写入则会添加它。
++   entry .jsonOrdinalOptical   按 `Ordinal` 指向单个数组元素的光学器件：`scenes(Prim)`
++       以不可变方式重建数组；超出末尾的索引，或非数组，会使文档保持不变。
++   entry .jsonEachOptical   `Each` 光学器件：对数组的每个元素应用变换
++   entry .jsonFilterOptical   `Filter[Json](predicate)` 光学器件：对匹配谓词的元素应用变换
+
+@ 0 1 0 01262333a3b609a41d5ab7579cccd6af
++ entry .encodables   把 aviation 的 `Instant` 和 `Duration` 编码为毫秒数，每一种都是按名称导入的 given
+
+% 1 1 0 029d81485af9066d17787b8a146db886
+
+@ 0 2 0 092ea3a99035e5cb072d5d68698049fd
++       `jacinta.time`。
++       `Instant over Unix` 编码为自纪元起的整毫秒数，`Duration` 编码为其整毫秒数。
+
+% 2 1 0 0171a44d5c8ad131107464c8731291be
+
+% 3 1 0 07a279ce8925c6781fb06293e6ecad91
+
+% 0 1 0 1040cb96db7e64de129bcf8960d9e85f
+
+% 1 1 0 050e135c25fb4248051a75f0be7427ad
+
+% 0 1 0 174fd610fcf6945e18641991d93e4dc1
+
+% 0 1 0 08e50f3c1ae8d99515f11ab3088ae704
+
+% 1 1 0 1eafd111e3076ce61cf0d5a804d43343
+
+@ 0 2 0 085f6d0f73fdc4470e1a39d769f75898
++   entry .instantJsonEncodable   `Instant over Unix`，编码为表示毫秒数的 JSON 整数
++   entry .durationJsonEncodable   `Duration`，编码为表示毫秒数的 JSON 整数
+
+@ 0 1 0 171e38abbd1a3527106151889b2f7f2b
++ entry .decodables   通过树从毫秒数解码 aviation 的 `Instant` 和 `Duration`
+
+% 1 1 0 0926864cd0bd3fe31a91dc84f6489c2e
+
+@ 0 1 0 198f3621a1127feb1c02b332cb9c7acb
++       `jacinta.time`。
++       遍历树的解码器；`parsables` 是它们的直接解析孪生版本。
+
+% 2 1 0 06ec0ea1b11ab06a1b556a9b79cd7a5e
+
+% 3 1 0 0700918512ba78bf06c07bded7919555
+
+% 4 1 0 13643487c62bf7900f41e43718eb32f6
+
+% 0 1 0 1e91d232cf0ae70d0e703f4db5663c21
+
+% 0 1 0 13289e6aa371d55011dabcd0ff387c51
+
+% 1 1 0 05e18a259c827553178eaa5eff06c10d
+
+@ 0 2 0 18db408127923f5e1e80b330e662691c
++   entry .instantJsonDecodable   从表示毫秒数的 JSON 整数得到 `Instant over Unix`
++   entry .durationJsonDecodable   从表示毫秒数的 JSON 整数得到 `Duration`
+
+@ 0 1 0 12f3a81670fc91321e92b47d7474c136
++ entry .parsables   直接从词法单元流读取 aviation 的 `Instant` 和 `Duration`
+
+% 1 1 0 1b088fddf6efdfef04de4c9bd6572aeb
+
+@ 0 5 0 0360ed9fdc9f1bab1d9f52237c3e1753
++       `jacinta.time`。
++       `decodables` 的直接解析对应版本：数字直接从词法单元中读取，没有中间节点，因此带有 `Instant` 字段的记录在选择启用后可以直接解析。
++   entry .instantJsonParsable   直接从表示毫秒数的 JSON 整数读取 `Instant over Unix`
++   entry .durationJsonParsable   直接从表示毫秒数的 JSON 整数读取 `Duration`
+
+@ 0 1 0 11cd31be57f15f681ba9ce70288477d2
++ entry .InlinableStager   `Inlinable.parsable` 背后的编译时分阶段执行编译器
+
+% 1 1 0 1278d4b1c806195b109f0f1a15fedc5d
+
+% 2 1 0 1ca0af1a25b6816d024e380007afe52f
+
+@ 0 9 0 03afceb58ecf38a11dd475307a227d2a
++       不供直接使用。
++       `jacinta.staged`。
++       为记录生成解析器时，用户为字段类型编写的 `Inlinable` given 会在展开时于一个基于宏类加载器的全新分阶段执行编译器中求值（排除当前的输出目录，因为正在进行的编译过程中的类没有可信的类文件），以便生成器能调用它的 `parse`。
++       无法跨入内部编译器的类型——不透明的、结构化的，或在当前编译过程中定义的——退化为运行时接缝。
++       `Inlinable.Stager` 按名称加载 `.Implementation`。
++   entry .evaluate   在分阶段执行编译器中对某个类型的 `Inlinable` 实例求值，如果可以的话
++   entry .Implementation   `Inlinable.parsable` 按名称加载的 `Inlinable.Stager`
+
+% 1 1 0 19eedb816dca6452117f1f68331add6e
+
+@ 0 2 0 10158eda32a95c3e1b64cd253dbbc4b6
++         把 `summon` 委托给 `.evaluate`。
++     entry .summon   某个类型的 `Inlinable`，在展开时求值，或 `None`
+
+@ 0 1 0 1ffad89919342d880600041b89cffff1
++ entry .Inlinable   单个类型的 JSON 解析器和打印器的编译时代码生成器，组合成一个扁平的解析器
+
+% 1 1 0 198099299fb5d65a1a90567bcbf94bdc
+
+@ 0 10 0 064a20c26da34079040cf5a699d07a6d
++       `Inlinable` 是 `Json.Parsable` 和 `Json.Printable` 在宏展开时的对应物：`Json.Parsable` 实例针对 `Json.Reader` *运行*，而 `Inlinable` 实例以 `Expr` 的形式*生成*执行这一工作的代码。
++       `Inlinable.parsable[T]` 把 `T` 及其下每个字段类型的实例组合成单一的单态解析器——字段使用有类型的局部变量，键通过把打包的字与字面量比较来分派，嵌套记录和集合循环就地内联——没有运行时分派，没有实例数组，组合起来的解析器之间也没有适配器；`Inlinable.printable[T]` 对写入做同样的事。
++       结果被拼接到请求它的模块中，因此每个字段都直接从词法单元流读取，从不构建 `Json` 树。
+
+% 2 1 0 0ea7e636c2cc065a19c70ea778d3ac59
+
+% 3 1 0 14124626735f734e18b8ab0ec05d98fb
+
+% 4 1 0 1774d7384f5fc0d01d4f106f8381a92d
+
+% 5 1 0 09c2768b5bb0e4d01432225bcbd00403
+
+% 1 1 0 10e5dba181c2b4c409406624fe518ffa
+
+% 2 1 0 1b57ab72b70c598c0e3d02af8b5ce210
+
+% 0 1 0 1ab34bfb9a17727c1f2637b1b78246b9
+
+% 0 1 0 04fc31fa311781550f666118336f01d9
+
+% 1 1 0 1c5f35c29c0aa1651d7b856f2499c7a7
+
+% 0 1 0 0f29ef5ed663065c1613650057f4734f
+
+% 0 1 0 1dbc9bb35bbf0b0a14e219f161451630
+
+% 1 1 0 122a749be4c8cefb10a213bf369658d5
+
+@ 0 14 0 1193c7112619bfff01468c59c672730e
++       同样的两个实例可以由 `derives Json.Direct` 一次性生成到记录的伴生对象中，而 `import codecs.direct` 无需声明任何东西就为作用域内的每个记录选用生成的解析器和打印器，因此大多数代码从不直接调用 `Inlinable`。
++       为类型生成什么，由一个解析阶梯按顺序决定：内置叶子类型（`Int`、`Long`、`Double`、`Float`、`Boolean`、`Text`、`String`）；用户编写的 `Inlinable` given，在展开时求值；针对 case class（`.derived`）或已应用的集合类型——`List`、`Set`、`Sequence`、`Vector` 以及标准库的不可变集合，逐元素收集到集合的构建器中——的结构化生成器；否则就是**运行时接缝**，即对字段类型的 `Json.Parsable` 或 `Json.Field`（打印时则为其 `Encodable in Json`）的拼接调用，`Optional[…]`、`Map`、枚举或密封和类型就是这样参与进来的。
++       递归类型——`Tree(children: List[Tree])`——通过它自己的名义 `Json.Parsable`，把递归出现之处绑回正在生成的实例，因此展开会终止。
+
+@ 0 11 0 194be54d1cb3477f01de9871945ce7f2
++       手写实例受三条事实约束。
++       第一，`Inlinable` given 是一个普通的运行时值，因此生成器只能通过在宏内部对该 given 求值来调用它的 `parse`，这需要宏内部的分阶段执行编译器：`jacinta.staged` 提供了它（`Inlinable.Stager`），如果编译类路径上没有它，类型只有用户编写实例的字段会走运行时接缝。
++       第二，实例及其类型必须在比展开*更早*的编译过程中编译——同一编译过程中的实例没有可信的类文件，同样会退化为接缝。
++       第三，`Inlinable.parsable[T]` 本身会拒绝没有自身生成器的 `T`（唯一实例是名义 `Json.Parsable` 的类型），错误为 _jacinta: `T` has no generator of its own; use `Json.Parsable.staged` or `derived` rather than `Inlinable.parsable`_，因为结果要么什么都不增加，要么调用它自身。
+
+@ 0 5 0 084e5cb2062685f80565183a4a1ec0c8
++       实例的 `#prints` 说明它是否生成打印器；默认值 `false` 让只解析的实例保持诚实，实例不打印的字段则通过其 `Encodable in Json` 写出。
++       `#absent` 是对象中缺失某个键时的代码：默认情况下，它像运行时实例一样，通过给定的战术抛出 `Json.Error`。
+
+% 1 1 0 1fefd31920f7188e1eb1145d5eeee4c3
+
+% 0 1 0 03dc3645375f908b0a4e6c9c7875cf20
+
+% 0 1 0 0d1a2447c65c7bfc1074748ea61b4d20
+
+@ 0 7 0 03b8cf6fe664046b139f430a48286885
++   entry .parsable   `Inlinable.parsable[T]`：在代码编译时为 `T` 生成的单态 `Json.Parsable`
++       一个宏。
++       通过 `Inlinable` 下所述的阶梯解析 `T` 的 `Inlinable`，并把一个扁平的解析器拼接为 `Json.Parsable.Direct[T]`，它从 `Json.Reader` 底层的 `Parser` 读取值，而不构建 `Json`。
++       既没有实例也没有结构化生成器的类型是编译错误，_jacinta: no Inlinable instance for `T`, and it is not an inlinable product; use `Json.Parsable.staged` or `derived`_。
++       结果通常放在类型的伴生对象中：
+
+% 2 1 0 17b6a87855ae197a0da7ae46820caf4e
+
+% 3 1 0 0df9169765cece5211e3ec7da72c9bdf
+
+% 4 1 0 0ef048efede817751896305082516e4e
+
+% 5 1 0 080be18a5f13736214c2691f7760d686
+
+% 0 1 0 16e7677aa284c8e107d6438b1b0409df
+
+% 0 1 0 149aeeef426fec9f15cd40ecbcc76d27
+
+% 0 1 0 0d06b86acd872a0a11df3e835dd6020c
+
+% 0 1 0 0b75991676b12b8510afcbc115f1961e
+
+% 1 1 0 1a1ee4d9e09255e6079d9334865813c6
+
+@ 0 18 0 1e8b7abf013d0d870e124f7ac30568cc
++       语义与 `Json.Parsable.derived` 一致：缺失的键使用声明的默认值，应用 `@name` 重命名，未知的键用 `Parser#directSkipValue` 跳过，错误焦点指明字段。
++       集合按出现次序逐个收集到集合的构建器中，每个元素有一个索引焦点。
++   entry .printable   `Inlinable.printable[T]`：在代码编译时为 `T` 生成的单态 `Json.Printable`
++       一个宏：`.parsable` 在写入一侧的对应物，一个 `Json.Printable.Direct[T]`，它通过同样的实例组合，逐字段把 `T` 的紧凑 JSON 文本直接写入写入器。
++       根实例不打印的类型——编码为文本的类型，或唯一实例是运行时 `Encodable` 的类型——是编译错误，_jacinta: `T` has no generated printer; use its `Encodable in Json`_。
++       只要作用域内的 `Json.Formatting` 是紧凑的，`in[Text over Json]` 和 `in[Data over Json]` 就会使用生成的打印器；缩进输出仍通过树渲染。
++   entry .derived   case class 的结构化 `Inlinable`：每个字段通过它自己的实例处理
++       `Inlinable.derived[T]` 是作为值的积类型生成器，适用于 case class `T`：它在其 `parse` 被调用时反射 `T`，因此不需要自己的宏，可以写成一个 given，`given Tree is Inlinable = Inlinable.derived`。
++       它既能解析也能打印。
++   entry .ForJson   让 case class 可以写 `derives Inlinable.ForJson` 的载体
+
+% 1 1 0 13f91a10243baf41066a0fc0f30f8ddd
+
+@ 0 12 0 1f4d626c0eecd4761b12221eea289b63
++         以 `Self` 为类型的类型类没有类型参数，因此 `Inlinable` 不能出现在 `derives` 子句中。
++         `case class Play(…) derives Inlinable.ForJson` 把一个 `ForJson[Play]`——它*就是*一个 `Play is Inlinable`，把每个方法委托给 `Inlinable.derived[Play]`——合成到 `Play` 的伴生对象中，展开时的召唤会在那里找到它。
++         解析阶梯会解开这个委托，因此结构化实例保持其生成器身份。
++     entry .derived   `ForJson.derived[T]`：包装 `Inlinable.derived[T]`，供 `derives` 子句使用
++     entry #parse   委托对象生成的解析代码
++     entry #absent   委托对象为缺失键生成的代码
++     entry #prints   委托对象是否打印
++     entry #write   委托对象生成的写入代码
++   entry .Generates   类型的编解码器以记录形式结构化生成的证据
+
+% 1 1 0 06732068a3942a7604f1cc5a1e91afb4
+
+@ 0 7 0 0d270a7759f784501e08694615f12dbb
++         `Inlinable.Generates[T]` 是 `import codecs.direct` 生成实例的条件：它的 given `.generates` 是一个宏，只对积类型生成器支持且不编码为文本的 case class 成功，对其他一切都失败——_jacinta: `T` has no generated codec_——从而使对生成实例的搜索失败，转而解析派生路径。
++         不供直接使用。
++     entry .generates   `Generates[T]` 背后的透明内联 given：一次廉价的形状测试
++   entry .Stager   `jacinta.staged` 在展开时对用户编写的实例求值所经由的钩子
+
+% 1 1 0 0248d3e57e505ecc1660d1182e762e68
+
+@ 0 39 0 1a7454cc1d391eb909182bb55ca6307f
++         `Inlinable` given 是运行时值，因此生成器只能通过在宏内部、在分阶段执行编译器中运行该 given，才能得到用户编写的实例所生成的代码。
++         `jacinta.core` 不依赖编译器 jar，因此由 trait `Stager` 声明这一能力，由 `jacinta.staged` 实现它（`InlinableStager`）；当 `jacinta.staged` 位于宏类路径上时，伴生对象按类名加载实现，否则对每个类型都回答 `None`，使这类字段走运行时接缝。
++         召唤的结果在整个展开期间缓存，因此无论一个类型重复出现多少次，它的分阶段召唤最多运行一次。
++     entry .summon   已加载的 stager 的 `summon[field]`；类路径上没有 `jacinta.staged` 时为 `None`
++     entry #summon   如果能解析到，就在宏内部实时对 `field` 的 `Inlinable` given 求值
++   entry .int   `Int` 字段的生成器：`reader.int()`，写作裸数字
++   entry .long   `Long` 字段的生成器：`reader.long()`，写作裸数字
++   entry .double   `Double` 字段的生成器：`reader.double()`，写作裸数字
++   entry .float   `Float` 字段的生成器：`reader.double().toFloat`；只解析
++   entry .boolean   `Boolean` 字段的生成器：`reader.boolean()`，写作 `true` 或 `false`
++   entry .text   `Text` 字段的生成器：`reader.string()`，写作转义后的 JSON 字符串
++   entry .string   `String` 字段的生成器：`reader.string()`，写作转义后的 JSON 字符串
++   entry .iterable   元素为 `Inlinable` 的已应用集合的生成器
++       对任何 `collection <: Iterable`，在给定 `element is Inlinable` 时得到 `collection[element] is Inlinable`：生成的循环用 `Parser#directOpenArray` 打开数组，用 `Parser#directElementFirst` 和 `Parser#directElementNext` 步进，内联解析每个元素，并把它加入集合的 `Factory` 构建器。
++       元素能打印时，它也能打印。
++       在分阶段执行编译器内部解析实例图时，通过普通的 given 解析进行组合。
++   entry #parse   生成从 `Json.Reader` 读取 `Self` 的代码
++       接受读取器的 `Expr` 以及展开的 `Quotes` 和 `Type[Self]`，返回解码后值的 `Expr`，由派生宏就地拼接。
++       生成代码中的局部 `def` 或 lambda 以只读方式捕获独占的解析器，因此生成的代码体只绑定解析器一次，并直接通过它读取。
++   entry #prints   此实例是否也生成打印器；除非被重写，否则为 `false`
++   entry #write   生成把 `Self` 写入 JSON 写入器的代码
++       接受值和写入器——由于生成的代码是擦除了捕获的，写入器以中性的 `AnyRef` 载体传递，并在每次使用时重新断言——返回一个 `Expr[Unit]`。
++       默认实现以 _jacinta: the Inlinable for `T` generates no printer_ 中止展开；把 `#prints` 重写为 `true` 的实例也要重写它。
++   entry #absent   为对象中缺失的键生成值
++       默认值是通过给定战术的 `Json.Parsable.missing[Self]()`，它会抛出 `Json.Error`；可选包装器会重写它以产生其缺失值。
+
+@ 0 1 0 1ea3ffbc51c2e545096d04b5314db242
++ entry .inlining   `Inlinable` 背后的机制：展开时解析、结构化生成器和入口宏
+
+% 1 1 0 09ae3379b23807d60c2082ccf2756cf1
+
+% 2 1 0 05d2215676f61f68042934d36b0ee080
+
+@ 0 12 0 1c4985826d234afd05e998721ce78737
++       不供直接使用：该对象持有 `Inlinable.parsable`、`Inlinable.printable` 和 `Inlinable.Generates` 所展开到的宏实现、解析阶梯（内建、分阶段召唤、结构化积类型或集合、运行时接缝）、按展开划分的缓存（它 memoize 分阶段召唤并检测递归），以及积类型和集合的生成器。
++   entry .fieldSeam   运行时接缝：通过字段名义上的 `Json.Parsable` 或 `Json.Field` 解析字段
++       一个内联方法（`summonFrom` 只能位于内联方法中），生成的解析器为没有 `Inlinable` 的字段类型拼接它：名义上的 `Json.Parsable` 被直接调用，否则使用该字段的 `Json.Field`。
++   entry .generates   `Inlinable.Generates.generates` 背后的宏
++   entry .inlinablePrintable   `Inlinable.printable[T]` 背后的宏
++   entry .inlinableParsable   `Inlinable.parsable[T]` 背后的宏
+
+@ 0 1 0 0bb2580f6aeb905b11d42159ad387348
++ entry .internal   `j"…"`、`jp"…"`、按 schema 类型的导航和 `Json.Parsable.staged` 背后的宏实现
+
+% 1 1 0 0517e13bd05bcfcf1cdafb52a7603357
+
+% 2 1 0 0801d48b0eb81d5a0a1240e22fc220cf
+
+@ 0 30 0 0eb04a0cb9d6d6bc16ed5c013cf8f3a3
++       不供直接使用：该对象的存在是为了让这些宏有一个稳定的归属。
++   entry .jsonPointer   `jp"…"` 插值器背后的宏
++       在代码编译时，通过指针自身的 `Decodable` 把字面量解码为 `JsonPointer`，并把 `JsonPointer.Error` 的偏移量映射回源码，使编译错误指向出错的字符。
++   entry .select   `Json` 上 `json.field` 背后的宏：有 schema 类型时按其检查
++       对于 `Json of P from R`（即经 `verify` 赋予类型的文档），在 `P` 的结构中查找该字段，结果为 `Json of <field type> from R`；`P` 没有的字段是编译错误。
++       对于普通的 `Json`，访问受 `dynamicAccess.dynamicJson` 启用项控制，并以全函数方式读取字段。
++   entry .index   `Json` 上 `json(i)` 背后的宏：有 schema 类型时按其检查
++   entry .applied   `Json` 上 `json.field(i)` 背后的宏
++   entry .interpolator   `j"…"` 字面量背后的宏
++       在代码编译时解析字面量的各个部分，每处替换都用一个标记占位，因此格式错误的 JSON 会在其位置产生编译错误；然后拼接出一个填入了替换值的 `Json.Ast`。
++   entry .extractor   作为模式使用的 `j"…"` 背后的宏
++       把带有 `$name` 空位的 JSON 字面量编译为提取器，它把 `Json` 与字面量匹配并绑定这些空位，结果为 `Boolean`、单个值或由它们组成的元组。
++   entry .stagedParsable   用于 case class 的 `Json.Parsable.staged` 背后的宏
++       生成一个单态解析器：字段值存放在有类型的局部变量中，键通过预先计算的 `Json.KeyTable` 分派到整数 switch，内建基本类型直接从词法单元流内联读取，记录通过直接调用构造器构建。
++       内建类型以外的字段类型经由 `Json.Field` 实例处理，因此默认值、`@name`、缺失与空值、未知键、重复键和错误焦点的行为与 `Json.Parsable.derived` 完全相同。
++   entry .stagedSum   用于密封和类型的 `Json.Parsable.staged` 背后的宏
++       通过有界的、会回退的向前扫描定位判别字段，通过与线上变体名称的字符串比较进行分派，并通过所选变体的 `Json.Field` 解析它。
++       与派生引擎一样，缺少标签时抛出 `Json.Error(Absent)`，未知标签时抛出 wisteria 的 `Variant.Error`。
+
+@ 0 1 0 14e80d32de791fea0037f00a559e17a2
++ entry .jsonSchematics   构造与其读取或写入的 schema 融合在一起的编解码器：`Decodable & Schematic`
+
+% 1 1 0 01a06c61a493730b0e7ed7144f91aafa
+
+@ 0 8 0 17661cf9aabc5cc01bc67e880e36fad4
++       `Json.Encodable` 和 `Json.Decodable` 各自携带其写入或读取内容的 `Morphology`，`jsonSchematics.encodable[T]` 和 `jsonSchematics.decodable[T]` 把该形状具体化为 `JsonSchema`，并在一个实例中与编解码器配对，即 `T is Encodable & Schematic in Json over JsonSchema`（或 `Decodable & Schematic`）。
++       schema 来自编解码器本身，从不单独派生，因此这一对在构造上就是一致的：若某类型的 JSON 编解码器经由其 `Encodable in Text` 实现（例如写成字符串的枚举），它得到的是 `JsonSchema.String`，而独立的 `Schematic` 派生会把它的结构描述为对象。
+
+% 2 1 0 13ea3c6416a3ecaa0b936af10521b68d
+
+% 3 1 0 0b9384495cec80ea17c8db4a8de9819b
+
+% 4 1 0 05924c02737f6f4f1dc8c13a326c83fa
+
+% 5 1 0 04f80ab30f7eb3df10fc4873ec139b62
+
+% 0 1 0 0e8f9b9e37857b7a09aebafd0d92762e
+
+% 0 1 0 126a738502af624903ff15d87ee75a15
+
+% 0 1 0 0a8359486732e850025748367e685f36
+
+% 0 1 0 08540d815aa32ffa116ab8b6c12d891f
+
+% 1 1 0 02e15e85f84de8ac1d9887754ebde49d
+
+@ 0 5 0 0f6001903ddf3370137ee5bd86293948
++       这些是方法而不是 given，这是有意为之：`Decodable & Schematic` given 同时是其编解码器类型类和 `Schematic` 的子类型，因此作为 given，它会让任何单纯的 `Schematic` 召唤产生歧义。
++       在需要融合实例的地方调用其中之一，或把它绑定为局部 given：`given (Contact is Decodable & Schematic in Json over JsonSchema) = jsonSchematics.decodable[Contact]`。
+
+% 1 1 0 15978586e46c4f7313042332cac9c676
+
+@ 0 6 0 0faba517862868840b23860bd6774433
++   entry .encodable   `T` 的 `Json.Encodable`，与其写入内容的 `JsonSchema` 融合
++       需要作用域内有 `T is Json.Encodable`；`encoded` 委托给它，`schema()` 是对其 `shape()` 执行 `JsonSchema.reify` 的结果。
++   entry .decodable   `T` 的 `Json.Decodable`，与其读取内容的 `JsonSchema` 融合
++       需要作用域内有 `T is Json.Decodable`；`decoded` 委托给它，`schema()` 是对其 `shape()` 执行 `JsonSchema.reify` 的结果。
+
+@ 0 1 0 019501f78e0aced310b9130dd4d81c39
++ entry .JsonSchema   作为值的 JSON Schema：从 Scala 类型派生、从文档读取、写成文档
+
+% 1 1 0 06a5929399607b52050300d36f37afe1
+
+@ 0 10 0 1f22e8e677ceccfa1f92a6189fe518f6
++       `JsonSchema` 是一个枚举，其分支是各种 schema 节点：`Object`、`Array`、`String`、`Number`、`Integer`、`Boolean`、`Null` 和 `Ref`，每个分支携带 JSON Schema 允许它使用的关键字、一个可选的 `description`，以及一个 `optional` 标志，记录该节点接受 `null` 或缺失（`type` 中含有 `"null"`、OpenAPI 的 `nullable`，或派生 schema 中的 `Optional` 字段）。
++       它是 JSON 的 `Schematic` 传输层：`T is Schematic over JsonSchema` 为 `T` 给出 schema，伴生对象可为任何 case class 或密封层次结构派生 schema（通过 wisteria 的 `Derivable` 得到的 `JsonSchema.derived[T]`，以及为任何可反射类型解析它的内联 given `.schematic`），而 `JsonSchema` 可以编码为标准 JSON Schema 文档，也可以从中解码。
+
+% 2 1 0 1bb8ce533d77f04a0c99bab221a0f79b
+
+% 3 1 0 08a97c932363929212c861c059129440
+
+% 4 1 0 08c47d22c19433f30965e96828f09a37
+
+% 5 1 0 0caa25edfa2b5bd1103130533249a3f1
+
+% 0 1 0 021366bdd725b08b1901918e0d0c1ebf
+
+% 0 1 0 11b522624f1396eb18612da25cc7d34b
+
+% 0 1 0 0d6be4e494791348091ed4acaccb5e54
+
+% 1 1 0 100ae03d43a50e401095bbe4b5ee150e
+
+% 0 1 0 0d18bfafd5f50271007c6e5c1e6a50b0
+
+% 0 1 0 07445028f940a2531be59e031f1894cf
+
+% 0 1 0 0561f9555e513d241caed3499e6f484a
+
+% 1 1 0 03b38c81391335d7054dcbf627674f4d
+
+@ 0 1 0 090802b4f428a4e61eb4397c902a4b94
++       各分支都是 case class，每个参数都有默认值：
+
+@ 0 23 0 1e6488a066e558510908015f2f39a827
++       - `Object(description, properties: Map[Text, JsonSchema], optional, required: Optional[List[Text]], enum: Optional[List[Json]], additionalProperties: Boolean, oneOf, additionalSchema: Optional[JsonSchema], allOf, anyOf, not, const)`。
++         派生 schema 的 `required` 列出不是 `Optional` 的字段；密封层次结构派生为一个 `Object`，其 `oneOf` 为每个变体持有一个 schema，并要求 `kind`。
++         当 schema 接受更多属性时，`additionalProperties` 为 `true`，无论是通过单纯的 `true`，还是通过为它们给出的 schema（此时由 `additionalSchema` 携带）；布尔 schema `true` 读作 `Object(additionalProperties = true)`。
++       - `Array(description, items: Optional[JsonSchema], minItems, maxItems, optional, maxContains, minContains)`：`List` 或 `Set` 派生为其元素 schema 的 `Array`。
++       - `String(description, minLength, maxLength, pattern: Optional[Text], format: Optional[JsonSchema.Format], optional)`：`Text` 和 `EmailAddress` 派生为 `String`。
++       - `Number(description, multipleOf, maximum, minimum, exclusiveMinimum, exclusiveMaximum, optional)`，所有边界均为 `Optional[Double]`：`Float` 和 `Double` 派生为 `Number`。
++       - `Integer(description, maximum, minimum, exclusiveMinimum, exclusiveMaximum, optional, format)`，所有边界均为 `Optional[Long]`：`Byte`、`Short`、`Int` 和 `Long` 派生为 `Integer`。
++       - `Boolean(description, optional)` 和 `Null(description, optional)`。
++       - `Ref(pointer: JsonPointer, description, optional)`：一个 `{"$ref": "#/…"}` 引用，保持未解析，使循环的 schema 图保持有限；`verify` 不检查 `Ref` 节点。
+
+@ 0 4 0 1dd44f38bfaa4fcf006ae18a8828db80
++       schema 分支 `Array`、`String`、`Number`、`Boolean` 仅在 `object JsonSchema` 内部遮蔽预导入的同名类型；在外部，`JsonSchema.Array(…)` 与预导入的 `Array` 共存。
++       派生 schema 中字段的描述来自字段上的 `@memo` 注解，变体的描述来自变体上的 `@memo`。
+
+% 0 1 0 19c09abbbc05077409d38929a6799169
+
+% 0 1 0 13691869747c083e047302ed5a05c028
+
+% 0 1 0 152c95810e78aed31c0165603950d105
+
+% 1 1 0 12366fd777f813af1894edece5f7dfc8
+
+@ 0 39 0 153e3ca57b1c3aab0d10f9a8549fc6d0
++   entry .byteSchematic   `Byte` 派生为 `Integer()`
++   entry .shortSchematic   `Short` 派生为 `Integer()`
++   entry .intSchematic   `Int` 派生为 `Integer()`
++   entry .longSchematic   `Long` 派生为 `Integer()`
++   entry .floatSchematic   `Float` 派生为 `Number()`
++   entry .doubleSchematic   `Double` 派生为 `Number()`
++   entry .textSchematic   `Text` 派生为 `String()`
++   entry .emailSchematic   `EmailAddress` 派生为 `String()`
++       该 schema 不记录 `format`：`format: "email"` 由融合的 `jsonSchematics` 实例和 `Json.Provider` 解释。
++   entry .booleanSchematic   `Boolean` 派生为 `Boolean()`
++   entry .optionalSchematic   `Optional[T]`（或任何 `Mandatable` 包装器）派生为标记为可选的 `T` 的 schema
++       取内部类型的 schema，并通过 `.optional` 设置其 `optional` 标志，使派生的 `Object` 在 `required` 中省略该字段。
++   entry .listSchematic   `List[T]` 派生为 `Array(items = T's schema)`
++   entry .setSchematic   `Set[T]` 派生为 `Array(items = T's schema)`
++   entry .mapSchematic   键可编码为文本的 `Map[K, V]` 派生为 `Object(additionalProperties = true)`
++       值的 schema 不会被记录：JSON Schema 的 `additionalProperties` 关键字可以携带它，从文档读取 schema 时也确实如此（`additionalSchema`），但派生过程尚不写入它。
++   entry .schematic   为任何可反射类型派生 schema 的内联 given
++       `[value: Reflection] => value is Schematic over JsonSchema`，展开为 `derived`：case class 成为每个字段对应一个属性的 `Object`，非可选字段列入 `required`；密封层次结构成为每个变体对应一个 `oneOf` 的 `Object`。
++       每个字段和变体的 `@memo` 注解成为其 `description`，有多个时以换行符连接。
++   entry .jsonSchemaSchematic   `JsonSchema` 本身派生为宽容的 `Object()`
++       一个手写实例，优先于 `.schematic` 被找到，使得为带有 `JsonSchema` 字段的类型派生 schema 时能够终止，而不是无休止地递归求取 schema 的 schema。
++   entry .pointerEncodable   `JsonPointer` 编码为其文本，因此 `Ref` 序列化为字符串
++       显式地作为 `Json.Encodable` 提供，使通用派生把指针视为叶子，而不是派生其路径结构。
++   entry .encodable   把 `JsonSchema` 写成 JSON Schema 文档
++       `JsonSchema` 的 `Json.Encodable`：通过以 `type` 判别的派生，每个分支成为带有其 `type`（`"object"`、`"array"`、`"string"`、…）和关键字的对象；`Ref` 成为单纯的 `{"$ref": "…"}`。
++       正因为它是 `Json.Encodable` 而不是普通的编解码器，集合和映射的编解码器才能把嵌套的 `JsonSchema` 解析到这个实例，而不是派生出发散的 schema 的 schema。
+
+% 2 1 0 1d6772b133518cc20b0c4e31da1f2708
+
+% 3 1 0 184fe9be563937de15beb53deaa654ac
+
+% 0 1 0 18552f7e79b98f441a67f8a18fa53bb6
+
+% 0 1 0 0c6c313bb91c224e19fa5d9c1876ffff
+
+% 1 1 0 15c1df8dccd9f8aa0686a8be3cbc3064
+
+@ 0 7 0 0335c53fc5905e9f0ce86d96b4ad634c
++   entry .decodable   从 JSON Schema 文档读取 `JsonSchema`
++       `JsonSchema` 的 `Json.Decodable`，之所以手写，是因为 schema 节点由其 `type` 字段的*值*判别，该值可以是一个名称、一个名称列表（draft 2019-09 和 OpenAPI 3.1），或者在 `$ref` 或无类型对象中不存在。
++       它需要一个 `Tactic[Json.Error]` 和一个 `Tactic[JsonPointer.Error]`（用于格式错误的 `$ref`），且实例捕获了这两者，因此写出其类型的召唤必须允许该捕获，即 `summon[(JsonSchema is Json.Decodable)^]`；`as[JsonSchema]` 则无需特别处理。
+
+@ 0 6 0 14ee8f80d43f45df0d344ca70aa34c9f
++       它接受的内容：布尔 schema（`true` 即 `Object(additionalProperties = true)`，`false` 不接受任何值）；`type` 中的 `"null"` 或 OpenAPI 3.0 的 `nullable: true`，记录为 `optional`；draft 4 用来修饰 `minimum` 的 `exclusiveMinimum: true`，以及后来的数值形式，两者读到同一模型；作为布尔值或 schema 的 `additionalProperties`；任意名称的 `format`，未知名称保留为 `JsonSchema.Format.Other`；没有可识别 `type` 的节点读作 `Object`。
+
+% 2 1 0 1ce23233946f57e613b4caaaad56d19c
+
+% 3 1 0 1cd39ba24b5d85d60a649c37a7ab96a1
+
+% 4 1 0 0f18be6fee0e2a710bef6a503b6e74f6
+
+% 5 1 0 1605ca11f2ff614c0f3b3d7c9b4e0106
+
+% 0 1 0 12ec883e3bf139e71dbed151eae57bae
+
+% 0 1 0 07f8296cbbb83b1e1bbe889bd484ae79
+
+% 1 1 0 1ec18a00a4fcd7d804cfd6f6063d0424
+
+@ 0 6 0 106bb9ac5262fb561d8c03dc03799593
++   entry .discriminatedUnion   `JsonSchema` 文档如何表明自己是哪个分支：通过其 `type` 字段
++       派生编码器使用的 `Discriminable` 实例：判别字段是小写的 `type` 关键字（`"object"`、`"integer"`、…），读回时首字母大写得到分支名。
++       正是它让 `{"type": "integer"}` 的编码不带 `kind` 包装。
++   entry .reify   把格式中立的 `Morphology` 表示为 `JsonSchema`
++       从编解码器声明的形状到 schema 的桥接：
+
+% 0 1 0 16a4f2fae7bcd8cc1df54f58ca7e7d4d
+
+% 0 1 0 0153be1d41a877db10642c9eea64676f
+
+% 0 1 0 0764477653d9043115c2a4ce8dd9be69
+
+% 0 1 0 057f4ced034825e71ac16a64bd2ffbd1
+
+% 0 1 0 0fceab894344bd8a195b9f9cd0c74cf8
+
+% 0 1 0 11ac2742c5cd69420a9180bcd92717fd
+
+% 0 1 0 11b151bf3fb31f12138db61f7ba2ce0c
+
+% 0 1 0 1b08ed9cbe78f01715c77be199e92248
+
+% 0 1 0 1141726130aecc9a1a0a3c09de35db53
+
+@ 0 4 0 042cca7961b0505516131e58acf6a0cd
++       row  `Opt(inner)`  内部 schema，标记为可选
++       row  `Arr(items)`  一个 `Array`
++       row  `Obj(fields, required)`  带有这些属性的 `Object`
++       row  `OneOf(variants)`  一个 `Object`，其 `oneOf` 列出各变体，并要求 `kind`
+
+% 1 1 0 0add4f02e4f39b1d15e1379d58abea80
+
+@ 0 15 0 0d938692aef0602f12a933795dcdd2f9
++       `verify` 和 `jsonSchematics` 都建立在它之上，`jacinta.core` 因此不依赖任何 schema。
++   entry .optional   同一个 schema，设置了其 `optional` 标志
++       复制任一分支并令 `optional = true`；`.optionalSchematic` 以及 `Optional` 和 `Option` 字段的编解码器使用它。
++   entry .conjunction   case class 的 schema 派生：由其字段组成的 `Object`
++       `Derivable` 钩子：每个字段通过其字段类型的 `Schematic` 得到一个属性，schema 非可选的字段列入 `required`，每个字段的 `@memo` 描述连接起来作为其 `description`。
++       不直接调用；`.schematic` 和 `derived` 会用到它。
++   entry .disjunction   密封层次结构的 schema 派生：每个变体对应一个 `oneOf` 的 `Object`
++       `Derivable` 钩子：每个变体一个 schema，以变体的 `@memo` 为描述，置于 `oneOf` 之下，并要求 `kind`，即 `jsonByKindDiscriminable` 编码写入的判别字段。
++       不直接调用。
++   entry .Format   字符串或整数 schema 的 `format` 关键字：一个开放的词汇表，已知名称作为分支
+
+% 1 1 0 063c75f1a2eae6df0a32791e2ec9b949
+
+@ 0 7 0 1986b7e519e6ce9413a888b991e9a8d3
++         各分支是 JSON Schema 自身的格式（`DateTime`、`Date`、`Time`、`Duration`、`Email`、`Hostname`、`Ipv4`、`Ipv6`、`Uri`、`UriReference`、`UriTemplate`、`Uuid`、`JsonPointer`、`RelativeJsonPointer`、`Regex`）以及 OpenAPI 增加的 `Int32`、`Int64`、`Float`、`Double`、`Byte`、`Binary` 和 `Password`；文档自创的其他任何名称（`snowflake`、`unix-time`）都是 `Other(name)`，因此解码是全函数。
++         `Json.Provider` 把 `format` 读作它所指的类型：`email` 读作电子邮件地址，`uuid` 读作 `Uuid`，依此类推。
+
+% 2 1 0 0ccca4a829054dc0150a90f21162c2df
+
+% 3 1 0 087d053b94677908122e2483cb454c69
+
+% 4 1 0 1969d2a3ea1330d8005085633cb732f2
+
+% 0 1 0 0b46519939f7212f1083a7854f046e0a
+
+% 0 1 0 16782249826edbe01add01fb5167a964
+
+% 0 1 0 1510a99a20e6702b03a512e52e812eaf
+
+% 1 1 0 1d616fbab2e3d50411acfd225a34acc6
+
+@ 0 9 0 0190c150c26597f51dffb1b6e642ef95
++     entry .encodable   把格式写成其 kebab-case 名称：`DateTime` 写作 `date-time`，`Other(name)` 写作 `name`
++     entry .decodable   从名称读取格式；未知名称是 `Other(name)`，从不失败
++   entry #optional   该节点是否接受 `null` 或缺失
++       对派生 schema 中的 `Optional` 字段、文档 `type` 中的 `"null"` 或其 `nullable: true` 设置；派生的 `Object` 在 `required` 中省略可选属性，`verify` 仅在 schema 为可选时接受缺失的值。
++   entry #description   节点的 `description`，或 `Unset`
++   entry #description_=   带有描述的同一节点：`schema.description = t"…"`
++       复制任一分支并替换描述；`@memo` 在派生过程中设置它。
+
+@ 0 1 0 0c9d6ade29b7479b0f1fbee32e4d3d7f
++ entry .memo   为字段或变体在派生 schema 中提供 `description` 的注解
+
+% 1 1 0 17784699f806ec3d0e21a3b137a62f70
+
+@ 0 3 0 134c61750bc204a4088dc769928b2fb7
++       case class 字段上或密封层次结构变体上的 `@memo(t"…")`，成为伴生对象所派生的 `JsonSchema` 中该属性或备选项的 `description`。
++       同一字段上的多个 `@memo` 以换行符连接。
+
+% 2 1 0 1709ba6a4333350d07cc11eeee894cfa
+
+% 3 1 0 19fed2a7780e4d0b1a1c54308c2fdad8
+
+% 0 1 0 19186705c564daa705a05b413d3484d0
+
+% 0 1 0 1e66d4a5a593727e05d1cb92ea78cb90
+
+% 0 1 0 0cc1bc9d02fdf7e319c036424c46590e
+
+% 1 1 0 0e5a2eec8c2fcc6502454fe8bfe4202b
+
+% 0 1 0 17005df1b298165b1e934cce95720140
+
+% 1 1 0 1e53a9c7d027d98904fea55c8e5579fd
+
+% 1 1 0 1abfc6bb579b860c1f40863effc3b1c1
+
+@ 0 1 0 120773dcd338ddb30edc565bf7ec4a8d
++   entry #description   注解的文本
+
+@ 0 9 0 0d6fd08d0627d7841c6deaf9f043651e
++ entry .verify   把文档与某类型的 schema 对照检查并重新赋予类型，使其字段可以在编译时检查下导航
++     `Json` 上的扩展方法。
++     `json.verify[T]` 具体化 `T` 的 `Json.Decodable` 所声明的 schema（通过对其 `shape()` 执行 `JsonSchema.reify`），用它遍历检查文档，成功时返回类型为 `Json of T from T` 的同一文档：一个 `Json`，其幻影类型 `Topic` 是在 schema 中的位置，`Origin` 是根。
++     遇到第一处不匹配时，它抛出 `Json.Error`（类型错误的值为 `Reason.NotType`，文档缺少的必需字段为 `Reason.Absent`），因此需要一个 `Tactic[Json.Error]`；对于不符合的文档，`safely(json.verify[T])` 为 `Unset`。
+
+% 0 1 0 15d6d2800841da9e1c6e709ce05d6a7d
+
+% 1 1 0 0a47f914ed53260906bd03717b3d64ff
+
+@ 0 1 0 0d909c0e8898d3c312beea729ffa2f25
++       label 缺少必需字段：验证失败
+
+% 1 1 0 18728b4c6127f0910807b8f967c08904
+
+% 2 1 0 009745c72746fff004145d772c827bc6
+
+% 3 1 0 00c78d9b652792b3188172863da095a7
+
+% 4 1 0 19d31047c74b5f6600c7b6225e21b518
+
+% 6 1 0 15532f3ff376dc011ab286c42c0606c8
+
+% 0 1 0 076510b1fe5295f70e8454fa9863d7d9
+
+% 0 1 0 0be0348b737a9cc6016469e9b6cb51c1
+
+% 1 1 0 111857f5b0a66b450b0a033fc8c2d2d6
+
+@ 0 1 0 04b9d2cb1bd4b6be14e014ae48cd15b2
++       label 类型错误的字段同样失败
+
+% 1 1 0 0d6dce824cad4be50fa85b8cdc035121
+
+% 2 1 0 1e119404ce2413fb13f90ec240013a6e
+
+% 3 1 0 1efed181b6dbe6ac0f3a8d9659a16f38
+
+% 4 1 0 11be2d9b925f1c410ca2beb268e299eb
+
+% 6 1 0 01e25ea9a687f09011ae164faee53ef2
+
+% 0 1 0 07c3f607baeb47730aecbcc79a3431a3
+
+% 0 1 0 151fead40e4903a91b23ff606994bb07
+
+% 1 1 0 1fb48054f2862e301629c9955d765e58
+
+@ 0 1 0 1428803bd2b9d65c1eb82ff54d231fec
++       label 符合的文档通过验证、可解码，并以经检查的字段名导航
+
+% 1 1 0 0cb2a254bac66aa90976bf0767854cef
+
+% 2 1 0 18bab82e1cfc8ea40fd9834ad261c530
+
+% 3 1 0 027a9c6e17b7018402b208720bfdd75b
+
+% 4 1 0 15759e6f48d4e815066b30c4ea24ff53
+
+% 6 1 0 110f830efe216b4b02adf7a775ca3083
+
+% 0 1 0 1da790cc6ef5fe46000c4afe5f8e67c5
+
+% 0 1 0 1888c083c572bc0c0e284f4253c0e362
+
+% 0 1 0 17e4ec359e3217160ea3ca0621cdbe6c
+
+% 0 1 0 03e4f85a3d43ad3b140110b9dc26b145
+
+% 0 1 0 0472326144a49ce71767be845f62f575
+
+% 1 1 0 11e767d9efb47d1a0f4b85a0051bf1dd
+
+@ 0 7 0 0eb267edde423a8618a21cc0ac6b6ee5
++     经过验证的文档的类型使导航成为合法：`verified.name`、`verified.workplace.city` 和 `verified.members(1).name` 都在代码编译时按 schema 的结构检查，类型中没有的字段、对非数组字段的索引或对标量的字段访问都是编译错误，并指明问题所在，而且无需导入 `dynamicAccess.dynamicJson`。
++     普通的、未经验证的 `Json` 仍然需要该启用项，错误信息也会这样说明，因此这两种访问不会混淆。
+
+@ 0 6 0 077e3930e9da8476148ab614ae883464
++     检查涵盖的内容：schema 列出的每个属性都被递归检查，且仅在其 schema 为可选时才可缺失；schema 未列出的属性是允许的；数组的每个元素都按 `items` 检查；只要任一变体通过，`oneOf` 就通过；`Ref` 节点不检查，因为没有根文档就无法解析引用。
++     派生的 `Optional[T]` 字段可以缺失，但其位置上的 JSON `null` 不算缺失，会在按内部 schema 检查时失败。
+
+@ 0 1 0 000d78aa6ce356f512c624830965a5b6
++ entry .Parser   每个 `read[Json]` 背后的流式 JSON 词法分析器：每个线程一个独占的池化实例
+
+% 1 1 0 1d917967065f372508d14405b047ec76
+
+@ 0 7 0 0eb2c97eed12411d02d6dfc1d79d25ea
++       `Parser` 是单遍 JSON 解析器，每个 `read[Json]`、`Json.Ast.parse`、`j"…"` 字面量和直接的 `read[T in Json]` 都经过它。
++       它是基于 `Data` 的 `zephyrine.Cursor` 的有状态独占能力（`caps.ExclusiveCapability, caps.Stateful`），因此每个在输入中移动的方法都是 `update def`，只能通过独占的 `Parser^` 引用调用；每个线程的池中存放一个实例，每次解析前重置，因此解析不分配解析器，其暂存缓冲区和键缓存也能从一个文档到下一个文档保持预热。
+
+@ 0 4 0 1063bee80db08a100a7fdaedf2b0752b
++       普通代码从不提到它。
++       面向用户的入口是 `read[Json]`（以及基于 `Stream[Data]` 或 `Iterator[Data]` 的 `read[Json]`，它逐块解析，无需先连接输入）、`Json.Ast.parse`，以及通过 `Json.Reader` 直接从词法单元流读取值的 `Json.Parsable` 实例：
+
+% 2 1 0 1076eb8d0aa2e9ac0ddf56fd80f176d5
+
+% 3 1 0 00c4afd4c64ed0771a9785a5f9c40322
+
+% 4 1 0 0560004b10f2744b08bd5172bfd2ea38
+
+% 5 1 0 052113960352db0f0cb24d72a38a4902
+
+% 2 1 0 1561d4f6954518f517d834f4208ed13a
+
+% 0 1 0 14e7fdf40a6f035305834c6eb1167555
+
+% 0 1 0 120ba75bcf3dfb81082d993092e48385
+
+% 0 1 0 178c9cc64570d359035ad4214d13c4ea
+
+% 1 1 0 00f9ab7aee0197891010262f590524fb
+
+@ 0 8 0 0efe30f819d5f12603ec4f86731332f3
++       该类作为*类型*是公开的，因为 `Inlinable.parsable[T]` 和 `Json.Parsable.staged` 生成的解析器被拼接到用户自己的模块中，并通过其直接边界（`#directString`、`#directLong`、`#directElementFirst`、…）读取，这比通过 `Json.Reader` 的逐词法单元转发器快几个百分点。
++       手写的 `Json.Parsable` 应改用 `Json.Reader`：读取器携带自己的 `Tactic[Parse.Error]`，而访问正在进行的读取背后的解析器的唯一途径封装在 jacinta 内部。
++       `new Parser` 是可行的，但不是预期的途径：它没有池，并且必须在 `#parse` 之前调用 `#resetData`。
+
+@ 0 7 0 10d4c9be5740e9510a88c4edd02bb04d
++       它产生的是 `Json.Ast`：`String`、`Long`、`Double`、`Bcd`（用于超过十五位的数字，按作用域内的 `NumberMode`）、`true`/`false`、`Json.JsonNull`、用于对象或混合数组的 `Array[Any]`，以及用于全是小数字的数组的打包 `Array[Int]` 或 `Array[Long]`，后者解码得到的值与装箱形式相同，但只需一次分配。
++       最多十六个 ASCII 字节的对象键通过每线程缓存驻留，因此在多个文档中重复的记录形状会复用其键字符串。
+
+@ 0 10 0 015947a9abc3261d0c38cfd9abb9a648
++       能精确放入 `Long` 或 `Double` 的数字通过快速路径解码；更长或精度更高的数字保留为 `Bcd` 数字位，不丢失任何信息，除非导入 `numberModes.doubleNumberMode` 或 `numberModes.bcdNumberMode`，以这份精度换取吞吐量。
++       开头的 UTF-8 字节顺序标记会被跳过。
++       字符串从 UTF-8 解码，处理所有转义；不是有效 JSON 的输入会以 `Parse.Error` 中止，其 `Json.Ast.Issue` 在出错的字节位置指明故障：`EmptyInput`、值之后的 `SpuriousContent`、`ExpectedColon`、`NumberHasLeadingZero`、`IncorrectEscape`、`PrematureEnd` 等。
++       在 `parsing.trackPositions` 下，同一次解析还会构建 `Json.PositionIndex`，使 `locate` 能把节点映射回其行和列。
+
+@ 0 3 0 05135bea71eb17111211fc9845df6066
++       性能：在基准测试语料的文档上，流式解析的速度与 Jackson 相差约百分之十五以内，而通过生成的 `Json.Parsable` 直接读取则完全跳过树。
+
+% 1 1 0 192beb85fef2cbfc0da7eda141f06e57
+
+% 0 1 0 1713daee8aae7e3a056502fd959c093d
+
+% 0 1 0 1aa5487254dc39361426da3d612ffd72
+
+@ 0 88 0 1c954ec661d563ca0c01e872832734b5
++   entry #Region   输入中的一个标记位置，即 `Cursor.Mark`，作为解析器自己的别名
++       `Region` 是输入中的绝对位置，在词法单元开始时获取，用于在词法单元结束后截取其字节，或报告错误的范围。
++       它就是 zephyrine 的 `Cursor.Mark`，只在产生它的那次保持期间有意义。
++   entry #resetData   让解析器指向一个完整保存在内存中的文档
++       在 `input: Data` 上重建游标，并清除每次解析的全部状态：字符串缓冲区、暂存数组和位置索引。
++       池的入口在每次 `#parse` 之前调用它；手动持有的解析器也必须这样做。
++   entry #resetIterator   让解析器指向一个以字节块形式到达的文档
++       与 `#resetData` 相同，但基于解析器所消费的 `Iterator[Data]`（该参数是 `consume` 的，因此调用者交出该迭代器）。
++       随着解析推进，块会被重新填充，横跨两个块的词法单元（数字、字符串、关键字）由游标拼成连续的，因此结果与解析连接后的字节完全相同。
++   entry #resetStream   让解析器指向一个 `Stream[Data] over Credit`
++       与 `#resetIterator` 相同，但基于按额度计量的 `Stream[Data]`：这就是从套接字或文件执行 `read[Json]` 时如何在字节到达时以有界内存解析，而不是在连接整个输入之后再解析。
++   entry #parse   解析一个完整的 JSON 文档并返回其 `Json.Ast`
++       跳过字节顺序标记和开头的空白，恰好解析一个值，然后要求直到输入结束都只有空白：其他任何内容都以 `Json.Ast.Issue.SpuriousContent` 中止，空输入则以 `Json.Ast.Issue.EmptyInput` 中止。
++       它需要一个 `Tactic[Parse.Error]`，每个格式错误输入的故障都通过它连同字节位置一起抛出。
++       当解析器跟踪位置时，根 `Json.PositionIndex` 与树一同构建。
++   entry #directSkipValue   消费一个完整的值而不构建任何东西
++       直接边界的跳过操作：对一个值（标量、数组或对象，任意深度）进行带验证的扫描，执行与 `#parse` 相同的语法并抛出相同的 `Json.Ast.Issue`，但不分配节点、缓冲区或键字符串。
++       生成的解析器对每个不认识的键使用它，因此未知字段的代价只是它所占的字节。
++   entry #directString   消费一个 JSON 字符串词法单元并将其作为 `String` 返回
++       跳过空白，然后要求一个 `"`；其他任何内容都以 `Json.Ast.Issue.ExpectedString` 中止。
++       在当前缓冲区内结束的纯 ASCII 字符串被直接复制出来；带转义或非 ASCII 字节的字符串，或跨越块边界的字符串，由通用路径解码，结果相同。
++   entry #directBoolean   消费 `true` 或 `false`
++       跳过空白，然后读取关键字，若字节不完全是该关键字，则以 `Json.Ast.Issue.ExpectedTrue` 或 `ExpectedFalse` 中止。
++   entry #directLong   消费一个整数词法单元，作为 `Long`
++       跳过空白，然后在从不重新填充缓冲区的快速路径上读取最多十八位数字和可选的负号。
++       小数部分、指数、第十九位数字、前导零（必须作为 `NumberHasLeadingZero` 拒绝）或触及窗口末尾的数字会回退到通用数字解析器，因此无论走哪条路径，值都相同。
++       `Json.Reader#long` 和 `Json.Reader#int` 就是这个调用。
++   entry #directDouble   消费一个数字词法单元，作为 `Double`
++       跳过空白，然后读取一个最多十五位有效数字、且指数处于尾数和十的幂都精确的范围内的数字，因此快速路径与通用路径的结果逐位相同；其他任何情况（第十六位数字、数字前的前导零、较大的指数、窗口末尾）都走通用路径。
++       `Json.Reader#double` 就是这个调用。
++   entry #directOpenObject   消费 `{` 并进入对象
++       跳过空白，然后要求 `{`（否则为 `Json.Ast.Issue.ExpectedObject`），并压入一个嵌套层级，其分隔符状态由逐键步进的方法维护，使缺失或重复的逗号像 `#parse` 那样被拒绝。
++   entry #directKeyWordFirst   对象的第一个键，打包为 `Long`，或者一个哨兵值
++       供静态地知道自己正在读取对象第一个键的生成解析器使用：不期望分隔逗号。
++       由一到十六个不带转义的可打印 ASCII 字节组成的键被打包返回，前八个字节在结果中，其余在 `#directKeyWordHigh` 中，使生成的解析器能通过与字面常量比较进行分派，而无需物化该键。
++       有两个值不可能是打包后的键，用作哨兵值：消费闭合的 `}` 后为 `-1`（`Json.Reader.KeyEnd`），快速路径在此无法判定时为 `-2`（`Json.Reader.KeyOpaque`），即键带转义、长于十六字节、为空、位于窗口边缘或格式错误，此时调用者通过通用的、驻留名称的步骤（`Json.Reader.keyNameOf`）解析它。
++   entry #directKeyWordNext   对象的后续键，打包为 `Long`，或者一个哨兵值
++       与 `#directKeyWordFirst` 相同，用于第一个之后的每个键：期望键前有 `,`（或闭合的 `}`），且不查询任何逐键状态。
++       适用相同的哨兵值。
++   entry #directKeyWordHigh   最近打包的键的第九到第十六个字节
++       `#directKeyWordFirst` 或 `#directKeyWordNext` 刚扫描的键的高位字，对于八字节或更短的键为零。
++       在读取低位字之后、扫描下一个键之前立即读取它。
++   entry #directOpenArray   消费 `[` 并进入数组
++       跳过空白，然后要求 `[`（否则为 `Json.Ast.Issue.ExpectedArray`），并为逐元素步进的方法压入一个嵌套层级。
++   entry #directElement   步进到已打开数组的下一个元素，或关闭该数组
++       返回 `true` 时定位在下一个元素，任何分隔逗号均已消费；消费闭合的 `]` 后返回 `false`。
++       它跟踪当前层级是否已经产生过元素，因此元素之间缺少逗号，或第一个元素前出现逗号，都会像 `#parse` 那样被拒绝。
++   entry #directElementFirst   数组循环的第一步：一个元素或闭合的 `]`
++       与 `#directElement` 相同，用于静态地知道这是第一步的循环：期望一个值或 `]`，绝不期望逗号，并把该层级标记为已开始。
++       生成的集合解析器把它与 `#directElementNext` 配对使用。
++   entry #directElementNext   数组循环的后续一步：`,` 后跟一个元素，或闭合的 `]`
++       与 `#directElement` 相同，用于第一个元素之后：期望 `,` 或 `]`，且不查询任何逐元素状态。
++       `,` 后跟 `]` 时以 `Json.Ast.Issue.ExpectedSomeValue` 中止。

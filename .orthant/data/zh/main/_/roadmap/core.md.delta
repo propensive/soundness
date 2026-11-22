@@ -1,0 +1,5 @@
+orthant 2 language
+
+@ 0 4 0 12b07e19a23cc3a90e9f3a30d1922b9f
++ 完成条件：`lib/` 中没有任何集合公开偏函数式的索引 `apply`，并且每个剩下的 `while` 都是 [`doc/work/standards/loops.md`](../standards/loops.md) 所认可的三种形状之一，并带有指明其不变式的注释。
++ 目标并不是字面上的零：由数据推导出的索引算术，以及组合子自身的内部实现，仍然保留为循环。

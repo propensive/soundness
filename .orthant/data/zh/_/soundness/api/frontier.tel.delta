@@ -1,0 +1,191 @@
+orthant 2 language
+
+% 0 1 0 0f04ec4b9ac2d4270a232409219e1f6b
+
+% 0 1 0 1839d307a452d6e40b6426e09bb0c989
+
+% 0 1 0 0b5938ce7315323607e1922cbc4d93e2
+
+@ 0 1 0 1d5d77e097f4a573135aea5c8b4ecee4
++ info   将缺失的 given 解释为一棵树，列出尝试过的候选项以及类路径上可以匹配的 given
+
+% 0 1 0 0ca6d61ddd9511ea1cdae38f1414f6fe
+
+@ 0 4 0 15781cd8e8cd524117f24b34ea0c8644
++     _Frontier_ 用对搜索过程的解释取代编译器简短的 _no given instance of type `T` was found_：尝试了哪些候选项，它们自身的哪些上下文参数无法找到，以及类路径上其他位置（未导入的，或位于选择包中的）有哪些 given 可以提供缺失的值，并给出导入每个 given 的 import 语句。
+
+% 0 1 0 121f5d49fa83450310393c10f05ce4fa
+
+% 0 1 0 1b9261087ab5c65c00494e8c15158853
+
+% 0 1 0 003b0f83b764717304597eb74f0aacc5
+
+% 0 1 0 1a1aad2b12e3225a03151ad4b70d251e
+
+% 1 1 0 10f0167f8011fb52161242df18c834d2
+
+@ 0 6 0 0e4302b1c58e79600cb440ac0084a4ac
++     它通过单个兜底 given `explainMissingContext` 工作，其类型为 `[any] => any`，因此是每次搜索的候选项。
++     尝试它时，它会自己重新执行搜索：如果发现不借助它搜索也能成功，它就失败，让编译器在类型推断完好的情况下选择实例；否则，它构建一棵关于缺失内容的 `Diagnostic` 树，并以渲染出的树作为消息中止。
++     这个兜底 given 从不为程序贡献任何项：它纯粹用于诊断。
+
+@ 0 7 0 078b94650e82336d0a4c194a77e1e2f2
++     它依赖注解 `@scala.annotation.internal.diagnostic`，该注解存在于 Soundness 构建所用的 Proscala 编译器中。
++     带有此注解的 given 若在隐式搜索期间中止，会像普通候选项一样失败，因此 `summonFrom`、默认 `using` 参数和 `NotGiven` 的行为与没有它时相同；但编译器会把它的错误保存为 `DiagnosticFailure`，如果整个搜索失败，就原样报告该消息，取代编译器自己的消息（以及任何 `@implicitNotFound`）。
++     在没有该注解的编译器下，这个兜底 given 无法使用。
+
+@ 0 1 0 063ed4f4d045da3e04b5beaf4ec2366a
++     可以通过以下两种方式之一将兜底 given 引入作用域：
+
+@ 0 4 0 17473136a501065a08e47c2ac175fac4
++     - `import soundness.*` 引入 `soundness.explainMissingContext`，它是旧式的 `implicit def` 而不是 `given`，正是为了让通配符导入包含它；
++     - `import frontier.context.explainMissingContext` 按名称引入该 `given`，适用于不导入总括包的代码。
+
+% 0 1 0 0797c6bf77c3030003eb6d7db95ad910
+
+% 0 1 0 1ce8fe6ca033a15a0bd38efcfa5b98d2
+
+% 0 1 0 12921236bce385d40855562298c83f0e
+
+% 1 1 0 1ce8b8e2cc9e49dd052da87a9b8e52e8
+
+@ 0 5 0 0ad980165e6bd28b173fb26df2620255
++     在一串 `using` 子句中，显示的解释针对最深处的缺失值，即最内层的原因，因为兜底 given 首先在那里展开。
++     解释是有界的：深于六层的候选项链，或一次解释中超过 256 次隐式搜索，会被报告为缺失而不再跟进，渲染出的树在 100 行处截断。
+
+@ 0 3 0 1995f22dc81cceef0ca99943218a7b68
++     该库只有一个源集 `frontier.core`。
++     `Diagnostic` 刻意不导出到 `soundness` 总括包，因为在那里它会与 `harlequin.Diagnostic` 冲突：请通过 `frontier.Diagnostic` 访问它。
+
+% 0 1 0 194151561e25ce5919101cdcc2b88ded
+
+% 0 1 0 0f221ed2717ac3a9100b15b50965dad6
+
+@ 0 1 0 143f892d26c7f152076ee372cd452cfa
++ entry .context   存放兜底 given `explainMissingContext` 的选择包，按名称导入
+
+% 1 1 0 0250e6d3bec738dc1f6e99a441ce4524
+
+@ 0 3 0 1df638e1da7a94dd01c6a065c74420a9
++       一个包，其唯一的 given 按名称导入，因为 `import frontier.context.*` 不会导入 given。
++       导入 `soundness` 总括包的代码不需要它：`import soundness.*` 会引入等价的 `soundness.explainMissingContext`。
+
+% 0 1 0 0d9fb0b7a1b2e2741a9a29ca5ceafd0b
+
+@ 0 10 0 13ba0b5714ff1e5017f905e65dccb707
++   entry .explainMissingContext   将失败的隐式搜索解释为一棵由候选项和类路径建议组成的树
++       一个类型为 `[any] => any` 的 `transparent inline given`，标有 `@scala.annotation.internal.diagnostic`，因此它是每次隐式搜索中的候选项。
++       尝试它时，它会在不包含自身的情况下重复搜索：如果搜索成功，兜底 given 就失败，让编译器在类型变量仍然开放的情况下自行选择实例；如果搜索失败，兜底 given 就以渲染出的 `Diagnostic` 树中止，若没有其他候选项成功，编译器就把它作为错误报告。
++       对于目标 `NotGiven[X]`，它平凡地成功，这样编译器对每个候选项的否定会把它变成失败，由 `NotGiven` 自己的实例来决定，从而 `NotGiven[X]` 恰好在不存在 `X` 时成立。
+
+% 2 1 0 06cf5b78f266969317260c70d1be036e
+
+% 0 1 0 00973241d22ea8a4012caaf81aeec69a
+
+% 0 1 0 08ee91ce048da1c30d2890f29f3caf49
+
+% 0 1 0 08ee91ce048da1c40d2890f29f3caf4a
+
+% 0 1 0 12689b8f01a131a817529a2fc39db27f
+
+% 0 1 0 001296c3f114510b1dcb0810a6100700
+
+% 1 1 0 173abe80ab8de7320a022afa3ad9a82f
+
+@ 0 3 0 040e488b9dfa1b2209cd459f85f02a20
++       该消息报告缺失的 `B`，即最内层的原因。
++       对多态 given 的建议会列出其类型参数绑定（`textual = Char`），候选项的 `NotGiven[X]` 要求显示为 _prohibits X_，并附上违反它的 given。
+
+@ 0 1 0 112679f98c94cf5e029814da099941fd
++ entry .Diagnostic   描述一次失败的隐式搜索的预渲染树，及其渲染器
+
+% 1 1 0 111ccd669e24327e0e2215c7b3f5a7e6
+
+@ 0 5 0 1af5b916d8cd9dbc0744090e38b9c065
++       一种与格式无关的解释模型：每个节点有一个种类、一个已渲染为 `Text` 的 `#name`、一个可选的 `#label` 以及它的 `#children`。
++       由于名称已经渲染好，渲染器不依赖编译器，任何需要解释失败的宏都可以构建同样的模型：Wisteria 的泛型派生会把字段名或变体名作为标注附加到每个节点上。
+
+@ 0 2 0 0583359f1acf43ba1ad88239ce325dfc
++       该枚举的六个分支就是它的节点种类，每个都接受一个名称、一个可选标注和一个子节点列表：
+
+% 0 1 0 16a4f2fae7bcd8cc1df54f58ca7e7d4d
+
+@ 0 9 0 10a5462555db93a905f090192d9fd9a6
++       column  分支
++       column  渲染形式
++       column  节点
++       row  `Resolving`  _■ resolving T_  根节点：正在解析的类型
++       row  `Candidate`  _▪ candidate g_  作用域中被尝试过的 given
++       row  `Requires`  _✗ requires T_  候选项中无法找到的上下文参数
++       row  `Propose`  _▸ propose pkg.g_  类路径上不在作用域中、但可以提供该值的 given
++       row  `Prohibits`  _⊘ prohibits X_  `NotGiven[X]` 要求，解包为 `X`；其子节点是违反它的 `Found`，若要求成立则没有子节点，标注为 `absent`
++       row  `Found`  _✓ found T_  已找到的值
+
+% 1 1 0 085a396440b94d5306c5eeced83a5004
+
+% 2 1 0 0673280dafa8be1405a02105a60e7489
+
+% 3 1 0 1b4080545ef535db03e59e50845d3623
+
+% 0 1 0 159b8d4e6cbaeaa113aac703fafd78db
+
+% 0 1 0 0c010ed7b57d2432034695f2df013319
+
+% 0 1 0 074caed5ee138b4b1f3de4bb9a5c300f
+
+% 0 1 0 0144d3b883890cf6199de2eb989393b7
+
+% 0 1 0 1ac6c91edfd6628f153d3499d8dd5942
+
+% 1 1 0 189bdac6354e2b190f71ebae5e8f5b8a
+
+@ 0 2 0 090a9e23fefe70e41403e95bb193df9c
++       `Diagnostic` 不导出到 `soundness` 总括包，因为在那里它会与 `harlequin.Diagnostic` 冲突。
+
+% 0 1 0 149718fb9e8fd11705bdc5d2784127e8
+
+@ 0 7 0 0f5e55e677ee66fd1d4195833f518f79
++   entry .render   在标题行之下，将诊断树渲染为 ANSI 着色的文本，最多到限定行数
++       根节点应是 `Resolving` 节点，它提供 _■ resolving T_ 这一行；其他任何节点都会被包裹在一个 `Resolving` 节点中。
++       `headline` 默认为 _contextual value not found_，`limit` 默认为 100：最多写出树的这么多行，若有行被省略，则在后面写出 _… n more_。
++       与已写出的子树完全相同的非叶子树只写出其第一行，并标注为 _as above_，因为在大的作用域中，解释否则可能长达数千行。
+
+% 2 1 0 019e19c47039c5bf1abf90decbf575e6
+
+% 3 1 0 09191a818f4814431c9d16f104a5c608
+
+% 0 1 0 03d6c89fab88062410e2e91683f1cc17
+
+% 0 1 0 0496797d163b904a1aee7903434fe546
+
+% 0 1 0 172dc24bf11f412d152e2648b4ff9f32
+
+% 1 1 0 04344e64d8e0e93c0151bedc6c1ff3a0
+
+@ 0 6 0 0beef1a9cb55de5b058ededce6df918f
++   entry .treeStyle   绘制诊断树所用的制表符样式
++   entry .expandable   使 `Diagnostic` 可展开为其子节点，以便绘制成树
++   entry #name   节点的类型或 given 渲染后的名称
++   entry #label   显示在名称之后的可选注释，例如字段名或 `absent`
++   entry #children   节点的子节点
++   entry #rebuild   同一种类、同一名称，但具有新标注和新子节点的节点
+
+@ 0 1 0 121f77e66ff8a44e0911ee9a30e423e0
++ entry .internal   `explainMissingContext` 背后的宏
+
+% 0 1 0 1c18810b564d59e609a88422cf8dd919
+
+% 1 1 0 0f71597c1b0bc6cb112bae74ffdfb433
+
+@ 0 7 0 0faa10a70af475360a95cad1e69d78dc
++       不供直接使用。
++       从兜底 given 到其宏的每一步都必须是 `transparent inline`：只有透明内联调用会在类型检查期间展开，因此非透明的一步会让宏在尝试兜底 given 时仍未展开，搜索就会错误地成功。
++   entry .explanation   解释宏的透明内联入口点
++   entry .explain   重新执行搜索，构建并渲染其 `Diagnostic` 的宏
++   entry .NoCandidates   匹配没有候选项的隐式搜索失败，给出其解释
+
+% 0 1 0 0eb601d2d8703d0a0cbc3f0c257d69cf
+
+@ 0 2 0 1e1fd34ade08fb8e132b0c4df5ca9693
++         `quotes.reflect.ImplicitSearchFailure` 上的提取器，供宏使用。
++     entry .unapply   若某搜索失败没有候选项，给出它的解释

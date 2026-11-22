@@ -1,0 +1,545 @@
+orthant 2 language
+
+% 0 1 0 0f04ec4b9ac2d4270a232409219e1f6b
+
+% 0 1 0 1044e12e2eb9decb08cd3fcf95b33c50
+
+% 0 1 0 0b5938ce7315323607e1922cbc4d93e2
+
+@ 0 1 0 1bb4543327382652151d3b89d68af7c5
++ info   无头终端模拟器：输入 ANSI 和 xterm 输出，输出由带样式单元格组成、可检视的屏幕
+
+% 0 1 0 0ca6d61ddd9511ea1cdae38f1414f6fe
+
+@ 0 7 0 02bf193bae568f891ea13af0b8ce5248
++     _Yossarian_ 是一个没有窗口的终端。
++     `Pty` 消费程序写入其终端的文本（字符与 ANSI 和 xterm 转义序列交织在一起），并计算出真实终端会显示的内容：一个单元格网格，每个单元格持有一个字素及其 `Style` 和任何超链接，另外还有光标、窗口标题、滚动区域以及程序设置的各种模式。
++     该状态是不可变值，因此测试可以保留中间状态、对它们进行比较，并对屏幕*显示*的内容作断言，而不是对产生它的字节流作断言。
+
+% 0 1 0 0797c6bf77c3030003eb6d7db95ad910
+
+% 0 1 0 1ce8fe6ca033a15a0bd38efcfa5b98d2
+
+% 0 1 0 0323f27fc4985e0804a43d7947f66e41
+
+% 0 1 0 10c21ad4388cfb8b111cdf3bf32636d3
+
+% 0 1 0 1dcfc42e1c6428f8049bf84be374705e
+
+% 0 1 0 01b431052e46e24a125ea9d29c1502b2
+
+% 0 1 0 1fbe3f2d3b19a34819d74ca0cbf45441
+
+% 0 1 0 14adb7ebb05b90e51e3c099925544d34
+
+% 0 1 0 0399105a6b43ab81118bc9c3dbc31511
+
+% 0 1 0 1a33ee6b4a3bba2500aa229743c7c755
+
+@ 0 9 0 1a345da8105ba76400de1bcd18b2cc1e
++     该模拟器实现了真实程序和 shell 所用的词汇：光标定位与移动、擦除、字符和行的插入与删除、滚动区域、使用十六色调色板、256 色立方和 24 位颜色的 `SGR` 样式、备用屏幕、光标可见性、焦点模式和括号粘贴模式、窗口标题和 `OSC 8` 超链接，以及程序可能请求的设备报告。
++     Unicode 按字素簇处理：宽字符占两个单元格，组合标记并入其左侧的单元格。
++     不影响屏幕显示内容的序列（小键盘模式、字符集指定、键盘协议协商、shell 通知）会被接受并忽略；模拟器无法理解的序列会抛出 `Pty.Error`。
+
+@ 0 3 0 02c7d711869263550361b4452aac29d1
++     从终端读取的输出以块的形式到达，块可能在转义序列中途结束，因此 `Pty` 保留不完整的序列，并在下一次 `consume` 时继续处理：无论输入如何划分，屏幕都相同。
+
+@ 0 3 0 173e7c497c536c001b306591a795cad6
++     没有回滚缓冲区：从屏幕（或滚动区域）顶部滚出的行就此消失，因此必须看到长输出全部内容的测试应当让 `Pty` 足够高以容纳它。
+
+@ 0 4 0 1b57dc92f3b3333b1cdd4ef534b1cf27
++     该库是一个平台中立的源集 `yossarian.core`。
++     `Pty`、`Screen` 和 `Style` 导出到 `soundness` 总括包；`Screen` 和 `Style` 在 `yossarian.internal` 中声明，其中 `Style` 是基于 `Long` 的不透明类型。
++     同一个 `Screen` 缓冲区，配以不同的单元格样式，支撑着 ultimatum 的文本用户界面。
+
+% 0 1 0 140984f76c87478615fca0342abdea8a
+
+% 0 1 0 1378e08a59eda7ec03b30888512a70c0
+
+% 0 1 0 0ae3217db960d1780e0752ad98e566cf
+
+@ 0 1 0 0ef3682fd7050c400f6f64459661266d
++ entry .Pty   作为不可变值的终端状态：其屏幕、光标、模式和待发送的回复
+
+% 1 1 0 02bf74caa7ad9f481697d1a5c13f5d19
+
+@ 0 4 0 12e970ea6e87832b02d176456eebd644
++       `Pty` 按某个尺寸创建（先宽后高，以单元格计），并由 `#consume` 转换，后者解释文本和转义序列并返回新的终端。
++       原终端保持不变：`#consume` 在写入前复制屏幕，因此可以保留并比较较早的状态。
+
+% 2 1 0 040b195f27a783ad17826de750978c52
+
+% 3 1 0 14a14899ff0a20251a2d8306d7e9f39f
+
+@ 0 1 0 077ba4401cff9f151f4bb67a3472c878
++         label 空白终端
+
+% 1 1 0 0b1ee9aa6f236c7f0f3990fcac86657f
+
+% 2 1 0 08d6612447080f5411280115e745897a
+
+% 3 1 0 10c52040836240ec040c49badc83fa6b
+
+% 5 1 0 063c60bbacc94d3106220e7851fac21b
+
+% 0 1 0 1a7aa7c6e3396f23145c08fa6bd5dd8a
+
+% 0 1 0 05820fda149c49fc0e006f04cf8b8f46
+
+% 1 1 0 099d5cf3a1c7536d0547c244833faebf
+
+@ 0 1 0 1e3321e6d39d1a67029027d674d33a9b
++         label 一些文本，然后是回车和换行
+
+% 1 1 0 11b05ab037bcb99c1fcc8d9e46366bf2
+
+% 2 1 0 0d701e3530ed13891107b0827d37959b
+
+% 3 1 0 019d9fa8bb5f92801b88f70997df68d7
+
+% 5 1 0 0078f1abb839e437000165c8ac54b3b2
+
+% 0 1 0 1013711093c130e411806b0d8d9c8f9a
+
+% 0 1 0 050d2de724e2d3fb1ce57090707eeb78
+
+% 1 1 0 1a950d8af5666a1808ba90f1ea68ef2a
+
+@ 0 1 0 0688763eae542dd80c56b3a4f9291172
++         label 光标回到起始位置，粗体 X 覆盖写在 h 上
+
+% 1 1 0 095002c9e6eb7fa514db75bf6dc4851f
+
+% 2 1 0 0c22b9cadd76434016bf81efe7a92eef
+
+% 3 1 0 130922d7c2a4a4791676c6b5725a93b8
+
+% 5 1 0 024856d1336a1dfd136f158a1de2bdd4
+
+% 0 1 0 0012197edcef19c2054905081e0d1115
+
+% 0 1 0 0dd4a91ece0ee63b16aae76597816309
+
+% 0 1 0 16f4462a3e84423014eb2d78965facf5
+
+% 1 1 0 0070a85a5beed8b105f8033b7cc39542
+
+@ 0 1 0 0d123cf1990adeae0e18525aa4e95bd9
++         label 擦除第二行
+
+% 1 1 0 1c4c245a0464433003e76185b31e2e65
+
+% 2 1 0 0bbd96b896e07ba01cb9128b8f27b294
+
+% 3 1 0 07420bb6920d746110b6f43cbdcd28c4
+
+% 5 1 0 1ce954fc7fb96e4c0169181f5d2eac3a
+
+% 0 1 0 00fd699ca4b0c6061beccf85be3b670c
+
+% 0 1 0 0edf4be63af912f90c4068dccf49085c
+
+% 0 1 0 0877af648357c3e703641d369f91589a
+
+% 1 1 0 1c2c9e88e3e6371a19a9ccd6855b53c7
+
+% 2 1 0 065a5ecac8ff4b680dc3f4085060dab0
+
+@ 0 4 0 01709c34e38ead24111d360ab12f9e14
++       换行符除了下移之外还会让光标回到第一列，正如处于常规换行模式的终端那样。
++       越过右边缘写入时采用延迟换行：光标停在最后一列，下一个可打印字符写到下一行的开头。
+
+@ 0 4 0 188961e399f0a0271f1deccf4f78f318
++       有些序列会让终端作出应答（光标位置报告 `CSI 6 n`、主设备属性和次设备属性），这些应答放在 `#output` 上，以 `#stream` 读回，因此可以用程序真正会收到的回复来测试会询问其终端的程序。
+
+@ 0 1 0 10d4266b16da94a317b6c40d6e13b63d
++       程序在屏幕本身之外设置的一切都在 `#state` 中，即一个 `Pty.State`。
+
+% 1 1 0 06bce6adadecd04807ae6b67aa8375e0
+
+% 1 1 0 1cbcc75204aea3111bc4f36b96485776
+
+@ 0 10 0 1887c4e6dfb285b700c54751eb4d03d2
++   entry .apply   给定宽度和高度、采用默认样式的空白终端
++       `Pty(width, height)` 创建一个终端，其每个单元格都是默认 `Style`（黑底白字，两种颜色都标记为终端的默认值）中的空格，光标位于左上角，滚动区域覆盖整个屏幕。
++   entry .stream   终端在消费一个惰性块流时经历的每个状态
++       `Pty.stream(pty, chunks)` 依次惰性地消费 `Chain` 中的每个 `Text`，给出每次之后的终端：作为流读取的程序输出就变成了屏幕的流。
++       与 `Pty#consume` 一样，被拆分到两个块中的转义序列会继续处理。
++       在消费每个块时抛出 `Pty.Error`。
++   entry .Error   转义序列无法解释时抛出
+
+% 1 1 0 029f32e989a172561fedd3a0cc8c37e1
+
+@ 0 8 0 1c35111ade6d0e540886ffa134fe8116
++         错误 `↯/s.132.1`：_an ANSI escape code could not be handled because `reason`_，其中 reason 是一个 `Pty.Error.Reason`。
++         由 `Pty#consume`（以及 `Pty.stream`）针对它不认识或参数无效的转义序列抛出，使测试能发现程序发出了损坏的序列，而不是让真实终端悄悄地把它们弄乱。
++         大多数故障在抛出后继续遍历，因此在累积式策略下，输入的其余部分仍会被解释；无效的 `SGR` 参数、非数值参数或超出范围的颜色编号则会中止。
++     entry .Reason   `Pty` 无法解释的转义序列中的故障
+
+% 1 1 0 19e149f83631454b048381349ca3bcd7
+
+@ 0 1 0 1b3fa9829eb6bccd111c77eb8c1db958
++           每个原因都携带其编号，即错误的第二段代码：
+
+% 0 1 0 01eaeca5798d1a3b02d48ba44beec41c
+
+@ 0 6 0 01424927abee49c2140071fde56a4a96
++           column  分支
++           column  代码
++           column  消息
++           column  说明
++           row  `BadSgrParameters(n)`  1  _`n` is not a valid SGR parameter sequence_  模拟器不认识的参数；`n` 是以 `;` 分隔的整个序列
++           row  `BadCsiParameter(n, command)`  2  _`n` is not a valid CSI parameter for the `command` command_  超出 `ED` 或 `EL` 等命令的范围
+
+% 0 1 0 00367a5c48c59fd51c00cf56323fc318
+
+@ 0 5 0 1ef1f2dc4508fa3b19cbddc29f1fa7fe
++           row  `BadColor(n)`  4  _`n` is not a valid color number_  超出 0 到 255 的 256 色索引
++           row  `BadOscParameter(parameter)`  5  _`parameter` is not a recognized OSC parameter_  既不是标题、超链接，也不是被忽略的 shell 通知之一
++           row  `BadCsiCommand(param, char)`  6  _`char` (with parameter `param`) is not a valid CSI command_  模拟器未实现的终止字符
++           row  `BadCsiEscape(char)`  7  _`char` is not valid in a CSI escape sequence_  不能出现在控制序列中的字节
++           row  `BadFeEscape(char)`  8  _`char` is not a valid Fe escape_  `ESC` 后跟一个不开始任何已知序列的字符
+
+% 0 1 0 1325124b3afc2ca70063c3f620bd5dcc
+
+@ 0 4 0 0aaf898f66ea89ed05e1d6e496810f48
++       entry .communicable   把每个原因渲染为消息，例如 _x is not a valid Fe escape_
++       entry #number   原因的编号，即错误代码的第二部分
++     entry #reason   指明故障的 `Pty.Error.Reason`
++   entry .State   终端除屏幕之外持有的一切：光标、保存的状态、模式、标题
+
+% 1 1 0 03df3ebe1c673ecb0303a03f255428f1
+
+@ 0 4 0 15f72d68e071b7291f6f558b16e7101c
++         由终端设置组成的 case class，由 `Pty#consume` 与屏幕一同更新。
++         位置是 `Ordinal` 单元格索引，指向逐行读取的屏幕，因此对于宽 `w` 个单元格的终端，第 `x` 列第 `y` 行的 `cursor` 为 `y*w + x`；滚动区域的边界是行序数。
+
+% 2 1 0 108a881af57622391ba2503149479f13
+
+% 3 1 0 048a58373f6657220cd1501c09f03fed
+
+% 4 1 0 16ab275da436986f01d82eb6a5b6c103
+
+% 6 1 0 1a37dc04878a96a60333371358465e13
+
+% 0 1 0 104008882517ee4511364a4ea72c03d6
+
+% 0 1 0 0658854e4fa3d264173e3945ceb8b8d8
+
+% 0 1 0 0a52aab63b8213b603367772bf4920fb
+
+% 0 1 0 09a050c4effdfb38136e579e9b042d64
+
+% 1 1 0 1d68d20075ee2aa118fc4c7626182f1b
+
+@ 0 42 0 07ce7c179458221d0a319096ccd74ba6
++         新终端的状态中，光标位于 `Prim`，样式为默认 `Style`，焦点开启，所有模式关闭；`Pty.apply` 把 `scrollBottom` 设为最后一行。
++     entry #cursor               光标的位置，即指向逐行读取的屏幕的单元格索引
++     entry #savedCursor          由 `CSI s` 或 `ESC 7` 保存、由 `CSI u` 或 `ESC 8` 恢复的位置
++     entry #savedStyle           由 `ESC 7`（`DECSC`）随光标保存、由 `ESC 8` 恢复的样式
++     entry #savedLink            由 `ESC 7`（`DECSC`）随光标保存、由 `ESC 8` 恢复的超链接
++     entry #style                下一个写入的字符将采用的样式，即 `SGR` 序列留下的样式
++     entry #focusDetectionMode   程序是否通过 `CSI ? 1004 h` 要求获知焦点变化
++     entry #focus                终端是否拥有焦点，以 `CSI I` 和 `CSI O` 最后的设置为准
++     entry #bracketedPasteMode   括号粘贴是否由 `CSI ? 2004 h` 开启
++     entry #hideCursor           程序是否通过 `CSI ? 25 l`（`DECTCEM`）隐藏了光标
++     entry #title                窗口标题，以 `OSC 0` 或 `OSC 2` 最后的设置为准
++     entry #link                 下一个写入的字符将携带的超链接，由 `OSC 8` 设置
++         没有打开的链接时为空：`OSC 8 ; ; url` 打开一个链接，不带 URL 的 `OSC 8` 关闭它。
++         链接打开期间写入的每个单元格都携带该 URL，用 `Screen#link` 读取。
++     entry #scrollTop            滚动区域的第一行，由 `CSI r`（`DECSTBM`）设置
++     entry #scrollBottom         滚动区域的最后一行，由 `CSI r`（`DECSTBM`）设置
++     entry #pendingWrap          光标是否停在最后一列，等待在下一个字符处换行
++     entry #mainScreen           主屏幕，在显示备用屏幕期间被搁置，否则为 `Unset`
++         进入备用屏幕（`CSI ? 1049 h`、`? 1047 h` 或 `? 47 h`）时把主屏幕存放在这里并清空显示；离开时把主屏幕恢复原样。
++         模式 1049 还会在 `#mainCursor` 中保存和恢复光标。
++     entry #mainCursor           主屏幕的光标，在通过模式 1049 进入备用屏幕时保存
++     entry #pending              上一次输入末尾的不完整转义序列，下次继续处理
++         从终端读取的输出以块的形式到达，块可能在转义序列中途结束；`Pty#consume` 把未完成的部分保留在这里，并把它加在下一次输入之前，因此无论输出如何划分，屏幕都相同。
++   entry #buffer   屏幕：由字素、样式和超链接组成的 `Screen[Style]`，逐单元格
++       用 `char`、`grapheme`、`style` 和 `link` 读取单元格，它们都依次以 `Ordinal` 接受列和行；或者用 `render` 读取整个屏幕。
++       该缓冲区是与此 `Pty` 共享的可变 `Screen`：可以读取它，但不要对它 `set` 或 `scroll`，否则持有它的 `Pty` 也会改变。
++   entry #state    终端在屏幕之外的设置：一个 `Pty.State`
++   entry #output   终端放置设备查询回复的中继
++       光标位置报告（`CSI 6 n`）放置 `ESC [ row ; column R`，主设备属性查询（`CSI c`）放置 `ESC [ ? 1 ; 2 c`，次设备属性查询（`CSI > c`）放置 `ESC [ > 0 ; 0 ; 0 c`。
++       从同一次 `Pty.apply` 派生的所有状态共享这个中继，因此它持有迄今为止的所有回复。
++       以 `#stream` 读取它；如果需要一次取得全部内容，先对它调用 `stop()`。
++   entry #stream   终端对设备查询的回复，作为惰性文本流
++       `#output` 作为 `Chain[Text]` 的视图，在被强制求值时拉取回复。
++       要读取迄今为止的每个回复，先停止中继，否则该链会等待更多内容：
+
+% 2 1 0 0a9627c4d71f10231c44f3485535d971
+
+% 3 1 0 116c8861eda148371400e17e4a207a83
+
+% 4 1 0 042a47e5fcb3e29d1816bac04b9b7307
+
+% 6 1 0 0ed02eb77d868fc01c89fc84a12c87f6
+
+% 0 1 0 133f80053d32c87e16180e71218a534a
+
+% 0 1 0 12b37fe324dcb3b81c7c8e5b5bb9a1e5
+
+% 0 1 0 02547fcfdca56a430e97c95eb635b256
+
+% 1 1 0 1b8f698042a6a7291b0ec8aea648244c
+
+@ 0 11 0 0c01770181cdc93f04975d76a2a72c85
++   entry #title    程序通过 `OSC 0` 或 `OSC 2` 设置的窗口标题，或者为空
++       两种终止符（响铃字符和字符串终止符 `ESC \`）都被接受，因为程序两者都用。
++   entry #cursor   光标的位置，即指向逐行读取的屏幕的单元格索引
++       对于宽 `w` 个单元格的终端，位于第 `x` 列第 `y` 行的光标为 `y*w + x`，类型为 `Ordinal`。
++   entry #cursorVisible   光标是否显示：`CSI ? 25 l` 之后为 false，`CSI ? 25 h` 之后再次为 true
++   entry #consume   解释文本和转义序列，给出终端的下一个状态
++       `pty.consume(text)` 在光标处写入每个字素并执行每个转义序列，返回新的 `Pty`；接收者保持不变。
++       它需要一个 `Tactic[Pty.Error]`，用于无法解释的序列。
+
+% 2 1 0 1d253e2c4eb2217f052abaa5cc281c47
+
+% 3 1 0 014a064733028a4010ddc6697da74144
+
+% 4 1 0 0860e65de1c6704602098370d2e14791
+
+% 6 1 0 180983073619fb1a01ca99ccee4e5956
+
+% 0 1 0 10262ef16adbefb518e1ed61abb81404
+
+% 0 1 0 1b1fdff82f5ac32e07ab654ae55cb5c7
+
+% 0 1 0 11580f37eed22f610064131fb9f70731
+
+% 0 1 0 02f57f974541d0180f8445af5e46a3b1
+
+% 1 1 0 1f8cd8a2d629458a05ead0b3fe327f38
+
+@ 0 5 0 0037a330176605e11a694aadce5e0546
++       控制字符的行为与终端上相同：退格左移而不擦除，制表符前进到下一个八列制表位，回车回到第一列，换行和换页下移一行，并在区域底部滚动该区域。
++       其他 C0 控制字符被忽略。
++       `ESC c`（`RIS`）把终端重置为初始状态，因此一个 `Pty` 值可以开始一个新的场景。
+
+@ 0 1 0 0b7503f64657e29f11c4ec959193c727
++ entry .Screen   单元格网格，每个单元格是带样式和超链接的字素，可逐单元格读取
+
+% 1 1 0 0fbddc860584195b18da99c44e0c75b2
+
+@ 0 6 0 1394f8fe65c1a66406a5b315af804a5d
++       `Screen[styling]` 是 `Pty` 背后的缓冲区（作为 `Screen[Style]`），也是 ultimatum 文本用户界面背后的缓冲区（使用 escapade 的样式词）。
++       `Screen` 在 `yossarian.internal` 中声明，并在这里导出。
++       每个单元格持有一个字素簇：一个 ASCII 字符、一个组合序列、一个表情符号，或宽字符的前半部分，其后半单元格持有空字素（`isWideTrailing`）。
++       单元格先按列再按行定位，两者都是 `Ordinal`。
+
+% 2 1 0 1f6901124fe8bbe61715aaca911aeb9b
+
+% 3 1 0 18a2101a98c18c0609fbd23d6923fbe6
+
+% 4 1 0 060b68c1198e96200f6e67b08087b9b4
+
+% 6 1 0 125badaa61e159870b19fb6318cb3c6f
+
+% 0 1 0 0f142b19a8ec70cf0823634085b5d1ba
+
+% 0 1 0 0e75efbcc67b578703f7905ab2963663
+
+% 0 1 0 0237bb7147ee0aa50cabece1c0d030ac
+
+% 0 1 0 1f7ced5efdbaa5d50291db4ea6da2dc2
+
+% 0 1 0 1c3d217be06730cf15e9995281f4ab66
+
+% 1 1 0 175099cfe0b1ccee010ac24fe81c8a57
+
+@ 0 2 0 05fcba9999ca0f391a0e885f5d3e98da
++       与 `Pty` 不同，`Screen` 是可变的：`set` 和 `scroll` 原地改变它，`copy` 生成一个独立的副本。
+
+% 1 1 0 10b1619b8f862f991e82103b3c7ccc65
+
+% 1 1 0 028a6347af47f6b50726212a5e10673f
+
+@ 0 1 0 109e5eb2d3eb3d0718073f37bf283a59
++ entry .Style   单元格的外观：八个属性标志、两种颜色，以及每种颜色是否为默认值
+
+% 1 1 0 11259ea9084ebc7709dcf9e9e7add467
+
+@ 0 5 0 0c46cdfe19ce10cd14a9f7dfaa407fe2
++       `Style` 是基于 `Long` 的不透明类型，在 `yossarian.internal` 中声明并在这里导出，通过扩展方法读取：`bold`、`faint`、`italic`、`underline`、`blink`、`reverse`、`conceal` 和 `strike` 是标志，`foreground` 和 `background` 是以 `Chroma` 表示的颜色，`defaultForeground` 和 `defaultBackground` 表明每种颜色是终端自身的默认值，还是输出所选的颜色。
+
+@ 0 5 0 1118e44e001040c60b671a2485f66f19
++       这一区别对渲染器很重要。
++       新单元格，以及在 `SGR 0`、`SGR 39` 或 `SGR 49` 之后写入的单元格，具有默认颜色：其 `Chroma` 只是本模拟器为它们显示的颜色（黑底白字），以自己的主题绘制屏幕的渲染器可以使用自己的颜色。
++       输出显式设置的任何颜色都会清除该标志，即使它与默认色度相同。
+
+% 2 1 0 053b9a6b81059775030faa6728bdab85
+
+% 3 1 0 1ab9dac2ec0b294a0789714ebd5a1188
+
+@ 0 1 0 1318e27c0cbbfe8109db60be28c36281
++         label 新单元格：两种颜色都是默认值
+
+% 1 1 0 0c9151406871db7e0e49c98554709f5b
+
+% 2 1 0 1e89e4bc4370448011fce080b348bda0
+
+% 3 1 0 0463f923f01aa62c1cb487ef37108aed
+
+% 5 1 0 0c1f213a7e4bd17311eb14041744d803
+
+% 0 1 0 11eba432a40924ad02a28c9e93f3f642
+
+% 1 1 0 06cf806996ebd7ad0646275b2ec70ee7
+
+% 1 1 0 1d16dbde6b8075481a17f2c292553b35
+
+@ 0 1 0 117c7cca5be37dd309a1519ec609aefc
++         label SGR 31 设置红色前景：只有背景仍是默认值
+
+% 1 1 0 181f00514385caf604bbdc039767532a
+
+% 2 1 0 106db708a80f6d1e0fdd45efe83e5beb
+
+% 3 1 0 141bd16c021eeb1c08a481621be5c389
+
+% 5 1 0 08e84f9e80e58d8808550298e07659e3
+
+% 0 1 0 0bfec68f6e1db62b1b7996d464893edb
+
+% 0 1 0 10380c502a94fec40f2b56713a5c3abd
+
+% 0 1 0 0b31bbd480869f171bb821b4e00b9d49
+
+% 1 1 0 167d63b684299de616970d53f9aed742
+
+@ 0 1 0 030ec1c5a2c88c0301073cd3db07adb7
++         label SGR 39 恢复默认前景色
+
+% 1 1 0 17fb5f69960dbbe7000063797f79b816
+
+% 2 1 0 0638e43e43d9c9260b39c00624ee8504
+
+% 3 1 0 0717692cd763bb311d653c6bd713df3d
+
+% 5 1 0 1d631178ea4dd9d20b4bf41c5f9e2b59
+
+% 0 1 0 1cbc0b3209ca5eaa09ee4e4d27e01810
+
+% 1 1 0 1b616dc1ed71598f092e1a10f1f830bb
+
+% 1 1 0 14a009634a3588bb1b451fee212e7e2f
+
+% 2 1 0 05b68d1eda152d7501ad753915abcce1
+
+@ 0 5 0 150194ef63fc7e19069ece57de37f2c6
++       `SGR 30`–`37` 和 `40`–`47` 从十六色调色板中选择，`90`–`97` 和 `100`–`107` 选择其亮色的一半，`38;5;n` 和 `48;5;n` 选择 256 色调色板（十六色、一个 6×6×6 立方和一个 24 级灰阶），`38;2;r;g;b` 和 `48;2;r;g;b` 选择任意 24 位颜色。
++       与终端上一样，样式变化影响之后写入的单元格，而不影响已在屏幕上的单元格。
+
+@ 0 2 0 01f8c27b291a52a01bf99b04cf1e0fe7
++       样式检视时紧凑地显示为其标志（关闭的标志名称前加 `!`）和两种颜色，如 `[Bo !F !I … DF DB … …]`。
+
+% 1 1 0 07df072df7e0d8090904a31398fa2067
+
+% 1 1 0 062afa7bcf7a9d77073fe2da263417e4
+
+@ 0 1 0 15acb4d4bc40c88b19a9252aa443208a
++ entry .internal   `Screen` 和 `Style` 的声明，以及读取样式的扩展方法
+
+% 0 1 0 1c18810b564d59e609a88422cf8dd919
+
+% 1 1 0 0f71597c1b0bc6cb112bae74ffdfb433
+
+@ 0 4 0 04358a69dc939fee09b0771df7921cda
++       不供作为前缀直接使用：`Screen` 和 `Style` 从这里导出到 `yossarian` 包，样式扩展方法（`bold`、`foreground`、…）无需导入即可用于任何 `Style`。
++   entry .Style   以不透明 `Long` 表示的单元格外观；参见 `yossarian.Style`
+
+% 1 1 0 0f69ab3fb02d166a04bd825f1bb7e322
+
+@ 0 4 0 1c31a34935e14faa095036e94ca28108
++         不透明类型 `Style = Long`。
++         它在 `yossarian` 包下的页面有完整说明；对位进行编码和解码的成员在这里。
++     entry .apply   默认样式：黑底白字，两种颜色都标记为默认值
++     entry .Bits   读写样式中一个 24 位颜色字段
+
+% 1 1 0 10cf5e8dd54e68b7035cd4693badcc1e
+
+@ 0 9 0 1ad9bcfe77725dc5188faaca2da9a064
++           一种颜色在 `Long` 中某个偏移处占 24 位；`Foreground` 和 `Background` 是两个实例。
++       entry #apply    样式字段中存储的颜色，作为 `Chroma`
++       entry #update   把该字段设为某颜色的样式副本：`Style.Foreground(style) = chroma`
++     entry .Foreground   样式的前景色字段
++     entry .Background   样式的背景色字段
++     entry .chromaInspectable   以打包整数渲染 `Chroma`，用于样式的检视
++     entry .inspectable   把样式渲染为其标志和颜色：`[Bo !F … DF DB fg bg]`
++     entry .Bit   样式的一个标志：一个属性，或某种颜色是否为终端的默认值
+
+% 1 1 0 0cd55a5cd81eda5a0e84592f0a4c1c2b
+
+@ 0 9 0 10a19b0981c95ee51facf2f5dad861b3
++           属性标志 `Bold`、`Faint`、`Italic`、`Strike`、`Blink`、`Underline`、`Conceal` 和 `Reverse`，以及 `DefaultForeground` 和 `DefaultBackground`；后两者在颜色为终端默认值时设置（在重置时，以及 `SGR 39` 或 `49` 之后），并被输出设置的任何颜色清除。
++           标志用 `Bit.Bold(style)` 读取样式，用 `Bit.Bold(style) = true` 写入样式。
++       entry #bit      该标志在样式 `Long` 中的位位置
++       entry #apply    该标志在样式中是否已设置
++       entry #update   设置或清除了该标志的样式副本
++   entry .Screen   带样式单元格的网格；参见 `yossarian.Screen`
+
+% 1 1 0 0bfc62a1819f13660a01fea67a78d9f7
+
+@ 0 26 0 14379de4f99b7def18e4d0c8d9abbe85
++         类 `Screen[styling]`，对每个单元格持有的样式泛型。
++         它在 `yossarian` 包下的页面有完整说明；其成员在这里。
++     entry .apply   给定宽度和高度的空白屏幕，使用给定的空白样式或默认 `Style`
++         `Screen(width, height, blank)` 以样式 `blank` 的空格填充每个单元格，因滚动而腾空的单元格也采用这一样式；它需要该样式类型的 `ClassTag`。
++         `Screen(width, height)` 是终端模拟器的屏幕，一个以默认 `Style` 清空的 `Screen[Style]`。
++     entry #width     列数
++     entry #capacity  单元格数，即宽度乘以高度
++     entry #height    行数
++     entry #offset    按列和行给出的单元格索引，指向逐行读取的屏幕
++     entry #style     某列某行单元格的样式
++     entry #link      某列某行单元格的超链接，没有时为空文本
++     entry #grapheme  某列某行单元格中的字素，宽字素的后半部分为空
++     entry #char      某列某行单元格的第一个字符，宽字素的后半部分为空格
++         便于对窄文本作断言：持有组合序列或表情符号的单元格只给出其第一个 `Char`，因此这些情况请使用 `#grapheme`。
++     entry #isWideTrailing   该单元格是否为宽字素的后半部分，该字素位于其左侧单元格
++     entry #line      整个屏幕作为一行，与此屏幕共享单元格
++     entry #render    屏幕的文本，各行以换行符连接，宽字素只出现一次
++         每一行都完整渲染，包括末尾的空格，因此持有 `hi` 的十列行渲染为 `hi` 后跟八个空格。
++     entry #find      文本在屏幕上首次出现处的单元格，作为单行屏幕，或者为 `Unset`
++         把屏幕作为一行来搜索，因此匹配可以从一行末尾延续到下一行。
++         结果持有所匹配单元格样式和链接的副本，因此测试可以找到一个词并检查它是如何绘制的：
+
+% 2 1 0 180441d868421ec10add35d492733d58
+
+% 3 1 0 181a25e21cad5f3109fd0e45590edca2
+
+% 4 1 0 10a0bc6a2ca739df070349b96a0a06dd
+
+% 6 1 0 051696624edea30b08946a11dc5f49e5
+
+% 0 1 0 198e05741935908b15bb04a3bb4841d7
+
+% 0 1 0 1fa95221e0ca385f126e1d84ea63d9f6
+
+% 1 1 0 06ee1cc9b6a7d3581602446faa1e578e
+
+@ 0 28 0 14e87e15fe25692a19eb1a94a6be9f00
++     entry #styles    每个单元格样式的冻结副本，逐行读取
++     entry #scroll    把屏幕或某个区域的行上移若干行，为负数时下移
++         `scroll(n)` 滚动整个屏幕，`scroll(n, top, bottom)` 滚动从 `top` 到 `bottom`（含）的行；露出的行以空白单元格填充。
++         它原地改变屏幕。
++         滚出的行被丢弃：没有回滚缓冲区。
++     entry #set       原地把字素、样式和超链接写入单元格
++         按列和行定位，或按单元格索引定位；屏幕被原地改变。
++     entry #copy      屏幕的独立副本，之后对任一方的写入都不影响另一方
++   entry .bold                样式是否为粗体，由 `SGR 1` 设置，由 `SGR 21` 或 `22` 清除
++   entry .italic              样式是否为斜体，由 `SGR 3` 设置，由 `SGR 23` 清除
++   entry .blink               样式是否闪烁，由 `SGR 5` 设置，由 `SGR 25` 清除
++   entry .faint               样式是否为暗淡，由 `SGR 2` 设置，由 `SGR 22` 清除
++   entry .conceal             样式是否隐藏，由 `SGR 8` 设置，由 `SGR 28` 清除
++   entry .strike              样式是否带删除线，由 `SGR 9` 设置，由 `SGR 29` 清除
++   entry .underline           样式是否带下划线，由 `SGR 4` 设置，由 `SGR 24` 清除
++   entry .reverse             样式是否交换其颜色，由 `SGR 7` 设置，由 `SGR 27` 清除
++   entry .foreground          样式的前景色，作为 `Chroma`
++       当 `defaultForeground` 为 true 时，这只是本模拟器为终端默认值显示的颜色（白色），渲染器可以换成自己的颜色。
++   entry .background          样式的背景色，作为 `Chroma`
++       当 `defaultBackground` 为 true 时，这只是本模拟器为终端默认值显示的颜色（黑色），渲染器可以换成自己的颜色。
++   entry .defaultForeground   样式的前景色是否为终端的默认值，而不是输出设置的颜色
++       对新单元格以及在 `SGR 0` 或 `SGR 39` 之后为 true；设置任何前景色之后为 false，即使它与默认色度相同。
++   entry .defaultBackground   样式的背景色是否为终端的默认值，而不是输出设置的颜色
++       对新单元格以及在 `SGR 0` 或 `SGR 49` 之后为 true；设置任何背景色之后为 false，即使它与默认色度相同。

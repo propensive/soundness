@@ -1,0 +1,3188 @@
+orthant 2 language
+
+% 0 1 0 0f04ec4b9ac2d4270a232409219e1f6b
+
+% 0 1 0 0e310d55627738e50aa912d11464a66a
+
+% 0 1 0 0b5938ce7315323607e1922cbc4d93e2
+
+@ 0 1 0 060e63be177a781b0fc5e15ea60246fc
++ info   作为有类型值的 HTTP：请求、响应、头部、正文、cookie，以及通过导入选择传输层的客户端
+
+% 0 1 0 0ca6d61ddd9511ea1cdae38f1414f6fe
+
+@ 0 9 0 1d20aff7ee75397f1336e25ad019c2f1
++     _Telekinesis_ 是 Soundness 对 HTTP 及其客户端的建模。
++     请求发送到一个在代码编译时就受到检查的 URL；头部是具名参数，其值依照所设置的头部进行检查（`accept` 接受 `MediaType`，`authorization` 接受 `Auth`）；请求正文是一个知道自身媒体类型的有类型值（`Postable`）；而响应正文按所请求的任何类型读取（`Receivable`）。
++     失败的状态是 `Http.Error`，无法建立的连接是 `Connect.Error`，两者都是通过 `Tactic` 抛出的有类型错误，而不是需要去猜测的异常。
++     一段代码会访问网络这一事实本身也是可见的：每个请求都要求一个 `Online` 能力，通过 `internetAccess.online` 导入。
+
+% 2 1 0 0777ec0739147fbd1e2b01970af265c0
+
+% 3 1 0 040d18f17a9a6bc6039d7741b9db13a2
+
+% 4 1 0 0e08fe6c88cae32605a16a9dec90dec9
+
+% 5 1 0 06f9972e9dcde6e81b870ef396865b7e
+
+% 0 1 0 1e13bb2d27b6fcca0581e75784422724
+
+% 1 1 0 012625f543ddacaf1fe60cd4d465b7cc
+
+% 2 1 0 0af2dc0a07df816c0e0c2854140b2a58
+
+% 3 1 0 183ea90f753252ee03a46f2dd90954a6
+
+% 4 1 0 0f0232d489fc52bf0fc6ac21bfb0c724
+
+% 0 1 0 1ce543c070756ca7033d2356903af397
+
+% 0 1 0 0ec02e5ef6717f541a617ea7aa8a933b
+
+% 0 1 0 17e21dbf4e685fa21c1bb0cef36fe3dd
+
+% 0 1 0 03f708f800ea32e8020a1b9ce814a2dc
+
+% 1 1 0 0ab64c13b38ccd1a02d3e7ec3cef0f15
+
+@ 0 7 0 15bed0110efd805200865553617a4c35
++     同样的词汇也服务于另一个方向。
++     `Http.Request` 是服务器从连接上解析出的东西（`Http.Request.parse`），`Http.Response` 是处理函数所返回的东西（`Http.Response(Http.Ok)(t"hello")`，或任何 `Servable` 值），`Cookie`、`Parameter` 和 `Submission` 读取请求的 cookie 和表单字段，而 `Http.Connection` 是处理函数所看到的一次活动的交换。
++     `scintillate` 库的服务器就构建在这些类型之上，而数据格式库所提供的 `Servable`/`Postable` 对（`postables.jsonPostable`、`servables.xmlServable`、…）可以接入两端。
+
+@ 0 6 0 16257869eca3f1291c58f2eb7a48ca42
++     核心类型都嵌套在 `Http` 中：`Http.Request`、`Http.Response`、`Http.Header`、`Http.Method`（含 `Http.Get`、`Http.Post`、…）、`Http.Status`（含 `Http.Ok`、`Http.NotFound`、…，它们被导出，因此 `Http.Ok` 就是该状态）、`Http.Body`、`Http.Backend`、`Http.Client`、`Http.Session` 和 `Http.Connection`。
++     URL 是 urticose 的 `HttpUrl`（`url"…"`），查询字符串是 legerdemain 的 `Query`，媒体类型是 gesticulate 的 `MediaType`（`media"…"`）。
+
+@ 0 1 0 06be053cd855533a17c578f1edbd6b55
++     该库按每个平台能做的事情划分为多个组件：
+
+@ 0 21 0 083bf0cb566ebd8806753aeb9a66ad60
++     - `telekinesis.core`——模型（`Http` 及其中的一切）、类型类 `Postable`、`Receivable`、`Servable`、`Fetchable` 和 `Directive`、扩展方法 `fetch` 和 `submit`、`Auth`、`Cookie`、`Session`、`Context`、`Parameter`、`Submission`、`Connect.Error`，以及选择包 `httpRedirections`、`queryParameters` 和 `construables`。与平台无关；客户端逻辑（重定向、日志）位于此处，并将线上的传输委托给一个 `Http.Backend`。
++     - `telekinesis.forms`——`Orchestrate`/`orchestrate` 和 `Submission#form`：用 honeycomb 的 HTML 和 legerdemain 的部件渲染的表单往返。
++     - `telekinesis.sockets`——`httpBackends.soundnessHttp`，即直接在 coaxial 的套接字上（JVM 和 Scala Native）使用 HTTP/1.1 线上编解码器通信的后端，带有池化的 keep-alive 连接；在 JVM 上，它的 `https` 路径通过 ALPN 协商 HTTP/2。
++     - `telekinesis.jvm`——基于 `java.net.http` 的 `httpBackends.javaNetHttp`，以及 Unix 域套接字客户端（`udsFetchable`、`udsHttpClient`、`requestTransmissible`）。
++     - `telekinesis.http2`——HTTP/2 层（仅 JVM）：`Http2` 及其 `Connection`、`Stream`、`Frame`、`Event` 和 `Error`，编解码器 `Hpack` 和 `Huffman`，`FrameReader` 和 `PseudoHeaders`，`Http.Session` 的各个实现，以及在 URL 上打开会话的 `httpUrlSessional` given（`url.session: session ?=> …`）。每个都有自己的页面。
++     - `telekinesis.wasi`——`httpBackends.wasiHttp`，即面向 Wasm 组件、基于 `wasi:http` 的后端，用于从组件提供服务的 `WasiHttpServer`，以及 `wasiApis.wasiHttpApi`。
+
+@ 0 8 0 032f34ecf15c324d16fc3139b2105e9e
++     有三项选择通过按名称导入 given 来作出，因为 `import soundness.*` 不会导入 given：来自 `httpBackends` 的**传输层**（`javaNetHttp`、`soundnessHttp`、`wasiHttp`），来自 `httpRedirections` 的**重定向方针**（`doNotFollowRedirects`；没有它时，重定向会被跟随，最多到 `Http.Redirection` 的十次上限），以及对于泛型派生的 `Query`，`queryParameters.arbitraryQueryParameter`。
++     请求还需要作用域中有一个 `Http.Event is Loggable`（`logging.silentLogging` 会丢弃这些事件），以及一个 `Tactic[Connect.Error]` 和一个 `Tactic[Http.Error]`，或者一个诸如 `strategies.throwUnsafely` 的策略。
+
+@ 0 2 0 11162e40ba9a8bba0811e74579e794b7
++     所有内容都导出到 `soundness` 总括包，在那里选择包会与总括包自己的包合并。
+
+% 0 1 0 18d5e63c64c0207c17373acba4a73b8e
+
+% 0 1 0 0c45b0f3e0cf55d902ff79fe2ec38bd0
+
+% 0 1 0 119fd230649fcff21c8cd33531529de8
+
+% 0 1 0 0af3e578632d373712f36af9b6597270
+
+% 0 1 0 01f2d2e26910251c160e74dd7a7c85c5
+
+% 0 1 0 066cd8e3e3dfcf650bf1d9f7837db24a
+
+% 0 1 0 164362d281f69df60fc75bd4042b84a3
+
+% 0 1 0 0b3f84a95166c67818ffbae91c6f0cf5
+
+@ 0 1 0 12d99fc1293bd5db1126842771dc5919
++ entry .Http   HTTP 模型：方法、状态、头部、正文、请求、响应、客户端
+
+% 1 1 0 122dd709d11ec8430c2bf72157170bbf
+
+@ 0 7 0 132522339dbbfa77096811283f4b7fc4
++       `Http` 是整个模型的命名空间，也是一个自身没有实例的密封特质。
++       方法有 `Http.Get`、`Http.Post`、`Http.Head`、`Http.Put`、`Http.Delete`、`Http.Connect`、`Http.Options`、`Http.Trace` 和 `Http.Patch`，每个都是 `Http.Method` 的 case object；状态是 `Http.Status` 的各分支，它们被导出到 `Http` 中，因此可以直接访问 `Http.Ok`、`Http.NotFound` 等。
++       消息是一个 `Http.Request` 或一个 `Http.Response`，各自带有一个 `List[Http.Header]` 和一个 `Http.Body`。
+
+% 2 1 0 135a9a32cdcddc621b464f431381ab14
+
+% 3 1 0 04f5c085d504d9fc17234b4306865c26
+
+% 4 1 0 1b3971753db5d75000ae02ce2bd12309
+
+% 0 1 0 191c9c42efc03a9b09ea8b6a3456f8ab
+
+% 0 1 0 07d1eae15d0b17da084ac0b31c597ef4
+
+% 0 1 0 10c05fe2cc7a64c01b11bf76340685e2
+
+% 0 1 0 168e1c3b7b67b4fb0b1404f862ab62b4
+
+% 0 1 0 1c4bed9ed52957560b05d1db7e4833f7
+
+% 1 1 0 0c49c78732205dac0b9472ef69eb94f0
+
+@ 0 6 0 055e281c0063e11215a80e8affa8af7b
++       客户端一侧是 `Http.Fetch` 和 `Http.Submit`，即 `url.fetch` 和 `url.submit` 返回的值，其 `apply` 构建并发送请求；`Http.Client` 在一个 `Http.Backend`（从 `httpBackends` 中选择的传输层）之上运行重定向循环和日志记录。
++       服务器一侧用 `Http.Request.parse` 解析，通过 `Http.Connection` 作答，并用 `Http.Response.serialize` 序列化。
++       `Http.Session` 是到单个源的一条连接，多个请求在其上交换。
+
+@ 0 3 0 170733222b6f0c6b1af9cafffbdfa659
++       错误有 `Http.Error`（成功范围之外的响应）、`Http.Request.Error` 和 `Http.Response.Error`（无法解析的消息），以及 `Connect.Error`（根本没有响应）。
+
+% 1 1 0 1bb8805d9a02c3010125f4b6c28bbdfb
+
+% 1 1 0 0d58a5a6ea1742ef0a5921c15f3251f4
+
+% 1 1 0 0219be65f01c58820f9153959e996e3e
+
+% 1 1 0 14873f9b65329e701ecc452c7b49a94f
+
+% 0 1 0 14b699f6eef25190032461e1411836c0
+
+% 0 1 0 0d61f640db7e020900bf9d63f7b3b130
+
+@ 0 1 0 0b0d0cd9015fbd6600353dd679eb7138
++   entry .Version   消息的协议版本：`0.9`、`1.0`、`1.1`、`2.0`、`3.0` 之一
+
+% 1 1 0 06e67368a1c21bff17888b3e4ba53d53
+
+@ 0 8 0 0ef2e222437c2ebc0938a147c830ff4e
++         `Http.Version` 是字面量类型的并集 `0.9 | 1.0 | 1.1 | 2.0 | 3.0`，因此版本就写作数字本身：`Http.Request(Http.Get, 1.1, …)`。
++         伴生对象负责渲染和解析它：`1.1` 显示为 `HTTP/1.1`，`2.0` 显示为 `HTTP/2`。
++     entry .showable   将版本渲染为 `HTTP/1.1`、`HTTP/2`、`HTTP/3`
++     entry .parse   读取 `HTTP/1.1`、`HTTP/2` 或 `HTTP/2.0`、`HTTP/3`；其他任何内容都视为 `1.0`
++         有意设计得宽松：解析器不认识的版本被视为 `1.0`，即服务器对于没有发送更好版本的客户端必须假定的版本。
++   entry .Header   一个头部字段：键和值，都是文本
+
+% 1 1 0 0058f93ce6dc194e15f9166330cb17d4
+
+@ 0 16 0 1d4a54266a13d43f01c7c5a7bd949f52
++         `Http.Header(key, value)`，从线上读取，或由 `Directive` 构建。
++         键不区分大小写，当它们来自具名参数时，客户端以小写的 kebab 形式（`content-type`）发送。
++         `Header` 是 `Encodable in Http.Header`（即它自身），因此可以用 `response + header` 将其添加到响应中。
++     entry .encodable   恒等编码：`Header` 编码为其自身，因此 `response + header` 可以工作
++     entry .repeatable   一个字段在消息中是否可以出现多次
++         `Http.Header.repeatable(t"set-cookie")` 为 `true`；`repeatable(t"content-type")` 为 `false`。
++         基于列表的字段（`accept`、`cache-control`、`vary`、…）和 `Set-Cookie`（它必须重复，因为 cookie 值可能包含逗号）是可重复的；其他所有字段，包括库所不知道的字段，都是单例字段，因为重复单例字段是协议错误。
++         查找不区分大小写。
++         该规则决定 `Http.Response(…)(body)` 如何合并在调用处指名的头部与其 `Servable` 所派生的头部：单例字段被覆盖，可重复字段则两者都保留。
++     entry #key   字段名，按书写形式
++     entry #value   字段值
++   entry .Method   请求方法，作为一个密封特质，每个方法一个 case object
+
+% 1 1 0 001e8faa89ae11a11791aa3bd21fc54f
+
+@ 0 6 0 056d2c2331eb9a7e045169d0e8ca23e2
++         `Http.Get`、`Http.Head`、`Http.Post`、`Http.Put`、`Http.Delete`、`Http.Connect`、`Http.Options`、`Http.Trace` 和 `Http.Patch`。
++         每个方法都在类型层面上携带它是否有请求正文：`Http.Post.Payload` 为 `true`，`Http.Get.Payload` 为 `false`，而 `#payload` 是其运行时对应物，可以通过擦除后的 `Method` 类型读取。
++         方法显示为其大写名称，并以不区分大小写的方式从文本解码，任何无法识别的内容都读作 `GET`。
+
+% 2 1 0 146ad4c1b3da19ec17ecc0dfb9d36a7f
+
+% 3 1 0 12c10222a667cfba0135c95236e45c48
+
+% 0 1 0 13854378bb6a33030e48c4dcded53f4f
+
+% 0 1 0 0aa67839fb5d7b831fbee8cfa4787666
+
+% 0 1 0 017a657cc6a647e013349262bdebc235
+
+% 0 1 0 0dee6d404d405b6c10d04a27ce7547a3
+
+% 1 1 0 1d1d48b4bd5c75291362aa961eb5e822
+
+@ 0 19 0 17ab3fa33997a09302eeb562894e5fe8
++         方法也是作用于请求的提取器：`case Http.Post() =>` 匹配方法为 `Post` 的请求。
++     entry .showable   将方法渲染为 `GET`、`POST`、…
++     entry .decodable   以不区分大小写的方式从文本读取方法；未知名称为 `Get`
++     entry #Payload   该方法是否携带请求正文，作为字面量 `Boolean` 类型
++     entry #payload   该方法是否携带请求正文，作为运行时值
++         与类型层面的 `valueOf` 不同，通过类型为擦除后的 `Http.Method` 的值调用它也是安全的。
++     entry #unapply   `case Http.Post() =>`：匹配方法为此方法的请求
++   entry .Get   `GET` 方法；没有正文
++   entry .Head   `HEAD` 方法；没有正文，对它的响应也没有
++   entry .Post   `POST` 方法；`submit` 的默认方法，带有正文
++   entry .Put   `PUT` 方法；有正文
++   entry .Delete   `DELETE` 方法；没有正文
++   entry .Connect   `CONNECT` 方法；不要与 `Connect.Error` 或 `Http.Connection` 混淆
++   entry .Options   `OPTIONS` 方法；没有正文
++   entry .Trace   `TRACE` 方法；没有正文
++   entry .Patch   `PATCH` 方法
++   entry .Status   响应状态：其代码、原因短语和类别
+
+% 1 1 0 0a53a648dbeb7e6819263426dd0db41f
+
+@ 0 16 0 067046d9b1f8cb1811511bc616f17ae2
++         标准状态的枚举，每个都有其 `#code` 和 `#description`：`Continue`（100）、`SwitchingProtocols`（101）、`EarlyHints`（103）、`Ok`（200）、`Created`、`Accepted`、`NonAuthoritativeInformation`、`NoContent`（204）、`ResetContent`、`PartialContent`、`MultipleChoices`（300）、`MovedPermanently`、`Found`（302）、`SeeOther`、`NotModified`（304）、`TemporaryRedirect`（307）、`PermanentRedirect`（308）、`BadRequest`（400）、`Unauthorized`、`PaymentRequired`、`Forbidden`、`NotFound`（404）、`MethodNotAllowed`、`NotAcceptable`、`ProxyAuthenticationRequired`、`RequestTimeout`、`Conflict`、`Gone`、`LengthRequired`、`PreconditionFailed`、`PayloadTooLarge`、`UriTooLong`、`UnsupportedMediaType`、`RangeNotSatisfiable`、`ExpectationFailed`、`UnprocessableEntity`（422）、`TooEarly`、`UpgradeRequired`、`PreconditionRequired`、`TooManyRequests`（429）、`RequestHeaderFieldsTooLarge`、`UnavailableForLegalReasons`、`InternalServerError`（500）、`NotImplemented`、`BadGateway`、`ServiceUnavailable`、`GatewayTimeout`、`HttpVersionNotSupported`、`VariantAlsoNegotiates`、`InsufficientStorage`、`LoopDetected`、`NotExtended` 和 `NetworkAuthenticationRequired`（511）。
+
+@ 0 3 0 168d057819a059a61df4512e4a808412
++         各分支被导出到 `Http` 中，因此 `Http.Ok` 和 `Http.Status.Ok` 是同一个值。
++         状态也是响应的构造器：`Http.Ok(headers, body)` 是具有该状态的响应，`Servable` given 就是这样构建它们的响应的。
+
+% 2 1 0 1370f64bddfdf3f303f504036f69c392
+
+% 3 1 0 004b97c7adae0e3706cce7890ac48dae
+
+% 0 1 0 13eb43b1f6972c5707d6da55fe25e727
+
+% 0 1 0 02f6f69479410ad518ed2a360391ab38
+
+% 0 1 0 0303fba9e4d0944e05534968bdbbc229
+
+% 0 1 0 1f937082d71288480cae0fb765969991
+
+% 0 1 0 110d06fc4e6337e71fc9169dc691e419
+
+% 1 1 0 0cee614597e7e5150c46236b1d4ba361
+
+@ 0 24 0 159003b69b7a4203189aeca5bdbca836
++         枚举没有指名的代码没有对应的 `Status`：对它，`Http.Status.unapply` 为 `None`，而携带这种代码的响应会以 `Http.Response.Error` 解析失败。
++     entry .unapply   某个代码对应的状态：对 `Int` 使用 `case Http.Status(status) =>`
++         `Http.Status.unapply(200)` 是 `Some(Http.Ok)`；枚举没有指名的代码为 `None`。
++     entry .communicable   将状态渲染为消息：`404 (Not Found)`
++     entry .Category   五类状态：信息、成功、重定向、客户端错误、服务器错误
++         `Informational`（1xx）、`Successful`（2xx）、`Redirection`（3xx）、`ClientError`（4xx）和 `ServerError`（5xx）。
++         `Http.Status#category` 给出状态的类别，`Receivable` 在读取正文之前检查的就是它，`Http.Client` 记录响应所用的级别也由它决定。
++     entry #code   数字代码，`200`
++     entry #description   原因短语，`OK`
++     entry #category   状态的 `Http.Status.Category`，由其第一位数字决定
++     entry #apply   `Http.Ok(headers, body)`：具有此状态的响应
++         版本为 `1.1`、带有给定头部和 `Http.Body` 的响应；结果保留正文所捕获的一切。
++   entry .Category   `Http.Status.Category`，导出到 `Http` 中
++       与 `Http.Status.Category` 是同一个枚举，通过导出 `Http.Status` 的成员，以 `Http.Category` 访问。
++   entry .emptyBody   一个新的、已为空的请求正文流
++       `Http.emptyBody()` 是不含任何内容的 `Stream[Data] over Credit`，每次调用都重新构建，因此返回它的请求正文 `Spring` 可以按 `Spring` 契约的要求被重新物化（用于重定向或日志记录）。
+
+% 2 1 0 153d2d17744e417e08a193518c683c99
+
+% 3 1 0 173d4338627420bb0db1f19750638292
+
+% 4 1 0 062adbedb8aa76181ac90ab1c3373221
+
+% 0 1 0 0210d46f5f8ce55f04b0802f96d29bdd
+
+% 0 1 0 13bdcd5aed94c7420d3e5ec0687b06f4
+
+% 0 1 0 07b340ffed11e0b2107ba1c403141c91
+
+% 1 1 0 19e68cfd98b2cc2915e5367ad7c04391
+
+@ 0 1 0 1aec1377d53bf29b0610edf7f2eaf809
++   entry .Body   消息正文：从 spring 流式产生、固定的字节块，或者没有
+
+% 1 1 0 0cb431bb6820498012940625761d0ed0
+
+@ 0 6 0 03925e387debc4f10ad8d90dd70ae61a
++         包含三个分支的枚举。
++         `Flowing(source: Spring[Data]^)` 是由 `Spring` 按需产生的正文，它可以在每次被请求时铸造一个新的流（请求正文可能被发送不止一次，比如在重定向之后），或者，对于从活动连接上读取的响应，重新借出同一个流，从上一个读取者停下的地方继续。
++         `Fixed(data)` 是字节已经在手的正文，而 `Empty` 没有正文。
++         `Fixed` 或 `Empty` 正文是纯的；`Flowing` 正文保留其 spring 所捕获的一切。
+
+% 2 1 0 0685e1503cee42700a4fd5ebe36047d3
+
+% 3 1 0 0f0b7e870a6361e70283ee4712a98d02
+
+% 4 1 0 1137d9a437f8d92c18c04509ade24a62
+
+% 5 1 0 108f2852c4d1632e149f26f75deffbb8
+
+% 0 1 0 12028d9051813fec1cfadec155086eb7
+
+% 0 1 0 14ee0cc8e0107ca50d300787ee9b05ea
+
+% 0 1 0 181f23c4adb6a62b0a3a02a2b40ac4c3
+
+% 1 1 0 155b81ecc71d5b2d0ee64d9e0d16b9b5
+
+@ 0 8 0 00e5b6460d5eb2491659b636a0f4270e
++         在线上，`Http.Response.serialize` 用 `Content-Length` 为 `Fixed` 或 `Empty` 正文分帧，用分块传输编码为 `Flowing` 正文分帧。
++     entry #stream   一个作用于正文字节的新拉取端点
++         需要一个 `Tactic[Truncation.Error]`，当 `Flowing` 正文被截断时抛出。
++         对于 `Fixed` 和 `Empty`，流可以被铸造任意次；对于 `Flowing`，它是 spring 所返回的任何东西，对客户端响应而言，那是一个作用于连接的单一所有者流，因此只读取一次，或者将其 `memoize`。
++   entry .Request   HTTP 请求：方法、版本、主机、目标、头部和正文
+
+% 1 1 0 0824bbfd39e66e4815c1978fbfd1e205
+
+@ 0 5 0 0205b7ec73218c0e1bbb5574cf7af260
++         客户端发送的请求，也是服务器接收的请求。
++         它可以直接构建（`Http.Request(method, version, host, target, headers, body)`，其中正文是一个每次调用都铸造新流的 `Spring[Data]`），或者用 `.parse` 从连接上解析得到。
++         `fetch` 和 `submit` 宏从 URL 及其具名头部参数构建请求。
+
+% 2 1 0 11fa475b19be543f170e25aac6880cdc
+
+% 3 1 0 188372c7793922ba0c7b13abcf1925d9
+
+% 4 1 0 0d6232c084c9ddf602e532a9c32e4eb9
+
+% 5 1 0 0e542cc221890fcf0c751ac605dcc7c9
+
+% 0 1 0 12b383ea45a182ae0439a19ef42285c0
+
+% 0 1 0 03a212b53975040d1affd7c55046bea0
+
+% 0 1 0 00b5a9817389cec30b17c3c92496fb0a
+
+% 0 1 0 19df05f27e03b7d70f4027e218532e56
+
+% 0 1 0 0be0add1cc9d03850669eff8dab1ea4e
+
+% 0 1 0 082ab5a1c4b0c90d1860ae539f8076f5
+
+% 0 1 0 1d1827561afec39f02344e3cfd1e1582
+
+% 0 1 0 00ce671de639b769024b1bcde077e79e
+
+% 1 1 0 0b8870725552c5190cf052a0055b6b0c
+
+@ 0 5 0 026fa92e298c3a1b17e99e70ea9be0f6
++         解析器对版本宽松，对 `Host` 头部严格（没有 `Host` 头部或其无效的请求会抛出 `Http.Request.Error`），并且有上限：请求行不得超过 8 KiB，头部块不得超过 64 KiB，因此恶意客户端无法让服务器无休止地读取。
++         请求作为单行摘要（方法、主机、路径、头部、正文样本）是 `Showable` 的，用于日志记录。
+
+% 0 1 0 1f2039c010e1977919b68e508bb4e20d
+
+% 0 1 0 0b375bcc3bc75fed1ca2f6c169526146
+
+% 0 1 0 162b2c1d0126a71b178fc269428fb1bc
+
+% 0 1 0 0fa85852ec691890115f0f4df2236929
+
+@ 0 9 0 0af0f619ab482a36100fa94d3ca0ddd5
++     entry .showable   用于日志的请求单行摘要：内容类型、方法、查询、主机、路径、正文样本、头部
++     entry .serialize   请求的 HTTP/1.1 线上字节：请求行、`Host`、分帧、头部、正文
++         整个消息的一个新 `Stream[Data] over Credit`，供直接写入套接字的传输层使用（域套接字客户端将其包装为 `requestTransmissible`）。
++         正文一次探测一个块：在第一个块之内结束的正文用 `Content-Length` 分帧；更长的则以 `Transfer-Encoding: chunked` 流式输出。
++         需要一个 `Buffering`（用于块大小）和一个 `Tactic[Truncation.Error]`。
++     entry .Head   解析后的请求行和头部块，位于正文之前
+
+% 1 1 0 0cf0d0250a9095c108261a7bb5d4c8be
+
+@ 0 31 0 0518fccabba17baa02d3a1b08c5f8d9e
++           `Http.Request.Head(method, version, host, target, headers)`：`.parseHead` 所返回的东西，供自行为正文分帧的服务器使用。
++       entry #method   请求方法
++       entry #version   协议版本
++       entry #host   解析后的 `Host` 头部
++       entry #target   请求目标，即书写形式的路径和查询
++       entry #headers   头部字段，按顺序
++     entry .parseHead   从游标上解析请求行和头部，使游标停在正文处
++         `Http.Request.parseHead(cursor, maxRequestLine = 8192, maxHeaders = 65536)` 读取 `METHOD SP target SP HTTP-version CRLF` 和头部块，并在正文的第一个字节处停下，不再继续读取，因此没有正文的 `GET` 不会阻塞等待那些在服务器作答之前不会到来的字节。
++         在 keep-alive 连接上驱动同一个游标的服务器将它与 `.fixedBody` 或 `.chunkedBody` 一起使用，为正文分帧。
++         超出限制时抛出带有 `UriTooLong` 或 `HeadersTooLarge` 的 `Http.Request.Error`，`Host` 头部缺失或无效时为 `Host`，行尾格式错误时为 `Expectation`。
++     entry .parse   从字节流上解析出的请求
++         有两种形式。
++         `parse(stream: Chain[Data])` 从惰性的块链读取；`parse(input: Stream[Data] over Credit)` 直接消费一个拉取端点。
++         每种形式都返回请求，其正文是一个 `Flowing` 正文，其 spring 借出输入的剩余部分，因此 `request.body().memoize` 读取正文。
++         需要一个 `Tactic[Http.Request.Error]`。
++     entry .fixedBody   从游标上借出恰好 `length` 字节的正文，之后游标保持打开
++         用于以 `Content-Length` 分帧的请求：流在 `length` 字节之后结束，从不继续读取，使游标停在 keep-alive 连接上下一个流水线请求的开头。
++     entry .chunkedBody   从游标上解码的 `Transfer-Encoding: chunked` 正文
++         产出每个数据块的数据，跳过数据块扩展和尾部，并使游标停在终止的 `0` 数据块及其空行之后。
++         宽松：格式错误的长度或被截断的流会结束正文。
++     entry .Error   请求无法解析时抛出
+
+% 1 1 0 1266e17f40032c4609541fc0b7699c25
+
+@ 0 3 0 00b4b6bf8cbcd7b418462251d20a4810
++           错误 `↯/s.103.2`：_could not parse HTTP request because `reason`_，由 `.parse` 和 `.parseHead` 抛出。
++           原因编号为 `367.1` 到 `367.5`，列在 `Reason` 下的表格中。
++       entry .Reason   请求无法解析的原因
+
+% 1 1 0 0d2ff26173aabd050a5cf40d93f70b71
+
+@ 0 5 0 122f4aee2160130b0b108b32c433628b
++           column  分支
++           column  代码
++           column  消息
++           column  说明
++           row  `Expectation(expected, found)`  1  _`found` was found when `expected` was expected_  行尾格式错误；两者都是 `Char`
+
+% 0 1 0 1de9c4a887ccefdd069f450837a67659
+
+% 0 1 0 1141015b48551bfb163fef61d08ac4f0
+
+@ 0 2 0 0a0d8f85f62d50431d9891e0e5a75dda
++           row  `UriTooLong`  4  _the request line exceeded the maximum length_  `maxRequestLine`；服务器以 `414` 作答
++           row  `HeadersTooLarge`  5  _the request headers exceeded the maximum size_  `maxHeaders`；服务器以 `431` 作答
+
+% 1 1 0 1468e4b98244afa80d185ca6edce83c7
+
+@ 0 33 0 0b4c22df4e0abafb0f01a7e6183ca749
++       entry .communicable   将每个原因渲染为消息
++       entry #reason   `Http.Request.Error.Reason`
++     entry #method   方法
++     entry #version   协议版本
++     entry #host   请求所发往的主机，来自其 `Host` 头部
++     entry #target   书写形式的请求目标：路径，以及查询（如果有）
++     entry #textHeaders   所有头部字段，按顺序，作为 `Http.Header`
++     entry #body   作为 `Spring[Data]` 的正文：调用它以获得新的流
++         `request.body()` 铸造一个流（需要一个 `Tactic[Truncation.Error]`）；对于解析得到的请求，它借出输入的剩余部分，因此只读取一次，或者将其 `memoize`。
++     entry #request   请求本身，供处理函数的上下文函数接收者使用
++     entry #path   目标的路径，作为以 `%` 为根的 `Path on Www`
++         将 `location` 解码为 `Path on Www under %.type`，即 URL 路径类型，因此各段可以用 `/` 模式匹配。
++     entry #on   给定一个源时请求的完整 URL：`request.on(origin)`
++         对于 `Origin["http"]` 或 `Origin["https"]` 为 `Url[scheme](origin, target)`；客户端在 `Http.Event.Send` 中记录的就是它。
++     entry #query   查询参数，来自 URL 和表单编码的正文
++         目标的 `?…` 部分组成的 `Query`，再加上当 `Content-Type` 表明正文是 `application/x-www-form-urlencoded` 时按此解码的正文。
++         读取正文需要一个 `Tactic[Truncation.Error]`；`Parameter` 读取其中的一个字段。
++     entry #location   不含查询的目标：从 `/path?q=1` 得到 `/path`
++     entry #headers   按名称对头部进行有类型的访问：`request.headers.contentType`
++         一个动态选择器：`request.headers.accept`、`request.headers.cookie`、`request.headers.contentLength` 各自是该字段值的 `List`，通过同名 `Directive` 的 `Decodable in Text` 解码为它所声明的类型（`MediaType`、`List[Cookie.Value]`、`Bytes`）。
++         camelCase 名称会被转换为 kebab-case 的字段名。
++     entry #contentType   作为 `MediaType` 的 `Content-Type` 头部，或 `Unset`
++     entry #textCookies   请求的 cookie，作为从名称到值的 `Map`
++         从 `Cookie` 头部解析；`Cookie#apply()` 读取其中一个并解码为其类型。
++   entry .Backend   发送一个请求并返回其响应的传输层
+
+% 1 1 0 173647f69ec3745611c0718748533226
+
+@ 0 8 0 1577c68874fdba880f9b70aee1f8fb56
++         可替换的线上传输。
++         `Http.Backend` 接受文本形式的完全解析的 URL（因此非 JVM 后端可以自行解析它）、方法、头部和正文 spring，并返回响应；它既不处理重定向也不处理日志记录，这些由其上方的 `Http.Client` 完成。
++         后端是平台特定的，因此总是通过从 `httpBackends` 按名称导入一个 given 来选择：`javaNetHttp`（`java.net.http`，位于 `telekinesis.jvm`）、`soundnessHttp`（Soundness 自己基于 coaxial 套接字的线上编解码器，位于 `telekinesis.sockets`，适用于 JVM 和 Native）或 `wasiHttp`（`wasi:http`，位于 `telekinesis.wasi`）。
+
+% 2 1 0 1ff4e2fb2dead9c703f0026e9568279e
+
+% 3 1 0 09971b69e3e9161f0495e5cf5269f75b
+
+% 4 1 0 1fe429ec5da3acc0139949e9ad7a2a8d
+
+% 5 1 0 191e7510331053551bf9c5021dd982d4
+
+% 6 1 0 055f8f0ebf7d20d2085a40195989f023
+
+% 1 1 0 0bb435fef400c49f14a0e6030fb7b52e
+
+% 0 1 0 19399c733cfebdd50c2131677278ce61
+
+% 1 1 0 0eb31bd45830676f0398f310a3a65e79
+
+% 2 1 0 040d697e29e77b2403e874bea2201672
+
+% 0 1 0 1ede485b5a7d1dd90cca7c3c447eb40e
+
+% 1 1 0 0c6cf7212c3752e71420425b78fd2af2
+
+% 0 1 0 133c5b713c684eb3093584caf0e781c6
+
+% 1 1 0 0ed8866d15c434120fba3e1a2e9179fa
+
+@ 0 2 0 1de037731d82d91f12659c4f028885e1
++     entry #request   发送一个请求并返回其响应，若没有响应到来则抛出 `Connect.Error`
++   entry .Response   HTTP 响应：版本、状态、头部和正文
+
+% 1 1 0 1304cd7109aef6440d0cac9f2f8e5b8f
+
+@ 0 5 0 1606738eb88d343711edf951e9ad915b
++         响应可以从客户端的获取中读到，由服务器处理函数构建，或从连接上解析得到。
++         它的构造器是私有的：响应通过动态的 `Http.Response(…)` apply 创建，或由状态创建（`Http.Ok(headers, body)`），或由 `Servable` 创建（对作用域中有 `Servable` 的任何值使用 `Http.Response(json)`，经由 `.conversion`）。
+
+% 2 1 0 164b306312dcbdad0162a3759eb0c906
+
+% 3 1 0 043854c78a33679405c96e6ecac4ba58
+
+% 4 1 0 01c60f005824a2990588d6aa8660e874
+
+% 5 1 0 02730fd6bff7b75813d8fe9a0fb979fb
+
+% 0 1 0 10f6946cf3688fc01890d60ac297cd9f
+
+% 0 1 0 0521ae675cc901de0f7d9fc371f2dc7a
+
+% 0 1 0 05d54d7cbb5f41ab07eb08cb2dcbad54
+
+% 0 1 0 025605352746530e0f047e952f998e5e
+
+% 0 1 0 0c7747ab52f92d3116219d1fe2e8ce28
+
+% 1 1 0 0ead06875694b9b500915971714a4f53
+
+@ 0 6 0 124f28e5de2b268a00959f4ac0404d74
++         第一个参数列表以任意顺序接受至多一个 `Http.Status` 和具名头部（`contentType = media"…"`、`location = t"…"`，各自由其 `Directive` 检查）；第二个参数列表接受正文，可以是 `Servable` 值或 `Http.Body`。
++         在调用处指名的头部会覆盖 `Servable` 为同一单例字段所派生的头部（因此对 `Text` 正文使用 `contentType = …` 时，`content-type` 在线上只出现一次），而诸如 `Set-Cookie` 的可重复字段则两者都保留。
+
+@ 0 5 0 07401da735cfef8d0c2b7b256eee20ff
++         在客户端，`#receive[Text]` 按所请求的类型读取正文，`#status` 检查状态，`#headers.contentType` 按名称读取头部。
++         正文是作用于连接的 `Flowing` 正文，只读取一次：`#successBody` 或 `#body.stream` 借出单一所有者流。
++         服务器端的响应可能保留它所应答的活动连接（`Response^{connection}`）；面向客户端的响应则总是纯的。
+
+% 1 1 0 101f58f5d802f93a0a082e678859c1c2
+
+% 0 1 0 03b033a4e934d20e0c199578ea16e0a7
+
+% 0 1 0 08dc29274d5d2c550f57866324219798
+
+@ 0 15 0 0abfa1829794c987141e9bffc49e1793
++     entry .applyDynamicNamed   `Http.Response(Http.Ok, contentType = …)(body)`：一个状态和具名头部，然后是正文
++         `Http.Response(…)` 背后的宏。
++         当只有一个参数且它有 `Servable` 时，结果就是提供该值（`Http.Response(t"hello")`）。
++         否则，它将一个可选的 `Http.Status` 和任意数量的头部——具名的（`contentType = …`，由同名的 `Directive` 编码）或不具名的（其类型标识一个头部的值，例如对应 `accept` 的 `MediaType`）——收集到一个 `Protoresponse` 中，后者自己的 `apply` 接受正文。
++         给出两次状态是编译错误，头部值类型错误也是：_the header `Content-Type` cannot take a value of type `Int`_。
++     entry .applyDynamic   `Http.Response(Http.Ok)(body)`：只有位置参数
++         与 `.applyDynamicNamed` 相同，用于没有具名参数的调用。
++     entry .conversion   任何 `Servable` 值都可以转换为 `Response`
++         这个 `Conversion` 让处理函数在需要 `Http.Response` 的地方返回 `Json`、`Text` 或任何作用域中有 `Servable` 的值。
++     entry .Protoresponse   等待正文的状态和头部
+
+% 1 1 0 1f9927b6d2a5d0b91a70b6893b29bfaa
+
+@ 0 23 0 1596027be131b4ed1e0fff44eba56400
++           `Http.Response(Http.Ok, contentType = …)` 在第二个参数列表之前的形态：`Protoresponse(status0, headers)`，有两个 `apply` 来完成它。
++       entry #status0   状态，或表示 `Ok` 的 `Unset`
++       entry #headers   在调用处指名的头部
++       entry #apply   以一个 `Http.Body`（默认为 `Empty`）或一个 `Servable` 值完成响应
++           `proto()` 是正文为空的响应；`proto(body: Http.Body)` 附加一个正文，结果保留正文所捕获的一切；`proto(value)` 通过值的 `Servable` 提供该值，对于单例字段，调用处的头部覆盖所提供的头部。
++           状态若未设置，则取所提供响应的状态。
++     entry .streamable   成功的响应流式输出其正文；任何其他状态都抛出 `Http.Error`
++         `Streamable by Data over Credit` given，因此响应可以被 `read[Data]` 或继续传送。
++         需要一个 `Tactic[Http.Error]`（当状态不是 2xx 时抛出）和一个 `Tactic[Truncation.Error]`。
++     entry .serialize   响应的 HTTP/1.1 线上字节
++         `Http.Response.serialize(response, includeBody = true, version = 1.1)`：状态行，头部（对于 `Fixed` 或 `Empty` 正文添加 `Content-Length`，对于 `Flowing` 正文添加 `Transfer-Encoding: chunked` 分帧，除非头部已经为其分帧），空行和正文。
++         `includeBody = false` 用于对 `HEAD` 请求的响应：写出分帧头部，但不写出正文。
++         在 `101 Switching Protocols` 之后，正文是升级后协议的原始流，不添加任何分帧；对于 HTTP/1.0 客户端，流式正文按原样写出，以关闭连接作为界定。
++         需要一个 `Buffering` 和一个 `Tactic[Truncation.Error]`。
+
+% 2 1 0 1f5150fc08bebfaa0daf45d81fe95074
+
+% 3 1 0 034dfb0afa65e9070f2c6c20000bb6dd
+
+% 4 1 0 04fe9ee917258c9716b16198bdf906e0
+
+% 0 1 0 1d0fe69c17007ff2075aa423d2353293
+
+% 0 1 0 194b14fb5ac274dc0a6bcaa6eaf0a001
+
+% 1 1 0 1e0e53fb2f8c6b4903963314c7ca3526
+
+@ 0 14 0 0693a0638868a9d5058ff01b9f3ef513
++     entry .serializeHead   只有状态行和头部，作为一个字节块
++         头部与 `.serialize` 所写出的完全一致，包括分帧头部，供那些将固定正文作为第二个缓冲区、直接从处理函数的字节发送而不复制的服务器使用。
++     entry .parse   从字节流上解析出的响应
++         `parse(stream: Chain[Data], bodiless = false)` 从惰性链读取；`parse(input: Stream[Data] over Credit)` 和 `parse(input, bodiless)` 消费一个拉取端点。
++         `bodiless` 标记对 `HEAD` 请求的响应，它重复 `GET` 的分帧头部，但不携带正文。
++         正文由头部分帧：`Transfer-Encoding: chunked` 采用分块解码，`Content-Length` 采用固定长度，`204`、`304`、`1xx` 或无正文的响应没有正文，`101` 采用全部剩余内容，其他情况则读取直到连接关闭的全部内容。
++         游标停在正文之后的第一个字节，因此 keep-alive 连接可以解析下一个响应。
++         需要一个 `Tactic[Http.Response.Error]`。
+
+% 2 1 0 10f1f0bff1be36921b308c69690e3cfd
+
+% 3 1 0 0fab65465d9948910bcf2e9e5a91374a
+
+% 4 1 0 1f2241edf13ae9510b33df6fc6d1544f
+
+% 5 1 0 06cc3196811e555e0e762980f09047ee
+
+% 0 1 0 11da24db47b475c31c13f253bedd88b4
+
+% 0 1 0 0c5df723009e2b1018efc376c2e8b277
+
+% 0 1 0 0cbf2f67c6fb740f046053b7e32129fa
+
+% 0 1 0 08d9fb93cf35edc31ac6c8b95f138719
+
+% 1 1 0 137867136d68273b090cec4712c3d6f5
+
+@ 0 1 0 0966b0b12f8cece60b8af2c3146ddd09
++     entry .Head   解析后的状态行和头部块，位于正文之前
+
+% 1 1 0 0ac6ed49166e89a6019101bc126f4436
+
+@ 0 13 0 0c64f78dca611bb501ba9f6c663dbaf9
++           `Http.Response.Head(version, status, headers)`：`.parseHead` 所返回的东西，供自行为正文分帧的客户端使用，`Http.Session` 就是这样做的。
++       entry #version   协议版本
++       entry #status   状态
++       entry #headers   头部字段，按顺序
++     entry .parseHead   从游标上解析状态行和头部，使游标停在正文处
++         读取 `HTTP-version SP code SP reason CRLF` 和头部块，并在正文的第一个字节处停下，不再继续读取，因此 keep-alive 连接上无正文的响应不会阻塞等待服务器永远不会发送的补充数据。
++         对于不是以 1–5 开头的三位数、或 `Http.Status` 枚举没有指名的代码，抛出带有 `Status` 的 `Http.Response.Error`，对于格式错误的行则为 `Expectation`。
++     entry .Error   响应无法解析时抛出
+
+% 1 1 0 089742536a15a4b5140706373d891e6d
+
+@ 0 25 0 125bb339ad0175b10f016bc65416af78
++           错误 `↯/s.103.1`：_could not parse HTTP response because `reason`_，由 `.parse` 和 `.parseHead` 抛出。
++           原因有 `Expectation(expected, found)`（366.1，_`found` was found when `expected` was expected_：字节不是以 `HTTP/` 开头，或某一行不是以 CRLF 结尾）和 `Status(value)`（366.2，_the HTTP status code `value` was invalid_）。
++           基于套接字的客户端将其转换为 `Connect.Error(Connect.Error.Reason.Unknown)`。
++       entry .Reason   响应无法解析的原因：`Expectation(expected, found)` 或 `Status(value)`
++       entry .communicable   将每个原因渲染为消息
++       entry #reason   `Http.Response.Error.Reason`
++     entry #version   协议版本，客户端构建的每个响应都是 `1.1`
++     entry #status   `Http.Status`
++     entry #textHeaders   所有头部字段，按顺序，作为 `Http.Header`
++     entry #body   `Http.Body`
++     entry #updateDynamic   `response.contentType = media"…"`：设置一个头部，替换任何同名头部
++         一个动态 setter：`response.location = t"/next"` 返回一个新响应（接收者是不可变的），其中带有由同名 `Directive` 指名并编码的头部，替换任何已有的同名字段。
++     entry #successBody   状态成功时的正文流，否则为 `Unset`
++         2xx 状态下作用于正文的单一所有者拉取端点；需要一个 `Tactic[Truncation.Error]`。
++     entry #receive   按某个类型读取正文：`response.receive[Text]`
++         召唤该类型的 `Receivable` 并应用它。
++         标准的 `Receivable` 可以读取 `Text`、`Http.Status`、任何 `Aggregable by Data` 的类型（`Data`、流、`Json`、…），以及任何 `Instantiable across HttpRequests from Text` 的类型；非成功状态会在读取任何内容之前抛出 `Http.Error`。
+
+% 2 1 0 17b2c8dfc81246691cced35ef7b7a234
+
+% 3 1 0 0435eeb7d7412e53120fd58324ddb8cb
+
+% 4 1 0 00e9e8faae0667010efbc2c4e1a7274b
+
+% 5 1 0 0e5aeb05028959331809bf77f870b0e4
+
+% 6 1 0 04284c22c64687f2129a2a29685af7d1
+
+% 7 1 0 0ffc5541705ee94c18ad4af645ae09de
+
+% 8 1 0 0a123ca5724bfcfb1d67a495c1431802
+
+% 9 1 0 16815022730315b9003db5377becfd6c
+
+% 10 1 0 114a15d05cc5c6001ce7554bbd83e465
+
+% 0 1 0 1d544e075e5302600468858529771ecc
+
+% 0 1 0 047c56562cdce134080890d756cd5f25
+
+% 1 1 0 025256f60ddba8061bdf638d727ff8e1
+
+@ 0 7 0 092d57f7e78048e71fac119d8bea3b85
++     entry #headers   按名称对头部进行有类型的访问：`response.headers.contentType`
++         一个动态选择器，与 `Http.Request` 上的相同：`response.headers.setCookie` 是该字段值的 `List`，解码为其 `Directive` 所声明的类型。
++     entry #+   `response + cookie`：添加一个由任何 `Encodable in Http.Header` 的值编码而来的头部
++         `Cookie.Value` 添加一个 `Set-Cookie` 字段；`Http.Header` 添加其自身。
++         头部被添加到最前面；不会替换任何东西（替换请使用 `#updateDynamic`）。
++   entry .Submit   带有正文的请求，等待被赋予头部和载荷
+
+% 1 1 0 020ce3e96ac50bc318fe041feb406419
+
+@ 0 16 0 09313d1cf7590e0d01cd076537632853
++         `url.submit` 返回的东西：请求目标、主机和 `Fetchable` 目标（对于 `HttpUrl` 是一个 `Origin`，对于套接字端点是一个 `Uds`）。
++         它的 `apply` 是一个宏，在第一个参数列表中接受方法和头部，在第二个参数列表中接受载荷，构建带有来自载荷 `Postable` 的 `Content-Type` 的 `Http.Request`，并通过作用域中的 `Http.Client onto target` 发送它。
++         参见 `submit`。
++     entry #originForm   请求目标：URL 的路径和查询
++     entry #target   请求的去向：URL 的 `Origin`，或一个 `Uds`
++     entry #host   `Host` 头部的值
++     entry #applyDynamicNamed   `url.submit(Http.Put, accept = media"…")(payload)`：方法、具名头部，然后是正文
++         方法如果给出，在第一个参数列表中出现一次，默认为 `Http.Post`；其余的是头部，具名或不具名（参见 `fetch`）。
++         载荷是任何具有 `Postable` 的值；`Content-Type` 是该 `Postable` 的媒体类型。
++         需要一个 `Online`、一个 `Http.Event is Loggable`，以及一个 `Http.Client onto` 该目标。
++     entry #applyDynamic   `url.submit(Http.Put)(payload)` 或 `url.submit()(payload)`：只有位置参数
++   entry .Fetch   不带正文的请求，等待被赋予头部
+
+% 1 1 0 133763c55f5f61230d4b52096fee3af9
+
+@ 0 11 0 0631453eaf3baaea14774653e55fc139
++         `url.fetch` 返回的东西；它的 `apply` 是一个宏，接受方法（默认为 `Http.Get`）和头部，并通过作用域中的 `Http.Client onto target` 发送请求。
++         参见 `fetch`。
++     entry #originForm   请求目标：URL 的路径和查询
++     entry #target   请求的去向：URL 的 `Origin`，或一个 `Uds`
++     entry #host   `Host` 头部的值
++     entry #applyDynamicNamed   `url.fetch(accept = media"…", authorization = Auth.Bearer(token))`：具名头部
++         需要一个 `Online`、一个 `Http.Event is Loggable`，以及一个 `Http.Client onto` 该目标；正文为空。
++     entry #applyDynamic   `url.fetch()` 或 `url.fetch(Http.Head, media"…")`：只有位置参数
++   entry .Client   向目标发送请求：重定向、日志记录，以及下层的 `Http.Backend`
+
+% 1 1 0 14d0fa5706524cdc0361b0dea46b3b15
+
+@ 0 6 0 1692f3691599089210edf17600d89dd4
++         `Http.Client onto Target` 将一个 `Http.Request` 和一个目标转换为响应。
++         对于 `Origin["http" | "https"]` 目标，伴生对象中有两个 given 相互竞争，根据作用域中是否有 `Redirects.Disabled` 来选择：`.http` 跟随重定向，`.httpStrict` 不跟随。
++         两者都需要一个 `Tactic[Connect.Error]`、一个 `Online` 和一个 `Http.Backend`；请求本身需要一个 `Http.Event is Loggable`。
++         对于 `Uds` 目标，客户端是 `udsHttpClient`，位于 `telekinesis.jvm`。
+
+@ 0 3 0 1855822a46388bb00076b6c60209d36e
++         客户端是一个能力：它由一个战术、一个 `Online` 令牌和一个后端构建，并保留它们全部。
++         很少需要手动召唤客户端；`fetch` 和 `submit` 会为其 URL 所给出的目标召唤它。
+
+% 0 1 0 17776523af3bb6170dffbceb4b68a293
+
+% 0 1 0 0f459a754ad6e6ab04c4b398306a6e0c
+
+% 0 1 0 1303902220d344860b433d5b71ae95c9
+
+@ 0 16 0 0792a3c76ac35af603a3c4a522d40582
++     entry .http   用于 `http` 和 `https` 源的跟随重定向的客户端
++         当作用域中没有 `Redirects.Disabled` 时选择。
++         以 `info` 级别记录 `Http.Event.Send`，通过 `Http.Backend` 发送，并按 `Location`（相对于当前 URL 解析）跟随 `301`、`302`、`303`、`307` 和 `308` 响应，最多达到作用域中的 `Http.Redirection` 上限（默认为十次）。
++         `301`/`302`/`303` 会将方法降级为 `GET` 并丢弃正文；`307`/`308` 两者都保留，从正文的 spring 重新铸造正文。
++         被丢弃的中间正文会被排空以释放其连接，每一跳都以 `fine` 级别记录 `Http.Event.Redirect`。
++         最终响应按其类别以相应级别记录：5xx 为 `fail`，4xx 为 `warn`，其他为 `fine`。
++         没有 `Location` 的重定向，或超出上限的重定向，按原样返回。
++     entry .httpStrict   原样返回 3xx 响应的客户端
++         当作用域中有 `httpRedirections.doNotFollowRedirects`（一个 `Redirects.Disabled`）时选择。
++         此时重定向就是一个普通响应：`receive` 抛出带有该 3xx 状态的 `Http.Error`，而 `status` 可以检查它。
++     entry #request   向目标发送请求并返回响应
++   entry .Error   当响应的状态在成功范围之外时抛出
+
+% 1 1 0 16aec6ea1536b6f713984c063e910705
+
+@ 0 4 0 1571b3003d83412d19a73afe5fe339cc
++         错误 `↯/s.103.3`：_the HTTP request failed with status `status`_。
++         当状态的类别不是 `Successful` 时，由 `Receivable`（`response.receive[T]`）和 `Http.Response.streamable` 抛出；该错误携带状态和头部，因此调用者可以对出错的情况作出反应。
++         直接检查 `response.status` 从不会抛出它。
+
+% 2 1 0 094b698cbba6139a1f52b395cdcb5cfc
+
+% 3 1 0 0cd370c6dbc18a301bfc3f71a229e563
+
+% 4 1 0 12d4867fa61bc9a60bfe0cde16888c29
+
+% 5 1 0 14ed8ba3fdec517d1768cd22286423b0
+
+% 6 1 0 11ed9a55b1bcf25e1b7188ba9a793afd
+
+% 7 1 0 1a24370e282e93ce1e00ff8cf3f7b652
+
+% 8 1 0 13034cf8feb0dac902544c3e42bfa668
+
+% 9 1 0 1f2826f205beba460ac05ee15b554e2a
+
+% 10 1 0 18599520d97679e901bb9d097418e9e4
+
+% 0 1 0 0c6bb037d796ffa20862ce0b2473a278
+
+% 1 1 0 0abeb78bbbf546e10ed208d1476e015b
+
+@ 0 3 0 0d7e6ff0cc8e483110ee361e83024a46
++     entry #status   响应的状态
++     entry #headers   响应的头部
++   entry .Event   客户端在发送请求和接收响应时记录的日志
+
+% 1 1 0 1936736cfcfca21f1549bddeee575e91
+
+@ 0 9 0 0a3b0e26c93af04d1772576f4bc09e4f
++         每个 `Event` 都带有 `Log.Network` 标签，`Send` 和 `Redirect` 还带有 `Log.Protocol` 标签。
++         `Http.Client` 在请求发出时以 `info` 级别记录 `Send(method, url, headers)`，对它所跟随的每一跳以 `fine` 级别记录 `Redirect(from, to)`，并在回复到达时以 `fine`、`warn`（4xx）或 `fail`（5xx）级别记录 `Response(status)`。
++         `Request(preview)` 是请求正文的样本，供记录它的传输层使用。
++         每次 `fetch` 和 `submit` 都需要作用域中有一个 `Http.Event is Loggable`；`logging.silentLogging` 会丢弃这些事件。
++     entry .communicable   将每个事件渲染为消息：_sending a GET request to …_
++   entry .Redirection   客户端最多跟随的重定向次数：除非被覆盖，否则为十次
+
+% 1 1 0 1209710041bbae2213d615ff3c1107ec
+
+@ 0 8 0 13c1942e6878f8e718b6672679dfa18e
++         `Http.Client.http` 最多跟随 `Http.Redirection#value` 跳；伴生对象的 `.default` 为十次（curl 的上限），而局部的 `given Http.Redirection = Http.Redirection(1)` 可以降低它。
++         达到上限后，3xx 响应按原样返回，因此随后的 `receive` 会抛出带有该重定向状态的 `Http.Error`。
++         要不跟随任何重定向，请改为导入 `httpRedirections.doNotFollowRedirects`。
++     entry .default   十次重定向的上限，位于隐式作用域中
++     entry #value   允许的重定向次数
++   entry .Session   到单个源的一条客户端连接，多个请求在其上交换
+
+% 1 1 0 0ffcc113b88418551df775041e1344fd
+
+@ 0 6 0 1ee6ea7270e098b304cb3cbc0e387495
++         会话通过 `url.session: session ?=> …`（即位于 `telekinesis.http2` 中的 `httpUrlSessional` given）在 URL 上打开，它只连接一次，将会话借给代码块，并在之后关闭它。
++         协议在会话的整个生命周期内是固定的：对于 `https`，TLS 握手期间的 ALPN 会选择多路复用的 HTTP/2 会话（各次获取在同一条连接上交错进行），或者顺序的 HTTP/1.1 会话；明文 `http` 总是顺序的，keep-alive 让各次获取固定使用同一条连接。
+
+% 2 1 0 174b5f7dfe165abc044732a7bb3603c8
+
+% 3 1 0 1bc99b732970ad9916b825059843b0ea
+
+% 4 1 0 180d3a92674319c5125704c5ecc0ea1f
+
+% 5 1 0 148bb8d4fa0a5d4918c81802b634b65e
+
+% 0 1 0 1cbce8534dfc667e162ca0e4afa96711
+
+% 1 1 0 175cc84b7680ffdc0c9249ec3bccb31a
+
+% 1 1 0 0972f93f3fc5e790017b3c9975ea599d
+
+% 1 1 0 10ddd3faf13d83971246a2f6537550bb
+
+% 1 1 0 159c32bd045c64a710533b4bde274bc1
+
+% 2 1 0 01fb8c598697677410833b68cc109ef6
+
+% 0 1 0 116f998ff554de2f118768013517f789
+
+% 0 1 0 10c1a0cb41d963b61c38f3771650904b
+
+% 1 1 0 1712c3f8d6a844fe1e0f4fe4b5510206
+
+% 1 1 0 176ece85ca3620fd14fa9ebd1f701e63
+
+% 1 1 0 0383bafa33bbbae4196630d6e7135437
+
+@ 0 6 0 01457cf0c195f17b1fc23fc157d07c5b
++         会话是一个独占的、有状态的能力：`#fetch` 是一个 `update` 方法，其响应借用会话，因此仍在从活动连接流式传输的响应正文无法逃出代码块；已 memoize 的正文则可以。
++         留下未消费的响应不会使会话出轨：下一次获取会排空上一个正文的剩余部分，以到达响应边界。
++         （对逃逸句柄的静态拒绝有待分离检查器的进一步支持；类型已经表达了这一点。）
+
+% 1 1 0 0cd15986ff8fd53212aad4815ff2441f
+
+@ 0 3 0 04b2dfaf01f5564019d14c59a68c0165
++     entry #fetch   通过会话的连接发送请求并返回其响应
++         需要一个 `Tactic[Connect.Error]`。
++         结果保留会话。
++   entry .Connection   一次活动的请求/响应交换，即服务器处理函数所看到的样子
+
+% 1 1 0 1bc22e46718b626317b00a36d8d8a253
+
+@ 0 9 0 014d59b84453e07d09148ce307564cbf
++         `Http.Connection` 就是它所携带的 `Http.Request`——它扩展了 `Request`，因此处理函数可以直接读取 `connection.method`、`connection.query` 和 `connection.headers`——再加上应答它的手段：`#respond`，一个向客户端写出响应并结束交换的数据汇，以及传输层的事实信息 `#tls` 和 `#port`。
++         它是一个独占的能力，因为一次交换只有一个所有者，并且只应答一次；当处理函数的响应正文从请求流式传输时，响应可能保留它（`(connection: Http.Connection) ?=> Http.Response^{connection}`）。
++         服务器（scintillate 的服务器）从其传输层构造它；该类型本身只需要请求和数据汇。
+
+% 1 1 0 171318645c1f01e607528213dceda3ff
+
+@ 0 1 0 1726985c223c1b410bba3eea4c042013
++     entry .Respond   向客户端写出响应并关闭连接的数据汇
+
+% 1 1 0 126cacff33c65bbc04ba6e2b866c376c
+
+@ 0 6 0 02c5d4ecea7bfee3138b5f808e375d1e
++           一个具名的单方法特质 `apply(response: Response^)(using Tactic[Truncation.Error]): Unit`，而不是函数类型，以便响应可以捕获活动连接。
++     entry #tls   请求是否通过 TLS 到达
++     entry #port   服务器接受连接所用的端口
++     entry #respond   此次交换的 `Http.Connection.Respond` 数据汇
+
+@ 0 4 0 1adcaf019d0799c6134e5522ae56796f
++ entry .Acceptance   验证所提交值的结果：接受，或带着错误被拒绝
++     有两个分支的枚举：`Accept(value)` 携带表单提交解码得到的值，`Reject(errors)` 携带解释其为何未被接受的 `Errors`。
++     这是在对提交进行处理之前先进行检查时，表单处理函数所返回的形状。
+
+@ 0 1 0 0caf36c7eae092a70ec1d2386dfc57a8
++ entry .Auth   `Authorization` 头部的凭据，按方案划分
+
+% 1 1 0 07691e6023218f2e017e53ef808a0c7d
+
+@ 0 6 0 000300014bccec600f8b6ef58ded4ae4
++       认证方案的枚举：`Basic(username, password)`、`Bearer(token)`、`Digest(digest)`、`Hoba(text)`、`Mutual(text)`、`Negotiate(text)`、`OAuth(text)`、`ScramSha1(text)`、`ScramSha256(text)` 和 `Vapid(text)`。
++       `Auth` 显示为头部的值（`Basic` 对 `username:password` 进行 base64 编码），也可以从头部值解码，因此它是 `fetch` 中 `authorization` 头部所接受的类型，也是 `request.headers.authorization` 所产出的类型。
+
+% 2 1 0 0993c5c114ddd7e21e9cd492aedf58f9
+
+% 3 1 0 00e6cd4dfaca8e19059b5512372f3727
+
+% 4 1 0 1d0c7d12670c908708de70de043c81d5
+
+% 0 1 0 1f00e9f6cbd59ad50ea86f20b9db8bcb
+
+% 0 1 0 1036a45998898f180e12eb5764d9920b
+
+% 0 1 0 0bda60fd53aa8bca0196d60c43ef5980
+
+% 1 1 0 14b34736dc71929f04210eed835fb121
+
+% 2 1 0 02534176a96c8b0c186dfffa6f1daf35
+
+% 3 1 0 1f7f4ea47e4aacba07532d821e374bcf
+
+% 4 1 0 054ab02e63fb37dd1dcca5710d0252c5
+
+% 5 1 0 1e225271d193ea6f1401246f09890bf0
+
+% 6 1 0 1923e5ea430c1d2018d55bf85593032d
+
+% 7 1 0 0d34c5f790420006102cfa2ddef2c6b0
+
+% 8 1 0 0d629c6f034769a4083cd15cbfe986c9
+
+% 9 1 0 1a3c0251317628f806a6889cdfbaacac
+
+% 0 1 0 16e5ec7a9c0b8b931e4b29fc859a9b76
+
+% 1 1 0 0f7aa5d32e138b3e116dd8407ee2f6a9
+
+@ 0 8 0 0d31bede6a0594ca0f84e69d9f23bc92
++   entry .showable   将任何 `Auth` 分支渲染为其头部值，`Bearer …`、`Basic …`
++       在每个子类型上声明，因此类型为 `Auth.Bearer` 的值也会渲染为头部值，而不会退回到通用的枚举渲染。
++   entry .decodable   从头部值读取 `Auth`，对未知方案抛出 `Auth.Error`
++       `Basic` 凭据从其单个 base64 文本解码，并在第一个冒号处拆分，因此密码可以包含冒号；解码后不含冒号的文本是一个 `Auth.Error`。
++       需要一个 `Tactic[Auth.Error]`，该实例会保留它。
++   entry .Error   当头部值不是可识别的认证方案时抛出
+
+% 1 1 0 12046e599fbae7e70552dd6ec203aace
+
+@ 0 3 0 05734b386495b87519f328a7d000d444
++         错误 `↯/s.103.4`：_the authentication value `value` is not valid_，由 `.decodable` 对它不认识的方案或格式错误的 `Basic` 凭据抛出。
++     entry #value   无法解码的文本
+
+@ 0 1 0 1bef250d794ff1971c1fd568de2ae878
++ entry .Connect   `Connect.Error` 的命名空间：无法连接到的服务器
+
+% 1 1 0 08e4d2eb73f54737102fcffe19c9df75
+
+@ 0 5 0 0d3560a644f5687c0601017ec1840866
++       `Connect` 持有完全无法连接到服务器（DNS、TCP 连接、TLS 握手）时的错误，区别于 `Http.Error`（报告服务器确实发送了的响应）和 coaxial 的 `Socket.Error`（报告已经建立后又失败的连接）。
++       相邻的名称特意取得不同：`Http.Connect` 是 `CONNECT` 方法，`Http.Connection` 是一次已建立的交换；两者都不是这里的错误。
+
+% 1 1 0 106cc9c84f30c2ad196963cf441c7101
+
+@ 0 1 0 1fdefc54d0da19d70e89533afad2c9da
++   entry .Error   请求无法到达服务器时抛出：DNS、拒绝连接、TLS、超时
+
+% 1 1 0 0b826d07960b2bc71db3d3387b3d2e83
+
+@ 0 9 0 0033a13251938cef0fbce1d0b2cef286
++         错误 `↯/s.103.5`：_the TCP connection failed because `reason`_，由每个 `Http.Backend` 和 `Http.Client` 抛出，因此 `fetch` 或 `submit` 需要作用域中有一个 `Tactic[Connect.Error]`。
++         各原因编号为 `999.1` 到 `999.5`，列于 `Reason` 之下。
++         TLS 失败与网络失败相区分，其自身的 `Connect.Error.Reason.Ssl.Reason` 说明它在哪个阶段失败；过期的证书、主机不符的证书、已吊销的证书或有缺陷的密码套件都会在握手时被拒绝，而不是在警告后被接受。
++         如果必须连接到证书无法验证的主机，可以在作用域中放置一个放宽的 `TlsAcceptance` 来明确允许。
+
+% 2 1 0 0ed33e7e1242511b0b9070fdfddcf389
+
+% 3 1 0 10266cfca9763bfa1ebcefb6deef008b
+
+% 4 1 0 0d4d93d0941f569f0c09370325179d59
+
+% 5 1 0 1994fbd24bb047de063e3ff812596c46
+
+% 6 1 0 1d93822c4560f850120f61bac552c6dd
+
+% 7 1 0 0a4b71b2c1d71b2f19314a9f1a673dc1
+
+% 8 1 0 085c6aec84f97c1913007a6c3971d886
+
+% 9 1 0 047521347ad8223400347d7b307b175c
+
+% 0 1 0 0af4b1b6afa56c201789ad72edc78da0
+
+% 0 1 0 16ac27e123fb98c212cffffacb17ff1d
+
+% 1 1 0 0fb0410cde47e37a1d57e6edbeb42b20
+
+@ 0 4 0 04ac810f29509e8a0fd10312f467def5
++         基于套接字的客户端（`soundnessHttp`、域套接字客户端和会话）按原因把 `Socket.Error` 映射为 `Connect.Error`，并把格式错误的响应（`Http.Response.Error`）报告为 `Unknown`；`javaNetHttp` 则对 JDK 的异常进行分类。
++     entry .Reason   连接失败的原因：`Dns`、`Refused`、`Ssl(reason)`、`Timeout` 或 `Unknown`
+
+% 1 1 0 075ce22cdaa7af101293ca1ce3e1731c
+
+% 1 1 0 183d5f11254e8518154a3b6c2f0be0bd
+
+@ 2 4 0 1f8bdbb9b7a7466c0ba15f159ba64a67
++           column  分支
++           column  代码
++           column  消息
++           column  说明
+
+% 0 1 0 0c8d8f9b61f7c72e0b90b3ba6442b061
+
+% 0 1 0 04cf36566083e5111dcc7440a4dbe98f
+
+@ 0 1 0 0582ec369b26c74d10ac5c7dfe6d1a63
++           row  `Ssl(reason)`  3  _the SSL/TLS layer could not be established because `reason`_  一个 `Connect.Error.Reason.Ssl.Reason`，说明 TLS 层在何处失败
+
+% 0 1 0 1d31fa2e2858edd016619b83d63b0fdf
+
+% 0 1 0 03b7195221a5454e1249fb5eba848ea1
+
+% 1 1 0 0c7af4c083f83f510a6f8a3a28016383
+
+@ 0 1 0 02201d6822283bb61910dcfb25041169
++       entry .Ssl   TLS 失败原因的命名空间
+
+% 0 1 0 1fa5966119e8ae1109b0dcda52a971aa
+
+@ 0 1 0 0fc869e8497dcb181d2e6697cc6c3844
++             `Connect.Error.Reason.Ssl.Reason` 是 TLS 失败的无编号枚举：
+
+% 0 1 0 17a12efcb5b524961abe798015d06fdd
+
+@ 0 4 0 016b7621a7c24fcf02ccee5ee1a923a6
++             column  分支
++             column  消息
++             column  说明
++             row  `Handshake`  _the local and remote peer could not negotiate the desired level of security_  所有证书问题和密码套件不匹配都报告为此
+
+% 0 1 0 1da594ffe08c8cd91fb554899a6fa5e7
+
+% 0 1 0 0bdfb0b46c91ac561b62faef14533227
+
+% 0 1 0 0acfa83a3468bdcd0145784dce158f50
+
+% 0 1 0 0886f09d22a849f8174ec96cea203f24
+
+@ 0 6 0 1252aa250feb944b1b63642e0037ee80
++             基于套接字的客户端把每种 TLS 失败都报告为 `Handshake`；`javaNetHttp` 则根据 JDK 的异常区分这四种。
++         entry .Reason   `Handshake`、`Key`、`Peer` 或 `Protocol`
++           entry .communicable   把每个 TLS 原因渲染为一条消息
++       entry .communicable   把每个原因渲染为一条消息
++     entry #reason   `Connect.Error.Reason`
+
+@ 0 1 0 0489f2ab512c96780859ca6842b00cfb
++ entry .Context   按会话存储值：每个 `Session` 一个某类型的槽位
+
+% 1 1 0 00f73c0400ca3f5e1c3c1acb47ef6d92
+
+@ 0 6 0 0b3325e88552146f18e601b76ef44c12
++       `Context[value]()` 是一个每个会话一个槽位的存储，在 `Session` given 下读写：`context()` 是当前会话的 `Optional[value]`，`context() = value` 设置它。
++       服务器端状态（登录信息、购物篮）就是这样跨请求保存的，以会话 cookie 的 `Session` 为键。
++       它以并发映射为后端；`Context` 是 `Findable` 的，因此可以作为上下文值召唤。
+
+% 2 1 0 0752fc5cd7b9e8a71177750ce7f2bf43
+
+% 3 1 0 1233d457701f96330d826826c55c5c83
+
+% 0 1 0 0259e76275a2dd451460264c1bb2e4a0
+
+% 0 1 0 13d998f588e00bc41114211e7dcac913
+
+% 0 1 0 1da7557931e18b151646a655f1780d6a
+
+% 0 1 0 0a11f68ec88d8dce06b4e2f0e98d8a41
+
+% 0 1 0 1c2c6e81f8fbff9801f02c817fa14c61
+
+% 1 1 0 0244c68616c5960d1486cd562a742bdb
+
+% 1 1 0 1a09b2e59925a5c50820db4c20dc1fed
+
+% 1 1 0 1d04716766c12f85129f9d16e3ae2f2e
+
+@ 0 3 0 0c9f67c62622aa040339a87f1aec6dc7
++   entry .apply   `Context[value]()`：一个新的空存储
++   entry #apply   当前会话的值，或 `Unset`
++   entry #update   `context() = value`：设置当前会话的值
+
+@ 0 1 0 03822d7a0b3499a5090931db1c0d8ee6
++ entry .Cookie   cookie 模板：名称、属性，以及其值编码所用的类型
+
+% 1 1 0 164f68688c91efea0fead61e513edbbc
+
+@ 0 6 0 1edc2c9ea7e8d5511ff139da9fb8dfa3
++       `Cookie[value]` 不是一个已发送的 cookie，而是写入 cookie 所用的模板：`Cookie[Text](t"theme")` 指定一个 cookie 及其域、过期时间、`Secure`、`HttpOnly` 和路径属性，以及其值与文本之间编码和解码所用的类型。
++       `cookie(value)` 生成要在 `Set-Cookie` 头中发送的 `Cookie.Value`（`response + cookie(value)`），`cookie()` 则从作用域中 `Http.Request` 的 `Cookie` 头读回该值，并解码为其类型。
+
+% 2 1 0 072408388ea4698b04f694546c467f22
+
+% 3 1 0 0c69c165f238bcac1d7cf6b230d376db
+
+% 4 1 0 011fc0db1abb3f9611ddfa3674068a5c
+
+% 0 1 0 0c8714067b7d85bc04a7ed423fd393f4
+
+% 0 1 0 04f55ebe006a401f0bb152c4c3c2057b
+
+% 0 1 0 1fdf7d0b350fbaf01827cfcff7acf406
+
+% 1 1 0 0d8de823abec6f891fbcd1d5baad7fc3
+
+@ 0 5 0 15aca34413d96d5616ceda123f7c27c3
++       `Cookie[Session]` 带有 `Cookie.session`，它在请求的 `Session` 下运行一个代码块；请求没有会话时，生成一个并设置 cookie。
++       用 `cookie.Session` 对请求做模式匹配会提取解码后的值。
++       cookie 模板检视为 `Cookie(t"theme" ╱ secure ╱ httpOnly)`，只显示它所带的属性。
+
+% 1 1 0 0144991564f5dc8f0782b464eeb41577
+
+% 1 1 0 13ae035336289f9709a684962e9715e8
+
+@ 0 7 0 1cebf8bfb9683bb20aa19a22ed78f101
++   entry .apply   `Cookie[value](name, domain, expiry, secure, httpOnly, path)`：一个模板
++       值类型需显式给出，并且必须是 `Encodable in Text` 和 `Decodable in Text` 的。
++       `domain` 是 `Optional[Hostname]`，`expiry` 是任何 `Abstractable across Durations to Long` 的时长类型（以秒存储），`secure` 和 `httpOnly` 默认为 `false`，`path` 是可选的文本。
++   entry .inspectable   把模板渲染为 `Cookie(name ╱ domain:… ╱ expiry:… ╱ secure ╱ httpOnly)`，只包含存在的属性
++   entry .Value   发送或接收的 cookie：名称、值及其属性
+
+% 1 1 0 023fc629592a3239041d5ce3f9cd1625
+
+@ 0 4 0 0e51ff8ae91d46ac02cfd7ff884e2771
++         `Cookie.Value(name, value, domain, path, expiry, secure, httpOnly)` 是具体的 cookie：模板的 `apply(value)` 生成的、`request.headers.cookie` 解码出的、以及 `response + cookieValue` 作为 `Set-Cookie` 头添加的都是它。
++         它的 `expiry` 是以秒计的 `Max-Age`。
+
+% 2 1 0 1632e8ab40cdc092069ef6c4b175c0a5
+
+% 3 1 0 0fa26cd3bb6c2b320449bce8cb81c0eb
+
+% 0 1 0 05bf30784907240811af4fe83c6af0c0
+
+% 0 1 0 0f433a6d2260e45019ffab7f986f6fc4
+
+% 1 1 0 16b7312bcdbf0f9709c054f552a25aeb
+
+@ 0 30 0 1890dddc9d671e171201c771e53803e4
++     entry .showable   渲染为 `Set-Cookie` 形式：`name=value; Max-Age=…; Domain=…; Path=…; Secure; HttpOnly`
++     entry .inspectable   渲染为包住 `Set-Cookie` 形式的 `Cookie.Value(…)`，以免被误认为头部文本
++     entry .encodable   把 cookie 编码为 `Set-Cookie` 头，用于 `response + cookie`
++     entry .addable   `response + cookie`：添加了 `set-cookie` 头的响应
++     entry .decodable   把 `Cookie` 请求头 `a=1; b=2` 读取为 `List[Cookie.Value]`
++         每个 `name=value` 对都经过 URL 解码；没有 `=` 的片段被跳过。
++     entry #name   cookie 的名称
++     entry #value   cookie 的值，以文本表示
++     entry #domain   `Domain` 属性（如果设置了）
++     entry #path   `Path` 属性（如果设置了）
++     entry #expiry   以秒计的 `Max-Age` 属性（如果设置了）
++     entry #secure   是否设置了 `Secure` 属性
++     entry #httpOnly   是否设置了 `HttpOnly` 属性
++   entry .session   在请求的会话下运行处理函数，会话为新建时设置会话 cookie
++       `Cookie[Session]` 上的扩展：`cookie.session { … }` 从作用域中的请求读取会话，或由一个 UUID 生成新会话，以它作为 given 运行代码块，并把 cookie 添加到代码块返回的响应中。
++   entry #name   cookie 的名称
++   entry #domain   模板强加的 `Domain` 属性（如果有）
++   entry #expiry   模板强加的 `Max-Age`，以秒计（如果有）
++   entry #secure   cookie 是否标记为 `Secure`
++   entry #httpOnly   cookie 是否标记为 `HttpOnly`
++   entry #path   模板强加的 `Path` 属性（如果有）
++   entry #apply   `cookie(value)` 生成一个 `Cookie.Value`；`cookie()` 从作用域中的请求读取值
++       `cookie(value)` 把值编码为文本并附上模板的属性。
++       `cookie()` 需要一个 `Http.Request` given，它是从该请求中同名 cookie 解码出的 `Optional[value]`，不存在时为 `Unset`。
++   entry #Session   作用于作用域中请求的提取器：`case cookie.Session(value) =>`
++       当请求带有此 cookie 时匹配，并以解码后的值作为上下文值运行给定的代码块。
+
+@ 0 1 0 0515ff6d3f2f15931e978fe03a7c8a7e
++ entry .Directive   如何按头部名称检查和编码头部值的类型
+
+% 1 1 0 08eb6593a20d088814cdf4aae6047e1f
+
+@ 0 9 0 1735cec97873d16212e6d9c4c050adbe
++       `Directive` 是具名头部参数背后的类型类。
++       `("accept" is Directive of MediaType)` 表示写作 `accept = …` 的头部接收一个 `MediaType`，并说明如何渲染它；`fetch`、`submit` 和 `Http.Response(…)` 背后的宏为每个参数的名称召唤该指令，并据此检查值的类型，因此 `accept = 3` 是一个编译错误：_the header `Accept` cannot take a value of type `Int`_。
++       传输时的名称是把驼峰式标签转为短横线式：`contentType` 变为 `content-type`。
++       同样的指令也为动态读取器 `request.headers.contentType` 和 `response.headers.setCookie` 提供类型，把字段的文本解码为指令的类型。
+
+@ 0 4 0 00b02179f55eff89158cddef23c2eebb
++       未具名的参数仅按其类型匹配，因此单独的 `MediaType` 是 `accept`，`Auth` 是 `authorization`；对多个头部都是 `Directive` 的类型（`Text`）不能不具名地传入：_the type `Text` does not uniquely identify a particular HTTP header_。
+
+% 2 1 0 045e4e7e46808a681f084b3e0d6e34d9
+
+% 3 1 0 1cdd1fc06b88eec813ac38e9ca179550
+
+% 4 1 0 1ac30f4b019c39d30b96a0acf3984bdb
+
+% 5 1 0 16541242399439791b7f83b1f507e7f6
+
+% 6 1 0 1a11ef9b3da1f57414525d573605316f
+
+% 7 1 0 15d0496310c4aca30824edf7d357275d
+
+% 8 1 0 14f6e64c87b7062212a7067381996383
+
+% 9 1 0 1a179f0098e476ab096e3882f5eb6b34
+
+% 0 1 0 185db210b192411d1ad2c40ffe3c33c9
+
+% 0 1 0 03e905fb33a32cc2170689361907c615
+
+% 1 1 0 1aae064e68a8bba8147a677466a540f0
+
+@ 0 8 0 0b0ff2b2bfa62ccd1720efd7fba06d14
++       伴生对象为每个标准头部声明一个指令：有类型的包括 `accept`（一个 `MediaType` 或 `List[MediaType]`）、`authorization`（`Auth`）、`contentType`（`MediaType`）、`contentLength`（`Bytes`）、`contentEncoding`（一个 `Encoding`）、`cookie`（`List[Cookie.Value]`）、`host`（`Host`）、`maxForwards`（`Int`）、`origin`（任何 URL 类型）、`range`（一个 `Interval`，渲染为 `bytes=start-end`）和 `transferEncoding`（`TransferEncoding`）；其他每个标准头部都接收 `Text`。
++       伴生对象未列出的头部需要一个局部 given，即 `given ("xRequestId" is Directive of Text) = identity(_)`，才能按名称传入。
+
+% 1 1 0 0abdc87c13325798175bf99c2e1648e0
+
+% 1 1 0 1488dbcd13dc5fad0006b4d34234f00d
+
+@ 0 73 0 14d23be13bda6d480cf91517c714edad
++   entry #Self   头部的名称，以字面量类型表示：`"contentType"`
++   entry #encode   把头部类型的值渲染为字段的文本
++   entry #key   由 `Self` 得到的头部名称文本
++   entry .contentEncoding   `contentEncoding`：一个 `Encoding`，按其名称渲染
++   entry .accept   `accept`：一个 `MediaType`
++   entry .accept2   `accept`：一个 `List[MediaType]`，以逗号连接
++   entry .authorization   `authorization`：一个 `Auth`
++   entry .cacheControl   `cacheControl`：文本
++   entry .connection   `connection`：文本
++   entry .contentMd5   `contentMd5`：文本
++   entry .contentType   `contentType`：一个 `MediaType`，渲染时不带其参数
++   entry .contentLength   `contentLength`：一个 `Bytes` 数量，渲染为数字
++   entry .cookie   `cookie`：一个 `List[Cookie.Value]`，以 `; ` 连接
++   entry .date   `date`：文本
++   entry .expect   `expect`：文本
++   entry .forwarded   `forwarded`：文本
++   entry .from   `from`：文本
++   entry .host   `host`：一个 `Host`
++   entry .http2Settings   `http2Settings`：文本
++   entry .ifMatch   `ifMatch`：文本
++   entry .ifModifiedSince   `ifModifiedSince`：文本
++   entry .ifNoneMatch   `ifNoneMatch`：文本
++   entry .ifRange   `ifRange`：文本
++   entry .ifUnmodifiedSince   `ifUnmodifiedSince`：文本
++   entry .maxForwards   `maxForwards`：一个 `Int`
++   entry .origin   `origin`：任何 `Abstractable across Urls to Text` 的 URL 类型
++   entry .pragma   `pragma`：文本
++   entry .prefer   `prefer`：文本
++   entry .proxyAuthorization   `proxyAuthorization`：文本
++   entry .range   `range`：一个序数的 `Interval`，渲染为 `bytes=start-end`
++   entry .referer   `referer`：文本
++   entry .te   `te`：文本
++   entry .trailer   `trailer`：文本
++   entry .transferEncoding   `transferEncoding`：一个 `TransferEncoding`
++   entry .userAgent   `userAgent`：文本
++   entry .upgrade   `upgrade`：文本
++   entry .via   `via`：文本
++   entry .warning   `warning`：文本
++   entry .acceptCharset   `acceptCharset`：文本
++   entry .accessControlAllowOrigin   `accessControlAllowOrigin`：文本
++   entry .accessControlAllowCredentials   `accessControlAllowCredentials`：文本
++   entry .accessControlExposeHeaders   `accessControlExposeHeaders`：文本
++   entry .accessControlMaxAge   `accessControlMaxAge`：文本
++   entry .accessControlAllowMethods   `accessControlAllowMethods`：文本
++   entry .accessControlAllowHeaders   `accessControlAllowHeaders`：文本
++   entry .acceptPatch   `acceptPatch`：文本
++   entry .acceptRanges   `acceptRanges`：文本
++   entry .age   `age`：文本
++   entry .allow   `allow`：文本
++   entry .altSvc   `altSvc`：文本
++   entry .contentDisposition   `contentDisposition`：文本
++   entry .contentLanguage   `contentLanguage`：文本
++   entry .contentLocation   `contentLocation`：文本
++   entry .contentRange   `contentRange`：文本
++   entry .deltaBase   `deltaBase`：文本
++   entry .eTag   `eTag`：文本
++   entry .expires   `expires`：文本
++   entry .im   `im`：文本
++   entry .lastModified   `lastModified`：文本
++   entry .link   `link`：文本
++   entry .location   `location`：文本
++   entry .p3p   `p3p`：文本
++   entry .preferenceApplied   `preferenceApplied`：文本
++   entry .proxyAuthenticate   `proxyAuthenticate`：文本
++   entry .publicKeyPins   `publicKeyPins`：文本
++   entry .retryAfter   `retryAfter`：文本
++   entry .server   `server`：文本
++   entry .setCookie   `setCookie`：文本
++   entry .strictTransportSecurity   `strictTransportSecurity`：文本
++   entry .tk   `tk`：文本
++   entry .vary   `vary`：文本
++   entry .wwwAuthenticate   `wwwAuthenticate`：文本
++   entry .xFrameOptions   `xFrameOptions`：文本
+
+@ 0 1 0 13e2ddb928ad5b960b112f89231e5ee1
++ entry .Fetchable   `fetch` 和 `submit` 接受为端点的内容，以及它发送到的目标
+
+% 1 1 0 05869d5acf64194d13763fee4238e44f
+
+@ 0 6 0 0db7c501faff175609a3b2a4e51c0963
++       `Fetchable` 值产生一个请求目标（其路径和查询，以文本表示）、一个 `Host`，以及为之召唤 `Http.Client` 的 `Target`：`HttpUrl` 以其 `Origin["http" | "https"]` 为目标，`Uds.Endpoint`（借助 `telekinesis.jvm` 中的 `udsFetchable`）以其套接字为目标。
++       伴生对象的 `.httpUrl` 覆盖每个 `HttpUrl`，包括 `url"…"` 字面量所具有的、按方案细化的类型。
+
+% 1 1 0 1634765dd790c7c300852ca64d8914b3
+
+% 1 1 0 1a3dd8f25ff93f6b1207999cafc87848
+
+@ 0 6 0 19291a42d28c852f0282546e2493f88d
++   entry .httpUrl   任何 `HttpUrl` 都可获取，以其源为目标
++       请求目标是 URL 的路径和查询，主机是其主机名；没有主机名的 URL 是一个缺陷。
++   entry #target   端点的 `Target`
++   entry #text   端点的请求目标文本
++   entry #hostname   端点的 `Host`
+
+@ 0 1 0 02a508bb68fd3b5209d94d10c2e1bf26
++ entry .Parameter   请求查询或表单正文中的一个具名字段，读取为某个类型
+
+% 1 1 0 0f33dea52fb194751bb8d7aa0e91b7f3
+
+@ 0 5 0 05c26f7acf0ab60b121dd7bda3e5c033
++       `Parameter[Int](t"page")` 指定一个字段，以及它解码到和编码自的类型。
++       当作用域中有 `Http.Request` 时，`page()` 是它的值，从请求的 `query`（URL 参数与表单编码的正文同样处理）解码，字段缺失或格式错误时抛出 `Query.Error`；`page(3)` 是 `Query` 片段 `page=3`；`case page(n) =>` 匹配带有该字段的请求。
+
+% 2 1 0 0686a933ad57be581747ff6f0c73cad3
+
+% 3 1 0 1ebeaa4853a8bd2c0f521d757e0154f3
+
+% 4 1 0 04b1b83b7ac9270206c1b567fd4e1eb0
+
+% 2 1 0 114e83ce4ced1b6d19322b33b4d3e588
+
+% 0 1 0 0152619c50a620f20d28e66087c0a6d0
+
+% 0 1 0 0635381891b8cfe71cb4087b72141557
+
+% 0 1 0 0ed41a1191ac14ab1f882fe5f971730e
+
+% 0 1 0 0f0c65d9d197fd7f1282cae5b79e99d0
+
+% 1 1 0 138f8a791c1cb60f1629c7344fd07eed
+
+@ 0 2 0 04edaa42a5e5b0801179d47923ad4034
++       值类型必须是 `Decodable in Query` 和 `Encodable in Query` 的，每个基本类型及其积类型都满足。
+
+% 1 1 0 0dc05813934a62481c84f8b846e0f5b7
+
+% 1 1 0 0cebd8bc3325c88204df90ba03db5170
+
+@ 0 9 0 13ff89d38d9e2e7b1cd1ad4559b0aef7
++   entry .apply   `Parameter[value](name)`：具有某个名称和类型的参数
++   entry #name   字段的名称
++   entry #decode   从 `Query` 得到的值
++   entry #encode   由值得到的 `Query`
++   entry #apply   `parameter(value)` 编码一个值；`parameter()` 从作用域中的请求读取它
++       读取需要一个 `Http.Request` given、一个用于字段缺失或格式错误的 `Tactic[Query.Error]`，以及一个用于表单正文被截断（报告为字段缺失）的 `Tactic[Truncation.Error]`。
++   entry #unapply   作用于 `Http.Request` 的 `case parameter(value) =>`：字段能解码时匹配
+
+@ 0 1 0 1b47c0ce2fe187041badd1f2bbf1d4b7
++ entry .Postable   值如何成为请求正文：它的媒体类型和字节
+
+% 1 1 0 1d678b842e6e1b770031b6e465d61cbd
+
+@ 0 10 0 0f7e629feb2407cb098a32f325eb891c
++       `Postable` 值可以作为 `submit` 的载荷：该类型类给出它的 `MediaType`（成为 `Content-Type` 头），并在每次被请求时给出其字节的一个新的 `Stream[Data] over Credit`（正文可能在重定向后再次发送，也可能为记录日志而被采样）。
++       伴生对象覆盖 `Text`（`text/plain`，由作用域中的 `Codepage` 编码）、`Data` 和 `Data & Sized[n]`（`application/octet-stream`）、`Chain[Text]` 和 `Chain[Data]`（流式，`application/octet-stream`）、`Query`（`application/x-www-form-urlencoded`，表单提交）、`Unit`（空的 `text/plain` 正文），以及任何 `Abstractable across HttpStreams` 到媒体类型和流的类型；数据格式库另外添加 `postables.jsonPostable`、`xmlPostable`、`yamlPostable`、`cborPostable`、`protobufPostable` 以及 gesticulate 的 multipart。
+
+% 2 1 0 0d0b96ba0ab3190c05578eda7fa4e817
+
+% 3 1 0 16cd2fe0a8ea3dfb11a9b4328a52850d
+
+% 4 1 0 1307fa0810a6bd3d1630885a18d9dc49
+
+% 5 1 0 03fb09910f1fef5617268daf5514be67
+
+% 6 1 0 04060d78d968eb6d18e7c1b875671bfb
+
+% 7 1 0 0daae30422eb83a006044fac37a9e0c5
+
+% 8 1 0 0efbec31f4a5bfb9082f9d1102d703ec
+
+% 9 1 0 0e19ccf7fe2f144c09a2065bc2795e26
+
+% 10 1 0 07dabd0e8e0fe7d615e36b275bf8c5da
+
+% 0 1 0 05d1d341d162925b1b395172df93d946
+
+% 0 1 0 1ea7b2c0a615da610b8ac50c82bd8f46
+
+% 1 1 0 05cf05ed27633649138c2eddf42c68c5
+
+@ 0 2 0 16676a7b6986b6ad18181cd13fd9d543
++       自定义实例为 `Postable(mediaType, streamer)`，其中 streamer 是从值到流的函数；实例保留 streamer 所捕获的内容。
+
+% 1 1 0 0115fab32a0facef1346088c4a28eb20
+
+% 0 1 0 0267f5ed1679c9481af5552f2715dc1f
+
+@ 0 1 0 1633f0cc8c1c63d208c8ad22ff8521f9
++   entry .Streamer   从值到新正文流的函数，以单方法 trait 表示
+
+% 1 1 0 1a467600a48c4dd10c9aa6d858d59240
+
+@ 0 19 0 18b3d9d0fd99cd441a680bdae35e34a1
++         之所以命名而不用函数类型，是为了让其 `stream` 方法能够生成一个新的作用域流；lambda 会在调用处转换为它。
++     entry #stream   值的字节的一个新流
++   entry .apply   `Postable(mediaType, streamer)`：由媒体类型和 streamer 构成的实例
++   entry .text   `Text` 以 `text/plain` 提交，由作用域中的 `Codepage` 编码
++   entry .textStream   `Chain[Text]` 以 `application/octet-stream` 提交，每个块分别编码
++   entry .unit   `Unit` 以空的 `text/plain` 正文提交
++   entry .data   `Data` 以 `application/octet-stream` 提交
++   entry .sizedData   `Data & Sized[length]` 与 `Data` 一样提交
++   entry .byteStream   `Chain[Data]` 以 `application/octet-stream` 流式提交
++   entry .query   `Query` 以 `application/x-www-form-urlencoded` 提交，即表单提交
++   entry .dataStream   任何 `Abstractable across HttpStreams` 的值都以其抽象得到的媒体类型和流提交
++       需要一个 `Tactic[MediaType.Error]`，在抽象得到的媒体类型文本无法解析时抛出；实例保留它。
++   entry #mediaType   值的正文的媒体类型
++   entry #stream   值的正文的一个新流
++   entry #preview   正文第一个块的十六进制样本，用于日志
++       至多进行一次有界的补充读取，因此绝不会为了记录日志而耗尽大型正文；长于 128 字节的样本以 `...` 结尾。
+
+@ 0 1 0 16330e6c260a444910fcf264719665dc
++ entry .Receivable   如何把响应读取为某个类型：`response.receive[T]`
+
+% 1 1 0 1d936fb9850a86f508b1806c84a7797b
+
+@ 0 8 0 0c8146ab425120d3031bbf6f3e0f0482
++       `Receivable` 把 `Http.Response` 读取为一个值。
++       每个用 `Receivable(reader)` 构建的实例都会先检查状态：`Successful` 类别之外的响应会以其状态和头部抛出 `Http.Error`，只有之后正文流才交给读取器。
++       伴生对象读取 `Text`（整个正文，UTF-8）、任何 `Aggregable by Data` 的类型（`Data`、`Json`、`Chain[Data]`……）、任何 `Instantiable across HttpRequests from Text` 的类型，以及 `Http.Status`，唯有后者从不抛出，因为它不读取正文。
++       `Instantiable` 实例 `instantiable` 继承自 trait `Receivable2`，优先级低于伴生对象自己的实例。
+
+% 2 1 0 015da383054144c70952a4c22f93252e
+
+% 3 1 0 036b0975652620451350bf8e0dd0fe25
+
+% 4 1 0 13111ec3323678da1c90661ffac054bb
+
+% 5 1 0 06b1fa6e453239e219232dffeeefa87b
+
+% 6 1 0 01d1c8c571e2b71f15ccd4eaa5d5e394
+
+% 7 1 0 10c1c230c9654f05140a4657af2ba8fb
+
+% 8 1 0 11498eb8b48251a207b8b37a8f8fcad7
+
+% 9 1 0 1066d9ace9d32f621769f472a69e63df
+
+% 4 1 0 138a62c8f7d6fff800634e5cc95a6a07
+
+% 0 1 0 0930b0d7f3c33c4a1d77276a931e8d23
+
+% 0 1 0 0244e41d87138e7310a6ab6bb0f09307
+
+% 0 1 0 150c605e34ce240705452d3fd4ab6338
+
+% 1 1 0 1fc44fba2bc66518157f5f53c1096d8e
+
+@ 0 3 0 0bcd42575202ee4016b9847425606263
++       正文只读取一次：流是连接上的单一所有者端点，因此对同一响应的第二次 `receive[Text]` 会发现它已被耗尽。
++       `#map` 从已有的读取器派生出另一个类型的读取器。
+
+% 1 1 0 0c5eea201358f1df0188147987ff9d8c
+
+% 1 1 0 0a224abb675dcb741ed149e9fac1fccd
+
+@ 0 1 0 1d04f119ee9bff660b17fde868934aeb
++   entry .Reader   从正文流到结果的函数，以单方法 trait 表示
+
+% 1 1 0 0207425637772179189714db434aada5
+
+@ 0 11 0 029c631451f3173f0bfc70d7979cb202
++         之所以命名而不用函数类型，是为了让它能够接收带能力类型的流；lambda 会在调用处转换为它。
++     entry #read   由正文流得到的结果
++   entry .apply   `Receivable(reader)`：先检查状态、再读取正文的实例
++       需要一个 `Tactic[Http.Error]` 和一个 `Tactic[Truncation.Error]`，实例将它们连同读取器一起保留。
++   entry .text   把正文读取为 `Text`，按 UTF-8 解码
++   entry .streamable   通过任何 `Aggregable by Data` 读取正文：`Data`、`Json`、流
++   entry .httpStatus   `receive[Http.Status]`：状态，不读取正文，也从不抛出
++   entry #read   读取响应，其正文可能保留着活动的连接
++   entry #map   通过作用于本读取器结果的函数，得到另一个类型的 `Receivable`
+
+@ 0 1 0 0eb3ed84b12ab0ab1b470bf9b9eb36ab
++ entry .Receivable2   优先级较低的 `Receivable` 实例，混入伴生对象
+
+% 1 1 0 06b85b5f876e0a2e01f6058be384ff1a
+
+% 2 1 0 1d029725260078ad01bbce8879d84fd4
+
+@ 0 4 0 0c3394d3cf7ebdbf1d42e3438ad4b1e2
++       不供直接使用：持有 `instantiable`，即从正文的 UTF-8 文本读取任何 `Instantiable across HttpRequests from Text` 类型的后备实例，优先级低于 `Receivable.text` 和 `Receivable.streamable`。
++   entry #instantiable   把正文读取为文本并实例化任何 `Instantiable across HttpRequests from Text`
+
+@ 0 1 0 1a3dad6c66c391ea0b3629d9cbaa05b1
++ entry .Redirects   `Redirects.Disabled` 的命名空间，该标记用于关闭重定向跟随
+
+% 1 1 0 1aec922d3a68e0e90e09f4e5851650a9
+
+@ 0 3 0 007670e961d7faa70c884c456d16510d
++       把一个 `Redirects.Disabled` 引入作用域会选中 `Http.Client.httpStrict`，它原样返回 3xx 响应而不跟随。
++       做到这一点的 given 是 `httpRedirections.doNotFollowRedirects`，需按名称导入。
+
+% 0 1 0 10895e0f8cd8e71d0b1e8f0d614dcabf
+
+@ 0 1 0 07985b8c0fa07d691cb18ea57f8eb781
++   entry .Disabled   标记类；作用域中有一个实例时禁用重定向跟随
+
+@ 0 1 0 1d0fc46ff3643b0610c46c787f8719ef
++ entry .Servable   值如何成为响应：`Http.Response(value)`，或从处理函数返回它
+
+% 1 1 0 0d6cae7a5772259e0b097533c42938a6
+
+@ 0 8 0 08c87e94173c0e4c0118b420a1d205dc
++       `Servable` 值作为 `Http.Response` 提供服务，其媒体类型放在 `content-type` 头中，其字节作为正文。
++       伴生对象覆盖 `Text`（`text/plain`，由作用域中的 `Codepage` 编码）、`Data` 和 `Data & Sized[n]`（`application/octet-stream`）、gesticulate 的 `Content`（媒体类型加流）、任何 `Abstractable across HttpStreams` 的类型，以及通过 `.media` 覆盖任何具有 `Media` 实例并具有 `Encodable in Data`、`Streamable by Data` 或 `by Text` 的类型；数据格式库另外添加 `servables.jsonServable`、`xmlServable`、`yamlServable`、`cborServable` 和 `protobufServable`。
+
+% 2 1 0 0b13e11249c480cb0242aa8547aae354
+
+% 3 1 0 07172fbef591d71f0f7437cc32f44500
+
+% 4 1 0 13f89ce7b58693a80a636bd50b2b423a
+
+% 0 1 0 16935585091732ef01d9242c06db6ec8
+
+% 0 1 0 05f79e63c550c96f038228127c79cce5
+
+% 1 1 0 03a939d0b1acaeac17383c7386c25a5b
+
+@ 0 5 0 0edf821df79219bf148c9b97626adb52
++       自定义实例为 `Servable(mediaType)(value => body)`，或当媒体类型取决于值时为 `Servable(value => mediaType)(value => body)`。
++       通过 `.media` 提供的流式 `Text` 正文会把 `Codepage` 作为流的一个阶段来运行，服务器在服务路径上必须逐块消费它（`sweep`），绝不能 `memoize`；`Data` 正文（`Http.Body.Fixed`）则不存在这个问题。
+
+% 1 1 0 172bab0102c783570cee601efd68ae0f
+
+% 1 1 0 1148a9c80ce49d601581973a2eacc850
+
+@ 0 17 0 13de89031fb9bbc30adb1dd317d4fe5c
++   entry .apply   `Servable(mediaType)(value => body)`：由媒体类型和正文函数构成的实例
++       媒体类型可以是常量（其头部只渲染一次），也可以是值的函数。
++       实例保留这些函数所捕获的内容。
++   entry .content   gesticulate 的 `Content` 以其自身的媒体类型和流提供服务
++   entry .bytes   任何 `Abstractable across HttpStreams` 的值都以其抽象得到的媒体类型和流提供服务
++       无法解析的媒体类型文本是 `Abstractable` 实例的缺陷，会引发 panic。
++   entry .data   `Data` 以 `application/octet-stream` 固定正文提供服务
++   entry .sizedData   `Data & Sized[length]` 与 `Data` 一样提供服务
++   entry .text   `Text` 以 `text/plain` 固定正文提供服务，由作用域中的 `Codepage` 编码
++   entry .media   任何 `Media` 类型都以其媒体类型提供服务，取自其 `Encodable in Data` 或某个 `Streamable`
++       一个内联 given，在召唤处依次选择 `Encodable in Data`（固定正文）、`Streamable by Data over Credit`（流式正文）或 `Streamable by Text over Credit`（通过作用域中的 `Codepage` 和 `Buffering` 流式传输）。
++   entry #serve   值对应的响应
++   entry #contramap   通过一个到本类型的函数，得到另一个类型的 `Servable`
+
+@ 0 1 0 10eb6290142f8e371faa1d88ffdbf7b9
++ entry .Session   会话键：会话 cookie 跨请求携带的标识
+
+% 1 1 0 18baf6354768f8761513c28a5adb486a
+
+@ 0 4 0 0222b3ff41dd25d519b716e6101ee195
++       `Session(key)` 是 `Cookie[Session]` 在浏览器中存储并读回的值，也是 `Context` 保存每会话状态所用的键。
++       它编码为其裸键，检视为 `Session(t"a3f1")`，因此两者可以区分。
++       它是 `Findable` 的，因此可以在 `Cookie.session` 中作为上下文值召唤。
+
+% 1 1 0 1aa367f4ad21ba6813eb1a077d4c7515
+
+% 1 1 0 0f95654d2c1af48b1b7b1f9abf97ea14
+
+@ 0 4 0 124a7bb8fc38059000ace29026c52a0f
++   entry .encodable   会话编码为其键
++   entry .decodable   会话从其键解码
++   entry .inspectable   渲染为 `Session(t"key")`
++   entry #key   会话的键
+
+@ 0 1 0 18a21cb13e10417c19fa554e887d8a37
++ entry .Submission   表单的状态：尚未提交，或已提交并带有待解码的查询
+
+% 1 1 0 1a9580cb359dfe1003db40b482627401
+
+@ 0 4 0 130f2bb979191473155a84df07e201c7
++       `Submission[content](query)` 持有提交表单时所带的 `Query`，或在表单首次显示时为 `Unset`。
++       `#value` 把它解码为表单的类型，`#valid` 说明它能否解码，`#fresh`/`#submitted` 说明它处于哪种状态。
++       借助 `telekinesis.forms`，`submission.form(…)` 把它渲染为 HTML。
+
+% 0 1 0 07bb4ab1bdb520e61f0a4c62381ede96
+
+% 0 1 0 0109017e26a0240203ba9e8f5bf00e8f
+
+@ 0 6 0 0a3b01ee0f1de5911b7fe71fb22f44ae
++   entry #query   提交的 `Query`，或 `Unset`
++   entry #fresh   表单是否尚未提交
++   entry #submitted   表单是否已提交
++   entry #optional   解码后的值；缺失或无效时为 `Unset`
++   entry #valid   提交的查询能否解码为表单的类型
++   entry #value   解码后的值；未提交时为 `Unset`；格式错误的查询会抛出错误
+
+@ 0 1 0 0b8c0c01a808a95e054c4bd39b3c1527
++ entry .TransferEncoding   `Transfer-Encoding` 头的取值
+
+% 1 1 0 1a63a51a58e5220a1732aff8a89f0958
+
+@ 0 3 0 1c5a1012b597b630043156f7c96bbb2d
++       一个枚举：`Chunked`、`Compress`、`Deflate` 和 `Gzip`，各自编码为其小写名称。
++       它是 `transferEncoding` 头部参数所接收的类型。
++   entry .encodable   把传输编码编码为其小写名称
+
+@ 0 1 0 082b51434ff4e9161c7bf95adb90279f
++ entry .internal   `fetch`、`submit` 和 `Http.Response(…)` 背后的宏实现
+
+% 1 1 0 06c6d613445b534e136eb0db9baa2b04
+
+% 2 1 0 1ecb9230fd058d640f19e5bd36c2d294
+
+@ 0 8 0 0f39c2d0513e611e0dbcf3fe497f5709
++       不供直接使用：该对象的存在是为了给宏一个稳定的归属。
++   entry .expand   把调用的参数分拣为方法、状态和编码后的头部
++       每个具名参数都对照其名称的 `Directive` 检查，每个未具名参数都对照其类型唯一的 `Directive` 检查；方法或状态给出两次，或值不适合任何头部，都是编译错误。
++   entry .submit   `Http.Submit#apply` 背后的宏：构建带 `Content-Type` 的请求并发送
++   entry .fetch   `Http.Fetch#apply` 背后的宏：构建无正文的请求并发送
++   entry .response   `Http.Response(…)` 背后的宏：一个被提供服务的值，或一个 `Protoresponse`
+
+@ 0 1 0 1ac5e51485bd2d68003b508bea6f7233
++ entry .fetch   `url.fetch(…)`：对 URL 发出 `GET`（或其他无正文）请求，带类型化头部
+
+% 1 1 0 014b94928b36c4bb167ebbaa1b904452
+
+@ 0 8 0 0b3cf0475f4a1c0d1fe2c60578dd6142
++       作用于任何 `Fetchable` 端点（`HttpUrl`，或 JVM 上的 `Uds.Endpoint`）的扩展，返回一个 `Http.Fetch`；其 `apply` 是一个宏，接收可选的 `Http.Method`（默认 `Http.Get`）和任意头部，构建请求，并通过端点目标对应的 `Http.Client` 发送。
++       头部是按名称由 `Directive` 检查的具名参数，或其类型能识别头部的未具名值。
++       调用需要一个 `Online`（`internetAccess.online`）、一个 `Http.Event is Loggable`（`logging.silentLogging`）、一个来自 `httpBackends` 的 `Http.Backend`，以及针对 `Connect.Error` 和（在 `receive` 时）`Http.Error` 的战术。
+
+% 2 1 0 1c278bf50b2ecd320f63bbfabd81ecd7
+
+% 3 1 0 0941eda91bac48571d022bbd687fe7b8
+
+% 1 1 0 196763793b32db02032b83bb4b7efc71
+
+@ 0 1 0 1c86316cf3e37a021f3a620f574dff8d
++         label 最简单的 fetch：只取状态
+
+% 1 1 0 111e75cfd07b3f450d9dcbff2c3ed04a
+
+% 2 1 0 1f96e7a87ff725f71c0be8b68c9f1ba6
+
+% 3 1 0 126d72e6a83189b116985b4c25a455b9
+
+% 4 1 0 1c6008b960490b7505eac183e3de9d3e
+
+% 5 1 0 18c00bb23b2cf40405ed5d5445029811
+
+% 6 1 0 0da8152fc85335491ac2ca30d721e87d
+
+% 0 1 0 12e61943f50013610d92f3575c020f18
+
+% 1 1 0 09f0d45f8d23f2de0bf668adaeeb2d76
+
+@ 0 1 0 10e5e6b7142f5fea1dec42a57d2ac7fc
++         label 一个具名并经检查的头部：`accept` 接收一个 `MediaType`
+
+% 1 1 0 00db0f2ddcf526dd10a55be5c8f0fda7
+
+% 2 1 0 08bcb023bb626ec016194d2132a4cb76
+
+% 3 1 0 09e8c9fc617ba9390e980b7fed3d9cd6
+
+% 4 1 0 0adfcd9f6fa74540077cbbda5614baca
+
+% 5 1 0 11afb526351150e602d48d59b6aa1373
+
+% 6 1 0 1192702b6fddb03805ed06190059947e
+
+% 0 1 0 1bbfd080469a27ad148a99e18cf3a0b8
+
+% 1 1 0 1121b2b4a6146bb408274c53ac268a0a
+
+@ 0 1 0 10e98339a0894f720ec4a856b92fa83e
++         label 第二个头部：`authorization` 接收一个 `Auth`
+
+% 1 1 0 0e6ece00565af76a1c90ca4ace7ed0db
+
+% 2 1 0 0248a4f8fe8ca8d4106af9b381df52a9
+
+% 3 1 0 0fe6bcf2dc7967cb03376008ce7b2f89
+
+% 4 1 0 18c6223ea179089d08d7257ab2c304dc
+
+% 5 1 0 157f8eb1af8cd7b80079ca50bf04c5e5
+
+% 6 1 0 1718ab7b6481d065100a27fb43e23d8f
+
+% 0 1 0 1787be7b2bdb6bae046e8da33a008b43
+
+% 1 1 0 06b7f293795e97e41a176d210b314a3e
+
+@ 0 1 0 135e13addf0657ee063e8caa99e4bb9e
++         label 按位置给出的 `GET` 以外的方法
+
+% 1 1 0 1620ca0aefed45561755f98f976ce26f
+
+% 2 1 0 060fb5bbde484abf15d99135ec30d97b
+
+% 3 1 0 1acb8c7f3b6701ca0041c6e3201d9c47
+
+% 4 1 0 1e609ef9b136e3ed009744cabfc8f3da
+
+% 5 1 0 184e713ba3c333f900579ffdc007d956
+
+% 6 1 0 1a62a9e9eef0d98f0ca0cb350e2dcc1e
+
+% 0 1 0 1656066d2e2448940fdd343b96257b9a
+
+% 1 1 0 15b3e7bd8394294811271840087402b3
+
+@ 0 1 0 1b40b73ab63793ce15b76337641318ee
++         label 把正文读取为某个类型
+
+% 1 1 0 1805b999e84c52d51dc8fc5b2150edd7
+
+% 2 1 0 0ec7f0287e2ac7510c96ba96848d7db6
+
+% 3 1 0 144c68c7f5cf08b6087452415f4a2210
+
+% 4 1 0 0912bd30c55b39b000b04cd15b0071ee
+
+% 5 1 0 0400098acd3d22b207eaf2c64aa255e0
+
+% 6 1 0 14006112b6e103a9165a029dded78de9
+
+% 0 1 0 1dea07e3942bf4f60d5d2e5e19f27e6c
+
+% 0 1 0 0e50798e48dc9152165c562311f1e671
+
+% 1 1 0 09a94a5f37be7f681753f510b6b73ffb
+
+% 2 1 0 1908a4523cdedfe80205f2fffb550741
+
+@ 0 4 0 0c372bdc3e3d8a461427c73863d0bb4d
++       重定向会被跟随，最多十次，除非导入了 `httpRedirections.doNotFollowRedirects`；成功范围之外的响应原样返回，只有在用 `receive` 读取其正文时才抛出 `Http.Error`。
++       无法到达服务器的请求抛出 `Connect.Error`。
+
+% 1 1 0 14497bfbde427bd41e2361a858762c60
+
+% 0 1 0 1fcfcf4ceb332b091fd068197c8d6b1d
+
+% 1 1 0 0774057b0615fbbb04f196b2045d0865
+
+% 0 1 0 194c91364766d9670dbbd409ae5376ca
+
+@ 0 1 0 0bb9b32e5c44ace00921bf566a134694
++ entry .submit   `url.submit(…)(payload)`：带正文的请求，正文为类型化的 `Postable` 值
+
+% 1 1 0 12713f12f6774b331a4cdfd25639d0d6
+
+@ 0 5 0 14d6e03029b8904f1d9bfe7bf246e2d2
++       作用于任何 `Fetchable` 端点的扩展，返回一个 `Http.Submit`；其 `apply` 在第一个参数列表中接收方法（默认 `Http.Post`）和头部，在第二个参数列表中接收载荷。
++       载荷是任何具有 `Postable` 的值，如 `Text`、`Data`、`Query`（表单提交）、借助 `postables.jsonPostable` 的 `Json`，其媒体类型成为 `Content-Type` 头，因此无需手工设置任何内容来匹配。
+
+% 2 1 0 03e8ae05eb73ab0b0e37363da11ee5c6
+
+% 3 1 0 11583f77d6ee50b000eb3a26a56a78a1
+
+% 4 1 0 0393b3b9a72b306218857db0d24c23d0
+
+% 5 1 0 0f9600af97d7ae420a0f41f8450e4ceb
+
+% 6 1 0 1d05b85360b4eb1618aaaada1c49b4a9
+
+% 7 1 0 069bd22cf11908650c9ff6ca2fdab30e
+
+% 8 1 0 190234c9a9fd1aed0512142a22cd6764
+
+% 9 1 0 01039a231b0098e41263873a991f5142
+
+% 10 1 0 0c01759a0b3eeb470cccb336ac77565f
+
+% 0 1 0 03df5e91a1fd06e718c57063e389e7bd
+
+% 0 1 0 049dbb6dece84200039f5155eb17e925
+
+% 0 1 0 159c9aa364bccc950e27ccae74dc5fb8
+
+% 1 1 0 0d628809438a6c39165bf404df7bc2e8
+
+@ 0 3 0 12d6c5bd94e327f80dbc319c64923128
++       需要与 `fetch` 相同的上下文值：一个 `Online`、一个 `Http.Event is Loggable`、一个 `Http.Backend` 和一个 `Tactic[Connect.Error]`，外加 `Postable` 自身所需的值（`Text` 需要一个 `Codepage`）。
+
+% 1 1 0 1f687f81439cd94812f9a255019d3d07
+
+% 1 1 0 0c627afff3d931341545f3203271cf7d
+
+% 0 1 0 0738377d82dc7d9b003b6b35d0bb07c0
+
+@ 0 3 0 116956c3e38dc1df1ba3d4baff942abc
++ entry .query   `value.query`：以 `Query` 表示的值；`url.query(query)`：添加了参数的 URL
++     两个扩展共用这个名称。
++     `value.query` 把任何 `Encodable in Query` 的值（case class 通过泛型派生，嵌套字段以点连接）编码为 `Query`：
+
+% 2 1 0 13416ce82652d4e0189df5b953b88425
+
+% 3 1 0 0e1bfb76689a3194073813c64246be02
+
+% 0 1 0 18ee8e1ba585b2ee198a70721d374a1a
+
+% 0 1 0 1872f392c5dcfbc7158614081e276135
+
+% 0 1 0 14b16cc5ec63d25a180578ec55d8fc22
+
+% 0 1 0 05e552f6ca7d309d1b7896184716dbe2
+
+% 0 1 0 0dbeb67c875bc0ab1f3ac7c33e438f56
+
+% 0 1 0 059d95a53e1f0d0213ca0bc7c46c0c1f
+
+% 1 1 0 05362f149e0d0be3035334392a51f033
+
+@ 0 2 0 01f7fdd1f6c1dc6d0ae1fcc442fd566f
++     `url.query(query)` 是一个 `HttpUrl`，在其已有参数之后追加查询的参数，用于由类型化参数构建请求 URL：
+
+% 2 1 0 1069ef0b4b83324119afac0f5b9172e0
+
+% 3 1 0 059e27b043a2acae0fe1afc035385d16
+
+% 1 1 0 0e3bcc542e4df8490371466e2b036867
+
+% 0 1 0 0fd40c4c106c79051f278e920a7bd088
+
+% 1 1 0 1ec549b94f7dcc6912b4a25d65cc035f
+
+@ 0 1 0 03df3a7ab1439c4c15e8db2d7bd6d83a
++ entry .queryParameters   允许用任意字段名构建 `Query` 的 given
+
+% 1 1 0 09e44214b4079e0517f4551325236e90
+
+@ 0 4 0 0a72a2833ab32eb11b18757eaa27e475
++       `Query.make(key = value, …)` 对照一个 `key is Parametric to value` given 检查每个具名参数，该 given 固定了查询可以具有的每个字段的名称和类型。
++       按名称导入的 `arbitraryQueryParameter` given 接受任何名称和任何类型，因此可以临时构建查询，嵌套的积类型通过泛型派生展平。
+
+% 2 1 0 1c95879d73a773cc1ccfa119fe8b3015
+
+% 3 1 0 11fe3ed555735123106bae6dcbb97d34
+
+% 0 1 0 14c26373278c29d604d444929c9eb95a
+
+% 0 1 0 0a4d74c49ca30e9a09fa549eddb9e89f
+
+% 0 1 0 1b39ade6af662af2124fbe05abe477f0
+
+% 0 1 0 0fb1773505302b2d04fbeab2dcfc8874
+
+% 1 1 0 0c4f771e3c44688f0a2e97e179dd7da6
+
+@ 0 1 0 05e334c17318c6c21e1655392bdb2a12
++   entry .arbitraryQueryParameter   任何标签都是任何类型的查询参数
+
+@ 0 1 0 08d6ef8f45b7f38f132c7c082cf28858
++ entry .httpRedirections   重定向方针，作为需按名称导入的 given
+
+% 1 1 0 08e4cd5dcfc223490e07eb7018bf7ec2
+
+@ 0 5 0 18d03d8cad425bef11446a43f46d94fd
++       不做任何导入时，`Http.Client` 跟随 `301`、`302`、`303`、`307` 和 `308` 响应，直到 `Http.Redirection` 限制，默认为十次。
++       导入 `doNotFollowRedirects` 会把一个 `Redirects.Disabled` 引入作用域，从而改为选中 `Http.Client.httpStrict`：此时重定向响应原样返回，读取其正文会以 3xx 状态抛出 `Http.Error`。
+
+% 2 1 0 034d781f4cc6d83c107f580d7c2fc613
+
+% 3 1 0 0dd939ab7fdf729f168d127454ba29dc
+
+% 4 1 0 04d054653b0444271932f80dcc91c8fb
+
+% 5 1 0 1614a2da274af8e8181dd9993a51aecf
+
+% 6 1 0 08a81d406b75711303c1a09330867b31
+
+% 0 1 0 0de73a01e6bda16814a5ed268337b5a4
+
+% 1 1 0 0a88383eaab8915b16920fd7876f9291
+
+% 2 1 0 1aa60d8a4ab37df40fc0ce9bf1e27a97
+
+% 3 1 0 01583f87be4be18c114a6956c1da9a3b
+
+% 4 1 0 03d5f2b37060aeef1abb5dcf9c3e8bc3
+
+% 0 1 0 195703d77b275e830aadb8d13e060e84
+
+% 1 1 0 15d5c9efed597d350ae918c93a4086a9
+
+% 0 1 0 0ccb6862b6dc894204a0054a2009a302
+
+% 1 1 0 190b2590573572af166e5cdc396ac7dc
+
+@ 0 1 0 0f22407e587b7b300711ad670dee854a
++   entry .doNotFollowRedirects   一个 `Redirects.Disabled`：3xx 响应被返回而不被跟随
+
+@ 0 1 0 11271fa9530d2e9d18f5e46abb895b28
++ entry .construables   把 `application/x-www-form-urlencoded` 解释为 `Query` 的 given
+
+% 1 1 0 0659207cde3100081e9bfd11dc061c1a
+
+@ 0 4 0 06369689d32b4ba700c94d1033c5319e
++       `Construable` 把媒体类型映射到读取该类型响应时所用的 Scala 类型，apoplexy 生成的 API 客户端用它解码响应正文。
++       按名称导入 `formConstruable` 会把表单编码的正文读取为 `Query`。
++   entry .formConstruable   `application/x-www-form-urlencoded` 解释为 `Query`
+
+@ 0 1 0 0fc1055f7ae1d2871e8b9d227b3d9848
++ entry .httpBackends   各种 HTTP 传输，每个都是需按名称导入的 `Http.Backend` given
+
+% 1 1 0 0a05380e6a92d083064319af789bc948
+
+@ 0 7 0 02544ffa1730b9d213afefcbe842d3cf
++       由哪条线路承载请求，取决于作用域中的 `Http.Backend`，而这一选择从不隐式发生：`import soundness.*` 不会引入其中任何一个，必须按名称导入一个。
++       `javaNetHttp` 使用 JVM 自身的 `java.net.http`；`soundnessHttp` 在 JVM 和 Scala Native 上直接通过 coaxial 的套接字使用 Soundness 的传输编解码器，不涉及 `java.net.http`；`wasiHttp` 从 Wasm 组件调用 `wasi:http`。
++       后端之上的一切（重定向、日志、类型化的头部和正文）无论选择哪个都相同。
+
+% 2 1 0 0126f4b866e9ee5a03b6242f1f729951
+
+% 3 1 0 1bf6af5b7ae72af80596c0eb434ff9d7
+
+% 0 1 0 11dde41b9288fd041d994c5dddc6eac4
+
+% 1 1 0 0bcdd568423b29150a1d7758b4c7dec0
+
+% 2 1 0 178e15825ba484cc099ced53021a886c
+
+% 3 1 0 1141a34b40aba61216d4eca37eb4d89f
+
+% 4 1 0 1d36964b3c36510200bfce0830839fc2
+
+% 5 1 0 01c623a32bf3f1d40f74237621b6c2ae
+
+% 2 1 0 1185a8ba286497da1332280a3bd63c2e
+
+% 0 1 0 13e6c6f62e9c60a71ec17efdd57116a5
+
+% 1 1 0 15d87c563bb8b2251dec6bf0ce19e77b
+
+% 0 1 0 179a9a1da797d30d06ff27275bffc9a4
+
+% 1 1 0 0a7734b5678aeb2c1590ce5442de7e76
+
+% 2 1 0 0dfdd335973cb20815b2f54bc625d3b2
+
+% 3 1 0 103ace6b995b79610464962e2a9fbedb
+
+% 4 1 0 176f41c1f6a49d580f451bb761bb04e5
+
+% 5 1 0 14e1012d030c76f017f98ea23729a317
+
+% 6 1 0 1e2efe16572bf5cc0d8fb5e1965abde0
+
+% 8 1 0 06a1bbdbbbbaf9ba1252b95a9ba04813
+
+% 9 1 0 1b853a423deb33a306e2e171449455bd
+
+% 1 1 0 12ac603a4c3d22971a970a873fedf822
+
+% 0 1 0 04e8a0c43e9eb6571c158a8047a9db6a
+
+% 1 1 0 0cab2475bb8fa80e181c8a42cbaa349f
+
+% 2 1 0 1d290734fbd074a61b6981c9d85a2f00
+
+% 3 1 0 1aae405d20d399e707472e0aa9995738
+
+% 4 1 0 04d984971c3773a509465a4c42a9e0fb
+
+% 5 1 0 0e2730efa286f37e04ef426af3589df3
+
+% 6 1 0 1d6e2889dece4e87051384ee8b01abc3
+
+% 8 1 0 193f20bdb9b26d600da2739ecf31a0ee
+
+% 9 1 0 1d1887474d813d6804adb6626bcbd511
+
+% 0 1 0 1493853c0a954c13055573b54c1544b3
+
+% 0 1 0 0c33664209bd619c12bc9ebc2b1b16cc
+
+% 1 1 0 14a26cdc157c8ad6186d5cf2b6031d93
+
+% 2 1 0 041d9b5280f54a0a0bb19564d1cdcdd5
+
+% 1 1 0 0a7bfba3e801060e05deff987caf1cf2
+
+% 1 1 0 15dca428aa72d0020f1810af002ea160
+
+@ 0 36 0 19513b7fff2a4e1719bd79a62c7dbd42
++   entry .javaNetHttp   基于 `java.net.http` 的 JVM 传输
++       位于 `telekinesis.jvm`。
++       需要作用域中有一个 `TlsAcceptance`（coaxial 的：严格的默认值会验证主机名和证书链；`TlsAcceptance().permitSelfSigned` 及其同类在 `cryptoPermits` 导入下放宽它），并为每种不同的接受方式构建一个 JDK 客户端并缓存。
++       重定向跟随交给 `Http.Client`，因此 `Http.Redirection` 限制得到精确遵守。
++       对明文 `http://` 源的请求以 HTTP/1.1 发送，从不提出 `h2c` 升级；在 `https` 上，ALPN 可以在 JDK 内部协商 HTTP/2。
++       正文在每次订阅时从一个新流延迟发布，因此大型正文绝不会整体保存在内存中。
++       JDK 的异常被分类为 `Connect.Error` 原因：`UnknownHostException` 为 `Dns`，被拒绝或超时的连接为 `Refused` 或 `Timeout`，SSL 异常为 `Ssl(Handshake)`、`Ssl(Protocol)`、`Ssl(Peer)` 或 `Ssl(Key)`。
++   entry .soundnessHttp   通过 coaxial 的套接字使用 telekinesis 传输编解码器的传输
++       位于 `telekinesis.sockets`，在每个具有 `Socket.Backend` 的平台上可用。
++       需要一个 `Online`、一个 `Socket.Backend`（JVM 上为 `socketBackends.javaBaseSockets`）、一个 `Every[Socket.Option.Tcp]`、一个 `Buffering` 和一个 `Tls`。
++       明文 `http` 是在原始 TCP 套接字上带 keep-alive 的 HTTP/1.1：当响应的长度是明确的（有分帧的正文，或没有正文）且双方都未要求关闭时，其连接返回到按源划分的连接池（每个源最多八个空闲连接）以供下一个请求使用；服务器已关闭的池化套接字会在使用时被发现，并在一个新连接上重试一次来替换。
++       在 JVM 上的 `https` 中，ALPN 在握手时先提供 `h2` 再提供 `http/1.1`，交换由对端所选的 HTTP/2 或 HTTP/1.1 驱动程序在同一个套接字上进行，每个请求一个连接；在 Scala Native 上，则是通过 coaxial 的 OpenSSL 连接进行的一次 HTTP/1.1 交换，没有 ALPN，也没有 HTTP/2。
++       有分帧的正文会在连接被交出或关闭之前被急切地读完，因此响应目前还不是流式的，`101` 升级会被拒绝（升级后的流永远不会结束），报告为 `Connect.Error(Unknown)`。
++       `Socket.Error` 按原因映射为 `Connect.Error`，格式错误的响应为 `Unknown`。
++   entry .wasiHttp   基于 `wasi:http/outgoing-handler` 的传输，用于 Wasm 组件
++       位于 `telekinesis.wasi`。
++       一个 `inline` given：`wasi:http/types` 调用在召唤它的位置展开，该位置必须有 `wasiApis.wasiHttpApi` 在作用域中，并且只在为 Wasm 目标编译的代码中实际生成。
++       请求由一个 `fields` 资源和一个 `outgoing-request` 组装，方法带正文时还有一个 `outgoing-body`；响应通过其 pollable 等待，其正文从 `input-stream` 整体读取，因此结果是一个 `Fixed` 正文。
++       宿主调用的任何失败都是 `Connect.Error(Unknown)`。
+
+@ 0 1 0 10e80bed71db9a081a7cabb9f6664b8e
++ entry .Orchestrate   表单的一次往返：渲染它，或在 `POST` 时解码、验证并执行
+
+% 1 1 0 19350ab6940f6ca808e3f85369f11435
+
+@ 0 8 0 17d497ec91d2c32b04706a545e85b5ca
++       `Orchestrate[value, result]`（用 `orchestrate` 构建）处理表单的两半：对 `POST` 以外的任何请求，它渲染表单，如果给出了 `initial` 则预先填入；对 `POST`，它把请求的查询解码为 `value`，解码失败时运行调用者的验证来标注各字段。
++       在两种情况下，调用者的 `process` 函数都会收到一个 `form` 渲染器（`Text => Html of Flow`，接收提交按钮的标签）和 `Optional[value]`（需要再次显示表单时为 `Unset`，解码成功时为该值），并决定如何响应。
++       它是一个能力，因为它保留了调用者的函数。
++       位于 `telekinesis.forms`。
+
+% 2 1 0 1bf4a905904c13681853a59b01159f46
+
+% 3 1 0 1a2cca2219425dd00f43ffaf81b25556
+
+% 4 1 0 0c7377e990ffac1d00875d0963ab980c
+
+% 5 1 0 1022b40547a3798d151e4a323cb97e16
+
+% 6 1 0 1d5905f711c83f69188351c6dd082b3e
+
+% 0 1 0 13dd3bb925d5ffbe099ec022b1a81125
+
+% 0 1 0 02291b758748b49c0fca3af086e777c7
+
+% 0 1 0 0cf998ce877de4a219b68407708f3838
+
+% 0 1 0 18ed8fb2df1d71ce04077e4976cc56ca
+
+% 0 1 0 00b5790c5ebfb4e105c5e5375b485b79
+
+% 0 1 0 06eb47ee87240aa0198a8b3714d175bf
+
+% 1 1 0 1678dd34674fd71318df8c7eef1d4599
+
+% 0 1 0 1969b24c27f66e74158d7295c8bf38df
+
+% 1 1 0 17423039c741a0be1117d41022c0191c
+
+@ 0 5 0 13eb77fa5c1f3b000c6a6d5450e78979
++   entry #otherwise   运行往返，并在 `POST` 无法解码时应用验证
++       `otherwise(validate)` 需要一个 `Formulation`（legerdemain 的表单样式）、值的 `Formulaic`（其字段如何渲染）和 `Decodable in Query`、作用域中的 `Http.Request`，以及针对 `Query.Error` 和 `Truncation.Error` 的战术。
++       验证是作用于提交的 `Query` 的上下文函数。
+
+@ 0 5 0 0191b42a7b38a0a81ffcd273468e61a0
++ entry .orchestrate   `orchestrate[value](initial)(render)`：为某个表单类型构建一个 `Orchestrate`
++     `render` 函数以上下文值的形式收到表单渲染器，并收到 `Optional[value]`（解码后的提交，或需要显示表单时为 `Unset`），并产生结果；随后对结果调用 `.otherwise(validation)` 来运行它。
++     结果保留 `render` 所捕获的内容。
++     位于 `telekinesis.forms`。
+
+@ 0 6 0 15df993db95ca8e21d96e171b67d08af
++ entry .form   `submission.form(…)`：渲染为 HTML 表单的 `Submission`
++     `Submission[value]` 上的扩展，位于 `telekinesis.forms`（以免核心模型依赖 honeycomb 和 legerdemain 的控件）：通过值的 `Formulaic` 和作用域中的 `Formulation` 渲染表单的字段，用提交的查询预先填入，带有给定的 `submit` 按钮标签以及针对各字段的任何 `Validation` 消息。
++     返回一个 `Html of Flow`。
+
+@ 0 5 0 02e9edf828487b431411e71886202344
++ entry .requestTransmissible   `Http.Request` 以其 HTTP/1.1 传输形式通过原始套接字传输
++     coaxial 的 `Transmissible` given，位于 `telekinesis.jvm`，基于 `Http.Request.serialize` 构建；域套接字客户端用 `socket.transmit(request)` 发送的就是它。
++     它是顶层 given，因此必须按名称导入（`import soundness.requestTransmissible`），并需要一个 `Tactic[Truncation.Error]`。
+
+@ 0 4 0 1dafec358972c7f00384437577917532
++ entry .udsFetchable   `Uds.Endpoint` 可获取：直接在 Unix 域套接字上运行 HTTP/1.1
++     位于 `telekinesis.jvm`，用于在本地套接字上提供的 API，如 Docker 守护进程的 API。
++     请求目标是端点的路径，`Host` 是 `localhost`，召唤客户端时所针对的目标是 `Uds`。
++     一个顶层 given，需按名称导入。
+
+% 2 1 0 0485b9f58c7a925b017f7bdd468e764e
+
+% 3 1 0 1ce0175d5de6e8341ec61899b74ecddb
+
+% 4 1 0 0ef3e65289897cfd1ea90dd5cf52db4f
+
+% 5 1 0 09d61c70b90884d903ce5ac820fb0d71
+
+% 0 1 0 085bf4b590a935410d61c4bd3b65f745
+
+% 1 1 0 05574793770b76eb086296b90b98d416
+
+% 2 1 0 0eb6e88b476dcbb3188bd7b1e1ef6a85
+
+% 3 1 0 0f7fcf3f9d805179014f64459d5eef27
+
+% 4 1 0 0270ce1901aaa52a1c31a08ca6d97af8
+
+% 0 1 0 1e54b785d58358c20e9f508babdf10b2
+
+% 0 1 0 039ac17a473f0fda001caa63040dc5bc
+
+% 1 1 0 004b101960e7060a1ce15a13f955c305
+
+@ 0 6 0 060ffe0d2b17935014264ba6d1cc4c61
++ entry .udsHttpClient   `Http.Client onto Uds`：在套接字上进行一次请求、一次响应
++     位于 `telekinesis.jvm`。
++     用 `requestTransmissible` 序列化请求，用 `Http.Response.parse` 解析回复，不跟随重定向。
++     需要一个 `Tactic[Truncation.Error]` 和一个 `Tactic[Connect.Error]`：`Socket.Error` 按原因映射为 `Connect.Error`，格式错误的响应为 `Connect.Error(Connect.Error.Reason.Unknown)`。
++     一个顶层 given，需按名称导入。
+
+@ 0 5 0 1fe75eaefac8b91401d3b4aae8441fca
++ entry .WasiHttpApi   xenophile 所见的 `wasi:http` 的 WIT 接口类型
++     `Interface in Wit at "/telekinesis/http.wit"`：随 `telekinesis.wasi` 打包的 WIT 定义，`httpBackends.wasiHttp` 和 `WasiHttpServer` 依据它进行类型检查，它们的 `call` 也在展开处查阅它，以获取模块 id、资源方法和参数类型。
+
+@ 0 1 0 0d44da996ecac6fc1330c95d5e954fb9
++ entry .wasiApis   `wasi:http` 接口，作为需按名称导入的 given
+
+% 1 1 0 1e382e94051511700576a39ca81fd6d5
+
+@ 0 5 0 0771e0069786ebea1025c4137e88baad
++       凡是召唤 `httpBackends.wasiHttp` 或调用 `WasiHttpServer.handle` 的地方，作用域中都必须有 `wasiHttpApi`，因为两者都是 `inline` 的，并在该处解析其 WIT 调用。
++       它与总括包的 `wasiApis` 包合并，与其他库的 WASI 接口并列。
++   entry .wasiHttpApi   从打包的 `http.wit` 资源读取的 `WasiHttpApi` 接口
+
+@ 0 1 0 0002280171bf1c721d536ced83a3da28
++ entry .WasiHttpServer   从 Wasm 组件提供 HTTP 服务：从 `wasi:http/incoming-handler` 到 Soundness 处理函数
+
+% 1 1 0 1e89f46c0f384d871571cf6556d10306
+
+@ 0 9 0 1c31b6ae66322d451045d1a0262cb165
++       从组件导出的 `handle` 函数到 `Http.Request => Http.Response` 的桥梁。
++       应用提供一个小型的 `@WitExport` 垫片，这是唯一必须以带注解的形式存在于编译为 Wasm 的应用中的部分，它把两个门面实例不带类型地传递过去；其余工作由 `WasiHttpServer.handle` 完成：反编组请求（其方法、路径、头部和整个正文；主机为 `Localhost`，因为组件不通过主机名寻址），调用处理函数，编组响应的状态、头部和正文，并在写入正文之前设置 outparam，以便宿主能流式传输它。
++       它是 `inline` 的，因此 WIT 调用在调用处展开，该处需要 `wasiApis.wasiHttpApi` 在作用域中。
+
+% 0 1 0 180b259b8573eca1043c16eca560e5f1
+
+@ 0 4 0 195ff059ad01c26c09a1c78b60f0f88a
++   entry .handle   `WasiHttpServer.handle(request, responseOut)(handler)`：回答一个传入请求
++       两个不带类型的门面是宿主传给导出函数的 `incoming-request` 和 `response-outparam`。
++       处理函数截断的响应正文会使组件陷入 trap，导出函数的其他任何失败也是如此。
+
+@ 0 1 0 17866595effdd22c04ce9d4730da0422
++ entry .Http2   HTTP/2 引擎：帧、HPACK 编码的头部，以及多路复用连接的客户端和服务器角色
+
+% 1 1 0 1bcdfe22b3e19e49079317424eb82b0b
+
+@ 0 6 0 096b9df96f362a610bbe5d50cc99bd43
++       `Http2` 把 HTTP/2（RFC 7540）的词汇归于一个名称之下，正如 `Http` 归集与传输无关的模型：`Frame` 及其 `FrameType`、`Flags`、`ErrorCode`、`SettingId` 和 `Setting`；连接的两个角色，`Connection`（客户端，负责打开流）和 `ServerConnection`（服务器，负责接受流）；两个角色共享的 `Stream`；明文 h2c 客户端所连接的 `Endpoint`，及其 `Client` given 和 `sessional` 会话；以及引擎抛出和记录的 `Error` 和 `Event`。
+
+@ 0 11 0 19fc534278aa469d13015cb79fdab88b
++       一个连接在一个持久的 `Duplex` 上多路复用许多请求流。
++       一个写入守护进程把出站的帧队列写到套接字，因此每次写入都无需加锁即可串行化；一个读取守护进程解码入站帧，并按流 id 分发；两者都在外层 `supervise` 的 `Monitor` 下运行，这就是连接只能在其中建立的原因。
++       握手即 `start()`：双方各自的 `SETTINGS`，以及一个把连接窗口提高到其接收预算的 `WINDOW_UPDATE`。
++       流量控制在两个方向上都得到遵守：大于对端窗口的正文会使发送方纤程停驻，直到 `WINDOW_UPDATE` 授予更多额度；应用尚未读完的入站正文会把对端限制在所宣告的窗口内。协议栈不处理的帧类型（`PRIORITY`、`PUSH_PROMISE`、扩展）按 RFC 的要求只解码后忽略，而不会使连接失败。
+
+@ 0 5 0 094ac3e183d4a5b3173d3ef0e1b019ca
++       该引擎是 Soundness HTTP 两端的 HTTP/2 驱动程序：`https` 客户端后端在任何 ALPN 协商选中 `h2` 的 TLS 连接上使用 `Connection`，TLS `SocketServer` 则把协商了 `h2` 的连接交给 `ServerConnection`。
++       明文形式，即基于先验知识的 h2c（无升级，无 TLS），通过 `Http2.Endpoint` 使用，gRPC 就运行在这种传输之上。
+
+@ 0 2 0 1a4d4a39c27c87d918ab21c109694c68
++       从请求到线路上字节的流水线是由这些值组成的一条链，其中每一步程序都可以手工执行：
+
+% 2 1 0 18dc65c47748ce4e1a9d239bad6cd703
+
+% 3 1 0 1d04539a59f753e208d830c83b572350
+
+@ 0 1 0 0ef84d16cef9a6ec1e83ea5f7638e110
++         label 请求的头部列表，伪头部在前
+
+% 1 1 0 14ff9592ab9c54700f6ea95b54dbe9a8
+
+% 2 1 0 0eb9e1a94e9ed3af012231089f8f45f9
+
+% 3 1 0 16f8fd5841a353aa1b97702ab9d6a546
+
+% 5 1 0 0d4adbc212c569b517b48f85346e2efb
+
+% 6 1 0 00545ae8ee458153039863d75481421b
+
+% 8 1 0 125b6140f1404f0001e7683070f10cbf
+
+% 1 1 0 18c080caef1c7fce0bf030f572fc569f
+
+@ 0 1 0 163e6222b1b843861d35426493591ae4
++         label 编码为 HPACK 头部块
+
+% 1 1 0 1b91a8a7208bc8b01d3f4a15a11cf9b7
+
+% 2 1 0 1bcede802bb0446a0f30a2b5254678f2
+
+% 3 1 0 0079ea69d760b15c08005bd1342abdfc
+
+% 5 1 0 19ca79cdf6ea40691962feadc9f11679
+
+% 6 1 0 1ff515fc236398b50de5cd71febb9618
+
+% 8 1 0 1a1ba99cd68de17b120d2c9205bc31c4
+
+% 9 1 0 03739d38a7f3bae81f5a22347b57d026
+
+% 1 1 0 0273bea03464ff2310e8338ec69542a5
+
+@ 0 1 0 0a65d39080806d7c13af99e704c4742e
++         label 由流 1 上的 HEADERS 帧承载，该帧同时结束流
+
+% 1 1 0 01903aa7eabb6d8511bc8edfbc1e8bf1
+
+% 2 1 0 060eab59f3e616a10aef451b5932c169
+
+% 3 1 0 012cab7a73c45dd60fe4ad2e732cca7c
+
+% 5 1 0 1fd387228a8428ee01bad48e580e8b30
+
+% 6 1 0 1cc6463fd89585bd10ddb0457d41f7aa
+
+% 8 1 0 18fff18afd5a1bb1008601d2de2d1a3c
+
+% 9 1 0 177134bc6161f722006956ec6849f394
+
+% 10 1 0 0ed4453f5f3add6904d61ee3b1e48d05
+
+% 1 1 0 1f83d02befc86080198f6a36779f4f58
+
+@ 0 1 0 0aeb27d2cbc3fec307d51e31de64d1df
++         label 序列化：九字节的帧头，然后是块
+
+% 1 1 0 049096887861a0c40a8a893ee89b1442
+
+% 2 1 0 03f7649083ce609d0893bcd96b4139a3
+
+% 3 1 0 16479ee2182f455e07cd77179a5a0c47
+
+% 5 1 0 17a6d931236b0df81194b1ba9c35e3a0
+
+% 6 1 0 1dd25a251df336ee13fc6255923d58f1
+
+% 8 1 0 0cf52b236e0e8e6f056b35cb5676b690
+
+% 9 1 0 1eab10e5ba9c11501c4ed2ddc55bc3f9
+
+% 10 1 0 11eca4c7acf5a94d11a4bf2949b31e6c
+
+% 0 1 0 1a3e58170cb52a59120daa8f00a932a1
+
+% 1 1 0 03d3a196a80039ca1e8d80676675ba18
+
+% 2 1 0 00c02b1dcf77c3b71c6f0c7e64700e43
+
+@ 0 3 0 0bb283de51be934201f596e7dc9ee7f9
++       `Connection#fetch` 为一个 `Http.Request` 完成上述全部步骤，`FrameReader` 和 `Hpack#decode` 则是接收端的逆过程。
++       不支持服务器推送（客户端的 `SETTINGS` 禁用了它），来自对端的 `PUSH_PROMISE` 会被忽略。
+
+% 1 1 0 0db3696e179469750e7892115d6bfcf9
+
+% 2 1 0 138231a9ac61221f1d35bf600003058c
+
+% 0 1 0 029bac0122a8b30318a70efe7e9b119d
+
+% 1 1 0 0aa3b80fb8353396087873e5784e139b
+
+% 0 1 0 194f1c0c532cb7f500830253020cea7a
+
+% 0 1 0 0864bc3c29b3875811918dee32f52f15
+
+@ 0 1 0 0498bbcf26524e6c0bd84839cdda8321
++   entry .Connection   客户端角色：基于 `Duplex` 的多路复用 HTTP/2 连接，每个请求打开一个流
+
+% 1 1 0 0403b0fca5604f950616fd9a746ed431
+
+@ 0 7 0 1edc2284e44f2fba14c1df06e3c9af7e
++         `Http2.Connection(duplex)` 把一个持久的 `Duplex`（一个套接字，或内存中 `Duplex.pair()` 的一端）包装为 HTTP/2 连接的客户端，以基于先验知识的明文 h2c 通信：它发送客户端连接前言，然后发送帧，自身不做升级，也不做 TLS（`https` 后端交给它的 `Duplex` 已经在 TLS 握手中协商了 `h2`）。
++         它需要作用域中有一个 `Monitor` 和一个 `Probate`，因为它的读取和写入守护进程在其下运行，因此它在 `supervise` 代码块内创建，并且必须在第一个请求之前调用 `#start`。
+
+% 2 1 0 1f638067d6defa821c83731c58e7c03d
+
+% 3 1 0 173ac388ffa2d35d1dda87d497510079
+
+% 4 1 0 1fc4c4610b55ec6608bd29749f4a5d3a
+
+% 5 1 0 1fe08552837b67f00726afa8b92c8dc1
+
+% 6 1 0 06529f8381b9827c16b4eb29709d8471
+
+% 7 1 0 00f880efc165c7771c66b0864e47a18a
+
+% 8 1 0 05e3fd125ef8b58d14765b60e79308e6
+
+% 9 1 0 0482cc5cf3fe3d76100c29b502c87c68
+
+% 0 1 0 1cadd0499856c21e18b6c87a2da94c07
+
+% 0 1 0 1546f27ed7d7493105ae3b80ae32ee05
+
+% 0 1 0 13bf2a757245e809080573be5cb4ab5f
+
+% 0 1 0 05c3d5c60d11e0af0c62ef50ffc16a2b
+
+% 0 1 0 1f4077f9f135c8790e035380737fe6ab
+
+% 0 1 0 16bfe79db2b66e4e096f54ae185e86f7
+
+% 0 1 0 10970fab45ba905f1f9e0fbeff9083f0
+
+% 1 1 0 1424a83ad2b9353806e16ff26b36a662
+
+@ 0 8 0 1ec3a46f913ddac4021eeb7da3295d7e
++         第二个构造参数 `window` 是连接为每个流以及为整个连接宣告的接收预算（默认 1 MiB）：对端在应用已消费的字节之外，至多可以有这么多字节在途，这正是限制未读响应正文所能占用的内存的因素。
++         补充由消费驱动并分批进行：预算的一半被读完后才发出一个 `WINDOW_UPDATE`，因此停滞的消费者会使对端的发送方停滞，而不是积累其输出。
++         低于 RFC 默认值 65535 的预算会使连接窗口保持默认值，起限制作用的是流窗口。
+
+@ 0 6 0 093169acdfa1a8401a73eb23866a8e16
++         流的编号为 1、3、5……，客户端的流必须如此。
++         并发的 `#fetch` 调用在同一个连接上多路复用。
++         任一守护进程中的写入、解析或 HPACK 失败都会拆除连接（未完成的握手被解除阻塞，每个打开的流都被结束，从而等待其头部、正文或尾部的任何东西都不会挂起，写入方退出），而不是逃出守护进程或被吞掉；来自对端的 `GOAWAY` 会结束读取方并记录 `Http2.Event.GoAway`。
+
+% 1 1 0 0008b7f2b686621808e4e8396d501fdb
+
+% 0 1 0 1444dec51ddda8040012ce1b543b455e
+
+% 1 1 0 0a7433878a0d43ef163bddce3c8bf752
+
+@ 0 23 0 0dd83f66607c283c060c39411c1fc16c
++     entry #start   执行握手：发送本方的 `SETTINGS` 并等待对端的
++         发送禁用服务器推送并宣告接收窗口的 `SETTINGS`；如果预算更大，则用一个 `WINDOW_UPDATE` 把连接窗口提高到 RFC 默认值之上；然后阻塞，直到对端自己的 `SETTINGS` 帧到达（由读取方确认）。
++         它需要一个 `Tactic[Async.Error]`，在握手完成前连接被拆除时抛出。
++         在它返回之前不能发送任何内容。
++     entry #request   打开一个流，发送一个头部块和可选的正文，并返回流句柄
++         请求的帧级形式：分配下一个奇数流 id，用一个新的 HPACK 编码器对 `headerBlock`（其伪头部必须已经排在最前，如 `PseudoHeaders.request` 所安排的那样）编码，并作为 `HEADERS` 帧发送，`body` 为 `Unset` 时设置 `END_STREAM`。
++         正文在对端的连接窗口、流窗口及其最大帧大小的约束下以 `DATA` 帧发送，因此大型上传会在窗口耗尽时使调用方纤程停驻，直到对端的 `WINDOW_UPDATE` 授予更多额度。
++         返回的 `Http2.Stream` 随响应到达由读取守护进程填充：等待 `#headers`，消费 `#body`，然后是 `#trailers`。
++     entry #fetch   发出一个 `Http.Request`，返回其流和 `Http.Response`，只为响应头部而阻塞
++         用 `PseudoHeaders.request(request, scheme, authority)` 构建头部块（`Http.Request` 既不携带方案也不携带 `:authority`，因此两者在此给出），对请求正文做 memoize，用 `#request` 打开流，并等待响应的 `HEADERS`。
++         它返回的 `Http.Response` 从流的入站 `DATA` 帧延迟地流式读取正文，因此大型响应边到达边读取；流与响应一同返回，以便在正文之后等待尾部（例如 gRPC 的 `grpc-status`）：`stream.trailers.await()`。
+
+@ 0 12 0 1497e270c89082ff0ec91ba017e401a4
++         它在 `fine` 级别记录 `Http2.Event.RequestSent`，因此需要一个 `Http2.Event is Loggable`，如 `logging.silentLogging`；它还接收一个 `Tactic[Http2.Error]`（此流上的协议错误，或没有有效 `:status` 的响应）、一个 `Tactic[Async.Error]`（等待期间连接被拆除）和一个 `Tactic[Truncation.Error]`（请求正文在 memoize 时被截断）。
++     entry #close   发送 `GOAWAY`，停止守护进程，并关闭 `Duplex`
++         干净的关闭：发送带 `NoError` 的 `GOAWAY`，然后停止出站队列，取消读取方和写入方，并关闭 duplex。
++         在 `supervise` 代码块中创建的连接应在代码块结束前关闭，否则代码块会等待守护进程。
++         关闭客户端不会停止内存中一对连接另一端的 `ServerConnection`，后者必须单独关闭。
++   entry .ServerConnection   服务器角色：接受客户端打开的流，并在其上发回响应
+
+% 1 1 0 0d5e6f30e86c50621586fc1c577ecf80
+
+@ 0 12 0 126c5eb94b638ef4198e8780fbbf79be
++         `Http2.ServerConnection(duplex)` 是 HTTP/2 连接的服务器端，其客户端已经协商完毕，或正在以基于先验知识的 h2c 通信。
++         它的读取守护进程首先消费并验证 24 字节的客户端连接前言（不匹配时为原因为 `Protocol` 的 `Http2.Error`），然后解码帧；每个在未见过的流 id 上的 `HEADERS` 帧都会创建一个 `Stream`，其 `headers` promise 即请求的头部块，并将其交给 `#eachStream`；活动流上的第二个 `HEADERS` 块是请求的尾部。
++         写入守护进程负责排空出站队列，因此可以为不同的流并发调用 `#sendHeaders`、`#sendData` 和 `#sendTrailers`：帧按设计交错，每个头部块都用一个新的 HPACK 编码器编码，因此处理函数之间不共享任何编码器状态。
++         它需要一个 `Monitor` 和一个 `Probate`，因此在 `supervise` 代码块内创建，它接收的 `Duplex` 可以捕获其 I/O 能力（`Duplex^`），套接字就是如此。
+
+@ 0 1 0 10f4d74ef4852d300ea75333aa367910
++         响应从其头部块开始在流上逐步构建：
+
+% 2 1 0 18d37fae892b375210af3b9dd7245477
+
+% 1 1 0 158e85274d8cd94c0c04d4c98d8066a7
+
+@ 0 1 0 091985a475ed752c19d8385e4c8a0053
++           label 无正文的响应：仅头部块就结束流
+
+% 1 1 0 0d23cd53ffc4b7210f097e1e49724588
+
+% 2 1 0 11b716297cbdd0340d0848db9ecb9ec9
+
+% 3 1 0 1dcbb2e78285572410a9b7ad32d7004a
+
+% 5 1 0 0c2d230c7fa74be51156c030532e009b
+
+% 0 1 0 0970d7fff54b6a2510be0e2fb30bbfd7
+
+% 0 1 0 089447b43cff46ab1a6c8f61a9e9b90c
+
+% 1 1 0 1a1b2c5909a16fff1f40179b6c3842fb
+
+@ 0 1 0 18e6707706bed53207e33588f7e624b3
++           label 有正文：头部保持打开，最后一个 DATA 帧结束流
+
+% 1 1 0 11929c0d2d87edb20d95dd5113fc88de
+
+% 2 1 0 062d466714ebe7eb0370c1f766d45652
+
+% 3 1 0 0bf936d6cb81459d0d1c08788a32090b
+
+% 5 1 0 111b94297fff297f1d9c5ef4593d03d0
+
+% 6 1 0 0f57c65f11fcbc3a1e2ea7179c5cab76
+
+% 7 1 0 1ee863df9eb267840741a63440714965
+
+% 0 1 0 1a4bf774ce1b2d0f085651f732e390af
+
+% 1 1 0 13aff6cd419549e416dd782602bef630
+
+@ 0 1 0 0e2fd75833f652c715387135ab58a6c2
++           label 尾部：头部和正文保持打开，尾部块结束流
+
+% 1 1 0 01baa1bd7f46414c0286a5fd6e58ff5b
+
+% 2 1 0 095e208947e426e6170403a1ee8bdfbd
+
+% 3 1 0 08cbb4978feeeef61d184d842018dd6b
+
+% 5 1 0 084731bf59b69f3d1eb3c4374380b457
+
+% 6 1 0 0292354f979590041fe3f3be0f3dc0b6
+
+% 7 1 0 1f84f56f33d4f10c1091571285f7cea5
+
+% 0 1 0 0b0bed6406e7835b05dbdf7967916d7c
+
+% 0 1 0 0708a7c9b54e707a1c05ceb853a20a04
+
+% 1 1 0 042b355c07e6a9cf1cbdcc63d35aaa8b
+
+% 1 1 0 15f916aeae550be3198d58aa0afe3867
+
+@ 0 9 0 09c9ebe9c04d3c6d042f750b1df7588a
++         `PseudoHeaders.requestOf` 把被接受的流的头部块和正文转为 `Http.Request`，`PseudoHeaders.entries` 把 `Http.Response` 转为要发送的头部块，TLS `SocketServer` 正是这样在 h2 上为普通处理函数提供服务，而无需改动处理函数。
++         直接驱动引擎时有两条规则：流动的响应正文必须逐块写入流，绝不能 memoize，因为进行转换的正文（文本编码器的正文）在 `memoize` 下不会终止；并且连接必须在外层 `supervise` 代码块返回之前 `#close`，否则代码块会永远等待其守护进程，关闭另一端的客户端并不会停止服务器的写入方。
+
+@ 0 4 0 1f693f3234c133ae0cb5f9dbe8930ecc
++         接收预算（`window`，默认 1 MiB）及其分批补充与 `Http2.Connection` 相同：处理函数尚未读完的请求正文会把客户端限制在所宣告的窗口内。
++         对端的 `SETTINGS_INITIAL_WINDOW_SIZE` 适用于它到达之后打开的流；已有的流不作调整。
++         未实现服务器推送。
+
+% 1 1 0 09105479fee055d70f4ea17cdc91130c
+
+% 0 1 0 11472f321cfe9feb1f4aec5311801351
+
+% 1 1 0 0ee28719ee8b81e8045c842c918e230f
+
+@ 0 37 0 1793947a44bfa3a809d6e9e396f7d984
++     entry #start   执行握手的服务器端：发送 `SETTINGS` 并等待客户端的
++         发送宣告接收窗口的 `SETTINGS`（服务器不发送 `ENABLE_PUSH`）；如果预算更大，则把连接窗口提高到 RFC 默认值之上；然后阻塞，直到客户端的 `SETTINGS` 帧到达并被确认。
++         它需要一个 `Tactic[Async.Error]`，在此之前连接被拆除（例如前言错误）时抛出。
++         客户端的前言和 `SETTINGS` 与服务器的 `SETTINGS` 可以按任意顺序发送，因此内存中一对连接两端的 `start()` 可以并发运行。
++     entry #eachStream   按到达顺序为客户端打开的每个流运行一个处理函数，直到连接结束
++         从读取方填充的队列中取出每个被接受的 `Http2.Stream`，在由读取方驱动的服务循环上调用 `handler`，在连接结束（`GOAWAY`、套接字关闭或 `#close`）时返回。
++         请求头部块一到达，处理函数就会得到该流（正文可能仍在流入），它应当为该流生成自己的纤程，以便在同一连接上多路复用的请求并发地得到服务，而不是在循环上一个接一个地处理。
++     entry #sendHeaders   在流上发送响应头部块，如果响应没有正文则结束该流
++         用一个新的 HPACK 编码器对 `entries` 编码，并作为一个设置了 `END_HEADERS` 的 `HEADERS` 帧发送。
++         `:status` 必须排在最前，如 `PseudoHeaders.entries` 所安排的那样。
++         对于无正文的响应，`endStream` 为 `true`；随后还有 `#sendData` 或 `#sendTrailers` 时为 `false`。
++     entry #sendData   在流上以 `DATA` 帧发送正文，受对端流量控制窗口约束
++         把 `payload` 切分为受连接窗口、流窗口和对端 `SETTINGS_MAX_FRAME_SIZE` 限制的数据块，并在窗口耗尽时阻塞调用方纤程，直到入站的 `WINDOW_UPDATE` 授予更多额度，因此大于窗口的响应能完整地流式传输，且从不超出对端的额度。
++         `endStream` 随最后一个数据块发送；空载荷不携带数据并立即发送，其唯一作用是结束该流。
++     entry #sendTrailers   发送尾部头部块，它总是结束该流
++         正文之后的第二个 `HEADERS` 块，设置了 `END_STREAM`，即响应的尾部，如 gRPC 的 `grpc-status`。
++         带尾部的响应在其 `#sendHeaders` 和 `#sendData` 上不设置 `endStream`，从而由这个块关闭该流。
++         用一个新的 HPACK 编码器编码。
++     entry #close   发送 `GOAWAY`，停止服务循环和守护进程，并关闭 `Duplex`
++         发送带 `NoError` 的 `GOAWAY`，然后停止出站队列和已接受流的队列（因此 `#eachStream` 返回），取消读取方和写入方，并关闭 duplex。
++         应在外层 `supervise` 代码块结束之前调用它。
++   entry .Stream   一个 HTTP/2 流的接收端：其头部块的 promise，以及受流量控制的正文
+
+% 1 1 0 14ed9436fbba189004164be04360693c
+
+@ 0 9 0 1806f1e5b0f6b5fe1f6358631ff010c0
++         `Stream` 是请求在连接接收端（任一角色）的样子：对于 `Http2.Connection`，它是客户端所打开请求的响应；对于 `Http2.ServerConnection`，它是客户端发送的请求。
++         它有一个 `#id`、对其第一个 `HEADERS` 块的 promise（`#headers`：响应头部或请求头部）、对第二个结束流的块的 promise（`#trailers`），以及由 `DATA` 帧填充的 `#body`。
++         连接的读取守护进程随帧到达填充它们，并在流结束、被对端重置或连接被拆除时，把仍未完成的部分解决掉（以 `Nil` 解决，并结束正文），因此等待流的任何东西都不会挂起。
+
+% 2 1 0 0aafaed55685e00b17d28cb940704296
+
+% 3 1 0 030c78772047e0d40861047372189add
+
+% 4 1 0 046b47c6ad2cb4b71d22f5980c96c818
+
+% 5 1 0 0f1ae8655dbfc88b0e254572bf0acc22
+
+% 6 1 0 01f07285413a3bab0132a7c0f77453d9
+
+% 0 1 0 0b269f4a4e49a6171adbba2dcdf5dfb3
+
+% 0 1 0 13faee67639211050520644fe8bf0d30
+
+% 0 1 0 1a37f7ddd71bf9d815600777af159307
+
+% 0 1 0 076f4d666b34d7c514b426523b23b7ca
+
+% 1 1 0 0b2eaedcc34a2d211b6ca9e3d68572b6
+
+@ 0 5 0 112a5e7ba81b223408072b26abcdc1e3
++         正文是一个受协议额度而非缓冲区大小限制的中继：对端在消费者已读完的部分之外，至多可以有连接所宣告的窗口那么多字节在途，而读取正文正是补充窗口的方式。
++         流由连接创建，绝不手工创建；`#acceptHeaders`、`#acceptData` 和 `#end` 是读取守护进程的入口点。
+
+% 1 1 0 10ba9d13812e6ba61ffede9a248c83fe
+
+% 1 1 0 0e23570c204debce01e56ae0e52c91dd
+
+% 0 1 0 12b2fccb4a3304fa088a48b02054fddd
+
+@ 0 1 0 151dd685cee6a54b1ae70255362ac0b9
++     entry .Body   流的入站正文：`DATA` 载荷的中继，由流量控制计量
+
+% 1 1 0 05af8e00ab1bf27e121607a2fb0f4ae1
+
+@ 0 32 0 0c9674f8bbc5ed59020a447cddcef8ba
++           `Body` 收集其流上每个 `DATA` 帧的载荷，并将它们作为字节块的流提供。
++           它的缓冲在结构上是无界的，但受协议额度限制（对端在没有 `WINDOW_UPDATE` 的情况下不能发送超过所宣告窗口的数据），并且只有当消费者越过记录时才发送更新，因此未读的正文会把对端限制在窗口内，而不是在内存中积累。
++           它由 `Http2.Stream` 创建，附带连接的消费回调。
++       entry #stream   以字节块流表示的正文，消费它会补充对端的窗口
++           一个以 `Credit` 计的 `Data` 记录的 `zephyrine.Stream`，需要作用域中有一个 `Buffering`。
++           消费者越过的每条记录都会被计数并报告给连接，连接在半窗口阈值处把计数分批汇总为 `WINDOW_UPDATE`。
++           每次调用都重新借出同一个底层中继，因此第二次读取从第一次停下的地方继续；对它调用 `memoize` 会把整个正文收集为一个 `Data`。
++     entry #id   流的标识符：客户端打开的流为奇数，`0` 永远不是流
++     entry #headers   对第一个头部块的 promise：响应头部或请求头部
++         由读取守护进程在流的第一个 `HEADERS` 帧上解决，结果是解码后的 `Hpack.Entry` 列表，其伪头部（`:status`，或 `:method`、`:scheme`、`:authority` 和 `:path`）排在常规字段之前。
++         如果流在没有头部块的情况下结束，则以 `Nil` 解决。
++         `await()` 需要一个 `Tactic[Async.Error]`。
++     entry #trailers   对第二个结束流的头部块的 promise：尾部，没有时为 `Nil`
++         在流上的第二个 `HEADERS` 块上解决，协议要求该块结束流（gRPC 的 `grpc-status` 就是这样到达的）；流在没有第二个块的情况下结束时以 `Nil` 解决，因此在正文之后等待它总是安全的。
++         `await()` 需要一个 `Tactic[Async.Error]`。
++     entry #body   流的入站正文，一个 `Http2.Stream.Body`
++     entry #acceptHeaders   记录一个入站头部块：第一个作为头部，之后的作为尾部
++         由连接的读取守护进程以解码后的块调用。
++         不供应用使用。
++     entry #acceptData   把一个入站 `DATA` 载荷追加到正文
++         由连接的读取守护进程调用。
++         不供应用使用。
++     entry #end   关闭接收端，解决仍未完成的一切，使任何等待者都不会挂起
++         未解决的 `#headers` 或 `#trailers` 以 `Nil` 解决，正文被停止。
++         由连接在 `END_STREAM`、`RST_STREAM`、`GOAWAY` 和拆除时调用。
++   entry .Endpoint   明文 h2c 端点：可连接的地址和要发送的 `:authority`，供 `Http.Client` 和会话使用
+
+% 1 1 0 12ab0b422abc884404433f44afc1f5fd
+
+@ 0 7 0 117e7e4d5d546c870b30676785d2e9cf
++         `Http2.Endpoint(endpoint, authority)` 指定一个以基于先验知识的明文 HTTP/2 通信的服务器：`endpoint` 是任何 `Connectable`（且 `Showable`）的值，如基于 TCP 的 coaxial `Endpoint(host, port)`、`Uds` 或测试用的环回，`authority` 是每个请求都携带的 `:authority` 伪头部，仅凭地址无法得知它。
++         它是 HTTP/2 `Http.Client` given（`Client.http2`）的 `Target`（telekinesis 的 HTTP/1.1 客户端则以 URL 为目标），也是 `.sessional` 的主题，后者把一个活动连接借给一个作用域。
+
+% 2 1 0 1b4c3f45725ce2b2073d2f79e27cbac9
+
+% 3 1 0 15184041a6f0990002e5bce70600531f
+
+% 4 1 0 0c1aca2d34414c6211861977ab874053
+
+% 5 1 0 02df617d7c1d63a902d0a8d9c90ac230
+
+% 6 1 0 0c7880d4d4f0fedc0f594fbca720a6c7
+
+% 7 1 0 0870bcad00bc632108e0c8d014aaa149
+
+% 8 1 0 022c00a528df3afd0d466c95c3d2bf34
+
+% 9 1 0 107c44df57d923df05d764d0564612c7
+
+% 10 1 0 1c8e03421eea60d90dcae7aa0468a88f
+
+% 12 1 0 0a8a48ab8073eaf30de79edd218766f4
+
+% 0 1 0 0c4809ceeab50ae11a2d49c014ebb97f
+
+% 0 1 0 05c0c75cba838acb112183fa923e251d
+
+% 1 1 0 1eb8e531c520ebbc0b9032340d5365eb
+
+% 0 1 0 0b1c1c039deb5ee60bf4e7d436cedc7b
+
+% 0 1 0 150e798b565e04751357f1d3069a5a72
+
+% 0 1 0 14c5657f511faf3d1f86399bc2000732
+
+% 1 1 0 0d41e9065b9b0fd60e854ec10d769fc5
+
+@ 0 1 0 00682da47f1a955b0cfc9252fcab483e
++         这是 gRPC 所运行于其上的传输层：`Grpc.Channel` 在一个 `Http2.Endpoint` 上打开。
+
+% 1 1 0 095ceedaf6a1505c047a358742697547
+
+% 0 1 0 1a0c58d4f9e45e67114b218994f23a5a
+
+% 0 1 0 004668f520281e2c1f786288fb7ced3e
+
+@ 0 13 0 13bcc3900e163d2f09f57ad8d9220327
++     entry #endpoint   可连接的地址
++     entry #authority   每个请求上发送的 `:authority` 伪头部，例如 `localhost:50051`
++     entry #connect   打开一条多路复用连接，它一直存在，直到外围的 `supervise` 作用域结束
++         连接该地址，在 `Duplex` 之上建立一个 `Http2.Connection`，完成其握手并返回它。
++         该连接运行在一个守护进程上，它保持双工通道打开，并一直停驻到作用域被拆除，因此连接惰性地流式传输的响应正文在整个作用域的生命周期内都保持可读，而不是在每个请求后被关闭；在此之前没有任何东西会关闭它。
++         它需要一个 `Monitor` 和一个 `Probate`（因此要在 `supervise` 内调用），一个针对无法连接的地址的 `Tactic[Socket.Error]`，以及一个针对在就绪前被取消的连接的 `Tactic[Async.Error]`。
++         结果保留了监视器。
++         `.sessional` 是限定作用域的替代方案，它在代码块结束时关闭连接。
++   entry .EndpointSessional   在 `Http2.Endpoint` 上把一个 `Http2.Connection` 借给某个作用域的 `Sessional` 实例
+
+% 1 1 0 05f44980cf3049d51cd8bfdd956872dc
+
+@ 0 10 0 13f2664aaae155af193c033a5678becd
++         `.sessional` given 背后的类，它是具名的而非匿名的，以便准确地写明它的 `Result` 类型——一个带捕获的 `Http2.Connection`。
++         `endpoint.session: connection ?=> …` 连接端点，完成握手，把活动连接借给代码块，并在代码块结束时拆除它（读取方、写入方和传输层）；借出与作用域重合，因此之后不会有守护进程保持连接打开。
++         代码块的结果类型在代码块之外量化，因此仍在借用该连接的值——惰性流式传输的响应正文、打开着的 `Http2.Stream`——无法逃逸，而已 memoize 的正文则可以。
++         代码块内的各次获取在这一条连接上多路复用，并且可以并发运行。
++         它需要一个 `Monitor`、一个 `Probate`、一个 `Tactic[Async.Error]`、一个 `Tactic[Socket.Error]` 和一个 `Socket.Event is Loggable`。
+
+% 0 1 0 0df58be1e2e4d89e0d04eb36ba16702c
+
+@ 0 9 0 079217898112135d1b7610e6bedaea5b
++     entry #Result   `Http2.Connection^`：代码块接收的活动连接
++     entry #session   连接，把连接借给代码块，之后关闭它
++   entry .sessional   使 `endpoint.session: connection ?=> …` 能在 `Http2.Endpoint` 上工作的 given
++       针对地址为 `Connectable` 且 `Showable` 的任意 `Http2.Endpoint` 的 `EndpointSessional`。
++       它位于 `Http2` 的伴生作用域中，因此无需导入，但只有在作用域内有 `Monitor`、`Probate`、`Tactic[Async.Error]`、`Tactic[Socket.Error]` 和 `Socket.Event is Loggable` 的地方才会被召唤：例如在一个带有 `strategies.throwUnsafely` 和 `logging.silentLogging` 的 `supervise` 代码块内。
++   entry .Client   HTTP/2 的 `Http.Client` given，它通过 h2c 从 `Http2.Endpoint` 获取
+
+% 1 1 0 1b6aea4009f8581419e23d37eb0d6150
+
+@ 0 13 0 08ab311a5082668901c8743b75c1289e
++         持有 `.http2`，即 `Http.Client onto Http2.Endpoint[endpoint]` 实例：发送到 `Http2.Endpoint` 的 `Http.Request` 通过一条先验知识的 h2c 连接承载，以端点的 `authority` 作为其 `:authority`，以 `http` 作为其 scheme。
++     entry .http2   向 `Http2.Endpoint` 使用 HTTP/2 的 `Http.Client`；每个请求一条连接，随作用域关闭
++         该 given 捕获它被召唤时所在上下文的 `Monitor` 和 `Probate`——连接的守护进程及其与作用域绑定的拆除需要它们——因此它只能在 `supervise` 代码块内解析。
++         每个请求都用 `Endpoint#connect` 打开一条全新的连接，它一直存在到作用域结束；没有连接池，因此向同一端点发出许多请求的程序应改用 `endpoint.session`。
++         它还需要一个 `Tactic[Http2.Error]`、一个 `Tactic[Async.Error]`、一个 `Tactic[Socket.Error]` 和一个 `Tactic[Truncation.Error]`，请求通过作用域内的 `Http.Event is Loggable` 记录日志。
+
+% 2 1 0 046d8056f642c30a12eceae164111c74
+
+% 3 1 0 0362d27e852e2ba10b3109b96405936f
+
+% 4 1 0 07c31077bf5bcbc3016bc2807cd8f2c8
+
+% 5 1 0 0cdf51eb28c704e50f5eec0af64205da
+
+% 6 1 0 1461a9b73d034d790724ede8cf71b4d8
+
+% 7 1 0 0a2411ed4f6c9c8f1703e133c7086c26
+
+% 8 1 0 13ca454ac63b7412024725410e7b996e
+
+% 9 1 0 1ffa48c3743484201b21241fda36a067
+
+% 10 1 0 0e564cee848147a00027d248880bbfbe
+
+% 12 1 0 18b1e31b189489aa13b7a5c7d78ae84e
+
+% 0 1 0 1480f135c6a571550348256530adc88d
+
+% 0 1 0 04c402d647da88fd0e3b41acdd71f09c
+
+% 0 1 0 0e1b50a751a96a6e1bc84d9e340dd4a4
+
+% 0 1 0 1a414827e09cac4105eb79a69b57fe78
+
+% 0 1 0 03d8dea1e822ceb70f7cf287fc3b0bd2
+
+% 1 1 0 0c63ac262535d86a136f364bca1a3f32
+
+@ 0 1 0 15ebd2f5ce68ec510a91e3a93e477039
++   entry .Frame   一个 HTTP/2 帧：九字节的头部和特定于类型的载荷，可从字节解码，也可序列化为字节
+
+% 1 1 0 19aa5cf8896b6d7416c9995d32eb57fa
+
+@ 0 3 0 1dbae201e058a63819b0b02acb91d7ae
++         HTTP/2 的线上单元（RFC 7540 §4）：24 位长度、8 位类型、8 个标志位、31 位流 ID，以及形状由类型决定的载荷。
++         `Frame` 是一个枚举，包含引擎所建模的各种类型，每个分支持有已解码的字段，而不是原始标志：
+
+% 0 1 0 1682596b9e5a64c91ea7da6dc8713ea7
+
+@ 0 11 0 129c9d3689681126075e24f4656c7309
++         column  分支
++         column  帧
++         row  `Headers(streamId, headerBlock, endStream, endHeaders)`  一个 HPACK 块，填充和任何 `PRIORITY` 前缀均已去除
++         row  `Continuation(streamId, headerBlock, endHeaders)`  一个块的其余部分，该块对单个 `HEADERS` 帧来说太大
++         row  `Data(streamId, payload, endStream)`  正文字节，填充已去除
++         row  `RstStream(streamId, errorCode)`  对端放弃一个流
++         row  `Settings(settings, ack)`  一个 `Setting` 列表，或一个空的确认
++         row  `Ping(opaque, ack)`  八个不透明字节，带 `ack` 回显
++         row  `GoAway(lastStreamId, errorCode, debug)`  对端关闭连接
++         row  `WindowUpdate(streamId, increment)`  流量控制额度，在流 `0` 上时针对整个连接
++         row  `Ignored(typeId, streamId)`  引擎未建模类型（`PRIORITY`、`PUSH_PROMISE`、扩展）的入站帧，解码只是为了按协议要求将其丢弃；它永远不能被序列化
+
+% 1 1 0 1b19efa941feb47608f8a6b08e0bbade
+
+% 2 1 0 08a1aaa27a33b3d600c40a4777139099
+
+% 3 1 0 15ed7097a93bde601582783fd7b9ecca
+
+% 4 1 0 02ff43e45101e4191eb1e57b7d17f385
+
+% 0 1 0 0a8c08fe9d85ed2215e4be23e25d7f67
+
+% 0 1 0 17ec938e31dd759c1dbfd0563179f00b
+
+% 0 1 0 0f0458fead3d449302d41895471da29f
+
+% 1 1 0 1ac2efe5d07f1708059cd26dc30604a0
+
+@ 0 2 0 027af476cad64ee60937edf4f6d868c9
++         手工使用该协议的程序在 `Duplex` 上发送 `frame.serialize`，并用 `FrameReader` 读取，它从套接字的任意数据块中重新组装出帧。
+
+% 0 1 0 05defaa95eadf8bf028b5b7fad4b3324
+
+% 0 1 0 06433e425984044d0b0b25a27c16e4c4
+
+% 0 1 0 001e3c237f3050c4063004fafcab9f45
+
+@ 0 14 0 10698405e54dd9eb04de1581bbdd4765
++     entry .decode   从字节的某个偏移处解码一个帧，返回该帧和紧随其后的偏移
++         `Frame.decode(data, offset)` 读取位于 `offset` 的九字节头部及其声明的载荷，载荷必须已经全部存在：超出 `data` 末尾的头部或载荷会抛出原因为 `Truncated` 的 `Http2.Error`，错误的填充或长度不是六字节倍数的 `SETTINGS` 载荷会抛出原因为 `Protocol` 的错误。
++         引擎不认识的类型 ID 会成为 `Frame.Ignored`。
++         结果是该帧和下一个帧的偏移，因此包含多个帧的缓冲区可以通过迭代来解码。
++     entry #stream   该帧所属的流；对于连接级的 `SETTINGS`、`PING` 和 `GOAWAY` 为 `0`
++     entry #serialize   该帧的字节形式，包括头部
++         九字节的头部——载荷长度、类型的 ID、字段所隐含的标志（`END_STREAM`、`END_HEADERS`、`ACK`）和流 ID——后跟载荷。
++         序列化一个 `Ignored` 帧会引发 panic：它的存在只是为了被丢弃。
++   entry .FrameType   引擎所建模的帧类型，各带其线上 ID
+
+% 1 1 0 19ffae81e9ae601217bc7cae0e3fb7f6
+
+@ 0 8 0 1a70cff43f6460c406965ccc8abdb71b
++         引擎解码和发送的八种类型组成的枚举：`Data`（`0x0`）、`Headers`（`0x1`）、`RstStream`（`0x3`）、`Settings`（`0x4`）、`Ping`（`0x6`）、`GoAway`（`0x7`）、`WindowUpdate`（`0x8`）和 `Continuation`（`0x9`）。
++         `PRIORITY`（`0x2`）和 `PUSH_PROMISE`（`0x5`）没有对应分支：客户端禁用了服务器推送，优先级在出现之处被跳过，因此这两种入站帧都解码为 `Frame.Ignored`。
++     entry .fromId   具有某个线上 ID 的帧类型，引擎未建模的则为 `Unset`
++     entry #id   该类型的线上 ID，即帧头部中长度之后的那个字节
++   entry .Flags   帧头部的标志位，以及检测某个标志的方法
+
+% 1 1 0 11a3d4b578754c8f1718cf9f085b98cf
+
+@ 0 13 0 06b1fa1ddbe0fa811c7f07e5497826fc
++         标志字节的各个位，按受支持的帧类型的用法：`EndStream`（`0x1`，用于 `DATA` 和 `HEADERS`），`Ack`（同样是 `0x1`，用于 `SETTINGS` 和 `PING`：同一个位，含义不同），`EndHeaders`（`0x4`，用于 `HEADERS` 和 `CONTINUATION`），`Padded`（`0x8`，用于 `DATA` 和 `HEADERS`），以及 `Priority`（`0x20`，用于 `HEADERS`）。
++         `Frame.decode` 把它们读入各帧的布尔字段；把它们公开出来，是为了供检查原始头部的程序使用。
++     entry .EndStream   `0x1`：该帧结束其流的发送一半（`DATA`、`HEADERS`）
++     entry .Ack   `0x1`：该帧确认一个同类型的帧（`SETTINGS`、`PING`）
++     entry .EndHeaders   `0x4`：头部块已完整（`HEADERS`、`CONTINUATION`）
++     entry .Padded   `0x8`：存在一个填充长度字节和尾随的填充（`DATA`、`HEADERS`）
++     entry .Priority   `0x20`：头部块之前有一个五字节的优先级前缀（`HEADERS`）
++     entry .set   某个标志位在标志字节中是否被设置：`Flags.set(flags, Flags.EndStream)`
++   entry .ErrorCode   由 `RST_STREAM` 和 `GOAWAY` 携带的 HTTP/2 错误码，各带其数值代码
+
+% 1 1 0 0f2ac3784c50baec098061da368a3469
+
+@ 0 9 0 167b63cbf1d65b111b7c2d03fd44a923
++         RFC 7540 §7 的十四个代码组成的枚举，各带其 `#code`：`NoError`（`0x0`）、`ProtocolError`（`0x1`）、`InternalError`（`0x2`）、`FlowControlError`（`0x3`）、`SettingsTimeout`（`0x4`）、`StreamClosed`（`0x5`）、`FrameSizeError`（`0x6`）、`RefusedStream`（`0x7`）、`Cancel`（`0x8`）、`CompressionError`（`0x9`）、`ConnectError`（`0xa`）、`EnhanceYourCalm`（`0xb`）、`InadequateSecurity`（`0xc`）和 `Http11Required`（`0xd`）。
++         `Frame.RstStream` 或 `Frame.GoAway` 携带原始的 `Long`，因为对端可能发送列表之外的代码；`ErrorCode.NoError.code` 是干净的 `#close` 所发送的。
++     entry #code   该代码的数值，为一个 `Long`
++   entry .SettingId   `SETTINGS` 参数的标识符，各带其数值 ID
+
+% 1 1 0 1859d8613e942a8115f009b78f7ac6db
+
+@ 0 8 0 1bffbb70d1412a2d03d3e90d0fdaf37a
++         RFC 7540 §6.5.2 的六个参数组成的枚举，各带其 `#id`：`HeaderTableSize`（`0x1`）、`EnablePush`（`0x2`）、`MaxConcurrentStreams`（`0x3`）、`InitialWindowSize`（`0x4`）、`MaxFrameSize`（`0x5`）和 `MaxHeaderListSize`（`0x6`）。
++         `Setting` 持有原始 ID 而不是 `SettingId`，因为未知的标识符必须被忽略，而不是被拒绝。
++         引擎会依据对端发来的 `InitialWindowSize` 和 `MaxFrameSize` 行事，并发送 `EnablePush`（由客户端发送，值为 `0`）和 `InitialWindowSize`。
++     entry #id   该参数的 16 位标识符
++   entry .Setting   一个 `SETTINGS` 参数：16 位标识符和 32 位值
+
+% 1 1 0 0be8a394366190461cc576c6f71c0726
+
+@ 0 2 0 0cba1f8dbb34fbda0557c60de88e390d
++         `Setting(SettingId.InitialWindowSize.id, 65535)`。
++         ID 是原始的，这样引擎不认识的参数就会按协议要求被携带并忽略。
+
+% 2 1 0 0560bafeaa48fa88090a926c4abbf614
+
+% 3 1 0 1e64ebf33af2e3290856bf5ff4bf539c
+
+% 0 1 0 09957cba6592240e12090bc938554ad4
+
+% 0 1 0 13f17ea41e63da450a6ab95f7e13f48c
+
+% 1 1 0 0446879a26fc4f3f1a1ee34745bb77a7
+
+@ 0 3 0 0de0df583a55864e0f12968650c692ff
++     entry #id   该参数的标识符；已知参数为 `SettingId#id`
++     entry #value   该参数的值，为存放在 `Long` 中的无符号 32 位数
++   entry .Error   针对格式错误或违反协议的 HTTP/2 交换抛出，带有一个 `Reason`
+
+% 1 1 0 108c080eac29ce0d1f767012fd934e55
+
+@ 0 6 0 1572a8c2fa2df1630433c03876fb26ff
++         _the HTTP/2 operation failed because `reason`_。
++         由 `Frame.decode`、`FrameReader`、`Hpack#decode`、`Huffman.decode` 和 `PseudoHeaders` 通过 `Tactic[Http2.Error]` 抛出，也由 `Connection#fetch` 为它所驱动的交换抛出。
++         在连接的读取守护进程内部，该错误会拆除那一条连接，而不是逃逸出去；`https` 会话把它报告为 `Connect.Error`。
++     entry .Reason   HTTP/2 操作失败的原因
+
+% 1 1 0 0a7827850760c5b01bee9cd37ec18154
+
+@ 0 1 0 03d1aeb1f05fc3531e37b4d6dd0d83c9
++           每个分支都渲染为它的消息：
+
+% 1 1 0 05f424c7a32c4c0b0b03863d383d30a5
+
+@ 0 4 0 1c11022252accc3c1fe51bdc2fcd38b5
++           column  分支
++           column  消息
++           column  说明
++           row  `Truncated`  _the HTTP/2 data ended unexpectedly_  帧、头部块或整数被截断
+
+% 0 1 0 049882a67c69bbf61e562b90dc596586
+
+@ 0 1 0 14ea7cd4202f24dc1c8a6abaf874aa27
++           row  `BadHuffman`  _the Huffman-coded string was not valid_  长于 30 位的码，或不全为 1 的填充
+
+% 0 1 0 0bcda516d445cbf80be6085f830631bd
+
+% 0 1 0 139b3921345273181bfffd290468882a
+
+% 0 1 0 001f9051c8b71cdc0bee2b881ecc56a1
+
+% 0 1 0 010e3e9d683682870a0f038c37e519b6
+
+% 0 1 0 167e6a3875fa69a201f2b5d94fc9890a
+
+@ 0 1 0 10c2b3af5a256c0513322d64b0d5704a
++           row  `Protocol(message)`  _a protocol error occurred: `message`_  错误的连接前言、错误的填充、错误的 `SETTINGS` 长度，或缺少 `:status`、`:method`、`:path` 或 `:authority` 的头部块
+
+% 0 1 0 035cb90b113c4e111414338a9d4ed430
+
+% 1 1 0 1fa48be84477bf2409f9d0ccfd8cf2b2
+
+@ 0 3 0 0111a4a23a498fec10260f8f19ea9f31
++       entry .communicable   把每个原因渲染为它的消息
++     entry #reason   原因，为一个 `Http2.Error.Reason`
++   entry .Event   连接记录的日志：发送了一个请求，以及收到了一个 `GOAWAY`
+
+% 1 1 0 14bb0f65507cb146090506b6c49886b1
+
+@ 0 6 0 1eeb54dcbae62e8d0e6e57ad467545ed
++         每个 `Event` 都带有 `Log.Network` 和 `Log.Protocol` 标签。
++         `Connection#fetch` 以 `fine` 级别记录 `RequestSent(authority)`——_sending an HTTP/2 request to `authority`_——连接的读取方在停止之前以警告级别记录 `GoAway(lastStream)`——_received GOAWAY; the last processed stream was `lastStream`_。
++         获取时作用域内必须有一个 `Http2.Event is Loggable`；`logging.silentLogging` 会丢弃它们。
++     entry .communicable   把每个事件渲染为一条消息
+
+@ 0 1 0 1acb88a8108825961a79014a89489c27
++ entry .Hpack   HPACK 编解码器：用它自己的动态表压缩和解压 HTTP/2 头部块
+
+% 1 1 0 1aeb2c020352f57f110e78c5892d53e0
+
+@ 0 5 0 185b4590891969bd0ee0dd3aefa80903
++       HPACK（RFC 7541）是 HTTP/2 承载头部的方式：每个字段要么是指向最近见过的字段所组成的表的索引，要么是字面的名称和值，在 Huffman 编码更短时各自使用 Huffman 编码。
++       一个 `Hpack` 实例拥有一个方向的动态表，该表随它编码或解码的每个块而变化，因此一条连接保留一个编解码器用于解码入站块，另一个用于编码出站块，两者从不混用。
+
+% 2 1 0 0656c5fea64821fe07521de2cbf9b00b
+
+% 3 1 0 0fd187f58b9e0c130abceaba6ecddae4
+
+% 4 1 0 05141930faf3750d06df68baeb20cf81
+
+% 0 1 0 01563c0006528d2b1e3c4a10907064e6
+
+% 0 1 0 0dd41eb9643c00d11cbb439382d96a84
+
+% 0 1 0 1c5cf8d26ffd993b0aad6848424ffb33
+
+% 0 1 0 1d71b89d742a990404ce765b8440d51d
+
+% 1 1 0 1e413f44922a500f1e1957b5eb5ea7e5
+
+@ 0 5 0 0e7c8432f11d7b4c11b960c98b00c443
++       该编解码器是一种有状态的独占能力：`Hpack()` 返回 `Hpack^`，`#encode` 和 `#decode` 是更新方法。
++       应把它保存在局部变量中，或作为类型为 `Hpack^` 的参数传递，而不要从捕获它的闭包或局部 `def` 中调用它——被捕获的引用是只读的，调用会被拒绝——这也是一个编解码器恰好属于一个读取守护进程或写入守护进程的原因。
+
+@ 0 2 0 0f97b0ee6251d5c006c7de256c72b020
++       给解码器输入连续的块，它的动态表会增长，每个块都可以引用前一个块所添加的内容（RFC 7541 附录 C.3 的示例）：
+
+% 2 1 0 05df456e7f2c1fdc0fda390ea174caca
+
+% 3 1 0 1ba8afd3950ad123195d667545936848
+
+@ 0 1 0 171cc0d4b254f7891dd588565f861090
++         label 第一个请求：四个字段，authority 作为字面量发送
+
+% 1 1 0 0f6dc1dadc70ba7b101935b46636951a
+
+% 2 1 0 039726231c45f5c206aa7cda1a02a6de
+
+% 3 1 0 0b5c91b75c2a64801beb6b952c9067b8
+
+% 5 1 0 15f02fd45c8ca24103b50ac364756c88
+
+% 7 1 0 0ec75e4934a0754416aaaabec68d9aff
+
+% 8 1 0 06739ae4fe0d44da1eb52ae21a4d7cc4
+
+% 0 1 0 1261996de336cf7812427f028557003f
+
+% 1 1 0 082b020ef14d39ef01394c0578fa177d
+
+@ 0 1 0 0f79cfe83ceb5f2f109c2ac1812ecb0d
++         label 第二个：authority 现在是索引 62，只占一个字节，并加入了一个新字段
+
+% 1 1 0 13c76bfb98baf3b811f82b5d8b70a828
+
+% 2 1 0 1490e2421ed0f2e80c8faa3878f20970
+
+% 3 1 0 10423bd849d301d5111d2c9506b377c3
+
+% 5 1 0 1148fa0a1c29e2510b30ac68572ca002
+
+% 7 1 0 110609e2df26bcb6146a6f43312a305a
+
+% 8 1 0 19b8c4626af9969c08783751a366efe4
+
+% 9 1 0 0409f67cc8b84aba11be1717fe1cdfda
+
+% 0 1 0 11d456fb5f8d661a121757ab06756d0b
+
+% 1 1 0 178ad23b3f59aec81cd4802c3f3c7cd3
+
+@ 0 1 0 1557af4209cedf7a0592d0cc5f112993
++         label 第三个：一个自定义字段，之前加入的两项仍在索引中
+
+% 1 1 0 140ba494e3d087600bd85819b8aae854
+
+% 2 1 0 112b44459f55061c17069882d0816b84
+
+% 3 1 0 1c5ac203ca4b63a21fd7c7c4fa808b10
+
+% 5 1 0 1f91c779dc2c5b0a16fef5971ca776a5
+
+% 7 1 0 08af778232cf3cd619c9cafcdcc62026
+
+% 8 1 0 14331200b08f4d0604c3ffdc5234adef
+
+% 9 1 0 0d87a117ffebc03e1514ef89b026ca8e
+
+% 0 1 0 02d7493f68b1d2ac100bcb1a2eb4803b
+
+% 0 1 0 0aa9dbe675eef49719ce9b6a3d0763e5
+
+% 1 1 0 15376927454c7f0f191b63f99607e51b
+
+% 2 1 0 0feeaeddabc27e5a16b4b1f98c69637d
+
+@ 0 6 0 06cb1fe75579ae051a0c79ca987c0c23
++       编码器有意保持简单：每个字段都作为带增量索引的字面量发出，其名称和值各自采用 Huffman 编码或原始形式中较短的一种。
++       这是正确的，可以与任何解码器互操作，并使两张表保持同步，但尚未利用静态表的名称匹配，因此块比经过调优的编码器所产生的更大。
++       伪头部必须由调用方排在常规字段之前，正如 `PseudoHeaders` 所安排的那样。
+
+% 1 1 0 05fd61defd2975e21f11c0d6270e7a1c
+
+% 0 1 0 1056b5f52e6def0718792b9ecdebf263
+
+% 0 1 0 05a840856c6a73b5008373548dd9e2db
+
+% 0 1 0 0261683ed6c93ce704b3fd9a91bf8836
+
+@ 0 5 0 03bfc99fcdb986c8147df6094314d19b
++   entry .apply   一个动态表为空的全新编解码器，写作 `Hpack()` 或 `Hpack(maxTableSize)`
++       表的字节上限默认为 4096，即协议的初始 `SETTINGS_HEADER_TABLE_SIZE`。
++       块内来自对端的动态表大小更新会调整它的大小。
++       结果是 `Hpack^`：一种全新的独占能力。
++   entry .Entry   一个头部字段：名称和值
+
+% 1 1 0 01c21446f4b5d5240a63c7e91cb92997
+
+@ 0 2 0 138e28927c1d5762101e99cc4b4a1283
++         `Hpack.Entry(t":status", t"200")`。
++         名称在线上是小写的，伪头部以 `:` 开头；`#size` 是该字段在动态表中的开销。
+
+% 2 1 0 0edef6df0682e4951f91b0e087444b94
+
+% 3 1 0 181583b7a0c2eec41debd3be0718a5db
+
+% 0 1 0 09f9cdd63a162fe0048f743b59a299e7
+
+% 1 1 0 1658ac6d388c81fd0b07ab24c28b5f1c
+
+@ 0 4 0 0b67cde888b8947e19c604490ba0e148
++     entry #name   字段的名称，小写，例如 `:path` 或 `content-type`
++     entry #value   字段的值
++     entry #size   用于动态表统计的字段大小：名称长度 + 值长度 + 32
++   entry .Table   HPACK 地址空间：61 个条目的静态表，以及一个有界的、最新者在前的动态表
+
+% 1 1 0 061be083dccbd4530f31882b52ba73a7
+
+@ 0 5 0 15d85cde484c90081bbcd681ae7ecf27
++         1 到 61 的索引指向 RFC 7541 附录 A 静态表中的字段，保存在 `.static` 中；62 及以上指向动态表，最近插入的在前。
++         动态表是一个以字节大小（`#capacity`）为界的 FIFO，会逐出最旧的条目以容纳新条目。
++         `Table` 归它的 `Hpack` 编解码器所有，而编解码器本身限定于一个守护进程；程序只有在手工解析或检视索引时才需要它。
+
+% 2 1 0 0e3ddaa915bfc9ad079dbf3c71f76fe2
+
+% 3 1 0 1bafd790815ca3be1a8285a6836aaa6e
+
+% 0 1 0 0ec016d98cb7084e028f1bb48b7d5879
+
+% 0 1 0 0cb5293e9269d9d014e0351dcba887ff
+
+% 0 1 0 0d63eb17609c66670809b476a9dc0f46
+
+% 0 1 0 18f00bceb50c58ec004cd3e02da08776
+
+% 1 1 0 1a488c280ba91f801ebddbd55c7244b0
+
+@ 0 26 0 1264691a604594a908c1a1a900e4146b
++     entry .static   静态表的 61 个字段，索引 1 位于第 0 个元素
++         `:authority`，`:method` 的 `GET` 和 `POST`，`:path` 的 `/` 和 `/index.html`，`:scheme` 的 `http` 和 `https`，七个常见的 `:status` 值，以及值为空的标准头部名称，按 RFC 中的顺序排列。
++     entry #size   动态表当前的字节大小，即其各条目大小之和
++     entry #capacity   动态表的字节上限
++     entry #resize   设置字节上限，逐出最旧的条目以适应它：即一次动态表大小更新
++     entry #add   在动态表前端插入一个字段，逐出最旧的条目以保持在上限之内
++         大于整张表的字段会清空该表，而它本身不被存储，正如 RFC 所规定的。
++     entry #lookup   从 1 开始的索引处的字段：1 到 61 为静态表，之后为动态表；超出范围时为 `Unset`
++   entry #decode   把头部块解码为它的各个字段，并按块的指示更新动态表
++       读取一个完整的块——一个 `HEADERS` 帧的载荷，或一个 `HEADERS` 帧及其各 `CONTINUATION` 帧拼接后的载荷——按顺序得到一个 `List[Hpack.Entry]`。
++       索引字段通过表来解析，带增量索引的字面量被加入表中，不带索引的字面量和永不索引的字面量则不加入，动态表大小更新会调整表的大小。
++       需要一个 `Tactic[Http2.Error]`：表中没有的索引为 `BadIndex`，超过 28 位的整数为 `BadInteger`，无效的 Huffman 字符串为 `BadHuffman`，被截断的块为 `Truncated`。
++       这是一个更新方法：必须独占地持有该编解码器。
++   entry #encode   把字段编码为一个头部块，每个字段都是带增量索引的字面量
++       `#decode` 的逆操作：每个字段都写作带增量索引的字面量，其名称和值在 Huffman 编码更短时各自采用 Huffman 编码，否则采用原始形式，并被加入动态表，使解码器的表保持同步。
++       字段按给定的顺序写入，因此伪头部必须在前。
++       这是一个更新方法：必须独占地持有该编解码器。
+
+@ 0 1 0 0b3700f9a0b9ff261ad0dcd36854c46b
++ entry .Huffman   HPACK 的 Huffman 码：压缩和解压头部块中的字符串
+
+% 1 1 0 01546cbe6059d69d0cdca62ecfe01ee4
+
+@ 0 3 0 016db7990a122974136e7603dc2efd29
++       RFC 7541 附录 B 的规范码，作用于 256 个字节值和一个字符串结束符号。
++       对于每个名称和值，只要 Huffman 编码比原始字节更短，`Hpack` 就使用它；程序只有在手工使用 HPACK 时才需要直接使用它。
+
+% 2 1 0 05ce86e3c14406600922ad56bec019ec
+
+% 3 1 0 0b72cc2c1dc81d15111ae1bbfe5ddbe9
+
+% 4 1 0 0f4b14d73b47e24a1d36139a685de7bd
+
+% 0 1 0 1848af7e17cf49e31e55c5eddfa4cd68
+
+% 0 1 0 08a0426c3cd861ad1fe491387d17c530
+
+% 0 1 0 18b7482142edd09b0f34ac566bafae54
+
+% 1 1 0 1005835a2a07afa119da4927f6a2625b
+
+% 1 1 0 1e2089ba5bcd3fd01692bcfe9e0a60d7
+
+@ 0 8 0 1fbf1115d1311eee1b3e7575a507e159
++   entry .encode   对字节进行 Huffman 编码，用 1 位填充最后一个字节
++       最高有效位在前，最后一个不完整的字节用字符串结束符号的开头几位填充，正如 RFC 所要求的。
++       从不失败。
++   entry .decode   把 Huffman 编码的字符串解码回它的字节
++       依照码表遍历各个位，接受并丢弃尾随的填充。
++       需要一个 `Tactic[Http2.Error]`；对于超过 30 位仍不匹配任何符号的位序列，或者长度达到八位或以上、或不全为 1 的填充，以原因 `BadHuffman` 抛出。
++       解码器对每一位都线性扫描码表，因此它追求正确而不是快速。
+
+@ 0 1 0 17575b073b63b32801d07d77a84c7fdf
++ entry .FrameReader   从以任意数据块到达的字节流中重新组装出完整的 HTTP/2 帧
+
+% 1 1 0 109651863bd47496110c901134987de8
+
+@ 0 6 0 0e1e2a3f9a85a0960ec6d76e84be5f5c
++       套接字以网络产生的任意数据块交付字节，一个帧可能跨越多个数据块，也可能与其他帧共享一个数据块。
++       `FrameReader(source)` 接管一个 `Stream[Data] over Credit`——即 `Duplex` 的 `source`——的所有权，缓冲它已读取的内容，并不断重新填充，直到一个帧的九字节头部及其声明的载荷都已存在，因此 `#next` 一次返回一个解码后的 `Frame`，在流干净地结束时返回 `Unset`。
++       它是连接唯一的读取方：一种有状态的独占能力，它会像解析器那样消耗交给它的端点。
+
+% 2 1 0 05cc790041ce067a0d309367518b9ee7
+
+% 3 1 0 0cbba1a7e5b072ac1206a2fe5a87059f
+
+% 4 1 0 06d3ab37e3b5454e11c2d49a6e6985a0
+
+% 5 1 0 0ca74decccfe23861842966f02b4e0c7
+
+% 6 1 0 1e3c58a0c81c1b760860f6557c346acc
+
+% 0 1 0 1e7e2265e6a8c7cc10d8a8471834ca1d
+
+% 0 1 0 0aa7fb246c0a61400d7bf09c7b6365f8
+
+% 0 1 0 0f66db0995515a790764e5cf9246854f
+
+% 0 1 0 03e06732f622a1d404fa8c4e7f3e0533
+
+% 0 1 0 176d2a39e0b250b118513c783c1ae850
+
+% 0 1 0 13ffc759c4f27d2f12f8ca1168eb8a51
+
+% 0 1 0 09d036a6f5aea7a709ce49a3b8c7935b
+
+% 0 1 0 0ebdacf2c15da27900fd2efc9e54950c
+
+% 1 1 0 122f533747e988f4073fb33675fc6eb6
+
+@ 0 2 0 0a10e54d0b3f9f89108b205ea0db0859
++       服务器在第一次调用 `#next` 之前，用 `#expectPreface` 读取客户端 24 字节的连接前言。
++       作用域内必须有一个 `Buffering`，它决定读取的大小。
+
+% 0 1 0 00a28069eaf0e6d50220f32a4044dcbf
+
+% 1 1 0 08dcee32c0a7d4570fb574fde285cd51
+
+@ 0 14 0 06f9390c9b7be27b186e929137a8d42a
++   entry .apply   一个基于拉取端点的读取器，它会消耗该端点：`FrameReader(duplex.source)`
++       以 `consume` 方式接收端点，因此调用方放弃了自己对它的使用：读取器现在是它唯一的读取方。
++       需要作用域内有一个 `Buffering`。
++       结果是 `FrameReader^`，一种全新的独占能力。
++   entry #expectPreface   在第一个帧之前消耗并检查连接前言
++       `reader.expectPreface(preface)` 恰好读取 `preface.length` 个字节并比较它们：不匹配，或者流在这些字节之内结束，都会抛出原因为 `Protocol`（_bad connection preface_）的 `Http2.Error`。
++       这是服务器角色在一条新连接上的第一次读取，客户端前言为 `PRI * HTTP/2.0\r\n\r\nSM\r\n\r\n`。
++       这是一个更新方法。
++   entry #next   下一个完整的帧，或在流干净地结束时为 `Unset`
++       阻塞并重新填充端点，直到一个帧头部及其声明的载荷都已缓冲，然后用 `Http2.Frame.decode` 解码它们。
++       在头部之后、载荷完整之前结束的流会抛出原因为 `Truncated` 的 `Http2.Error`；在两帧之间结束的流为 `Unset`。
++       需要一个 `Tactic[Http2.Error]`。
++       这是一个更新方法。
+
+@ 0 1 0 050896147a55bf910766a4479332d46a
++ entry .PseudoHeaders   在 `Http.Request`/`Http.Response` 与 HTTP/2 头部块之间双向转换
+
+% 1 1 0 097130b71a8384881866a260832d6679
+
+@ 0 6 0 051858d1c36516990e5b2d685f799014
++       HTTP/2 把请求行和状态行作为伪头部承载——请求上的 `:method`、`:scheme`、`:authority` 和 `:path`，响应上的 `:status`——位于小写的常规字段之前。
++       `PseudoHeaders` 是这种形式与 telekinesis 中与传输层无关的 `Http.Request` 和 `Http.Response` 之间的桥接：`.request` 和 `.response` 是客户端的两个方向，`.requestOf` 和 `.entries` 是服务器的两个方向，每一个都是另一个的逆操作。
+
+% 2 1 0 18b871f1a6d42dec087c0b14475cfa09
+
+% 3 1 0 02ffac369b847db51237063880571b7f
+
+% 4 1 0 0a0164f5eba2ca680bbe68f583ada97c
+
+% 0 1 0 01ef950e0dcd95611a478de65118acb4
+
+% 0 1 0 036a6ba7e4583c6e0433209985fb5c87
+
+% 0 1 0 1d20373cd5376e5806d68edcee700f7e
+
+% 0 1 0 012749f809c4239a17449b8509102853
+
+% 1 1 0 143bf4975a45bed90adf1e99a09d2a16
+
+% 1 1 0 0049181bb9efd77a0261dfe003485e21
+
+% 1 1 0 0e9fcce47c1366ce065a59e109984c66
+
+% 2 1 0 1bc55ae5ad9c7be804b6ba86c78cde65
+
+@ 0 25 0 1b386ae443ddcee213475e1cab95c96e
++   entry .request   请求的头部块：它的四个伪头部，然后是转为小写的各个头部
++       `PseudoHeaders.request(request, scheme, authority)`。
++       `Http.Request` 既不携带它的 scheme，也不携带它被发往的 authority，因此两者都要给出：`:method` 取自请求的方法，`:scheme` 按给定值，`:authority` 按给定值（浏览器会省略默认端口，写作 `localhost` 而不是 `localhost:443`），`:path` 取自请求的目标，然后是名称转为小写的每个头部。
++       `Http2.Connection#fetch` 调用它。
++   entry .response   根据解码后的响应块和一个正文流得到的 `Http.Response`
++       `PseudoHeaders.response(headerBlock, body)`：`:status` 选择 `Http.Status`，其他伪头部被丢弃，其余字段成为响应的头部；正文是基于给定字节块链的流动的 `Http.Body`。
++       当块中没有 `:status`，或其 `:status` 不是已知的状态码时，抛出原因为 `Protocol`（_missing :status_）的 `Http2.Error`。
++   entry .requestOf   根据解码后的请求块和一个正文源得到的 `Http.Request`
++       `PseudoHeaders.requestOf(headerBlock, body)`：`:method` 和 `:path` 成为方法和目标，`:authority` 成为主机（去除任何端口，与 HTTP/1.1 的 `Host` 头部一样），其他伪头部被丢弃，其余字段成为请求的头部；版本为 2.0。
++       正文是一个由请求接管所有权的 `Spring[Data]`，通常基于该流的入站 `DATA` 帧。
++       需要一个 `Tactic[Http2.Error]`；对于缺少 `:authority`、`:path` 或 `:method` 的块，或 `:authority` 不是主机的块，以 `Protocol` 原因抛出。
++       这是服务器角色中 `.request` 的逆操作。
++   entry .entries   响应的头部块：`:status` 在前，然后是转为小写的各个头部，去除了特定于连接的头部
++       `PseudoHeaders.entries(response)`：`:status` 为状态码的数字，然后是转为小写的每个头部，其中 `connection`、`keep-alive`、`transfer-encoding`、`upgrade` 和 `proxy-connection` 被移除，因为 HTTP/2 禁止它们。
++       这是服务器角色中 `.response` 的逆操作；也就是 `ServerConnection#sendHeaders` 发送的块。
+
+@ 0 1 0 0eb656afaa6563550a3ac566f6e16164
++ entry .FlowWindow   一个 HTTP/2 流量控制发送窗口：对端授予的字节预算，按数据块获取，由 `WINDOW_UPDATE` 补充
+
+% 1 1 0 0493dfe638378ed20c4feb2e288d313a
+
+@ 0 7 0 07c59d87a9a7d9541de8025f3fa96dcc
++       连接或流的发送端额度（RFC 7540 §6.9），表现为一个计数器：发送方纤程从中支取，入站的 `WINDOW_UPDATE` 为其补充。
++       `#acquire` 阻塞直到至少有一个字节可用，并取走至多所请求的数量，因此大的正文会随着窗口打开而逐步发出；`#release` 增加额度并唤醒每个等待者。
++       等待基于锁条件而不是监视器，因此被阻塞的虚拟线程会释放它的载体。
++       `Http2.Connection` 和 `Http2.ServerConnection` 为每条连接保留一个窗口，为每个流保留一个窗口；程序只有在自己建模流量控制时才需要这个类。
+
+% 2 1 0 048de544c8c3f5211f5a779dd241f5cf
+
+% 3 1 0 144fb03220632ec60c3e93d10f34cf31
+
+% 4 1 0 095e300d44e027601f491a4481643a95
+
+% 0 1 0 0501b13bd2211d43198087765cafdd33
+
+% 0 1 0 0e73e7682d74a82f06278b1faec7f952
+
+% 0 1 0 1dfe7bdbf2cbdaea1da06ac1ccaab8bd
+
+% 0 1 0 1ba2d414a663113b1256ac95b5b9fd45
+
+% 0 1 0 0a515b4b3257a76d0fec86d1fd1f6cd7
+
+% 0 1 0 1a172dd5c639acfd06bafb076722b38a
+
+% 0 1 0 02b78276c4b4e69a09ec8a1c716c9d51
+
+% 0 1 0 0f8b443a0e9dcc820eb6dae162694589
+
+% 0 1 0 18f24e4e5bdefa850b7bde4ab7cdd94b
+
+% 0 1 0 0801dbd79ca3cef11a3f54de63eb53fe
+
+% 1 1 0 163c6600a37f43060e7db6667491f504
+
+@ 0 2 0 070a509aa3c5ebae1553aa4d3202fcca
++       该类声明在 `telekinesis` 包中，但没有导出到 `soundness` 总括包，因此要通过 `telekinesis.FlowWindow` 访问。
+
+% 1 1 0 1c14b37ad8d26cc40714142406480e76
+
+@ 0 7 0 05032988c6f51acc008e27f4aa32aaed
++   entry #acquire   取走至多 `n` 字节的额度，在窗口为空时阻塞
++       返回至多 `n`，并且在 `n` 为正数时至少一个字节：即窗口中所持有的、不超过 `n` 的任何数量，因此发送正文的调用方会循环，直到发送完所有内容。
++       当窗口处于或低于零时，阻塞调用方纤程，直到 `#release` 唤醒它。
++   entry #release   向窗口增加额度，并唤醒每个在其上等待的纤程
++       这是入站 `WINDOW_UPDATE` 的效果。
++       所有等待者都被唤醒，然后各自取走它能取的，因此停驻在空窗口上的两个发送方在一次释放之后都会继续。
+
+@ 0 1 0 16e24ffd157fdc38002910d6588c3fb0
++ entry .UrlSessional   打开一条到 HTTP 或 HTTPS URL 源站的连接并将其借给某个作用域的 `Sessional` 实例
+
+% 1 1 0 013b931e37a5052304418da925569036
+
+@ 0 6 0 0b973e3b18adba271e9dd0eff80e3453
++       `httpUrlSessional` given 背后的类，它是具名的而非匿名的，以便准确地写明它的 `Result` 类型——一个捕获了连接的 `Http.Session`。
++       `url.session: session ?=> …` 只连接一次 URL 的主机和端口，把连接作为一个 `Http.Session` 借给代码块，在其上 `session.fetch(request)` 进行一次交换，并在代码块结束时关闭它。
++       scheme 决定会话的形式，该形式在会话的整个生命周期内固定不变：
+
+@ 0 10 0 073a60e3df1b241719757022d7d17377
++       - `http` 是基于一条保持活动的连接的顺序 HTTP/1.1 会话：一次一个交换，每个响应的正文恰好在下一个响应开始之处结束。未消耗完的响应不会使它出轨——下一次获取会排空前一个正文的剩余部分以到达边界——但 `101 Switching Protocols` 响应会被拒绝，因为它的正文将是升级后协议的无尽流。
++       - `https` 以 TLS 连接，通过 ALPN 依次提供 `h2` 和 `http/1.1`。如果服务器选择了 `h2`，会话就在同样的顺序契约之下于一个 `Http2.Connection` 上多路复用，每次获取的正文都在该次获取内被排空，因此响应是一个普通的值；否则它就是顺序形式。HTTP/2 失败和异步失败都报告为 `Connect.Error`。
+
+@ 0 6 0 05bf94c7bd4210ea0543551393b67ef2
++       代码块的结果在代码块之外量化，因此仍在借用该连接的值——从它流式传输的响应正文——无法逃逸；已 memoize 的正文则可以。
++       该实例需要一个 `Online`、一个 `Socket.Backend`、TCP 的 `Socket.Option`、一个 `Buffering`、一个 `Tls` 和一个 `Tactic[Connect.Error]`；对于 `http` 或 `https` 以外的 scheme，以原因 `Unknown` 抛出，对于没有主机的 URL 以 `Dns` 抛出，在无法建立连接时以套接字的原因——`Dns`、`Refused`、`Timeout`、`Ssl(Handshake)`——抛出。
+
+% 0 1 0 00ac747d4d5d2ff60a50aa413c377494
+
+% 1 1 0 1bc29fa85d430fb102e6d71f4dffb165
+
+@ 0 3 0 1e22a42438df21fa18689186acac43dc
++   entry #Self   URL 类型，`HttpUrl` 的一个子类型
++   entry #Result   `Http.Session^`：代码块接收的会话
++   entry #session   连接到 URL 的源站，把会话借给代码块，之后关闭连接
+
+@ 0 6 0 11d10d68ae488bc6079bce017e07af06
++ entry .httpUrlSessional   使 `url.session: session ?=> …` 能在 HTTP 或 HTTPS URL 上工作的 given
++     针对任意 `url <: HttpUrl` 的 `UrlSessional`，以此为界，使得类型为按 scheme 细化的子类型的 `url"https://…"` 字面量也能解析到它。
++     它是顶层 given，因此需要按名称导入——`import soundness.httpUrlSessional`——并且需要作用域内有一个 `Online`、一个 `Socket.Backend`（例如 `socketBackends.javaBaseSockets`）、TCP 的 `Socket.Option`、一个 `Buffering`、一个 `Tls` 和一个 `Tactic[Connect.Error]`。
+
+% 2 1 0 1e5c7b745cbed5620aada4332611f8d6
+
+% 3 1 0 05c0963d14a506e2100c9454e2ac9989
+
+% 4 1 0 04044a9c2831c93116aec5e4fe11c369
+
+% 5 1 0 1df49339ebe408be0ee169f64eb6ad72
+
+% 0 1 0 18c899fbefe1b88d0c673febf0e51517
+
+% 0 1 0 14a68bffa6b708411ac2ce37360b6c83
+
+% 1 1 0 1dfe2ed28c40f21602d714af0442cecb
+
+% 1 1 0 035417faa82e78ab19b88c9192c6d9ba
+
+% 1 1 0 05ebbbd4e006f8141b264ef5108a2678
+
+% 0 1 0 03b4f7c37608d6c01029688612adb490
+
+% 0 1 0 1a835caa65b166990a2493b2981e50d0
+
+% 0 1 0 024567e881f4dd0f1313a9ec1163a9df
+
+% 1 1 0 14d5aaf61169d7d81902322fd2ade4b2
+
+% 1 1 0 1ea121fd2ea2a1be1b13ed25c481c50b
+
+% 1 1 0 00313a34bc35abba13ea1fbbf70abcbd
+
+@ 0 3 0 02d93917dc80840d01dd9b314522f634
++     通过 `https` 时，如果服务器的 ALPN 选择了 HTTP/2，会话就使用 HTTP/2，否则使用 HTTP/1.1；通过 `http` 时，它总是带保持活动的 HTTP/1.1。
++     `UrlSessional` 描述了这两种形式以及各种错误。

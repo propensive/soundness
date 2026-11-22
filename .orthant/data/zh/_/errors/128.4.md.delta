@@ -1,0 +1,43 @@
+orthant 2 language
+
+% 0 1 0 1a128d1a7b1d062518789bd673eab8b8
+
+@ 0 1 0 1c9d39591e9a32441d17c939c19c265f
++ 当 XML 值不符合 `Xml.Provider` 读取它时所依据的 XML Schema 时抛出。
+
+@ 0 1 0 1d8ed6a2d2412a231ea0d46e12dff5b7
++ ## 原因
+
+@ 0 4 0 1f88fe5ed239ef871d49a27bb8197394
++ Xylophone 的 `Xml.Provider` 在读取记录的字段时依据 schema 检查文档，并通过读取该字段的代码的 `Tactic` 报告每处不匹配，以便进行验证的读取方能够收集全部不匹配。
++ 消息为 `the XML did not conform to its schema because $reason`。
+
+@ 0 1 0 0982d44e8aec0bbd176df78e68656684
++ ## 变体
+
+% 0 1 0 0a7c55b4c0ac40601a46d9fdcd155626
+
+@ 0 12 0 1ac6cc0290f10dea052b6a6f1c3eb886
++ column  代码
++ column  原因
++ column  含义
++ column  消息
++ column  解决方法
++ row  `↯/s.128.4.1`  `OutOfRange`  数字超出其类型的界限：`minInclusive`、`maxInclusive`、`minExclusive` 或 `maxExclusive` 约束面，或 `xs:positiveInteger` 等内置类型所隐含的界限。缺失的界限是 `Unset`。  `[↯/s.128.4.1] the XML did not conform to its schema because the value 200 is outside the range 0 to 150`  提供范围内的值，或放宽该约束面。
++ row  `↯/s.128.4.2`  `LengthOutOfRange`  值的长度违反 `length`、`minLength` 或 `maxLength` 约束面。  `[↯/s.128.4.2] the XML did not conform to its schema because the length of abcd is outside the range 3 to 3`  提供长度允许的值。
++ row  `↯/s.128.4.3`  `PatternMismatch`  值与 `pattern` 约束面不匹配。  `[↯/s.128.4.3] the XML did not conform to its schema because the value nope does not match the pattern \d{3}-[A-Z]{2}`  提供与该模式匹配的值。
++ row  `↯/s.128.4.4`  `NotPermitted`  值不在 `enumeration` 约束面的值之中。  `[↯/s.128.4.4] the XML did not conform to its schema because the value urgent is not one of low, normal, high`  提供允许的值之一。
++ row  `↯/s.128.4.5`  `TooManyDigits`  小数的位数多于 `totalDigits` 或 `fractionDigits` 约束面所允许的位数。  `[↯/s.128.4.5] the XML did not conform to its schema because the value 1.234 has more digits than the 5 total or 2 fraction digits permitted`  将值舍入或截断到允许的位数。
++ row  `↯/s.128.4.6`  `Absent`  缺少必需的元素或属性（`minOccurs` 至少为一，或 `use="required"`），或者它所指的元素位于错误的命名空间中。  `[↯/s.128.4.6] the XML did not conform to its schema because the element or attribute city is required`  添加该元素或属性，并置于 schema 所期望的命名空间中。
++ row  `↯/s.128.4.7`  `Malformed`  值的文本无法按其类型读取（例如不是数字的 `xs:int` 文本），或者元素没有可读取的文本。  `[↯/s.128.4.7] the XML did not conform to its schema because the text none is not a valid Double`  为元素或属性提供 schema 所声明类型的文本。
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 1 0 004f241cb4a4ed0405cb108ee75b2611
++ ## 另请参阅
+
+% 0 1 0 18ba4ff9268817c10005d362755cc347
+
+% 0 1 0 1f718dc1c824c1411f5f8454e02273b2
+
+% 0 1 0 0d801d2e17abd7ca07dcb80e1676fff9

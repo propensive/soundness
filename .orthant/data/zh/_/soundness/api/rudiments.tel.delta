@@ -1,0 +1,2054 @@
+orthant 2 language
+
+% 0 1 0 0f04ec4b9ac2d4270a232409219e1f6b
+
+% 0 1 0 1dc5e629935d905319a491e5a1a8a06a
+
+% 0 1 0 0b5938ce7315323607e1922cbc4d93e2
+
+@ 0 1 0 0856b83007c342180225e6890cec472c
++ info   每个 Soundness 库赖以立足的基础：组合子、集合操作、证明、构建器和原子量
+
+% 0 1 0 0ca6d61ddd9511ea1cdae38f1414f6fe
+
+@ 0 4 0 1471a1f80e2d67e40e50299c37ce69bd
++     _Rudiments_ 是一层通用定义，其他每个 Soundness 库都使用它，用 Soundness 编写的程序也会不假思索地频繁用到它，甚至不觉得它们属于哪个库。
++     它没有核心类型，只有一套词汇。
++     初识 Soundness 的读者大致按以下顺序遇到它的各个部分：
+
+@ 0 33 0 0bc2c1ff476dd59e0b0432d3b2ceda14
++     - **日常组合子**，适用于任何值：`pipe`、`tap`、`also`、`when`、`give`、`twin`、`yet`、`upon`，以及折叠和迭代操作交给其 lambda 的上下文访问器 `state`、`next`、`prior` 和 `ordinal`。
++     - **集合操作**，在类型类 `Traversable`、`Countable`、`Applicable`、`Segmentable` 及其同类之上只编写一次，因此 `head`、`last`、`tail`、`keep`、`skip`、`snip`、`before`、`after`、`sort`、`order`、`fuse`、`each`、`indexed`、`seek`、`where`、`total`、`mean` 等在 `List`、`Sequence`、`Set`、`Map`、冻结的 `Array`、`Text` 以及其他每个具有实例的类型上含义都相同。类型类本身位于 `murmuration`（`Traversable`、`Reshapable`、`Mappable`、`Convertible`、…）和 `denominative`（`Countable`、`Applicable`、`Definable`、…）中，并在此重新导出，因此 `import rudiments.*` 呈现的是同一个接口面。
++     - **类型中的证明。** 只对某些输入安全的操作不会被做成部分函数，而是被赋予一个要求证明的类型。`head`、`last`、`lead`、`tail` 和 `reduce` 在类型为 `& Populated` 的接收者（非空字面量，或 `occupied` 的结果）上是全函数，否则返回 `Optional`；经 `confine`、`pick`、`iterate` 或 `Surveyor` 针对某个集合检查过的序数，类型为 `Ordinal in xs.type`，用这样的索引执行 `xs(i)` 读取的是裸元素，而用其他索引读取的是 `Optional`；长度为字面量的冻结数组，类型为 `& Sized[n]`，超出 `n` 的字面量序数无法编译。链表的 `size` 或按位置访问的开销同样是一种证明——导入 `dysasymptotics.linearSize` 或 `linearAccess`——而不是悄无声息的遍历。
++     - **构建器和扫描器**，用于解析器和编解码器的热循环：`Array.scribe` 和 `Array.collect` 借出一个 `Scribe`（一个每个索引都被证明在范围内的写句柄），`survey` 借出一个 `Surveyor`（一个按步推进的游标，其匹配段以带品牌的区间返回），`lattice` 对二维平面寻址，`pairs`/`triples`/`quads` 成组地遍历集合，`Scroll` 是不装箱的可增长数组。
++     - **并发原语**：基于 JDK 原子量的 `Atomic` 单元，以 `cell()` 读取，以 `cell() = v` 写入，并以 `ere` 和 `since` 进行转换，它们会把 `_ + 1` 这样的 lambda 字面量编译为 JDK 内建函数；`Mutex`；绑定到线程的 `Scoped` 值；以及 `Loop`，一种供后台任务使用的可停止迭代。
++     - **小型值**：`Exit` 和 `Termination`（命令的返回值），`Bytes`（带有 `kib`/`mib`/`gib` 字面量的字节计数），`Digit`，以及编译时辅助工具 `typeName`、`reflectClass`、`probe` 和 `!!`。
+
+% 2 1 0 1952c9361316573007d1e8185c2a09e6
+
+% 3 1 0 0a3ffc15827748f5156a52681336e96d
+
+% 4 1 0 041867c881835ff00f14cd92a27246e2
+
+% 0 1 0 097e48206aa1712e1e35289c7bc93717
+
+% 0 1 0 0088be0e17ed730304eb277b1216f6bc
+
+% 0 1 0 0e80b59ebc1de7b21d228d4a1aedf3bc
+
+% 0 1 0 18d4b92d0c6c15a70e378af499ec65cf
+
+% 0 1 0 1002d24306e491cd0a8c794885d4a108
+
+% 0 1 0 1bb9fd8c801f83311a72e06befce42f8
+
+% 0 1 0 0c60cc9855bf31d1156c8276d7a6d7a0
+
+% 0 1 0 06dee464bb4276a7071f2471e2082026
+
+% 0 1 0 06c1b67e946d9c1e163eaa0cc839c7bf
+
+% 0 1 0 1f0034626edc9b32128dd1a9b5617d12
+
+% 0 1 0 0078701ccdcba2900a7bfcf7da12358a
+
+% 0 1 0 148035c480be40c905e2bb707e1d4853
+
+% 0 1 0 0451c02ce6d6363b0760275320e85442
+
+% 0 1 0 004ffe1ba55ff23c092e2abfd8981efa
+
+% 1 1 0 135f26b3535af277125fbaec396c0be5
+
+@ 0 11 0 0394e6696b54dcb6112a694e8426cfbe
++     该包由两个库声明，这种拆分关乎构建图而非命名空间。
++     `rudiments.core` 包含组合子、集合操作、`Atomic`、`Mutex`、`Scoped`、`Loop`、`Exit`、`Bytes` 和排序操作，依赖于 `murmuration`、`denominative`、`vacuous`、`symbolism` 和 `anticipation`。
++     `concordance` 库直接位于 `denominative` 之上，使 rudiments 之下的库也能安全地索引；它声明了受限索引的词汇——`apply`、`at`、`defines`、`confine`、`pick`、`unsafeAttested`、`sized`——以及 `Populated`、`Segmentable`、`Appendable`、`Prependable`、`Bijection`、`Scribe`、`Scroll`、`Surveyor`、`Lattice` 和分组组合子，全部位于 `package rudiments` 中；每个这样的条目都会注明这一点。
++     二者都可编译到 JVM、Scala.js 和 Scala Native，只要平台提供 `java.util.concurrent.atomic`，`Atomic` 就基于它实现。
+
+@ 0 8 0 1fa4a32196b1b9c90beaed1db2e4aa08
++     几乎所有内容都导出到 `soundness` 总括包中。
++     例外的内容需要通过按名称导入（如 `import rudiments.occupied`）来访问，它们是 `occupied`、`find`、`Scribe`、`Array.scribe`/`Array.collect` 以及 `appendVarint` 和 `appendUtf8`、`Surveyor` 和 `survey`、`Lattice` 和 `lattice`、`Scroll`，以及分组组合子 `pairs`、`triples`、`quads`、`quints`、`octuples` 和 `adjacent`——这些依赖类型的借出者被排除在外，是因为合成的导出转发器无法携带它们的类型。
++     排序算法是从 `sortingAlgorithms` 中按名称选择的 given（`import sortingAlgorithms.timsort`），因为 `import soundness.*` 不导入任何 given。
+
+% 0 1 0 0b440c0eefac4b7716b9bc5dc1f4fe1f
+
+% 0 1 0 100265f3014fcb951356d2733b6ae83f
+
+% 0 1 0 11125257a7f305a6126c2afaab885805
+
+% 0 1 0 0d54f2283abdb2871d3e51c55d84141b
+
+% 0 1 0 09cebb02f6da96ec174adeab0a89769f
+
+% 0 1 0 1a285f1b9a4e3b5202fb08c6f0de9c2d
+
+% 0 1 0 1e652ce139c6bbfc0d8a31b5d83b32e9
+
+@ 0 4 0 146d3e876d0c8ed40e9b9383280f6f05
++ entry .pipe   `value.pipe(f)`：将函数应用于值，从左到右书写
++     `value.pipe(lambda)` 即 `lambda(value)`，因此计算按其发生的顺序阅读，而不是由内向外。
++     接收者是传名参数，方法是内联的，因此不分配任何东西，值也恰好只求值一次。
+
+% 2 1 0 1e03be572968264512c465aff38a921c
+
+% 3 1 0 1d9104a50bce7ac214bee7254d686447
+
+% 0 1 0 031dea022f2c94cd0bbbc0cae9b879bc
+
+% 1 1 0 01482a1a2b1fff0919f539d154ecc9a0
+
+@ 0 4 0 1c71aab84ff282681e777ddbe4b2a75c
++ entry .tap   `value.tap(f)`：对值执行一个副作用，并返回该值
++     `value.tap(block)` 对值求值一次，将其传给 `block` 以产生效果——记录日志、断言、测量——并原样返回该值，因此无需将其绑定到名称，就能在链条中间观察某一步。
+
+% 2 1 0 0b564ab039e3a8520743fd8e951c10d9
+
+% 3 1 0 05692b6d0f4189b3130d4a25d35d140b
+
+% 0 1 0 13d71bd59acee33b0df07fa0c51ddd28
+
+% 0 1 0 1be0b75d6b6a998b0068f5ed5648f0bf
+
+% 1 1 0 0841812adc2d89630b47b6257636e6fb
+
+@ 0 3 0 0ca31e3600668c830098bf5abf7ff6b2
++ entry .also   `value.also(block)`：在值之后对代码块求值，并返回该值
++     与 `tap` 相同，但代码块不接收该值：`value.also(cleanup())` 先对值求值，再对代码块求值，并返回该值。
+
+@ 0 5 0 1646cd89ad2f647d02081b0214044eb5
++ entry .when   `value.when(condition)(f)`：仅当条件成立时才应用函数
++     有两个重载：`value.when(predicate: Boolean)(lambda)` 和 `value.when(predicate: value => Boolean)(lambda)`。
++     二者都在条件为真时返回 `lambda(value)`，否则原样返回 `value`，这就是流水线中无需重复书写该值的 `if`/`else` 的条件步骤。
+
+% 2 1 0 031dd27802a256a408f3150f303a4829
+
+% 3 1 0 040e9d15a0afcde81c9d73de13a0c3af
+
+% 0 1 0 0307b3e53e4772140bb31158290f72a4
+
+% 1 1 0 15c775de96bdf2ca111c8739b8d8a395
+
+@ 0 4 0 1263515e12167832065aa8f8a538150c
++ entry .give   `value.give(block)`：在代码块内使一个值作为上下文值可用
++     `value.give { summon[Type] }` 以 `value` 作为其类型的 given 对代码块求值：`block: value ?=> result`。
++     这是把显式值交给期望上下文值的代码的方式，而无需在外围作用域中声明 `given`。
+
+@ 0 3 0 11fba40799afb5d605bf2e014944d2c8
++ entry .unit   丢弃一个值，得到 `()`
++     `expression.unit` 为了表达式的效果对其求值并给出 `Unit`，比 `val _ = expression` 或末尾的 `()` 更整洁。
+
+@ 0 3 0 1ad5d412846b09db18893706e2a4385f
++ entry .waive   `value.waive`：忽略其参数并返回该值的常量函数
++     `value.waive` 即 `_ => value`，类型为 `Any => value`：用于接受函数而调用者只有一个值的 API，例如 `optional.lay(fallback.waive)(f)`。
+
+@ 0 2 0 0a3af870957c65ee0ead594ac158e5cf
++ entry .twin   `value.twin`：二元组 `(value, value)`
++     将值与其自身配对，用于接受二元组的 API。
+
+@ 0 1 0 145f67964174f338022b4221b0dd9d55
++ entry .triple   `value.triple`：三元组 `(value, value, value)`
+
+@ 0 3 0 13cc66e45e5e216a11f4a5a2bd538f50
++ entry .typed   `value.typed[Subtype]`：该值是否为其静态类型的某个子类型的实例
++     `value.typed[T]` 即 `value.isInstanceOf[T]`，其中 `T` 以该值自身的类型为上界，因此针对无关类型的测试是编译错误，而不是恒为 `false`。
+
+@ 0 8 0 0654ee848f807ebc19ed71a0ad67fcd9
++ entry .unsafeMatchable   在 `Unsafe` 令牌之下，将值强制转换为 `value & Matchable`
++     在严格可匹配性之下，禁止对类型不是 `Matchable` 的值——不透明类型或抽象类型参数——进行模式匹配。
++     `value.unsafeMatchable` 通过强制转换将 `Matchable` 加入静态类型，并接受一个擦除的 `Unsafe` 上下文参数，因此调用处必须位于 `unsafely` 之内（或以其他方式持有该令牌）：这个名称表明编译器的保证已被搁置，因为对不透明类型的表示进行匹配，恰恰是不透明性本应阻止的事情。
++     它是透明的，因此结果的类型恰好是 `value & Matchable`。
+
+@ 0 4 0 15e9cd01d02acd601ec98fef880392e1
++ entry .yet   `statement yet block`：先对语句求值，再对代码块求值，返回代码块的结果
++     作用于 `Unit` 表达式的中缀顺序运算符：`log() yet compute()` 为了 `log()` 的效果运行它，并返回 `compute()`。
++     在首个动作是副作用的单行方法末尾，它读起来很顺畅。
+
+@ 0 3 0 019fe3846d55faf910e80287dea2282d
++ entry .upon   `lambda.upon(value)`：将传名函数应用于传名参数
++     用于类型为 `(=> input) => result` 的函数：`lambda.upon(expression)` 不对表达式求值就将其传入，由函数决定是否以及何时对其求值。
+
+@ 0 3 0 097c2bdcab77407d062cd110daca4534
++ entry .and   `lambda and input`：中缀函数应用
++     `lambda and argument` 即 `lambda(argument)`，按名求值。
++     它使函数成为一连串操作中某个句子的主语：`handler and event`。
+
+@ 0 4 0 1acdb0c9e872d3bd1c92f84d933ca8b8
++ entry .context   `lambda.context`：将函数作为上下文函数
++     将 `input => result` 转换为 `input ?=> result`，使普通函数可以传到期望上下文函数的地方——即用 `summon` 或通过 `state` 这类访问器读取其参数的代码块。
+
+@ 0 4 0 01b06757df82c02d17995f3d791ed8a5
++ entry .that   `that(block)`：作用于传名代码块的恒等函数，用于强调
++     `that { … }` 对其代码块求值并返回结果：它的存在是为了让一个构造能以其所断言的内容来命名，如 `assert(that(x > 0))`，并在需要时为内联代码块提供一个语法锚点。
+
+@ 0 5 0 03c3052d266af5e51230b6853ca202e5
++ entry .state   `fuse` lambda 内的累加器，作为上下文值
++     `fuse` lambda 是一个上下文函数，接受两个带标签的值：当前状态和下一个元素。
++     `state` 读取前者：`xs.fuse(0)(state + next)`。
++     其标签是类型 `value aka "state"`，只有 `fuse` 会提供它，因此在 `fuse` 之外使用 `state` 是编译错误，提示找不到该类型的 given。
+
+@ 0 3 0 016140fd99be07d408072f3a35e29b05
++ entry .next   `fuse` lambda 内的下一个元素，作为上下文值
++     `fuse` lambda 接收的第二个带标签的值：`xs.fuse(t"")(state + next.show)`。
++     标签的说明参见 `state`。
+
+@ 0 3 0 08f6551faf7c90e11f1a8c9d26349ad9
++ entry .prior   接收前一个值的 lambda 内的该值，作为上下文值
++     读取一个上下文 `value aka "prior"`：在其他库中传递它的操作（例如成对扫描）里，两个元素中较早的那个。
+
+@ 0 4 0 07871485936f670e1cbcbc10869b9003
++ entry .ordinal   `each` lambda 内当前元素的位置，作为上下文值
++     `each` lambda 以上下文 `Ordinal aka "ordinal"` 的形式获得元素的 `Ordinal`，`ordinal` 读取它：`xs.each { x => labels ::= t"$ordinal: $x" }`。
++     位置从 `Prim` 开始。
+
+@ 0 3 0 143b9e58015f76120033bed9230c7e1d
++ entry .repeat   `repeat(count)(action)`：将一个动作运行固定次数
++     `repeat(3) { step() }` 对代码块求值三次，是一个无需索引的循环。
++     次数为负数或零时一次也不运行。
+
+@ 0 5 0 1ffce46aba42832402989c937b3471c7
++ entry .fixpoint   `fixpoint(initial)(recur ?=> …)`：由打结的 lambda 构成的递归计算
++     `fixpoint(initial)` 将一个 `Fixpoint` 应用于初始值：lambda 以上下文函数 `recur: value => value` 的形式获得递归本身，并调用它进行递归。
++     结是惰性打上的，因此 `recur` 只在被应用时才重新进入 lambda，由 lambda 决定递归何时停止。
+
+% 2 1 0 1bd2dd2058029f9f03f64d96e033f020
+
+% 3 1 0 191c499d30f0f8f90c2023fdf78156e8
+
+% 0 1 0 17b141d40e0bd94d09ee0404c58f727d
+
+% 0 1 0 151ac6f36045e089008490070e19cbac
+
+% 1 1 0 097e5d910d9fca0d00c510ae3c4b3922
+
+@ 0 1 0 138b17b5a9220a4e1ecbb9629e393d17
++ entry .Fixpoint   `fixpoint` lambda 的形状：给定递归，得到作用于值的函数
+
+% 1 1 0 1fd9e9f366c3502c09e6517619e6326b
+
+@ 0 5 0 0ad9d1ea19be35d30e46e89442a269df
++       一个 SAM 特质，其 `apply` 以上下文 `value ->{this} value` 的形式接受递归，并产生步骤 `value ->{recur} value`。
++       上下文函数字面量 `recur ?=> …` 在 `fixpoint` 调用处转换为它；之所以需要这个特质，是因为上下文函数无法在其自身类型中指称函数值，而必须声明对 `recur` 的保留捕获，递归才能通过捕获检查。
+
+% 0 1 0 1c84e199e517a6080565db4f8ede49ba
+
+@ 0 1 0 09c09e4542a9338403a25f0f1c809f7f
++   entry #apply   给定要调用的递归，得到的步骤
+
+@ 0 5 0 1579a59524022c8d103011bb1e7bd34e
++ entry .probe   `probe[T]`：中止编译，报告类型 `T` 是什么
++     用于类型层面代码的调试辅助工具：`probe[SomeMatchType[X]]` 无法编译，并给出 _the type is …_，显示编译器所见的类型（已去别名并加宽），使读者无需猜测就能知道一个复杂类型归约成了什么。
++     它返回 `Nothing`，永远不会留到运行时。
+
+@ 0 4 0 0084682249ed8d370c25f87af0b2aa45
++ entry .typeName   `typeName[T]`：类型的名称，作为文本，在编译时得出
++     `typeName[List[Int]]` 是 `t"List[Int]"`，在代码编译时由编译器自己的打印器渲染，并去除所有捕获检查注解。
++     适用于消息，以及需要说出其实例化类型的泛型代码。
+
+@ 0 4 0 0a4495726683f49c01a7840d21292aac
++ entry .reflectClass   `reflectClass[T]`：按全名得到的类型的 `Class[T]`
++     在代码运行时，用 `Class.forName` 按类型符号的名称查找类，类型为 `Class[T]`。
++     对于通过特定类加载器加载的类或嵌套类，`hellenism.ClassRef[T]` 能正确解析二进制名称，应优先使用。
+
+@ 0 6 0 1a68d262497d45b507d8afc397bfe074
++ entry .!!   `!![T]`：任意类型的擦除值，用于擦除的证明或证据参数
++     写作 `!![T]`，这是编译器的擦除值召唤器：它产生一个只存在于编译时、没有运行时表示的 `T`，因此可以传到需要该类型 `erased` 参数的地方——`lambda(using !![data is Dynamical])` 就是 `dynamically` 授予其许可的方式——除此之外别无他用。
++     其值一旦会被求值，就是编译错误。
+
+@ 0 5 0 050b8a46791e09c10a98d9198930a9ba
++ entry .each   访问每个元素，以上下文 `ordinal` 的形式将每个元素的位置交给 lambda
++     有两个重载，一个用于任何 `Traversable` 接收者——不透明集合、`Text`、冻结数组——另一个用于标准库的 `Iterable`。
++     lambda 是一个上下文函数，以 `Ordinal aka "ordinal"` 的形式获得元素的 `Ordinal`，用 `ordinal` 读取，从 `Prim` 开始计数。
++     `each` 是本库对 `foreach` 的惯用写法，保留 `foreach` 只是为了让 `for` 循环能够脱糖。
+
+% 2 1 0 02f1ca1a89081b39145e654222ca18dd
+
+% 3 1 0 01e1d89bfc67d345007aa44b0ffa6bb7
+
+% 0 1 0 0bfb2c35de08db64184bb07e4986372e
+
+% 0 1 0 0f40905cb882073b1dc119dc621253f7
+
+% 0 1 0 0fa3bb4e115ff8a20dc4c676d1e8ad4e
+
+% 0 1 0 10ac5a5ee9859a4301ad612d20291283
+
+% 1 1 0 0fd573d5d6c5281201469154b9855daf
+
+@ 0 5 0 08d193c36d47a9841b7ca382f95c843c
++ entry .fuse   从左折叠，累加器和下一个元素分别为 `state` 和 `next`
++     `xs.fuse(base)(lambda)` 是一个左折叠，其 lambda 是上下文函数：它以 `state` 读取当前累加器，以 `next` 读取元素，因此 `xs.fuse(0)(state + next)` 求和。
++     对任何 `Traversable` 和标准库 `Iterable` 都有重载；它是内联的，因此循环就地展开。
+
+% 2 1 0 05882bfc69cb0bd000fc1e2f907ccc18
+
+% 3 1 0 0d3ef4e339b19fd61125f17febb69b52
+
+% 0 1 0 1227941a64c1b9ee14f247116a5b821b
+
+% 0 1 0 1313c99e15a1b2e818245224ff2b4d01
+
+% 1 1 0 19b1d1218cc8eaa51086969eee464bd6
+
+@ 0 3 0 035bbc4896e17f3e16e72fafedc1ab4a
++ entry .all   是否每个元素都满足谓词
++     `xs.all(_ > 0)` 即标准库的 `forall`；对 `Traversable` 接收者和 `Iterable` 都有重载。
++     对空接收者为真。
+
+@ 0 4 0 1c7212dd2c9f9a92105a057ef8de3467
++ entry .find   第一个满足谓词的元素，或 `Unset`
++     在任何 `Traversable` 上的 `xs.find(predicate)`，产生 `Optional[element]` 而不是 `Option`；与 `seek` 是同一操作，只是用了标准库的名称。
++     不导出到 `soundness` 总括包：使用 `import rudiments.find`，或使用 `seek`。
+
+@ 0 5 0 094005dab921437b0cc60f69af8d781b
++ entry .seek   第一个满足谓词的元素，或 `Unset`
++     在任何 `Traversable` 上，`xs.seek(_.startsWith(t"x"))` 以 `Optional` 的形式产生该元素。
++     没有接受值的重载（`seek(value)`）：由于元素类型是路径依赖的，它对每个 lambda 都会与谓词形式产生歧义，因此查找特定元素用 `seek(_ == value)`，查找其位置用 `where`。
+
+@ 0 4 0 061675a97387d70c1466c504ac79ed93
++ entry .reap   第一个被偏函数接受的元素，经其变换，或 `Unset`
++     `xs.reap { case Some(x) => x }` 是标准库 `collectFirst` 的全函数对应物，也是 `sweep` 的单结果兄弟。
++     之所以用一个不同的名称而不是 `seek` 的重载，是因为 case 字面量闭包同时匹配谓词形状和偏函数形状。
+
+% 2 1 0 1377fea5dbf50d0f1f1246715adc548e
+
+% 3 1 0 04c6204ce2b7050b1f7af09515759068
+
+% 0 1 0 1c7c17ee257eeb6d17300112c4640e02
+
+% 1 1 0 1d4e66f5cc8f2b1215f303eec38e04c0
+
+@ 0 3 0 1915d5815e2b073518073bdccbe17710
++ entry .where   第一个满足谓词的元素的位置，作为 `Optional[Ordinal]`
++     `xs.where(_ == x)` 取代 `indexOf`：结果是 `Ordinal` 而不是 `Int`，没有匹配时为 `Unset` 而不是 `-1`。
++     元素本身用 `seek` 查找。
+
+% 2 1 0 126e350bcde1570a038ba739ebe4ee9c
+
+% 3 1 0 018e259aa11d3ed1171b8b2c2a4ae6d2
+
+% 0 1 0 18aaf930dd65d6b1098eaa3dc35e9d83
+
+% 1 1 0 19724826174019000abd325de5a69537
+
+@ 0 5 0 0b81f79a45507ac90f8dba3cf8dc583d
++ entry .indexed   每个元素与其 `Ordinal` 配对，保持接收者自身的形状
++     `xs.indexed` 是 `zipWithIndex` 的全函数对应物：`List` 给出 `List[(element, Ordinal)]`，`Sequence` 给出由二元组构成的 `Sequence`。
++     它需要一个 `Reshapable.Stable` 实例，因此不接受无序的 `Set` 或 `Map`——它们的元素没有位置。
++     序数从零开始，即 `Prim`；对它的算术通过 `n0` 或序数加法进行。
+
+@ 0 5 0 0a8ddc0a56ddd83b1b81f1c37d2b5819
++ entry .sift   属于某个类型的实例的元素，作为该类型的集合
++     `xs.sift[Subtype]` 保留通过类型测试的元素并收窄结果：`List(None, Some(1), None).sift[None.type]` 是 `List[None.type]`，单例类型或单例类型的联合也可以（`List.range(0, 10).sift[5 | 7]` 是 `List(5, 7)`）。
++     对 `Traversable`（给出 `List`）和 `Iterable` 都有重载。
+
+@ 0 3 0 1d1cd45881fe61ea0c3a74884c92523a
++ entry .bi   每个元素与其自身配对，保持形状
++     `List(1, 2).bi` 是 `List((1, 1), (2, 2))`；`Set` 给出由二元组构成的 `Set`。
++     对于 `Traversable`，它需要一个 `Reshapable` 实例，而 `Iterable` 重载直接映射。
+
+@ 0 2 0 1f4f8c62d954257315c227bb8b383312
++ entry .tri   每个元素与其自身组成三元组，保持形状
++     `Set(1, 2).tri` 是 `Set((1, 1, 1), (2, 2, 2))`。
++     参见 `bi`。
+
+@ 0 3 0 1849d881385ab37b1a65777fb289b925
++ entry .weave   逐个元素地交织两个 `Iterable`
++     `left.weave(right)` 产生 `left(0), right(0), left(1), right(1), …`，任一方耗尽时停止。
++     只在标准库的 `Iterable` 上定义。
+
+@ 0 4 0 1bdf0696bfa559eb1d3f344402288c71
++ entry .annex   将每个元素与一个计算出的值配对，并展平元组元素
++     `xs.annex(f)` 将每个元素 `x` 映射为 `(x, f(x))`；若元素本身已是元组，则 `f(x)` 作为又一个分量追加到它上面，而不是嵌套。
++     作用于标准库的 `Iterable`，产生一个 `Iterable[Tuple]`，其精确类型在调用处细化。
+
+@ 0 4 0 0f7be42f08d29fea08d63095f14522d0
++ entry .intercalate   以分隔符连接嵌套的 `Iterable`
++     `parts.intercalate(List(0))` 拼接内层集合，在每两个之间插入分隔符；分隔符默认为空，因此 `intercalate()` 就是展平。
++     作用于标准库的 `Iterable[Iterable[value]]`。
+
+@ 0 7 0 17c826334cb83aa711f9b1d77d445014
++ entry .total   元素之和，依据其 `Addable` 实例
++     `xs.total` 将元素相加。
++     其结果类型会适应：若元素类型有 `Zeroic` 实例（每种数值类型都有），则从零开始求和，结果是裸的元素类型；否则为 `Optional`，空接收者为 `Unset`。
++     对 `Traversable` 和 `Iterable` 都有重载，且是透明的，因此在带有期望类型的参数位置上可能无法收窄——在那里，`xs.total.or(0)` 是稳妥的写法，因为 `Int` 符合 `Optional[Int]`。
+
+% 2 1 0 0e4ccec85fe0eca11ea9f509158438cc
+
+% 3 1 0 1bcd4c1837a8b387133a6b677abf82eb
+
+% 0 1 0 014c0585dbb75fb31a85a2369acf1df1
+
+% 0 1 0 0772ddcc30bf07de16c9eaab82ad9794
+
+% 1 1 0 1c733524c63c6c011df76364a5af2cb8
+
+@ 0 3 0 167f5446f85a1e90081e167544e4fad4
++ entry .product   元素之积，依据其 `Multiplicable` 和 `Unital` 实例
++     `xs.product` 将元素相乘，从该类型的 `one` 开始。
++     对 `Traversable` 和 `Iterable` 都有重载。
+
+@ 0 2 0 01f1140792d6c9031b2b5856fc4832d7
++ entry .sumBy   每个元素的数值投影之和
++     作用于标准库 `Iterable` 的 `xs.sumBy(_.length)`，依据投影类型的 `Numeric`。
+
+@ 0 4 0 0d256334ccffd4b01fb80ff2ddc6cf5d
++ entry .mean   元素的算术平均值；空接收者为 `Unset`
++     `xs.mean` 是 `xs.total` 除以元素个数，适用于自身 `Addable` 且可被 `Double` `Divisible` 为自身的元素类型——`Double` 或某个量。
++     对 `Traversable` 和 `Iterable` 都有重载。
+
+@ 0 5 0 0c08d14a22473491017c7dda8f71c504
++ entry .mean2   围绕任意枢轴计算的平均值，数值稳定性更好
++     `xs.mean2` 从每个元素中减去第一个元素，对差值求平均，再把枢轴加回来；当值很大且彼此接近时，它比 `mean` 损失的精度更少。
++     作用于标准库的 `Iterable`，需要算术所需的可减、可加、可除实例。
+
+@ 0 3 0 0addf39177e67d3d1bb1dda80f630667
++ entry .variance   元素的总体方差；空接收者为 `Unset`
++     相对于 `mean` 的偏差平方的平均值。
++     对 `Traversable` 和 `Iterable` 都有重载；结果类型为元素平方除以 `Double` 的类型。
+
+@ 0 3 0 1bc8eaefa3381a3003af012c7382717f
++ entry .std   元素的总体标准差；空接收者为 `Unset`
++     以第一个元素的单位计算，因此带量纲的量的标准差以该量自身的类型返回。
++     对 `Traversable` 和 `Iterable` 都有重载。
+
+@ 0 3 0 00bf76bccee6ac4b0c0782addc9bc16b
++ entry .indexBy   从计算出的键到每个元素的映射
++     `xs.indexBy(_.id)` 构建一个 `Map[key, element]`；两个元素共用一个键时，后出现的胜出。
++     作用于标准库的 `Iterable`。
+
+@ 0 4 0 19f8fd77ad9f07291da4cfdd2101996b
++ entry .longestTrain   满足谓词的最长连续元素段的起点和长度
++     `xs.longestTrain(_ == 0)` 是谓词成立的最长连续段的 `(start, length)`，以从零开始的 `Int` 表示；没有任何元素满足时为 `(0, 0)`。
++     对 `Traversable` 和 `Iterable` 都有重载。
+
+% 2 1 0 1c2a35fd60b799011c043187f15c7561
+
+% 3 1 0 1ad7c380559943261902ca592b7051e2
+
+% 0 1 0 17233a1d697d528907836c195c1ca4de
+
+% 1 1 0 0d8b5e848fa0cd640410ba54e80c7bab
+
+@ 0 4 0 0ea9bf6ba19e3e7d1e0f7e0f1e5b94c1
++ entry .iterator   对 `Traversable` 的一次性遍历，供拉取式的消费者使用
++     `xs.iterator` 是遍历元素的 murmuration `Iterator`，其 `next()` 在末尾产生 `Iterator.Exhausted` 而不是抛出异常。
++     适用于必须逐个拉取元素、而不是由 `each` 交给它元素的循环。
+
+@ 0 8 0 0b6dc291f4a34cea17080a5be739c96f
++ entry .to   将集合转换为所要求的形状：`xs.to[List]`、`text.to[Set]`、`pairs.to[Map]`
++     `xs.to[Form]` 通过一个从接收者到该形式的 `Convertible` 实例进行转换，形式可以是真正的类型，也可以是未应用的构造器；任何 `Traversable` 都有到各种集合的实例，`Text` 则转换为 `Char` 的集合。
++     第二个重载将元组转换为 case 类：`(t"Hamlet", 30).to[Person]`，通过 `Mirror.ProductOf`。
++     它是透明的，因此结果在调用处被完全应用；在没有期望类型确定它的地方，裸构造器可能保持未应用，此时以带括号的工厂形式 `xs.to(List)` 作为回退。
+
+% 2 1 0 0145e9dbad8894040e9421801346f5e3
+
+% 3 1 0 0687585246a75b9b06cceb3888284f52
+
+% 0 1 0 1e5e7764220cbd490a2d76cf00b5f449
+
+% 0 1 0 1d7f4095206501b1089cbb72ee674199
+
+% 1 1 0 087e97e7542417aa037af40f42aa3d2c
+
+@ 0 6 0 0c295279913daa3d0021faf785afdb99
++ entry .occupied   一次性检查值非空，并将证明记录为 `& Populated`
++     `xs.occupied` 是 `Optional[xs.type & Populated]`：空接收者为 `Unset`，否则为同一个值，其类型带有非空的证明，在它上面 `head`、`last`、`lead`、`tail` 和 `reduce` 都是全函数。
++     一次检查，在类型中了结，而不是每次读取都得到 `Optional`。
++     不导出到 `soundness` 总括包：使用 `import rudiments.occupied`。
+
+% 2 1 0 17d7fd2df403323a1d5732e586db9046
+
+% 3 1 0 19f0ca6b5e6d5833048f06054434053a
+
+% 0 1 0 0969f05a35c8acae1228f5af4b1e84dd
+
+% 0 1 0 1ea7b92cf800b6e9050c075d7a5aa5a4
+
+% 0 1 0 1b57f3a3e9c3c7f21e5ea56a3ce0ad18
+
+% 1 1 0 0d3d2c42c29627d0161b9ba4646e5d4c
+
+@ 0 10 0 09f80845643d38711203600530eba2f0
++ entry .Populated   集合非空的证明，以类型表示
++     `Populated` 即 `proscenium.Populated`——结构化细化 `Any { type Occupied = true }`——在此以早期代码所用的名称重新声明，随 `concordance` 库提供。
++     类型为 `List[Int] & Populated` 的值已知含有元素，因此 `head`、`last`、`lead`、`tail` 和 `reduce` 在它上面都是全函数。
++     这一证明由集合伴生对象的非空字面量构造器（`List(1, 2, 3)` 带有它；`List()` 和 `List(xs*)` 则没有）、由 `occupied`，以及由返回已知非空内容的 API（如 `Text#cut`）生成。
++     由于它是结构化的，擦除后什么也不剩：`Text & Populated` 在运行时仍是 `String`，而 `populatedEquality` 允许这个带品牌的值与其不带品牌的自身进行比较。
+
+@ 0 7 0 0cbb07a61ce38ffb057b1f501a4fec9c
++ entry .head   第一个元素：在 `Populated` 接收者上为裸值，否则为 `Optional`
++     `xs.head` 会适应接收者类型所证明的内容。
++     在 `List[Int] & Populated`——非空字面量，或 `occupied` 的结果——上，它是 `Int`；在普通的 `List[Int]` 上，它是 `Optional[Int]`，为空时为 `Unset`，只检查一次是否为空。
++     不存在会抛出异常的部分函数 `head`：想在大小未知的集合上得到裸元素的程序，应先绑定 `occupied`，或使用 `at(Prim)`。
++     在 `List` 上，`head` 没有开销；`at(Sec)` 及之后的位置需要遍历列表，因此需要 `dysasymptotics.linearAccess`。
+
+% 2 1 0 1cc63d3f1d40a34a1c0c602fb57b99da
+
+% 3 1 0 0bf0536d3a25ef761d52caef9218d1f5
+
+@ 0 1 0 1854497f21db9f7215928b0ce002a9b1
++       label 未经证明的列表：head 为 Optional
+
+% 1 1 0 0b0ccc11015bf91807a79bb7ed32f795
+
+% 0 1 0 1399b8218c9871a20a67fa53b000b346
+
+% 0 1 0 04d3ad29e33b3d4d14a2c1806baadbd7
+
+% 1 1 0 15dc2f8bf5dd7f6c1976f5e3d5b94497
+
+@ 0 1 0 0300df5b47ad78cc0968ab49572ebd3e
++       label 字面量自带证明：head 为裸值
+
+% 1 1 0 0ca3c7233be52ed8009e4a226cd41ef3
+
+% 0 1 0 167d13c003e1a02f1e7a12cd1a1ddfd6
+
+% 1 1 0 1e82086adf23b57e02b4ac913f14d750
+
+@ 0 1 0 04bc2976d905976f1649b57e3a0595d0
++       label 经过检查的值把证明带入代码块
+
+% 1 1 0 13c0499e3873bac70f2c92d69a2c4af2
+
+% 0 1 0 01bf6f107225b2b30d0501b6a6e0a3bf
+
+% 0 1 0 1b604f942fe4295805d9999f7b46ede1
+
+% 1 1 0 17882c064c75821e183f2463d44eec26
+
+% 2 1 0 0d84dc0f1de8b7f90272dfa29912f987
+
+@ 0 2 0 0ba2097a5e4f509a1a76bc695c70a624
++     一个陷阱：接收者应当是具名值或字面量；`(if c then xs else ys).head` 这样的表达式可能无法携带编译器原本能看到的证明。
+
+@ 0 5 0 02ef8f738dae7874138843ca1643bfb9
++ entry .last   最后一个元素：在 `Populated` 接收者上为裸值，否则为 `Optional`
++     `xs.last` 通过接收者的 `Terminable` 实例实现，因此每种容器以各自的开销作答：`Sequence` 或数组为 O(1)，`List` 需要遍历（因此需要 `dysasymptotics.linearSize`），`Chain` 需要强制求值（`unboundedSize`）。
++     它与 `head` 一样会适应：在 `Populated` 接收者上为元素，否则为 `Optional`。
+
+@ 0 4 0 0f1aa142cfdc329d0e58b42d133da4f2
++ entry .lead   最后一个元素之前的所有元素：在 `Populated` 接收者上为裸值，否则为 `Optional`
++     `xs.lead` 是 `tail` 的镜像，通过接收者的 `Truncable` 实例实现；`lead` 和 `last` 合起来重构出整体。
++     结果是普通的集合类型，从不带品牌：单元素列表的 `lead` 为空。
+
+@ 0 5 0 1d3dd77a468ff431042c6b565874154d
++ entry .tail   第一个元素之后的所有元素：在 `Populated` 接收者上为裸值，否则为 `Optional`
++     对任何 `Segmentable` 且 `Countable` 的接收者，`xs.tail` 即 `xs.skip(1)`，其中包括 `Text`（`t"hello".tail` 是 `t"ello"`）。
++     它与 `head` 一样会适应，因此在未经证明的接收者上为 `Optional`，为空时为 `Unset`；分段本身从不带品牌，因为单元素值的 `tail` 为空。
+
+@ 0 4 0 19f012ac990b575017b0d28de43d269d
++ entry .reduce   从左起两两合并元素，仅适用于 `Populated` 接收者
++     `xs.reduce(_ + _)` 只为类型为 `& Populated` 的接收者定义，正是这一点使它成为全函数：不存在空的情况。
++     大小未知的集合应先经过 `occupied`，或使用带初始值的 `fuse`。
+
+@ 0 3 0 1ae6128771d4b1f71d159e7164aafe78
++ entry .populatedEquality   允许 `value & Populated` 与普通的 `value` 进行比较
++     一个位于隐式作用域中的 `CanEqual` given；没有它，当字面量的类型带有证明而 `xs` 没有时，严格相等性会拒绝 `List(1, 2) == xs`。
+
+@ 0 1 0 182ffd10f14cd45402ca35a351a2f569
++ entry .populatedEqualityReversed   用于 `value == (value & Populated)` 的 `CanEqual`，方向相反
+
+@ 0 3 0 1d850d109b58786f101732a5b0c17bee
++ entry .sizedEquality   允许 `value & Sized[n]` 与普通的 `value` 进行比较
++     一个位于隐式作用域中的 `CanEqual` given，使字面量长度的数组可以与不带品牌的数组比较。
+
+@ 0 1 0 1f8ee637f4139f6c146ac6aaa526d7d2
++ entry .sizedEqualityReversed   用于 `value == (value & Sized[n])` 的 `CanEqual`，方向相反
+
+@ 0 6 0 092c276755c753de0c3d78277f7c063f
++ entry .segment   `value.segment(interval)`：值在某个区间内的部分
++     `xs.segment(Sec thru Quat)` 是任何 `Segmentable` 值在一个序数 `Interval` 上的分段，类型为该实例的 `Segment` 类型：`List` 得到 `List`，`Text` 得到 `Text`，冻结数组得到冻结数组。
++     按位置的操作 `before`、`upto`、`from`、`after`、`keep`、`skip`、`snip` 和 `tail` 都基于它编写，超出值范围的区间会被截取到范围之内。
+
+% 2 1 0 0d30c300738307211c3dd5700096c75a
+
+% 3 1 0 006b4f08964eae33093a62bd7776dfca
+
+% 0 1 0 0d40a1dd3a6d167214b0533784092bf7
+
+% 1 1 0 07895d7f45a9b8b81cd28b45cdc2b39b
+
+@ 0 6 0 1448bfc06c757a840a7da941b25b6e53
++ entry .before   某个位置之前的所有元素，或第一个满足谓词的元素之前的所有元素
++     `xs.before(Ter)` 是前两个元素构成的分段。
++     谓词重载 `xs.before(_ == ' ')` 是第一个匹配元素之前（不含该元素）的所有元素；没有任何匹配时，则是最后一个元素之前的所有元素。
++     适用于任何 `Segmentable` 且 `Countable` 的值（序数形式），或另外还是 `Traversable` 的值（谓词形式）。
+
+@ 0 3 0 028fcb13558a40a60083f201f578058c
++ entry .upto   直到某个位置（含）的所有元素，或直到第一个满足谓词的元素（含）的所有元素
++     `xs.upto(Ter)` 是前三个元素；`xs.upto(_ == ':')` 包含匹配的元素，没有任何匹配时一直到最后一个元素。
+
+@ 0 3 0 05e882fcc6d18e28157ed5938cb1da86
++ entry .from   从某个位置起的所有元素
++     `xs.from(Ter)` 是从第三个元素到末尾的分段。
++     这个名称在 `soundness` 总括包中没有歧义，因为没有其他库在值上导出 `from`。
+
+@ 0 2 0 0c11371dd87b19670aa280fc29aee990
++ entry .after   某个位置之后的所有元素
++     `xs.after(Ter)` 是从第四个元素到末尾的分段。
+
+@ 0 8 0 1b39d4ce164d9e7b13cec9d409d3d7d2
++ entry .keep   前 `count` 个（或在 `Rtl` 时最后 `count` 个）元素，或开头满足谓词的连续段
++     `xs.keep(3)` 即标准库的 `take`，`xs.keep(3, Rtl)` 即其 `takeRight`；`xs.keep(_ < 4)` 即 `takeWhile`，`xs.keep(predicate, Rtl)` 是其从右到左的孪生版本。
++     每种形式都通过 `Segmentable` 保持形状——`Text` 保持其类型，带样式的文本保持其样式——当数量超出范围时进行截取而不是失败。
++     `Chain` 没有 `Segmentable` 实例，因为分段会强制对它求值；它的伴生对象有自己的惰性 `keep` 和 `skip` 重载（不带 `Bidi`），对于 `Chain` 接收者，重载解析会优先选择它们。
+
+% 2 1 0 17cee86077059f3706e6e8a97eb21b5f
+
+% 3 1 0 17fcfce205e0f42c194f41329ef22a93
+
+% 0 1 0 1b67ae63a79275ef1253558f2c887fc6
+
+% 0 1 0 09e4677c6ad2b13c1ec42e243423942a
+
+% 0 1 0 08e86adf036fb17a1066f3681d71dccb
+
+% 1 1 0 15a159a0676f2174113569ca157e6920
+
+@ 0 3 0 0fa9e78b259caec204a21e518073935e
++ entry .skip   除前 `count` 个（或在 `Rtl` 时最后 `count` 个）元素之外的所有元素，或开头匹配段之后的所有元素
++     `xs.skip(2)` 即标准库的 `drop`，`xs.skip(2, Rtl)` 即其 `dropRight`，`xs.skip(_ == ' ')` 即其 `dropWhile`。
++     与 `keep` 一样保持形状并截取；在 `Chain` 上是惰性的。
+
+@ 0 5 0 0d44e5ae9b0e8e5802a384479068ebf8
++ entry .snip   在某个位置，或在第一个满足谓词的元素处，将值拆分为两个分段
++     `t"Hello".snip(2)` 是 `(t"He", t"llo")`：前 `count` 个元素和其余部分。
++     谓词重载 `xs.snip(predicate, start)` 查找 `start` 处或之后第一个匹配的元素，并给出两侧，匹配的元素作为右侧的开头，结果为 `Optional`，没有任何匹配时为 `Unset`。
+
+@ 0 5 0 19e52517831565461ae8ca9e0528820d
++ entry .define   设置了某个位置或键的容器副本：`at` 的写操作孪生版本
++     在 `Sequence` 上为 `xs.define(Sec, 9)`，在 `Map` 上为 `map.define(key, value)`，通过接收者的 `Definable` 实例实现。
++     它是全函数：超出范围的序数会原样返回容器，不存在的键会定义一个新条目。
++     在 `List` 上，按位置定义需要遍历列表，因此需要 `dysasymptotics.linearAccess`。
+
+@ 0 3 0 12febad58ad231cc1ab75dda132172c8
++ entry .omit   去掉一个键或一个位置的容器副本
++     `map.omit(key)` 移除一个条目（不存在的键使映射保持原样）；冻结数组则 `omit` 一个位置。
++     通过接收者的 `Omissible` 实例实现。
+
+@ 0 10 0 10dac1cfa8da3f3204bbf152d2989a3a
++ entry .sort   按元素自身的顺序排列的元素，依据元素类型的 `Comparable` 和作用域中的算法
++     `xs.sort` 对 `Reshapable.Stable` 接收者——`List`、`Sequence`、`Chain`、冻结数组；`Map` 将其键值对排序为一个 `Ledger`——进行排序，依据元素类型的 `Comparable`（数值类型都有；`Text` 需要一种排序规则，例如 `collations.codepointCollation` 配合 `collationComparable`），以及作用域中的 `SortAlgorithm` given，该 given 从 `sortingAlgorithms` 中按名称选择。
++     `Set` 没有稳定实例，因此无法排序：这是一种诚实的拒绝，而不是悄悄丢弃顺序。
++     第二个重载 `array.sort()` 就地对可变的 `Array^` 排序，不返回任何东西。
++     若文件已为接收者的 `Countable` 实例打开门控（`List` 为 `linearSize`），则按该实例确定临时数组的大小，否则从迭代器逐步扩充。
+
+% 2 1 0 072eb08ac58a71461f23c08156810f1b
+
+% 3 1 0 1bff1f359076e7d40a85775b654b863a
+
+% 4 1 0 130c999c8484a0c60f6a53e8f78bc42c
+
+% 0 1 0 114019d44cbebe68120ef00f2ecc1e7d
+
+% 0 1 0 1601313cbc738e131406efd811c15b47
+
+% 1 1 0 005ea0f9d3ced86e0b95f8b24c0efbd3
+
+@ 0 7 0 06da9ee08f56af9a067350edbcd0c564
++ entry .order   按从每个元素计算出的键排序的元素：`xs.order(_.age)`
++     `xs.order(lambda)` 即标准库的 `sortBy`，是稳定的，因此键相等的元素保持其顺序。
++     键在排序前为每个元素计算一次，而不是每次比较计算两次。
++     与 `sort` 一样，需要键的 `Comparable`、来自 `sortingAlgorithms` 的 `SortAlgorithm`，以及 `Reshapable.Stable` 接收者。
++     没有比较器重载（`sortWith`）：双参数 lambda 会破坏对键值对元素接收者的解元组，例如 `map.order { (key, value) => key }`。
+
+% 2 1 0 01d33ff11d31cf64118d939cef48abb7
+
+% 3 1 0 1cf28ef576aa5839137b7de617333144
+
+% 4 1 0 1060110ed4c0a5550cc618dc377b3351
+
+% 0 1 0 1ea6ee3f69ae02c400e7cc8668774b60
+
+% 0 1 0 0ad69b5674847eb50df80876de345b78
+
+% 1 1 0 0eb4a660a264e14d0a94cb8728d033a9
+
+@ 0 5 0 14be4e9bb840593d18a3dcb66dcc9620
++ entry .maximize   键最大的元素；空接收者为 `Unset`
++     `xs.maximize(_.score)` 一趟就找到 `xs.order(_.score).last` 会给出的元素：多个键相等的元素中，第一个胜出。
++     适用于任何 `Comparable` 键——`Text`、`Ordinal`、日期——这一点不同于 hypotenuse 中数值型的 `maximum`。
++     作用域中的局部 `def maximize` 会遮蔽该扩展方法。
+
+@ 0 2 0 1512b80a2ebbee401744f54dd567c997
++ entry .minimize   键最小的元素；空接收者为 `Unset`
++     `maximize` 的对应物：`xs.minimize(_.length)`。
+
+@ 0 1 0 0156283d47a1076e05a26aca65d5b68c
++ entry .sortingAlgorithms   各种排序算法，每个都是按名称导入的 `SortAlgorithm` given
+
+% 1 1 0 07afd6615a390ccf07613740d093c415
+
+@ 0 5 0 1ce686b2500646de08d7e67f6c0357b3
++       `sort`、`order` 和 `array.sort()` 使用哪种算法，由作用域中的 `SortAlgorithm` given 决定，且没有隐式默认：文件中必须出现 `import sortingAlgorithms.timsort`（或其他算法）。
++       此包镜像 `murmuration.sortingAlgorithms`，使通过 `rudiments` 访问集合的代码可以用 `rudiments.sortingAlgorithms.x` 选择算法；`soundness` 总括包将二者合并。
+
+% 2 1 0 09565f705cc270030c795101941890fc
+
+% 3 1 0 1f9429ba58d270b818c5f9fb5190542e
+
+% 0 1 0 181bdb6108d3a40a1c0ebcab9db44ebd
+
+% 0 1 0 078817f50e87290a07194cade0bfa3fb
+
+% 1 1 0 1d0f1a1da4b7b96402b79112e674b35b
+
+@ 0 8 0 1308bb8d2906933d0f66686699bd68fc
++       Timsort 和 Powersort 是稳定的，在部分有序的数据上很快；快速排序和堆排序使用的内存更少；冒泡排序和插入排序适合极小的输入。
++   entry .timsort   Timsort：稳定、自适应，即 JDK 自身的对象排序
++   entry .powersort   Powersort：稳定、自适应，其合并方针可证明优于 Timsort
++   entry .quicksort   快速排序：就地进行，不稳定
++   entry .heapsort   堆排序：就地进行，不稳定，有保证的上界
++   entry .bubbleSort   冒泡排序：稳定，二次复杂度，用于极小的输入
++   entry .insertionSort   插入排序：稳定，二次复杂度，在近乎有序的极小输入上很快
+
+@ 0 1 0 1f81b95581b00e871b49891f55b7bc62
++ entry .sorting   集合与排序算法所排序的数组之间的管道代码
+
+% 1 1 0 1720f3dd8461facb18139d94c8c17e57
+
+% 2 1 0 1b90e2162628cd16148a85b1573ce7cf
+
+@ 0 12 0 038021a3549dd62f13bbea34c9560aaa
++       不供直接使用：之所以是公开的，只是因为 `sort` 和 `order` 是内联的，无法访问私有成员。
++       `Entry` 为 `order` 将键与其元素配对；`extremum` 是 `maximize` 和 `minimize` 背后的单趟扫描；`comparator` 将 `Comparable` 转换为算法所接受的 `java.util.Comparator`；`sorted` 和 `ordered` 将迭代器排入一个临时数组，对其排序，再迭代返回。
++   entry .Entry   排序键及其来源元素
++     entry #key   `order` 的 lambda 计算出的键，无类型
++     entry #element   计算出该键的元素，无类型
++   entry .extremum   一趟找出键最大或最小的元素
++   entry .comparator   由 `Comparable` 得到的 `java.util.Comparator`
++   entry .sorted   迭代器的元素，按其自身顺序排序
++   entry .ordered   迭代器的元素，按某个投影排序
+
+@ 0 3 0 0dd005b15e73a14e119afd9d87496d1f
++ entry .upsert   将某个键设为其当前值（无论存在与否）的函数结果的映射
++     `map.upsert(key, _.or(0) + 1)` 以 `Optional` 的形式传入当前值并存储结果：键不存在时为插入，否则为更新。
+
+@ 0 3 0 1e1038453eb8dd120536cc468d1a2395
++ entry .collate   合并两个映射，并组合两者都有的键的值
++     `left.collate(right)(merge)` 包含两个映射中的每个键；两者都定义了某个键时，值为 `merge(leftValue, rightValue)`。
+
+% 2 1 0 0dcef7462ff64fd91d9f923154259f8a
+
+% 3 1 0 19397f9056b7bf1b1302cd4768a3caf3
+
+% 0 1 0 046f54319d3654321599558bb1ecd8c7
+
+% 0 1 0 06758eb9a81a02b81309164456355d9d
+
+% 0 1 0 01cf28d65d19a60f0019442323ceb269
+
+% 1 1 0 17dfd3782006dc74127ed06c612f7658
+
+@ 0 3 0 173255c7d741978c1252a78d344538ab
++ entry .establish   可变映射中某个键的值，若不存在则计算并存储
++     作用于 `scala.collection.mutable.Map` 的 `map.establish(key)(compute)` 即 `getOrElseUpdate`：这是记忆化的惯用法，其名称表明条目只确立一次。
+
+@ 0 3 0 08eb875ecb8e1fe81f88b34fa101aad7
++ entry .plus   向 `Map[key, List[value]]` 中某个键对应的列表添加一个元素
++     `map.plus(key, value)` 将 `value` 前置到 `key` 下的列表中，键不存在时开始一个新列表：即多重映射的插入操作。
+
+@ 0 3 0 140b887e56cc9ef10b900d4797cdc24e
++ entry .unwind   将一个列表反转后接到另一个列表上：`reversed.unwind(tail)`
++     `list.unwind(tail)` 即 `list.reverse + tail`：当通过前置构建的累加器之后还有剩余部分要追加时，用这一步来收尾。
+
+@ 0 3 0 198c1c8a3fb4dd7014b4f44772384582
++ entry .unique   单元素列表中唯一的元素，或 `Unset`
++     列表恰好有一个元素时，`list.unique` 即该元素；列表为空或更长时为 `Unset`——用于检查一次查找恰好找到一个答案。
+
+@ 0 4 0 0ad80351736c701e16201258727db26a
++ entry .unused   `unused(base)(taken)`：`base`、`base2`、`base3`、… 中第一个不被 `taken` 拒绝的名称
++     用于选择一个新的名称——生成代码中的变量、与其他文件并列的文件——而无需自己维护计数器。
++     不加修饰的 `base` 是第一个候选项，后缀从 2 开始，因此永远不会产生 `base1`。
+
+% 2 1 0 0628cefdf216be3e04a51e85f07e0311
+
+% 3 1 0 12c67d13b6e442f107a35cce0002253a
+
+% 0 1 0 1647140c3cf4b568150c67330faf0d4b
+
+% 0 1 0 1e08c1e90a0719d615c9dbeab55931d3
+
+% 1 1 0 17af720a2c5edf1d0c4369df9861d164
+
+@ 0 2 0 0653b737515a90bc03eb8ccd0e11b97f
++ entry .runs   将列表拆分为相邻相等元素的最大连续段
++     `List(1, 2, 2, 1, 1, 1).runs` 是 `List(List(1), List(2, 2), List(1, 1, 1))`。
+
+@ 0 3 0 03b062f9e377dc6209e161e44b573bd8
++ entry .runsBy   将列表拆分为投影相等的相邻元素的连续段
++     `List(1, 2, 2, 1, 1, 1, 4, 4).runsBy(_%3)` 按投影分组，因此 `1, 1, 1, 4, 4` 构成一个连续段。
+
+@ 0 3 0 0dd5cb00cdb32a0d12b237a500037f4a
++ entry .snapshot   可变 `scala.Array` 的冻结副本
++     `array.snapshot` 将一个 JVM 数组复制到一个全新的冻结 `Array[element]^{}` 中，之后对原数组的写入不会影响它。
++     需要元素的 `ClassTag`。
+
+@ 0 4 0 10b244155b463f750b1486f13abfd91b
++ entry .place   将冻结数组复制到可变 `scala.Array` 的某个位置
++     `target.place(source, ordinal)` 是从冻结数组到可变数组的 `System.arraycopy`，从 `ordinal`（默认为 `Prim`）开始。
++     用于 `Scribe` 的受限形式是 `Scribe#place`。
+
+@ 0 3 0 0088ff1efa63d9c10d27b25cea25b841
++ entry .javaInputStream   作为 `java.io.InputStream` 的 `Data`
++     用于将字节交给读取流的 Java API：一个基于该数组的 `ByteArrayInputStream`，不进行复制。
+
+@ 0 8 0 0d4a7cc443cc7a3b165736414ce663b3
++ entry .Bytes   字节计数，作为量：`4.kib`、`data.bytes`
++     `Bytes` 是不透明类型 `rudiments.internal.Bytes`，即一个不透明的 `Long`，在此导出。
++     算术和比较把它当作量处理：两个 `Bytes` 可以相加和相减，`Bytes` 可以乘以和除以 `Int`，一个 `Bytes` 除以另一个得到 `Double` 比值，这些都通过其伴生对象中的 given 实现，因此无需导入。
++     用 `Bytes(long)` 或 `Int`、`Long` 上的字面量扩展方法 `b`、`kib`、`mib`、`gib` 和 `tib`（二进制单位：`1.kib` 是 1024 字节）构造，也可以用 `bytes` 从 `Data` 构造；用 `long` 读回，显示为 `1024 bytes`。
+
+% 2 1 0 00932d85a6921757064e26a6e56a7308
+
+% 3 1 0 10881c050a9a0b0f1ee397b30e4e37e2
+
+% 0 1 0 1b7d436d0877d6251b50d1013e47f363
+
+% 0 1 0 15a2f032bb2d416f1f9e73c7938145ec
+
+% 0 1 0 1ff93883786571760b6eb8b6071fe709
+
+% 1 1 0 17ec48607ef8899c1bf9c9ede6ea7df6
+
+@ 0 6 0 1e368e7a077d158815f8729945dcc69b
++ entry .b   `n.b`：`n` 字节的 `Bytes`，作用于 `Int` 或 `Long`
++ entry .kib   `n.kib`：`n` KiB（×1024）的 `Bytes`
++ entry .mib   `n.mib`：`n` MiB（×1024²）的 `Bytes`
++ entry .gib   `n.gib`：`n` GiB（×1024³）的 `Bytes`
++ entry .tib   `n.tib`：`n` TiB（×1024⁴）的 `Bytes`
++ entry .bytes   `data.bytes`：`Data` 的长度，作为 `Bytes`
+
+@ 0 5 0 1a8da5c6066dea59017d33fe71b7374f
++ entry .Digit   作为类型的十进制数字，`0` 到 `9`
++     `Digit` 是不透明类型 `rudiments.internal.Digit`，即联合类型 `0 | 1 | … | 9`，并导出到这里，因此类型为 `Digit` 的值已知是单个十进制数字。
++     `Digit(char)` 和 `Digit(int)` 以 `Optional` 的形式构造一个数字，其他输入得到 `Unset`；扩展方法 `int` 和 `char` 把它读回。
+
+% 2 1 0 1e8c88fd32c0312a1c9fcb00d0ff3b14
+
+% 3 1 0 065025eba33198df1e0d175021be2895
+
+% 0 1 0 03f18f19cf7a05ed1157a9bd706c5c11
+
+% 0 1 0 05194f237c40d8c4159f4dd88e1a92ce
+
+% 1 1 0 0c6ae1031bac64f70c6ddaf7180fa10d
+
+@ 0 3 0 1152a441acff1522026ea9825bb991af
++ entry .tuple   把 case class 表示为由其字段组成的元组
++     `person.tuple` 就是 `Tuple.fromProductTyped(person)`，类型为该积类型的 `MirroredElemTypes`；它是元组 `to[Product]` 转换的逆运算。
+
+@ 0 3 0 191bb31f27479ea900e6f829ca46d3d9
++ entry .contains   `tuple.contains[T]`：在编译时判断元组类型是否有某个类型的分量
++     `Tuple` 上的一个内联、擦除的扩展方法：`(erasedValue[(Int, Text)]).contains[Text]` 为 `true`，由类型计算得出。
++     不导出到 `soundness` 总括包。
+
+@ 0 2 0 09c7c9943c15d49e050b6b1c134a020c
++ entry .indexOf   `tuple.indexOf[T]`：某个分量类型在元组类型中的位置，或 `-1`
++     在编译时由类型计算得出；不导出到总括包。
+
+@ 0 3 0 0ec357c44eb18e0f00957a40a7a2f848
++ entry .subtypes   `tuple.subtypes[S]`：元组类型中属于某个类型的子类型的分量，作为元组类型
++     一个 transparent inline 的类型级过滤器，供派生代码使用；不导出到总括包。
+
+@ 0 5 0 1e68393baf0d8d6108aa458cdb038cd9
++ entry .literal   在宏中从 `TypeRepr` 读出字面常量
++     `repr.literal[Int]`（或任何基本类型、`String`、`Unit` 或 `Null`）是 `ConstantType` 所持有的常量，以 `Optional` 表示；对其他任何类型或其他种类的常量则为 `Unset`。
++     这是 `quotes.reflect.TypeRepr` 上供宏作者使用的扩展方法；不导出到总括包。
+
+@ 0 1 0 00909455c03bd2e4028480e6a7a59465
++ entry .Atomic   基于 JDK 原子类的原子单元：`Atomic.Int`、`Atomic.Long`、`Atomic.Bool`、`Atomic.Ref` 以及各种数组
+
+% 1 1 0 0479f6561d6be84b1d3e3af39f3b236f
+
+@ 0 7 0 1c18bdafa4926e35144a9d0ba1a6f8c7
++       `Atomic` 单元是在线程之间共享的值，它的读写是原子的，状态转换是无锁的。
++       每种单元都是对相应 `java.util.concurrent.atomic` 类的不透明包装——`Atomic.Int` 包装 `AtomicInteger`，`Atomic.Long` 包装 `AtomicLong`，`Atomic.Bool` 包装 `AtomicBoolean`，`Atomic.Ref[value]` 包装 `AtomicReference`，而 `Atomic.Ints`、`Atomic.Longs` 和 `Atomic.Refs` 包装原子数组——并且每个操作都是内联的，因此字节码就是原始的 JDK 调用。
++       这些名称说明单元持有什么，而不是它用来做什么。
+
+@ 0 8 0 17173fdccc6fe3af04db860d9557848f
++       `Atomic[value]` 是一个匹配类型，为某个类型拼写出正确的单元：`Atomic[Int]` 是 `Atomic.Int`，`Atomic[Boolean]` 是 `Atomic.Bool`，其他任何类型都是 `Atomic.Ref`。
++       它让不装箱的单元成为最自然的写法（`Atomic.Ref[Int]` 是合法的，但每次写入都会装箱）。
++       `Atomic(initial)` 按参数的类型构造，因此 `Atomic(0)` 是一个 `Atomic.Int`；`Atomic[Int](0)` 会选中通用的 `Ref` 分支而无法符合类型，这是一个类型错误，而不是悄无声息的装箱。
++       对于不透明集合类型或抽象类型参数——`Atomic[List[x]]`——该匹配类型不会归约，这样的单元要写成 `Atomic.Ref[List[x]]`。
+
+% 2 1 0 0726a11f32de371e19197e85ea790045
+
+% 1 1 0 08d9458eb73012351c93056f35e51984
+
+@ 0 1 0 0174fb0f730d18bc1dfd74a1bdc140b3
++         label 用 var 实现的共享计数器存在数据竞争
+
+% 1 1 0 0164db097a2aadd11576b4aae39863a4
+
+% 0 1 0 0eafd200297710950885edf6a3ff9c59
+
+% 0 1 0 1143032b3d37d5d4022aff7002270168
+
+% 1 1 0 1b320da8a316663701233a5eacc21830
+
+@ 0 1 0 0aaca3e1c383d7d40ec6271a1236c426
++         label 原子单元用 `cell()` 读取，用 `cell() = v` 写入
+
+% 1 1 0 120583ca20e79a1405993beb984fb32f
+
+% 2 1 0 0bd93a48f95931ec0a7ada37fe66402a
+
+% 0 1 0 04bf7e296cbcfb21066add83feab85b3
+
+% 1 1 0 0f553a9c13e231bd06529b11abef1b89
+
+@ 0 1 0 0659a6c8879a5de30c4a49abf629e007
++         label 转换是一个原子步骤，编译为 JDK 内建函数
+
+% 1 1 0 192de7b53ddf715601da84a9a9cf617a
+
+% 2 1 0 18af3c7007bdd28312af8e21b073f7da
+
+% 0 1 0 0e7a64ae5bb486130ce15ac32f8ecd63
+
+% 1 1 0 1ab0c57775861165024d6fc4ca6160dd
+
+% 2 1 0 081b3423bf27c01d0aa724a6a044d7b4
+
+@ 0 6 0 1e6647e57e505709140ffb119d125c0a
++       每种单元都用 `apply()` 读取，用 `update` 写入（因此写作 `cell() = v`），用释放存储发布，用 `swap` 交换，用 `replace` 进行比较并设置。
++       标量单元和 `Ref` 还可以用 `ere` 和 `since` 进行转换：两者执行同样的转换，分别返回被替换掉的值和新装入的值。
++       引用单元从不需要 `nn`：持有 `Unset` 的 `Ref[Optional[x]]` 读出的是 `Unset`，而对原始的 `AtomicReference` 调用 `nn` 则会抛出异常。
+
+% 0 1 0 066d72055af8f10300952218e05bf5aa
+
+@ 0 5 0 15eb73b0270f0f5a15498f2d61ada392
++   entry .apply   `Atomic(initial)`：与参数类型相应的单元
++       按 `Int`、`Long`、`Boolean` 和其他任何类型重载，与匹配类型的各个分支一一对应：`Atomic(0)` 是 `Atomic.Int`，`Atomic(t"x")` 是 `Atomic.Ref[Text]`。
++       由参数决定选择；不要传入类型参数。
++   entry .Int   基于 `AtomicInteger` 的原子 32 位整数
+
+% 1 1 0 131361ee91ad46bc198bcf03df20cccc
+
+@ 0 6 0 06efd485932db7470ad145dab716d208
++         `Atomic.Int(initial)`（或从零开始的 `Atomic.Int()`）构造一个单元。
++         读取写作 `count()`，写入写作 `count() = n`。
++         转换方法 `ere` 和 `since` 在编译时识别 lambda 的形状：`_ + 1` 变成 `getAndIncrement`/`incrementAndGet`，`_ + n` 变成 `getAndAdd`/`addAndGet`，`_ - 1` 和 `_ - n` 变成对应的递减版本，常量变成 `getAndSet`，其他任何形状则变成一个比较并设置的重试循环，并把转换的主体内联进去。
++         无论哪种情况都不分配任何对象。
+
+% 2 1 0 0b22895f2ff0ff970711af4bdf69f8b3
+
+% 3 1 0 1364d684f22b9b0c0974f396dac888a7
+
+% 0 1 0 0bef53516ba92f600337acbc2c0909c8
+
+% 0 1 0 0fe0e501b241e1f61d9ba006f4144f42
+
+% 0 1 0 1b41d073cf0f8e061c5fea1d413556f8
+
+% 0 1 0 011c9491126f4608099c172e161d3c7b
+
+% 0 1 0 1e6f8191e6f9925c1b794ba7aa07e6a8
+
+% 1 1 0 0a513cef12c34bed13cfadaef6aff63c
+
+@ 0 19 0 0bcfd80220f8ed471f79ed94b3cce603
++     entry .apply   `Atomic.Int(initial)` 构造一个单元，默认从零开始；`count()` 读取单元
++         两个同名的重载。
++         在伴生对象上，`Atomic.Int(initial)`（或 `Atomic.Int()`）基于一个新的 `AtomicInteger` 构造单元。
++         作为单元上的扩展方法，`count()` 是一次 volatile 读取，即 `get`。
++     entry .update   `count() = n`：一次 volatile 存储
++     entry .publish   `count.publish(n)`：一次释放存储，排在之后的存储之前，但比 `update` 开销更小
++         即 `lazySet`：单生产者环形缓冲区可以发布对某个槽位的写入，并确信读者在看到之后发布的索引时也能看到这次写入。
++         在存储本身就是发布点的地方，它不能替代 `update`。
++     entry .swap   `count.swap(n)`：存入 `n` 并返回被替换的值
++     entry .replace   `count.replace(expected, updated)`：比较并设置，成功则为 true
++     entry .ere   `count.ere(transition)` 或 `count.ere(n)`：应用一个转换，并返回它替换掉的值
++         转换是一个 lambda 字面量，在编译时检查其形状；以值调用的 `ere(n)` 就是 `getAndSet`。
++         没有 `since(n)`：它只会返回自己的参数，而不关心旧值的设置就是 `count() = n`。
++     entry .since   `count.since(transition)`：应用一个转换，并返回它装入的值
++         `_ + 1` 编译为 `incrementAndGet`，`_ + n` 编译为 `addAndGet`，`_ - 1` 和 `_ - n` 编译为对应的递减版本，其他任何形状编译为比较并设置循环。
++   entry .Long   基于 `AtomicLong` 的原子 64 位整数
+
+% 1 1 0 0fe143539f3e5e7c002a620471aea7be
+
+@ 0 13 0 05ec850c25ee5a0f05865cff5bc5ba33
++         与 `Atomic.Int` 相同，只是针对 `Long`：`Atomic.Long(initial)` 或 `Atomic.Long()`，具有相同的操作，在编译时以相同的方式识别转换的形状（落到 `AtomicLong` 的内建函数上）。
++     entry .apply   `Atomic.Long(initial)` 构造一个单元，默认从零开始；`tally()` 读取单元
++         两个同名的重载：伴生对象上基于新的 `AtomicLong` 的构造器，以及扩展方法 `tally()`，一次 volatile 读取。
++     entry .update   `tally() = n`：对 `Atomic.Long` 的一次 volatile 存储
++     entry .publish   `tally.publish(n)`：对 `Atomic.Long` 的一次释放存储（`lazySet`）
++     entry .swap   `tally.swap(n)`：把一个值存入 `Atomic.Long` 并返回被替换的值
++     entry .replace   `tally.replace(expected, updated)`：对 `Atomic.Long` 的比较并设置，成功则为 true
++     entry .ere   对 `Atomic.Long` 应用一个转换（或存入一个值），并返回被替换的值
++     entry .since   对 `Atomic.Long` 应用一个转换，并返回装入的值
++   entry .Bool   基于 `AtomicBoolean` 的原子标志
+
+% 1 1 0 0bdcc34ee306918d01163f3a30141214
+
+@ 0 4 0 16df0113ec22e9b70e05953d33b40090
++         `Atomic.Bool()` 从 `false` 开始。
++         一次性用法的惯用写法是 `flag.ere(true)`：它恰好返回一次 `false`，返回给竖起该标志的调用者，对之后的每个调用者都返回 `true`，因此“我就是关闭它的那次调用”只需一个表达式。
++         像 `since(!_)` 这样的转换通过比较并设置循环取反。
+
+% 2 1 0 0da895482ad0bd9a1b93ed8442633c08
+
+% 3 1 0 1c2c223ed9a0c2f71c19a364ec7ae342
+
+% 0 1 0 1449b0ea9937b38403da538dc7ec23a8
+
+% 0 1 0 1a4098cbdfc392980c0f6370d3184778
+
+% 1 1 0 0bf62a7edaf768a919046265850c5a9c
+
+@ 0 12 0 1f2145f915323e820cb9719c05f46367
++     entry .apply   `Atomic.Bool(initial)` 构造一个标志，默认为 `false`；`flag()` 读取标志
++         两个同名的重载：伴生对象上基于新的 `AtomicBoolean` 的构造器，以及扩展方法 `flag()`，一次 volatile 读取。
++     entry .update   `flag() = state`：对 `Atomic.Bool` 的一次 volatile 存储
++     entry .publish   `flag.publish(state)`：对 `Atomic.Bool` 的一次释放存储（`lazySet`）
++     entry .swap   `flag.swap(state)`：把一个状态存入 `Atomic.Bool` 并返回被替换的状态
++     entry .replace   `flag.replace(expected, updated)`：对 `Atomic.Bool` 的比较并设置，成功则为 true
++     entry .ere   对 `Atomic.Bool` 应用一个转换（或存入一个状态），并返回被替换的状态
++         `flag.ere(true)` 是一次性用法的惯用写法：它恰好返回一次 `false`，返回给竖起该标志的调用者。
++     entry .since   对 `Atomic.Bool` 应用一个转换，并返回装入的状态
++   entry .Ref   基于 `AtomicReference` 的原子引用单元
+
+% 1 1 0 09c891f07df23fd31444a7cbc8a18228
+
+@ 0 8 0 14d20cb68a302df515ee98ba06da55e4
++         `Atomic.Ref(initial)` 可以持有任何值；`Atomic.Ref.vacant[value]` 是一个从 `Unset` 开始的 `Atomic.Ref[Optional[value]]`。
++         读取从不需要 `nn`，空单元读出 `Unset` 而不是抛出异常。
++         转换方法 `ere` 和 `since` 接受一个 lambda 字面量，它可以调用值上的方法、从值构造新值，或对值进行匹配并重建；如果转换是一个函数*值*而不是字面量，就要通过 `revise`。
++         当 `value` 本身是函数类型时，无法选中 `ere` 的值重载——编译器会认定转换重载——因此要用 `cell() = f` 存入函数。
+
+% 2 1 0 0dd94f17147d8a5903a102f2a8f97db2
+
+% 3 1 0 06bda2d6236ee4981a1d92a01d76e23a
+
+% 0 1 0 022035ece1c06dca0edc8fd2b9bbe1d3
+
+% 0 1 0 145b450f0b53bbd71eceae55c8cb5817
+
+% 0 1 0 0c60cf9924ea869b109add0f445d0e85
+
+% 0 1 0 0348b235305e69f508f8bd169233dae0
+
+% 1 1 0 0cc62cab9aa7a1b2029dd26dceb1d58d
+
+@ 0 17 0 17284737de3bbf741af1fc222d4d05eb
++     entry .apply   `Atomic.Ref(initial)` 构造一个持有 `initial` 的单元；`cell()` 读取单元
++         两个同名的重载：伴生对象上基于新的 `AtomicReference` 的构造器，以及扩展方法 `cell()`，一次 volatile 读取，它不需要 `nn`，对持有 `Unset` 的单元也不会抛出异常。
++     entry .vacant   `Atomic.Ref.vacant[value]`：一个初始为空的 `Ref[Optional[value]]`
++     entry .update   `cell() = value`：对 `Atomic.Ref` 的一次 volatile 存储
++     entry .publish   `cell.publish(value)`：对 `Atomic.Ref` 的一次释放存储（`lazySet`）
++     entry .swap   `cell.swap(value)`：把一个值存入 `Atomic.Ref` 并返回被替换的值
++     entry .replace   `cell.replace(expected, updated)`：按引用相等进行比较并设置，成功则为 true
++     entry .ere   对 `Atomic.Ref` 应用一个转换（或存入一个值），并返回被替换的值
++     entry .since   对 `Atomic.Ref` 应用一个转换，并返回装入的值
++     entry .revise   应用一个作为函数值而非字面量的转换，并返回装入的值
++         用于无法检查形状的转换——比如作为参数传入的函数——的逃生舱口。
++         它运行一个比较并设置循环，因此在竞争下转换可能被重新执行，必须是纯的；返回同一个引用的转换不写入即可完成。
++   entry .Ints   基于 `AtomicIntegerArray` 的 32 位整数原子数组，以 `Ordinal` 为索引
+
+% 1 1 0 0ca37f84d72ff5520ca6aa627d8d8231
+
+@ 0 13 0 0e05a79dad0fd8e80f23866bbdc83cdf
++         `Atomic.Ints(size)` 全部为零，槽位读出普通的 `Int`——新的零是一个值，而不是缺失。
++         槽位以 `Ordinal` 寻址，与 Soundness 的所有索引一样；序数不是受限的，因为掩码后的环形索引在构造上就处于范围内。
++         没有针对单个槽位的 `ere`/`since`：这些数组只提供发布和读取。
++     entry .apply   `Atomic.Ints(size)` 构造一个全零数组；`ints(ordinal)` 读取一个槽位
++         两个同名的重载：伴生对象上基于新的 `AtomicIntegerArray` 的构造器，以及扩展方法 `ints(ordinal)`，对槽位的一次 volatile 读取。
++     entry .countable   `Atomic.Ints` 的大小，供 `size` 使用
++     entry .update   `ints(ordinal) = n`：对 `Atomic.Ints` 某个槽位的一次 volatile 存储
++     entry .publish   `ints.publish(ordinal, n)`：对 `Atomic.Ints` 某个槽位的一次释放存储
++     entry .swap   `ints.swap(ordinal, n)`：存入 `Atomic.Ints` 的某个槽位并返回被替换的值
++     entry .replace   `ints.replace(ordinal, expected, updated)`：对 `Atomic.Ints` 某个槽位的比较并设置
++   entry .Longs   基于 `AtomicLongArray` 的 64 位整数原子数组，以 `Ordinal` 为索引
+
+% 1 1 0 1c8d716a694f36be158217b508cadc6c
+
+@ 0 10 0 153e8d92ecd046531651a73e684b59e4
++         与 `Atomic.Ints` 相同，只是槽位为 `Long`。
++     entry .apply   `Atomic.Longs(size)` 构造一个全零数组；`longs(ordinal)` 读取一个槽位
++         两个同名的重载：伴生对象上基于新的 `AtomicLongArray` 的构造器，以及扩展方法 `longs(ordinal)`，对槽位的一次 volatile 读取。
++     entry .countable   `Atomic.Longs` 的大小，供 `size` 使用
++     entry .update   `longs(ordinal) = n`：对 `Atomic.Longs` 某个槽位的一次 volatile 存储
++     entry .publish   `longs.publish(ordinal, n)`：对 `Atomic.Longs` 某个槽位的一次释放存储
++     entry .swap   `longs.swap(ordinal, n)`：存入 `Atomic.Longs` 的某个槽位并返回被替换的值
++     entry .replace   `longs.replace(ordinal, expected, updated)`：对 `Atomic.Longs` 某个槽位的比较并设置
++   entry .Refs   基于 `AtomicReferenceArray` 的引用原子数组，其槽位为 `Optional`
+
+% 1 1 0 179fd5ba3e878c0b050fe0308b0162f0
+
+@ 0 12 0 178e8fb8bfdf4c8c078bec5728b0e217
++         `Atomic.Refs[value](size)` 开始时每个槽位都是 null，表示缺失，因此槽位读出 `Optional[value]`——这正是它与 `Atomic.Ref`（构造时就有一个值）以及 `Atomic.Ints`（新槽位持有真正的零）的诚实区别。
++     entry .apply   `Atomic.Refs[value](size)` 构造一个槽位全为 `Unset` 的数组；`refs(ordinal)` 读取一个槽位
++         两个同名的重载：伴生对象上基于新的 `AtomicReferenceArray` 的构造器，以及扩展方法 `refs(ordinal)`，以 `Optional` 形式对槽位的一次 volatile 读取。
++     entry .countable   `Atomic.Refs` 的大小，供 `size` 使用
++     entry .update   `refs(ordinal) = value`：对 `Atomic.Refs` 某个槽位的一次 volatile 存储
++     entry .publish   `refs.publish(ordinal, value)`：对 `Atomic.Refs` 某个槽位的一次释放存储
++     entry .swap   `refs.swap(ordinal, value)`：存入 `Atomic.Refs` 的某个槽位并返回被替换的值
++     entry .replace   `refs.replace(ordinal, expected, updated)`：对 `Atomic.Refs` 某个槽位的比较并设置
+
+@ 0 1 0 04816ad0f54d8e800f8a880c7f47a297
++ entry .atomicMacros   `Atomic` 的 `ere` 和 `since` 背后的宏
+
+% 1 1 0 084d776bf2d1b7bd1fc0dcbf20f20f01
+
+% 2 1 0 00dfd8b54083fa0309b9529b6210510e
+
+@ 0 7 0 19e9353139b0d6d208ca4f6f3dbc60d9
++       不供直接使用。
++       `int`、`long`、`bool` 和 `ref` 各自检查转换 lambda 的树，对识别出的形状（`_ + 1`、`_ + n`、`_ - n`、常量）生成 JDK 内建函数调用，否则生成比较并设置循环。
++   entry .int   `Atomic.Int` 的转换宏
++   entry .long   `Atomic.Long` 的转换宏
++   entry .bool   `Atomic.Bool` 的转换宏
++   entry .ref   `Atomic.Ref` 的转换宏
+
+@ 0 1 0 0640e67a1a0a4f3d1de13466b8ccbdbd
++ entry .Mutex   作用于代码块的可重入锁：`mutex { … }`
+
+% 1 1 0 16e42be15f35253300d97a6e148fb711
+
+@ 0 4 0 0812debe9f80734a08f86c143f9f4e35
++       `Mutex()` 包装一个 `ReentrantLock`，`mutex(block)`（或 `mutex { … }`）在持有锁的情况下求值代码块，并在 `finally` 中释放锁。
++       它是内联的，因此加锁和解锁就位于调用者自己代码中的代码块两侧。
++       对于单个共享值，`Atomic` 单元通常是更好的工具；互斥锁用于保护对多个值的复合更新。
+
+% 2 1 0 0f4d4ade3289f6591c18ff5aca4c17bf
+
+% 3 1 0 07617115dcc9822103293bc8fd279189
+
+% 0 1 0 1cf25415ae0c32120f588b88a2f5a623
+
+% 0 1 0 0c9cbf5569f970fd11ccbe39a8d822ad
+
+% 0 1 0 195a7b970357a109140e6b1ac076e00f
+
+% 0 1 0 1e39f3ecdfe692b203942c6fa86ef8df
+
+% 0 1 0 15274bd2d2fb60900e28604476a74d4c
+
+% 1 1 0 138cd4ede8903603036194847041de9d
+
+@ 0 1 0 06504564d8f726cd1d55a9cee9cc0224
++   entry #apply   在持有锁的情况下求值代码块
+
+@ 0 1 0 045859e7a46faa291daba2ab5e17a72d
++ entry .Scoped   在代码块的范围内绑定到当前线程的值
+
+% 1 1 0 12a531e7a514acd80a832658adbab568
+
+@ 0 5 0 1cfb5696d96867a30dfe45995e354b85
++       `Scoped[value]()` 是一个线程局部槽位，在有代码块绑定它之前读出 `Unset`：`scoped(v) { … }` 求值代码块，期间在该线程上 `scoped()` 读出 `v`，之后恢复先前的绑定（即使代码块抛出异常也是如此），如果先前没有绑定，就把条目整个移除，这样池化的线程不会残留任何东西。
++       其他线程看到的是它自己的绑定或 `Unset`。
+
+% 2 1 0 09f0cca1c5e7f2c21c9b492666163c84
+
+% 3 1 0 07da46be87f1d6751b21f9a6bea82e86
+
+% 0 1 0 1e58d17b98f6428c06d5097c94b95b2b
+
+% 0 1 0 123b91b84131b0041e051e580f5e8f9a
+
+% 0 1 0 0b5d706242d70f20187b997da26875fa
+
+% 0 1 0 0b914abfa22fdc110ce8045df43b1eeb
+
+% 0 1 0 108ee56ed1634a4d14d452da40a04c76
+
+% 1 1 0 1fc129b90ab4ea641fd9f9fc6bfbb209
+
+@ 0 2 0 137f7505487c237516886b9b5e7a9e26
++   entry .apply   `Scoped[value]()`：一个新的、未绑定的槽位
++   entry #apply   `scoped()`：当前绑定，或 `Unset`；`scoped(v)(block)`：在代码块内绑定
+
+@ 0 1 0 0372e44ba7bd825e1567730559190f2f
++ entry .Loop   可停止的迭代，在一个任务上运行，由另一个任务停止
+
+% 1 1 0 0abaab00ea63c1aa0f61e939ece2e53d
+
+@ 0 6 0 19d26cbf037d756a16febb29f9c40c0c
++       `Loop` 在状态为 `Active` 时反复运行它的迭代，从任何线程调用 `stop()` 都会把它转为 `Stopping`，于是当前迭代会完成，而不再开始新的迭代；然后 `run()` 把它标记为 `Finished`。
++       它用 `loop { … }` 构建并交给一个任务：例如套接字服务器的 accept 循环，或文件系统监视器的轮询循环。
++       迭代只能捕获共享的能力，因为它在一个任务上运行，却从别处被停止。
+
+% 2 1 0 029cb7de0739365d14844bf9d4a61289
+
+% 3 1 0 1b8dc8fdb216293c119a4dd8122894e7
+
+% 0 1 0 12e7a1af61532d821d99b1d4839e2cd2
+
+% 0 1 0 184a57e8ae288e4c15326d3086c7db3a
+
+% 0 1 0 17793854676f27431624b5d409e82b2c
+
+% 0 1 0 111a1327fe7e0a651c0519a6dd33095d
+
+% 1 1 0 1b4f5f311c6f48150e7429acfbc42c61
+
+% 0 1 0 1adc9ff2c6cffdb30ab39540f9dea883
+
+@ 0 6 0 17e9a1e21339c9a90146d4fc6729269f
++   entry .State   循环的生命周期：`Active`、`Stopping` 或 `Finished`
++       一个枚举，包含循环依次经历的三个状态：在调用 `stop()` 之前为 `Active`，在进行中的迭代完成之前为 `Stopping`，`run()` 返回后为 `Finished`。
++   entry #stop   请求循环在当前迭代之后停止
++   entry #run   运行迭代直到循环被停止，然后将其标记为已完成
+
+@ 0 4 0 10d463f105a5484c09d8515b004fd044
++ entry .loop   `loop { … }`：以代码块为迭代的 `Loop`
++     从一个产生副作用的代码块构造 `Loop`，并在构造时吸收循环自身的新鲜能力，使得基于纯状态的循环是一个纯值。
++     代码块只能保留 `Durable`（共享）能力。
+
+@ 0 1 0 0313d76eb178a97e09387fc1cb72e77d
++ entry .Exit   进程的退出状态：`Exit.Ok` 或 `Exit.Fail(status)`
+
+% 1 1 0 06da261918e6d21c03f1dfb13bfc04dd
+
+@ 0 4 0 1b7568c8bb74ff800c128b99099478d3
++       命令行程序返回的结果：`Exit.Ok` 是状态 0，`Exit.Fail(n)` 是非零状态。
++       `Exit(n)` 对整数进行分类，`exit()` 把整数读回。
++       `Exit` 是一个 `Termination`，因此应用程序的主体可以返回一个 `Exit`，或者 `Exit` 与它自己的 `Status` 对象组成的联合类型。
+
+% 2 1 0 1c6b53688db445ad15d077d3fa384d85
+
+% 3 1 0 1e87b49d03bee75313021e9d040c89ea
+
+% 0 1 0 01ef92540632a28b06061b7850d6c257
+
+% 0 1 0 17b1dbdf15c105141e933ff2000f370b
+
+% 0 1 0 0ce71e360264ba7406e51e02a77d60cb
+
+% 1 1 0 14807d7a640e3a500a83b6620a9ae9e7
+
+% 0 1 0 1208ee3fec2e3c3b0b4d18276ec4ab13
+
+@ 0 4 0 0aab3656d3b0b3100ed9fbbd80591ced
++   entry .apply   `Exit(status)`：零为 `Ok`，否则为 `Fail(status)`
++   entry #exit   退出本身，作为其 `Termination`
++   entry #apply   以 `Int` 表示的状态：`Ok` 为 0
++   entry #terminate   以此状态退出 JVM，永不返回
+
+@ 0 1 0 1e115e60be7a06cd14c8fcbdcfc2e67a
++ entry .Termination   任何能够决定进程退出状态的东西
+
+% 1 1 0 1ddd8f0e3a45a7e81cafb58cf6f6e8f1
+
+@ 0 6 0 12cbb6b14d82859f1ef7cdfd0c991b35
++       应用程序的结果所实现的特质：`exit` 说明它对应哪个 `Exit`。
++       `Exit` 是最简单的 `Termination`；有多个具名结果的程序会声明扩展它的 `Status` 对象，并返回它们的联合类型，CLI 机制会记录这一联合类型，使帮助树能够列出命令可能以哪些状态结束。
++       终止结果是纯的（它扩展 `scala.caps.Pure`），因此绝不能持有活动的能力。
++   entry #exit   此结果对应的 `Exit`
+
+@ 0 1 0 1cee08f40865eaf90743017af3aa4ffe
++ entry .Dynamical   对无类型数据值进行 `scala.Dynamic` 字段访问所需的擦除权限
+
+% 1 1 0 16c538298a15cd98096a84c162267109
+
+@ 0 6 0 19f65bf1dea209de0ef087b6c9c09b02
++       像 `Json`、`Yaml`、`Cbor` 或 `Tel` 这样的格式，会把它的动态成员访问（`json. server.port`）门控在 `(? >: Json) is Dynamical` 上，因此该权限可以只授予这一种格式（`Json is Dynamical`，由该格式的 `dynamicAccess` given 提供），授予若干格式的联合类型，或授予所有格式（`Any is Dynamical`）。
++       它是密封且擦除的：它的值从不存在，而 `dynamically` 是在代码块中铸造它的唯一途径。
++       位于 `rudiments.core` 中。
+
+% 1 1 0 0b6de20d60f9fb960acd6b67489417c5
+
+% 0 1 0 0658c764e3175f4a06f97efe16a29e92
+
+@ 0 1 0 0cc969d430c446c6194a9fafee395cd9
++ entry .Dynamically   `Dynamical` 权限的代码块形式：`Dynamically[data](block)`
+
+% 1 1 0 1507d40b315cc10314d09ff9f8f866b8
+
+@ 0 4 0 037ba256dbf25ccd0dd881ac451aa3fb
++       `Dynamically` 是对象 `Dynamically[Any]`，而 `Dynamically[-data]` 是逆变的类，其 `apply` 在作用域中有一个擦除的 `(? >: data) is Dynamical` 的情况下求值代码块。
++       之所以是逆变的，是为了让该对象对每个 `data` 都是 `Dynamically[data]`，并让不带类型参数的 `dynamically` 推断为 `Any`。
++       通过 `dynamically` 使用。
+
+% 1 1 0 0e6d92f61ad7aa1e13251c25c8c305df
+
+@ 0 1 0 117d35886f44fbcf0010892b420fc7b0
++   entry #apply   在作用域中有该权限的情况下求值代码块
+
+@ 0 5 0 0cdb9462870f37260365d2b9c72b16b0
++ entry .dynamically   `dynamically[Json] { … }`：在代码块内授予动态成员访问
++     `dynamically[Json]` 允许在代码块内写 `json.field.subfield`，仅限 JSON；联合类型 `dynamically[Json | Yaml]` 涵盖多种格式，而不带类型参数的 `dynamically` 涵盖所有支持动态访问的格式。
++     该权限是擦除的，因此代码块不产生任何开销。
+
+% 2 1 0 042ecf57b77db2a20ca511bd779ef599
+
+% 3 1 0 1a7d906e53c5afb9149a0a47d4f82030
+
+% 0 1 0 0323f27fc4985e0804a43d7947f66e41
+
+% 0 1 0 1ae140ed179c925e18b873aa83aad471
+
+% 0 1 0 1ed4604c5ef2be1e199ad00fc1ecf803
+
+% 0 1 0 13caeacfdbf3766116109151311a4743
+
+% 1 1 0 0f7b1c99eb2b76e709b79e2d2d3c29fd
+
+@ 0 1 0 1aab3a156b051d250d9469dedcacd0b0
++ entry .Defaulting   证据：当没有任何东西约束某个类型参数时，它默认为某个类型
+
+% 1 1 0 12cd904e032267ed0908b436abc840c4
+
+@ 0 6 0 17e0a4815f7f511801dbecf1f8ff1ac9
++       `topic is Defaulting to Text` 是一个擦除的 given，当 `topic` 已被推断时——通过伴生对象的实例解析为它自身——或者未受约束时都能解析，后一种情况下由优先级较低的 `Defaulting2` 实例把它解析为默认类型。
++       像 `Flag[topic](name)` 这样的工厂方法使用它，使不带类型参数的 `Flag(t"jobs")` 得到 `Flag of Text`，而 `Flag[Int](t"jobs")` 得到 `Flag of Int`。
++       该特质是密封的，没有值；两个 given 都是擦除的。
+
+% 0 1 0 0ba0ec54b13fc04f0328123cc87aa0a1
+
+@ 0 1 0 0f148883810fa9830431a5150da1d6e8
++ entry .Defaulting2   把未受约束的参数解析为默认类型的回退 `Defaulting` 实例
+
+% 1 1 0 18ec57295348eaeb1192d2cf32acd0d8
+
+% 2 1 0 1f98652ff904c5470153143b36cafb47
+
+@ 0 3 0 08cd066e6b42ef3309a05936766f9246
++       不供直接使用：它是 `Defaulting` 伴生对象的低优先级父类，持有未受约束的参数会落到的 `[value, anything] => value is Defaulting to anything` given。
+
+@ 0 1 0 0d55ad1194bea1d414c0f99a9d102337
++ entry .DecimalConverter   把 `Double` 渲染为文本：数字显示背后的方针
+
+% 1 1 0 0ebc3fcfc513244e14bd85861a6f8641
+
+@ 0 5 0 00cba6dcd494807e1ccd878f0498fcc9
++       `DecimalConverter` 只有一个方法 `decimalize(double): Text`，并且是一个 `Findable` 的上下文值，因此小数的渲染方式由作用域中的转换器决定。
++       Gossamer 的 `Decimalizer(significantFigures, decimalPlaces, …)` 是可配置的实现，数值类型的 `Showable` 实例会召唤一个转换器。
++   entry #decimalize   把 `Double` 表示为文本
+
+@ 0 5 0 089a2ada8d04d77213aa85ce49f6f59f
++ entry .&   `case A(x) & B(y)`：同时用两个提取器匹配一个值
++     一个从 `rudiments.internal` 导出的提取器对象，其 `unapply` 把被匹配值产出两次：`value match case AsInt(x) & AsLong(y) => …` 在同一个值上从第一个提取器绑定 `x`，从第二个提取器绑定 `y`，否则就需要嵌套匹配或守卫。
+
+@ 0 1 0 12fdeff0dd305b5e13d7ea1b051e00a7
++ entry .internal   `Bytes`、`Digit`、`&` 提取器以及 `probe`、`typeName` 和 `reflectClass` 背后的宏的所在地
+
+% 1 1 0 047a97f65e431f090d73fff44cf79a35
+
+% 2 1 0 0ecb8edcede973a11c1f788697dd595f
+
+@ 0 4 0 1738b17d2007985f152fad9e0e258470
++       不供直接使用：`Bytes`、`Digit` 和 `&` 从这里导出到 `rudiments` 包，它们的页面在那里；`probe`、`name` 和 `reflectClass` 是宏的实现。
++   entry .Bytes   不透明的字节数，被视为数量的 `Long`；参见 `rudiments.Bytes`
+
+% 1 1 0 1a9b1e222bfc3e371042c38a07017433
+
+@ 0 7 0 1d7781037ce087c0189942ec13fe92e6
++         不透明类型 `Bytes = Long`，连同它的构造器、算术和比较 given 以及访问器。
++         它在 `rudiments` 包下的页面有完整的说明；这里的每个 given 都在 `Bytes` 的隐式作用域中。
++     entry .apply   `Bytes(long)`：由 `Long` 得到的字节数
++     entry .comparable   按数值对字节数排序
++     entry .zeroic   零字节，因此对字节数的 `total` 从零开始，结果是裸值
++     entry .communicable   在消息中把字节数渲染为 `n bytes`
+
+% 0 1 0 07083782653a076f107485ff40107d5f
+
+% 0 1 0 1a270c8aea0f9abb1dd49c93a3e39aa2
+
+% 0 1 0 025466a3b94dbb861d5cc6bafa37a607
+
+% 0 1 0 0e97f2d9ca1546e80070c4b1831cb087
+
+% 0 1 0 033b7aaa1bbd0cf80ca85a3c69ff0d48
+
+@ 0 4 0 14d8a8d333e7b0f207eab40d8341e365
++     entry .divisible2   `Bytes / Bytes`，以 `Double` 比值表示
++     entry .long   `bytes.long`：以 `Long` 表示的字节数
++     entry .text   `bytes.text`：以文本表示的字节数，`1024 bytes`
++   entry .Digit   不透明的十进制数字，`0 | 1 | … | 9`；参见 `rudiments.Digit`
+
+% 1 1 0 04c58a93a8eec80e1594dd64f375fe7e
+
+@ 0 6 0 1471aae313909061149c930c86c91933
++         不透明类型 `Digit`，连同它的构造器。
++         访问器 `int` 和 `char` 是在 `internal` 中与它并列声明的扩展方法。
++     entry .apply   `Digit('7')` 或 `Digit(7)`：由字符或整数得到的数字，或 `Unset`
++   entry .int   `digit.int`：以 `Int` 表示的 `Digit`
++   entry .char   `digit.char`：以 `Char` 表示的 `Digit`，`'0'` 到 `'9'`
++   entry .&   双重提取器；参见 `rudiments.&`
+
+% 1 1 0 1a35a4c181b1f7dd009fda63efe155f2
+
+@ 0 6 0 18ce72b28632ce640fec4fa8c4608179
++         其 `unapply` 把被匹配值返回两次的对象，使 `case A(x) & B(y)` 能用两个提取器匹配同一个值。
++     entry .unapply   产出与自身配对的被匹配值，总是匹配成功
++   entry .probe   `probe[T]` 背后的宏：以该类型的名称中止
++   entry .name   `typeName[T]` 背后的宏
++   entry .reflectClass   `reflectClass[T]` 背后的宏
+
+@ 0 43 0 1de174c2bddd4554146fb9d3f0ab29c1
++ entry .Traversable   从 `murmuration` 重新导出：凡是能逐个元素遍历的东西的类型类
++     `import rudiments.*` 把集合类型类呈现为一个统一的接口，因此 `Traversable`、`Reshapable`、`Mappable`、`Reversible`、`Inclusive`、`Convertible`、`Keyed`、`Intersectable`、`Iterator` 和 `SortAlgorithm`，连同基于它们编写的操作，都从 `murmuration` 导出到这里。
++     每一个在其 `murmuration` 页面上都有完整的说明；需要 `Ordinal` 或 `Optional` 的操作（`each`、`seek`、`where`、`head`……）在 `rudiments` 本身中声明。
++ entry .Reshapable   从 `murmuration` 重新导出：由变换后的元素按集合自身的形状重建集合
++ entry .Mappable   从 `murmuration` 重新导出：`map` 背后的值映射类型类
++ entry .Reversible   从 `murmuration` 重新导出：`reverse` 背后的类型类
++ entry .Inclusive   从 `murmuration` 重新导出：`has` 背后的成员判断类型类
++ entry .Convertible   从 `murmuration` 重新导出：转换为所请求的形状，即 `to[Form]` 背后的类型类
++ entry .Keyed   从 `murmuration` 重新导出：具有键和值的容器，即 `keys` 和 `values` 背后的类型类
++ entry .Intersectable   从 `murmuration` 重新导出：`intersect` 和 `except` 背后的集合代数类型类
++ entry .SortAlgorithm   从 `murmuration` 重新导出：排序算法，从 `sortingAlgorithms` 中选择
++ entry .Iterator   从 `murmuration` 重新导出：一次性遍历，其 `next()` 在末尾产出 `Iterator.Exhausted`
++ entry .reverse   从 `murmuration` 重新导出：逆序排列的元素
++ entry .has   从 `murmuration` 重新导出：集合是否包含某个值（对 `Map` 而言是其键）
++ entry .map   从 `murmuration` 重新导出：保持形状地变换每个元素（对 `Map` 而言是其值）
++ entry .remap   从 `murmuration` 重新导出：把每个元素（对 `Map` 而言是其键值对）变换为新的形状
++ entry .bind   从 `murmuration` 重新导出：单子绑定，把每个元素映射为一个集合，再展平
++ entry .flatMap   从 `murmuration` 重新导出：以 `for` 推导式脱糖所用的名称提供的 `bind`
++ entry .filter   从 `murmuration` 重新导出：满足谓词的元素；没有 `filterNot`
++ entry .withFilter   从 `murmuration` 重新导出：`for` 推导式脱糖所得的守卫
++ entry .foreach   从 `murmuration` 重新导出：访问每个元素；首选的写法是 `each`
++ entry .exists   从 `murmuration` 重新导出：是否有某个元素满足谓词
++ entry .fold   从 `murmuration` 重新导出：使用双参数 lambda 的左折叠；`fuse` 是其上下文形式
++ entry .flat   从 `murmuration` 重新导出：展平一层嵌套
++ entry .trace   从 `murmuration` 重新导出：保留每个中间状态的左折叠
++ entry .excerpt   从 `murmuration` 重新导出：两个从零开始的位置之间的元素
++ entry .group   从 `murmuration` 重新导出：按键分组到一个 `Map` 中的元素
++ entry .distinct   从 `murmuration` 重新导出：去除重复项后的元素
++ entry .deduplicate   从 `murmuration` 重新导出：按某个键去除重复项后的元素
++ entry .zip   从 `murmuration` 重新导出：把两个集合的元素配对
++ entry .batched   从 `murmuration` 重新导出：按给定大小分组的元素
++ entry .span   从 `murmuration` 重新导出：在第一个不满足谓词的元素处拆分
++ entry .partition   从 `murmuration` 重新导出：拆分为满足谓词的元素和其余元素
++ entry .sweep   从 `murmuration` 重新导出：被偏函数接受并经其变换的元素；即标准库的 `collect`
++ entry .keys   从 `murmuration` 重新导出：键值容器的键
++ entry .values   从 `murmuration` 重新导出：键值容器的值
++ entry .count   从 `murmuration` 重新导出：满足谓词的元素个数；`count(_ == x)` 统计某个值
++ entry .intersect   从 `murmuration` 重新导出：两个集合共有的元素
++ entry .except   从 `murmuration` 重新导出：一个集合中不在另一个集合中的元素
+
+@ 0 8 0 1db8da0a6c1550a31c5bd8e012685cd6
++ entry .apply   `xs(index)`：用受限索引直接读出元素，用其他索引则读出 `Optional`
++     通用的按索引读取操作，位于 `concordance` 库中，适用于任何具有 `Applicable` 实例的值——集合按 `Ordinal`，`Map` 按键，`Text` 按 `Ordinal`，`Bijection` 按键。
++     它在编译时按索引的类型分派：类型为 `Operand in xs.type` 的索引——即 `confine`、`pick`、`iterate`、`within`、`Surveyor` 或 `Lattice` 已经针对*这个*值检查过的索引——直接取到元素，结果是裸元素；其他任何索引都要做边界检查，结果是 `Optional`。
++     不存在可能抛出异常的部分读取。
+
+% 2 1 0 0bbed1313d3f94f40c3136767c4fff5b
+
+% 3 1 0 1e4907700d1960ea0ea7e1ed29420c89
+
+@ 0 1 0 165cce3032208c14078a36fa388354f2
++       label 未经检查的索引读出 Optional
+
+% 1 1 0 0f5001cc97ce698f0f5ccddd076a8807
+
+% 0 1 0 12cc05c723d951d01bf333e3a35bc131
+
+% 0 1 0 1dfe1171c01f57561f68a3d689e24b64
+
+% 0 1 0 107f7ffecd41739112ffb8ca0aae6cd2
+
+% 1 1 0 0b198210f35e050312f221c95b4a9d15
+
+@ 0 1 0 0edb32f1b5639fa10507fa1aae5b864d
++       label confine 只检查一次，并给索引加上品牌
+
+% 1 1 0 17b341a5824ee32c14c90f455e0e94c9
+
+% 0 1 0 0eab6ee4e9c61fca1db8630807488092
+
+% 1 1 0 1413ed0e7f302f1a1d5b86a7b52eeb2a
+
+@ 0 1 0 1c2e6de8db1110b90dae09ea8cf310f6
++       label pick 把检查与使用融合在一起
+
+% 1 1 0 1b7229d7c2f4bbf612d45228d9cbeed6
+
+% 0 1 0 1f4d3266e3024f14125cf713378f06ba
+
+% 1 1 0 049c9241d174927904f8629326552a40
+
+@ 0 1 0 1a1f468aa1d2b78010da0381d72418e7
++       label iterate 交出已经证明过的索引
+
+% 1 1 0 18d8cbf3347d0ebb1c223d3a27135c34
+
+% 0 1 0 0a0e62a455a4b496031624e203295df2
+
+% 1 1 0 00b7dc73c21b93ac062c1aec81b301a2
+
+% 2 1 0 07df9bc68aa19fed13d21e93ee733071
+
+@ 0 7 0 054e39aeb023cc7a16a91acd17428b3e
++     类型为 `& Sized[n]` 的冻结数组（字面长度的 `Array.fill`、`Array.tabulate`、`Data.fill` 或 `sized[n]`）还有一个重载：*字面*序数——`Ter`、`7.z`——在代码编译时就与 `n` 比较，因此读取得到裸值，而超出范围的字面量是编译错误，_the ordinal 3 is beyond the array's proven length of 3_；变量序数则走 `Optional` 路线。
++     在 `List` 上，越过头部的任何位置都要遍历列表，需要 `dysasymptotics.linearAccess`。
++     以通配符导入的 `rudiments.*` 会用这个 `apply` 遮蔽可变 `Array^` 自己的 `apply(Int)`。
+
+@ 0 4 0 141b705ce1e723dc045b0b064f96343f
++ entry .at   `xs.at(index)`：与 `xs(index)` 相同的读取，使用其旧名称
++     与 `apply` 完全相同——受限索引得到裸值，否则得到 `Optional`——保留它是为了衔接那些把按位置访问写作 `xs.at(Sec)`、把按键访问写作 `map.at(key)` 的代码。
++     位于 `concordance` 库中。
+
+@ 0 4 0 0803d5decb6f8d2d1aa5bb7bda85b2e4
++ entry .defines   `xs.defines(index)`：某个索引或键对某个值是否有定义
++     通过 `Applicable` 实例提供 `map.defines(key)` 和 `xs.defines(ordinal)`，并在标准库的 `scala.collection.Map` 上提供 `map.defines(key)`。
++     位于 `concordance` 库中。
+
+@ 0 6 0 0ec98f63a85bc4a1198c56543601359f
++ entry .confine   `xs.confine(index)`：针对某个值检查索引，并返回带有该值品牌的索引
++     产出 `Optional[Operand in xs.type]`：索引无定义时为 `Unset`，否则就是索引本身，并附带它对 `xs` 处于范围内的证明，因此随后的 `xs(i)` 得到裸值，不再做第二次检查。
++     它把 denominative 的 `within`（针对序数）推广到任何索引类型，包括映射的键。
++     对于稳定路径上的不可变接收者，它是可靠的。
++     位于 `concordance` 库中。
+
+% 2 1 0 07d9c7f33edbdbe114fb3daf56ac3d30
+
+% 3 1 0 03792bc28574b97201a38ca982ef66e1
+
+% 0 1 0 15cf56b2bc02120016b6b20e40e2baaf
+
+% 0 1 0 0da9c637cc4e9b64118a0f91df8eab30
+
+% 1 1 0 1c21d1584739288d11a66d75c481722e
+
+@ 0 5 0 06471e8c5ac7790a0c5ea33c7f8094ab
++ entry .pick   `xs.pick(index)(lambda)`：`confine` 与 `let` 的融合形式
++     检查过的索引到达 lambda 时已经是受限的，因此主体中以它读取 `xs` 得到裸值，并且不会构建中间的 `Optional[Operand]`；结果是 `Optional[result]`，索引无定义时为 `Unset`。
++     如果主体只是读取元素，`xs(index)` 本身就已表达了这一点。
++     位于 `concordance` 库中。
+
+% 2 1 0 1a03d2902deac80906c11fe4cdeaaefd
+
+% 3 1 0 1ec24d7142837f85159868d4d8a287bb
+
+% 0 1 0 0c8ffee8a59f2d47097aa598b759c0af
+
+% 0 1 0 0fde935f94566e1915268c6a871cada3
+
+% 1 1 0 10d16cf69683761f1dd6ca578e403708
+
+@ 0 8 0 1b50183640cfef100ffb23ea3a883160
++ entry .unsafeAttested   凭调用者的担保，把一个索引或区间标记为对某个值有效
++     `xs.unsafeAttested(index)` 是不做检查的 `confine`：它在一个 `Unsafe` 令牌下（因此调用处位于 `unsafely` 之内）直接铸造 `Operand in xs.type`，用于证明无法跟随程序的两个地方——宏的引用边界，以及索引运算。
++     代码块形式 `xs.unsafeAttested(index) { i => … }` 把担保的作用域限定在一个 lambda 内，而 `interval.unsafeAttested(xs)` 为 `xs.iterate(range)` 之类的批量操作担保一个 `Interval`。
++     每个调用处都带有一条注释，指出证明该边界的构造：这条注释就是证明。
++     位于 `concordance` 库中。
+
+% 2 1 0 1cd85ead19fdec4703634a9a40e683ad
+
+% 3 1 0 0b0d21502cdd7db105acc32c456e0422
+
+% 0 1 0 11ffb27e0432af721657799d6bedaaa1
+
+% 0 1 0 1ee937620fd36ed00be4b497beef38db
+
+% 0 1 0 04533c7bf32cb0ae13438b2019f825fc
+
+% 0 1 0 1f4851f735ca7cdf1d5f6948c7c02ac4
+
+% 1 1 0 10cd1a69ef614cbe000df8a84294e013
+
+@ 0 7 0 06ee487203d6dc1a042a835f87ce92f3
++ entry .sized   `xs.sized[n]`：检查一次值的长度，并将其记录为 `& Sized[n]`
++     `Array(1, 2, 3, 4).sized[4]` 是 `Optional[xs.type & Sized[4]]`：长度不同时为 `Unset`，否则就是该值，其长度已体现在类型中，因此小于 `n` 的字面序数读取得到裸值，而等于或超出 `n` 的则无法编译。
++     它是 `occupied` 在长度方面的对应物，适用于任何 `Countable` 值；当 `n` 是字面量时，字面构造器 `Array.fill(n)`、`Array.tabulate (n)` 和 `Data.fill(n)` 会以同样的方式给结果加上品牌（`val` 长度则不会）。
++     位于 `concordance` 库中。
+
+% 2 1 0 1e391b7e6f981cce0093871ceb6ea71a
+
+% 3 1 0 0487f07a08dcdcc41b5524594e013d44
+
+% 0 1 0 0dd65affd32388491946efc95b0b306d
+
+% 0 1 0 0ddc205161ed88c804ef921137450220
+
+% 1 1 0 02b80e8c963a1f210ec0aca89c7b5db2
+
+@ 0 3 0 19985a3640bac60406e8258bab6061c8
++ entry .bijection   `map.bijection`：由标准库映射得到的 `Bijection`
++     `scala.collection.Map` 上的扩展方法，同时构建逆映射。
++     位于 `concordance` 库中。
+
+@ 0 1 0 0172e50f04b03f921722ee88cce2826c
++ entry .Bijection   一一映射，可双向读取
+
+% 1 1 0 164e37163e6dabf21d2add349f16b209
+
+@ 0 5 0 165c070d8d6b2d140c127a940534e803
++       `Bijection(map)` 持有一个标准库不可变映射及其转置，因此 `flip` 能在常数时间内交换键和值，`get` 按键查找，`-` 移除一个键及其转置后的条目。
++       它是一个标准库 `Map`，也是由键值对组成的 `Iterable`，并且按键 `Applicable`，因此 `bijection(key)`、`at` 和 `defines` 都适用于它。
++       位于 `concordance` 库中。
+
+% 2 1 0 1c986bffa397b5451b139bfb6a8b4054
+
+% 3 1 0 123461f1e4b56f6d03aa9fe372f3eba4
+
+% 0 1 0 0e9fce4d71e1a7220bb3be962a0240d7
+
+% 0 1 0 0b7732fb2a9be54817d641b15a116686
+
+% 0 1 0 0a07342b0ce5e2e4021027f5f57f8a3a
+
+% 0 1 0 0b54f2a250c3c0d4103bfd073ff0ae43
+
+% 1 1 0 0668d4f465c1d7800c185bb98c34c544
+
+@ 0 8 0 00d9ce1d073cfd9f13e65ea208297780
++   entry .apply   `Bijection(map)`：由映射得到的双射，并计算其逆映射
++   entry .indexable   `Applicable` 实例：双射按键索引
++   entry #map   正向映射
++   entry #transposition   逆映射，从值到键
++   entry #iterator   键值对，按正向映射的顺序
++   entry #-   移除一个键及其转置后的条目；有接受多个键的重载
++   entry #get   某个键对应的值，以标准库 `Option` 表示
++   entry #flip   逆双射，共享两个映射；翻转两次得到原双射
+
+@ 0 1 0 06a3f49c55061f620e81c07ce33fc59a
++ entry .Segmentable   可以按 `Interval` 截取连续部分的值的类型类
+
+% 1 1 0 101c66efb61c2b961782d5232ec0e0e9
+
+@ 0 16 0 1a88a31abcdbbc310e0ef198bc0be915
++       `value is Segmentable` 只有一个方法 `segment(value, interval)`，以及表示结果的类型成员 `Segment`：对集合而言是普通的集合类型（非空列表的片段可能为空，因此 `Populated` 品牌不会保留），对文本类型而言是该值自身的类型，由 `Textual` 固定，使带样式文本的片段保留其样式。
++       每个按位置的操作——`segment`、`before`、`upto`、`from`、`after`、`keep`、`skip`、`snip`、`tail`——都基于它编写。
++       `List`、`Sequence`、冻结数组、标准库 `IndexedSeq` 和 `Text` 的实例都在伴生对象中；`Chain` 有意没有实例，因为截取片段会强制求值它，它自带惰性的 `keep` 和 `skip`。
++       位于 `concordance` 库中。
++   entry .indexedSeq   标准库 `IndexedSeq`，通过 `slice`
++   entry .frozenArray   冻结数组，借助其 `ClassTag` 复制，而不是通过 `slice`
++   entry .sequence   `Sequence`（任何子类型，因此带品牌的字面量也符合），得到普通的 `Sequence`
++   entry .list   `List`（任何子类型），得到普通的 `List`
++   entry .text   `Text`，通过 `substring`，截断到文本的长度
++   entry #Segment   片段的类型：普通集合，或文本类型本身
++   entry #segment   值在某个区间内的部分
+
+@ 0 1 0 05330b14bd24730715aae296c3cb41d6
++ entry .Appendable   `xs :+ element` 背后的类型类：单元素增长
+
+% 1 1 0 0012e75db999894a048d28196c1a61cf
+
+@ 0 8 0 07238222d46e03ba1d315551b108bc6c
++       `self is Appendable by element` 追加一个元素：对有序的形状（`List`、`Sequence`、`Chain`、冻结数组）追加在末尾，对没有两端的 `Set` 则作为成员添加。
++       集合与集合的拼接是 symbolism 的 `Concatenable`，即 `xs + ys`。
++       追加时需要重建整个集合的实例——`List` 和冻结数组，两者都是 O(n)——要求 `Dysasymptotic.LinearSize` 标记，因此向列表追加元素的文件要导入 `dysasymptotics.linearSize`，明确表明这一点；`Sequence`、`Chain` 或 `Set` 的追加不受门控。
++       它在接收者上按子类型参数化，因此带品牌的非空字面量会保留其品牌。
++       位于 `concordance` 库中。
+
+% 2 1 0 0b28ddeffa04e78e1fa8829856e69b15
+
+% 3 1 0 135bce9d30fb33e51b10c93ff860421d
+
+% 0 1 0 0bf87a32fe9bce971e59d6ea8c2a0221
+
+% 0 1 0 11a54c60b13fec2014ffd68bf0f50705
+
+% 0 1 0 11a8e71c5f4441111fd5352b9eddd523
+
+% 0 1 0 0ef2fe39bcbd927401c72a99bdc404e9
+
+% 1 1 0 067ef1e1653b2d940ba9d749d9d9d2b8
+
+@ 0 6 0 16430718bfb4aa9d19f702d706f52d06
++   entry .list   通过复制向 `List` 追加：受 `linearSize` 门控
++   entry .sequence   向 `Sequence` 追加
++   entry .chain   惰性地向 `Chain` 追加
++   entry .set   向 `Set` 添加一个元素
++   entry .frozenArray   通过重建向冻结数组追加：受 `linearSize` 门控
++   entry #append   添加了一个元素的集合
+
+@ 0 3 0 0dd36966a267d6ce09d42acbf7a73c49
++ entry .:+   `xs :+ element`：通过 `Appendable` 在末尾追加一个元素后的集合
++     位于 `concordance` 库中。
++     在 `List` 或冻结数组上，它需要作用域中有 `dysasymptotics.linearSize`，因为这种追加是线性的。
+
+@ 0 1 0 138732ab51bf5b970e203833abe07b90
++ entry .Prependable   `element +: xs` 背后的类型类：在前端的单元素增长
+
+% 1 1 0 02ab087e25abe6260bb0a01c908f0590
+
+@ 0 8 0 096690c3b3e401bd1c1f0bc9e67dbd6a
++       `Appendable` 在前置方面的对应物。
++       对 `List` 和 `Chain` 而言，前置是 O(1) 的，因此只有冻结数组的重建受 `Dysasymptotic.LinearSize` 门控；`Sequence` 的前置不受门控。
++       位于 `concordance` 库中。
++   entry .list   向 `List` 前置，与 `::` 相同
++   entry .sequence   向 `Sequence` 前置
++   entry .chain   惰性地向 `Chain` 前置
++   entry .frozenArray   通过重建向冻结数组前置：受 `linearSize` 门控
++   entry #prepend   在前面加了一个元素的集合
+
+@ 0 3 0 00e284b17b7f99c812f2817ce340d8ec
++ entry .+:   `element +: xs`：通过 `Prependable` 在前面加上一个元素后的集合
++     右结合，因此接收者是元素，参数是集合。
++     位于 `concordance` 库中。
+
+@ 0 1 0 0d573a260a28e23611a6a0683f3bef14
++ entry .Scribe   新分配数组上的写句柄，其每个索引都被证明处于范围内
+
+% 1 1 0 0426eb4f25923b8d0a2c0c02ba6fd498
+
+@ 0 10 0 1165bd5e815f3d8d1c5a6eb23df53069
++       `Scribe[element]` 是受限读取在写入方面的对应物：它是对 `Array.scribe` 或 `Array.collect` 刚刚分配的数组的不透明句柄，只允许通过带有该 scribe 本身品牌的序数进行写入（以及读回）——`scribe(i) = v`，其中 `i: Ordinal in scribe.type`——以及在它自己的游标处顺序 `append`，对精确大小的缓冲区，追加到末尾时会被截断，对未指定大小的缓冲区则会扩容。
++       调用者能够触及的位置都不会越界，并且由于借出者在其 lambda 返回时就让唯一的写入者退役，冻结结果无需复制。
++       scribe 是 `Countable` 的，因此整个受限扫描系列（`iterate`、`spot`、`lead`、`pare`、`retrace`）以及 `lattice` 都可以直接用于它。
++       位于 `concordance` 库中，不导出到 `soundness` 总括包：请使用 `import rudiments.*` 或 `import rudiments.{Scribe, scribe}`。
+
+% 2 1 0 111c6b769e9b32ed0374c96dbc6b579b
+
+% 0 1 0 1b37cbc63d64b0a31268700657abfadb
+
+% 1 1 0 00cc9ac3f75593f208b44d40daab7ed9
+
+% 0 1 0 099a245f4b461b9f16fea7de35561733
+
+% 0 1 0 0619683095c7ac4f19da1cd620f96cdf
+
+% 0 1 0 0a58d2b91b6ab5220cf3a7042469e024
+
+% 0 1 0 04127fc204e7b6b417b7bd950902f559
+
+% 0 1 0 1931c8d8ad311abd000202e4559841fc
+
+% 1 1 0 0aba5ff1cae5244a0c8c93b7ffc5023f
+
+% 0 1 0 036272047b09ae7515113fb5cb5d34fc
+
+% 0 1 0 03452cd9c32155f319c5a49a3fe63f69
+
+% 0 1 0 1aad5137a790d48a00fa8ec28ca06aec
+
+% 0 1 0 009247110c41171a027d2ad242b06d26
+
+% 0 1 0 1fd9766e21a893991b57463fb451f537
+
+% 0 1 0 0b5b8cbb6010e0ee074cb62d1cd8f488
+
+% 1 1 0 12a82291a6605bab02d1b077bf233034
+
+% 0 1 0 0f6de79b4633b4bf16fd96f8e4f8985f
+
+% 0 1 0 0ed0879315885e1516f3aacb226bf176
+
+% 0 1 0 1185ed626bfeebc61c5da7c09b8e0324
+
+% 1 1 0 177a52d428bd207f1fbdee0eaeffd83c
+
+% 2 1 0 0d53e48d12c1f6500baaa334542001b1
+
+@ 0 2 0 10edd69970ec4019018b3fe52f370d75
++       字节 scribe 另外还有 `appendVarint` 和 `appendUtf8`，它们只做一次容量检查就写入一个完整的值。
+
+% 0 1 0 1aa8d125363a8a491af3e35f32479ae3
+
+% 0 1 0 0744d36044a6ee7f0f4841d1c2027f33
+
+% 0 1 0 09b47ccc21ac248800fedddb8dbc00cc
+
+@ 0 1 0 13179e2e30221efe13ed7c8816f2be2a
++   entry .Core   scribe 背后的载体：缓冲区及其游标
+
+% 1 1 0 16ea6ef1ce25accf01047d5261b75fb5
+
+% 2 1 0 1f98a4512f835cc2115116ae80eaca90
+
+@ 0 27 0 012d8cde5632554d13075f76b8c65c23
++         不供直接使用：它之所以是公开的，只是因为内联的借出者和访问器会在调用者的包中展开，必须能够指名它。
++         它持有无类型的缓冲区、追加游标 `mark`，以及该 scribe 是否会扩容。
++     entry #mark   追加游标
++     entry #buffer   无类型的底层数组
++     entry #growable   越过末尾的追加是否会扩容缓冲区
++   entry .countable   scribe 的大小就是其缓冲区的长度，因此受限扫描系列适用于它
++   entry .apply   `Scribe(buffer)` 铸造一个精确大小的 scribe；`scribe(i)` 在带品牌的序数处读回
++       两个同名的重载。
++       在伴生对象上，`Scribe(buffer)` 把一个可变的 JVM 数组包装为精确大小的 scribe——这是 `Array.scribe` 所用的铸造方式，它会截断而不是扩容。
++       作为 scribe 上的扩展方法，`scribe(i)` 读回 `i: Ordinal in scribe.type` 处的元素，不做边界检查，因为品牌已经证明了范围。
++   entry .varintLength   `Long` 的 LEB128 编码占用多少字节，1 到 10
++   entry .varintInto   把 `Long` 以 LEB128 写入 JVM 字节数组的某个位置，并返回其后的位置
++   entry .utf8Length   字符串 UTF-8 编码的长度，无需实际编码
++       代理对计为一个四字节序列，孤立的代理项计为 JDK 编码器所替换成的 `?` 的那一个字节。
++   entry .utf8Into   把字符串以 UTF-8 编码写入 JVM 字节数组的某个位置，并返回其后的位置
++   entry .update   `scribe(i) = value`：在带有该 scribe 品牌的序数处写入，不做边界检查
++   entry .append   在 scribe 的游标处写入并前移游标：一个元素、一整个冻结数组，或其中的一个窗口
++       `append(value)` 写入一个元素；`append(array)` 复制一个冻结数组；`append(array, from, count)` 复制其中的一个窗口，供追加更大数据块中某个切片的分帧格式使用。
++       在精确大小的 scribe 上，越过末尾的写入会被丢弃；未指定大小的 scribe 则按倍增扩容。
++   entry .mark   `scribe.mark`：到目前为止追加到 scribe 中的元素个数
++   entry .place   `scribe.place(array, at)`：在带品牌的位置复制进一个冻结数组，返回放入了多少个元素
++       复制会被截断到 scribe 的末尾，并且不移动追加游标。
+
+@ 0 3 0 08a90da4569ad68e085eeed55d103a1b
++ entry .appendVarint   `scribe.appendVarint(long)`：向字节 scribe 追加一个 LEB128 varint
++     一到十个字节，只做一次容量检查即写入；小于 128 的值作为其本身的单个字节追加。
++     位于 `concordance` 库中；不导出到总括包。
+
+@ 0 4 0 0d278120dfdc114c0a18d0795efbf6ed
++ entry .appendUtf8   `scribe.appendUtf8(string)`：向字节 scribe 追加字符串的 UTF-8 编码
++     直接编码到缓冲区中，不经过中间数组，并带有 ASCII 快速路径；孤立的代理项编码为 `?`。
++     位于 `concordance` 库中；不导出到总括包。
+
+@ 0 8 0 13bbb9591793e5501089c40fe5de3df1
++ entry .scribe   `Array.scribe[element](size)(scribe => extent => …)`：分配、借出 scribe、冻结
++     `Array` 伴生对象上的扩展方法，位于 `concordance` 库中。
++     它分配一个恰好 `size` 个元素的数组，借出其上的 `Scribe` 以及作为 `Interval in scribe.type` 的范围——因此 `scribe.iterate(extent)` 和 `scribe(i) = v` 都是全函数——并在 lambda（唯一的写入者）返回后返回冻结的数组。
++     通过 `append` 越过末尾的写入会被丢弃，而不会扩容：结果的长度总是恰好为 `size`。
++     需要元素的 `ClassTag`。
++     不导出到总括包：`import rudiments.scribe`。
+
+% 2 1 0 0028c7f169f53ae91ecddecf0b1bbb86
+
+% 3 1 0 12e4ad49820580fc1adefc3be8980a05
+
+% 0 1 0 131b7078fa788d5914928ff900d90b64
+
+% 0 1 0 1f9fe3a6ba7de5ec033bddc95187970e
+
+% 0 1 0 04f8b52eb7b936ad1da79b3e504ede7e
+
+% 0 1 0 05c71502cccae5ff0e7c3b9d9e770025
+
+% 1 1 0 0e781b5e07af689d018f101451d04c8b
+
+@ 0 9 0 16c709ef2229ed89049b1e5efa369457
++ entry .collect   `Array.collect[element](hint)(scribe => …)`：恰好由代码块所追加内容构成的数组
++     `Array` 伴生对象上的扩展方法，位于 `concordance` 库中：可扩容的借出者，用于长度无法预先知道的结果——也就是以前处处求助于 `java.io.ByteArrayOutputStream` 的场合，但没有它的同步、它不可能发生的 `IOException`，也没有 `toByteArray` 每次调用都要做的复制。
++     scribe 起始容量为 `hint` 个元素（至少 16），按 `append` 的需要倍增，如果缓冲区恰好被填满，结果无需复制即可冻结。
++     lambda 不会收到带品牌的范围，因为没有固定的范围可以打上品牌：未指定大小的 scribe 通过 `append` 和 `place` 写入。
++     不导出到总括包：`import rudiments.collect`。
+
+% 2 1 0 1d7d94b2ff1df95c171b89d64b0efb68
+
+% 3 1 0 0aebc319b3ab30c019350d6b3a3c4633
+
+% 0 1 0 08288b8fd3de9931063f267df82ded5f
+
+% 0 1 0 070f79ed6730c4b40b079fa09f564956
+
+% 0 1 0 144076bb95e49f0d143b1c88125a4853
+
+% 0 1 0 0a71cccc5744238013517f252c16be85
+
+% 1 1 0 0b6381153a2a17ad0748ffd73065a3b6
+
+@ 0 1 0 1e7720f70f91b9f90a025f5b09de267c
++ entry .Scroll   可扩容的基本类型（或任意类型）数组，不装箱，以 `Int` 索引
+
+% 1 1 0 0a13d99c00ba95e615c31f75cb20e894
+
+@ 0 9 0 14d7fd7c9955787208c3d78269a76007
++       `Scroll[Int]()` 是 stdlib `ArrayBuffer[Int]` 的不装箱替代品，后者的底层存储持有装箱后的引用：具体元素类型的 scroll 直接读写 JVM 基本类型数组，因此 `scroll.append(1)` 就是一条 `iastore`。
++       它是 `Scribe` 的同类，用于在计算出的位置写入、并在多次解析之间复用的描述符构建器和样式栈：可公开构造、可 `clear`，以普通 `Int` 索引，并对照其 `length` 检查（否则抛出 `IndexOutOfBoundsException`）。
++       `freeze` 把到目前为止的元素作为精确大小的冻结数组给出，scroll 仍可继续使用。
++       位于 `concordance` 库中；不导出到总括包，因此请 `import rudiments.Scroll`。
+
+% 2 1 0 1c2f11c2405d91bd1ccdba1ed184833b
+
+% 3 1 0 0bfc9d946f24058813fb39a885db1abb
+
+% 0 1 0 0624148bf54848f9022c856de4aadf66
+
+% 0 1 0 1d1d10126e8c749314788e3bd0d3898b
+
+% 0 1 0 0e3360120345563106df8579c9888a3e
+
+% 0 1 0 062aeb2a0bcb6c3a1c98c4bd2669fa51
+
+% 0 1 0 1d9f3e4dedb9d33201f95ff7bb7ce2ac
+
+% 0 1 0 1918dc4f65d189d116a2fd2fa4b433aa
+
+% 0 1 0 0e143a1317a2e898026eac693ea50cb2
+
+% 0 1 0 1057533327ecb6f213944b7eeb34e82c
+
+% 1 1 0 023533307e7139eb1396d34a052a673f
+
+% 0 1 0 16fabe80158479210589a2063b025141
+
+@ 0 1 0 0d95fdc49f7c80bd01bd411f643a3707
++   entry .Core   scroll 背后的载体：无类型的缓冲区及其长度
+
+% 1 1 0 1e908079d7899d281702c8b0248ecff6
+
+% 2 1 0 00d21d58328154b8113af06657f90cef
+
+@ 0 16 0 03754967e09f524603e10bfda778b9c3
++         不供直接使用：它之所以是公开的，是因为内联访问器会在调用者的包中展开。
++     entry #buffer   无类型的底层数组
++     entry #length   持有的元素个数
++   entry .apply   `Scroll[element](capacity)` 创建空的 scroll；`scroll(index)` 读取一个元素
++       两个同名的重载。
++       在伴生对象上，`Scroll[element](capacity)` 创建一个至少有 16 个槽位的空 scroll，需要元素的 `ClassTag`。
++       作为 scroll 上的扩展方法，`scroll(index)` 是从零开始的 `Int` 处的元素，对照长度检查，超出时抛出 `IndexOutOfBoundsException`。
++   entry .length   `scroll.length`：scroll 持有多少个元素
++   entry .isEmpty   `scroll.isEmpty`：scroll 是否不持有任何元素
++   entry .update   `scroll(index) = value`：替换 scroll 中某个小于其长度的索引处的元素
++   entry .last   `scroll.last`：scroll 中最近追加的元素；scroll 为空时抛出异常
++   entry .append   向 scroll 追加一个元素、另一个 scroll 的所有元素，或 JVM 数组的一个窗口
++   entry .retract   `scroll.retract(count)`：丢弃 scroll 的最后 `count` 个元素，保留容量
++   entry .clear   `scroll.clear()`：丢弃 scroll 的所有元素，保留容量
++   entry .freeze   `scroll.freeze`：到目前为止的元素，作为精确大小的冻结数组；scroll 不变
+
+@ 0 1 0 0b810339d7d741951f314449eb3b5408
++ entry .Surveyor   在可索引集合上逐步推进的游标，它返回的游程和位置都带有品牌
+
+% 1 1 0 00f5e6a047ae40140f5b90690d500bb4
+
+@ 0 10 0 0c25df8e118cf3d6001f6faec803dfb9
++       `Surveyor` 是受限的解析器游标：在稳定、可索引的集合上的可变位置，由 `value.survey { surveyor => … }` 借出，它产生的一切都带有该集合的品牌——游程是 `Interval in value.type`，位置是 `Ordinal in value.type`——因此它们可以无需边界检查地传给 `apply`、`iterate` 和 `segment`，游程长度来自区间大小，而不是索引运算。
++       这是各个扫描式解析器最终汇聚到的形状：`pace(_ == ' ')` 跳过空白并报告跳过了多少，`pace(_ != ':')` 扫描到分隔符，`peek` 按当前元素分派，`next` 消费一个元素，`matches` 测试一个标记，`glimpse` 借出固定长度的前瞻窗口。
++       裸位置上不提供读取，因此不存在可调用的部分函数。
++       位于 `concordance` 库中；不导出到总括包（`import rudiments.{Surveyor, survey}`）。
+
+% 2 1 0 05ccf2e65e75d0e60dc007b60dab1d7a
+
+% 3 1 0 1943ac968cf207ae02f00c27792c8495
+
+% 0 1 0 001a59c0422f73f90a787d3de4f2b71a
+
+% 0 1 0 06906807fb58cd08128be32388bf272f
+
+% 0 1 0 0b90ada8824b9cce0f0e37b6aec25796
+
+% 0 1 0 1d25350e9dbbe4db1332cd13924a95fe
+
+% 0 1 0 03a1f923022f5460080f0ece23b7e86f
+
+% 0 1 0 1e0e9b95e8bc065d0d00abccb2962901
+
+% 0 1 0 17f8a9f9b1a84d901e87b4d160e7a9d4
+
+% 0 1 0 0e472172ca4365340200cc2a5c211fb6
+
+% 1 1 0 13bda11534736bfc13113e48c08f6be6
+
+% 0 1 0 03aac2006e934f88094ad5ab8e03d880
+
+@ 0 14 0 1dad381cc79397280ae55bd9aa881f6d
++   entry #passed   当前位置，从集合开头算起
++   entry #more   是否至少还剩一个元素
++   entry #advance   越过一个元素；耗尽时为 false
++   entry #peek   当前元素是否满足谓词，不前移；耗尽时为 false
++   entry #next   `next(otherwise)(lambda)`：把当前元素消费到 lambda 中，耗尽时得到 `otherwise`
++   entry #take   最多消费 `count` 个元素，返回实际经过的带品牌游程
++   entry #matches   此处的元素在某种相等关系下是否与模式匹配，不前移
++       `surveyor.matches(t"bcd") { (left, right) => left == right }` 逐个元素地与任何 `Countable` 且 `Applicable by Ordinal` 的模式比较；剩余元素少于模式长度时为 false。
++   entry #glimpse   接下来 `count` 个元素的带品牌窗口，不前移；剩余不足时为 `Unset`
++   entry #point   带品牌的当前位置；耗尽时为 `Unset`
++   entry #remainder   尚未经过的全部内容，作为带品牌、可能为空的区间
++   entry #pace   越过满足谓词的元素游程，并将其作为带品牌的区间返回
+
+@ 0 8 0 0fce32316058257e1ee2dccb26b07129
++ entry .survey   `value.survey { surveyor => … }`：在集合或其带品牌的子区间上借出 `Surveyor`
++     任何 `Applicable by Ordinal` 且 `Countable` 的值（`Text`、`Sequence`、冻结数组、`Scribe`）上的扩展方法，位于 `concordance` 库中。
++     单参数形式 `value.survey(range)` 把勘测器限制在一个 `Interval in value.type`（如 `value.extent.capped(4)` 或 `value.extent.beyond(2)`）中：它从区间起点开始，在其界限处耗尽，因此以集合自身长度以外的任何东西为界的扫描都不会越界。
++     不导出到总括包：`import rudiments.survey`。
+
+@ 0 1 0 061f8c4654ea9b5d026be70646ae095e
++ entry .Lattice   线性集合的二维寻址：行和点作为带品牌的区间和序数
+
+% 1 1 0 185a5df4333be6550f5fcca28975f79b
+
+@ 0 9 0 0f14e961aef2c7e11ae8629be445b61c
++       `Lattice` 本身不打任何品牌；它根据 `(x, y)` 坐标为集合推导出线性的带品牌区间和序数，因此每次访问都经过受限机制。
++       它所取代的运算是步长不等于宽度的 `y*stride + x`——像素平面、交错行、子采样色度。
++       `row(y)` 是作为 `Interval in value.type` 的一行，`point(x, y)` 是作为 `Ordinal in value.type` 的一个位置，在格子之外各自为 `Unset`，`rows` 连同索引访问每一行。
++       借出者把高度限制为能容纳的完整行数，因此 `row` 和 `point` 在构造上就是全函数，不完整的尾行位于格子之外。
++       位于 `concordance` 库中；不导出到总括包（`import rudiments.lattice`）。
+
+% 2 1 0 0fae1d0c9dd4ae931ad0b2480bbcebc2
+
+% 3 1 0 129a121ece6e4b5709d0e2b98345ab8e
+
+% 0 1 0 0bf68aae6c11b23b0ffdce76ac3c9980
+
+% 0 1 0 1d58359ff74e59e715acc4e49fba74df
+
+% 0 1 0 1be6527587b3db5a148feeaec479f91b
+
+% 0 1 0 139553c7c469e7db158f20b9f0f5374d
+
+% 0 1 0 1bb19472cb5722ab0e707e15e8718ecb
+
+% 0 1 0 13c890324b44d12c0317e4c688c6cd29
+
+% 0 1 0 0f6130ac4cbb0a2c0071228b7c5a74dc
+
+% 1 1 0 0d46ef9d8a8443e2188c933cc9546f9c
+
+% 0 1 0 09ca94c70a1efec307e2a980b31026cd
+
+@ 0 5 0 0bcc97e4dd0927ab1682c074b69edf71
++   entry #width   一行中的元素个数
++   entry #height   集合中能容纳的完整行数
++   entry #row   第 `y` 行，作为带品牌的区间；在格子之外为 `Unset`
++   entry #point   `(x, y)` 的线性位置，作为带品牌的序数；在格子之外为 `Unset`
++   entry #rows   按顺序访问每一行，给出其索引和带品牌的区间
+
+@ 0 6 0 08d36a1b7710c94d11318b738773a0c0
++ entry .lattice   `value.lattice(width, stride, offset) { lattice => … }`：在 `Countable` 值上借出 `Lattice`
++     步长至少被限制为宽度（重叠的行会互相别名），退化的几何形状得到高度为零的格子，高度是从 `offset` 起能容纳的完整行数。
++     `value.lattice(width)` 是从开头起由连续行构成的格子。
++     由于 `Scribe` 是 `Countable` 的，其上的格子寻址的是一个写句柄。
++     位于 `concordance` 库中；不导出到总括包。
+
+@ 0 7 0 1a42d6c79f045183002f634414894b86
++ entry .pairs   以完整、互不相交的对访问集合，并把尾部剩余部分作为带品牌的区间返回
++     在任何 `Countable`、`Applicable by Ordinal` 的值上，`xs.pairs { (a, b) => … }` 按顺序传入每一对的元素，并把尾部的 0 或 1 个元素作为 `Interval in xs.type` 返回，然后按编解码器的定义由 `iterate` 或 `apply` 处理。
++     对 `List`，需要 `dysasymptotics.linearSize` 和 `linearAccess` 两者；`Sequence`、`Text` 或冻结数组则都不需要。
++     位于 `concordance` 库中；不导出到总括包（`import rudiments.pairs`）。
+
+% 2 1 0 0d183aefa193cc410e18b4596950f1b8
+
+% 3 1 0 1dd5eb5861431bec0a3e9501bbfe22ab
+
+% 0 1 0 045cb050cab877f90dfa50c0e9869be8
+
+% 0 1 0 034140ba1135937a006c27da995bbeeb
+
+% 0 1 0 0de1be3d49af471a07084bc14ad95f41
+
+% 0 1 0 05afac5ddec816bb0fbbabe8d41a707c
+
+% 1 1 0 04bfe202603d706118f24103358bf974
+
+@ 0 3 0 127675960d86a86e0057a762bd958dda
++ entry .triples   以完整、互不相交的三元组访问集合；带品牌的剩余部分有 0 到 2 个元素
++     与 `pairs` 相同，每次三个。
++     位于 `concordance` 库中；不导出到总括包。
+
+@ 0 3 0 1d0882102b8ee38e0485031817d30342
++ entry .quads   以完整、互不相交的四元组访问集合；带品牌的剩余部分有 0 到 3 个元素
++     与 `pairs` 相同，每次四个。
++     位于 `concordance` 库中；不导出到总括包。
+
+@ 0 3 0 1e13582bf7b123c41b4bbafa231a4733
++ entry .quints   以完整、互不相交的五元组访问集合；带品牌的剩余部分有 0 到 4 个元素
++     与 `pairs` 相同，每次五个。
++     位于 `concordance` 库中；不导出到总括包。
+
+@ 0 3 0 03232a0c7b5addf30fe524f2d1eeb4c0
++ entry .octuples   以完整、互不相交的八元组访问集合；带品牌的剩余部分有 0 到 7 个元素
++     与 `pairs` 相同，每次八个。
++     位于 `concordance` 库中；不导出到总括包。
+
+@ 0 4 0 1386a864c1ded95f0e4731ad6422867d
++ entry .adjacent   访问每一对重叠的相邻元素：边界窗口形状
++     `xs.adjacent { (left, right) => … }` 按顺序传入 `(xs(0), xs(1))`、`(xs(1), xs(2))`、……；四个元素给出三对，而 `pairs` 给出两对，少于两个元素时什么也不产生。
++     位于 `concordance` 库中；不导出到总括包。
+
+% 2 1 0 09c2510bf4eca1bc1de18793d28fdaf2
+
+% 3 1 0 089adbc33e270abd1438d361bfb3dffd
+
+% 0 1 0 180d763d9e7af827102d3d4e56ddd476
+
+% 0 1 0 1d02fa391a513307171c7574dc40437e
+
+% 0 1 0 120513fab8e73ab90207dfb6f795c456
+
+% 0 1 0 023ac62009eb8ea502df1649555c7b63
+
+% 1 1 0 09eff49e6bb96a0b106b314cc83a7c32
+
+@ 0 1 0 0353f6d909b1f66b0db99f89eb733c26
++ entry .sizedMacros   `Sized` 数组上字面量序数读取背后的宏
+
+% 1 1 0 03a3b8c2824c3eea09e06d995fc2404d
+
+% 2 1 0 1b0a79799c184f060bf23e2cc2e960c0
+
+@ 0 7 0 0a0d03d39efa425c13ba0c195a5e33ad
++       不供直接使用。
++       `read` 由 `Array[element] & Sized[n]` 上的 `apply` 展开：它在内联后的树中识别字面量序数——经由 `z` 的 `Int` 字面量，或命名序数 `Prim` 到 `Sept` 之一——将其与 `n` 比较，并生成裸读取，或编译错误 _the ordinal i is beyond the array's proven length of n_；变量序数则生成经过检查的 `Optional` 读取。
++       位于 `concordance` 库中。
++   entry .read   宏：在代码编译时对照已证明的长度检查字面量序数

@@ -1,0 +1,15 @@
+orthant 2 language
+
+@ 0 1 0 188df1fa5d3a04e71c5124dc71ff8f93
++ # `SN-339` — `PositionalError`（已退役）
+
+@ 0 2 0 1a537637d484d5a0090a985cc99411f5
++ 此错误已不复存在。
++ 保留本页面是为了不让该代码被重复使用，并使旧版本中对它的引用仍能被解析。
+
+@ 0 1 0 1a08cb6777f7bfef175fcbc06499ad14
++ ## 后来如何
+
+@ 0 4 0 1d0178c1d45a58d71c01d49023c59141
++ 抛出此错误的 Contextual 的 `Interpolator` API 已被 `Interpolable` 类型类和 `interpolation[…]` 入口点所取代。
++ 插值器现在通过自己的错误类型报告解析失败，其位置由宏所获得的 `origins` 确定，因此不再有需要记录的共享位置错误。

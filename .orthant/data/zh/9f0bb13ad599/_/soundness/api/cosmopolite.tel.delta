@@ -1,0 +1,10 @@
+orthant 2 language
+
+@ 0 8 0 107b358d0629d709038c662ccb2b3bd8
++   entry .encodable   把区域设置写为其语言的代码，例如 `t"fr"`
++   entry .inspectable   区域设置的调试呈现，形如 `Locale(fr)`
++       采用构造器形式，因此不会与 `.encodable` 写出的裸代码混淆。
++   entry .decodable   从语言代码读取区域设置，回退到英语
++       解码为 `Locale[en & pl & fr & de & es]`：`t"pl"`、`t"fr"`、`t"de"` 和 `t"es"` 对应各自的语言，不区分大小写，并忽略任何地区子标签，因此 `t"FR"`、`t"fr-CA"` 和 `t"fr_CA"` 都是法语。
++       其他任何文本都会被静默地视为 `en`。
++   entry #language   该区域设置所使用的语言

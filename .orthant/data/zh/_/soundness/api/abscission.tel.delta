@@ -1,0 +1,208 @@
+orthant 2 language
+
+% 0 1 0 0f04ec4b9ac2d4270a232409219e1f6b
+
+% 0 1 0 16954a4860263f300e6e6559e2691004
+
+% 0 1 0 0b5938ce7315323607e1922cbc4d93e2
+
+@ 0 1 0 0bafb754252ef4e70ab371bc1f4033d4
++ info   通过从 TASTy 重新编译，把类路径收缩为其入口点所能到达的封闭世界
+
+% 0 1 0 0ca6d61ddd9511ea1cdae38f1414f6fe
+
+@ 0 8 0 115492e9a197291b073b277b65d3462b
++     _Abscission_ 接受一个类路径和一组入口点，写出它们所到达的封闭世界：能够运行的那些类，此外别无其他。
++     这是字节码收缩器所做的工作，只是做得更早。
++     由本编译器编译的类，从类路径为它们保存的 TASTy 重新编译，而无法到达的成员在内联之后、在生成特质转发器、桥接方法或惰性值背后字段的那些阶段之前被移除，因此不会为不保留的成员生成这些东西，也不需要任何规则来保留它们。
++     编译单元在分析发现需要它们时才被读取，因此无法到达的单元永远不会被读取，其宏也永远不会运行。
+
+% 0 1 0 0797c6bf77c3030003eb6d7db95ad910
+
+% 0 1 0 1ce8fe6ca033a15a0bd38efcfa5b98d2
+
+% 0 1 0 0323f27fc4985e0804a43d7947f66e41
+
+% 0 1 0 07aa8161624367551679f30020d6e318
+
+% 0 1 0 1868d81936ed3e540c9c483296e512f5
+
+% 0 1 0 110355b92c839bd20f4c65138c78d5de
+
+% 0 1 0 1a33ee6b4a3bba2500aa229743c7c755
+
+@ 0 5 0 0de571fb819b125a0271aadd5cd9b185
++     封闭世界由三种类构成。
++     由本编译器编译且被到达的类，只带着被到达的成员重新编译。
++     由本编译器编译、但仅在签名、类型转换或类型测试中作为类型被提及的类，写成一个外壳：它的名称、标志和父类型。
++     任何其他的类，无论来自 Java、Kotlin 还是标准库，只要被保留的字节码引用了它，就原样复制。
+
+@ 0 6 0 19799460c4167aba102057a9101f11f1
++     这个库有三个源集。
++     `abscission.engine` 是 `Shaker` 和 `Shrinker`，仅针对编译器和 JDK 编写，接受普通类型，就像 `probably.Instrumenter` 那样。
++     `abscission.core` 是 `Shrink`，功能相同，但使用 Soundness 的类型。
++     `abscission.linker` 使收缩成为 Anthology `Toolchain` 中的一个步骤：`shrinkEdges`、`shrinkOptions`，以及节点 `Shrunk` 和 `Shrunk.Jar`。
++     三者都仅限 JVM，并且需要运行它们的程序的类路径上有编译器。
+
+@ 0 3 0 1d4942fab39ebfb90931ce9bdf440119
++     只有通过反射才能到达的东西必须用 `keep` 和 `pin` 明确说明。
++     封闭世界在写出之前要经过检查，先在编译器的树上检查，再在字节码上检查一次，任何从被保留之物指向被移除之物的引用都会抛出 `Shrink.Error`。
+
+% 0 1 0 0bf4eed086bff865137b3e252ba58944
+
+% 0 1 0 045547d95553f1bc11c97d237fd1c6a5
+
+% 0 1 0 1c7418be2e529ea50c66ea378c4fe6f0
+
+% 0 1 0 075df1600ec4126a16ccc6da28352bb4
+
+@ 0 1 0 0fcfda2a88d51cf3108a538b72ab1bf2
++ entry .Shrink   类路径如何收缩：选项，以及要保留和要固定的类的模式
+
+% 1 1 0 1c8bfcf315a50492052ca80063d8b3db
+
+@ 0 3 0 079a3074bb324ac804e818fb41b1296d
++       `Shrink` 是一份配置，应用它即完成工作：`Shrink(…)(classpath, entryPoints, out)` 把 `entryPoints` 所到达的 `classpath` 的封闭世界写入目录 `out`，并给出一个 `Shrink.Report`。
+
+% 2 1 0 1b56bd8e2dde6aec06bb8491582decb9
+
+% 3 1 0 09f738eed1546a531d48d10845d99ee9
+
+% 0 1 0 12a618ab3fc8ab800817fdfca2fcb19c
+
+% 0 1 0 1e3425bf937593811dbeaa98961aed7f
+
+% 0 1 0 15a3af31ebf4db211a505d510f76a415
+
+% 0 1 0 1773fd3274818d2116820a9e7d6f3d89
+
+% 1 1 0 1e08f30d3d22e4501154ff09a6bf268e
+
+@ 0 5 0 166f2315d996afad015a8f6ea8784600
++       在模式中，`*` 代表名称的一部分，`**` 代表任意数量的包，因此 `com.example.plugins.**` 匹配该包之下的每个类，`com.example.*Codec` 匹配 `com.example` 中名称以 `Codec` 结尾的每个类。
++       模式与类的二进制名称（以点号书写）进行匹配：嵌套类是 `com.example.Outer$Inner`，对象的类以 `$` 结尾。
+
+@ 0 2 0 0120dc9f5353396104be0f4f7266aa78
++       入口点是带有 `main` 方法的类。
++       `META-INF/services` 文件所列出的每个实现也都是入口点，除非 `services` 为 `false`。
+
+% 0 1 0 098062f798db4dfb1e8ca9550379cfee
+
+% 0 1 0 059d8591280efa8202edbd6d42d2cb2d
+
+@ 0 27 0 1433c7470786eb42037a527f4d61cfb3
++   entry #options   编译这些类时使用的编译器选项，Soundness 自身的选项除外
++       重新编译对整个类路径使用同一组选项：先是 Soundness 自身编译时使用的选项（已内置），然后是这些选项。
++       一个单元是否经过捕获检查，从它的 TASTy 中读取，无需说明。
++   entry #keep   要整体保留的类的模式，即反射所能到达的类
++       匹配的类被视为已实例化，它的每个成员都被保留，连同这些成员所到达的一切。
++       运行时按名称查找的类需要这样处理：用参数不是字面量的 `Class.forName` 加载的类，或者作为资源读取的类。
++   entry #pin   顶层类的模式，其所在单元原样复制
++       匹配的单元不重新编译。
++       它的类被整体复制，这些类的字节码在被重新编译的类中所提到的一切都被保留。
++       这是绕开分析出错的单元的办法，也是收缩器对无法重新编译的单元自行采取的做法。
++   entry #services   `META-INF/services` 文件所列出的每个实现是否都是入口点
++       除非更改，否则为 `true`。
++       这些文件在整个类路径上合并，并连同被保留的实现一起写出；若为 `false`，则只有当其他东西到达某个实现时，该实现才被保留。
++   entry #fine   没有 TASTy 的库是否逐个类地取用
++       Scala 库总是逐个类地取用。
++       没有 TASTy 的库（Java 或 Kotlin 的库）只要其中一个类被到达，就会被整体取用，因为这样的库可能按名称加载它自己的类；若设置了 `fine`，它也逐个类地取用。
++   entry #apply   把类路径的封闭世界写入一个目录，并报告所做的工作
++       如果任何被保留之物引用了被移除之物，或者某个单元既不能重新编译也不能固定，则以原因 `Unsound` 抛出 `Shrink.Error`；如果收缩器本身失败，则以原因 `Failed` 抛出。
++       不是类路径中某个类的入口点是一个问题，而不是一个空结果。
++   entry .Report   收缩类路径所做的工作，以数字表示
+
+% 0 1 0 0eb601d2d8703d0a0cbc3f0c257d69cf
+
+@ 0 14 0 09f14e3468cdb68b15d984a021d47bfd
++         `units` 是能够从其 TASTy 重新编译的单元，`read` 是因为被某物到达而实际被重新编译的单元。
++         `classes` 和 `size` 属于类路径，`kept` 和 `written` 属于封闭世界。
++         在被保留的类中，`recompiled` 来自 TASTy，`shells` 只有名称及其父类型，`copied` 保持原样。
++         `members` 和 `removed` 计数被重新编译的类的方法和字段。
++         `pinned` 是没有被重新编译的单元，无论是应要求还是因为无法重新编译，`notes` 说明后者的原因。
++         `packages` 是类路径中的包，按名称排序。
++     entry #why   导致某个类被保留的类链
++         链中的每个类都引用它前面的那个类；最后一个是被重新编译的类，或者是一个入口点。
++         没有被保留的类，其链只包含它自己。
++   entry .Package   类路径中的一个包，以及它在类路径中和在封闭世界中的类
++   entry .Error   无法收缩类路径时抛出：错误 `↯/s.146.1`，_the classpath could not be shrunk because `reason`_
++     entry .Reason   原因：封闭世界将不健全，或者收缩器失败
+
+% 0 1 0 0f0c06beeb68e4ca19dd934fb64b22c4
+
+% 0 1 0 01eaeca5798d1a3b02d48ba44beec41c
+
+@ 0 4 0 05b25278931622921bac852d8c53d3e3
++           column  分支
++           column  代码
++           column  消息
++           row  `Unsound(problems)`  1  _a problem was found: `problem`_，或 _`n` problems were found, of which the first was: `problem`_
+
+% 0 1 0 0ba0d4e3f4952521084c0fa46177e460
+
+% 0 1 0 1325124b3afc2ca70063c3f620bd5dcc
+
+@ 0 1 0 0a0a0db4eda0689e1ce5b118c20be442
++ entry .Shrunk   类文件的封闭世界：从 `Classfile` 经 `shrinkEdges` 到达的工具链节点
+
+% 1 1 0 0ca29577c28fcad11a62c942229c69cb
+
+@ 0 7 0 1084a99545384b160f05b7ddf7d8f520
++       一个 id 为 `shrunk` 的 `Artifact.Ir`：一个本身即为类路径的目录，存放入口点所到达的类、提供这些类的库的资源，不含 TASTy。
++   entry .Jar   封闭世界的可执行 JAR：从 `Shrunk` 到达的应用程序节点
++       一个 id 为 `shrunk-jar` 的 `Artifact.Application`。
++       它是一个独立的节点，而不是 `Artifact.Jar`，这样同时拥有 `jarEdges` 和 `shrinkEdges` 的工具链到达两者各有一条路径。
+
+@ 0 1 0 190239d0a9aa43451d96053f60dd26f0
++ entry .shrinkEdges   使收缩成为工具链中一个步骤的边
+
+% 1 1 0 1bf500e221ca5f100d3c055f9d0aab5a
+
+@ 0 6 0 0b890cf4a7949a1a0d4a05a4613b1e91
++       `shrinkEdges(scalac)` 注册两条边：从 `Toolchain.Universe.Classfile` 到 `Shrunk`，以及从 `Shrunk` 到 `Shrunk.Jar`。
++       第一条边携带编译这些类的 `Scalac` 的选项，因为它要再次编译它们，并把工具链的入口点作为保留内容的根。
++       第二条边像 `jarEdges` 打包类路径那样打包封闭世界，最多以一个入口点作为其 `Main-Class`。
+
+% 2 1 0 182eb3f3f131cd320aa97ff7478d68e8
+
+% 3 1 0 1fb804d44ff3e6b918d936c5b4842222
+
+% 0 1 0 08237b858ecdc9e2021d1c63886da4bb
+
+% 1 1 0 18e5d99a85d96f7a1095701a38765585
+
+@ 0 3 0 176d348327c6eda11bf58e26c5b1d423
++       这里 `steps` 是 `List(t"shrunk", t"shrunk-jar")`。
++       `Shrink.Error` 以 `Link.Error` 的形式抛给工具链，封闭世界不健全时原因为 `Packaging`，收缩器失败时原因为 `Failed`。
+
+@ 0 7 0 1a4dee26f9667da918d7c56c06a32f3d
++ entry .shrinkOptions   收缩边的设置
++   entry .keep   要整体保留的类的模式，用于 `Shrunk` 节点
++   entry .pin   顶层类的模式，其所在单元原样复制，用于 `Shrunk` 节点
++   entry .services   `META-INF/services` 文件所列出的每个实现是否都是入口点
++   entry .fine   没有 TASTy 的库是否逐个类地取用
++   entry .name   JAR 在输出目录中的文件名，用于 `Shrunk.Jar` 节点
++       默认为 `main.jar`。
+
+@ 0 1 0 18ee3c7d4271e38f175944f9b7fbf546
++ entry .Shrinker   引擎：收缩类路径，接受并返回普通类型
+
+% 1 1 0 0610076c249b941a1a58d54526ab79be
+
+@ 0 8 0 06c5816676ec37c61f24a5bdaa78ea0c
++       `Shrink` 所调用的东西，供那些拥有路径和名称、想要取回数字、而自身类路径上又不会有 Soundness 类型的宿主使用。
++       `Shrinker.Request` 包括类路径的条目、输出目录、选项、入口点和模式；`Shrinker.shrink` 给出一个 `Shrinker.Report`，如果封闭世界已写出，其 `problems` 为空。
++   entry .shrink   收缩类路径，在每项工作开始时告知 `progress` 正在做什么
++   entry .classpath   类加载器从中加载的条目，以绝对路径表示
++       对 `URLClassLoader` 而言是它自己的 URL，对其他任何加载器则是 JVM 的 `java.class.path`。
+
+@ 0 1 0 12ce4ed98d2f75bf02464894c238ebb3
++ entry .Shaker   编译器的部分：从 TASTy 重新编译单元，去掉无法到达的东西
+
+% 1 1 0 06ff8dd0ecf7e6e51e6d9099d2420093
+
+@ 0 5 0 0ad77c7f6c2911c60b94beb10bd992d5
++       `Shaker.shake` 把一组 `Shaker.Root` 所到达的内容（限于它被告知可以读取的单元）重新编译到一个目录中；`Shaker.recompile` 重新编译给它的每个单元，不移除任何东西。
++       两者都不写出所写内容的 TASTy。
++       决定根以及结果如何处理的是 `Shrinker`。
++   entry .compiler   本编译器，以 TASTy 文件记录写出它的编译器的方式表示

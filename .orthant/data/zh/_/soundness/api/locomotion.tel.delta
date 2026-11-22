@@ -1,0 +1,1278 @@
+orthant 2 language
+
+% 0 1 0 0f04ec4b9ac2d4270a232409219e1f6b
+
+% 0 1 0 1dc51523555b6f5d16db6081b3ebd53a
+
+% 0 1 0 0b5938ce7315323607e1922cbc4d93e2
+
+@ 0 1 0 187fc9bf63ce93ac1b358c8fbe9d3a2e
++ info   由 Scala 类型得到的 Protocol Buffers：以带编号的 case class 字段作为 proto3 消息，提供派生、直接和流式编解码器
+
+% 0 1 0 0ca6d61ddd9511ea1cdae38f1414f6fe
+
+@ 0 8 0 192356cdf1d10d6f16b638dbf718135d
++     _Locomotion_ 直接从 Scala 类型编码和解码 Protocol Buffers 线上格式。
++     字段带有 proto3 字段编号的 case class *就是*消息定义：不需要编写 proto schema 文件，也不需要运行代码生成器，而它产生的字节与 `protoc` 针对等价 schema 产生的字节相同。
++     字段编号来自 `field` 注解（没有注解时则来自声明顺序）；其余一切——varint、zig-zag 编码、小端定长值、长度前缀的字符串和嵌套消息、打包的重复字段、映射条目以及 `oneof` 变体——都由字段类型决定。
+
+% 2 1 0 169e15ba6567c0d218531abe09043006
+
+% 3 1 0 14b7bf587958534c1e7a823d2e6a0575
+
+% 4 1 0 17ae7cd7b99763cc1bac7ff2a2aebf5c
+
+% 0 1 0 085aa0922c2e230608ba19bd8d830c1e
+
+% 0 1 0 138e764fa0e84fdc0740966080b218f2
+
+% 0 1 0 1c2905436e26845a00eb8c1677585d46
+
+% 0 1 0 0034b96edce63c221a30b228cd3e16f2
+
+% 1 1 0 02b8f64a21839c4a0afb0a6947f70c8c
+
+@ 0 10 0 132242a94b2ac05c11ebb1b5026d9fc4
++     核心类型是 `Protobuf`，即单个线上值：`Wire(wireType, bytes)`、`Absent`，或者某个字段编号所有出现的 `Repeated`。
++     一整条消息是一个长度前缀的 `Wire`，而 `Encodable in Protobuf` 和 `Decodable in Protobuf` 实例——标量实例位于 `Protobuf` 的伴生对象中，消息实例则通过 wisteria 由 case class 的形状派生——把值转换为线上值，再转换回来。
++     hypotenuse 的定长数值类型仅凭类型就能选择 proto3 的整数风格：`U32` 和 `U64` 是 `uint` varint，`S32` 和 `S64` 是 zig-zag 的 `sint`，`B32` 和 `B64` 是 `fixed32` 和 `fixed64`。
++     `Optional` 表示显式存在性，`List`、`Set` 或 `Sequence` 是重复字段（当元素是 `Packable` 时会打包），冻结的 `Array[Long]^{}` 是同样的字段但不装箱，而 `Map` 是标准的重复条目消息。
+
+@ 0 1 0 14ab4850bdd66b9b076e3a3bdc71758f
++     这个库有三条路径，它们产生相同的字节：
+
+@ 0 11 0 07401444a141c5481cc36a1c54b7f6be
++     - **派生**：`value.in[Protobuf]` 通过派生的 `Encodable` 构建 `Protobuf` 树，`read[Protobuf].as[T]` 通过派生的 `Decodable` 遍历这棵树。
++       它总是可用，也是测试另外两条路径时的参照。
++     - **直接**：`Protobuf.Parsable` 通过 `ProtobufReader` 直接从输入中读取值的字段，不构建树；`Protobuf.Printable` 计算字段大小，并把它们直接写入输出数组。
++       两者都在编译时生成：由 `Inlinable.parsable[T]` 和 `Inlinable.printable[T]` 生成，由消息上的 `derives Protobuf.Direct` 生成，或者由 `import codecs.direct` 为作用域中的每个消息和 oneof 生成。
++     - **流式**：`ProtobufParser` 在 zephyrine 的 `Cursor` 上读取，因此对 `Chain[Data]` 或 `Stream[Data]` 的直接读取会在每个数据块到达时读取它，只保留正在读取的字段；跨越多个数据块的值与整个到达的值读取结果完全相同。
+
+% 2 1 0 183aa782606a437f1b8e4988251e020f
+
+% 3 1 0 1d72026c7c0900e41143372affa9b1c0
+
+% 4 1 0 1099e36b8861b9ad08ee6c8284bd7d3d
+
+% 0 1 0 0b9f2ee2c257769f10f4b12b577556bc
+
+% 0 1 0 037d2bb47a2186ca0e97493c01dccda5
+
+% 0 1 0 0f90ab872d2f56e0151f62577c7fcdab
+
+% 0 1 0 1e5484cd987bc1cc0ad17f8d1d520213
+
+% 1 1 0 0c3c61393f1fa98a1983816bbd03714c
+
+@ 0 4 0 1d29b2bdd060f6620a827f2382bf7b0c
++     即使作用域中有直接编解码器，`import codecs.derived` 也会强制使用派生路径；而 `import codecs.strict` 会让对没有直接编解码器的类型执行 `read[T in Protobuf]` 或 `in[Data over Protobuf]` 成为编译错误。
++     这三种模式是 distillate 的 `codecs` 包中的 given，按名称导入，一次一个。
+
+@ 0 5 0 06bcbb94f888e47302909fa997879706
++     格式错误的消息会抛出 `Protobuf.Error`（编号 700），其 `Reason` 指明故障和字节偏移——输入被截断、varint 格式错误或溢出、意外的线上类型、缺少 `oneof` 字段。
++     字段按编号选择，因此唯一的光学器件是 `fieldOptical`：`message.lens(_(Prim) = value)` 替换字段 1，并原样传递其他所有字段，包括程序不认识的字段。
+
+@ 0 1 0 1af03583aa97792d1ed95982f8b2b936
++     这个库有三个组件：
+
+@ 0 11 0 0c60fd329385707f128681d3de1f0d45
++     - `locomotion.core`——`Protobuf` 及其编解码器、`field`、`WireType`、`Packable`、流式的 `ProtobufParser`、`ProtobufReader` 边界、`ProtobufPrinter` 和 `ProtobufSizes`，以及 `Inlinable` 及其生成器（`inlining` 对象）。
++       可编译到 JVM、Scala.js 和 Scala Native。
++     - `locomotion.staged`——`InlinableStager`，即宏内部的分阶段执行编译器，它在展开时求值*手写*的 `Inlinable` given。
++       它按名称在宏的类路径上查找；没有它时，类型只有手写实例的字段会通过其 `Decodable in Protobuf` 解码，通过其 `Encodable` 编码。
++       基于 case class 和密封和类型生成的解析器和打印器只需要 `core`。
++     - `locomotion.http`——`application/protobuf` 媒体绑定：供 telekinesis 使用的 `postables`、`servables` 和 `construables` given。
++       仅限 JVM。
+
+@ 0 7 0 1e8395bb7bbee2b41d746c62c705644e
++     总括包导出 `Protobuf`、`Protobuf2`、`Packable`、`WireType` 和 `field`，并镜像 `conversions`、`postables`、`servables` 和 `construables` 选择包。
++     `Inlinable`、`ProtobufParser`、`ProtobufReader`、`ProtobufPrinter` 和 `ProtobufSizes` 通过 `locomotion.Inlinable` 等方式访问，因为生成的编解码器会替用户指名它们。
++     选择包中的 given 按名称导入——`import conversions.encodableToProtobuf`、`import postables.protobufPostable`——因为 `import pkg.*` 不会导入 given。
+
+% 0 1 0 169c9153dc2b56501ded5f2f0d8f9a0c
+
+% 0 1 0 0b120bfbb878b70017a0824c86a3efc1
+
+% 0 1 0 08be575c937344ef1780f75de3c746e4
+
+% 0 1 0 1a3d9632423bc9e31a7de3d1fb80d340
+
+% 0 1 0 13049792e7aefff2197f16f2db95b7c9
+
+% 0 1 0 0e7c7bf351514d7b13500227cd4f0f39
+
+@ 0 1 0 19fbe796cf9a746810f1daba25753e5a
++ entry .Protobuf   Protocol Buffers 线上值，也是该格式所有编解码器的所在地
+
+% 1 1 0 163ad37ead37d5e10310fc4272e7fdfc
+
+@ 0 2 0 094a94ba13c840591c70678f4e15de43
++       `Protobuf` 是一个枚举，包含字段记录值可能具有的三种形状，也是 `Encodable in Protobuf` 和 `Decodable in Protobuf` 的 `Form`：
+
+@ 0 6 0 0bcd8eee4e8973080ddd6b47bcbd55e8
++       - `Wire(wireType, bytes)`——一个线上值：varint、32 位或 64 位定长值，或者长度前缀的字符串、字节数组、打包序列或嵌套消息的载荷字节，并标有其 `WireType`。
++         一整条消息是一个 `Wire(Len, bytes)`。
++       - `Repeated(values)`——消息中某个字段编号的所有出现，按线上顺序排列，用于重复字段以及 proto3 对标量采用的“最后一个生效”规则。
++       - `Absent`——解码时不存在的字段，或编码时应省略的字段。
+
+@ 0 2 0 03314d42f8dd5e0f11fc21582255d1fb
++       `#single`、`#occurrences`、`#payload`、`#wireKind` 和 `#isAbsent` 以统一的方式读取这三种形状，`#as` 通过任何 `Decodable in Protobuf` 解码一个值。
+
+% 2 1 0 09a16f442d9efc0d0cf50d4119074f0e
+
+% 3 1 0 0beadd25708b92a403092f6c298a925a
+
+% 4 1 0 02f757305cc2fff20b69f1ce5db6cc4c
+
+% 0 1 0 191b7ae8b4522c131714b416a8b14f74
+
+% 0 1 0 158b4db8ecc09d48172c6ba467526219
+
+% 0 1 0 03e50b4a5d26794c06b71ba0ddbc31c1
+
+% 0 1 0 035cf8e2d36f30151dcd759fcc4a460f
+
+% 1 1 0 1481935e3f4b08200b3f3e73980fef44
+
+@ 0 8 0 0521de5f1a2bd0161d71fbfbb5b953e0
++       伴生对象持有各个编解码器。
++       标量实例是该对象本身的 given（`intEncodable`、`textDecodable`、`u32Encodable`……），打包的集合实例和冻结数组实例、`optionalEncodable`、`mapEncodable` 以及模式选择器也是如此。
++       低优先级的层 `Protobuf2`（派生编解码器、不打包的集合实例以及物化树的 `read` 路径）和 `Protobuf1`（直接路径，只要作用域中有 `Protobuf.Parsable` 或 `Protobuf.Printable` 就会选用）是该对象扩展的特质，因此它们的 given 也是 `Protobuf` 的成员，无需导入即可从隐式作用域解析。
+
+@ 0 8 0 0506f44af82ed6f01361d9953f29e053
++       读取是 `bytes.read[Protobuf]`（`aggregable`，适用于任何字节源）再接 `as[T]`，或者简写 `read[T in Protobuf]`，由各层来路由：作用域中有 `Parsable` 时经由它（`Protobuf1#aggregableParsed`），否则经由树（`Protobuf2#aggregableIn`）。
++       写入是 `value.in[Protobuf]`，其 `encode` 是消息的字节（`encodableInData`），或者用 `value.in[Data over Protobuf]` 只得到字节（`Protobuf2#encodableOver`）。
++       作用域中有 `Printable` 时，`in[Protobuf]` 变成 `Protobuf1#encodablePrinted`：打印出的数组就是消息唯一的 `Wire`，因此 `encode` 无需复制即可返回它。
+
+% 0 1 0 14116fcaa006993f068c95fd1ec862a2
+
+% 1 1 0 08d9458eb73012351c93056f35e51984
+
+@ 0 1 0 0cc70caa21ba76401dcf106834476559
++         label 只有一个 varint 字段的消息：标签 0x08，然后是 varint 150
+
+% 1 1 0 190ad679ccfa97811b4e93ef59a3ca49
+
+% 0 1 0 14406c08ea826e9b02e5581fbe7a9a51
+
+% 0 1 0 0fc16f135558470b022eab23c7085e4b
+
+% 1 1 0 0966c4d790c50e121d1f78063051102d
+
+@ 0 1 0 1c3b3f2939c0b4141f9226c1eb171038
++         label 字符串字段由其标签、长度和 UTF-8 字节组成
+
+% 1 1 0 09a8ad5fcd3bc46e02b11e1887c3298f
+
+% 0 1 0 0dc663b35f6a468318c95bd535370069
+
+% 0 1 0 0fd23290a6aad717112ae40e3b72a8d3
+
+% 1 1 0 0634316fe24a666119086a99f19522e9
+
+@ 0 1 0 126bfa1cb7d51e1305203f28e9aed067
++         label 嵌套消息带有长度前缀，其字段编号是它自己的
+
+% 1 1 0 0c15e1bba4e917590593cd33406273c2
+
+% 0 1 0 1dc7bac1217ef57f11ae84613a9bd784
+
+% 0 1 0 1e8f28348cada8271b5d3b22cfc80e7c
+
+% 0 1 0 115be6d153a53da41a41506bf2702d27
+
+% 1 1 0 004dafba0982722d182af58d655d58d0
+
+@ 0 1 0 012c9f43eec56b0916a058c6b3710482
++         label 再读回来：同样的字节被读作该类型，经由作用域中的任一路径
+
+% 1 1 0 0a9953ed8ad752321d879a979a9e54a7
+
+% 0 1 0 1aeb59c411d45b241b411878be1d0fc2
+
+% 0 1 0 05324ab952d132031fa7821cd90c1137
+
+% 1 1 0 1a277342ea9dfdc5113023e785963c91
+
+@ 0 4 0 1e5f84077a3d397b179128615cf9af20
++       每个解码 given 都接受一个 `Tactic[Protobuf.Error]`；派生的 given 会闭包捕获派生处作用域中的战术，这就是为什么指名这种实例的 `summon` 必须允许其捕获（`summon[(T is Decodable in Protobuf)^]`），而 `read`、`as` 和派生则无需任何特殊处理。
+
+% 0 1 0 120a6488ccad648c09d351df863b58c3
+
+% 0 1 0 00c91892e137142d1003bae9590f80d2
+
+% 0 1 0 14e2ea7727f6704002aef0b906b19e61
+
+% 1 1 0 086759f4cbbe09060f7e8a5a8f546b4d
+
+% 1 1 0 0fb801fb500eb02f1a045b30a28505b2
+
+@ 0 53 0 1ecc98d289b3b41d1b795edb9e7aa866
++   entry #single   最近的单个线上值：proto3 对标量采用的“最后一个生效”规则
++       `Repeated` 给出它的最后一个值（如果它不含任何值则为 `Absent`）；`Wire` 或 `Absent` 则是它自身。
++   entry #occurrences   为该字段记录的每个线上值，用于解码 `repeated` 字段
++       `Repeated` 给出它的列表，单独的 `Wire` 给出单元素列表，`Absent` 给出 `Nil`。
++       不打包的集合解码器遍历这个列表；打包序列作为单个 `Len` 出现到达，由 `ProtobufParser.packed` 拆分。
++   entry #payload   `#single` 的字节，值不存在时为空数组
++   entry #wireKind   `#single` 的 `WireType`，值不存在时为 `Len`
++       解码由 `Packable` 元素组成的重复字段时，用它区分打包的标量序列（`Len`）和内联的标量出现，因为读取方必须同时接受这两种形式。
++   entry #isAbsent   值是否为 `Absent` 或空的 `Repeated`
++   entry #as   通过类型的 `Decodable in Protobuf` 把线上值解码为该类型
++       `message.as[Person]` 是两步读取 `bytes.read[Protobuf].as[Person]` 的后半部分；载荷格式错误时会抛出 `Protobuf.Error`。
++       派生解码器把只出现一次的字段作为 `Wire` 本身传递，把出现多次的字段作为包含每次出现的 `Repeated` 传递，把缺失的字段作为 `Absent` 传递，因此手写的 `Decodable in Protobuf` 应当通过 `single` 或 `occurrences` 进行匹配，而不是只匹配 `Repeated` 构造器。
++   entry .emit   以数据块迭代器的形式给出消息的字节，在纤程上产生
++       `Protobuf.emit(message)` 通过一个 `Producer` 交出已经组装好的载荷，使字节可以作为流来消费；它需要一个 `Monitor` 和一个 `Probate`。
++       Protocol Buffers 给每个嵌套消息加长度前缀，因此在发送任何字节之前所有字节都必须是完整的——这只是把字节切分成块，并不是流式地产生它们。
++       对于有 `Printable` 的值，`Protobuf.Printable.emit` 则逐块写入。
++   entry .aggregable   `bytes.read[Protobuf]`：把任何字节源聚合为一条消息
++       把整个字节源读入内存，并包装为 `Wire(Len, bytes)`；`Protobuf` 值就是它的字节，因此它持有整条消息，而通过 `Parsable` 的直接读取只持有正在读取的字段。
++   entry .protobuf   `Protobuf is Decodable in Protobuf`：恒等解码，用于类型为 `Protobuf` 的字段
++       声明为 `Protobuf` 的字段保留其原始线上值，未知内容或透传内容就是这样在一条程序以其他方式解码的消息中携带的。
++   entry .encodableInData   `message.encode`：`Protobuf` 消息的线上字节
++       即 `Encodable in Data` given，因此获取消息字节所用的动词与 jacinta 对 `Json` 所用的相同；`serialize` 保留给字节到文本的编码。
++   entry .abstractable   作为 HTTP 正文的 `Protobuf` 消息，使用 `application/protobuf`
++       `Abstractable across HttpStreams to HttpStreams.Content`：媒体类型和编码后的字节，telekinesis 由此派生请求正文和响应正文。
++       `locomotion.http` 组件的 `postables`、`servables` 和 `construables` given 是分别用于客户端提交、服务端响应和解析请求正文的具名绑定。
++   entry .chainReadable   `Chain(bytes).read[T in Protobuf]` 原地读取单数据块的链
++       即 `Chain[Data] is Readable to (value in Protobuf)` given：已在手中的链直接交给 `Aggregable` 自己的 `aggregate`，它读取单数据块的链时无需复制，而不是经由链上的流。
++   entry .fieldOptical   `message.lens(_(Prim) = value)`：`Ordinal` 按编号选择字段
++       Protocol Buffers 的字段是编号的，而不是命名的，因此 `Ordinal` 就是光学器件：`Prim` 是字段 1，`Sec` 是字段 2，依此类推。
++       更新时会解析消息的字段，用变换的结果替换所选编号的线上值（每次出现，作为 `Repeated`），并把其余字段原样重新编码——包括程序不认识的字段。
++       消息没有定义的编号，或者无法解析的消息，会保持原样。
++       所赋的值是一个 `Protobuf`；使用 `import conversions.encodableToProtobuf` 时，可以直接赋入任何 `Encodable in Protobuf` 的值。
+
+% 2 1 0 15ea09ac96f446471982c22f4ea87345
+
+% 3 1 0 17558bf962f02e010f5b77e94bf9d14e
+
+% 4 1 0 1ba03865800fed74146ce5000ccab4e6
+
+% 0 1 0 00c225b4ecc3acd10bd67608043a120e
+
+% 2 1 0 08b69bfaa97ed53c11af9a8800cc879f
+
+% 0 1 0 17d194efa984b9ab184c9a6d62cd91af
+
+% 0 1 0 0c4cc1891500b37b1bf062b92a25df8a
+
+% 0 1 0 0e453afcead973a31946109d04022a29
+
+% 0 1 0 0bbff86a1e71a6fb1b8a33a8acf99799
+
+% 1 1 0 1f5ff7445399e3eb1f33cf9efdba0dee
+
+@ 0 79 0 1efe45f79e50b70b0e76b6021857ce37
++   entry .intEncodable   把 `Int` 编码为 `int32` varint
++       负值按 proto3 的规定占满十个字节；预期为负的值最好使用 `S32` 类型，其 zig-zag 编码能让它保持简短。
++   entry .longEncodable   把 `Long` 编码为 `int64` varint
++   entry .booleanEncodable   把 `Boolean` 编码为 varint 1 或 0
++   entry .doubleEncodable   把 `Double` 编码为小端 64 位值（`I64`）
++   entry .floatEncodable   把 `Float` 编码为小端 32 位值（`I32`）
++   entry .textEncodable   把 `Text` 编码为其 UTF-8 字节，带长度前缀
++   entry .dataEncodable   把 `Data` 编码为带长度前缀的 `bytes` 字段
++   entry .sizedDataEncodable   `Data & Sized[n]` 数据块的编码与普通 `Data` 完全相同
++       因此大小在类型层面得到证明的数据块编码时不会丢失这一证明。
++   entry .intDecodable   把 `int32` varint 解码为 `Int`；不存在时为零
++       接受一个 `Tactic[Protobuf.Error]`，varint 被截断或格式错误时抛出。
++       每个标量解码器都把不存在的字段读作 proto3 的零值。
++   entry .longDecodable   把 `int64` varint 解码为 `Long`；不存在时为零
++   entry .booleanDecodable   把 varint 解码为 `Boolean`：任何非零值都是 `true`
++   entry .doubleDecodable   把 64 位定长值解码为 `Double`；不存在时为 `0.0`
++   entry .floatDecodable   把 32 位定长值解码为 `Float`；不存在时为 `0.0f`
++   entry .textDecodable   把带长度前缀的载荷解码为 `Text`，按 UTF-8 解码
++   entry .dataDecodable   把带长度前缀的载荷解码为 `Data`，字节保持原样
++   entry .u32Encodable   把 hypotenuse 的 `U32` 编码为 `uint32` varint
++       定长整数类型按类型选择 proto3 的整数风格，无需注解：`U32`/`U64` 是普通的 `uint` varint，`S32`/`S64` 是 zig-zag 的 `sint` varint，`B32`/`B64` 是小端的 `fixed32`/`fixed64`。
++   entry .u64Encodable   把 `U64` 编码为 `uint64` varint
++   entry .s32Encodable   把 `S32` 编码为 zig-zag 的 `sint32` varint
++       zig-zag 把 0、-1、1、-2……映射为 0、1、2、3……，因此较小的负数仍是简短的 varint，而 `Int` 则要占十个字节。
++   entry .s64Encodable   把 `S64` 编码为 zig-zag 的 `sint64` varint
++   entry .b32Encodable   把 `B32` 编码为 `fixed32`，四个小端字节
++   entry .b64Encodable   把 `B64` 编码为 `fixed64`，八个小端字节
++   entry .u32Decodable   把 `uint32` varint 解码为 `U32`；需要一个 `Tactic[Protobuf.Error]`
++   entry .u64Decodable   把 `uint64` varint 解码为 `U64`
++   entry .s32Decodable   把 zig-zag 的 `sint32` varint 解码为 `S32`
++   entry .s64Decodable   把 zig-zag 的 `sint64` varint 解码为 `S64`
++   entry .b32Decodable   把 `fixed32` 解码为 `B32`
++   entry .b64Decodable   把 `fixed64` 解码为 `B64`
++   entry .optionalEncodable   `Optional[T]` 字段：已设置时编码，为 `Unset` 时为 `Absent`
++       显式存在性：未设置的字段不写入任何内容，而存在且为零的标量会写入其标签和值。
++       适用于任何对其内部类型 `Mandatable` 的类型，因此 `Optional[Text]`、`Optional[Point]` 和 `Optional[List[Int]]` 都可以使用。
++   entry .optionalDecodable   不存在的字段读作 `Unset`；存在的字段通过内部解码器读取
++   entry .packedEncodable   把由 `Packable` 标量组成的集合编码为一个打包的 `Len` 字段
++       这是 proto3 对重复数值的默认方式：所有元素的编码拼接成单个带长度前缀的字段。
++       由于 `Packable` 约束了元素，它的优先级高于不打包的 `Protobuf2#listEncodable`；空集合为 `Absent`。
++   entry .packedDecodable   由打包或不打包的出现解码重复的 `Packable` 字段
++       按照 proto3 规范对读取方的要求，接受这两种线上形式：`Len` 出现按元素的线上类型用 `ProtobufParser.packed` 拆分，其他任何出现都是一个元素。
++       需要集合的 `Factory` 和一个 `Tactic[Protobuf.Error]`。
++   entry .packedListEncodable   用于由 `Packable` 元素组成的前导 `List` 的打包编码器
++       不透明的前导集合不是 `Iterable`，因此 `List`、`Set` 和 `Sequence` 各有自己的一对打包实例，在底层类型上委托给 `packedEncodable`。
++   entry .packedListDecodable   用于前导 `List` 的打包解码器
++   entry .packedSetEncodable   用于由 `Packable` 元素组成的前导 `Set` 的打包编码器
++   entry .packedSetDecodable   用于前导 `Set` 的打包解码器
++   entry .packedSeriesEncodable   用于由 `Packable` 元素组成的前导 `Sequence` 的打包编码器
++   entry .packedSeriesDecodable   用于前导 `Sequence` 的打包解码器
++   entry .intArrayEncodable   把冻结的 `Array[Int]^{}` 编码为打包字段，字节与 `List` 形式相同
++       由可打包标量组成的冻结数组是重复数值字段的不装箱表示：生成的解析器通过不装箱的构建器填充它，生成的打印器按索引遍历它，因此两条路径上都没有元素被装箱。
++       字节与 `List` 形式完全相同，因此两者在线上可以互换。
++       每种标量一对实例，每个都与该标量自己的实例一样是纯的；`Array[Byte]^{}` 是 `Data`，属于标量。
++   entry .longArrayEncodable   把冻结的 `Array[Long]^{}` 编码为打包字段
++   entry .booleanArrayEncodable   把冻结的 `Array[Boolean]^{}` 编码为打包字段
++   entry .doubleArrayEncodable   把冻结的 `Array[Double]^{}` 编码为打包字段
++   entry .floatArrayEncodable   把冻结的 `Array[Float]^{}` 编码为打包字段
++   entry .intArrayDecodable   把打包或不打包的重复字段解码为冻结的 `Array[Int]^{}`
++   entry .longArrayDecodable   把打包或不打包的重复字段解码为冻结的 `Array[Long]^{}`
++   entry .booleanArrayDecodable   把打包或不打包的重复字段解码为冻结的 `Array[Boolean]^{}`
++   entry .doubleArrayDecodable   把打包或不打包的重复字段解码为冻结的 `Array[Double]^{}`
++   entry .floatArrayDecodable   把打包或不打包的重复字段解码为冻结的 `Array[Float]^{}`
++   entry .mapEncodable   把 `Map[K, V]` 编码为重复的条目消息，`{ key = 1; value = 2 }`
++       这是 proto3 的映射线上格式：每个条目是一条带长度前缀的消息，其字段 1 是键，字段 2 是值，因此 `Map[Text, Int]` 在线上与 `map<string, int32>` 完全相同。
++       空映射为 `Absent`。
+
+% 2 1 0 022079eaae4b1df81fc3dcafc8b2d28b
+
+% 3 1 0 06cb8082c19ff4850a67fbe544b76f8e
+
+% 4 1 0 1014615c3a162845013ebda836effc8a
+
+% 0 1 0 02430143e1c8570712115354cb090b6a
+
+% 0 1 0 0f426416628e0b070b043c936ee3d601
+
+% 1 1 0 1d5f7fd0f5cc9bd51c0d83f86b5a8d27
+
+@ 0 17 0 180b88d218e1ca4e0acd1f252ab5e1ee
++   entry .mapDecodable   把重复的条目消息解码为 `Map[K, V]`
++       扫描每次出现中的字段 1 和字段 2；缺少其中任何一个的条目会把它解码为 `Absent`——即标量的零值或空消息。
++       需要一个 `Tactic[Protobuf.Error]`。
++   entry .aggregableDerived   在 `import codecs.derived` 下，`read[T in Protobuf]` 走树路径
++       它的优先级高于 `Protobuf1#aggregableParsed`，并且恰好在后者适用的地方适用——作用域中有 `Parsable` 的类型——因此即使作用域中有直接解析器，也由派生的 `Decodable` 解码。
++       在其他地方，派生路径本来就会被解析。
++   entry .readableDerived   在 `import codecs.derived` 下，`data.read[T in Protobuf]` 走树路径
++   entry .encodableDerived   在 `import codecs.derived` 下，即使作用域中有 `Printable`，`in[Protobuf]` 也进行派生
++   entry .aggregableStrict   在 `import codecs.strict` 下，`read[T in Protobuf]` 必须找到 `Parsable`
++       严格模式是供绝不能回退的代码使用的直接模式：凡是能解析到直接解析器的地方都使用它，而在解析不到的地方，`Protobuf1#aggregableStrictFailure` 会报告一个指名该类型的编译错误。
++   entry .encodableOverStrict   在 `import codecs.strict` 下，`in[Data over Protobuf]` 必须找到 `Printable`
++       `in[Protobuf]` 本身不受门控：它指名线上值，就像 `in[Json]` 指名树一样。
++   entry .Direct   `derives Protobuf.Direct`：消息的解析器和打印器只生成一次，放入其伴生对象
+
+% 1 1 0 11111fc15dae2ef71f6b72205e7520f1
+
+@ 0 6 0 1445a9860c4dab44150da868c1d89393
++         以 `Self` 为类型的类型类没有类型参数，因此 `Protobuf.Parsable` 和 `Protobuf.Printable` 都不能出现在 `derives` 子句中。
++         `Protobuf.Direct[T]` 是能够出现在其中的载体：`case class Play(…) derives Protobuf.Direct` 调用 `.derived`，后者用 `Inlinable.parsable` 和 `Inlinable.printable` 生成 `Play` 的解析器和打印器，并把它们存放在伴生对象中，`Protobuf.Parsable.declared` 和 `Protobuf.Printable.declared` 会在那里找到它们。
+
+% 2 1 0 0d6e53c2763316bd00a8cd94640ea4ed
+
+% 3 1 0 1f1706128f4c014d033a3e58e5b63227
+
+% 4 1 0 15d80953f0041c2815b36958a9c4b574
+
+% 0 1 0 0bcabe5df62c62c816860bae38849e5b
+
+% 0 1 0 02cb33949b3032f211c13fe2ade87402
+
+% 1 1 0 1c9ab4bf1353d62417f6017256c747c4
+
+@ 0 8 0 0c4e9e54d74624a6105d9ded94706356
++         这些实例无需导入即可服务于该类型的每次读写；在 `import codecs.direct` 下，派生了 `Protobuf.Direct` 的类型会使用它们，而不是在每个使用处重新生成，因此分阶段执行编译的代价只付一次。
++         在 `import codecs.derived` 下，它们会像其他任何直接编解码器一样被绕过。
++     entry .derived   生成该类型的 `Parsable` 和 `Printable` 并将它们包装起来
++     entry #parsable   生成的 `Protobuf.Parsable`
++     entry #printable   生成的 `Protobuf.Printable`
++   entry .Parsable   直接解析的类型类：直接从输入中读取值的字段
+
+% 1 1 0 0e95188c8b6255b0082fd869b8bac18b
+
+@ 0 7 0 1fe0be496a039344169f7a8cf8cfa3ff
++         `Decodable in Protobuf` 的对应物，从不构建树：`Parsable` 接收一个 `ProtobufReader`，其窗口设置为该值的载荷——在顶层是整个输入，在字段位置是一个字段的线上值——并且必须一直消费到窗口末尾。
++         它以 `Transport = Protobuf` 和 `Reader = ProtobufReader` 扩展 distillate 的 `Parsable`，因此它唯一的方法是 `#parse(reader: ProtobufReader^): Self`。
++         读取器自带 `Tactic[Protobuf.Error]`，因此 `parse` 的主体不需要任何错误相关的词汇。
+
+@ 0 3 0 10a2cbf43815eb351b1f095dd6a178c8
++         `Parsable` 就是选择启用的方式：作用域中有一个时，`read[T in Protobuf]` 会解析为 `Protobuf1#aggregableParsed` 或 `Protobuf1#readableParsed` 并直接读取；没有时则一切不变。
++         获得它的方式，按通用程度排列：
+
+% 2 1 0 1dbb10b7eb885fbd1a62168c13e5b339
+
+% 3 1 0 0a340d6c13adb551079f68f26d1e9cd2
+
+% 4 1 0 087f67e3679a554f036f90cf4e1b5a8b
+
+% 5 1 0 1425ddbe95113e071f1670c387c606da
+
+% 7 1 0 1a9a1541952f94bf096a24ed85ebdf72
+
+% 0 1 0 10fc4d2db253674a01c3ca4193f56716
+
+% 0 1 0 1970e307cc4061901a2a6a297460fabf
+
+% 0 1 0 00b82f1752871d4c08f3eb7cd6bae001
+
+% 1 1 0 108db4f7399f3343010c300df4c78b1d
+
+@ 0 5 0 1d04fd22a806d51e1c917f8282d5a37b
++         或者在消息上使用 `derives Protobuf.Direct`，或者用 `import codecs.direct` 为作用域中的每个消息和 oneof 获得（`Parsable2#generated`）。
++         手写的实例是 `Protobuf.Parsable(reader => …)`（`.apply`），而 `.fromDecodable` 可以桥接任何 `Decodable in Protobuf`——当自定义解码器必须胜过生成的解析器时，这是只需一行的逃生舱口。
+
+@ 0 9 0 13c0fc3c1d95ea49064bc232f74412e1
++         生成的解析器原地读取消息的标量，逐次出现地（打包或不打包）收集 `List`、`Set`、`Sequence` 或冻结数组字段，逐个条目地把 `Map` 字段读入映射的构建器，通过扫描消息中存在的最小变体编号（取其最后一次出现）来分派 `oneof`，用零值填充不存在的标量，用声明的默认值填充不存在的字段，整个跳过未知字段，并取重复标量的最后一次出现。
++         类型没有 `Inlinable` 的字段——定长整数、`Optional` 集合、用户类型——会作为线上值收集，并通过其 `Decodable in Protobuf` 解码一次：这就是*接缝*，它得到相同的值，只是更慢。
+
+@ 0 4 0 0bfea1bb035732ff0091cb24bb9f99c1
++         在 `Chain[Data]` 或 `Stream[Data]` 上，读取从不先组装输入：解析器在需要时拉取每个数据块，至多持有正在读取的那一个字段——跨越 `oneof` 时除外，此时在选择其变体期间会缓冲其消息。
++         对整个 `Data` 的读取是原地进行的。
+
+% 1 1 0 17660febed6dd2331dbd1bcf821c933e
+
+% 0 1 0 0876e925e67b594f0940ce84655ee4b0
+
+% 0 1 0 0fafe7c5410823400a3f9b63854a0027
+
+@ 0 19 0 077346a60ea3263803ae0010b5f58673
++     entry #Transport   传输类型，`Protobuf`
++     entry #Reader   读取器类型，`ProtobufReader`
++     entry .apply   由作用于读取器的函数得到的 `Parsable`
++         `Protobuf.Parsable[Point](reader => …)`：实例会捕获该函数。
++         在函数内部，读取器的 `tag`、`enterField`、`varint`、`text` 和 `leaveField` 遍历窗口；参见 `ProtobufReader`。
++     entry .fromDecodable   把窗口物化为消息并对其解码的 `Parsable`
++         来自树的世界的桥接：`reader.message()` 把剩余窗口复制出来，成为一个 `Wire(Len, bytes)`，再由 `Decodable` 解码。
++         只有 `Decodable in Protobuf` 的类型被生成的解析器作为完整值遇到时，就是通过它读取的；这也是让自定义解码器胜过生成的解析器的方法。
++     entry .declared   类型用 `derives Protobuf.Direct` 生成到其伴生对象中的解析器
++         它的优先级高于 `Parsable2#generated`（`import codecs.direct`），因此派生了 `Direct` 的类型会使用它只生成一次的编解码器。
++     entry .parseField   在生成的解析器的字段位置调用一个名义上的 `Parsable`
++         `Protobuf.Parsable.parseField[T](parsable, reader)` 把两者都作为中性的 `AnyRef` 载体接收——生成的代码是擦除了捕获的——并在这里重新断言它们，这里就是经过审计的那个点。
++         生成的代码会调用它；手写的代码没有理由调用。
++     entry .Direct   生成的解析器的基类，把读取器作为中性载体接收
+
+% 1 1 0 12199d498e77f6e51fd2bf56ed4e1fda
+
+@ 0 8 0 135872de1e5f00c2180ae41eb6c91a9c
++           `Protobuf.Parsable.Direct[T]` 实现 `parse(reader: ProtobufReader^)` 的方式，是把读取器作为 `AnyRef` 传给受保护的 `parseCarrier`，后者由生成的代码实现，并在每次使用时用 `ProtobufReader.of` 重新断言该能力。
++           生成的代码若直接覆盖 `parse`，会把特质的 `Reader^` 参数收窄为纯类型，而这是捕获检查所拒绝的，因此经由载体的这一跳就是边界。
++           手写的实例不需要它，它们使用 `Protobuf.Parsable.apply`。
++       entry #parse   `parseCarrier(reader)`，读取器作为 `AnyRef` 传入
++   entry .Parsable2   持有 `Parsable.generated` 的低优先级层
+
+% 1 1 0 07a3ae4f135d8b6b0ac71c7cca3eca3d
+
+% 2 1 0 01ed5ca4b82271231245e4afeedee60d
+
+@ 0 9 0 1767f10e113cb80919b978a6b2e106e8
++         对象 `Protobuf.Parsable` 所扩展的特质，使 `import codecs.direct` 的 given 位于 `Parsable.declared` 之下；`Protobuf.Parsable` 从它继承 `generated`。
++     entry #generated   在 `import codecs.direct` 下，为每个消息和 oneof 生成的解析器
++         一个内联 given，以 `Codecs.Direct` 模式和 `Inlinable.Generates[T]` 为条件，后者只对 case class 消息或由它们组成的密封和类型成立；其他任何类型——泛型 case class、集合——都会搜索失败，并保持派生路径。
++         解析器在每个使用处展开，这要花费编译时间；`derives Protobuf.Direct` 只付出一次这个代价。
++   entry .Printable   直接打印的类型类：计算值的字段大小，并把它们直接写入输出
+
+% 1 1 0 1719a315bc14f0750547085a151ba696
+
+@ 0 7 0 00aeeadfc6b7eb20060907de02c3c22b
++         `Encodable in Protobuf` 的对应物，从不构建树，分两遍进行：`#measure` 遍历值一次，把遇到的每个带长度前缀的大小记录在 `ProtobufSizes` 表中，并返回值的编码长度；`#write` 再遍历一次，通过 `ProtobufPrinter` 写入，并按同样的顺序读回这些大小。
++         没有字段会被编码成中间的 `Protobuf`，也没有嵌套消息会先被编码再复制到其父消息中。
++         （protobuf-java 在每个消息对象上 memoize 一个大小；case class 没有地方保存它，因此需要这张表。）
+
+@ 0 4 0 03cb744a83f5319609bae052b0898c67
++         作用域中有 `Printable` 时，`value.in[Protobuf]` 解析为 `Protobuf1#encodablePrinted`，其消息就是打印器填充的那一个 `Wire(Len, bytes)`，因此 `encode` 返回数组时无需复制；`in[Data over Protobuf]` 只给出字节，而 `.print`、`.emit` 显式地执行这两遍。
+
+% 2 1 0 0926c4a6c8fec6670910a2227b76d52f
+
+% 3 1 0 038ad621a4878e95145585e756e5a24c
+
+% 4 1 0 0f67c0148861e56317efab32debbba96
+
+% 5 1 0 122aca1a0650083012ac5e4896ca4285
+
+% 7 1 0 128dca5e070c7a3a0411161bde6f5fd8
+
+% 8 1 0 0ffebfb00b608ee609088f97ae104fed
+
+% 0 1 0 05772ab8cad662471a8884f3bdd22e2a
+
+% 0 1 0 0561f02bc8a4b590077a87890c7c9279
+
+% 1 1 0 1f47430e3ae2806b12ac6f0767ea2052
+
+@ 0 8 0 1db29b0a239351ea0cfd07aadb1c508e
++         这些字节与派生的 `Encodable` 写出的字节完全相同——每种标量、ASCII 以外的文本、打包序列、映射、嵌套和重复的消息、字段位置上的 `oneof`、可选的消息——因此消息可以在连接的一端直接打印，在另一端通过树解码。
++         选择启用的方式与 `Protobuf.Parsable` 相对应：显式实例、`Inlinable.printable[T]`、`derives Protobuf.Direct`，或 `import codecs.direct`（`Printable2#generated`）。
++         类型没有用于打印的 `Inlinable` 的字段，会在计算大小的那一遍通过其 `Encodable in Protobuf` 编码一次，暂存在表中，并在写入的那一遍复制出来（`.fromEncodable`）。
+
+% 0 1 0 074712248eff05cf1ebc6ef3ffda7188
+
+% 0 1 0 0bfc473217b2731800ae1eb5f95d74aa
+
+% 1 1 0 16e969c048e5b72d1d6e57dc21acf726
+
+@ 0 15 0 1e362b6cccf1e7611b9d64f9fb781ad1
++     entry #measure   值的编码长度，并在表中记录嵌套的大小
++     entry #write   通过打印器写入值，并读回各个大小
++     entry .print   通过 `Printable` 得到值的线上字节：先计算大小，再写入一次
++         `Protobuf.Printable.print(value)` 使用从线程获取的大小表运行 `measure`（每个线程一张，可重用，因此一次打印只分配其输出），然后倒回这张表，写入一个按所计算大小分配的 `ProtobufPrinter.exact` 数组，并在不复制的情况下返回该数组。
++     entry .emit   以数据块形式给出值的字节：推送给消费者，或作为迭代器拉取
++         `emit(value, deliver)` 像 `.print` 一样计算大小，然后通过一个按作用域中的 `Buffering` 确定大小的 `ProtobufPrinter.blocks` 打印器写入，每个数据块填满时就交给 `deliver`，最后一块通过 `flush` 交出；不会构建整条消息的数组，而长于一个数据块的字符串会被完整交付。
++         `emit(value)` 是拉取形式：数据块以 `Iterator[Data]^` 给出，在被消费时于纤程上写入，需要一个 `Monitor`、一个 `Probate` 和一个 `Buffering`；此时 `Printable` 必须是纯的，生成的 `Printable` 就是如此。
+
+% 2 1 0 028f7b28be5c12881edc74a236161278
+
+% 3 1 0 0df0dae936b21d7d1f4359a8681caa76
+
+% 4 1 0 17f3e8df47179cc5083ac86a6bfa403c
+
+% 5 1 0 16181118923562fd13c84bb2f670bc47
+
+% 7 1 0 03636ac83f23b1fc1cfdff7e059a91e8
+
+% 8 1 0 096a265fd045426c0013ca8ee1c3a88c
+
+% 0 1 0 10cadd242bc0cac5158a420a49607019
+
+% 0 1 0 1ea9d714e0bd161519c5a5b7b88ba570
+
+% 1 1 0 10be8bc09eb65ab40cf9b41ca90b668f
+
+@ 0 15 0 0ab788d06844eb0e12d63c2289bf9551
++     entry .apply   由一个计算大小的函数和一个写入函数得到的 `Printable`
++         `Protobuf.Printable[T]((value, sizes) => …, (value, printer, sizes) => …)`；实例会捕获这两个函数。
++         这两个函数以独占能力的形式接收 `ProtobufSizes^` 表和 `ProtobufPrinter^`。
++     entry .fromEncodable   把值编码一次并写出其载荷的 `Printable`
++         来自树的世界的桥接：计算大小的那一遍通过值的 `Encodable in Protobuf` 对其编码，把线上值暂存在表中，并返回载荷长度；写入的那一遍取出它，原样写入字节。
++         生成的打印器就是这样处理类型无法打印的字段的。
++     entry .declared   类型用 `derives Protobuf.Direct` 生成到其伴生对象中的打印器
++     entry .measureField   从生成的打印器调用一个名义上的 `Printable` 的 `measure`
++         载体以 `AnyRef` 的形式传递，并在这里重新断言，这里就是经过审计的那个点，就像 `Protobuf.Parsable.parseField` 对解析器所做的那样。
++         供生成的代码使用。
++     entry .writeField   从生成的打印器调用一个名义上的 `Printable` 的 `write`
++     entry .Direct   生成的打印器的基类，把打印器和表作为载体接收
+
+% 1 1 0 08fa505d82efa22910e395c8f5ccbc32
+
+@ 0 8 0 169ae24742d840ac023be0691ca4cd96
++           `Protobuf.Printable.Direct[T]` 实现 `measure` 和 `write` 的方式，是把 `ProtobufSizes` 和 `ProtobufPrinter` 作为 `AnyRef` 传给受保护的 `measureCarrier` 和 `writeCarrier`，后两者由生成的代码实现，并在每次使用时用 `ProtobufSizes.of` 和 `ProtobufPrinter.of` 重新断言这些能力。
++           手写的实例则使用 `Protobuf.Printable.apply`。
++       entry #measure   `measureCarrier(value, sizes)`，表作为 `AnyRef` 传入
++       entry #write   `writeCarrier(value, printer, sizes)`，两者都作为 `AnyRef` 传入
++   entry .Printable2   持有 `Printable.generated` 的低优先级层
+
+% 1 1 0 1d3e38cfc677669b1faa2f85f9ee7cea
+
+% 2 1 0 0f6a0fb4902c2ff01dd1ec6ffead06c7
+
+@ 0 6 0 126ccc77776d190d07c32b92af81316e
++         对象 `Protobuf.Printable` 所扩展的特质，使 `import codecs.direct` 的 given 位于 `Printable.declared` 之下；`Protobuf.Printable` 从它继承 `generated`。
++     entry #generated   在 `import codecs.direct` 下，为每个消息和 oneof 生成的打印器
++         以 `Codecs.Direct` 和 `Inlinable.Generates[T]` 为条件，与 `Protobuf.Parsable2#generated` 完全相同。
++   entry .EncodableDerivation   为 case class 或密封和类型派生 `Encodable in Protobuf`
+
+% 1 1 0 05074c6ca03fde841c66997718fc4884
+
+@ 0 6 0 002ad2948bafa011052c5938d05ea124
++         `Protobuf2#encodable` 背后的 wisteria `Derivable`。
++         积类型编码为一条带长度前缀的消息，其中各字段按声明顺序排列，每个字段按其 `field` 注解编号，没有注解时按其从 1 开始的位置编号；`Absent` 字段不写入任何内容，`Repeated` 字段写入每次出现。
++         和类型编码为 `oneof`：一条只包含一个字段的消息，该字段按变体在和类型中从 1 开始的位置编号，其载荷是该变体自身的编码。
+
+% 2 1 0 0cc54fd57b29750f09ba75d3017f2189
+
+% 3 1 0 1dc6294e411dce0c07b36c832da1ec82
+
+% 0 1 0 01bf1f32dff7d5561b0f416224eaaaf9
+
+% 0 1 0 1b975e49ae04e1131697c33e51419e71
+
+% 0 1 0 1891e061c592ebcb0530c7a08c76e6cb
+
+% 0 1 0 17b7f12e4d877de8154d0137fd81b7d6
+
+% 1 1 0 128c4fa4d076bd2400ed73c8b9faf71a
+
+@ 0 3 0 18f687d6639299bf1afc29de74d75540
++     entry .conjunction   积类型编码器：把编号的字段编入一条带长度前缀的消息
++     entry .disjunction   和类型编码器：以变体从 1 开始的编号放置该变体的消息
++   entry .DecodableDerivation   为 case class 或密封和类型派生 `Decodable in Protobuf`
+
+% 1 1 0 0f513e3bc6f7305e0947573891ba2f67
+
+@ 0 10 0 16d02b299e4dac461965fba5a559de9f
++         `Protobuf2#decodable` 背后的 wisteria `Derivable`。
++         积类型的载荷被扫描一次，存入以编号为键的表中；每个字段的解码器接收其编号对应的线上值——只出现一次时是 `Wire` 本身，否则是包含每次出现的 `Repeated`，缺失时是 `Absent`，这种情况下会优先使用声明的默认值。
++         和类型按消息中存在的最小变体编号（取其最后一次出现）解码；没有变体字段的消息会以 `MissingField` 抛出 `Protobuf.Error`。
++         两者都会闭包捕获派生处作用域中的 `Tactic[Protobuf.Error]`。
++     entry .conjunction   积类型解码器：每个字段取自其编号，缺失的字段使用默认值
++     entry .disjunction   和类型解码器：存在的编号最小的变体，或 `MissingField`
++   entry .Error   线上字节不是有效消息时抛出
+
+% 1 1 0 046c34893416180915605acb67b66fbe
+
+@ 0 7 0 01d7ac0094ddea3d09907de3cd541b0f
++         错误 `↯/s.111.1`：_the protobuf data was not valid: `reason`_。
++         每条解码路径——派生解码器、标量解码器、`ProtobufParser` 的读取以及生成的解析器——都通过 `Tactic[Protobuf.Error]` 抛出它，`.Reason` 说明出了什么错以及错在哪里。
++         字节级原因上的偏移是在正在解析的消息或子消息载荷内的位置：在流式路径上，它是输入中的绝对偏移；在树路径上，只有顶层消息的偏移是绝对的，因为每个嵌套载荷都是从它自己的切片解码的。
+
+% 2 1 0 0ea91013674e889c12800803f4c4c733
+
+% 3 1 0 0d4b451a555b8e6b0a364977c621d496
+
+% 0 1 0 0abba67f4d0de9eb0543a52190e7c765
+
+% 0 1 0 105dbad4fda64b39106f3112fd8abb8d
+
+% 0 1 0 086145cbe874da5411280f1018c0be22
+
+% 0 1 0 0e644837690eea950569db23ab7a1931
+
+% 0 1 0 02007947ca127f9d134f6a3641966c4e
+
+% 1 1 0 1fc40427dee146810a54c2a1514b474b
+
+@ 0 2 0 1c9980c7dc5424a31708b5fe44055b4d
++     entry #reason   数据被拒绝的原因，以及位于哪个偏移
++     entry .Reason   消息可能出现的五种故障
+
+% 1 1 0 189b3b94da8b847600af1ff8b3113708
+
+@ 0 1 0 03d1aeb1f05fc3531e37b4d6dd0d83c9
++           每个分支都渲染为其消息：
+
+% 0 1 0 01eaeca5798d1a3b02d48ba44beec41c
+
+@ 0 8 0 00a9771a3e9f63f7078aff0f77c67407
++           column  分支
++           column  消息
++           column  说明
++           row  `Truncated(offset)`  _the protobuf data ended unexpectedly at offset `offset`_  长度前缀、定长值或 varint 越过了其窗口的末尾
++           row  `MalformedVarint(offset)`  _a varint was malformed at offset `offset`_  超过十个后续字节
++           row  `UnexpectedWireType(found, offset)`  _an unexpected wire type, `found`, was encountered at offset `offset`_  标签的线上代码为 3、4（已弃用的分组）、6 或 7
++           row  `Overflow(offset)`  _a numeric value was too large for its type at offset `offset`_  第十个 varint 字节贡献了超过第 63 位的内容
++           row  `MissingField(number)`  _the required field number `number` was missing_  `oneof` 中没有任何变体；这是解码层面的故障，没有偏移
+
+% 0 1 0 1325124b3afc2ca70063c3f620bd5dcc
+
+@ 0 1 0 06ade4f58b17d19a03a6a03e398784b9
++       entry .communicable   把每个原因渲染为上面的消息
+
+@ 0 1 0 04da4f1f9bc02f751de9ff557d17ef2f
++ entry .Protobuf2   最低的编解码器层：派生编解码器、不打包的集合以及读取树的路径
+
+% 1 1 0 16215e42e4bfaadf1a4cded746207763
+
+@ 0 44 0 1f6c9d4a9cba38f20f2c3e6d4c7d4fa9
++       `Protobuf` 对象所扩展的特质，因此它的每个 given 都是 `Protobuf` 的成员，并从隐式作用域解析。
++       它是三层中最低的一层——位于 `Protobuf1`（直接路径）和对象本身（标量、打包集合以及模式选择器）之下——因此只有当没有更具体的实例适用时，才会选用它的通用实例：派生的消息编解码器让位于手写的编解码器，不打包的集合实例让位于针对 `Packable` 元素的打包实例，物化树的读取让位于直接解析器。
++       由于派生会指名它，它被导出到总括包。
++   entry #encodable   为任何具有 wisteria `Reflection` 的类型派生 `Encodable in Protobuf`
++       一个内联 given，为 case class 或密封和类型展开 `Protobuf.EncodableDerivation`；既没有反射也没有其他实例的类型会搜索失败。
++   entry #decodable   为任何具有 wisteria `Reflection` 的类型派生 `Decodable in Protobuf`
++   entry #listEncodable   把任何 `Iterable` 编码为不打包的重复字段，每个元素一个标签
++       用于没有 `Packable` 实例的元素——字符串、字节数组和嵌套消息——的回退，每个元素都作为该字段的一次单独出现写入。
++       元素自身的 `Repeated` 出现会被展平进来，`Absent` 元素会被丢弃，空集合为 `Absent`。
++       捕获按名传递的元素编解码器。
++   entry #listDecodable   通过 `Factory` 由各次出现解码任何 `Iterable`
++       用元素的解码器解码每次出现。
++       作用域中没有 `Packable` 时，打包字段在这里仍能往返，因为元素解码器读取的是一个值。
++   entry #aliasListEncodable   用于前导 `List` 的不打包编码器
++       不透明的前导集合不符合 `Iterable`，因此 `List`、`Set` 和 `Sequence` 各有一对在底层标准库类型上构建的别名实例。
++   entry #aliasListDecodable   用于前导 `List` 的不打包解码器
++   entry #aliasSetEncodable   用于前导 `Set` 的不打包编码器
++   entry #aliasSetDecodable   用于前导 `Set` 的不打包解码器
++   entry #aliasSeriesEncodable   用于前导 `Sequence` 的不打包编码器
++   entry #aliasSeriesDecodable   用于前导 `Sequence` 的不打包解码器
++   entry #arrayEncodable   把由消息、文本或字节组成的冻结 `Array[T]^{}` 编码为不打包的重复字段
++       字节与 `List` 形式相同，因此重复的消息字段可以声明为 `Array[Message]^{}`，由生成的解析器收集，而无需为每个元素分配一个单元。
++       需要一个 `ClassTag`。
++       由 `Packable` 标量组成的冻结数组则会打包，通过 `Protobuf.longArrayEncodable` 及其同类实例。
++   entry #arrayDecodable   把重复字段解码为冻结的 `Array[T]^{}`，用于非标量元素
++   entry #aggregableIn   通过树进行的 `read[T in Protobuf]`：先聚合字节，再 `as[T]`
++       针对任何 `Decodable in Protobuf` 的 `(value in Protobuf) is Aggregable by Data` given，捕获其 `Tactic[Protobuf.Error]`。
++       单个内存中的数据块原地解码，由多个数据块组成的链先收集成一个数据块，流则在到达时收集——无论哪种情况都会持有整条消息，因为 `Protobuf` 值就是它的字节。
++       只要作用域中有 `Parsable`，`Protobuf1#aggregableParsed` 的优先级就高于它。
++   entry #encodableOver   `value.in[Data over Protobuf]`：消息的线上字节
++       `read[T in Protobuf]` 在写入方面的镜像：解析到的任何 `Encodable in Protobuf` 的载荷，因此作用域中有 `Printable` 时直接打印，否则通过树编码。
+
+@ 0 1 0 05058753186c96400c9b8ac636985032
++ entry .Protobuf1   中间的编解码器层：直接路径，只要作用域中有 `Parsable` 或 `Printable` 就会采用
+
+% 1 1 0 147d70ef9a23b00c0a926d4e050061e7
+
+@ 0 25 0 02316bc3ebad280f1eda4a949603f269
++       位于 `Protobuf2` 与 `Protobuf` 对象之间的特质。
++       它的 given 只适用于作用域中有 `Protobuf.Parsable` 或 `Protobuf.Printable` 的类型，此时它们的优先级高于 `Protobuf2` 基于树的 given，因此直接编解码器只在其存在的地方改变读取或写入。
++       `import codecs.derived` 从上层的对象覆盖它们，而 `import codecs.strict` 把对象的严格 given 与这里的失败 given 配对。
++   entry #encodablePrinted   通过 `Printable` 进行的 `in[Protobuf]`：打印出的数组作为消息唯一的 `Wire`
++       针对作用域中有 `Protobuf.Printable` 的任何类型的 `Encodable in Protobuf`，并捕获该 `Printable`。
++       消息是 `Wire(Len, Printable.print(value))`，因此 `encode` 无需复制即可返回该数组。
++       词法作用域内的 `Printable`——局部 given，或按名称导入的 given——会使编码成为直接编码。
++   entry #aggregableParsed   通过 `Parsable` 对链或流进行的 `read[T in Protobuf]`
++       针对具有 `Protobuf.Parsable` 的任何类型的 `(value in Protobuf) is Aggregable by Data` given，捕获该 parsable 及其 `Tactic[Protobuf.Error]`。
++       单数据块的链原地读取；更长的链或流通过 `ProtobufParser` 读取，它按需拉取单元，因此输入从不被组装，至多持有一个字段——跨越 `oneof` 时除外，此时在选择其变体期间会缓冲其消息。
++       错误偏移是输入中的绝对偏移。
++   entry #readableParsed   对整个 `Data` 进行的 `data.read[T in Protobuf]`，原地解析
++       它在 `Data` 上是具体的，因此当全部内容已经在手中时，它胜过组合出来的管道，并且无需把内容包装成单元素流即可解析。
++   entry #aggregableStrictFailure   在 `import codecs.strict` 下，读取没有 `Parsable` 的类型会编译失败
++       一个内联 given，在使用处抛出 _`T` has no direct codec_。
++       它位于派生读取之上，使派生路径不会被悄无声息地采用；又位于 `Protobuf.aggregableStrict` 之下，后者会优先为每个有解析器的类型采用解析器。
++   entry #encodableOverStrictFailure   在 `import codecs.strict` 下，没有 `Printable` 的 `in[Data over Protobuf]` 会编译失败
+
+@ 0 1 0 02399c22806a206819265f01ccf26369
++ entry .WireType   proto3 的四种线上类型：`Varint`、`I64`、`Len` 和 `I32`
+
+% 1 1 0 0c360b9cc5e06c9116803b488f70c070
+
+@ 0 6 0 18a4c1ac578c8a100ab141f6f5cf4c46
++       字段标签的低三位说明其值的布局方式：`Varint`（代码 0）用于 `int32`、`int64`、`uint`、`sint`、`bool` 和枚举；`I64`（代码 1）用于 `fixed64`、`sfixed64` 和 `double`；`Len`（代码 2）用于字符串、字节、嵌套消息、打包序列和映射条目；`I32`（代码 5）用于 `fixed32`、`sfixed32` 和 `float`。
++       已弃用的组类型，即代码 3 和 4，不受支持：携带其中任一代码的标签会被以 `Protobuf.Error.Reason.UnexpectedWireType` 拒绝。
+
+% 2 1 0 15de928426ce5f980614e8f17bd0bd2d
+
+% 3 1 0 187ae6ba0723b0630d877caa125d962c
+
+% 0 1 0 16ef7832a33c68921a32db69827ed75c
+
+% 0 1 0 03e9fe429f03172f15f70161732bd57b
+
+% 0 1 0 1d4bc6856232090d00ef895413bea165
+
+% 1 1 0 160d07d5c20d3c7d0bf33ca3b3b77f6c
+
+@ 0 2 0 1454079fca24609b17976e9b36786061
++   entry .fromId   具有给定 3 位代码的线上类型，对 3、4、6 和 7 则为 `Unset`
++   entry #id   打包进字段标签的 3 位代码：0、1、2 或 5
+
+@ 0 1 0 176a4aa5a99131721c10851e614fa91d
++ entry .Packable   标记一种标量，其重复字段会打包为一个带长度前缀的序列
+
+% 1 1 0 0129660e29ce61a717e7dba9a141e1d1
+
+@ 0 6 0 01a8b2d1d4f1f8c00c160ff84ae15fd4
++       proto3 会打包重复的数值字段：每个元素的字节被串接成单个 `Len` 字段，而不是每个元素写一个标签。
++       `Packable` 是元素类型可以打包的证据，它记录其值所用的 `#wireType`，以便读取方把打包序列拆回各个元素。
++       只有数值标量有实例——`Int`、`Long`、`Boolean`、`Float`、`Double` 和六种定宽整数——因为字符串、字节数组和消息都带长度前缀，总是作为单独的字段重复。
+
+@ 0 3 0 19fb8bb7183b34c51b3f61bd583f2d0e
++       这些实例是伴生对象中的 given，因此 `List[Int]` 字段无需导入即可打包，而 `List[Text]` 字段则采用不打包的 `Protobuf2#listEncodable`。
++       无论写入方选择了哪种形式，读取方都接受两种形式。
+
+% 1 1 0 0506374c408184810daa72b5a7f99830
+
+@ 0 12 0 1f94e54f6ca18ff61d017bb862be56b5
++   entry #wireType   单个元素的布局方式：`Varint`、`I32` 或 `I64`
++   entry .int   `Int` 打包为 varint
++   entry .long   `Long` 打包为 varint
++   entry .boolean   `Boolean` 打包为 varint
++   entry .u32   `U32` 打包为 varint
++   entry .u64   `U64` 打包为 varint
++   entry .s32   `S32` 打包为 zig-zag varint
++   entry .s64   `S64` 打包为 zig-zag varint
++   entry .float   `Float` 打包为 32 位定长值
++   entry .double   `Double` 打包为 64 位定长值
++   entry .b32   `B32` 打包为 32 位定长值
++   entry .b64   `B64` 打包为 64 位定长值
+
+@ 0 1 0 0c99364a4381578212a62f2de3e4afce
++ entry .field   `@field(n)` 注解：case class 字段的 Protocol Buffers 字段编号
+
+% 1 1 0 19b1bd4fd1d869721943ffa530adc35a
+
+@ 0 6 0 1570679f83b8ec231ffcc5b25ec2567b
++       `case class Point(@field(1) x: Int, @field(2) y: Int)` 把 `x` 声明为字段 1，把 `y` 声明为字段 2，这就是 proto3 所需而 Scala 类型没有说明的全部内容。
++       这些编号在派生期间以及由生成器读取，因此该注解是一个带有一个 `#number` 的 `StaticAnnotation`。
++       没有该注解的字段按其从 1 开始的声明位置编号——与 `protoc` 对相同声明所分配的编号一致——并且编号可以是稀疏的，这是协议演进所要求的：
+
+% 2 1 0 177106922e2857f11dc978f19ab2974b
+
+% 3 1 0 032e117616aa24a712f8f6a8f40383c9
+
+% 0 1 0 13ef00015d56b3b201f642d02b01a7a6
+
+% 0 1 0 127a74ad7a4fdefe12bc0a96f5070eb7
+
+% 0 1 0 038550b06f592ca7140359d1409c3545
+
+% 1 1 0 123e27092178dea3061c1164b5e7297d
+
+@ 0 4 0 1d7eb3665bea345a1c6e0739b0e9a1a1
++       `oneof` 各变体的字段编号按位置确定：枚举或密封特质的第一个分支是 `oneof` 消息的字段 1，第二个是字段 2，对它们不会参考该注解。
++   entry #number   字段编号，1 或更大
+
+@ 0 1 0 1edb32c71ad9dcf11a495e22b57e2764
++ entry .conversions   让可编码的值出现在需要 `Protobuf` 之处的 given
+
+% 1 1 0 06d03833f7fdd18008083f46e4a7977c
+
+@ 0 6 0 0cb695fd752500c913fca0735ec641da
++       一个选择包，按名称导入：`import conversions.encodableToProtobuf`。
++   entry .encodableToProtobuf   从任何 `Encodable in Protobuf` 值到其 `Protobuf` 的、限定作用域的 `Conversion`
++       把隐式转换 `value => value.in[Protobuf]` 引入词法作用域，因此可编码的值可以在透镜赋值处直接提供——`message.lens(_(Prim) = Point(7, 8))`——而无需写 `in[Protobuf]`。
++       转换在默认情况下从不在作用域中；导入它就是显式的选择。
+
+@ 0 1 0 168b4e39869db247126d81020f92935b
++ entry .Inlinable   直接解析器和打印器背后按字段类型工作的编译时代码生成器
+
+% 1 1 0 18217b659f57168a031c38560a07fe4c
+
+@ 0 8 0 176b346f5d4f8b7006614f9a710f4975
++       `Inlinable` 是 `Protobuf.Parsable` 和 `Protobuf.Printable` 在 `Expr` 层面的对应物：一个在宏展开时生成代码的类型类。
++       `#parse` 接收读取器的 `Expr`，其窗口设置为该值的载荷，并返回解码值的 `Expr`；`#measure` 和 `#write` 同样返回打印的两遍。
++       生成器把每个结果直接拼接进它正在构建的解析器或打印器，因此嵌套消息、重复字段的收集、`oneof` 分派和自定义叶编解码器全都内联成一个扁平的方法，没有运行时分派，没有字段映射，组合起来的解析器之间也没有适配器跳转。
+
+@ 0 1 0 02cba14927f03df8131f6790b3937d08
++       用户通过两个入口接触它：
+
+% 2 1 0 14c42fd427a5d97a0936e323b2671763
+
+% 3 1 0 1b101290be58011019c231869c59af5f
+
+% 4 1 0 0e8aa5f94db2620d193adda43c0eff11
+
+% 0 1 0 0d056e7399d96de419e1aaa893e149cc
+
+% 2 1 0 0284ceed9e4f1b16068706289d36580c
+
+% 0 1 0 0f76b1a797c93b19167941340d00ecc8
+
+% 0 1 0 0c679ec4366487e906353a9b2a237cf4
+
+% 0 1 0 0d68a3b3294b6e5d18a38e9ddb3da6e1
+
+% 1 1 0 158036a89a98186e0f073a64c42b89f5
+
+@ 0 8 0 1b9ed8734343ca740b72c86c18527db6
++       每个入口都为 case class 消息或密封和类型 `oneof` 生成一个单态实例，由其字段类型的 `Inlinable` 实例组合而成：`derived` 为嵌套消息和和类型构建的结构实例、伴生对象中的叶 given（`int`、`long`、`boolean`、`double`、`float`、`text`、`data`），以及用于重复字段的 `iterable`。
++       没有实例的字段类型——定宽整数、`Optional` 集合、用户类型——走*接缝*：它的各次出现被收集为线上值，并通过其 `Decodable in Protobuf` 解码（通过其 `Encodable` 编码），因此每个消息仍然可以解析，只是在该字段处较慢。
+
+@ 0 9 0 1dca7278ad9a4388065945a2eb792c3b
++       手写的实例（`given (MyLeaf is Inlinable) = new Inlinable { … }`）是一个普通的运行时值，生成器只能通过在宏内部对它求值来调用其 `parse`——这需要一个宏内部的分阶段执行编译器，由 `locomotion.staged` 作为 `.Stager` 提供。
++       由此产生两个约束：实例及其类型必须在比展开*更早*的一次运行中编译（同一次运行中的实例还没有可信的类文件，会降级为走接缝），并且如果宏类路径上没有 `locomotion.staged`，每个手写实例都会降级为走接缝。
++       生成的结构实例两者都不需要。
++       实例为 `derives` 子句（`derives Inlinable.ForProtobuf`）的消息，会在其伴生对象中被分阶段执行的召唤找到。
+
+@ 0 1 0 18c984cffbc18cad0c5845ef4967aab2
++       `Inlinable` 没有导出到总括包：请写 `import locomotion.Inlinable`。
+
+% 1 1 0 0b15f3928ca293111662ef5f02b4021f
+
+% 0 1 0 147e046f29e62e5b04a9813f1d58b1b4
+
+% 0 1 0 01bc8e1fb02213070d3215eedfc92819
+
+@ 0 16 0 1a9eecfffb61a9e21739250564c9a628
++   entry .parsable   `Inlinable.parsable[T]`：为消息或 oneof 生成的 `Protobuf.Parsable`
++       一个宏。
++       该类型必须是 case class 消息、由它们构成的密封和类型，或带有 `Inlinable` 实例的类型；集合会被拒绝（_a Protobuf message is the unit of direct parsing_），既没有实例也不具有消息形状的类型是编译错误，并建议提供一个 `Decodable in Protobuf`。
++       生成的解析器绑定到一个惰性的 `self`，因此其自身类型的递归出现——带有 `children: List[Tree]` 的 `Tree`——会原地通过它读取。
++   entry .printable   `Inlinable.printable[T]`：为消息或 oneof 生成的 `Protobuf.Printable`
++       一个宏，与 `.parsable` 相同。
++       实例不打印（`prints` 为 `false`）的类型是编译错误：_`T` has no generated printer; a Protobuf message is the unit of direct printing_。
++   entry .derived   case class 消息的结构实例：`product is Inlinable`
++       在调用其 `parse`、`measure` 或 `write` 时对积类型进行反射——它自己没有宏，因为 `Type` 随调用一同到达。
++       字段按编号读取，并按其类型进行收集、分派或走接缝。
++   entry .ForProtobuf   `derives Inlinable.ForProtobuf` 载体：消息在其伴生对象中的结构实例
+
+% 1 1 0 0b22a341f68026f20aed7782544ffeb0
+
+@ 0 13 0 0332a38594a216bb1851f674008d9efe
++         以 `Self` 为类型的类型类不能出现在 `derives` 子句中，因此 `case class Play(…) derives Inlinable.ForProtobuf` 会把这个参数化子类——它*就是*一个 `Play is Inlinable`——合成到 `Play` 的伴生对象中，另一个消息的生成器在展开时召唤就能在那里找到它。
++         它把每个方法都委托给 `Inlinable.derived` 构建的结构实例，而解析阶梯会把它解开，使该实例保留其生成器身份。
++     entry .derived   为 `derives` 子句包装 `Inlinable.derived[T]`
++     entry #parse   委托给结构实例
++     entry #absent   委托给结构实例
++     entry #prints   委托给结构实例
++     entry #measure   委托给结构实例
++     entry #write   委托给结构实例
++   entry .Generates   类型的编解码器可以按结构生成的证据：消息或 oneof
+
+% 1 1 0 026f858860e2838f17f964a11113974e
+
+@ 0 7 0 073bf6407b322b3c1a2b411af7a433b9
++         `import codecs.direct` 所生成实例的条件。
++         它的透明 given `.generates` 是一个宏，对 case class 消息或由它们构成的密封和类型成功，对其他任何类型失败——_`T` has no generated codec_——因此对生成实例的搜索失败，转而解析到派生路径。
++         这是一个代价低廉的形状测试，因此该模式下的搜索仍然代价低廉。
++     entry .generates   宏 given：对消息或 oneof 给出 `Generates[T]`，否则搜索失败
++   entry .Stager   `locomotion.staged` 在展开时对手写实例求值所经由的钩子
+
+% 1 1 0 0d2744b111282a860204b3237fa98d90
+
+@ 0 41 0 0949830b91184e681218f23fd2ebeebb
++         `Inlinable.Stager` 是一个特质，只有一个方法 `#summon`，`locomotion.staged` 以 `InlinableStager.Implementation` 实现它；伴生对象在首次被请求时从宏自身的类加载器中按类名加载该实现，若不存在，`.summon` 返回 `None`，从而核心部分不依赖编译器 jar。
++         按名称查找而不经由 `ServiceLoader`，是为了让核心部分能为 Scala Native 编译。
++     entry .summon   字段类型经分阶段执行得到的 `Inlinable`，`locomotion.staged` 不存在时为 `None`
++     entry #summon   在分阶段执行编译器内部对某类型的 `Inlinable` given 求值
++   entry .int   `Int` 作为 varint 读取，也作为 varint 打印；不存在时为 `0`
++       叶生成器读取读取器窗口的方式，与树访问器解释字段所记录载荷的方式完全相同，以便在一个值上组合的手写实例使用。
++   entry .long   `Long` 作为 varint 读取和打印；不存在时为 `0L`
++   entry .boolean   `Boolean` 作为 varint 读取和打印；不存在时为 `false`
++   entry .double   `Double` 作为 64 位定长值读取和打印；不存在时为 `0.0`
++   entry .float   `Float` 作为 32 位定长值读取和打印；不存在时为 `0.0f`
++   entry .text   `Text` 把窗口作为 UTF-8 读取，并通过大小表的暂存区打印
++       测量遍把字符串一次性编码进 `ProtobufSizes` 的暂存区（`stashText`），记录其偏移和长度，写入遍再把它复制出来（`ProtobufPrinter#stashedText`），因此字符串恰好只编码一次。
++   entry .data   `Data` 把窗口作为字节读取，并原样打印
++   entry .iterable   为重复字段携带元素的实例；从不单独解析
++       集合的各次出现可能散布在整个消息中，并且可能是打包的，因此集合无法从单个字段窗口解析：收集工作在消息生成器中进行。
++       这个实例只是把元素的 `Inlinable` 携带给它，如果直接到达其 `parse`，则是编译错误。
++   entry #parse   生成从读取器窗口读取 `Self` 的代码
++   entry #prints   该实例是否生成打印器；默认为 `false`
++       不打印的实例——这是默认情况，因此只用于解析的实例保持诚实——在生成的打印器中让其字段走 `Encodable in Protobuf` 接缝。
++   entry #measure   生成测量遍：记录嵌套的大小，返回编码长度
++       默认实现是编译错误 _the Inlinable for `T` generates no printer_；覆盖 `prints` 的实例必须覆盖这个方法和 `#write`。
++       大小表以 `Expr[AnyRef]` 的形式传递，并用 `ProtobufSizes.of` 重新断言其类型。
++   entry #write   生成通过打印器进行的写入遍，并读回各个大小
++       打印器和大小表以 `Expr[AnyRef]` 的形式传递，并用 `ProtobufPrinter.of` 和 `ProtobufSizes.of` 重新断言其类型，因为生成的代码是擦除了捕获的。
++   entry #absent   生成当该类型字段的编号缺失时它所产生的值
++       proto3 没有必需字段：叶实例产生其零值，消息实例产生一条所有字段都不存在的记录，默认实现则通过给定的战术以 `Protobuf.Error.Reason.MissingField(0)` 中止，因此没有覆盖它的自定义实例会明确报错，而不是悄无声息地出错。
+
+@ 0 1 0 0038746119113b2b04f4b732c44a9bc4
++ entry .ProtobufParser   流式线上解析器：直接从 `Cursor` 读取字段，每次一个窗口
+
+% 1 1 0 18a3c9da1f2a2a330ead0b39c962abe5
+
+@ 0 6 0 08fe81bfc775e25d13a53e618e48562f
++       `ProtobufParser` 从 zephyrine 的 `Cursor` 中读取 Protocol Buffers 线上字节，每次一个字段，因此分块到达的消息在到达时即被读取，缓冲区只持有正在读取的字段。
++       它是一个有状态的独占能力（`ProtobufParser^`），只能通过伴生对象的 `.apply` 构造，其参数是完整的 `Data`（原地读取，不用游标）、`Chain[Data]`（按需拉取单元）或 `Stream[Data]`（数据块交付时即读取），并在一次读取的整个过程中归该次读取所有。
+
+@ 0 8 0 0bac87cc3a06e262042826c1860b8b08
++       读取受*窗口*约束：窗口是正在解析的值的范围，以输入中的绝对偏移表示，因此嵌套消息原地解析，而不是在复制出来的载荷上解析。
++       `#directEnterField` 按标签的线上代码把窗口收窄到一个字段的线上值，`#directLeaveField` 恢复外层窗口，并跳过该字段剩余的部分；每次标量读取都会检查窗口，并以绝对偏移报告 `Protobuf.Error`。
++       `oneof` 的读取方式是把整个窗口缓冲起来（`#directBufferWindow`），扫描其中的变体，再重新进入该变体的范围（`#directWindow`、`#directRestore`）。
+
+@ 0 6 0 0bba8011c86ecd2f1b0fc4c9541ce19b
++       生成的解析器被拼接进用户模块，每条记录绑定一次解析器，并通过这个*直接边界*读取——即 `direct…` 方法，每个都接受一个 `Tactic[Protobuf.Error]`——这就是它们是公开方法的原因。
++       手写的 `Parsable` 实例使用 `ProtobufReader`，即为它们携带战术的受限边界。
++       伴生对象还持有树路径所用的整载荷读取：`.fields`、`.packed`、`.varintOf`、`.fixed32Of` 和 `.fixed64Of`，每个都作用于内存中的 `Data`。
+
+% 2 1 0 0c57b931321b2b9e1f7ea1a2e08626f5
+
+% 3 1 0 177192daf06922b10d5df2c957f2d8d6
+
+% 4 1 0 0f40c15c0d91d08812096037b1c803cd
+
+% 0 1 0 1f545fa8a719c3621c59a692dce5fe27
+
+% 0 1 0 0a1950f8a01f681b1b5a2af8a4e44091
+
+% 0 1 0 08a5ba10a803ac4b1f69743ca6cc05fa
+
+% 0 1 0 0984af592b3292be02b94995a301618e
+
+% 0 1 0 07d44f777cbfcb6c0aaafc89f6f9801e
+
+% 0 1 0 12e0260ddc2f3bf7044f6d770f0a0817
+
+% 0 1 0 0bbc03b5333e47b9053a0cd238fb0141
+
+% 1 1 0 094d9d9847e488e70e2683d6520e62f2
+
+@ 0 6 0 1f4e7011bb2076c91c174ee92d58afec
++       用户可以依赖的性能说明：单字节 varint（标签、布尔值、短长度）原地读取；两到四字节的 varint 走一条直线路径；在完整 `Data` 上读取的、字节全为 ASCII 的字符串字段，通过 Latin-1 复制而不是 UTF-8 构造器解码，得到相同的 `Text`；在完整 `Data` 上的读取完全没有游标。
++       窗口位置以 `Int` 跨越边界：消息至多 2 GiB，这是其 `int32` 长度前缀所要求的。
+
+% 1 1 0 1ecc24b255e8328306aad5ab10a4c8f4
+
+% 1 1 0 12d92586228731430860ed03611f0631
+
+@ 0 82 0 08ea117d3da0031702969d6011a1f9c3
++   entry .apply   基于完整 `Data`、`Chain[Data]` 或被消费的 `Stream[Data] over Credit` 的解析器
++       在 `Data` 上，数组就是缓冲区，以借用方式使用且从不写入，窗口就是其长度。
++       在链或流上，窗口是无界的——消息在输入结束处结束，而流只有在结束时才会表明这一点——单元在解析器需要时被拉取。
++       流的重载以 `consume` 方式接受参数：流恰好被使用一次，即被解析器使用。
++   entry .of   把以中性 `AnyRef` 载体传递的解析器重新断言为 `ProtobufParser^`
++       供生成的解析器使用：它们以载体形式接收读取器的解析器，而每次 `update` 调用都需要这个独占能力；它是内联的，因此强制转换表达式本身会落在用户模块中。
++       手写代码没有需要重新断言的载体。
++   entry .varintOf   从内存中载荷的开头读取的 varint；需要一个 `Tactic[Protobuf.Error]`
++       树路径中不分配内存的标量读取：`Protobuf.intDecodable` 及其同类在字段所记录的载荷上调用它。
++       单字节 varint 原地读取；超过十个字节是 `MalformedVarint`，读完输入是 `Truncated`，第十个字节贡献了超过第 63 位的内容则是 `Overflow`。
++   entry .fixed32Of   从载荷读取的小端 32 位值；不足四个字节时为 `Truncated`
++   entry .fixed64Of   从载荷读取的小端 64 位值；不足八个字节时为 `Truncated`
++   entry .fields   把消息载荷表示为从字段编号到其每次出现的映射，按首次出现的顺序排列
++       遍历载荷一次，并把每个字段的载荷复制到各自的 `Protobuf.Wire` 中，保留重复字段和未知字段。
++       `fieldOptical` 用它来重写一个字段并原样传递其余字段。
++       字段的各次出现按线上顺序列出。
++   entry .packed   按元素的线上类型，把打包序列拆分为每个元素一个线上值
++       `ProtobufParser.packed(payload, WireType.Varint)` 拆分由串接的 varint 组成的 `Len` 载荷；`I32` 和 `I64` 按固定宽度拆分。
++       线上类型来自元素的 `Packable` 实例。
++       被截断的最后一个元素是 `Truncated`。
++   entry #directAtLimit   窗口是否已无更多内容；在顶层，即输入是否已经结束
++       记录循环的测试条件：`while !parser.directAtLimit` 读取标签，直到窗口被消费完。
++       在无界窗口上，它会在回答之前向游标请求更多数据，因此活动流中的完整字段无需等待下一个字段即可读取。
++   entry #directMark   当前的绝对偏移，为 `Int`
++   entry #directBoundary   窗口的结束偏移，为 `Int`；无界时为 `Int.MaxValue`
++   entry #directTag   下一个字段的标签 `(number << 3) | wireCode`；只能在未到达界限时调用
++   entry #directVarint   受窗口约束的 varint
++       在窗口或输入结束处为 `Truncated`，超过十个字节为 `MalformedVarint`，第十个字节高于第 63 位为 `Overflow`；每种情况中的偏移都是 varint 开始的位置。
++   entry #directFixed32   窗口内的四个小端字节，作为 `Int`
++   entry #directFixed64   窗口内的八个小端字节，作为 `Long`
++   entry #directEnterField   按线上代码把窗口收窄到一个字段的值；返回外层边界
++       代码 0 覆盖 varint 自身的字节，1 覆盖接下来的八个字节，5 覆盖接下来的四个字节，2 消费长度前缀并覆盖相应数量的字节；代码 3、4、6 或 7 在标签的偏移处报告 `UnexpectedWireType`。
++       会越过外层窗口的字段是 `Truncated`；无界的外层窗口在进入时无法证明这些字节存在，因此由其读取在同一偏移处报告截断。
++       返回的令牌供 `#directLeaveField` 使用。
++   entry #directLeaveField   恢复外层窗口，跳过该字段剩余的部分
++       解析可以合理地少读字段的载荷——树访问器也会忽略载荷末尾的字节——因此剩余部分被跳过，而不是被缓冲。
++   entry #directSkipField   按线上代码整个跳过一个字段：先进入，再离开
++       生成的解析器以此跳过它不认识的字段编号。
++   entry #directLong   按线上代码把字段的值读作 `Long`
++       代码为 0 时，varint 原地读取；代码为其他值时，进入该字段的窗口，并像树访问器解释所记录的载荷那样解释其载荷——由一个 varint 组成的 `Len` 载荷读作该 varint。
++   entry #directDouble   把字段的值读作 `Double`：代码为 1 时原地读取，否则经由窗口
++   entry #directFloat   把字段的值读作 `Float`：代码为 5 时原地读取，否则经由窗口
++   entry #directString   带长度前缀字段的内容，作为 `String`，对代码 2 融合处理
++       对代码 2，长度前缀、边界检查和 UTF-8 解码是一步完成的；其他任何代码走窗口路径。
++   entry #directData   复制出来的带长度前缀字段的内容，作为 `Data`
++   entry #directWire   物化为 `Protobuf.Wire` 的单个字段的值
++       没有 `Inlinable` 的字段类型所走的运行时接缝：每次出现都以这种方式收集，字段通过其 `Decodable in Protobuf` 解码一次，与树路径解码 `Repeated(values)` 的方式完全相同。
++   entry #directStringWindow   整个当前窗口，作为 `String`
++       `ProtobufReader#text` 背后的窗口级读取，供已经拥有字段窗口的 `parse` 主体使用。
++   entry #directDataWindow   复制出来的整个当前窗口，作为 `Data`
++   entry #directMessage   剩余的窗口，作为带长度前缀的 `Protobuf.Wire` 消息
++       `Protobuf.Parsable.fromDecodable` 背后的整值接缝。
++   entry #directBufferWindow   在 oneof 扫描之前，把窗口剩余的内容整个缓冲起来
++       无界窗口会以输入的结束处为界，这是填充时已经找到的；此后无论扫描还是重新进入都无法再填充——从而压缩——缓冲区，因此 `#directMark` 返回的偏移在离开窗口之前对 `#directWindow` 一直有效。
++       必须先于 `#directWindow` 和 `#directRestore` 调用。
++   entry #directWindow   移动到已缓冲窗口内的一个绝对范围；返回供 `#directRestore` 使用的令牌
++       `directWindow(start, end)` 定位到 `start`，并把窗口的边界设在 `end`——即某个变体所记录的范围——同时把之前的位置和边界打包进返回的 `Long`。
++       只能在 `#directBufferWindow` 之后调用。
++   entry #directEmptyWindow   位于读取位置的空窗口，不存在的嵌套值从中解析
++       不存在的消息字段解析为空消息，因此生成的解析器进入一个空窗口，并在其上运行嵌套解析器。
++       由 `#directRestore` 恢复。
++   entry #directRestore   恢复 `#directWindow` 或 `#directEmptyWindow` 令牌所持有的位置和边界
+
+@ 0 1 0 0716949c96f5d8af0742f7aedd1a2cae
++ entry .ProtobufReader   `Protobuf.Parsable` 读取所经由的受限边界：一个窗口、其中的字段及其标量
+
+% 1 1 0 12b9b595b1dd84a303d6528a96001128
+
+@ 0 6 0 0f5f66204105ed8d09df381056278e5a
++       `ProtobufReader` 是 `Protobuf.Parsable.parse` 所接收的东西：窗口设置为该值载荷的解析器，内部携带一个 `Tactic[Protobuf.Error]`，因此 `parse` 主体不需要任何错误词汇——格式错误的输入会通过读取的环境战术中止。
++       只有 locomotion 的读取路径会构造它；它是一个有状态的独占能力，在一次 `parse` 调用的整个过程中归该调用所有，之后不得保留它的任何部分。
+
+@ 0 2 0 12be84089bf8acf70cc5033e86e4ef5e
++       手写实例用 `#more`、`#tag`、`#enterField` 和 `#leaveField` 遍历其窗口，并在其间读取每个字段的标量：
+
+% 2 1 0 19b87fcddd0a64fb0372a7c0ee5eda0a
+
+% 3 1 0 110c537f37bf4374159c8ef8cf526b14
+
+% 4 1 0 13f95483c84837770cc0985789119770
+
+% 2 1 0 0c77a9a5eb6823581b7ea9dd63ec38d6
+
+% 0 1 0 1cb1d4afb5a924081223eee9f12bd3a5
+
+% 0 1 0 008d75f08751885506f1434d3a464c48
+
+% 0 1 0 070e4f0a9d0db9960ddee9735c891809
+
+% 0 1 0 1dafb60c51ad024f1baeddfc4bfde9d3
+
+% 0 1 0 0d2e6abec6a684c713f8b8dfcd38285a
+
+% 0 1 0 1abc4ba60027bb1b0602171d6f83e5cf
+
+% 0 1 0 0f430d0b9657c0691f0f531c924a732d
+
+% 0 1 0 1387d1bc6f84c01b1e2c23a89c7ad23e
+
+% 0 1 0 0c32bbf0c634be681eb179afbed2a6be
+
+% 0 1 0 038d05ecd365626b0dccf667cfc042e5
+
+% 0 1 0 1313296de8ed1d67139db199db057b70
+
+% 0 1 0 155db439953f062d1d9cb13944df35e8
+
+% 0 1 0 167826ab7d8ee6f11583690d0942178a
+
+% 1 1 0 09963d0e454135060d7f72c819a1cc8e
+
+@ 0 6 0 057d1a9a9dae0a211d9c66bfd3443fa2
++       标量读取方法（`#varint`、`#fixed32`、`#fixed64`、`#text`、`#data`）读取窗口内容的方式，与树访问器解释字段所记录载荷的方式完全相同，因此在一个线上值上组合的实例与派生的解码器结果一致。
++       `#wire` 和 `#message` 是通回树的世界的接缝。
++       生成的解析器不使用这些转发方法：它们通过 `ProtobufReader.of` 取得解析器本身，并通过 `ProtobufParser` 的直接边界读取。
+
+% 0 1 0 06cd74cf4dbd0aad1c863cfea6bf1bea
+
+% 1 1 0 15a00fa6a8eed35c00a0d6c862b77a4b
+
+@ 0 16 0 17c0c480931297cc11b6494fd7b5d949
++   entry .of   把以中性 `AnyRef` 载体传递的读取器重新断言为 `ProtobufReader^`
++       生成的解析器的 `parseCarrier(reader: AnyRef)` 的入口，被拼接进用户模块；它是内联的，因此强制转换会落在那里——在一个进行捕获检查但不进行分离检查的模块中，方法的 `^` 结果会是只读的。
++   entry #more   窗口是否还有更多内容：记录循环的测试条件
++   entry #tag   下一个字段的标签 `(number << 3) | wireCode`
++   entry #enterField   按线上代码把窗口收窄到下一个字段的值；返回离开时使用的令牌
++   entry #leaveField   恢复外层窗口，跳过该字段的剩余部分
++   entry #skipField   按线上代码整个跳过下一个字段
++   entry #varint   从窗口读取的 varint
++   entry #fixed32   四个小端字节，作为 `Int`
++   entry #fixed64   八个小端字节，作为 `Long`
++   entry #text   整个窗口，作为 UTF-8 `Text`
++   entry #data   复制出来的整个窗口，作为 `Data`
++   entry #wire   物化为 `Protobuf` 的单个字段的值，供通过 `Decodable in Protobuf` 解码
++   entry #message   剩余的窗口，作为 `Protobuf` 消息，供 `Protobuf.Parsable.fromDecodable` 使用
+
+@ 0 1 0 1c85a1945862684609cd47d0cc8bddd0
++ entry .ProtobufPrinter   把线上字节写入它所拥有的缓冲区：精确大小、可增长或逐块
+
+% 1 1 0 152258d6d5c3524d03fbf897635adca6
+
+@ 0 10 0 0de63f64df469ada0498b54dbf81aa4e
++       `ProtobufPrinter` 写出 Protocol Buffers 线上字节：varint 写作 LEB128，定长值写作小端，字段写作其标签后跟其值（对 `Len` 带长度前缀）。
++       它以三种模式之一拥有自己的缓冲区，由伴生对象的构造方法选择：`.exact(size)` 是恰好为测量大小的数组，`#data` 无需复制即可返回它；`.growing(hint)` 按需加倍，用于长度未知的字节；`.blocks(size, deliver)` 在下一次写入会溢出当前块时把每个已填满的块交给 `deliver`，并由 `#flush` 交出最后一个不满的块，因此消息作为一串块写出，从不作为一个数组。
++       比整块更长的写入直接交给 `deliver`。
++       打印器是一个有状态的独占能力（`ProtobufPrinter^`），其写入操作被归类为更新。
+
+% 2 1 0 0dae0c38aa8880211c19d57571d9b1d7
+
+% 3 1 0 052ed3d0f6b1f5840163caf07524d324
+
+% 0 1 0 15dde595985c67261e13ec972c610fd3
+
+% 0 1 0 182f489a5192117c18f3a2865e9e4c4f
+
+% 0 1 0 1039f41cd8b4a5ad102b9539c9b0090b
+
+% 0 1 0 08b40a943d3778760179c231350dca5c
+
+% 1 1 0 0948f0b33ea9968b1d84f6b5929cb05a
+
+@ 0 5 0 005cabe31925ba1b07dd6e65b446adeb
++       伴生对象的大小函数——`.varintSize`、`.tagSize`、`.utf8Length` 和 `.fieldSize`——是 `Printable` 的测量遍所累加的内容，`#field` 与 `.fieldSize` 逐字节对应：越过精确大小打印器的末尾写入会抛出 `ArrayIndexOutOfBoundsException`，因此与写入不一致的测量会明确报错。
++       `.varintData` 和 `.fixedData` 是树路径的标量编码器。
+
+% 0 1 0 04dae3c4d539afc61cad71069c72461a
+
+% 1 1 0 0446d67c793e883a1ebb053d5aba1f38
+
+@ 0 38 0 00582b43e7f2193c0450e4bb21ef5d7e
++   entry .exact   恰好 `size` 个字节的打印器，其 `#data` 就是该数组，不经复制
++   entry .growing   基于可增长缓冲区的打印器，初始为 `hint` 个字节（至少 16）
++   entry .blocks   把每个已填满的 `size` 字节块交给一个消费者的打印器
++       `deliver` 以 `consume` 方式接受：它归打印器所有。
++       块至少 16 个字节。
++       `#flush` 交出最后一个不满的块；通常由 `Protobuf.Printable.emit` 调用。
++   entry .of   把以中性 `AnyRef` 载体传递的打印器重新断言为 `ProtobufPrinter^`
++       供生成的打印器使用，它们的 `writeCarrier` 以 `AnyRef` 形式接收打印器；与 `ProtobufParser.of` 一样是内联的。
++   entry .varintSize   把值读作无符号 64 位时的 LEB128 长度：1 到 10 个字节
++   entry .utf8Length   字符串 UTF-8 编码的长度，无需实际编码
++   entry .tagSize   字段标签的长度：字段 15 及以下为一个字节，此后为一个 varint
++   entry .fieldSize   `#field` 为一个编号和一个线上值写出的字节数
++       `Absent` 为 0，`Repeated` 为其各值之和，`Wire` 为其标签加上——对 `Len` 而言——长度前缀，再加上载荷。
++   entry .varintData   值的 LEB128 字节，作为长度恰好相符的 `Data`
++   entry .fixedData   值的低 `width` 个字节，小端，作为 `Data`
++   entry #data   在精确大小或可增长模式下写出的字节
++       已达到其大小的精确大小打印器无需复制即可返回其数组；否则把迄今写出的字节复制出来。
++   entry #flush   在块模式下，把迄今写出的字节作为一个块交给消费者
++   entry #byte   写出一个字节
++   entry #raw   原样写出字节
++       常见情况——字节放得下——只需一次比较和一次复制；在块模式下，比一个块更长的载荷会先清空当前块，再整体交付。
++   entry #chunk   写出带长度前缀的载荷：先以 varint 写出长度，再写出其字节
++   entry #varint   把值写作 LEB128 varint，1 到 10 个字节
++   entry #utf8   把字符串的 UTF-8 编码直接写入输出
++       其长度，即打印器预先测量的值，是 `ProtobufPrinter.utf8Length`。
++   entry #stashedText   写出测量遍暂存的字符串：先写长度前缀，再从大小表写出其字节
++       从 `ProtobufSizes` 读取下一个偏移和长度，并把字节从大小表的暂存区复制出来；是 `ProtobufSizes#stashText` 的对应操作。
++   entry #fixed32   把 `Int` 写作四个小端字节
++   entry #fixed64   把 `Long` 写作八个小端字节
++   entry #tag   把字段标签 `(number << 3) | wireType.id` 写作 varint
++   entry #field   由 `Protobuf` 值写出一个带编号的字段：标签、对 `Len` 的长度前缀、载荷
++       `Absent` 什么也不写，`Repeated` 在同一编号下写出每个值，`Wire` 写出其标签和字节。
++       恰好写出 `ProtobufPrinter.fieldSize` 个字节。
+
+@ 0 1 0 022c722087f2dcbd16d9ca014dea4df3
++ entry .ProtobufSizes   直接打印器的测量遍与写入遍之间的大小表
+
+% 1 1 0 10cc0fc97fa2b86813d9a0c63fd0cb28
+
+@ 0 9 0 1a491a2ad5fd5f2c050734e504eeff3d
++       每个带长度前缀的值——嵌套消息、字符串、打包序列——都需要在其字节之前以前缀形式写出其大小，因此 `Protobuf.Printable` 在一遍中测量值，按访问顺序把每个这样的大小记录在这里，并在第二遍中写出它，按相同顺序读回这些大小（先 `#rewind`，再 `#next`）。
++       嵌套消息的槽位在测量其子项之前预留（`#reserve`），在之后填入（`#set`），因此大小表在两遍中都是前序的。
++       测量遍产生而写入遍需要的东西也一并保存：字符串被一次性编码进大小表的字节暂存区（`#stashText`），再由 `ProtobufPrinter#stashedText` 复制出来；接缝所编码的线上值则作为引用暂存（`#stash`、`#unstash`）。
+
+@ 0 6 0 0ad3bf956b5b6ff4068952bc0828e772
++       它是一个有状态的独占能力（`ProtobufSizes^`），在一次打印的整个过程中归该次打印所有：`Protobuf.Printable.print` 取用线程的大小表，该线程上的每次打印都复用它，因此一次打印除输出外不分配任何内存；若线程的大小表正被占用——接缝的 `Encodable` 通过自己的 `Printable` 打印嵌套消息时——则取用一个新的大小表。
++       手写的 `Printable` 实例以参数形式接收它，只需把它传给所组合的字段编解码器。
+
+% 1 1 0 11913774c36e2e0a032e62a3cea10d9b
+
+% 1 1 0 17df2e56ac6171e60b57159ba00b5dfd
+
+@ 0 13 0 16693fcd52e134010577ceb74ccbdb6b
++   entry .of   把以中性 `AnyRef` 载体传递的大小表重新断言为 `ProtobufSizes^`
++       供生成的打印器使用；与 `ProtobufParser.of` 一样是内联的。
++   entry #reserve   为只有在测量完子项后才知道的大小预留一个槽位；返回其索引
++   entry #set   填入一个预留的槽位
++   entry #record   把一个大小记录到下一个槽位：`set(reserve(), size)`
++   entry #rewind   把读取位置移到开头，供写入遍使用
++   entry #next   下一个记录的大小，按记录的顺序
++   entry #stashText   把字符串编码进暂存区，记录其偏移和长度；返回编码后的长度
++       一次性写出字符串的测量部分；`ProtobufPrinter#stashedText` 是写入部分，它通过 `#next` 读回记录的两个值。
++   entry #stash   为写入遍按顺序保存一个引用
++       `Protobuf.Printable.fromEncodable` 暂存它在测量时编码的 `Protobuf`。
++   entry #unstash   下一个暂存的引用，按暂存的顺序
+
+@ 0 1 0 15fbe3351f227d0219c18ce416294e3f
++ entry .inlining   `Inlinable.parsable`、`Inlinable.printable` 和 `codecs.direct` 背后的宏实现
+
+% 1 1 0 0cfdffae0329d6ad187226d2c38d3281
+
+% 2 1 0 19897dfb91d68f7b03a67bdb36d3b5be
+
+@ 0 8 0 01425b3b418566b30413857b0108dec1
++       不供直接使用：这个对象持有展开时的实例解析、针对消息、重复字段、映射字段和 `oneof` 和类型的结构生成器，以及三个入口宏。
++       生成的解析器或打印器绑定到一个惰性的 `self`，因此递归类型会原地通过它读取；带有 `Form` 成员细化的类型——读取 `Play in Protobuf` 时推断出 `Play { type Form = Protobuf }`——会生成 `Play` 的编解码器。
++   entry .inlinableParsable   `Inlinable.parsable[T]` 背后的宏
++   entry .inlinablePrintable   `Inlinable.printable[T]` 背后的宏
++   entry .generates   `Inlinable.Generates.generates` 背后的宏：对消息或 oneof 成功
+
+@ 0 1 0 07b02c109381fb5615f5844f1eacf1aa
++ entry .InlinableStager   在展开时对手写 `Inlinable` 求值的宏内部分阶段执行编译器
+
+% 1 1 0 0ed357b1ead48d481b1999ce8d495246
+
+% 2 1 0 0b8d559443e8e88017432385f1998dbf
+
+@ 0 13 0 0d76d4528470ac411f20253b6791ab35
++       不供直接使用。
++       这是 `locomotion.staged` 组件唯一的对象：当 `locomotion.staged` 位于宏类路径上时，`Inlinable.Stager` 按名称加载 `.Implementation`，`.evaluate` 运行一个全新的分阶段执行编译器——基于宏类加载器的类路径，并排除当前输出目录——来召唤字段类型的 `Inlinable` given，并把这个活的实例交回给生成器。
++       只有类形式的类型（类或类的应用）且其类文件已经存在，才能进入内部编译器：不透明类型、结构类型，或在正在进行的编译运行中定义的类型，都产生 `None`，该字段则通过其 `Decodable`/`Encodable in Protobuf` 走运行时接缝。
++       每次召唤都会以编译器信息消息报告其耗时：_locomotion: staged summon for `T` took `n`ms_。
++   entry .evaluate   分阶段执行的召唤：对可求值的类型为 `Some(instance)`，否则为 `None`
++   entry .Implementation   `Inlinable.Stager.summon` 所委托的 `Inlinable.Stager`
++     entry .summon   为该类型调用 `InlinableStager.evaluate`
+
+@ 0 1 0 1b3c661c5f1bd1561b19839156a60d3b
++ entry .postables   把 `Protobuf` 消息作为 HTTP 请求正文提交的 given
+
+% 1 1 0 03d1dd785a0072cf16787e19b1ef190d
+
+@ 0 6 0 0b35e59224100b4a11a452526eafb10b
++       `locomotion.http`（仅限 JVM）的一个选择包，与总括包自身的同名包合并，因此该 given 按名称导入：`import postables.protobufPostable`。
++   entry .protobufPostable   `Protobuf is Postable`：媒体类型为 `application/protobuf` 的线上字节
++       Protocol Buffers 是二进制的，因此正文就是消息的字节，不指明字符集。
++       它在作用域中时，`Protobuf` 值可以作为 telekinesis 的 `post` 或 `put` 的正文：
+
+% 2 1 0 14f2317681ee0bf6026254b118e01ff4
+
+% 3 1 0 1210be9c969adde413ffefa522d7b97e
+
+% 0 1 0 1d51791f5f5a891b17c7225b47754172
+
+% 2 1 0 174eb5968979728f1810f84c648ebdee
+
+% 0 1 0 0d470ab025ca02e5163777fdb35b8a76
+
+% 1 1 0 198ca633ab6a18920e39033c274f8daf
+
+@ 0 1 0 149b2a2ee9d9994f0fcfe8d66a89b29c
++ entry .servables   把 `Protobuf` 消息作为 HTTP 响应正文提供的 given
+
+% 1 1 0 1ff34097b5e08ac10365b2fd0e8d3b39
+
+@ 0 3 0 090afb345d69f3f108676ea60964cd96
++       `locomotion.http`（仅限 JVM）的一个选择包，按名称导入：`import servables.protobufServable`。
++   entry .protobufServable   `Protobuf is Servable`：由线上字节组成的固定正文，类型为 `application/protobuf`
+
+@ 0 1 0 075c951b5dcbfe7f1a3e8d1de2e582b6
++ entry .construables   把 `application/protobuf` 请求正文读作 `Protobuf` 的 given
+
+% 1 1 0 03578590d1652e240db90114d63ec58f
+
+@ 0 6 0 02e7f061914ff7c2116a8e6cc8f59c75
++       `locomotion.http`（仅限 JVM）的一个选择包，按名称导入：`import construables.protobufConstruable`。
++   entry .protobufConstruable   `"application/protobuf" is Construable to Protobuf`：把正文的字节作为消息
++       构造完成后，用 `as[T]` 解码消息，或直接用 `read[T in Protobuf]` 读取请求正文，因此消费二进制 API 的代码与消费 JSON API 的代码相同；只有格式的类型不同。

@@ -1,0 +1,6 @@
+orthant 2 language
+
+@ 0 5 0 0f0a020048ce75790f970f9a5a6f8db9
++       由 `NetForward`（显示为 `→`，来自 `-->`）、`BothDirections`（`⇄`，来自 `<=>`）、`Equilibrium`（`⇋`，来自 `<~>`）、`Stoichiometric`（`=`，来自 `===`）和 `Resonance`（`↔`，来自 `<->`）组成的枚举。
++       化学家写下哪个箭头是有含义的，方程式会保留它。
++   entry .showable   将反应显示为其箭头

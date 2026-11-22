@@ -1,0 +1,734 @@
+orthant 2 language
+
+% 0 1 0 0f04ec4b9ac2d4270a232409219e1f6b
+
+% 0 1 0 0a2592a6fec741bb0c121348eb0ba60d
+
+% 0 1 0 0b5938ce7315323607e1922cbc4d93e2
+
+@ 0 1 0 135d707e598580ba1870dcfa7148b0f1
++ info   限定作用域的资源访问：`open`、`create`、`archive` 和 `session`，模式作为授权携带在句柄的类型中
+
+% 0 1 0 0ca6d61ddd9511ea1cdae38f1414f6fe
+
+@ 0 5 0 18b9ebdace29c0750e76f39f52b09d2b
++     _Aperture_ 为 Soundness 中反复出现的一种模式命名：一个值说明某样东西*在哪里*——一个路径、一个 URL、一个内存中的引用——而获取其内容是另一个独立的、**限定作用域**的动作。
++     文件被打开以进行流式读写，目录作为受限的根被打开，Git 仓库被打开以读取其引用，URL 被打开以进行一个请求会话；在每种情况下，都有一个句柄被借给一个代码块，代码块结束，访问也就结束。
+
+@ 0 2 0 18b8db6668f313b216ece9068abb53b3
++     这个库定义了四个动词背后的类型类，以及在任何值上调用它们的扩展方法：
+
+@ 0 9 0 06d946103fab05080174051637276594
++     - `open[Form](mode, flags*)`，通过 `Openable`：访问已经存在的东西，带有一个 `Mode`（`Read`、`Write`、`Exclusive` 及其 `&` 组合），其 `Grant` 携带在句柄的类型中，因此通过只读句柄进行写入无法编译；
++     - `create[Form](flags*)`，通过 `Creatable`：让某样东西开始存在，要么为空，要么在一个代码块完成时提交的作用域中编写它；
++     - `archive[Form](flags*)`，通过 `Archivable`：把某样东西的内容收集到一个内存中的归档值里；
++     - `session`，通过 `Sessional`：一次活动的交互——一个连接、一个已预热的编译器、一个浏览器——借给一个代码块，并在代码块结束时释放。
+
+% 2 1 0 0556ac6c127246f71a8581adaec93966
+
+% 3 1 0 1e785c348084f90b00abfd7d85d26248
+
+% 4 1 0 081a50ccf822248e1908aa7c07eba1d4
+
+% 5 1 0 1fd73833e65f36bf0d333e77e114fb76
+
+% 6 1 0 13af1eba1dde389f03b3086ef6dc2643
+
+% 7 1 0 1aa88a439542a1f30d751191ed2b78f3
+
+% 8 1 0 08f34d97ff165925168f69dd2e3ff052
+
+% 9 1 0 07cf35a107374e4b1f7404c9c1aaabe4
+
+% 10 1 0 13c7f47fb152741812910f23cbc1e112
+
+% 0 1 0 0e1e2392ad24e5291dac8f353b309eaf
+
+% 2 1 0 0b5407e2399ebfe2043e4e51bdeb6a3f
+
+% 0 1 0 03fea899de0394b717fe66a61cd4b9b1
+
+% 0 1 0 076647ca23db91c51d9cdcc255b11ce3
+
+% 1 1 0 073ec21fe327486a18af2ab2d625be14
+
+@ 0 7 0 1d22d298db8293e71138b5e7a5a0071f
++     *形式*——目标被打开、创建或归档*成*什么——是一个类型参数，因为一个目标可能有多个实例：一个路径可以作为 `File`、`Directory`、`Zip` 或 `Pdf` 打开。
++     当目标恰好只有一个实例时，形式可以省略；有多个实例时，歧义错误会列出各个备选项。
++     模式之后的标志属于实例自己的 `Operand` 类型，因此它们特定于所打开的东西，不相关的标志无法通过类型检查。
++     每个实例都以介词风格书写：`target is Openable in Form by Flag to Handle`。
+
+@ 0 3 0 1e13c6b76dacc9350c89d78c05b570e0
++     句柄是能力，通过捕获检查被限制在其代码块内：无论是句柄本身、捕获它的闭包，还是容纳它的集合，都不能作为代码块的结果。
++     `Stale` 是与之相伴的概念，用于*通过*句柄从句柄并不拥有的状态中读取的值。
+
+@ 0 5 0 18b87c5b6cf40a240dbb36ea8dfa1fe8
++     Aperture 只依赖 `prepositional`，因此它位于每个提供实例的库之下：galilei（文件、目录、临时空间）、octogenarian（`Git.Repo`、`Git.Worktree`）、bitumen 和 zeppelin（归档）、facsimile（PDF 文档）、telekinesis 和 coaxial（会话）等等。
++     它只有一个源集 `aperture.core`，适用于所有平台，一切都导出到 `soundness` 总括包。
+
+% 0 1 0 181978ce8813533c0eb06e7e297d768c
+
+% 0 1 0 05f3b958add35e9d1abfebc16b3b4bb6
+
+% 0 1 0 16b63a78e1b0467717697dc8df6d1722
+
+% 0 1 0 129261cde6e86a57124d0d9917fdd0b2
+
+% 0 1 0 02c8b4a252ae08bc12ef30e18c26c9db
+
+% 0 1 0 0737af66c950417e1a9a75b522a7ca77
+
+@ 0 1 0 1b58c1e4deea7932118db4cc21336d79
++ entry .Openable   可以按某种形式打开的目标的类型类，把一个带授权的句柄借给代码块
+
+% 1 1 0 0b5749efdcf100081eb06933d042f120
+
+@ 0 5 0 099e7d1ce3ed3bcd07adbfda7f27b039
++       实例写作 `target is Openable in Form by Flag to Handle`：`Self` 是目标（一个路径、一个引用），`Form` 是它被打开成的东西，`Operand` 是该组合可接受的标志类型，`Result` 是句柄。
++       实例唯一的方法 `#open` 接收目标、调用方所要求的 `Mode` 以及标志，并以类型为 `Result & Granting[grants]` 的句柄运行代码块，其中 `grants` 是该模式的 `Grants`。
+
+@ 0 1 0 08c6a22a2868bac80a8e8fa16023feb9
++       用户通过 `open` 扩展方法调用它，从不直接调用：
+
+% 2 1 0 0d2044604667e4bb126c612751500eab
+
+% 3 1 0 0a51ca518da38185013f5eb69ecaff46
+
+% 4 1 0 15da92635f98091800b9612eef66badc
+
+% 5 1 0 0c08f9a1f438c20b172d832bedd721d7
+
+% 6 1 0 1415db7bd8861cda1844cac230287f3e
+
+% 7 1 0 0156216c95035b8a0da95a4ed8714fc8
+
+% 8 1 0 0331eba7a03b995b1bdfe5370e8eb9ca
+
+% 9 1 0 162f0ea68201eec1123600d2a91e30a1
+
+% 10 1 0 0e1fbeef8e76dcfa1b4d83e2b0070ae1
+
+% 12 1 0 08d4d8f4d7146ddb1ec58d3d5696ebb8
+
+% 0 1 0 0819a788a3d64918092d6661a67f2ef2
+
+% 0 1 0 0b8917a87469bcb5186576c656c72dca
+
+% 1 1 0 10770fbb42383d3c172bbbac62c17d7d
+
+@ 0 4 0 1c9ab85ea22966981cd9d2734bfddc25
++       实例对句柄的操作是按授权进行门控的扩展方法，例如 `extension (handle: (DocHandle & Granting[Grant.Write])^) def append(…)`，因此调用处所选择的模式决定了代码块内什么能够编译。
++       实例通过查询 `mode.atoms`（`mode.atoms.has(Read)`），把模式转换为其后端自己的术语。
+
+@ 0 4 0 131fb82c842d42460e0ce37fa155f236
++       实例应当是具名类，而不是匿名的 `given … = new Openable:` 实例：匿名子类会在推断出的 `Result` 成员中把句柄的能力类型新鲜化，于是代码块的句柄就无法与以它为门控的扩展方法通过类型检查。
+
+% 1 1 0 1ee0643211de745a035a97ced2b37e8e
+
+% 1 1 0 098d16432d684efa05e81acf7b78e0df
+
+% 2 1 0 0c7cba514165d44c0100e9e7d3d1014e
+
+% 1 1 0 14887555a12e7c6d0c6770c4ba14cd63
+
+@ 0 5 0 05d359d078dabc78181114e317d5933f
++   entry #open   以某种模式、带标志打开目标，并以带授权的句柄运行代码块
++       `open(value, mode, flags)(block)`：实例所提供的实现。
++       代码块以句柄 `(Result & Granting[grants])^` 作为上下文参数，在实例关闭了它所打开的一切之后，返回代码块的结果。
++       由 `Opener#apply` 调用；用户代码则写作 `value.open[Form](mode, flags*)`。
+
+@ 0 1 0 0a12cab23ad351220e82c453e6a7ad08
++ entry .Opener   `open[Form]` 返回的应用器，它接受一个可选的模式、标志和代码块
+
+% 1 1 0 12dd9494ed5d7f4b0bca8368fb4a88ba
+
+@ 0 4 0 0285405fbfb9017e0d5e9b31611c2c25
++       `value.open[Form]` 仅凭形式解析出 `Openable` 实例，并返回一个 `Opener`；随后由其重载的 `#apply` 接受参数。
++       分成两步是有意为之：重载的扩展方法无法跨越多个参数列表进行解析，因此应用器才是可以安全地重载可选模式的地方。
+
+% 2 1 0 15c28de2528e0b94028be9c3f3743de2
+
+% 3 1 0 123f7705c23e5bd7005ea34bc459d8ca
+
+% 4 1 0 1793c93ffa7616a7002fb87c3875f321
+
+% 5 1 0 088b4191947eb00c157cb78ffd4e1b14
+
+% 6 1 0 1327060ce2b7d53b1e114ec7dd4e2809
+
+% 7 1 0 0d605b06948836b5084ffa69a7cc9044
+
+% 8 1 0 12b77035df6a122f19fb5f93888b238b
+
+% 9 1 0 1d85410a067e524c0482b809368a5d73
+
+% 10 1 0 1af0753962c5ca3316e02580222a9dae
+
+% 0 1 0 1efc2c2a82007caf058a8cdc4da418dd
+
+% 0 1 0 03a4a480e578b88215749cf1b1bfdd47
+
+% 0 1 0 0cd66392481b732a193944ababe3156c
+
+% 1 1 0 1fb94de29319005901cf39f49b73dd03
+
+@ 0 2 0 1f7f462dd2c71a07069098773cfca30a
++       `#openable` 字段是 `tracked` 的，因此实例的 `Self`、`Operand` 和 `Result` 成员在 `#apply` 的类型中保持精确。
+
+% 1 1 0 1c9306a31fa36cb91bfc5d49b668b68f
+
+% 1 1 0 12f7033b964ee2481a8bc8b5ef885f62
+
+@ 0 7 0 0557582cc73f49b7124ff48bfb42bae0
++   entry #openable   由形式解析出的 `Openable` 实例
++   entry #value   要打开的目标
++   entry #apply   打开目标，默认只读或采用给定的模式，并运行代码块
++       有两个重载。
++       `apply(flags*)(block)` 以 `Read` 模式打开，因此句柄是 `Granting[Grant.Read]`；`apply(mode, flags*)(block)` 以给定的模式打开，因此句柄恰好授予 `mode.Grants`。
++       标志属于实例的 `Operand` 类型，跟在模式之后。
++       句柄是代码块的上下文参数（`handle ?=> …`）。
+
+@ 0 1 0 0defabb207e604351eae1b426f94cba5
++ entry .open   以某种形式打开一个值：`path.open[File](Read & Write) { handle ?=> … }`
+
+% 1 1 0 1fed61834fab93d307990d2cd07bffa4
+
+@ 0 4 0 0520248a8e7109751231b910ad43e14f
++       这是作用于任何在所指明形式下有 `Openable` 实例的值的扩展方法。
++       它返回一个 `Opener`，其 `apply` 依次接受一个可选的 `Mode`（默认为 `Read`）、实例的 `Operand` 类型的标志，以及一个以句柄作为上下文参数的代码块。
+
+@ 0 1 0 059b81a56e393b041bca4c94618c5d04
++       所选的模式决定句柄的类型，从而决定它的哪些操作能够编译：
+
+% 2 1 0 11c287423517fb591b121fab41113180
+
+% 1 1 0 08d9458eb73012351c93056f35e51984
+
+@ 0 1 0 0e746141282b3f47186118d3bf65966f
++         label 不带模式打开：句柄只授予读取
+
+% 1 1 0 114eeadb6319c5011a73d732b2ecbc0f
+
+% 0 1 0 1e2beb093dbc0d49086946bc0c79e482
+
+% 1 1 0 05405a2b413dd3241fbdb99680e4b6c4
+
+% 0 1 0 1492935231d11c221d05541011d30757
+
+% 1 1 0 00b266260d2a261b0ea453b977a613f4
+
+@ 0 1 0 14664edba34bcfd206fd553d0879cc59
++         label `Read & Write`：两种操作都能编译
+
+% 1 1 0 0099c8f28dfbdb8b093f8aae2211873b
+
+% 0 1 0 0434ae24e518d0c51b60c80dc824d1ae
+
+% 1 1 0 06dcad5e35b7cdc80c84acff7941580e
+
+% 2 1 0 15a080379b852db31dc568b358bb7069
+
+% 1 1 0 076f96543a83248217815954211e1ef9
+
+@ 0 1 0 005e27f5ed8ce4931d7572c59fbf62bc
++         label `Read & Write & Exclusive`：并且其他句柄都不能与之重叠
+
+% 1 1 0 0d31f09ad698429b10c63339e949f142
+
+% 0 1 0 03ffd1ae2db5bec1197fc8101192d0c7
+
+% 1 1 0 13582012d7bbafe81df14a93bd72641d
+
+% 2 1 0 19b394d2c20554491f76d2c3728014f7
+
+% 1 1 0 1ef8c3d9193837f418ae867faff761f3
+
+% 1 1 0 1a277342ea9dfdc5113023e785963c91
+
+@ 0 4 0 1dd7e42510a6282f05edc3ad40497788
++       当目标恰好只有一个 `Openable` 实例时，可以省略形式，写作 `value.open()`；有多个实例时，歧义错误会列出它们。
++       句柄是被限制在代码块内的能力：返回它、返回捕获它的闭包或返回由它组成的集合，都是编译错误。
+
+% 1 1 0 1fa0a8f620000a0f057bafeb4d477032
+
+% 1 1 0 055579f6e76350050c472186208a9bfc
+
+% 2 1 0 003839e48112b040089bba938ac55401
+
+@ 0 1 0 09352adfff4166660fb5aa01b48bef1a
++ entry .Mode   一次 `open` 调用授予哪些授权，可用 `&` 组合
+
+% 1 1 0 1ea4dd58b33fd13a154733662a19a51b
+
+@ 0 5 0 184faf1ed3464cbe1d790df8426f3139
++       `Mode` 是在项层面上对授权的选择，作为其 `#Grants` 类型成员携带，因此在调用处写下的模式决定了代码块内句柄的类型。
++       原子模式有 `Read`、`Write` 和 `Exclusive`（各个库还会添加自己的模式，例如 galilei 的 `Shared`）；`&` 以依赖的方式组合它们，因此 `Read & Write` 的 `Grants = Grant.Read & Grant.Write`，无需宏或内联展开。
+
+% 2 1 0 15b1b47702ad57aa1e98d83c8a994381
+
+% 3 1 0 1310770e82431dd51330565696bc6c82
+
+% 0 1 0 106e66a541471e091e2525f61194128a
+
+% 0 1 0 1d1115263c7f27501340ff27baa2af01
+
+% 1 1 0 1c77e9dfad9561161f0159fa6bbc61fa
+
+@ 0 4 0 0f41948c8c1f1694106c0751c3a494ea
++       在运行时，复合模式由 `#atoms` 标识，即构建它的原子模式的集合，`Openable` 实例正是借此把模式转换为操作系统标志。
++       原子模式是按引用比较的全局值，因此定义新模式的库要把它写成 `object … extends Mode` 或顶层的 `val`。
+
+% 0 1 0 187ef6f98ed613170ad91ebd5608759d
+
+% 0 1 0 1e86cd1bee4ea59600f80d3dad909084
+
+@ 0 9 0 1f182e176eb5ed301323bed4eb42cc5d
++   entry #Grants   此模式授予的授权，以 `Grant` 子类型的交集表示
++   entry #atoms   组成此模式的原子模式
++       原子模式的原子只有它自己；`Read & Write` 的原子是 `Set(Read, Write)`。
++       `Openable` 实例通过检查成员资格 `mode.atoms.has(Write)` 来决定如何打开其目标。
++   entry #&   组合两个模式：原子取并集，授权取交集
++       `Read & Write` 是一个 `Mode granting (Grant.Read & Grant.Write)`。
++       由于授权和原子都是集合，该运算满足结合律，效果上与顺序无关。
+
+@ 0 1 0 10c0867fdae569e9155cc4b3ff11a94c
++ entry .Grant   表示某种被允许的操作的幻影标记，通过交集组合
+
+% 1 1 0 07fb4efb652f350717a7257cc06de51c
+
+@ 0 4 0 1fa7ea59072976780ab47349a637d116
++       授权从不被实例化：它们只作为类型存在，通过 `Granting` 交入句柄的类型，在那里对哪些扩展方法适用进行门控。
++       交集使得授权越多，类型就越具体，因此要求 `Grant.Write` 的操作接受任何模式中包含 `Write` 的句柄，无论模式中还包含什么。
+
+@ 0 2 0 07b3866bba0da1bc092740b8101b6f3f
++       这个层次结构是开放的：定义 `Openable` 实例的库可以通过扩展 `Grant` 引入其领域特有的授权，并配上相应的 `Mode`。
+
+% 1 1 0 165d4f9e3955f822152de5c1ebd1899f
+
+% 1 1 0 1ca25bf21318963b1fa29bd434f01876
+
+@ 0 8 0 0dc632214a9bf0d102b045021ba6963a
++   entry .Read   读取句柄内容的授权，由 `Read` 模式授予
++   entry .Write   修改句柄内容的授权，由 `Write` 模式授予
++       写入并不蕴含读取：仅以 `Write` 打开的句柄没有读取操作，两者都需要时要用 `Read & Write`。
++   entry .Exclusive   保证同一实体上同时没有其他句柄打开
++       由 `Exclusive` 模式授予。
++       实例如何维持这一保证是它自己的事：galilei 会以原因为 `Busy` 的 `Io.Error` 拒绝程序内重叠的打开，对于文件还会获取操作系统锁。
+
+@ 0 5 0 19da3fd6c40de929187ed2e4b24de490
++ entry .Granting   混入句柄，以附加其模式所选的授权
++     `Granting[+grants <: Grant]` 是 `Openable` 或 `Creatable` 实例混入其所借出的句柄的标记，写作 `new Handle(…) with Granting[grants] {}`。
++     它是协变的，因此 `Granting[Grant.Read & Grant.Write]` 的句柄也是 `Granting[Grant.Read]`，为 `(Handle & Granting[Grant.Read])^` 编写的扩展方法也适用于它。
+
+% 2 1 0 06a2d75b09ced9f01907d33071b70273
+
+% 3 1 0 19f953e1fd660b090bd1d6403f5c500d
+
+% 0 1 0 04450b795ec966da13762aabd671c2c0
+
+% 0 1 0 1bcc2e8eac24b96512647bc710a57f4c
+
+% 0 1 0 0d536401313263dd0e0b7742d4e4b1fc
+
+% 0 1 0 0ffe027661a288781fc29f223c630b84
+
+% 1 1 0 07e4fed5c970253814f278d42264b858
+
+@ 0 4 0 05be6781234b4d8c1daa88c2d088e605
++ entry .granting   `Mode granting Grant.Read`：把类型的 `Grants` 成员细化为恰好这些授权
++     一个中缀类型别名：`refined granting grants` 即 `refined { type Grants = grants }`。
++     它在签名中读起来很自然，如 `mode: Mode granting grants`，也是原子模式的类型：`Read` 是一个 `Mode granting Grant.Read`。
+
+@ 0 3 0 1c47c445f3abcf2804aa6f4cb7d62fa6
++ entry .Read   授予读取的模式：`open` 的默认模式
++     一个 `Mode granting Grant.Read`。
++     不带模式的 `value.open[Form]()` 使用它；要组合它，就显式传入，如 `Read & Write` 或 `Read & Exclusive`。
+
+@ 0 3 0 08728399fedc7c1a16134db657eba3e1
++ entry .Write   授予写入而不授予读取的模式
++     一个 `Mode granting Grant.Write`。
++     单独的 `Write` 不授予读取权限：要得到既能读又能写的句柄，请以 `Read & Write` 打开。
+
+% 2 1 0 1b853e0395275c421bb6b49b994a0ffa
+
+% 3 1 0 065a485fa95fe0c01b1ad37af1675c0f
+
+% 4 1 0 0c4c8e8d65f9d81a0fe95e20334da425
+
+% 5 1 0 18f6f41b31b45b9313ed7832fc71f2a2
+
+% 6 1 0 0c1abd5c66d76abb1627103c805f7547
+
+% 7 1 0 1607c66852931b5e14cdd30ef334b82e
+
+% 8 1 0 0d67c680fe95fa48001033f2e08d0d41
+
+% 9 1 0 0c361341731a59060ed87b2c6e21a9e9
+
+% 10 1 0 1b538f6a857699671db2ba0ea4870606
+
+% 0 1 0 1c638bba6223ebf012b6454e651b400d
+
+% 2 1 0 02648135ce19b4871fc91a5fdb4a7326
+
+% 0 1 0 0fbce25e81b244721e748f976dd38c35
+
+% 1 1 0 111c38e163141fe600d834184ecc4e8e
+
+@ 0 5 0 175562f7b8b1cd051969cdc8da86982e
++ entry .Exclusive   授予排他性的模式：在此期间该实体上不得打开其他句柄
++     一个 `Mode granting Grant.Exclusive`，与另一个模式组合使用，如 `Read & Exclusive`。
++     在排他作用域持续期间，重叠的打开无论先后顺序都会失败；galilei 把它报告为原因为 `Busy` 的 `Io.Error`，对于文件还会获取操作系统锁，使排他性对其他进程同样成立。
+
+@ 0 1 0 1d8258fdd239db0b119dbe97f1c96ced
++ entry .Creatable   可以使之开始存在的目标的类型类，可为空，也可在作用域中编写
+
+% 1 1 0 1d5df2f3facca3d0072e87571ff432f1
+
+@ 0 3 0 17b6a2f4648b73ea18dd3c3db9e831e8
++       `Openable` 的对应物，用于创建而非访问。
++       实例写作 `target is Creatable in Form by Flag to Handle`，用一个动词服务于两种创建：
+
+@ 0 6 0 00fb26ea002902c6108d951103e322e8
++       - **实例化**，`path.create[Directory]()`：让制品以空的状态存在，没有作用域，并返回目标；
++       - **限定作用域的编写**，`path.create[Tar]() { tar ?=> … }`：制品被创建，并通过一个被授予实例的 `#Grants` 的句柄填充——从诞生起就有写权限，因为新生的制品无条件地归其创建者所有——并在代码块完成时提交。
+
+@ 0 3 0 0fb21a8867fcd21204a164b0493dba63
++       从编写作用域中逃逸的异常不会留下任何东西：实例通过先写到一个临时的同级位置再原子地移到目标位置，或者通过删除它们所创建的东西，来保证这一点。
+
+% 2 1 0 02256acbef042f8c14eba0795def6c6f
+
+% 3 1 0 0ed080ddf58974d20ebe309f740333aa
+
+% 4 1 0 17a16ab5b03ccd3d1d9b00002105f4fa
+
+% 5 1 0 115b7ab1c4fefc7d167a462b4c9077d7
+
+% 6 1 0 10dfb596508fe8481f97d2bec743bd0a
+
+% 7 1 0 1003ea946aa662af19c7c35668011304
+
+% 8 1 0 0438c6ff1fb6136e1f01791cb261c3ad
+
+% 9 1 0 0a44556f1cb2fba7091e09c9f18462d3
+
+% 10 1 0 1a3f570a795f3ef80fb43270f5c2142c
+
+% 0 1 0 0a62474a8951568014f48b1e17c32758
+
+% 0 1 0 0eb825bb01dcc79a09ab8a71053ac37a
+
+% 0 1 0 05ede16a3ff56b0c085535023a541aa9
+
+% 1 1 0 18fa0b1cf3ef00ad0db3d1d30662e5b4
+
+@ 0 5 0 0019d213db3dd65f150b72c80d1849d9
++       这里没有 `Mode`：创建作用域可以做什么不由调用方选择，所创建的条目保留什么权限则由标志决定。
++       创建可能已经存在的东西由各形式的标志控制（galilei 的 `CreateFlag.Replace`），替换从来都不是默认行为。
++       这与为写入而*打开*一个可能不存在的实体（`OpenFlag.Create`）不同，后者访问的是那里已有的任何东西。
+
+% 1 1 0 1d0db166e77646f61220ebf51511c362
+
+% 1 1 0 1722fab6aa214b361c0794af5f804d32
+
+% 1 1 0 04ccc16f80b4c1880859a012ff864ba9
+
+@ 0 11 0 14bcd73946fae2a200bf2415e4a4d41b
++   entry #Grants   编写句柄所携带的授权，由实例确定
++   entry #make   创建空的制品，没有作用域
++       默认实现以一个什么也不做的代码块运行 `#create`，这适合那些丢弃句柄没有任何代价的构建器形式。
++       持有操作系统资源的实例会覆盖它以直接创建——尤其是 FIFO，它绝不能仅仅为了创建而被打开，因为以写方式打开 FIFO 会一直阻塞，直到出现读取方。
++   entry #create   创建制品，并以用于编写它的句柄运行代码块，成功时提交
++       `create(value, flags)(block)`：代码块以 `(Result & Granting[Grants])^` 作为上下文参数；在制品提交之后返回代码块的结果，而代码块抛出的异常不会提交任何东西。
++       由 `Creator#apply` 调用；用户代码则写作 `value.create[Form](flags*) { handle ?=> … }`。
+
+@ 0 1 0 0fa0e42a6788f59c001f094b42cf50da
++ entry .Creator   `create[Form]` 返回的应用器，用于实例化或限定作用域的编写
+
+% 1 1 0 17170809815ed5541b68afa499097db1
+
+@ 0 3 0 1d624f5721870fb5019225cc43bfb146
++       `value.create[Form]` 根据形式解析出 `Creatable` 实例，并返回一个 `Creator`。
++       其重载的 `#apply` 要么只接受标志，以创建一个空的制品并返回目标，要么接受标志和一个代码块，以编写制品的内容。
+
+% 1 1 0 00be9566d0219d160df4740ce8c5ec3a
+
+% 1 1 0 0abf71e29b9268da0ce6dd3a10c9638f
+
+@ 0 6 0 049258e25d6d4ef8106c86f73d3ec28c
++   entry #creatable   由形式解析出的 `Creatable` 实例
++   entry #value   要创建的目标
++   entry #apply   创建空的目标并返回它，或在代码块内编写它
++       `apply(flags*)` 调用 `Creatable#make` 并返回此时已存在的目标；`apply(flags*)(block)` 调用 `Creatable#create`，把一个被授予实例的 `Grants` 的句柄借给代码块，并在制品提交后返回代码块的结果。
+
+@ 0 1 0 0bd341596f11a5740bd5dabe8b835c71
++ entry .create   以某种形式创建一个值：`path.create[Directory]()`，或 `path.create[Tar]() { … }`
+
+% 1 1 0 00ff1e93c30c2c20071ac91b596774db
+
+@ 0 4 0 008142c07ee96071136000de5f4fae69
++       这是作用于任何在所指明形式下有 `Creatable` 实例的值的扩展方法，返回一个 `Creator`。
++       不带代码块时，创建一个空的制品并返回目标；带代码块时，通过句柄编写制品，在代码块完成时提交，如果代码块抛出异常，则制品不存在。
+
+% 2 1 0 0c7014aa252c62571b47129f4ed8b8fb
+
+% 3 1 0 00909420ea410df00d8b1f1c8fad79bc
+
+% 4 1 0 194b14ec460692a809f7769b1cb60b9a
+
+% 5 1 0 1fa2e2c63a8f3fac0b9e1d926e95de37
+
+% 6 1 0 07a88e74bcdb804c1f1680a37e3ce291
+
+% 7 1 0 087994495fadb9840301ca35bd5c4533
+
+% 8 1 0 127252c1de4e75d018783762af348508
+
+% 9 1 0 0040be2b7b08200902f879796bb0a9fb
+
+% 10 1 0 14eda762bc993f130834ef84272d0d48
+
+% 12 1 0 15ef58c8309bc6151539d732c73020d7
+
+% 0 1 0 15bbc3257b9a939a1ed00fb919a2334f
+
+% 0 1 0 082c5857953407ac1b9ef7d8509fd2ca
+
+% 0 1 0 1d3f9e874ebfc5bb0bd6e769ede3abdb
+
+% 1 1 0 16cf1d88cf8b279c136bb6db6a69674e
+
+@ 0 2 0 0673ce55d143e5e10d15c3da53626ee9
++       标志属于实例的 `Operand` 类型；galilei 的标志是 `CreateFlag`，例如 `CreateFlag.Parents` 和 `CreateFlag.Replace`。
+
+% 1 1 0 0e5b6d4e5676fa7b16b9cbd202de4169
+
+% 1 1 0 1d5fcb6b496a5b8e06c2213c339f432c
+
+@ 0 1 0 1e7688e2862d4a2f10aa5fc7d0d17d2e
++ entry .Archivable   其内容可以被收集到归档值中的值的类型类
+
+% 1 1 0 1fd4d354fb8a997c173b43178ebf6384
+
+@ 0 6 0 028eaf657646f25600cb7b9322904be1
++       实例写作 `target is Archivable in Form by Flag to Result`：形式是归档格式（`Tar`、`Zip`、`Ar`），`Operand` 是为该组合调整归档方式的标志类型（一种长名称约定、要记录的所有者、一种压缩方法），`Result` 是所产生的内存中的归档。
++       与 `Creatable` 不同，这里不写入任何东西：结果是一个值，它去往何处——流式传输、压缩、写入文件——是调用方的下一步。
+
+% 2 1 0 0b0f033543a1939410193d2575153a94
+
+% 3 1 0 1af20fdd953da1e8153264fc3fb413e6
+
+% 4 1 0 0fb5119d4f76b55a105d8c808c96ced5
+
+% 5 1 0 131defd8dc30964112e05e60f5374c96
+
+% 6 1 0 039fd6ac8fd6dde11c7bad95ef48a3eb
+
+% 7 1 0 0143026c9f5039700680913048e983a2
+
+% 8 1 0 1f39d21a1ba5aecf07eb6c321f85c1c3
+
+% 9 1 0 03fa2337dd1d4d49178f8ad86da15efc
+
+% 10 1 0 16bbb16d389e97ef143e3fb9260ca6b4
+
+% 0 1 0 09b9718acd263c610a2247a61caaf1ee
+
+% 0 1 0 0c33f942e6a682440273de07898d23ce
+
+% 1 1 0 111baee4d32e19620401d3251b2a943f
+
+@ 0 3 0 0815f11650ff34020881849f920a815e
++       目录的实例位于格式类型（`Tar`、`Zip`、`Ar`）的伴生对象中，并通过 galilei 的文件系统后端遍历目录树，因此它们无需导入即位于隐式作用域中。
+
+% 1 1 0 19d7a20cc85aa93e0eaa42cd354598fb
+
+% 0 1 0 1156c4b2b32b3f030357c98eec790e29
+
+@ 0 3 0 1f2443cb7a08e71b1560d9a6d60d70a4
++   entry #archive   把一个值的内容按标志的调整收集到归档值中
++       `archive(value, flags)`：实例所提供的实现。
++       由 `Archiver#apply` 调用；用户代码则写作 `value.archive[Form](flags*)`。
+
+@ 0 1 0 18db20637d03a6bc01287459e6e2f4c4
++ entry .Archiver   `archive[Form]` 返回的应用器，它接受标志
+
+% 1 1 0 1428577169d7a7191e60f82670d69a8b
+
+@ 0 3 0 056f4d45bb5f28c006715b464ce8ed37
++       `value.archive[Form]` 根据形式解析出 `Archivable` 实例，并返回一个 `Archiver`，其 `#apply` 接受实例的 `Operand` 类型的标志并返回归档。
++       这一形状与 `Opener` 和 `Creator` 相对应。
+
+% 1 1 0 19a2d3fc5d718ab918151642b2ed76a0
+
+@ 0 3 0 09bb34086577ad08044e17099226319e
++   entry #archivable   由形式解析出的 `Archivable` 实例
++   entry #value   要归档的值
++   entry #apply   用给定的标志归档该值，返回归档
+
+@ 0 5 0 1dbb537141c80df81f99d3e11c2c8f5a
++ entry .archive   以某种形式归档一个值：`directory.archive[Tar]()` 给出一棵目录树的 tarball
++     这是作用于任何在所指明形式下有 `Archivable` 实例的值的扩展方法，返回一个 `Archiver`，其 `apply` 接受实例的 `Operand` 类型的标志。
++     结果是实例的 `Result` 类型的内存中归档值，随后由该格式的库对其进行序列化或压缩。
+
+% 2 1 0 13d8266c1722fee00d9efd3be804ca6c
+
+% 3 1 0 1b817663108c1e811e4cdca5998504a5
+
+% 4 1 0 0f6a2bf17921c8cd038c9da2583adda1
+
+% 5 1 0 1f0501ae7ee55ed710e3310ec80a7c69
+
+% 6 1 0 15599115b52a406904657b08198ded15
+
+% 7 1 0 0f442417ed0d248a0b9238ed230c4187
+
+% 8 1 0 04196fae53d017dd1fadbca785dd45e2
+
+% 9 1 0 19007fd046a68d771b35d20be9c7868c
+
+% 10 1 0 0cd79e6130e722f61ec6bf4254915c86
+
+% 0 1 0 18db68f2f84aa4da024449ff0a3777c1
+
+% 0 1 0 014ee61598ffda2d087cb1ee21512fbf
+
+% 1 1 0 0ab812532b337a7f030d517004431590
+
+@ 0 1 0 0069abde5f6556b115a9c7f93765a5ed
++ entry .Sessional   把活动会话借给代码块并在之后将其释放的目标的类型类
+
+% 1 1 0 003f2da884abac4b10d89b3fd42d00e0
+
+@ 0 5 0 1a409eb8b038d1b3021412fb0c6012bb
++       会话是一个有状态的交互作用域：一个网络连接、一个已预热的编译器、一个被远程驱动的浏览器、一台通过 SSH 访问的设备。
++       实例写作 `target is Sessional to Handle`；其 `#session` 与目标建立会话，在代码块运行期间把句柄借给它，并在代码块结束时释放会话，无论代码块是正常返回还是抛出异常。
+
+% 2 1 0 11ddee58a470abcf1298e5d95e2b149b
+
+% 3 1 0 0f5969e1f510e18c1b5f683e1108369c
+
+% 4 1 0 0c23a9bb101a217a198a0b8d6c346639
+
+% 5 1 0 06b853619c27700f0253da452b64d0a0
+
+% 0 1 0 06a007b8ffa0770b0db2af4ea355ee02
+
+% 0 1 0 05a43c9cdd34150916596034aced282b
+
+% 0 1 0 019a06f280175d460b430c4c9402435c
+
+% 0 1 0 017964186291c5070b5fb360cd17bc7f
+
+% 1 1 0 0dc2d84fe896400f13a275bcc693410e
+
+% 1 1 0 057623fdd24f157d095b7df246edaaa6
+
+% 1 1 0 15736583e83c6f8b16e59aea011d082f
+
+@ 0 6 0 1dd547445aa8e3ac1954c7342490be16
++       代码块的结果类型在代码块之外量化，因此仍在借用会话的值——句柄本身、捕获它的闭包、从活动连接流式传来的响应——不能作为其结果；与会话无关的值，例如已被完整读取的值，则可以。
++       传输层的实例（coaxial 为任何 `Connectable` 端点提供的实例）借出原始连接；更高层的实例借出了解协议的句柄，例如 telekinesis 的 HTTP 会话或 exegesis 的语言服务器会话。
+
+@ 0 2 0 04b44cdd9564b02a1bea98e091dae0f4
++       主体归另一个库所有的实例是带有库限定名称的顶层 given，按名称导入（`import soundness.httpUrlSessional`）。
+
+% 0 1 0 0aa2bb590f713fa21aae4aaccefd4fca
+
+% 1 1 0 1bf86935119f00c51d33232aa150c609
+
+@ 0 4 0 1949bd123dbb5a1e166e3ec76010d490
++   entry #session   与目标建立会话，用它运行代码块，然后释放它
++       `session(target)(lambda)`：实例所提供的实现。
++       句柄是 lambda 的上下文参数，在任何结果下都会被释放。
++       用户代码写作 `target.session { handle ?=> … }`。
+
+@ 0 7 0 0f4f5b8fd82aa0d91a2e51a50307c415
++ entry .session   在一个值上打开会话，并把其句柄借给代码块：`url.session { s ?=> … }`
++     这是作用于任何在作用域中有 `Sessional` 实例的值的扩展方法。
++     句柄——无论实例提供的是什么类型——是代码块的上下文参数，并在代码块结束时被释放。
++     借用会话的值不能作为结果：返回句柄、捕获它的闭包或容纳它的集合，或者把它赋给代码块之外的变量，都是编译错误（_… outlives its scope_、_… cannot flow into capture set …_）。
+
+% 0 1 0 15d6d2800841da9e1c6e709ce05d6a7d
+
+% 0 1 0 1a8ec18672c39e03185024ae675e9c25
+
+% 0 1 0 0472326144a49ce71767be845f62f575
+
+% 1 1 0 149c77db45ac644f1a74f205bbafc35a
+
+% 0 1 0 18c899fbefe1b88d0c673febf0e51517
+
+% 0 1 0 14a68bffa6b708411ac2ce37360b6c83
+
+% 0 1 0 074ab1c2dd3f8ebc031901f844a03d33
+
+% 0 1 0 024567e881f4dd0f1313a9ec1163a9df
+
+% 0 1 0 18a3d633bca8b02a07d3f001113ecfa3
+
+% 1 1 0 00313a34bc35abba13ea1fbbf70abcbd
+
+@ 0 3 0 0903cfe269e1de5614b492ceaa5f186d
++     这个扩展方法是普通方法，而不是内联方法，并且实例和代码块可以共享能力（一个监视器、一个战术）：两者都把各自的捕获集作为参数接受，而不是作为新鲜的、相互分离的捕获集。
+
+@ 0 1 0 12cb382735b944121bc842c22c8bef8b
++ entry .Stale   句柄所看到的值，其背后的状态此后可能已被其他进程改变
+
+% 1 1 0 18b8e51a95ded2e31cc3b1fd5e40063d
+
+@ 0 6 0 14fd11d4273c22cb19c1229b336616d7
++       `Stale[value]` 包装通过句柄从句柄并不拥有的状态中读取的值：其他进程会写入的仓库中的一个引用、一个文件的大小、一个目录的条目。
++       这个值是不可变且纯的，但它所记录的东西可能在读取返回之前就已经改变了。
++       这个类型的存在是为了让签名能够说明这一点：返回 `Stale[Git.Hash]` 的方法解析了一个引用，而接受它的方法则以该引用仍然持有那个值为条件，如果不再持有，就以有类型的错误失败。
+
+% 2 1 0 0f9818b4fd3c2c1802136764045ff651
+
+% 3 1 0 07a9df363e5a54630a58bceae0cf7078
+
+% 4 1 0 0485889e8efa662016dcc49a8fbd0c68
+
+% 5 1 0 1a3227dd1c972459179c8c3f9299fb15
+
+% 2 1 0 0e9435e601f38dba02e2d7fbdae82035
+
+% 3 1 0 0b3f7d56208aa17a0960361fc07523a0
+
+% 4 1 0 0a2489263358c461177f04c2bad37b89
+
+% 5 1 0 04f8bd3693ed2c521d78f675eab151c5
+
+% 6 1 0 0ba1c95fb631e1a80008e0ac6a4f9a2a
+
+% 7 1 0 15a9622bdf2267b1045631b4f07c2f9c
+
+% 8 1 0 0062e075a9a992e81241b9a9a4d9e260
+
+% 0 1 0 025a8cfdc31ec73d18a4e32a66514dfc
+
+% 0 1 0 13b3145d5d77076c0a035a099314247c
+
+% 0 1 0 0ee05dbc473a135a1991c4399441c55a
+
+% 0 1 0 037c13e6234abfc90d63828638fb2299
+
+% 0 1 0 162120ac8677457a05dbdf9313bbdee9
+
+% 0 1 0 1267be16c31a610102dca42374beea2f
+
+% 1 1 0 1b46d202ca01ce5617cc7a4b19680b33
+
+@ 0 2 0 19a73a68348d71d716945dfdcc0e9fc4
++       如果另一个进程在读取和提交之间移动了 HEAD，提交会以 `Git.Error(Moved(…))` 失败，而不会覆盖那项工作。
+
+@ 0 3 0 0419a9507b705b721a97e3edf8ea9877
++       这里有意不带时间戳：时钟会成为一个依赖，而新近程度并不是可以据以推理的性质。
++       陈旧值唯一合理的用法，是把它交还给产生它的句柄，或者在知道它可能已过时的前提下读取其 `#value`。
+
+% 0 1 0 071d3ceb5e7915ed12f2868090902787
+
+@ 0 4 0 1f506d79ed00d17d112e44598e3bebb6
++   entry #value   读取时的值
++   entry #let   从陈旧值派生出一个值，它的陈旧程度完全相同
++       `Stale(1).let(_ + 1) == Stale(2)`。
++       这是一个方法而不是扩展方法，这样 vacuous 在 `Optional` 上的 `let`（到处都会被导入）就不会抢占这个接收者。

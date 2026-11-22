@@ -1,0 +1,1178 @@
+orthant 2 language
+
+% 0 1 0 0f04ec4b9ac2d4270a232409219e1f6b
+
+% 0 1 0 181208bb8e1b61921cc7c7acca994648
+
+% 0 1 0 0b5938ce7315323607e1922cbc4d93e2
+
+@ 0 1 0 070d55ffe2c201b41054fa1f33ee109d
++ info   类型化的远程过程调用：JSON-RPC、gRPC、服务器发送事件和消息分帧
+
+% 0 1 0 0ca6d61ddd9511ea1cdae38f1414f6fe
+
+@ 0 7 0 1c7c2bc9a8ff39ed0e5eff2b640df3bf
++     _Obligatory_ 让远程过程调用在两端都是类型化的。
++     RPC 接口是一个普通的特质，其方法带有 `@rpc` 注解；宏从这一个定义派生出一个**服务端分发器**和一个**客户端桩**，前者把传入的请求路由到某个实现，后者把每次方法调用变成一条线上的消息，因此两端不可能在方法的名称、参数或结果上产生分歧。
++     同一种形状服务于两种协议：载荷为 `Json` 的 JSON-RPC 2.0，以及基于 HTTP/2、载荷为 Protocol Buffers 消息的 gRPC。
+
+@ 0 6 0 1dbb1059ee1924390430dbe049aa6195
++     协议之下是消息流的管道。
++     **分帧**按照一种以类型命名的约定，把文本流或字节流切分成各条消息，这些约定是 `LengthPrefix`、`ContentLength`、`CrLf`、`Linefeed`、`CarriageReturn`、`Sse` 和 `Grpc.Framing`，通过 `frames` 扩展和 `Framable` 类型类使用；一个 `Sse` 值是一个服务器发送事件，而 `Sse.Source` 持有这些事件的可重放缓冲区，用于 `text/event-stream` 响应。
+
+% 2 1 0 015612327cb29c291284fdb7a970c12f
+
+% 3 1 0 132559872a7f5e5818fb6dbe8a86c7a5
+
+% 4 1 0 0d7151a43e6281391a48047847451b79
+
+% 2 1 0 1ffa06cbaa856763054f085afa384185
+
+% 3 1 0 0b661f856c5a2b921b0fb8008f20e69a
+
+% 5 1 0 132d8bcdba6627c8181a0c0895995e55
+
+% 6 1 0 0c61ea64dc5a77780df5e27b1cfc0cfe
+
+% 0 1 0 013ebe4898310f3819572e0bfaa4ae3a
+
+% 0 1 0 1213fec88dccd3e71082ac419383b354
+
+% 0 1 0 04b8d46e97492f07036d83eeac7c021a
+
+% 0 1 0 00592949af9e49521361c8a0d9785094
+
+% 0 1 0 04310b8972df79280e04a912ec3d5cb5
+
+% 1 1 0 1a24ee2fc89b8cb5131cb1c1dbaf58e9
+
+@ 0 11 0 083e8eb353b8b76f02c636f2ef1e373f
++     结果类型为 `Unit` 的方法是一个*通知*：客户端发送它时不带 id，也不等待响应，分发器用 `Unset` 回应它。
++     其他每个方法都是请求，按 id 关联。
++     在调用方，`remote[Echo](url)` 制造一个客户端，把每次调用以 JSON-RPC 的形式 POST 到一个 HTTP URL；而 `JsonRpc` 实例的 `client`/`proxy` 在一个双向的 `Json` 消息通道上制造客户端，语言服务器（`exegesis`）、智能体（`espionage`）或 MCP 会话（`synesthesia`）就是这样与对端通信的。
++     对于 gRPC，`Grpc.remote[Echo](channel, t"echo.Echo")` 在一个 `Grpc.Channel` 上派生桩，它是单个持久的 HTTP/2 连接：返回一个值的方法发起一元调用，返回 `Chain` 的方法发起服务端流式调用，而非 `Ok` 的状态以携带规范 `Grpc.Status` 的 `Grpc.Error` 到达。
+
+@ 0 6 0 0ec0dd0843a4716b01302a22dfc635ed
++     MCP 建立在 JSON-RPC 这一半之上：`synesthesia` 中的 `Mcp.Server` 是一个 `JsonRpc`，其 `Origin` 是客户端的接口，每个请求都由 `JsonRpc.serve` 分派，故障用 `JsonRpc.failure` 回应，而 MCP 可流式 HTTP 传输中从服务器到客户端的那一半是 `Sse` 事件的 `JsonRpc#stream`，由 `Sse.servable` 作为 `text/event-stream` 提供。
++     Language Server Protocol 在以 `ContentLength` 分帧的标准流上做同样的事，Agent Client Protocol 则在以 `Linefeed` 分帧的标准流上做。
+
+@ 0 1 0 1c2315358367c5db196b18bacc02b83e
++     这个库分为三个源码集：
+
+@ 0 8 0 14a2b4dbc3eef69411310374de5c9b06
++     - `obligatory.core`：分帧类型类 `Framable`、`frames` 扩展、分帧器 `CarriageReturn`、`Linefeed`、`CrLf`、`ContentLength` 和 `LengthPrefix`、`Framing.Error`、`@rpc` 和 `@bare` 注解，以及 `Rpc.Error`。
++       它可为 JVM、Scala.js 和 Scala Native 编译。
++     - `obligatory.json`：`JsonRpc`、`remote` 和 `Sse`。
++       仅限 JVM，因为它通过 `telekinesis` 和 `jacinta.http` 使用 HTTP。
++     - `obligatory.grpc`：`Grpc` 和 `GrpcSessional`，基于 `telekinesis` 的 HTTP/2 客户端和 `locomotion` 的 Protocol Buffers。
++       仅限 JVM。
+
+@ 0 6 0 158d27a12e3f0cd517ad59a949429d74
++     所有内容都导出到 `soundness` 总括包。
++     这个库没有选择包：每个 given 都位于其主题类型的伴生对象中（`Sse.framable`、`LengthPrefix.framable`、`Grpc.Endpoint.sessional` 等），无需导入即可通过隐式作用域找到。
++     示例确实需要的，是一个用于处理分帧器或调用所抛出错误的 `Tactic`（至少要 `import strategies.throwUnsafely`），以及对于任何经由连接的操作，一个提供 `Monitor` 和 `Probate` 的 `supervise` 作用域。
+
+% 0 1 0 0e54dc62de0993661f606bd62a10cbd2
+
+% 0 1 0 1365aa8a54b97c05055e92fedc1cdab9
+
+% 0 1 0 167feb5cd6bc483d136efb95ec0715b4
+
+% 0 1 0 0b41cae943974c7b189767beb31972cd
+
+% 0 1 0 1881221f0f435dab1e42f49ff260cb0d
+
+% 0 1 0 19a86f2751a907bc184a7c7689d338f0
+
+@ 0 1 0 1b963bdf41cc22e9165d8ce4783486b4
++ entry .Framable   按一种具名约定把流切分成帧的类型类
+
+% 1 1 0 108c33e78f4fad9905d4780a6a3eed91
+
+@ 0 5 0 1a0fcea759f6a28c0d3b229e8d420176
++       `element is Framable by frame` 是一个证据，证明一个由 `element`（`Text` 或 `Data`）组成的流可以按 `frame` 所命名的约定切分成消息，这些约定是 `CrLf`、`Linefeed`、`CarriageReturn`、`ContentLength`、`LengthPrefix`、`Sse` 或 `Grpc.Framing`，每个都是一个密封的、无居留值的类型，其伴生对象持有相应的 given。
++       `Iterator[element]^` 或 `Chain[element]` 上的 `frames` 扩展应用它：`chain.frames[Linefeed]`。
+
+@ 0 3 0 03bf9bfb280592d31e31e506dfd119c0
++       分帧器在输入上的 `Cursor` 中维护自己的位置，因此数据块边界对它毫无意义：跨三个数据块的一条消息、同一数据块中的两条消息、以及没有终止符的最后一条消息，都会被完整交付。
+
+% 2 1 0 18a460d5bae971f003a10610f0dece3d
+
+% 3 1 0 0820af156097af2b068e28e23e66ac20
+
+% 2 1 0 1b4d93f3905c53771b93a5eefdbb2163
+
+% 1 1 0 0593fb8b9162f077138f4bf83319ba50
+
+@ 0 5 0 1b6d56e968886d41186466d5ff82a49e
++       分帧后的迭代器惰性地从输入中拉取，因此捕获了输入；它也捕获分帧器，因为由 `Tactic[Framing.Error]` 构建的分帧器在迭代期间通过它抛出错误，而不是预先抛出。
++       因此，需要战术的分帧器（`CrLf`、`ContentLength`、`LengthPrefix`、`Grpc.Framing`）在调用 `frames` 的地方需要作用域中有一个战术；`CarriageReturn`、`Linefeed` 和 `Sse` 不会失败，不需要战术。
+
+@ 0 2 0 13e4947cf90026c21853b5c8f7fc5fa9
++       用户定义的分帧器是一个设置了 `Self` 和 `Operand` 并实现了 `frames` 的 `new Framable`，最简便的写法是基于 `Framable.frames` 和一个 `Cursor`。
+
+% 1 1 0 1161d15563a7b08118800f80dfa65034
+
+% 0 1 0 1dd6c0c49ffa68ea11bebb0c57045d51
+
+@ 0 10 0 151d1f80efa11fae01dd894e8a89f755
++   entry .frames   把一个读取一帧（或在末尾返回 `Unset`）的 thunk 包装成迭代器
++       `Framable.frames[data](frame)` 把一个传名表达式（它读取并返回下一帧，或在输入耗尽后返回 `Unset`）变成一个 `murmuration.Iterator[data]`，隐藏了每个分帧器原本都要重复的预读一项的缓冲。
++       这个 thunk 通常闭包捕获调用者的 `Cursor`，因此迭代器捕获该 thunk（`^{frame, caps.any}`）。
++       这个库中的每个分帧器以及 `Sse.framable` 都是这样写的。
++   entry #frames   输入流中分帧后的消息，作为一个惰性的一次性迭代器
++       接受一个 `Iterator[Self]^`，返回其各帧的 `Iterator[Self]^{input, this}`。
++       通过 `frames` 扩展调用，而不是直接调用。
+
+@ 0 7 0 087844b8758ab4c119b2a67480d8df69
++ entry .frames   `stream.frames[Convention]`：按某种分帧约定得到的流中的消息
++     这是 `Iterator[element]^` 和 `Chain[element]` 上的扩展，各自返回由作用域中的 `element is Framable by frame` given 所界定的消息的一次性 `Iterator[element]`。
++     类型参数指定约定：`frames[LengthPrefix]`、`frames[ContentLength]`、`frames[CrLf]`、`frames[Linefeed]`、`frames[CarriageReturn]`、`frames[Sse]` 或 `frames[Grpc.Framing]`。
++     接收者会被消耗：分帧后的迭代器是其输入的唯一读取者。
+
+% 2 1 0 06b70005d6216bfc1b685ebb9b424b34
+
+% 3 1 0 0849c0ec96291db2061795a3552817db
+
+% 4 1 0 183e51cc584faca21eac01113b59b4e5
+
+% 0 1 0 01b5f6639dba21fe1f20e49c40a99bbb
+
+% 0 1 0 15eb285d9fca2ec10ee6c080ec8d094d
+
+% 0 1 0 1e58a159388b44031efbb8368512cd05
+
+% 0 1 0 023cb931f96fda95141d2e790899c1a7
+
+% 0 1 0 065d0b9a3e166d0519488bfec95b27fe
+
+% 0 1 0 1cc021532b1318201fed00172f55f919
+
+% 0 1 0 0db1aa190f7b505008c9f260bf65a481
+
+% 1 1 0 01a49e12abb8679d1156b80bee87d009
+
+@ 0 5 0 1dd966f64245b1100d649aa395b5f562
++     这个证据是捕获多态的：抛出 `Framing.Error` 的分帧器（`CrLf`、`ContentLength`、`LengthPrefix`）在调用处需要作用域中有一个 `Tactic[Framing.Error]`，迭代器会保留它，在读取时才抛出截断或格式错误的帧，而不是在调用 `frames` 时抛出。
++     流的 `.chain` 就是以 `Chain` 接收者的形式到达的：`stream.chain.frames[Linefeed]` 逐行读取子进程的输出。
+
+@ 0 1 0 1babd0165c573a9814f89680cbcee84f
++ entry .Framing   在流中界定消息的行为，以及它失败时的错误
+
+% 1 1 0 09be15ece9c73f1e0208635e611a4398
+
+@ 0 4 0 1e300a53ca06d9c30ec1622bdd04e3ff
++       `Framing` 是 `Framing.Error` 的所在之处，每个分帧器在遇到无法解帧的流时都抛出这个错误。
++       它以行为而非帧来命名（obligatory 没有 `Frame` 类型），并且有别于 gRPC 消息约定 `Grpc.Framing`，后者抛出的是 `Grpc.Error`。
+
+% 1 1 0 1fe94366cf0a3bd90279c3da40d3cf09
+
+@ 0 1 0 139a09562dc763c50f78024b60a2ef88
++   entry .Error   当流无法切分成帧时抛出：错误 `↯/s.112.2`
+
+% 1 1 0 1c36b3769c5a6a2c1208ab9797e3629e
+
+@ 0 10 0 1ceb0c9c4da34359118163e0dac34ee2
++         错误 `↯/s.112.2`：_could not deframe the message because `reason`_。
++         在读取分帧后的迭代器时，通过分帧器的 given 所捕获的 `Tactic[Framing.Error]` 抛出。
++         `reason` 说明出了什么问题：`ShortRead` 表示输入在一帧之内结束（`LengthPrefix` 的字节数少于其头部所承诺的，`ContentLength` 的头部或正文被截断）；`MissingLineFeed` 表示 `CrLf` 遇到了后面没有换行符的回车符；`MalformedLength` 表示 `Content-Length` 头部的值缺失或不是数字；`UnknownHeader` 则保留给协议拒绝的头部（`ContentLength` 目前跳过无法识别的头部，而不是抛出它）。
++     entry .Reason   无法读取一帧的原因
++         编号是该错误的细节编号：
+
+% 3 1 0 1c3c8fa4c76c609a0d18d6510c3500ea
+
+@ 4 4 0 09cbb2932ef5fca603e49f5b8b313bf0
++         column  分支
++         column  代码
++         column  消息
++         column  备注
+
+% 0 1 0 11796bcc7d5d8c520121e216d8978bc2
+
+% 0 1 0 034859d340cb4ade170b3284c11ed730
+
+% 0 1 0 15d463aa4ad64116093fbc505de801ef
+
+% 0 1 0 1fd7fadf16bedcc9053ea7055f1446fb
+
+% 1 1 0 148107bd6dcc8c9a0112a186534afb90
+
+@ 0 2 0 158be23c86b4a36e1bb2d1e663321064
++     entry .communicable   把每个 `Framing.Error.Reason` 呈现为其消息
++     entry #reason   无法读取该帧的原因
+
+@ 0 1 0 0bbf2d9308ed84b31e5240cf80c9d93d
++ entry .CarriageReturn   以单独回车符结束各行的分帧约定
+
+% 1 1 0 078ec04105f20d4b0b1fd469996c8dfa
+
+@ 0 4 0 1c7f40b4b208acef07bcf1a7ebf9e186
++       一个密封类型，命名 `frames[CarriageReturn]` 应用于 `Text` 流的约定：每一帧是 `\r` 之前的文本，`\r` 本身被消耗；没有终止符的最后片段按原样产出，空输入不产出任何内容。
++       这个约定不会失败，因此不需要战术。
+
+% 2 1 0 0298ff36abb9ba081479d017ca09eaaa
+
+% 3 1 0 0777e5f6bc4a4abd1157544c184d1034
+
+% 0 1 0 00631730011a71e0113468695aabb6fc
+
+% 1 1 0 066ccff8352fe2f805ef26ec4424a6e8
+
+@ 0 1 0 02fe9d6a8f861c081ed66768bb581b78
++   entry .framable   `Text is Framable by CarriageReturn` given，位于隐式作用域中
+
+@ 0 1 0 04012cb8a6f8a69f0477655b24bccb8b
++ entry .Linefeed   以换行符结束各行的分帧约定，适用于文本或字节
+
+% 1 1 0 0ae959a21ef497bc0a629612a128a40a
+
+@ 0 7 0 09600fcc02aa7572135feb3863a0418b
++       一个密封类型，命名 `frames[Linefeed]` 所应用的约定：每一帧是 `\n` 之前的内容，`\n` 本身被消耗；没有终止的最后片段按原样产出，空行作为空帧保留。
++       它不会失败，因此不需要战术。
++       有两个 given 服务于它：`.framable` 用于 `Text` 流，`.framableData` 用于 `Data` 流，后者在任何文本解码之前按原始字节切分，因此多字节的 UTF-8 内容可以完整通过；这正是二进制流上以换行分隔的 JSON 的形状，Agent Client Protocol 就是这样使用的。
+
+% 2 1 0 1ddb909287e34a24068906f4b2de7907
+
+% 3 1 0 03286c1085f3f5830ef47661d026cfd6
+
+% 1 1 0 1b393a49198909460836d728f5136ee6
+
+% 2 1 0 10176be1a29bef310dd4ade131ced455
+
+% 0 1 0 1dcb0ec8498407de1ad9c1c0359b3e82
+
+% 1 1 0 14f0f7ab1953ffe71084f3cf54855173
+
+@ 0 8 0 0f0790dcc5dec5710c16ed0b91f15530
++       字节分帧器读取*活动*的流，例如子进程的输出：它用游标的不重新填充的 `advance()` 消耗终止符，因此恰好在数据块末尾结束的一行会立即交付，而不会为了等待其后的字节而阻塞；重新填充的代价在下一行开始时支付。
++   entry .framable   `Text is Framable by Linefeed` given，位于隐式作用域中
++   entry .framableData   `Data is Framable by Linefeed` given：按原始的 `\n` 字节切分字节
++       位于隐式作用域中。
++       在任何解码之前按字节 10 切分，因此 UTF-8 内容绝不会在一个字符的中间被切断；没有终止的最后片段按原样产出。
+
+@ 0 1 0 17fe30b1c214248c1b6ff1749950291f
++ entry .CrLf   以回车符加换行符结束各行的分帧约定
+
+% 1 1 0 145b73a8f2d31a420f13a01e7116401d
+
+@ 0 5 0 1225fd68cb998476114a18d3716f9252
++       一个密封类型，命名 `frames[CrLf]` 应用于 `Text` 流的约定：每一帧是 `\r\n` 之前的文本，这两个字符都被消耗；没有终止符的最后片段按原样产出。
++       后面不跟 `\n` 的 `\r` 是违反协议的，以 `Framing.Error(MissingLineFeed)` 抛出，因此这个 given 需要作用域中有一个 `Tactic[Framing.Error]`，分帧后的迭代器会保留它。
+
+% 2 1 0 13bb1301c9ebd10e0e3c6a1a1050cb66
+
+% 3 1 0 0cff337c002748960aabfaefdaa297b8
+
+% 4 1 0 14e7256774cea5be1d1f68c45dacc42f
+
+% 0 1 0 069ea1b5866efff318cc4c0befbdfe54
+
+% 1 1 0 075c88c381e2292b177e401f68c30cca
+
+@ 0 1 0 143c8c0972368e7c17a0d7ea444cad25
++   entry .framable   `Text is Framable by CrLf` given；需要一个 `Tactic[Framing.Error]`
+
+@ 0 1 0 1523faff4a6928d50572924633f33720
++ entry .ContentLength   在每段正文之前有一个 `Content-Length` 头部块的分帧约定
+
+% 1 1 0 0e3564d90561628213cb367d3305221f
+
+@ 0 9 0 07743c53ea38d30f0de59a4de2dd5ed4
++       一个密封类型，命名 `frames[ContentLength]` 应用于 `Data` 流的约定：这是 Language Server Protocol 的基础协议，也是它所源自的 HTTP 风格分帧。
++       每条消息是一组 `Name: value` 头部（每个以 `\r\n` 结束），一个空的 `\r\n`，然后是恰好 `Content-Length` 个字节的正文，以 `Data` 产出。
++       计数的单位是*字节*，正如规范所定义的，这就是分帧器在 `Data` 上工作、并把文本解码留给调用者的原因：按字符计数只在 ASCII 下与字节数一致，遇到任何多字节 UTF-8 正文都会破坏流。
++       头部名称的匹配不区分大小写，`Content-Length` 以外的头部（例如 `Content-Type`）会被跳过。
+
+% 2 1 0 12d0a87f9f42272a1583d40fa735ae87
+
+% 3 1 0 1fa412d765958ac61805e5e43688afce
+
+% 4 1 0 13c90b87718f2d0c180b383b5c3384a7
+
+% 1 1 0 1f0d33ac9029de9b05c44d6992611c68
+
+% 0 1 0 07c9c22a5b80d5610c7ad5c18f49bcd9
+
+% 0 1 0 02b8a43376fc7ecf1033350b03ec4b74
+
+% 1 1 0 1a80d556dd2fa8b5188b88335729d612
+
+@ 0 4 0 176c00c3065130ed1bde4285f93eea5c
++       没有数字 `Content-Length` 的头部块抛出 `Framing.Error(MalformedLength)`，在头部或正文内部结束的输入抛出 `Framing.Error(ShortRead)`，因此这个 given 需要一个 `Tactic[Framing.Error]`，分帧后的迭代器会保留它。
++   entry .framable   `Data is Framable by ContentLength` given；需要一个 `Tactic[Framing.Error]`
+
+@ 0 1 0 0a7109e13fd0afc807add075fbc7be84
++ entry .LengthPrefix   在每条记录之前有一个四字节大端长度的分帧约定
+
+% 1 1 0 11c65d5cd27b3fc40974977d13b338ba
+
+@ 0 4 0 0a940ac6b9664a741585c08cf9ed346c
++       一个密封类型，命名 `frames[LengthPrefix]` 应用于 `Data` 流的约定：每条记录是四个字节的大端长度，然后是那么多字节，以 `Data` 产出。
++       `.encode` 是写入的一半，为一条记录加上前缀以便发送，因此分帧的流既可以读取也可以生成；携带 BinTEL 消息的 `Duplex` 就是这样分帧的。
+
+% 2 1 0 0aff3c7c5f6f01bf0e48b3b1e5726bcd
+
+% 3 1 0 0c986d8620d0a681122a52d0e5e42a6f
+
+% 4 1 0 1d4791f9b022020e18c3ab1be9c1c971
+
+% 0 1 0 0a0df8633f29cc450b2ccc10b306f5c1
+
+% 0 1 0 0696122e1252c0ac074a8c983264a0da
+
+% 1 1 0 171d55f7c5cc4b0701b91bfcf6509e05
+
+@ 0 9 0 10d338907f73322e10331fc1971abc6b
++       在头部或记录内部结束的输入抛出 `Framing.Error(ShortRead)`，因此这个 given 需要一个 `Tactic[Framing.Error]`，分帧后的迭代器会保留它。
++       读取长度时，每个字节在移位之前都先经过掩码，因此尽管 `Data` 的字节是有符号的，128 字节或更长、或长于 32767 的记录也能正确分帧。
++   entry .encode   为一条记录加上四个大端字节表示的长度前缀
++       `LengthPrefix.encode(record)` 是由四字节头部及其后的记录组成的 `Data`：它是 `.framable` 的逆操作，也是长度前缀流的写入者对每条记录所调用的方法。
++   entry .framable   `Data is Framable by LengthPrefix` given；需要一个 `Tactic[Framing.Error]`
+
+@ 0 1 0 05a129c020ddf4061d986bf87d83207c
++ entry .Associable   把一个会话值与它所管辖的响应配对的类型类
+
+% 1 1 0 04b614026f4b238414125379cf0eced0
+
+@ 0 7 0 096888983312d0fb13804c53e878f325
++       `Self is Associable by Operand to Target`：`association(operand)` 由一个操作数生成会话值，`associate(session)(response)` 把该会话附加到一个 `Target` 类型的响应上。
++       它是为必须给每个响应标记其所属会话的传输层（正如 MCP 用会话 id 头部标记响应）提供的钩子；这个库只声明了这个类型类，没有提供任何实例。
++   entry #association   由一个 `Operand` 生成 `Self` 会话值
++   entry #associate   把会话附加到一个 `Target` 响应上，返回标记后的响应
+
+@ 0 1 0 1fcc2ee040324fc21a2c040a184a99bf
++ entry .Rpc   `Rpc.Error` 的所在之处，即远程调用的通用失败
+
+% 1 1 0 01cb95cdccd2f97907487bea39354f38
+
+@ 0 7 0 10facd6a3377f8540a4eb121f2bd9f44
++       这个对象只持有 `Rpc.Error`。
++       特定于协议的失败是 `JsonRpc.Error` 和 `Grpc.Error`，各自携带其线上格式所报告的内容；`Rpc.Error` 只说明一次调用失败了。
++   entry .Error   远程过程调用失败时抛出：错误 `↯/s.112.8`
++       错误 `↯/s.112.8`：_the remote procedure call failed_。
++       一种没有细节的通用失败，用于无法提供更多信息的传输层；`JsonRpc.Error` 和 `Grpc.Error` 携带对端的代码和消息。
+
+@ 0 9 0 0d716715d1ba21000fcb9695e7ba4222
++ entry .rpc   `@rpc` 注解：把接口的一个方法标记为远程过程
++     `@rpc def call(request: Ping): Pong` 声明 `call` 是协议所暴露的一个方法。
++     `JsonRpc.serve`、`JsonRpc#proxy`、`remote` 和 `Grpc.remote` 都读取接口的 `@rpc` 方法（包括继承来的），并忽略其他所有成员。
++     方法名就是线上的方法名（带斜杠的 JSON-RPC 名称写成反引号标识符，`` @rpc def `prompts/list`(…) ``），其参数名是 JSON-RPC `params` 对象的成员，而 `Unit` 结果标记一个通知，它不期待响应。
++     gRPC 的 `@rpc` 方法恰好接受一条请求消息。
++     这个注解在 `annotations` 对象中声明并导出。
+
+@ 0 7 0 139481e33424ec0f045021d30a1e0b69
++ entry .bare   `@bare` 注解：作为整个 `params` 值的 JSON-RPC 参数
++     把 `@rpc` 方法的某一个参数标记为从整个 `params` 值解码，而不是从 `params` 对象中同名的字段解码；客户端同样把它作为整个 `params` 发送。
++     用于 `params` 是一个直接解码为某一类型的裸对象的线上协议，例如 LSP 的 `*/resolve` 系列。
++     一个方法最多可以声明一个 `@bare` 参数：第二个会在 `JsonRpc#proxy` 中导致编译错误。
++     这个注解在 `annotations` 对象中声明并导出。
+
+@ 0 1 0 1d044ad1bde91951017d95654230d3a4
++ entry .annotations   `@rpc` 和 `@bare` 注解的所在之处
+
+% 1 1 0 04e621464944ac1d0dbae72c8fea6bab
+
+@ 0 6 0 18b13a364ca9125313fe077762449a3a
++       这两个注解在这里声明，而不是在包的顶层声明，是为了让 `rpc` 在不区分大小写的文件系统上不与 `Rpc` 共用一个类文件名；两者都导出到 `obligatory` 和 `soundness` 总括包，因此 `@rpc` 和 `@bare` 无需限定即可书写。
++   entry .rpc   把接口的一个方法标记为远程过程；参见 `obligatory.rpc`
++   entry .bare   把一个参数标记为整个 JSON-RPC `params` 值；参见 `obligatory.bare`
+
+@ 0 1 0 19faf76ab9d192e21602b758de2cc4ec
++ entry .JsonRpc   JSON-RPC 2.0：从 `@rpc` 接口派生的分发器和客户端桩，基于 HTTP 或通道
+
+% 1 1 0 10e729884a2f28f706b99cdb15d0bdf6
+
+@ 0 9 0 100547103a84178a0d45aef4ceb95b80
++       `JsonRpc` 有两重身份。
++       作为**对象**，它是 JSON-RPC 2.0 工具集：`.serve` 从一个由 `@rpc` 方法组成的接口派生分发器，`.Request`、`.Response` 和 `.Failure` 是三种消息形状，`.failure` 写出一个符合规范的错误响应，而 `.call`、`.request`、`.notification`、`.outcome` 和 `.answer` 是构建客户端所用的关联机制。
++       作为**特质**，它是一个双向连接：协议类扩展 `JsonRpc`，把对端的接口命名为它的 `Origin`，从而获得 `#client`（该接口的一个桩，其调用排入连接的出站通道）、用于发送自身消息的 `#put`，以及供传输层取尽的 `#outgoing` 或 `#stream`。
+
+% 2 1 0 0db83e3c081630d708d386d561e0f4ba
+
+% 3 1 0 1ec53f5a1e6e7f15180b7fe982065482
+
+@ 0 1 0 19f00fc56b7e1d6a101a839d14860dd9
++         label 一个由远程方法组成的接口
+
+% 1 1 0 13690aa4d70db9e10c5f6a31ea8f2921
+
+% 2 1 0 1b1589ee76c0abea001652545b8dc6b7
+
+% 3 1 0 0675ef31a7918d1e1b60971d251f4a81
+
+% 5 1 0 0c060c4a10f41ede0a3b241202f7814f
+
+% 6 1 0 1546347dc8c2565516ac4f788c8b3b8a
+
+% 8 1 0 1ea87b2e5f464f780d5e138bf3418197
+
+% 9 1 0 0620400443b9f1740462d8debe2b0e0a
+
+% 10 1 0 00650472f2900278017638622f5adf8b
+
+% 1 1 0 0bb48eb5e71a55341b767ae7f3520dbc
+
+@ 0 1 0 055d6e13f5e9df1a07dbb596f81b1737
++         label 一个实现成为分发器
+
+% 1 1 0 138be5bc30dd9d500434de6f573f7d7f
+
+% 2 1 0 1681facef18cf0180b2860514f592259
+
+% 3 1 0 1a58f390ee70c42f1bedeb19f853e252
+
+% 5 1 0 1bf366614e795f590bd14bbf74bb6806
+
+% 6 1 0 05ca2187a28cf6ba0d678a83242c336b
+
+% 8 1 0 1e44939d967c2f151e360de9585af0c1
+
+% 9 1 0 0116c057fd18963412c339a23c41f359
+
+% 10 1 0 10a6d7284ee4386a191080caa4e2d409
+
+% 12 1 0 1b7882cb29ef584a1e7e0da6eacf6791
+
+% 13 1 0 18ec0852909802dc08b508626035c163
+
+% 14 1 0 0db0248dd44505961fcf0e9deb21378f
+
+% 16 1 0 0c242aa1a146b26b0248d7c1ae3c36cc
+
+% 1 1 0 0e70b1634f9ae4d41967b9d534d1eb56
+
+@ 0 1 0 13358fb0d50226431007c0fb017ed1a5
++         label 一个请求被分派并得到回应
+
+% 1 1 0 08ba1c16f02716f612d916a72e7b97f1
+
+% 2 1 0 074c372185377a6e15ee9629b5da19af
+
+% 3 1 0 0329e129353c85f117785c496252b812
+
+% 5 1 0 132b2f53e6429db7077938ec6b2cf535
+
+% 6 1 0 1020a08e5c174dda15d988de9f92e6c4
+
+% 8 1 0 072edcfa8dfd56440d895fc60b1255b8
+
+% 9 1 0 0555ae8e481926b2007e2b67d05e9b36
+
+% 10 1 0 17c24bc6b92ac47418d430d00355e8dd
+
+% 12 1 0 00655c9947ea301a1c9fcaa52c205277
+
+% 13 1 0 064b36dce536da9f1076b4e2f67af13c
+
+% 14 1 0 0e33462a49921d4c01b8512269c6017a
+
+% 16 1 0 06c85035b36c3f2518ff2ce16b927483
+
+% 18 1 0 040ed28eff949d7a00a284bfa126bb78
+
+% 19 1 0 04ecaf2166d6cf35121424256a561f3d
+
+% 1 1 0 0dc25ea83d18f7141e8ac4e88257fa30
+
+@ 0 1 0 1744e19c8efc76a9184f52b1a43747d9
++         label 一个通知被分派，不产生响应
+
+% 1 1 0 06fa76c6e0bceb9c16b1c23bdb9be86d
+
+% 2 1 0 19c817a9961e6d3715385de9c2f257f7
+
+% 3 1 0 102fdd4cce2a3bac02c84f90219ae827
+
+% 5 1 0 100497d4bbe62c921c20a1110edb48b4
+
+% 6 1 0 00483a5ba51032a410941373b6b23428
+
+% 8 1 0 1aabdd5731aa9b0e1ffe996c572b9bd1
+
+% 9 1 0 1156ae00bfd102ea170b1a2414ac2e62
+
+% 10 1 0 04cea3dda559cb4212c064afbf214849
+
+% 12 1 0 1cfb5a5bc9446bab1b28f29880f9ade8
+
+% 13 1 0 02f9078c2b7d0e2f1d5cc133e59996b6
+
+% 14 1 0 0fbb6328248dbf8c0a24006f067a7112
+
+% 16 1 0 15337713bc8046a5143593773f3abafd
+
+% 18 1 0 13ffc29b9e0510c50bd91a792915f796
+
+% 19 1 0 13a5fbb607069965184f999db45bdcc9
+
+% 0 1 0 0ffaa65478b8c361061cd4b3752949bc
+
+% 0 1 0 0ecc3830f3a0f2c90fa7c9eca7845c6c
+
+% 1 1 0 1eb86a172aaf360b126cbe5d26fccc80
+
+% 2 1 0 09dbeed81ab7a3091f2a8f87847a3e1a
+
+@ 0 10 0 116ab51a463d8ae51535f608b215d9da
++       方法的参数是请求的 `params` 对象中按名称对应的成员，各自用其类型的 `Json.Decodable` 解码；而 `@bare` 参数则是整个 `params` 值。
++       结果用其类型的 `Encodable in Json` 编码，并包装在一个回显请求 id 的 `Response` 中。
++       返回 `Unit` 的方法是通知，以 `Unset` 回应。
++       方法未在接口中声明的请求抛出 `JsonRpc.Error(UnknownMethod)`，参数无法解码的请求抛出 `Json.Error`，两者都由服务循环捕获并用 `.failure` 回应（按规范的术语是 `-32601` 和 `-32602`）。
++       没有 `method` 成员的消息是一个响应，分发器把它路由到 `.answer` 并为它返回 `Unset`，因此一个分发器就能读取双向流。
+
+@ 0 5 0 109459591e7dc8e91fae36a927744ca9
++       分发器只闭包捕获实现本身，并且只保留持久的能力，因此可以从任务中调用它。
++       `.serve` 的每次展开都为每个方法内联一个携带 schema 的编解码器，而一个非常大的接口（例如 Language Server Protocol 的接口）可能超出 JVM 每个类的常量池上限：把它拆分到几个特质中，为每个特质派生一个分发器，再按 `.methods` 路由。
+
+@ 0 9 0 0d9c29af31ab5f90124041b915c47456
++       **基于 HTTP。**
++       `remote[Echo](url)` 是挂载在某个 HTTP 路由之后的分发器的客户端：每次调用把一个 `Request` POST 到该 URL，并解码 `Response`。
++       **基于通道。**
++       对于长期存在的双向连接（以 `ContentLength` 或 `Linefeed` 分帧的标准流、套接字或 MCP 会话），由一个类扩展 `JsonRpc` 特质，传输层的写入端取尽 `#outgoing`，而其读取端把每个传入的文档交给分发器。
++       `synesthesia` 的 `Mcp.Server` 就是这样一个类，其 `Origin = Mcp.Client`：它的 `serve` 通过 `.serve` 分派每个 POST 来的请求，用 `.failure` 回应故障，并把其 `Sse` 事件的 `#stream` 作为 `text/event-stream` 以流的形式传回。
+
+% 0 1 0 1aaa155934d22d05151c5a8122692d3d
+
+% 1 1 0 0ac2c0e0c878a05d061ae7ccab3997df
+
+% 0 1 0 110d2606f44d246f1e9e78d92f9d1828
+
+% 0 1 0 091bece190e186611d4880daa5fe867a
+
+@ 0 6 0 1f2fd76ef3a6aab10cf148cd684f06c2
++   entry .serve   从接口的实现派生一个分发器 `Json => Optional[Json]`
++       `JsonRpc.serve[Interface](implementation)` 是一个宏，它读取 `Interface` 的 `@rpc` 方法，返回一个从请求文档到其响应文档的函数；对于通知，或对于路由到 `.answer` 的响应，返回 `Unset`。
++       其结果类型是 `Json ->{caps.any.only[Durable]} Optional[Json]`：分发器只保留持久的能力和实现，因此可以由任务持有。
+
+@ 0 13 0 1d38c97fd74e9f541f2d4f91d6e6e4d1
++       宏在展开处需要每个方法结果类型的 `Encodable in Json`（缺少时是一个指明该方法的编译错误），并在生成的分发器内、在每次调用的战术之下召唤每个参数的 `Json.Decodable`，因此缺少解码器时，由编译器自己在 `serve` 处报告“no given instance”消息。
++       未知方法以 `JsonRpc.Error(UnknownMethod)` 抛出，无法解码的参数以 `Json.Error` 抛出，由服务循环捕获并用 `.failure` 回应；展开处不需要战术。
++   entry .methods   接口的 `@rpc` 方法的名称，用于在多个分发器之间路由
++       `JsonRpc.methods[Interface]` 是接口 `@rpc` 方法名（包括继承的）的 `List[Text]`。
++       一个大到无法用一个分发器类容纳的协议，为每个子接口用 `.serve` 派生一个分发器，并把每个请求路由到其 `methods` 包含该请求 `method` 的分发器；`exegesis` 就是这样处理 LSP 的七组方法的。
++   entry .Request   JSON-RPC 请求或通知文档，以值的形式
+
+% 1 1 0 119f365b3c97037d0c7d70c57fee948d
+
+@ 0 14 0 1a2f4a0468568c43140558daafc8bfd5
++         `Request(jsonrpc, method, params, id)`：`jsonrpc` 版本（`"2.0"`）、`method` 名称、`params` 文档，以及 `id`，对于通知它是 `Unset`。
++         伴生对象的 `.decodable` 从一个 `Json` 中读取它，因此 `safely(json.as[JsonRpc.Request])` 可以区分请求和响应（响应没有 `method` 成员，解码会失败），而 `json.as[JsonRpc.Request].id` 就是在失败响应中要回显的 id。
++     entry .decodable   `JsonRpc.Request is Json.Decodable` given，位于隐式作用域中
++         一个纯的、抛出异常的派生锚点：它直接抛出 `Json.Error`，而不是通过作用域中的战术抛出，因此可以在 `safely` 内召唤它，而召唤不会捕获战术。
++     entry #jsonrpc   协议版本 `"2.0"`
++     entry #method   方法名
++     entry #params   参数：由具名成员组成的对象，或者对于 `@bare` 参数而言的裸值
++     entry #id   关联 id，对于通知则为 `Unset`
++   entry .Response   成功的 JSON-RPC 响应文档，以值的形式
+
+% 1 1 0 03a01275090517001144b0fc008b54a3
+
+@ 0 8 0 0e4c8a077b33842904e2e925022f08ec
++         `Response(jsonrpc, result, id)`：版本、编码后的 `result`，以及它所回应的请求的 `id`。
++         `JsonRpc.serve` 为它分派的每个请求构建一个；自行回应请求的协议（例如代理）用 `JsonRpc.Response("2.0", result, id).in[Json]` 构建一个。
++         故障不是 `Response`，而是一个 `JsonRpc.failure` 文档。
++     entry #jsonrpc   协议版本 `"2.0"`
++     entry #result   方法编码后的结果
++     entry #id   所回应请求的 id
++   entry .Failure   JSON-RPC 错误响应的 `error` 成员：代码、消息和可选数据
+
+% 1 1 0 0268f6e5d42442e1049b4ba0f5199057
+
+@ 0 3 0 0be9437a7dbb3a7113159504162ce501
++         `Failure(code, message, data)` 是符合规范的对端放在响应的 `error` 成员中、用以代替 `result` 的对象。
++         这些代码出自规范，协议也可以在其之外定义自己的代码：
+
+% 2 1 0 09c9e296603c81631f8fd7dfc680d35f
+
+@ 0 7 0 18d5442eaa9195d4010510e9815680bc
++         column  代码
++         column  含义
++         row  -32700  无法解析 JSON
++         row  -32600  无效的请求
++         row  -32601  未知的方法
++         row  -32602  无效的参数
++         row  -32603  内部错误
+
+% 1 1 0 0d90478489faa4831b5abe5d2f89db91
+
+@ 0 15 0 13affb388a77135c1e245c11675065db
++         `JsonRpc.failure` 围绕它构建整个响应文档；`JsonRpc.answer` 从响应中读回它，并交给 `JsonRpc.receiveFailure`，在那里 `JsonRpc.outcome` 把它变成一个携带代码和消息的 `JsonRpc.Error(Failed)`。
++     entry .decodable   `JsonRpc.Failure is Json.Decodable` given，位于隐式作用域中
++         与 `JsonRpc.Request.decodable` 一样，是一个纯的、抛出异常的派生锚点，因此 `safely(json.error.as[JsonRpc.Failure])` 在使用处可以工作。
++     entry #code   数字错误代码
++     entry #message   人类可读的错误消息
++     entry #data   对端附加的任何进一步细节，或 `Unset`
++   entry .failure   一个符合规范的错误响应文档，回显失败请求的 id
++       `JsonRpc.failure(code, message, id)` 是错误响应的 `Json`：故障作为一个 `.Failure` 放在 `error` 成员中，没有 `result` 成员，`id` 回显失败请求的 id；当请求无法解析、其 id 无从得知而省略 id 时，按规范要求写成显式的 JSON `null`。
+
+% 2 1 0 18f43889d06676750883b59caee3e19e
+
+% 3 1 0 11e28b841bb1aa79024bb5d80384bf40
+
+% 0 1 0 10d6f7e0646a3ed70876a012b19a9826
+
+% 0 1 0 1bde9bbbacc964b11cad4d18135dab71
+
+% 1 1 0 13903722b44c908413f40a303d08c76c
+
+@ 0 46 0 1660d5f84df6337f1e47753ea2096121
++   entry .notification   发送一个通知，发到 `JsonRpc` 通道，或通过 POST 发到 HTTP URL
++       有两个重载，各自发送一个没有 id 的 `Request`，并返回一个已兑现的 `Promise[Unit]`，因为通知不期待回复。
++       `JsonRpc.notification(target: JsonRpc, method, payload)` 把文档放到目标的出站通道上。
++       `JsonRpc.notification(url: HttpUrl, method, payload)` 把它 POST 到该 URL 并丢弃响应；它需要作用域中有 `Monitor`、`Probate` 和 `Online`，连接、HTTP、媒体类型或截断方面的失败都会被忽略，因为通知的送达不会得到确认。
++       `@rpc` 客户端桩对 `Unit` 方法调用这些重载。
++   entry .call   在 `JsonRpc` 通道上发送请求，并返回待等待的 `Pending` 调用
++       `JsonRpc.call(target, method, payload)` 生成一个 UUID id，在其下注册一个 promise，把 `Request` 放到目标的出站通道上，并返回由 id 和 promise 组成的 `.Pending` 对。
++       `.outcome` 等待它；响应到达时，`.answer` 兑现或取消它。
++       之所以保留 id，是因为错误响应无法兑现 promise，必须按 id 匹配回调用者。
++   entry .request   在 `JsonRpc` 通道上或通过 POST 到 HTTP URL 发送请求，得到结果的 promise
++       有两个重载。
++       `JsonRpc.request(target: JsonRpc, method, payload)` 是去掉 id 的 `.call`：结果的 `Promise[Json]`，当响应到达连接的读取端时由 `.answer` 兑现，如果对端以错误回应则被取消（此时故障只能通过 `.Pending` 上的 `.outcome` 恢复）。
++       `JsonRpc.request(url: HttpUrl, method, payload)` 在一个任务中把 `Request` POST 到该 URL，并用响应文档兑现 promise；它需要作用域中有 `Monitor`、`Probate` 和 `Online`，连接、HTTP、媒体类型或解析方面的失败会取消 promise，因此等待的调用者会看到一个 `Async.Error`。
++   entry .outcome   等待 `Pending` 调用的响应，把对端的故障作为 `JsonRpc.Error` 抛出
++       `JsonRpc.outcome(pending)` 等待 promise，需要一个 `Monitor` 和一个 `Tactic[JsonRpc.Error]`。
++       带有 `result` 的响应作为 `Json` 返回；带有 `error` 的响应以 `JsonRpc.Error(Failed, code, message)` 到达，携带对端的代码和消息，供调用者映射到自己的术语；而在没有记录任何故障的情况下被取消的 promise（连接先结束了）是 `JsonRpc.Error(Abandoned)`。
++       生成的 `#proxy` 方法会调用它。
++   entry .answer   按 id 把传入的响应路由到等待它的 `.call`
++       `JsonRpc.answer(json)` 读取响应的 `id` 以及 `result` 和 `error` 中恰好一个：`result` 通过 `.receive` 兑现待定的 promise，`error` 通过 `.receiveFailure` 记录 `.Failure` 并取消它。
++       没有可读 `id` 的文档，或没有任何调用在等待的 id，都会被忽略。
++       `.serve` 分发器对任何没有 `method` 成员的文档调用它，因此连接的读取端可以把每个传入文档都交给同一个分发器。
++   entry .receive   用结果兑现给定 id 的待定调用
++       `JsonRpc.receive(id, result)` 完成并遗忘注册在 `id` 下的 promise；未知的 id 会被忽略。
++       通常由 `.answer` 调用。
++   entry .receiveFailure   为给定 id 的待定调用记录故障并取消它
++       `JsonRpc.receiveFailure(id, failure)` 存储 `.Failure` 供 `.outcome` 查找，并取消注册在 `id` 下的 promise，因为错误响应不携带可用来兑现它的结果。
++       通常由 `.answer` 调用。
++   entry .Pending   一个进行中的请求：它的关联 id 和其响应的 promise
+
+% 1 1 0 0d9e68676dea64951feb6b21b5852b57
+
+@ 0 5 0 1d9895eb8aff3b37159a023a1db82d1d
++         由 `JsonRpc.call` 返回，由 `JsonRpc.outcome` 消耗。
++         id 与 promise 并列保存，因为错误响应无法兑现 promise，要按 id 匹配回去。
++     entry #id   发送请求时使用的 UUID
++     entry #promise   `JsonRpc.answer` 用结果兑现、或在故障时取消的 promise
++   entry .Error   JSON-RPC 操作失败时抛出：错误 `↯/s.112.7`
+
+% 1 1 0 057bca10a44fb127012c81e37b93fc0f
+
+@ 0 42 0 06cf9be50183c3f90d617245ee0c2255
++         错误 `↯/s.112.7`：_the JSON-RPC operation failed because `reason`_。
++         当方法未在接口中声明时（`UnknownMethod`），由 `JsonRpc.serve` 分发器抛出；当对端以错误回应时（`Failed`，`#code` 和 `#detail` 携带对端的 `error.code` 和 `error.message`），或当请求的 promise 被取消、因而从未得到回应时（`Abandoned`），由 `JsonRpc.outcome` 抛出，从而也由每个生成的 `#proxy` 方法抛出。
++         协议客户端根据代码恢复自己的错误术语：LSP 客户端把 `code` 映射到一个 `Lsp.Error.Reason`。
++     entry .Reason   操作失败的原因
++         `UnknownMethod`（1），_the method name was not recognised by the dispatcher_；`Failed`（2），_the peer answered the request with an error_；`Abandoned`（3），_the request was never answered_。
++         编号是该错误的细节编号。
++     entry .communicable   把每个 `JsonRpc.Error.Reason` 呈现为其消息
++     entry #reason   操作失败的原因
++     entry #code   当故障经由线上传回时，为对端的 `error.code`；否则为 `Unset`
++     entry #detail   当故障经由线上传回时，为对端的 `error.message`；否则为 `Unset`
++   entry #client   `Origin` 接口的桩，其调用在这个连接上发送
++       `proxy[Origin]`：一个 `Origin^`，它的每个 `@rpc` 方法都把一个 `JsonRpc.Request` 放到这个实例的出站通道上。
++       其结果是一个能力，因为它保留了连接。
++   entry #proxy   任意 `@rpc` 接口的桩，其调用在这个连接上发送
++       `proxy[Interface]` 是一个宏，它构建一个实现 `Interface` 的对象：每个 `@rpc` 方法把参数编码为 `params` 对象（或把 `@bare` 参数编码为整个 `params`），用 `JsonRpc.call` 把请求放到这个实例的通道上，用 `JsonRpc.outcome` 等待它，再用类型的 `Json.Decodable` 解码结果，该解码器在生成的方法内、在这次调用自己的战术之下召唤。
++       `Unit` 方法发送通知并立即返回。
++       宏在展开处需要一个 `Monitor`，并需要每个参数的 `Encodable in Json`；对端的错误响应会从调用中抛出 `JsonRpc.Error(Failed)`。
++       表面分散在多个接口中的协议为每个接口构建一个代理，它们共享同一个出站通道。
++   entry #put   把一个文档排入这个连接的出站通道
++       用于桩不会生成的消息：协议自行回应的响应、来自 `JsonRpc.failure` 的失败、服务器发起的通知。
++   entry #stop   结束出站通道，使 `#outgoing` 和 `#stream` 在取尽后结束
++       通道的读取者在读完已放入的内容后即完成，而不是等待更多内容。
++       已经有名为 `stop()` 的成员的子类必须重写它。
++   entry #outgoing   出站文档，作为供传输层写入端取尽的 `Chain[Json]`
++       每个访问器都通过一个新的单一所有者视图取尽共享队列：在同一个实例上使用 `outgoing` 或 `stream`，不要两者都用。
++   entry #stream   作为 `Sse` 事件的出站文档，用于 `text/event-stream` 响应
++       每个文档变成一个 `Sse`，其唯一的 `data` 行是文档的紧凑 JSON，由 `Sse.servable` 作为 `text/event-stream` 提供：这是 MCP 可流式 HTTP 传输中从服务器到客户端的那一半。
++       在同一个实例上使用 `stream` 或 `outgoing`，不要两者都用。
+
+@ 0 6 0 005b306c92fb955208f16c8a630834b0
++ entry .remote   `remote[Interface](url)`：把每次调用 POST 到 HTTP URL 的 JSON-RPC 客户端桩
++     一个宏，从 `Interface` 的 `@rpc` 方法构建一个实现它的对象，用于挂载在某个 HTTP 路由之后的分发器。
++     每个方法把参数编码为 `params` 对象，用 `JsonRpc.request` 把一个 `JsonRpc.Request` POST 到 `url`，等待响应，并用结果类型的 `Json.Decodable` 解码 `result`；`Unit` 方法用 `JsonRpc.notification` 发送通知，在 POST 出去后即返回。
+
+% 0 1 0 15d6d2800841da9e1c6e709ce05d6a7d
+
+% 0 1 0 1a8ec18672c39e03185024ae675e9c25
+
+% 0 1 0 0472326144a49ce71767be845f62f575
+
+% 1 1 0 149c77db45ac644f1a74f205bbafc35a
+
+% 2 1 0 00c648c4451d3840102b5a9ac5af6427
+
+% 0 1 0 1c1f3e45ded604af0bc729117e24f8f7
+
+% 0 1 0 059174723a298f9c186e2cbad03d1515
+
+% 0 1 0 11638efeb008c55609d015e26792ca37
+
+% 2 1 0 1b92696f897689ba1a719427b33c8f80
+
+% 3 1 0 109e179f2da37a521fae52f792b39466
+
+% 5 1 0 1628154c9fc5e5d81d9bcfc8b04c6455
+
+% 6 1 0 1c0aa24e5082690b1fb1f23a467e898f
+
+% 0 1 0 02c573240d33b38616e69334fc6d9971
+
+% 0 1 0 0a2a8d667154a8c80f795fb1eb7ca1fd
+
+% 0 1 0 19bd53717efe5eed1cf1c9f3d94081b9
+
+% 1 1 0 11f5997087bca1a30f765f8e613c24fd
+
+@ 0 5 0 1468e252ed4733e61f62a179ac5a8b3e
++     展开处必须在作用域中有 `Monitor`、`Probate` 和 `Online`（缺少任何一个都是编译错误），并且每个参数都要有 `Encodable in Json`，每个结果都要有 `Json.Decodable`。
++     连接、HTTP 或解析方面的失败会取消请求的 promise，生成的方法从调用中把它作为 `Async.Error` 抛出。
++     对于基于双向通道而非 HTTP 的客户端，参见 `JsonRpc#proxy`。
+
+@ 0 1 0 1228d0d85679ffb90aa97731bd254dfa
++ entry .Sse   一个服务器发送事件：事件名称、数据行、id 和重试间隔
+
+% 1 1 0 0ab10a8695d98876158ce7286b7630ea
+
+@ 0 8 0 1fb235948a7291111074705467f7b428
++       `Sse(event, data, id, retry)` 是 `text/event-stream` 中的一个事件：`event` 名称（未设置时为 `"message"`）、`data` 行，以及可选的 `id` 和以毫秒计的 `retry` 间隔。
++       其伴生对象持有读写这种流所需的一切：`.framable` 在空行处把文本流切分成事件，`.decodable` 解析一个事件的字段，`.encodable` 呈现一个事件，`.servable` 把 `Chain[Sse]` 作为流式 HTTP 响应提供，而 `.jsonEncodable` 和 `.textEncodable` 从 JSON 文档或一行文本生成事件。
++       `Sse.Source` 是一个可重放的事件缓冲区，供带着最后所见 id 重新连接的客户端使用。
+
+% 2 1 0 06d146a9bcda11fd07f0eb18d111784d
+
+% 3 1 0 188b17d6ee19b4881d9aeea6766665df
+
+@ 0 1 0 10630a5e204a38121af89e256906d263
++         label 事件流的文本
+
+% 1 1 0 043cc594da2b334603d4862be80ffae2
+
+% 2 1 0 0c9255001deda2d6193f81b60146bf5e
+
+% 3 1 0 18ea2d6076e455591c071d1d1a4a9da2
+
+% 5 1 0 125890a7a2d1bce51376b6d2a72164c9
+
+% 1 1 0 15ad0e7c1eb3cb680ff73f28fad50add
+
+@ 0 1 0 09b4ea18cc89849a13583744845154d1
++         label 在每个空行处分帧为事件
+
+% 1 1 0 0632a021a393d3fb0da72990650cbcdb
+
+% 2 1 0 1a84ef9afe1eeb1e147fd974b9832b01
+
+% 3 1 0 0c5e44e5c48994e0177e91900bfc9abd
+
+% 5 1 0 0675c07744881d0f11b4ec931b434922
+
+% 0 1 0 15dee661d85d37eb174ba6d4e1026c77
+
+% 0 1 0 0859dfacf01525f1155350716510fef1
+
+% 1 1 0 06fdd9c673ac3c1a11898a702f3b2643
+
+@ 0 1 0 1b3fb89c8892cd6001cc74582b6d8336
++         label 每个事件解码为其字段
+
+% 1 1 0 1fc44a804b47f931055e83dcef3b5a2d
+
+% 2 1 0 1451d1bf73e8ac3a1659b3e7a9990e1e
+
+% 3 1 0 05df0e09992aef7c060ea3e346b2c37b
+
+% 5 1 0 1d84ff1bca43471f0f91a80eac204e07
+
+% 0 1 0 08ec8e3b17b5d32b0b976211a164b6f7
+
+% 0 1 0 063224d02abdea150210021c113a1cbc
+
+% 1 1 0 0311bed8e49ea4b0046afbe99ef47607
+
+% 2 1 0 1d14b26503ea4fe702dd1d6137a3c058
+
+@ 0 3 0 0cc34dc080dfed4414114926fe96050c
++       `JsonRpc#stream` 是由连接的出站文档组成的 `Chain[Sse]`，MCP 服务器就是这样把通知以流的形式传给客户端的；`Sse.servable` 是让 HTTP 处理函数把这个链作为响应返回的 given。
+
+% 0 1 0 150fa6533cf08426038d26901519e6a3
+
+% 1 1 0 0c5d1c57b6db92ba1e0c2c5277254138
+
+@ 0 27 0 06abfb524adcb3931940ea4fff6a095b
++   entry .servable   把 `Chain[Sse]` 作为流式 `text/event-stream` HTTP 响应提供
++       `Chain[Sse] is Servable` given，位于隐式作用域中：返回 `Chain[Sse]` 的 HTTP 处理函数会以媒体类型 `text/event-stream` 发送一个流动的正文，内容是每个事件经 UTF-8 编码的 `.encodable` 文本，链每产出一个事件就交付一个。
++   entry .framable   `Text is Framable by Sse` given：每个事件一帧，在空行处切分
++       位于隐式作用域中；`text.frames[Sse]` 把每个事件的各行作为一个 `Text` 产出，不含结束它的空行，没有结束空行的最后一个事件按原样产出。
++       它不会失败。
++       随后用 `.decodable` 解码各帧：`frame.as[Sse]`。
++   entry .decodable   把一个事件的 `field: value` 行解析为 `Sse`；需要一个 `Tactic[Sse.Error]`
++       `Sse is Decodable in Text` given，位于隐式作用域中，因此 `text.as[Sse]` 读取一个分帧后的事件。
++       每行是 `field: value`，冒号后可有一个空格；`event` 设置名称，每个 `data` 行按顺序追加，`id` 作为文本保存，`retry` 解析为 `Long`。
++       没有冒号的行抛出 `Sse.Error(MalformedField)`，未知的字段名抛出 `Sse.Error(UnknownField)`，非数字的 `retry` 抛出 `Sse.Error(BadRetryValue)`；一帧中的每个错误都会抛出，有任何错误的帧都绝不会作为填充了一半的事件交付。
++   entry .encodable   把 `Sse` 呈现为线上的文本：`event:`、`data:`、`id:` 和 `retry:` 行，然后是一个空行
++       `Sse is Encodable in Text` given，位于隐式作用域中：`sse.encode` 是 `event: name`、每个数据行一个 `data: line`、设置时的 `id: …` 和 `retry: …`，每行以 `\n` 结束，最后再加一个 `\n` 结束该事件。
++       `.servable` 为它提供的每个事件写出这些内容。
++   entry .jsonEncodable   从 `Json` 文档生成 `Sse`：以紧凑 JSON 为数据的 `message` 事件
++       `Json is Encodable in Sse` given，位于隐式作用域中：作为 `Sse` 的 `json.encode` 的事件名称是 `message`，并有一个数据行，内容是文档的紧凑呈现，这正是 `Sse.Source#put(json)` 所存储的、`JsonRpc#stream` 所产生的内容。
++   entry .textEncodable   从 `Text` 生成 `Sse`：以该文本为唯一数据行的 `message` 事件
++       `Text is Encodable in Sse` given，位于隐式作用域中，因此 `Sse.Source#put(t"…")` 可以工作。
++   entry .Error   服务器发送事件无效，或重放超出源的缓冲区时抛出：错误 `↯/s.112.5`
+
+% 1 1 0 1d4fe11890f19e7602ee3f40365523d6
+
+@ 0 7 0 0c898753b5b056260f36d5638585b177
++         错误 `↯/s.112.5`：_the server-sent event was not valid because `reason`_。
++         由 `Sse.decodable` 针对格式错误的行（`MalformedField`）、未知的字段名（`UnknownField`）或不是整数的 `retry`（`BadRetryValue`）抛出；当请求的重放追溯得比源的容量更远时（`CapacityExceeded`），由 `Sse.Source#stream` 抛出。
++     entry .Reason   事件或重放无效的原因
++         编号是该错误的细节编号：
+
+% 3 1 0 1d443b425db050651557c15cff807ee8
+
+@ 4 4 0 18bc1dae84c32bd41b32da1463652ba4
++         column  分支
++         column  代码
++         column  消息
++         column  备注
+
+% 0 1 0 1f06d451e2d932271836a1aafa15672b
+
+% 0 1 0 05a311f96df4a68d14b645f6587f6857
+
+% 0 1 0 05ab5e21aaafc17a09f670f490448441
+
+% 0 1 0 001416a8b2b403c300d3853be107d8df
+
+% 1 1 0 0cb98cc39c17e78100d2b08c3d085e0a
+
+@ 0 3 0 1949e8aea82b0c3b0632008ca9f868a9
++     entry .communicable   把每个 `Sse.Error.Reason` 呈现为其消息
++     entry #reason   事件或重放无效的原因
++   entry .Source   按 id 编号的可重放事件缓冲区，供重新连接的客户端使用
+
+% 1 1 0 1e6577b9cd04d2181c7def95f73d80f9
+
+@ 0 5 0 1551284250a21e350c40cba1332051ab
++         `Sse.Source(capacity)` 在一个环形缓冲区中持有最近的 `capacity` 个事件，并以它们供给一个活动的流。
++         `#put` 把每个事件的序号作为其 `id` 打上，而 `#stream(start)` 是 id `start` 之后的事件链（先从环形缓冲区重放，再随着事件放入而实时传送），这正是协议所要求的重新连接行为：客户端发送它看到的 `Last-Event-ID`，源从那里继续。
+
+% 2 1 0 145619edf69056d400cf10ad7765c12a
+
+% 3 1 0 14ff874b57ef3c5e13c70caa31c2c9e6
+
+% 4 1 0 0ed05fcf289a8cd31b3105aa077f1bf1
+
+% 0 1 0 14507dc1b739096a0d7255100d423f11
+
+% 0 1 0 1293f89741b811cc14c375e21da725a9
+
+% 0 1 0 1ba29754a636195c130bef1285288a96
+
+% 0 1 0 0b3951b9bfe2dd960b3f685ae8c7b4d6
+
+% 0 1 0 0980ce4c3008e1731b56c486b317a0d9
+
+% 1 1 0 03f6bb3df693f9451a9249ec77c3dca1
+
+@ 0 17 0 1b1cfa8db70d0b0a08b2b71afae6a356
++         源是同步的，因此可以从任何线程放入事件；但每次带起点调用 `#stream(start)` 都会替换活动的缓冲轴，结束任何先前消费者的流，因此一个源一次只供给一个消费者。
++     entry #put   存储并发布一个事件，把它的序号作为其 id 打上
++         `put(value)` 接受任何 `Encodable in Sse` 的值（`Text`、`Json` 或 `Sse`），把它的 `id` 设为下一个序号，保存在环形缓冲区中（超出 `capacity` 后逐出最旧的），并发送到活动的流。
++     entry #stream   最后所见 id 之后的事件，先从缓冲区重放，再实时传送
++         带起点 id 的 `stream(start)` 重放 id 大于 `start` 的每个缓冲事件，然后继续传送之后放入的每个事件，作为一个 `Chain[Sse]`；如果自 `start` 以来放入的事件超过 `capacity` 个，它抛出 `Sse.Error(CapacityExceeded)`，因为重放会出现缺口。
++         不带起点时，它只包含实时事件。
++         开始一次重放会结束任何先前消费者的流。
++   entry #event   事件名称，除非流指定了名称，否则为 `message`
++   entry #data   数据行，按顺序排列；消费者用换行符把它们连接起来
++   entry #id   事件 id（如果流设置了的话），客户端会把它作为 `Last-Event-ID` 发回
++   entry #retry   以毫秒计的重新连接间隔（如果流设置了的话）
+
+@ 0 1 0 129409bc5d6cd2a409d9ae99d05c99f0
++ entry .internal   `JsonRpc.serve`、`JsonRpc.methods`、`JsonRpc#proxy` 和 `remote` 背后的宏实现
+
+% 1 1 0 11d5a1855a0bd8ad14b75aafb12cb844
+
+% 2 1 0 1d70faa39fe80a750e5d9444ce619a36
+
+@ 0 7 0 09637ca10cde2739131d80ba7db3705d
++       不供直接使用：这个对象的存在是为了让 JSON-RPC 宏有一个稳定的归宿。
++       每个宏读取一个接口的 `@rpc` 方法（包括继承的方法），并生成由 `JsonRpc` 和 `remote` 拼接的代码。
++   entry .methodNames   `JsonRpc.methods` 背后的宏：一个接口的 `@rpc` 方法名
++   entry .dispatcher   `JsonRpc.serve` 背后的宏：一个针对方法名的匹配，对每个方法进行解码和编码
++   entry .remote   `remote` 背后的宏：一个通过 HTTP POST 实现该接口的对象
++   entry .client   `JsonRpc#proxy` 背后的宏：一个在通道上实现该接口的对象
+
+@ 0 1 0 03dcc7a2b6de0784089d290c679b093b
++ entry .Grpc   基于 HTTP/2 的 gRPC：通道、端点、规范状态、消息分帧和派生的桩
+
+% 1 1 0 0f9b0020c82a295b0db060eab220a7de
+
+@ 0 8 0 14f59bc2aa3e4bc40e5fea9ae14c2a67
++       `Grpc` 把 gRPC 的词汇——`Status`、`Method`、`Metadata`、`Endpoint`、`Channel`、`Error` 和 `Framing`——归于一个名称之下，就像 `telekinesis` 把它的类型归于 `Http` 和 `Http2` 之下。
++       `Grpc.Channel` 是单个持久的 HTTP/2 连接，每次调用在其上打开一个多路复用的流：请求是一条带长度前缀的 Protocol Buffers 消息，响应是一条消息（`Channel#unary`）或惰性解码的一系列消息（`Channel#serverStreaming`），而规范状态在响应的 `grpc-status` 尾部中到达。
++       `Grpc.remote` 在通道上为一个由 `@rpc` 方法构成的服务接口派生类型化的桩，因此一次调用就是一次方法调用。
+
+% 2 1 0 197ae190836cac7d0147eca91d242e73
+
+% 0 1 0 0ff09fd85a6fbb540f3b2a2530c17d7e
+
+% 1 1 0 10f090fe19e7ee750458b0e6da583f6b
+
+% 1 1 0 05e58c57513ff4fb1664b4fb5914cddd
+
+% 2 1 0 04ea60e84068f7921bdf4ecb54884444
+
+% 0 1 0 0501b13bd2211d43198087765cafdd33
+
+% 0 1 0 0e73e7682d74a82f06278b1faec7f952
+
+% 0 1 0 0b1a7e211e92884b152d013f713fb2b2
+
+% 0 1 0 099cc1f5b3c02f8d103cd6a42f21344b
+
+% 0 1 0 08f5b05833287b1618a12d159d43d9ad
+
+% 0 1 0 12c65388be6c9cba0f41551ac4c2f48c
+
+% 0 1 0 11456b760a806ff90248e5c1f27698dd
+
+% 0 1 0 1dfe7bdbf2cbdaea1da06ac1ccaab8bd
+
+% 0 1 0 06ebef5403ea94af1a20eba023d619b7
+
+% 0 1 0 09545cd0bdf4771e04d278b7e462a8cb
+
+% 0 1 0 1607e1b04c0c531e167bacdb8f38df29
+
+% 0 1 0 1a650a14ba7e2b220ea0cb0fe7e0940c
+
+% 1 1 0 039ed632a320dea006f6295022ccb505
+
+@ 0 8 0 1eaa359dc59cad7e186e857b9f1b3eb7
++       消息用 `locomotion` 的 `Encodable in Protobuf` 和 `Decodable in Protobuf` 编码和解码，它们为 case class 派生。
++       请求始终是一条消息：客户端流式调用和双向调用有待 `Http2` 的增强。
++       通道保留着它的连接，而连接持有环境中的 `Monitor`，因此通道是一种能力，存在于 `supervise` 作用域之内；`Grpc.Endpoint(…).session: channel ?=> …` 则把通道的作用域限定在一个代码块内，在代码块结束时拆除连接。
++       状态非 `Ok`、HTTP 状态非 200、正文被截断或没有消息的响应会抛出 `Grpc.Error`，其 `status` 是规范的 `Grpc.Status`。
+
+% 0 1 0 0dcb6423fd3698930e5256943b3381b4
+
+% 1 1 0 132def176c7657fc0546d41a2cab4384
+
+% 1 1 0 1519932a1c29406004316c37e738bee8
+
+@ 0 1 0 1ac33d7b84241ef6112487a86b29fb74
++   entry .Status   十七个规范的 gRPC 状态码，由 `grpc-status` 尾部携带
+
+% 1 1 0 09958014b99aedf60e5621892f3606f8
+
+@ 0 14 0 1e2cf17acec069b01df11a711101e279
++         规范状态码的枚举，每个都带有其数字 `#code`：`Ok` (0) 表示成功，其余每个都表示失败——`Cancelled` (1)、`Unknown` (2)、`InvalidArgument` (3)、`DeadlineExceeded` (4)、`NotFound` (5)、`AlreadyExists` (6)、`PermissionDenied` (7)、`ResourceExhausted` (8)、`FailedPrecondition` (9)、`Aborted` (10)、`OutOfRange` (11)、`Unimplemented` (12)、`Internal` (13)、`Unavailable` (14)、`DataLoss` (15) 和 `Unauthenticated` (16)。
++         `Grpc.Error` 携带服务器返回的状态，因此调用方可以对它进行匹配：`case Grpc.Error(Grpc.Status.NotFound, _) => …`。
++         通道自己检测到的传输层故障报告为 `Internal`。
++     entry .of   数字代码对应的状态，无法识别的代码则为 `Unset`
++         `Grpc.Status.of(5)` 是 `Grpc.Status.NotFound`。
++         通道用它读取 `grpc-status` 尾部，把缺失或无法识别的代码视为 `Unknown`。
++     entry .communicable   把状态呈现为其名称，用于 `Grpc.Error` 的消息
++     entry #code   数字代码，从 `0` 到 `16`
++   entry .Method   一个完全限定的 gRPC 方法：服务名和 rpc 名
+
+% 1 1 0 096e4c6515d3c2291d39d4b84aae34a5
+
+@ 0 9 0 1325013890d4089414e365b34a5ad6bf
++         `Grpc.Method(service, rpc)` 按线上寻址的方式命名一个方法，即 HTTP/2 的 `:path` `/<package>.<Service>/<Method>`——`Grpc.Method(t"grpc.health.v1.Health", t"Check")` 对应 `/grpc.health.v1.Health/Check`。
++         `Channel#unary` 和 `Channel#serverStreaming` 接受一个方法；`Grpc.remote` 根据服务名和方法自身的名称为每个 `@rpc` 方法构建一个。
++     entry #service   完全限定的服务名，即包和 `Service`
++     entry #rpc   方法在服务中的名称
++     entry #path   HTTP/2 的 `:path`，即 `/service/rpc`
++   entry .Metadata   自定义的调用元数据：随调用作为 HTTP/2 头部发送的键值对
+
+% 1 1 0 070b0fcc04b7b17a0d1a8b012e8da516
+
+@ 0 6 0 02ad4658da297dfb0a7fb949aef24795
++         `Grpc.Metadata(entries)` 是一个由头部名称和值组成的对的列表，与 gRPC 伪头部一起发送——例如 containerd 的 `containerd-namespace`，或授权令牌。
++         通道的 `defaults` 随每次调用发送，调用自己的元数据追加在其后。
++     entry #entries   头部名称和值的对，按顺序排列
++   entry .Endpoint   一个 gRPC 端点：作用域限定通道的目标，即 `Grpc.Endpoint(…).session`
+
+% 1 1 0 140e1e3f5717388f0562df2632e985ef
+
+@ 0 7 0 0b4ba86507be99e4156c1e109c11f5a6
++         `Grpc.Endpoint(endpoint, defaults)` 把一个 `Http2.Endpoint`——任何 `Connectable`、`Showable` 的地址，例如 TCP `Endpoint` 或 Unix 套接字——与每次调用应携带的 `Metadata` 配对。
++         它唯一的用途是作为会话的主体：伴生对象的 `.sessional` given 使它成为 `Sessional`，因此 `Grpc.Endpoint(…).session: channel ?=> …` 打开 HTTP/2 连接、完成握手、把一个 `Grpc.Channel^` 借出给代码块，并在代码块结束时拆除连接——而 `Grpc.Channel.apply` 会让连接一直打开，直到外围的 `supervise` 作用域结束。
+
+% 2 1 0 0a6e62180f97c73312228ca23939b932
+
+% 3 1 0 13b3eb261bceeed81f8332df75de9ce9
+
+% 4 1 0 1da145652dfff2a9020a803c9e27045c
+
+% 5 1 0 12e355363e3784a306a9821e6b3680d1
+
+% 6 1 0 19a9ce7bb78684461e848cb465108e6a
+
+% 7 1 0 0cbc51aaa049d8d30523c120a4c2816d
+
+% 8 1 0 0d829c04f0cad5ee1fd4b4d6dc6b9f1b
+
+% 0 1 0 1cc3b0e519c77d4c1c98c05c46dfe672
+
+% 2 1 0 0962506583a0991f035adf6c7aeaefad
+
+% 3 1 0 09ef38a3e68c015012861e4f59c87e25
+
+% 5 1 0 1f8660474e5d317a1c5e0c9252cb8a84
+
+% 0 1 0 0c4809ceeab50ae11a2d49c014ebb97f
+
+% 0 1 0 1782753e3b0e8ba404948b2f6e5a64f7
+
+% 0 1 0 076b0b5c257e608402adb47ec1f55e76
+
+% 1 1 0 0bedf1a1641ebe621359bd5ecc29e843
+
+@ 0 16 0 0ff0f4f9433c31151f643b7e1e6f0530
++         通道是代码块的一个新鲜能力：从代码块中返回它或任何捕获它的东西，都会被捕获检查器拒绝。
++     entry .sessional   使 `Grpc.Endpoint` 成为作用域限定通道会话主体的 given
++         一个位于隐式作用域中的 `GrpcSessional[endpoint]`，适用于任何 `Connectable`、`Showable` 的端点类型。
++         它需要作用域中有 `Monitor`、`Probate`、`Tactic[Async.Error]`、`Tactic[Socket.Error]` 和 `Socket.Event is Loggable`，并捕获它们，因为连接的读取和写入守护进程在它们之下运行。
++     entry #endpoint   要连接的 HTTP/2 端点
++     entry #defaults   通道上每次调用都发送的元数据
++   entry .remote   `Grpc.remote[Interface](channel, service)`：通道上的类型化客户端桩
++       一个宏，它根据 `Interface` 的 `@rpc` 方法构建一个实现该接口的对象，每个方法必须恰好接受一条请求消息。
++       返回一个值的方法发起 `Channel#unary` 调用；返回 `Chain[Response]` 的方法发起 `Channel#serverStreaming` 调用。
++       每个方法的 `:path` 是 `/service/method`，由给定的完全限定 proto 服务名和方法自身的名称组成，因此 `Grpc.remote[Echo](channel, t"echo.Echo")` 把 `call` 发送到 `/echo.Echo/call`。
+
+@ 0 7 0 161ebc13a1fc3cc800bbde8060840e79
++       Protocol Buffers 编解码器（每个请求的 `Encodable in Protobuf`，每个响应的 `Decodable in Protobuf`）以及调用所需的能力——一个 `Monitor`，以及 `Grpc.Error`、`Http2.Error`、`Async.Error` 和 `Protobuf.Error` 的战术——在 `remote` 的调用处召唤，因此必须在它们位于作用域中的地方调用它；这样桩的方法就具有接口的普通签名，失败的调用通过在那里捕获的战术抛出。
++       参数为零个或多个的方法是编译错误。
++   entry .Channel   基于单个持久 HTTP/2 连接的 gRPC 通道，用于一元调用和服务端流式调用
+
+% 1 1 0 19c1bbff87a7cc9e0e96221172a39c9b
+
+@ 0 9 0 08b512b08c6f6d950101e9101bc33202
++         `Channel` 包装一个 `Http2.Connection`、要发送的 `:authority`，以及每次调用携带的 `Metadata`。
++         `Channel.apply(endpoint)` 在 `supervise` 作用域内打开一个通道，并让其连接一直打开到作用域结束；`Grpc.Endpoint(…).session` 则在一个代码块的持续期间借出一个通道。
++         每次调用是一个 HTTP/2 流：向方法的 `:path` 发出的 `POST`，以 `content-type: application/grpc+proto`、`te: trailers` 和元数据作为头部，正文恰好是一条带 `Grpc.Framing` 前缀的消息；响应的消息从正文中解帧，其状态从尾部（对于 Trailers-Only 响应则从头部）的 `grpc-status` 和 `grpc-message` 字段读取。
+
+% 2 1 0 1118f39a777bd87101f009dfc5ef24df
+
+% 3 1 0 0adb407da6200e351f99c749fda76171
+
+% 4 1 0 063c24f7cc38880a01f699e20b6eef9e
+
+% 5 1 0 12920f0a336b33441c43aaed2671953d
+
+% 6 1 0 0ccc17e545a24c8708c6f6413fc6c0f3
+
+% 7 1 0 091f46d74d2e14b80a56bed22401979a
+
+% 8 1 0 0f49ad4fd599fae6070fc65515cab38f
+
+% 2 1 0 1ad1c811aec9cc511ccc81fc833d54b0
+
+% 3 1 0 06e1821c853b76b61d160a272a3637cc
+
+% 5 1 0 023bb0a9c45ffb8404872eb364bd8182
+
+% 0 1 0 0ff26a3025010e07007c9a9ca28fa52c
+
+% 0 1 0 150b0f3d47e77784004f31c745c5d90f
+
+% 0 1 0 1a50ab14d13ba2b2095c56e2cf0d62dc
+
+% 0 1 0 17bbd7974fee50e51fc638095207eb4b
+
+% 1 1 0 10216f9ac7bec56314420f3b4892506b
+
+@ 0 29 0 0d2e3cf00999514c0a5e0624965bf874
++         通道是一种能力（`Channel^{monitor, caps.any}`），因为它的连接持有环境中的 `Monitor`。
++         构造器 `new Channel(connection, authority, defaults)` 是公开的，供以其他方式打开的连接使用；它构建的请求的 `Host` 取自 `authority` 中任何 `:` 之前的部分，若那不是主机名（例如带方括号的 IPv6 字面量），则为 `Localhost`，这无害，因为 HTTP/2 传输层把 `authority` 作为 `:authority` 发送并忽略它。
++     entry .apply   打开一个通往明文（h2c）端点的通道，完成 HTTP/2 握手
++         `Grpc.Channel(endpoint, defaults)` 连接 `Http2.Endpoint`，完成握手并返回通道。
++         连接的读取和写入守护进程捕获环境中的 `Monitor` 和 `Probate`，因此必须在 `supervise` 作用域内调用它，并且它需要一个 `Tactic[Async.Error]` 和一个 `Tactic[Socket.Error]`，用于无法建立的连接。
++         连接一直打开到作用域结束；若要把它的作用域限定在一个代码块内，请使用 `Grpc.Endpoint(…).session`。
++     entry #unary   发送一条消息并恰好读取一条响应消息，然后检查状态
++         `channel.unary[Request, Response](method, value, metadata)` 用 `value` 的 `Encodable in Protobuf` 对它编码并发送，用 `Response` 的 `Decodable in Protobuf` 解码第一条响应消息并返回它。
++         它需要一个 `Monitor`，以及 `Grpc.Error`、`Http2.Error`、`Async.Error` 和 `Protobuf.Error` 的战术。
++         尾部的状态在索取消息之前检查，因此 Trailers-Only 的错误响应以其真实状态抛出 `Grpc.Error`，而不是因缺少消息而以 `Internal` 抛出；200 以外的 HTTP 状态、被截断的正文，或成功状态却没有消息，都会抛出 `Grpc.Error(Internal, …)`。
++     entry #serverStreaming   发送一条消息，并以 `Chain` 惰性解码每条响应消息
++         `channel.serverStreaming[Request, Response](method, value, metadata)` 与 `#unary` 相同，但返回响应正文中所有消息组成的 `Chain[Response]`，在链被强制求值时解码。
++         尾部的状态只在正文耗尽后才校验，因此非 `Ok` 的状态在链的末尾抛出，并且链必须在拥有该通道的 `supervise` 作用域内消费。
++   entry .Error   gRPC 调用失败时抛出：规范状态和服务器的消息
+
+% 1 1 0 012dcca6444840f5037bbb9b21eceffc
+
+@ 0 10 0 1534491fc2f8faa41c61888b5441a97f
++         _the gRPC call failed with status `status`: `detail`_。
++         当响应的 `grpc-status` 不是 `Ok` 时，由 `Channel#unary` 和 `Channel#serverStreaming`（因而也由每个 `Grpc.remote` 桩方法）抛出，`#status` 为规范的 `Grpc.Status`，`#detail` 为 `grpc-message` 文本；当服务器返回 200 以外的 HTTP 状态、没有向一元调用发送消息、提前截断响应，或发送了被截断的消息帧（`Grpc.Framing.framable`）时，则以 `Grpc.Status.Internal` 和一条本地诊断信息抛出。
++         该错误不带 fulminate 错误编号。
++     entry #status   规范状态，对应 `grpc-status` 代码
++     entry #detail   `grpc-message` 文本，或一条本地诊断信息
++   entry .Framing   gRPC 的消息分帧：一个压缩标志字节、一个四字节长度，然后是载荷
+
+% 1 1 0 0c128efd0b26a34d0f4d199ebe8d06f9
+
+@ 0 7 0 0015fa0f3d4d6a800119a81a72ee8d1f
++         每条 gRPC 消息，无论其编解码器是什么，在线上都以一个字节作为前缀：若载荷用调用的 `grpc-encoding`（这里是 gzip）压缩则为 `1`，否则为 `0`，然后是以四个大端字节表示的长度。
++         `.encode` 为一条消息加上前缀，`.framable` 从任意分块的响应正文中重新组装出完整的消息，因此 `body.frames[Grpc.Framing]` 是其消息组成的 `Iterator[Data]`，带标志的消息会被解压。
++         `Grpc.Framing` 是命名该约定的密封类型；它的失败是 `Grpc.Error`，而不是 `Framing.Error`。
+
+% 2 1 0 0a9564034ca414fb0b37d75ae1ffa58c
+
+% 3 1 0 1dff50f4418f7fe31173a9dc5afbd527
+
+% 4 1 0 0c6ef3b7f570f70c0e1d5a7772d2f70a
+
+% 0 1 0 1549dce1def0d2b3146a423ec9cc1b2e
+
+% 0 1 0 0d58d694702ca6d41c37fcdd4c940a4b
+
+% 0 1 0 03b273905b0a865a02efa0007292f33c
+
+% 0 1 0 17f661e428c8e14c06145efd85384357
+
+% 0 1 0 0d7d112cfa88365c1543dd4405c34829
+
+% 1 1 0 13f42f9289c8e88818eba79b0a0a33f2
+
+@ 0 11 0 00b7ea925c904e9710292df72b5c4125
++     entry .encode   为一条消息加上线上前缀，若有要求则用 gzip 压缩
++         `Grpc.Framing.encode(message, compress)` 是五字节头部后跟载荷：载荷是原样的消息，或者当 `compress` 为 `true` 时是其 gzip 压缩形式并设置标志字节（未设置时为 `false`）。
++         通道发送的每条请求消息都不压缩。
++     entry .framable   `Data is Framable by Grpc.Framing` given；需要一个 `Tactic[Grpc.Error]`
++         位于隐式作用域中。
++         读取每个五字节头部并取出相应数量的字节，对设置了标志的载荷进行 gunzip 解压；输入在消息边界处结束则迭代器结束，在头部或载荷内部结束则抛出 `Grpc.Error(Internal, "the gRPC message frame was truncated")`。
++         长度逐字节掩码，因此 128 字节或更长的消息也能正确分帧。
+
+@ 0 1 0 0b18d5b10efae680098e2ba45236cdff
++ entry .GrpcSessional   为 `Grpc.Endpoint` 借出作用域限定的 `Grpc.Channel` 的 `Sessional` 实例
+
+% 1 1 0 027ed91951aeef35186dcee4b342c221
+
+@ 0 8 0 1a70b92740780f730eb179bab8e7e2a9
++       `GrpcSessional[endpoint]` 是 `Grpc.Endpoint.sessional` 背后的类：它的 `Self` 是 `Grpc.Endpoint[endpoint]`，`Result` 是一个新鲜的 `Grpc.Channel^`。
++       `session(target)` 通过 `Http2.EndpointSessional` 打开端点的 HTTP/2 连接，完成握手，在该连接上借出一个通道给代码块，并在代码块结束时拆除连接及其读取和写入守护进程——这与 `Grpc.Channel.apply` 不同，后者的连接由一个停驻的守护进程保持打开，直到外围的 `supervise` 作用域结束。
++       它是一个具名类而不是匿名 given，因为匿名实例会把其推断出的 `Result` 中的能力类型新鲜化。
+
+@ 0 4 0 19e3fb255645135611c91956492ccd33
++       构造它需要一个 `Monitor`、一个 `Probate`、一个 `Tactic[Async.Error]`、一个 `Tactic[Socket.Error]` 和一个 `Socket.Event is Loggable`，`Grpc.Endpoint.sessional` 从作用域中取得所有这些；用户写的是 `Grpc.Endpoint(endpoint).session: channel ?=> …`，从不需要提到这个类。
+
+% 0 1 0 026d6bc26b4b257c1b33bf53dbbfd801
+
+@ 0 7 0 11aa7950ca207358009db789616ce42b
++   entry #Self   主体类型，`Grpc.Endpoint[endpoint]`
++   entry #Result   借出的值，一个不得逃出代码块的新鲜 `Grpc.Channel^`
++   entry #session   打开连接，把通道借出给代码块，之后关闭它
++       `session(target)(lambda)`：代码块以上下文值的形式接收 `Grpc.Channel^`，因此其中的调用是 `channel.unary[…](…)`，其中 `channel` 是代码块所命名的上下文参数。
++       无法建立的连接会通过实例捕获的战术抛出 `Socket.Error` 或 `Async.Error`。
+
+@ 0 1 0 0ea0c1e17dc4b2b00bb87aa67dc1124f
++ entry .grpcInternal   `Grpc.remote` 背后的宏实现
+
+% 1 1 0 11425998ffe5882e197e0a89277992bf
+
+% 2 1 0 038a205e94a595b30282d863b630e9b0
+
+@ 0 5 0 19671ee6f2155246123e5e1fce1312bb
++       不供直接使用：这个对象的存在是为了让 gRPC 桩宏有一个稳定的归宿。
++   entry .remote   `Grpc.remote` 背后的宏：一个在通道上实现该接口的对象
++       对于接口的每个 `@rpc` 方法，生成一个方法体，在展开处召唤 Protocol Buffers 编解码器、`Monitor` 和四个战术，并调用 `Grpc.Channel#unary`，若结果为 `Chain` 则调用 `Grpc.Channel#serverStreaming`。

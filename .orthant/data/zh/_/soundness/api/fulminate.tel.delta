@@ -1,0 +1,672 @@
+orthant 2 language
+
+% 0 1 0 0f04ec4b9ac2d4270a232409219e1f6b
+
+% 0 1 0 13823121897fee7e15809ea5817ec9a2
+
+% 0 1 0 0b5938ce7315323607e1922cbc4d93e2
+
+@ 0 1 0 087361cc8a07c1141306004178086fd1
++ info   以值表示的错误，带有结构化消息：`Error`、`Message` 与 `m"…"`、`Panic`、`Diagnostics`
+
+% 0 1 0 0ca6d61ddd9511ea1cdae38f1414f6fe
+
+@ 0 7 0 0f5446647d39c8da0c3697c1cfbddf52
++     _Fulminate_ 是每个 Soundness 库共用的关于失败的词汇。
++     **错误**是一个值——一个扩展 `Error` 的 case class——它携带解释出了什么问题的带类型字段，以及由这些字段构建的**消息**；`Message` 不是字符串，而是一个结构化的值，用 `m"…"` 插值器编写，它让每个被插入的部分与周围的文字保持区分，因此同一条消息可以呈现为纯文本、带样式的终端文本、Markdown 或 HTML。
++     任何具有 `Communicable` 实例的东西都可以被插入，类型正是以此一次性地决定它在行文中如何表述。
+
+% 2 1 0 0f9e3d4c5531ab800d01d764ae661f1f
+
+% 3 1 0 1ad955a1beb7cc0e140de402cb78b4d9
+
+% 0 1 0 15d9e9539b91fada08baa01cab1bcfc5
+
+% 0 1 0 020a0412c73473b41777c60a4749ff18
+
+% 0 1 0 180e0cad3e7b2b590a536e40f52fbaac
+
+% 0 1 0 144efdc0424766891a05274f1b987c82
+
+% 1 1 0 0b44d0d6bfba20d703b0e50008dd914d
+
+@ 0 6 0 0ae7822513db22b804469eb30be867c2
++     错误类型有一个 bolt 代码——`Error(25, 1, 0)`，即第二十五个模块的第一个错误，为 `↯/s.25.1`——它在各个版本之间保持稳定，从不复用，并在 `doc/errors/25.1.md` 中有文档；它的各个不同原因是扩展 `Clarification` 的 `Reason` 枚举的分支，每个分支在该错误内编号（`↯/s.25.1.1`），并各自通过自己的 `Communicable` 呈现。
++     下面是一个逐步完善的完整错误（900 代表该错误所在模块的编号）：
+
+% 0 1 0 15d6d2800841da9e1c6e709ce05d6a7d
+
+% 1 1 0 0a47f914ed53260906bd03717b3d64ff
+
+@ 0 1 0 0ae1a21f912c45ef17a8dd4ca99a798a
++       label 带有消息的错误
+
+% 1 1 0 0328d1534a36af590237e09ac5593eea
+
+% 2 1 0 0b11842f1e079a7c10806ffb42ea1fc2
+
+% 4 1 0 1743357d284a3aed0122a77f73a2ac3d
+
+% 0 1 0 09fabbabb96b7b7b1f9f53862768f12a
+
+% 0 1 0 01c2873408e850f10adc1b68e6bab1c1
+
+% 1 1 0 19a8dc7a790845e70c37c28bf854a679
+
+@ 0 1 0 15e0d275ed3ff6400dd1654f8419c734
++       label 加上编号，用于目录
+
+% 1 1 0 068e2a721018f5a6190b9cd3a332965d
+
+% 2 1 0 0fd7c9b0199bb0830e02c95064297f92
+
+% 4 1 0 127eda6eff15b0541b2f45911cc4a3e3
+
+% 0 1 0 003cadc07451c21106f2dcb9aaff95fe
+
+% 0 1 0 16b6f5bddc917a791598712c48679a21
+
+% 0 1 0 1f3bf6b677165efc094c7326fac365e8
+
+% 1 1 0 139e2da6efee7c150d71e0cf12b4f3ec
+
+@ 0 1 0 1106b721b26c20a10a190d88c308de62
++       label 加上原因，在错误内编号
+
+% 1 1 0 194f8f947e6be87311bb8378d41d49c1
+
+% 2 1 0 111706587623671c018395dd8f0c261a
+
+% 0 1 0 02fdb30f117464470d5d8a10d9e87e3d
+
+% 0 1 0 0dc8cc56619eac3006f2dd8a8de719e0
+
+% 0 1 0 1c39d16e0c8758041335b87d90f12820
+
+% 0 1 0 0081504e0ee4283b0465561120fecbdd
+
+% 0 1 0 1b83e0dcd82ee60e0939f836a29d75fd
+
+% 0 1 0 134c90bd9a042ba40e2fcb6a137c9839
+
+% 0 1 0 1550269f423e76200f45c7f468d2237d
+
+% 0 1 0 0561cb2b10556e9f1abdb66112fbdb6a
+
+% 0 1 0 082e02a5b551f3c51ea1bf779ac2214d
+
+% 0 1 0 1bee96452562dac91666b59056c4dcac
+
+% 0 1 0 1953fc3e63191b981e019cb162594b10
+
+% 0 1 0 1551a45598799c7a05325a7f27b76e86
+
+% 0 1 0 1eccf6e29bf99c3a057fd856cc64c0fa
+
+% 0 1 0 0472326144a49ce71767be845f62f575
+
+% 1 1 0 11e767d9efb47d1a0f4b85a0051bf1dd
+
+@ 0 8 0 0ff8be92e706d8b10761ea9376e7e0c6
++     每个错误都是一个 `Hazard`——一个 `caps.Pure` 的 `Exception`——因此它永远无法将活跃的能力带出限制它的作用域：错误持有的是无法打开的路径，而不是已打开的句柄。
++     错误是否捕获堆栈跟踪是一个上下文相关的选择，即 `Diagnostics` given：`errorDiagnostics.stackTracesDiagnostics` 会记录堆栈跟踪，`errorDiagnostics.emptyDiagnostics` 则省略它，这就是为什么每个错误的构造函数都接收 `(using Diagnostics)`，也是为什么一个预期之中且会被处理的错误，构建成本不比任何其他值更高。
++     `Panic` 是唯一不打算被处理的失败：一个 `java.lang.Error`，说明为何曾认为某种情形不可能发生。
+
+@ 0 4 0 1586d1bdf9786f63023aab263d37bce5
++     对于宏，`halt` 和 `warn` 将 `Message` 报告为编译时诊断信息，并以相同的 bolt 代码作为前缀，而外部的 `Throwable` 会被包装为 `Error.Unchecked`，使其成为 `Hazard`。
++     如何*抛出*和*处理*错误——`raises`、`Tactic`、`safely`、`recover`……——属于 `contingency`，它构建在本库之上。
+
+@ 0 7 0 11cd230cad243b911130fd8957f4282d
++     该库有两个源集。
++     `fulminate.core` 包含以上所有内容，可编译到 JVM、Scala.js 和 Scala Native；`fulminate.print` 添加了 `printables.messagePrintable`，即让 `Message` 可以被打印的 `Printable` 实例，它被单独存放，使错误词汇不依赖于打印。
++     所有内容都导出到 `soundness` 总括包，`errorDiagnostics` 和 `printables` 选择包与总括包自身的同名包合并，因此它们的 given 需按名称导入（`import errorDiagnostics.stackTracesDiagnostics`）：通配符导入从不导入 given。
+
+% 0 1 0 0afc6443f648f4f31ac1dc48d6a16eab
+
+% 0 1 0 178d51de9e4ed77d1a55624949f5e859
+
+% 0 1 0 05a4f924dcf33d8305bf103c78caed92
+
+% 0 1 0 1795a2df43e7052d13f20017cfafffd2
+
+% 0 1 0 1a67ed30f0cf88061235702b5f37216a
+
+% 0 1 0 1a4262049dd395cd1d61a31a45add749
+
+% 0 1 0 0db7ca6617f1b5c50f03c89938e496e6
+
+@ 0 1 0 04b35377cdce06240778ca0777d8309a
++ entry .Error   每个 Soundness 错误的基类：一个编号、一条结构化消息和可选的诊断
+
+% 1 1 0 0803f60870d2a7b90024267a53d67d95
+
+@ 0 5 0 1f074a11e3e9b0710bf04738c1f23f3d
++       错误是扩展 `Error` 的 case class，以字段携带解释它的值，其消息用 `m"…"` 根据这些字段编写，因此消息永远不会描述该值并不处于的状态。
++       主构造函数是 `Error(d, e)(message, cause)(using Diagnostics)`，另有两种较短的形式：`Error(d, e)(message)` 和 `Error(message, cause = null)`，后者用于没有编号的错误。
+
+% 2 1 0 0d491ab674b9a5380ff5a11d66332cf2
+
+% 3 1 0 0ad95af81941bd8a0976297a3f25774b
+
+% 4 1 0 17a6e8a7f0f327f11db3743f9a229561
+
+% 2 1 0 157983f23aaa21770fa5dc6e236bb050
+
+% 3 1 0 16267d4ca443c23104e6be7c52e21938
+
+% 0 1 0 144443d7e7968e081a8a4faf96943c68
+
+% 0 1 0 0aa90aad8bcdce76139490af670e2891
+
+% 0 1 0 155ff78dba9cf8d209f73b4d00d46ccb
+
+% 0 1 0 1a047e92dd258538077154b7641bee1f
+
+% 1 1 0 01068e5a799be0741ef8acac3b160a47
+
+@ 0 11 0 19d0a8d2167931e0146293929bc0aa5c
++       错误由三个数字标识，它们构成其 bolt 代码。
++       `module` 是错误所在库的编号，记录在 `bolt` 注册表的 `s.tel` 中；`number` 是该错误在库内自己的编号，即编写该错误类型时下一个空闲的编号，且从不复用（已退役的编号留在注册表中，并加以标记）；`variant` 是错误原因的编号——即其 `Reason` 分支（一个扩展 `Clarification` 的枚举）的 `number`——若该错误没有原因则为 0。
++       错误在 `doc/errors/<module>.<number>.md` 中有文档，说明其起因和常见的补救办法，因此用户报告中的 `↯/s.25.1` 可以被查到，而不必猜测。
++       以 `Error(message)` 编写的错误的 `module = 0`：没有代码，`getMessage` 改为以其组件作为前缀。
++       该代码呈现在 `#labelled`、`getMessage` 以及编译时 `halt` 的 `[↯/s.25.1.2]` 前缀中。
+
+@ 0 7 0 0cb182ea64cce1430eb008e342a52635
++       `Error` 是 `caps.Pure`：它永远不能持有活跃的能力，因为 `throw` 是捕获检查看不到的唯一通道，而在作用域之外捕获的异常到达时其捕获已被擦除。
++       `Diagnostics` given 决定构造函数是否捕获堆栈跟踪（`Exception` 的 `writableStackTrace` 根据它设置），这是定义错误所强加的唯一一项仪式性工作。
++       消息文本同时也是异常的 `getMessage`，因此确实作为抛出的异常逃逸出去的错误，读起来仍然恰当。
+
+@ 0 4 0 0b6f654c48ede4541a940cb6f02515e6
++       消息的内部风格规范是 `doc/standards/messages.md`：小写，末尾不加句号，使用现在时，将出错的具体资源作为带类型的值插入，并且从不以 *invalid* 或 *bad* 作为整个谓语。
++       错误是用来被匹配的：处理函数解构该 case class 及其 `Reason`，从不解构其文本。
+
+% 1 1 0 18189a56275f46ee09dbb519c6d80e16
+
+% 0 1 0 13030e7e0f0a6e1d17173d1683e2a7d9
+
+% 0 1 0 1bebfe4fcc5efa011d455316ccc24d13
+
+% 1 1 0 11f7e8def6ea75820429a1e912688a47
+
+% 0 1 0 16e18ae3bbfc914a05958525dfac50ce
+
+% 0 1 0 1198682780fae52b0e4b6a6ec7658ed1
+
+@ 0 26 0 08b481cb1dea92ea1e1252aff27ddaa5
++   entry .apply   将任意 `Throwable` 作为 `Error`：若它本身就是则原样返回，否则包装为 `Error.Unchecked`
++       `Error(throwable)` 将 `Error` 原样传递，并将其他任何 `Throwable` 包装在 `Error.Unchecked` 中，保留其消息和堆栈跟踪。
++       JDK 异常正是以这种方式成为可以被抛出的 `Hazard`。
++   entry #module   错误所在库的编号：`↯/s.25.1.2` 中的 `25`，无编号的错误为 0
++   entry #number   错误在其库内的编号：`↯/s.25.1.2` 中的 `1`
++   entry #variant   原因在错误内的编号：`↯/s.25.1.2` 中的 `2`，或 0
++   entry #bolt   错误的 bolt 代码；无编号的错误为 `Bolt.Uncoded`
++       因另一个项目的错误而报告的错误会覆盖它，以携带那个错误的代码：Stratiform 的 `Tel.Error` 对于 TEL 规范所编号的原因为 `↯/s.118.1/t.1.7`。
++   entry #message   错误的消息，作为结构化的 `Message`
++   entry #diagnostics   构建错误时所用的 `Diagnostics`
++       提供它是为了让转译后的错误可以沿用原错误的选择来构建：`InputError(text)(using error.diagnostics)`。
++   entry #fullClass   错误类的全限定名称，以其各段表示
++   entry #className   错误类的简单名称
++   entry #component   类名的第一段：定义它的库
++       类的全限定名称的第一段，对于 Soundness 错误而言就是顶层包。
++       对于没有编号的错误，它是 `getMessage` 的前缀，因此诸如 `galilei: the path is not a directory` 的消息会说明错误来自何处。
++   entry #errorCode   以文本表示的代码，`↯/s.25.1` 或 `↯/s.25.1.2`；无编号的错误为空
++   entry #colourCode   以 `[↯/s.25.1.2]` 表示的代码，带 ANSI 颜色；无编号的错误为空
++   entry #labelled   带有代码前缀的消息：`[↯/s.25.1.2] message`
++       错误没有编号时只有消息本身。
++       当错误变为编译错误时，`HaltTactic` 报告的就是它。
+
+@ 0 1 0 03960099997858210b9ce1c3b49cb5e8
++   entry .Unchecked   包装为 `Error` 的外部 `Throwable`，使其可以被抛出
+
+% 1 1 0 1a8e31cb4c0ed5290069f711cffe3d26
+
+@ 0 8 0 0d897d164659fe66000941c9f328707e
++         错误 `↯/s.15.1`：_unchecked error with message, `text`_，或 _unchecked error with no message_。
++         `Unchecked(throwable)` 将原异常的消息保留为 `#text`，并采用其堆栈跟踪，它以 `emptyDiagnostics` 构建，因为它携带的堆栈跟踪是原异常的。
++         通常用 `Error(throwable)` 来创建它：它将真正的 `Error` 原样传递，并包装其他任何东西。
++         原异常本身不会被保留——`getCause` 为 `null`——只保留其消息和堆栈跟踪，因此遇到它的处理函数应将其作为带类型的错误呈现出来，或者修复抛出的源头，而不是按原异常的类进行匹配。
+
+% 0 1 0 17eb8adb6e00f77a1f587e115ef02545
+
+@ 0 4 0 053bdffe1fadcf9a1753321ec16bfa03
++     entry .describe   针对原消息文本的消息；为空时为 _with no message_
++     entry .apply   包装一个 `Throwable`，保留其消息和堆栈跟踪
++     entry #text   原异常的消息，或空文本
++     entry #stackTrace   原异常的堆栈跟踪，作为 JVM 数组
+
+@ 0 1 0 0a15ebd0a2c74600140a0a32e30c6b48
++ entry .Bolt   bolt 代码：诊断信息的名称，例如 `↯/s.25.1.2` 或 `↯/s.118.1/t.1.7`
+
+% 1 1 0 1f0d6c72542d251d1bcc2584f1d88024
+
+@ 0 7 0 080d3de261e544db02582b5e4fe1ecd0
++       bolt 代码以在 Propensive 所有项目中统一的形式命名其中某个项目的诊断信息：`↯`，后接一个或多个组，每个组以 `/` 开头。
++       一个组由项目的字母（`s` 即 Soundness）及其数字组成：项目的一个细分部分——对 Soundness 而言是一个库——其中的一个错误，以及可选的该错误的变体和报告它的位置。
++       由多个组组成的代码是复合代码：第一个组是被报告的错误，其后的组是导致报告它的 `cause`，它本身也是一个代码。
+
+% 2 1 0 114a44ee8640f6901f7a6fa0ef0d6e8a
+
+% 0 1 0 0b44719f5c0e5542150760ac6398e922
+
+% 0 1 0 01b0f8eef48ddda00537354cab44d844
+
+% 0 1 0 1be5994cf971a7af0d77f31987577ded
+
+% 0 1 0 1ed8496af1986f400900f16f4d9b5170
+
+% 1 1 0 03c28723925ab5a601cff9e98da20d82
+
+@ 0 2 0 1e42b06c995d9a4f0576039facd8d8f9
++       每个代码含义的记录位于 [bolt](https://github.com/propensive/bolt) 仓库中。
+
+% 1 1 0 14ef3baace8ad76611a2a923841d290a
+
+@ 0 18 0 106991bec040f6231d360a4858b9239a
++   entry .Soundness   bolt 代码用来指称 Soundness 的字母，`s`
++   entry .Uncoded   没有代码的诊断信息的代码
++   entry .prefix   文本开头的代码（无论是否带括号），以及它占用了多少个字符
++       若文本不以代码开头，则为 `Uncoded` 和零。
++       计数包括代码之后的一个空格，因此丢弃这么多字符后剩下的就是消息。
++   entry .parse   某个文本所构成的代码；若它不恰好是一个代码，则为 `Uncoded`
++   entry #project   项目的字母
++   entry #subdivision   项目中某个部分的编号：对 Soundness 而言是库的编号
++   entry #error   错误在该细分部分内的编号
++   entry #variant   错误变体的编号，或 0
++   entry #site   报告该错误的位置的编号，或 0
++   entry #cause   导致报告此错误的代码，或 `null`
++   entry #coded   这是否确实是一个代码：只有 `Uncoded` 为 false
++   entry #carrier   被报告的错误，不含其原因
++   entry #carrying   携带另一个代码的此代码，被携带者位于复合代码的最内层
++   entry #text   代码的书写形式，`↯/s.25.1.2`；`Uncoded` 为空
++   entry #label   带括号的代码，即写在消息之前的形式
++   entry #colorLabel   带 ANSI 颜色的括号代码
+
+@ 0 6 0 030e4cdbe1b56ebf10763fe927280a2a
++ entry .Hazard   可抛出值的领域：任何纯的 `Exception`
++     `type Hazard = Exception & caps.Pure`。
++     `Error` 通过继承而是纯的，因此每个 Soundness 错误都是 `Hazard`；JDK 异常必须被包装（通过 `Error(throwable)`，作为 `Error.Unchecked`）才能被抛出，因为对任意 `Throwable` 子类无法确立纯性。
++     每个 `Tactic[error]`、`raises error` 和 `Attempt[_, error]` 都以 `Hazard` 作为其错误的上界。
+
+@ 0 1 0 09c9082abae7915e18aadca4f81573b1
++ entry .Message   结构化消息：嵌入了带类型、可区分部分的固定文本
+
+% 1 1 0 15debc45561bf9c1146c2a54f2a91563
+
+@ 0 5 0 0189ba36a7c0b6ef1c10bc666e6fd479
++       `Message` 由 `texts`——字面片段——与 `messages`——嵌入的部分，比文本少一个——交错组成，因此消息中固定部分与可变部分之间的边界会一直保留到呈现之时。
++       `m"…"` 构建一条消息；`#text` 将其展平为纯文本；`#colorText` 在终端上以斜体呈现嵌入的部分；Markdown、HTML 或带样式文本的呈现器则遍历 `#segments` 或 `#fold`。
+
+% 2 1 0 1e5ebdf183347edf016dc5b6ba415ea3
+
+% 3 1 0 18a00485b3bd795109723048a65d4651
+
+% 0 1 0 0c89b7db98b1a0900b2b2275eb90ce1f
+
+% 0 1 0 1a629175e24703eb162d1df7c3696cc0
+
+% 0 1 0 12fe8bc0056773cc0c0409a42b56f88d
+
+% 0 1 0 08f0fb5b1b87372706da73b8680fb7a9
+
+% 0 1 0 1cb02e80b139288615f4942410df34c0
+
+% 0 1 0 1affb38f10a25488036fea45773a287a
+
+% 1 1 0 1d059076dba91a221e7b9ecb2fb6c92a
+
+@ 0 6 0 092649811126157c1b14786c1f8e829e
++       消息的部分可以嵌套到任意深度：嵌入的 `Message` 保留其自身的结构，`m"…"` 还会将反引号之间的文本作为一个部分嵌入，因此 `m"the field `name` is absent"` 会将 `name` 呈现为可区分的部分。
++       `Message` 是 `Communicable`（以其自身表示），因此一条消息可以插入另一条消息，而 `List[Message]` 会以项目符号列表的形式插入。
++       打印 `Message` 需要来自 `fulminate.print` 的 `printables.messagePrintable`。
+
+% 1 1 0 0191588842b204f60e516a039c14fc8d
+
+% 0 1 0 18dde09716a20df30516406192b1045a
+
+% 0 1 0 0923ba834fc086d7131f4446fa6e0b57
+
+@ 0 25 0 0e2d8fad0c1269ce12bf5d7408984145
++   entry .apply   由一段字面文本组成的消息
++       `Message(text)` 是没有嵌入部分的消息。
++       重载 `Message[tuple] (messages, done)` 是 `m"…"` 宏用来通过 `Communicable` 实例转换替换值元组的内联辅助方法；它不供直接使用。
++   entry .communicable   `Message` 以其自身插入另一条消息
++       位于 `Message` 自己的伴生对象中，使其处于 `Message is Transcribable to Message` 的隐式作用域内，日志记录器正是借此记录裸消息。
++   entry #texts   字面片段，比嵌入部分多一个；部分相邻处为空文本
++   entry #messages   嵌入的部分，按顺序排列
++   entry #+   `left + right`：连接，连接处的文本合并为一个片段
++   entry #segments   将消息表示为其文本与部分交错组成的单个扁平列表
++   entry #fold   以深度优先方式呈现消息，函数接收每段文本及其嵌套层级
++       `message.fold(initial)((accumulator, text, level) => …)`：按阅读顺序给出消息及其各部分的每个字面片段，以及它所嵌入的深度（顶层为 0）。
++       `#text` 和 `#colorText` 都是折叠。
++   entry #text   展平为纯文本的消息，多行字面量会被解包
++       三引号 `m"""…"""` 中的各行会被修剪并以单个空格连接，空行变为换行符，因此消息可以在源代码中跨行排版，而这种排版不会传到读者那里。
++   entry #colorText   作为终端文本的消息，嵌入部分为斜体，更深的部分为粗斜体
++       只有 ANSI 样式——尽管名称如此，但没有颜色——深度 1 为斜体，深度 2 及以上为粗斜体。
++       当编译器的颜色设置开启时，宏的 `halt` 会使用它。
++   entry #unwrap   折叠多行字符串：各行被修剪并以空格连接，空行变为换行符
++       即 `#text` 所应用的规范化；它是公开的，使呈现器可以对字面量应用同样的规则。
+
+@ 0 8 0 1c1df70cf8ee7f600922f9b8d1c61768
++ entry .m   `m"…"` 插值器：由字面文本和 `Communicable` 替换值构成的 `Message`
++     `m"the port $port is not available"` 构建一个 `Message`，其字面片段是替换值之间的文本，其部分是各个替换值，每个都通过其 `Communicable` 实例转换——因此只有知道如何在行文中表述的值才能被插入，没有实例的值会导致编译错误。
++     `Message` 以其自身插入，`Text` 以其自身插入（为空或带有前后空格时用 `“ ”` 引起来），基本类型以其十进制或字符文本插入，任何 `Textualizable` 通过其文本插入，`List[Message]` 以项目符号列表插入。
+
+% 2 1 0 080c4aaaa4c040640b7ce0b1a22d961c
+
+% 3 1 0 19b5b883b99f339d03b4bd0375ed741c
+
+% 0 1 0 1c9769053f0173fb0ac0d060dce26e0b
+
+% 0 1 0 1957adcee2ee33bc15698fd933c27fed
+
+% 0 1 0 0d7f55b364d8676219fd5d8ad3ba5257
+
+% 0 1 0 1b4ca5974a7ce9cb0bdce535e23e7a72
+
+% 0 1 0 01129071b6926718054f47e47f430891
+
+% 1 1 0 19c6788aff86530210f0e17f282e907d
+
+@ 0 7 0 133e6fedf1262b801427114ec24a2e3c
++     一对反引号之间的文本会成为一个嵌入部分——一条独立的消息，其本身也可以包含替换值——因此行文中的标识符或字面片段与周围的文字可以区分开，在终端上以斜体呈现，在 Markdown 中以代码呈现。
++     不匹配的反引号会导致编译错误，_the m"" interpolator has an unmatched backtick_。
++     转义符 `\n`、`\r`、`\t`、`\f`、`\b`、`\e`、`\\`、`\"`、`\'` 和 `\uXXXX` 在编译时解码，其他任何转义符都会导致编译错误。
++     三引号 `m"""…"""` 可以跨行；`Message#text` 会将其解包。
+
+@ 0 1 0 02edaaeae12f74cb148e8582e38cd76e
++     关于消息内容的内部风格规范是 `doc/standards/messages.md`。
+
+@ 0 1 0 1ed2cedd19f1bfd41f4b8d393016c907
++ entry .Communicable   能在行文中表述的值的类型类：将值转换为 `Message`
+
+% 1 1 0 1d2b3e510214c40b10fa0a74b662e9ac
+
+@ 0 9 0 078416fbea8a2473102a655c7a055549
++       `value is Communicable` 将值转换为 `Message`，这正是 `m"…"` 对每个替换值的要求。
++       出现在消息中的类型会在其伴生对象中提供一个实例，通常从其文本呈现派生，使所有关于此类值的消息在如何表述上保持一致；`Reason` 枚举则提供一个为每个分支措辞的实例。
++       伴生对象中的实例涵盖 `Text`（为空或带有前后空格时用 `“ ”` 引起来，使空缺或空白的值可见）、`String`、`Char`、`Int`、`Long`、`Message`、任何 `Textualizable`、`List[Message]`（作为项目符号列表，每行一个）、`Specializable`（`Int` 表示为 `int`，用于指称基本类型的消息），以及——在宏中、作用域中有 `Quotes` 时——`Term` 或 `Expr`。
+
+% 2 1 0 17a79ecbe06f0424055063d142788481
+
+% 3 1 0 08efc07760e9826a14aff92fedfee4a5
+
+% 0 1 0 1a088d7cc72006e01e0a5862f787f2e8
+
+% 0 1 0 04b489e8f8b2598d05b85d18b94e76e6
+
+% 0 1 0 19e392dc58a773c3150da8aecea29e32
+
+% 0 1 0 19530c5f2e80b89301864330a462617f
+
+% 0 1 0 05e2cc5f8e8480ae1f13313b0cd976d0
+
+% 0 1 0 00563016e218e12012782ccbf7fae300
+
+% 0 1 0 02a4671c3b4336fa19b991f3f5441f27
+
+% 1 1 0 0f8d4bb18f16ad66039819d8169ffd0a
+
+@ 0 4 0 0bafdbabfe80d9801d152a5a07a7e9e9
++       `Communicable` 是一个 `Transcribable to Message`：将值转换为消息，恰恰就是将可记录的事件转录到日志载体上的方式，这使得日志记录器无需任何进一步的桥接就能记录任何 `Communicable` 事件。
++       `value.communicate` 是以扩展方法形式提供的这一转换。
+
+% 1 1 0 0e4b266afb969cec00bf40d80d875b24
+
+% 1 1 0 0047eae1946031b21ae3485cb292b614
+
+% 0 1 0 175ffc5341b679381ab2db8c43261eeb
+
+@ 0 13 0 062682d45547079012e487f3207c9f25
++   entry .text   `Text` 以其自身表示，若为空或以空格开头或结尾，则用 `“ ”` 引起来
++   entry .string   `String` 以其文本表示
++   entry .char   `Char` 以该字符表示
++   entry .int   `Int` 以十进制表示
++   entry .long   `Long` 以十进制表示
++   entry .textualizable   任何 `Textualizable` 值，以其文本表示
++   entry .term   `quotes.reflect.Term`，按编译器显示它的方式表示；用于作用域中有 `Quotes` 的宏
++   entry .expr   `Expr[T]`，按编译器显示它的方式表示；用于作用域中有 `Quotes` 的宏
++   entry .specializable   基本类型的伴生对象（`Int`、`Boolean`……）以其小写名称表示
++       用于指称基本类型的消息，正如 `Number.Error` 的 _is not a valid int_ 那样。
++   entry .listMessage   `List[Message]` 作为项目符号列表，每行一条消息
++       每条消息独占一行，前缀为 ` - `，因此聚合了其他错误的错误会说明数量并在下方列出它们。
++       不要手动用逗号连接消息。
+
+% 0 1 0 0ea6bcfa716420281516b24b1c0b6be1
+
+@ 0 4 0 08990125b0a8706b0976bcdb7f23c4dc
++   entry #message   某个值的消息
++   entry #record   某个值的消息：同一转换的 `Transcribable` 名称
++   entry #contramap   通过映射到本类型得到的另一类型的 `Communicable`
++       `String` 实例就是由 `Communicable.text.contramap(_.tt)` 构建的。
+
+@ 0 1 0 0cff86a3a4b102110dd2f7bd3935ec42
++ entry .communicate   `value.communicate`：通过其 `Communicable` 得到的作为 `Message` 的值
+
+@ 0 8 0 063f0d9811f50917072f41f93b8399e8
++ entry .Clarification   `Reason` 枚举所扩展的特质：为错误的每个不同原因提供一个编号
++     `trait Clarification { def number: Int }`。
++     错误的各个不同原因是扩展 `Clarification` 的 `Reason` 枚举的分支，每个都有一个在该错误内唯一的编号，因此 `Error(25, 1, reason.number)` 呈现为 `↯/s.25.1.1`、`↯/s.25.1.2`……，并且每个原因在 `doc/errors` 中该错误的页面里都有一个小节。
++     在诊断需要时，`Reason` 携带自己的数据（`Ipv4ByteOutOfRange(byte: Int)`），并提供自己的 `Communicable` 实例为每个分支措辞，错误的消息会插入它。
++     接收 `Clarification` 的 `halt` 或 `warn` 会将其编号放入诊断信息的前缀中。
+
+% 2 1 0 069206f7c6c020f4099a571186506b26
+
+% 3 1 0 0fbf3143ec95d19016fc04b4ad326e05
+
+% 0 1 0 07d9fda9feeb831d0a87d5e164fe64a7
+
+% 0 1 0 05c0ffa24de6952504546b3171e81a7e
+
+% 0 1 0 083d0e91463131ba1900514871565603
+
+% 0 1 0 0c848d71488e01f00a2feedc0163f9c0
+
+% 0 1 0 099dc5fd05ccda9e191dbfa63f172dc0
+
+% 1 1 0 192aba54fb29f9071c9d65c73dc6d584
+
+@ 0 1 0 00b1797ec363f38f1cc845d241e6ffdf
++ entry .Diagnostics   错误是否捕获堆栈跟踪：`Diagnostics.capture` 或 `Diagnostics.omit`
+
+% 1 1 0 158c494051901ff51503c5e4ec4b676d
+
+@ 0 7 0 00d88eef3e76a0771264152124aa6693
++       一个不透明类型（从 `fulminate.internal` 导出），有两个值。
++       每个错误的构造函数都将其作为上下文参数接收，并把 `captureStack` 传给 `Exception` 的 `writableStackTrace`，因此在 `omit` 下构建的错误没有堆栈跟踪，成本不比任何其他值更高，这正是带类型的错误在预期之中且会被处理的热路径中也负担得起的原因。
++       丢弃其错误的战术（`safely`、`recover`）自己提供 `omit`；保留错误的战术接收作用域中的 `Diagnostics`；会抛出异常的战术使用 `capture`。
+
+% 2 1 0 19255ec83813cd8602bac62e933075e5
+
+% 3 1 0 053132de18aa422c0137ee68f7c5c9c6
+
+% 2 1 0 0823b74bc01c96280b75760f51f37a5e
+
+% 3 1 0 0e8235c20bbe3d261b34b55af9c9ba63
+
+% 2 1 0 13fbc5e5eab3450c037f10b023def64f
+
+% 0 1 0 11420fbb5e6b718f1b3000e7ba19486d
+
+% 0 1 0 1d186ac06c9efc2c183862503ad8f05f
+
+% 2 1 0 07e7157a20592ac10d2ab440d4c58977
+
+% 0 1 0 18f5aa26b33b5d75164ce04461dfd972
+
+% 0 1 0 070f2f1622bcba18198bfe3101efaf84
+
+% 1 1 0 184e6f4731ecd69b1ca8ae95e669190d
+
+@ 0 1 0 0618eefdbf505c8f1bf4710b1d86daef
++       通常的选择方式是按名称导入 `errorDiagnostics` 中的一个 given。
+
+% 0 1 0 0163c571e04c5920016250c9a29905d9
+
+% 1 1 0 0f5b5c3dba37cd33097787c06bb357be
+
+@ 0 1 0 0ce7812318f2ee01164abe240b930fe8
++ entry .errorDiagnostics   两种 `Diagnostics` 选择，作为需按名称导入的 given
+
+% 1 1 0 050075c64a0d0bb2033622194eab7f03
+
+@ 0 4 0 10529abb7c13359f04d0e9794ac19037
++       `import soundness.*` 不会引入其中任何一个，因为通配符导入从不导入 given；凡是在战术的形实转换函数之外构造错误的地方——测试、`mitigate` 分支、直接的 `PortError(80)`——都要按名称导入一个。
++       在 `abort(…)` 和 `raise(…)` 内部，战术会提供自己的选择，因此 `raises` 方法不需要导入。
+
+% 2 1 0 0d009dc699db24b30b36facdba45a437
+
+% 3 1 0 16a30e40476cb7461b1fc20fdcedca9b
+
+% 4 1 0 1181d99ce6e347bc1611e67ace7585f3
+
+% 1 1 0 052232952f6381a509d59a6b8923d0ea
+
+% 1 1 0 188adf8a7b6bbcb015a45b8075c63871
+
+@ 0 2 0 096d425e068f30590b9dffec7b90b222
++   entry .emptyDiagnostics   `Diagnostics.omit`：不记录堆栈跟踪；在错误预期之中且会被处理时更省成本
++   entry .stackTracesDiagnostics   `Diagnostics.capture`：记录堆栈跟踪，用于调试
+
+@ 0 1 0 128419ef4c220f6e0e1f05b57a43650e
++ entry .Panic   不打算被捕获的错误：程序员的理解是错误的
+
+% 1 1 0 059e8192a6599bd318f2cf778861f834
+
+@ 0 5 0 04141182da23a0b114ed062babd7aea2
++       一个 `java.lang.Error`（不是 `Exception`，因此也不是 `Hazard`），携带一条 `Message`，说明为何曾认为该情形不可能发生。
++       遇到它并不是未能处理的问题：它不出现在任何 `raises` 子句中，也没有战术会捕获它。
++       `panic(message)` 抛出一个 panic；`Panic(exception)` 包装一个意外抛出的异常，其消息会指出该异常的类和文本。
+
+% 2 1 0 07c20c3533221db51fc08bcf80a2070a
+
+% 3 1 0 117bb1af2b37062c11d9fd1064757790
+
+% 0 1 0 112c373021ddc262094ba15ce932f6f7
+
+% 0 1 0 190999d6c15d389512c8529b26a450df
+
+% 1 1 0 1ee3e3fee7720165092e298baebc545c
+
+% 0 1 0 1d647f153b0a0b80114ef4de132142df
+
+@ 0 4 0 18da0ee4f86e7a6a05cd99cd4e636a34
++   entry .apply   针对意外抛出的异常的 panic
++       `Panic(exception)` 的消息为 _an `ClassName` exception was unexpectedly thrown; the error was: `text`_，没有消息的异常则为 `[null]`。
++   entry #message   为何曾认为该情形不可能发生
+
+@ 0 4 0 0b7ad92bb8e1673115424ab29d53f6a5
++ entry .panic   以一条消息抛出 `Panic`：曾认为该情形不可能发生
++     `panic(m"…")` 的类型为 `Nothing`，因此它可以出现在任何需要值的地方——模式匹配中不可达的分支，或者由先前步骤保证的检查的 `else`。
++     它不是需要处理的错误，也不在签名中声明。
+
+@ 0 12 0 16cb5647bd90c4100dc733b2079a83bf
++ entry .halt   从宏中报告编译错误并中止展开
++     用于宏实现，作用域中需有 `Quotes`。
++     `halt(message)` 通过 `report.errorAndAbort` 报告该 `Message` 的文本（当编译器的 `-color` 设置开启时，通过 `Message#colorText` 着色）；`halt(message, position)` 附加一个位置。
++     带编号的重载以错误的代码 `[↯/s.25.1] ` 作为诊断信息的前缀——`halt(module, number, message)`、`halt(module, number, message, position)`——或者以其原因的编号 `[↯/s.25.1.2] ` 作为前缀：`halt(module, number, reason, message)` 和 `halt(module, number, reason, message, position)`，其中 `reason` 是一个 `Clarification`。
++     带编号形式的位置参数是 `Matchable`，不是 `quotes.reflect.Position` 的值（或 `null`）会不带位置地报告。
++     每个由宏抛出的代码都与运行时错误一样，在 `doc/errors` 中有一个页面。
+
+% 2 1 0 02a48611362d461e0226da392ed47025
+
+% 3 1 0 0f5a51c74283bfb01e202aaebfd8c2e9
+
+% 0 1 0 17aa25563b6ef5f20ef33c4527c8861e
+
+% 0 1 0 08813f89405a48fe137845c61f358491
+
+% 0 1 0 0546aea4ca06a0af18dbf62dc8b35ac8
+
+% 0 1 0 0b9e627db83890290c01ace59d03f955
+
+% 1 1 0 1848c1bae463f99a116720e6b4b1ab22
+
+@ 0 2 0 003a54a1a6f71e711f73f89ef05fae3f
++     来自 `contingency` 的 `HaltTactic` 会将抛出的 `Error` 转换为对其 `labelled` 消息的 `halt`，因此在运行时抛出错误的解析器会在编译时报告相同的错误。
+
+@ 0 5 0 158bac973b84b36c1688024204f392ec
++ entry .warn   从宏中报告编译警告
++     用于宏实现，作用域中需有 `Quotes`。
++     与 `halt` 相同的重载——`warn(message)`、`warn(message, position)`、`warn(d, message)`、`warn(d, message, position)`、`warn(d, reason, message)` 和 `warn(d, reason, message, position)`——以 `report.warning` 代替 `report.errorAndAbort`，因此展开会继续进行。
+
+@ 0 1 0 190937ab60c2efc21d27a888d07ef0e0
++ entry .TextEscapes   解码文本中的标准转义序列：`\n`、`\t`、`\uXXXX`……
+
+% 1 1 0 05ccedeec59996f706a0998634b04290
+
+@ 0 6 0 0be3696d0b3895eb041277c1ea3f608f
++       `m"…"` 和其他插值器共用的转义规则，以运行时函数的形式提供给在输入中遇到转义的解析器。
++       `escape(text)` 解码文本中的每个转义；`standardEscape` 是该循环的一步。
++       可识别的转义为 `\\`、`\n`、`\r`、`\f`、`\b`、`\t`、`\e`、`\"`、`\'` 和 `\uXXXX`。
++       这些函数将 `TextEscapes.Error` 作为受检异常抛出（`throws`，而不是 `raises`），因此调用者需要作用域中有 `CanThrow[TextEscapes.Error]` 或 `unsafeExceptions.canThrowAny`。
+
+% 2 1 0 109f345d18a7136c1f52072e71ad3ab3
+
+% 3 1 0 005bab09caa0ce24134048893f2a5328
+
+% 0 1 0 04730089dbbde68612610fed08563f9c
+
+% 0 1 0 0bd017d0658991251a7f82e999e63b67
+
+% 1 1 0 14475c7abac07d9011552f07177ea691
+
+@ 0 8 0 1beba6f02770085a130796775b2cf341
++   entry .standardEscape   解码某个位置上的一个字符：该字符（或 -1）、下一个位置，以及是否有转义处于开启状态
++       `standardEscape(text, cursor, escaping)` 在 `escaping` 所表示的状态下读取 `cursor` 处的字符，并返回解码后的字符（当该字符开启一个转义而未产生任何字符时为 `-1`）、继续读取的位置以及新的状态。
++   entry .escape   解码文本中的每个转义
++       对于无法识别的转义、不完整的 `\u` 序列，或以单独的反斜杠结尾的文本，抛出 `TextEscapes.Error`。
++   entry .Error   在转义序列无效时抛出
+
+% 1 1 0 141f933cd84fa62f1b2dcef1cc040760
+
+@ 0 4 0 13e4351ba13d497018cae3ec7d9f587f
++         错误 `↯/s.15.2`：_the character `c` should not be escaped_、_the unicode escape is incomplete_ 或 _the final character cannot be an escape_。
++         由 `escape` 和 `standardEscape` 抛出。
++     entry #initMessage   描述无效转义的消息
+
+@ 0 1 0 1f35cb9cff96be8d13521e886490e7c9
++ entry .printables   `Message` 的 `Printable` 实例，作为需按名称导入的 given
+
+% 1 1 0 07202c24b97677a716a590ba4ccd47fb
+
+@ 0 4 0 0ad22b61728ef04f05511227c479e515
++       位于单独的源集 `fulminate.print` 中，使每个模块都依赖的错误词汇不必同时依赖于打印。
++       从那里提供的 given 不在 `Message` 的隐式作用域内，因此必须导入；`Printable` 没有通用的回退实例，因此忘记导入的调用处会编译失败，而不是打印出降级的内容。
+
+% 2 1 0 1120688565fc7439065ee4629797c2dc
+
+% 3 1 0 0b85761646101d900481e52c0d117a50
+
+% 0 1 0 034be053725dc6ad1c679036533262ec
+
+% 0 1 0 1f48a0a0e8c01b3b10f4167929a40652
+
+% 0 1 0 1ce570b588c2901109d732798d700c35
+
+% 1 1 0 0261860c9fbf98de1830bc17e3ff3d8a
+
+@ 0 1 0 083e30d1576601f100a2143c462d8fe1
++   entry .messagePrintable   将 `Message` 打印为其纯 `text`，无论终端如何
+
+@ 0 1 0 1638be5e5c2552021a7e1795d7fdae06
++ entry .internal   `Diagnostics` 和 `m"…"` 宏的所在
+
+% 0 1 0 1c18810b564d59e609a88422cf8dd919
+
+% 1 1 0 0f71597c1b0bc6cb112bae74ffdfb433
+
+@ 0 4 0 1c8fccd0051fb4cf19fe6cbcf88e7d25
++       不供直接使用。
++       `Diagnostics` 在这里声明，是基于 `Boolean` 的不透明类型，并导出到 `fulminate` 包；`m"…"` 背后的宏及其辅助方法也位于这里。
++   entry .Diagnostics   不透明类型 `Diagnostics`；参见 `fulminate.Diagnostics`
+
+% 1 1 0 1566a1c3d7dc599305a0634541514e9c
+
+@ 0 7 0 073d79aedef5ebbe14ce35114a387d99
++         在这里声明并导出；它在 `fulminate` 包下的页面有完整说明。
++     entry .capture   错误记录其堆栈跟踪
++     entry .omit   错误不记录堆栈跟踪
++   entry .captureStack   `Diagnostics` 上的扩展方法：是否要捕获堆栈跟踪
++       由 `Error` 的构造函数传给 `Exception` 的 `writableStackTrace` 的 `Boolean`。
++   entry .mSubMessages   通过 `Communicable` 将一个替换值或替换值元组转换为消息
++   entry .mMacro   `m"…"` 背后的宏：解码转义、按反引号拆分，并拼接出一个 `Message`

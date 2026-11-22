@@ -1,0 +1,50 @@
+orthant 2 language
+
+% 0 1 0 1990139d61bdf161086f5ce67fae7634
+
+@ 0 1 0 16dc2dddf29445001dc821951b256700
++ 当密钥文档无法作为所请求密码算法的私钥读取时抛出。
+
+@ 0 1 0 1d8ed6a2d2412a231ea0d46e12dff5b7
++ ## 原因
+
+@ 0 4 0 17a1300885da038210c3354899399f75
++ 私钥从一个文档中读取为指定密码算法的密钥，例如 `PrivateKey[Ecdsa[256]]`；文档可以是 PKCS#8、PKCS#1、SEC1 或 OpenSSH 自己的容器，可以是裸格式，也可以带有 PEM 铠装。
++ 此错误涵盖以下情况：文档根本不是密钥；文档持有另一种算法或大小的密钥；文档无法按原样使用。
+
+@ 0 1 0 0982d44e8aec0bbd176df78e68656684
++ ## 变体
+
+% 0 1 0 0a7c55b4c0ac40601a46d9fdcd155626
+
+@ 0 3 0 17c5dabcf166ec4616e8785a29a4a26d
++ column  代码
++ column  原因
++ column  消息
+
+% 0 1 0 113bacf08540a99b1e1b2539f1a4bcbb
+
+% 0 1 0 1ee3e6184817505f0dbc96517d266c97
+
+% 0 1 0 0fa9ef46e80437d017db764b8505bc8b
+
+% 0 1 0 05cded517bb34cdc02a5ac57e833f631
+
+% 0 1 0 02ad2fb73a0cce881e1f919498ae904a
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 1 0 0a3dc9137d3cf72f0228e7373e7a2cbf
++ ## 解决方法
+
+@ 0 5 0 1c8e66a4e6bb00060b81f525c0ea6261
++ `Mismatch` 会指明文档所持有的内容：将密钥作为那种密码算法读取，或提供原本想要的密钥。
++ 受口令保护的密钥必须先解密才能读取，例如使用 `ssh-keygen -p` 或 `openssl pkcs8`。
++ 写出时不带公钥部分的 EC、Ed25519 或 ML-DSA 密钥无法响应 `public`；请用会包含公钥的工具重写它，例如 `openssl pkey`。
+
+@ 0 1 0 004f241cb4a4ed0405cb108ee75b2611
++ ## 另请参阅
+
+@ 0 2 0 1bd9ab0cbbc3852511b7d13e82a75913
++ - 源代码：`lib/enigmatic/src/core/enigmatic.PrivateKey.scala`
++ - `↯/s.105.8` — `PublicKey.Error`，公钥的相应错误

@@ -1,0 +1,35 @@
+orthant 2 language
+
+% 0 1 0 0942075fc1bf46591e1dfb62e67d7605
+
+@ 0 2 0 1afcb839f03442ff03e37412aea25d73
++ 当 RPC 调用因某个无法用 JSON-RPC 错误类型表达的原因而失败时抛出。
+
+@ 0 1 0 1d8ed6a2d2412a231ea0d46e12dff5b7
++ ## 原因
+
+@ 0 4 0 1c7cdeddfb635e880e72815f4e359389
++ Obligatory 的传输层失败——无法建立的连接、始终未到达的响应、无法分帧的消息——都没有 JSON-RPC 错误码可以承载，因为 JSON-RPC 错误对象描述的是已经完成的调用中的故障。
++ 此错误涵盖其余情况。
+
+@ 0 1 0 1dde240f21b5409104721a1bcf5ec317
++ ## 示例消息
+
+% 1 1 0 1abf28c8819c4a100ba2af9cc74b39c0
+
+% 0 1 0 0bfa767c0dad9d901fed392a3c098f58
+
+% 1 1 0 0f3a70848a4ab4760d5f72936e4996a7
+
+@ 0 1 0 0a3dc9137d3cf72f0228e7373e7a2cbf
++ ## 解决方法
+
+@ 0 1 0 14c9c86596f7732f1b08faf65861b08d
++ 检查原因链，以获取传输层或协议层的细节。
+
+@ 0 1 0 004f241cb4a4ed0405cb108ee75b2611
++ ## 另请参阅
+
+@ 0 2 0 158eb4cc4bdc4670121a36b2972970eb
++ - 源代码：`lib/obligatory/src/core/obligatory.Rpc.scala`
++ - `↯/s.112.7` — JSON-RPC 特有的失败

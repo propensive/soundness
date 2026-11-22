@@ -1,0 +1,35 @@
+orthant 2 language
+
+% 0 1 0 07e44edbcd41755c07cefe86bb358e83
+
+@ 0 1 0 023e7d72a2402b8d0dbf0ec236e56eba
++ 当从少于其布局所需字节数的数据中读取固定布局的记录时抛出。
+
+@ 0 1 0 1d8ed6a2d2412a231ea0d46e12dff5b7
++ ## 原因
+
+@ 0 4 0 113988bebea8141c1cd2f65b126f6d91
++ `unpack` 在加载任何字段之前，先对照它所读取的字节检查整个记录。
++ 当 `offset` 处没有 `width` 个字节时就会抛出此错误：偏移为负，或者记录（或由记录构成的重复段）会越过数据或 expanse 的 `size`。
+
+@ 0 1 0 1dde240f21b5409104721a1bcf5ec317
++ ## 示例消息
+
+% 1 1 0 1abf28c8819c4a100ba2af9cc74b39c0
+
+% 0 1 0 185ed552d5041e5f169036a6fa51a6ef
+
+% 1 1 0 0ec2c5d99cd9bca41d8aa25241253218
+
+@ 0 1 0 0a3dc9137d3cf72f0228e7373e7a2cbf
++ ## 解决方法
+
+@ 0 2 0 151d846c2d530e4b06c22a5cf9228d75
++ 对照格式的规范检查偏移，并检查输入是否完整。
++ 比其自身头部所声称的更短的文件，要么已被截断，要么不是预期的格式。
+
+@ 0 1 0 004f241cb4a4ed0405cb108ee75b2611
++ ## 另请参阅
+
+@ 0 1 0 1c3ec29c6fc470aa1c1220089890c7cb
++ - 源代码：`lib/zephyrine/src/layout/zephyrine.Structural.scala`

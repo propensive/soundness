@@ -1,0 +1,130 @@
+orthant 2 language
+
+@ 0 1 0 040d3839eadabb860ed437b47e76c5de
++ # Soundness 消息规范
+
+@ 0 7 0 1157aed8e8bbd5f11ba5f6a4f1937a96
++ 本文档定义用 `m"…"` 插值器书写的人类可读消息的内部风格：`fulminate` 错误的文本、`eucalyptus` 日志事件所携带的 `Message`，以及宏报告的诊断信息。
++ 三者共用一种风格，因为读者会在相同的地方遇到它们（终端、日志、编译器错误），而且不应能从行文中看出是哪个模块写的。
++ 它是对 `logging.md`（何时记录以及记录什么）和 `naming.md`（错误类型如何命名）的补充。
++ 示例取自 `lib/*/src/core/*.scala`。
+
+@ 0 1 0 1a916e1fddcfa8c50e66201e1e56795e
++ ## 1. 语体
+
+@ 0 2 0 0a441a9021ca74b90efb97dd772c5173
++ 消息陈述写下它的那一刻世界的一个事实，就像一位内行的同事当面说出来那样：冷静、具体、简短。
+
+@ 0 17 0 010c4815c5ee02ca1e636691bdf0d6f7
++ - **小写。** 消息以小写字母开头，除非它的第一个词是专有名词或标识符（`Burdock can only repackage a JAR file, not a directory`）。
++ - **结尾不加句号。** 消息是一个片段，由外围的渲染为其加标点；它会被嵌入堆栈跟踪、加上代码前缀，或作为项目符号列出，而在每种情况下结尾的句号都是错误的。
++ - **现在时，陈述语气。** 陈述*是*什么，而不是*发生了*什么或*应当*是什么：写 `the JAR has no manifest`，而不是 `the JAR did not have a manifest` 或 `the JAR should have a manifest`。例外是整体失败的操作，它用过去时，因为失败本身就是事实：`could not list the releases of $repository (HTTP $status)`。
++ - **简洁。** 只说读者为了采取行动需要知道的那一件事。不道歉（`sorry`），不制造惊慌（`fatal`、`!`），除非补救办法既确定又简短，否则不给建议，也不重复错误类型的名称已经说明的内容。
++ - **不使用实现中的术语。** 消息用读者的术语指称事物（端口、路径、头部、字段），绝不使用抛出它的库中的类、方法或变量。`unknown variables reference` 是写给 DAP 客户端的；`null frameRef in scopes()` 则不是。
+
+@ 0 1 0 0061313c865e5a150c82da9f02a2b1b8
++ ## 2. 结构
+
+@ 0 2 0 04afbb509a01dc520079381480bbc896
++ 消息有一个主语，即出错的具体事物，还有一个谓语，即它出了什么问题。
++ 当主语是读者会去寻找的东西时，以主语开头：
+
+% 0 1 0 1d7c7855fd07bfa012c75794e827bf90
+
+% 0 1 0 09b5fa9fdb683198093442a904f2e1fa
+
+% 0 1 0 0f22a4e1f16aab361d157fcc315c0608
+
+@ 0 5 0 067fd17856774e3f06ef5b7ebcc3dc87
++ 插入上下文，而不是描述上下文。
++ 写着 `the file could not be read` 的消息让读者自己去找那个文件；`${path} could not be read` 则不会。
++ 指明出错的具体资源（路径、端口、URL、标识符、头部名称、行和列），并在数字已经在手时给出数量：写 `${items.size} CBOR issues`，而不是 `some CBOR issues`。
+
+@ 0 2 0 11a4fb64ca443bec16c53b658fb3f9e1
++ 当原因已知且不同于症状时，把它附加在括号中或冒号之后，优先顺序如上：
+
+% 0 1 0 165c774a6a8e0b341b80d7bc5dbcd66d
+
+% 0 1 0 11318639235892601a6666bc7cbf0da0
+
+@ 0 2 0 190ce2e9f97341cd02befd39671c66b0
++ 汇总其他消息的消息要说明有多少条，并让 `Communicable` 的 `List[Message]` 实例把它们渲染为其下方的项目符号：
+
+% 0 1 0 1f95f053fe4aeabe10e7c0f5ad8e99dc
+
+@ 0 1 0 04697c2f9668183b11ddfb09fd94b4d1
++ ## 3. 词汇
+
+@ 0 1 0 060086407914c9690ec020fde74a7b18
++ 每种反复出现的情况只有一种说法：
+
+% 2 1 0 102bb8a92c02849f1046d94665e0b49b
+
+@ 0 10 0 073bb44515ed9bcd0d12d4e59adc43e5
++ column  说法
++ column  用于
++ column  示例
++ row  *is not a valid X*  无法解析为 X 的值  `the value $value is not a valid ISO 8601 repeating interval`
++ row  *is not a known X*  可以解析但不在集合中的值
++ row  *could not* + 动词  在环境中（网络、文件系统、进程）失败的操作  `could not list the releases of $repository`
++ row  *cannot* + 动词  库按其构造拒绝的请求  `a command cannot end with an escape character`
++ row  *has no X*  缺失的部分  `the JAR has no manifest`
++ row  *already has X*  冲突的部分
++ row  *must*  仅用于读者可以通过修改输入来满足的规则  `a port number must be specified after a colon`
+
+% 1 1 0 00c76919e9eefe48191d87bac4d9a8b0
+
+@ 0 5 0 1ed03f945cc5a5cb05569802eabdaea5
++ - 优先使用单数的具体名词（`the manifest`、`this JAR`、`the document`），而不是类别（`input`、`data`、`object`）；当上下文中只有一个这样的事物时，使用定冠词。
++ - 绝不把 *invalid*、*illegal*、*bad* 或 *error* 作为整个谓语：它们说的是存在一条消息这件事，而不是消息的内容。
+
+@ 0 1 0 15aefff1dd791f3906d891ee81e2f0b9
++ ## 4. 消息不得包含的内容
+
+% 2 1 0 1886ff37e4f5826f11f7cee32eba1491
+
+@ 0 6 0 1c7b9222dbe5d0f30faea783c7c494f3
++ column  绝不
++ column  改为
++ row  机密：令牌、密码、密钥材料、cookie 或 `Authorization` 值，即使只是一部分  凭据的*来源*，如果有帮助的话（`the GITHUB_TOKEN environment variable`）
++ row  载荷：请求或响应正文、文件内容、序列化的文档  出错的*片段*（一行、一个词法单元、一个字段）及其位置
++ row  堆栈跟踪或异常文本  按第 3 节的说法重新陈述的原因，并把原始异常附加为错误的原因
++ row  格式：ANSI 转义、Markdown、对齐用的空格  什么都不加；`Message` 是结构化的，由渲染器决定它的样子
+
+% 1 1 0 064c95d6aab1dbf20ad37031b4943f55
+
+@ 0 1 0 0cd39488b492804a1e929b54f96bad9f
++ ## 5. 通过 `Communicable` 组合
+
+@ 0 3 0 17218340da6f11590577468a6a8db6a7
++ `Message` 不是字符串。
++ `m"…"` 插值器把每个插入的值都保留为一个 `Message` 部分，通过该值的 `Communicable` 实例转换，因此格式化逻辑对每种类型只存在于一处，而不是分散在每条消息中。
++ 由此得出：
+
+@ 0 13 0 01f2eb64620692c5048fbfc08f651825
++ - 插入类型化的值，而不是它渲染后的结果：写 `m"…$path…"`，而不是 `m"…${path.show}…"`。`Path` 实例决定路径在行文中如何呈现，所有关于路径的消息都保持一致。
++ - 为出现在消息中的类型在其伴生对象中提供一个 `Communicable` 实例，通常由它的 `Textualizable` 或 `Showable` 实例派生；不要在调用处手动渲染。
++ - 可能为空或带有填充的文本由 `Text` 实例加上引号（`“ ”`），使缺失的值或空白值可见；绝不要在插入的 `Text` 周围自己加引号。
++ - 消息列表就是列表，而不是拼接起来的字符串：`List[Message]` 渲染为项目符号，每行一条。不要用逗号 `join` 消息。
++ - 宏抛出的编译时诊断信息在标准前缀中携带其 bolt 代码（`m"${bolt.label} $message"`）；消息正文原样遵循本规范。
+
+@ 0 1 0 1f19b20982c8aa011c3cc1048e9e114f
++ ## 6. 日志事件
+
+@ 0 5 0 124b19d4644c3db50691b1e5d6f7d157
++ 日志事件是模块的 `Event` 类型的一个值，由其 `Communicable` 实例渲染消息。
++ 适用同样的语体，只多一条：事件指明操作及其对象（`resolved $hash to $url`、`listening on $port`），操作已完成时用过去时，刚开始时用现在分词。
++ 级别由 `logging.md` 选择；消息不重复级别（`warning:` 不是消息的一部分）。
+
+@ 0 1 0 1e7de92576a275d310f2a572e2294fa0
++ ## 7. 检查清单
+
+@ 0 2 0 02bbabe8605fc958162d9fab8269d7a5
++ 添加消息之前，按它将要出现的样子去读（在 `[↯/s.…]` 之后、在十二条消息的列表中，或在堆栈跟踪的末尾），并检查：
+
+@ 0 5 0 0d19267b8db329d30ee8839805621a76
++ 1. 首字母小写，结尾无句号，使用现在时；
++ 2. 出错的具体资源以类型化值的形式插入；
++ 3. 已知数字时给出数字；
++ 4. 没有机密，没有载荷，没有实现中的名称；
++ 5. 错误类型的名称和消息没有说同一件事。

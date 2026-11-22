@@ -1,0 +1,701 @@
+orthant 2 language
+
+% 0 1 0 0f04ec4b9ac2d4270a232409219e1f6b
+
+% 0 1 0 12ff138622b10d2514ae4f86fde1adfa
+
+% 0 1 0 0b5938ce7315323607e1922cbc4d93e2
+
+@ 0 1 0 11ed0bedf0416f3d1215aa522bbf8c43
++ info   由范式特质组合而成的网页：每个特质添加一项特性、它的 CSS 和它的元数据
+
+% 0 1 0 0ca6d61ddd9511ea1cdae38f1414f6fe
+
+@ 0 9 0 04d3679139f0b53d05346397d185b9fe
++     _Graffiti_ 用可复用的部件组装网页。
++     页面是一个扩展 `Archetype` 的类，混入它想要的特性——一个 `Masthead`、一个 `Hero` 横幅、`Breadcrumbs`、内容旁边的一个 `VersoPanel`、页脚的一个 `Colophon`、头部中的 `Keywords` 和一个 `Favicon`——并履行它唯一的义务 `content`，即核心内容。
++     每个特性特质通过包装列在它之前的特质所产生的东西，贡献自己的标记、自己的 CSS 规则和自己的 `<head>` 元数据，因此混入它们就会按列出的顺序把它们嵌套起来，而相互独立的特性永远不会冲突。
++     结果是一个完整的 HTML 文档，以 honeycomb 的元素词汇来定类型，它可以用 `html` 渲染为文本、可以流式传输，也可以直接作为 HTTP 响应提供。
+
+% 2 1 0 0df657fae2d549bb0cfeb317ae680233
+
+% 3 1 0 1cd90e939b89677f1a1246e82f12f4ec
+
+% 4 1 0 00d76cad0b37630306ab11c3bcf93598
+
+% 0 1 0 0b014b2c52185b23001af5573e592715
+
+% 0 1 0 04641424f02bec2c14c8f48e697aef93
+
+% 0 1 0 16e7671f7cc082811ae10a03345a3687
+
+% 0 1 0 0bbbcda68bcd72ec0751cb9439f5c996
+
+% 0 1 0 172e66ef90439765046f3335e52cae2d
+
+% 0 1 0 17b97877b6bcb42200595438376fc140
+
+% 0 1 0 012b9647dc0318d81113e3cd89415498
+
+% 1 1 0 03d6449a71329df00ea682e907d02aca
+
+@ 0 8 0 010c92dcc217e2aa199f15bbbea14872
++     由于页面是一个类，编译器能看到它的结构：缺少 `content` 的页面无法编译，给插槽一个不属于那里的元素是类型错误，而两个各自定义同名插槽的特性会在它们被组合之处报告。
++     每个特性都暴露供页面直接覆盖的钩子——插槽（`masthead`、`verso`、`hero`）、设置（`versoWidth`、`menuGap`）和规则集（`mastheadStyles`、`menuStyles`）——因此页面可以调整一项特性，而无需触及其标记或调用 `super`。
++     每种布局都只使用逻辑 CSS 属性，因此把 `direction` 设为 `HDir.Rtl` 就能镜像整个页面，而样式表保持不变。
+
+@ 0 7 0 038eb03f38ee851619d54528cdd47a49
++     只有一个源码集 `graffiti.core`，它构建于 honeycomb（HTML）、cataclysm（CSS）和 parasite 之上，可编译到 honeycomb 支持的每个平台；其中没有任何东西只存在于 Scala.js 上。
++     一切，包括 `urlText` given，都导出到 `soundness` 总括包。
++     页面需要作用域中有 honeycomb 的元素构造器（`import htmlDoms.whatwg.*`），并且为了渲染其样式表，还需要一个 CSS 格式化选择，例如 `formatting.indentedCssFormatting`；库内部的 `cataclysm.formatting.indentedCssFormatting` 导入用于渲染内联的 `<style>` 元素。
+
+% 0 1 0 0447419e3d1e867e0a6f4d977eee7cf4
+
+% 0 1 0 14635efb6e6ac74d0d6838d267ff49d0
+
+% 0 1 0 1ae9f53f6b35845b14a57023ba6bd887
+
+% 0 1 0 07ce35ed5adcf912137e4969eb82aa49
+
+@ 0 1 0 095006b48c905a301a6d5ffebea5774b
++ entry .Archetype   每个页面的基础：它的内容、标题、书写方向、样式表，以及各特性借以组合的接缝
+
+% 1 1 0 101e8637e757a46f1c7b560355f98d3b
+
+@ 0 7 0 00abe424a50efd0314f1a83532f7151b
++       具体页面扩展 `Archetype` 和它想要的特性特质，并定义 `#content`。
++       这些特质通过三个受保护的接缝组合：`#frame`，即包装流水线，布局特质把它覆盖为对 `super.frame` 的某种装饰；`#styles`，即样式表累加器，覆盖为 `super.styles + ownRules`；以及 `#head`，即 `<head>` 累加器，覆盖为由一个新元素和 `super.head` 组成的片段。
++       页面作者很少触及它们：每个特性都会暴露自己的钩子。
+
+@ 0 7 0 0d7567081b08a0ca1823dec635a7aca9
++       整个页面是 `#document`，即带有 doctype 的 `Document[Html]`，或者是 `html`（honeycomb 的扩展方法，经由 `.renderable`）：一个 `<html>`，其 `<head>` 中有 `#pageTitle`、样式表——内联在 `<style>` 中，或者在给出 `#stylesheetUrl` 时为指向它的 `<link>`——以及累积的元数据，其 `<body>` 的 `dir` 是 `#direction`，容纳经过包装的内容。
++       这一组装是 final 的，因此页面无法覆盖它，从而悄悄丢失样式表或书写方向；`#css` 是单独的样式表，用于在 `#stylesheetUrl` 处提供。
+
+% 2 1 0 0dbaed9ae821635f1fd8115459c904d1
+
+% 1 1 0 08d9458eb73012351c93056f35e51984
+
+@ 0 1 0 107b9a46c6f200c306b840db281a7c84
++         label 最简页面：只有内容，别无他物
+
+% 1 1 0 1859146f032af9c6021f0a076c55fbd6
+
+% 2 1 0 1b2847d9a0f2cc1e1b7a7bc4f5927f30
+
+% 3 1 0 1b241039ec9ad6f11025459a6ecf4597
+
+% 0 1 0 09ad024aa2f61ecb0161f022e6708388
+
+% 1 1 0 136f758467d37db20303a0eb9ece9e65
+
+% 0 1 0 05e4e16206c5bcb2075f620eaa30f881
+
+% 1 1 0 08462eb4fc21b7970413308eb3c2f7c0
+
+@ 0 1 0 04ad492b3f7c47f308fa348432661e15
++         label 标题特性设置文档标题，并在内容上方放置一个 <h1>
+
+% 1 1 0 1b88afec68c6c2d30685f1514c424454
+
+% 2 1 0 0f49174813e230681de9c09fa268e036
+
+% 3 1 0 1258a7df291f65bd1a7086190847ce80
+
+% 0 1 0 09f3a1287373be060860b2daa1ada8b7
+
+% 1 1 0 140191367bdf53471af0b2badc761a03
+
+% 0 1 0 1f0d072d2271a9fa1ece0c8b8181d432
+
+% 1 1 0 0c2704856a0ebf661d1a99aafe91aa59
+
+@ 0 1 0 18599b022ca8a1321167905cde79b5ba
++         label 地标包装在它之前的内容
+
+% 1 1 0 08ca925b91034fc01df8e0c2ccb67bc1
+
+% 2 1 0 1e7a6de8b66e39700526907e58396eba
+
+% 3 1 0 0f96aa56ede06fad1b89c1c0acd05e27
+
+% 0 1 0 1624fd22842c70d212e43da6ef778de9
+
+% 1 1 0 160f2ecdaa8cac5c173939801b647364
+
+% 0 1 0 0c0f2517e8e9d3f31517d6130086dec4
+
+% 1 1 0 14b39cb5cf1e39cf070f012188f5f984
+
+@ 0 1 0 1e5a799fbaf602a70d0569f82eb6791c
++         label 列在地标之后的报头位于地标之外
+
+% 1 1 0 0938c16b809dd1151de90e88244f56ba
+
+% 2 1 0 1622f24f69ef7bce18330c8e34d41cf7
+
+% 3 1 0 025320d9de35cfee0396c36b2ed71b86
+
+% 0 1 0 12a9488aea0ba2821e4f926b9b0415f2
+
+% 1 1 0 1b66159b42cf4613125189990fbb7828
+
+% 2 1 0 07d1379c4f4537b10b262443eb640317
+
+% 0 1 0 025a30db0152fc76086ecafd1b0356aa
+
+% 1 1 0 123822a5934b00bd1ebe99b03852eaac
+
+@ 0 1 0 16e52435c5bfc7ad1ed7af2ec00fd7d9
++         label 元数据进入头部，链接的样式表取代内联样式表
+
+% 1 1 0 159fc14da7b2af95075b57f7c4958c31
+
+% 2 1 0 1c07c0d894d5ad1a0c9e6a4525c75dfa
+
+% 3 1 0 10992cfa8308381411f220e13b312906
+
+% 0 1 0 1df09f558a2622ab188a85a89b77af62
+
+% 1 1 0 1ee23a0334b0ea8e0c9ce4f8f3f5f4eb
+
+% 2 1 0 12a955c416189d4907c8ebf84b50b373
+
+% 0 1 0 1fbd0df9b05064aa00deb2020076ebc7
+
+% 0 1 0 095dfa26b427c2880016af5a69587f12
+
+% 0 1 0 1e7c3dcd88781f7509e44c92909c84e7
+
+% 1 1 0 1946ee2b83c8bcf41fdcc3b549ca5bc5
+
+% 1 1 0 1a277342ea9dfdc5113023e785963c91
+
+@ 0 4 0 074aa07a73152d9f046d1562bcf18056
++       页面本身也是一个响应正文：它声明媒体类型 `text/html`（`.media`）并流式传输其渲染出的文档（`.streamable`），因此 HTTP 处理函数可以直接返回它，而 `Content-Type` 头部由该值决定。
++       `Css` 值以同样的方式作为 `text/css` 提供，这就是链接的样式表所需的全部。
+
+% 2 1 0 1a50480a9f55a1cd0e140e7a03846c81
+
+% 0 1 0 0ff09fd85a6fbb540f3b2a2530c17d7e
+
+% 1 1 0 10f090fe19e7ee750458b0e6da583f6b
+
+% 0 1 0 1492e2c6d04528120817b348f1092da4
+
+% 0 1 0 0e423d575fca47920401920097bdb49e
+
+% 0 1 0 0d932cfd06edad330f1f7777e2e1c685
+
+% 0 1 0 11ce5b7e67b06152117ba6cc7f0d7eb2
+
+% 0 1 0 14ede6b2350321d61cb36a728b09721d
+
+% 0 1 0 0a9497f4e82afbcc1b4d99d145b48583
+
+% 1 1 0 048b5ac8ea10b5010659bf92387b474a
+
+% 0 1 0 056ea3aeafa2ef7e188d031c5e90fa2a
+
+% 1 1 0 0d40c141884727bb12a79d608c93d337
+
+% 2 1 0 1e12ef94d7723f770d3c3ea22fcc1c5d
+
+% 1 1 0 0d790efc9722ad5d05278f91f43fde82
+
+% 0 1 0 19aceaf6479dd4ce1c2f3d076557dfc7
+
+@ 0 36 0 03fc1ab164bb2b530cc8bf05ecdac3fc
++   entry .media   每个页面的媒体类型：`text/html; charset=UTF-8`
++       任何 `page <: Archetype` 的 `Media` given，位于隐式作用域中，凡是 HTTP 处理函数返回页面之处，都会由它合成一个 `Servable`。
++   entry .renderable   把任何页面渲染为完整的 `<html>` 元素
++       任何 `page <: Archetype` 的 `Renderable in "html"` given，位于隐式作用域中：honeycomb 的 `page.html` 扩展方法调用的正是它，得到带有 `<head>`（标题、样式表、元数据）和 `<body dir="…">` 的 `<html>` 元素。
++       自己定义了 `html` 成员的页面会遮蔽该扩展方法，而不会编译失败。
++   entry .streamable   把任何页面渲染出的文档作为文本流式传输
++       任何 `page <: Archetype` 的 `Streamable by Text` given，需要作用域中有一个 `Monitor` 和一个 `Probate`：页面的 `document` 在流式传输时渲染，处于服务器运行时所在的监管作用域中，不做任何缓冲。
++       在 `supervise` 之下，`page.read[Text]` 就是整个文档，doctype 在最前。
++   entry #content   页面的核心内容；具体页面必须定义的唯一成员
++       流内容：一个 `P`、一个 `Div`，或由多个元素组成的片段。
++       每个特性的 `frame` 都会包装它或在它旁边添加内容。
++   entry #pageTitle   文档的 `<title>`；除非被覆盖或由 `Headline` 或 `Dashboard` 设置，否则为空
++   entry #direction   书写方向，默认为 `HDir.Ltr`
++       作为 `dir` 设置在 `<body>` 上，因为这里的 `<html>` 不接受全局属性。
++       每种布局都只使用逻辑属性（`inline-size`、`inline-start`），因此 `HDir.Rtl` 会在浏览器中交换左页和右页，而输出的 CSS 逐字节相同。
++   entry #frame   包装流水线：经过目前所有特性包装的内容；受保护
++       在基础处为 `content`。
++       布局特质把它覆盖为对 `super.frame` 的装饰，因此各特性按线性化顺序嵌套；页面作者则使用各特性的钩子。
++   entry #styles   样式表累加器：目前所有特性的规则；受保护
++       在基础处为空；每个特性把它覆盖为 `super.styles + ownRules`。
++       `css` 是它的最终值。
++   entry #head   `<head>` 元数据累加器：目前所有特性的元素；受保护
++       在基础处为空片段；元数据特质把它覆盖为由它自己的 `<meta>` 或 `<link>` 与 `super.head` 组成的片段。
++   entry #stylesheetUrl   如果页面链接而非嵌入样式表，样式表在何处提供
++       默认为 `Unset`，因此样式表嵌入在 `<style>` 元素中，页面是自包含的。
++       设置之后，头部改为用 `<link rel="stylesheet">` 引用它，应用程序在该地址提供 `css`，因此拥有许多页面的网站只需提供一个样式表。
+
+% 2 1 0 06ab11defee815e30873926c32a00540
+
+% 3 1 0 0f0de6cb9471d4a609153c5800cb741b
+
+% 4 1 0 0373893a315a66ad1d31094f58ef508e
+
+% 0 1 0 15f6ad9a58df3b31161d24aecedae8bf
+
+% 1 1 0 1b12f4266608d4dd104a0eae873dd087
+
+% 0 1 0 09ba1429276df4dc1326bb52ff121ba7
+
+% 0 1 0 12eac6d13189cf21136277529574043f
+
+% 1 1 0 0bf82f8ffbe65bd8091a1b9485accbb8
+
+@ 0 8 0 0d257c47106d29f017eddc22b18a99f4
++   entry #css   页面的完整样式表，作为结构化的 `Css`；final
++       每个特性累积的规则，用于在 `stylesheetUrl` 处提供，或用 `show` 渲染（这需要一个 CSS 格式化选择，例如 `formatting.indentedCssFormatting`）。
++       它是 final 的：页面通过某个特性的规则钩子（如 `mastheadStyles`）来重新设置该特性的样式，而不是覆盖这个成员。
++   entry #document   作为 `Document[Html]` 的页面，开头带有 doctype；final
++       通过 HTTP 提供并由 `.streamable` 流式传输的形式：先是 doctype，然后是 `html` 渲染出的 `<html>` 元素。
+
+@ 0 1 0 13f726b8d094a4ad189bf8512e4bfcc8
++ entry .Headline   设置文档标题，并在前面加上顶级标题
+
+% 1 1 0 132e7b97a6e15d1500f3781226d29880
+
+@ 0 3 0 0e2d6065f5ee850a088866d69a9b35c0
++       `Headline(title)` 把 `pageTitle` 设为该标题，并在包装结果的开头放置一个 `<h1 class="graffiti-headline">`，因此它出现在列于它之前的特性所构建的任何内容之上。
++       它自身不填充任何插槽。
+
+% 2 1 0 0f1b66ab1712ed690b111994386e9a89
+
+% 3 1 0 06cc252aafe0e996042ecfd68608fb8e
+
+% 4 1 0 1d27edcaba6654ed1bb39763f1d3e2d0
+
+% 0 1 0 14d8ce3bd70569d60871fc1d6192ff3d
+
+% 1 1 0 1799ef9656a8c90403c08facc8938460
+
+% 0 1 0 1f302f38d8b06a221afdf2583922e119
+
+% 1 1 0 1d1cdece8004a046167074cc72b1b098
+
+@ 0 3 0 1b9783e33d10255e141bb1929c3e548c
++   entry .headlineClass   标题的 CSS 类：`graffiti-headline`
++   entry #heading   渲染出的标题，即一个 `<h1>`；受保护，覆盖它可改变其结构
++   entry #headlineStyles   这个特性的规则，即标题下方的外边距；受保护，覆盖它可重新设置样式
+
+@ 0 1 0 049d9f78d8a475b5116f193dd7b8f445
++ entry .TopMenu   横贯页面顶部的水平导航栏，可作为 `menu` 复用
+
+% 1 1 0 1748c9833df342461123454f14495dcb
+
+@ 0 3 0 0ca52d50d9399cb11c8dcddcb46dfd7a
++       在前面加上由 `#menuItems` 组成的 `<nav class="graffiti-top-menu">`，布局为弹性行，各项之间相隔 `#menuGap`。
++       渲染出的导航栏也是 `#menu`，这是一个辅助成员，页面可以把它放到别处——比如侧面板中——以取代顶部的导航栏或与之并存。
+
+% 2 1 0 1ed6a3b574ad739e03f4ecfd29c9055f
+
+% 3 1 0 01c4f6e615dfe5be166b0c97b632d72b
+
+% 4 1 0 1dfd4904e6ffff7a1f066a1b67e52792
+
+% 0 1 0 065253a3358955141838451cd69bda11
+
+% 0 1 0 1ea226f4a5d863891e4468233e6bcf22
+
+% 0 1 0 00267f9fe7331007055f210d61760d78
+
+% 0 1 0 0e7306bc1dcda74d01f2017ed8a4b065
+
+% 1 1 0 12efc5bc4124b8b21104ac043fdbb1fb
+
+@ 0 5 0 02fd8767cbe35b9a05e18f2f8d05c870
++   entry .menuClass   导航栏的 CSS 类：`graffiti-top-menu`
++   entry #menuItems   导航栏的链接，均为短语元素；在被覆盖之前为空
++   entry #menuGap   各项之间的间距，默认为 `1rem`
++   entry #menu   渲染出的 `<nav>`；受保护，是页面可以复用来填充另一个插槽的辅助成员
++   entry #menuStyles   这个特性的规则，即带有 `menuGap` 的弹性行；受保护，覆盖它可重新设置样式
+
+@ 0 1 0 0608c258b68ac347193a5b95a01ca402
++ entry .VersoPanel   位于行内起始边、内容旁边的侧面板
+
+% 1 1 0 1f74b7b5f90192c61324ef3bacfc32d7
+
+@ 0 6 0 11a1d0315975226c1af637e469b4dd2b
++       跨页中的左页（verso）：在从左到右的文本中位于左侧，在从右到左的文本中位于右侧。
++       内容和由 `#verso` 插槽构成的 `<aside class="graffiti-verso">` 放在一个两列网格中，其源码顺序是先面板后内容，因此网格遵循书写方向，`direction = HDir.Rtl` 无需改动 CSS 即可将其镜像。
++       面板宽 `#versoWidth`，与内容之间相隔 `#versoGap`。
++       它独立于 `RectoPanel`：页面可以把两者都混入，顺序不限。
+
+% 2 1 0 18c5c4c13888f33500aa6ee2f6ef1085
+
+% 3 1 0 00aafc826d3ae56f18f45d2b74262384
+
+% 4 1 0 0926b634ef7c5d3a0a49540faac6535b
+
+% 0 1 0 0bf7fea121e942210f02a223e614ba41
+
+% 1 1 0 08174352adce2161139643b6970f64c2
+
+% 0 1 0 1db075e2e40ae70f0a17164a480318f9
+
+% 0 1 0 1bfc6b0d36ca7534181cc0734374ff85
+
+% 0 1 0 06b80d3594ff01e70ba577cfe53b65e5
+
+% 1 1 0 119a568506e8ede7027bd3779e2b1bc3
+
+% 1 1 0 14396c24484825d80c5980e28ad84ece
+
+@ 0 8 0 1049edbfd2b9a8460a409354b1286dd8
++   entry .layoutClass   网格容器的 CSS 类：`graffiti-verso-layout`
++   entry .versoClass   面板的 CSS 类：`graffiti-verso`
++   entry .contentClass   内容列的 CSS 类：`graffiti-verso-content`
++   entry #verso   面板的内容；在被覆盖之前为空
++   entry #versoWidth   面板的行内尺寸，默认为 `16rem`
++   entry #versoGap   面板与内容之间的间隔，默认为 `1rem`
++   entry #versoArrangement   面板与内容的排列方式，即一个网格 `<div>`；受保护，覆盖它可改变容器
++   entry #versoStyles   这个特性的规则，即网格和面板的宽度；受保护，覆盖它可重新设置样式
+
+@ 0 1 0 1d8b980b606cbe5d11962ff8f3a85f90
++ entry .RectoPanel   位于行内结束边、内容旁边的侧面板
+
+% 1 1 0 098389a23963213412db8aaf6dddda5e
+
+@ 0 5 0 1e04be0cb8ba85cd12c5504caafb1646
++       跨页中的右页（recto）：在从左到右的文本中位于右侧，在从右到左的文本中位于左侧。
++       内容和由 `#recto` 插槽构成的 `<aside class="graffiti-recto">` 放在一个两列网格中，其源码顺序是先内容后面板，只使用逻辑属性，因此 `direction = HDir.Rtl` 无需额外代价即可将其镜像。
++       面板宽 `#rectoWidth`，在内容之后相隔 `#rectoGap`。
++       `FoldableRectoPanel` 在它的基础上加入折叠功能。
+
+% 1 1 0 0e1f055180b06f1d0f535c3e8e867c44
+
+% 0 1 0 119b845ed9011ca20baedcd2296d8598
+
+@ 0 8 0 0157264a5748fffa1807baf6861a8802
++   entry .layoutClass   网格容器的 CSS 类：`graffiti-recto-layout`
++   entry .rectoClass   面板的 CSS 类：`graffiti-recto`
++   entry .contentClass   内容列的 CSS 类：`graffiti-recto-content`
++   entry #recto   面板的内容；在被覆盖之前为空
++   entry #rectoWidth   面板的行内尺寸，默认为 `16rem`
++   entry #rectoGap   内容与面板之间的间隔，默认为 `1rem`
++   entry #rectoArrangement   内容与面板的排列方式，即一个网格 `<div>`；受保护，覆盖它可改变容器
++   entry #rectoStyles   这个特性的规则，即网格和面板的宽度；受保护，覆盖它可重新设置样式
+
+@ 0 1 0 0a64e9ca0393da360bb0cba8ba5faad2
++ entry .FoldableRectoPanel   可以折叠起来的右页面板，仅靠 CSS 实现
+
+% 1 1 0 15c3db120153b3cb1033aaff5152ff71
+
+@ 0 4 0 164e8eddca0ce62219760aaaf870295a
++       它在 `RectoPanel` 之上没有增加任何结构：它在样式表上叠加更多规则，裁剪面板的溢出内容，并以 `#maxRectoWidth` 为界、带过渡效果地限制其行内尺寸，因此降低该尺寸的脚本或悬停规则就能把面板折叠收起。
++       它展示了一个特性如何纯粹通过规则来细化另一个特性。
+
+% 1 1 0 10556451f57a7a9f13190d30a441ea32
+
+@ 0 2 0 09318f0a18569e5515a843bf3edf4604
++   entry #maxRectoWidth   面板从其开始折叠的行内尺寸，默认为 `16rem`
++   entry #foldedStyles   折叠的规则，叠加在 `RectoPanel` 的规则之上；受保护，覆盖它可改变折叠方式
+
+@ 0 1 0 1009c7d93d20268e059cc7a889998d0a
++ entry .Breadcrumbs   内容之前由路径段组成的面包屑导航
+
+% 1 1 0 1b090789072e31aa0e930660f81e0a50
+
+@ 0 2 0 13711ca9ef63091b1485b1027e0c9ef9
++       `Breadcrumbs(segments*)` 在前面加上一个 `<nav class="graffiti-breadcrumbs">`，其中有一个 `<ol>`，每个路径段对应一个 `<li>`，布局为弹性行。
+
+% 2 1 0 1dc98e169df1406b1f391aa527b834c8
+
+% 3 1 0 1ed596a6aaddaf110699fc7f540d473f
+
+% 4 1 0 0be07987fe1bbc571e2492fd7ffd8bc4
+
+% 0 1 0 0fe42199b53a8f111121c21c7260355f
+
+% 1 1 0 121d71a900a4e6781c52105bfe33d03b
+
+% 0 1 0 1ebc8684299124b6165f90c9d0a6ddc5
+
+% 1 1 0 0963012fe4d381130ba7a08c7febef9f
+
+@ 0 3 0 1871b2dce030e557165973471ae35c60
++   entry .crumbsClass   面包屑导航的 CSS 类：`graffiti-breadcrumbs`
++   entry #breadcrumbs   渲染出的面包屑导航，即一个 `<nav>`；受保护，覆盖它可改变其结构
++   entry #breadcrumbStyles   这个特性的规则，即弹性行；受保护，覆盖它可重新设置样式
+
+@ 0 1 0 0b6731ce906c04a61e1b2a9772c9fac3
++ entry .Logo   短语级的标志 `logo`，供页面或其他特性放置在任何地方
+
+% 1 1 0 08d80d12014cad63051fd2968f8cacc2
+
+@ 0 2 0 1d4fcdfd3da2793a1649543c2d310fca
++       它自身不贡献任何结构：`#logo` 是由 `#logoText` 构成的 `<span class="graffiti-logo">`，以粗体渲染，页面可以把它放进报头、菜单或面板。
+
+% 2 1 0 0250708d8e3956d91ca62724bf885376
+
+% 3 1 0 1f03204e856e75fc0a333d8ea25f7a90
+
+% 4 1 0 0681f4100cd0239c09dda86b3eb3ff46
+
+% 0 1 0 16376051d296baac0ffd2ab8e9426ed4
+
+% 1 1 0 09e94338fb903e2317c22a6caacc0c33
+
+% 0 1 0 01d095a6da5a232a06b2bebad46ea845
+
+% 0 1 0 10bb4a126ab8c78d16a9a9037c56f11c
+
+% 1 1 0 10476805a894b60b1682f1cf3efc969e
+
+@ 0 4 0 0d4b91d7443d5015172f0a41cd372117
++   entry .logoClass   标志的 CSS 类：`graffiti-logo`
++   entry #logoText   标志的文字；在被覆盖之前为空
++   entry #logo   渲染出的标志，即一个 `<span>`；受保护，供页面随意放置
++   entry #logoStyles   这个特性的规则，即粗体文本；受保护，覆盖它可重新设置样式
+
+@ 0 1 0 00ca847a8e4ff2b50e2a272038e76ef7
++ entry .Masthead   页面顶部的 `<header>` 报头，通过 `masthead` 插槽填充
+
+% 1 1 0 1e6397bf69e328661a3a4e2c76b57e53
+
+@ 0 3 0 0eb61f309180b6fc106dc124d3d826bd
++       在列于前面的特性所构建的内容之前，加上由 `#masthead` 插槽构成的 `<header class="graffiti-masthead">`——通常是一个标志、一个标题和一个菜单——布局为弹性行。
++       列在 `Mainstay` 之后时，它位于 `<main>` 地标之外。
+
+% 2 1 0 177ee368232d70bc18b74d81631cfcae
+
+% 3 1 0 1615e4e539b2c925172a6a219190c6ed
+
+% 4 1 0 0c70386840fd0a5c1817d096ddb598d3
+
+% 0 1 0 077ef9bf583e993b13152236a60a2432
+
+% 1 1 0 0c2531721c66f8941f86e946532b85a2
+
+% 1 1 0 01b553f4388de3ba0269ac902b444610
+
+% 1 1 0 0bfe149e22703c620e4b3f482b644597
+
+% 0 1 0 1499313ed6c3088e0a99ad16185d4e2e
+
+% 1 1 0 02f1533616333ef2050761ef821636f3
+
+@ 0 3 0 0d2e408cef20b3300e27ae508defac1f
++   entry .mastheadClass   页头的 CSS 类：`graffiti-masthead`
++   entry #masthead   报头的内容；在被覆盖之前为空
++   entry #mastheadStyles   这个特性的规则，即带有间隔的弹性行；受保护，覆盖它可重新设置样式
+
+% 1 1 0 1cd3c554cd6b66890f532fb0f9fa0690
+
+% 2 1 0 066e0d5043bed9c400b006f9e92f55fe
+
+% 3 1 0 1bbf37f4d31fa4c71e9ed6dfe4046af1
+
+% 0 1 0 120d62b86dc4e88518bc39fb9d2c063a
+
+% 1 1 0 093699958d27cf3d078c59caf4267133
+
+% 0 1 0 0910e15fcf91eb1b0dd172226e67ea40
+
+% 0 1 0 0e6daa53ff39041e1f6fc44ae191b656
+
+% 0 1 0 0b922d203ab110bc0e931da945e3e1c9
+
+% 1 1 0 1934d6fd4457c36e13b5fc82badc89f7
+
+@ 0 1 0 06424c50b3d13feb13b94af923aec019
++ entry .Colophon   页面底部的 `<footer>` 版末题记，通过 `colophon` 插槽填充
+
+% 1 1 0 1a9f9106aa45b12b0c969a46dd7fcd05
+
+@ 0 3 0 033438e3875a5a201b83f283436af1f8
++       在列于前面的特性所构建的内容之后，追加由 `#colophon` 插槽构成的 `<footer class="graffiti-colophon">`——网站地图、版权声明、联系方式——上方带有外边距。
+
+% 2 1 0 121766cca11e14cb1ac8334577de2192
+
+% 3 1 0 146e39378de5716c0a384af6c794c80f
+
+% 4 1 0 14ca57bd1064f97f106992b535837cdf
+
+% 0 1 0 04b137395fee0f200026e94576726c8f
+
+% 1 1 0 1c8b993c4f5bfadd051cc2e5e7071d21
+
+% 0 1 0 17003e02fd93918714948d57344d4de3
+
+% 1 1 0 04c0d7eb619c0b7904beb566a41a0eb9
+
+% 1 1 0 0ab4372b566c1cbb1d50b63b15a5ca32
+
+@ 0 3 0 1d7b6d7712b780d402b03f755ab86cda
++   entry .colophonClass   页脚的 CSS 类：`graffiti-colophon`
++   entry #colophon   版末题记的内容；在被覆盖之前为空
++   entry #colophonStyles   这个特性的规则，即外边距和内边距；受保护，覆盖它可重新设置样式
+
+@ 0 1 0 0fd2d2c7306d7d5e05378589a94b613b
++ entry .Mainstay   把目前为止的内容包装在 `<main>` 地标中
+
+% 1 1 0 17c70d89289d2e7807cf26ee09ce3e5e
+
+@ 0 4 0 019acd5ab3afc51d139b9c6579832d9f
++       把列在它之前的特性所构建的包装结果包装在 `<main class="graffiti-mainstay">` 中。
++       把它列在页面外框（`Masthead`、`Colophon`）之前，地标就只包围内容而不包围外框；如果列在它们之后，它也会把报头包围进去。
++       它不添加任何规则。
+
+% 2 1 0 0693c37c13052cc8026cb2f5055dfc75
+
+% 3 1 0 09ce9fe81753d8790b48acc595498d6d
+
+% 4 1 0 0dc02098410a5b1811532055b7a953a5
+
+% 0 1 0 0d688b433b3e59461798c5acd4474597
+
+% 1 1 0 1cf6deebac24bcf50a82492257b01b66
+
+% 1 1 0 096728f9b46866b511bbee93b73c5d1d
+
+% 0 1 0 1dfbda0eee966c130cda685bc11b0204
+
+% 1 1 0 110f2da40fb25cca07b6ab38dfcd5613
+
+@ 0 1 0 1b2e2b9acc8aba831b2a5fcd025c674d
++   entry .mainstayClass   地标的 CSS 类：`graffiti-mainstay`
+
+@ 0 1 0 0f9ee36f463d9dd505aa58650135b21b
++ entry .Hero   引出页面的醒目横幅，以特质参数为标题
+
+% 1 1 0 0d8f6eab888bc87d188f75a339e6187b
+
+@ 0 3 0 0183d61aaabfb47b1f2c28f72d978300
++       `Hero(headline)` 在前面加上一个 `<section class="graffiti-hero">`，其中有一个以该标题为内容的 `<h1>`，以及其下方由 `#hero` 插槽提供的任何内容，居中排列，并带有充裕的纵向内边距。
+
+% 2 1 0 1b7406396b176dea087858ad7ac90442
+
+% 3 1 0 18ffd9ed393ac6fa096d3d0f287dba88
+
+% 4 1 0 1ac3b7c31eb983081749e568b99cc7d4
+
+% 0 1 0 1305a4f310dacef516b212ecdd8c817d
+
+% 0 1 0 16916b9e9518e99e0027314d85310d3d
+
+% 0 1 0 1525d391a5c6474f01561ce198aa77af
+
+% 1 1 0 03c14f355f38285c01718c459e7e67de
+
+@ 0 4 0 11566cb15a9f8c011db342cc730f01a2
++   entry .heroClass   横幅的 CSS 类：`graffiti-hero`
++   entry #hero   标题下方的其他横幅内容；在被覆盖之前为空
++   entry #heroBanner   渲染出的横幅，即一个 `<section>`；受保护，覆盖它可改变其结构
++   entry #heroStyles   这个特性的规则，即内边距和居中文本；受保护，覆盖它可重新设置样式
+
+@ 0 3 0 1348413def51ac2c17cd0cc1d3c09326
++ entry .Description   在头部添加一个 `<meta name="description">`
++     `Description(text)` 贡献描述元素，不向正文添加任何内容。
++     `StandardMetadata` 提供同样的元素，外加一个视口设置。
+
+@ 0 1 0 0f5b97b72e5ef06b05bd305ea2ad7c7a
++ entry .Viewport   在头部添加一个响应式的 `<meta name="viewport">`
+
+% 1 1 0 0ff57a847a7ae6e31483bb78d9e4ce53
+
+@ 0 3 0 03085e8b300a17c80229f1a85c40ae73
++       指令是 `#viewport`，除非被覆盖，否则为 `width=device-width, initial-scale=1`。
++       `StandardMetadata` 扩展了这个特质。
++   entry #viewport   视口指令，默认为 `width=device-width, initial-scale=1`
+
+@ 0 2 0 0bcded46fb448f971857754102250120
++ entry .Keywords   根据特质参数在头部添加一个 `<meta name="keywords">`
++     `Keywords(words*)` 用 `, ` 连接这些词，作为该元素的内容。
+
+@ 0 2 0 1e24cfb1d4e8bc4d0be93482b18f0334
++ entry .Author   在头部添加一个 `<meta name="author">`
++     `Author(name)` 贡献作者元素，不向正文添加任何内容。
+
+@ 0 2 0 032ef4add5542f250fee28a09b81dc56
++ entry .ThemeColor   在头部添加一个 `<meta name="theme-color">`
++     `ThemeColor(color)` 以 CSS 颜色文本接受颜色，例如 `t"#336699"`。
+
+@ 0 3 0 0093dac87e92aeb51822dd42581b2eb8
++ entry .Favicon   在头部添加一个 `<link rel="icon">`
++     `Favicon(href)` 通过 `urlText` given 以 `Text` 接受图标的地址——像 `t"/icon.png"` 这样的路径和 URL 一样都可以。
+
+@ 0 2 0 0d8c3179451a70f2172367fa0e0002fb
++ entry .Canonical   在头部添加一个 `<link rel="canonical">`
++     `Canonical(href)` 通过 `urlText` given 以 `Text` 接受规范地址。
+
+@ 0 4 0 05ca458cf35b043d03cf4f4803265c35
++ entry .StandardMetadata   几乎每个页面都需要的元数据：描述和响应式视口
++     `StandardMetadata(description)` 扩展 `Viewport`，并根据其参数添加一个 `<meta name="description">`，因此页面只需混入一个特质，而不必逐个连接每个元素。
++     根据需要在旁边加上 `Keywords`、`Author`、`Favicon`、`Canonical` 和 `ThemeColor`。
+
+% 2 1 0 1999668fbeb379c50fff64a7be3b20ed
+
+% 3 1 0 14a0d7b9b2b8c4091061fdab9469c6f4
+
+% 4 1 0 1163378ab552e4ae1901725100a12a59
+
+% 0 1 0 0bbd76582fa4dcc5097c18cd83b0e617
+
+% 0 1 0 1f916f4bde6507020b3d4f4a8058dfab
+
+% 0 1 0 1e55a38aa832b0c002eb2ff765fe0dd6
+
+% 0 1 0 13885bd3cfe2c0670a1feeec8a249e9e
+
+% 0 1 0 192501feb3587e650b1d35250deddc33
+
+% 0 1 0 17275ffa0a8c3959061892f6606d4f95
+
+% 0 1 0 155a08124e7907330792fed5c5d8608c
+
+% 1 1 0 15f8a231c322b9390b365cd845c839eb
+
+@ 0 1 0 09e060a0f60525db1dff9cfe628f48e7
++ entry .Dashboard   仪表盘视图：报头中的品牌名称，以及响应式网格中的卡片
+
+% 1 1 0 007cb42fe29321c10cf1ec818614cf88
+
+@ 0 4 0 13eb21f160eb2f300be6669f7f0e9224
++       由 `Mainstay` 和 `Masthead` 组合而成的范式。
++       它以 `#brand` 为文档命名，在报头中显示该品牌名称，并把 `#cards` 作为内容，布局为由 `<article class="graffiti-card">` 图块组成的网格，每个图块由 `#card` 渲染。
++       具体的仪表盘只需提供品牌名称和卡片。
+
+% 2 1 0 1c9f9022cd600d6e10038730c5a5ec03
+
+% 3 1 0 06cb171598cded6a1ba4ed3b0aefa0af
+
+% 4 1 0 0393d4273acaea3d1d97173760a06650
+
+% 0 1 0 02d08c57617e79ef10c2117f1d0209c2
+
+% 0 1 0 12c6c914e61998a015cc2e31059b2e3c
+
+% 0 1 0 07989679cce8f85614048a56c6efb48c
+
+% 0 1 0 15f1cd6c2b891c6b0e4e4840d2af2aba
+
+% 0 1 0 0a3a3e0ab88c93f309e57467678ad433
+
+% 1 1 0 116adf499914b9510607f125e3bc4fe0
+
+% 1 1 0 10685b3ce7e35dff0fb99c2fd905293d
+
+% 2 1 0 1f9180c96b49b6ce069ff7d85a374d07
+
+@ 0 9 0 1e07f1f363fe33d508d5dab9938a4922
++   entry .gridClass   网格的 CSS 类：`graffiti-dashboard`
++   entry .cardClass   图块的 CSS 类：`graffiti-card`
++   entry .Card   仪表盘的一个图块：一个标题及其自身的流内容
++     entry #heading   图块的标题，渲染为一个 `<h2>`
++     entry #body   图块的内容
++   entry #brand   在报头中显示并用作标题的名称；抽象
++   entry #cards   各图块，作为 `Dashboard.Card`；抽象
++   entry #card   把一个图块渲染为 `<article>`；受保护，覆盖它可改变其结构
++   entry #dashboardStyles   这个视图的规则，即网格和图块的边框；受保护，覆盖它可重新设置样式
+
+@ 0 7 0 1620520a481b334304201cce9723ef0e
++ entry .urlText   允许在 honeycomb 需要 URL 属性（如 `href`）的地方给出 `Text`
++     `Text is Attributive to Whatwg.Url` given，位于包的顶层，并导出到 `soundness` 总括包。
++     honeycomb 把 `href` 定类型为 URL 属性，接受 `HttpUrl` 或任何可以抽象为它的东西，但网站图标或规范地址天然就是任意路径，例如 `/icon.png`，因此 `Favicon` 和 `Canonical` 接受 `Text`，而这个 given 把它原样传递过去。
++     通过 `import soundness.*` 它就处于作用域中；在总括包之外，请按名称导入它。

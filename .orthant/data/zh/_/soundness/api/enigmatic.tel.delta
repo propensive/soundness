@@ -1,0 +1,3678 @@
+orthant 2 language
+
+% 0 1 0 0f04ec4b9ac2d4270a232409219e1f6b
+
+% 0 1 0 066e0607747f6f0c0076d2635ee00485
+
+% 0 1 0 0b5938ce7315323607e1922cbc4d93e2
+
+@ 0 1 0 1f5fa8b49fad56da124609d9ce793608
++ info   加密、签名、密钥协商和消息认证，每个选择都是一个类型
+
+% 0 1 0 0ca6d61ddd9511ea1cdae38f1414f6fe
+
+@ 0 8 0 068dda9b8de940f816875afc858a597b
++     _Enigmatic_ 是这样一种密码学库：它的*选择*（算法、密钥长度、分组密码模式、填充、签名摘要）都是类型，在书写代码之处受到检查。
++     以 CBC 模式和 PKCS#7 填充进行 AES-256 加密，会把全部四个决定写成 `Aes[256] over Cbc against Pkcs7`；规范所禁止的搭配，例如计数器模式加上填充，无法编译（`Permits`）；而弱的选择，即 DES、RC2、Blowfish、1024 位 RSA、DSA、ECB 以及*每一种*未认证的分组密码模式，都需要先按名称导入一个 `cryptoPermits` 许可才能使用，因此代码库对遗留密码学的接受体现为一条可搜索的导入。
+
+@ 0 10 0 0fc04b2aed9409db1d7cde62af443b31
++     密钥以其密码算法为类型。
++     `PrivateKey[cipher]` 或 `SymmetricKey[cipher]` 从不暴露自己的字节：它在 `uncloak` 块内使用，该块把密钥作为 `Encryptor` 或 `Decryptor` 能力借给块，捕获检查把这种能力限制在块内，因此秘密材料在何处使用，从代码的结构上就能看出。
++     它在两次使用之间*存储*在何处，由作用域中的 `Cloak` 决定，从 `cloaks` 包按名称导入：在堆上、在堆外内存中，或者在一个临时密钥下静态加密存储。
++     `Password` 是同一类秘密，只是不附带密码算法。
++     算法本身来自同样按名称导入的 `Crypto` *提供者*：JDK 的（`providers.javaBaseProvider`）、OpenSSL 的（`providers.opensslProvider`）或纯 Scala 的 `SoundnessCrypto`（`providers.soundnessProvider`）。
+
+% 2 1 0 1e601bd3aeb5367004bd82ba53991c58
+
+% 3 1 0 058625caea1d594103d8d939c74d3b63
+
+% 0 1 0 0ad93198262cba4102f10ea1980b5899
+
+% 0 1 0 0b1e22680a708fa418dc46e682b2353f
+
+% 0 1 0 1ce543c070756ca7033d2356903af397
+
+% 0 1 0 0d5bf406e74cd04a13d75d4030990ef7
+
+% 1 1 0 1333e51de5d3b111114515521f7c8a8b
+
+% 2 1 0 1e9c05fbd4bbcbe51d980a2e8d19dd47
+
+% 3 1 0 03fdb5dcc0ea69cf0f5656cc1640f748
+
+% 0 1 0 0748dd2ae9d32bae02b0a4c21a25c4d4
+
+% 0 1 0 173b82e93420df05082371488719469d
+
+% 0 1 0 0aab230779b6a08b0c95afc939cee594
+
+% 0 1 0 1709475f1ef904d10424efa8ed0d4c78
+
+% 0 1 0 07bdd9ba6381f16809bdcfa682b176e3
+
+% 0 1 0 0eb593622147444300b7ff3239943f59
+
+% 0 1 0 09fc66e33c57001a0848d3739011d3df
+
+% 0 1 0 05effd46c52019bf0110e7456fd52688
+
+% 1 1 0 198ebfa6945ca2f1096d3f9c1d491c1c
+
+@ 0 1 0 11af449c315796f41f944f51f6639db7
++     这个库的接口，按种类划分：
+
+@ 0 26 0 1021d1fc97a55c7a00aab2741af30ddf
++     - **对称加密**：`SymmetricKey`，分组密码 `Aes`、`Blowfish`、`Des`、`TripleDes` 和 `Rc2`，作用于模式 `BlockCipher.Cbc`、`BlockCipher.Ecb`、`BlockCipher.Ctr`、`BlockCipher.Cfb`、`BlockCipher.Ofb` 和填充 `BlockCipher.Pkcs7`、`BlockCipher.Iso10126`、`BlockCipher.NoPadding`，带有 `encrypt`/`decrypt` 扩展（整个值、`Chain` 和 `Stream`），每个加密处都有显式的 `InitializationVector`。
++     - **认证加密和密钥流**：`AesGcm` 和 `ChaCha20Poly1305`（在 nonce 和关联数据下 `seal` 与 `unseal`），作为裸密钥流的 `ChaCha20`（`xor`），以及作为一次性认证器的 `Poly1305`。
++     - **公钥密码学**：作用于 `Rsa`（加密和签名）、`Dsa`、`Ecdsa`、`Ed25519` 和后量子 `MlDsa`（用 `Signature` 签名和验证）的 `PrivateKey`/`PublicKey`，以及 `X25519` 和 `Ecdh`（`agree` 出共享秘密）。
++     - **消息认证**：作用于任何 gastronomy 哈希的 `hmac[Sha2[256]](key)`，得到 `Hmac`。
++     - **密钥文档**：`PrivateKey` 可从 PKCS#8、PKCS#1、SEC1 或 OpenSSH 自有容器格式的 PEM 或 DER 读取，`PublicKey` 可从 `PUBLIC KEY`/`RSA PUBLIC KEY` 块或 OpenSSH 的 `authorized_keys` 行（`OpenSsh`）读取，每一个都对照所指定的密码算法检查；`KeyAlgorithm` 是该检查背后的类型类，`Pkcs8` 和 `Spki` 是两种文档形状。把私钥写出（`pem(Divulgence)`、`data(Divulgence)`）需要 `Divulgence` 令牌。
++     - **ASN.1 和 DER**（`enigmatic.asn1`）：`Asn1`，即 PKIX 使用的通用类型，带有规范的 `Der` 编解码器和惰性解析多个块的 `Pem` 铠装。
++     - **X.509**（`enigmatic.x509`）：基于 `Distinguished` 名称和 `SignatureAlgorithm` 的 `Certificate.selfSigned` 和 `Certificate.issued`，包括 ML-DSA 签名的证书。
++     - **COSE**（`enigmatic.cose`）：基于 `CanonicalCbor` 的 `Cose` 签名消息和 MAC 消息，`HmacCipher` 把 HMAC 适配到密钥机制上，`authenticate[Cose](key)` 进行验证。
++     - **OpenSSL**（`enigmatic.openssl`）：`OpensslCrypto`，一个基于 `libcrypto` 的提供者。
++     - **密钥库**（仅限 JVM）：用 `path.open[Keystore](password)` 打开的 PKCS#12 存储，在块内由 `keystore` 提供。
+
+@ 0 8 0 11d48005f39943b400be8e3046e2a05e
++     源码集有 `enigmatic.asn1`（最底层：`Asn1`、`Der`、`Pem`）、`enigmatic.core`（其上所有与平台无关的部分，包括纯 Scala 提供者 `SoundnessCrypto`），以及 JVM、Scala.js 和 Scala Native 各一个平台切片。
++     JVM 切片有基于 `javax.crypto` 的真正 `JavaBaseCrypto`、全部四种遮蔽器和 `Keystore`；Scala.js 和 Scala Native 切片有一个 `JavaBaseCrypto` 孪生实现，它把 AES、HMAC、AES-GCM、ChaCha20、X25519 和 Ed25519 转发给 `SoundnessCrypto`，对其他任何算法（RSA、DSA、ECDSA、ML-DSA、遗留分组密码）则 panic，并且只有 `heapCloak`。
++     `enigmatic.openssl`、`enigmatic.x509` 和 `enigmatic.cose` 位于 `core` 之上。
+
+@ 0 8 0 18914397c797e0770aa2656fa6dc0e4a
++     一切都导出到 `soundness` 总括包，其中选择包 `cloaks`、`providers`、`blockCipherModes`、`blockCipherPaddings` 和 `signatureDigests` 与总括包自己的同名包合并。
++     `import soundness.*` 不导入任何 given，因此遮蔽器、提供者以及（对于类型中没有指明它们的分组密码）模式和填充，都要各自按名称导入。
++     有两个 given 刻意不在这些包中：`BlockCipher.Ecb.mode` 和 `BlockCipher.NoPadding.padding` 只能通过在类型中指明它们（`over BlockCipher.Ecb`、`against NoPadding`）来到达，因为它们各自接受一个上下文参数，分别是许可和 `Tactic[Crypto.Error]`，而重新导出的 given 无法携带这些参数。
+
+% 0 1 0 00aca2f030b2b9cb1204dfdc4f94e288
+
+% 0 1 0 1cb9545f2666ecbc137632c8f184f16c
+
+% 0 1 0 0e7bfe5ee0df05bf18b695def15ef0e2
+
+% 0 1 0 0ef44336b742140e15c86b971cae6e2c
+
+% 0 1 0 0b414540a248e336147ba3469954ba40
+
+% 0 1 0 1625a73067616cda04f5dad7a7b6c72f
+
+% 0 1 0 01c774325a078be706c5a3ad27c4c86e
+
+% 0 1 0 10cd842112a374951ff7297b8df274cf
+
+% 0 1 0 08f282bd83486a580c1cff8ad167f11f
+
+@ 0 1 0 010a8c0b4188e859039e4d9a5e20a8fd
++ entry .Crypto   可插拔的密码学提供者：类型化 API 所委托的算法
+
+% 1 1 0 098872834cbd33fd002c63ba9bf7ae6c
+
+@ 0 7 0 127805b04be6d21e1178b5b6f41b2aad
++       `Crypto` 是提供者，即 JDK 的 JCE、OpenSSL 或纯 Scala 的 `SoundnessCrypto`，它提供每个类型化操作所委托的原始实现。
++       它是一个上下文值，通过按名称导入一个提供者来选择：`providers.javaBaseProvider`（gastronomy 的 JDK 标记，`.javaBaseCrypto` 从中派生出 `JavaBaseCrypto`）、`providers.soundnessProvider`（`.soundnessCrypto` 从中派生出 `SoundnessCrypto`）或 `providers.opensslProvider`（直接是 `OpensslCrypto`）。
++       这一条导入同时选定哈希和密码学。
+
+@ 0 6 0 0762f2e3560f2de51884d47bba57521c
++       每个提供者都实现必备的基线，即 `#random`、`#aes`、`#rsa`、`#hmac` 和 `#rsaSignature`，并把其他任何算法（DES、Blowfish、RC2、DSA、ECDSA、Ed25519、ML-DSA、X25519、ECDH、AES-GCM、ChaCha20）作为*附加*成员提供，密码算法 given 通过结构化细化来到达它们，例如 `Crypto { def ecdsa(digest: Text): Crypto.SignatureScheme }`。
++       因此，提供者不提供的算法会在使用处成为编译错误，而不是运行时的失败。
+
+@ 0 4 0 0e0bb5ab1f370b9b0eacee8d47ab6f15
++       所有输入和输出都是 `Data` 和 `Text` 描述符：契约中不出现任何平台密码学类型。
++       密钥材料遵循 JCE 编码：对称密钥是原始字节，私钥是 PKCS#8，公钥是 X.509 `SubjectPublicKeyInfo`；当模式使用 IV 时，对称密文是 IV 后接原始密文。
+
+@ 0 1 0 18afdcee4cc3d3951ab2e0242c8b37a0
++       自定义提供者就是一个普通的 `given Crypto`，测试正是用这种方式固定随机性的：
+
+% 2 1 0 1c2c3b8254fbf1f1192db36fca448977
+
+% 3 1 0 042e44ac5b2a8be6127796b6f9011ac2
+
+% 4 1 0 05a438c2a9d2739d072d30700511405f
+
+% 3 1 0 02ffa425ec0d6a6b0ca4d9f17b42adc4
+
+% 2 1 0 1a225c9ee0a3173914e0f763da786f71
+
+% 0 1 0 05524a0e9c839b860464088714cdb3e3
+
+% 0 1 0 1b0b4081b7b6e3630fa0e76bf52529eb
+
+% 0 1 0 1ee943b1c93258981e17ee5b68982d57
+
+% 0 1 0 160650dc59d4fa41075177905cbb6844
+
+% 0 1 0 1f30f32f6664e053132d85245e84be5e
+
+% 0 1 0 0c27cb8bd41ffb0f1ea1c4b4a5690267
+
+% 2 1 0 02e205180deeb5311a79cf08c65036f6
+
+% 0 1 0 0948dfaadca69b420d3efc1b50119488
+
+% 1 1 0 1d333ece2d69386109550a36a5d1a8ba
+
+% 1 1 0 030084c17ede343403e653f88fb1e2d5
+
+% 1 1 0 0777c7062a76250010a1811d5082ccdf
+
+% 1 1 0 1cfb612df8a7c498168481d732914c9a
+
+@ 0 9 0 0fa37f7b7c5a379c054ede2eba4ef3c7
++   entry .javaBaseCrypto   导入 `providers.javaBaseProvider` 时可用的 JDK 提供者
++       一个从 gastronomy 的 `Provider.JavaBase` 标记派生出的 `JavaBaseCrypto.type` given，因此单条 `import providers.javaBaseProvider` 就同时启用哈希和密码学。
++       在 Scala.js 和 Scala Native 上，它提供的 `JavaBaseCrypto` 是把可移植算法转发给 `SoundnessCrypto` 的孪生实现。
++   entry .soundnessCrypto   导入 `providers.soundnessProvider` 时可用的纯 Scala 提供者
++       一个从 gastronomy 的 `SoundnessHashing` 标记派生出的 `SoundnessCrypto.type` given，因此这一条导入同时给出哈希和密码算法的 Scala 实现。
++   entry .SymmetricCipher   提供者眼中的分组密码：作用于原始密钥的 JCE 风格变换
+
+% 1 1 0 1d5a239eb55f13c91346425baa90fb6c
+
+@ 0 11 0 072f0e19ff06952812c10d56bcce032f
++         `#aes` 和遗留分组密码所履行的契约。
++         `transformation` 是 `BlockCipher` 构建的完整 JCE 规格，例如 `AES/CBC/PKCS5Padding`；提供了 IV 时，`encrypt` 和 `decrypt` 把 IV 作为密文的首个块来组织；`stream` 和 `decryptStream` 打开一个 `Cipher.Session` 用于分块处理。
++     entry #encrypt   用 `key` 加密 `data`，给定 `iv` 时将其作为前缀加在密文前
++     entry #decrypt   解密 `data`，给定大小时把开头的 `ivSize` 个字节读作 IV
++     entry #blockSize   变换的分组大小（字节）：AES 为 16，DES、Triple-DES、Blowfish 和 RC2 为 8
++     entry #generateKey   新的 `bits` 位随机密钥材料
++     entry #stream   在 `key` 下加密、已应用 `iv` 的 `Cipher.Session`
++     entry #decryptStream   在 `key` 下解密、IV 已与密文分离的 `Cipher.Session`
++   entry .PublicKeyCipher   非对称密码算法：用公钥加密，用私钥解密
+
+% 1 1 0 0475db071dbb85440e1fa4a032db7e4b
+
+@ 0 8 0 1bbcdf02266ff062113925a18d78aa92
++         `#rsa` 所履行的契约。
++         密钥为 PKCS#8（私钥）和 `SubjectPublicKeyInfo`（公钥）；`generateKeyPair` 返回私钥，`privateToPublic` 从中恢复公钥。
++     entry #encrypt   在 `SubjectPublicKeyInfo` 公钥下加密 `input`
++     entry #decrypt   用 PKCS#8 私钥解密 `input`
++     entry #generateKeyPair   新的 `bits` 位 PKCS#8 私钥
++     entry #privateToPublic   PKCS#8 私钥的 `SubjectPublicKeyInfo`
++   entry .SignatureScheme   签名方案：用私钥签名，用公钥验证
+
+% 1 1 0 02975208e3d18a7319164fdbc02dd155
+
+@ 0 11 0 1ab6bb7a374fb3391faa350935e5b6aa
++         `#rsaSignature` 以及结构化成员 `dsa`、`ecdsa`、`ed25519` 和 `mlDsa` 所履行的契约。
++         签名无法解码时，`verify` 回答 `false` 而不是抛出异常（JDK 的 ML-DSA 在最后一个字节损坏时会抛出异常，提供者必须捕获它）。
++     entry #sign   用 PKCS#8 私钥对 `data` 生成的签名
++     entry #verify   在 `SubjectPublicKeyInfo` 密钥下，`signature` 是否为对 `data` 的有效签名
++     entry #generateKeyPair   新的 PKCS#8 私钥，在方案无法派生公钥时携带其公钥部分
++     entry #privateToPublic   PKCS#8 私钥的 `SubjectPublicKeyInfo`
++   entry .Mac   带密钥的消息认证码
++     entry #mac   在 `key` 下对 `data` 的认证码
++   entry .KeyAgreement   Diffie–Hellman 式的协商：两个密钥对，一个共享秘密
+
+% 1 1 0 03a319fc3b4fdaef1348811e843b8506
+
+@ 0 8 0 1fb76f3508b10d1613a2d4ad4e7bc8d0
++         结构化成员 `x25519` 和 `ecdh` 所履行的契约。
++         `generateKeyPair` 返回携带其公钥部分的 PKCS#8 私钥，`privateToPublic` 把该部分恢复为 `SubjectPublicKeyInfo`，而 `agree` 是原始共享秘密，协议会把它送入密钥派生函数，而不是直接使用。
++     entry #generateKeyPair   携带其公钥部分的新 PKCS#8 私钥
++     entry #privateToPublic   PKCS#8 私钥的 `SubjectPublicKeyInfo`
++     entry #agree   私钥与对方公钥的原始共享秘密
++   entry .StreamCipher   作为密钥流、通过 `xor` 应用的流密码
+
+% 1 1 0 09012c59dbd4010e01dd2d3f586310f5
+
+@ 0 6 0 02820e0807fb4a450fa182b24d7470ea
++         结构化成员 `chaCha20` 所履行的契约：`xor` 把对应于密钥、nonce 和起始块计数器的密钥流应用到数据上，这既是加密也是解密。
++     entry #generateKey   新的 `bits` 位随机密钥材料
++     entry #xor   `data` 与由 `key`、`nonce` 和块 `counter` 决定的密钥流相结合
++   entry .Aead   带关联数据的认证加密：在 nonce 下封装，解封或拒绝
+
+% 1 1 0 17caa95719fac6f50259d35a1a63abe0
+
+@ 0 9 0 17f01fe24a4366221126777c46b76280
++         结构化成员 `aesGcm` 和 `chaCha20Poly1305` 所履行的契约。
++         `seal` 返回附加了认证码的密文；认证码验证失败时，`unseal` 为 `Unset`。
++     entry #generateKey   新的 `bits` 位随机密钥材料
++     entry #seal   在 `key` 和 `nonce` 下 `plaintext` 的密文，同时认证 `associated`，并附加认证码
++     entry #unseal   `ciphertext` 的明文，认证码验证失败时为 `Unset`
++   entry .Random   密码学强度的随机字节来源
++     entry #bytes   `size` 个随机字节
++   entry .Error   解密或解封失败时抛出：密钥错误、数据损坏、认证码不正确
+
+% 1 1 0 19087be469d094fe1de5a96a48e4def5
+
+@ 0 6 0 19808348a394b0f41ef2dc9d0d9193e9
++         错误 `↯/s.105.2`：_could not decrypt the data because `reason`_。
++         加密是全函数，因为类型保证了变换有效，所以只有处理一侧会失败：`Data#decrypt`、流式 `decrypt`（在拉取最后一个窗口时）、`unseal`，以及在未对齐的输入上用 `BlockCipher.NoPadding` 加密。
++         提供者自身的失败（`javax.crypto.BadPaddingException` 等）被映射为一个 `#reason`，其消息保留为 `#detail`。
+
+% 2 1 0 192df6e62a04763719dda20c99310ce3
+
+% 3 1 0 177554eed45e795f0258bdeef9045794
+
+% 0 1 0 18464b19ab8acee113076f882fe63822
+
+% 0 1 0 0d4c8c06c12e7a171db754d8214054ed
+
+% 1 1 0 1dfca9b50faafdb5041dc722e90146d9
+
+% 0 1 0 19a760161d9bb3b60a6dbac3a892d268
+
+% 0 1 0 1f247e5be16091cf0cbddd68466c42b8
+
+% 0 1 0 0acbec2a4bca638f0fd616b8dd66b748
+
+% 0 1 0 01672fbd528afff91c2ce8ec8f443948
+
+% 1 1 0 013da9096444ca1806089ad1a6efef70
+
+@ 1 2 0 1865534471504a290de3b5ea431227b7
++     entry .communicable   把每个原因呈现为一条消息
++     entry .Reason   操作失败的原因
+
+% 1 1 0 0b29cb2b67d0c22e0951ce28ca4b47de
+
+@ 2 4 0 03657a026322aab81bfc1cd1f22bdf49
++         column  分支
++         column  代码
++         column  消息
++         column  说明
+
+% 0 1 0 1ca0702d00d118c71ec77e7aa0ef4d41
+
+@ 0 2 0 1af80457e0ef9f1c1fb10f50f9ca3abc
++         row  `IllegalBlockSize`  2  _the input length was not valid for the cipher_  在按块对齐的模式中，`BlockCipher.NoPadding` 对长度不是分组大小整数倍的输入抛出的就是它
++         row  `InvalidKey`  3  _the key was not valid for the cipher_  例如用 `SymmetricKey(bytes)` 采用了长度错误的密钥材料
+
+% 0 1 0 1ef0a336bf7f00141d4ce05f724218c0
+
+@ 0 2 0 070c855e7e9ebe51072369bf3ef9fea7
++         row  `IoFailure`  5  _data could not be read or written_  任何其他 `java.security.GeneralSecurityException` 的映射
++         row  `BadTag`  6  _the authentication tag did not verify_  来自 `unseal`：伪造、密钥错误，或者 nonce 或关联数据与封装时的不同
+
+% 1 1 0 030a59b218264fe90acbd617aca718bb
+
+@ 0 9 0 02a71c72b26ed22d198ae00436ef55b3
++     entry #reason   是哪一种失败
++     entry #detail   提供者自己的消息（如果有）
++   entry #random   提供者的随机来源，`InitializationVector.random` 从中取值
++   entry #aes   各种分组密码模式和填充下的 AES；必备
++   entry #rsa   原始 RSA 加密和解密；必备
++   entry #hmac   基于 JCE 命名算法（例如 `HmacSHA256`）的 HMAC；必备
++   entry #rsaSignature   基于所指定摘要（例如 `SHA256`）的 RSASSA-PKCS1-v1_5；必备
++       与 `dsa` 和 `ecdsa` 不同，签名属于基线的一部分，因为 `Rsa` 用一个密钥对既加密又签名，而它的 given 只要求一个 `Crypto`。
+
+@ 0 1 0 17725a45be0cb42f0261b456b62d98c5
++ entry .JavaBaseCrypto   基于 JDK 的 `javax.crypto` 和 `java.security` 的 `Crypto` 提供者
+
+% 1 1 0 140ef611761a3558141b4c4c0d63ab4b
+
+@ 0 7 0 02894fd5ac64ae8b14d0aff05997415c
++       默认提供者，由 `import providers.javaBaseProvider` 选定，也是库中每个 `javax.crypto` 和 `java.security` 调用的唯一所在。
++       在 JVM 上它提供完整的集合：基线、遗留分组密码、DSA、ECDSA、Ed25519、ML-DSA（JDK 24 或更高版本：更早的 JDK 会在首次使用时 panic，_the JDK does not provide ML-DSA; JDK 24 or later is required_）、X25519、ECDH、AES-GCM、ChaCha20 和 ChaCha20-Poly1305。
++       对于 JDK 无法解码的签名，它的签名验证器回答 `false` 而不是抛出异常。
+
+@ 0 6 0 1fe2d0d061dbcbcf07b5d6c44210166b
++       EC、Ed25519、X25519 或 ML-DSA 私钥没有可回到其公钥的 JCA 途径，因此提供者在生成时把公钥嵌入 PKCS#8 文档中（对 EC 是在 SEC1 `ECPrivateKey` 内，对其他算法是在 RFC 5958 的顶层 `[1]` 字段中），并在任何 JCA 调用之前再把它剥离；以 OpenSSL 的隐式形式携带该字段的文档也能读取。
++       从文件读取的、不带该字段的密钥会被 `PrivateKey` 以 `PublicKeyAbsent` 拒绝。
+
+@ 0 5 0 0efa24f32da4c9d71b35666b9a6f29f4
++       在没有 `javax.crypto` 的 Scala.js 和 Scala Native 上，`JavaBaseCrypto` 是一个孪生实现，它把 `random`、`aes`、`hmac`、`aesGcm`、`chaCha20`、`chaCha20Poly1305`、`x25519` 和 `ed25519` 转发给 `SoundnessCrypto`，因此对于这些算法，`import providers.javaBaseProvider` 在那里无需改动即可工作；而对 `rsa`、`rsaSignature`、`ecdsa` 和遗留分组密码，它在首次使用时 panic。
+
+% 1 1 0 0e4b3b7dad573671146a0480082f35ec
+
+% 1 1 0 08c69280bf8c02ef1f3f025263eb7dc8
+
+% 0 1 0 006d3de451b96cc50e311a0f5e9de345
+
+@ 0 7 0 05e36e44fe13b77113be7cb2859942d0
++   entry .aes   通过 `Cipher.getInstance` 的 AES，支持 JDK 支持的每种模式和填充
++   entry .des   DES；需要 `Permit[Concession.Des]`
++   entry .tripleDes   Triple-DES（`DESede`）；需要 `Permit[Concession.TripleDes]`
++   entry .blowfish   Blowfish；需要 `Permit[Concession.Blowfish]`
++   entry .rc2   RC2；需要 `Permit[Concession.Rc2]`
++   entry .hmac   基于所指定算法的 `javax.crypto.Mac`
++   entry .rsa   通过 `Cipher.getInstance("RSA")` 的原始 RSA
+
+% 0 1 0 09676ed84984abc61a3be13469b696a2
+
+@ 0 9 0 03b30a7f1d856a351fea1567c86967db
++   entry .ecdsa   `<digest>withECDSA`，按密钥长度作用于 P-256、P-384 或 P-521
++   entry .ed25519   Ed25519，公钥嵌入在生成的私钥中
++   entry .x25519   通过 `KeyAgreement.getInstance("X25519")` 的 X25519 密钥协商
++   entry .ecdh   基于 NIST 素数曲线的 ECDH；其密钥与 `.ecdsa` 的是同样的文档
++   entry .aesGcm   带 128 位认证码的 AES/GCM/NoPadding
++   entry .chaCha20   裸 ChaCha20 密钥流，使用 IETF nonce 和计数器
++   entry .chaCha20Poly1305   ChaCha20-Poly1305 AEAD
++   entry .mlDsa   按级别的 ML-DSA-44、-65 或 -87；需要 JDK 24 或更高版本
++   entry .dsa   DSA 签名，公钥由私钥计算得出
+
+@ 0 1 0 1a811fd0c5e3c4bd178a46ccda834ed2
++ entry .SoundnessCrypto   纯 Scala 的 `Crypto` 提供者：Scala 能运行之处就有密码学
+
+% 1 1 0 1d0a60d412a941f9188599254420fcd3
+
+@ 0 7 0 087459b52fff903213acc308431c725f
++       由 `import providers.soundnessProvider`（连同 gastronomy 的纯哈希）选定的提供者，基于 gastronomy 的哈希函数用 Scala 实现，因此密码学不仅能在 JVM 上运行，也能在没有 OpenSSL 的 Scala.js、WASI 和 Scala Native 上运行。
++       它提供五种分组模式加三种填充的 AES（包括流式处理）、AES-GCM、基于每种 gastronomy 哈希的 HMAC、ChaCha20 和 ChaCha20-Poly1305、X25519 和 Ed25519：SSH、TLS 1.3 以及现代互联网的其余部分赖以构建的基本原语。
++       它的密文和签名与 JDK 的双向互通。
+
+@ 0 3 0 17ad972d3293cefb1d1ab6dafa9a4fd6
++       它不提供 RSA、DSA、ECDSA、ML-DSA 或遗留分组密码：`.rsa` 和 `.rsaSignature` 会 panic，其他的则是它根本没有的结构化成员，因此向它请求 `Ecdsa[256]` 是编译错误。
+
+% 2 1 0 119cc9bc0204951003fcb02235679c84
+
+% 3 1 0 02fa312bc9427c0b1351b62090ed5cb0
+
+% 4 1 0 003c1c6acccb2ddf0107fc3132634b8a
+
+% 0 1 0 155254bd4676bb2116d9b9887e7294cc
+
+% 1 1 0 09287630121c835c14e190e50b78296c
+
+% 3 1 0 16fb9d7d179b336c159ebdc504d12dc4
+
+% 0 1 0 012a1ef9a851f71a0e2ddba192a3e551
+
+% 0 1 0 165ef4503604bcb708bd8e7f09d110db
+
+% 1 1 0 1fafd15d694063b606507970e86ff933
+
+@ 0 7 0 1a277be9fcaf73420078aba51b343efd
++       注意：这是可移植、可审阅的代码，而不是经过加固的库。
++       它没有经过独立审计；它的 AES 是面向字节的软件实现，因此不能免疫缓存计时攻击；它的 Curve25519 算术使用 `BigInt`，其运算不是常数时间的（一次签名需要几毫秒）。
++       在平台提供原生提供者（JDK 的或 OpenSSL）的地方，对于对手能够计时的密钥，应优先使用原生提供者；这个提供者的存在，是为了让浏览器和 WASI 不至于一无所有。
++       它的随机性在 JVM 上来自 `SecureRandom`，在 Scala.js 上来自 `crypto.getRandomValues`，在 Scala Native 上来自 `/dev/urandom`。
+
+% 1 1 0 1f49350d2d3c54b409d7d57e13a66ff3
+
+% 1 1 0 1668428cb8d257161d3d067907c84c66
+
+@ 0 15 0 0fff103537996bbd0a3d171baf5d7784
++   entry .random   平台的熵源
++   entry .aes   基于 Scala Rijndael 的 AES，支持 CBC、ECB、CTR、CFB 和 OFB，以及 PKCS#7、ISO 10126 或无填充
++       CFB 和 OFB 是整块（128 位反馈）变体，CTR 递增整个 128 位计数器块，与 JDK 一致，因此一方生成的密文可以在另一方下解密。
++   entry .hmac   基于 `HmacMD5`、`HmacSHA1`、`HmacSHA224`、`HmacSHA256`、`HmacSHA384`、`HmacSHA512` 或 `HMAC-BLAKE3` 的 RFC 2104
++   entry .rsa   不提供：panic，_RSA is not provided by SoundnessCrypto; select the JDK or OpenSSL provider_
++   entry .rsaSignature   不提供：像 `.rsa` 一样 panic
++   entry .aesGcm   使用无表 GHASH 的 AES-GCM
++   entry .chaCha20   RFC 8439 的 ChaCha20 密钥流
++   entry .chaCha20Poly1305   RFC 8439 的 ChaCha20-Poly1305 AEAD
++   entry .x25519   基于 `BigInt` 域算术的 X25519；不是常数时间的
++   entry .ed25519   基于 `BigInt` 域算术的 Ed25519；不是常数时间的
++       与 JDK 不同，这个提供者从秘密派生公钥，因此它接受不携带公钥部分的 PKCS#8 Ed25519 密钥。
+
+@ 0 1 0 005ba955901e7e8019e0624bf1aedb50
++ entry .Cipher   每种密码算法类型都具有的东西：密钥长度、密钥生成，以及密钥的公钥部分
+
+% 1 1 0 05c7a6570884277e0e948e7b2da8cb46
+
+@ 0 7 0 1fb05cf71d2df4740ed2f7c627d5ca44
++       密码算法层次结构的根。
++       在作用域中有 `Crypto` 提供者时，密码算法的实例作为 given 从其伴生对象（`Aes.value`、`Rsa.value`……）召唤，并携带提供者的实现；`SymmetricKey.generate[cipher]()` 和 `PrivateKey.generate[cipher]()` 调用它的 `#genKey`。
++       密码算法扮演的角色是它的其他父类型：`Encryption`（加密和解密）、`Signing`（签名和验证）、`Agreeing`（协商秘密）、`Authenticated`（封装和解封）、`Keystream`（`xor`）以及 `Symmetric`（其密钥同时是两部分）。
+
+% 1 1 0 184be51046275773013f43e2aada852c
+
+% 0 1 0 161cbb9359313bdc04d35fe876c2aa1b
+
+% 0 1 0 049738cc4b8df8660011f987e21af180
+
+@ 0 1 0 18adbabfd4d8604501c8f7dc67f53525
++   entry .Session   由提供者拥有的有状态流式会话：送入数据块，然后结束
+
+% 1 1 0 062e03e4ea9510330370265d866cfb5f
+
+@ 0 9 0 13ee7bc00247c28c1dbd85cf9310bfe5
++         由 `Crypto.SymmetricCipher#stream` 或 `#decryptStream` 打开，IV 已经应用；`update` 送入后续的数据块，`finish` 冲刷最后一个块，对于带填充的解密，填充正是在这里剥离，填充错误也在这里报告。
++     entry #update   再一个输入数据块的输出，在缓冲一个块时可能为空
++     entry #finish   应用或剥离填充之后的最终输出
++   entry #Size   以字面量类型表示的密钥长度（位）
++   entry #keySize   密钥长度（位）
++   entry #privateToPublic   密钥的公钥部分，采用提供者编码；对称密码算法则是密钥本身
++   entry #genKey   来自提供者的新密钥材料：原始密钥，或 PKCS#8 私钥
+
+@ 0 1 0 198ac56403c881b31d7b5eb28f9ed54b
++ entry .Cloak   秘密材料在不使用时存储的地方
+
+% 1 1 0 172d0108bb5f0b23047fdac108b4f2d7
+
+@ 0 5 0 1ea9522ac5c4f541129572158d8e5367
++       构造任何秘密值（`Password`、`SymmetricKey`、`PrivateKey`、从文件读取的密钥）都必须有 `Cloak` 在作用域中，而秘密会捕获存储它的遮蔽器，因此秘密永远不会比它的存储活得更久。
++       刻意没有默认 given：要从 `cloaks` 包按名称导入一个，因此存储的决定总是会被写下来。
+
+% 2 1 0 014aaec416e144b113853cce15145f09
+
+% 3 1 0 0ecbb53729668d0d11b73c803c445dac
+
+% 4 1 0 15465a9d87df5eb51ca55fb1c9b3b1c4
+
+% 5 1 0 0db9b4cc6b25354e1310117a9179e6ce
+
+% 2 1 0 0fb9b602f5df8ee511a88436b1f92b05
+
+% 3 1 0 0c386caf46472ff414c702d99b3f14ce
+
+% 1 1 0 1528044cebafef0d1fb65736cd40b357
+
+@ 0 7 0 02f4b637176c4a8e142afd86f8fae850
++       `heapCloak` 把材料保存在一个私有字节数组中，并且是纯的：堆遮蔽的秘密捕获集为空，可以自由存储和返回。
++       `offHeapCloak` 把它移出 Java 堆，因此它不会出现在堆转储中；`veiledHeapCloak` 和 `veiledOffHeapCloak` 还会在两次使用之间把它在一个临时 AES-256-GCM 密钥下加密保存。
++       这三者是能力：在其中之一下构造的秘密会捕获它，无法被标注为 `SymmetricKey[Aes[256]]` 这样的纯类型。
++       它们只存在于 JVM 上，因为它们需要 `java.lang.foreign`。
+
+@ 0 4 0 05742e58c5c312920651c98f918815a5
++       没有哪种遮蔽器能提供完全的保护：调试器或同进程的攻击者能看到一切，JCE 会在堆上临时复制密钥材料，而从 `Text` 构造会把一个无法清零的 `String` 钉在堆上。
++       更强的遮蔽器所缩小的，是明文可以从堆转储或核心文件中获取的*时间窗口*。
+
+% 0 1 0 0c69d3c6172c5369087c691c17d94e28
+
+% 0 1 0 1e6a8f8f24b4e4b519e6f4daec48184f
+
+@ 0 3 0 06f0eecf06385526024260b592930894
++   entry #cloak   把字节复制到遮蔽器的存储中，将输入清零，并返回 `Secret`
++       输入数组在方法返回之前被清零，因此调用者的明文副本不会残留；`Secret` 捕获这个遮蔽器。
+
+@ 0 1 0 0230dfb66ee664001eab337641163884
++ entry .Secret   通过 `Cloak` 存储的一个秘密的句柄；不导出到 `soundness`
+
+% 1 1 0 1ec06a93d3895d1d0269af4846af3285
+
+@ 0 7 0 13c61050833b5565121e7e1e494c1d64
++       不供直接使用：用户代码只能通过 `Password`、`PrivateKey` 和 `SymmetricKey` 及其 `uncloak` 方法接触秘密。
++       `Secret` 本身不是能力；它是否被追踪，取决于创建它的 `Cloak`：来自堆外或加密遮蔽器的秘密捕获该遮蔽器，来自堆遮蔽器的秘密是纯的。
++   entry #uncloak   把秘密作为可变字节数组借给一个块，块退出时将其清零
++       该数组从遮蔽器存储它的任何地方物化出来，并在 `finally` 中清零，无论块是正常退出还是异常退出，因此它不能逃出该块。
+
+@ 0 1 0 067efffa9dde001e0106cc78825b3d09
++ entry .Password   由 `Cloak` 不透明地持有、只能在 `uncloak` 内读取的密码
+
+% 1 1 0 04e8d04d105b3b84148cfafac62f19d6
+
+@ 0 5 0 01e85af78829de971d047c8704ff812a
++       `Password` 是不附带密码算法的被遮蔽秘密。
++       它的明文只能在 `#uncloak` 内获取，形式为一个基于可变字符数组的 `Cleartext` 能力，捕获检查把它限制在块内，块退出时将其清零；它的 `show` 和检视形式从不揭示明文。
++       构造它需要作用域中有 `Cloak`，它也是 `path.open[Keystore](…)` 所接受的标志。
+
+% 2 1 0 1fc6c921968e98400ecfe6124064ed07
+
+% 3 1 0 1d5dc252b3f1b0140bb62547f8c19674
+
+% 4 1 0 1cf83ebde11b43c9051704f580ed1a0d
+
+% 2 1 0 052935e8dd0597490c2f5230b75f3138
+
+% 3 1 0 0f2ce2c924ff6f2b0f5d916c0ad9a12f
+
+% 0 1 0 13a5303330e059d81db80447cb10d9d9
+
+% 1 1 0 0bb8fb355c55a6901a84aeb51b71dcb8
+
+% 0 1 0 117f3db2243905961b74d04ac0ee4e89
+
+% 1 1 0 181820bf05f4b03e0819cfc6780c6a6f
+
+@ 0 12 0 04197bc2f830f814195a2535f44e9f77
++   entry .apply   由 `Text`，或由会被清零的可变 `Array[Char]` 构造的密码
++       `Text` 重载已经把明文作为不可变的 `String` 钉在堆上，无法清零，因此遮蔽器只保护它所存储的副本。
++       当密码来自可变输入（例如从控制台读取）时，应优先使用 `scala.Array[Char]` 重载：它把字符编码为 UTF-8，然后把输入数组和编码缓冲区都清零，只留下被遮蔽的副本作为唯一的明文。
++   entry .showable   把每个密码呈现为 `Password(•••)`
++   entry .inspectable   把每个密码呈现为 `Password(•••)`，因此调试器或测试报告什么也看不到
++   entry #uncloak   运行一个块，把明文作为 `Cleartext` 能力借给它
++       该块是一个作用于 `Cleartext^` 的上下文函数，以 `cleartext` 访问；返回该能力或捕获它的闭包是编译错误，字符在块退出时被清零，因此它们也不能逃出。
+
+@ 0 1 0 14e95d8e7b9395b110e47e72108ce9bc
++ entry .Cleartext   密码明文的作用域内视图，在 `Password#uncloak` 中借出
+
+% 1 1 0 1f696709bba623a816c3af928117c740
+
+@ 0 4 0 07ab02b07b450dd81ff3f326d37bc1a1
++       一个基于可变字符数组的共享能力，在 `uncloak` 块内可以自由别名，但不能超出该块。
++       刻意没有 `Text` 访问器：不可变的 `String` 副本既无法限制在块内，也无法在块之后清零。
++       以 `cleartext` 访问。
++   entry #chars   作为可变 `scala.Array[Char]` 的明文，块退出时清零
+
+@ 0 3 0 07b136b82f13148e1a69b293ceb37101
++ entry .cleartext   外围 `Password#uncloak` 借出的 `Cleartext`，以上下文方式访问
++     写 `cleartext.chars` 而不是 `summon[Cleartext].chars`，与 parasite 的 `monitor` 的方式相同。
++     只在 `Password#uncloak` 块内有意义。
+
+@ 0 4 0 173992c1850be2571387f2d3d5d1df76
++ entry .Divulgence   揭示私钥材料时必须传入的令牌
++     `privateKey.pem(Divulgence)` 和 `symmetricKey.data(Divulgence)` 返回不可变的 `Data`，它比遮蔽器的清零活得更久，这正是获取它需要这个显式参数的原因：秘密材料逃出其遮蔽器的每一处，都是一个可搜索的词。
+
+% 2 1 0 19eee507e9a526f71ba128b1c5c164ac
+
+% 3 1 0 1398b380fd0c36781fd2779eaa2e1014
+
+% 4 1 0 11b205c91d4383b31c79ce31a4f4fb52
+
+% 5 1 0 01fe6c52bfd3f4711a37e6b0aef2d786
+
+% 0 1 0 1504606e40b0f15610a676736be3350b
+
+% 0 1 0 0631fdcc696d64ae114324b3f62dd70c
+
+% 1 1 0 04b1bc83517269c71ea77ef8bc140b65
+
+@ 0 4 0 1f76634eaf1ad20c0b74c6d19c90ffc3
++ entry .Symmetric   密钥同时是两部分的密码算法的标记：`SymmetricKey.generate` 要求它
++     `Aes`、`AesGcm`、`Blowfish`、`Des`、`TripleDes`、`Rc2`、`ChaCha20`、`ChaCha20Poly1305` 和 `HmacCipher` 是 `Symmetric`；`SymmetricKey.generate[cipher]()` 受 `Cipher & Symmetric` 约束，因此无法把 RSA 密钥作为对称密钥生成。
+
+@ 0 1 0 08c39358a3fc0db117b5d113d7b90ba9
++ entry .Encryption   加密和解密的密码算法的角色：分组密码和 RSA
+
+% 1 1 0 1ca057ea639623c91a367490acc61e3e
+
+@ 0 5 0 1e0374448761b6d7120551965ee965b3
++       `encrypt` 和 `decrypt` 扩展要求其密码算法是 `Encryption`。
++       IV 作为 `InitializationVector` 策略显式提供；不使用 IV 的密码算法和模式（RSA、ECB）会忽略它。
++   entry #encrypt   在 `key` 下 `value` 的密文，使用 `iv` 产生的 IV
++   entry #decrypt   在 `key` 下 `bytes` 的明文
+
+@ 0 5 0 06fe1a6f13843c60162efd7bdb9e1157
++ entry .Encryptor   `uncloak` 为用密钥加密而借出的能力
++     一个基于密钥材料的无状态包装，作为上下文值借给 `uncloak` 块，由 `encrypt` 扩展接受。
++     它是一个 `SharedCapability`，在块内可以自由别名，捕获检查把它留在那里：返回它或捕获它的闭包会以 _leaks into outer capture set_ 失败。
++     只由 `uncloak` 创建。
+
+@ 0 3 0 014df3ddd72937c61cef8ebaf4df53a0
++ entry .Decryptor   `uncloak` 为用密钥解密而借出的能力
++     `Encryptor` 的对应物，由 `decrypt` 扩展接受，并以同样的方式限制在其 `uncloak` 块内。
++     只由 `uncloak` 创建。
+
+@ 0 1 0 031a2913958b36f01b3df9ab3240cf85
++ entry .Agreeing   密钥协商密码算法的角色：`X25519` 和 `Ecdh`
+
+% 1 1 0 19f83111b95c8dff1d1721d6b13ee887
+
+@ 0 4 0 0e592c96f79399cf0d1a32dfc30cc691
++       双方各自持有对方的公钥，计算出同一个共享秘密。
++       密钥采用提供者编码，结果是原始秘密，协议会把它送入密钥派生函数。
++       通过 `PrivateKey` 上的 `agree` 扩展使用。
++   entry #agree   PKCS#8 私钥与 `SubjectPublicKeyInfo` 公钥的原始共享秘密
+
+@ 0 1 0 1101d674380c303f13831e2aabb6ca1c
++ entry .Authenticated   AEAD 密码算法的角色：`AesGcm` 和 `ChaCha20Poly1305`
+
+% 1 1 0 14a280701015669c1a3965e597340d7c
+
+@ 0 11 0 1550647857c7ed6103aff791155aa888
++       `seal` 加密明文，并在 nonce 下同时认证明文和关联数据，把认证码附加到密文后；`unseal` 逆转这一过程，当认证码验证失败时（伪造、密钥错误，或者 nonce 或关联数据与封装时的不同）为 `Unset`。
++       在同一个密钥下 nonce 绝不能重复；协议从计数器派生 nonce，这就是它是普通参数、而不是随机抽取的 `InitializationVector` 的原因。
++       通过 `SymmetricKey` 上的 `seal` 和 `unseal` 扩展使用，它们不需要许可：AEAD 不是 `Unauthenticated`。
++   entry #nonceSize   nonce 的长度（字节）：两种密码算法都是 12
++   entry #tagSize   认证码的长度（字节）：两种密码算法都是 16
++   entry #seal   附加了认证码的密文
++   entry #unseal   明文，认证码验证失败时为 `Unset`
+
+@ 0 1 0 0e2b9a50c8da980c1f7cf20fa637e1e1
++ entry .Keystream   用作密钥流生成器的流密码的角色：`ChaCha20`
+
+% 1 1 0 1a35e2aa3e8eff030d564337d0aa7a6f
+
+@ 0 8 0 106917a7b8a15e73180f4b8cbcc627f7
++       `xor` 把数据与由密钥、nonce 和块计数器决定的密钥流相结合，这既是加密也是解密。
++       它是协议用来构建自己的认证构造的原始原语（OpenSSH 的 `chacha20-poly1305@openssh.com` 对数据包长度使用一个 ChaCha20 密钥流，对载荷使用另一个），计数器正是因此而暴露。
++       在同一个密钥下 nonce 绝不能重复。
++       通过 `SymmetricKey` 上的 `xor` 扩展使用。
++   entry #nonceSize   nonce 的长度（字节）：12
++   entry #xor   `data` 与从块 `counter` 开始的密钥流相结合
+
+@ 0 1 0 006cafd66981f49403c3c0405117b5fd
++ entry .InitializationVector   对称加密的 IV 如何产生，在调用时提供
+
+% 1 1 0 1a73bfb30a5208d6068bd3ef5f9a4189
+
+@ 0 5 0 0f1dc1960f0920b306ac245a03ab4cbd
++       产生与密码算法分组大小相同的初始化向量的策略。
++       它总是在加密处显式提供，即 `value.encrypt(InitializationVector.random)`，从不隐式解析，因此在新的随机 IV 与可重复的 IV 之间的选择，在做出选择之处就可见。
++       不使用 IV 的密码算法和模式（RSA、ECB）会忽略它；分组密码的密文以 IV 开头，因此解密不需要策略。
+
+% 2 1 0 19e6553b6e15e4c903884e3bede6aa8b
+
+% 3 1 0 152b7422c2dfe3c019eeea30eb0e48e6
+
+% 4 1 0 0cb2cd6979cef14a1acf8d9bc274ea34
+
+% 5 1 0 1244cbae28f6f9bc191bffc5e6d6d092
+
+% 6 1 0 0c9b133af96b2ce50ef80185d3427fe2
+
+% 7 1 0 15cb45166391e4a419c07153d1b71cf5
+
+% 1 1 0 17b074fd5015540f1982291311ab97f7
+
+% 2 1 0 0ed2b168f77169431c26679d12cda233
+
+% 0 1 0 1d7c92e42617b12f0015ffabb385681c
+
+% 2 1 0 1151451a2504c9ae1e1c7d53c23e3640
+
+% 0 1 0 12d71b76231058d41d17ff9633d9ffb1
+
+% 0 1 0 0dc997a7a53d4c62080b71131e90ba9f
+
+% 1 1 0 0094bfe58b64b0d50d74dddf295c1508
+
+@ 0 4 0 15e36d724e7362dd0499083239a5d1c7
++   entry .random   每次加密都从作用域中的 `Crypto` 提供者取得新的随机 IV
++   entry .fixed   每次都把给定的字节用作 IV：确定性的，用于测试和已知答案向量
++   entry .zero   全零 IV
++   entry #apply   给定分组大小（字节）的 IV
+
+@ 0 1 0 079eab9f4b39129b11c446be142b13fa
++ entry .Permits   分组密码模式可以与某种填充组合的证据
+
+% 1 1 0 063721be55000b60140bb65499dd174f
+
+@ 0 18 0 09286add9d1c34d60dbdec97562bdfe5
++       `mode Permits padding` 是编译时检查，确认 `Aes[256] over mode against padding` 是提供者所支持的组合：分组结构的模式和反馈模式（ECB、CBC、CFB、OFB）接受全部三种填充，而计数器模式只接受 `BlockCipher.NoPadding`，因此 `Aes[128] over BlockCipher.Ctr against BlockCipher.Pkcs7` 没有 given，无法编译。
++       这十三个 given 位于伴生对象中，无需任何导入即可解析。
++   entry .ecbNoPadding   无填充的 ECB
++   entry .ecbPkcs7   PKCS#7 填充的 ECB
++   entry .ecbIso10126   ISO 10126 填充的 ECB
++   entry .cbcNoPadding   无填充的 CBC
++   entry .cbcPkcs7   PKCS#7 填充的 CBC
++   entry .cbcIso10126   ISO 10126 填充的 CBC
++   entry .cfbNoPadding   无填充的 CFB
++   entry .cfbPkcs7   PKCS#7 填充的 CFB
++   entry .cfbIso10126   ISO 10126 填充的 CFB
++   entry .ofbNoPadding   无填充的 OFB
++   entry .ofbPkcs7   PKCS#7 填充的 OFB
++   entry .ofbIso10126   ISO 10126 填充的 OFB
++   entry .ctrNoPadding   无填充的 CTR：计数器模式唯一允许的填充
+
+@ 0 3 0 1f98b5d0ccd2b21717a1803edf7365a2
++ entry .Weakness   密码算法类型需要许可的让步，以匹配类型表示
++     `Weakness[cipher]` 把一个（可能经 `over`/`against` 细化的）密码算法类型映射到使用它所需的 gastronomy `Concession`：
+
+% 0 1 0 1b6bea430224b167173b77cbfa415e01
+
+@ 0 2 0 16bd40c967d0a3ad0abdfccfb61c7bda
++     column  密码算法
++     column  让步
+
+% 0 1 0 17b07929a9ccbe430037f4cce51507f0
+
+% 0 1 0 1f5ab2ea3d0726e10b060f01a9ca73f8
+
+% 0 1 0 18d40108729910950d14b45bed86d8e2
+
+% 0 1 0 1b337562f1ac16861bcc2f36fd04e77e
+
+% 0 1 0 1dc7a8bc60787f6e056a4fbe37db3920
+
+% 0 1 0 1c995f971202b48b0f9f507a3390cc54
+
+@ 0 1 0 0fb56b871e48c4381ae7984063a1eb16
++     row  其他任何算法：AES、RSA-2048 及以上、ECDSA、Ed25519、ML-DSA  `Concession.Acceptable`，不需要许可
+
+% 1 1 0 1c7f23140cd8c8da16d9dddfaaffc07b
+
+@ 0 3 0 0ae128b029f2dfc216cf48b409b0ab8c
++     `encrypt` 和 `sign` 要求 `Permit[Weakness[cipher]]`；`decrypt` 和 `verify` 要求较弱的 `ProcessingPermit`，因此 `cryptoPermits.permitLegacyCrypto` 允许读取旧数据而不再写入更多这样的数据。
+
+@ 0 6 0 0baaf16cdfef131f0499cbbeec2639fe
++ entry .Authentication   密码算法类型是否未经认证，以匹配类型表示
++     对每个 `BlockCipher`，`Authentication[cipher]` 都是 `Concession.Unauthenticated`（没有哪种分组密码模式会认证它所加密的内容），对其他任何算法（包括 AEAD 密码算法和 RSA）则是 `Acceptable`。
++     因此，分组密码上的 `encrypt` 和 `decrypt` 需要作用域中有 `cryptoPermits.permitUnauthenticatedCrypto`（或任何涵盖它的许可）。
+
+@ 0 1 0 13c49d489aa2a0131098c2d683f61a4d
++ entry .SymmetricKey   由 `Cloak` 持有的密码算法密钥，同时作为 `Encryptor` 和 `Decryptor` 借给块
+
+% 1 1 0 1be465d9a4f0982e0df3ded976b485c8
+
+@ 0 5 0 0a8b28f77de95db30402394d6691452f
++       `SymmetricKey[cipher]` 是一个公钥部分就是其自身的 `PrivateKey`：用 `.generate` 为 `Symmetric` 密码算法生成，或用 `.apply` 从现有材料采用，并由作用域中的 `Cloak` 存储，密钥会捕获该遮蔽器。
++       它的 `uncloak` 把 `Encryptor` 和 `Decryptor` 都借给其块；`seal`/`unseal`（`Authenticated` 密码算法）和 `xor`（`Keystream` 密码算法）直接接受密钥。
+
+% 2 1 0 18051ddacab7fcbc13354a250a4c03f3
+
+% 3 1 0 197819920dd64f47092b0f5fbc611760
+
+% 4 1 0 0a4e2d2a1daa29a60b5b7a73040f59d6
+
+% 5 1 0 131ab06f5a35e39615d7b2221b9e9286
+
+% 6 1 0 1e564d52e0daf7911a6f287e96f1df43
+
+% 7 1 0 0069bf91285433e616c884c6e3fca6f8
+
+% 9 1 0 15a8fc62f35d25600164a7ca6a28476f
+
+% 5 1 0 1d1fdf555b6013b8026dc10911f153b9
+
+% 0 1 0 1d166942df7db22d1197acaf6321af9f
+
+% 1 1 0 03be32130e8d948b193dc2b59c639b6e
+
+@ 0 4 0 0f491e8c4cbbb87f15d313353fa87b15
++       导入了模式和填充的 given 时，可以在类型中省略密码算法的模式和填充：作用域中有 `blockCipherModes.cbc` 和 `blockCipherPaddings.pkcs7` 时，`SymmetricKey.generate[Aes[256]]()` 与上面是同一个密钥类型；而分组密码需要 `cryptoPermits.permitUnauthenticatedCrypto` 才能加密或解密。
+
+% 1 1 0 19684ecae39d459507ef58047f93ddbe
+
+% 1 1 0 0de49c1436ae24d012b30b8139453bbf
+
+% 1 1 0 1b125b237f8863d0180e7ed375a67c31
+
+% 1 1 0 1e15e8d31bbc67ba1a62382e78dc237e
+
+@ 0 14 0 1c3515bdf5f584341d81530db6a5828f
++   entry .generate   用作用域中的提供者为 `Symmetric` 密码算法生成新的随机密钥
++       需要密码算法的 given（因此也需要 `Crypto`，对于分组密码还需要模式和填充）以及一个 `Cloak^`。
++       结果会捕获该遮蔽器。
++   entry .apply   把现有的密钥材料（派生密钥、测试向量）采用为对称密钥
++       接受 `Data`，或接受在遮蔽时被清零的可变 `scala.Array[Byte]`，只留下被遮蔽的副本作为唯一的密钥材料；材料是可变的时，应优先使用数组重载。
++       字节必须是该密码算法的有效密钥长度（无效长度会在使用密钥时以原因为 `InvalidKey` 的 `Crypto.Error` 显现），而类型是调用者的声明：`SymmetricKey[AesGcm[128]](bytes)`。
++   entry #verify   对于 `HmacCipher` 这样的 `Signing` 对称密码算法，检查用此密钥生成的签名
++       `key.public.verify(value, signature)`；需要 `ProcessingPermit[Weakness[cipher]]`。
++   entry #data   出示 `Divulgence` 令牌后得到的原始密钥字节
++       不可变的 `Data` 比遮蔽器的清零活得更久，这就是获取它需要显式 `Divulgence` 参数的原因。
+
+@ 0 1 0 0932fefeb7813ae9037d8b5500c10c02
++ entry .PrivateKey   由 `Cloak` 持有的私钥：签名、解密、协商，并给出其公钥部分
+
+% 1 1 0 10a35b8a47b6ab3c1c43ddacefc00b69
+
+@ 0 5 0 11abc3905550cb7e12dff64d2aef418f
++       `PrivateKey[cipher]` 由创建它时作用域中的那个 `Cloak` 不透明地持有（用 `.generate` 生成，或用 `.pemDecodable` 和 `.derDecodable` 从密钥文档读取），并捕获该遮蔽器。
++       需要材料的操作（`#public`、`#sign`、`uncloak`、`agree`）通过遮蔽器临时物化材料，并在完成后立即把副本清零；只有以 `Divulgence` 为门槛的 `#pem` 允许它逃出。
+
+% 2 1 0 1766759ce56dd86116fd7ccc7dad3a11
+
+% 3 1 0 131d86b20b3f29120cfc9d0c6f8869e1
+
+% 4 1 0 1bf553a543c49fa4001ef2a3c1ab4693
+
+% 5 1 0 0259a4a3ea59c6fe1fa89938177b4895
+
+% 6 1 0 01040bfc4b646e4b0fa5b0716e22faed
+
+% 8 1 0 07d00e7d37ece97a1d86792dbc4a8d78
+
+% 0 1 0 1559cf4b973c65cb0a4d03a45b63a110
+
+% 0 1 0 09433ad1f0252a84008597996be2769c
+
+% 0 1 0 060c41a59aa63d371d83912b571421c8
+
+% 1 1 0 117363abac663acd0b6174fd5683e389
+
+@ 0 3 0 05cdf07bacf340df0a7fab46064e632d
++       已经存在的密钥（在 `~/.ssh` 中，或由 `openssl` 写出）可以从密钥文件所采取的任何形式读取为所指定密码算法的 `PrivateKey`，类型对照文档进行检查，而不是从文档推定：
+
+% 2 1 0 1d7454e669623e6915c507b6b58fbf9a
+
+% 3 1 0 0ebde5506adb0a881e77c9723a94f315
+
+% 4 1 0 12aa687b19a52c630936c7038d370c85
+
+% 5 1 0 02afbbed3d040b640df1b3ab40a10deb
+
+% 6 1 0 0f67de5999cb184c170234e511b3833b
+
+% 3 1 0 188d031f37be9053067bc6ef7b4af8d3
+
+% 5 1 0 057a4559bd7d842b1830972e4a0c6c3e
+
+% 3 1 0 1d37cc0097f70ff61692584e37a89c8e
+
+@ 0 1 0 0936b3404a6c369a1ea4d0b9ccecd948
++         label 从其 PEM 铠装读取的 OpenSSH 密钥
+
+% 1 1 0 0ad2d666f9f4de150f06db144557e658
+
+% 0 1 0 03783030beffb3d414987928579f16d7
+
+% 0 1 0 1740e8ea893338b318dc19ec6e782563
+
+% 0 1 0 0c06c1387a28a31b16a710f087a3f994
+
+% 0 1 0 1adaab8d8712a7a31bf7f6f58165359f
+
+% 0 1 0 05c580a511d50ffa08a2f1583b8c57c3
+
+% 0 1 0 18019d98e402c6221385fb492bb1b09b
+
+% 0 1 0 01733603308106f403bdfe1e50e0ef3c
+
+% 1 1 0 0d9eaeefa3cb61e0131e34da1ea400b0
+
+% 1 1 0 1b2e41817b631be70ea426f5aee073ec
+
+@ 0 1 0 0bb80ec870c7d7c71ad7a13031aa342d
++         label 用该密钥签名一条消息
+
+% 1 1 0 0079e848ce2c6545167a57c8f414e397
+
+% 2 1 0 0bde3688b75ffc830538c970d45d762b
+
+% 3 1 0 18df9a361db8c5860fa3697c38e68d00
+
+% 1 1 0 164faeaf5c5815091a996e604fe3341f
+
+@ 0 1 0 0ceaa556bd1bd87e07d375bd6f49996a
++         label 用其公钥部分验证签名
+
+% 1 1 0 1ae620409790bb8f125d1db4a871f0e7
+
+% 2 1 0 12cc0e284d88a3e70ebd900adb1dce3a
+
+% 3 1 0 04f6f2f5189dd04e11f626826f350885
+
+% 0 1 0 040ef46626daa17813368efc6d593665
+
+% 1 1 0 08591f1a62a354070fddae17d4f9be1f
+
+@ 0 1 0 081001f797adb0350b49c16011711c1d
++         label 公钥部分就是 `id_ed25519.pub` 所保存的那一行
+
+% 1 1 0 1a463cc9be0e5d661fc319070df62167
+
+% 2 1 0 0b43e0f745c02f61014f934e5cf330e1
+
+% 0 1 0 0a4ce9f54462aa0a050bf1100bf391ff
+
+% 0 1 0 1b846cfca080a9871a84c90288b5757a
+
+% 1 1 0 141dd750c14762631c4eedccf6cee6e0
+
+@ 0 1 0 1e4ad0670966791718f813f639b51714
++         label 把它读作另一种密码算法是不匹配，而不是谎言
+
+% 1 1 0 1d3b65661b3a38d213177778fba91043
+
+% 0 1 0 06b48c1f565a2da112ab38b7131369a0
+
+% 0 1 0 0f3b3ecc1853c4521bf039cf4536f7aa
+
+% 1 1 0 0be2b5cc4d7b48b41abfc9cd7405980e
+
+% 2 1 0 098ab82df0495c441951273277508ee7
+
+@ 0 2 0 03dc532334551c371bc85c1eda98b17c
++       `PrivateKey` 作为 `Showable` 呈现为其材料的 SHA-256 指纹，作为 `Inspectable` 呈现为 `PrivateKey(•••)`，因此日志和测试报告都不会泄露它。
+
+% 1 1 0 0f07cc906f88e3720149eac576947299
+
+% 1 1 0 1832a715bb43de8c056bb912fa82133a
+
+% 1 1 0 1103486e49ec32e21356dc09c0bf2f11
+
+% 1 1 0 0307baaa10f2536007c41f8f90f942c9
+
+% 0 1 0 15e7a661c900288d1db280aaba70f6e9
+
+@ 0 28 0 0371f4356443078f0508aa5ae54f093a
++   entry .generate   用作用域中的提供者为密码算法生成新的密钥对
++       需要密码算法的 given（因此也需要 `Crypto`，对于 `Rsa` 和 `Ecdsa` 还需要 `Signature.Digest`）以及一个 `Cloak^`。
++       结果会捕获该遮蔽器。
++       对于无法派生公钥的密码算法，提供者把公钥嵌入 PKCS#8 文档中。
++   entry .derDecodable   把 PKCS#8 `PrivateKeyInfo` 读作所指定密码算法的 `PrivateKey`
++       `der.as[PrivateKey[Rsa[2048]]]` 背后的 given，适用于任何具有 `KeyAlgorithm` 的密码算法。
++       它需要一个 `Cloak^`、一个 `Tactic[PrivateKey.Error]` 和 `Diagnostics`；结果会捕获该遮蔽器和该战术。
++       文档的算法标识符和密钥材料的大小必须是该密码算法的（否则为 `Mismatch`），而写入时没有可选公钥字段的 EC、Ed25519 或 ML-DSA 密钥是 `PublicKeyAbsent`，因为之后无法回答 `#public`。
++       解码得到的 `Data`，以及它所经过的 ASN.1 值和 base64 文本，都是不可变的，无法清零：从文本读取的密钥，其私密程度只等于它被读入的那个堆。
++   entry .pemDecodable   从密钥文件所采取的任何 PEM 形式读取 `PrivateKey`
++       `text.read[PrivateKey[Ed25519] in Pem]` 和 `pem.as[PrivateKey[…]]` 背后的 given。
++       `PRIVATE KEY`（PKCS#8）按原样读取；`RSA PRIVATE KEY`（PKCS#1）和 `EC PRIVATE KEY`（SEC1）由 `Pkcs8.fromPkcs1` 和 `Pkcs8.fromSec1` 包装为 PKCS#8；`OPENSSH PRIVATE KEY` 由 `OpenSsh.privateKey` 转换。
++       `ENCRYPTED PRIVATE KEY`，或带有密码算法的 OpenSSH 容器，是原因为 `Encrypted` 的 `PrivateKey.Error`（受口令保护的密钥目前还无法读取），而其他任何标签都是指出所发现块的 `Mismatch`。
++       需要与 `.derDecodable` 相同的上下文值。
++   entry .inspectable   把每个私钥呈现为 `PrivateKey(•••)`
++       完全隐去，连摘要都没有：检视的产生之处远多于 `show`，包括测试输出、调试器、外围值的嵌套呈现。
++   entry .showable   把私钥呈现为 `PrivateKey(<base64 SHA-256 of its material>)`
++       这是一个指纹，因此同一密钥的两次呈现相等，而密钥本身的任何内容都不会出现。
++   entry .Error   密钥文档无法读取为所请求的 `PrivateKey` 时抛出
+
+% 1 1 0 0b1d262ce80eb0540d6ac667d5fa58e1
+
+@ 0 4 0 18a52f8b593a31940629f4ed28b3a59d
++         错误 `↯/s.105.7`：_could not read the private key because `reason`_。
++         由 `.pemDecodable`、`.derDecodable`、`Pkcs8` 和 `OpenSsh.privateKey` 抛出。
++     entry .communicable   把每个原因呈现为一条消息
++     entry .Reason   文档被拒绝的原因
+
+% 3 1 0 0705e4a148629f080c762ac6c05852fa
+
+@ 0 6 0 14dc10ed735f16ea0fc21c15f94c3be8
++         column  分支
++         column  代码
++         column  消息
++         column  说明
++         row  `Malformed(detail)`  1  _the key document was malformed: `detail`_  不是 DER、不是 `PrivateKeyInfo`、不是 `RSAPrivateKey`、被截断的 OpenSSH 容器
++         row  `Mismatch(expected, found)`  2  _a `expected` key was expected but `found` was found_  名称取自 `KeyAlgorithm`，例如 `RSA-4096` 和 `RSA-2048`、`ECDSA P-384` 和 `ECDSA P-256`，或 `private` 和 `a public key block`
+
+% 0 1 0 1f66bd11326a2b5a0c7cc7ec08b9e72a
+
+@ 0 2 0 0968d6e73c13f4bd0580c69b0e7e024b
++         row  `Unsupported(detail)`  4  _the key uses an unsupported `detail`_  例如容纳多个密钥的 OpenSSH 容器，或 OpenSSH 能命名而这个库不支持的密钥类型
++         row  `PublicKeyAbsent`  5  _the key does not carry its public key_  没有可选公钥字段的 EC、Ed25519 或 ML-DSA 文档，任何提供者都无法重新计算该字段
+
+% 1 1 0 1ce1fbe4d6be4dcb190264be95a69cd5
+
+@ 0 14 0 04ad1d02a1428a0a15cd15a7b1b75066
++     entry #reason   文档被拒绝的原因
++   entry #public   密钥的公钥部分，作为 `PublicKey[cipher]`
++       通过密码算法的 `privateToPublic` 从私钥材料计算得出：对 RSA 和 DSA 是算术派生，对 EC、Ed25519、X25519 和 ML-DSA 是从嵌入的公钥字段读取。
++       需要密码算法的 given。
++   entry #sign   对可编码为 `Data` 的值的签名，适用于 `Signing` 密码算法
++       需要密码算法的 given 和 `Permit[Weakness[cipher]]`（因此 DSA 和 1024 位 RSA 需要许可；其余的是 `Acceptable`）。
++       值用其 `Encodable in Data` 编码，因此 `Text` 以其字节签名。
++       RSA 和 ECDSA 对作用域中 `Signature.Digest` 所指定的摘要签名（除非从 `signatureDigests` 导入一个，否则为 SHA-256）；Ed25519 和 ML-DSA 直接对消息签名。
++   entry #pem   出示 `Divulgence` 令牌后，以 `PRIVATE KEY` PEM 块给出的密钥
++       PKCS#8 `PrivateKeyInfo`，与每个提供者持有密钥的形式相同。
++       不可变的 `Data` 比遮蔽器的清零活得更久，这就是获取它需要显式 `Divulgence` 参数的原因。
+
+@ 0 1 0 1cae82f67e1354ba1ef944d43e226b39
++ entry .PublicKey   密钥对的公开一半：验证签名，向持有者加密
+
+% 1 1 0 12cdefe92132c24118cbce37f9e0c661
+
+@ 0 6 0 07d25481157fb8131dd1a31b05a2451d
++       `PublicKey[cipher]` 是一个普通值（它的 `#bytes` 是 X.509 `SubjectPublicKeyInfo`，不是机密），可以从私钥的 `public` 获得，从 `PUBLIC KEY` 或 `RSA PUBLIC KEY` 块读取（`.pemDecodable`），从 DER 读取（`.derDecodable`），从 OpenSSH 行读取（`OpenSsh.publicKey`），或者从线路协议携带的原始字节创建（`.raw`）。
++       它验证签名，在 `uncloak` 之内向其持有者加密（使用 `Rsa` 这样的 `Encryption` 密码算法），也是密钥协商中对方的那一半。
+
+% 2 1 0 18eb75f6c1f4e922179da739ad6ffab9
+
+% 3 1 0 10f51e3d18cf38081404e2114cfb0918
+
+% 4 1 0 1273b18e88bb89690583b63c7ab6bdc6
+
+% 5 1 0 1f952bef848a4caa1dfa57a9a2cd0aaf
+
+% 6 1 0 0859393f50ce2531191aef395475f2bb
+
+% 8 1 0 0e3a5596388c97f2025dee8fbc5bed45
+
+% 0 1 0 0c5d351443a5e2bf1eee824bde55b68c
+
+% 0 1 0 1276002ee8aca85809353dd077371b27
+
+% 1 1 0 16954ea26862344f04adf0bee1c696f3
+
+% 0 1 0 037a281bf2e76c901500be45d141d6b7
+
+% 1 1 0 04504cd0b5c0b1e619b2c0e62ed7038c
+
+% 1 1 0 0303e16736282b571a841c80a2a0f1d6
+
+% 2 1 0 12a8029d3cd2b498087bcf35481f3379
+
+% 1 1 0 0c172b8622ccbc5a0acaf50ef39ec6c4
+
+@ 0 14 0 14d9f0ea20d1734b1dbd7ec0acc53c57
++   entry .derDecodable   把 `SubjectPublicKeyInfo` 读取为所指定密码算法的 `PublicKey`
++       `der.as[PublicKey[Ecdsa[256]]]` 背后的 given，适用于任何具有 `KeyAlgorithm` 的密码算法；需要 `Tactic[PublicKey.Error]` 和 `Diagnostics`。
++       算法标识符及其曲线必须与该密码算法相符（否则为 `Mismatch`）。
++   entry .pemDecodable   从 `PUBLIC KEY` 或 `RSA PUBLIC KEY` 块读取 `PublicKey`
++       `text.read[PublicKey[Rsa[2048]] in Pem]` 背后的 given。
++       PKCS#1 `RSAPublicKey` 由 `Spki.fromPkcs1` 包装成 `SubjectPublicKeyInfo`；任何其他标注都是 `Mismatch`，并指明所找到的块。
++       OpenSSH 的单行形式不是 PEM：它用 `OpenSsh.publicKey` 读取。
++   entry .raw   从原始形式创建的公钥：`SubjectPublicKeyInfo` 的位串内容
++       即 SSH 或 TLS 这类线路协议所携带的内容：X25519 或 Ed25519 为 32 字节，EC 密钥为未压缩的点。
++       该密码算法的 `KeyAlgorithm` 必须有固定的标识符（`algorithm` 不是 `Unset`），因此 DSA 密钥（其参数只有密钥本身知道）不能用这种方式创建，结果为 `Unset`。
++       它是 `#raw` 的逆运算。
+
+% 2 1 0 0026936a2126db1808c20ff8b9e42f97
+
+% 3 1 0 0e9d748064f8a0471319efb0886a27cc
+
+% 4 1 0 12c12512f585c0c71a37ef3aa760a293
+
+% 1 1 0 1ca19d9772ee712f1d24a0e9f5913e1d
+
+% 0 1 0 1a1517edb00a4ffc0822a8d201f6344a
+
+% 0 1 0 0bdba78604eaa5f20a324be3ec02e4a0
+
+% 1 1 0 032a7db3f5c628900f1cafcb92f152cf
+
+@ 0 4 0 023c0672b043842106c28861b0ccecde
++   entry .showable   把公钥渲染为 `PublicKey(<lowercase hex of its bytes>)`
++   entry .encodable   公钥编码为它的 `SubjectPublicKeyInfo` 字节
++   entry .inspectable   以完整的十六进制渲染公钥，不需要作用域中有 `Alphabet`
++   entry .Error   密钥文档无法读取为所请求的 `PublicKey` 时抛出
+
+% 1 1 0 0608621f3cc189d71114af7934b08fc3
+
+@ 0 4 0 05610fbb01354d700ccf1425a9f1d703
++         错误 `↯/s.105.8`：_could not read the public key because `reason`_。
++         由 `.pemDecodable`、`.derDecodable`、`Spki` 和 `OpenSsh.publicKey` 抛出。
++     entry .communicable   把每个原因渲染为消息
++     entry .Reason   文档被拒绝的原因
+
+% 3 1 0 069c18402e185d3b106249b6b37816fd
+
+@ 0 7 0 08b020edbffdd17002731fca4e158781
++         column  分支
++         column  代码
++         column  消息
++         column  说明
++         row  `Malformed(detail)`  1  _the key document was malformed: `detail`_  不是 `SubjectPublicKeyInfo`，不是 `RSAPublicKey`，或者某一行不是 base64 或不是公钥
++         row  `Mismatch(expected, found)`  2  _a `expected` key was expected but `found` was found_  使用 `KeyAlgorithm` 名称，例如 `ECDSA P-256` 和 `Ed25519`
++         row  `Unsupported(detail)`  3  _the key uses an unsupported `detail`_  例如本库没有名称的 OpenSSH 密钥类型或曲线
+
+% 1 1 0 0ba0365226f1c084192cc2253b91cb81
+
+@ 0 11 0 0b81cfb253a5840b04db4b2f0d5c4104
++     entry #reason   文档被拒绝的原因
++   entry #bytes   X.509 `SubjectPublicKeyInfo`，DER 编码
++   entry #verify   对于 `Signing` 密码算法，签名对某个值是否有效
++       需要该密码算法的 given 和一个 `ProcessingPermit[Weakness[cipher]]`。
++       对于针对不同内容的签名、来自不同密钥的签名、在与作用域中不同的 `Signature.Digest` 下做出的签名，或损坏到无法解码的签名，结果为 `false`。
++       值用它的 `Encodable in Data` 编码，与 `PrivateKey#sign` 编码它的方式相同。
++   entry #pem   作为 `PUBLIC KEY` PEM 块的密钥
++   entry #raw   原始密钥，即位串的内容；若字节不是 `SubjectPublicKeyInfo` 则为 `Unset`
++       X25519 或 Ed25519 为 32 字节，EC 密钥为未压缩的点；它是 `.raw` 的逆运算。
+
+@ 0 1 0 19c8d736e51f348e1609bfe1f41bc50e
++ entry .KeyAlgorithm   密码算法的密钥在密钥文档中如何标识：读取密钥背后的类型类
+
+% 1 1 0 1d742e31d40034d71e3b1b0fa7f8e673
+
+@ 0 9 0 171983122d47f807097299bc6a56555b
++       PKCS#8 `PrivateKeyInfo` 和 X.509 `SubjectPublicKeyInfo` 都携带一个 `AlgorithmIdentifier`（一个对象标识符，带有可选参数，例如 EC 密钥的曲线），以及密钥材料；对 RSA 和 DSA 而言，密钥材料的大小是密钥强度的唯一记录。
++       把文件读取为 `PrivateKey[Rsa[2048]]` 时必须检查这两者，因为 JDK 会毫不在意地用以该类型交给它的 4096 位密钥签名，那样类型就成了谎言。
++       `cipher is KeyAlgorithm` 就是这一检查，每个具有密钥文档的密码算法（`Rsa`、`Dsa`、`Ecdsa`、`Ecdh`、`Ed25519`、`X25519` 和 `MlDsa`）的伴生对象中都有一个 given。
++       伴生对象保存着库所知道的对象标识符弧，用于识别标识符以及为所找到的内容命名。
+
+% 1 1 0 0b7eb63edad566850cace3e0e24bf733
+
+% 1 1 0 14dd060cfa8a67200d12bf864d914392
+
+@ 0 27 0 04d32871e9ece7140b3241b2e8fbb0e7
++   entry .Material   算法所检查的那一半密钥文档：私有的八位组或公开的位
++       `Private(octets)` 是 `PrivateKeyInfo` 的 `privateKey` OCTET STRING 的内容；`Public(bits)` 是 `SubjectPublicKeyInfo` 的 `subjectPublicKey` BIT STRING 的内容。
++   entry .Rsa   `rsaEncryption` 的弧，1.2.840.113549.1.1.1
++   entry .Ec   `id-ecPublicKey` 的弧，1.2.840.10045.2.1
++   entry .Ed25519   `id-Ed25519` 的弧，1.3.101.112
++   entry .X25519   `id-X25519` 的弧，1.3.101.110
++   entry .Dsa   `id-dsa` 的弧，1.2.840.10040.4.1
++   entry .MlDsa   按级别区分的 ML-DSA-44、-65 或 -87 的弧（RFC 9881）
++   entry .P256   P-256 曲线 `secp256r1` 的弧
++   entry .P384   P-384 曲线 `secp384r1` 的弧
++   entry .P521   P-521 曲线 `secp521r1` 的弧
++   entry .curve   某个密钥大小对应的曲线弧：256 为 P-256，384 为 P-384，其他为 P-521
++   entry .identifier   `AlgorithmIdentifier` 的弧和可选参数；若该值不是 `AlgorithmIdentifier` 则为 `Unset`
++   entry .rsaModulus   RSA 密钥材料的模数，从中读出密钥的大小
++       `RSAPrivateKey` 的第二个整数（在版本号之后），或 `RSAPublicKey` 的第一个整数；若材料两者都不是则为 `Unset`。
++   entry .describe   文档所携带内容的可读名称，用于 `Mismatch` 错误
++       `RSA-2048`、`Ed25519`、`X25519`、`ECDSA P-256`、`DSA-1024`、`ML-DSA-65`，其他任何内容则为 _the object identifier 1.2.3.4_。
++   entry #name   算法的名称及其大小，例如 `RSA-2048` 或 `ECDSA P-256`
++   entry #sshName   算法在 OpenSSH 格式中的名称；若 OpenSSH 没有则为 `Unset`
++       `ssh-rsa`、`ssh-ed25519`、`ecdsa-sha2-nistp256`；DSA、ECDH、X25519 和 ML-DSA 为 `Unset`，因此它们的密钥的 `OpenSsh.line` 为 `Unset`。
++   entry #algorithm   此类型密钥的 `AlgorithmIdentifier`；在只有密钥本身知道其参数的情况下为 `Unset`
++       供 `PublicKey.raw` 用来围绕原始材料构建文档；DSA 为 `Unset`。
++   entry #conforms   `AlgorithmIdentifier` 是否指明此算法及其参数，且材料是否为此大小
+
+@ 0 1 0 0b69b55a46a40f970c80597560e86f3f
++ entry .Signature   由 `PrivateKey` 做出的签名，以其密码算法为类型
+
+% 1 1 0 165550330c927bb411cbdd66dc16c30e
+
+@ 0 4 0 01e60b510466575a08f999e6220d12a0
++       `Signature[cipher]` 包装原始签名字节，因此签名只能针对同一密码算法的 `PublicKey` 验证。
++       它对密码算法是协变的。
++       由 `PrivateKey#sign` 创建，由 `PublicKey#verify` 检查；以 base64 形式 `Showable`，以十六进制形式 `Inspectable`，并作为其字节 `Encodable in Data`。
+
+% 1 1 0 1c4dbc3d1893f6711105507625b69391
+
+% 0 1 0 009e816b0de796e90944df85c486476c
+
+@ 0 4 0 0255409f0a3695cc138268d077a06548
++   entry .showable   把签名渲染为 `Signature(<base64>)`，使用作用域中的 `Alphabet[Base64]`
++   entry .encodable   签名编码为它的原始字节
++   entry .inspectable   以完整的十六进制渲染签名，不需要作用域中有 `Alphabet`
++   entry .Digest   RSA 或 ECDSA 签名所基于的摘要
+
+% 1 1 0 024d7ee638ebd63400986d9c81e81a10
+
+@ 0 12 0 0b4eafc36a74813d1f9243bfc5ca4143
++         RSA 和 ECDSA 对消息的哈希而不是消息本身签名，而哈希的选择是签名算法身份的一部分（`SHA256withRSA` 与 `SHA384withRSA` 是不同的算法，有自己的对象标识符），因此它在召唤密码算法时就已确定，而不是逐个签名选择。
++         默认是 SHA-256，来自此伴生对象中的 `.sha256Signature`；导入 `signatureDigests.sha384Signature` 或 `signatureDigests.sha512Signature` 会覆盖它，因为导入的 given 优先于伴生对象中的 given。
++         在一种摘要下做出的签名不能在另一种摘要下验证。
++         Ed25519 和 ML-DSA 直接对消息签名，不使用摘要。
++     entry .sha256Signature   默认值 SHA-256；无需导入即在隐式作用域中
++     entry #token   摘要在 JCE 转换中出现的名称，例如 `SHA256`
++         不带连字符，这与同一摘要作为 `Hash` 时的名称不同。
++   entry #bytes   原始签名
+
+@ 0 1 0 014844d4b1455798127fc66aa9603ada
++ entry .signatureDigests   RSA 或 ECDSA 签名所基于的摘要，每个都是按名称导入的 given
+
+% 1 1 0 08aa0faac227c2750e5816da3ad485df
+
+@ 0 2 0 040734c8f85bbcb41abd6d9158b3a3c0
++       `Signature.Digest` 的伴生对象提供 SHA-256，因此只有在要选择其他摘要时才需要导入其中之一；导入的 given 优先于伴生对象中的 given。
+
+% 2 1 0 0971bcdbec3ab3221fe9329d6d639db7
+
+% 3 1 0 073c2bb44f85604f12318922c4f81fb5
+
+% 4 1 0 1cd69184e4529bef01ed980abd7ab86d
+
+% 5 1 0 019a803fb84b14ca188753b8980faf06
+
+% 0 1 0 0d4a8e240ec10b311b4c244dc5d73395
+
+% 2 1 0 07875a882cbc38b71b9702b08f36184c
+
+% 0 1 0 02142b9b8d054be3037929f996691bc8
+
+% 1 1 0 1e9dbca29c6a817e05707bc2c0da8de8
+
+@ 0 1 0 0d5e1ea724cb079a15c99aa8d27f4be5
++   entry .sha256Signature   SHA-256，与默认值相同
+
+% 0 1 0 0b4cde45a2bd238e10f491b741103d34
+
+% 0 1 0 090e624d46f82b6612ac49feada3dc67
+
+@ 0 1 0 1ea69c9260eb2e00003118994deadaa5
++ entry .BlockCipher   每种分组密码的基类：一种模式、一种填充，以及提供者的机制
+
+% 1 1 0 1c57ca93e0d2283916f53f6239987ffb
+
+@ 0 7 0 00645b2565c3f75f0d911d5efbc73371
++       `BlockCipher` 保存分组密码在类型层面的*方针*（适用哪种 `Mode` 和 `Padding`、是否需要 IV、如何检查输入长度），并把字节层面的*机制*委托给召唤该密码算法的 given 时从提供者捕获的 `Crypto.SymmetricCipher`。
++       `Aes`、`Blowfish`、`Des`、`TripleDes` 和 `Rc2` 扩展它，每个都用其模式和填充加以细化，如 `Aes[256] over Cbc against Pkcs7`：`over` 类型成员是 `#Transport`，`against` 成员是 `#Contrast`，而该密码算法的 given 要求 `mode Permits padding`。
+
+@ 0 3 0 1b95269e21f76c07124ec5de2ac400ec
++       模式和填充可以写在类型中，也可以从由 `blockCipherModes` 和 `blockCipherPaddings` 导入的 given 推断；同一明文在每种组合下加密的结果都不同：
+
+% 2 1 0 16e591ac6c7d9c940d5fc67d455004e6
+
+% 3 1 0 1dc7aa86900aa21105206c5627b6ec61
+
+% 4 1 0 051e5f64de588c441d08df03501ee304
+
+% 5 1 0 1cdc89e01de161b50c1e8ec75012b4aa
+
+% 6 1 0 0f85200ae2f01ef60068d825dda54588
+
+% 7 1 0 0184c4d9ee08f48f07c95610ce6ad40c
+
+% 1 1 0 1d6ddd82ea6b074d1501eee653d3eeb4
+
+% 3 1 0 1d6f890bf801918c1ae967625ba97df5
+
+% 0 1 0 085d4ad752c35bc2028854e2975714da
+
+% 1 1 0 0e56506a0f6b8b7608dcf43976a8601a
+
+% 2 1 0 148f36bcc8cfcbb51bcd40bfcc5021e5
+
+% 1 1 0 0c954ab99fd6e0150b71859196d55971
+
+% 0 1 0 0880d36ee3cb17191c019afd4859ab68
+
+% 0 1 0 0546f7942a99b4bb0b1f536fa4a54b11
+
+% 1 1 0 0069cc826ae80a210bc319bfac90fdf6
+
+% 2 1 0 196c1ded2f75e89c13ef30430f9844b3
+
+% 0 1 0 1369384260b5e9b31401741a5f65fbe4
+
+% 0 1 0 1851a691e7a64de20a177298c71e6845
+
+% 0 1 0 0cdd0cfc73991bd21e47b054f4156dd7
+
+% 0 1 0 05eaba111b3be0e01968c3a513a48ff9
+
+% 1 1 0 1c68c647e5803a0a1534a5b94e752e45
+
+% 2 1 0 1219a4070649de960f542e4a591ee6b9
+
+% 0 1 0 1085cd8659ec89b61ba7cf6300fa9037
+
+% 0 1 0 1f57cf74595b13501fc730e57755be56
+
+% 0 1 0 0ad3b70fa0a97b7716245677e664e9e5
+
+% 1 1 0 15e393456cde1f420fa4a7d7c4e3b969
+
+% 2 1 0 0604001e9a300413152fc3dd16dcea68
+
+% 0 1 0 02571f73025322c8082840ceb4ddbb0f
+
+% 0 1 0 157a3c91fc79cdf41b00abf1d26c3d79
+
+% 1 1 0 1bbaf654e52dc39b0c29ea344fe8a7d5
+
+% 2 1 0 03708d1843fce8f719150753e57b3d5e
+
+@ 0 5 0 1862556490a785891cccd4e246a7703f
++       每种分组密码都是 `Unauthenticated` 的，因此用它加密或解密需要 `cryptoPermits.permitUnauthenticatedCrypto`（或涵盖它的许可）；经过认证的替代方案是 `AesGcm` 和 `ChaCha20Poly1305`。
++       当模式使用 IV 时，整值密文是 IV 后跟密文；流式密文则把 IV 作为它的第一个数据块发出。
+
+% 0 1 0 0b3a7bb7174f30eb0125587c75337da9
+
+% 1 1 0 0e78bde109cdf47f09bb71da31667aed
+
+% 1 1 0 12ba37806307b8510a3d302f880d5025
+
+% 0 1 0 04711cac31914ce914159ad213a79250
+
+% 1 1 0 15a6b2dc8d25e4500de2acd098966d3b
+
+@ 0 21 0 15efc2190a5b92bb1c8f6f0dbb90c3ca
++   entry #algorithm   算法的 JCE 名称：`AES`、`DES`、`DESede`、`Blowfish` 或 `RC2`
++   entry #Transport   模式，即 `over` 细化
++   entry #Contrast   填充，即 `against` 细化
++   entry #encrypt   加密一个完整的值，或作为管道阶段加密一个 `Stream[Data]`
++       整值形式检查填充的长度规则，在模式使用 IV 时从对应分组大小的 `InitializationVector` 取得 IV，并返回 IV 加密文。
++       流式形式通过一个管道驱动 `Cipher.Session`，首先发出 IV，并在流结束时（此时总长度终于已知）执行 `NoPadding` 的对齐检查；它需要一个 `Buffering`。
++   entry #encryptStream   逐个数据块地惰性加密一个 `Chain[Data]`，IV 作为第一个数据块
++       与 `turbulence.Compression` 相对应：每个数据块都经过提供者的会话，`NoPadding` 检查在最后执行。
++       要在创建该链的 `uncloak` 块之内把它取尽：在块结束后才取尽的惰性加密流，会读到遮蔽器已经清零的密钥字节。
++   entry #decrypt   解密一个完整的值，或作为管道阶段解密一个 `Stream[Data]`
++       当模式使用 IV 时，整值形式把开头的分组读作 IV。
++       流式形式在会话开始之前从流中取走 IV，需要一个 `Buffering` 和一个 `Tactic[Crypto.Error]`，并在拉取最后一个窗口时把提供者在流结束时的失败（填充损坏、认证码错误）作为 `Crypto.Error` 抛出。
++   entry #genKey   来自提供者的 `keySize` 位全新密钥材料
++   entry #privateToPublic   密钥本身：分组密码是对称的
+
+@ 0 1 0 1b7eee776bb3111817593ca60720bf9a
++   entry .Mode   分组密码模式的类型类：它的 JCE 名称、是否使用 IV、是否按分组对齐
+
+% 1 1 0 04bd7f59911a2b6d146ed93d8e53de82
+
+@ 0 6 0 01810669adca3b1d02644bf77958fded
++         `mode is Mode` 是 `Aes[256] over mode` 所需的证据，由 `Cbc`、`Ecb`、`Ctr`、`Cfb` 和 `Ofb` 各自的伴生对象以 `mode` 提供，并由 `blockCipherModes` 重新导出以供基于导入的推断（`Ecb` 除外，它的 given 需要一个许可）。
++         对于分组结构的模式 ECB 和 CBC，`blockAligned` 为 true，它们与 `NoPadding` 一起使用时要求输入长度是分组大小的倍数；对于流式模式 CTR、CFB 和 OFB，它为 false，这些模式接受任意长度。
+
+% 0 1 0 06c418204836b8ed0a1a23cc11a5f41e
+
+% 1 1 0 1b0ad16ee73155010e46b603650d3b5f
+
+@ 0 5 0 15ef03907a3f47e31b06a6e4155480c4
++     entry .apply   根据 JCE 名称、是否使用 IV 以及是否按分组对齐创建模式的证据
++     entry #name   模式在 JCE 转换中的名称：`CBC`、`ECB`、`CTR`、`CFB` 或 `OFB`
++     entry #usesIv   模式是否接受初始化向量；只有 ECB 不接受
++     entry #blockAligned   在使用 `NoPadding` 时，输入是否必须是分组大小的倍数
++   entry .Padding   分组密码填充的类型类：它的 JCE 名称和长度规则
+
+% 1 1 0 16cf09d680facc58030f2d83fa13d6c5
+
+@ 0 5 0 13aa622e0185dc361b6ffed4017bde05
++         `padding is Padding` 是 `Aes[256] over Cbc against padding` 所需的证据，由 `Pkcs7`、`Iso10126` 和 `NoPadding` 的伴生对象以 `padding` 提供，并由 `blockCipherPaddings` 重新导出以供基于导入的推断（`NoPadding` 除外，它的 given 需要一个战术）。
++         对于接受任意输入长度的填充，`verify` 什么也不做；`NoPadding` 覆盖它以拒绝未对齐的输入。
+
+% 0 1 0 05f58575e891df911642bfefef0284a6
+
+% 1 1 0 1037306efe6ff0be0486cf6a1b6c74da
+
+@ 0 4 0 1ee971522958d1c9185a64e6506a01c2
++     entry .apply   根据 JCE 名称创建填充的证据，长度规则为空操作
++     entry #name   填充在 JCE 转换中的名称：`PKCS5Padding`、`ISO10126Padding` 或 `NoPadding`
++     entry #verify   根据分组大小检查输入长度；只有 `NoPadding` 会抛出 `Crypto.Error`
++   entry .Cbc   密码分组链接：每个分组都与上一个分组链接，使用随机 IV
+
+% 1 1 0 1c4e255595cbbb4f07226420e40b71e8
+
+@ 0 5 0 00c5c5c3a9a005621cb1b2563051bbea
++         大多数遗留格式所用的分组结构模式：它需要 IV，按分组对齐，接受三种填充中的任何一种。
++         在 `InitializationVector.random` 下，同一明文每次加密的结果都不同；在固定 IV 下则完全相同。
++     entry .mode   `Cbc is BlockCipherMode` 证据；位于隐式作用域中，也可通过 `blockCipherModes.cbc` 获得
++   entry .Ecb   电子密码本：每个分组独立加密；作为不允许的算法受门控
+
+% 1 1 0 052d1ed030c377521229603d4dc3064c
+
+@ 0 8 0 0c3ef3af5fa56a1f17cb9f9fa1aa05be
++         ECB 会暴露明文的结构（相同的分组产生相同的密文），因此它受门控：召唤它的模式证据，无论用于哪个方向，甚至只是生成密钥，都需要 `Permit[Concession.Ecb]`，它由 `cryptoPermits.permitDisallowedCrypto` 提供。
++         它不使用 IV（`InitializationVector` 被忽略），按分组对齐，接受任何填充。
++         `Ecb.mode` 不由 `blockCipherModes` 重新导出，因为带上下文参数的 given 无法重新导出；请把模式写在类型中：`Aes[256] over Ecb`。
++     entry .mode   `Ecb is BlockCipherMode` 证据，需要一个擦除的 `Permit[Concession.Ecb]`
++   entry .Ctr   计数器模式：由递增的计数器分组生成密钥流，任意长度
+
+% 1 1 0 1a26b24636d05eb000286350eb9d4c6e
+
+@ 0 5 0 11648320bf15190f1cb9b864a7d44767
++         一种流式模式：它需要 IV，不按分组对齐，只接受 `NoPadding`（`Permits.ctrNoPadding` 是它唯一的配对）。
++         计数器在整个 128 位分组上递增，与 JDK 相同。
++     entry .mode   `Ctr is BlockCipherMode` 证据；位于隐式作用域中，也可通过 `blockCipherModes.ctr` 获得
++   entry .Cfb   密码反馈：全分组变体的流式模式
+
+% 1 1 0 190fb44f9f86c9eb1c22345bacf721bc
+
+@ 0 4 0 02241636751650bd063a382de3d6dd2c
++         需要 IV，不按分组对齐，接受任何填充。
++         反馈是整个分组（AES 为 128 位），与 JDK 的 `CFB` 相同。
++     entry .mode   `Cfb is BlockCipherMode` 证据；位于隐式作用域中，也可通过 `blockCipherModes.cfb` 获得
++   entry .Ofb   输出反馈：全分组变体的流式模式
+
+% 1 1 0 06864c1c8c2518b90ddd2839947806fd
+
+@ 0 4 0 12238fc7be6d279703356673eb417f56
++         需要 IV，不按分组对齐，接受任何填充。
++         反馈是整个分组，与 JDK 的 `OFB` 相同。
++     entry .mode   `Ofb is BlockCipherMode` 证据；位于隐式作用域中，也可通过 `blockCipherModes.ofb` 获得
++   entry .Pkcs7   PKCS#7 填充：最后一个分组用填充字节的个数填满
+
+% 1 1 0 0c8291eccc47f7771de6696d1bf6ee1c
+
+@ 0 5 0 14199a7aef72abd30dca19d77aba2375
++         常用的填充，确定性的，因此固定 IV 会产生逐字节相同的密文。
++         出于历史原因，JDK 称它为 `PKCS5Padding`。
++         解密时填充损坏（密钥错误）是一个原因为 `BadPadding` 的 `Crypto.Error`。
++     entry .padding   `Pkcs7 is BlockCipherPadding` 证据；位于隐式作用域中，也可通过 `blockCipherPaddings.pkcs7` 获得
++   entry .Iso10126   ISO 10126 填充：随机字节，最后是个数
+
+% 1 1 0 1fb787cff613a3f50967ebac343dd331
+
+@ 0 4 0 1d8b718cdb881e1601c19cc2ff8d31d9
++         填充字节是随机的，因此同一明文在固定 IV 下最后一个分组仍然不同。
++         这是 JCE 独有的方案：`OpensslCrypto` 不提供它。
++     entry .padding   `Iso10126 is BlockCipherPadding` 证据；位于隐式作用域中，也可通过 `blockCipherPaddings.iso10126` 获得
++   entry .NoPadding   无填充：输入必须已经适合该模式
+
+% 1 1 0 1f509fcb64595c0501a3273e7d168c0a
+
+@ 0 8 0 1dc1f31d7b90da5b000b7ae66ba953ff
++         对于按分组对齐的模式（ECB、CBC），输入长度必须是分组大小的倍数，否则作为原因为 `IllegalBlockSize` 的 `Crypto.Error` 报告：对整个值在加密之前检查，对流在流结束时检查；对于流式模式（CTR、CFB、OFB），接受任意长度。
++         该 given 捕获一个 `Tactic[Crypto.Error]`，这就是为什么构造 `NoPadding` 密码（因而为它生成或使用密钥）需要作用域中有该战术，而其他所有填充都是全函数；也是为什么 `NoPadding.padding` 不由 `blockCipherPaddings` 重新导出：请把它写在类型中，`against NoPadding`。
++     entry .padding   `NoPadding is BlockCipherPadding` 证据，捕获一个 `Tactic[Crypto.Error]`
+
+@ 0 1 0 1b4e85a51f7d2359060f00bf9945c68c
++ entry .Aes   使用 128、192 或 256 位密钥的 AES，采用某种分组密码模式和填充
+
+% 1 1 0 0c4e918b75ad5265072728f8b61813ca
+
+@ 0 6 0 1920d613db1c82f01f1420495abf0af6
++       `Aes[bits] over mode against padding` 是作为 `BlockCipher` 的高级加密标准，经由提供者必备的 `aes` 实现，因此每个提供者都提供它。
++       密钥大小是字面量类型：`Aes[128]`、`Aes[192]` 或 `Aes[256]`；模式和填充或者写在类型中，或者从 `blockCipherModes` 和 `blockCipherPaddings` 的导入推断。
++       它未经认证，因此需要 `cryptoPermits.permitUnauthenticatedCrypto`；要进行认证加密，请使用 `AesGcm`。
+
+% 2 1 0 1ef4168a06975b061aa666536a345e8a
+
+% 3 1 0 086d3c87513967c90e9894893afbd12e
+
+% 4 1 0 1e3cac7f297bf30214394d0aebf21394
+
+% 5 1 0 1ca0c984ffe680c207dd7354aaeee69c
+
+% 6 1 0 0da906e492547edc18baed2d99171ec7
+
+% 7 1 0 1354033b06a8bf251708a85c12f3d788
+
+% 0 1 0 0b1c693573c4012304785f4693908dab
+
+% 1 1 0 0d3aa0e79bcf788415f5367e2c6c8c6b
+
+% 2 1 0 1a9a546688187d2c11da33dfad808d63
+
+% 1 1 0 14489989f1fda1840864c62cbe45de36
+
+% 1 1 0 1c1ee63eb82eea111de81fb9ced413c4
+
+% 1 1 0 1ed5ebad82ddcfe50c40db44a8eeea8c
+
+@ 0 2 0 01488e5717a5505200be602f953e5a3d
++   entry .value   given `Aes[bits] over mode against padding`，由一种模式、一种填充、它们的 `Permits` 证据和一个 `Crypto` 构成
++   entry #keySize   128、192 或 256
+
+@ 0 1 0 0e9de8c4d6bf9d6e1a9c53385616a01a
++ entry .AesGcm   伽罗瓦/计数器模式的 AES：使用 96 位 nonce 和 128 位认证码的认证加密
+
+% 1 1 0 1280b87a7e3cca8511a8a4761707aa6d
+
+@ 0 7 0 161b2aff10f4bb73020b38b68966ed16
++       SSH 的 `aes256-gcm@openssh.com`、TLS 的 `AES_*_GCM` 套件以及现代互联网大部分地方所用的 AEAD，写作 `AesGcm[128]` 或 `AesGcm[256]`。
++       它是与 `Aes over BlockCipher.Cbc` 及其他分组密码模式不同的原语（它进行认证，接受关联数据，并接受调用者绝不能重复使用的 nonce），因此它是自成一体的 `Cipher & Symmetric & Authenticated`，而不是 `BlockCipherMode`，不需要许可，并通过 `seal` 和 `unseal` 而不是 `encrypt` 和 `decrypt` 使用。
++       经由提供者的结构成员 `aesGcm` 获得，每个内置提供者都有这个成员。
+
+% 2 1 0 17b983f0fd38be5301d4d7a294767e5a
+
+% 3 1 0 032d7d4805c9c80a1aafa36f1616415b
+
+% 4 1 0 114bf64ed61cac3f134a7038ca84dc5a
+
+% 5 1 0 0c3098b7806664d306993e45df72148e
+
+% 6 1 0 1182953f88bb2f1e10a9eb323e6b5778
+
+% 3 1 0 18337aaea198c00111e1795ad46e8197
+
+% 0 1 0 1ceab47122aeee461b1451738f33720c
+
+% 0 1 0 1f8399496a2fdf8600b4b86e63fa085d
+
+% 0 1 0 1266bbad72eefc801749759aaae4c5b9
+
+% 1 1 0 1b764453a6744f740d889289d166f1f9
+
+% 1 1 0 1f72ed2b592a09491d1c69b0aedb2db1
+
+% 0 1 0 0cf9b0f53f26ed4114bc43ec084e12fe
+
+% 0 1 0 0201b91c281aa62f118d9eaa313e9fdb
+
+@ 0 4 0 09960b6b9c0a09670e6d84c64338ea55
++   entry .value   given `AesGcm[bits]`，来自一个 `Crypto { def aesGcm: Crypto.Aead }`
++   entry #keySize   128 或 256
++   entry #genKey   来自提供者的全新密钥材料
++   entry #privateToPublic   密钥本身
+
+% 2 1 0 14a481548c2867fa02469aea393dbd28
+
+% 3 1 0 1a85f0d24d6336151a4e1bca587128cc
+
+@ 4 2 0 0f3e579052875139124606df8f7fd126
++   entry #seal   附加了认证码的密文
++   entry #unseal   明文；若认证码验证失败则为 `Unset`
+
+@ 0 1 0 1772ce0af7c1d1af09062cd3dd853d28
++ entry .Blowfish   使用 128、256 或 448 位密钥的 Blowfish；不允许使用，需要许可
+
+% 1 1 0 1a54992cd82b4917116a83779828353b
+
+@ 0 6 0 19d4dedd8be4b67d04ede954eb6204e7
++       分组为 8 字节的 `BlockCipher`，经由提供者的结构成员 `blowfish` 获得（只有 JDK 的提供者有）。
++       它的 `Weakness` 是 `Concession.Blowfish`，因此使用它需要 `cryptoPermits.permitDisallowedCrypto` 或 `permitCryptoThrough2014`，以及每种分组密码都需要的未认证许可。
++   entry .value   given `Blowfish[bits] over mode against padding`
++   entry #keySize   128、256 或 448
+
+@ 0 1 0 13e96c395ffe0c670e06acc7074fefb4
++ entry .Des   使用 56 位密钥的 DES；不允许使用，需要许可
+
+% 1 1 0 115e3f0318f4b923146d5d967686fd81
+
+@ 0 5 0 006a79c24a7b3d0b1f3c94786b78fe60
++       分组为 8 字节的 `BlockCipher`，经由提供者的结构成员 `des` 获得（只有 JDK 的提供者有）。
++       它的 `Weakness` 是 `Concession.Des`：已被攻破，只有 `cryptoPermits.permitDisallowedCrypto` 或按年份划分的许可才允许使用，用于读取很久以前加密的内容。
++   entry .value   given `Des over mode against padding`
+
+% 0 1 0 1d9bc053353251171431314b02b493dd
+
+@ 0 1 0 1707b563c3a30f6a1cd69a0e06369cf5
++ entry .TripleDes   使用 112 或 168 位密钥的三重 DES（`DESede`）；已弃用，需要许可
+
+% 1 1 0 1d56dd07331ea1db040bb0ecf36ab3d4
+
+@ 0 6 0 1ca50f592664ef3e07d7a4cdca9bc4de
++       分组为 8 字节的 `BlockCipher`，经由提供者的结构成员 `tripleDes` 获得（只有 JDK 的提供者有）。
++       它的 `Weakness` 是 `Concession.TripleDes`：`cryptoPermits.permitDeprecatedCrypto` 允许用它加密，而 `permitLegacyCrypto` 只允许解密。
++   entry .value   given `TripleDes[bits] over mode against padding`
++   entry #keySize   112 或 168
+
+@ 0 1 0 0e1de3a778fdd4d3056baf687ed3643b
++ entry .Rc2   使用 40、64 或 128 位密钥的 RC2；不允许使用，需要许可
+
+% 1 1 0 171efb142085334c19df228500f5c8f1
+
+@ 0 5 0 068fb771f3ac60240e7dd3e57835c1ce
++       分组为 8 字节的 `BlockCipher`，经由提供者的结构成员 `rc2` 获得（只有 JDK 的提供者有）。
++       它的 `Weakness` 是 `Concession.Rc2`，由 `cryptoPermits.permitDisallowedCrypto` 或 `permitCryptoThrough2014` 许可。
++   entry .value   given `Rc2[bits] over mode against padding`
++   entry #keySize   40、64 或 128
+
+@ 0 1 0 13fd0024e233c0720d23368f67dedd11
++ entry .ChaCha20   RFC 8439 的 ChaCha20 密钥流：256 位密钥、96 位 nonce、32 位计数器
+
+% 1 1 0 02a0c511242837b3100a66a75b17fdec
+
+@ 0 6 0 166b207a7b53567510ac7d4284438114
++       裸流密码，作为 `Cipher & Symmetric & Keystream`，通过 `SymmetricKey[ChaCha20]` 上的 `xor` 扩展方法使用：应用两次密钥流即可还原明文。
++       它是 OpenSSH 的 `chacha20-poly1305@openssh.com` 与 `Poly1305` 组合使用的原始原语（两个密钥、一个加密的长度）；对于普通的认证消息，请使用 `ChaCha20Poly1305`。
++       经由提供者的结构成员 `chaCha20` 获得，每个内置提供者都有这个成员。
+
+% 2 1 0 00e0a7a5bf5ac8e4043ad2e1790879c4
+
+% 3 1 0 0c388ecacbfcba3114fda7e6651a57e2
+
+% 4 1 0 12db294490cca0d615595c3da90535ec
+
+% 5 1 0 193107ff45c4ed9a0f323bafe301c3ff
+
+% 6 1 0 0475f53ab949ce1f062d31a5800843be
+
+% 0 1 0 0dea1f06f51d44d61176d121c43f6baa
+
+% 0 1 0 1aa69e2cca242c0c00c718b5a74698ed
+
+% 0 1 0 0ff1e977cfcab9571caaad9bcfce62df
+
+% 1 1 0 1f9bdf5afe025e730cf141381038ac7b
+
+% 0 1 0 16a625383a6303261fb23d9cd2a4d653
+
+% 0 1 0 1f94b24faf364f7115d1fa793abdc4d4
+
+% 0 1 0 02907f48d88e4fff18eb23a9cd71878f
+
+@ 0 1 0 10f774fb8f84ae87003fc68520204cad
++   entry .value   given `ChaCha20`，来自一个 `Crypto { def chaCha20: Crypto.StreamCipher }`
+
+% 1 1 0 04a45f765c139efd08aedd667a278bc2
+
+@ 2 2 0 1379be954867fcb1191d64163309d9e5
++   entry #genKey   来自提供者的 32 个全新随机字节
++   entry #privateToPublic   密钥本身
+
+% 4 1 0 1eb2aef4abdf680f1028cecdd37af347
+
+@ 1 1 0 16b4467209d682b700f9157b22aef72c
++   entry #xor   `data` 与从分组 `counter` 开始的密钥流组合的结果
+
+@ 0 1 0 0b3ed22f90ca18d11a1c51dcb177e837
++ entry .ChaCha20Poly1305   RFC 8439 的 ChaCha20-Poly1305 AEAD：TLS 1.3 的另一种密码算法，也是 WireGuard 的
+
+% 1 1 0 157136be2231cca5062b2e0b72217eb2
+
+@ 0 5 0 13c586b2b320b0c20de576666942db53
++       基于 `ChaCha20` 并带有 128 位 Poly1305 认证码的认证加密，作为 `Cipher & Symmetric & Authenticated`，与 `AesGcm` 完全一样通过 `seal` 和 `unseal` 使用：256 位密钥，在同一密钥下绝不能重复的 12 字节 nonce，经过认证但不加密的关联数据，以及附加在密文之后的认证码。
++       经由提供者的结构成员 `chaCha20Poly1305` 获得，每个内置提供者都有这个成员。
+
+% 1 1 0 107ab429ac107b5a08a5f50c6e86e59f
+
+% 1 1 0 19385170bc9e977a0ed2dfb9e049412e
+
+@ 0 1 0 0df7067e055f1bcb0121481e95366ef5
++   entry .value   given `ChaCha20Poly1305`，来自一个 `Crypto { def chaCha20Poly1305: Crypto.Aead }`
+
+% 1 1 0 19f83803f36649cd0484607aef6bdccb
+
+@ 2 2 0 0f5417dcb853df760db6a9cfb8860d4a
++   entry #genKey   来自提供者的 32 个全新随机字节
++   entry #privateToPublic   密钥本身
+
+% 4 1 0 12d37fb4e036546e12594910fe0904f2
+
+% 3 1 0 1892eec9b818698f1c28d5c2cb95d7cb
+
+@ 4 2 0 06cd03bfdd5e611b1b4c3052d9db9f8f
++   entry #seal   附加了认证码的密文
++   entry #unseal   明文；若认证码验证失败则为 `Unset`
+
+@ 0 1 0 0623d691e085bfb8096deb1f909300c4
++ entry .Rsa   使用 1024、2048、3072 或 4096 位密钥的 RSA：向公钥加密，并进行签名
+
+% 1 1 0 1a1905d8580f3c8f18ad8c8a8a9df083
+
+@ 0 7 0 13df4b08625f87f306ab8e00c099a46a
++       RSA 既加密也签名，这是共用一个密钥对的两种不同原语：`encrypt` 和 `decrypt`（在 `uncloak` 之内）使用原始 RSA，而 `sign` 和 `verify` 使用 RSASSA-PKCS1-v1_5，基于作用域中的 `Signature.Digest` 所指明的摘要（除非从 `signatureDigests` 导入了其他摘要，否则为 SHA-256）。
++       两者都属于每个提供者必备的基线。
++       加密时提供的 IV 被忽略。
++       `Rsa[1024]` 的 `Weakness` 是 `Concession.SmallRsa`，因此它需要 `cryptoPermits.permitDisallowedCrypto` 或 `permitCryptoThrough2014`；更大的尺寸不需要许可。
+
+% 2 1 0 1f9c0e67312fff4915d27b73d299d302
+
+% 3 1 0 142c84c3e5e89f681e852b4bce7404c6
+
+% 4 1 0 1d6dd576b0cd954413cf6850351ff481
+
+% 5 1 0 046078858caee6ee04a5c7b0747bc60c
+
+% 6 1 0 1f3e0634aa2a6d9818717899210e3a37
+
+% 8 1 0 0618537261326b1a111bc7b58ba0cdf6
+
+% 0 1 0 00117fc4ce1772780203d5a33531aaca
+
+% 0 1 0 1b6aac234c4b3d8d08b5e5cb3516b2b9
+
+% 1 1 0 177896abebecde5315482f3ffb6762b7
+
+% 2 1 0 027d8e68a9820cd607c09a2fa62f865e
+
+@ 0 3 0 16dbfa2dd1745a9f02274c4e33e3c6ce
++       它的密钥可以从 `PRIVATE KEY`、`RSA PRIVATE KEY`（PKCS#1）、`PUBLIC KEY` 和 `RSA PUBLIC KEY` 块读取，也可以从 `ssh-rsa` 行和 OpenSSH 容器读取；模数大小必须与类型相符。
+
+% 1 1 0 1999876624fc76f21ffdc7b15cd8df3f
+
+% 2 1 0 1ea32c77407a1ae900a73baaa295c85e
+
+@ 0 9 0 016cd0808b6646370e9c9012d2bf90c7
++   entry .value   given `Rsa[bits]`，由一个 `Signature.Digest` 和一个 `Crypto` 构成
++   entry .keyAlgorithm   `Rsa[bits] is KeyAlgorithm`：模数为 `bits` 位的 `rsaEncryption`，`ssh-rsa`
++   entry #keySize   1024、2048、3072 或 4096
++   entry #privateToPublic   由私钥计算出的公钥
++   entry #decrypt   用私钥进行原始 RSA 解密
++   entry #encrypt   向公钥进行原始 RSA 加密；IV 被忽略
++   entry #genKey   一个 `keySize` 位的全新 PKCS#8 密钥对
++   entry #sign   基于所选摘要的 RSASSA-PKCS1-v1_5 签名
++   entry #verify   签名在公钥下是否验证通过
+
+@ 0 1 0 16302a57a9d7778d08241fe783568ea1
++ entry .Dsa   使用 512、1024、2048 或 3072 位密钥的 DSA；不允许使用，需要许可
+
+% 1 1 0 1ed03ea7d64cf89b11341a921ae35fb9
+
+@ 0 13 0 0d0aaf7baacf85091a1e4a7fc3419fef
++       经由提供者的结构成员 `dsa` 获得的 `Cipher & Signing`（只有 JDK 的提供者有）。
++       它的 `Weakness` 是 `Concession.Dsa`（已在 FIPS 186-5 中移除），因此签名需要 `cryptoPermits.permitDisallowedCrypto` 或 `permitCryptoThrough2024`，验证旧签名至少需要 `permitLegacyCrypto`。
++       DSA 密钥的参数只存在于密钥之中，因此它的 `KeyAlgorithm` 没有固定标识符，也没有 OpenSSH 名称，`PublicKey.raw` 也无法构建这样的密钥。
++   entry .value   given `Dsa[bits]`，来自一个 `Crypto { def dsa: Crypto.SignatureScheme }`
++   entry .keyAlgorithm   `Dsa[bits] is KeyAlgorithm`：素数 `p` 为 `bits` 位的 `id-dsa`；没有 OpenSSH 名称
++   entry #keySize   512、1024、2048 或 3072
++   entry #genKey   一个全新的 PKCS#8 密钥对
++   entry #sign   一个 DSA 签名
++   entry #privateToPublic   由私钥计算出的公钥
++   entry #verify   签名在公钥下是否验证通过
+
+@ 0 1 0 179dd6ac1a61f2711b3150409c60ae26
++ entry .Ecdsa   基于按密钥大小选择的 NIST 素数曲线的 ECDSA：P-256、P-384 或 P-521
+
+% 1 1 0 13d8d1ab19b9eaca0973642ad8849080
+
+@ 0 7 0 1828da6033a23de106b844defc5c4d89
++       `Ecdsa[256]` 是 P-256（`secp256r1`），`Ecdsa[384]` 是 P-384，`Ecdsa[521]` 是 P-521：一种对作用域中的 `Signature.Digest` 所指明的摘要签名的 `Cipher & Signing`。
++       与 `Rsa` 不同，它不在必备基线之中，因此经由结构成员 `ecdsa(digest)` 获得，JDK 和 OpenSSL 的提供者有这个成员；`SoundnessCrypto` 不提供它，向它请求是编译错误。
++       它的密钥可以从 `PRIVATE KEY`、`EC PRIVATE KEY`（SEC1）和 `PUBLIC KEY` 块读取，也可以从 `ecdsa-sha2-nistp*` 行和 OpenSSH 容器读取；曲线必须与类型相符。
++       不需要许可。
+
+% 2 1 0 0d133561dd61a0160590fd8d56204740
+
+% 3 1 0 0159d2120910b1d607b6e8748c2b85bd
+
+% 4 1 0 100a9a83ae83c99a03fc88cdd9a47f56
+
+% 5 1 0 182752d8f18460f804f3fa3f1ff58151
+
+% 6 1 0 017024a2c9519ea60ccdc16da3dbb1c9
+
+% 8 1 0 1588810be9857df4177ed9012af10b5d
+
+% 1 1 0 0de307e26cb1b31601a7a93f0c84009b
+
+% 2 1 0 1272eed708726e8012ef8c996d30311f
+
+% 1 1 0 1de6bed569cd83ae0b0c1cbb757b295e
+
+% 1 1 0 1c98d78b8b4d201b063ecd19b494d236
+
+@ 0 7 0 19b7999d61c0651f005d09000561df17
++   entry .value   given `Ecdsa[bits]`，由一个 `Signature.Digest` 和一个 `Crypto { def ecdsa(digest: Text): Crypto.SignatureScheme }` 构成
++   entry .keyAlgorithm   `Ecdsa[bits] is KeyAlgorithm`：带有 `bits` 对应曲线的 `id-ecPublicKey`；`ecdsa-sha2-nistp<bits>`
++   entry #keySize   256、384 或 521
++   entry #genKey   一个全新的 PKCS#8 密钥对，在 SEC1 结构中携带其公钥
++   entry #privateToPublic   从私钥文档的内嵌字段读取的公钥
++   entry #sign   基于所选摘要的 ECDSA 签名
++   entry #verify   签名在公钥下是否验证通过
+
+@ 0 1 0 0c9113d4b96fc1fb0b65fa60ecf9d20b
++ entry .Ecdh   基于按密钥大小选择的 NIST 素数曲线的 ECDH 密钥协商
+
+% 1 1 0 1d9441ef20c929ff0ca4b9bb3a9fc7d0
+
+@ 0 7 0 05db5a6fd6e14a8a1f967187c3a5eadc
++       SSH 的 `ecdh-sha2-nistp*` 和 TLS 的 `secp*r1` 组所用的密钥协商，写作 `Ecdh[256]`、`Ecdh[384]` 或 `Ecdh[521]`：一种通过 `agree` 扩展方法使用的 `Cipher & Agreeing`。
++       其密钥是普通的 EC 密钥（`PrivateKey[Ecdh[256]]` 和 `PrivateKey[Ecdsa[256]]` 是同一种文档，EC 密钥文件可以读作其中任何一种），但把同一个密钥既用于协商又用于签名是一种错误，不同的类型可以防止这种错误。
++       经由提供者的结构成员 `ecdh` 获得（只有 JDK 的提供者有）。
++       共享秘密为 32、48 或 66 字节。
+
+% 1 1 0 10da3d27f8a8a778047506bd5739a125
+
+% 1 1 0 133396c0b31385520caa50d7a5729dcb
+
+@ 0 6 0 11895cb2598ee5181bd0ca778c0fb1e1
++   entry .value   given `Ecdh[bits]`，来自一个 `Crypto { def ecdh: Crypto.KeyAgreement }`
++   entry .keyAlgorithm   `Ecdh[bits] is KeyAlgorithm`：带有 `bits` 对应曲线的 `id-ecPublicKey`；没有 OpenSSH 名称
++   entry #keySize   256、384 或 521
++   entry #genKey   一个全新的 PKCS#8 密钥对
++   entry #privateToPublic   从私钥文档的内嵌字段读取的公钥
++   entry #agree   与对方公钥协商出的原始共享秘密
+
+@ 0 1 0 1b9174389d8fc0a807b55ae7474dc3f5
++ entry .Ed25519   Ed25519（RFC 8032）：OpenSSH 的默认密钥类型，TLS 1.3 的签名方案之一
+
+% 1 1 0 13d88addc22eb278173d8c9b408247e3
+
+@ 0 8 0 02ef2015c36200540e4ca1c8d70e719f
++       基于 Curve25519 的爱德华兹曲线签名方案，作为 `Cipher & Signing`，密钥大小固定为 256，没有大小参数。
++       它直接对消息签名（即“纯”变体），因此不涉及 `Signature.Digest`。
++       经由提供者的结构成员 `ed25519` 获得，每个内置提供者都有这个成员；其中纯 Scala 实现基于 `BigInt`，速度慢，且不是常数时间的。
++       它的密钥可以从 `PRIVATE KEY` 和 `PUBLIC KEY` 块、`ssh-ed25519` 行以及 OpenSSH 容器读取；在 JDK 下，缺少公钥字段的 PKCS#8 文档会得到 `PublicKeyAbsent`，因为 JDK 无法推导出公钥。
++       不需要许可。
+
+% 2 1 0 0948046065135cf71155f7512bd77cf0
+
+% 3 1 0 0a0d47720d56c0d9080779feee4467a5
+
+% 4 1 0 1b6dd011b91c79bb1a40ed804e75e741
+
+% 5 1 0 1e555a480c001a7e01d6c60863330243
+
+% 6 1 0 1303330bcd17f7c10895ec612c652a6e
+
+% 0 1 0 105a2813c11af4141d541f69216bcf05
+
+% 1 1 0 06b1a702c6a91baa0d58f4ed04197dd2
+
+% 2 1 0 1851efccd966988e07e73c221f7d7c4c
+
+% 1 1 0 03707d2c800df9a81b933554d550740a
+
+% 1 1 0 14773ce245fb8a810d2d1695aca16f47
+
+@ 0 2 0 1b35a9b98811b25c1693fff11b6843f2
++   entry .value   given `Ed25519`，来自一个 `Crypto { def ed25519: Crypto.SignatureScheme }`
++   entry .keyAlgorithm   `Ed25519 is KeyAlgorithm`：不带参数的 `id-Ed25519`；`ssh-ed25519`
+
+% 1 1 0 04c409323b29f8e3079160651b6f2d32
+
+@ 0 4 0 1be21eb4790e200c1bbd4ecf3a013e51
++   entry #genKey   一个全新的 PKCS#8 密钥对，公钥内嵌在 RFC 5958 的 `[1]` 处
++   entry #privateToPublic   从私钥文档的内嵌字段读取的公钥
++   entry #sign   直接针对消息本身的 Ed25519 签名
++   entry #verify   签名在公钥下是否验证通过
+
+@ 0 1 0 1bf0e408efce275b10884cc50e392e77
++ entry .MlDsa   ML-DSA（FIPS 204），后量子格签名，级别为 44、65 或 87
+
+% 1 1 0 10712c51e125d49b0a86101d9e4cc3de
+
+@ 0 6 0 1a759e5466fea018130068e138048a0b
++       由 CRYSTALS-Dilithium 标准化而来的模格签名方案，写作 `MlDsa[44]`、`MlDsa[65]` 或 `MlDsa[87]`（矩阵的维数，ML-DSA-65 为 6×5）：一种直接对消息签名的 `Cipher & Signing`，因此不涉及 `Signature.Digest`。
++       经由提供者的结构成员 `mlDsa(level)` 获得，只有 JDK 的提供者有，而且只在 JDK 24 或更高版本上可用（更早的 JDK 在首次使用时会 panic）。
++       不需要许可。
+
+@ 0 4 0 1bc52828cf4d54100606ffbe35e41192
++       ML-DSA 密钥签署证书的方式与其他任何密钥相同（`Certificate.selfSigned`），但 TLS 协议栈可能无法用后量子密钥完成握手（JDK 的就不能），因此以 ML-DSA 密钥为身份的服务，会让该密钥为一个它能够出示的经典密钥*签发*证书（`Certificate.issued`）。
+
+% 2 1 0 1eece767545774dd025a93f0b418647d
+
+% 3 1 0 0b30e9438b9749cc07f4484439ed7f12
+
+% 4 1 0 07e743fbe6e8b31e1cb4edba4755dff8
+
+% 5 1 0 0fad57e56a7d89180c7ca440582f90c7
+
+% 6 1 0 01574fce47263fe117918bc3182a80c8
+
+% 0 1 0 08b98b63ce79e64a0563039397d2a0dd
+
+% 1 1 0 1d98e2689f1dc04d1453f19558957f34
+
+% 2 1 0 069cd613f30b9114045b09b9e3035ac1
+
+% 1 1 0 0ef0767a9d3fa93f036614d0a4818bd7
+
+% 1 1 0 004436ce76ce3da3065ee97c62215a40
+
+@ 0 7 0 14222319d0eb0b0c09d534ecae0e3b16
++   entry .value   given `MlDsa[level]`，来自一个 `Crypto { def mlDsa(level: Int): Crypto.SignatureScheme }`
++   entry .keyAlgorithm   `MlDsa[level] is KeyAlgorithm`：该级别自己的标识符（RFC 9881），不带参数；没有 OpenSSH 名称
++   entry #keySize   44、65 或 87，即参数集
++   entry #genKey   一个全新的 PKCS#8 密钥对，公钥内嵌在 RFC 5958 的 `[1]` 处
++   entry #privateToPublic   从私钥文档的内嵌字段读取的公钥
++   entry #sign   直接针对消息本身的 ML-DSA 签名
++   entry #verify   签名在公钥下是否验证通过；对于损坏到无法解码的签名为 `false`
+
+@ 0 1 0 16ffb7a8478471750ca6500cc0db47dd
++ entry .X25519   X25519（RFC 7748），基于 Curve25519 的 Diffie–Hellman：TLS 1.3 的默认组，SSH 的 `curve25519-sha256`
+
+% 1 1 0 00b83f115508942e14e06bc4ee143f22
+
+@ 0 6 0 112605f88dea27cc03378830c36f4a67
++       一种 `Cipher & Agreeing`，密钥大小固定为 256，没有大小参数，通过 `agree` 扩展方法使用：持有彼此公钥的双方计算出相同的 32 字节秘密，协议再把它哈希为会话密钥。
++       经由提供者的结构成员 `x25519` 获得，每个内置提供者都有这个成员。
++       公钥的原始 32 字节形式是 `PublicKey#raw`，`PublicKey.raw[X25519](bytes)` 则根据对方发送的内容构建公钥。
+
+% 2 1 0 1628eb8e96d5ece8106639b8bcb26ba8
+
+% 3 1 0 091eae25d824d8450cc6c9321264e451
+
+% 4 1 0 0a8c48299c0b64e91617a20cd1eb84d9
+
+% 5 1 0 07ebf442a85f23f601e4bb3eaa737852
+
+% 6 1 0 17a17e5e67031fca04007fa9aa8717c2
+
+% 0 1 0 111fc0f6ffcb436112d546d51464facb
+
+% 0 1 0 03a8b4ee53ad3e47041934e428b204ef
+
+% 0 1 0 1798c0bcf5dec5410ddd33333630188b
+
+% 0 1 0 1ca1fab3a0e9bc1c084a74054d9cb51e
+
+% 0 1 0 1f28ef5e85e81b13137e972f86ae10c0
+
+% 1 1 0 00b702706d95dc280b2df9a61f90554d
+
+% 1 1 0 13e29cd7776209eb1e7585af35d365c4
+
+% 1 1 0 0294793276ee8ae81fad67f0deee3411
+
+@ 0 2 0 1a223076dc1f73550d59e5f6a7dae68c
++   entry .value   given `X25519`，来自一个 `Crypto { def x25519: Crypto.KeyAgreement }`
++   entry .keyAlgorithm   `X25519 is KeyAlgorithm`：不带参数的 `id-X25519`；没有 OpenSSH 名称
+
+% 1 1 0 1bdffb389e1bfc1e09ef7791a91bef5e
+
+@ 0 3 0 08ad4c85308cbc501e159416512cf777
++   entry #genKey   一个全新的 PKCS#8 密钥对，公钥内嵌在 RFC 5958 的 `[1]` 处
++   entry #privateToPublic   从私钥文档的内嵌字段读取的公钥
++   entry #agree   与对方公钥协商出的原始 32 字节共享秘密
+
+@ 0 1 0 1c6145f96ad0c4be09d9517d2e3e15f9
++ entry .Hmac   基于某种哈希算法的 HMAC，作为一个值
+
+% 1 1 0 03df54daad44a7cd07226591093cc7ba
+
+@ 0 4 0 1ad193052210ab650ea00930ccdd84a3
++       `Hmac in algorithm` 是 `hmac` 扩展方法的结果：认证码的字节，以哈希算法作为幻影类型成员 `#Form`。
++       它以 base64 形式 `Showable`（需要作用域中有 `Alphabet[Base64]`），以十六进制形式 `Inspectable`，并且 `Encodable in Data`，因此可以通过任何基数编码序列化。
+
+% 2 1 0 1899fdf04bbad8040fa2b929275717c0
+
+% 3 1 0 084a8518031b42590e6e5543760978c4
+
+% 4 1 0 13edaf0b58f6ec9012180dae19ea55df
+
+% 0 1 0 03775d0ecd055392006e7b2cb3ffcda6
+
+% 0 1 0 17fcfc04983deba8080a90ef1481aa64
+
+% 0 1 0 1b47d4cc2629697809681972b204bac6
+
+% 1 1 0 185ea547288705bd1c827fd2563cbae1
+
+% 0 1 0 11b663190656668b1cfed931fbba4119
+
+@ 0 6 0 06af173b3f8c4f380db8839a165921cb
++   entry .apply   把认证码字节包装为 `Hmac in scheme`
++   entry .showable   把 HMAC 渲染为 `Hmac(<base64>)`，使用作用域中的 `Alphabet[Base64]`
++   entry .encodable   HMAC 编码为它的字节
++   entry .inspectable   以完整的十六进制渲染 HMAC，不需要作用域中有 `Alphabet`
++   entry #bytes   认证码
++   entry #Form   哈希算法，作为幻影类型
+
+@ 0 7 0 03155c52574578d6181414b576d3fe13
++ entry .hmac   `value.hmac[Sha2[256]](key)`：任何可编码值在某个密钥下的 HMAC
++     任何 `Encodable in Data` 的值上的扩展方法。
++     它需要所指明哈希的 `Hash in algorithm`、一个 `Crypto` 提供者（以哈希的 JCE 名称调用其 `hmac`，例如 `HmacSHA256`），以及一个 `Permit[HashWeakness[algorithm]]`；因此基于 MD5 或 SHA-1 的 HMAC 需要相应的 `cryptoPermits` 导入，而 SHA-2 和 BLAKE3 不需要。
++     结果是一个 `Hmac in algorithm`。
++     密钥是普通的 `Data`：HMAC 密钥是共享秘密，`enigmatic.cose` 中的 `HmacCipher` 适配器可以改让 `SymmetricKey` 来保存它。
+
+% 2 1 0 0279cf1f000e5a101dbc3837ac342c87
+
+% 3 1 0 1c44f293dade6126034eae037619ef3b
+
+% 1 1 0 14701783ccc9666712befcd44588fd19
+
+% 0 1 0 1a94ea18d9ba3afe12b51cc7d574e969
+
+% 0 1 0 0f4d9e19d1ef50670c38ebaaada625ad
+
+% 1 1 0 061c5e35f69779100049d2b7cad6aac4
+
+@ 0 1 0 04d59df2e12b60a91213c62c8353fd6d
++ entry .encrypt   用 `uncloak` 借出的 `Encryptor` 加密一个值、一个 `Chain[Data]` 或一个 `Stream[Data]`
+
+% 1 1 0 0d9174120c96e508097c53d9d849aea9
+
+@ 0 10 0 04fdb4d5799060a51dd683f085dc11c3
++       三个同名的扩展方法。
++       在任何 `Encodable in Data` 的值上，`value.encrypt[cipher](iv)` 是整值密文（模式使用 IV 时为 IV 加密文），适用于任何 `Encryption` 密码算法，无论分组密码还是 RSA。
++       在 `Chain[Data]` 和 `(Stream[Data] over Credit)^` 上，它是只适用于 `BlockCipher` 的惰性逐块加密：IV 是第一个数据块，`BlockCipher.NoPadding` 的对齐检查在流结束时执行，流式形式需要一个 `Buffering`。
++       每个都从外围的 `uncloak` 获取 `Encryptor[cipher]`，还需要该密码算法的 given、一个 `Permit[Weakness[cipher]]` 和一个 `Permit[Authentication[cipher]]`，因此分组密码需要 `cryptoPermits.permitUnauthenticatedCrypto`，弱算法需要它自己的许可。
++       密码算法类型由作用域中的 `Encryptor` 推断。
+
+@ 0 2 0 0214e3bc611352f019e2313402442721
++       加密是全函数：类型保证了变换有效，因此它不会失败，只有对未对齐的输入使用 `BlockCipher.NoPadding` 时才会抛出 `Crypto.Error`。
+
+% 2 1 0 0601852bed7d79a51c54cf735995562c
+
+% 3 1 0 07c1b80fada3664504a1f1cbc19c4423
+
+% 4 1 0 0709cf105f4e7cff1df66f85c7bdf4ab
+
+% 5 1 0 1fd77197585ac3b3142d57da863f5657
+
+% 6 1 0 00c305af82e21ef21e7aac454c3dcc7a
+
+% 0 1 0 05c7b6b663c0853b10f681bb6ec5d7d3
+
+% 1 1 0 1fdb974efee19d68146a4151f0b6ddf5
+
+% 3 1 0 007af473214d1dd70ea95774bac1e402
+
+% 5 1 0 14e223ee393c8eb61480c3e598e4a66b
+
+% 0 1 0 10cfd0e8ea75945b175de853178dad73
+
+% 1 1 0 179371f1854d68711b430b4c72789657
+
+@ 0 3 0 0a14473f6306481d11a2c1f54d1ca435
++       要在创建惰性流的 `uncloak` 块之内把它取尽。
++       密文 `Chain` 是纯的，因此捕获检查允许它离开该块，但在块结束后才取尽的流会读到遮蔽器已经清零的密钥字节。
+
+% 1 1 0 10a9dd0fc006008f1afbbe143ce16e75
+
+% 1 1 0 174e2d025d4dfe3f0ed9910852643ea6
+
+% 0 1 0 1cd895b62abf45e80469f1eb82b4f211
+
+@ 0 1 0 0c246ec54415420705f5f81337cdfd15
++ entry .decrypt   用 `uncloak` 借出的 `Decryptor` 解密 `Data` 或 `Stream[Data]`
+
+% 1 1 0 09acbbdef85b708916726fcd522e36f3
+
+@ 0 9 0 11c762e3917528b51be11e321def0594
++       两个同名的扩展方法。
++       在 `Data` 上，`data.decrypt[T]` 解密整个值（模式使用 IV 时读取开头的 IV），并把明文解码为任何 `Decodable in Data` 的类型（如 `decrypt.as[Text]`，需要作用域中有 `Text` 解码器），适用于任何 `Encryption` 密码算法。
++       在 `(Stream[Data] over Credit)^` 上，它是对“IV 后跟密文”这一分帧的惰性解密，只适用于 `BlockCipher`，明文一旦可用就产出；它需要一个 `Buffering`。
++       每个都从外围的 `uncloak` 获取 `Decryptor[cipher]`，还需要该密码算法的 given，以及针对其 `Weakness` 和 `Authentication` 的 `ProcessingPermit`，因此读取旧数据只需要针对算法的 `cryptoPermits.permitLegacyCrypto` 和针对模式的未认证许可。
+
+@ 0 5 0 06117702c678b9ba02c701e96c15b5e4
++       解密是密码学会失败的地方：错误的密钥、损坏的密文或格式错误的输入会抛出 `Crypto.Error`（`BadPadding`、`IllegalBlockSize`、`InvalidKey`……），对于流式形式，在拉取最后一个窗口时抛出。
++       用错误的密钥解密永远无法恢复明文，但在流式模式或无填充时，它也可能不抛出错误：只是产出无意义的数据，而这正是认证密码要防止的。
+
+% 2 1 0 047825954e2eaa7f026e2537e2a80786
+
+% 3 1 0 187837bca7d75b121476417494c70f60
+
+% 4 1 0 14075bce3ab3d3ce0d30a3a60b289efd
+
+% 5 1 0 0135e0def74990480066db1ca63e757e
+
+% 6 1 0 0091d8e816da98171020ae6386757816
+
+% 7 1 0 1ddab26374830c22147c178d04522f23
+
+% 9 1 0 027d68ff126adca8060a453b5e24a67b
+
+% 0 1 0 1f04d6a9e4528a3b1c4fa7351804c34b
+
+% 0 1 0 09666a2d06cdf9c3107f5463cc30958f
+
+% 1 1 0 08c2ae2d5d69d993060591f22d907b41
+
+% 1 1 0 13a5c2b29622f36e16ddc7f9c4a1b5e2
+
+% 1 1 0 02da00ca8b63f5670acce265c7349a91
+
+@ 0 1 0 0863739d2abc473707ee797806ee4323
++ entry .uncloak   把密钥作为限定于某个块的 `Encryptor` 和 `Decryptor` 能力借给该块
+
+% 1 1 0 1c5efc1fe0f8a1ae1d475bde1acf2c0f
+
+@ 0 10 0 14f019b22777e5dd0d1d144a2e957f4b
++       三个扩展方法：`publicKey.uncloak(block)` 借出一个 `Encryptor[cipher]`，`privateKey.uncloak(block)` 借出一个 `Decryptor[cipher]`，`symmetricKey.uncloak(block)` 则同时借出两者。
++       每个都是一个有界作用域：块是以这些能力为参数的上下文函数，`encrypt` 和 `decrypt` 扩展方法会取用它们，而捕获检查把它们限定在块内：返回一个能力、返回一个稍后才加密或解密的闭包，或把能力存入外层变量，都是编译错误（_leaks into outer capture set_、_outlives its scope_）。
++       在块执行期间，密钥材料经由密钥的遮蔽器物化，并在块退出时清零；借出的能力查看的就是这个临时数组，因此它们的视图随之失效，这就是为什么惰性加密的流必须在块内取尽。
+
+% 2 1 0 126be76f0760270f053e23437d1db6bd
+
+% 3 1 0 0a27e0283b171a3d067587647330b0b9
+
+% 4 1 0 0a6015a9a035d1dc091f6165bed0234b
+
+% 5 1 0 0782dc19049688ae0ce2e297195b06c8
+
+% 6 1 0 1f5468dc99e9cccf086b9dfdab2486d7
+
+% 8 1 0 005d5dbbd690a020042a1d837e3f8443
+
+% 0 1 0 1d8c29779d5ff1d61a98048e36bacff6
+
+% 1 1 0 11c1bffd6527ada31a910bf7084d9b06
+
+% 0 1 0 1b7e9aed8e8e94ed07b00b2d501c1e55
+
+% 1 1 0 035956490e5cf4390bf58b96f5a8faba
+
+@ 0 1 0 1728346c2fc088990ad896474829e1cb
++       `Password#uncloak` 对密码是同样的思路，借出的是 `Cleartext`。
+
+% 0 1 0 06f2a3881f4adb8112b615587fa80251
+
+% 0 1 0 1f64b103726150a51e05f5c64f6d5a59
+
+% 1 1 0 07fa54401ebc9c7702572ad45840b9d0
+
+% 1 1 0 17696b29697556ff1d0074059d4f0fdf
+
+% 1 1 0 0f3b127131cb69a5158574f5ff7f862d
+
+@ 0 5 0 1c88007ffbbc1c8d13416ff380f9eb5a
++ entry .agree   `privateKey.agree(peerPublicKey)(block)`：把密钥协商的共享秘密借给一个块
++     `Agreeing` 密码算法（`X25519`、`Ecdh`）的 `PrivateKey` 上的扩展方法。
++     原始共享秘密作为一个数组的临时 `Data` 视图借给该块，块退出时数组被清零，这与 `uncloak` 借出密钥材料的方式相同：协议把这个秘密哈希为会话密钥，此后不再需要它，因此它的任何部分都不应在块之后留存。
+
+% 2 1 0 058570f6a36404f10f7f0255be371467
+
+% 3 1 0 12d7215935894f440e5bea614899cceb
+
+% 4 1 0 0ee6480064cd8e140a56b94399a4dcb9
+
+% 5 1 0 0b94ab48477978730412fd5e1c715059
+
+% 6 1 0 100ade740fcd19bf0f5e02d267bbf6c9
+
+% 0 1 0 1f7f9560670f858904a655ca2c2e82db
+
+% 0 1 0 0673762f99d048de0e82ee481a73d056
+
+% 0 1 0 0a6cdfbcb81ee9ac1b79012d9c683b9e
+
+% 1 1 0 18c56b56a8c67e621e8707e57e5ee706
+
+@ 0 7 0 09d0485ec3c1ab0b17541baf6386776b
++ entry .seal   `key.seal(nonce, associated, plaintext)`：在某个 nonce 下的认证加密
++     `Authenticated` 密码算法（`AesGcm`、`ChaCha20Poly1305`）的 `SymmetricKey` 上的扩展方法。
++     明文被加密，明文和关联数据都经过认证，认证码附加在密文之后。
++     不需要许可，因为 AEAD 不是 `Unauthenticated` 的；它确实需要的规程（在同一密钥下绝不重复使用 nonce）由调用者负责，这就是为什么 nonce 是一个普通参数，而不是 `InitializationVector` 策略。
++     关联数据可以为空，即 `Data()`。
+
+% 2 1 0 1c9d4ef610a5f9f611e6a90c53ccfefa
+
+% 3 1 0 165016a35f84a71206cf37ea21fd81f7
+
+% 4 1 0 1f2ef298c82b361405160fa09ec88463
+
+% 5 1 0 05143f84dcefac940c17932fd4d53efd
+
+% 6 1 0 0614e2705f8c38f71acfbc8012e173df
+
+% 8 1 0 1bfc4d28a65d25ba078bc54f89f2b5b6
+
+% 9 1 0 19a38d04f21a7ad80588f30a8defe7d0
+
+% 10 1 0 1fa91f07a0b79dd200160b5cab723a1d
+
+% 0 1 0 1c2e320ff330f21a1abbb4ff1ac1cdd8
+
+% 1 1 0 0d1a473cc8b869601b9bc3e45c9b91d2
+
+@ 0 6 0 07bf9379a9e2b52610da17717d679101
++ entry .unseal   `key.unseal(nonce, associated, ciphertext)`：返回明文，若认证码校验失败则为 `Crypto.Error`
++     `Authenticated` 密码算法的 `SymmetricKey` 上的扩展。
++     它是 `seal` 的对应操作，需要 `Tactic[Crypto.Error]` 和 `Diagnostics`：密文被篡改、密钥错误，或者 nonce 或关联数据与封装时的不同，都会抛出原因为 `BadTag` 的 `Crypto.Error`，且明文的任何部分都不会被释放。
++     它名为 `unseal` 而不是 `open`，因为在总括包中 `open` 属于 aperture。
+
+% 2 1 0 17c8fe06e2dfaaa10f925dfca05c7134
+
+% 3 1 0 1f244c13f7eba6ec005ff614652d725f
+
+% 4 1 0 1098cf010a6b311e10dd5dc9e7c5c828
+
+% 5 1 0 0a913ceb2a00e47a118f46f708e468f4
+
+% 6 1 0 1d4feaf57ce2337c0e2ae7dd5ace2a75
+
+% 8 1 0 1cf1bb80d2f7aedd1d79c02f3d8d3a1f
+
+% 9 1 0 1bf45c4b21253cfc12fc98909240099c
+
+% 10 1 0 109255503632edf51e4b4b905c47b672
+
+% 0 1 0 1b6bfb45174ea6cf15e714837a3dd909
+
+% 0 1 0 06c094e9872aeadc1ce1a94cda3f8f54
+
+% 1 1 0 0087c824bb45453007a7330d90b82932
+
+@ 0 7 0 19c2e01193ced055045c18de5231dd18
++ entry .xor   `key.xor(nonce, counter, data)`：应用密钥流，加密和解密用的是同一操作
++     `Keystream` 密码算法（`ChaCha20`）的 `SymmetricKey` 上的扩展。
++     数据与该密钥和 nonce 的密钥流从第 `counter` 块开始的部分相组合；应用两次即恢复明文。
++     计数器让协议可以从密钥流中途开始，OpenSSH 就是这样把第零块留给 Poly1305 密钥的。
++     同一密钥下的 nonce 绝不能重复，而且结果未经认证：这是一个构建单元，不是一种消息格式。
+
+@ 0 1 0 0a0961e4c032501d07a6fcd85244db9f
++ entry .Pkcs8   PKCS#8 `PrivateKeyInfo` 的形状，以及把其他密钥形式转换为它的转换
+
+% 1 1 0 1f1cbb855fadeacf0dc66ca8d44578b4
+
+@ 0 7 0 14588ebbf47fc60e073c91ea469129d3
++       RFC 5958 的 `OneAsymmetricKey`：一个版本号、一个 `AlgorithmIdentifier`、作为 OCTET STRING 的密钥材料，以及其后的任何内容——属性，以及在版本 2 中可选的公钥。
++       这是每个 `Crypto` 提供者接受私钥的形式，因此密钥文件可能使用的其他每种格式都在这里转换为它，而这些转换只是单纯的 ASN.1 改造：PKCS#1 `RSAPrivateKey` 和 SEC1 `ECPrivateKey` *恰好*就是 PKCS#8 包装的 OCTET STRING 为 RSA 或 EC 密钥所容纳的内容。
++       `PrivateKey.pemDecodable` 使用它们；直接使用适用于手工组装密钥文档的代码。
+
+% 1 1 0 1b83801498722ae30caf9f35401d3523
+
+% 0 1 0 0bbd9a007d92b185126906073a90782a
+
+% 1 1 0 0fb4f90e64a510d4100537edd8dde612
+
+@ 0 19 0 0ee9a87f4eb40b370bd240c437a3f8ad
++   entry .unwrap   把 DER `PrivateKeyInfo` 拆分为它的各个 `Pkcs8` 字段
++       若字节不是 DER 或不是 `PrivateKeyInfo`，则抛出原因为 `Malformed` 的 `PrivateKey.Error`。
++   entry .wrap   围绕一个 `AlgorithmIdentifier` 和密钥字节构造的版本 0 `PrivateKeyInfo`，以 DER 形式给出
++   entry .fromPkcs1   以 NULL 参数包装在 `rsaEncryption` 下、成为 PKCS#8 的 PKCS#1 `RSAPrivateKey`
++       若文档不是 `RSAPrivateKey`，则抛出 `PrivateKey.Error`（`Malformed`）。
++   entry .fromSec1   包装为 PKCS#8 的 SEC1 `ECPrivateKey`，曲线取自它自己的 `[0]` 字段
++       RFC 5915 只在曲线可从别处得知时才允许文档省略它，而这里并非如此：没有指明曲线的 SEC1 密钥属于 `Malformed`。
++   entry .carriesPublicKey   对于一个密钥文档，`PrivateKey#public` 能否得到答案
++       RSA 或 DSA 公钥由私钥计算得出，但 EC、Ed25519、X25519 或 ML-DSA 公钥是一个没有提供者会重新计算的点，因此它必须由文档携带：对 EC 而言位于 `ECPrivateKey` 内部（RFC 5915 的 `[1]`），对其他算法而言位于 `OneAsymmetricKey` 的顶层（RFC 5958 的 `[1]`，可以是显式形式，也可以是隐式形式）。
++   entry #version   `PrivateKeyInfo` 的版本：0，携带公钥时为 1
++   entry #identifier   `AlgorithmIdentifier`
++   entry #octets   密钥材料，即 `privateKey` OCTET STRING 的内容
++   entry #rest   密钥材料之后的任何内容：属性，以及可选的公钥
+
+@ 0 1 0 1faad47863f9124c087e069588a6d0fa
++ entry .Spki   X.509 `SubjectPublicKeyInfo` 的形状：一个 `AlgorithmIdentifier` 和作为 BIT STRING 的密钥
+
+% 1 1 0 15671f49ecb52a500114e00e353d4703
+
+@ 0 2 0 157bca91052512a610145d860f841a88
++       每个提供者接受公钥的形式。
++       `PublicKey.pemDecodable` 和 `PublicKey.raw` 使用它们；直接使用适用于手工组装密钥文档的代码。
+
+% 1 1 0 0fe9ce0011c03ef00bc96084fa22c3ab
+
+% 1 1 0 1fff4acab8e30f7b0039cea9bc92f0b8
+
+@ 0 7 0 13a63d2b0a5cf58e0a298ab9896ff8a5
++   entry .unwrap   把 DER `SubjectPublicKeyInfo` 拆分为它的各个 `Spki` 字段
++       若字节不是这样的结构，则抛出原因为 `Malformed` 的 `PublicKey.Error`。
++   entry .wrap   围绕一个 `AlgorithmIdentifier` 和密钥位构造的 `SubjectPublicKeyInfo`，以 DER 形式给出
++   entry .fromPkcs1   包装在 `rsaEncryption` 下、成为 `SubjectPublicKeyInfo` 的 PKCS#1 `RSAPublicKey`
++       若文档不是 `RSAPublicKey`，则抛出 `PublicKey.Error`（`Malformed`）。
++   entry #identifier   `AlgorithmIdentifier`
++   entry #bits   密钥，即 `subjectPublicKey` BIT STRING 的内容
+
+@ 0 1 0 0a90ca4ab9fbfb0d0d47f4026de54a72
++ entry .OpenSsh   OpenSSH 的两种密钥格式：`openssh-key-v1` 容器和 `authorized_keys` 行
+
+% 1 1 0 1122cbc12b79b4c41053236fd8bb8814
+
+@ 0 7 0 087969855dd5698e0c8703982d55486b
++       前者是 `ssh-keygen` 自 OpenSSH 7.8 起用来写私钥的容器（铠装为 `OPENSSH PRIVATE KEY`，`PrivateKey.pemDecodable` 通过 `.privateKey` 读取它），后者是 `id_*.pub`、`authorized_keys` 和 `known_hosts` 用来容纳公钥的单行形式——类型、base64 数据块和可选注释。
++       两者都建立在 SSH 传输编码（RFC 4251 §5）之上；两者都不是 ASN.1，因此各自被转换为提供者所接受的 PKCS#8 或 `SubjectPublicKeyInfo` 文档。
++       OpenSSH 命名且本库能读取的密钥类型是 `ssh-ed25519`、`ssh-rsa` 和 `ecdsa-sha2-nistp256`/`384`/`521`。
+
+% 2 1 0 021ba19ea15f76f01f4143dd6e8fa934
+
+% 3 1 0 0d08e4a34a856a370fd8ace2670390a0
+
+% 4 1 0 190f597c8178ee74033ba613e7b083e6
+
+% 5 1 0 1fc699c79e6f725d16802ae77b65b437
+
+% 0 1 0 1bdf8a619515844d013160abb1c5666b
+
+% 0 1 0 1a1af8dfcc45445a160340e3252acb50
+
+% 0 1 0 0e598df588b76caf085a54370e350c6b
+
+% 1 1 0 1b90ea3caeb12b62098c0a65fe0db341
+
+@ 0 3 0 0059a57fcb4a69f01705282a0a35c7b9
++       只读取未加密的私钥：受口令保护的容器（其密码算法和 KDF 不是 `none`）需要 bcrypt 的 KDF，而没有提供者提供它，因此会报告为原因为 `Encrypted` 的 `PrivateKey.Error`。
+
+% 1 1 0 0aecf74a14f1c52007f7c82d3be6e221
+
+% 1 1 0 1bb9f1a66473b4f00f920223458e1421
+
+% 1 1 0 0de7ecb755b894ba13f598a830de9050
+
+@ 0 21 0 06184924cedbdc2f1e9da1131d1efda2
++   entry .privateKey   `openssh-key-v1` 容器中唯一私钥的 PKCS#8 形式
++       需要 `Tactic[PrivateKey.Error]` 和 `Diagnostics`。
++       Ed25519 密钥变为 RFC 8410 的 `CurvePrivateKey`，公钥位于 RFC 5958 的 `[1]`；ECDSA 密钥变为指明其曲线的 SEC1 结构；RSA 密钥变为 PKCS#1 结构，OpenSSH 省略的两个 CRT 指数会被计算出来，因为 JDK 的 RSA 密钥需要它们。
++       不是此类容器的输入属于 `Malformed`，加密的容器属于 `Encrypted`，容纳多个密钥或未知密钥类型的容器属于 `Unsupported`。
++   entry .publicKey   `OpenSsh.publicKey[cipher](line)`：由单行形式得到的公钥，并对照密码算法进行检查
++       需要 `Tactic[PublicKey.Error]` 和 `Diagnostics`。
++       该行的形式为 `<type> <base64> [comment]`；不是此形式的行，或数据块不是 base64 的行，属于 `Malformed`，而其他算法的密钥属于 `Mismatch`，例如对 `ssh-ed25519` 行调用 `OpenSsh.publicKey[Rsa[2048]]` 会报告 _a RSA-2048 key was expected but Ed25519 was found_。
++   entry .spki   传输编码的公钥数据块的 `SubjectPublicKeyInfo` 形式
++       即一行中 base64 所容纳的数据块，或容器的公钥部分：SSH 协议的密钥编码（RFC 4253 §6.6），解码为提供者所接受的文档。
++   entry .line   单行形式的公钥，若给出注释则附带注释
++       若密钥的算法在 OpenSSH 中没有名称（DSA、ECDH、X25519、ML-DSA，如其 `KeyAlgorithm#sshName` 所示），或其字节不是格式良好的文档，则为 `Unset`。
++   entry .blob   传输形式的公钥：SSH 协议在认证和密钥交换中发送的内容
++       即一行的 base64 所编码的字节，见 RFC 4253 §6.6；在与 `.line` 相同的条件下为 `Unset`。
+
+@ 0 1 0 1184c5101cbae2341b77023168fc06f8
++ entry .Poly1305   RFC 8439 的一次性认证器，用 Scala 实现
+
+% 1 1 0 04f1f6f65807acf70096650e51a1c7ce
+
+@ 0 7 0 17fd5734bea42fe916172d41c8001dcf
++       `Poly1305.mac(key, message)` 是在一个 32 字节密钥下对消息计算出的 16 字节认证码，该密钥只能使用一次，这就是协议要为每条消息从密钥流派生密钥的原因。
++       它在这里实现而不是取自提供者，因为 JDK 只以与 ChaCha20 融合的形式提供 Poly1305，即 `ChaCha20Poly1305`，而 OpenSSH 的 `chacha20-poly1305@openssh.com` 需要单独使用它，其密钥取自 `ChaCha20` 密钥流的第零块。
++       其运算的耗时与消息内容无关，是常数时间的。
+
+% 2 1 0 1e75138cddea6214155ac9b40ea33829
+
+% 3 1 0 04e85da47f9e598a05a4a21bdeb7e35a
+
+% 1 1 0 07d758f26939287f14925d166a99b0dd
+
+% 0 1 0 1dfbd6b58deb54c213592027d6f0335b
+
+% 0 1 0 03b0430e7f05993919a811bda6508c71
+
+% 0 1 0 0b7e74aaa6650dd21eb126fef8a56757
+
+% 1 1 0 08211e93c539feac0b9724e9288922db
+
+@ 0 1 0 1a34b6b96d5377f51650bfd5db1e1726
++   entry .mac   在 32 字节一次性 `key` 下对 `message` 计算出的 16 字节认证码
+
+@ 0 1 0 07e8035d01e3ed7914dfd02172666e20
++ entry .blockCipherModes   分组密码模式，每个都是一个按名称导入以供推断的 given
+
+% 1 1 0 19186e99fda1b7af1fc9aa47e2ba4495
+
+@ 0 6 0 1f024703f331ffa51bdc38657365958f
++       分组密码的模式可以写在它的类型中，即 `Aes[256] over BlockCipher.Cbc`，也可以省略，从作用域中的模式 given 推断出来。
++       当类型指明模式时，伴生对象已经在隐式作用域中提供了这些 given；这些重新导出用于另一种情况，即带有 `import blockCipherModes.cbc` 的 `SymmetricKey.generate[Aes[256]]()`。
++       `BlockCipher.Ecb.mode` 不在这里，因为它接受一个擦除的许可，而重新导出的 given 做不到这一点：请写 `over Ecb`。
+
+% 2 1 0 09bd23160a6efdea1c315152a5153156
+
+% 3 1 0 145eae399e0dd78c05849671292a0d83
+
+% 4 1 0 1d3e0ae16f61d6001ce3dd76c7df7b9a
+
+% 5 1 0 12071c0d9e9903151f8518c9433165dc
+
+% 6 1 0 0aa99789f47d5c551c700bfaad26e3e3
+
+% 7 1 0 19a9cb4bae057c9a08c468ce993a3f88
+
+% 0 1 0 13d8bbc7f5546c7704b8fdeec5640d7e
+
+% 0 1 0 19b5b4fbc81b3c6e08481f96977a11a7
+
+% 0 1 0 11019e2ca96095cb145d0519fcbd92d0
+
+% 1 1 0 0f78609a0361828e182db614b9d5a675
+
+% 1 1 0 1d138bbe63bb338d1960ad82ab2c60ab
+
+% 0 1 0 181e17b8d8d3211314f7508d3c91abbb
+
+@ 0 4 0 1a1100b9f954980317692b933acf03cf
++   entry .cbc   密码块链接，`Cbc.mode`
++   entry .ctr   计数器模式，`Ctr.mode`；只能与 `NoPadding` 搭配，且必须在类型中写明
++   entry .cfb   密码反馈，`Cfb.mode`
++   entry .ofb   输出反馈，`Ofb.mode`
+
+@ 0 1 0 13702e7969213a6303d872065414ee7c
++ entry .blockCipherPaddings   分组密码填充方式，每个都是一个按名称导入以供推断的 given
+
+% 1 1 0 17ce94d322830b491011b5a134c8e155
+
+@ 0 4 0 170abfec104bdfea13e183e3c8a34d1c
++       与 `blockCipherModes` 相同，只是针对填充：`import blockCipherPaddings.pkcs7` 让 `Aes[256] over BlockCipher.Cbc` 无需 `against BlockCipher.Pkcs7` 即可解析。
++       `BlockCipher.NoPadding.padding` 不在这里，因为它捕获一个 `Tactic[Crypto.Error]`，而重新导出的 given 做不到这一点：请写 `against BlockCipher.NoPadding`。
+
+% 1 1 0 0366c966a3f9aa6e1079397661105e10
+
+% 0 1 0 151ae55c4d01c3eb02ae64af3c05c05e
+
+@ 0 2 0 1b31efc0993c2bac064e79c466a67b1b
++   entry .pkcs7   PKCS#7 填充，`Pkcs7.padding`
++   entry .iso10126   ISO 10126 填充，`Iso10126.padding`
+
+@ 0 1 0 17586ad150edb1a70c31568f4042c2ca
++ entry .cloaks   机密的存放位置，每个都是一个按名称导入的 given
+
+% 1 1 0 0be605741dd5a7511830b0d2a3d2a7fe
+
+@ 0 8 0 1a6a3d5c3fc89658077c614c0674c97f
++       这里有意不提供默认的 `Cloak`：构造任何机密——`Password`、`SymmetricKey`、`PrivateKey`、从文件读取的密钥——都需要作用域中有一个遮蔽器，因此存储方式的决定总是被明确写下。
++       `heapCloak` 在每个平台上都存在；其他三个需要 `java.lang.foreign`，只在 JVM 上存在。
++       这三种 JVM 策略是能力，因此它们的 given 是 `transparent inline`：每个召唤点都会实例化一个新的遮蔽器——它有自己的内存区域，对于加密策略还有自己的临时密钥——用它构建的机密会捕获它，因此这样的机密不能被赋予纯类型。
+
+% 2 1 0 0766a396779fafed1355e86fdb2c9b4b
+
+% 3 1 0 162819420641abaf1bc029313188e0ba
+
+% 4 1 0 01d5b617f1b57af3145b50a4a9423351
+
+% 5 1 0 127f8c27d0c310d21c5e7fed38dafeca
+
+% 3 1 0 05773032c2b5fdc1011d04647c24350d
+
+% 5 1 0 111e021922e90ba711ca5ca6379fd65d
+
+% 0 1 0 009d22bcbfcb995b0d245ef84c75fbc4
+
+% 1 1 0 06761457d6a8b32308d163642fb70a4d
+
+% 2 1 0 175a45fdbab4a15816329325cd66d306
+
+% 0 1 0 1d3ac2d8258775b6063ce79d14b5a864
+
+% 0 1 0 03896f0385fc7d930cc6c6c92f938297
+
+% 0 1 0 1a027b535df5b1830592e9fef9ea65f6
+
+% 0 1 0 0ea5e801806492d31d1fc5a200bcaba4
+
+% 1 1 0 15c529b72c6f9f1d0fa08126053d3165
+
+% 2 1 0 1368582ec4a53b7a0f606d9d929431c1
+
+% 0 1 0 1419395e82b8ef161039a72515063ebb
+
+% 0 1 0 08de6f186aaf6db81856b9c111647ed1
+
+% 0 1 0 02ddd9f2283606950df1c94c83977104
+
+% 1 1 0 1b5afd130970771e02291c2712c54d4a
+
+% 2 1 0 0d264cbae61744d50a6dffb4cd422b1c
+
+% 0 1 0 0ada1ec237cebc2b1e82f504616b97a5
+
+% 1 1 0 1dce5d21ddbf903e06cbfbf3f5be0bbb
+
+% 0 1 0 1c078421765f77c616ebca78008b82ed
+
+% 1 1 0 01d7b5fa2e1b250607750254c6a2e989
+
+% 2 1 0 1cf5f8a973a775bc0bbb9b23d0887546
+
+% 0 1 0 0883ee00286d5e031d404ec49fefd418
+
+% 1 1 0 1438c1368c53711e0416c143fe516f3a
+
+% 1 1 0 0daf2409f877a2a917f87f6d2e141375
+
+% 2 1 0 0076521fa9e4e71b0061baaa7a6b213f
+
+@ 0 3 0 122c37623cce139700b3a7502913bbf6
++       在每种策略下，密钥都以同样的方式在 `uncloak` 内使用。
++       没有任何遮蔽器能防御同一进程中的调试器；较强的遮蔽器所缩短的，是明文可从堆转储或核心文件中获取的时间窗口。
+
+% 1 1 0 1cfadb3bd34e4fa912f6bb69cbd63b46
+
+@ 0 15 0 1e8c922309a167491c940b7228c0d7e5
++   entry .heapCloak   明文存放在堆上，作为私有字节数组；适用于每个平台
++       最弱的策略——在机密的整个生命周期中，材料在堆转储中都是可见的——但可移植且纯粹：用堆遮蔽的机密具有空的捕获集，因此可以不经跟踪地存储和返回。
++   entry .offHeapCloak   明文存放在堆外内存中：静止时堆上完全没有任何内容；仅限 JVM
++       每个机密获得一个 `java.lang.foreign` 共享内存区域，当机密变得不可达时，由清理器将其清零并释放。
++       每个召唤点一个新的遮蔽器。
++   entry .veiledHeapCloak   密文存放在堆上，使用保存在堆外的临时 AES-256-GCM 密钥加密；仅限 JVM
++       静止时堆上只保存密文（每个机密都有新的 nonce，GCM 认证码保护它不被篡改），而读取它所需的密钥位于堆外。
++       每个召唤点一个新的遮蔽器，带有新的密钥。
++   entry .veiledOffHeapCloak   密文存放在堆外，使用保存在堆上的临时 AES-256-GCM 密钥加密；仅限 JVM
++       前者的镜像，用于大量机密材料应留在堆外、但可以接受一个 32 字节密钥驻留在堆上的情况。
++       每个召唤点一个新的遮蔽器，带有新的密钥。
+
+@ 0 1 0 00df4f0ac3d816a31ff2eb2315073e33
++ entry .providers   密码学提供者，每个都是一个按名称导入的 given
+
+% 1 1 0 11834964de219c6d11c0bdce16e2b78b
+
+@ 0 5 0 12db0174e44d38521c1946fd7f006568
++       `Crypto` 提供者由一条导入选定，这条导入同时也选定了哈希实现。
++       其中两个 given 属于 gastronomy：`providers.javaBaseProvider`（JDK，`Crypto.javaBaseCrypto` 从它派生 `JavaBaseCrypto`）和 `providers.soundnessProvider`（纯 Scala，`Crypto.soundnessCrypto` 从它派生 `SoundnessCrypto`）。
++       这个包加入了 OpenSSL 提供者，它来自 `enigmatic.openssl`。
+
+% 1 1 0 0254f0d5709f845c05c035e80ec8e627
+
+% 1 1 0 178e6fd494585aa21b698ce2432403d1
+
+@ 0 3 0 06a8556a50b1e2d513b329251742c52b
++   entry .opensslProvider   `OpensslCrypto`，基于 `libcrypto` 的提供者
++       即 given `OpensslCrypto.type`。
++       目前随机数、HMAC 以及 PKCS#7 填充或无填充的 AES 是原生实现的；RSA 委托给 JDK 提供者，因此它实际上仅限 JVM。
+
+@ 0 1 0 0c64b6424455ec3a1d3c5cedcf852ede
++ entry .Keystore   PKCS#12 密钥库，用 `Password` 打开，在一个作用域的持续期间内有效；仅限 JVM
+
+% 1 1 0 0ce82021eb10f51017975a8511c98d39
+
+@ 0 7 0 0991f25d930c1a640a4b2c7a3da45bfa
++       `path.open[Keystore](Password(t"…"))` 在某个路径（任何 `Abstractable across Paths to Text` 的类型）上为代码块打开密钥库，口令作为标志传入——它是不透明的 `Password`，因此其明文只能通过有作用域的 `Cleartext` 获取，而平台所需的字符数组在密钥库加载后即被清零。
++       在代码块内，`keystore` 是打开的 `.KeystoreHandle`，提供密钥库的别名和 DER 编码的证书。
++       打开需要 `Tactic[Keystore.Error]`。
++       它以 `java.security.KeyStore` 为基础，因此只在 JVM 上存在；在支持写入密钥库之前它是只读的。
+
+% 2 1 0 124b4d727f2ed75819d2c01f307d22d0
+
+% 0 1 0 0ff09fd85a6fbb540f3b2a2530c17d7e
+
+% 1 1 0 10f090fe19e7ee750458b0e6da583f6b
+
+% 1 1 0 05e58c57513ff4fb1664b4fb5914cddd
+
+% 2 1 0 07a766336e9a6e4b1bb46be10f78d8cf
+
+% 3 1 0 121e97737ae9337c19c172d710fbb792
+
+% 0 1 0 1f6b7d85434f8a0f0596cfc8c38449be
+
+% 0 1 0 04056516d35cf1d601f7d1e0db07ca4d
+
+% 0 1 0 012b6640a614693809d12262574619a2
+
+% 0 1 0 18b5e1c6a5f060491e54182cb186ef7f
+
+% 0 1 0 0990a1dc6f20286d07a0d0c4ec65b24e
+
+% 0 1 0 09d0a68f9a0ab47a0b88a113ece3a1e5
+
+% 1 1 0 02d603888e5f6df510b348a774cad138
+
+@ 0 4 0 1dfcf380dbdc017d1e1fc29dfc47e5c0
++       错误的口令和损坏的密钥库有意不加区分——两者都是 `Unreadable`——因为区分它们就等于告诉猜测者两者中是哪一个出了错。
++       没有口令时，密钥库会在不做完整性检查的情况下加载，与 `KeyStore.load` 的行为相同。
+
+% 0 1 0 0e80fd0bb66a68341144791297499908
+
+% 1 1 0 1b05b24a8b381d29091d1e979807ce37
+
+@ 0 1 0 1fb48afc9a0998670169ae8de461b04b
++   entry .KeystoreHandle   `open[Keystore]` 代码块内打开的密钥库，以 `keystore` 获取
+
+% 1 1 0 11cbf75c73f813ef07b492c4382fa665
+
+@ 0 6 0 0eb999bd2a6b957d0fae8d05d2706da9
++         对已加载的 `java.security.KeyStore` 的独占能力，限定在代码块内。
++     entry #aliases   密钥库中的每个别名，作为 `List[Text]`
++     entry #certificate   存储在某个别名下的 DER 编码的 X.509 证书，或 `Unset`
++         用 `Der(bytes).as[Certificate]` 解码它，或作为 `Asn1` 检视它。
++   entry .KeystoreOpenable   把路径作为密钥库打开的 `Openable`；为其 given 而设的具名类
+
+% 1 1 0 0d179b0a126caa39015b7bdb38c1d670
+
+@ 0 13 0 19da13bbad8cb3271033d359de5fa0f2
++         `.openable` 背后的实现，其中 `Form = Keystore`、`Operand = Password`、`Result = KeystoreHandle`。
++         它是具名类而不是匿名的 given 实例，以便可以谈论这个类型；通过 `.openable` 召唤。
++     entry #open   加载路径上的 PKCS#12 密钥库，并用句柄运行代码块
++         在触及文件之前，以 `Keystore.Error`（`WriteUnsupported`）拒绝 `Write` 模式；第一个 `Password` 标志（如果有）会为加载而解除遮蔽，并在加载后清零。
++     entry #loadKeystore   在字符数组口令下从流中加载 `java.security.KeyStore`
++         JDK 加载时的任何异常——口令错误、格式错误、截断——都会变成原因为 `Unreadable` 的 `Keystore.Error`。
++   entry .openable   让 `path.open[Keystore](password)` 得以解析的 given
++       适用于任何 `Abstractable across Paths to Text` 的路径类型；捕获作用域中的 `Tactic[Keystore.Error]`。
++   entry .Error   密钥库无法读取，或被以写入方式打开时抛出
+
+% 1 1 0 09c04a0a6cd7aa151cd17571000d8399
+
+@ 0 7 0 02a63caa6bd7a76e1fb239d68db80fd7
++         错误 `↯/s.105.3`：_the keystore operation failed because `reason`_。
++     entry .communicable   把每个原因呈现为一条消息
++     entry .Reason   操作失败的原因
++         `Unreadable`（1）：_the keystore could not be read with the given password_——口令错误或密钥库损坏，有意不加区分。
++         `WriteUnsupported`（2）：_keystores cannot yet be opened for writing_，针对 `open[Keystore](Write, …)`。
++     entry #reason   操作失败的原因
+
+@ 0 4 0 1509b2bd1d771109129daf2f1b80c737
++ entry .keystore   `open[Keystore]` 代码块内打开的 `Keystore.KeystoreHandle`，以上下文方式获取
++     用 `keystore.aliases` 代替 `summon[Keystore.KeystoreHandle].aliases`，方式与 galilei 的 `file` 相同。
++     它是 transparent inline，因此保留了句柄带有授权细化的精确类型。
++     只在代码块内有意义；仅限 JVM。
+
+@ 0 1 0 09dce67eed4d2760197a0f4a425ad6af
++ entry .Asn1   ASN.1 值，采用 PKIX 所用的通用类型，带有严格的 DER 编解码器
+
+% 1 1 0 1e51ee3a1fde860e1138682e02f44a7b
+
+@ 0 5 0 113f9e8fcf6992c307e0ae08d74b4db8
++       `Asn1` 是证书、密钥和签名请求所由构建的 ASN.1 通用类型的枚举，也是这样的值与其 [DER](https://en.wikipedia.org/wiki/X.690#DER_encoding) 八位字节之间的编解码器，这些八位字节保存为一个 `Der` 文档。
++       `value.in[Der]` 编码，`der.as[Asn1]` 解码，`bytes.read[Asn1 in Der]` 直接从字节来源读取一个值。
+
+% 2 1 0 0e317a87190e3fb71f9d76ba1fcd5d8f
+
+% 3 1 0 0e825d06c26c8ae1187d6aee705e4929
+
+% 4 1 0 053f40a8ebafb4250f9ec050d1a1f23a
+
+% 0 1 0 1f532031a48c546304974cac4434287c
+
+% 0 1 0 057c7222895d86581f800ad4eca5f776
+
+% 0 1 0 18c86458c04cd80c1927651e4d58282d
+
+% 1 1 0 0519031cd2c5d7bb16311cd75f0d60a8
+
+@ 0 2 0 106353e4681bed7e0e1c57a60ab00996
++       各个分支就是通用类型，每个都是一个 case class，其字段即是值，并带有写出时所用的通用标签编号：
+
+% 0 1 0 16a4f2fae7bcd8cc1df54f58ca7e7d4d
+
+@ 0 3 0 00de6c4e451a27620d5683f7c46d03cd
++       column  分支
++       column  标签
++       column  说明
+
+% 0 1 0 0af37759aa6ac93a11d142766c861f17
+
+@ 0 2 0 0816269e153880dd0e80a7c5f385b8ec
++       row  `Integer(value: BigInt)`  2  以最小长度编码，采用二进制补码符号扩展
++       row  `BitString(bytes: Data, unusedBits: Int)`  3  带有末尾未使用位的数目：签名或公钥为 `0`
+
+% 0 1 0 108aa9fa5090dfe219382ccb7dea4144
+
+% 0 1 0 0304aa78919a9f161ed71e5c6d68e2f0
+
+@ 0 1 0 0fb0bc95225bbe831951a2711f96c95c
++       row  `ObjectId(arcs: List[Int])`  6  以弧表示的对象标识符：`sha256WithRSAEncryption` 是 `Asn1.ObjectId(List(1, 2, 840, 113549, 1, 1, 11))`
+
+% 0 1 0 1c6247a2a0e9d522111aaec4bdbaf5b0
+
+% 0 1 0 0e2a1dfdbba1071112d7fece769c5007
+
+% 0 1 0 08e4a5ac0246c2f90bf57a5e44d8c67f
+
+@ 0 2 0 0e17e7fa518ab694051f9277ab1460f7
++       row  `UtcTime(timestamp: Long)`  23  自 Unix 纪元起的秒数，只接受 DER 的 `YYMMDDHHMMSSZ` 形式，没有小数部分和偏移；年份按 1950–2049 读取
++       row  `GeneralizedTime(timestamp: Long)`  24  自 Unix 纪元起的秒数，只接受 DER 的 `YYYYMMDDHHMMSSZ` 形式，没有小数部分和偏移
+
+% 0 1 0 13a075ee5e2f22ec16b5976bc953e3f7
+
+@ 0 3 0 1465aa90ecd172e01774d2dff7a06c89
++       row  `Set(elements: List[Asn1])`  17  写出时成员按其编码排序，读取时要求已排序
++       row  `Tagged(tag: Int, explicit: scala.Boolean, value: Asn1)`  `tag`  上下文类标签：显式标签包裹整个内部值，隐式标签替换内部值的标签
++       row  `Unknown(tagClass: Int, tag: Int, constructed: scala.Boolean, content: Data)`  `tag`  任何其他值，其内容八位字节原样保留
+
+% 1 1 0 05fe132e6ed11bd90b9a3dbe59d972d2
+
+@ 0 11 0 04a9b447136e8a310064ec4d0910d2a3
++       解码是**全函数**：这里没有建模的标签——`T61String`、`BMPString`、`ENUMERATED`、应用类或私有类标签——解码为 `Unknown`，而构造式上下文标签只有在其内容恰好是一个格式良好的值时才解码为 `Tagged(_, true, _)`，否则解码为 `Unknown`。
++       因此*隐式*标签是只写的：`[0] IMPLICIT INTEGER` 和 `[0] IMPLICIT OCTET STRING` 的字节完全相同，区分它们需要模块的 schema，所以对于基本类型的隐式标签，解码器产生 `Unknown(Asn1.Context, 0, false, bytes)`。
++       这就是 `Certificate.issued` 写出的授权密钥标识符读回时为 `Unknown` 的原因。
++       由于没有任何内容被丢弃，解码再重新编码会精确地再现原始字节，而验证证书 `TBSCertificate` 上的签名正依赖于这一点。
+
+@ 0 5 0 0fd279ab16749dae157acace7e665cb3
++       编解码器是**严格的**：它写出 DER，也只接受 DER，因此不定长度、过长的长度或标签、非最小长度的整数、构造式字符串、未排序的集合、格式错误的时间或尾随字节，都会抛出 `Asn1.Error`，其原因指明错误及发现它的字节偏移量。
++       不同时符合 DER 的 BER 会被拒绝。
+
+@ 0 5 0 0f105ebbb05c084f165d3eb89a04b956
++       携带字节的分支保存 `Data`，而 `Data` 的相等性按同一性判断，因此两个只在 `OctetString` 内容上不同的值仍可能比较为不相等；应改为比较它们的编码（`value.in[Der]`，`Der` 按字节比较）。
++       这个组件只做纯粹的字节处理，没有密码学提供者，因此可同样编译到 JVM、Scala.js 和 Scala Native。
+
+% 1 1 0 1fa0746bda02bf101c301ec4d5f88325
+
+% 1 1 0 09991a62b89531e21aa1870596efc234
+
+% 1 1 0 1352e7774228891a1a184c45a4d6f709
+
+@ 0 27 0 053cd5ae7d85335f0b7563910749e3fc
++   entry .Universal   通用标签类，`0`
++       标识符八位字节的最高两位指明标签类；`Universal` 是每个已建模类型的类，也是容纳未建模通用类型的 `Asn1.Unknown` 的 `tagClass`。
++   entry .Application   应用标签类，`1`
++       应用类标签没有建模，因此带有这类标签的值解码为以它为 `tagClass` 的 `Asn1.Unknown`。
++   entry .Context   上下文特定标签类，`2`
++       每个 `Asn1.Tagged` 值的类，也是从隐式上下文标签读取的 `Asn1.Unknown` 的 `tagClass`，如 `Asn1.Unknown(Asn1.Context, 1, false, bytes)`。
++   entry .Private   私有标签类，`3`
++       私有类标签没有建模，因此带有这类标签的值解码为以它为 `tagClass` 的 `Asn1.Unknown`。
++   entry .encodable   把值编码为 DER，即 `value.in[Der]`
++       隐式作用域中的 `Asn1 is Encodable in Der` given。
++       每个节点先呈现自己的内容，因为定长长度必须位于它所度量的内容之前，而 `SET` 按其成员的编码排序，这样每层嵌套要付出一次复制的代价：对于它所服务的千字节级结构而言无关紧要。
++       编码永不失败：弧少于两个的 `ObjectId` 按其弧的原样写出。
++   entry .decodable   解码 DER 文档，即 `der.as[Asn1]`
++       隐式作用域中的 `Asn1 is Decodable in Der` given，需要 `Tactic[Asn1.Error]` 并捕获它。
++       它解析整个文档，并对任何不是严格 DER 的内容抛出 `Asn1.Error`，包括值之后的字节（`Reason.Trailing`）。
++   entry .aggregable   从字节来源读取值，即 `bytes.read[Asn1 in Der]`
++       `(Asn1 in Der) is Aggregable by Data` given，需要 `Tactic[Asn1.Error]`。
++       解析前会读取整个来源；结果是 `Asn1` 值。
+
+% 2 1 0 0461fe7e37eeeba80d2ad27703d9142d
+
+% 3 1 0 174dd6bdaca72bd8049676a004492f9b
+
+% 4 1 0 15c766fa8de5d9580a55bd8525e58767
+
+% 0 1 0 0c3118c8dd151cac1c942dd95a6fde04
+
+% 1 1 0 04989a4157c4c7f61c51725c8b58a034
+
+@ 0 1 0 113b5ab52d5d9890092d99d16da0ea8d
++   entry .Parser   `.decodable` 背后的严格 DER 读取器
+
+% 0 1 0 1d67946842fbefea114a1c07674d3027
+
+% 1 1 0 02a2f799681a6c9808fd96975d2255e2
+
+@ 0 8 0 063f1051d179904f109775a3b37c28d3
++         不供直接使用：它是 `Asn1.decodable` 和 `Asn1.aggregable` 所运行的读取器，是一个针对单个文档的独占、有状态的游标，其构造器是内部的。
++         它拒绝 BER 允许但 DER 禁止的每种构造，从而它所接受的任何内容都能重新编码为读入时的字节。
++         它的公共接口是表示当前位置的 `#offset`，以及在某个界限内读取一个值的 `#value`。
++     entry #offset   下一个待读字节的位置
++     entry #value   读取一个在界限处或之前结束的值，抛出 `Asn1.Error`
++   entry .Error   字节不是严格的 DER 编码时抛出
+
+% 1 1 0 1ce89b5246c32ee609186f25b753c70e
+
+@ 0 10 0 06385fd0af79c1a6162915e25adbe1d2
++         错误 `↯/s.105.4`：_could not process the ASN.1 value because `reason`_，其中原因是一个 `Asn1.Error.Reason`，指明错误和字节偏移量。
++         当输入被截断，或使用了不定长度或过长的长度、过长的标签、非最小长度或空的整数、大到无法表示的长度、尾随字节、保留标签 `0`、格式错误的对象标识符或超出 `Int` 的弧、未排序的 `SET`、格式错误的时间、`0x00`/`0xFF` 以外的布尔值、`BOOLEAN`、`NULL` 或 `BIT STRING` 的错误长度、错误的未使用位填充、构造式字符串，或基本形式的 `SEQUENCE`/`SET` 时，由 `Asn1.decodable` 和 `Asn1.aggregable`（因而也由任何通过它们解码的代码：`Certificate.decodable`、密钥解码器、`text.read[Asn1 in Pem]`）抛出。
+
+% 2 1 0 079522856090d3d71fb99206c70d72d3
+
+% 3 1 0 1dc8dec2b960ac4d17d359d493fbfbc3
+
+% 1 1 0 10c75085845bdbdf08b47c1db265ea53
+
+% 0 1 0 1e95f81aa51aa31319a034a0a90d2cfd
+
+% 0 1 0 06d1f6349288f83518a12b881ae9f653
+
+% 1 1 0 0e1f28fb25bf053f10920e4904ab3c42
+
+@ 0 1 0 1a7830393f55a4a81c6713e025ff7b85
++     entry .Reason   字节出了什么问题，以及在哪个偏移量
+
+% 1 1 0 03447c85406471cc0a37908bb50036d0
+
+@ 0 2 0 05938c6df7f306f9000ed5ba5c993d8e
++           一个有十九个分支的枚举，每个分支都携带错误所在的字节 `offset`，并按错误的子编号进行编号：
+
+% 1 1 0 05f424c7a32c4c0b0b03863d383d30a5
+
+@ 2 4 0 0e01bf457d22e768016d5c9b67691157
++           column  分支
++           column  代码
++           column  消息
++           column  说明
+
+% 0 1 0 10fe5657c057848e18be1ded5fcb9594
+
+% 0 1 0 0c264f61e8cb28f714666a19b638305f
+
+% 0 1 0 0db51886b5f3b6b40a7b7366ab261195
+
+% 0 1 0 11d5229b07b2a687198a70957548a30e
+
+% 0 1 0 0d3b1975b90142650d85dcf2d98e4a63
+
+% 0 1 0 19f166d5d89e40780a13736f51f82104
+
+@ 0 1 0 0cc6355b4924adc5166da09ebbcb593e
++           row  `Overflow(offset)`  7  _an unrepresentable length was found at byte `offset`_  过大的长度或标签
+
+% 0 1 0 1ac6b809defbf5170e4dc1f0fcc19c73
+
+% 0 1 0 1cbdb12252d2eca71547323f3f52e195
+
+% 0 1 0 1080e45669b54cdd1dbc3cb287618036
+
+% 0 1 0 1afff168607eec100a2da383edca7cf3
+
+% 0 1 0 0f497d89bba76c011ddb7f17e467b656
+
+% 0 1 0 157604197b6ed4fa1bcedf3a67a08ba9
+
+% 0 1 0 0a0414dd2b0e5ee40fcb43391dd9e3ef
+
+% 0 1 0 03eae37c3a27cd3c0c467783e9b82b2c
+
+% 0 1 0 06f96196a159bb860820fd75cd74138e
+
+% 0 1 0 155524b7186640e2048e5317ab0ca111
+
+% 0 1 0 08b5f4a6f96882570c539548523e3f4e
+
+% 0 1 0 165a6f7020f5a5dc14915627e6079b0e
+
+% 1 1 0 1c55c9a2c2cbb8f70e71117524ad0807
+
+@ 0 2 0 1ee491767a23847702060d21df97feb8
++       entry .communicable   把每个原因呈现为一条消息，指明错误及其字节偏移量
++     entry #reason   失败的 `Asn1.Error.Reason`
+
+@ 0 1 0 073425b8cfc4eee41828a01984abaa2a
++ entry .Der   DER 文档：一个 ASN.1 值的规范编码，按字节比较
+
+% 1 1 0 0d63bc42f9d69822184b7281e63223f0
+
+@ 0 6 0 1cdb1c143a4ac25617ae4702db473ba1
++       `Der` 保存单个 DER 编码值的字节，它是 ASN.1 编解码器的*形式*：`asn1.in[Der]` 和 `der.as[Asn1]` 是它的两个方向，正如 `Cbor` 是 CBOR 编解码器的形式。
++       它是一个独立的类型而不是 `Data` 的别名，这样 `value.in[Der]` 和 `bytes.read[Der]` 就没有歧义，而且两个文档**按字节**比较——`Data` 按同一性比较——往返转换正是这样检查的：
+
+% 2 1 0 00cd09ccacd6030d18288e31e863c10b
+
+% 3 1 0 1bcd35ca1629eb8d110f413b8de69675
+
+% 4 1 0 134cbfcd59708da204f748fbeba9a2ed
+
+% 0 1 0 1392365d79128bb40235286b25408e78
+
+% 0 1 0 1bc526f4ffd55bbc1d4f357824f735ab
+
+% 1 1 0 076fcf22561b60ae00dcf375ffd9d81f
+
+@ 0 5 0 1f5b841058ec49ab013799b4a02f6dce
++       `Der` 可以用 `read[Der]` 从任何字节来源读取，作为其字节写入字节目标（`in[Data]`，或以流的形式），用 `Pem(label, der)` 铠装为 PEM，并用 `pem.as[Der]` 从 PEM 块获取。
++       `PrivateKey` 和 `PublicKey` 可从容纳 PKCS#8 `PrivateKeyInfo` 或 `SubjectPublicKeyInfo` 的 `Der` 解码，`Certificate` 可从容纳 X.509 证书的 `Der` 解码。
+
+% 1 1 0 041df49e37fcdb5f1d9cf92159a8f904
+
+% 2 1 0 0bac976ae7f9ee301704e58196b8b24c
+
+@ 0 12 0 17c01facfc1938e009f3bc21316271df
++   entry .encodable   文档的字节，即 `der.in[Data]`
++   entry .streamable   以流的形式输出文档的字节，即按 `Credit` 计量的 `Stream[Data]`
++   entry .aggregable   从字节来源读取文档，即 `bytes.read[Der]`
++       把整个来源收集为一个 `Der`。
++       不做任何解析：字节按原样接受，由 `as[Asn1]` 检查它们。
++   entry .showable   在作用域中有 `Alphabet[Hex]` 时，把文档显示为十六进制
++       需要一个 `Alphabet[Hex]`，例如 `alphabets.hexUpperCase` 或 `alphabets.hexLowerCase`。
++   entry .inspectable   调试呈现：`Der(…)`，整个文档以小写十六进制给出
++       总是可用，作用域中无需字母表。
++       不做任何省略：DER 文档由其字节定义，两个只差一个字节的文档会解码为不同的值，因此丢弃字节的检视会隐藏正要寻找的东西。
++   entry #data   文档的字节
+
+@ 0 1 0 12b10dc4f1c820391acf3c18f9355105
++ entry .Pem   PEM 块：一个标注，以及它的 base64 铠装所携带的字节
+
+% 1 1 0 04ed4d171b11e17f073d966e7b08bc2d
+
+@ 0 5 0 0dd04a7feacbf8d607f06b7ce123dd72
++       [PEM](https://en.wikipedia.org/wiki/Privacy-Enhanced_Mail) 是交换证书、密钥和请求时所用的铠装文本形式：一行 `-----BEGIN LABEL-----`，每行 64 个字符的 base64，以及一行 `-----END LABEL-----`。
++       `Pem` 值由 `#label` 和解码后的 `#data` 组成；`#serialize` 呈现铠装形式，`text.read[Pem]` 解析它。
+
+% 2 1 0 1adaf745e64cc62304c01729c566da61
+
+% 3 1 0 0d930a845434909a1046bc911d8af1f5
+
+% 4 1 0 068bdf0b83da90a911ebb741666db85a
+
+% 0 1 0 0acfbb96caa8a9c00629d7b7b9e0e51b
+
+% 0 1 0 08ae6a177a2c74ba17518fba17904764
+
+% 0 1 0 1867b38cec57427605cdb84c966a91c8
+
+% 0 1 0 0f7cd783859c4f52087da20383a4c931
+
+% 0 1 0 012c7fafb44eb2e50dcad34645b0f16a
+
+% 0 1 0 1c6321903dc36e311a8236c68a90b5e7
+
+% 1 1 0 0ff2b4526f5c5e5615b18f9a15452f89
+
+@ 0 9 0 0cdd4c4aeaad2602000152caf06f62fc
++       构建块时总是显式给出标注（`Pem(Pem.Label.Certificate, certificate.in[Der])`）：它是关于值的事实，而不是编码的一种模式，解析器也不会将它与内容相对照检查。
++       解析是流式的、逐行进行的，因此文档可以在有界内存中从任何来源读取；容纳多个块的来源——证书链、一组密钥——用 `read[Chain[Pem]]` 读取为惰性的 `Chain[Pem]`，跳过块之间的文本（OpenSSL 写出的 `subject=…` 行），并把没有块的输入读取为空而不是错误。
++       前导空白会被跳过；只有 `\n` 结束一行，因此 `\r` 留在行内，导致边界匹配失败。
+
+@ 0 5 0 0cf1078fdb19cca50cceccf97bbd85d7
++       有两种提升可以一步从铠装文本读取*解码后*的值：`text.read[X in Pem]` 在 `X` 有 `Decodable in Pem` 时使用它（`PrivateKey`、`PublicKey`，通过 `.aggregableInPem`），否则把 `X` 的 `Decodable in Der` 应用于块的字节（`aggregableIn`，继承自 `Pem2`），`text.read[Asn1 in Pem]`、`text.read[Certificate in Pem]` 和 `text.read[Der in Pem]` 就是这样工作的。
+
+@ 0 2 0 1743eb591b2365b81f46b9c34cbb7f74
++       `Pem` 与 `Asn1` 和 `Der` 一起位于 `enigmatic.asn1` 组件中，因此它在每个平台上都可用，且不需要密码学提供者。
+
+% 1 1 0 0a5820b00460e4cb1445c606ec96bed2
+
+% 1 1 0 0b94634707e040a20a260830775540e3
+
+% 1 1 0 172409e2dd77c27201a27e314c74e0b5
+
+@ 0 23 0 138ce6909e1099240a5d3da58b8b6a7e
++   entry .apply   在一个标注下铠装 DER 文档：`Pem(Pem.Label.Certificate, der)`
++       接受一个 `Pem.Label` 和一个 `Der`，并保留文档的字节。
++       `Pem(label, data)` 是基于原始字节的 case class 构造器。
++   entry .derDecodable   块的载荷，作为 `Der` 文档，即 `pem.as[Der]`
++       本模块所知的每个标注都铠装 DER，只有 `OPENSSH PRIVATE KEY` 例外，它的载荷是 OpenSSH 自己的二进制容器，由 `PrivateKey` 的 PEM 解码器按标注处理。
++       这里不检查标注。
++   entry .aggregableInPem   对有 `Decodable in Pem` 的 `X` 执行 `text.read[X in Pem]`
++       解析文本的第一个块，并把整个 `Pem`（包括标注）交给 `X` 的 `Decodable in Pem`。
++       它需要那个可解码实例、`Tactic[Pem.Error]` 和 `Diagnostics`，并且优先于继承自 `Pem2` 的 `Pem.aggregableIn`（基于 `Decodable in Der` 的同一种提升），因此两者都有的值按标注解码：`text.read[PrivateKey[Ed25519] in Pem]` 能区分 `PRIVATE KEY` 块和 `OPENSSH PRIVATE KEY` 块。
++   entry .aggregable   解析文本来源的第一个 PEM 块，即 `text.read[Pem]`
++       需要 `Tactic[Pem.Error]` 和 `Diagnostics`。
++       前导空白会被跳过；之后第一行必须是 `BEGIN` 边界，否则为 `Pem.Error(BeginMissing)`；正文一直累积到 `END` 边界（其标注不要求匹配），否则为 `Pem.Error(EndMissing)`；不是 base64 的正文为 `Pem.Error(BadBase64)`。
++       输入以流的形式逐个数据块消费，无论数据块的边界在哪里。
++   entry .aggregableAll   惰性地读取文本来源的每个块，即 `text.read[Chain[Pem]]`
++       需要 `Tactic[Pem.Error]` 和 `Diagnostics`。
++       `Chain` 每被强制求值一个单元就解析一个块；块之间的文本被跳过，没有块的输入是空链。
+
+% 2 1 0 151428d8bceb36bd1907c76a5f4a420a
+
+% 3 1 0 037739f1da45e0ab0a5a1f2f480d14b4
+
+% 4 1 0 07a85fe6c5a9e02a1748710c27b3162c
+
+% 0 1 0 1b3bcf193d6d69181505d1301ab826cd
+
+% 0 1 0 1e06223f613a27091cb8147a79fdd5d4
+
+% 0 1 0 15297d459cdb029610e4f6b2e42fd084
+
+% 1 1 0 1ec7494a6e66018b1a59a7c4861a1b47
+
+@ 0 9 0 0067939001c30f92123e3182176d6273
++   entry .inspectable   调试呈现：`Pem(LABEL:…)`，载荷以小写十六进制给出
++       铠装形式是多行的，因此检视时显示的不是它：标注标识块，载荷在一行内以完整的十六进制给出，不丢弃任何内容。
++   entry .streamable   每次一行的铠装形式，作为 `Stream[Text]`
++       面向流式消费者的 `serialize` 对应物：`pem.read[Text]` 或 `pem.stream[Text]` 产生 `BEGIN` 行、每行 64 个字符的 base64 行和 `END` 行，每行都带有其 `\n`。
++   entry .Error   文本不是 PEM 块时抛出
+
+% 1 1 0 00f3d66f2d5107e30fca6566e12ddb1f
+
+@ 0 2 0 0ced2198afaee2130f88860206023349
++         错误 `↯/s.105.1`：_could not parse PEM content because `reason`_。
++         由 `Pem.aggregable`、`Pem.aggregableAll` 和 `read[X in Pem]` 提升抛出：
+
+% 2 1 0 19d5ce65941fb5ea18d25d3359612f20
+
+@ 0 8 0 1b13930d6137c1ad15e701e1a67a419d
++         column  分支
++         column  代码
++         column  消息
++         column  说明
++         row  `BeginMissing`  1  _the BEGIN line could not be found_  第一个非空行不是 `BEGIN` 边界；输入为空时也是如此
++         row  `EndMissing`  2  _the END line could not be found_  输入在 `END` 边界之前结束
++         row  `BadBase64`  3  _could not parse the BASE-64 PEM message_  正文不是 base64
++         row  `EmptyFile`  4  _the file was empty_  已声明，但当前解析器不会抛出
+
+% 1 1 0 12e55c73538c04dd07dd4bab89686caa
+
+@ 0 4 0 17a187d401c8de380b05b58d6dde62b8
++     entry .communicable   把每个原因呈现为一条消息
++     entry .Reason   `BeginMissing`、`EndMissing`、`BadBase64` 或 `EmptyFile`，编号为 1 到 4
++     entry #reason   失败的 `Pem.Error.Reason`
++   entry .Label   `BEGIN` 和 `END` 之间的标注：一种已知类别，或一个专有标注
+
+% 1 1 0 1a2a0d96d5b5e5261cbd6edabb215390
+
+@ 0 9 0 1351db6232d955c80a0161fbe32c916d
++         PEM 块在实践中所带标注的枚举，每个在线上的拼写都是其名称拆分成的大写单词：`Certificate`（`CERTIFICATE`）、`CertificateRequest`、`NewCertificateRequest`、`PrivateKey`（`PRIVATE KEY`，PKCS#8）、`RsaPrivateKey`（`RSA PRIVATE KEY`，PKCS#1）、`DsaPrivateKey`、`EcPrivateKey`（`EC PRIVATE KEY`，SEC1）、`EncryptedPrivateKey`、`PublicKey`（`PUBLIC KEY`）、`BlockCipher.Pkcs7`、`Cms`、`DhParameters`、`X509Crl`、`AttributeCertificate`、`EncryptedMessage`、`SignedMessage`、`RsaPublicKey`、`DsaPublicKey` 和 `OpensshPrivateKey`（`OPENSSH PRIVATE KEY`）。
++         任何其他标注都解析为 `Proprietary(label: Text)`，按书写的原样保存文本。
+
+% 2 1 0 1e7aa9276dc2c4920a164b4b95343102
+
+% 3 1 0 0c8fa2e8b4a9a33f1e4249d10bc7fe84
+
+% 0 1 0 113f57f7fe8acffa0a8ac6c8b69a9adf
+
+% 0 1 0 02d51440b20573d21b9ad7014ce27cc3
+
+% 0 1 0 18717b440779cec0076d6882b722c6de
+
+% 1 1 0 168e59bd1a0e6b560befc285fc35e48a
+
+@ 0 12 0 0195f4637676b408103b5a9aac6aadbe
++     entry .index   每个已知标注，以其线上拼写为键
++         一个惰性的 `Map[Text, Pem.Label]`，从 `CERTIFICATE`、`PRIVATE KEY`……映射到分支，供 `.unapply` 查询。
++     entry .showable   标注的线上拼写：大写单词，或按给定原样的专有文本
++     entry .unapply   从线上文本得到标注，总是匹配：已知分支，否则为 `Proprietary`
++         作为提取器的 `Pem.Label(text)` 从不失败，因此它可以放在诸如 `r"-----BEGIN ${Pem.Label(label)}([ A-Z]+)-----"` 的模式中。
++   entry #label   块的 `Pem.Label`
++   entry #data   解码后的载荷，通常是 DER 文档
++   entry #serialize   铠装文本：`BEGIN` 行、每行 64 个字符的 base64 和 `END` 行
++       各行以 `\n` 连接，没有末尾换行符，因此解析得到的块重新序列化后就是去除首尾空白的来源文本。
++       `Pem.streamable` 是以流形式给出的同一文本。
+
+@ 0 1 0 0f3b9db36fb950f614bb7114f548605c
++ entry .Pem2   `Pem` 伴生对象的父特质，容纳较低优先级的 `read[X in Pem]` 提升
+
+% 0 1 0 1c18810b564d59e609a88422cf8dd919
+
+% 1 1 0 0f71597c1b0bc6cb112bae74ffdfb433
+
+@ 0 10 0 07b673273fb34cde14dce48524dcc7ab
++       不供直接使用：这个特质的存在，是为了让在伴生对象自身中定义的 `Pem.aggregableInPem` 在一个值同时具有 `Decodable in Pem` 和 `Decodable in Der` 时优先于这里定义的提升。
++       这个 given 以 `Pem.aggregableIn` 获取。
++   entry #aggregableIn   对有 `Decodable in Der` 的 `X` 执行 `text.read[X in Pem]`：解析铠装，再解码载荷
++       需要 `X is Decodable in Der`、`Tactic[Pem.Error]` 和 `Diagnostics`，并捕获该可解码实例和战术。
++       `text.read[Asn1 in Pem]`、`text.read[Certificate in Pem]` 以及通过恒等可解码实例的 `text.read[Der in Pem]` 都解析到它。
++       DER 解码中的失败会在它所捕获的战术下抛出该解码器自己的错误（`Asn1.Error`）。
+
+@ 0 1 0 09579eb33e0c050f11476e2fa8d86397
++ entry .Cose   COSE 消息（RFC 9052）：在密钥下签名或 MAC 的载荷，以带标签的 CBOR 表示
+
+% 1 1 0 19a43e1b86f29e7d1c4778d4ae02c158
+
+@ 0 8 0 0d8c5afcd52b83d8054fe46700d51002
++       `Cose` 是一条 [CBOR Object Signing and Encryption](https://www.rfc-editor.org/rfc/rfc9052) 消息：一个 `#payload`、一个 `#protectedHeader`（签名所覆盖的头部参数的序列化映射）、一个 `#unprotectedHeader`，以及 `#recipients`，后者的 `authentication` 即签名或 MAC 认证码。
++       密钥的类型决定变体——`SymmetricKey` 生成 `COSE_Mac0`（CBOR 标签 17），`PrivateKey` 生成 `COSE_Sign1`（标签 18）——这通过为该密钥提供的 `Cose.Authenticator` given 实现，而消息的幻影类型 `#Form`（`Cose.Mac0`、`Cose.Sign1`……）和 `#Operand`（密码算法）记录了这一选择。
+
+@ 0 2 0 03c5b8f2861bcef404513cb48712d86f
++       两种操作是构建并认证消息的 `Cose(payload, key)`，以及解析线上消息并验证它的 `bytes.authenticate[Cose](key)`：
+
+% 2 1 0 1930b495acf5fdc71cd813b1c39b693e
+
+% 3 1 0 0cd1e43d2f675276007a22327352e876
+
+@ 0 1 0 1d15ddbbc4bc6aeb12362ea18a6027b4
++         label 用于 HMAC-SHA-256 的密钥
+
+% 1 1 0 180217064fc4517405f804a7f2d9b910
+
+% 2 1 0 09d53718962f6ef203a9a623970bc39d
+
+% 3 1 0 1f0498d1cae4b2501e94fcf0960e1464
+
+% 4 1 0 0a8bcb9f7b726f0b07e1426cda39c95c
+
+% 5 1 0 064f3f78b44787a50a32ab673fbda44c
+
+% 7 1 0 1a64064deca8751717ea5caa84757516
+
+% 8 1 0 0e72caf1f19b45e0129f4a248432e326
+
+% 1 1 0 18a69ca45cbc60251502f2b852c6a7bb
+
+@ 0 1 0 1582023d5ca190cf115b195ca5e3ef54
++         label 在它之下认证的消息
+
+% 1 1 0 0175d6c0432d8bb60bd930a01e0e76f8
+
+% 2 1 0 063fc430e8ba44ab1f1ee7c9331d497b
+
+% 3 1 0 1e2a88ba2a217e4e006898f6ff3acfe0
+
+% 4 1 0 0b633cfbe0f21a220512c33856d2ae2a
+
+% 5 1 0 0efe73f5e919cf741768a21265240c82
+
+% 7 1 0 1b6db5b92333d3e6150a72aa66458bab
+
+% 8 1 0 0ce06c34c52743f909da5d24ead19ff8
+
+% 0 1 0 097ff04dd0064bfa02312cfb49f6461f
+
+% 1 1 0 0fb1f93640c0ac0c035a67cfdaee32df
+
+@ 0 1 0 0b21907292581ee30e8cf52d23f5706c
++         label 它的线上形式：CBOR 标签 17
+
+% 1 1 0 14b05d8215b1c2700610c3a2a5d612a5
+
+% 2 1 0 0f3017961dff158d04f9cfd37cb16bc4
+
+% 3 1 0 04b0910fc46e29090f48158a00f1ae5b
+
+% 4 1 0 0fa780ea50483df20d5979577966b216
+
+% 5 1 0 1c8240095811ee3415aed826ab22852b
+
+% 7 1 0 02bed360e749d9dd1767503748db0c7b
+
+% 8 1 0 19dccbb57b45869e0b5d8450bf221a18
+
+% 10 1 0 151ef5305571f6f902acf0fd985ed0f0
+
+% 0 1 0 1c682fbe968a85f20459202b1882773f
+
+% 1 1 0 0db9019a2338fde80fd175a4f25e7dbb
+
+@ 0 1 0 1cc2e0cbf27f9a000e8dec78eb994b0f
++         label 由接收方验证
+
+% 1 1 0 1276bcf5c4717ca5122232ea7de29be4
+
+% 2 1 0 0e4082ca05a198090231258f19192c14
+
+% 3 1 0 0240bc3f59d87dca1a7b787ff6d6552c
+
+% 4 1 0 17ae5318676a1c2b0e4f5892c1cad4c2
+
+% 5 1 0 0cbcc86126e1c7f41eb41ec8f60de3e1
+
+% 7 1 0 1acbcb70e779aa9e0d709917326ad6a3
+
+% 8 1 0 1baead5a7da4f1020a0c7c2386ad614f
+
+% 10 1 0 065a2136e1229fb50cb23e567c654021
+
+% 0 1 0 065e59559ffa8f7d19e238a30d708954
+
+% 0 1 0 079281a8ed8855340578cddb02d17e13
+
+% 1 1 0 1b8a865db6cffe4a05cbb2d044242793
+
+% 2 1 0 16376ad5c3c1caeb168cef5fa50d8c9a
+
+@ 0 7 0 0952de0501e3693c1c2eb165f7ea49d8
++       受保护头部只保存算法（`1 → alg`），其标识符是密钥的密码算法在 `Cose.Algorithm` 下的标识符，并编码为规范 CBOR（`CanonicalCbor`），被签名的 `Sig_structure`/`MAC_structure` 也是如此。
++       未受保护头部为空，外部 AAD 也为空。
++       用 `Cose.parse` 读回的消息具有一般的 `Form` 和 `Operand`，因为线上形式不说明使用了哪种密码算法；`#verifyWith` 用任何 `Cose.Verifier` 类型且变体相符的密钥检查它。
+
+@ 0 8 0 06f7de40b9d05b120e19d61d738244b4
++       随附的 `Cose.Algorithm` given 是三个 HMAC-SHA-2 标识符，因此 `SymmetricKey[HmacCipher[Sha2[256 | 384 | 512]]]` 开箱即可构建 `Mac0` 消息。
++       用 `PrivateKey[Ecdsa[256]]` 或其他签名密码算法构建 `Sign1` 消息，需要为该密码算法提供一个 `Cose.Algorithm` given（其 IANA 标识符，例如 ES256 的 `-7`），由调用者提供；用 `PublicKey` *验证* `Sign1` 消息则不需要。
++       多接收方变体 `Sign` 和 `Mac`（标签 98 和 97）可以被解析，但没有构造器构建它们，且随附的验证器只匹配 `Sign1` 和 `Mac0`。
+
+@ 0 2 0 1a9c0995f51f9b7f115e5042f7d4e724
++       `Cose` 位于 `enigmatic.cose` 组件中，该组件在 `enigmatic.core` 之上加入了 breviloquence（CBOR）。
+
+% 0 1 0 12494296de3aaaaa0051764bc65a3a6f
+
+% 0 1 0 04a47413df5077370b77dac2e896f350
+
+% 0 1 0 105d56f57d82475d04b4ea693fa80e41
+
+@ 0 29 0 0fa6739210c5e53018548484095c4bc6
++   entry .encodable   把消息序列化为带标签的线上形式，即 `cose.in[Data]`
++       `cose is Encodable in Data` given，以 `Cose` 为上界，从而构造器返回的细化类型 `Cose in Mac0 by cipher` 能解析到它。
++       `Sign1` 或 `Mac0` 消息是其标签下的四元素数组 `[protected, unprotected, payload, signature]`；`Sign` 或 `Mac` 消息则以一个由 `[protected, unprotected, signature]` 三元组组成的数组代替单个签名。
++   entry .apply   在一个密钥下构建一条经过认证的消息，覆盖一个载荷
++       `Cose(source, key)` 从任何 `Readable to Data` 的 `source` 读取载荷，并用为该密钥类型提供的 `Cose.Authenticator` given 对它签名或计算 MAC：`SymmetricKey[cipher]` 得到 `Cose in Cose.Mac0 by cipher`，`PrivateKey[cipher]` 得到 `Cose in Cose.Sign1 by cipher`。
++       密钥的密码算法需要一个 `cipher & Signing` given，以及一个提供算法标识符的 `cipher is Cose.Algorithm`；调用需要 `Tactic[Cbor.Error]`，并抛出 `Cose.Error`。
++       它是 inline 的，因此载荷在调用点按调用者自己的可读性和战术读取。
++   entry .parse   从字节读回带标签的 COSE 信封
++       解码 CBOR，要求标签为 17、18、97 或 98（否则为 `Cose.Error(UnknownTag(tag))`），并要求一个四元素数组，其受保护头部和载荷为字节串，未受保护头部为映射（否则为 `MalformedStructure`）；多接收方消息的每个接收方都必须是三元素数组。
++       需要 `Tactic[Cbor.Error]` 和 `Tactic[Cose.Error]`。
++       结果是一个普通的 `Cose`，其 `Form` 和 `Operand` 取各自的上界，由它的 `#verifyWith` 检查。
++       `bytes.authenticate[Cose](key)` 在一次调用中先解析再验证。
++   entry .make   `.apply` 背后的构造器，细化 `Form` 和 `Operand` 类型
++       从六个字段构建一个 `Cose in scheme by cipher`，不做任何认证：调用者提供受保护头部字节、未受保护头部、载荷、上下文字符串、CBOR 标签和接收方。
++       对于在密钥下认证的消息，请使用 `.apply`。
++   entry .Algorithm   密码算法的 COSE 算法标识符：`cipher is Cose.Algorithm`
+
+% 1 1 0 145b349d3d45c6901246ac7b81f165b5
+
+@ 0 5 0 1145335318d2473f19296499bd553f6f
++         一个类型类，把密码算法类型映射到它在 IANA COSE 算法注册表（RFC 9053）中的条目，`Cose.apply` 把它作为 `alg` 参数写入受保护头部。
++         伴生对象的 given 覆盖 HMAC 系列：`HmacCipher[Sha2[256]]` 是 5（HMAC 256/256），`[384]` 是 6，`[512]` 是 7。
++         签名密码算法需要自己的实例，位于调用 `Cose(payload, privateKey)` 的作用域中：
+
+% 2 1 0 16ee0d68adfdc6ff1d71c4aeb85c07f4
+
+% 3 1 0 1191577a6161e97e0e08c01cad99c671
+
+% 0 1 0 04557c6511cd145b1e00f13dd054442e
+
+% 0 1 0 03eccd76df78b63715b77a7b950a8d3d
+
+% 1 1 0 06be1f8d96de1dcb119db3178cdcfd75
+
+@ 0 6 0 0cc91c2902bf56791848dce0b7983fae
++     entry .hmacSha256   HMAC 256/256，标识符 5，用于 `HmacCipher[Sha2[256]]`
++     entry .hmacSha384   HMAC 384/384，标识符 6，用于 `HmacCipher[Sha2[384]]`
++     entry .hmacSha512   HMAC 512/512，标识符 7，用于 `HmacCipher[Sha2[512]]`
++     entry #Self   密码算法类型
++     entry #algId   注册表标识符，即写在 `alg` 头部参数中的值
++   entry .Authenticator   密钥类型如何对消息签名或计算 MAC，以及它生成哪种变体
+
+% 1 1 0 1d65322a44b6f6f713c093649d5360bb
+
+@ 0 21 0 1159e36516b94ca91120d148dcb75b12
++         `key is Cose.Authenticator in form by cipher` 是 `Cose.apply` 为其密钥召唤的内容：它确定消息变体（`Form`）、密码算法、算法标识符、待签名结构的上下文字符串（`Signature1` 或 `MAC0`）、CBOR 标签，以及待签名字节如何用密钥认证。
++         两个 given 按密钥类型选择：`SymmetricKey[cipher]` 是 `Mac0`，`PrivateKey[cipher]` 是 `Sign1`；由于 `SymmetricKey` 扩展了 `PrivateKey`，对于对称密钥，更具体的对称实例胜出。
++         两者都需要 `cipher & Signing` 和 `cipher is Cose.Algorithm`。
++     entry .asymmetric   `PrivateKey[cipher]` 生成 `Sign1` 消息，用该密码算法签名
++         适用于任何具有 `Cose.Algorithm` 的 `cipher <: Cipher & Signing`。
++         私钥的机密在签名期间被解除遮蔽。
++     entry .symmetric   `SymmetricKey[cipher]` 生成 `Mac0` 消息，用该密码算法计算 MAC
++         适用于任何具有 `Cose.Algorithm` 的 `cipher <: Cipher & Symmetric & Signing`，就随附的 given 而言即 `HmacCipher[…]`。
++     entry #Self   密钥类型
++     entry #Form   生成的变体：`Cose.Sign1` 或 `Cose.Mac0`
++     entry #Operand   密码算法
++     entry #algId   写入受保护头部的算法标识符
++     entry #contextString   `Signature1` 或 `MAC0`：被签名结构的上下文
++     entry #cborTag   信封的标签：`Sign1` 为 18，`Mac0` 为 17
++     entry #authenticate   用密钥对待签名字节签名或计算 MAC
++   entry .Verifier   密钥类型如何检查消息的签名或 MAC
+
+% 1 1 0 0646cf30ac75795d186abbd601981a9c
+
+@ 0 18 0 11be425b139a9d83195cc6579be9a5c9
++         `key is Cose.Verifier in form by cipher` 是 `Cose#verifyWith` 和 `authenticate[Cose]` 所召唤的内容：它确定该密钥能检查的变体，以及如何检查签名。
++         `PublicKey[cipher]` 验证 `Sign1` 消息，`SymmetricKey[cipher]` 验证 `Mac0` 消息；两者都只需要一个 `cipher & Signing` given，而不需要 `Cose.Algorithm`。
++         验证器把自己的上下文字符串与消息的相比较，因此用公钥检查 `Mac0` 消息，或用对称密钥检查 `Sign1` 消息，会抛出 `Cose.Error(VariantMismatch)`，而不是返回 `false`。
++         受保护头部中指明的算法不会与密钥的密码算法相比较。
++     entry .asymmetric   `PublicKey[cipher]` 检查 `Sign1` 消息的签名
++     entry .symmetric   `SymmetricKey[cipher]` 重新计算 `Mac0` 消息的认证码并加以比较
++         比较由 `HmacCipher#verify` 完成，它以常数时间运行。
++     entry #Self   密钥类型
++     entry #Form   检查的变体：`Cose.Sign1` 或 `Cose.Mac0`
++     entry #Operand   密码算法
++     entry #contextString   `Signature1` 或 `MAC0`，必须与消息的相等
++     entry #cborTag   验证器所期望的信封标签
++     entry #check   认证字节在该密钥下对待签名字节是否有效
++   entry .Error   COSE 消息无法解析或验证时抛出
+
+% 1 1 0 17370f37b8cf3b1616cfa64140a68ca9
+
+@ 0 8 0 1d3fbae672e5baee11f537e1d2e4b3e9
++         错误 `↯/s.105.6`：_could not process the COSE message because `reason`_。
++         由 `Cose.parse`（因而也由 `authenticate[Cose]`）在信封不是标签（`MalformedStructure`）、标签不是 17、18、97 或 98（`UnknownTag(tag)`）或正文形状错误（`MalformedStructure`）时抛出；由 `Cose#verifyWith` 在密钥的变体与消息的不同时抛出（`VariantMismatch(expected, actual)`）；以及由 `Cose.apply` 通过其 `raises` 子句抛出。
++         格式错误的 CBOR 本身是 `Cbor.Error`，通过这些调用所接受的 `Tactic[Cbor.Error]` 抛出。
++     entry .Reason   消息被拒绝的原因
+
+% 1 1 0 19231e4da13882b20c6d5ab0275ea63a
+
+% 1 1 0 183d5f11254e8518154a3b6c2f0be0bd
+
+@ 2 4 0 1f8bdbb9b7a7466c0ba15f159ba64a67
++           column  分支
++           column  代码
++           column  消息
++           column  说明
+
+% 0 1 0 0ebb7808a63583eb1946f2ab5106c6d5
+
+% 0 1 0 143926a6c5d0221e0cdeee01b9398909
+
+% 0 1 0 1f09d26e83f0ff55102c67267f25cf5b
+
+% 0 1 0 0f705c0229e5c7d615e11cc968684e50
+
+@ 0 2 0 1981bacbff86a85005a388e62cc40b95
++           row  `VariantMismatch(expected, actual)`  5  _expected a `expected` COSE message but found a `actual`_  两个上下文字符串，作为 `Text`
++           row  `VerificationFailed`  6  _the COSE signature or MAC did not verify_  检查失败时由 `verifyWith` 报告为 `false`，而不是报告为此分支
+
+% 0 1 0 0c4c00b55168422e0031f34cd8da5910
+
+% 0 1 0 116a453fee4e7044120173a0fe9012ae
+
+% 1 1 0 042e3bac84f57cd40d54c0f117048f8e
+
+@ 0 5 0 0dec5f3bf5c53a901e1c01e8ccb04d1d
++           其中，当前代码只会抛出 `MalformedStructure`、`UnknownTag` 和 `VariantMismatch`。
++       entry .communicable   把每个原因呈现为一条消息
++     entry #reason   失败的 `Cose.Error.Reason`
++   entry .Recipient   消息上的一个签名或 MAC：它自己的头部和认证字节
+
+% 1 1 0 0c64366b06ba6de51b3524f42c5379eb
+
+@ 0 7 0 0f7dafa20aaff6940f1460f8bbd570bb
++         `Sign1` 或 `Mac0` 消息恰有一个接收方，其头部为空；由 `Cose.parse` 读取的 `Sign` 或 `Mac` 消息，线上每个 `[protected, unprotected, signature]` 三元组对应一个接收方。
++     entry #protectedHeader   接收方的序列化受保护头部；对 `Sign1`/`Mac0` 为空
++     entry #unprotectedHeader   接收方的未受保护头部映射，作为 `Cbor`
++     entry #authentication   签名或 MAC 认证码的字节
++   entry .Structure   变体分类的根：消息的 `Form` 的上界
+
+% 1 1 0 124f58b259082dcc1cd24c2445efe97a
+
+@ 0 10 0 0783886bd8fad72b194a7df2911add48
++         `Cose.Signed` 和 `Cose.Maced` 把它一分为二，而 `Cose.Sign`（标签 98）、`Cose.Sign1`（18）、`Cose.Mac`（97）和 `Cose.Mac0`（17）是 RFC 9052 的四种消息类型。
++         消息的 `Form` 是其中之一：`Cose in Cose.Mac0 by HmacCipher[Sha2[256]]`。
++   entry .Signed   签名的变体，`Cose.Sign` 和 `Cose.Sign1`
++   entry .Maced   计算 MAC 的变体，`Cose.Mac` 和 `Cose.Mac0`
++   entry .Sign   `COSE_Sign`：多个签名者，CBOR 标签 98；可解析但不可构造
++   entry .Sign1   `COSE_Sign1`：一个签名者，CBOR 标签 18；`PrivateKey` 生成的就是它
++   entry .Mac   `COSE_Mac`：多个接收方，CBOR 标签 97；可解析但不可构造
++   entry .Mac0   `COSE_Mac0`：一个 MAC，CBOR 标签 17；`SymmetricKey` 生成的就是它
++   entry .Tag   四种消息类型的 CBOR 标签编号，作为 inline 常量
+
+% 1 1 0 193114453e5fc51b070c9a0da55ebda9
+
+@ 0 2 0 1f4b145e18f113080c6ebf87c4cef272
++         `Cose.Tag.Sign1` 是 18，`Mac0` 是 17，`Sign` 是 98，`Mac` 是 97（RFC 9052 §2）。
++         `Mac0` 线上消息的第一个字节是 `0xD1`：主类型 6，标签值 17。
+
+% 0 1 0 15998a723bc8b45b13b260d79ae0ac18
+
+% 0 1 0 1acb7de4d0dd389809492ebadd90c20e
+
+% 0 1 0 0d1c9a3434fb85e11a290162916c4a97
+
+% 0 1 0 016650208d392dd307e703a1bd8a1b9b
+
+@ 0 1 0 10421377aacf898e0d0d90442733fd98
++   entry .Context   被签名结构的上下文字符串，作为 inline 常量
+
+% 1 1 0 11805512f403ce9c0beea3b737475596
+
+@ 0 4 0 0c4bad77c7ff3a36013a161d769b375f
++         实际被签名的 `Sig_structure` 或 `MAC_structure` 的第一个元素（RFC 9052 §4.4 和 §6.3）：`Sign1` 为 `Signature1`，`Sign` 为 `Signature`，`Mac0` 为 `MAC0`，`Mac` 为 `MAC`。
++         消息以 `Cose#contextString` 携带自己的上下文字符串，验证器据此进行匹配。
+
+% 0 1 0 1ef42fa5048b07e409503e10f5af33ee
+
+% 0 1 0 09bd16943fa4164c07cceeab88c7f918
+
+% 0 1 0 0c98c2cd42b43fba0ff80c23339e8227
+
+% 0 1 0 054c7203ccd5a5561b044fd8ec435c18
+
+@ 0 14 0 1585fc4522514e3c0455b05df1f513d5
++   entry #Form   变体：`Cose.Structure` 的一个子类型，由构造器细化
++   entry #Operand   认证消息所用的密码算法，由构造器细化
++   entry #protectedHeader   序列化的受保护头部：一个规范 CBOR 映射，在这里构建时为 `{1: alg}`
++   entry #unprotectedHeader   未受保护头部映射，作为 `Cbor`；在这里构建时为空
++   entry #payload   载荷字节
++   entry #contextString   `Signature1`、`Signature`、`MAC0` 或 `MAC`：接收方签名的是哪种结构
++   entry #cborTag   写出信封时所用的标签：18、98、17 或 97
++   entry #recipients   消息上的签名或 MAC；对 `Sign1` 和 `Mac0` 恰有一个
++   entry #verifyWith   在某个密钥下是否有任何接收方的认证是有效的
++       根据消息自己的上下文字符串、受保护头部和载荷（外部 AAD 为空）重建待签名结构，并请密钥的 `Cose.Verifier` 检查每个接收方，返回是否有任何一个通过。
++       当验证器的上下文字符串与消息的不同时，抛出 `Cose.Error(VariantMismatch)`；对错误的密钥或被篡改的消息返回 `false`。
+
+% 2 1 0 089224748b6f4b120912cc62d4e78b11
+
+% 3 1 0 0c3b569686cf723f185af54a60115e3e
+
+% 4 1 0 0bd11c409b00b2fc0330eb1b72196a77
+
+% 5 1 0 160ad039a0b3ab77086951b742612e73
+
+% 6 1 0 09e46c232a897b2a11ab868e576291fa
+
+% 4 1 0 0852586763c8a3c71eb46a5133f0d5cb
+
+% 5 1 0 11bae5a65b684ab91a3e8ff74f1006e6
+
+% 0 1 0 1363bf0eab07d9fc152e2359f07acc0c
+
+% 1 1 0 1f48e5c15772b3601844a3bddb0fd575
+
+@ 0 1 0 006cbc3d3026d69717f84bfe0a2a969c
++ entry .CoseVerify   `bytes.authenticate[Cose]` 的载体，等待它的密钥
+
+% 1 1 0 17f4f5cb45e6d1db0857e279c76f5431
+
+@ 0 10 0 0d15921db82859e20f27b2946ce6f881
++       `source.authenticate[Cose]` 返回 `CoseVerify[source]`，这样方案作为类型参数指明，而密钥的类型仍由随后的 `#apply` 的值参数推断：`bytes.authenticate[Cose](key)`。
++       它不应被持有；两个调用应当写在一起。
++   entry #source   读取消息的来源
++   entry #apply   把来源解析为 COSE 消息，并在该密钥下验证它
++       以 `Data` 读取来源（它必须是 `Readable to Data`），用 `Cose.parse` 解析，再用 `Cose#verifyWith` 检查。
++       密钥需要一个 `Cose.Verifier`；调用需要 `Tactic[Cbor.Error]`，并抛出 `Cose.Error`。
++       结果是签名或 MAC 是否通过验证。
+
+@ 0 8 0 16a21ecacf79343710a8af1f45bc7ad4
++ entry .authenticate   `bytes.authenticate[Cose](key)`：解析 COSE 消息并在某个密钥下验证它
++     任何 `Readable to Data` 的来源上的扩展方法。
++     方案总是 `Cose`（类型参数以它为上界）；`authenticate[Cose]` 的结果是一个 `CoseVerify`，其 `apply` 接受密钥，因此整个表达式为 `wire.authenticate[Cose](key)`，当消息的签名或 MAC 在该密钥下有效时为 `true`。
++     `Mac0` 消息用生成它的 `SymmetricKey` 检查，`Sign1` 消息用签名者的 `PublicKey` 检查。
++     它名为 `authenticate` 而不是 `verify`，因为在总括包中 `verify` 是 jacinta 的 schema 检查。
+
+% 2 1 0 1d62c2f311df6b3f14113ce31caf98a1
+
+% 3 1 0 0b5aa257074d039117c13195352b2b92
+
+% 1 1 0 0e3bcc542e4df8490371466e2b036867
+
+% 1 1 0 0b4aded06700ff411debef445eb1a548
+
+% 1 1 0 1780b0f735f1809115dd07f2c0c3618e
+
+% 0 1 0 17c8205bfc21ec881c45d89003d8dd04
+
+% 0 1 0 0abf8afd3ae047fa14e68dac54237a73
+
+% 0 1 0 157927311fed90ca030ba19998b3852f
+
+% 0 1 0 10dd9c3bb6b068a518a4e9a5790e460f
+
+% 0 1 0 01a5d17a83db23e90ad74af3a8bb783b
+
+% 0 1 0 037832a00e736e11156448bb4b0e81c1
+
+% 0 1 0 0210057445a74aa11d55558d817f7e61
+
+% 1 1 0 171966445918bd9301f7c4aa7e007a69
+
+@ 0 1 0 125924ce0f1d144b0d095aad7d94ae47
++ entry .HmacCipher   作为对称签名密码算法、基于某个哈希的 HMAC：`SymmetricKey[HmacCipher[Sha2[256]]]`
+
+% 1 1 0 0587d9e814ae95b7108efd4e236008fe
+
+@ 0 7 0 021b47b4dbeb1f1915ba6e01820018be
++       `HmacCipher[algorithm]` 把 HMAC 呈现为 `Cipher & Signing & Symmetric`，使 HMAC 密钥成为 `SymmetricKey`，并接入与其他所有密码算法相同的密钥机制——正因如此，`Cose(payload, key)` 才能用它生成 `Mac0` 消息。
++       （数据上的 `hmac` 扩展方法是得到 HMAC 的另一条以输出定类型的途径。）
++       密钥为 32 字节（`Size = 256`），`genKey` 从 `Crypto` 提供者的随机源抽取它，`sign` 是提供者在该哈希的 `hmacName` 下的 HMAC，`verify` 则重新计算它并以常数时间比较。
+
+% 2 1 0 09188c5250dc6631044d4bba3d506060
+
+% 3 1 0 01419b7f5535db5d02cbdb2a69769dfb
+
+% 4 1 0 078df937ef41a15a057709fdbb0f3952
+
+% 2 1 0 11e0364fea3b2bc71b2d921d91a5339a
+
+% 4 1 0 195d2b6869f687a516184841a012e596
+
+% 5 1 0 0d6ecf75da2d090d072e0e55b5220145
+
+% 1 1 0 034d5a242433b77f1ed350d7b038d880
+
+@ 0 3 0 08c2fee7c78b1f760811d5254b4fefcb
++       任意哈希 `algorithm` 的实例由 `.value` 给出，它需要一个 `Hash in algorithm`（gastronomy 的，位于隐式作用域中）和一个从 `providers` 按名称导入的 `Crypto` 提供者。
+
+% 0 1 0 1819f6454e350fb018219860dd790396
+
+@ 0 2 0 1f9cd6f8440ae17a0216be6ff33e0a75
++   entry .value   对任何在作用域中有 `Hash` 和 `Crypto` 的哈希给出的 given `HmacCipher[algorithm]`
++   entry #Size   `256`：以位计的密钥大小
+
+% 0 1 0 06f448307f21ffba0a05116433e683ee
+
+@ 0 4 0 0c3615edea4e750806179f60f76ca7c1
++   entry #genKey   来自提供者的 32 个随机字节
++   entry #privateToPublic   密钥本身：MAC 密钥没有公钥部分
++   entry #sign   数据在该密钥下的 HMAC，经由提供者计算
++   entry #verify   某个认证码是否等于数据在该密钥下的 HMAC，以常数时间比较
+
+@ 0 1 0 13d5a682af6e720e0ae679688008e94c
++ entry .CanonicalCbor   确定性 CBOR 编码（RFC 8949 §4.2.1），COSE 要求使用它
+
+% 1 1 0 1bbd83a3e8e62d5e11194c064c10d258
+
+@ 0 7 0 159b853d9d7962051c9171ab729154af
++       COSE 对其头部和结构的序列化形式签名，因此编码必须是确定性的：最短形式的整数、确定的长度，以及按其编码的字节字典序排列的映射键。
++       breviloquence 的 `Cbor.Ast` 编码器已经满足前两项；`CanonicalCbor.encode` 补上键的排序，递归地贯穿映射、数组和标签，然后对结果编码。
++       `Cose` 把它用于受保护头部和待签名结构。
++   entry .encode   确定性地编码一个 `Cbor.Ast`，每个映射的键都按其编码排序
+
+@ 0 1 0 1e8d3dd223897ef30f3c9d19b0e2af79
++ entry .OpensslCrypto   基于 OpenSSL `libcrypto` 的 `Crypto` 提供者，适用于 JVM 和 Scala Native
+
+% 1 1 0 08a0f30c523be006054e4eee78e1463a
+
+@ 0 6 0 0e7cbf5515a2ab8200430417b268e268
++       一个通过 xenophile 的类型化 C 导航调用 OpenSSL 3 的 `libcrypto` 的 `Crypto` 提供者：随附的 `/enigmatic/openssl.h` 头文件中的原型在代码编译时解析，而每次调用在 JVM 上是一次 Panama 下行调用，在 Scala Native 上是一次直接的 C 调用，二者出自同一份源码。
++       按名称导入 `providers.opensslProvider` 即可选用它，也可以为某个代码块绑定一个局部的 `given Crypto = OpensslCrypto`，此后每个密码算法、密钥和 HMAC 都经由它运行：
+
+% 2 1 0 05b16c8a9f27370c08598d721e561eab
+
+% 3 1 0 0ec9f24a0f018ddf044db0f4eac907a3
+
+% 4 1 0 0673d40b2a3863af009954ccd181c95f
+
+% 0 1 0 05ad5d36e88dabc5068a2b9c8d6289f0
+
+% 1 1 0 1077b41f428a03950650d3eb6aaf7886
+
+% 2 1 0 02ab9ab5532fa30f1f41bd8f94b5a116
+
+% 1 1 0 09a8e1d290c9f89109ec135249fd839b
+
+% 2 1 0 0b0fecdfe605e2fe01063439ca3d0850
+
+@ 0 11 0 10ac572dcad00cc31840240af6a73ad5
++       它原生实现的内容：`#random`（`RAND_bytes`）、`#hmac`（基于 SHA-256、SHA-384、SHA-512、SHA-1 和 MD5 的一次性 `HMAC`），以及经由 EVP 密码 API 的 `#aes`，形式为 `aes-<bits>-<mode>`，采用 PKCS#7 填充或不填充（ISO 10126 填充是仅限 JCE 的方案，不予提供；AES 以外的分组密码会引发 panic）。
++       它的输出与 JDK 提供者逐字节一致，因此在其中一个下生成的密文可在另一个下解密。
++       RSA——`.rsa`、`.rsaSignature` 和 `.ecdsa`——委托给 `JavaBaseCrypto`，因此它在 JVM 上可用，在 Scala Native 上不可用，因为那里的该提供者是一个会 panic 的桩。
++       在 Scala Native 上，该库静态链接（`-lcrypto`）；在 JVM 上，`libcrypto` 从 Homebrew 路径、`/usr/local/opt/openssl@3`，或库路径上的 `libcrypto.so.3`/`libcrypto.so`/`libcrypto.dylib` 加载，并且 JVM 需要 `--enable-native-access=ALL-UNNAMED`。
++       没有 Scala.js 构建。
+
+@ 0 15 0 147ae480e89f299005972a66a554556e
++       `OpensslCrypto` 位于 `enigmatic.openssl` 组件中，该组件在 `enigmatic.core` 之上加入了 xenophile 的原生 FFI。
++   entry .random   `RAND_bytes`：一个 `Crypto.Random`，其 `bytes(n)` 是 OpenSSL 的随机字节
++   entry .hmac   以 JCE 风格名称指定的一次性 HMAC：`HmacSHA256`、`HmacSHA384`、`HmacSHA512`、`HmacSHA1`、`HmacMD5`
++       其他任何算法名称都会引发 panic。
++       该名称就是 gastronomy 的 `Hash#hmacName` 给出的名称，因此 `data.hmac[Sha2[256]](key)` 无需指明它即可到达这里。
++   entry .aes   经由 EVP 密码 API 的 AES，一次性和流式皆可，支持密钥类型指明的每种模式
++       `Aes[128 | 192 | 256]` 的 `Crypto.SymmetricCipher`：变换 `AES/<mode>/<padding>` 变为 OpenSSL 的 `aes-<bits>-<mode>`，对于 `BlockCipher.NoPadding` 则禁用填充。
++       给出 IV 时，`encrypt` 把它置于密文之前，`decrypt` 则将其剥去；`stream` 和 `decryptStream` 在多个数据块之间保持一个打开的 EVP 上下文，并在 `finish` 时释放它。
++       密钥由 `random` 生成。
++   entry .rsa   RSA，委托给 JDK 提供者；在 Scala Native 上不可用
++   entry .rsaSignature   基于摘要的 RSASSA-PKCS1-v1_5，委托给 JDK 提供者
++   entry .ecdsa   基于摘要的 ECDSA，委托给 JDK 提供者
+
+@ 0 1 0 1d6de38f625a86d706c849f6020f81cd
++ entry .Certificate   X.509 证书，以其本身所是的 ASN.1 值持有
+
+% 1 1 0 06d70222fd8a3ee012e23c4cb8b0dd82
+
+@ 0 7 0 0c1eac5ccb6159110efad9718ecd8305
++       [证书](https://en.wikipedia.org/wiki/X.509)在一段有效期内把公钥绑定到一个 `Distinguished` 名称，并由其颁发者签名。
++       `Certificate` 就是它的 `#asn1` 值，因此它通过普通的编解码器编码为 DER（`certificate.in[Der]`、`.encodable`），从 DER 读回（`der.as[Certificate]`、`.decodable`）或从铠装文本读回（`text.read[Certificate in Pem]`），并以 `#pem` 铠装；由于 ASN.1 编解码器是全函数且规范的，从线上读取的证书会逐字节地重新编码，而 `#verify` 正依赖于此。
+
+@ 0 8 0 0874fdbd7e5dac00012216f3fec5d066
++       有两个构造器可构建版本 3 的证书：`.selfSigned`，其主体就是它自己的颁发者——根证书颁发机构，或开发服务器为自己签发的一次性证书；以及 `.issued`，其中一个密钥的证书由另一个密钥签名。
++       除了密钥的密码算法之外，两者都需要一个 `cipher is SignatureAlgorithm`（它把密码算法与摘要的组合命名为一个 `AlgorithmIdentifier`）、一个 `Signature.Digest`（默认为 SHA-256；用 `signatureDigests.sha384Signature` 或 `sha512Signature` 更改）、一个用于密钥标识符的 `Hash in Sha2[256]`、一个针对该密码算法弱点的许可，以及针对 `Certificate.Error` 和 `Asn1.Error` 的战术。
+
+% 2 1 0 0dd90b4ba53d05ae163c8934a5cf802c
+
+% 3 1 0 12d41bf6072a7fd1099ea108c6872c74
+
+@ 0 1 0 19dc4dc0970b8c760b6a70d6859cd9ae
++         label 一个身份和一段有效期
+
+% 1 1 0 04af0f555c22e17f0da53474e9d7eaa7
+
+% 2 1 0 01fe83bdbf6284a11a1bc2defb290325
+
+% 3 1 0 1a1d51c9a5a82b5e18bee6af269abc87
+
+% 4 1 0 075485011ac5fce818bf60023f495d06
+
+% 5 1 0 1b863e3cd47555d8168aa9945feba98a
+
+% 6 1 0 14fdda8e086161b81fa937663f72c86c
+
+% 8 1 0 0d4fe6fb2f546e3e06cac48a2de51d30
+
+% 9 1 0 119c847a23f11ae207501b54aa6bc733
+
+% 1 1 0 10657d5f575c6c5e1510a51c64a6efd1
+
+@ 0 1 0 130bcd29fc33262c1a9252d7814616ea
++         label 一个自签名的根证书，标记为颁发机构
+
+% 1 1 0 0dbf200b99a1c75e18936f5018df8c85
+
+% 2 1 0 02676c55c20979d51bdb9a2327217ac1
+
+% 3 1 0 0166f4f9d3a9914b055834995d7c1a8f
+
+% 4 1 0 0e6298626a9863ce17bad986400a428c
+
+% 5 1 0 1f52a90b7b59bb9719caf35f1514ef84
+
+% 6 1 0 0b635d6dca1606f319900126f0c9b22a
+
+% 8 1 0 18095c0a28d19c280748050ac0e4faae
+
+% 9 1 0 0d350e2e990590a3133b1f1ea73d8ca2
+
+% 11 1 0 0513aa940f7e4be51a575480ba56da23
+
+% 12 1 0 003f624f959c92f7199a24ead00041e7
+
+% 13 1 0 1c0bee8d79c072f10720e6a955d19d8c
+
+% 1 1 0 1ef1d223b96bf31e1fd073eace20c870
+
+@ 0 1 0 08839f41760d04f40c6f3093957cfa2d
++         label 一个基于经典密钥、由根证书颁发的叶证书
+
+% 1 1 0 18c82c7d2b9e01510c3507b8ccf91019
+
+% 2 1 0 072a8038deec1ead1aa3a0a171dbfeda
+
+% 3 1 0 06bfb9981b45832f106cbcc71eb91819
+
+% 4 1 0 0d3bbb7e56076df208b0d61d6a04136a
+
+% 5 1 0 0099929a36cd991b1b18376f06103b0d
+
+% 6 1 0 06fdbd7ed24b6df00b8f1b2bea6703b4
+
+% 8 1 0 00f2df757365dd680c676feb2db10f55
+
+% 9 1 0 09f9a343b8470fb61b78017ee3e5b6b3
+
+% 11 1 0 0d153de206bb678117f9a42f3a9bcba5
+
+% 12 1 0 0664a1f9c623d6e206087ef6e352fe34
+
+% 13 1 0 00d4e46f8a86f1620b8233b0015747ca
+
+% 15 1 0 0ef8fbba64c0d73e15dc71ecf737ad70
+
+% 17 1 0 056f155fc00fc25d0f5511d343b368f8
+
+% 18 1 0 0772cf91ce3691d5180ea4288ba7b079
+
+% 1 1 0 0e1b3c65d961f137074fb323b66c3c3d
+
+@ 0 1 0 0ca411f6757a78ee1b3d2de469d1732e
++         label 两者都可用根密钥验证，并以 PEM 形式传递
+
+% 1 1 0 1ea486e6cd6f55a60bf850d03f9cc499
+
+% 2 1 0 1e023c62e9d7fd691e381ff551dd550e
+
+% 3 1 0 0e73783facb892790be8174002c486fe
+
+% 4 1 0 0656621e3a5abc4b1002f5418edc9089
+
+% 5 1 0 097bee8db7369c451a54c63322bf3d55
+
+% 6 1 0 1a8c17f7dbd253cb12460129e16999ec
+
+% 8 1 0 048bd445630e003c19466bb48dfdd5eb
+
+% 9 1 0 1d7f482d91483b3316eadcb275522df8
+
+% 11 1 0 02d44093c01dd4fe12b26eb1b90623d6
+
+% 12 1 0 174d8d338e30c4a4116123dba27278d8
+
+% 13 1 0 18b5651f5667badd0639fe43189397ce
+
+% 15 1 0 146e1a263cd46fd118724c123fe4096a
+
+% 17 1 0 0d6259b2ebdb6f5c0ef2998a993d111b
+
+% 18 1 0 1fb685827a7018961b736872ae8e99cd
+
+% 0 1 0 0b1615b0d746a71e06fda5ebe920c63a
+
+% 0 1 0 1d903cc3a1815b380753b1c883dc0c89
+
+% 0 1 0 1a84377146d32b1b1e1f780f3ebf89f0
+
+% 1 1 0 1fb3a097d31e294a06e53fe9b65b836d
+
+% 2 1 0 0d91ff0a715c61dd19d171c624cfda9c
+
+@ 0 8 0 1542fc48a4b4e9f50b5d7c5cbea4ad24
++       这条链就是当今后量子身份所采取的形状：ML-DSA 密钥以 FIPS 204 标识符签署证书，JDK 的 `CertificateFactory` 能解析并检查它们，但还没有任何 TLS 栈能用 ML-DSA 密钥进行*握手*，因此服务提供一个由 ML-DSA 密钥颁发的 ECDSA 叶证书，连同该密钥的自签名根证书，而知道该 ML-DSA 密钥的对端则以它验证叶证书。
++       （在 JDK 上，这样的链可以通过 `SunX509` 密钥管理器和 `X509ExtendedTrustManager` 完成握手；`PKIX` 管理器会对整条链运行算法检查并拒绝它。）
+
+@ 0 10 0 1edd597c6ed9f7f70f75d436373f1820
++       构建出的证书包含：版本 3、序列号、签名算法标识符、颁发者、有效期（2050 年之前写作 `UTCTime`，从那时起写作 `GeneralizedTime`）、主体、作为提供者所写的 `SubjectPublicKeyInfo` 的密钥（`PublicKey#bytes`，原样嵌入），以及扩展：关键的基本约束（颁发机构的 `cA` 为 true，否则为空）、关键的密钥用法（颁发机构为 `keyCertSign` 和 `cRLSign`；终端实体为 `digitalSignature` 和 `keyEncipherment`）、主体密钥标识符（RFC 7093 方法 1：密钥的 SHA-256 的前 160 位）、被颁发时的颁发机构密钥标识符，以及为 `alternatives` 生成的 `dNSName` 主体备用名称——TLS 客户端检查的正是它们，而不是通用名称。
+
+@ 0 2 0 179585b4fe08a8f61a85c84a946efeed
++       `Certificate` 位于 `enigmatic.x509` 组件中，该组件在 `enigmatic.core` 之上加入了 aviation（用于有效期的 `Period`）。
+
+% 0 1 0 1cc27323fc6b15591ae27808936ce01a
+
+% 1 1 0 1df8dbcbbe7aa59514d8d14cf99c0c53
+
+% 1 1 0 0224390fd271010f0748830b2d14de13
+
+% 2 1 0 16c532af88feed5216e2fbf90301b997
+
+@ 0 14 0 14563c65be11179e05066be371991592
++   entry .encodable   以 DER 形式表示的证书，即 `certificate.in[Der]`：它的 `asn1` 值经编码的结果
++   entry .decodable   从 DER 得到的证书，即 `der.as[Certificate]`
++       把文档解码为 `Asn1` 并包装它，对于不是严格 DER 的字节抛出 `Asn1.Error`；它不检查该值是否具有证书的形状，因此任何其他结构的文档都能解码，随后在 `#verify` 处失败。
++       `text.read[Certificate in Pem]` 从铠装形式读取证书。
++   entry .selfSigned   主体即其自身颁发者的证书，用它所携带的密钥签名
++       `Certificate.selfSigned(subject, key, validity, serial, authority = false, alternatives = Nil)` 基于 `key.public` 构建证书，以 `subject` 同时作为主体和颁发者，并用 `key` 对它签名。
++       `authority = true` 生成证书颁发机构（基本约束 `cA`，密钥用法 `keyCertSign` 和 `cRLSign`）；`false` 生成终端实体（`digitalSignature` 和 `keyEncipherment`）。
++       `alternatives` 是 `dNSName` 主体备用名称。
++       `serial` 必须为正，`validity` 必须在开始之后结束，否则抛出 `Certificate.Error`。
+
+@ 0 7 0 013992351417cc3e1eb21ad0c9897aac
++       密钥的密码算法必须有一个 given 的 `SignatureAlgorithm`——`Rsa[2048 | 3072 | 4096]`、`Ecdsa[256 | 384 | 521]`、`Ed25519` 或 `MlDsa[44 | 65 | 87]` 都有——而作用域中的 `Signature.Digest` 必须是该密码算法有标识符的摘要（对 RSA 和 ECDSA 而言为 SHA-256、SHA-384 或 SHA-512），否则抛出 `Certificate.Error(UnknownAlgorithm)`；Ed25519 和 ML-DSA 忽略摘要。
++       还需要一个 `Hash in Sha2[256]`、一个 `Permit[Weakness[cipher]]`（`Rsa[1024]` 这样的弱密码算法需要导入 `cryptoPermits`）、`Tactic[Certificate.Error]`、`Tactic[Asn1.Error]` 和 `Diagnostics`。
+
+% 2 1 0 009d9855f4957a510814a1442fcf032a
+
+% 3 1 0 0f2d41430528ed951390c2673b649219
+
+% 4 1 0 08ebe2e0d494e71d00aa765f1b2b6961
+
+% 5 1 0 0c6f047d1921658116b60b6e5211284b
+
+% 6 1 0 1de9d32465f853bc02429b09b5ca2744
+
+% 0 1 0 1040cb96db7e64de129bcf8960d9e85f
+
+% 2 1 0 1bad1cede668aa4c1c69f36b0dec05fc
+
+% 0 1 0 02820940eb3b95fd0c4ba3a40e8d077f
+
+% 1 1 0 1eb6d7a2f4eadd6411cfe04644f5b1be
+
+% 0 1 0 1adc94fec21623a50f9cb773611b90eb
+
+% 0 1 0 01273890b6789a030e06b8cb99fd3968
+
+% 0 1 0 0f7f0db600d6152312b43135b448a058
+
+% 1 1 0 0868d5902ff029d00ce053478c88c140
+
+@ 0 12 0 069e40a07e3df9ff0d859ea2e11e4f0f
++   entry .issued   基于一个密钥、由另一个密钥签名的证书：这正是颁发机构所做的事
++       `Certificate.issued(subject, key, issuer, issuerKey, validity, serial, authority = false, alternatives = Nil)` 构建一个把 `subject` 绑定到公钥 `key` 的证书，指明 `issuer` 为其颁发者，并用 `issuerKey` 对它签名。
++       它就是把两半分开的 `.selfSigned`，外加 RFC 5280 对被颁发证书所要求的颁发机构密钥标识符——即颁发者密钥的主体密钥标识符，验证者借此在链中找到签署它的证书。
++       上下文参数与 `.selfSigned` 的相同，针对的是*签名者*的密码算法：持有者的密码算法什么都不需要，因此经典的 `Ecdsa[256]` 密钥可以由 `MlDsa[65]` 密钥认证。
++       若任一密钥的字节不是 `SubjectPublicKeyInfo`，则抛出 `Certificate.Error(BadPublicKey)`。
++   entry .Error   无法构建证书时抛出
+
+% 1 1 0 0f9d0ef653d488261281ccb4adb04a2d
+
+@ 0 3 0 1c7d05eb348b8e331d75098a512efd4b
++         错误 `↯/s.105.5`：_could not build the certificate because `reason`_。
++         由 `Certificate.selfSigned` 和 `Certificate.issued` 抛出。
++         读取和验证从不抛出它：对于格式错误的证书，`#verify` 为 `false`。
++         原因如下：
+
+% 2 1 0 1b1adef5976662570d80675f0b0a75bf
+
+@ 0 6 0 04b0f6516198d6100f9552e90e8392a1
++         column  分支
++         column  代码
++         column  消息
++         column  说明
++         row  `UnknownAlgorithm(digest)`  1  _no signature algorithm is assigned to `digest`_  密码算法与作用域中的 `Signature.Digest` 之间没有对象标识符：RSA 或 ECDSA 搭配 SHA-256/384/512 以外的摘要
++         row  `BadPublicKey`  2  _the public key was not a SubjectPublicKeyInfo_  某个密钥的字节不是 `SubjectPublicKeyInfo`
+
+% 0 1 0 0567cfd47a4dd8d31408c43592a4bb2f
+
+@ 0 1 0 160aa96d18d0d70104f609d401f34876
++         row  `BadValidity`  4  _the validity period ended before it began_  在开始之时或之前结束的时段
+
+% 1 1 0 197b321300d98d2808e35142736a0006
+
+@ 0 18 0 0c0a1dd2c6e11d050e25bdd67721c438
++     entry .communicable   把每个原因呈现为一条消息
++     entry .Reason   `UnknownAlgorithm(digest)`、`BadPublicKey`、`BadSerialNumber` 或 `BadValidity`，编号为 1 到 4
++     entry #reason   失败的 `Certificate.Error.Reason`
++   entry #asn1   作为 `Asn1` 值的证书：`Sequence(List(tbsCertificate, algorithm, BitString(signature, 0)))`
++       每个字段都可以通过匹配这一结构取得；第一个元素是签名所覆盖的 `TBSCertificate`，它重新编码后恰好是被签名的字节。
++   entry #pem   以 PEM 铠装、标注为 `CERTIFICATE` 的证书
++       `Pem(Pem.Label.Certificate, asn1.in[Der])`；`pem.serialize` 就是服务器配置中或 `cat` 一个 `.crt` 文件时显示的文本。
++   entry #verify   签名是否由某个公钥对应的私钥部分对此证书作出
++       `certificate.verify(issuer)` 重新编码 `TBSCertificate`，并用密码算法的 `verify` 以 `issuer` 检查签名位串；对于自签名证书，颁发者就是它自己的密钥。
++       它需要 `cipher & Signing` 的 given 和一个 `ProcessingPermit[Weakness[cipher]]`。
++       对于需要摘要的方案（RSA、ECDSA），所用的摘要是作用域中的 `Signature.Digest`，而不是证书的算法标识符所指明的那个，因此两者必须一致；ML-DSA 和 Ed25519 没有需要一致的摘要。
++       不是已签名证书所具有的三元素结构的证书、被篡改的证书，或由另一个密钥签名的证书，结果都为 `false`。
+
+@ 0 1 0 010be6c0e36e2cb018a2c144d947628f
++ entry .Distinguished   X.501 可分辨名称：证书的主体或颁发者
+
+% 1 1 0 053176b3b1a491f605a62962184eeeb1
+
+@ 0 5 0 1a089a6d07ee1fb11228656ea6dde667
++       `Distinguished` 是证书把密钥绑定到的名称，由实践中出现的那些属性构成，每个属性都是默认为 `Unset` 的 `Optional[Text]`，缺省时干脆不编码：`#commonName`（`CN`）、`#organization`（`O`）、`#organizationalUnit`（`OU`）、`#locality`（`L`）、`#state`（`ST`）、`#country`（`C`）和 `#email`（`emailAddress`，即 PKCS#9 属性）。
+
+% 2 1 0 13d2c2573616c0381e4e972de649e915
+
+% 3 1 0 0fb001e1e9910536192bfb3f63fbb10a
+
+% 2 1 0 1bb4ed18cc441b3c08cec6c7c54de9c7
+
+% 1 1 0 18ca874c3f991470081b513bd40c6c82
+
+@ 0 8 0 11ea917fd6fa900200d577035b82dbed
++       它编码（`.encodable`、`name.in[Der]`）为一个 `SEQUENCE OF RelativeDistinguishedName`，每个属性位于自己的单成员 `SET` 中，按惯常顺序、最笼统的在前——国家、州、地区、组织、组织单位、通用名称、电子邮件——这也是 `openssl x509` 打印的顺序，因此 JDK 把上面的示例读作 `CN=example.com,O=Example,C=GB`。
++       国家是 `PrintableString`，电子邮件是 `IA5String`，这是它们的定义所要求的；其余都是 `UTF8String`。
++       没有解码器：从证书读出的名称以其 `Asn1` 形式进行匹配。
+
+% 1 1 0 035fb1cc4e7e04991e01067f5148bab3
+
+@ 0 8 0 1fb2b14f8121f74117e314b795952c96
++   entry .encodable   以 DER 形式表示的名称，即 `name.in[Der]`：由单属性 `SET` 组成的 `SEQUENCE`
++   entry #commonName   `CN` 属性（`2.5.4.3`），一个 `UTF8String`，若已给出
++   entry #organization   `O` 属性（`2.5.4.10`），若已给出
++   entry #organizationalUnit   `OU` 属性（`2.5.4.11`），若已给出
++   entry #locality   `L` 属性（`2.5.4.7`），若已给出
++   entry #state   `ST` 属性（`2.5.4.8`），若已给出
++   entry #country   `C` 属性（`2.5.4.6`），一个 `PrintableString`，若已给出
++   entry #email   `emailAddress` 属性（`1.2.840.113549.1.9.1`），一个 `IA5String`，若已给出
+
+@ 0 1 0 0c935f1632de3b1a1fe930de7486f9a7
++ entry .SignatureAlgorithm   密码算法与摘要的组合在证书中所具有的 `AlgorithmIdentifier`
+
+% 1 1 0 1338349280b8fe4d0cd40d1f0a2f6da4
+
+@ 0 9 0 1c2eca857333de6e037d6d86d8c08650
++       `cipher is SignatureAlgorithm` 针对某个 `Signature.Digest` 给出 ASN.1 `AlgorithmIdentifier`，它指明证书签名所用的签名方案；当该组合没有标识符时则给出 `Unset`。
++       它是*组合*的属性，而不只是密码算法的属性——`sha256WithRSAEncryption` 和 `sha384WithRSAEncryption` 是同一密钥类型上的不同对象标识符——但 Ed25519 或 ML-DSA 这类不接受摘要的方案除外，它们的标识符只指明密码算法。
++       `Certificate` 为签名密钥的密码算法召唤它，并把 `Unset` 转为 `Certificate.Error(UnknownAlgorithm)`，而不是写入一个没有验证者能识别的标识符。
+
+@ 0 4 0 05327479a8420b920abef5ed6cf92fcc
++       伴生对象为 `Rsa`（1024 到 4096 位）、`Ecdsa`（256、384、521）、`Ed25519` 和 `MlDsa`（44、65、87）给出实例，全部位于隐式作用域中。
++       没有实例的密码算法无法签署证书；为其他密码算法提供实例只需一行返回正确 `Asn1.Sequence` 的 given。
+
+% 1 1 0 02a94fc81e03c9250583ee118d54092f
+
+@ 0 15 0 0210a00b86e7273a1b21c5d1041cd64e
++   entry .rsa   RSASSA-PKCS1-v1_5：PKCS#1 弧下的 `sha256WithRSAEncryption`、`sha384…` 或 `sha512…`
++       按摘要分别为 `1.2.840.113549.1.1.11`、`.12` 或 `.13`，参数字段存在且为 `NULL`，这是 RFC 3279 所要求的。
++       其他任何摘要都为 `Unset`。
++   entry .ecdsa   ECDSA：ANSI X9.62 弧下的 `ecdsa-with-SHA256`、`-SHA384` 或 `-SHA512`
++       按摘要分别为 `1.2.840.10045.4.3.2`、`.3` 或 `.4`，参数字段缺省，这是 RFC 5758 所要求的，因为曲线已由公钥指明。
++       其他任何摘要都为 `Unset`。
++   entry .ed25519   Ed25519：`1.3.101.112`，无参数；摘要被忽略
++       RFC 8410 的标识符只指明曲线，因为该方案固定了它自己的哈希。
++   entry .mlDsa   ML-DSA：NIST 弧下的 `id-ml-dsa-44`、`-65` 或 `-87`；摘要被忽略
++       按参数集分别为 `2.16.840.1.101.3.4.3.17`、`.18` 或 `.19`（RFC 9881），参数字段缺省。
++       ML-DSA 对消息本身而不是其摘要签名，因此 `Signature.Digest` 不起作用。
++   entry #Self   密码算法类型
++   entry #identifier   某个摘要的 `AlgorithmIdentifier`，作为 `Asn1.Sequence`，或 `Unset`

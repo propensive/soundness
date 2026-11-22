@@ -1,0 +1,81 @@
+orthant 2 language
+
+% 0 1 0 0f04ec4b9ac2d4270a232409219e1f6b
+
+% 0 1 0 0b32e05725835bca1f985912aa004d7f
+
+% 0 1 0 0b5938ce7315323607e1922cbc4d93e2
+
+@ 0 1 0 191066454a39ac3c195efbed2f3029ba
++ info   一个为包做遮蔽的编译器插件，在编译时把包的声明移到一个新前缀之下
+
+% 0 1 0 0ca6d61ddd9511ea1cdae38f1414f6fe
+
+@ 0 6 0 0551362ea18d00150c8814c990d689f8
++     _Umbrageous_ 在编译时重定位（“遮蔽”）包。
++     给定从一个包到一个新前缀的映射，该包及其子包的每个声明都会像写在该前缀之下一样被编译，从而使一个库的两个版本，或者一个库与内嵌于另一个库中的副本，能够共存于同一类路径而不发生类冲突。
++     与字节码遮蔽工具不同，它在源代码解析时工作，因此类型检查器、TASTy 以及之后的每个阶段看到的都是遮蔽后的名称。
+
+@ 0 3 0 0b306703bd5128f8051ee7e7f374d665
++     启用插件的方法是把它的 jar 以 `-Xplugin:<path to the umbrageous plugin jar>` 的形式传给编译器（jar 的 `plugin.properties` 指明 `umbrageous.ShaderPlugin`），并把每个映射作为 `<package>:<new-prefix>` 形式的插件选项传入：
+
+% 0 1 0 121f5d49fa83450310393c10f05ce4fa
+
+% 0 1 0 158741edf7b88012099d8f5dd584058f
+
+% 0 1 0 0e36e04daf9f65340e86dc80875c0fe3
+
+% 0 1 0 1a33ee6b4a3bba2500aa229743c7c755
+
+@ 0 2 0 16b13ae65161bc370eb5dc8c384580fb
++     有了这个映射，声明 `package testing.globe` 的源文件会编译为 `shaded.v1.testing.globe`。
++     对每个源文件，它重写三样东西：
+
+@ 0 7 0 0cba03d85b0c4b7410c3d88ae5c5f149
++     - 名称为某个被映射包或位于其中的 `package` 子句被移到前缀之下；有多个映射匹配时，最长的包胜出；
++     - 每个 `package` 子句都会获得对每个映射前缀的通配符导入（移动了该子句的那个映射除外），因此另一个包中的 `import testing.globe.*` 仍能解析，只是现在解析到遮蔽后的包；
++     - 指向被映射包的全限定引用 `_root_.testing.…` 被重定向到 `_root_.shaded.v1.testing.…`。
+
+@ 0 2 0 0303cc69276c0e611760105d3a526cdb
++     不符合 `<package>:<new-prefix>` 形式的选项会被报告为警告并忽略。
++     前缀可以包含点号。
+
+@ 0 4 0 141a643a31119ef60b78c9cf4d1e5624
++     该库是单一的仅限 JVM 的源集 `umbrageous.plugin`，依赖 Scala 编译器，不依赖 Soundness 的任何部分。
++     它作为独立制品发布，而不是放在 Soundness 的捆绑包中，因为 `-Xplugin` jar 必须恰好声明一个插件。
++     它的两个类被导出到 `soundness` 总括包，尽管没有程序在运行时需要它们。
+
+% 0 1 0 0d68011425c7c64e1e7684730e0547a5
+
+% 0 1 0 1aa1b4d5641af56c029971e938ffc7d8
+
+@ 0 1 0 197de56ff3c2265f0de899e612533e27
++ entry .ShaderPlugin   编译器插件类，在 umbrageous 的 `plugin.properties` 中指明
+
+% 1 1 0 1bea3a3b3d3ea755072ff495c799e9f9
+
+@ 0 4 0 1edce66b60f01cb30e3c3d7f47817878
++       当 umbrageous 的 jar 通过 `-Xplugin:` 传入时，编译器实例化的 `StandardPlugin`。
++       它安装单个阶段 `Shader`，并把插件的选项交给它，每个选项都是一个以 `-P:umbrageous:<package>:<new-prefix>` 给出的映射 `<package>:<new-prefix>`。
++       它不供直接使用。
+
+% 0 1 0 1ba35b0747441ab51f6b4ff3d195bc24
+
+@ 0 1 0 0ccd8843369b212b0582c852b8b72235
++   entry #name   插件的名称 `umbrageous`，其选项通过它来指定
+
+@ 0 1 0 026291eff2343af81039b0f18b3f7cd2
++ entry .Shader   在解析之后把被映射的包移到其前缀之下的插件阶段
+
+% 1 1 0 181951bf227ecdd91010a27e799d496d
+
+@ 0 7 0 11dacdf90c70d8b3044ecf394092b093
++       一个名为 `shade` 的阶段，在 `parser` 之后、`typer` 之前运行，作用于每个编译单元的无类型树。
++       它由 `ShaderPlugin` 用插件的选项构造，把每个选项解析为 `<package>:<new-prefix>` 映射，对其他任何选项发出警告并跳过。
++       然后，它把被映射包的每个 `package` 子句重写到其前缀之下，为每个 `package` 子句添加对其他每个映射前缀的通配符导入，并重定向每个以 `_root_` 限定、指向被映射包的引用。
++       它不供直接使用。
+
+% 0 1 0 104b2e37635872f60990d8e8dffe39a1
+
+@ 0 1 0 128c6c0a5c8bedc50f53676df1495c4e
++   entry #phaseName   阶段的名称 `shade`

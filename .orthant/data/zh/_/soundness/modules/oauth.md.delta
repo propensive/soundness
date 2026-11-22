@@ -1,0 +1,189 @@
+orthant 2 language
+
+% 0 1 0 0e3b2f29cf37f35a1f8f63eefacb6fb8
+
+@ 0 1 0 02ed9263154c2802081b650b8e2f33e5
++ ### 概述
+
+@ 0 3 0 031bf46529c0164816d880cdba390c01
++ [OAuth 2](https://www.rfc-editor.org/rfc/rfc6749) 规定了客户端如何获得授权来调用 API，无论是代表用户还是代表自己。
++ 客户端从 API 的授权服务器获取访问令牌，并在每个请求中出示它。
+
+@ 0 4 0 0e7de8bd1e6ebaae030c5be78229d819
++ 这里提供的是其中客户端的一侧：获取令牌的授予方式、授权码流程所用的 PKCE，以及让某种方案的令牌或密钥到达有类型客户端的 `Credential`。
++ 对于 Web 应用程序，授权码流程还以[HTTP 服务器](http-server.md)中间件的形式提供。
+
+@ 0 1 0 1a588ef54116e2d2121b8367d0849d1c
++ ### 关于令牌
+
+@ 0 3 0 094a537c5c3895841e1407f24e0856da
++ 令牌不只是一个字符串。
++ 它授予特定的权限范围，会过期，还可能附带一个刷新令牌。
++ `Authorization` 保存了全部这四项，因此令牌能做什么是已知的，`Scope` 也可以与它核对。
+
+@ 0 3 0 060ee6004fd5e0fa0f08bf1040db9840
++ 所有内容都来自 `soundness` 包。
++ 获取令牌意味着发出 [HTTP 请求](http-client.md#what-a-request-needs-in-scope)，因此这些请求所需的导入都在作用域中：
+
+% 0 1 0 05f2ae76781bc53c0f28815590cdc90c
+
+% 0 1 0 1bca28db88d8e18d0fbcefeaacfc679c
+
+% 0 1 0 0db1a0ecc5cc04ab14e285e7be2d415a
+
+% 0 1 0 0ef43ebb468b6866066a6976c6eee4e9
+
+% 0 1 0 08a1699a28eaa36e15c02fc5fa78fa3d
+
+% 0 1 0 0189ca70729c68090dc6a72473b09ed5
+
+% 1 1 0 10a6a1b53a3234051acece4438dda764
+
+@ 0 1 0 185619aa4d397e5b115d9275c6e8173e
++ 本页的示例会联系授权服务器，因此只编译而不运行。
+
+@ 0 1 0 008a108ca37ff5ed1b9115f22cb8f27c
++ ### 获取令牌
+
+@ 0 3 0 19219ead17cce23b0f379055f040d7bc
++ `Issuer` 是某个客户端眼中的授权服务器。
++ 它包含服务器的令牌端点，以及客户端的标识和密钥。
++ 对于授权码流程，它还包含服务器的授权端点，以及客户端的重定向 URI。
+
+@ 0 2 0 048fae321ebf693612eaa9f94657be34
++ 每种授予方式都向令牌端点发送 POST 请求，并读取返回的 `Authorization`。
++ 拒绝会抛出 `OAuth.Error`。
+
+% 2 1 0 1154d8e5ef10e2230fb5e058dd812ca8
+
+@ 0 7 0 15d5c0996b8b77551e2d5fa38873b4fa
++ column  方法
++ column  授予方式
++ column  给出
++ row  `clientCredentials`  客户端凭据（RFC 6749 §4.4）  客户端自己的授权凭证，用于所指定的权限范围
++ row  `refresh`  刷新（RFC 6749 §6）  新的授权凭证，来自刷新令牌或携带刷新令牌的 `Authorization`
++ row  `authorizationUrl`  授权码，第一步（RFC 6749 §4.1.1）  用户被发送到的 URL
++ row  `exchangeCode`  授权码，第二步（RFC 6749 §4.1.3）  针对用户带回的授权码的授权凭证
+
+% 1 1 0 1ebdc4c7779aca7107810dee5042b93d
+
+@ 0 1 0 1ac5e62bf1fb84fb1b8a0aaf7983902b
++ 代表自己行事的服务使用客户端凭据授予方式：
+
+% 2 1 0 0c2d561344d4ccd7071bc4a89765e625
+
+% 3 1 0 0004cb5bcadc2ba11839c63a6bf80674
+
+% 4 1 0 10afa786b85505f60813d4007e9145f4
+
+% 0 1 0 1e980b6a0a3dbd71080a01901e24976e
+
+% 0 1 0 1fb3cd4d956c01150b47de3432210573
+
+% 0 1 0 1b4f5bd9bf399ea118cbd8f2aafddc04
+
+% 0 1 0 00287db35f27f7f11d378a4848ff0015
+
+% 0 1 0 094d5cb11cd865971b519ac019de2179
+
+% 1 1 0 1e60997700f787cb0917c50bb8cf1e13
+
+@ 0 2 0 1bac8e1c8145a5d40d94557bd877af3d
++ `key` 就是访问令牌本身。
++ `grants` 说明令牌是否涵盖所指定的权限范围，`refresh` 则通过令牌的刷新令牌获取新的授权凭证。
+
+@ 0 4 0 0fcd2a66554489f4031b547e14185e5a
++ 代表用户行事的应用程序使用授权码流程，它分两步。
++ `authorizationUrl` 构建用户被发送到的 URL。
++ 它包含权限范围、一个在返回时检查的 `state`，以及在使用 `Pkce` 时的 S256 质询码。
++ 然后 `exchangeCode` 用用户带回的授权码进行交换：
+
+% 2 1 0 1888ff083337a37a1d8564a918a07e23
+
+% 3 1 0 018105fb8c4f3a4216219b27321ccd1a
+
+% 4 1 0 10608f6a3c3deeed0ee5e14a0dbd744c
+
+% 0 1 0 0e9eb7726cb1284e056f489a1121dd70
+
+% 0 1 0 0a3070abcfa46c59067d40fb57be4648
+
+% 0 1 0 0b3ba159c576cfbb1e04c243765f4e73
+
+% 0 1 0 08f053f07404ca3d171161767b55af84
+
+% 0 1 0 113baa5b3f7ad9a618760f4e2e92a241
+
+% 0 1 0 10c1fa79a26d320c15403f761762713c
+
+% 0 1 0 0b5dd8b06d4eca2b1fe6092ec209edb3
+
+% 1 1 0 0a278a5d0d64f1fd06e6e61bcecf8a5c
+
+@ 0 1 0 1051ee65cabaeb6002d0d424954f4353
++ 这里的密钥是 `Unset`，因为使用 PKCE 的客户端不必持有密钥。
+
+@ 0 1 0 0f83bb5585f7b8a305502594231d74b1
++ ### 有类型客户端的凭据
+
+@ 0 2 0 1d86ca433ef4264f1bb66229f32e7efc
++ `Credential` 按照 API 规范中的命名指明一种安全方案，并保存该方案所需的值：
+
+% 2 1 0 124ab15e023f5e3004616f6933816cea
+
+@ 0 4 0 0ae2cdfdb832b6811d0c1c7c5f89d25c
++ column  方案
++ column  值
++ row  API 密钥  `Text`
++ row  HTTP 认证  `Auth`
+
+% 0 1 0 16f715f1ee1592cc1e2c02338826c817
+
+% 1 1 0 1e1b075017ec97b0116c6c0e4c528d98
+
+@ 0 2 0 1cf70dadff69f1571af0a01188549886
++ [OpenAPI 客户端](openapi.md)按名称找到某个操作所需的每种方案的凭据，并按方案的规定出示它：
+
+% 2 1 0 1a4304e6dad38bef136aa863808902a7
+
+% 3 1 0 0fcab2a78de2ef9f1195927fc31ef862
+
+% 4 1 0 0cbc2bfa9357f2c40c4d1f1a1750e8c2
+
+% 0 1 0 02ce7f585e7323f517423dc7f4f475fb
+
+% 0 1 0 1d961b670e75eaee03c2fd32dfbcdbce
+
+% 0 1 0 0e0dc7f80a18b3ba06c808dfbd6ac151
+
+% 1 1 0 0bc372780edfc2901d7ed25eb3e765f7
+
+@ 0 2 0 16fd525a1f83086d02b7f488741449ba
++ 方案的名称是凭据类型的一部分，因此凭据不能为它自己以外的方案出示。
+
+@ 0 1 0 0ad5b8c446edfdd208ed4de3044b0525
++ ### 在 Web 应用程序中
+
+@ 0 2 0 1743685ecd5581d919799e3dc28debf0
++ 对于代表其用户行事的应用程序，`orthodoxy.server` 模块把请求处理函数包装在授权码流程中：
+
+% 2 1 0 13839e92905af9590c112bae0b068969
+
+@ 0 4 0 17d6de979159c9dd123d5314597b8fd6
++ column  包装器
++ column  作用
++ row  `issuer.oauth { … }`  处理从签发方返回的重定向，交换授权码，或刷新过期的令牌
++ row  `issuer.require(scope) { … }`  把尚未授权该应用程序的用户发送到签发方，否则在作用域中有 `Authorization of scope` 的情况下运行处理函数
+
+% 1 1 0 18066d45585bf93a07f99a91d444db33
+
+@ 0 1 0 09bdc47cfd4c27e70040ca5b53f08df8
++ `Authorizations` 保存每个会话的状态。
+
+@ 0 1 0 0a15ebad305c934c1527dd3a42e83d7a
++ ### 相关
+
+@ 0 4 0 19a72f7b2121f48f05750740b0270904
++ - [HTTP 客户端](http-client.md)发出令牌所授权的请求。
++ - [OpenAPI](openapi.md) 生成一个能自行出示凭据的有类型客户端。
++ - [密码学](cryptography.md)介绍其他认证方案底层的密钥和签名。

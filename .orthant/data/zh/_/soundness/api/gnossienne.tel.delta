@@ -1,0 +1,223 @@
+orthant 2 language
+
+% 0 1 0 0f04ec4b9ac2d4270a232409219e1f6b
+
+% 0 1 0 082c183b14f8412400c6cf416a9e480d
+
+% 0 1 0 0b5938ce7315323607e1922cbc4d93e2
+
+@ 0 1 0 050c561742c60e5d1da6d9f2706fd530
++ info   指向实体的类型化引用，只保存实体的键，并通过存储解析回实体
+
+% 0 1 0 0ca6d61ddd9511ea1cdae38f1414f6fe
+
+@ 0 4 0 165c198dfaf4a0380e9de6258e9be4f3
++     _Gnossienne_ 把指向实体（一个人、一件产品、一行数据）的引用表示为一个值，它只保存该实体的键，并按所指之物确定类型。
++     由 `t"juliet@example.com"` 构建的 `Reference to Person` 不是 `Text`，也不会与指向其他任何事物的引用混淆。
+
+@ 0 5 0 0d3e22cb5db93ca40e1253ea49bd2d13
++     键如何找到其实体，由 `Resolvable` 类型类实例决定。
++     常用的实例用 `Resolvable(store)` 从一组值构建，并按标有 `@primary` 注解的字段搜索这些值。
++     该实例在作用域内时，扩展方法 `ref` 可取得任何值的引用，而应用一个引用会把它解析回实体；如果存储中没有值具有该键，则抛出 `Reference.Error`。
+
+% 2 1 0 1126c05c50a3369e022aa000ddbe7877
+
+% 3 1 0 08cec7ff608e3d5e057e46fbfd8b182f
+
+% 0 1 0 0323f27fc4985e0804a43d7947f66e41
+
+% 2 1 0 1c7dc61d53a29d8b061b2bba1dd82fd6
+
+% 0 1 0 1ac908a88e2af4bd14442782478975c3
+
+% 1 1 0 0337c74c2cf22f661b88e950e0d8e899
+
+% 0 1 0 14d9782da58e6c961428ff598f24584c
+
+% 0 1 0 0676d78f6a5371bf02c1c6f77fd476cb
+
+% 0 1 0 1b6d075363438ad4083e12421b9d076a
+
+% 0 1 0 0b237a8b4919e02b1c4e18e03809e12a
+
+% 0 1 0 0a16332cc20701de19baca19d5ab591c
+
+% 1 1 0 1753336499458167141afa111752b4f9
+
+@ 0 2 0 16166f0ae511d9010d0aed3952a25478
++     引用编码为其键，也从键解码，因此可以作为文本存储或发送，稍后再解析。
++     引用只在被应用时验证，构建时从不验证。
+
+@ 0 3 0 09190bc14448707a16b1e72dd19ba4e7
++     本库只有一个源集 `gnossienne.core`，适用于所有平台，一切都导出到 `soundness` 总括包。
++     数据库教程展示了引用与关系的配合使用。
+
+% 0 1 0 0e36480fb14dca771324f8eb427889d4
+
+% 0 1 0 125fe216bebe48d10ca1f6c0c08fa479
+
+% 0 1 0 18cf172329b85318071977aff881b740
+
+% 0 1 0 00e3da3dfa54be6812bd8334fb98cde5
+
+@ 0 1 0 19e0e115124f7efb10d472bcb1d9bd78
++ entry .Reference   指向实体的类型化引用，保存实体的键，并通过 `Resolvable` 解析
+
+% 1 1 0 03a448e92f3fd8aa1cd4154d3b446b35
+
+@ 0 4 0 1d619a95af6bd54d0f9d3a49f10a9ba9
++       `Reference` 保存实体的键，并以类型成员 `#Result` 保存所指实体的类型：`Reference to Person` 是指向 `Person` 的引用。
++       它可以用扩展方法 `ref` 从一个值构建，也可以用 `Reference[Person](key)` 从一个键构建；无论哪种方式，其 `#key` 的类型都是作用域内 `Resolvable` 实例的 `Operand`。
+
+@ 0 4 0 12a047f3a84551450b9fdc1db1bc09c5
++       应用引用 `reference()` 会通过 `Person is Resolvable` 查找该键并返回实体，如果不存在则抛出 `Reference.Error`。
++       由不匹配任何实体的键构建的引用仍是有效的引用：失败只在应用它时才出现。
+
+% 2 1 0 1b2bd7e6836fc16c16413a9c7f5db92f
+
+% 3 1 0 066d0923965235f61762cbecc2701a26
+
+% 4 1 0 1b5952cfb9b2cf99144942aeebae835d
+
+% 0 1 0 03192bf9c781dae10151efc5bfe7d029
+
+% 0 1 0 0764f101609dc5c408f7899bc196c085
+
+% 0 1 0 085b66bfd9ef18e4117ffa58a3be9bd6
+
+% 0 1 0 0474fe082ebd5cb91ba19501c625ecc7
+
+% 0 1 0 1d5fdd59d4acd1ca1a7fbfacf05158f8
+
+% 1 1 0 05e68c83701539ef04ce678c3fb81a3e
+
+@ 0 2 0 0aeb4d982fa5d2b900a3d506b0b3aed0
++       引用通过 `.encodable` 编码为文本，通过 `.decodable` 解码，二者都借助键自身的编解码器，因此 `t"1001".as[Reference to Product]` 可读取一个引用。
+
+% 0 1 0 165cda82ce1c6a321430f1b948ed1292
+
+% 0 1 0 169a1c95367cc8c30aa77110c57a79a7
+
+@ 0 11 0 1c96f4c2d7d7e9fe1bb4f0709dc523b2
++   entry .apply   从键构建引用，写作 `Reference[Entity](key)`
++       键的类型是该实体的 `Resolvable` 实例的 `Operand`，该实例必须在作用域内。
++       此时不做任何查找：不匹配任何实体的键会构建出一个在应用时抛出 `Reference.Error` 的引用。
++   entry .encodable   把引用编码为文本：即其键的编码
++       只要 `Entity is Resolvable` 且其键类型为 `Encodable in Text`，`Reference to Entity` 就可使用它。
++       它位于隐式作用域中。
++   entry .decodable   通过解码键，从文本解码引用
++       只要 `Entity is Resolvable` 且其键类型为 `Decodable in Text`，`Reference to Entity` 就可使用它。
++       解码得到的引用在被应用之前不会与存储核对。
+
+% 2 1 0 09479b5c768963c410b170eefb118ade
+
+% 3 1 0 0f57a4f823b9303e1d156994d3464936
+
+% 4 1 0 1189d248c90512e31393b3aab10755d9
+
+% 6 1 0 11268607142430ff0a681d94b4d948cb
+
+% 0 1 0 104bcb25460eb5470c472c1a2064a69e
+
+% 0 1 0 0fac05e1d49696a814722a83c89d2f8e
+
+% 1 1 0 0e2e2da6fcd958060375a58be8ea0fcf
+
+@ 0 1 0 030f5fd136f6306810cb2a2b6898e703
++   entry .Error   当引用的键不匹配存储中的任何实体时抛出
+
+% 0 1 0 0eb601d2d8703d0a0cbc3f0c257d69cf
+
+@ 0 16 0 00ca65fc8712e5d102ff05853485603e
++         错误 `↯/s.31.1`：_the reference `reference` could not be resolved because `reason`_。
++         当存储中没有任何实体的 `@primary` 字段等于该键时，由 `Reference#apply`（以及 `Resolvable#resolve`）抛出。
++         `#reference` 是该键，编码为文本。
++     entry #reference   无法解析的键，编码为文本
++     entry #reason   引用无法解析的原因，一个 `Reference.Error.Reason`
++     entry .Reason   引用无法解析的原因
++         唯一的分支是 `NotFound`：_no target with that reference was found in the store_。
++     entry .communicable   把 `Reference.Error.Reason` 呈现为消息
++   entry #Result   引用所指实体的类型
++   entry #key   引用的键，类型为 `Resolvable` 实例的 `Operand`
++       需要作用域内有 `Result is Resolvable`，它确定键的类型。
++   entry #apply   把引用解析为其实体，如果不存在则抛出 `Reference.Error`
++       需要作用域内有 `Result is Resolvable` 和 `Tactic[Reference.Error]`。
++       每次应用都会重新查找该键，因此在实体加入存储之前构建的引用，在实体加入后即可解析。
+
+@ 0 1 0 1a99baa4ad8060030b831ba3275213ad
++ entry .Resolvable   一个类型类，说明类型为 `Operand` 的键如何解析为类型为 `Self` 的实体
+
+% 1 1 0 129cb53513dddf8d05dd397383bbaddc
+
+@ 0 3 0 0d6c838d499cd6960d3b191330a82fd9
++       `Person is Resolvable by Text` 表示 `Text` 键标识一个 `Person`，并说明 `Person` 的哪个字段是该键（`#field`），以及如何解析键（`#resolve`）。
++       扩展方法 `ref` 和 `Reference#apply` 都需要作用域内有一个这样的实例。
+
+@ 0 1 0 0f513113d3242a1102a034bc6ac6f7e6
++       常用的实例用 `Resolvable(store)` 从一个存放值的存储构建：
+
+% 2 1 0 0373e8a323ce26431f057f8493563f5b
+
+% 3 1 0 1e2f0f2e18f56a751359581a0e66b136
+
+% 4 1 0 00385efef82382d013f8e2b511c710dc
+
+% 6 1 0 1168c682dabb32701e4e79dd5bf3488a
+
+% 0 1 0 014ab5048463d0b9187cedf65314118f
+
+% 0 1 0 0668617fa0ee633c04f88dab7eb15377
+
+% 0 1 0 0fbfc0bb4ff805f70727e3401459cada
+
+% 0 1 0 1b794459f9c4c1c4027801ef50b6c3da
+
+% 1 1 0 178252eba82f44150ac3ae9c0ee2e25e
+
+@ 0 2 0 0ddbb4b9f9c6eaf304aed5a01e94241b
++       其他种类的存储（数据库表、远程服务）可以直接实现该特质。
+
+% 0 1 0 1f89e113889f43d80b463269e38ad210
+
+% 0 1 0 1a5adb2a45d0f5c81e52f2466562e150
+
+@ 0 5 0 1ec29f1aa428c49810f648da33915d3f
++   entry .apply   一个按 `@primary` 字段搜索一组值的 `Resolvable`
++       `Resolvable(store)` 要求实体类型恰有一个字段标注 `@primary`（从而它是 `Annotated by primary`），该字段可作为 `Dereferenceable to Operand` 选取，且字段的类型为 `Encodable in Text`（用于错误消息）。
++       键的类型和字段都从该注解推断。
+
+@ 0 3 0 1586cbc4300a743d17cb3ea0b465c5e4
++       存储按名传递，每次解析时求值，因此会变化的存储按引用被应用那一刻的状态被搜索。
++       搜索是对集合的线性扫描。
+
+@ 0 7 0 06176ca5588dea32057abe9994cc6711
++       其结果类型为 `raises Reference.Error`，因此构建该实例需要作用域内有 `Tactic[Reference.Error]`（或写作 `unsafely(Resolvable(store))`），尽管在解析某个键之前什么都不会失败。
++   entry #Self   键所解析到的实体的类型
++   entry #Operand   键的类型
++   entry #resolve   查找具有给定键的实体，如果不存在则抛出 `Reference.Error`
++   entry #field   实体的键字段的名称，以文本表示
+
+@ 0 4 0 15bf15b143a345091ecfff133f60340e
++ entry .primary   为 `Resolvable(store)` 标记 case class 中作为其键的字段
++     标注在 case class 某一个参数上的注解：`case class Person(@primary email: Text, name: Text)`。
++     `Resolvable(store)` 通过 `Annotated by primary` 找到被标注的字段，并把它的类型用作指向该类的每个 `Reference` 的键类型。
+
+@ 0 4 0 097f6379bb5b114f0cfd6b84377be524
++ entry .ref   某个值的引用：其键，类型为指向该值类型的 `Reference`
++     一个扩展方法，适用于类型为 `Resolvable` 的任何值。
++     它读取该值的键字段（标有 `@primary` 的那个），并把它包装为 `Reference to Entity`。
++     此时不做任何查找，因此不需要战术；之后应用该引用即可把它解析回来。
+
+% 2 1 0 0c495ed8c153c68413285640a3834eae
+
+% 3 1 0 1001fcf1764c42d01832b3fd168d1c40
+
+% 2 1 0 11facafdcea7c03c07bd970bd84fcdbb
+
+% 1 1 0 1088d3ae6bab006a0a18203b364810ca
+
+% 0 1 0 1c511eb281f3e0a71350970840d6d2cb
+
+% 0 1 0 114e2f84450ce25500dab855159892f0
+
+% 1 1 0 1b6d37ee3e6225cd0ebd76dd4a944e2d

@@ -1,0 +1,975 @@
+orthant 2 language
+
+% 0 1 0 0f04ec4b9ac2d4270a232409219e1f6b
+
+% 0 1 0 1120c6bda8c650551a63e48021508ddf
+
+% 0 1 0 0b5938ce7315323607e1922cbc4d93e2
+
+@ 0 1 0 15f9260676ca79661bdafaa82f669777
++ info   HTTP 服务器：在端口上提供服务的处理函数，基于原始套接字、JDK 服务器或 servlet 容器
+
+% 0 1 0 0ca6d61ddd9511ea1cdae38f1414f6fe
+
+@ 0 8 0 16319f7aae12ea7513a0dd4376d26267
++     _Scintillate_ 提供 HTTP 服务。
++     服务器是一个**处理函数**——读取环境中的 `request`、对其方法和目标进行匹配并返回 `Http.Response` 的一段代码——由 `RequestServable` 后端绑定到端口：`SocketServer` 是原始 TCP 后端，支持 HTTP/1.1（keep-alive、流水线、分块正文、`100-continue`、TLS 以及 `101` 协议升级），并在握手协商出 HTTP/2 的任何 TLS 连接上支持 HTTP/2；`Httpd` 则在 JDK 的 `com.sun.net.httpserver` 上运行同一个处理函数。
++     第三个组件把处理函数适配为 Jakarta servlet（`JavaServlet`、`@servlet`），用于 Jetty 或 Tomcat 等容器。
+
+% 2 1 0 1a108276636581aa035d46831672a73d
+
+% 0 1 0 1a8ec18672c39e03185024ae675e9c25
+
+% 1 1 0 0c5ceab6fcbd3b691fba3cf9ed81c8a0
+
+% 1 1 0 149c77db45ac644f1a74f205bbafc35a
+
+% 0 1 0 03f91ab3dc19c4f9112c539014548423
+
+% 1 1 0 1f5fcfc0ea8e3f9f0728c798d9ffcd49
+
+% 0 1 0 1c1f3e45ded604af0bc729117e24f8f7
+
+% 0 1 0 0a521d99b45fc7d610917706d09c2d5c
+
+% 0 1 0 1d5e1a4fa6f0818802d7be243df390a3
+
+% 0 1 0 0888a8dab56b721e1fb1a5943667b9bb
+
+% 0 1 0 0720d9ea1d5184400000e4513ad2860f
+
+% 0 1 0 0c4aef453432a46d1dfb372e1fe0c1fd
+
+% 0 1 0 11b38ff691976ead12e1c3a8defe5f9b
+
+% 0 1 0 109ad80e895584ae0764b96e6fc2a7a3
+
+% 0 1 0 026d73fd002682ba011ed13743307859
+
+% 1 1 0 080d4a1c25acb3c10dc849720ffff805
+
+@ 0 8 0 0eeefd08edcd290000a8c90132e9f5cb
++     `handle` 绑定端口并返回一个 `Service`，其 `cancel()` 停止服务器，其 `port` 是所绑定的端口（请求 `0` 时由系统选择）。
++     服务器运行在外围 `supervise` 的任务上，因此该代码块与服务器存续同样长的时间；它需要一个 `Monitor`、一个 `Probate`、一个 `Httpd.Event is Loggable`（例如 `logging.silentLogging`）、一个用于端口无法绑定情形的 `Tactic[Httpd.Error]`，以及一个用于处理函数抛出异常情形的 `WebserverErrorPage`。
++     在处理函数中，`request` 是正在服务的 `Http.Connection`——其方法、目标、头部、cookie 和正文——`cookie`、`basicAuth` 和 `as[Multipart]` 都从它读取。
+
+@ 0 8 0 1ebd5404d2511c9814031a7dbadb83d6
++     响应正文是一个流：处理函数的 `Http.Response` 可以捕获它所应答的连接（`Http.Response^{connection}`），分块响应、服务器发送事件流或升级后的 WebSocket 正是借此读取实时的请求流，服务器则在连接的生命周期内逐块写出它。
++     其他任何有作用域的东西都不能被捕获，连接也不能被保存到处理函数之外：捕获检查会拒绝这两者。
++     请求正文同样是边接收边到达的，第二次调用 `request.body()` 会从第一次停下的地方继续，而不会重放，因此需要两次读取正文的处理函数应调用一次 `request.body().memoize`。
+
+@ 0 1 0 03150b228620304a1949202ab83688c5
++     三个组件：
+
+@ 0 7 0 06a903c0a10831930be493e413d48f5c
++     - `scintillate.server`（JVM）——`SocketServer`、`Httpd`、`Reactor`、`RequestServable`、`Http2Session`，响应包装器 `Redirect`、`NotFound`、`NoCache` 和 `Unfulfilled`，`Acceptable`、`WebserverErrorPage`，处理函数辅助工具 `request`、`cookie`、`basicAuth` 和 `as`，以及选择包 `frontends`、`httpServers` 和 `webserverErrorPages`。
++     - `scintillate.servlet`（JVM）——`JavaServlet` 和 `@servlet` 注解，用于 servlet 容器。
+
+@ 0 7 0 099eeab3e7f44d360d7a3e5aaf40bdcd
++     除了请求正文的 `as` 扩展方法之外，所有内容都导出到 `soundness` 总括包；该方法与 distillate 的 `as` 冲突，需以 `scintillate.as` 访问。
++     选择包在总括包中有镜像（`soundness.frontends`、`soundness.httpServers`、`soundness.webserverErrorPages`）；它们的 given 按名称导入，因为 `import soundness.*` 不会导入 given。
++     总括包中的 `httpServers` given 是手写的转发器而非 `export`，因为合成的导出转发器会丢失 given 带捕获注解的细化类型。
+
+% 0 1 0 0c8a8ac05a834f2c0198934be908c300
+
+% 0 1 0 09302e1bef244bda001f9227b4fb8760
+
+% 0 1 0 131a8da8945fe8e80ad289cc032346cf
+
+% 0 1 0 1bc47b68ed6f23911a568a93c1e256bf
+
+% 0 1 0 0ec410f82767dd6f0fbcefeee150854f
+
+% 0 1 0 18d5e63c64c0207c17373acba4a73b8e
+
+@ 0 1 0 1b61ab5582d62c0108d947b3edd55308
++ entry .SocketServer   原始 TCP 后端：HTTP/1.1 keep-alive、TLS 以及经 ALPN 协商的 HTTP/2
+
+% 1 1 0 082d3b19bd7135d51b277aa25814829f
+
+@ 0 7 0 00ff5bde0029853310f9c97167365f10
++       `SocketServer(port, local, ssl)` 是基于 `java.net.ServerSocket` 的 HTTP 服务器，独立于 JDK 的 `httpserver`。
++       `port` 是要绑定的端口，或表示由系统选择空闲端口的 `0`；`local`（默认为 `true`）只绑定 `localhost`，`false` 则绑定所有网络接口；`ssl` 是一个 `Optional[javax.net.ssl.SSLContext]`，存在时提供 TLS 服务，并通过 ALPN 依次提供 `h2` 和 `http/1.1`，因此支持 HTTP/2 的客户端会在握手期间协商出 HTTP/2。
++       它需要一个 `WebserverErrorPage` given，把抛出异常的处理函数转换为响应。
+
+% 2 1 0 0d596e5fcd857a8208a8b886d417d1ba
+
+% 3 1 0 02ed662d92408fd216906f4a96796ba0
+
+% 4 1 0 1c27c4717a2f7e2e150fb3dfbf2cae87
+
+% 5 1 0 18eb1181e48e42ea1455c517986f3090
+
+% 6 1 0 14a0f4943836cffe0a752324f27f464c
+
+% 7 1 0 089c20f949760a601af732d673d6e300
+
+% 8 1 0 002d1ab3c5bb7e991388c510f82da66e
+
+% 9 1 0 16876b51be9a60aa184192fdc19d3082
+
+% 10 1 0 07044886811cc3ba0959c7ec312978b6
+
+% 12 1 0 1bfa6083f8735c79097b2ca354dcc99d
+
+% 0 1 0 06cc46d33a891aec0526562d985fea51
+
+% 0 1 0 1938814add94e6670f45ce1298cfc4b9
+
+% 0 1 0 0f89f83a54b07c1e00e697956b2216f6
+
+% 0 1 0 142afd3088d019cb04173bd5e65488a7
+
+% 1 1 0 048b90f9dd9e01c518b335683752f0da
+
+@ 0 10 0 1f6821ce4044c2221d6681cb90a5a536
++       每个被接受的连接都由 `#serveConnection` 服务：这是一个 keep-alive 循环，从套接字上逐个解析请求头，按 `Content-Length` 或分块方式（或作为空正文）为每个正文分帧，在处理函数读取正文之前用临时的 `100` 应答 `Expect: 100-continue`，并排空不超过 64 KiB 的未读正文以到达下一个流水线请求，遇到更大的正文则关闭连接而不读取。
++       超出限制的请求行以 `414` 拒绝，超出限制的头部以 `431` 拒绝，其他格式错误的请求头以 `400` 拒绝，读取超时（空闲 30 秒）则尽力以 `408` 应答。
++       任一方发出的 `Connection: close` 会在响应之后结束循环，发给 HTTP/1.0 客户端的流式正文通过关闭连接来界定，因为它无法分块。
+
+@ 0 7 0 0ee05caadb0a6ce903ad4a305c23a599
++       携带 `Connection: Upgrade` 和 `Upgrade` 头部的请求（`h2c` 除外，Java 的 `HttpClient` 在每个明文请求上都提供它，而本服务器从不执行）是一次协议升级：它的正文是连接中无界的剩余部分，以流式正文应答 `101 Switching Protocols` 的处理函数会在该正文运行期间接管套接字——WebSocket 处理函数就是这样工作的。
++       小响应不会被 Nagle 算法延迟（`TCP_NODELAY`），固定长度响应的头部和正文会合并为一次套接字写入。
+
+@ 0 4 0 09ee26e28c4b1a660ffc6ecac11f3665
++       监听套接字的积压队列为 1024（内核会限制它：默认 macOS 上为 128，Linux 上为 4096）。
++       单个连接内部的失败被记录为 `Httpd.Event.ConnectionFailed`，并局限于该连接；服务器继续接受连接。
+
+% 1 1 0 0d9df40765c155b905ae41fd72454d2e
+
+% 1 1 0 16b0e397d74ad8fc0643071b00d3ba11
+
+% 1 1 0 06d86ac303951baa0dd3a4ebf236ce92
+
+% 0 1 0 113e430abb623ad80fe19e3cf1b15059
+
+@ 0 20 0 1eb1c69accf779391a94da38f974f5fa
++   entry #port   构造时给出的端口：要绑定的端口，或表示任意空闲端口的 `0`
++       `#handle` 返回的 `Service` 报告实际绑定的端口，每个被服务的 `Http.Connection` 也是如此，因此以 `0` 构建的服务器仍然可以被寻址。
++   entry #local   是只绑定 `localhost`（`true`，默认值）还是绑定所有网络接口
++   entry #ssl   用于提供 TLS 服务的 `SSLContext`，明文时为 `Unset`
++       TLS 服务器通过 ALPN 提供 `h2` 和 `http/1.1`；协商出 `h2` 的连接由 HTTP/2 引擎驱动，使用同一个处理函数。
++       无论作用域中是哪个 `Frontend`，TLS 路径总是每个连接使用一个虚拟线程，因为 `SSLSocket` 无法挂在选择器上。
++   entry #handle   在选定的 `Frontend` 上用处理函数服务每个请求
++       绑定端口并返回一个 `Service^`，取消它时服务器停止。
++       处理函数是从 `Http.Connection` 到 `Http.Response^{connection}` 的上下文函数：它可以在流式正文中保留连接，此外不能保留任何东西。
++       它需要一个 `Monitor` 和 `Probate`（服务器的接受循环和每个连接都作为守护进程在它们之下运行）、一个 `Httpd.Event is Loggable`、一个 `Tactic[Httpd.Error]`（端口无法绑定时抛出）以及一个 `Frontend`；伴生对象将 `Frontend` 默认为 `Frontend.ThreadPerConnection`，而对明文服务器，`import frontends.reactiveFrontend` 会覆盖它：此时由选择器循环 `Reactor` 提供服务，处理函数在循环上内联运行。
++       TLS 服务器忽略前端，走每连接一个守护进程的路径。
+
+% 2 1 0 0c65c94168a1f4370694f1dfb47b9b0b
+
+% 3 1 0 1df9598dfedfbe9a0bfb9e3f0217a4a4
+
+% 4 1 0 018d2cba942d6d260a8c9e2c8e3240cb
+
+% 5 1 0 02339ab1491940ef1af4d243a9329e84
+
+% 6 1 0 0eb28cb4475d6f0602f6185cfca511dc
+
+% 7 1 0 1fcfd3004b5ba54a010cbac2c5e0e727
+
+% 8 1 0 0871f3bf232276811e6a5329262fed34
+
+% 9 1 0 02221be63f6a31b11d84adcfe3214a60
+
+% 10 1 0 095d381f0c085f4e0b6e6ecce2ff0410
+
+% 11 1 0 0b2f1c80963733461fcf27b9fab48224
+
+% 13 1 0 18b15781059df487116e8aefd318f913
+
+% 0 1 0 0e423d575fca47920401920097bdb49e
+
+% 0 1 0 0d2a006d03e59bf301db589d4128461f
+
+% 1 1 0 157d8f087fbfe4950f0104742a487907
+
+@ 0 9 0 07970e55b8d65a831dbcb100ec155bdb
++       按请求的 `handle` 是 `#handleSession` 的退化情形：每个连接都在没有按连接设置的情况下被服务。
++   entry #handleSession   把每个连接作为一个会话来服务，状态每个连接设置一次
++       `handleSession(scope)` 为每个被接受的连接——一个 HTTP/2 连接，或一个 HTTP/1.1 keep-alive 套接字——运行一次 `scope`，作用域中有一个 `Http2Session`。
++       该作用域可以设置按连接的状态（已认证的主体、限流器、计数器），然后调用 `session.handle(handler)`，在该状态处于作用域中的情况下服务该连接的请求或流。
++       捕获检查把状态限制在其连接内，因此它不会泄漏给另一个客户端的连接。
+
+% 2 1 0 01a0a9ea2fe5cd1b1addf1e47be88cf8
+
+% 3 1 0 10aac1bbee340db70f12f5ac5d168527
+
+% 4 1 0 0b56f452402b49331d0ad61d17e587e8
+
+% 5 1 0 08a4655b081e5b18142ab5ba644dc5cd
+
+% 6 1 0 1cce8f57c07ad6cd114b12d50f567863
+
+% 7 1 0 0d631246e98ec1620763a8a3c2c09562
+
+% 8 1 0 06d866d662cc93cc1023e71ff22ac3e5
+
+% 9 1 0 04797fad987fcb44083e225976af5e65
+
+% 10 1 0 117962d5e6fd886c1327ac809ce76d97
+
+% 0 1 0 1f004b4451701e421901d4b150d0ff16
+
+% 0 1 0 0d27b365991dcc930600e3bc58f651f9
+
+% 0 1 0 1aee6eb36f74b3261eea8b33e44f0d81
+
+% 0 1 0 1f97891eb9d3c7641f637378b1d5aaee
+
+% 0 1 0 08c2a2292004e58c04ddcc87650ec93f
+
+% 1 1 0 1ae08136f52f7bbb1c176816c8b8a8fd
+
+@ 0 12 0 137680637e266cd41a8be9599a64a8cb
++       在 HTTP/2 上，复用在同一连接上的各个流被并发服务，各自运行在自己的虚拟线程上，共享该作用域的状态。
++       它接受与 `#handle` 相同的上下文值，只是没有 `Frontend`：会话总是每线程的。
++   entry #serveConnection   在输入流和输出流上驱动 HTTP/1.1 keep-alive 循环
++       `serveConnection(handler)(in, out)` 服务可从 `in` 读取的每个请求，把响应写入 `out`，直到输入结束或某个请求关闭连接。
++       服务器为每个被接受的套接字调用它一次；它也是测试和基准测试的进程内入口，它们送入一个装有请求的 `ByteArrayInputStream`，并从 `ByteArrayOutputStream` 读取响应，不涉及任何套接字或线程。
++       流归调用者所有：由调用者负责关闭它们以及任何读取超时。
++       它只需要一个 `Httpd.Event is Loggable`；使连接中断的流错误被记录为 `Httpd.Event.BrokenStream`。
+
+% 2 1 0 1a3065639f71a5f81a5c6cee7c36ae27
+
+% 3 1 0 1e70e7c46d69092012e6d37ccb27b821
+
+% 2 1 0 1d9d0450e4d5fe9707699c4e1ae71799
+
+% 3 1 0 1a197d952a6d2f6a1bcb89157bc10113
+
+% 4 1 0 1bc3811d9f767bef1ebb57fb8f303c12
+
+% 0 1 0 0c493cd8705d195b00b1b054ffdd0fc7
+
+% 0 1 0 10cd2222ce89f83f0883b4c9be8a707b
+
+% 0 1 0 1c544fcde6003c6f0f1d06998c3f6a66
+
+% 0 1 0 162deebdd1cfdaef1f2eb6241e5b3cfd
+
+% 1 1 0 1d59a4dac01100330dd09cbd82bb85f6
+
+@ 0 1 0 06915db1788e794606b9e2d6837f9478
++ entry .Httpd   JDK 后端：在 `com.sun.net.httpserver` 上运行同一个处理函数，以及服务器事件和错误
+
+% 1 1 0 1db8340e9d25593802e2e903b240d699
+
+@ 0 7 0 04fbac69c55bb54d181fe95ac5d5582e
++       `Httpd(port, local)` 通过 JDK 内置的 `HttpServer` 服务处理函数，每次交换使用一个虚拟线程。
++       它的 `#handle` 与 `SocketServer` 的签名相同，因此两个后端可以互换，但 JDK 服务器只有一种引擎：`Frontend` 被接受但被忽略，没有 TLS 或 HTTP/2，也没有会话。
++       `SocketServer` 是首选的后端；`Httpd` 留给想用 JDK 服务器的程序，而它的伴生对象是所有后端的事件和错误所在之处。
+
+% 2 1 0 06eb6e75ef1b52b51493f11057023cce
+
+% 3 1 0 16ded4d96a650f411a471bb9e09ac7c5
+
+% 4 1 0 12fdccfa68a87edb14343c9141f456a8
+
+% 5 1 0 16d6c0d63b32758f11a5a4a8a9416e6a
+
+% 6 1 0 105d584001e2f1431ff18f0c446cd480
+
+% 7 1 0 1ac6a684711b34950cd65aa2717914a4
+
+% 8 1 0 186311410f86fe471b5a9ae2881a68c0
+
+% 9 1 0 0243f3a81bb56a350b5ceb26ec6d660e
+
+% 10 1 0 0fdb25d1f4b76f1117f6bc525b253c73
+
+% 12 1 0 188c7e7b03a43a8f013047cbf47d937b
+
+% 0 1 0 015e73b6cc6f4d520683009146d31d8b
+
+% 0 1 0 153fa445a598f2720f3c74739dbe50dd
+
+% 1 1 0 1d1a9ad9ee4683340985b8fda5d6e002
+
+@ 0 2 0 1822e2ffad4e9a380e3da0f458e9374a
++       主机无法解析的请求以 `400` 应答，并被记录为 `Httpd.Event.ConnectionFailed`；被中断的响应被记录为 `BrokenStream`。
+
+% 1 1 0 10edddab5bb772aa03fd75370198c776
+
+% 0 1 0 1bfd009e87ab017b188be830e1ae2b0b
+
+@ 0 1 0 1a0f5d3970c66a2a04a3c79cd25b463f
++   entry .Event   服务器记录的日志：已接收和已处理的请求、中断的流以及失败的连接
+
+% 1 1 0 0e1d489539abf4fa0599745c8ee05db3
+
+@ 0 18 0 18492d3313892c81042b68c41a55271f
++         每个 `Event` 都带有 `Log.Network` 标签，`Received` 还带有 `Log.Protocol`。
++         两个后端都会在请求头解析完毕时以 `fine` 级别记录 `Received`，在响应送达后以 `info` 级别记录 `Processed` 及所用时间；写出响应（或读取请求）被中断时，`BrokenStream` 是一条警告；连接的处理过程抛出了未被转换为响应的东西时，以 `fail` 级别记录 `ConnectionFailed`。
++         作用域中必须有一个 `Httpd.Event is Loggable` 才能提供服务；`logging.silentLogging` 会丢弃这些事件。
++     entry .communicable   把每个事件渲染为一条消息
++     entry .Received   请求头已被读取：_received the request `request`_
++       entry #request   该请求
++     entry .Processed   响应已发送：_processed the request `request` in `duration`ms_
++       entry #request   该请求
++       entry #duration   从请求到达到其响应送达所经过的毫秒数
++     entry .BrokenStream   响应未能完整写出：_sending the response was aborted after `length`_
++       entry #length   失败之前写出的字节数
++     entry .ConnectionFailed   连接的处理函数失败：_the connection handler failed: `message`_
++       entry #error   该失败，作为 `fulminate.Error`
++   entry .Error   端口无法绑定时抛出
+
+% 1 1 0 0ecc1c5c46778de10103f543e7d1719a
+
+@ 0 12 0 1596989e2a376fbd115855a48f04f17f
++         错误 `↯/s.116.1`：_could not start an HTTP server on port `port`_。
++         当绑定监听套接字抛出 `BindException` 时（通常是因为端口已被占用），由（任一后端的）`handle` 和 `SocketServer#handleSession` 抛出。
++         调用 `handle` 需要一个 `Tactic[Httpd.Error]`。
++     entry #port   无法绑定的端口
++   entry #port   要绑定的端口，或表示由系统选择空闲端口的 `0`
++   entry #local   是只绑定 `localhost`（`true`，默认值）还是绑定所有网络接口
++   entry #handle   在 JDK 服务器上用处理函数服务每个请求
++       创建 `HttpServer`，在根上下文上安装处理函数，启动它，并返回一个 `Service^`，其 `cancel()` 停止服务器（有一秒的宽限期），其 `port` 是所绑定的端口。
++       接受与 `SocketServer#handle` 相同的上下文值；`Frontend` 被忽略。
+
+@ 0 1 0 07b46b346869bcee03be90578f59926b
++ entry .RequestServable   每个 HTTP 服务器后端所提供的东西：在端口上的 `handle(handler)`
+
+% 1 1 0 0f7ec73a1dc467f71c29a7a25d414cee
+
+@ 0 6 0 01d9a7327c58f2891659c4460962d07d
++       `SocketServer` 和 `Httpd` 实现的特质。
++       它唯一的方法 `#handle` 接受服务每个请求的处理函数，想在运行时选择后端的程序可以把任一后端作为 `RequestServable` 持有。
++       处理函数的类型是整个库的契约：一个从实时 `Http.Connection` 到 `Http.Response^{connection}` 的上下文函数，它可以在流式正文中保留连接，此外不能保留任何东西。
+
+% 1 1 0 06b0669ce8f68f2d09a32b53f5baa89b
+
+% 2 1 0 176b4099beefa2b80b7468fde7a9bd9f
+
+@ 0 5 0 1a131777cef81baa1bfa0b92e349fe0f
++   entry #handle   用处理函数服务每个请求，返回正在运行的 `Service`
++       需要一个 `Monitor` 和 `Probate`、一个 `Httpd.Event is Loggable`、一个 `Tactic[Httpd.Error]` 以及一个 `Frontend`。
++       `Frontend` 是一个参数，而不是在实现内部召唤，这样找到的就是在调用处导入的 `frontends` given，而非伴生对象中的默认值。
+
+@ 0 1 0 0d04cc73aec1071e1494bb6ecc48af29
++ entry .Http2Session   按连接的作用域：`handle` 以共享状态服务一个连接的请求
+
+% 1 1 0 182980a856ca0b5f14b2636e2a2630e2
+
+@ 0 6 0 167a664c368ed2a70a2926c03a932bb5
++       `SocketServer#handleSession` 为每个被接受的连接借给其作用域的值。
++       `#handle(handler)` 用处理函数服务该连接上的每个请求（对 HTTP/2 而言是每个流，并发地），处理函数闭包捕获作用域所设置的任何状态；捕获检查把状态限制在该连接内。
++       基于 HTTP/1.1 keep-alive 套接字的会话按顺序服务其请求；在 HTTP/2 上，它是客户端 `Http2.Endpoint.session` 在服务器端的对偶。
+
+% 1 1 0 10d8c5892387ad9a025c53aef9fe6b35
+
+@ 0 1 0 1bf8836b334351c1079160a884eacb79
++   entry #handle   用处理函数服务该连接的每个请求或流
+
+@ 0 1 0 106d21c12d7d47740678897959c1e5cb
++ entry .Frontend   `SocketServer.handle` 在哪种引擎上提供服务：每连接一个线程，或反应器
+
+% 1 1 0 1837e382f9acd55d00fdd4ba1e890fd7
+
+@ 0 12 0 1836616e88a012e706731dae31195a4f
++       提供明文 HTTP/1.1 服务的 `SocketServer` 可以以两种方式运行，由调用 `handle` 时作用域中的 `Frontend` given 选择。
++       `ThreadPerConnection` 是默认值（伴生对象中的 `.default`），为每个被接受的套接字派生一个虚拟线程守护进程：处理函数可以阻塞——等待数据库、文件或另一个服务——而只有它自己的连接会等待；它支持流式响应、TLS、HTTP/2 和会话。
++       `Reactive` 在 `Reactor` 上提供服务，这是一个由选择器通道组成的事件循环，它内联运行处理函数，不需要每个请求的线程切换：对小请求而言吞吐量约提高一半，分配也更少，代价是阻塞的处理函数会使其通道上的所有连接停滞。
++       反应器把它无法内联服务的任何东西——分块或超大的正文、`Expect: 100-continue`、协议升级——交给每连接一个线程的路径，因此 WebSocket 处理函数在两者之下都能工作，而 TLS 服务器则完全忽略这一选择。
+
+% 2 1 0 1cd9fcc8bb69d6271d7566767fc395e2
+
+% 3 1 0 06fb08abf501674b019bb8e7c1ac9d2b
+
+% 1 1 0 180d33106fd5eff70f5912d49212ad54
+
+% 0 1 0 17c7b49c9f3298151d989d1b217bd95c
+
+% 1 1 0 0c778da6672c30b71cce344cb5b1f0a2
+
+@ 0 2 0 1cbe0568bc58fe840c4b6baddc0f17bc
++       通过按名称导入一个 `frontends` given 来做出选择，它的优先级高于伴生对象的默认值。
+
+% 0 1 0 017c107cebbb08641ae3529950fc44c9
+
+% 0 1 0 1f5a0e15112e8dca02b74bec04e676dd
+
+@ 0 3 0 0500863288d33a50143271d98590cb7e
++   entry .default   伴生对象的默认值 `Frontend.ThreadPerConnection`
++       无需导入即在隐式作用域中，优先级低于按名称导入的 `frontends` given。
+
+@ 0 1 0 008f53f006f7478b13218d23a60336ee
++ entry .frontends   两种前端，各是一个按名称导入的 given
+
+% 1 1 0 1890fd1aa3fae93f10b747883d319059
+
+@ 0 4 0 0753357f74edb57e00b02da44c8edacd
++       `import frontends.reactiveFrontend` 为明文服务器选择选择器循环 `Reactor`；`import frontends.threadPerConnectionFrontend` 显式声明默认值。
++       `import soundness.*` 不会引入两者中的任何一个；没有导入时适用 `Frontend.default`。
+
+% 2 1 0 0e0ab64cfd41f9d7009b3984506275dc
+
+% 3 1 0 0ba8f0d9fe615c760e3a8b67d1a4b854
+
+% 4 1 0 0478dd8f0d2c79c7173ca38adb789718
+
+% 5 1 0 0c8e24d0e94b75c01882eec50e516fba
+
+% 6 1 0 09df665a9f604b760a5e0cda83cf4152
+
+% 7 1 0 0c409e508b7d1d9d162be02f8639c3aa
+
+% 8 1 0 17564c2265b30162115f692ec766c506
+
+% 9 1 0 1941e9950f16287c0a06dcdf1eccf85a
+
+% 10 1 0 1749246a8802e52b0e5fdc85185829f2
+
+% 11 1 0 0beb4c436dab24dc07e4e59e06182521
+
+% 13 1 0 01bdc45d6b1df7730b995fe0a4902a5d
+
+% 0 1 0 16dd5864c7aeb8000118c1d74d19a83c
+
+% 1 1 0 0cd00c657ddd79031c1bcb66ef4a163f
+
+@ 0 2 0 0d0e61b2a909a9370bfebef7db8e8dc5
++   entry .threadPerConnectionFrontend   每个连接一个虚拟线程：处理函数可以阻塞
++   entry .reactiveFrontend   选择器循环反应器：处理函数不得阻塞
+
+@ 0 1 0 1cf0f8f8cb6db3ff16dc8ca92098e468
++ entry .Reactor   事件循环前端：以选择器通道服务明文 HTTP/1.1，处理函数内联运行
+
+% 1 1 0 0382e8098f80484a0c6c098cbe3949d1
+
+@ 0 9 0 1accc66825d02ba50c2f810175e7f7b3
++       `Reactor(requested, local, loops)(handler)` 绑定一个监听通道，并启动 `loops` 个平台线程（若为 `0`，则每个可用处理器一个），每个线程拥有一个 `Selector` 以及注册到它的所有连接，另有一个负责接受连接并以轮询方式分配它们的主线程。
++       一个通道每次唤醒处理一批就绪的连接：它累积每个请求直到其请求头（以及任何不超过 64 KiB 的固定长度正文）完整，在一个不会阻塞的内存游标上解析它，内联运行处理函数，并以一次聚集写入写出长度已知的响应。
++       慢速读取方会受到背压：排队的响应字节超过 256 KiB 时，连接的读取兴趣会被撤销，直到队列排空到 64 KiB。
+
+@ 0 4 0 0fc062ae483bc2b60284588e1637bf50
++       当 `frontends.reactiveFrontend` 在作用域中时，`SocketServer.handle` 会构造一个反应器；它也可以直接作为具有 `#port` 和 `#stop()` 的值使用，测试正是这样在没有 `Monitor` 的情况下使用它的。
++       它需要一个 `WebserverErrorPage` 和一个 `Httpd.Event is Loggable`。
+
+% 2 1 0 11ca47393a077eeb1da0c35cc7d701a9
+
+% 3 1 0 00065ca490d3959d0667aa72b906c187
+
+% 4 1 0 02daeacb592eaf6e0f76c9fa54f26279
+
+% 5 1 0 141372e548c7d67b142a6e321b8e89ef
+
+% 6 1 0 03468c34dbd0e853007a6ca577d2d4cc
+
+% 7 1 0 04bce3c96b7669d91a17af83e0686e71
+
+% 4 1 0 1f359c15cc15df281f539dc0e6bdcdc9
+
+% 0 1 0 005fb60f960bf3890ef7f10ca50959df
+
+% 0 1 0 14535ee01529ce6f0d619005b193f946
+
+% 0 1 0 1349b5a346a53b811c1eddf05323eb39
+
+% 1 1 0 1b724ea3068f05841b4ebbe0a9b42af6
+
+@ 0 9 0 09085bf95cd9abcf04929115cb5275a5
++       契约是处理函数不阻塞：它要么根据已有的东西计算响应，要么把工作交给其他任务并从内存中应答。
++       流式（`Flowing`）响应在写出之前会在通道上被强制执行完毕。
++       通道无法内联服务的请求——分块或超大的正文、`Expect: 100-continue`、协议升级——会离开反应器：通道以及所有已读取的字节都交给运行 `SocketServer#serveConnection` 的虚拟线程，它会像从一开始就拥有该套接字那样重新解析请求。
++       超出限制的请求头以 `431`（或 `414`、`400`）拒绝；这些线程都是守护线程，因此反应器绝不会让主线程已结束的 JVM 无法退出。
+
+% 1 1 0 0052fca43a8ad441067c74307de9ff33
+
+% 1 1 0 0900333730fa3ba402c902f2022b6c08
+
+@ 0 2 0 1a9516634f910131030c96442f40e47e
++   entry #port   所绑定的端口：请求的端口，或在请求 `0` 时由系统选择的端口
++   entry #stop   关闭监听器，唤醒每个通道并汇合各线程
+
+@ 0 1 0 1cfd04ae7f7d1c04014a82e311750f30
++ entry .WebserverErrorPage   处理函数的异常如何变成响应
+
+% 1 1 0 0036edf659ff69c803c424255d362dc3
+
+@ 0 5 0 0cad8f72486c88d70f8be7b1930a2419
++       `WebserverErrorPage` 是一个函数，把处理函数抛出的 `Throwable` 以及它正在服务的 `Http.Request` 映射为客户端收到的 `Http.Response`。
++       每个后端在构造时（`SocketServer`、`Httpd`、`Reactor`）都需要一个这样的 given，`webserverErrorPages` 中的三个——极简的、带样式的和带堆栈跟踪的——按名称导入；程序自己的错误页是一个 lambda：
+
+% 2 1 0 16d124b752ef719c1c9d219b327976ca
+
+% 3 1 0 15ff0cde11aa08db0dd944b9148ccba7
+
+% 0 1 0 0065453c3cb6fdd20753cb0cd3902f57
+
+% 0 1 0 0d1181d7243829b7029a105cca1e33d3
+
+% 1 1 0 174dee93b2e85e0d0be44a9a238885a5
+
+@ 0 3 0 18e9ae76a53429061e19611e8276d5fb
++       处理函数的异常只有作为抛出的异常逃出处理函数时才会到达错误页；通过处理函数自己提供的 `Tactic` 抛出的错误由处理函数自行处理。
+
+% 0 1 0 128068b057c31da21d5278f289dda8bb
+
+% 0 1 0 1a9ce93c2649f60a143c6094c5dbcdd4
+
+@ 0 1 0 1713768c274cd8b010051fe5ca2afb1c
++   entry #handle   针对一个 throwable 及其所中断的请求的响应
+
+@ 0 1 0 0130d91e2ce8819c0cb1bcc167f57c65
++ entry .webserverErrorPages   标准错误页，各是一个按名称导入的 given
+
+% 1 1 0 1f73086cfcdf84c4153fce0db0069002
+
+@ 0 6 0 0775a8762d232562086f4ba21b43b13c
++       每个服务器都需要一个 `WebserverErrorPage`；默认不选择任何一个。
++       `minimalErrorPage` 是单行文本响应，没有任何依赖。
++       `styledErrorPage` 和 `stackTracesErrorPage` 是由打包在 scintillate jar 中的模板构建的 HTML 页面，通过作用域中的 `Classloader` given（例如 `classloaders.threadContextClassloader`）读取，后者包含异常的堆栈跟踪，适合开发而非生产环境。
+
+% 2 1 0 0b68f1448fa7bdba17142d1924fc2f05
+
+% 3 1 0 0eacdf236a55fb7b030e96c920408236
+
+% 1 1 0 1d20673c1990a24c1f6dbd1b361fe801
+
+% 0 1 0 168672ef579d996c18d79bd753101717
+
+% 1 1 0 0d31649fd1d24cf102b7ba0ba4356398
+
+@ 0 3 0 11858f908550597e0b2feb1c76575841
++   entry .minimalErrorPage   一个 `500`，文本为 _An error occurred which prevented the request from completing._
++   entry .styledErrorPage   一个带样式 HTML 页面的 `500`；需要一个 `Classloader` 来读取打包的模板
++   entry .stackTracesErrorPage   一个显示异常堆栈跟踪的带样式 HTML 页面的 `500`；需要一个 `Classloader`
+
+@ 0 6 0 0b9cf3ba7d07b7721b6ff1eba08fccc0
++ entry .request   处理函数中正在服务的请求
++     `request` 是上下文中 `Http.Request` 的内联访问器——在处理函数中，就是正在服务的 `Http.Connection`，即带有应答手段的请求。
++     它给出方法、版本、主机、目标、头部、cookie 和正文，因此路由就是对 `request.target` 的匹配，内容协商就是读取 `request.headers`。
++     处理函数可以一次增加一项关注点：
+
+% 2 1 0 162823a92a642a9c1bb143acf20849cb
+
+% 1 1 0 0a47f914ed53260906bd03717b3d64ff
+
+@ 0 1 0 0893083ca0512dd219d458c28dd24429
++       label 对每个请求都给出同一个响应
+
+% 1 1 0 13a1a0a75fd294380e014988c6c13baa
+
+% 2 1 0 12f64e4ac1872f3b191e256ab29aca34
+
+% 3 1 0 0387166f38dec55619f4d5f2c8437929
+
+% 4 1 0 0010d7a32ed817ca0120cdaccca72a48
+
+% 5 1 0 162ee25a80bfee8702a86b3e3dee992a
+
+% 6 1 0 110d4cc657d0050801090320760afd69
+
+% 7 1 0 0a154dd3930c81f3104dee8a7c9504a3
+
+% 9 1 0 0ddb371482e872991b495bfd26e95290
+
+% 10 1 0 01d2edcaf143174011a80526b1917ec2
+
+% 0 1 0 0308157f658685fc1907402deaab0936
+
+% 1 1 0 1736463c3be7d105173c1721db834e6e
+
+@ 0 1 0 147846e0cb1116041a9093dd275eb900
++       label 按请求的目标路由
+
+% 1 1 0 0d3b176a146d90eb0fa5e0d3af9edcfc
+
+% 2 1 0 02961e583fe5a28111cf66f77e109fa4
+
+% 3 1 0 02f9353c2c5623d015969f42f9dc8ddc
+
+% 4 1 0 05b5c535773273c20ff2bb35c3838bee
+
+% 5 1 0 15a706d42d5093a40e5906a0b095b52d
+
+% 6 1 0 1723b5379589510c05e58ff7338929ae
+
+% 7 1 0 1fa5607a49b3b1c80da7e3f2a4aedf33
+
+% 9 1 0 1995199de4bc0485156faa347ab38d27
+
+% 10 1 0 0a018c6d0dbb66070a2e6a3279cf7eb4
+
+% 0 1 0 15dba2f5e028c4af056191491d6fd5db
+
+% 0 1 0 07e2e7dd22e887f00bc68596126daeae
+
+% 0 1 0 1e7212cd8b8b83710ec83fd49c818210
+
+% 0 1 0 129d0e99958dd3ba0e50af74806e0e50
+
+% 1 1 0 1c82ae4c0a93a8ab06c0e221eae75f93
+
+@ 0 1 0 1282f9d08980f31707a65e6932717899
++       label 边到达边读取的提交正文
+
+% 1 1 0 1f36da017fa001d10587dd76f869172d
+
+% 2 1 0 0359d28664bf9c670e4d2432d3252d1e
+
+% 3 1 0 18d46ba39ff48f320c9c379c2d0049c1
+
+% 4 1 0 0cbc5acb4e6e388d1018d469ac2ff1ce
+
+% 5 1 0 162de33f0e94e0290dd1373e09d2e2e9
+
+% 6 1 0 19ea5eeb6f347bfb02919104af22d4f3
+
+% 7 1 0 14fbe827aee55559183ea7712c25703f
+
+% 9 1 0 12801c7a7a3945e402169972ddc63fd1
+
+% 10 1 0 07d3cd2d643d55f21ff79dfbc3977345
+
+% 11 1 0 10b0752604ab16d611f100029dd7e7a4
+
+% 0 1 0 1cfba17f3e34588103803f725ef8f8a7
+
+% 1 1 0 03f0e446485e66650a7693e0dfd5e5e0
+
+% 2 1 0 1dd6ff0a40bf224d003f5b7e2350c6a4
+
+% 3 1 0 199b662af5c594de02456010a848ad01
+
+% 1 1 0 1149308149f82a901f29f5ba8223dd6e
+
+@ 0 1 0 1cde1f1cae0d0eb003c1354e87c494cf
++       label 一个 cookie，以及对没有它的访客进行重定向
+
+% 1 1 0 15e261173956afa21ab0b56262d63798
+
+% 2 1 0 0443e58a9a16cf3c1f2e0d24c7f8d0c3
+
+% 3 1 0 071da3abd1d98ecd1e19f56a91702ba2
+
+% 4 1 0 079304474309c9e419db2d554101532f
+
+% 5 1 0 150ed6bd173c374108a60349cc454569
+
+% 6 1 0 1af01ec922f01a710127836e0b25757a
+
+% 7 1 0 03b8c8a9c5faf5e117e6d8a96482302c
+
+% 9 1 0 047a4c135fa898af0f4fa92251f58275
+
+% 10 1 0 192fb466672dd5c50cad6699c3749a59
+
+% 11 1 0 0d02341a24dbc6881c01b632133607ad
+
+% 0 1 0 04de1477de01ccc6197d0223750d55ee
+
+% 0 1 0 18f9d3756d4d0a071517be5984d14258
+
+% 0 1 0 1de825075c9eac900f83687b0badcfc7
+
+% 0 1 0 0a63e39f788c878c1633c6b80bc96844
+
+% 1 1 0 13b67a5dc685e72c1fe61908d7572027
+
+% 2 1 0 064dffdcee937a8b0d544f046950bd01
+
+% 3 1 0 1adcbe2845f387c20b492e38bbb5b26a
+
+% 1 1 0 12015e597dd7a73c104443d25738b5dc
+
+% 1 1 0 11e767d9efb47d1a0f4b85a0051bf1dd
+
+@ 0 6 0 16cd894d86229fc900e364686fcb8b0f
++     正文是连接所拥有的流：`request.body()` 从上一次读取停下的地方继续读取，因此需要多次读取整个正文的处理函数应调用一次 `request.body().memoize` 并保留结果。
++     处理函数未读的部分由服务器排空（不超过 64 KiB），以到达下一个流水线请求。
++     `request` 即 `infer[Http.Request]`，因此在处理函数之外使用它会因缺少上下文 `Http.Request` 而成为编译错误。
+
+@ 0 4 0 10aa2f911e2b776f06fddebec7fae6cb
++ entry .cookie   处理函数中某个具名请求 cookie 的值
++     `cookie(key)` 即 `request.textCookies(key)`：cookie 的值，作为 `Text`；如果请求没有携带该名称的 cookie，则为 `Unset`。
++     它需要上下文中有一个 `Http.Request`，因此在处理函数中调用。
+
+% 2 1 0 071e1d3a4888c4bd1e16dcbda22f834d
+
+% 3 1 0 128823d4013b31fe1871f3d0ef1cbfbb
+
+% 0 1 0 172ab654f9ff3bff1c6a727964dc55d9
+
+% 1 1 0 188840c1c037e94d12cfad63b78a2b57
+
+@ 0 8 0 0f08b171e55d77050cad48fffd3c9e74
++ entry .basicAuth   用 HTTP Basic 认证保护响应
++     `basicAuth(validate, realm)(response)` 检查请求的 `Authorization` 头部：如果它恰好携带一个 `Basic` 凭据且 `validate(username, password)` 为真，就求值并返回按名传递的 `response`；凭据错误时以 `403 Forbidden` 应答，凭据缺失时以 `401 Unauthorized` 应答并附带 `WWW-Authenticate: Basic realm="…", charset="UTF-8"` 质询，这会让浏览器弹出提示。
++     它需要上下文中的 `Http.Connection` 和一个 `Tactic[Auth.Error]`，后者在头部无法解析时抛出。
+
+% 2 1 0 163aad882e0704531c0f8d4500cdf8b7
+
+% 3 1 0 1a5a3c249746500a16c0dd5fb56b2203
+
+% 1 1 0 0e3bcc542e4df8490371466e2b036867
+
+% 0 1 0 1c19eec46bf6fc6d05a36fc4f2028b63
+
+% 0 1 0 05165046fc9ce9971d7b42a7ca9155b5
+
+% 0 1 0 184c1de5bcfe9ae11c5af33d554db44c
+
+% 1 1 0 0b65a8d81486d21908657104bcca2e4d
+
+@ 0 6 0 141b67b6395372271a3e09ca8435571b
++ entry .as   通过 `Acceptable` 把请求正文读取为带类型的值：`request.as[Multipart]`
++     `Http.Request` 上的扩展方法 `request.as[body]`，适用于任何 `body: Acceptable`，它根据请求的头部和正文对请求进行解码。
++     scintillate 提供的唯一实例是 `Acceptable.multipart`，用于 `multipart/form-data` 上传。
++     该扩展方法没有导出到 `soundness` 总括包，因为 distillate 的通用 `as`（通过 `Decodable` 解码 `Text`）与它同名：需以 `scintillate.as` 访问。
+
+% 2 1 0 16b6094d25358e760c1a9c82356e5270
+
+% 3 1 0 0fc2092d8eda3af20240f97dc257f20c
+
+% 0 1 0 0320632edf6730aa17a7a4c69681dfd3
+
+% 1 1 0 190d62cc417ea2e315c85fdc99938c09
+
+% 0 1 0 0803952cae2aad0e10e9f43d60f7d5aa
+
+% 0 1 0 09ada703ce6a7faf0e181d389bed77a3
+
+% 0 1 0 059099e796bb0b7805ce5a3bc045fe77
+
+% 1 1 0 1266550d211e8bde148c26e872ce8b59
+
+@ 0 1 0 012b1abacbc013500e998f4d41448eb4
++ entry .Acceptable   把请求正文读取为值的类型类：`request.as[T]`
+
+% 1 1 0 06e280c2964d4dbc1b965b40969ddcd8
+
+@ 0 4 0 107f353c26a8ca391e6fe24a02b532a7
++       `T is Acceptable` 说明 `Http.Request` 如何根据其头部和正文变成 `T`，`request.as[T]`（即 `scintillate.as` 扩展方法）应用它。
++       库中唯一的实例是 `.multipart`，它解析 `multipart/form-data` 正文；程序通过提供 `MyType is Acceptable` 添加自己的实例。
+
+% 0 1 0 1b26cd4286fe7b60047ffddec07e5915
+
+@ 0 7 0 1ec58eb3fa9c3b8718da90cec895503a
++   entry .multipart   把 `multipart/form-data` 请求逐部分读取为 `Multipart`
++       检查 `Content-Type` 是否为带 `boundary` 参数的 `multipart/form-data`，并用 `Multipart.parse` 解析正文。
++       各部分在正文到达时从正文中借出，因此处理函数要先读取每个部分的内容，再转到下一个部分。
++       它需要一个 `Tactic[Multipart.Error]`：内容类型或边界缺失或错误时以原因 `MediaType` 抛出，正文被截断时以 `Truncated` 抛出。
++   entry #accept   从请求中读取的值
+
+@ 0 1 0 0f1a63e94cd9c3be05aff198b62b3f16
++ entry .Redirect   执行重定向的响应：`302 Found` 或 `301 Moved Permanently`
+
+% 1 1 0 1e8094f79dea46211b5804fc0078f5f7
+
+@ 0 4 0 10e8260644469ac302d6dd811533adfa
++       `Redirect(location, permanent)` 是一个 `Servable` 值，因此 `Http.Response(Redirect(…))` 是带有该状态和 `Location` 头部的响应。
++       `location` 可以是任何 `Abstractable across Urls to Text` 类型——`Text`、`HttpUrl`——而 `permanent`（默认为 `false`）选择 `301` 而非 `302`。
+
+% 2 1 0 0503f82aa192c46d16e203fa7361228b
+
+% 3 1 0 1ce2dd90f52bdfd61f913554cc5bc363
+
+% 0 1 0 1d8a6f9aa03bf97504b79e6c4ebec385
+
+% 0 1 0 10265137131e6e2d11410c867f70d249
+
+% 1 1 0 17d870155242c3250240d28f983d744c
+
+@ 0 4 0 1becbf2a41bf7f98070fb2f6beaf5325
++   entry .apply   由任何类 URL 值构成的 `Redirect(location, permanent = false)`
++   entry .redirect   把重定向渲染为带 `Location` 头部的响应的 `Servable`
++   entry #location   目标，作为文本
++   entry #permanent   重定向是否为 `301` 而非 `302`
+
+@ 0 1 0 0cac40ec6001b0e81702cdab0556685a
++ entry .NotFound   把可服务的值包装为 `404 Not Found` 响应
+
+% 1 1 0 18a640e10faf64111aaa7b8ae5a140f2
+
+@ 0 3 0 09efc24390fa28fd09e9aab4498b0239
++       `NotFound(content)` 服务 `content`——任何 `Servable` 值：文本、HTML、JSON——与平常的服务方式完全相同，带有其头部和正文，只是状态为 `404`。
++       通常是路由匹配的最后一个分支。
+
+% 2 1 0 065d1016b14e59d11cb50e0ec58331cb
+
+% 3 1 0 1d448a8108eca64c19c576caea74d419
+
+% 0 1 0 160e8b68a8a7688a19e1a63607d6127a
+
+% 1 1 0 02635977b323b1891612cd01c217c9a4
+
+@ 0 2 0 0ff3cdebb4c80e6b147b1c9e3cdf47b6
++   entry .servable   `NotFound[content]` 的 `Servable`，前提是 `content is Servable`
++   entry #content   以 `404` 服务的值
+
+@ 0 1 0 12ef6b7de88b6a560b7ba0084a806065
++ entry .Unfulfilled   把可服务的值包装为 `500 Internal Server Error` 响应
+
+% 1 1 0 0a23724d8966d8f3106d789ce0b24364
+
+@ 0 3 0 10281684f2285d841acc946bd50f3481
++       `Unfulfilled(content)` 以状态 `500` 服务 `content`，保留其头部和正文。
++       `webserverErrorPages` 中的 given 由它构建响应，检测到自身失败的处理函数也可以这样做。
+
+% 2 1 0 1c8a3226c40bea710fb0183c389dfe25
+
+% 3 1 0 0dad88273e4637fc12afbb1f13593fd3
+
+% 0 1 0 0d91cc016f88aa5f01762b4ad3140307
+
+% 1 1 0 06def9814d57fb42092d9ec20c38b98a
+
+@ 0 2 0 19c01551aa15adb50fb0c8271ee530ea
++   entry .servable   `Unfulfilled[content]` 的 `Servable`，前提是 `content is Servable`
++   entry #content   以 `500` 服务的值
+
+@ 0 1 0 0f3b497909c695ae1e41df431d6541ba
++ entry .NoCache   用禁止缓存的头部包装可服务的值
+
+% 1 1 0 058869ac8378c31a038f4dcf6fb9137a
+
+@ 0 3 0 059fc85a9753942f186773004dee22c1
++       `NoCache(content)` 以 `content` 自身的状态和正文服务它，并在前面加上 `Cache-Control: no-store`、`Pragma: no-cache` 和 `Expires: 0` 头部，使浏览器和代理都不保留它。
+
+% 2 1 0 0d3714d677d6ba8c182ba15e1e04e85a
+
+% 3 1 0 19ef3c48a102fee817f95811bd3c7f21
+
+% 0 1 0 1aeccb517d82acda0ccaf0817b8ae755
+
+% 1 1 0 0063eb2c11761e641128b4fb67ae6e87
+
+@ 0 2 0 0a91c74bc857028714b96fa44b673fae
++   entry .servable   `NoCache[content]` 的 `Servable`，前提是 `content is Servable`
++   entry #content   不经缓存服务的值
+
+@ 0 1 0 03e5c28c01ea5bca0bb9999362fd59c5
++ entry .httpServers   作为端口上 `Protocolic` 协议的 HTTP：`tcp"8080".serve[Http](handler)`
+
+% 1 1 0 1b61be72277737981edf08b903d4560b
+
+@ 0 9 0 18588e3a53e99aae190f5026015b6422
++       urticose 的 `port.serve[protocol](handler)` 通过 `protocol is Protocolic over port` given 在端口上提供某种协议的服务，这四个 given 使 `Http` 成为 `Tcp.Port` `80`、`443`、`8080` 和 `8000` 上的这样一种协议：`jdkHttpserver` 和 `jdkHttpserverPublic` 通过 `Httpd` 提供服务，`soundnessHttpd` 和 `soundnessHttpdPublic` 通过 `SocketServer` 提供服务，`Public` 变体绑定所有网络接口而非仅 `localhost`。
++       按名称导入其中一个，处理函数与 `handle` 所接受的上下文函数相同。
++       每个 given 都保留构建它所用的 `Tactic[Httpd.Error]`、`Monitor`、`Probate`、`Httpd.Event is Loggable` 和 `WebserverErrorPage`，因此所需的上下文值与 `SocketServer#handle` 相同。
+
+% 2 1 0 02f6d2a0c432bfce1dd3cb57d7e17ea9
+
+% 3 1 0 0762c29109c5a5ff04b6adeab08182a5
+
+% 4 1 0 1ac929b3999a273d18580e083e7f1ffb
+
+% 5 1 0 0a091b34f651f002093b7350af14c1fe
+
+% 6 1 0 0ec630783f5aa0060665e1d9abceb3b5
+
+% 7 1 0 16e6f3ecb020585a1cfce91801104766
+
+% 8 1 0 1b3ba51135d8ebf4089c83f10ccdb039
+
+% 9 1 0 1d421d6be4099eac0fe8087ee6dbdef4
+
+% 10 1 0 0e4a02cc4e6fa1fe009c8a9f920465df
+
+% 0 1 0 1e5e0a61e64bc2840669a827caf48567
+
+% 2 1 0 11bd70080294d0c71ba4c571835fc6be
+
+% 0 1 0 19daf22a75c9782f04523219ed6ca07f
+
+% 1 1 0 07949cc3ea610e381de03e81525faf4e
+
+@ 0 3 0 11c14fed33ac6b041a49ae10388c7866
++       在 `soundness` 总括包中，这四个是手写的转发 given 而非 `export`，因为合成的导出转发器会丢失它们带捕获注解的细化类型；它们的名称相同。
+
+% 0 1 0 1facd88cca386e8f095b56321e1312f3
+
+% 1 1 0 021cd7636ac9454812fa249e6cd2cf0d
+
+% 2 1 0 1f6395ed6771fff81d67650fb909db49
+
+@ 0 8 0 00d1c0916e12553815039796dd5004d4
++   entry .HttpdFor   这些 given 的类型：`Tcp.Port of port` 上的 `Http is Protocolic`，服务 `Http.Connection`
++       `HttpdFor[port]` 以 `Transport = Tcp.Port of port`、`Request = Http.Connection^`、`Response = Http.Response` 和 `Server = Service` 细化 `Protocolic`。
++       它是公开的，以便总括包的转发器能够指名它。
++   entry .jdkHttpserver   由 `Httpd` 在 `localhost` 上服务的 `Http`
++   entry .jdkHttpserverPublic   由 `Httpd` 在所有网络接口上服务的 `Http`
++   entry .soundnessHttpd   由 `SocketServer` 在 `localhost` 上服务的 `Http`
++   entry .soundnessHttpdPublic   由 `SocketServer` 在所有网络接口上服务的 `Http`
+
+@ 0 1 0 08df0bad8277b8270f1e3c518097e807
++ entry .Http2Serve   TLS `SocketServer` 背后的 HTTP/2 引擎：服务一个已协商连接的各个流
+
+% 1 1 0 193243313c915c1a0104e44c26dc5078
+
+@ 0 11 0 003b316c1a3f4331001c7bb77b299646
++       一旦 TLS 套接字通过 ALPN 协商出 `h2`，`SocketServer` 就分派到这里。
++       每个由客户端发起的流都成为一个 `Http.Connection`，由处理函数在其自己的虚拟线程上服务，因此复用在该连接上的请求并发运行；该引擎实施流量控制、HPACK 和尾部（响应的 `Trailer` 头部指明在正文之后发送的头部，gRPC 的 `grpc-status` 就是这样），并容忍它不处理的帧类型。
++       两个方法都在连接的生命周期内阻塞调用线程，并以 `AnyRef` 载体接受处理函数或作用域（一个从连接到响应的 `AnyRef => AnyRef`，或一个作用于 `Http2Session` 的 `AnyRef => Unit`），这就是程序通过 `SocketServer#handle` 或 `#handleSession` 而非这里使用 HTTP/2 的原因。
++       响应正文从其流中逐块驱动，绝不会被 memoize：经过文本编码器变换的正文在 `memoize` 下不会终止。
+
+% 1 1 0 08228c041f25eaed1a3003869f818d8d
+
+% 1 1 0 057ed4328672f7871369a47e7914fefd
+
+@ 0 9 0 06e754c73631da5803eec0979a8a3c70
++   entry .serve   用处理函数服务基于套接字流的 HTTP/2 连接的每个流
++       `serve(handler, in, out, port)`：在 `in` 和 `out` 上打开服务器连接，并为每个流运行处理函数，直到客户端发送 `GOAWAY` 或套接字关闭。
++       需要一个 `Monitor`、一个用于连接启动的 `Tactic[Async.Error]`，以及一个 `Httpd.Event is Loggable`。
++   entry .serveSession   把 HTTP/2 连接作为会话来服务，把一个 `Http2Session` 借给作用域
++       `serveSession(scope, in, out, port)`：与 `.serve` 相同，但作用域只运行一次，其中有一个 `Http2Session`，其 `handle` 服务每个流；作用域所设置的状态由该连接的各个流共享，不与其他连接共享。
+
+@ 0 1 0 16a56630bd2483c415c486c83d8a1d43
++ entry .Responder   状态、头部和正文的数据汇：`sendBody` 和 `addHeader`
+
+% 1 1 0 1355301846c16fcf081139c8a1e05044
+
+@ 0 6 0 172b66a9ff0ca7d511b14980c6468b6f
++       一个最小的响应数据汇：`#addHeader(key, value)` 添加一个头部，`#sendBody(status, body)` 发送状态以及以 `Chain[Data]` 给出的正文。
++       它已声明并导出，但本组件中没有任何后端实现它；各后端通过 `Http.Connection.Respond` 应答。
++   entry #sendBody   发送状态和由数据块组成的正文
++   entry #addHeader   添加一个响应头部
+
+@ 0 1 0 014e75eb1c71d98d0c1f1dc72ac8f801
++ entry .JavaServlet   作为 Jakarta `HttpServlet` 的处理函数，用于 servlet 容器
+
+% 1 1 0 0f22904fc793645a153db858572d970e
+
+@ 0 9 0 00bb02e72f919fcf160612a1ed4942aa
++       `JavaServlet(handle)` 是一个 `HttpServlet`，它把每个 servlet 请求转换为 `Http.Connection`——方法、版本、主机、目标、头部（小写）以及从 servlet 输入流式读取的正文——在其上运行 `handle`，并通过 servlet 响应写回响应的状态、头部和正文，流式正文则分块写出。
++       位于 `scintillate.servlet` 组件中。
++       处理函数是普通函数 `Http.Connection => Http.Response`，而不是上下文函数，因为上下文函数类型的类参数无法从子类的超类参数中应用；由子类（或 `.Fn`）提供它。
++       正文读取错误或无法解析的主机会打印到 servlet 的标准输出，后者以 `400` 应答。
+
+% 2 1 0 0d23fa8bd63185ac0599a6c1e848fdaa
+
+% 3 1 0 02bf4d16b8efa8f119dbbdc570a08949
+
+% 0 1 0 17ef4a4f6693d4111aaade83e07cfd42
+
+% 1 1 0 082ae4a7839bcbe8057ad59936f2840f
+
+@ 0 1 0 0cdb181b1893d4f21281d73fdad62410
++       `@servlet` 注解从一个方法生成这样的类。
+
+% 0 1 0 0bce33c49929c39b1981288ed533ebcf
+
+@ 0 7 0 0fd03eca9914f97606a270b4d7a7e1e5
++   entry .Fn   `JavaServlet.Fn(handle)`：由函数构成的 servlet，可扩展或实例化
++       一个构造函数接受处理函数的开放类，因此匿名子类或生成的子类（即 `@servlet` 产生的东西）不需要自己的类体。
++   entry #handle   通过处理函数服务一对 servlet 请求和响应
++       构建 `Http.Connection`，应用处理函数并交付响应。
++       servlet 的 `service` 为每个请求调用它，并把任何异常打印到标准输出，而不让它逃逸到容器。
+
+@ 0 6 0 03273e504af14e4c06e8440a531fcd44
++ entry .servlet   `@servlet` 注解：返回 `Http.Response` 的方法变成一个 servlet 类
++     方法 `def name(connection: Http.Connection): Http.Response` 上的宏注解，它在方法旁边添加一个同名的类，扩展 `JavaServlet.Fn` 并委托给该方法，以便 servlet 容器可以按名称实例化它。
++     方法的结果类型必须是 `Http.Response` 的子类型，且注解必须应用于方法：违反任一条都是编译错误。
++     位于 `scintillate.servlet` 组件中。
+
+% 2 1 0 13072f2d725fb57d16a789561ce9d653
+
+% 3 1 0 1f8737a6735cabb91b2a36f5024089f2
+
+% 0 1 0 185cb4fc1cca0e9604e9b73fd479e4db
+
+% 0 1 0 13229bd9ce4c6765075682cdb905af3d
+
+% 1 1 0 0a334814fa46ed7f1dbc8ec3b356360f

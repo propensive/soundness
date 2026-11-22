@@ -1,0 +1,61 @@
+orthant 2 language
+
+% 0 1 0 034521a36c271d7c1f86f106004c533d
+
+@ 0 1 0 16b7e94f7205b3f90afbfe475dbc515c
++ 当 JSON 指针无法解析时抛出。
+
+@ 0 1 0 1d8ed6a2d2412a231ea0d46e12dff5b7
++ ## 原因
+
+@ 0 3 0 173017d0ef47177f0b34bde670ebaa9c
++ Jacinta 按照 RFC 6901 解析 JSON 指针。
++ 构造器接收一个 `reason: Reason`；渲染出的消息为 `the JSON pointer could not be resolved because $reason`。
+
+@ 0 1 0 0982d44e8aec0bbd176df78e68656684
++ ## 变体
+
+@ 0 2 0 0ce9f3323010cab5021e70adfcef5654
++ （`↯/s.106.2.1`，即 `UnknownDocument`，在 `JsonPointer` 失去其从未被填充的文档 URL 以及 `JsonPointer.Registry` 时已退役；其余编号不变。）
+
+% 0 1 0 00dd5d5779c0f95f1477eb240a154ecb
+
+@ 0 1 0 01c29b357a79e9d80c0e5d213f43e9e8
++ JSON 引用不以 `#` 开头。
+
+@ 0 1 0 105e3c4dee51a790105a64c459096fa9
++ **示例。** `[↯/s.106.2.2] the JSON reference was not valid because a JSON reference must begin with '#'`
+
+@ 0 1 0 0e02c3730b3808551133a6b50f498754
++ **解决方法。** 以 `#` 作为引用的开头，如 `#/play/title`。
+
+% 0 1 0 034c98f84dc358491b08ae76143624e5
+
+@ 0 1 0 06fbbc8ff422674809e73432ced72b39
++ JSON 引用的片段不以 `/` 开头。
+
+@ 0 1 0 1eebdd34b53ab9cd0b440a81e81db782
++ **示例。** `[↯/s.106.2.3] the JSON reference was not valid because a JSON reference fragment must begin with '/'`
+
+@ 0 1 0 045bcb580c6de5281b75c7ff0313c11f
++ **解决方法。** 以 `/` 作为片段的开头，如 `#/play`。
++ 指向整个文档的单独 `#` 也是有效的。
+
+% 0 1 0 06c60eb430a43dda148893f098ee48aa
+
+@ 0 1 0 1b3c92628749be9715451d7fbc0415f1
++ JSON 引用中的 `~` 后面跟的不是 `0` 或 `1`。
+
+@ 0 1 0 05c7364129967dc101f1e6e394871984
++ **示例。** `[↯/s.106.2.4] the JSON reference was not valid because a '~' in a JSON reference must be followed by '0' or '1'`
+
+@ 0 1 0 12b5dc6f91211c980559d07428049b1b
++ **解决方法。** 把字面的 `~` 转义为 `~0`，把字面的 `/` 转义为 `~1`。
++ 没有定义其他转义。
+
+@ 0 1 0 004f241cb4a4ed0405cb108ee75b2611
++ ## 另请参阅
+
+@ 0 2 0 1969b177843c517a1349e53956b6ebf8
++ - 源代码：`lib/jacinta/src/core/jacinta.JsonPointer.scala`
++ - `↯/s.106.1` — 带类型的 JSON 访问错误

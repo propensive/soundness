@@ -1,0 +1,929 @@
+orthant 2 language
+
+@ 0 1 0 1c0bf6953362d69700309eb01b8f5d56
++ # 模块边界
+
+@ 0 9 0 12ff44dbb5898e6b07601783c5b7f228
++ Soundness 有 134 个库，每一个都应当有单一的、可以说得出名字的用途。
++ 随着模块不断增长，每个模块都积累了一些当初为了编译而需要、如今却不再属于它的代码，依赖图记录下了这种积累：构建的关键路径有十九个模块深，测试框架位于单位库的闭包之中，同样的算法——CRC-32、规范 Huffman 编码、变长整数、位级 I/O——在多达六个地方各自实现。
++ 这条路线（issue #1640）要恢复这些边界：每个模块说明自己的用途，只包含为该用途服务的代码；去除重复；只要轻量的接口就够用，就用 anticipation 风格的类型类接口或集成子模块切断硬依赖；构建变得更浅、更宽。
+
+@ 0 5 0 0d533d15e455afc3014c61e4691fc553
++ 贯穿始终的约束是：**语义和行为不变**。
++ 代码可以被重写、移动、拆分和合并，但每一步都必须让可观察的行为保持一致，独立通过 `make attest`，并保持基准测试可以编译（`make build`）。
++ 本文档出自对代码库的一次全面审计（2026-08）；其中的文件和行号引用是那次审计时的快照，实施时必须重新核实。
+
+@ 0 1 0 0c0d9dd5db7d32ca0190c6fa32c2b6a2
++ 这条路线的各项，以及它们的时间范围和硬依赖；[`status.tel`](status.tel) 记录了每一项的进展：
+
+% 2 1 0 1a49486c3b4d2d2d15f5c2c51b85eebd
+
+@ 0 14 0 0f8604bed22c64d2034dded1ae191393
++ column  条目
++ column  标题
++ column  时间范围
++ column  依赖
++ row  mod-1  无用的边和无用的代码  近期
++ row  mod-2  只含一个 given 的集成子模块  近期
++ row  mod-3  模块拆分  近期 → 中期
++ row  mod-4  按编解码器和按格式拆分  中期
++ row  mod-5  算法去重  中期  mod-4
++ row  mod-6  分阶段派生内核  中期 → 远期
++ row  mod-7  延伸目标  远期
++ row  mod-8  无用的边，第二轮——以及它们所掩盖的错误声明  近期
++ row  mod-9  关键路径的头部  近期
++ row  mod-10  脊柱 given  近期
+
+% 1 1 0 05a4b136286d643f1087d589f9b9043e
+
+@ 0 1 0 03a72508a020fb7e0ebf064262aeb8c9
++ ## 测得的基线（2026-08）
+
+@ 0 4 0 1bfb60768d528ea6179981ae184a3c74
++ 关键路径有 19 个模块深：exegesis → obligatory.json → jacinta.schema → telekinesis.jvm → telekinesis.core → legerdemain → honeycomb → urticose.url → escapade → escritoire → polysyllabic → gossamer → hypotenuse → cardinality → fulminate → anticipation.http → anticipation.codec → anticipation.text → symbolism。
+
+@ 0 1 0 1d2f4254db8247871568d578de803452
++ 扇入最高的模块：
+
+% 2 1 0 073dfa29635d719f1473e2defc7ab331
+
+@ 0 2 0 1862e1fc01e90c601b205da056fd96a7
++ column  模块
++ column  依赖者
+
+% 0 1 0 082e5e636ca340fd16ba4ef8ad3c1a8c
+
+% 0 1 0 003d37829c3fedad17628f30c4a928c5
+
+% 0 1 0 0fe2d0d6b9ceb10305f4c42a0b50186e
+
+% 0 1 0 101d8748017db18613d9499338894c96
+
+% 0 1 0 12d8d49bb4e9f8380515adf30c770f9b
+
+% 0 1 0 0f6febac77fc99211a5090d1666aeb41
+
+% 0 1 0 067dcff5451e8bbe01e446c461e31eac
+
+% 1 1 0 02446483d23aeded1cbda7a93cccd3b8
+
+@ 0 1 0 065dd3ac45d21d2c0cf88cfb8f6bb2ec
++ 最大的模块：
+
+% 2 1 0 1d1c901a2cfe880d1176e91c82d17ee6
+
+@ 0 3 0 1613e10c086d1209047362f879d40508
++ column  模块
++ column  行数
++ column  依赖
+
+% 0 1 0 07178ad1a998d69c0d3694aed2c685cb
+
+% 0 1 0 1119539066f94d381442a57071eef21a
+
+% 0 1 0 023b994d758a5245069c2514cac89dee
+
+% 0 1 0 0ed674ac14092ff61bf066c717d642c7
+
+% 0 1 0 0e285cb81088a8320487c9ad06c1ffd9
+
+% 0 1 0 12ff1a36c13343ab04d3f85e4318a99c
+
+% 0 1 0 0a9e9496e4ea18ce042fe343f1f146d3
+
+% 0 1 0 1e2552998794e4aa1c4caa2b24a9e320
+
+% 1 1 0 077d66b92bdc656f02df94146f3c238c
+
+@ 0 1 0 13a1100292722ac61fd153e7b35cebc0
++ ## 适用于每一步的机制
+
+@ 0 26 0 1c5c77fe7604294a1b4f3905cb5ae4bf
++ - 一个新组件意味着：一个 `build.mill` 对象、一个 `lib/<name>/src/<sub>/` 目录、一个 `soundness_<lib>_<sub>.scala` 导出文件，以及在**恰好一个**捆绑包中的成员资格；`./mill groupCheck.validate` 强制检查这一点。新库还需要一个 `allLibraries` 条目。自 #1744 起，捆绑包是发布的单位，每个捆绑包从其闭包推导出 POM 依赖，因此不属于任何捆绑包的组件根本不会被发布，属于两个捆绑包的组件会被打包两次；`groupCheck.excluded` 不再列出接口模块，只保留三个独立的编译器插件。优先选择已经拥有该组件同级组件的捆绑包（所有 `anticipation.*` 都在 `base` 中），并确认新的跨捆绑包边是依赖图中已有的边。
++ - 当一个定义在组件之间移动时，它在旧 `soundness_*.scala` 导出文件中的那一行必须**在同一个提交中**删除——重复的顶层导出会按类路径顺序悄无声息地解析。
++ - `scalaJs`/`scalaNative` 标志必须与新的依赖闭包相符。从一个模块中拆出只限 JVM 的尾部，可能使剩余部分*获得*平台（例如，facsimile.core 在拆出文件系统层之后就可以去掉 `scalaJs = false`）；这样的获得会改变 `soundness.js`/`soundness.native` 聚合模块，要审慎地进行。
++ - `*.wasi` 组件（turbulence.wasi、capricious.wasi、…）提供替代的后端；对 Stdio 或熵的任何重构都必须让它们改为指向新的目标，并保持 `soundness.wasi` 通过。
++ - `bench.model` 依赖全部六个 `*.staged` 模块，而基准测试对 `soundness.all` 不可见；每一步之后都要运行 `make build`。
++ - 从伴生对象中移出的 given 会离开隐式作用域，需要在下游清理导入；移*入*主体类型伴生对象的 given 会重新进入隐式作用域（这是反转边时的首选——不需要清理）。
++ - 每一步的验证：`make attest` 和 `make build`；涉及分阶段派生或格式解析器的步骤还要为受影响的格式运行 `make bench`——性能持平是行为保持的一部分。
+
+@ 0 1 0 0aa20f1db19802d60be28005779a1ca9
++ ## 审计中确立的更正
+
+@ 0 14 0 0721b74f599bb4721e9dca72fec4cf72
++ 1. “cordillera”是 `telekinesis.http2` 内部的一个包，而不是一个库；引用它的去重条目实际上是 telekinesis.http2 的条目。这个包后来已被重命名为 `telekinesis`，因此这一区别不再出现。
++ 2. murmuration 只接上了一半：它列在 `groupCheck.disabledLibraries` 中，不在 `allLibraries` 里，但 `rudiments.core` 已经依赖 `murmuration.core`。任何移入 murmuration 的操作都需要先就注册问题作出决定。
++ 3. scintillate 两次重新推导分块传输的检测，二者之间存在一个潜在的差异（`== t"chunked"` 与 `.contains(t"chunked")`）；合并头部解析时必须逐个缺陷地保留这一行为，或者经明确批准后修复它。
++ 4. tarantula 的 `screenshot(): Raster in Png` 是公共 API；切断 hallucination 时保留解码后的方法（放在一个集成子模块中），并增加一个原始 `Data` 的变体——现有的返回类型永不改变。
++ 5. gossamer 确实使用了 kaleidoscope，但只是传递性地依赖它；在去掉无用依赖时应当声明这个依赖。
+
+@ 0 1 0 1c289e99c8bd54ef10ef66aba138d1de
++ ## mod-1：无用的边和无用的代码
+
+@ 2 2 0 05cd6a40c6af8e3618fc57699a3f3ce2
++ 时间范围：近期
++ 完成：#1746（2026-08-08）
+
+@ 0 2 0 0b19bf840edf850f050376f9193f5cb9
++ 存在却未被使用的构建边，以及没有任何东西使用的接口类型。
++ 一个 PR，除删除外不移动代码：
+
+@ 0 9 0 06d8692cb3aa9baf1a495db404c119f4
++ - fulminate.core：`anticipation.http` → `anticipation.text`（http 未被使用；这个依赖存在只是为了传递性地到达 text——而由于 fulminate 的扇入实际上就是整个仓库，这一改动把 anticipation.codec/generic 从全局最小闭包中去除）。
++ - urticose.url：去掉 `anticipation.html`。xylophone.core：`urticose.core` 移到 xylophone.test。gossamer.core：去掉 mercator（只用于测试）和 contextual（`t"…"` 插值器是一个裸宏），声明 kaleidoscope。turbulence.core：去掉 stenography。rudiments.core：去掉 `anticipation.http`（顺便核实 `anticipation.path`）。
++ - 删除没有使用者的 anticipation 类型：`Legible`（src/text）、`HtmlContent` 和 `Sgml`（src/html），以及它们的导出行。
+
+@ 0 2 0 0427aa4b331e7cdc0536a3527c0fb716
++ 完成标准：每条被去掉的边都经 grep 核实未被使用，删除后能够编译，并且 `make attest` 通过。
+
+@ 0 1 0 1d478bfd0a1326751f9d7b944e9e5c73
++ ## mod-2：只含一个 given 的集成子模块
+
+@ 2 2 0 01178d1a1eccf7f11738b1f239139195
++ 时间范围：近期
++ 完成：#1746（2026-08-08）
+
+@ 0 4 0 099b0f71e4a89c9a02e7b38a1307223d
++ 为承载单个 given 实例（或一个小文件）而存在的依赖，按照 `jacinta.time`、`eucalyptus.ansi` 和 `hallucination.ansi` 这一既定模板移入集成子模块。
++ 除另有说明外，各步相互独立。
+
+@ 0 42 0 1237b70eb3b14ffa12dde42c97a8eb54
++ - **urticose.ansi**：`Url is Teletypeable` given（urticose.Url.scala:61）和 `UrlPalette` 移到新的 `urticose.ansi`（依赖：urticose.url、escapade.core）。这把 escapade 和 iridescence 从每个 URL、JSON 和 YAML 使用者的闭包中去除。陷阱：通用的回退 `given showable: [value: Showable] => value is Teletypeable`（escapade.Teletypeable.scala:68）意味着漏掉新导入的调用处仍能编译，并悄无声息地以无样式方式呈现——要从 `soundness` 顶层导出该 given，清理内部对 URL 的 `e"…"` 插值，并增加一个断言样式的测试。
++ - **honeycomb → anticipation.url**：特定的 `HttpUrl is Attributive to Whatwg.Url` given（honeycomb.Attributive.scala:67）在行为上与 :64 处的通用 given 完全相同（后者经由 `Url` 的 `abstractable = _.show`）。增加一个证明输出相同的呈现测试，删除 :67，并把 honeycomb.core 的依赖从 urticose.url 换成 anticipation.url。
++ - **anticipation.check**（此后已移到 `hypotenuse.check`，包为 `hypotenuse`，因为它的 `Commensurable` 界定使它无论如何都要依赖 hypotenuse）：一个新的 anticipation 子模块（与其同级模块一起在 `base` 捆绑包中），容纳 probably 的 `Checkable` 类型类；probably.core 重新导出它，quantitative.core 把对 probably.core 的依赖换成 anticipation.check（宏的位置在 quantitative.internal.scala:208 和 protointernal.scala:790）。这让约 40 个模块——abacist、aviation 以及它们之上的一切——摆脱测试框架的闭包。
++ - **chiaroscuro 拆分**：`chiaroscuro.core` 保留 Contrastable/Decomposable/Similarity；新的 `chiaroscuro.render` 接收 Juxtaposition.scala，并随之接收 escapade、escritoire 和 dendrology 依赖。probably.core 依赖两者，因此其行为不变，但所有只需要结构对比的东西都摆脱了呈现栈。
++ - **escapade 分解**：新的 `digression.ansi` 接收 StackTrace/帧/方法的 Teletypeable given、堆栈跟踪调色板以及 `graphical` given（escapade.Teletypeable.scala:75–213），从 escapade.core 中切掉 escritoire、digression、anticipation.gfx 以及（待核实的）iridescence；可写入 Stdio 的 given（escapade.Teletype.scala:71–79、134——escapade 对 turbulence 的唯一使用）移到 `escapade.io`。escapade.core 最终只剩 csi + gossamer + anticipation.url：真正是 ANSI 形状的。与 urticose.ansi 相同的静默回退陷阱同样适用。
++ - **fulminate.print**：`Message is Printable`（fulminate.Message.scala:46，它忽略自己的 termcap）从 Message 的伴生对象移到 `fulminate.print`，从 fulminate.core 中切掉 anticipation.print。清理以 Message 召唤 Printable 的地方，并核实它与 escapade 中需选择启用的竞争者 `displayableTypes.messagePrintable` 之间的交互。
++ - **tarantula.image**：依照更正 4；tarantula.core 从浏览器自动化中去掉 hallucination（及其 gesticulate/pneumatic.flate/iridescence 闭包）。
++ - **spectacular 反转**（在 escapade 那一步之后）：`Uuid is Showable` 移入 inimitable 中 Uuid 的伴生对象；`StackTrace is Showable` 移入 digression 中 StackTrace 的伴生对象；每次移动都在同一个提交中翻转构建边（spectacular 失去该依赖；叶子模块获得 spectacular.core——已核实无环）。伴生对象到伴生对象的移动保留隐式作用域，因此不需要清理导入。`typeRepr`/`meta` given **不**移动：编译器拥有的类型没有可以容纳它们的伴生对象，失去隐式作用域会悄无声息地改变 spectacular.Inspectable.scala:241 中 `summonFrom` 的落空行为。
+
+@ 0 6 0 0be87865924c25270b5a86d8830b7f68
++ 以下被记录为现状即正确，因此不再重新争论：fulminate → anticipation.log 和 gigantism（Communicable 扩展 Transcribable 是有意的设计，而在 mod-1 落地后，anticipation.log 的闭包处于 fulminate 的闭包之内）；escapade → anticipation.url/gfx；hellenism 的依赖；xylophone → serpentine（XPath 确实复用了路径代数）；stratiform 的十四个核心依赖（全都被使用，全都轻量；只有 panopticon 的 given 在 mod-3 中移动）。
+
+@ 0 2 0 0475c56d88a613f81386694467b5e5a5
++ 完成标准：列出的每条边都被切断，新的子模块都已归入捆绑包，并且没有下游模块传递性地重新获得被切断的闭包。
+
+@ 0 1 0 06c7a3615ea4588115c41be6e4c8fe83
++ ## mod-3：模块拆分
+
+@ 0 1 0 1be1c26a35f84add18c6be13de5a0e85
++ 时间范围：近期–中期
+
+@ 0 29 0 0c4f79c4ebb1847902c246a598428096
++ - **legerdemain.query**——关键路径上最大的收益：telekinesis 使用 legerdemain 只是为了 `Query` 类型，而 legerdemain 中需要 honeycomb 的是它的 HTML 部件代码。`Query` 拆分为不依赖 honeycomb 的 `legerdemain.query`；telekinesis.core 改为指向它，从而把整个 HTML/XML 栈从 HTTP 客户端路径上切掉。检查平台标志：query 变为完全跨平台。
++ - **ethereal.dist**——**按原定方案受阻；再次尝试之前需要一个设计决定。** 原意是把 Runners、Assembler、Installer 和 Upgrade（下载/校验/打包/自更新的工具链）从守护进程中拆出，并带走 telekinesis.jvm、urticose.url、gastronomy 和 zeppelin。检查后发现，守护进程和工具链无法沿这条线分开：`cli`（ethereal_core.scala:88）占据了文件的其余部分，它*就是*守护进程，而它的 `name` 解析在缺少 `ethereal.name` 属性时会通过运行整条构建可执行文件的路径来恢复，这条路径调用 `Runners.version`、`Runners.download`、`Assembler.PublicKeyLength` 和 `Assembler.assemble`。因此 core 无法去掉 Runners 或 Assembler，而这两者合起来需要全部四个重型依赖；只移动 Installer 和 Upgrade（core 不引用它们）什么也切不掉，因为它们只需要 zeppelin，而 Assembler 无论如何都需要 zeppelin。反过来把 `cli` 放进新组件，则会让 `core` 只剩下守护进程的支撑类型，而两个真正的外部使用者——anthology.xeq（`Runners`）和 ziggurat.packager（`Assembler`）——无论如何都会依赖新组件，因此这次拆分对它们也毫无益处。要正确地做这件事，就要把构建可执行文件的分支抽取到一个由 `ethereal.dist` 提供的接口之后，这会改变到达该路径的方式，因而越过了“不改变语义”这条线。关于 `quantitative.units` 的观察本身是成立的：这样的字面量只有一个，而不是两个——ethereal_core.scala:266 处的 `val idleTimeout = Quantity[Hours[1]](6.0)`——而 `Long is Abstractable across Durations to Long` 可以恰好取代它。
++ - **ypsiloid 去除 jacinta**：`Bcd`（jacinta.internal.scala:284+，一个基于 `IArray[Double]` 的不透明类型）移到 **hypotenuse**，切断 ypsiloid → jacinta——一个 YAML 库依赖一个 JSON 库，是依赖图中最错误的一条边。YamlPath（ypsiloid 中 serpentine、urticose、beneficence 和 symbolism 的唯一导入者）移到 `ypsiloid.pointer`。
+
+@ 0 2 0 0d149f81a87a3d4c0c1948ce540fb2d4
++   **已完成。** 351 行的 `Bcd` 代码块移到 `hypotenuse.Bcd`，ypsiloid 的编译类路径上完全不再有 jacinta。
+
+@ 0 8 0 177aca8cf9202e5f0eaa4e71232eee14
++   早先的尝试之所以失败，是因为它试图保留 `Bcd` 的构造器在 `object internal` 内部被*推断*出的捕获行为：那里的每个结果都带有一个新鲜的 `any.rd` 能力，而 jacinta 的解析器用 `unsafeAssumePure` 把它洗掉了。显式声明这一点修好了 jacinta，却弄坏了 ypsiloid，反之亦然。解决办法是：`Bcd` 就是一个纯值——它是不可变 `IArray[Double]` 的不透明别名——因此构造器以纯的形式返回它，围绕它们的每个 `unsafeAssumePure` 都消失了，唯一真正不纯的一步，即接管一个新构建的可变数组，由伴生对象中的 `Bcd.adopt` 一次性处理，而不是在每个调用处处理。
+
+@ 0 6 0 18be91292d999cfa19cbaaef442227a5
++   有两个陷阱值得记录。`Bcd.fromContent15` 原本是 `private[jacinta]`，它唯一的调用者 `jacinta.Json.Parser` 现在位于另一个库中，因此它成了公共的——这是这次移动所需的唯一一次访问权限放宽。而重新导出这个类型（在包 `jacinta` 中 `export hypotenuse.Bcd`）*并不*等同于导入它：别名不携带伴生对象的隐式作用域，因此 `bcd.toLong` 和 `bcd.toDouble` 无法再解析，直到使用它们的文件直接导入 `hypotenuse.Bcd`。
+
+@ 0 18 0 04d988bfcbf375011b57a62a233498c1
++   这一步中 YamlPath 的那一半与 `Bcd` 无关，并且**同样受阻**，原因与 ethereal.dist 受阻相同：YamlPath 确实是 ypsiloid 中 serpentine、urticose、beneficence 和 symbolism 的唯一导入者，但 `ypsiloid.core` 处处使用它——`Yaml.Focus` 带有一个 `pointer: YamlPath`，存在一个 `Yaml is Positionable by YamlPath` given，`yp"…"` 插值器及其宏也在 core 中——因此它无法移到 core 之上的组件，而把它移到 core 之下又不会改变 core 的依赖闭包。要切断这四个依赖，就要把 Yaml 抽象语法树与其指针类型分开，这比这一步所描述的改动大得多。
++ - **jacinta.optics 以及 JsonPointer 去除 URL**（在 ypsiloid 那一步之后；涉及公共 API，因此要格外小心）：panopticon 的透镜 given 离开 jacinta.Json.scala，移到 `jacinta.optics`；JsonPointer 的文档注册表键从 `HttpUrl` 改为 Text 或 `Abstractable across Urls`，具体的 HttpUrl 便捷方法放在 `jacinta.url` 中，jacinta.schema 通过它保留基于 URL 的查找。RFC 6901 指针核心（在 ypsiloid.YamlPath 和 apoplexy.internal 中也有手写版本）作为这一步的一部分被共享。
++ - **stratiform 拆分**（两个 PR）：（a）`stratiform.base256` 是一个通用的二进制到文本编解码器，移入 **monotonous**（把 `Serializable` 扩展到非 ASCII 字母表）；stratiform.binary 和 revolution 改为指向它；bitumen 手写的 `decodeOctal` 改用 monotonous.Octal；面向 turbulence 的 given 移到 `stratiform.io`。
+
+@ 0 20 0 07482f063ed96e6c18698cb47992ab55
++   **（a）是 mod-5 的工作，而不是模块拆分，括号里的内容就是全部工作。**
++   `monotonous.Alphabet` 本身并不局限于 ASCII——它以 `log2(chars.length)` 推导每个字符的位数，对 256 个字符的字母表得到 8——但 `Serializable.base` 是：它预先计算 `Array.tabulate(1 << bits)(alphabet(_).toByte)`，一张 ASCII *字节*查找表，它的注释直白地陈述了这个不变式（"Every alphabet character is ASCII, so decoding the output as Latin-1 yields identical text"），正是这一点让它可以从 Latin-1 字节构建结果，而无需逐字符装箱。
++   `Base256` 的字母表绝对不是 ASCII（`ḀḁЂЃĄą…`），因此 `char.toByte` 会截断其中的每个字符。
++   因此，整合这个编解码器意味着修改 monotonous 文档中记载的快速路径，这对性能敏感，应当与 mod-5 的编解码器工作一起进行，并以针对现有 `Base256.encode`/`decode` 的等价性测试和基准测试为门槛。
++   它还要把 stratiform 和 reliquary 中 13 个使用者文件从 `Base256.encode(data)` 改为 `serialize`/`deserialize` 词汇。
++   把 `Base256` 原样搬到包 `monotonous` 中，会让这 13 个文件同样发生变动，却达不到统一的目的，因此它兼有两种选择的坏处，没有这样做。
++   （b）保留呈现形式的编辑层（Mutation、Revision、TelHandle，约 1,607 行，外加 telOpenable given）成为 `stratiform.editing`，切掉 aperture；透镜 given（Tel2.scala:107–137）成为 `stratiform.optics`，切掉 panopticon；schema 层（Tels.scala、Tels2.scala）成为 `stratiform.schema`，与 jacinta.schema 的捆绑包位置相对应。
+
+@ 0 5 0 1dfe4abd8191d79c0830c306b1dd9ce6
++   **状态：** `stratiform.optics` **已完成**——三个透镜/光学 given 原本是 `trait Tel2` 的成员（因而被继承到 `Tel` 的隐式作用域中），现在是顶层 given `telLens`、`telOrdinalOptical` 和 `telEachOptical`，从 stratiform.core 中切掉了 panopticon。
++   `Tel` 是普通的类，不是 `Product`，因此 panopticon 的通用 `deref` 透镜不会在缺少导入时悄无声息地顶替。
+
+@ 0 3 0 121c7106a045edd716f958a155a3e5b5
++   `stratiform.schema` **受阻**：`Tel.scala` 有 51 处代码引用 `Tels`——`assign`、`resolveType`、`keywordMap` 等等——因此 schema 层与核心抽象语法树交织在一起，无法移到它之上。
++   jacinta 的核心不使用它的 schema，而 stratiform 的核心使用。
+
+@ 0 26 0 107eec50ea0ba64512e5f0dc887ae72d
++   `stratiform.editing` **已部分分析，尚未尝试**。
++   一个有用的发现：`Tel.scala` 的 `import aperture.*` 是无用的——该文件没有引用其中的任何东西——因此 aperture 这条边完全取决于 `TelHandle.scala` 外加两个 `Openable` given。
++   这两个 given 就是障碍：`Tel` 的 `telOpenable`（Tel.scala:83）有意优先于 `Tel2` 的 `telViewOpenable`（Tel2.scala:100），因为对象中的 given 胜过从特质继承的 given，正是这一点让可写的来源解析为回写实例。
++   把两者都展平为新组件中的顶层 given，会破坏这种优先顺序，并使它们对既是 `Readable` 又是 `Writable` 的来源产生歧义。
++   做这一步意味着在 `stratiform.editing` 内部有意地重建对象扩展特质的分层，并用一个测试固定读写来源所选择的实例。
++ - **turbulence.stdio**——对“turbulence 需要更清晰的用途”的具体回答：*流*和*标准流*是不同的模块。已核实：Stdio、In、Out 和 Err 从不触及流代数（它们只导入 java.io、anticipation.print、rudiments 和 beneficence）。它们移到 turbulence **之下**的一个模块（`Component(anticipation.print, rudiments.core, beneficence.core)`，约 290 行，包括 `stdios` given）；turbulence.wasi 改为指向这个新模块，而这恰好就是 turbulence.wasi 存在所要替代的东西。`Stdio` 和 `stdios` 顶层导出在同一个提交中移动。
++   **已完成**，但有更正。预测的六个只使用 stdio 的使用者是错的：camouflage 根本没有指名任何 stdio 类型，dendrology 和 escritoire 的类路径上从来没有 turbulence，而 burdock、probably 和 ultimatum 确实分别通过 zeppelin、eucalyptus 和 profanity 用到了流代数——改变它们的指向什么也改变不了。
++   枚举每个*声明*了 turbulence.core 却不使用任何流名称的组件，恰好得到两个：`pneumatic.core` 和 `dendrology.demo`。
++   让 pneumatic.core 改为指向新模块（它还必须声明原本通过 turbulence 得到的 contingency 和 zephyrine），使它的编译类路径从 42 个模块降到 23 个，去掉了 turbulence.core、parasite、capricious 和 hieroglyph。
+
+@ 0 15 0 0d880753cd0e75230ccb609ee2e91094
++   有两个子项**被推迟，需要决定**：`shred` 不能简单地移到 turbulence 的测试作用域，因为 zephyrine 的测试也使用它，并通过 probably 传递性地到达它；它自然的归属是 `capricious`（它是一个基于 zephyrine 的 `Chain` 的随机数据生成器），这意味着 capricious 要依赖 zephyrine。
++   在它移走之前，turbulence.core 保留对 capricious 的依赖。
++   `Document`/`Documentary` 仍然需要移到新的 `anticipation.document`；它们的使用者比“格式模块”更广（其中包括 caduceus、exegesis 和 archimedes），因此那是单独的一步。
++ - **rudiments 瘦身**——整个计划中范围最广的清理；保持它纯粹是机械性的。受限索引这一组（Scribe、Grouping、Lattice、Surveyor、Deindex、Segmentable、Populated，约 730 行，全都直接建立在 denominative 之上——ypsiloid、stratiform、facsimile 和 escapade 都趋向了这种形状）成为位于 denominative 和 rudiments 之间的一个新库（占位名称 **`concordance`**）。Mutex、Counter 和 Loop（JVM 并发）移到 parasite；Exit 移到 imperial 或 ambience；DecimalConverter 移到 gossamer（与 Decimalizer 重新会合，并切掉 beneficence）；Bijection 在更正 2 作出决定后移到 murmuration。
+
+@ 0 7 0 187ef67c59b80db21ef105e8030df3a6
++   `concordance` 的抽取**已完成**，其中有一个值得保留的决定：它的源代码保持 `package rudiments`。
++   起初尝试过重新分包，后来放弃了——`Deindex` 的 `apply`、`at` 和 `prim` 扩展方法是整个代码树的索引词汇，因此新的包会迫使几乎每个做索引的文件都加一条导入；这种连锁反应经过六轮波及了六十多个组件，仍在扩散。
++   保留包名使这次拆分不可见：没有任何源文件发生变化。
++   `Bijection` 随这一组一起移动，而没有移到 murmuration，因为它唯一的使用者是 `Deindex.bijection`，而且它需要 denominative，而 murmuration 没有。
+
+@ 0 3 0 115d557849c44d7606ce4e9a095f8ea7
++   **其余的重新安置无法按原定方案完成**，原因是结构性的，而不是投入不足：每个提议的归属都位于一个已经使用这些代码的模块*之上*。
++   已批准实施、已尝试，并发现受阻：
+
+% 2 1 0 12e89c9f9dbba44d0c3a7eca0f749572
+
+@ 0 9 0 1d60853c25d059f70616fcbc55492ac5
++   column  工具
++   column  提议的归属
++   column  结果
++   column  原因
++   row  `Loop`  parasite  形成环  `fulminate.internal` 和 `wisteria.internal` 使用 `loop`，而 parasite 传递性地依赖这两者（parasite → digression → spectacular → wisteria；fulminate 同理）
++   row  `Exit`  imperial 或 ambience  形成环  `contingency.Fatal` 使用 `Exit`，而 imperial 依赖 contingency
++   row  `DecimalConverter`  gossamer  形成环  `spectacular.Showable` 使用它，而 gossamer 依赖 spectacular
++   row  `Mutex`  parasite  可行，但有害  `turbulence.Out` 和 `turbulence.Err` 使用它，因此 `turbulence.stdio` 会从 16 个模块增长到至少 37 个
++   row  `Counter`  parasite  已删除  它没有使用者，并且已被 `rudiments.Atomic` 取代
+
+% 1 1 0 04a6dafcab3b1f0700df7ecf3f412401
+
+@ 0 5 0 17e0e9954dc13ea0111da3db739272c5
++   `turbulence.stdio` 是这条路线有意创建的最小组件，而 parasite 的闭包有 37 个模块，因此移动 `Mutex` 会抵消拆出标准流所取得的大部分成果。
++   `Counter` 在 rudiments 内外都没有使用者——代码树中唯一另一个 `Counter` 是 `ultimatum.Reckoning.Counter`，一个无关的嵌套枚举——而带 `ere(_ + 1)` 的 `Atomic[Int]` 就是 `getAndIncrement`，因此它被删除，而不是重新安置。
+
+@ 0 4 0 05e26c1fcefcc25b1873e545739510d5
++   因此，rudiments 容纳这些工具，恰恰*是因为*它们被位于其所属主题之下的模块使用。
++   按主题重新安置它们，意味着先移动它们的低层使用者，这比本条目所描述的改动大得多。
++   早先的测量结论也依然成立：这些移动都不会缩小任何闭包。
+
+@ 0 2 0 0af9614a2d739fbc06784e964f343b44
++ - **gossamer.lexicon**：Dictionary.scala（434 行）移到一个子模块；先检查与 nomenclature.lexicon 的重叠。
+
+@ 0 1 0 0019c01d1678ba6f04c58bd1915ffdea
++ 2026-09-25 的进展，逐步列出：
+
+% 2 1 0 035174b7ae3c4d180c9e988279f3920b
+
+@ 0 15 0 1e5b68cb2e7357fa00f95dda0481fe08
++ column  步骤
++ column  状态
++ row  legerdemain.query  已落地
++ row  hypotenuse.Bcd 去除 jacinta  已落地
++ row  jacinta.optics  已落地
++ row  stratiform.optics  已落地
++ row  turbulence.stdio  已落地
++ row  concordance  已落地
++ row  gossamer.lexicon  已落地
++ row  ethereal.dist  受阻，如上所述
++ row  ypsiloid.pointer  受阻，如上所述
++ row  stratiform.schema  受阻，如上所述
++ row  jacinta.url  未落地：`JsonPointer` 仍以 `HttpUrl` 为键
++ row  stratiform.editing  未落地
++ row  stratiform.base256 移入 monotonous  未落地
+
+% 1 1 0 0b4daf3e26ef237f0f8e47279b1c073c
+
+@ 0 2 0 027c26b98f3044d3114ee809badb1d4d
++ 完成标准：每个拆分出的模块都已归入捆绑包，其父模块的依赖列表只包含其剩余代码所使用的边。
+
+@ 0 1 0 1cd93e78bf22ebf7097e3b73ba3c7f7a
++ ## mod-4：按编解码器和按格式拆分
+
+@ 0 2 0 028181b7e5c4e45b1bb880ca1a360a78
++ 时间范围：中期——顺序为：pneumatic，然后 hallucination，然后 facsimile。
++ 完成：#1748、#1756（2026-08-09）——下文记录为受阻的 facsimile 各步不属于完成标准。
+
+@ 0 9 0 018b8a1dfaa8a7891845bbfd0e326ad1
++ - **pneumatic 按编解码器拆分**：在现有的 `flate` 旁边增加 `pneumatic.{brotli,lzma,lzw}`；BrotliDictionaryData（1,761 行纯表格）随 brotli 一起走，而不是让每个使用者都承担它。之后，telekinesis.http2、galilei、zeppelin、facsimile 和 hallucination 只选用 flate（+lzw）。
++ - **hallucination 按格式拆分**：五个编解码器共享一个约 890 行的核心；它们成为 `hallucination.{jpeg,png,gif,webp,bmp}`，并由 `hallucination.aperture` 负责 CanvasHandle/RasterOpenable；gesticulate 的媒体类型描述符随各自的格式移动；pneumatic.flate 移到 png 组件；tarantula.image 改为指向 png。去重（Crc32、GifLzw）留待 mod-5——先拆分，再去重，每个 PR 一个用途。
+
+@ 0 6 0 0e0574ff612f14891056b37540f914c1
++   核心大小的估计是对的：留下的文件合计约 880 行。
++   aperture 组件**已完成**，但命名为 `hallucination.canvas`——嵌套在 `object hallucination` 中、名为 `aperture` 的组件会遮蔽它所依赖的 `aperture` 库，而 mill 的构建文件会先解析内层的名称。
++   `Canvas` 的 `openable` given 随 `CanvasHandle` 和 `RasterOpenable` 一起移走，这清空了 `Canvas` 的伴生对象，因此伴生对象已不复存在，`Canvas` 现在只是形式幻影。
+
+@ 0 4 0 1e25b6c51e4b91910156e8192510dcf4
++   **已完成，方式是重新设计后端，而不是移动文件。**
++   `Rasterizable` 现在是编解码器接口，而不仅仅是描述符：除了 `name`、`mediaType` 和 `alpha` 之外，它还携带 `decode`、`encode` 和 `sniff`，每种格式都从自己的组件中提供自己的实例。
++   中心化的 `RasterBackend` 已不复存在。
+
+@ 0 2 0 1ca43ea3dcc465aa1b721d422d1354ed
++   现在每种格式都按平台选择自己的实现，采用 `-jvm`/`-native` 源目录模式：
+
+% 2 1 0 1d8a91771d42b89b098703bbce2f3aaa
+
+@ 0 8 0 1587877699a36381175bb0ddde6d0291
++   column  格式
++   column  在 JVM 上解码所经由的
++   column  在 Scala.js 和 WASI 上所经由的
++   row  PNG  `javax.imageio`  它的纯编解码器
++   row  JPEG  `javax.imageio`  它的纯编解码器
++   row  GIF  `javax.imageio`  它的纯编解码器
++   row  BMP  `javax.imageio`  它的纯编解码器
++   row  WebP  它的纯编解码器  它的纯编解码器
+
+% 1 1 0 171027a4c6bd4ec308c1166b1d3162e9
+
+@ 0 4 0 147a87dac42de711074926edfd9d7124
++   WebP 在所有平台上都使用它的纯编解码器，因为没有任何标准 JRE 附带 WebP 读取器。
++   这消解了看似属于核心的一项方针——它之所以是方针，只是因为由核心来做选择。
++   纯编解码器保留在每个组件的共享目录中，因此它们仍会被编译，并仍在 JVM 上与 ImageIO 进行差分测试。
+
+@ 0 5 0 0cc81871dda3f10d0cf1238dbb2620a1
++   嗅探显式地接受其候选项：`Raster(data)` 和 `Aggregable` given 现在需要一个 `RasterFormats`，它列出调用者所链接的格式。
++   `hallucination.formats` 依赖全部五种格式并提供每一种，因此“解码任何东西”仍然只需一条导入。
++   提供替代的编解码器或增加新格式，现在只是新组件中的一个普通 given；核心中什么都不用改。
+
+@ 0 1 0 1e5664f909a9482b10cdc73c2e01fbea
++   得到的大小：
+
+% 2 1 0 1c5a8c0eb703f2231802843a3d8c2267
+
+@ 0 2 0 1ebb07d94328d3361140869cbd0dc86b
++   column  组件
++   column  行数
+
+% 0 1 0 0f871560ef4013dd0c0865b41860e5e6
+
+% 0 1 0 14cf32adf71f46f204f71c4ffa6cdf95
+
+% 0 1 0 0cb7ba25752849b2033db2670016e78c
+
+% 0 1 0 0f5b4742d4b42e41002a7cbd3bc13ede
+
+% 0 1 0 08d14909d967537c08bb37e0350e15c2
+
+% 0 1 0 0a18b6323e2a1eb105fba500f50be7f4
+
+% 1 1 0 1efebe0a824f630a1b15638b3a86ad95
+
+@ 0 9 0 0d5aef3a12c3f5020473854c26b0cf02
++   核心包含 `Quantization`，GIF 的调色板编码器与 JPEG 共用它，因此它留了下来。
++   tarantula 的截图解码器现在只看到 `hallucination.core` 和 `hallucination.png`。
++ - **facsimile 拆分**：Ascii85 移到 monotonous；Rc4 移到 enigmatic；Predictor（PNG/TIFF 行过滤器，与 PngCodec 的逻辑重复）移到 png 组件或 pneumatic；`facsimile.crypto` 接收 Guard（从核心中切掉 enigmatic 和 gastronomy）；`facsimile.file` 接收 PdfFile（切掉 galilei 和 ambience，并让核心可以去掉 `scalaJs = false`）；`facsimile.fonts` 接收约 900 行面向 phoenicia 的字体机制。aviation 留在 PdfInfo 那里，或随文件组件一起走。
+
+@ 0 1 0 193c66f240467c870ce1fb54e0840389
++   把每个重型依赖对应到导入它的文件，得到：
+
+% 2 1 0 0abd9cc392c059da0a1c1441205170e3
+
+@ 0 6 0 0e759180d41365890f78c386170d24ee
++   column  依赖
++   column  导入者
++   row  enigmatic  Guard、Pdf、PdfFile
++   row  gastronomy  FontEmbedder、Guard
++   row  galilei 和 ambience  仅 PdfFile
++   row  phoenicia  FontEmbedder、PdfFont、facsimile_editing
+
+% 0 1 0 0e37e3045d676a6412697391f0b09d80
+
+% 1 1 0 11ece45022b362d91292d2ca3567f788
+
+@ 0 6 0 1ca52501fa1c3d5d0fc99e1e03ebeba8
++   **`facsimile.file` 已完成**，并带走了 galilei 和 ambience：facsimile.core 的编译类路径从 67 个模块降到 62 个。
++   `PdfFile` 在 `Pdf` 中只以三个 `Openable` given 的形式出现，它们随之移走，成为 `pdfPathOpenable`、`pdfDataOpenable` 和 `pdfCreatable`。
++   它们的注释记录着它们“anchored here — the form's companion — so `path.open[Pdf]()` … resolve with no import”，因此这一改动是有意放弃了这种便利；`Openable` 没有回退，所以忘记导入的调用处会编译失败。
+
+@ 0 3 0 012515250dedfba404315b7baf3d7773
++   与路线图相反，核心保留了 `scalaJs = false`：原因有两点，内存映射读取*和* JCE，而随 `PdfFile` 离开的只有前者。
++   `enigmatic` 之所以保留，是因为 `Pdf` 本身使用它。
+
+@ 0 9 0 1dfbe106bbfaa8c409904ade43d68d64
++   **`facsimile.crypto` 和 `facsimile.fonts` 受阻**，都是因为 `Pdf` 和页面模型依赖它们要带走的东西。
++   加密与 `Pdf` 交织在一起：`guard` 是类型为 `Optional[Guard]` 的私有 var，`decryptStrings` 接受一个 `Guard`，`Guard.Method` 驱动 `cryptMethod`。
++   字体与页面模型交织在一起：`Page.fonts` 返回 `Map[Text, PdfFont]`，`TextExtractor.extract` 接受一个，`TextRun` 有一个 `font: PdfFont` 字段。
++   单独的 `FontEmbedder` 也许可以分离，但只有在 `Guard` 也移走时才能切掉 gastronomy——因此两者是耦合的。
++   Ascii85、Rc4 和 Predictor 是 mod-5 的去重条目，而不是拆分；尤其是 Ascii85 不能使用 `monotonous.Serializable.base`，后者的位打包假定字母表大小是 2 的幂，而 85 不是。
+
+@ 0 2 0 170a19735a360d51052f9b635de2ba0b
++ 完成标准：一种格式的使用者不再编译其他格式的代码，并且平台标志反映新的闭包。
+
+@ 0 1 0 1460eab221a796bf19b6ea6384d445ab
++ ## mod-5：算法去重
+
+@ 0 1 0 02cb1cf489ff8832138ebe3d90bd9caf
++ 时间范围：中期——在 mod-4 之后，这样任何东西都不会移动两次。
+
+@ 0 5 0 0fc9cb6f71acc6c4143b7230295e2f19
++ - **一个二进制原语库**（**`corpuscular`**，现已创建）：变长整数/LEB128（以 stratiform.Varint 为种子）、大端/小端访问器和可回填的字节构建器（以 hallucination.Binary 为种子）、LSB 优先和 MSB 优先两种变体的位读写器，以及规范 Huffman 表构建器（以 pneumatic.BrotliDecoder 中的为种子，它是四个中最干净的）。它落地时带有复现每个来源全部边界情况的测试，然后才迁移任何使用者。
+
+@ 0 2 0 03b3b29a952fe65906202c681cb72bd7
++   **变长整数并不像路线图所假定的那样可以共享。**
++   `stratiform.Varint.decode` 和 locomotion 的 `ProtobufParser` 并不是只有表面差异的同一个函数：
+
+% 2 1 0 1661b3f3790480e71f4d61a21b6ad967
+
+@ 0 1 0 02e58a16872a0b31181438982f1ed8a5
++   column  方面
+
+% 0 1 0 0731529e5afd023302434c236999f23d
+
+% 0 1 0 0c87e91422efe79407f22826120aa4cd
+
+@ 0 3 0 1389366d772cf7ac07e8222ac2147caa
++   row  过长的编码  在 `shift >= 64` 时中止  容忍 `shift` 达到 70，并*丢弃*第 63 位以上的位（`if shift < 64 then result |= …`）
++   row  结果  分配一个 `Decoded(value, offset)`  修改解析器的 `pos` 字段，不做任何分配
++   row  错误  `VarintError`  `ProtobufError`，带有位置
+
+% 1 1 0 05151a4534aabcaa1619369be1294c60
+
+@ 0 4 0 1bd3dd94aaaea12b0b4419520d62599d
++   丢弃高位是 protobuf 对非规范编码的规则，因此统一两者会改变其中一方在格式错误输入上的行为；共享的解码器要么在 protobuf 的热循环中分配内存，要么需要一个目前没有任何来源具备的游标式 API；而位置是 protobuf 诊断信息的一部分。
+
+@ 0 10 0 049c3eb9abe7f78c12f9ec9bc5824499
++   *编码器*则更接近，`size`/`write` 也许仍值得共享。
++   真正的重复在 **locomotion 内部**：`ProtobufParser` 有两份相同的解码循环，区别只在于它是以 `data.length` 还是以 `boundary` 为界。
++   这是一次局部重构，把界限参数化——值得做，但它是热循环，因此需要在改动前后为 protobuf 运行 `make bench`，而不是看到就改。
++ - **校验和放入 ~~gastronomy~~ `corpuscular`**：一个快速的、非 `Digestion` 的 CRC-32/CRC-64/Adler-32 API。**已完成**（2026-10-21）：`corpuscular_core.scala` 容纳了 `lib/` 中唯一的 `Crc32`、`Crc64` 和 `Adler32` 表生成，每个原来的来源都从那里读取它们；zeppelin 保留 `java.util.zip.CRC32`，如下文所决定。Huffman 构建器和变长整数循环都还在各自的来源中，corpuscular 两者都没有：
+
+% 2 1 0 0c41e5c3524c50f008181ce51b1dbc66
+
+@ 0 5 0 055e81cb37a4673101a34010a5bd5d29
++   column  算法
++   column  仍由谁持有
++   row  Huffman 构建器，解码端（五个）  pneumatic 的 Inflater 和 Brotli，hallucination 的 WebP 和 JPEG，telekinesis 的 HPACK
++   row  Huffman 构建器，编码端  四个
++   row  变长整数循环  stratiform，locomotion 的三个，rudiments 的 `Scribe`，degustation，ethereal 的启动器，gastronomy 的 multihash，pneumatic 的 XZ 容器，octogenarian 的包文件
+
+% 1 1 0 02c0b668bb474eff0e0bf482baac9423
+
+@ 0 4 0 147c27f9fa3880a60eaa1490d3e51a1e
++   不放进 gastronomy：`gastronomy.core` 建立在 45 个模块之上，而 `pneumatic.core` 建立在 24 个之上，pneumatic 和 hallucination 都不依赖 gastronomy，因此把快速校验和放在那里，会为了省下一张表和一个循环而使它们的闭包几乎翻倍。
++   `corpuscular` 位于它们之下，只依赖 `anticipation.codec`。
+
+@ 0 2 0 014a79df4948999d0f005f0a8f479459
++   “四个手写的 CRC-32”这一计数需要在两个方向上更正。
++   实际上是三种算法的五个实现：
+
+% 2 1 0 1b67e0770464ed701af4399f47aa8ef5
+
+@ 0 8 0 01e7dce719d2e8490b49d35fcd630e61
++   column  实现
++   column  算法
++   column  形式
++   row  pneumatic 的 `Crc32`  CRC-32  流式，JZlib 移植
++   row  pneumatic 的 `Adler32`  Adler-32  流式，JZlib 移植
++   row  pneumatic 的 `Crc64`  CRC-64  在 XZ 层中
++   row  hallucination 的 `Crc32`  CRC-32  一次性
++   row  zeppelin 的 `crc32`  CRC-32  委托给 `java.util.zip.CRC32`
+
+% 1 1 0 171deac81d062b5613a42ae135c8eda7
+
+@ 0 5 0 0be10b52b0cc00441e3b28d9a59101f9
++   但**有两个 CRC-32 根本不应去重**：zeppelin 的那个委托给 `java.util.zip.CRC32`，gastronomy 的 `Digestion` CRC-32 同样经由 `JavaBaseHashing`。
++   两者都是 JVM 内建函数；用表驱动的 Scala 循环取代它们会造成性能退化，却毫无益处。
++   JVM 上的 pneumatic 也是如此，它的 `FlateBackend` 使用 `JavaCrc32`；它的纯 `Crc32` 只用于 JS/native 路径。
+
+@ 0 9 0 1683a6b6b7664eb00a020453f6feff9f
++   这种不对称本身值得解决，在此记录为一个未决的决定。
++   pneumatic 按平台选择校验和——`flate-jvm` 提供 `JavaCrc32`，`flate-native` 提供纯实现——而 zeppelin 和 gastronomy 无条件地使用 `java.util.zip`。
++   对 zeppelin 而言，这一选择是它被限定在 JVM 上的部分原因（`scalaJs = false`，"zip archives (`java.util.zip`, `galilei`)"）：一个能跨平台编译的 ZIP 库需要纯校验和，而 `corpuscular` 现在提供了它。
++   因此这种接线是可行的，pneumatic 的 `<name>-jvm`/`<name>-native` 源目录拆分就是先例。
++   要决定的是是否采用它——要么让平台选择在所有地方保持一致，要么明确说明哪些库按设计只限 JVM，并在其他地方不再为这种抽象付出代价。
+
+@ 0 8 0 13f5d0a4707888b319f3f2b060788e6f
++   **pneumatic 的迁移已完成**，它所需要的捕获规程结果只是三件小事，而不是一次重写。
++   `FlateChecksum` 现在是一个带 `update def` 方法的 `caps.Mutable` 特质，与 XzCheck 的校验器以及 `corpuscular` 的校验器一致。
++   要让它通过编译，需要：把持有它的字段声明为 `FlateChecksum^`（普通的 `val` 会隐藏新鲜性，因此引用是只读的，不能在其上调用任何更新方法），对两个 flate 后端中的 `crc32()` 工厂方法做同样处理，并手动把 `Inflater` 中的两次读取标记为分离——`window` 和 `adler` 都是通过 `this` 到达的，分离检查器会拒绝这一点，尽管 `update` 以只读方式接受其缓冲区，且不保留对它的引用。
+
+@ 0 5 0 162d9627c3ea0b441a5156886e9639ba
++   构建注释声称 pneumatic “compiled with capture checking (not separation checking)”，因为 “the faithfully-ported, aliasing-heavy zlib machinery does not (yet) satisfy the stricter ruleset”，这已经过时：`settings.sep` 两者都会应用，而且一直都应用于这个模块。
++   这条注释已被更正。
++ - **使用者迁移**到二进制原语库，按使用者拆分：
+
+% 2 1 0 0978bba7b6b59df71810796b44a0988d
+
+@ 0 5 0 11bc7d78f5061df504a5a5b23307af26
++   column  批次
++   column  使用者
++   row  (a)  pneumatic 和 hallucination 的编解码器
++   row  (b)  telekinesis.http2 的 Hpack 和 FrameReader
++   row  (c)  stratiform、locomotion（它内部有两份变长整数副本）、mandible、breviloquence、phoenicia、anthology 和 zeppelin
+
+% 1 1 0 16b3cf80618a9a520ec574fc6f3faeea
+
+@ 0 8 0 1e01417cf9d3bc6909a04632274a3bfa
++ - **其余的去重**：JSON 字符串转义例程（jacinta.Json.scala:1247–1279，被原样复制到 ypsiloid 中）成为 gossamer 层级的辅助函数；escapade.csi 中的一个 CSI 词法分析器取代 yossarian.Pty 和 profanity.Keyboard 私有的转义序列状态机（以 yossarian 的测试为门槛）；capricious 中的一个 `SecureEntropy` 能力取代 perihelion、enigmatic 和 inimitable 中对 `SecureRandom`/`UUID.randomUUID` 的直接使用（恢复与 wasi 的对等）——**需要决定；见下文**；telekinesis 为 obligatory.ContentLength 和 scintillate 导出其字节级的头部块扫描器（适用更正 3）。
+
+@ 0 1 0 0509974d92157a020cd2911b1b1ef4c6
++   **其中前两个前提经检查不成立。**
+
+@ 0 8 0 1f270dba38f29b86043a016324798c0c
++   字符串转义器*并非*原样复制。
++   jacinta 指名了七种转义（引号、反斜杠、退格、换页、换行、回车、制表符）；ypsiloid 指名了五种，省略了退格和换页，它的 `c < ' '` 分支随后把这两者输出为六个字符的 unicode 引用——是合法的 YAML，但字节不同。
++   ypsiloid 还把整个例程包在 `if plainSafe(string)` 中，因为 YAML 可以输出不加引号的纯标量，而 JSON 不可以。
++   真正共享的是大约十二行滑动窗口循环和一个 `escape` 辅助函数；而差异恰恰是要紧的部分。
++   共享它意味着在两个热点序列化器中对转义表进行参数化，只为了十二行代码。
++   （ypsiloid 的省略是否有意，值得一问。）
+
+@ 0 9 0 0b87cdad94d1f23e12b6b6a1dac65d50
++   CSI 这一条根本不是去重：`escapade.csi` 是一个*写入器*——`cuu`、`cud`、`sgr` 等等用于生成序列——其中不包含解析器，因此这意味着编写一个词法分析器，而不是移动一个。
++   两个使用者的差异恰好让词法分析器难以共享：yossarian 用纯状态机解析完整的缓冲区，并在输入格式错误时*抛出* `Pty.Error`，这是终端模拟器必须做的；profanity 读取实时的 TTY，其解析与时序纠缠在一起——它的 `Lookahead` 的存在，就是为了判断一个单独的 ESC 是 Escape 键，还是一个被数据包边界分割的序列的开头——并且它降级为 `Keypress.Escape` 而不是失败，因为用户可能输入任何东西。
++   共享的词法分析器必须同时对输入模型和错误方针进行抽象。
+
+@ 0 6 0 00b4c6de4aa283021b6985b0560dd46c
++ **SecureEntropy。**
++ 在尝试之前，位置列表需要更正。
++ enigmatic 对 `SecureRandom` 的使用全都在 `core-jvm` 中，即它的 JVM 后端，旁边还有一个 `core-native` 孪生实现和一个 OpenSSL 提供者——这是平台后端模式在按预期工作，而不是对等方面的缺口，它们应当保留。
++ perihelion 是 `scalaJs = false`，因此它用于 WebSocket 掩码密钥的按连接 `SecureRandom` 从构造上就只限 JVM。
++ 真正的位置是 inimitable 的 `Uuid.apply()`，它在一个跨所有平台编译的库中调用 `ju.UUID.randomUUID()`。
+
+@ 0 3 0 00492ac0f9d4713c1db5918f12330818
++ capricious 是一个可行的归属——`capricious.core` 可以跨平台编译（`scalaNative = false` 在 `capricious.wasi` 上），而且 capricious 已经有完全合适的先例：一个 `wasi` 组件，提供以 `wasi:random/random` 导入为后盾的 `Randomization`。
+
+@ 0 7 0 08cf915f0fd68cca0737629bcff1ce81
++ 让这件事成为一个决定、而不只是一次改动的，是它的形态。
++ `Uuid()` 在整个代码树中大约有 28 个调用处，因此 `def apply()(using SecureEntropy)` 是一次公共 API 变更，要求在所有地方的作用域中都有该能力。
++ 另一种选择是在 inimitable 内部使用 `core-jvm`/`core-native` 后端，就像 galilei 和 pneumatic 那样，这可以在不改变 API 的情况下修复对等问题。
++ 在两者之间作出选择，取决于 `java.util.UUID.randomUUID` 在 JS、Native 和 WASI 上是否真的有缺陷——它在所有这些平台上都能编译，因此这是一个关于熵质量的问题，需要在这些平台上测量，而不是凭假设。
+
+@ 0 7 0 1b24b0303545910b0aa36d19999c60f5
++ 进展（2026-09-25）：CRC 和 Adler 表只有一个实现，位于 corpuscular——pneumatic、XZ 的 CRC-64（#2043）、gastronomy 的 Soundness 哈希以及 hallucination 的 PNG 编解码器都委托给它，两个使用 JVM 内建函数的使用者按设计保留。
++ corpuscular 还没有 Huffman 构建器或变长整数：还剩四个 Huffman 解码表构建器（Brotli、Inflater、WebP、JPEG），外加编码器的树和 HPACK 自己的表，以及大约十六个变长整数循环——stratiform 的五个、locomotion 的四个、分布在 xenophile、mandible 和 degustation 原子化器中的七份 `uvarint` 副本，以及 gastronomy 的 multihash。
+
+@ 0 2 0 003706967ab9751809688859992fc6b0
++ 完成标准：每种算法都恰好只有一个实现，通过 grep 签名模式（CRC 表、Huffman 构建器、变长整数循环）加以核实。
+
+@ 0 1 0 1e29ef05a59f39df1ae5c12562d2f627
++ ## mod-6：分阶段派生内核
+
+@ 0 1 0 1ab4c6134dcf82e60833eaa1d94025d0
++ 时间范围：中期–远期
+
+@ 0 5 0 10c4b1c6a2e5eba3045896cbcaf60b65
++ 六个分阶段派生引擎（jacinta、breviloquence、locomotion、xylophone、stratiform.staged、stratiform.binaryStaged——约 7,400 行）共享一个逐字相同的展开期环境：macroClassloader、currentOutputDirectory、definedInCurrentRun、innerClasspath、TypeShape 传输、`summonViaStaging` 以及缓存——每个引擎约 250–300 行，而 prescience.internal.scala 已经容纳了它们全都复制过的原型版本。
+
+@ 0 7 0 1d88069719eedbcf1c0690d784ecafcd
++ 一个新的 `prescience.staged`（与其同级模块一起归入捆绑包）一次性提供这个内核，以格式特质的 `Class` 参数化（用 `TypeRepr.typeConstructorOf` 代替静态的 `TypeRepr.of`）。
++ 特定于格式的生成器、`fieldSeam` 内联方法、`Inlinable` 特质以及六个 `XxxReader` 类**保留在各自的格式包中**：生成器引用 `private[jacinta]` 式的 `rawParser`/`rawTactic` 成员，在包外编写的引用无法指名它们，而这道能力封印至关重要。
++ 预期去重：约 1,600–1,800 行。
+
+@ 0 3 0 11aafb77d44c65531b40ccd05f93e4ad
++ 迁移每个 PR 一种格式——xylophone、locomotion、jacinta、breviloquence，然后是 stratiform（staged 和 binaryStaged 一起）——每一个都用 `make attest`、`make build` 以及该格式的 `make bench` 来验证。
+
+@ 0 5 0 1c892ac14299257116098d988bc1395e
++ 进展（2026-10-21）：无。
++ 全部六个引擎仍各自定义 `macroClassloader`、`currentOutputDirectory`、`definedInCurrentRun` 和 `innerClasspath`——其中四个现在位于 `*.InlinableStager.scala` 中（每个 216–265 行），stratiform 的两个位于 `stagedInternal.scala` 和 `bintelInternal.scala` 中（它们还保留着 `summonViaStaging`）——prescience 的原型副本是第七份，而 `prescience.staged` 并不存在。
+
+@ 0 2 0 0ee67e39efac44a613414d9c9a787d98
++ 完成标准：没有任何 `*.staged` 模块包含自己的一份展开环境副本，并且基准测试语料表明每种格式的性能持平。
+
+@ 0 1 0 0f07aa0f86de62551b73a455e333ff8b
++ ## mod-7：延伸目标
+
+@ 0 2 0 07738317d7525a781d3b2ab3678051fc
++ 时间范围：远期——每一项在开始前都需要明确批准，因为每一项都会越过“不改变语义”的界线，或带有真实的回归风险。
+
+@ 0 13 0 0113d59f40d4d6ae0219fc147fd1d7da
++ - **完整的分阶段执行引擎统一**（超出 mod-6 内核的部分）：需要解除 `rawParser`/`rawTactic` 的密封（这是一次 API 和能力密封上的改动），并在跨模块边界处对以能力分类的类型抽象 `Expr[Reader]`，而那里正是已知的 quote 中 cc 序列化隐患所在。可能还能再去重约 4,000 行。
++ - **为 jacinta 和 ypsiloid 提供共享的文档 AST 底层**（占位名称 **`palimpsest`**）：ypsiloid 从 jacinta 照搬过来的 `Array[Any]` 节点布局、PositionIndex、NumberMode、解析器池和描述符布局。审计中的阻碍：ypsiloid 对身份敏感的 `arrayPad` 哨兵值（用 `eq` 比较）、有意分歧的描述符布局，以及热点解析器的性能风险。若获批准：先从 jacinta 原样提取，由 jacinta 委托给它（通过基准测试比较），然后再单独让 ypsiloid 改用它。
++ - ~~**合并 anticipation.html**~~ 完成：一旦发现其仅有的两个使用方（gesticulate、telekinesis）自身都没有使用方，`anticipation.html` 和 `GenericHtmlAttribute` 就被直接删除了。
+
+@ 0 1 0 0c1aa529286631ff183e3fb0f90375a7
++ ## 已否决的方案及其原因——记录在此，以免再次争论
+
+@ 0 9 0 0f2dc95f7574a2b604475e7bf274c6a0
++ - 反转 fulminate ↔ anticipation.log：当前的方向是有意为之的（`Communicable extends Transcribable` 让 `Loggable.fanOut` 无需 anticipation 提及 `Message` 就能记录任何错误），而且在 mod-1 之后这条边的代价很低。
++ - 移动 spectacular 的 `typeRepr`/`meta` given：没有任何伴生对象能容纳它们，而且失去隐式作用域会悄无声息地改变 `summonFrom` 的落空行为。
++ - 共享六个 `XxxReader` 类：只有约 15 行是共同的，而 `private[pkg]` 密封是承重的。
++ - 把 zephyrine 并入 turbulence、重新划定 gossamer/hieroglyph 的边界，或合并 proscenium/rudiments/vacuous：审计结果干净——分层是真实的。
+
+@ 0 1 0 0da3690fa3085b6a159f26650d478819
++ ## 形态与预期结果
+
+@ 0 8 0 0030a332be0492c914ca9e0d217f3f38
++ 五个 PR，每个阶段一个：mod-1 和 mod-2 合在一起，然后 mod-3、mod-4、mod-5 和 mod-6 各自独立。
++ 一个阶段内的各步仍可单独验证——每一步都必须让代码树能够编译且行为不变——但它们被合并成一个可评审的改动，而不是每步一个 PR。
++ 在一个 PR 内，相互独立的轨道可以按任意顺序完成：escapade 链（urticose.ansi → escapade 分解 → spectacular 反转）；anticipation.check + chiaroscuro；legerdemain.query；ethereal.dist；ypsiloid → jacinta 链；stratiform 的拆分；turbulence.stdio → rudiments；pneumatic → hallucination → facsimile → 去重链；以及分阶段执行内核。
++ mod-7 在单独获批之前不予纳入。
+
+@ 0 1 0 0afb682d27cabf921b34144ae5d6adbd
++ 预期结果：
+
+% 2 1 0 19648c1ca47bf226144143f1ddf34a03
+
+@ 0 5 0 1ba0a16ed39b305019a80067e286e558
++ column  结果
++ column  度量
++ row  关键路径缩短  在三个瓶颈处：legerdemain.query、urticose.ansi、escapade 瘦身
++ row  测试框架离开其闭包的模块数  约 40 个模块
++ row  重复的算法消失  mod-5 中约 2,500 行，mod-6 中约 1,700 行
+
+% 1 1 0 1454c34e7b5dbaed1dd8423001dc2fd7
+
+@ 0 4 0 0abd7ef205a2e24c1537df009de374ad
++ Rudiments 和 turbulence——该 issue 特别点名的两个模块——也获得了清晰的一句话定位：“核心类型上的扩展方法工具”和“拉取式流代数”，而标准流、并发原语、进程退出和受限索引各自位于其应在之处。
+
+@ 0 1 0 16e98842bd50447f0e09791c259a4fef
++ # 第二次审计（2026-08-09）
+
+@ 0 11 0 02f8aa4af204df740d2316663b14eff7
++ 在 mod-1 到 mod-5 落地（或因有记录的原因受阻）之后，在 `modularity/decided-items` 的最新提交上重新测量了依赖图，并再次进行了全面排查。
++ 方法：从 `build.mill` 中解析出组件图，并按*组件*计算深度、扇入和闭包（第一次基线统计的是库，因此两个深度数字不可比较）；凡是其包名从未出现在使用方源码中的已声明依赖都被标记出来；然后对每个标记，手工对照该依赖的 `soundness_*.scala` 导出文件（查找无需提及包名即可使用的顶层名称）以及隐式作用域（所提及类型的伴生对象中的 given）进行核实。
++ 文件和行号引用是本次审计时的快照，实施时必须重新核实。
++ grep 的结论是证据，而不是证明：下面每一项删除的最终检查，都是在去掉这条边后编译该组件（及其依赖方）。
+
+@ 0 1 0 00ad68ddd113ef6215181512757afeae
++ ## 重新测得的基线
+
+@ 0 6 0 11f3d80465ba01f30afb47a975daa6ce
++ 关键路径有 27 个组件深：exegesis.core → obligatory.json → hyperbole.core → harlequin.ansi → harlequin.core → hellenism.jvm → galilei.jvm → galilei.core → turbulence.core → parasite.core → nomenclature.core → gossamer.core → distillate.core → digression.core → iridescence.core → geodesy.angle → hypotenuse.core → contingency.core → rudiments.core → concordance.core → denominative.core → vacuous.core → fulminate.core → anticipation.log → anticipation.text → symbolism.core → prepositional.core。
+
+@ 0 1 0 1972573c9fd51e7c08b4082d93eaf718
++ 扇入最高的组件，以及闭包最大的组件：
+
+% 2 1 0 09147ce4096567fd13ef22242f834c0d
+
+@ 0 2 0 0e5e5381ef2800001b81e67cb5b2c1e6
++ column  组件
++ column  扇入
+
+% 0 1 0 11117353ee417e481b39435ea922a6af
+
+% 0 1 0 053bfe961cb7ba73065212939f557b8a
+
+% 0 1 0 0d885ad4fe56443a1efa56e1f68eade8
+
+% 0 1 0 1056b80e10dd7a000e754de7432c2c39
+
+% 0 1 0 1184b20276e5a75c093ce144acce781b
+
+% 0 1 0 1f6865bde2c59acc0ee24e2c2ca7b490
+
+% 0 1 0 0012d0ccb37e5af311f85f6c4f4d56fe
+
+% 1 1 0 1114192a177b545508d819a01ef41031
+
+% 2 1 0 0d319a2b6604f7aa00c8337e177f9257
+
+@ 0 2 0 0b91ce9bd83d07560b5b69f18988a4f3
++ column  组件
++ column  闭包（组件数）
+
+% 0 1 0 01779f8f7e7630cc041b9470c967a061
+
+% 0 1 0 00fc44dbda3e359816d4e476b8472bab
+
+% 0 1 0 100d65934ed8390f01a61b8bc9b7b2bb
+
+% 0 1 0 095dc6dfd3179ba31d41b71680be7409
+
+% 0 1 0 1951605f10b35aec1a8f1b800c4e0aca
+
+% 1 1 0 0a31b3bbef903b4511f593f95cba8047
+
+@ 0 1 0 182b6a7a8a900ea81a7e948f8a92922d
++ 模拟同时应用下面的每一步，得到：
+
+% 2 1 0 0968ace54ef4c0fa16bf58621fa20a0f
+
+@ 0 5 0 0c19b1c4ea3bde5906a1e92519416a77
++ column  度量
++ column  实测
++ column  模拟
++ row  关键路径  27  23
++ row  exegesis.core 的闭包  99  59
+
+% 1 1 0 1de1c2042d81fa8502168e712d5a9956
+
+@ 0 1 0 1e167a91790e2596155a67e4174d3787
++   cell  gossamer.core 的闭包
+
+% 1 1 0 157792c62a1ff31609513d6fd4ee45ba
+
+% 0 1 0 146486612fcdc9d916d90ccf49b44acf
+
+% 1 1 0 02461475a35264d50522a6c8dfe082f0
+
+@ 0 1 0 076d78091d87333d1233a0c4ee95cd11
++   cell  pneumatic.core 的闭包
+
+% 1 1 0 1063a56a7a8bce301ba7464a67d52a77
+
+% 0 1 0 146486612fcdc9d716d90ccf49b44acd
+
+% 1 1 0 01bda74d002a835e00e416c942ad5c40
+
+@ 0 2 0 1c59d78497cfe2e8077e0eb8315f037f
++ 剩余的主干是 anthology → hellenism.jvm → galilei → turbulence → parasite → nomenclature → gossamer → 基础模块，其唯一的硬性连接记录在最后。
+
+@ 0 3 0 155bd62fc837b7dc09e6730377e5c279
++ 实测路径的两端结果都是软的：头部（从 exegesis/obligatory 到 harlequin）主要靠无用的边连在一起，而 gossamer 之下的尾部则悬挂在少数几个可以迁移的 given 上。
+
+@ 0 1 0 143193f04542de6f0fc868bb11b42ebb
++ ## mod-8：无用的边，第二轮——以及它们所掩盖的错误声明
+
+@ 0 2 0 0a0f9a960f4eb5981f0af2cf9bd83d1d
++ 时间范围：近期。一个 PR，只做删除和依赖列表修正。
++ 完成：#1758（2026-08-10）
+
+@ 0 4 0 1136d2db8565e44613c35c26b89fe670
++ 这次扫描发现了第一次审计的 mod-1 没有发现的两件事：第二轮真正无用的边，以及——更紧迫的——组件使用了从未声明过的依赖，通过*别人的*无用边获得它们。
++ 错误声明是正确性方面的债务（类路径顺序变一下就会导致构建失败），应当在同一个 PR 中优先处理：
+
+@ 0 8 0 1481bfecc7e8a8591ed7a28fe47098a5
++ - **hallucination.png** 使用了 `corpuscular.Crc32.checksum`（hallucination.PngCodec.scala:84、360），却只声明了 `core`，而 `core` 自身指向 corpuscular 的边除此之外是无用的。把 `corpuscular.core` 的声明从 core 移到 png。
++ - **obligatory.grpc** 导入了 spectacular（obligatory.Grpc.scala:44、obligatory.GrpcChannel.scala:47），却没有声明它，而是通过 locomotion.core 指向 spectacular 的无用边获得它。在切断那条边之前先声明它。
++ - **ziggurat.packager** 使用了 `digest[Sha2[256]]`（ziggurat.Packager.scala:133），却没有声明 gastronomy，目前是通过 telekinesis.jvm → coaxial.jvm 提供的。声明它。
+
+@ 0 3 0 0137607c91997fc30343d6b35048c019
++ **导管边**——按名称看是无用的，却是使用方真正导入的某个模块的唯一提供者。
++ 这些是错误声明的依赖列表，而不是可以切断的边：先声明真正用到的东西，然后逐个决定是否去掉这条导管：
+
+% 2 1 0 1a0c229f5367e47d00167539abec6842
+
+@ 0 4 0 0ddea31851f5afba0c2874154bb66a52
++ column  导管边
++ column  唯一提供
++ column  备注
++ row  breviloquence.core → urticose.url  gossamer.core  其源码导入了 gossamer、spectacular、distillate 和 wisteria，均未声明
+
+% 0 1 0 03c4306e5264bda00dd425b84e5a4708
+
+@ 0 4 0 0d163215d0e30ca715474b257c59ace1
++ row  serpentine.core → ambience.core  anticipation.path 和 anticipation.print  anticipation_serpentine_core.scala 中的 `textPath` given 需要 `Paths`
++ row  profanity.core → eucalyptus.core  turbulence.core 和 parasite.core
++ row  profanity.core → frontier.core  escapade.core  profanity 声明的 escapade.csi 并不包含 `Teletype`
++ row  honeycomb.core → xylophone.core  typonym.core、adversaria.core 和 wisteria.core  全都被 honeycomb 导入
+
+% 1 1 0 1cadea5ff3fe3bae00cd729f3fbc605a
+
+@ 0 2 0 163057ec4390d8e902cf42d0974e6264
++ **已确认无用**（没有使用任何导出名称，没有隐式作用域路径，闭包由其他已声明的依赖重新提供）：
+
+% 2 1 0 01ee1cd005794210169d9758f02fe20a
+
+@ 0 3 0 0babedd5f255f2150bec8482c7e6faf1
++ column  组件
++ column  无用的边指向
++ column  备注
+
+% 0 1 0 13fa7a8ad745340114936a80b98b3547
+
+% 0 1 0 1bf2984c6a5ee1920d0f33f834ad222d
+
+@ 0 1 0 1f5cef08287b134214f44356f8cb4803
++ row  zephyrine.core  hypotenuse.core  核实 anticipation.opaque 仍能获得
+
+% 0 1 0 070b0c73cfb02c2a138ba4ffe54180f8
+
+% 0 1 0 05489cffb0c4954119cf4a5b14df084c
+
+% 0 1 0 0779c68d3c02ac1718cb67125d5a044b
+
+% 0 1 0 06854ce9895a550f0a56d8813c9b2478
+
+% 0 1 0 04481a6e713c30c11624896fe610086a
+
+@ 0 1 0 065c8b81598fc31e01a99d5f452a00b4
++ row  tarantula.core  diuretic.core、gastronomy.core
+
+% 0 1 0 1c3083aefebd2dd30f5aee200a071028
+
+@ 0 1 0 0731374a9828f5af1633d8d2aca9339d
++ row  apoplexy.core  legerdemain.core  它通过 telekinesis.core 获得 legerdemain.query，这就是它所需的全部
+
+% 0 1 0 16be5f4639d403561eea1bccabe84b87
+
+% 0 1 0 004463021dc8bdfc1180f41134a9f893
+
+% 0 1 0 07886598f195c5b910ba4288017fe50b
+
+% 0 1 0 0b22d0c6dc9f0ee20144969f7cf09424
+
+% 0 1 0 08dc503a58ff8971156537a954fee108
+
+% 0 1 0 01b7757830ceca9a03aa00b9783f054a
+
+% 0 1 0 0fc56cc8595f9c3811359087ab809e5a
+
+% 0 1 0 1093a363e03d7482117962bccf199eb2
+
+% 0 1 0 105e3ff9b3f0c3a50fa39f984675c4ca
+
+% 0 1 0 17b94d1f4207536612694bcb98f9f164
+
+% 0 1 0 137ad45e622d4d721a8358116d57f098
+
+% 0 1 0 033a53f304bbf728134515bde1a55298
+
+% 0 1 0 1e95ecb90c4b10560be7df048049e46c
+
+% 0 1 0 1c69f045cc535c4219c155159dee2052
+
+% 0 1 0 11d71e49a4fd60e4119e9fb5b1ee5ab8
+
+% 0 1 0 11f078a70ef24c8d0c14d69f7ee738b4
+
+@ 0 2 0 11d4b575a6f4e69114222906ac59964e
++ row  stratiform.base256  gossamer.core、vacuous.core
++ row  embarcadero.containerd  coaxial.core  冗余：通过 telekinesis.http2 → coaxial.jvm 重新提供
+
+% 0 1 0 02168908615567301c57ee6f3978fc1d
+
+@ 0 1 0 12189922980b02fd10ed30fd285fbf58
++ row  prescience.core  fulminate.core、gossamer.core
+
+% 1 1 0 122335951f09dfb61141fd1bf0268f8f
+
+@ 0 8 0 04aa3ce2171639851cc6b5caa6f6e9c3
++ 两个扫描陷阱，记录在此以免下次排查重蹈覆辙：telekinesis.http2 的源码过去位于 `package cordillera` 中，因此按包名 grep 会把这条边判为无用，而它实际上确实被使用（embarcadero.containerd 导入了它）——该包现在是 `telekinesis`，但任何包名与其库名不同的组件都会掉进同样的陷阱；而带有 `override def sources` 的组件会引入逐组件扫描所遗漏的兄弟目录——enigmatic.core → aperture.core 看起来是无用的，但它在 `core-jvm` 中被使用（enigmatic.Keystore.scala）。
+
+@ 0 2 0 13924ba9e119a27e0d9535a0d1782505
++ 完成标准：每个错误声明都已修正，每条无用的边都已删除，并且每个受影响的组件及其依赖方都能编译（`make attest`、`make build`）。
+
+@ 0 1 0 02516fbf1a8b64aa14c50ba8681b41bb
++ ## mod-9：关键路径的头部
+
+@ 0 4 0 0f4412c044c803ac0990c823976a3a50
++ 完成：#1759（2026-08-10）——`harlequin.scala` 仍是一个需单独批准的设计项。
++ 时间范围：近期。exegesis → obligatory.json → hyperbole → harlequin → anthology 这条链在其顶部的几个环节是靠无用的边连在一起的；切断它们就能让 LSP 和 JSON-RPC 栈与编译器栈完全分离。
+
+@ 0 26 0 193ab67b39317179095eda03cd428af9
++ - **obligatory.json** 去掉 scintillate.server、hyperbole.core 和 revolution.core——三条都是无用的。obligatory.json 是一个 JSON-RPC 对等端加 SSE 编解码器：它从不提供 HTTP 服务（它的 `Servable` 来自 telekinesis，经由 jacinta.http 获得；`httpBackends.javaNetHttp` 经由 jacinta.schema 来自 telekinesis.jvm），从不内省 TASTy，也从不涉及清单。正是 hyperbole 这条边把整个 harlequin/anthology 栈放到了 exegesis 之下；删除它会让实测的最深路径坍缩。（eucalyptus.core 确实被使用——obligatory.JsonRpc.scala:42。）
++ - **exegesis.core** → ethereal.core 和 → exoskeleton.completions 移到 **exegesis.demo**，那是它们唯一真正的使用方（exegesis_demoserver.scala:38–53、exegesis_demoproxy.scala:39–59；src/core 下没有任何东西引用它们）。ethereal 是 exegesis 设置 `scalaJs = false`（build.mill）的明确原因，因此 core 可能会多获得一个平台——按照 mod 机制的规则，这是一次有意的标志更改，以 obligatory.json 自身的闭包为前提。
++ - **hyperbole.core** 把 harlequin.ansi 改为 harlequin.core 加 escapade.core。hyperbole 中没有任何地方提及 `ScalaSyntaxPalette` 或 `syntaxHighlighting`（这是 harlequin.ansi 的全部内容，而且是包作用域的，因此无法通过隐式作用域获得）；hyperbole 使用的是 `SourceCode`/`Scala.highlight`（hyperbole.internal.scala:85、93），并直接使用 escapade（TastySymbol.scala:36、TastyTree.scala:39）。escritoire 和 dendrology.tree 确实被使用，予以保留。
++ - **mandible.core** 用它实际导入的四个模块替换对 hyperbole.core 的依赖——anthology.scala（mandible_core.scala:68）、hellenism.jvm（mandible.Classfile.scala:43）、escritoire.core（mandible.Bytecode.scala:48–57）和 escapade.core。hyperbole 只是一条导管；mandible 中没有任何东西使用它。
++ - **perihelion.core** 用 telekinesis.core 替换 scintillate.server（只用到了 `Servable`、`Http` 及其相关类型——perihelion.Websocket.scala:201–202；随之而来的 telekinesis.http2 和 hellenism.core 都未被使用），并直接去掉 eucalyptus.core（日志记录通过 anticipation 的 `Log` 进行，perihelion.WebsocketEvent.scala:35）。
+
+@ 0 13 0 01ff6f890767fabc095b57caeac6d989
++ **harlequin.scala（设计项，开始前需要批准）。**
++ harlequin 中对 Scalac/LocalClasspath 的使用仅限于 `Highlight`、`Diagnostic`（它只需要 anthology.core 的 `Importance`）以及约 300 行的 `SourceCode`（harlequin.SourceCode.scala:376–689：`resolveTypes`、`frontend`、补全机制）。
++ 一个 `harlequin.scala` 组件能让 harlequin.core——连同 harlequin.md 以及每个渲染 Markdown 的使用方——摆脱 anthology.scala、hellenism.jvm 和 galilei.jvm。
++ 但它*不能*让它们摆脱 scala3-compiler jar 本身：词法分析器直接导入了 `dotty.tools.dotc.parsing`（harlequin.SourceCode.scala:41–46）。
++ 设计上需要绕开的阻碍：`SourceCode.apply` 接受 `using Highlight`，并对其 `scalac`/`classpath` 字段进行模式匹配（harlequin.SourceCode.scala:73–90），因此必须把 `Highlight` 抽象为一个由 `harlequin.scala` 提供的解析器接口，并以词法分析路径作为 core 的默认实现。
++ 另有一项代价低且独立的改动：harlequin.core 对 hellenism.jvm 的显式依赖已经由 anthology.scala → anthology.core 隐含。
+
+@ 0 2 0 0e7348d6fa045f53175f8a7dcd460c0e
++ 完成标准：exegesis.core 的闭包中不含任何编译器栈模块，并且经由 obligatory.json 的最深链条终止于 jacinta。
+
+@ 0 1 0 0ea6968abf2b063e06f5ad0ba95ef015
++ ## mod-10：主干上的 given
+
+@ 0 6 0 0d0b11849e39b9be037f46a2e2ba5bd7
++ 时间范围：近期。gossamer.core 的扇入为 44，因此它之下的一切几乎都会给整棵树带来负担——而位于它之下的东西只悬挂在个位数的 given 上。
++ 这些都是 mod-2 式的集成子模块迁移，有着 mod-2 记录过的同样陷阱：从伴生对象（或从包的顶层）移出的 given 会离开隐式作用域，因此每次迁移都需要一次下游导入排查、一个 `soundness` 顶层导出，并且在存在静默的通用回退的地方，需要一个固定所解析实例的测试。
++ 各步如下，每一步在下文中详述：
+
+% 2 1 0 04af983ea5076db9112747823da1a828
+
+@ 0 11 0 196212937f54147407ef912e7fed1df6
++ column  边
++ column  维系者
++ column  补救措施
++ row  gossamer.core → distillate.core  `textDecodable` 和四个 `enumIdentification` given  一个 `gossamer.codec` 式的子模块
++ row  distillate.core → digression.core  `fqcn` Decodable  反转到 digression 侧的一个组件中
++ row  distillate.core → inimitable.core  `uuid` Decodable  同样的反转
++ row  distillate.core → wisteria.core  `VariantError`  把错误类迁移到两者都能看到的地方
++ row  digression.core → iridescence.core  `StackTrace.Palette`、`hex` 和 `defaultPalette`  移到 digression.ansi
++ row  digression.core → spectacular.core  `showable` given 和一次 `show` 调用  一个 `digression.show`，排在最后
++ row  parasite.core → mercator.core  `Monad[Task]`  一个 `parasite.monad` 组件
++ row  turbulence.core → capricious.core  延后处理的 `shred` 项  mod-3 中关于其归属的待定决策
+
+% 1 1 0 0f02c03fc3f6696c0e8acc01423a3b42
+
+@ 0 34 0 195476f600c0a2b4145db1a497ed8874
++ - **gossamer.core → distillate.core** 取决于同一文件中的五个 given：`textDecodable`（gossamer_core.scala:124）和四个 case 风格的 `enumIdentification` `Identifiable` given（gossamer_core.scala:614–625）——后者已经需要显式导入才能启用，因此迁移不会给其使用者带来任何代价。把它们移到一个 `gossamer.codec` 式的子模块。仅切断这一条边就能让关键路径缩短三层（它把 distillate → digression → iridescence → geodesy.angle 从扇入为 44 的节点之下移除）。
++ - **distillate.core → digression.core** 只是一个两行的 given（`fqcn` Decodable，distillate.Decodable.scala:62）。反转它：`Fqcn` 是 digression 的类型，因此该 given 属于一个依赖 distillate 的 digression 侧组件。
++ - **distillate.core → inimitable.core** 是完全相同的形态（`uuid` Decodable，distillate.Decodable.scala:64），采用完全相同的反转。
++ - **distillate.core → wisteria.core** 只把 `VariantError` 用作 `enumeration` given 的错误类型（distillate.Decodable.scala:108–114）。把该错误类（wisteria.VariantError.scala 中一个普通的 fulminate `Error`）迁移到两者都能看到的组件中；`enumeration` given 本身留在伴生对象作用域中。注意，无论如何 wisteria 都会经由 spectacular.core 留在闭包中——这次切断是为了 distillate 自己的依赖方。
++ - **digression.core → iridescence.core** 是 `StackTrace.Palette`、`hex` 和 `defaultPalette`（digression.StackTrace.scala:135–163），约 30 行纯粹的颜色代码。它们移到 **digression.ansi**，后者新增对 iridescence.core 的依赖；两个现有使用方（digression_ansi.scala、probably.AnsiRenderer.scala:137、355）已经位于它的下游。这一步就能把 iridescence → geodesy.angle 从主干上切下。
++ - **digression.core → spectacular.core** 是一个 given（`showable`，digression.StackTrace.scala:111–133）加上对一个 `Int` 的一次 `.show`（第 128 行，可以轻松改为 `int.toString.tt`）。可以移到一个 `digression.show` 中，但把它排在其他各项之后：该 given 位于 `StackTrace` 的伴生对象中，因此移动它会让下游的每个 `stackTrace.show` 失去隐式作用域解析，而 spectacular 自身的闭包（stenography、wisteria）是主干无论如何都会保留的模块。
++ - **parasite.core → mercator.core** 是一个 given，`Monad[Task]`（parasite.Task.scala:90–99）。一个 `parasite.monad` 组件就能切断它；需要注意的还是老问题（对 `Task` 的 for 推导式目前无需导入，从伴生对象中解析）。
++ - **turbulence.core → capricious.core** 已确认恰好就是延后处理的 `shred` 项（turbulence_core.scala:319–324），别无其他；mod-3 中关于 `shred` 归属的待定决策不变，只是现在它就是这条边的全部。
+
+@ 0 1 0 1ff6bc8bad1b7c7b0fc2f54e8a984280
++ **在第二次审计中被判无需改动的边，记录在此以免再次争论：**
+
+% 2 1 0 151aece8353443051c3d1e824164f600
+
+@ 0 7 0 0c9b220832c9aac51dde494906ce2676
++ column  边
++ column  保留原因
++ row  gossamer.core → kaleidoscope.core  `Scanner` 位于插值器宏展开内部（gossamer.internal.scala:239–292），而 kaleidoscope 自身的闭包只有 contingency
++ row  digression.core → contingency.core  `raises` 出现在 `Fqcn.apply` 的签名中
++ row  parasite.core → anticipation.time  约 17 处签名，而且该依赖深度为 2、不含文本栈——没有代价
++ row  iridescence.core → geodesy.angle  `Angle` 出现在 `Hsl`/`Hsv` 的公共字段中，而且 iridescence 已经直接依赖 hypotenuse，因此这条边只增加一个浅层节点
++ row  turbulence.core → anticipation.http  三处使用，但 turbulence.Streamable.scala:48–50 中 `import zephyrine.{stream as _, *}` 的遮蔽安排依赖于 `HttpStreams.Body.stream` 是同一模块中的兄弟成员，而且该依赖深度为 3 且不在主干上——不值得为此折腾
+
+% 1 1 0 1f99ffa482ccfb511b14a4a7756d6156
+
+@ 0 8 0 19973b9a9f1496cf0356097fdc2dba29
++ **唯一的硬边：parasite.core → nomenclature.core → gossamer.core。**
++ `Name[Async]` 出现在 `task`（parasite_core.scala:150）、`Task.apply`、`Monitor` 以及两个平台监管器的公共签名中（约 20 处），而 `Async is Nominative under Rules`（parasite.Async.scala:47）把 nomenclature 放进了隐式机制中。
++ 没有任何迁移能切断它：这是在并发 API 中使用经过验证的名称还是使用 `Text` 之间的选择，属于 mod-7 级别的设计决策。
++ 在做出决定之前，gossamer 及其之下的一切都会留在 parasite、turbulence 以及树的大部分的闭包中。
++ 在 mod-8/9/10 之后，这是剩余主干上唯一的软点。
+
+@ 0 8 0 1482686188fb4295063686354bfba8a5
++ 完成标准：`parasite.core` 不再声明 `mercator.core` 边，`turbulence.core` 不再声明 `capricious.core` 边，并且 `gossamer.core` 的闭包不超过 23 个组件。
++ gossamer、distillate 和 digression 各步已在 #1760（2026-08-10）中落地。
++ turbulence 的边已经消失：`turbulence.core` 不再列出 `capricious.core`，`shred` 改为以传名 `Int` 接受其数据块大小（2026-10-21）。
++ 剩下的是 parasite 这一步——`parasite.core` 仍为 `Monad[Task]` given 声明了 `mercator.core`——并且按遍历 `build.mill` 计算（包括隐含的 `beneficence.core` 和 `proscenium.core`），`gossamer.core` 的闭包有 26 个组件：distillate、wisteria、kaleidoscope 和 spectacular 都仍在其中。
+
+@ 0 1 0 1e7c1a3ac299bb6c0caf8967c9ae6fc8
++ ## 第二次审计的形态
+
+@ 0 6 0 0a3d042588f0675d0401be4239c2971f
++ 三个 PR：mod-8（先处理错误声明，再处理无用的边）、mod-9（关键路径的头部，包括代价低的重定向；harlequin.scala 在其设计获批前不予纳入）、mod-10（主干上的 given，每一步一个集成子模块，各自附带导入排查和固定实例的测试）。
++ 预期结果是[重新测得的基线](#the-re-measured-baseline)中的模拟数字，剩余的深度集中在唯一真正悬而未决的问题上，即 parasite 经过验证的任务名称。

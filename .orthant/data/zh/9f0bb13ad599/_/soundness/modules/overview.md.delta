@@ -1,0 +1,18 @@
+orthant 2 language
+
+@ 0 15 0 1a577346faef63ba19f24433df1356b1
++ - [JSON](json.md)——解析、类型化访问、构建、schema 和验证
++ - [YAML](yaml.md)——解析、标签、锚点和编码
++ - [XML](xml.md)——节点、命名空间、XPath 和 schema
++ - [CBOR](cbor.md)——类似 JSON 的二进制编码，带有标签和诊断记法
++ - [CSV](csv.md)——行、表头和格式，解码为 case class
++ - [TEL](tel.md)——基于缩进的数据语言、其 schema 及编辑
++ - [Protocol Buffers](protobuf.md)——消息、字段和兼容性
++ - [Markdown](markdown.md)——解析、渲染和写回
++ - [Base 编码](base-encoding.md)——Base64、十六进制及其他字母表
++ - [二进制数据](binary-data.md)——描述、读取和写入二进制布局
++ - [压缩](compression.md)——压缩值和流
++ - [归档](archives.md)——ZIP、tar 和 ar
++ - [哈希](hashing.md)——摘要、校验和与快速哈希
++ - [密码学](cryptography.md)——加密、签名、密钥和证书
++ - [媒体类型](media-types.md)——媒体类型，以及知道自己媒体类型的类型

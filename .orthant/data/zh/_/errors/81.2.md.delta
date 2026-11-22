@@ -1,0 +1,79 @@
+orthant 2 language
+
+% 0 1 0 134735d34eb71cf017d174d515b950fb
+
+@ 0 1 0 1d875e78cb65a32f0633838315ab108a
++ 当 multipart MIME 数据无法解析时抛出。
+
+@ 0 1 0 1d8ed6a2d2412a231ea0d46e12dff5b7
++ ## 原因
+
+@ 0 5 0 17a4469920ca3ccb04bef3165c787bb6
++ Gesticulate 解析以 `Content-Type` 头部中声明的分隔符划分的 multipart 正文。
++ 每个部分都有自己的头部和正文。
++ 此错误报告 multipart 流中的结构性问题。
++ 消息为 `multipart data could not be read because $reason`。
+
+@ 0 1 0 0982d44e8aec0bbd176df78e68656684
++ ## 变体
+
+% 0 1 0 03b81b73ddd7267518f25999a3ba4dd8
+
+@ 0 2 0 06de294ad6efdc0f08541bbf0c9df6e8
++ 解析器在当前位置期待某个特定字符，但遇到的是另一个字符。
+
+@ 0 1 0 179cd578b684d6f91fa543e88d229f51
++ **示例。** `[↯/s.81.2.1] multipart data could not be read because the character ':' was expected`
+
+@ 0 2 0 1b1f8d2a051f110b1c2d1b7caffa7abd
++ **解决方法。** 确认生成方输出的是有效的 multipart 数据；检查是否缺少 CRLF 或边界。
+
+% 0 1 0 06327e7539aefd3e1c54a53a8580d6df
+
+@ 0 1 0 19b8128eddd2072519b2007300c69d1d
++ 在结束边界之后出现了字节。
+
+@ 0 1 0 1447cfdebb48387c11532467976372f2
++ **示例。** `[↯/s.81.2.2] multipart data could not be read because the stream continues beyond the last part`
+
+@ 0 2 0 146a6b0c128621d01fcafbcc843d5a91
++ **解决方法。** 在结束边界处截断正文，或者在其后停止输出字节。
+
+% 0 1 0 045ffbc24f719ee916ada862b714fe96
+
+@ 0 2 0 1079b41110a9b279025e8043caaf632c
++ 边界之后的内容不符合文档规定的终止符格式。
+
+@ 0 1 0 0875a7f4316e7e7410f6451484f34424
++ **示例。** `[↯/s.81.2.3] multipart data could not be read because unexpected content followed the boundary`
+
+@ 0 2 0 1b0fd42990acc13616be6c9c63d00662
++ **解决方法。** 边界之后必须是 `\r\n`（下一部分的开始）或 `--\r\n`（正文的结束）；修正生成方。
+
+% 0 1 0 0706709ad094f8f608b4209d08210c02
+
+@ 0 1 0 06502d9c18b588a51e4ccb50e9bf5dd4
++ 某个部分的 `Content-Type` 头部不是有效的媒体类型。
+
+@ 0 1 0 004dc69806bbad6c06a819903e709254
++ **示例。** `[↯/s.81.2.4] multipart data could not be read because the media type is invalid`
+
+@ 0 1 0 089ccafbd17c28bf0ec2d540f2916ec7
++ **解决方法。** 媒体类型的规则参见 `↯/s.81.1`。
+
+% 0 1 0 1c2ada53b6f13e370a507d969d35893f
+
+@ 0 1 0 1db8dfa05ca0a9e217d749a66e3b58a7
++ 某个部分的 `Content-Disposition` 头部格式错误。
+
+@ 0 1 0 0eda9a5f2afde8180e9ed8487d17192b
++ **示例。** `` [↯/s.81.2.5] multipart data could not be read because the `Content-Disposition` header has the wrong format ``
+
+@ 0 2 0 126204f5d620df1008ccccac0cb9082f
++ **解决方法。** 使用标准形式，例如 `form-data; name="field"; filename="x.txt"`。
+
+@ 0 1 0 004f241cb4a4ed0405cb108ee75b2611
++ ## 另请参阅
+
+@ 0 1 0 09952908d92f8c7f0ebacac01d6389de
++ - 源代码：`lib/gesticulate/src/core/gesticulate.Multipart.scala`

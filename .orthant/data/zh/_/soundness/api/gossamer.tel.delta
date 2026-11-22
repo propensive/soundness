@@ -1,0 +1,1723 @@
+orthant 2 language
+
+% 0 1 0 0f04ec4b9ac2d4270a232409219e1f6b
+
+% 0 1 0 0d2063bbe5efb5860f6f784f6c463904
+
+% 0 1 0 0b5938ce7315323607e1922cbc4d93e2
+
+@ 0 1 0 0eaca7ef4efa00ce178e5819a55a45d7
++ info   作为带类型值的文本：`Text`、`t"…"` 插值器，以及适用于任何文本类型的一套操作词汇
+
+% 0 1 0 0ca6d61ddd9511ea1cdae38f1414f6fe
+
+@ 0 4 0 0dde71729355683c0b585e9ca82bb8e5
++     _Gossamer_ 是文本库：它提供 `Text` 上的操作（`Text` 是 JVM `String` 的不透明别名，Soundness 在所有地方用它代替 `String`），以及使这些操作同样可用于任何其他文本类型的类型类，例如带 ANSI 样式的 `Teletype`、`Ascii` 字节串或由字素簇组成的 `Writing`。
+
+@ 0 9 0 15d1c37dd8c74a3a1c5af57b4eca052d
++     `Text` 用 `t"…"` 插值器书写，它代入任何 `Showable` 的值，并在代码编译时处理转义；也可以用 `txt"…"` 书写，它还会把跨多行源码书写的段落合并为一行。
++     它的操作都是简单的动词：`cut` 在分隔符处切分，`join` 重新拼合；`keep`、`skip`、`snip`、`before`、`after`、`upto`、`from` 和 `segment` 按数量或序数位置切片；`lower`、`upper`、`capitalize`、`trim`、`pad`、`fit` 和 `sub` 进行变换；`starts`、`ends`、`contains`、`offsetOf`、`tally`、`pinpoint` 和 `search` 进行查询。
++     缺失用 `Optional` 表示，而非 `-1` 或 `null`；位置是 `Ordinal`（`Prim`、`Sec`、`Ter`，……），不会与长度混淆；而 `cut` 被证明至少产生一段。
+
+% 2 1 0 0e8e9e8def100b1b1e69c0fa8e0fe68a
+
+% 3 1 0 06ec704c9ddf0fce1c4a36c0c26cf54e
+
+% 4 1 0 0a89e89a23198e971486cdf5cd587ccc
+
+% 0 1 0 049be74cec392a8f0b2e3713feb24799
+
+% 0 1 0 13e45beaf01fc7b2046a5d81153f196c
+
+% 0 1 0 1b430b72bce17b9306dda8b27cf836b3
+
+% 0 1 0 1d721cefbd3caee01801a5542168a9a9
+
+% 0 1 0 0b6c61edd04b4f93022a858e83f45bfa
+
+% 0 1 0 0e432c84425dcf91040cea8ea9f46c59
+
+% 1 1 0 08d673d324904af716a360c37fb89de9
+
+@ 0 8 0 12ced88ca10cf91d0bbd13f14f774332
++     大部分词汇只在 `Textual` 类型类上编写一次，因此具有 `Textual` 实例的类型——`Text`、`Ascii`、`Writing` 以及 escapade 的 `Teletype`——无需重新定义就能获得全部操作。
++     `Textual` 扩展了通用的集合类型类（`Countable`、`Segmentable`），正因如此，基于数量和基于谓词的 `keep`、`skip` 和 `snip`，基于序数的 `before`/`after`/`upto`/`from`，以及集合库中的 `count`、`where`、`all` 和 `exists` 也适用于文本：它们位于 `rudiments` 和 `murmuration` 中，而非这里。
++     工厂 `reversibleTextual` 和 `traversableTextual` 让新的文本类型在其自身的伴生对象中发布 `reverse` 和遍历。
+
+@ 0 2 0 0d2ffddc9ec6b56e1824bbfc7f757ed5
++     文本的三个方面是方针，通过**按名称**导入 given 来选择（因为 `import soundness.*` 不会导入 given）：
+
+@ 0 7 0 03a1f22a1f3c37271ac422ebab703d46
++     - **大小写敏感性**（`caseSensitivity.caseSensitive`、`caseInsensitive` 或 `smartCase`），每种相似度度量都会参考它。
++     - **排序规则**（`collations.unicodeCollation` 或 `codepointCollation`），没有它，文本就无法排序，也无法用 `<` 比较：借助 `collationComparable`，作用域中的 `Collation` 使 `Text` 成为 `Comparable`。
++     - **相似度**（`proximities.levenshteinProximity`、`jaroProximity`，……），即 `proximity`、`fuzzy` 和 `Lexicon` 背后的度量。
+
+@ 0 3 0 162aaef74114f99517d62d922be08080
++     `Decimalizer` 将 `Double` 渲染为选定的有效数字位数或小数位数，`Double` 上的 `show` 参考的就是它；`decimalConverters.javaDecimalConverter` 是简单的 `toString` 替代方案。
+
+@ 0 1 0 1af03583aa97792d1ed95982f8b2b936
++     该库有三个组件：
+
+@ 0 10 0 171bed539baa28ed1b7b463e3ed472a8
++     - `gossamer.core`——`Text` 的操作、`t"…"`、`txt"…"` 和 `a"…"`、`Textual`、`Builder` 和 `Text.build`、`Cuttable` 和 `Joinable`、`Writing` 和 `Grapheme`、`Ascii`、`Decimalizer`、`Numerous`、`CaseSensitivity`、`Collation`、`Proximity`，以及选择包 `caseSensitivity`、`collations`、`proximities` 和 `decimalConverters`。
++     - `gossamer.codec`——面向 `distillate` 的一半：`textDecodable`，它通过 `Charset` 将字节解码为 `Text`；以及 `enumIdentification` 包，它以 kebab、snake、camel 或 Pascal 命名法为枚举分支命名。之所以拆分出来，是为了让只需要文本的模块不依赖 `distillate`。
++     - `gossamer.lexicon`——`Lexicon`，一种用于在词汇表上进行相似性搜索的 BK 树；以及 `Dictionary`，一种用于精确查找和前缀查找的稠密字典树。
+
+@ 0 3 0 124f785e9ce2fdf10cafda1bd09c874d
++     所有内容都导出到 `soundness` 总括包，选择包也与总括包自身的选择包合并，因此用户写 `import soundness.*`，然后为每种方针按名称导入一个 given。
+
+% 0 1 0 1cb99be0c6364ae90bcaca8d0f0393d0
+
+% 0 1 0 1ae68af5c6d9ea450a530e077ffa85c6
+
+% 0 1 0 1307a59e9a82a6681d69d19c9d1b8a67
+
+% 0 1 0 0b4856cf1a0bce450d66f97c1901d65d
+
+% 0 1 0 1631f648de7531c706ecde251846f177
+
+% 0 1 0 18283946a065cb540c93cd17543f6eb1
+
+% 0 1 0 1b105736a890f215154fba55236f87d8
+
+% 0 1 0 12529380dbfed102016f60f62548f22b
+
+@ 0 1 0 088afddc33f4d8c205629ac12e14b93e
++ entry .t   `t"…"` 插值器：由字面量构成、带 `Showable` 代入的 `Text`；以及 `t"…"` 模式
+
+% 1 1 0 06d7e2aefa25c8ab1139347a643f7e93
+
+@ 0 5 0 0bc3851ccd6bb87f1494d47aa3e16c56
++       `t"Hello, $name!"` 构建一个 `Text`。
++       每个字面量部分在代码编译时进行转义处理（`\n`、`\t`、`→`、`\\`、`\$`；错误的转义会在出错字符处产生编译错误），每个代入值则通过其类型的 `Showable` 实例渲染——没有 `Showable` 的值是编译错误 _a value of `T` is not Showable_，而不会悄悄调用 `toString`。
++       结果是 `Text`，绝不是 `String`。
+
+% 2 1 0 0f9852dd5a79b4c51289946172c68183
+
+% 3 1 0 17135b6786f4b59d025e4ad3752066c2
+
+% 0 1 0 1df4c24d9bd279f40aa9b11fba4bfc3a
+
+% 0 1 0 1a479cdf6c00c9bd1468d4644aa98c38
+
+% 0 1 0 063bbc2b9b4d305c0fe55b9e5653c006
+
+% 0 1 0 14925258b5e287290443908b26e4fdb8
+
+% 1 1 0 07b3831b3b2e07bb04194bee4b857299
+
+@ 0 3 0 0cb51fc098eccfae1d763f455714c9e7
++       同一前缀也是一种模式：`case t"quit" =>` 通过 `SimpleTExtractor` 匹配与该字面量相等的 `Text`。
++       模式形式不接受代入。
++       `fuzzy` 的分支中也接受 `t"…"` 模式。
+
+% 2 1 0 075606c26a23a20a17051c3b1693ac00
+
+% 3 1 0 06463f92964e4f2316059df10cf140e4
+
+% 0 1 0 0062787c089bcf200eddb8e3a22cf715
+
+% 0 1 0 0213a18ee0b108641f61190bfb6c9129
+
+% 0 1 0 16e7dd24469a7307058807e16676d8c2
+
+% 1 1 0 1280d732bdcdc75d0d982c63dccc70fd
+
+@ 0 1 0 1b013881d26b1b180db1dc29fc65b8bc
++       `txt"…"` 是用于多行散文的变体，`a"…"` 则构造一个 `Ascii`。
+
+% 0 1 0 0578a50888e209b600d8d256afc20fa8
+
+% 0 1 0 02ac02ecd19cf9ef0bfdb2fffe2487d3
+
+% 1 1 0 04ed385f6a5800c6066a4dab9f8ded0c
+
+@ 0 6 0 1a382fa76d6e538a1da4ddf14de54e21
++ entry .txt   `txt"…"` 插值器：将折行的源码行合并为一行的 `Text`
++     与 `t"…"` 相同，但会规范化跨多行源码书写的字面量中的空白：每段连续空白（包括单个换行及其后的缩进）都变为一个空格，空行——两个换行——变为单个 `\n`，因此为源码读者而折行的段落会为输出的读者展开，空行则分隔段落。
+
+% 2 1 0 17519fbaa49198b016caaadaae4118a0
+
+% 3 1 0 1df2baa837aec93600e959993a0691a1
+
+% 0 1 0 1ce5e21b2d2f6d041dc4a26d6bab4e4a
+
+% 0 1 0 0911935cc7c035d303c0bb6da6e38e07
+
+% 0 1 0 0e591537a973b2d81af9384c6bc3a9f7
+
+% 0 1 0 06aa6101a985e98d17c16eadaccff0f1
+
+% 0 1 0 12fe4487d3d69a9f1e097d76ddb8dfd1
+
+% 0 1 0 1940dea9d14323a21b0d7e92578989b9
+
+% 1 1 0 0e1ba0bf939270ab1de39971e1d11499
+
+@ 0 2 0 177bf424f5322c230a62a3de89abbf98
++     代入值与 `t"…"` 中一样通过 `Showable` 渲染，并与文本的其余部分一起规范化。
+
+@ 0 5 0 13b1f1c51aeec34f14e592f75817cf7b
++ entry .a   `a"…"` 插值器：`Ascii` 字节串，在代码编译时检查是否为 ASCII
++     `a"hello"` 是一个 `Ascii`，即保存字面量字符的冻结字节数组，每个字符一个字节。
++     ASCII 之外的字符是编译错误（编号 824，_`é` is not a valid ASCII character_），在该字符自身在源码中的位置报告，而非在字面量的开头。
++     代入值本身是 `Ascii` 值，被拼接进去。
+
+% 2 1 0 051d6133369871aa126977ab25ddbb4b
+
+% 3 1 0 17ab86559999eaff0a8c9804c138cc62
+
+% 0 1 0 0478a6eac7ba37fc1b321257df4b7bec
+
+% 0 1 0 1f121c60238443a2009e112f730a77fb
+
+% 0 1 0 1edacc6180d2f3f80275fd30124e3bc9
+
+% 1 1 0 1448578a1728a38f19b981831a70d7dc
+
+@ 0 1 0 1eb2cc11a62ada081531296f0011d3f4
++ entry .SimpleTExtractor   `t"…"` 模式背后的提取器：与字面量相等
+
+% 1 1 0 09d915d91a07f0061c9ca4464a568006
+
+@ 0 5 0 1fa88a10963723ce018e7e8116f8255b
++       `case t"quit" =>` 脱糖为 `SimpleTExtractor(t"quit")`，其 `#unapply` 是与被匹配值的相等判断。
++       它的存在使 `t"…"` 既可以写在表达式中，也可以写在模式中；很少有理由直接构造它。
++   entry #text   模式所匹配的字面量
++   entry #unapply   被匹配值是否等于 `#text`
+
+@ 0 1 0 03192535705f45d6003f0c839b1b2815
++ entry .Textual   使类型成为文本类型的类型类：`Text`、`Ascii`、`Writing`、`Teletype`
+
+% 1 1 0 1dfc915390628d4a1c509867399c56c0
+
+@ 0 6 0 1b9ffd8b4963956c1459566925e57a8d
++       `textual is Textual` 表示 `textual` 是长度已知的字符序列，可以被切片、映射、搜索和连接，可以在 `Builder` 中逐步构建，也可以渲染为普通的 `Text`。
++       gossamer 中的每个通用操作——`cut`、`join`、`words`、`lower`、`trim`、`pad`、`capitalize`、`uncamel`、`pinpoint`、`chomp`，……——都是接收者具有 `Textual` 实例的扩展方法，因此新的文本类型只需在其伴生对象中提供一个实例，就能获得全部词汇。
+
+@ 0 7 0 0ec53a8e8baaab4f12bd664e544310c0
++       类型成员 `#Result` 是元素类型：`Text` 为 `Char`，`Ascii` 为 `Byte`，`Writing` 为 `Grapheme`。
++       作用于字符的操作（`lower`、`upper`、`trim`、`capitalize`、`tr`、`pad`、`pinpoint`，……）要求 `Textual { type Result = Char }`；作用于位置和子串的操作（`cut`、`words`、`starts`、`offsetOf`、`slices`、`chomp`，……）接受任何 `Textual`。
++       `#Show[value]` 是值被追加到此类型的构建器时必须满足的类型类（`Text` 为 `Showable`；escapade 的 `Teletype` 使用它自己的类型类，因此带样式的值会连同其样式一起追加）。
+
+@ 0 5 0 091eb2dc6dc4a1e410c0bd13f5ab00a5
++       `Textual` 扩展了 `Countable` 和 `Segmentable`（其中 `Segment = Self`，`Operand = Ordinal`），正是这一点让通用集合操作——`keep`、`skip`、`snip`、`before`、`after`、`upto`、`from`、`segment`、`count`、`where`、`all`、`exists`——适用于文本值；它还扩展了 `Zeroic` 和 `Applicable`，因此 `textual.zero` 是空值，而 `Textual[Teletype](text)` 将普通文本转换进来。
+
+% 2 1 0 1f1c44f765ebf8881bedba09d91f1c04
+
+% 3 1 0 11711410d4afa5501994e4111df0e0f3
+
+% 0 1 0 14967e055f142249184934cf67d94a43
+
+% 0 1 0 0aad168c935482530732ae1f04e59d21
+
+% 0 1 0 0b583a965e56bbf9096ec257d8c02156
+
+% 1 1 0 0d5cd735f7fcfade142957f15a1391f5
+
+@ 0 4 0 107c88dd8331b2370d914a49cf4e037c
++       `Text` 的实例（`.text`）以及通过各自伴生对象提供的 `Ascii` 和 `Writing` 的实例都在隐式作用域中。
++       若某个类型的 `reverse` 和遍历应通过其 `Textual` 实例进行，它就在自己的伴生对象中发布 `reversibleTextual` 和 `traversableTextual`，因为从 `rudiments` 无法找到一个通用的 given。
+
+% 0 1 0 0d419ea1421c57421530ac1da4380b8d
+
+% 0 1 0 187bf92a225e2c58028f03694db327fe
+
+% 0 1 0 160617c1c45eb5e71dc1a6962087e48f
+
+% 1 1 0 0c0adbb5877dd95e0ede3da577660e3b
+
+% 0 1 0 1bb4b560495664af1099c405a55de713
+
+@ 0 39 0 166d423d43f827710ef7c70a021437d8
++   entry .apply   `Textual[textual](text)`：将 `Text` 转换为任何文本类型
++       `#apply` 的显式形式：`Textual[Teletype](t"plain")` 将普通文本包装为不带样式的样式化值，`Textual[Text](text)` 是恒等转换。
++   entry .text   `Text` 自身的 `Textual` 实例，元素为 `Char`，`Show` 为 `Showable`
++       长度、访问、`indexOf`、`segment` 和 `map` 直接作用于底层的 `String`；构建器是 `TextBuilder`。
++   entry .concatenable   任何文本类型上的 `left + right`，通过 `Textual#concat` 实现
++       为每个文本类型提供 `+` 的 `Concatenable` given。
++       它是 `Textual` 的伴生 given，因此对任何 `textual: Textual` 都能找到。
++   entry #Result   元素类型：`Text` 为 `Char`，`Ascii` 为 `Byte`，`Writing` 为 `Grapheme`
++   entry #Show   值被追加到此类型的构建器时所需的类型类
++       对于 `Text`、`Ascii` 和 `Writing`，`Show[value]` 是 `value is Showable`；带样式的类型可以选择更丰富的类型类。
++       `Text.build` 块中的 `append` 要求既非 `Text` 也非 `Char` 的任何值满足它。
++   entry #Segment   此文本的切片所具有的类型：文本自身的类型
++   entry #Operand   索引类型：`Ordinal`
++   entry #show   通过 `#Show` 将值渲染为此文本类型
++   entry #apply   将普通 `Text` 转换为此文本类型
++   entry #single   由一个 `#Result` 构成的单元素文本
++   entry #fromChar   与某个 `Char` 对应的 `#Result` 元素
++   entry #classTag   该文本类型的 `ClassTag`，用于分配其数组
++   entry #length   元素的数量：字符、字节或字素
++   entry #text   值的普通 `Text`，丢弃任何样式
++   entry #map   对每个元素应用函数后得到的新文本
++   entry #empty   此类型的空值
++   entry #concat   两个值连接为一个
++   entry #access   序数位置上的元素；不检查它是否在范围内
++   entry #contains   某个序数是否是文本中的有效位置
++   entry #indexOf   子串在 `start` 处或之后首次出现的位置，或 `Unset`
++       `offsetOf`、`contains` 和 `tally` 背后的原语。
++       无论文本类型是什么，子串始终是普通 `Text`。
++   entry #lastIndexOf   子串最后一次出现的位置，或 `Unset`
++       默认通过反复调用 `#indexOf` 进行扫描；`Text` 的实例用 `String` 的原语覆盖了它。
++       空子串的结果是 `Unset`。
++   entry #builder   此类型的一个全新 `Builder`，可选指定大小
++   entry #segment   文本在序数 `Interval` 上的切片，限制在文本的边界之内
++       超出末尾的区间会被截短，起点超出末尾的区间则为空，两者都不会失败。
++   entry #zero   空值，即 `Zeroic` 类型类所称的零值
+
+@ 0 1 0 1b9ba37c66e5719313430a47e684ef95
++ entry .Builder   由追加的片段构建文本值的可变累加器
+
+% 1 1 0 05dce116e571da3511551280e957ef81
+
+@ 0 5 0 04484e256fb22ffc00b75c4e421c138f
++       `Builder[textual]` 是 `TextBuilder`、`AsciiBuilder`、`WritingBuilder` 以及其他文本类型的构建器背后的抽象类，每个构建器都从其 `Textual#builder` 获得。
++       片段通过 `#append` 添加（该类型的值，或单个 `Char`），结果通过 `#apply` 读取，而 `#build` 运行一个代码块，在其中包级的 `append` 和 `appendln` 将它作为上下文值写入。
+
+% 2 1 0 1bc54daada06aa9610e1cdab8ff23d4f
+
+% 3 1 0 1710c2d23a9e3c2404d1c58d052890a0
+
+% 0 1 0 147d8f5b19fc1997075583f29db9f00f
+
+% 0 1 0 1fa3cf35d41f00d40cbff25891bf0b2c
+
+% 0 1 0 0b424e3649da9c8718a714afa8303543
+
+% 0 1 0 0546b71de2ac6c011374116ba8e2e581
+
+% 1 1 0 12bc111e575a4e210cc6fe31ce10b249
+
+@ 0 2 0 1705c730f54a173a17c6809faa84144d
++       构建器是可变状态，不能安全地在线程间共享；对于文本，优先使用 `Text.build`，它将构建器限定在一个代码块内。
+
+% 0 1 0 03754eda6fac3ee61b7db574d637742a
+
+% 0 1 0 0bcb8cc5e3ac9c4705e0b1ba694b1b1d
+
+% 0 1 0 032bbcdd97c5b6fe1973fc45e8b24f21
+
+@ 0 9 0 0b8a62cddb0deac01416528daf45b7fd
++   entry #append   添加一个该文本类型的值或单个 `Char`；返回构建器
++   entry #build   以此构建器作为上下文 `builder` 运行代码块，然后返回结果
++       在代码块内，`append(value)`、`appendln(value)` 和 `builder` 指向此构建器。
++       代码块的生存期不能超过这次调用，这就是构建器尽管可变，却仍以纯上下文值的形式传入的原因。
++   entry #apply   累积的值
++   entry #clear   丢弃迄今追加的全部内容；返回构建器
++   entry #nil   是否尚未追加任何内容
++   entry #length   迄今追加的元素数量
+
+@ 0 1 0 00eef8e649f60e140618cb5a066eced1
++ entry .TextBuilder   `Text` 的 `Builder`，基于 `StringBuilder`
+
+% 1 1 0 1aa9f86c0b80c4190c659dc91878ea4d
+
+@ 0 4 0 1594da8117a98ecd017de28b6245279d
++       长度已知时，`TextBuilder(size)` 以此作为提示设定底层缓冲区的大小。
++       `Textual.text.builder` 返回一个，`Text.build` 将一个限定在代码块内。
++   entry #put   追加一个字符
++   entry #length   迄今追加的字符数量
+
+@ 0 1 0 1209ed2e09be2d8d16dcf74a8e79cd23
++ entry .AsciiBuilder   `Ascii` 的 `Builder`，累积字节
+
+% 1 1 0 00794af433cf31061286edaba14fa404
+
+@ 0 4 0 07df1c22bc7e098b08c360f52c849093
++       每个追加的 `Char` 被截断为其低字节；追加的 `Ascii` 贡献其字节。
++       `Ascii` 的 `Textual` 实例在每个构建操作中都使用它。
++   entry #put   以一个字节追加一个字符
++   entry #length   迄今追加的字节数量
+
+@ 0 1 0 0f9bc8049ca78f7a1fecdb3fcfd0ac6a
++ entry .WritingBuilder   `Writing` 的 `Builder`
+
+% 1 1 0 101c2ca409dd6add07dc90be2ed6fbcc
+
+@ 0 4 0 04b28d9ce65a8937015e9eff92709d63
++       累积每个追加的 `Writing` 的文本，并在读取结果时重新计算整体的字素边界，因此构建期间 `#length` 计数的是字符，而非字素。
++   entry #length   迄今追加的字符数量
+
+@ 0 6 0 1f861b40fb0013c21d04b789b127364e
++ entry .append   在 `build` 块内，将值追加到上下文 `Builder`
++     包级内联方法，用于 `Text.build` 或 `Builder#build` 内部，那里有一个 `Builder[textual]` 作为上下文值 `builder` 处于作用域中。
++     `Text` 按原样追加（转换为构建器的类型），`Char` 作为一个元素追加，其他任何值都通过构建器的 `Textual#Show` 类型类追加——对于 `Text` 是 `Showable`——因此没有渲染方式的值是编译错误，而不会调用 `toString`。
+
+% 2 1 0 0077cf903fe9914d0ecf050a0e7011e0
+
+% 3 1 0 16629ae36a5067dc1b2611e7cc41ffd4
+
+% 0 1 0 1519f26f726ca36c0b38f0fbe07f017b
+
+% 0 1 0 1a8e7e04f32789fd046468bc18fb9444
+
+% 0 1 0 02d5bbd4022b283e19cceef797e17c93
+
+% 0 1 0 127a022e0b9b080e1a0fc75658fba712
+
+% 0 1 0 064f2efd1a6c438000e7ca53f7f2af7d
+
+% 1 1 0 0c67fc6310acbbaa1c63a6f111d84221
+
+@ 0 2 0 05a0758713361c0a094d5bc16e5acad1
++ entry .appendln   将值及其后的换行符追加到上下文 `Builder`
++     与 `append` 相同，随后追加 `'\n'`。
+
+@ 0 4 0 1042d930eb699d890ee7032cf6da9cf8
++ entry .builder   `build` 块内作为值的上下文 `Builder`
++     `builder[TextBuilder]`（或 `builder[Builder[Text]]`）取得 `Text.build` 或 `Builder#build` 块正在写入的构建器，用于 `append` 未涵盖的操作，例如 `clear()` 或读取 `length`。
+
+@ 0 5 0 13a933d42f0037d60fbbb9ea67cf1aa9
++ entry .build   `Text.build` 将 `TextBuilder` 限定在代码块内；`Array.build` 填充一个新数组
++     两个扩展方法同名。
++     `Text.build { … }` 以一个新的 `TextBuilder` 作为上下文构建器运行代码块——其中的 `append`、`appendln` 和 `builder` 都指向该构建器——并返回构建出的文本，因此由许多片段拼成的文本无需可见的可变值即可写出：
+
+% 2 1 0 130e0ccc6942ea2f1802f4d705f8d169
+
+% 3 1 0 10c33df10457fbe60ef75d484d9c4266
+
+% 0 1 0 1b28bdf68583d7471f0da3e06bcd00d9
+
+% 0 1 0 1fee23c4f3b3f69100a69466c69ed6a5
+
+% 0 1 0 1f9d884b80893f6902c69409d4f2d7bb
+
+% 0 1 0 1c9d9f925a78eef800c92a8811234897
+
+% 1 1 0 14de1771a6ade58b14b10ded29cb5be4
+
+@ 0 3 0 09827f72596789ae1b9956f916ba611f
++     `Array.build[element](size) { array => … }` 分配一个含 `size` 个元素的可变 JVM 数组，交给 lambda 填充，然后以冻结的 `Array[element]^{}` 返回；`Pue.apply` 和 `Ascii` 的连接都使用它。
++     lambda 中的数组不得逃逸。
+
+@ 0 3 0 1ddce184ce5de4141e322f3033fbd706
++ entry .fill   `Text.fill(length)(index => char)`：给定长度的文本，每个索引一个字符
++     索引从零开始（`Int`），因此 `Text.fill(3)(_ => '-')` 是 `t"---"`，`Text.fill(3)(i => ('a' + i).toChar)` 是 `t"abc"`。
+
+@ 0 4 0 02dfc6dd7f0ab638142c303e57e1542c
++ entry .ascii   `Text.ascii(bytes)` 和 `bytes.ascii`：将 `Data` 解码为 US-ASCII 文本
++     两种形式都将每个字节解码为一个 ASCII 字符；大于 127 的字节变为替换字符。
++     对于 UTF-8，使用 `utf8`；对于任意字符集，在 `Charset` given（`textDecodable`）下用 `data.as[Text]` 解码。
+
+@ 0 3 0 1ddacbba7c8212700fa3cbdb747fb67d
++ entry .utf8   将 `Data` 解码为 UTF-8 文本
++     `bytes.utf8`：`codepages.utf8Codepage` 下 `text.in[Data]` 的逆操作。
++     格式错误的序列变为替换字符，而不会失败。
+
+% 2 1 0 18dd3824a46dc587135db8e446c45de2
+
+% 3 1 0 1028e943968ad61c159cb42e3e684f67
+
+% 0 1 0 1ce543c070756ca7033d2356903af397
+
+% 0 1 0 198cf0fc0960389c19f48140f0d4085b
+
+% 1 1 0 1cc0d41face70c1117e29b544cebfa1d
+
+@ 0 2 0 0decb6f1bda3d3490e3ba6330faf5cd7
++ entry .utf16   将 `Data` 解码为 UTF-16 文本，遵循字节顺序标记
++     `bytes.utf16`：没有标记时，字节按大端读取。
+
+@ 0 7 0 0c273a88f6fea5800e73170c6fb00e57
++ entry .pue   将 `Data` 渲染为每个字节都是一个可打印字符的文本
++     `bytes.pue`：_可打印 Unicode 编码_，一种可逆的、将字节渲染为文本的方式，其中每个字节是一个字符，并保证没有一个是控制字符——本会成为控制字符的字节（其低七位不超过 0x20，或为 0x7f）被上移 0x100，其他每个字节则是与其值相同的字符。
++     `Pue(text)` 将其还原。
++     其结果用于显示以及通过仅限文本的通道传送字节；它不是标准编码。
+
+@ 0 1 0 11b9dc723e9dc30105c66650c894cd86
++ entry .Pue   将可打印 Unicode 编码的文本解码回字节
+
+% 1 1 0 1379868abb2816151d94bf60b1909946
+
+@ 0 5 0 0c519f23beafd89405681a363d42c69d
++       `Pue(text)` 是 `bytes.pue` 的逆操作：每个字符的低字节是结果的一个字节，因此 `pue` 为避开控制字符而上移 0x100 的字节会被还原。
++       并非来自 `pue` 的文本会被无声地归约为其字符的低字节。
++   entry .apply   可打印 Unicode 编码文本所编码的字节
+
+@ 0 6 0 0255d0f714381cde086b982a4d5ca3cc
++ entry .cut   在分隔符的每次出现处切分文本，得到一个被证明非空的列表
++     `text.cut(delimiter)` 在 `Text`、`Char` 或 `Regex`（`r"…"` 字面量）处拆分，适用于任何具有该分隔符的 `Cuttable` 实例的文本类型。
++     结果是 `List[textual] { type Occupied = true }`：切分总是至少产生一段——最后一个分隔符之后的文本，或在分隔符从未出现时的整个文本——因此对其调用 `head` 和 `last` 是全函数，`case List(a, b) =>` 也会绑定元素类型。
+
+% 2 1 0 1a65c2fe7bf8701d0daa0b27cee1c365
+
+% 3 1 0 1fb27b55194b6db207e2b3b0551727b5
+
+% 0 1 0 00b36b221b2310410d45c04de19b6083
+
+% 0 1 0 0bb6fa1b2f86afd31335ee9ecb1ea830
+
+% 0 1 0 05104541e58fffe101842016e2046604
+
+% 0 1 0 01992267879eb6d1197a4f1b9d1ffc03
+
+% 0 1 0 0367157293212d6e170d5c85e388ba56
+
+% 1 1 0 026df1ce664e84b808e64f98caa5912e
+
+@ 0 4 0 017c973c15c817de097a106ac9a69689
++     正的 `limit` 限制段数，最后一段取剩余部分；零或负数的限制表示不限。
++     末尾的空段会被保留，就像 `String.split` 在正限制下保留它们一样，因此 `t"a,".cut(t",")` 是 `List(t"a", t"")`。
++     `words`、`lines`、`unkebab` 和 `unsnake` 分别是在空格、换行、`-` 和 `_` 处的切分。
+
+@ 0 1 0 0ead16ae853282ab12c558b5e239fe1d
++ entry .Cuttable   `cut` 背后的类型类：文本类型如何在某种分隔符处切分
+
+% 1 1 0 084235061f6f9df710b657f0b5e4c572
+
+@ 0 21 0 1c7c50c2a232610711f4e71875549500
++       `textual is Cuttable by delimiter` 只有一个方法 `#cut(text, delimiter, limit)`，并且必须返回至少一段。
++       实例包括：`Text` 按 `Text` 切分（扫描字面分隔符，不涉及正则表达式）和按 `Regex` 切分；任何具有 `Countable` 实例的 `Textual` 按 `Text` 或 `Regex` 切分（因此带样式的文本通过 `segment` 切分并保留其样式）；以及任何可按 `Text` 切分的类型按 `Char` 切分。
++       它们都是伴生 given，位于隐式作用域中。
++   entry .textualText   任何文本类型按字面 `Text` 切分；以及任何可按 `Text` 切分的类型按 `Char` 切分
++       两个 given 同名。
++       第一个服务于任何具有 `Countable` 的 `Textual`，用 `Textual#indexOf` 扫描，用 `segment` 切片；第二个从类型的 `Cuttable by Text` 实例派生出 `Cuttable by Char`，因此凡是 `cut(t",")` 可用之处，`cut(',')` 也可用。
++   entry .textualRegex   任何文本类型在 `Regex` 的匹配处切分
++       结果是匹配*之间*的片段，最后一个匹配之后的文本作为最后一段。
++       游标处的零宽匹配不算切分点，因此扫描总能前进。
++       `Text` 本身有更直接的 `.textRegex`。
++   entry .textText   `Text` 按字面 `Text` 切分，采用简单的子串扫描
++       不编译任何正则表达式，因此 `.` 或 `|` 这样的分隔符无需转义，在正则引擎不可用的运行时中切分也能工作。
++   entry .textRegex   `Text` 在 `Regex` 的匹配处切分，通过 `String.split` 实现
++       `limit` 按原样传给 `split`（在 `cut` 已将非正限制替换为不限之后），因此末尾的空段会被保留。
++   entry #cut   在分隔符处切分文本得到的片段，至多 `limit` 段，绝不为零段
+
+@ 0 3 0 1b0cf0ec8af0b273141cbb13ea9cccdc
++ entry .words   在每个空格处切分的文本
++     `text.words` 即 `text.cut(t" ")`：连续的空格会产生空段，其他空白都不是边界。
++     结果非空。
+
+@ 0 2 0 0daaf318932618d30b5d7fe4fe332c82
++ entry .lines   在每个换行处切分的文本
++     `text.lines` 即 `text.cut(t"\n")`；换行前的 `\r` 留在它所在的行上。
+
+@ 0 2 0 05aaf2e7cf0633c310d99337b9b06a52
++ entry .unkebab   kebab 命名法标识符中的单词：在每个 `-` 处切分
++     `t"one-two-three".unkebab` 是 `List(t"one", t"two", t"three")`。
++     它是 `kebab` 的逆操作。
+
+@ 0 2 0 15b694cb2eaea6d71437754e6dbcf10c
++ entry .unsnake   snake 命名法标识符中的单词：在每个 `_` 处切分
++     `t"one_two_three".unsnake` 是 `List(t"one", t"two", t"three")`。
++     它是 `snake` 的逆操作。
+
+@ 0 6 0 1fc33801a0758d63025669068cf08db8
++ entry .uncamel   camel 或 Pascal 命名法标识符中的单词，每个都转为小写
++     在第一个字符之后的每个大写字母前断开，并将每个单词转为小写：`t"oneTwoThree".uncamel` 和 `t"OneTwoThree".uncamel` 都是 `List(t"one", t"two", t"three")`。
++     一串连续的大写字母每个字母算一个单词（`t"parseXML"` 得到 `parse`、`x`、`m`、`l`）。
++     `kebab`、`snake`、`dotted`、`spaced`、`camel` 和 `pascal` 以另一种命名约定重新拼合这些单词：
+
+% 2 1 0 08e15d35dd2b6c901c98496d069f325c
+
+% 3 1 0 0d6f019df19d4171132b6be2095f68cc
+
+% 0 1 0 1e64ee57594cd69916ac4d8c185865e7
+
+% 0 1 0 121a5da0c9aea0331a55f992e2fba416
+
+% 0 1 0 16c89afb7848d38d0b135319dfe4c7c8
+
+% 0 1 0 0eb7a09a1693872f1425e7148f73dbca
+
+% 1 1 0 0621fdfed9a0220807d2cf01d09bf741
+
+@ 0 6 0 05610c6df752863f0b2fa0da2b6acd90
++ entry .join   连接一组文本，可选分隔符和括号
++     任何 `Traversable` 集合上的扩展方法——`List`、`Set`、`Chain`、`Sequence`、冻结数组或标准库 `Iterable`——其元素是 `Joinable` 的：任何文本类型的文本、`Message`，或通过连接来拼合的集合。
++     结果类型就是元素类型，因此拼合 `List[Text]` 得到 `Text`，拼合 `List[Teletype]` 得到 `Teletype`，分隔符也是同一类型。
+
+% 2 1 0 14802c39942e223a0b2026646c554f0d
+
+% 3 1 0 023f87f23937f1a917ba1ff5a592bbc7
+
+% 0 1 0 06c707af01998eb81d493bb2e90b4ca3
+
+% 0 1 0 0468ffe8b013f54b01e847e09a722992
+
+% 0 1 0 1218b83ba29f246f0b3e44b9a04d558c
+
+% 0 1 0 0180f5dc3cdf5ecc1758d9a5a5988316
+
+% 0 1 0 0aeddd5f3dafd97a0a2f2cdee050ed8b
+
+% 1 1 0 1977f49ac75b1f981f25a77569f57605
+
+@ 0 3 0 15932bcb0d403bd2094129830b16144a
++     五种形式是：无分隔符；一个分隔符；左括号、分隔符和右括号；一个分隔符加上置于最后一个元素之前、用于散文的不同的*倒数第二*分隔符；以及全部四者。
++     两个元素加上倒数第二分隔符得到 `t"a and b"`。
+
+@ 0 6 0 1a1297ceb3a0cc960f180c0a4b902477
++     当元素本身不可拼合时——如 `List(1, 2, 3)`——分隔符是一个*元素*，被穿插到按接收者形状重建的集合中：`List(1, 2, 3).join(0)` 是 `List(1, 0, 2, 0, 3)`，`List(List(1), List(2)).join(List(0))` 是 `List(1, 0, 2)`。
++     `join` 是 `mkString` 的对应物，但从不调用 `toString`：元素无法拼合的集合不能通过编译。
++     `Set` 按其迭代顺序拼合，调用者拼合它即表示接受该顺序。
+
+@ 0 1 0 0e6ffcf24695b45a1328b1297915daed
++ entry .Joinable   `join` 背后的类型类：一组值如何变成一个值
+
+% 1 1 0 1fe870142c3206bd0723bb7443be5373
+
+@ 0 7 0 11e7fe4f19935bb90f6255eb55460835
++       `textual is Joinable` 只有一个方法 `#join(elements)`，它将一个由值组成的 `Iterable` 连接为一个值。
++       伴生对象中的实例涵盖每个 `Textual` 类型（通过其构建器，并按总长度预设大小）、`Message`，以及原生集合形状 `List`、`Chain`、`Sequence`（通过连接）和 `Set`（通过并集）。
++       `join` 的接收者一侧是 `Joinable.Source`（任何 `Traversable`），而结果是什么——一个拼合后的元素，还是穿插了分隔符的重建集合——由 `Joinable.Assembly` 决定。
+
+% 0 1 0 0d18e3ab83f34825131bce2db4e77311
+
+@ 0 7 0 1ade7ba83789062e1569df723c9a5985
++   entry .textual   任何 `Textual` 类型都通过其 `Builder` 成为 `Joinable`
++   entry .message   `Message` 通过连接拼合
++   entry .list   多个 `List[element]` 通过连接拼合为一个 `List`
++   entry .chain   多个 `Chain[element]` 拼合为一个 `Chain`
++   entry .sequence   多个 `Sequence[element]` 拼合为一个 `Sequence`
++   entry .set   多个 `Set[element]` 通过并集拼合为一个 `Set`
++   entry .Source   `join` 的接收者一侧：被遍历出其元素的集合
+
+% 1 1 0 0f6fe5ec6f60cfa3082ad2910ed2f290
+
+@ 0 8 0 0435a91aa45b14d814e50017430c551f
++         `self is Joinable.Source by element` 以迭代器的形式产出接收者的元素。
++         唯一的实例 `.traversable` 服务于任何 `Traversable` 接收者，即每种原生形状和任何标准 `Iterable`。
++         之所以用一个类型类，而不是为每种接收者各写一个 `join` 扩展方法，是因为参数子句形状不同的同名扩展方法会使每个接收者都产生歧义。
++     entry .traversable   任何 `Traversable` 接收者都是其元素的 `Source`
++     entry #traverse   接收者的元素，按顺序，作为迭代器
++   entry .Assembly   `join` 如何组装接收者的元素，以及其分隔符的类型
+
+% 1 1 0 18953b4196608fd9048de931f996ce01
+
+@ 0 13 0 024e589703e0c0fc10115351cd336447
++         `self is Joinable.Assembly by element to result` 决定 `join` 返回什么。
++         `#Part` 是分隔符和括号的类型，`#assemble` 将各部分组成的流转换为结果。
++         两个实例按优先级顺序尝试：`.joinable`，当元素本身是 `Joinable`（文本、消息、集合）时适用，此时结果是其中一种，分隔符也是同一类型；以及回退实例 `Fallback#interleaving`，当元素不可拼合时适用，此时分隔符是元素，结果是通过 `Reshapable` 按接收者形状重建的集合。
++         这一选择由 given 优先级决定，因为对于 `List[Text]`，两种解读都适用，而重载无法对它们排序。
++     entry .joinable   本身是 `Joinable` 的元素拼合为其中一个，分隔符也是该类型
++         `List(t"a", t"b").join(t",")` 是 `t"a,b"`。
++         元素可以被拓宽为可拼合的超类型，因此由 `Text` 子类型组成的列表按 `Text` 拼合。
++     entry .Fallback   低优先级的组装方式：分隔符作为元素穿插其中
+
+% 1 1 0 06862d9416e711100ba9e1e6f2802e02
+
+@ 0 8 0 1b7d469ed01a149a1252ce0729dde160
++           `Joinable.Assembly` 的伴生对象所扩展的特质，使得只有在 `.joinable` 不适用时才会找到 `#interleaving`。
++       entry #interleaving   不是 `Joinable` 的元素被重建，并在其中穿插分隔符
++           需要 `self is Reshapable by element to result`。
++           `List(1, 2, 3).join(0)` 是 `List(1, 0, 2, 0, 3)`。
++     entry #Part   分隔符或括号的类型：拼合后的类型，或元素类型
++     entry #assemble   由元素和分隔符组成的流构建结果
++   entry #join   由一个 `Iterable` 中的多个值得到的一个值
+
+@ 0 4 0 0914f1ac5ba16de7119b9f1cb77955e9
++ entry .pascal   以 Pascal 命名法拼合的单词：每个首字母大写，无分隔符
++     元素为 `Char` 的文本类型所组成的任何 `Traversable` 上的扩展方法：`List(t"one", t"two").pascal` 是 `t"OneTwo"`。
++     每个单词先转为小写再首字母大写，因此 `List(t"ONE", t"two").pascal` 也是 `t"OneTwo"`。
+
+@ 0 2 0 003d365f0248932a0ee973dd828aa769
++ entry .camel   以 camel 命名法拼合的单词：首字母小写的 Pascal 命名法
++     `List(t"one", t"two", t"three").camel` 是 `t"oneTwoThree"`。
++     `uncamel` 是它的逆操作。
+
+@ 0 3 0 03e8487b9003d187098e0b9f41d9bad8
++ entry .snake   以 `_` 拼合的单词
++     `List(t"one", t"two").snake` 是 `t"one_two"`；单词的大小写不变。
++     `unsnake` 是它的逆操作。
+
+@ 0 3 0 06826d066af23d071693799633467339
++ entry .kebab   以 `-` 拼合的单词
++     `List(t"one", t"two").kebab` 是 `t"one-two"`；单词的大小写不变。
++     `unkebab` 是它的逆操作。
+
+@ 0 2 0 1695b655c13bca6f1d21ed357ddbdda9
++ entry .dotted   以 `.` 拼合的单词
++     `List(t"one", t"two").dotted` 是 `t"one.two"`。
+
+@ 0 2 0 0a0797583005508d0088d0d694d69261
++ entry .spaced   以空格拼合的单词
++     `List(t"one", t"two").spaced` 是 `t"one two"`，是 `words` 的逆操作。
+
+@ 0 3 0 1c15557013cf0af219ab2e24402858b5
++ entry .length   文本值中元素的数量：字符、字节或字素
++     `t"hello".length` 是 `5`；`Writing(t"👨‍👩‍👧").length` 是 `1`，即一个字素。
++     通过 `Textual#length` 实现的、任何 `Textual` 类型上的内联扩展方法。
+
+@ 0 4 0 00194b9389247e9c17dd7e4ad5de2f35
++ entry .plain   任何文本值的普通 `Text`，丢弃样式
++     作为扩展方法的 `Textual#text`：`teletype.plain` 只是样式化文本的字符，`text.plain` 就是 `text` 本身。
++     测量宽度的操作（`pad`、`fit`、`center`）测量的是普通文本。
+
+@ 0 3 0 1597dd865759779b10d51954ba4614c8
++ entry .init   去掉最后一个元素的文本值
++     `t"Hello".init` 是 `t"Hell"`，空文本的 `init` 为空。
++     与 `skip(1, Rtl)` 相同；另一端对应的是通用集合操作 `tail`。
+
+@ 0 4 0 0542fa0c1505892f177369813da7d166
++ entry .chars   文本值的字符，作为冻结的 `Array[Char]`
++     `t"Hello".chars.to[List]` 是 `List('H', 'e', 'l', 'l', 'o')`。
++     无论文本类型是什么，数组都由普通文本的字符组成。
++     冻结 `Array[Char]` 上的 `text` 是它的逆操作。
+
+@ 0 3 0 0cbecc7348d766ad0f7ad0f37cc14e93
++ entry .text   作为 `Text` 的冻结 `Array[Char]`；以及作为 `Text` 的 `StringBuilder` 内容
++     `chars.text` 是 `chars` 的逆操作。
++     在 `StringBuilder` 上，`builder.text` 读取累积的文本，与 `add` 配套。
+
+@ 0 4 0 0372405eabba5b251e0d6d743d2c05cc
++ entry .add   将 `Text` 或 `Char` 追加到 `StringBuilder`
++     用于处理原始 `StringBuilder` 的代码：`builder.add(t"…")` 和 `builder.add('x')` 在调用处无需 `String` 转换即可追加，`builder.text` 则读取结果。
++     `TextBuilder` 和 `Text.build` 是带类型的替代方案。
+
+@ 0 5 0 06081d032208485511c0de7be5be86fa
++ entry .slices   分成固定大小片段的文本值
++     `t"abcdefg".slices(3)` 是 `List(t"abc", t"def", t"g")`：除最后一段外，每段恰有 `size` 个元素，最后一段包含剩余部分。
++     通过 `segment` 适用于任何 `Textual` 类型，因此样式化文本的片段保留其样式。
++     空文本得到一个空片段。
+
+@ 0 4 0 1920fe273eddaaf91c06ed68f5903a9c
++ entry .punch   在某个序数处拆分文本值，丢弃该处的元素
++     `t"key=value".punch(Quart)` 是 `(t"key", t"value")`：序数之前的全部内容和序数之后的全部内容，序数处的元素本身被去掉。
++     与 `snip` 相比，后者在元素之间拆分并保留所有元素。
+
+@ 0 5 0 17a1124c5e8421250df1f370ad0a3eba
++ entry .justify   通过在单词间隙中分配额外空格，将文本加宽到某个宽度
++     其意图是两端对齐：`width` 与文本长度之差作为额外空格分配到各单词之间，使一行填满其所在列。
++     只考虑普通字符数，而不考虑显示宽度。
++     源码中将其实现标记为需要处理，目前还不应依赖它。
+
+@ 0 4 0 0b55a012481838bf00e7fcedb57c5747
++ entry .contains   文本值是否包含某个子串或字符
++     `t"hello world".contains(t"ello")` 和 `t"hello".contains('e')` 都是 `true`；每个文本都包含空文本。
++     子串是普通 `Text`，因此样式化文本按其字符搜索。
++     若需要位置而不只是是或否，使用 `offsetOf`。
+
+@ 0 3 0 1286a5246c38e86317eb83259bc7779c
++ entry .starts   文本值是否以某个前缀开头
++     `t"hello".starts(t"he")` 是 `true`。
++     在普通文本上比较；`chomp` 会在前缀存在时将其移除。
+
+@ 0 3 0 1c169ba0a8bddbb81180e6f35f549466
++ entry .ends   文本值是否以某个后缀结尾
++     `t"hello".ends(t"lo")` 是 `true`。
++     在普通文本上比较；`chomp(suffix, Rtl)` 会在后缀存在时将其移除。
+
+@ 0 4 0 02f1a75dc3cd39d4103d0ce36a582f3c
++ entry .chomp   从文本值中移除前缀（或在 `Rtl` 时移除后缀），如果存在的话
++     `t"Sir Toby".chomp(t"Sir ")` 是 `t"Toby"`，`t"file.txt".chomp(t".txt", Rtl)` 是 `t"file"`；不带该缀的文本原样返回，因此无需先用 `starts` 或 `ends` 检查即可安全地应用 `chomp`。
+
+@ 0 5 0 013e39ca29c46635049b3ead970cbf49
++ entry .offsetOf   子串首次（或在 `Rtl` 时最后一次）出现的位置，作为 `Optional` 序数
++     `t"hello world".offsetOf(t"o")` 是序数 `Quin`，`offsetOf(t"o", Rtl)` 是最后一个 `o` 的序数；不出现的子串是 `Unset`，绝不是哨兵值。
++     结果是 `Ordinal`，因此可以直接传给 `before`、`after`、`upto`、`from`、`punch` 和 `segment`，围绕分隔符拆解文本就是这样做的：
+
+% 2 1 0 08ba2e1f18b6b4d21e6a4da7a4442e09
+
+% 1 1 0 0a47f914ed53260906bd03717b3d64ff
+
+@ 0 1 0 1520d953bbbfd2091dbaf26a916e193e
++       label 找到分隔符
+
+% 1 1 0 18c1e10beb27d43307238ecdd275fbfa
+
+% 2 1 0 160af94bcf403f89074156fa5345d775
+
+% 4 1 0 19892b0c902f7f2f14d5fb90ec5af2e2
+
+% 0 1 0 11274b0be484456b1caa35f3b24f8ef3
+
+% 1 1 0 04addcf0f9490aae049d9c0355cc0bcc
+
+@ 0 1 0 0298cdd3013834e30a19679b181b3249
++       label 取出它之前的名称
+
+% 1 1 0 0c21cb1986fc76c80441c24b6bb02c8a
+
+% 2 1 0 1ba22028dd10d9b01ac6fd8d0312e192
+
+% 4 1 0 10607942135538db0f43015565a5ed86
+
+% 0 1 0 05ccade1c36766d51f5dc0f909ef977f
+
+% 1 1 0 1345f0d31bfd42df16f8229b2d2a7ced
+
+@ 0 1 0 03592b0a66f692e307fbb485ab6b51ae
++       label 以及它之后的值，并去掉首尾空白
+
+% 1 1 0 14e98ff2987171650bed5f43cdd3216b
+
+% 2 1 0 0e3951b4b3fbb6251c4631df6f5d35f1
+
+% 4 1 0 03abf736576f3f350bad42551318a159
+
+% 5 1 0 04dc1e0d90c22c8805184aedd7a56248
+
+% 0 1 0 073b68327f58c6a60992ae1ce94a9455
+
+% 1 1 0 1ab0dc5bcb04635a05fc73999b417cd0
+
+@ 0 1 0 1d8de30634b90d78153e75fcf58a88a3
++       label 然后在第一个参数处拆分该值
+
+% 1 1 0 157f33ed7412cb910290a33112d6fd5a
+
+% 2 1 0 04f34bad0f6533f901d74928116a5ec1
+
+% 4 1 0 0e8d9e7244f1a00f01eed2529534a54b
+
+% 5 1 0 0602c11a99bd802b09978648975fc161
+
+% 0 1 0 1ba5de609b990b841021b7147a998c98
+
+% 1 1 0 11aca008af2887b201da4b6882dbc0e0
+
+% 1 1 0 11e767d9efb47d1a0f4b85a0051bf1dd
+
+@ 0 3 0 06469edb3faf7dae19accf00a154286e
++     `offsetOf` 查找子串；`pinpoint` 按谓词查找字符，`search` 查找正则表达式的匹配。
++     `Textual#indexOf` 是其下的原语。
++     空子串从左侧在 `Prim` 处找到，从右侧则为 `Unset`。
+
+@ 0 5 0 139a5dc461c245b401a82868f518a5f6
++ entry .tally   子串不重叠出现的次数
++     `t"banana".tally(t"an")` 是 `2`，`t"aaaa".tally(t"aa")` 也是 `2`，因为每次出现都从上一次的末尾开始计数。
++     空子串计为 `0`。
++     这是子串形式；文本上的 `count(predicate)`——`t"banana".count(_ == 'a')`——是集合的操作，这就是子串形式有自己名称的原因。
+
+@ 0 5 0 191ed2bcf2bcacf20ec45c6178c10476
++ entry .search   文本值中被正则表达式匹配的子串
++     `t"a1b22c".search(r"[0-9]+")` 是由 `t"1"` 和 `t"22"` 组成的 `Chain`，每个都是接收者的切片（因此样式化文本的匹配保留其样式）。
++     当 `overlap = true` 时，匹配可以从上一个匹配内部开始。
++     它需要作用域中有一个 `Regex.Engine`，由 `r"…"` 字面量的形式提供。
++     若需要匹配*之间*的片段，使用 `cut`。
+
+@ 0 8 0 18553ebc914420f90e08163cc031bee2
++ entry .extract   用由正则模式组成的偏函数扫描文本值，收集每个匹配
++     `text.extract { case r"…" => value }` 沿文本从 `start`（默认为 `Prim`）运行由 `r"…"` 模式组成的偏函数，产出由匹配分支所产生的值组成的 `Chain`；扫描会推进到每个匹配的末尾。
++     这些分支在代码编译时被分解，使每个模式在每个位置都被尝试，并配有一个记录其匹配起止位置的 `Scanner`；无法分解的 lambda 会回退为在每个位置重新运行整个偏函数。
++     结果类型由各分支推断。
+
+% 2 1 0 00f4c76df71b2d38100ace2db66fab94
+
+% 3 1 0 126e0913dfdbb2ad1f425f32537a822d
+
+% 0 1 0 0556d061636198d00069be3b657a96f4
+
+% 0 1 0 04fda55ff8217f360b7ea2ccf62b53d0
+
+% 1 1 0 0417ff00aebddd800d6418da1c28c1f6
+
+@ 0 4 0 0c85a5e963bb59d01b01d8910cb7f4f0
++ entry .lower   小写形式的文本值
++     `t"Hello World".lower` 是 `t"hello world"`，用 `Char#toLower` 映射每个字符。
++     要求元素为 `Char`，因此它可用于 `Text`，`Writing` 被排除在外，样式化文本则保留其样式。
+
+@ 0 3 0 1f19f3d1fe57c62d0c1ed6886635b6f6
++ entry .upper   大写形式的文本值
++     `t"Hello World".upper` 是 `t"HELLO WORLD"`，用 `Char#toUpper` 映射每个字符；没有单字符大写形式的字符（`ß`）保持不变。
+
+@ 0 3 0 049c117eca3fec5f0565bbbc9813f15a
++ entry .capitalize   首字符为大写的文本值
++     `t"hello".capitalize` 是 `t"Hello"`，`t"kingLear".capitalize` 是 `t"KingLear"`；其余部分不变。
++     空文本保持为空。
+
+@ 0 2 0 18a099b5aa67e6db0c17dccbea8062aa
++ entry .uncapitalize   首字符为小写的文本值
++     `t"Hello".uncapitalize` 是 `t"hello"`；`camel` 就是 `pascal` 之后再接此操作。
+
+@ 0 4 0 1857b040c5cd2af91fd10b446dec2dbf
++ entry .trim   去掉首尾空白的文本值，或借助 `Bidi` 只去掉一侧
++     `t"  Hello \n".trim` 是 `t"Hello"`，`trim(Ltr)` 或 `trim(Rtl)` 只去掉一侧。
++     空白以 `Char#isWhitespace` 为准：空格、制表符、换行以及其他 Unicode 空格分隔符。
++     全为空白的文本修剪后为空文本。
+
+@ 0 3 0 0dc337fd972dfbe016aa232ffc59765e
++ entry .blank   文本值是否为空或全为空白
++     `t"  \t".blank` 和 `t"".blank` 都是 `true`；若只判断是否为空，使用集合的 `nil`。
+
+@ 0 8 0 144534d9364d79631609fa5805c0373b
++ entry .pinpoint   从某个起点、沿任一方向，第一个满足谓词的字符的序数
++     `t"oh, Hello World".pinpoint(_.isUpper)` 是 `Quin`，即 `H` 的位置；`pinpoint(_.isUpper, Sen)` 从第六个字符开始搜索并找到 `W`；`pinpoint(!_.isWhitespace, bidi = Rtl)` 则从末尾扫描。
++     没有字符满足谓词时，结果是 `Unset`。
++     它是 `trim`、`blank` 和 `uncamel` 之下的位置原语，通过直接访问而非遍历获取每个字符。
++     若要查找子串的位置，使用 `offsetOf`；集合的 `where` 是不带起点和方向的谓词搜索。
+
+@ 0 4 0 1cde42d6d2a3604b0dc64c6cd1cf07c4
++ entry .tr   映射每个字符；或将一个字符替换为另一个
++     `t"ABC".tr(_.toLower)` 是 `t"abc"`，`t"one,two".tr(',', ';')` 是 `t"one;two"`。
++     这是逐字符的转写，从不改变长度；对于子串，使用 `sub`。
+
+@ 0 2 0 1e80b5964d8f78030252d5d2c9a22e71
++ entry .erase   去掉所给字符的每次出现后的文本值
++     `t"a-b_c".erase('-', '_')` 是 `t"abc"`。
+
+@ 0 6 0 1b34c3d54da8c2410e87001cd95eeca5
++ entry .broken   在相邻两个字符满足谓词之处插入断行字符
++     `text.broken((left, right) => …)` 检测每对相邻字符，在谓词成立时于两者之间插入 `break`——默认是零宽空格——从而可以为长标识符提供用于换行的软断点：`t"camelCaseName".broken((a, b) => a.isLower && b.isUpper)` 标记出每个单词边界。
++     少于两个字符的文本不变。
+
+@ 0 6 0 10855d65429e305a05eeb2908f3adcdc
++ entry .pad   用某个字符将文本值扩展到某个宽度，在右侧，或在 `Rtl` 时于左侧
++     `t"123".pad(5)` 是 `t"123  "`，`t"123".pad(5, Rtl, '0')` 是 `t"00123"`；已达到或超过该宽度的文本保持不变，绝不截断。
++     宽度通过作用域中的 `Text is Measurable` given 测量（`textMetrics.uniformMetric` 每个字符计一列；`wideCharacterWidthMetric` 对中日韩字符和 emoji 计两列），因此填充能像终端显示那样对齐文本列。
+
+% 2 1 0 109622438fc194330993af0c53a0f3d2
+
+% 3 1 0 0173702d378cf1d1046a1f6bc6bf8bdf
+
+% 4 1 0 0443117395fc62dd17dfd86de9232795
+
+% 0 1 0 0c78fd810adfe1ca132c46af44e98a75
+
+% 1 1 0 07b81afc0ae020fd17e9e130ac1e3f6e
+
+@ 0 3 0 0fa49ad222f606441d223ff7388c38e5
++ entry .center   在两侧填充文本值至某个宽度
++     `t"ab".center(6)` 是 `t"  ab  "`，若有多出的一列，则放在左侧。
++     与 `pad` 一样，通过作用域中的 `Text is Measurable` given 测量。
+
+@ 0 5 0 04a21d16fa56538b03b9e68174d34c8c
++ entry .fit   将文本值强制为确切宽度，按需填充或截断
++     `t"123".fit(5)` 是 `t"123  "`，`t"12345".fit(3)` 是 `t"123"`；在 `Rtl` 时，填充放在左侧，截断保留右侧：`t"12345".fit(3, Rtl)` 是 `t"345"`，`t"123".fit(5, Rtl, '.')` 是 `t"..123"`。
++     通过作用域中的 `Text is Measurable` given 测量。
+
+@ 0 3 0 0b6f74b4b1b67ffc0d7cf3dbe74588c1
++ entry .ossify   将每个空格替换为不换行空格
++     `t"a b".ossify` 的两个字母之间是 U+00A0，因此自动换行的布局会将这些单词保持在一起。
+
+@ 0 2 0 14153480253b8c8501ed1b8630ff51b4
++ entry .subscripts   每个字符都被替换为其下标形式的文本值
++     `t"2".subscripts` 是 `t"₂"`；没有 Unicode 下标形式的字符变为空格。
+
+@ 0 2 0 08ddfbc5753fd6651cabad6558d77d12
++ entry .superscripts   每个字符都被替换为其上标形式的文本值
++     `t"23".superscripts` 是 `t"²³"`；没有 Unicode 上标形式的字符变为空格。
+
+@ 0 7 0 1c6607b02110b8ef03838b8661cfc5ed
++ entry .sub   替换 `Text` 中某个子串的出现，或正则表达式的匹配
++     `t"naive".sub(t"i", t"ï")` 是 `t"naïve"`，除非给出 `count`，否则每次出现都会被替换：`t"aaa".sub(t"a", t"b", 2)` 是 `t"bba"`。
++     字面替换文本按原样插入——其中的 `\` 和 `$` 不是转义——因此 `t"a.b".sub(t".", t"\\.")` 得到 `a\.b`。
++     以 `Regex` 作为模式时，替换文本中的 `$1` 指第一个分组：`t"ab".sub(r"(a)b", t"$$1c")` 是 `t"ac"`。
++     匹配不重叠：`t"fofofoo".sub(t"fofo", t"momo")` 是 `t"momofoo"`。
+
+@ 0 3 0 15a5d20c8decca1e14f366ad4a8206c5
++ entry .urlEncode   以 UTF-8 百分号编码为 URL 查询组成部分的 `Text`
++     `t"hello world".urlEncode` 是 `t"hello+world"`，`t"é".urlEncode` 是 `t"%C3%A9"`：这是表单编码，其中空格为 `+`。
++     `urlDecode` 将其还原。
+
+@ 0 2 0 0a57c1c75022d63c1cf8e106589c8602
++ entry .urlDecode   解码百分号编码的 `Text`，其中 `+` 表示空格
++     `t"%2B".urlDecode` 是 `t"+"`，`t"+".urlDecode` 是 `t" "`。
+
+@ 0 2 0 05d5683d7034acf10b8f16ad7e89b446
++ entry .punycode   国际化域名的 ASCII（Punycode）形式
++     `t"www.äpfel.com".punycode` 是 `t"www.xn--pfel-koa.com"`，通过 `java.net.IDN` 得到。
+
+@ 0 3 0 095763c090f190ed177570d35e8e1086
++ entry .sysData   `Text` 在系统代码页下的字节，作为冻结数组
++     `t"hello".sysData` 是字节 `104, 101, 108, 108, 111`。
++     若要使用选定的编码，在作用域中放入一个 `codepages` given 并使用 `text.in[Data]`。
+
+@ 0 6 0 180a4666a7bd84d2048a558082125a8c
++ entry .proximity   在作用域中的 `Proximity` 度量下两个 `Text` 之间的距离
++     在 `proximities.levenshteinProximity`（以及 `caseSensitivity.caseSensitive`）下，`t"Hello world".proximity(t"Hello orld")` 为 `1`：结果类型是该度量的 `Operand`——对 Levenshtein 和前缀度量是 `Int`，对 Jaro、Jaro–Winkler 和归一化 Levenshtein 是 `Double`。
++     `Proximity` 和 `CaseSensitivity` 都必须按名称导入。
+
+% 2 1 0 17ae4524e4d7faa706176e139ff4d446
+
+% 3 1 0 02ad62dda354bb27190b61b95fb5c7c1
+
+% 0 1 0 01bb34a2d0bdaad70bf21c35db82b7e2
+
+% 0 1 0 001716f4c0f290721deda3807d16c220
+
+% 0 1 0 1e7c4b1d183ff3c004413e3583df4967
+
+% 1 1 0 04ee86c83279f93b1b8dc06133da137a
+
+@ 0 8 0 10208e5ba23794661c753096e77824ad
++ entry .fuzzy   按接近程度而不是相等性将 `Text` 与字面量分支进行匹配
++     `text.fuzzy() { case t"hello" => … }` 求值的是在作用域中的 `Proximity by Double` 度量（`proximities.normalized LevenshteinProximity` 或 `jaroWinklerProximity`）下其字面量最接近该文本的分支，距离相同时取靠前的分支。
++     `threshold` 限定了分支可被选中的距离上限；与每个字面量的距离都超过它的文本会落入通配分支，该分支必须位于最后，并可以绑定该文本，若没有通配分支则抛出 `MatchError`。
++     每个非通配分支都必须是 `"…"` 或 `t"…"` 字面量，这在代码编译时检查。
+
+% 2 1 0 0c22c565b51df0bc0268778aa0a335bf
+
+% 3 1 0 07e612972dca8a3604d1818a67ecd9f9
+
+% 0 1 0 179b22b75b69454912f65511fccf9278
+
+% 0 1 0 1a389aad30b4767e0ad7f88ba7004bb9
+
+% 0 1 0 1aaf6273303a2ae60212bfcdaaf8bf00
+
+% 0 1 0 1a5def411d6fa0ae0284cd5f1b72bc6f
+
+% 0 1 0 097bfe0f63817b020796bbff7b974f8a
+
+% 0 1 0 1670a4af074c11c61a057d484da16b9d
+
+% 0 1 0 18c219d20bfef2a50e95f0725d8cc70e
+
+% 1 1 0 08181cbf977f93791fa719d79c8f084a
+
+@ 0 1 0 14f9cace7f3310491124ff447b4135fe
++ entry .Proximity   两个 `Text` 之间距离的度量：`proximity`、`fuzzy` 和 `Lexicon` 背后的类型类
+
+% 1 1 0 1a5bd1013b4743631b8e5884abaf0210
+
+@ 0 5 0 1d987aa4b8c29e2819782758ef0c37ec
++       `Proximity by operand` 只有一个方法 `#distance(left, right)`，其结果类型为 `#Operand`：对编辑次数或匹配字符数的计数是 `Int`，对归一化得分是 `Double`。
++       没有默认值：度量需从 `proximities` 包中按名称导入，而且每种度量都要参考作用域中的 `CaseSensitivity` 来判断两个字符是否相同，因此它也需要导入。
+
+% 2 1 0 1bd0761ed2f8044a14bbb8bdd4849c5c
+
+% 3 1 0 08c8cb24ae1f33b21f715f61c8fff921
+
+% 4 1 0 1e9dc2005401f7b31ea12ad108dcb487
+
+% 0 1 0 07325107ba6075ec0e326daf3deb0df2
+
+% 0 1 0 15b3b599e5ba8b4d1bb3e400b397604b
+
+% 1 1 0 1dfade9e7cccae1010877196502bb2b2
+
+@ 0 4 0 13e57a1526f8a5191d88209cf1ef0aeb
++       对于满足三角不等式的度量（Levenshtein），`#Triangulable` 为 `true`，`Lexicon` 需要这一点来修剪其搜索；Jaro 系列度量是相似度而不是度量空间意义上的距离，`Lexicon(terms)` 不接受它们。
+
+% 1 1 0 1af513c5a74ca2f4130665957f6bd443
+
+% 0 1 0 1e69dc539d8034bb09cff705d078e9ea
+
+% 1 1 0 1100b7cb9a92b4d909c71b83662786d5
+
+% 1 1 0 19293a5e34c2772610466b77f39c170f
+
+@ 0 3 0 051e646a665ac0ee1e45b68a8aa6a958
++   entry #Operand   距离的类型：`Int` 或 `Double`
++   entry #Triangulable   当该度量是满足三角不等式的度量空间距离时为 `true`
++   entry #distance   两个文本之间的距离
+
+@ 0 1 0 0d27eafa6e5bc55d0e4eb8a3667929d1
++ entry .proximities   字符串相似度度量，各自是一个需按名称导入的 `Proximity` given
+
+% 1 1 0 10515cb1ebd2d52a015eeec1927a7312
+
+@ 0 3 0 0467c7d4fe3c6e150d844e080a8bb436
++       `proximity`、`fuzzy` 和 `Lexicon` 使用哪种接近概念是一种选择，因此 `import soundness.*` 不引入其中任何一个；需要按名称导入一个，同时导入一个 `CaseSensitivity`，每种度量都需要它来比较字符。
+
+% 2 1 0 173c6477efb8131910139d59f56ee4dd
+
+% 3 1 0 1d7f8b51510ea6480fbcc0ab520d8847
+
+% 0 1 0 1879cb9a0ca3632602b434379def3247
+
+% 1 1 0 1289a1cae3de325f09fed6e43bf64903
+
+% 0 1 0 19db33a11c9e0707093b2b873ace6c07
+
+% 1 1 0 0acd6cf127a37a8610f0ae87d5039656
+
+@ 0 23 0 0c3c0175e6decb180e45e9da82daea72
++       Levenshtein 距离和前缀距离是 `Int`，零表示相同；Jaro、Jaro–Winkler 和归一化 Levenshtein 度量是 `Double`。
++       Jaro 和 Jaro–Winkler 是*相似度*（一表示相同），而归一化 Levenshtein 是*距离*（零表示相同）；`fuzzy` 选取值最小的分支，因此它期望的是距离。
++   entry .levenshteinProximity   Levenshtein 编辑距离：单字符的插入、删除和替换
++       `t"kitten".proximity(t"sitting")` 为 `3`。
++       文本与空文本之间的距离就是该文本的长度。
++       它是真正的度量空间距离（`Triangulable = true`），因此 `Lexicon` 建立在它之上。
++       它用两行整数计算，因此内存与较短文本的长度呈线性关系。
++   entry .normalizedLevenshteinProximity   Levenshtein 距离除以较长文本的长度，取值在 `0.0` 到 `1.0` 之间
++       相同文本为 `0.0`，毫无共同之处的文本为 `1.0`，两个空文本为 `0.0`。
++       `fuzzy` 通常与这一度量一起使用，因为其上的阈值不依赖于文本的长度。
++   entry .jaroProximity   Jaro 相似度：窗口内的匹配字符数，减去换位
++       相同文本为 `1.0`，在彼此较长长度一半的范围内没有共同字符的文本为 `0.0`。
++       它是相似度，而不是距离。
++   entry .jaroWinklerProximity   针对最多四个字符的公共前缀加以提升的 Jaro 相似度
++       即 Jaro 值，加上公共前缀长度（上限为四）的十分之一乘以 Jaro 值距 `1.0` 的差额；它偏向开头相同的文本，拼写错误往往如此。
++   entry .prefixProximity   两个文本公共前缀的长度
++       `t"interview".proximity(t"internal")` 为 `5`。
++       数字越大表示*越*相似；它是 `jaroWinklerProximity` 的构件，而不是供 `fuzzy` 使用的距离。
+
+@ 0 1 0 07b57b913f4889691df85f49385854f6
++ entry .CaseSensitivity   两个字符是否算作相同：每种接近度量都要参考的方针
+
+% 1 1 0 0f362d9a1e109c0c12c1e7f78ca83c67
+
+@ 0 4 0 18ae1a06e3bc1ac70140cce38962f5a4
++       `CaseSensitivity` 是一个从两个 `Char` 到它们是否匹配的函数。
++       `caseSensitivity` 包中的三种方针——`caseSensitive`、`caseInsensitive` 和 `smartCase`——是常用的选择，需按名称导入；自定义方针可以是任何形状合适的 lambda。
+
+% 0 1 0 10de0472bfcb1d4c0544b1a8fc6b2e1a
+
+@ 0 1 0 1f1912132806dfcc0f13f1f84396ba3f
++   entry #compare   在此方针下两个字符是否匹配
+
+@ 0 1 0 14e77f9cd6bce0e51e168545a7293433
++ entry .caseSensitivity   大小写匹配方针，各自是一个需按名称导入的 `CaseSensitivity` given
+
+% 1 1 0 0eb12e77d6ede00e0f00e039089e26f3
+
+@ 0 2 0 0aeae3210365ed5e1a09c9d4bb012371
++       `import soundness.*` 不引入其中任何一个。
++       凡是使用 `Proximity` 之处都需按名称导入一个，因为每种度量都要询问它两个字符是否相同。
+
+% 2 1 0 192b35ace8183f250c4256e429bbb83c
+
+% 0 1 0 136eece6874131450e11c79453722b45
+
+% 1 1 0 11f40f328a770b7a0385b3c047dafdc1
+
+% 2 1 0 1c987fe9be164466037e10b2f04ec4e6
+
+% 3 1 0 0ca647cafc6eda8d1fe2507826b0903f
+
+% 0 1 0 07d2afc9a9789aac10b4d532221ea5cb
+
+% 0 1 0 1f2494ad0a6cd9f6130d3519750a63f5
+
+% 0 1 0 0990dd2e1d8805a30fe26db752f812b9
+
+% 1 1 0 01f8d5e289adac7f175635014a1f63b1
+
+% 2 1 0 15545a498bca5fff1eda85f801930d54
+
+% 3 1 0 06f22cfe9e09259e16d62119994d2d61
+
+% 0 1 0 1130122ad0e28f7f0e45fcbbca6cf743
+
+% 0 1 0 1988865f09e6fcc7092575f36e3b1925
+
+% 0 1 0 1fa8140495f611be17bf901c6fb07a61
+
+% 1 1 0 1bd2a533bbea88840d6374c9d36c939b
+
+% 2 1 0 1b1b4718b06cdff900a6ebec27c412aa
+
+% 3 1 0 1f84399ecaf6517415e06e95c0e195fa
+
+% 0 1 0 0e8dbcae8b4fc5010e2fb6fcdaf93d8c
+
+% 0 1 0 111dea5d4be1402c1e67d459489d3ba8
+
+% 1 1 0 161e97cf325b049e1e86f7a222be00bd
+
+% 2 1 0 023f78848f4101760a4009b02ef32760
+
+@ 0 6 0 0f575d19463e930312107f1f24e81c39
++   entry .caseSensitive   字符仅在相等时匹配
++   entry .caseInsensitive   字符在其大写形式相等时匹配
++   entry .smartCase   左侧的小写字符匹配任一大小写；其他任何字符只匹配其本身
++       这是 Vim 的 `smartcase` 等搜索工具的规则：以小写输入的查询不区分大小写，而查询中的大写字母必须精确匹配。
++       左操作数是查询。
+
+@ 0 1 0 15f79144967721480829164e70394a08
++ entry .Collation   `Text` 的全序：排序和比较文本所需之物
+
+% 1 1 0 187511314d9189cc17b1b57960937b90
+
+@ 0 7 0 0f83761330500fd20662c9a2917a9f3b
++       文本没有天然的顺序——`café` 是否排在 `caff` 之前取决于语言和用途——因此 Soundness 没有环境默认的顺序：对 `List[Text]` 排序，或者写 `t"a" < t"b"`，都需要作用域中有一个 `Collation`，否则无法编译。
++       排序规则可从 `collations` 包中按名称导入（`unicodeCollation` 用于词典顺序，`codepointCollation` 用于快速且无需表的顺序），或用 `.apply` 从 hieroglyph 的 `CollationTable` 构建，而 `collationComparable` 将其转换为比较运算符和排序所寻找的 `Text is Comparable`。
+
+% 2 1 0 06fb88e3d27239b1142bf4a0d7045526
+
+% 3 1 0 138d01285a77ad770bafea0982a2ee2e
+
+% 0 1 0 1285ef31f17a40770ec6b6f0bbd813af
+
+% 0 1 0 1e5f4b9c319e82950983f04a2f5db149
+
+% 0 1 0 09bd1f97efb7692319774c2a96f513ac
+
+% 0 1 0 1a0b705e3a58d182070dadfd6ccca56a
+
+% 1 1 0 0a4a3c8edc407a1005f4242fdfe9bfff
+
+@ 0 3 0 00936ba1fc232af6057d8b49f76defa6
++       `#compare` 给出两个文本的 `Comparison`，`#key` 给出排序键：一个整数数组，逐元素比较时其顺序与排序规则一致，用于对许多文本排序而无需重复比较工作。
+
+% 0 1 0 14c68f3f67c0578c0e70b4fc041d16ce
+
+% 0 1 0 1c4f05048b2b06fe0566f1a18d8e8c36
+
+@ 0 3 0 07dc6a1c58d2d8c603a1a401ffb6ebb0
++   entry .apply   基于 hieroglyph `CollationTable`（例如某种语言的定制表）的 `Collation`
++   entry #compare   两个文本的 `Comparison`（`Less`、`Same` 或 `More`）
++   entry #key   文本的排序键：按排序规则的方式进行比较的整数
+
+@ 0 7 0 06c83fc5e6cb1f1f062079b410a9fae3
++ entry .collationComparable   只要作用域中有 `Collation`，就使 `Text` 成为 `Comparable`
++     `<`、`>`、`least`、`sort` 以及 `Text` 上所有其他比较操作都通过这个 given 解析。
++     它需要作用域中有 `Collation`，因此文本恰好在选定了排序顺序时才变得可排序，而对未排序的 `List[Text]` 报告的错误会指出缺少的 `Comparable`。
++     它是一个带有库限定名称的顶层 given，因为 `Comparable` 和 `Text` 的伴生对象都无法引用 gossamer，所以它必须与排序规则一起按名称导入——`import soundness.collationComparable`。
+
+% 2 1 0 143b1ff2d6c293021469411cf6f6a0a0
+
+% 3 1 0 05e8299b64dc7e21076221524f9d921c
+
+% 0 1 0 161ba3160e460cb50c6576063980e5d8
+
+% 0 1 0 00bb9d3937e1649c0e3805cd5e749bfe
+
+% 0 1 0 074f2d88bda64d9219f64ea3eebd4777
+
+% 1 1 0 14a9c4b5095d4f8c12e2f249bae02434
+
+@ 0 1 0 0415d3c5f34169920992b62e09cb9801
++ entry .collations   文本的排序顺序，各自是一个需按名称导入的 `Collation` given
+
+% 1 1 0 05014f8ee6faad691a7c34173f9c4ed1
+
+@ 0 2 0 16940fd200f758a91d76504b46fc9632
++       `import soundness.*` 不引入其中任何一个；通过导入其中之一来选择排序顺序。
++       两种顺序在大小写、重音符号以及基本平面之外的字符上有所不同：
+
+% 2 1 0 06e22c38f4bbd7800340bb6eecfbdc00
+
+% 0 1 0 0c22ba6d0a62a47a12fbbe4c8f30d91d
+
+% 1 1 0 1b83dd50030db11c09144ea4d4ef7849
+
+% 2 1 0 18a5cc87e519fcf113869db63db84456
+
+% 0 1 0 140b8725d89050d21ae20ffce63e4f64
+
+% 1 1 0 0338fed99a5e0afa02b76c69825eb969
+
+% 0 1 0 17b40f81e1f842790280b0aa82e382cb
+
+% 0 1 0 05839c29923015ce18fd1352046d440d
+
+% 1 1 0 107a3d3e0b33af93145d8bb694909cc9
+
+% 2 1 0 0ed5e491ffd8cc3212c246bb3b1b1633
+
+% 0 1 0 0877360e20676ed600ff377f037c7fa9
+
+% 1 1 0 02c8a01cbe20fc20176e06dd185f00f0
+
+% 0 1 0 0001b5d1a6354b0c08c163a90a02c449
+
+% 1 1 0 0a22b8cf71af2b360c9bca69b0ecb28e
+
+% 2 1 0 04aa94bd2df4f4af0889f903c2586ef8
+
+@ 0 12 0 0ec9ce377f07534a18700b104079a4bd
++       特定于区域设置的定制来自 cosmopolite，它从上下文中的 `Locale` 派生出 `Collation`，或者来自基于 hieroglyph `CollationTable` 的 `Collation(table)`。
++   entry .unicodeCollation   词典顺序：Unicode 排序算法的根表，三个级别，不可忽略
++       默认 Unicode 排序元素表（UTS #10）的顺序：字母先按其主权重排列，不论大小写或重音，然后按重音，再按大小写，因此 `cafe` < `café` < `caff`，且 `a` < `B`。
++       排序键是该表为文本给出的键。
++   entry .codepointCollation   原始码点顺序：确定性的、无需表，用于面向机器的排序
++       按 Unicode 标量值排序，因此在排序数据的各个版本之间保持稳定，且加载没有任何开销；适用于文件列表以及其他必须可复现而非可读的输出。
++       它不是 `String` 的顺序，后者比较 UTF-16 码元，因此会把增补字符（`𝓐`）排在 U+E000–U+FFFF 之前；在这里它们排在整个基本平面之后。
++       大写字母排在所有小写字母之前。
+
+@ 0 1 0 153cbca83488361616c600a6f33510ad
++ entry .Decimalizer   以选定的精度将 `Double` 渲染为十进制文本，作为 `show` 所参考的 `DecimalConverter`
+
+% 1 1 0 131e8f48d69fe32e1f1e3c7f0f755589
+
+@ 0 5 0 139ad7fd5b683a2d07dd64583853cc5b
++       `Decimalizer` 是一个 `DecimalConverter`，即 `Double is Showable`（以及 `Double` 的 `t"$x"`）所寻找的类型类，它规定值得显示多少位数字：`Decimalizer(3)` 是三位有效数字，`Decimalizer(decimalPlaces = 2)` 是小数点后两位。
++       数量级达到 `#exponentThreshold` 个十的幂（默认为三）的值以科学计数法书写，指数用上标表示。
+
+% 2 1 0 031584548f52bb0604efabde299102cf
+
+% 3 1 0 0caa0a3fd84c8e58101a65d1b42a883c
+
+% 0 1 0 1d08d79b5f5709130d2666989c77baaf
+
+% 0 1 0 02aa449918b4ba141dd797dc20482922
+
+% 0 1 0 094e28e45a14fb8d068f90eafb3edeeb
+
+% 0 1 0 13ab2d11a47c287c007962fef008d2d0
+
+% 0 1 0 1bf1187c77aaee6713bc60630ad482a2
+
+% 0 1 0 136a33f3fd0e72650fb76ccd0cb68a0c
+
+% 1 1 0 0b61cbb398676fb013724c89dd4f51fb
+
+@ 0 6 0 0cf74315ae75c92309ba67317b73653a
++       作用域中的 `given Decimalizer(3)` 会使所有浮点数的 `show` 以同样的方式渲染，因此改变程序的精度只需一个 given，而不必搜寻格式字符串。
++       舍入会正确地进位越过首位数字。
++       特殊值渲染为 `#infinity`（`∞`，为负时带 `#minusSign`）和 `#nan`（`∉ℝ`）。
++       `decimalConverters.javaDecimalConverter` 是使用普通 `Double#toString` 的替代方案。
+
+% 0 1 0 0cadd17fdce7c0d3001ae4d3513cb578
+
+% 0 1 0 0b19ef9d8df904131fb8f63308d771d3
+
+@ 0 19 0 0c8c1f781c3d97d005616feb3090c029
++   entry #significantFigures   要显示的有效数字位数，或 `Unset` 表示使用 `#decimalPlaces`
++       它是第一个参数，因此 `Decimalizer(3)` 设置的就是它。
++       它和 `#decimalPlaces` 都为 `Unset` 时，使用三位有效数字。
++   entry #decimalPlaces   小数点后的位数，在 `#significantFigures` 为 `Unset` 时使用
++   entry #decimalPoint   小数点字符，默认为 `.`
++       `Decimalizer(7, decimalPoint = '·').decimalize(6.626070e-34)` 为 `t"6·626070×10¯³⁴"`。
++   entry #minusSign   写在负数之前的字符，默认为 `-`
++   entry #plusSign   写在正数之前的字符，或 `Unset`（默认）表示不写
++   entry #exponent   尾数与指数之间的文本，默认为 `×10`
++   entry #exponentThreshold   开始使用科学计数法的数量级，以十的幂计；默认为 `3`
++       `Unset` 完全禁用科学计数法。
++   entry #superscript   指数是用上标数字书写（`10²³`，默认），还是用普通数字书写（`10-34`）
++       使用上标时，负指数以类似长音符号的 `¯` 作为其符号。
++   entry #exponentMultiple   将指数向下舍入到某个倍数，`3` 即工程计数法；默认为 `1`
++       使用 `exponentMultiple = 3` 时，`6.0221408e23` 渲染为 `602.2141×10²¹`。
++   entry #infinity   无穷值的文本，默认为 `∞`
++   entry #nan   非数值的文本，默认为 `∉ℝ`
++   entry #decimalize   在此 decimalizer 的设置下 `Double` 的文本
++   entry #exponentScale   指数中的十进制位数；`#decimalize` 的辅助方法
+
+@ 0 1 0 0508c9d5c3d9653b0bfaeaa706548f1c
++ entry .decimalConverters   `Decimalizer` 之外的 `DecimalConverter` 替代方案，需按名称导入
+
+% 1 1 0 1809323c391c4bb9122934b3a3200fb2
+
+@ 0 6 0 0467a005d4c99f290aa11f314b86ce54
++       `Double` 通过作用域中的 `DecimalConverter` 显示。
++       `Decimalizer` 规定精度；本包包含不规定精度的转换器。
++   entry .javaDecimalConverter   用 `Double#toString` 渲染 `Double`，与 Java 完全一致
++       `3.14159` 渲染为 `3.14159`，`1e21` 渲染为 `1.0E21`，`0.1 + 0.2` 渲染为 `0.30000000000000004`：显示二进制值所具有的每一位数字，不舍入到任何精度。
+
+@ 0 1 0 0c9117d2f32e8f630e3343fa7d1388f0
++ entry .Numerous   带有单数和复数词尾的单词，用于在行文中计数
+
+% 1 1 0 116e9e43ba72363316ed2b8e6ae502f3
+
+@ 0 3 0 11354cd9e448cf701a8fe8c8592b07fd
++       `Numerous(t"item")(3)` 为 `t"items"`，`Numerous(t"item")(1)` 为 `t"item"`。
++       词尾默认为 `s` 和空，不规则单词需给出词尾：`Numerous(t"quer", t"ies", t"y")`。
++       可以传入集合来代替计数。
+
+% 2 1 0 1cd00686e8e03ea50d6d2e022bafccea
+
+% 3 1 0 0e28bc40ad0e369405c579277c02bd96
+
+% 0 1 0 1124e97b083af06611282880540fe23e
+
+% 0 1 0 1de33667ff1675cd0b5d91f9a1c1b587
+
+% 0 1 0 03753e8f73c4d2e815d868d72cca0004
+
+% 0 1 0 0998a9a1d645ad1101ef734bebfba7ba
+
+% 1 1 0 1165d6a04ae9f97c186a5c98da214b89
+
+@ 0 4 0 02044e881142acba1bb0f1d6ad31b378
++   entry #word   添加词尾的词干
++   entry #pluralEnd   计数不为一时的词尾；默认为 `s`
++   entry #singularEnd   计数为一时的词尾；默认为空
++   entry #apply   带有对应于某个计数或某个集合大小的词尾的单词
+
+@ 0 1 0 1bc0439dbf81237312307bbf5d792eca
++ entry .Range   `Range.Error` 的所在之处，在索引超出文本边界时抛出
+
+% 1 1 0 06a794a67ee6c4190853ad119abafa82
+
+@ 0 4 0 1618ecc84532bf8a0d0197922496b35d
++       这里只有该错误。
++       切片操作本身会截取而不是失败——`segment` 会截短过大的区间——因此只有少数必须拒绝某个索引的操作才会抛出该错误，例如行编辑器的光标移动。
++   entry .Error   错误 `↯/s.42.1`：_the index `index` is outside the range `from`-`to`_
+
+% 1 1 0 1c82d34216796840072f8fb59c388e10
+
+@ 0 6 0 10122ebeefb82edc04f3bb34814b2528
++         当无法截取的操作遇到超出文本边界的位置时抛出。
++         它是一个 `fulminate.Error`，因此通过 `Tactic[Range.Error]` 抛出，并可以用 `safely` 或 `mend` 处理。
++     entry #index   所请求的索引
++     entry #from   最低的有效索引
++     entry #to   最高的有效索引
+
+@ 0 5 0 055c9b9fbdc1d849128c0b460301cdc0
++ entry .Bidi   操作的起始方向：`Ltr`（从开头）或 `Rtl`（从结尾）
++     `Bidi` 是 anticipation 的枚举，连同其分支在这里重新导出，以便 `import gossamer.*` 拥有完整的切片词汇。
++     `keep`、`skip`、`pad`、`fit`、`trim`、`chomp`、`offsetOf` 和 `pinpoint` 各自接受一个 `Bidi`，默认为 `Ltr`，而 `Rtl` 使它们从结尾开始工作：`t"Hello".keep(2, Rtl)` 为 `t"lo"`。
+
+@ 0 3 0 0796ba76d5ee223a17b684196e1fb5fd
++ entry .Ltr   从左到右：从文本的开头开始，默认方向
++     即 `Bidi.Ltr`，重新导出以便可以直接书写：`t"123".pad(5, Ltr, '.')` 为 `t"123.."`。
+
+@ 0 3 0 1e182269e0a2ce4311592304e2150ea9
++ entry .Rtl   从右到左：从文本的结尾开始
++     即 `Bidi.Rtl`，重新导出以便可以直接书写：`t"123".pad(5, Rtl, '.')` 为 `t"..123"`，`t"Hello".skip(1, Rtl)` 为 `t"Hell"`。
+
+@ 0 5 0 1eb1af350a5a4d52125e7eb4c291a64e
++ entry .reversibleTextual   适用于任何文本类型的 `Reversible` 实例，供伴生对象发布
++     `reverse` 是同时适用于集合和文本的单个扩展方法，由 rudiments 的 `Reversible` 类型类驱动；但适用于所有 `Textual` 类型的通用 given 无法放在隐式搜索能找到的地方，因为 `Reversible` 的伴生对象位于 gossamer 之下的 `rudiments` 中。
++     因此每个文本类型都在自己的伴生对象中发布该实例：
+
+% 2 1 0 0140ec3b7bba7cf518b9a50aa9dee6f2
+
+% 0 1 0 06b5aa9bb0e2148116df5511cfb637db
+
+% 1 1 0 13a044c22d96d78511a97f25240fbe40
+
+% 1 1 0 149c77db45ac644f1a74f205bbafc35a
+
+% 0 1 0 1643cd7fd72c22981ec68aed5653b98c
+
+% 0 1 0 09659e236c813bd3122a82f9f71d7f97
+
+% 0 1 0 09580821ec10efc9132bdcbbfbcea5c1
+
+% 0 1 0 114d41ff69b133e9130920aabac9b6f5
+
+% 1 1 0 1e6ef8d1ccfe887d13dfa0b5d8d1f220
+
+@ 0 3 0 01127e691fcc705a0088d50d063f1a48
++     细化必须如图所示加上括号，否则花括号会被解析为 given 的主体。
++     反转通过该类型的 `Builder` 逐元素构建结果，因此带样式的文本仍保持样式。
+
+@ 0 7 0 1965025f7cb68f5e038fbf09c9306a87
++ entry .traversableTextual   适用于任何文本类型的 `Traversable` 实例，供伴生对象发布
++     与 `reversibleTextual` 对应、用于遍历的实例：若某个文本类型的伴生对象声明了 `given traversable: (Styled is Traversable { type Operand = Char }) = traversableTextual`，它就获得集合库中 `keep`、`skip`、`snip`、`count`、`where`、`all`、`exists` 的谓词形式以及其他 `Traversable` 操作，重建过程通过 `segment` 进行，因此样式得以保留。
++     所遍历的元素是该类型的 `Textual#Result`。
+
+@ 0 1 0 164eb937ebca35fd17261f7547d2ec49
++ entry .Writing   切分为字素簇的文本：读者所看到的字符
+
+% 1 1 0 06afbd4aeb84087314be649a43e2ddbe
+
+@ 0 6 0 0221942b48cb92180da38838590d3778
++       `Char` 并不是人们所说的字符：`é` 可能是一个码点，也可能是两个；旗帜是一对区域指示符；家庭表情符号是若干个连接在一起的码点。
++       `Writing(text)` 一次性计算文本的字素簇 `#boundaries`（Unicode UAX #29），然后将其呈现为元素为 `Grapheme` 的 `Textual`，因此 `length`、`keep`、`skip`、`segment`、`slices` 和 `reverse` 按所见的内容而不是按 UTF-16 码元来计数和切分。
+
+% 2 1 0 02c74f4d2411604712b56b82af22d47e
+
+% 3 1 0 1de6c10a3569e1d7095b8ae14317d001
+
+% 0 1 0 17cf5a2661de60a3157c36fcb6e7e50a
+
+% 0 1 0 0c58cbbef4c94eff11af9fb9cbdd2ada
+
+% 0 1 0 02833d88d77e923a1faf1c715c1a50a7
+
+% 0 1 0 03c7787e9a3b68ab1b6f51501c58d369
+
+% 0 1 0 1e520efd372bf5ff12c13f3a5469c7a1
+
+% 1 1 0 0439a3e702ed10b809fc15a409ad2d28
+
+@ 0 4 0 12cff669074ca88812a899bff80ad524
++       在作用域中有 `Grapheme is Measurable`（来自某个 `textMetrics` given）时，`.measurable` 给出 writing 的显示宽度，即其各字素宽度之和，这比按码点度量普通文本更准确。
++       `Writing` 显示为其文本，检视时其各字素簇以 `·` 分隔。
+
+% 0 1 0 07a92d31bf9ef86219fe40a7bfd89acc
+
+% 0 1 0 01dee382db0e97d21c85dd9a7f91eec7
+
+@ 0 20 0 0e633bbe9ab7a2fe1729cbf1b49c62a1
++   entry .apply   文本的 `Writing`，已计算其字素边界
++   entry .empty   空 writing
++   entry .showable   将 writing 显示为其普通文本
++   entry .inspectable   将 writing 检视为 `w"…"`，字素之间以 `·` 分隔
++       `Writing(t"a\r\nb").inspect` 为 `w"a·\r\n·b"`：切分正是区分不同 writing 的东西，因此检视显示的就是它。
++   entry .concatenable   writing 上的 `left + right`，边界会重新计算
++   entry .measurable   writing 的显示宽度：其各字素宽度之和
++       需要作用域中有 `Grapheme is Measurable`，`textMetrics.wideCharacterWidthMetric` 通过 `Grapheme.measurable` 提供它。
++       组合重音符号不会给其基字符增加宽度，旗帜或 ZWJ 序列是一个宽单元格，而不是其各部分之和。
++   entry .textual   `Writing` 的 `Textual` 实例，元素为 `Grapheme`
++       长度是字素数量，访问和 `segment` 以字素为单位工作，而 `indexOf` 仅当子串从字素边界开始时才返回位置。
++   entry .graphemes   writing 的字素，作为可索引序列
++   entry .graphemeCount   字素簇的数量；与 `length` 相同
++   entry #text   底层的普通文本
++   entry #boundaries   字素边界的字符偏移量，从 `0` 到文本的长度
++       一个比字素数量多一个元素的冻结数组；第 `i` 个字素是 `boundaries(i)` 与 `boundaries(i + 1)` 之间的字符。
+
+@ 0 1 0 155a286f74189b03045067c921296cf6
++ entry .Grapheme   一个字素簇：带有组合标记的基字符，或连接而成的序列
+
+% 1 1 0 0e2fd49c9777a55d1414b43a03db0fac
+
+@ 0 4 0 14686a3441f3838613ea197ed7618ebe
++       `Writing` 的元素类型：一个基于 `String` 的不透明类型，保存单个用户感知字符的码点。
++       `Grapheme("é")` 包装一个字素；`#text` 是其 `Text` 形式，`#chars` 是其以 UTF-16 单元计的长度。
++       它检视为 `‹é›`，即字素簇完整地显示在尖角引号内而不加转义，因为其结构才是重点。
+
+% 2 1 0 1b2b7c95b766eaf51a85ae9dd646a16a
+
+% 3 1 0 1e86ad4772c4cf4c16418435f3a338cc
+
+% 0 1 0 00e9d5b71cf9ab080cfecb5746060983
+
+% 0 1 0 1e7e22ead531858e1c277408c3e0afc8
+
+% 0 1 0 07ee11cd059c1acc093cf1e61c617377
+
+% 0 1 0 061b7d4b94ca9bd11f3a4ec24e34c29d
+
+% 1 1 0 1256fb718a4d1e49051faf38d85d19df
+
+@ 0 3 0 0381843fba506f2e1e5c93adb3bb9023
++       其伴生对象的成员——`apply`，`showable`、`inspectable` 和 `measurable` given，以及 `text` 和 `chars` 扩展方法——在 `internal.opaques.Grapheme` 中声明并在那里记述，该类型就是从那里导出的。
+
+% 1 1 0 118adeba898a3e3a00a32de0dfb431bd
+
+@ 0 1 0 043b853bd518cb9a1981cefb677888dc
++ entry .Ascii   ASCII 字符的字节串，用 `a"…"` 创建
+
+% 1 1 0 025559248ee42c1a062720f5b3461bec
+
+@ 0 5 0 0252768855d7fc1712a0aa98b36131fa
++       一个基于冻结 `Array[Byte]` 的不透明类型，每个字符一个字节，带有元素为 `Byte` 的 `Textual` 实例，因此位置和子串操作（`cut`、`keep`、`starts`、`offsetOf`、`slices`、`+`……）可以直接作用于它，而 `plain` 将其转换为 `Text`。
++       `a"…"` 插值器在代码编译时检查每个字符是否为 ASCII；`Ascii(bytes)` 包装已有的字节，不做检查。
+
+% 2 1 0 1fa62ce875bdd5ac0e2a099339e0b17a
+
+% 3 1 0 09b8bf393ec99047150c3305f66d4019
+
+% 0 1 0 139da282229722560e3ad580a1bc0358
+
+% 0 1 0 047d0b7f52284fb71a20c8e227276507
+
+% 0 1 0 1a06f0a1f74c69d00f7c0acb6f5bd238
+
+% 0 1 0 037ccd134eb215c51f1ba237a936ef70
+
+% 1 1 0 082a8cc19e47101510856a84bc9c39e5
+
+@ 0 3 0 0ad2150928e71b7918ebf759d891bac9
++       其伴生对象的成员——`apply`，`showable`、`inspectable`、`concatenable` 和 `textual` given，以及 `bytes` 扩展方法——在 `internal.opaques.Ascii` 中声明并在那里记述，该类型就是从那里导出的。
+
+% 0 1 0 12e50c0f512032521e1c5cb19b0e4bae
+
+@ 0 7 0 113b37a7988e2b9315795ecff0f06565
++ entry .textDecodable   通过作用域中的 `Charset` 将 `Data` 解码为 `Text`，用于 `data.as[Text]`
++     `Text` 的 `Decodable in Data` given，位于 `gossamer.codec` 中：`bytes.as[Text]` 以作用域中的 `Charset` given（`charsets.utf8Charset`、`asciiCharset`……）读取字节，它与 `codepages` given 下的 `text.in[Data]` 相对应。
++     ISO-8859-1 以外的字符集还需要一个用于处理格式错误输入的 `TextSanitizer`（`strictSanitizer` 抛出 `Charset.Error`）。
++     它是顶层 given，因此必须按名称导入：`import soundness.textDecodable`。
+
+% 2 1 0 11f85c1fbdcf708211c7dd6b55599ba4
+
+% 3 1 0 0272a28ef126475315cb957f9b120862
+
+% 0 1 0 0ad93198262cba4102f10ea1980b5899
+
+% 0 1 0 0b1e22680a708fa418dc46e682b2353f
+
+% 0 1 0 0d5bf406e74cd04a13d75d4030990ef7
+
+% 0 1 0 195d698c79e48182084de8e2fe1b52e0
+
+% 0 1 0 14ad7791959ecbd2182874a17e7ce744
+
+% 1 1 0 0014f482f1cb64bb11bbaa81566a8412
+
+@ 0 1 0 1d240539574aa65b1ef8a90dace08686
++ entry .enumIdentification   枚举分支名称写成文本的方式，各自是一个需按名称导入的 `Identifiable` given
+
+% 1 1 0 027138c0d020227809b6eaa568eeda56
+
+@ 0 5 0 165ae8e7f570a95d013ae8bab5dcf1eb
++       `Verbosity.Loud` 分支在命令行、配置文件或 JSON 文档中可能写作 `loud`、`LOUD`、`Loud` 或 `loud-level`；采用哪一种是一种选择，因此枚举的 `Identifiable` given 位于此处，需按名称导入其中一个。
++       每一个都将分支名称编码为相应约定的形式，并将该约定下的文本解码回枚举所声明的帕斯卡命名形式。
+
+% 2 1 0 02fcc2e29c8da45c0caeafb74ef70d2b
+
+% 3 1 0 06bf63447de38b081ecda646e0429c9d
+
+% 0 1 0 0a64e7aa3d9799e41209266460234792
+
+% 0 1 0 15ef8fa0251cf9fe085a698b8dfd7893
+
+% 0 1 0 191116ac2dca1f8a1d566ff0afb51f66
+
+% 0 1 0 0760df20b28407af0b17849a073b801f
+
+% 0 1 0 11c67d2ae77b8bb41572aae89c52183f
+
+% 1 1 0 04a092ba86c0ab1e0b7ec836138c8d2c
+
+@ 0 2 0 16a32dd94bf44b970f1abb4015ad485b
++       这样，类型为 `Flag[Verbosity]` 的 CLI 标志就会读取 `--verbosity very-loud`，JSON 或 TEL 编解码器也会将该分支写作 `very-loud`。
+
+@ 0 2 0 1ac573af4e987f96170b0df1ea43a28f
++       `pascalCaseIdentifiable` 是恒等映射，用于分支按声明形式书写的枚举。
++       这些 given 位于 `gossamer.codec` 中，因为 `Identifiable` 属于 distillate。
+
+% 0 1 0 0f88e25e7dcfcc37166291640af2c899
+
+% 0 1 0 16d863ef386c4d8309adaa428b5e8ff8
+
+% 0 1 0 00704d3aa6f96e8507d8580d3fceabcd
+
+@ 0 3 0 1079e0e2c9c55681071c1e9cab516e06
++       解码时在重新大写之前将 `_` 视为单词边界，与蛇形命名 given 相同。
++   entry .pascalCaseIdentifiable   `VeryLoud` ↔ `VeryLoud`：声明时的分支名称
+
+@ 0 1 0 1f9c0c43469fa4be130152411ad6f6e7
++ entry .Lexicon   基于词汇表的 BK 树：查找与查询相距在给定距离之内的每个词条
+
+% 1 1 0 128a42484c21a43e0b35e6e172dba45a
+
+@ 0 5 0 11b5c6a0b2afcb821e7cff2cf08f8b97
++       将查询与词汇表中的每个单词逐一比较是二次方复杂度的，而拼写建议需要快速完成。
++       `Lexicon` 在作用域中的 `Proximity by Int` 下用 Burkhard–Keller 树索引词条，并利用三角不等式——度量必须满足它，因此其 `Triangulable` 必须为 `true`，`levenshteinProximity` 就是如此——在不度量大部分词汇的情况下将其修剪掉。
+
+% 2 1 0 04f08f7e6691704d13ea9b9d27959d02
+
+% 3 1 0 07f25f1c5f66c6071236fffffedd2904
+
+% 4 1 0 0459f21502d0b8781f83492e385ddca8
+
+% 1 1 0 1118e79849ad83f30a07ef83e20bd831
+
+% 0 1 0 14bf560888b588a913941905276b49fc
+
+% 0 1 0 19839187e62cefe819dcf8b5ecee5ed5
+
+% 0 1 0 131f6e88a31b29b307e68021f450fd80
+
+% 1 1 0 0f40fda82e85b7291f788a5885e2c173
+
+@ 0 4 0 1dcbbd9b322e3e921b13790fa6cce14f
++       词典可以将每个词条映射到一个值（`Lexicon(Map(t"colour" -> Colour.Blue))`），此时搜索返回这些值。
++       它是可变的：`#update` 添加一个词条，`lexicon(t"term") = value`，而且该结构在构建期间不能安全地在线程之间共享。
+
+% 0 1 0 01cb21270777e2d6197c750f0e78a2a8
+
+% 1 1 0 1ff5d5811ce5306d01c80a6327c4a35b
+
+@ 0 6 0 06c307b8fcc1e6d600a71d64329e72a1
++   entry .apply   由词条列表、从词条到值的映射构成的词典，或空词典
++       `Lexicon(terms)` 将每个 `Text` 同时作为键和值进行索引；`Lexicon(map)` 索引键，搜索时返回值；`Lexicon[element]()` 是空的，用 `#update` 填充。
++       前两种需要 `Triangulable` 度量；空的形式接受任何 `Proximity by Int`，并依赖调用者已选择了度量空间距离。
++   entry .Node   树的一个节点：一个词条、其值，以及按距离作键的子节点
+
+% 1 1 0 048e3b8a87a30fc403f17a1e9210e9da
+
+@ 0 10 0 1dc0509180ec88e7013b29483ffc3dab
++         非空词典的实现。
++         每个子树以其根节点与本节点词条之间的距离作为键，这使得搜索可以跳过所有键与查询距离之差超过半径的子树。
++     entry #children   子树，以它们与本节点词条之间的距离作为键
++     entry #update   将词条添加到对应距离的子树中，必要时创建子树
++     entry #search   本子树中与查询相距在 `radius` 之内的值
++   entry #update   添加一个带值的词条：`lexicon(key) = value`
++   entry #search   与查询相距在 `radius` 之内的每个词条的值
++       半径为零即精确查找；半径越大，接纳的候选项越远，“您是不是要找”式的建议就是这样从大型单词列表中产生的。
+
+@ 0 1 0 08c1f213d532536e050c36ddf634425c
++ entry .Dictionary   从 `Text` 键到值的稠密字典树，用于精确查找和前缀查找
+
+% 1 1 0 0cafccc78741b89c1c0a8e554c4c8706
+
+@ 0 5 0 1316e2047acc49260b20ac39ef781c79
++       `Dictionary[value]` 通过以扁平数组布局的字典树将文本映射到值：每个节点在 `#children` 中拥有一块 `alphabet.size` 个槽位，因此一次查找对键的每个字符只需读取一次数组，且无需对整个键计算哈希。
++       它适用于连字符表、HTML 属性名、关键字集合以及其他任何被频繁查找的固定词汇。
+
+% 2 1 0 043bf89226be48e61c55086eaf8cb6ad
+
+% 3 1 0 080086e95dfe048c0aec0c11f0089f25
+
+% 0 1 0 146ef45f4625aa68120c2226f00fb80c
+
+% 0 1 0 13981b2b539e30a50bce2a46626655b3
+
+% 0 1 0 1d74aa6e18c8040403b1092af5094064
+
+% 0 1 0 129182031f5c2e7c03e6869dab2dc4d1
+
+% 1 1 0 11528d5993a898da09c1072341975990
+
+@ 0 5 0 02d053f6f0bc7311029938f21871c221
++       字母表——键可以包含的字符，每个字符分配一个槽位——由 `.apply` 和 `.empty` 从键中推导出来，或者提供给 `.withAlphabet` 和 `.aho`；含有字母表之外字符的键会被静默丢弃。
++       `.aho` 还会构建 Aho–Corasick 自动机的失败链接，因此对输入的一遍扫描即可通过 `#step`、`#fail` 和 `#dictLink` 找到在每个位置结束的所有键。
+
+@ 0 3 0 1aa6bc5f09e346111aca931ff927c197
++       字典一旦构建就不可变，且其数组是冻结的，因此可以自由共享；`#add`、`#+` 和 `#++` 会重建一个值类型被拓宽的新字典。
++       值类型应当是引用类型，因为值以装箱形式存储在 `AnyRef` 数组中。
+
+% 1 1 0 10c23a16ae6051ee130b78160bf58da4
+
+@ 0 1 0 1f53b611320e6a210239fa26dd97be2d
++   entry .Alphabet   字典的键可以使用的字符，每个字符映射到一个稠密的槽位
+
+% 1 1 0 0e836df6c55c4e0515e38aeb130c8b1c
+
+@ 0 43 0 0126d6f19b345489095ee3d8ba873fbc
++         从 `Char` 到 `[0, size)` 中某个槽位的固定映射，字母表之外的字符为 `-1`。
++         `Alphabet.of(t"abc…")` 按顺序为字符串中的字符编号；默认的构建器会自动从键中推导出字母表，因此大多数调用者从不需要自己创建。
++         只有小于 128 的字符才能出现在字母表中。
++         字母表是纯的，可以被建立在其上的所有字典共享。
++     entry .of   由字符串中的字符按其顺序构成的字母表；仅限 ASCII
++     entry .empty   不含任何字符的字母表，供空字典使用
++     entry #slot   字符的槽位，若不在字母表中则为 `-1`
++     entry #char   某个槽位上的字符
++     entry #size   字符的数量，因而也是每个节点子节点块的宽度
++   entry .empty   没有条目的字典
++       其字母表为空；`+` 和 `++` 会用从键推导出的字母表重建它。
++   entry .apply   由 `(key -> value)` 对构成的字典，字母表从键中推导
++       字母表的槽位遵循字符首次出现的顺序，因此对于相同的输入是稳定的。
++   entry .withAlphabet   基于给定字母表、由键值对构成的字典
++       含有字母表之外字符的键会被丢弃。
++   entry .aho   基于字母表、由键值对构成的字典，带有 Aho–Corasick 失败链接和字典后缀链接
++       填充 `#depth`、`#fail` 和 `#dictLink`，普通构建器会让它们保持为空；这样，用 `#step` 遍历输入时可以在不匹配时沿失败链接前进，并通过 `#dictLink` 报告在当前位置结束的每个键。
++   entry #children   子节点表：`children(node * alphabet.size + slot)` 是子节点，或 `-1`
++   entry #values   每个节点上的值，没有键在此结束时为 `null`；由于数组是不变的，其类型为 `AnyRef`
++       请改用 `#value(node)` 读取带类型的值。
++   entry #depth   每个节点的深度，用于 Aho–Corasick 字典；否则为空
++   entry #fail   每个节点的失败链接，用于 Aho–Corasick 字典；否则为空
++   entry #dictLink   每个节点在失败链上最近的持有值的祖先；除非用 `aho` 构建，否则为空
++   entry #alphabet   键所采用的编码字母表
++   entry #root   根节点的 id，`0`
++   entry #step   从某个节点经一个字符到达的节点，若没有键沿此方向延续则为 `-1`
++       每次查找的原语：从 `#root` 开始，每个字符前进一步。
++   entry #value   节点上的值，没有键在此结束时为 `null`
++   entry #apply   某个键对应的值，或 `Unset`；也可以查找字符缓冲区的一个切片
++       `dictionary(t"key")` 是精确键形式。
++       `dictionary(buffer, offset, length)` 查找可变 `Array[Char]` 切片中的字符而不分配 `Text`，供已经持有缓冲区的解析器使用。
++   entry #size   所存储键的数量
++   entry #iterator   所存储的值，作为 `Iterable`
++   entry #entries   每个 `(key, value)` 对，按字母表顺序排列
++   entry #add   添加了一个条目的新字典，与 `#+` 相同，只是键和值分开传入
++   entry #+   添加了一个条目的新字典，用覆盖二者的字母表重建
++       `dictionary + (t"key" -> value)`。
++       值类型拓宽为公共超类型。
++   entry #++   添加了若干条目的新字典
+
+@ 0 1 0 15fb3b746a709c9a1aa241f9398a21b1
++ entry .internal   `t"…"`、`txt"…"`、`a"…"`、`extract` 和 `fuzzy` 背后的宏实现，以及不透明类型的所在之处
+
+% 0 1 0 1c18810b564d59e609a88422cf8dd919
+
+% 1 1 0 0f71597c1b0bc6cb112bae74ffdfb433
+
+@ 0 9 0 14dbb660ee9d830d145965fa883f1a47
++       不供直接使用：该对象的存在是为了让宏有一个稳定的所在之处，并使 `Ascii` 和 `Grapheme` 能够成为不透明类型。
++       二者都从 `.opaques` 导出到 `gossamer` 包。
++   entry .t   `t"…"` 背后的宏：处理各部分中的转义，并通过 `Showable` 渲染替换项
++   entry .txt   `txt"…"` 背后的宏：与 `.t` 相同，然后折叠连续空白和空行
++   entry .ascii   `a"…"` 背后的宏：检查每个字面字符是否为 ASCII，在其位置报告错误
++   entry .extractMacro   `extract` 背后的宏：分解各分支，并用 `Scanner` 扫描文本
++   entry .fuzzyMacro   `fuzzy` 背后的宏：收集字面量模式，并在运行时选取最接近的一个
++   entry .opaques   不透明类型 `Ascii` 和 `Grapheme` 的声明
+
+% 1 1 0 0df48bbc54dc386914b01df23956f402
+
+@ 0 3 0 09317e308a90ef8c117c86d21accd6d4
++         这些类型在 `gossamer` 包下的页面有完整说明；其伴生对象的成员在这里，即它们被声明之处记述。
++     entry .Ascii   ASCII 字符的字节串；参见 `gossamer.Ascii`
+
+% 1 1 0 0b2d638d415d00ed01f08a5b1fae262e
+
+@ 0 10 0 1890d2b0b19de9000417ba02dd4f7255
++           不透明类型 `Ascii` 的伴生对象，与该类型一起导出到 `gossamer` 包。
++       entry .apply   将 `Data` 包装为 `Ascii`，不检查其字节
++       entry .showable   将 `Ascii` 显示为其字节所编码的文本
++       entry .inspectable   将 `Ascii` 检视为 `ascii"…"`，字符按文本字面量的方式转义
++       entry .concatenable   `Ascii` 值上的 `left + right`
++       entry .bytes   底层字节，作为 `Data`
++       entry .textual   `Ascii` 的 `Textual` 实例，元素为 `Byte`
++           `apply(text)` 以系统代码页编码文本，`segment` 和 `concat` 复制字节，构建器是 `AsciiBuilder`。
++     entry .Grapheme   一个字素簇；参见 `gossamer.Grapheme`
+
+% 1 1 0 0cf3a0d8c5090f14024abbc9ba49fa60
+
+@ 0 10 0 1025020f6517940a126b29fa19da6700
++           不透明类型 `Grapheme` 的伴生对象，与该类型一起导出到 `gossamer` 包。
++       entry .apply   由其码点字符串构成的字素；不检查它是否为单个字素簇
++       entry .showable   将字素显示为其文本
++       entry .inspectable   将字素检视为 `‹…›`，字素簇不加转义
++       entry .measurable   字素的显示宽度：其各码点宽度中的最大值
++           需要作用域中有 `Char is Measurable`（某个 `textMetrics` given）。
++           取最大值而不是总和，因此带有组合标记的基字符与其基字符一样宽，旗帜对或 ZWJ 家庭表情是一个宽单元格。
++       entry .text   字素的码点，作为 `Text`
++       entry .chars   字素中 UTF-16 码元的数量

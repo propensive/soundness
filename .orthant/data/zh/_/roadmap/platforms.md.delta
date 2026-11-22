@@ -1,0 +1,212 @@
+orthant 2 language
+
+@ 0 1 0 00760b9ac28ed0bc18ff7eed1db7c234
++ # 平台对等
+
+@ 0 5 0 02e0e1edbcf8665814961578b89e88fc
++ 一个“自带电池”的平台，只有当电池在应用实际运行的地方都能工作时，才配得上这个名称：在 JVM 上、在浏览器中、作为原生二进制文件、在 WASM 运行时之内，以及在 Android 设备上。
++ 承诺并不是每个模块都能在任何地方运行——浏览器没有文件系统——而是每一项排除都是固有的、有说明的、经过检查的，并且为任何目标构建都不比为 JVM 构建更难。
+
+@ 0 1 0 01b7abbd40ce8f4c05a1e98866bb5983
++ 各个目标目前的状况：
+
+% 2 1 0 0883e0b79cb06b510b571ab7dbc9b5d5
+
+@ 0 8 0 15bbb0b62a406b101425e4d89c67392c
++ column  目标
++ column  现状
++ column  由谁完成
++ row  JVM  全部
++ row  JavaScript  大多数模块  plat-3
++ row  Native  大多数模块  plat-3
++ row  WASI  范围窄但切实可用的一部分，构建在 WASM 组件模型之上  plat-4
++ row  Android  端到端可用——无需 Android SDK 即可进行 D8 dex 转换和 APK 签名——但不在常规构建之内  plat-2
+
+% 1 1 0 0a3afe9e3c46ec421ee33a70c32b2104
+
+@ 0 3 0 12c576a84f39ace80384922fd3d5edd8
++ 对等意味着消除上述每一项限定，而实现它的工具是一份清单：以签入数据形式存在的平台矩阵，其中每个“否”都附有原因，当现实相对清单出现倒退时，CI 就会失败。
++ 当剩下的原因都是固有原因时，对等声明便成立。
+
+@ 0 1 0 0c0d9dd5db7d32ca0190c6fa32c2b6a2
++ 本路线的各个条目，及其时间范围和硬依赖；[`status.tel`](status.tel) 记录了每个条目的进展：
+
+% 2 1 0 1a49486c3b4d2d2d15f5c2c51b85eebd
+
+@ 0 11 0 19d6a961d72c3c7e035166ea0bf4ff9d
++ column  条目
++ column  标题
++ column  时间范围
++ column  依赖
++ row  plat-1  强制执行平台清单  近期
++ row  plat-2  Android 进入常规构建  近期 → 中期
++ row  plat-3  JavaScript 和 Native 完全覆盖未排除的模块  中期  plat-1
++ row  plat-4  WASI 超越最初的七个后端  中期 → 远期
++ row  plat-5  对等声明成立  远期  plat-4
++ row  plat-6  浏览器成为一等应用目标  中期
++ row  plat-7  degustation 无需编译器即可原子化 TASTy  中期  plat-3
+
+% 1 1 0 170d3f3709b3deef1cd2ff673b424c42
+
+@ 0 1 0 046e448e2e19632a01bcd6f0bb7f0299
++ ## plat-1：强制执行平台清单
+
+@ 0 2 0 101f07bd9906972015586fe41eb3f43b
++ 时间范围：近期
++ 基线：145 行中有 104 行可为 JavaScript 构建，108 行可为 Native 构建；有 34 项 JavaScript 排除，每一项都附有原因（2026-10-21 测得；2026-09-25 为 144 行中 101 行；2026-08-01 为 132 行中 94 行）
+
+@ 0 6 0 0955585b3bd56b54186f37d0a4c93f52
++ `doc/compatibility.tsv` 记录这个矩阵，`etc/check-compatibility.py`（由 `make build` 运行）从 `build.mill` 重新生成其平台列——即每个组件的 `scalaJs`/`scalaNative` 标志以及 `sources`/`jsSources`/`nativeSources` 源集——并在与签入副本有任何分歧，或某项排除在 `notes` 中没有原因时失败。
++ 因此这个矩阵是一份契约：添加模块而不添加行，或翻转标志而不修改该文件，都会使构建失败，而唯一需要手写的内容，是每个 `no` 或 `core` 单元格的原因。
+
+@ 0 2 0 155a8ca79eb6b193158be804bdda4d43
++ 完成条件：常规构建重新生成清单，在与签入副本出现分歧时失败，且没有任何排除行的原因为空——已由 `etc/check-compatibility.py` 达成。
++ 中期度量：
+
+% 0 1 0 131c76c742857dfc08f4e5d29215867d
+
+@ 0 1 0 193f187e802cd4da03fde08c28230438
++ ## plat-2：Android 进入常规构建
+
+@ 0 1 0 1ab880ee5d02c1ea1d60c0cf49f6c644
++ 时间范围：近期 → 中期
+
+@ 0 3 0 0d9b885c84dd405e1e692c1bbe35853c
++ dex 转换和 APK 签名的路径可以工作，但以 `ANDROID_HOME` 为门槛，并被排除在 CI 之外。
++ 每次经过证明的运行都应构建并签名一个 Android 应用，从而让倒退立即暴露，而不是等到下一次手动尝试时才发现。
+
+@ 0 2 0 1e32707143aaedca1cb799318a771c46
++ 完成条件：`make attest` 包含 Android 阶段，且 CI 为每个发布版本记录一个已签名的 APK。
+
+@ 0 1 0 134e5670da1189d31ee1387d2bff0082
++ ## plat-3：JavaScript 和 Native 完全覆盖未排除的模块
+
+@ 0 2 0 1a40572e16b707af0053a8ba6efb463d
++ 时间范围：中期
++ 依赖：plat-1
+
+@ 0 2 0 02e1d0dd4b7a16dc110414ffd42a8393
++ 每个模块都为 JavaScript 和 Native 构建，除非其排除原因是固有的；而 Native 覆盖始终由真实的二进制链接检查来验证，而不仅仅是编译。
+
+@ 0 2 0 041a025fe2e13f960ed32836dac38a64
++ 完成条件：清单中没有任何原因非固有的 JavaScript 或 Native 排除，且 Native 链接检查覆盖每个支持 Native 的模块。
+
+@ 0 8 0 1de2b5b5d0d17643106252bfe802ccde
++ 已知的非固有 Native 缺口已不复存在。
++ 2026-10-22 完成：guillotine 的伪终端在 Scala Native 的 C 互操作（`posix_openpt`、`posix_spawn`、`poll`；JVM 版本基于 Panama）之上重写，因此 `Command#pty` 能在 Native 上运行真实的终端。
++ 2026-10-21 完成：coaxial 的原生后端可以加入组播组（从而把 syndesis 带到 Native）；telekinesis 的 `soundnessHttp` 客户端移入可交叉编译的 `telekinesis.sockets`，为 Native 提供了一个 `Http.Backend`（HTTP/1.1，`https` 则基于 coaxial 的 OpenSSL 连接）；hellenism 的类加载器构造移入 `core-jvm` 源集，因此 `cp"…"` 资源、cataclysm 的 HTML 样式表以及七个 WASI 后端也都能为 Native 编译。
+
+@ 0 8 0 084e5ab8dc7699011608878f3e56df6d
++ 密码学不再是 JavaScript 的排除项：enigmatic 的纯 Scala `SoundnessCrypto`（各种模式的 AES、HMAC、AES-GCM、ChaCha20-Poly1305、X25519、Ed25519）支撑着 Scala.js 和 Scala Native 构建，而 `import providers.soundnessProvider` 可以在任何地方选择它。
++ 它未涵盖的部分——RSA、DSA、ECDSA、ML-DSA——仍由 JDK 和 OpenSSL 负责。
++ 基于浏览器 Web Crypto API 的提供者以 JSPI 为前提：`crypto.subtle` 只提供 Promise，而 `Crypto` 契约是同步的，因此它需要先在 Wasm 后端下证明该分支的 `js.async`/`js.await` 可用（plat-6）；有了这一点，Web Crypto 就可以作为其所具备原语的替代提供者接入，而无需更改 API。
+
+@ 0 9 0 12a5fc1273536a500f0c21bcafa80635
++ 链接检查重新可以链接了（2026-10-22）：Proscala 1.0.4 把其补充库发布为 `proscala-library_native0.5_3`，因此 `scala.caps.SharedUnscoped`（当时每次 Native 链接都会通过 `contingency.ThrowTactic` 用到它；自 #2328 起只会用到 `scala.Spreadable`）通过 `nativeToolchain.runtimeDeps` 直接从工具链本身获得 NIR；原先弥补这一缺口的单特质 `nativelink.shim` 已被移除。
++ 同一版本还为 Scala.js 和 Scala Native 提供了 `tasty-core`，正是这一点让 `hyperbole.tasty` 能够在两者上无需编译器即可读取 TASTy。
++ `nativelink.binary` 在每次证明时运行，检验 FFI、文件系统、套接字、监管器、伪终端和 OpenSSL；把它扩展到每个支持 Native 的模块（并恢复 `nativelink.testSuites`）仍有待完成。
+
+@ 0 1 0 0fa7e2f0fee933fe1a48b937c471cbaf
++ ## plat-4：WASI 超越最初的七个后端
+
+@ 0 2 0 17c1d8017e0250cd1c575622676e221f
++ 时间范围：中期 → 远期
++ 基线：7 个 WASI 后端；HTTP 可以发送任何带正文的方法，套接字仅支持 TCP（2026-09-25 测得；2026-08-01 时 HTTP 仅支持 GET）
+
+@ 0 6 0 1416fb93ea44981a19f11aea36bd6765
++ WASI 部分——环境、时钟、随机数、套接字、文件系统、HTTP、标准输入输出——证明了 WIT 组件模型方法的可行性；对等则要求完整的 HTTP 方法集、UDP，以及为每个其领域能由 WASI 表达的模块提供后端。
++ 编译器方面的工作触手可及：Soundness 用 Proscala 构建，因此 Wasm 后端和绑定生成（目前是树外的 `wit-bindgen` 分支，将被纳入本仓库）都由我们自己修复。
++ 真正的外部门槛是 WASI 本身：它的接口必须成熟到足以表达后端所需的内容。
+
+@ 0 2 0 1f97f24449afbeb7112fabfd020f055c
++ 完成条件：清单中的 WASI 列与 JavaScript 列一致，除非排除原因指明缺少某种 WASI 能力。
++ 中期度量：
+
+% 0 1 0 0f3c66635b03a3d8184117850749fa05
+
+@ 0 6 0 0b24b16a2cc6cc9b0b2aca4f3c467fc2
++ 现在组件不仅可以运行，也可以部署：`Image.wasm`（embarcadero）把组件打包为 Wasm OCI 制品，anthology 的 `OciImage` 格式可以从一次编译直接得到它，`make wasm-e2e` 则在 `wasmtime serve` 下提供打包后的 HTTP 组件。
++ 从这里到 Wasm 工作负载在集群上运行，仍然缺少的是分发——树中没有任何东西实现 OCI 注册表协议，因此制品只能通过 `skopeo` 或 `ctr` 到达注册表——而且 containerd 客户端在创建容器时还无法指定 Wasm 运行时。
+
+@ 0 1 0 02f1e2e8561cbdb510ef20b1aac51275
++ ## plat-5：对等声明成立
+
+@ 0 2 0 0466901bc3fdba5500ca8101a96a2228
++ 时间范围：远期
++ 依赖：plat-4
+
+@ 0 3 0 1fea897334dc6c930413010bdeb03d43
++ 最终状态，以关于清单的事实来陈述：清单中任何排除原因都不意味着“尚未”。
++ 每个原因都是固有的——平台无法支持该能力——而清单中的原因本身就是完成的信号。
+
+@ 0 2 0 19c6e43d758f5543098910d9595bfb3a
++ 完成条件：`doc/compatibility.tsv` 中的每个排除原因都描述一项固有的平台限制，且 CI 中有一项原因词汇检查来强制执行这一区分。
+
+@ 0 1 0 0da7504b41531da817583bd42934a04f
++ ## plat-7：degustation 无需编译器即可原子化 TASTy
+
+@ 0 3 0 1c6f1f2429f9712b011b3967768bf151
++ 时间范围：中期
++ 依赖：plat-3
++ 基线：`degustation.core`（1,179 行）通过编译器的反射驱动 `scala3-tasty-inspector`；仅限 JVM，类路径上带有 `scala3-compiler_3`（2026-10-23 测得）
+
+@ 0 7 0 131a8d07937bbf450ba91a9290b2fef2
++ degustation——LIRA 的 Scala 规程背后的 `tasty/1` 原子化器——是最后一个因编译器而无法用于 JavaScript 和 Native、且原因并非固有的模块：该规程是在编译器的语义模型之上*定义*的（`tasty.md` §4），因此原子化器对 `quotes.reflect` 类型进行模式匹配，并向符号查询其 `fullName`、`signature`、`children` 和标志。
++ Proscala 1.0.4 为全部三个平台发布了 `tasty-core`，而 `hyperbole.tasty` 已经通过它读取 TASTy，因此问题在于 degustation 在字节之外还需要什么。
++ 2026-10-23 确定的范围：
+
+@ 0 19 0 007cbbfcfdf377a80c6a638053cf64d5
++ - **结构性的，可直接从原始 TASTy 获得**：修饰符（`tasty/1` 的整个标志集合，用于可见性规则的 `PRIVATEqualified`，`ARTIFACT`/`SYNTHETIC`）、注解（包括构成密封类/枚举子类列表的 `@Child` 注解，按声明顺序）、模板的父类型、自身类型、类型参数和声明、每个成员的声明类型（参数和结果的 `tpt`、上下界、别名）、作为语法树的内联和宏体（其局部符号可寻址，以便进行 alpha 规范化）、包限定引用（`TERMREFpkg`/`TYPEREFpkg`），以及——在*引用*一侧——擦除后的签名本身，每个指向重载成员的 `TERMREF` 都在其 `SIGNED` 名称中携带它。§7 必须特殊处理的编译器 `LazyRef` 占位符在文件中并不存在。
++ - **语义性的，需要依赖类路径的模型**：只有两项。（1）*声明*键的擦除签名消歧符（§6）：擦除一个声明的参数类型，意味着对其去别名、把不透明类型和值类擦除为其底层类型、把类型参数引用擦除为其上界，并按其组成部分的类/特质区分来擦除交集类型——其中每一项都要询问被引用的类型在某个依赖的 TASTy 或 Java 类文件中*是*什么。（2）被选择成员的声明所有者（§6“键按声明确定”，`TastyDiscipline`）：`play.title` 被序列化为针对 `play` 类型的 `title` 签名名称，而要发现 `title` 声明于 `Base`，需要沿着 `Play` 的父类型进行成员查找。两者都不需要子类型判定、类型推断、as-seen-from 替换或补全顺序；两者都需要惰性加载类路径，而这正是 `tasty-query` 存在的目的。
+
+@ 0 1 0 1d98056fdb067ade032b7191b71ee9ae
++ 有三种方式完成这一项：
+
+@ 0 10 0 080cce816217458b162958cf03a981f9
++ 1. **在 `tasty-core` 之上构建自己的语义层**（推荐）：五个组件（列于下方），约 6,000 行，而 `tasty-query` 有 19,000 行，因为 degustation 不需要后者的子类型判定、类型映射或 Scala 2 序列化读取器。
++ 2. **依赖 `tasty-query`**：改动约 1,000 行，但这是一个 19,000 行的依赖，只为 JVM 和 Scala.js 发布——Native 需要由我们发布交叉构建，就像 Proscala 现在为 `tasty-core` 所做的那样——而且它的擦除和成员解析是对编译器实现的独立重写，与每个 Scala 版本有着同样的耦合。
++ 3. **继续依赖编译器**，并把该排除归类为固有的：原子化在组装和发布时运行，那时手头有 JVM。这在今天是诚实的，但它排除了从 Native 或 Wasm 构建工具进行原子化的可能，而这正是想要它的原因。
+
+@ 0 1 0 15db87563e3ccecc1d0a15650e714cc2
++ 第一种方案的组件及其估计规模：
+
+% 2 1 0 154dee85a73f7db51eeda1313f888bdd
+
+@ 0 8 0 1553f8c8c8c7cc080c8cf62d5f0bca91
++ column  组件
++ column  行数
++ column  说明
++ row  把语法树反序列化为普通数据的反序列化器  ~2,000  `hyperbole.tasty` 提供头部和名称表
++ row  基于目录和 jar 的惰性类路径加载器，带有读取类种类、类型参数和成员描述符的 Java 类文件读取器  ~1,200
++ row  Scala 3 擦除及签名拼写  ~900  参照 dotc 的 `TypeErasure` 和 `Signature`
++ row  沿父类型的成员查找  ~300
++ row  在数据模型之上重新表述的原子化器  ~1,200  编码规则不变
+
+% 1 1 0 157de62fd75c206a1cc90286752da647
+
+@ 0 9 0 093346393e7d9e5c1c86492523a436df
++ 前两种方案中的任何一种都是一个新规程 `tasty/2`（`tasty.md` §1：对规范化的任何改动都是一个新规程）：§4 改为在原始 TASTy 而不是编译器模型之上提取；§6、§11 和 §12 按规程自身的定义拼写擦除，而不是“按编译器的计算”；§7 去掉 `LazyRef` 条款；§14 的承诺在事实上变得可检查，因为两个工具链不再可能对只有其中一个构建的模型产生分歧。
++ 验证采用差分方式：在 Soundness 发布的每个 `*.tasty` 上运行新的原子化器和由编译器驱动的原子化器，并要求两者给出完全相同的（键、类、值）列表——现有的“真实模块的 TASTy 能被原子化”测试就是这个语料库的种子——然后才淘汰由编译器驱动的原子化器。
+
+@ 0 8 0 1020e0c3605055370442f216b8d5df23
++ 进展（2026-10-23，分支 `degustation-tasty`）：方案 1 已构建。
++ `degustation.tasty` 包含数据模型、读取器、类路径 `Universe`、`Erasure` 和 `Degustation.atomize`，并可交叉编译到全部三个平台；`degustation.core` 保留 `Inspection.atomize` 作为其文件系统门面（目录和 jar 通过 `java.util.zip`，JDK 的类通过平台类加载器），并因此仅限 JVM，但不再依赖编译器。
++ 在 147 个构建模块上，原子与由编译器驱动的原子化器所产生的逐字节相同，只有编译器的输出是运行过程的产物之处除外（`tasty.md` §16）；由编译器驱动的原子化器是测试套件的判定依据。
++ `tasty.md` 描述了 `tasty/2`。
+
+@ 0 4 0 131c830233371c8f0a3f343802904c3b
++ 完成条件：`degustation.core` 依赖 `tasty-core` 而不依赖编译器，可为 JavaScript 和 Native 构建（或者证明其文件系统门面是唯一的 JVM 残余，且 Native 构建工具能够以 jar 形式提供 JDK 的类），并且对 Soundness 语料库的原子化结果与它所取代的由编译器驱动的原子化器完全相同；`tasty.md` 描述了 `tasty/2`。
+
+@ 0 1 0 1fb046d6f3ec99ee170722975e2b27ce
++ ## plat-6：浏览器成为一等应用目标
+
+@ 2 1 0 13ea3a3481ee418b0a4388cf054a0697
++ 时间范围：中期
+
+@ 0 6 0 09494f8572db532814bc66c3047a566c
++ 为 JavaScript 编译是必要的，但并不充分：用 Soundness 构建的网站应当端到端地用 Soundness 编写，前端使用 Scala.js，每个 Web API——DOM、fetch、存储、媒体——都通过 xenophile 从 WebIDL 生成的类型化门面访问，构建在 querencia 的类型化 DOM 之上。
++ 没有手写的 JavaScript，没有无类型的 `js.Dynamic` 接缝。
++ 证明方式是自用：soundness.dev 自身的前端由树内网站提供服务，并以这种方式构建。
+
+@ 0 2 0 135645698bafe5f61df9262090290d39
++ 完成条件：soundness.dev 前端以 Soundness 编译的 Scala.js 形式发布，所有 Web API 访问都通过生成的类型化门面进行，并在常规构建中构建。

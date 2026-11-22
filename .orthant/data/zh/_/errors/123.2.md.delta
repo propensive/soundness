@@ -1,0 +1,42 @@
+orthant 2 language
+
+% 0 1 0 1097a49644ebfac503974006102a5376
+
+@ 0 1 0 13d9f5d1201526010c6c5973f997ea05
++ 当某个值不是有效的 Git 引用名称时抛出。
+
+@ 0 1 0 1d8ed6a2d2412a231ea0d46e12dff5b7
++ ## 原因
+
+@ 0 4 0 0b7b785f65fc4b3f02190685f962f130
++ Octogenarian 按照 `git check-ref-format` 的规则验证引用名称。
++ 构造函数记录违规的 `value` 和一个 `reason: Reason`；渲染出的消息为 `$value is not a valid Git reference because $reason`。
+
+@ 0 1 0 0982d44e8aec0bbd176df78e68656684
++ ## 变体
+
+% 0 1 0 0a7c55b4c0ac40601a46d9fdcd155626
+
+@ 0 13 0 1b5d062075a6030b0fe6de0445e2ba23
++ column  代码
++ column  原因
++ column  含义
++ column  消息
++ column  解决方法
++ row  `↯/s.123.2.1`  `LeadingOrTrailingDot`  引用的某个路径段以 `.` 开头或结尾。  `[↯/s.123.2.1] .verona is not a valid Git reference because a path segment starts or ends with .`  去掉该段开头或结尾的点。
++ row  `↯/s.123.2.2`  `ReservedSuffix`  某个路径段匹配 `*.lock`，Git 将该模式保留给锁文件。  `[↯/s.123.2.2] feature.lock is not a valid Git reference because a path segment ends with the reserved suffix .lock`  选择一个不匹配 `*.lock` 的名称。
++ row  `↯/s.123.2.3`  `ReservedSequence`  名称包含 `@{`，Git 将其保留给 reflog 选择器（例如 `HEAD@{1}`）。  `[↯/s.123.2.3] verona@{capulet} is not a valid Git reference because the name contains the reserved sequence @{`  删除或替换 `@{` 序列。
++ row  `↯/s.123.2.4`  `DoubleDot`  名称包含 `..`，Git 将其保留给范围选择器。  `[↯/s.123.2.4] verona..capulet is not a valid Git reference because the name contains ..`  把 `..` 替换为单个 `.` 或其他分隔符。
++ row  `↯/s.123.2.5`  `EmptySegment`  名称包含空的路径段，通常是开头、结尾或重复的 `/`。  `[↯/s.123.2.5] verona//capulet is not a valid Git reference because the name contains an empty path segment`  删除该空段。
++ row  `↯/s.123.2.6`  `InvalidCharacter`  名称包含 Git 禁止在引用中使用的字符：`*`、`[`、`\`、` `、`^`、`~`、`:` 或 `?` 中的任何一个。  `[↯/s.123.2.6] verona capulet is not a valid Git reference because the name contains a character forbidden by Git`  把被禁止的字符替换为 `-` 或 `_`。
++ row  `↯/s.123.2.7`  `BadHash`  传给 `Git.Hash` 的值不是 40 个字符的小写十六进制字符串。  `[↯/s.123.2.7] abc is not a valid Git reference because the value is not a 40-character hexadecimal hash`  提供完整的 40 个字符的 SHA-1 提交哈希。
++ row  `↯/s.123.2.8`  `BadRefspec`  传给 `Git.Refspec.parse` 的值不是 refspec：它有不止一个分隔源和目标的 `:`。  `[↯/s.123.2.8] a:b:c is not a valid Git reference because the value is not a valid refspec`  把 refspec 写成 `source`、`source:destination` 或 `:destination`，可带一个可选的前导 `+`。
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 1 0 004f241cb4a4ed0405cb108ee75b2611
++ ## 另请参阅
+
+@ 0 2 0 023fbd10cb04d6eb059b3853ad9a959e
++ - 源代码：`lib/octogenarian/src/core/octogenarian.Git.scala`
++ - `↯/s.123.1` — Git 操作失败的变体

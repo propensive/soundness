@@ -1,0 +1,1367 @@
+orthant 2 language
+
+% 0 1 0 0f04ec4b9ac2d4270a232409219e1f6b
+
+% 0 1 0 16042307d651ed5508cc5040a8d03817
+
+% 0 1 0 0b5938ce7315323607e1922cbc4d93e2
+
+@ 0 1 0 1e5bb8325dbb8463142e7e843ed26b14
++ info   基于 W3C WebDriver 协议的浏览器自动化：会话、元素、动作和截图
+
+% 0 1 0 0ca6d61ddd9511ea1cdae38f1414f6fe
+
+@ 0 7 0 039c4f088f1479cb06f47724678906e9
++     _Tarantula_ 通过 [WebDriver](https://www.w3.org/TR/webdriver2/) 协议从 Scala 驱动 Web 浏览器。
++     浏览器是一个值（`WebDriver.Chrome`、`WebDriver.Firefox`、`WebDriver.Safari` 或 `WebDriver.Edge`，各自对应其浏览器的标准驱动程序），在它上面打开会话会启动驱动程序、等待它开始监听、创建会话，并在块结束时删除会话并停止驱动程序，无论块是正常返回还是抛出异常。
++     已经在运行的驱动程序或远程 Selenium grid，则用 `WebDriver(url, capabilities)` 通过同一个 `WebDriver.Session` 接口驱动。
+
+@ 0 5 0 168d2f70a86f98131b0380f6a71a82c3
++     在会话中，`browser` 是作用域内的句柄：它进行导航，读取标题和源码，按有类型的条件查找元素（HTML 标签、经过验证的 DOM id、类列表、CSS 选择器列表、XPath 或链接文本，以及任何具有 `Focusable` 实例的东西），切换窗口和框架，处理警告框，管理 cookie 和超时，执行键盘和指针动作，运行 JavaScript，打印页面并截图。
+
+% 2 1 0 1c1bdf69fda8a01b059e5cbe24aaf84e
+
+% 3 1 0 0755df3a74dab3680060380ca025906d
+
+% 4 1 0 17d6c98b5abf7c0c1b0d4b69a5843e2f
+
+% 0 1 0 1ce8fe6ca033a15a0bd38efcfa5b98d2
+
+% 0 1 0 1fc8caa31dddf31c0d4ed3cae383aa63
+
+% 0 1 0 15d9e9539b91fada08baa01cab1bcfc5
+
+% 0 1 0 1e13bb2d27b6fcca0581e75784422724
+
+% 0 1 0 11638efeb008c55609d015e26792ca37
+
+% 0 1 0 03f91ab3dc19c4f9112c539014548423
+
+% 0 1 0 0a521d99b45fc7d610917706d09c2d5c
+
+% 0 1 0 0323f27fc4985e0804a43d7947f66e41
+
+% 0 1 0 1c1f3e45ded604af0bc729117e24f8f7
+
+% 0 1 0 1daff35678ce6b8600453c8e520497ad
+
+% 1 1 0 06ceab4636d2e5561f158dcde8bc05fa
+
+% 2 1 0 0a8cca522fa4b09d1175af1b76e9dbad
+
+% 3 1 0 180e80c27ca44f83061efdc97160b7ee
+
+% 2 1 0 09f66897003c39d800ab1f949f063544
+
+% 1 1 0 195693bda4cceac80613f9088269e653
+
+@ 0 4 0 1e8e1129596843e71a5359cbc683969e
++     会话需要互联网访问（`internetAccess.online`）、一个与驱动程序通信的 HTTP 客户端（`httpBackends.javaNetHttp`）、一个 `Tactic[WebDriver.Error]` 和 `Diagnostics`，以及一个用于 `Http.Event` 的日志记录器；启动本地驱动程序还需要一个 `Monitor`（一个 `supervise` 块）、一个 `WorkingDirectory`、一个供驱动程序进程使用的 `Environment`，以及一个用于 `Exec.Event` 的日志记录器。
+
+@ 0 7 0 04de9c25f63469e006d2c3e9225d61ed
++     `WebDriver.Session` 句柄是一种能力，由捕获检查限制在拥有它的块中：返回它或任何捕获了它的东西都是编译错误。
++     `WebDriver.Element` 句柄是纯值，但对它的每个操作都以上下文参数的形式接受会话，因此句柄在其会话之外是无效的，而在页面改变后使用的句柄会以原因 `StaleElement` 抛出 `WebDriver.Error`。
++     每一种失败（无法连接的驱动程序、形状错误的回复，或驱动程序报告的任何错误）都以一个 `WebDriver.Error` 的形式到达，它把 W3C 错误代码作为其 `WebDriver.Error.Reason` 携带。
+
+@ 0 4 0 0d71c40d7da9afe9173faa8c9a803971
++     元素选择写作 `\`，而不是 `/`：`browser \ Li`、`element \ cls"item"` 和 `shadowRoot \ Button` 各自返回所有匹配项，而 `element(…)` 恰好返回一个，否则抛出 `NoSuchElement`。
++     反斜杠让 symbolism 的算术 `/` 可以在同一作用域中自由地用于数量相除。
+
+@ 0 1 0 077df09bc24708d50aa8247034b55636
++     这个库有两个源码集：
+
+@ 0 8 0 0277ff94e0466907131af169257bd96c
++     - `tarantula.core`：`WebDriver` 及其嵌套的 `Session`、`Element`、`ShadowRoot`、`Error` 和 `Local`，`browser` 访问器，以及元素扩展（`click`、`value`、`innerText`、`attribute`、…）。
++       它需要路径上有一个驱动程序二进制文件（`chromedriver`、`geckodriver`、`safaridriver` 或 `msedgedriver`）才能启动浏览器；协议层本身是普通的 HTTP，可以针对任何 WebDriver 端点运行。
++     - `tarantula.image`：`screenshot()` 扩展，它通过 hallucination 把截图解码为 `Raster in Png`，单独存放，使浏览器自动化不依赖图像编解码器。
+
+@ 0 2 0 1bae0a484bb0a74d190bf26698ca9455
++     所有内容都导出到 `soundness` 总括包，因此用户写 `import soundness.*`，并按名称导入上面那些环境 given。
+
+% 0 1 0 1de92eea923899891f87ee2d2549fc9f
+
+% 0 1 0 19b732b9b7efa4471d0079e891ac4989
+
+% 0 1 0 03d04ce52428b0dc1cbd321fc1fb3e50
+
+@ 0 1 0 161f825464c05ad41209a2099b285c7f
++ entry .WebDriver   要驱动的浏览器：一个本地驱动程序，或一个已经在某个 URL 上监听的驱动程序
+
+% 0 1 0 0d66ee75ebc1a706051aa7278dbe12c1
+
+@ 0 7 0 079fb060952aee8f1305a47d8b25ed9e
++       `WebDriver` 是共用一个名称的两样东西。
++       作为**类型**，它是一个已经在监听的驱动程序（手动启动的，或 Selenium grid），由它的 `#base` URL 和将向它请求的 `#capabilities` 指定，用 `WebDriver(url"http://localhost:4444", capabilities)` 创建。
++       作为**对象**，它是四种本地浏览器（`.Chrome`、`.Firefox`、`.Safari`、`.Edge`）的所在之处，每一种都是一个在会话期间启动其驱动程序的 `WebDriver.Local`；它也是每个会话都使用的类型的所在之处：`Session`、`Element`、`ShadowRoot` 和 `Error`。
+
+@ 0 2 0 011389b8975d84ce089a3a2cde4e1508
++       两者都是 `Sessional`，因此 `driver.session: session ?=> …` 可以在任一者上打开会话，块结束时会话会在 `finally` 中关闭，启动的驱动程序也会停止。
+
+% 2 1 0 07268d3e3cd785431b5ec5e9ed2c7f71
+
+% 3 1 0 07bad6332436d64b008af29515d11852
+
+% 4 1 0 0e55d76e344ca0b116a9ae8cd8235fec
+
+% 0 1 0 1dfe7bdbf2cbdaea1da06ac1ccaab8bd
+
+% 0 1 0 00abfc3c0dc8d1e40c575642504c5ed2
+
+% 0 1 0 175d5074f3e6597c0675032ed74d163d
+
+% 0 1 0 014976018f1c004b00d0cf02658b8e6e
+
+% 0 1 0 163dd072280af31914aa9ef6d2b64ce6
+
+% 1 1 0 002e485b7c8088771f223420447f5d0b
+
+% 2 1 0 007b72edda9142a11583d6c606566b91
+
+@ 0 3 0 1ab55cb2b46fffdb1f4701b04052a9ec
++       用 `apply` 构建的 `WebDriver` 会把它的 `capabilities` JSON 原样作为 `POST /session` 的载荷发送，因此 Selenium grid 自己的扩展、代理、超时和移动设备模拟都可以通过它请求。
+
+% 0 1 0 0d45e06297bd6b991d5e7567ce632101
+
+% 0 1 0 0761615d7984f09a0533cb47a4135584
+
+% 0 1 0 03be0b5f6c79342f1cf06afbca556f63
+
+% 0 1 0 1ab8d8eb9b18c99019d257f32a423dd6
+
+@ 0 1 0 02f683e312a26e5812ef0dbf25431f17
++   entry .Driver   四个 W3C 驱动程序：chromedriver、geckodriver、safaridriver 和 msedgedriver
+
+% 1 1 0 1171ca25bef6605b0e3ef42db75724b9
+
+@ 0 17 0 16b0e459f2a4134d13266142d030096f
++         `WebDriver.Local` 可以启动的驱动程序的枚举，以数据而不是子类表示：`Chromedriver`、`Geckodriver`、`Safaridriver` 和 `Edgedriver`。
++         每一个都知道在某个端口上启动它的命令、它的浏览器所对应的 `browserName` 能力，以及让该浏览器进入无头模式的参数。
++         添加一种浏览器就是添加一个新分支，因为进程的生命周期对它们都是一样的。
++     entry #command   让驱动程序在某个端口上开始监听的 shell 命令
++         `chromedriver --port=N` 和 `msedgedriver --port=N` 用等号接受端口；`geckodriver --port N` 和 `safaridriver --port N` 把它作为单独的参数接受。
++         驱动程序二进制文件必须在路径上。
++     entry #browserName   驱动程序的浏览器所对应的 `browserName` 能力
++         `chrome`、`firefox`、`safari` 或 `MicrosoftEdge`，按 W3C 能力对象的拼写。
++     entry #headless   选择无头模式的浏览器参数，如果浏览器有无头模式的话
++         Chrome 和 Edge 为 `--headless=new`（自从旧的 `--headless` 成为它的别名以来受支持的写法），Firefox 为单短横线的 `-headless`，Safari 则没有，因为它没有无头模式：请求无头模式是空操作，而不是错误。
++   entry .Local   一个浏览器及驱动它的驱动程序，作为纯值
+
+% 1 1 0 0780e7b4c07d080c17e0c0044272d27e
+
+@ 0 6 0 02d7d3e084a0cba91ca6aac4c11c28a0
++         `WebDriver.Local` 通过它的 `WebDriver.Driver` 指定要驱动的浏览器，还包括驱动程序应监听的端口（除非 `#on` 另行指定，否则为 `4444`）、浏览器启动时的参数，以及可选的、代替生成的能力对象发送的能力对象。
++         它不持有任何进程、连接或会话 id，因此它可以是在测试之间共享的 `val`，并依次用于多个会话；`.Chrome`、`.Firefox`、`.Safari` 和 `.Edge` 是四个标准值。
+
+% 2 1 0 0a5258bffb3bfa74019029432b16aed9
+
+% 3 1 0 1e759c446bcd4895121d52ed7366967a
+
+% 4 1 0 0af4f944e97e3e42151cccec0676969e
+
+% 0 1 0 010665a457d299ee1483d2a88ce7bbe2
+
+% 2 1 0 12c2b394b112716a17ca302d2c8f3dc6
+
+% 0 1 0 149388f4119b4b04180e8c50f2af55ad
+
+% 1 1 0 03a7596355105d5b1b3198d3afa3e0ca
+
+% 0 1 0 1391a6377a4ce25615ed3bd0a1d0f043
+
+% 1 1 0 077bff8a964b5be91943398aed6236f6
+
+@ 0 6 0 14a001e83c449dd3113c27e85ee12462
++         打开会话会派生出驱动程序的命令，每 50 毫秒轮询一次它的 `GET /status` 端点，最多五秒，直到它回答，然后用 `#capabilities` 打开会话，并在块结束时停止驱动程序。
++         无法派生的驱动程序会以原因 `SessionNotCreated` 抛出 `WebDriver.Error`，而始终没有开始监听的驱动程序会以原因 `Timeout` 抛出。
++         同一端口上同时存在的两个会话会发生冲突，因此并行运行会话的测试套件用 `#on` 给每个会话分配自己的端口。
+
+% 0 1 0 1ad010f6f466c48109f2e4bb51cb9c01
+
+% 1 1 0 1028621768ccd3be06bf335f11646a13
+
+@ 0 1 0 146393cdcde9c2ec0f7f66bdb237d9fb
++     entry .Sessional   在 `WebDriver.Local` 上打开会话：派生驱动程序、等待、驱动、停止
+
+% 1 1 0 1a99ac5f26d3c98d15948533f4206b14
+
+@ 0 47 0 01cd3622234e90961f4f572efe03f5e9
++           `WebDriver.Local` 的 `aperture.Sessional` 实例，其中 `Self = Local`，`Result = Session^`。
++           它需要一个 `Online`、一个 `Http.Backend`、一个 `WorkingDirectory`、一个 `Environment`（由驱动程序进程继承）、一个 `Monitor`、用于 `Http.Event` 和 `Exec.Event` 的日志记录器、一个 `Tactic[WebDriver.Error]` 以及 `Diagnostics`。
++           `.sessional` given 构造它，因此调用者从不需要指名这个类。
++       entry #session   派生驱动程序，等待它开始监听，运行块，然后停止它
++           在作用域内有一个新的 `WebDriver.Session` 的情况下运行 `lambda`，然后在 `finally` 中中止驱动程序的作业。
++           派生失败报告为原因为 `SessionNotCreated` 的 `WebDriver.Error`；五秒内没有回答 `GET /status` 的驱动程序报告为原因为 `Timeout` 的 `WebDriver.Error`。
++     entry .sessional   让 `local.session: session ?=> …` 得以解析的 given
++         位于 `WebDriver.Local` 的伴生对象中，因此只要它需要的上下文值在作用域内，无需导入就能找到它：`Online`、`Http.Backend`、`WorkingDirectory`、`Environment`、`Monitor`、`Http.Event is Loggable`、`Exec.Event is Loggable`、`Tactic[WebDriver.Error]` 和 `Diagnostics`。
++     entry #driver   驱动这个浏览器的驱动程序
++     entry #port   驱动程序监听的端口；默认为 `4444`
++     entry #arguments   浏览器启动时的参数，例如 `--headless=new`
++     entry #requested   代替生成的能力对象发送的能力对象，或 `Unset`
++     entry #on   同一个浏览器，但其驱动程序在另一个端口上
++         端口上的每个会话都需要该端口空闲，因此并发运行的会话各自使用自己的端口：`WebDriver.Chrome.on(4451)`。
++     entry #headless   同一个浏览器，但不带窗口启动
++         把驱动程序的无头参数（`WebDriver.Driver#headless`）追加到 `#arguments`；在没有无头模式的 Safari 上，它不改变任何东西。
++     entry #arguing   同一个浏览器，但带有更多启动参数
++         `WebDriver.Chrome.arguing(t"--window-size=1280,800", t"--lang=en")` 按 `goog:chromeOptions`、`moz:firefoxOptions` 或 `ms:edgeOptions` 的规定，追加浏览器启动时的参数。
++     entry #requesting   同一个浏览器，但能力对象被整体替换
++         对于 `WebDriver.Local` 未建模的东西（代理、超时、移动设备模拟、grid 的扩展），可以以 `Json` 的形式提供整个 `POST /session` 载荷，替换生成的 `alwaysMatch` 对象。
++     entry #capabilities   `POST /session` 载荷：一个指定浏览器及其参数的 `alwaysMatch` 对象
++         W3C 形状 `{"capabilities": {"alwaysMatch": {…}}}`，带有浏览器的名称及其厂商选项对象（`goog:chromeOptions`、`moz:firefoxOptions` 或 `ms:edgeOptions`，承载 `#arguments`；Safari 只接受它的名称）。
++         只生成 `alwaysMatch`，因为 `firstMatch` 的存在是为了让一个请求适用于多个驱动程序，而一个 `Local` 恰好指定一个。
++         设置了 `#requested` 时，返回的是它。
++   entry .Chrome   Chrome，通过端口 4444 上的 `chromedriver`
++       `WebDriver.Local(WebDriver.Driver.Chromedriver)`：`WebDriver.Chrome.headless.session: …` 打开一个无头 Chrome 会话。
++   entry .Firefox   Firefox，通过端口 4444 上的 `geckodriver`
++   entry .Safari   Safari，通过端口 4444 上的 `safaridriver`
++       Safari 没有无头模式，因此 `WebDriver.Safari.headless` 与 `WebDriver.Safari` 相同。
++   entry .Edge   Microsoft Edge，通过端口 4444 上的 `msedgedriver`
++   entry .Sessional   在已经监听的驱动程序上打开会话
+
+% 1 1 0 0618dd3ccad4569d129733786409958a
+
+@ 0 19 0 17bf89f005ec377207cc84c612aacb0c
++         `WebDriver` 的 `aperture.Sessional` 实例，其中 `Self = WebDriver`，`Result = Session^`。
++         它用 `POST /session` 和驱动程序的 `#capabilities` 创建会话，在句柄位于作用域内的情况下运行块，并在 `finally` 中删除会话（这正是关闭浏览器的操作），同时吞掉删除失败，因为已经死掉的驱动程序无法清理，而报告这一点会掩盖块自身的错误。
++         启动本地驱动程序（`WebDriver.Local.Sessional`）是在此之上的组合。
++         它需要一个 `Online`、一个 `Http.Backend`、一个用于 `Http.Event` 的日志记录器、一个 `Tactic[WebDriver.Error]` 以及 `Diagnostics`。
++     entry #session   创建会话，在它位于作用域内的情况下运行块，然后删除它
++         会话的 `Result` 类型是一个新的 `Session^`：每次调用的句柄都是它自己的能力，因此块不能返回它或任何捕获了它的东西。
++   entry .sessional   让 `webDriver.session: session ?=> …` 得以解析的 given
++       位于 `WebDriver` 的伴生对象中，因此当作用域内有 `Online`、`Http.Backend`、`Http.Event is Loggable`、`Tactic[WebDriver.Error]` 和 `Diagnostics` 时，无需导入就能找到它。
++   entry .apply   已经在某个基础 URL 上监听的驱动程序，以及要请求的能力
++       `WebDriver(url"http://localhost:4444", capabilities)` 通过与本地浏览器相同的 `Session` 接口，驱动手动启动的驱动程序或 Selenium grid。
++       能力原样作为 `POST /session` 载荷发送；`WebDriver.Chrome.capabilities` 是现成的能力对象，对于不需要任何能力的驱动程序，`t"{}".read[Json]` 就足够了。
+
+% 2 1 0 07abcf4cbdc8cebb19509f6dd6f6038f
+
+% 3 1 0 0cb4d3e116e9d17817fc31c1688e46d8
+
+% 4 1 0 09d78a55c108f4731688026f4ccf0799
+
+% 0 1 0 1e0ee7bcadecb3de095db31a90514942
+
+% 1 1 0 16cb49d46afb4ab1033e8829e1f0d27e
+
+% 2 1 0 139b826e37699b6300554a99387c3fb5
+
+% 2 1 0 1daa274d18e44b8812a752b2c493c7a2
+
+@ 0 3 0 12b978690826955505d179d7a75a48b6
++   entry #base   驱动程序监听的 URL；命令发往 `base/session/id` 之下
++   entry #capabilities   作为 `POST /session` 载荷发送的 JSON
++   entry .Error   失败的 WebDriver 动作：W3C 错误代码、驱动程序的消息及其堆栈跟踪
+
+% 1 1 0 1d447c6664cb49391089f2cf1ba51254
+
+@ 0 7 0 1b328567aaeec5660a787a4114eb1ae2
++         错误 `↯/s.127.1`：_the WebDriver action failed because `reason`: `detail`_，以 `WebDriver.Error.Reason` 的编号作为子代码。
++         会话的每一种失败都以这一种类型到达：驱动程序在 4xx 或 5xx 回复中返回的错误对象、无法连接的驱动程序、不是规范所描述的 JSON 的回复（原因 `UnknownError`）、被截断的回复、无法启动的驱动程序（`SessionNotCreated`），或始终没有开始监听的驱动程序（`Timeout`）。
++         它通过打开会话时作用域内的 `Tactic[WebDriver.Error]` 抛出。
+
+% 2 1 0 0729940f861326ea1292e5863c70589f
+
+% 3 1 0 1d616e4fd5863486176421bde07d67b0
+
+% 4 1 0 044b521d61bed8e3063c152d5c4fafa6
+
+% 5 1 0 01fd9d47d5c5f38c14999750551a7cd0
+
+% 6 1 0 1623210948a4e88b14867892ea0cbd64
+
+% 7 1 0 0f1a8d6cbb7756100be76d02e81fe289
+
+% 0 1 0 0321688c26f738d114ccbc688586487c
+
+% 0 1 0 1224ec73fb658d94072c5b3332649156
+
+% 1 1 0 079415180350de600b311015920aa797
+
+@ 0 4 0 14156377719f19810b7ae3eeb910383f
++         驱动程序自己的消息是 `#detail`，它的堆栈跟踪（每个元素一行）是 `#browserStacktrace`。
++         `#data` 保存规范中可选的额外对象，在 `UnexpectedAlertOpen` 中，正是它携带提示框的文本：这恰好是调用者决定接受还是关闭它所需要的。
+
+% 0 1 0 01f0919780723a0b17de51ef47c5c435
+
+@ 0 1 0 04f22c6faa79abce06c3bf23e2f9359b
++     entry .Reason   驱动程序报告的 W3C 错误代码，作为具有稳定编号的枚举
+
+% 1 1 0 0e9572e3f55196c51d54f6cbdedd47c8
+
+@ 0 2 0 19edc9405a758630165f8e036d6f9030
++           WebDriver 规范定义的每个错误代码各对应一个分支，代码按驱动程序在其错误对象的 `error` 字段中的拼写：
+
+% 0 1 0 01eaeca5798d1a3b02d48ba44beec41c
+
+@ 0 4 0 0616fef9283d88c50bc24170ec4af959
++           column  分支
++           column  代码
++           column  消息
++           column  W3C 代码
+
+% 0 1 0 0458d02b69b4322211d1a01fcf6e6c0c
+
+% 0 1 0 11a2443379a011fb13c6e45d8d92464b
+
+% 0 1 0 18dc7397e65442e70917437d09a07944
+
+% 0 1 0 1bd3dedeba59b81d0a8cb05d334ccf90
+
+% 0 1 0 0ec2bf10d40815bc031aa5a7a32b5d80
+
+% 0 1 0 050dc488255d9468188c8334c8357c4e
+
+% 0 1 0 044d57a752ba89620fa7baf4d33605f7
+
+@ 0 1 0 1bdba1ac7e334e10156720422eff224b
++           row  `Other(code)`  8  _the WebDriver reported the error code `code`_  任何其他代码，保留为 `code`
+
+% 0 1 0 0355f74072fe37680ba8c9871f7579bf
+
+% 0 1 0 0b9bf1d7cda5c17b01462ef3138b3ae8
+
+% 0 1 0 089ed6f2f37ba712044d5f86ba7202b3
+
+% 0 1 0 0b0e92fcca0de24619d4f3e819f1a225
+
+% 0 1 0 111425ea7b8dc9320100fdb126f1ffe0
+
+% 0 1 0 0b52129fdb8130db024c3744016862d9
+
+% 0 1 0 09c0bd7d85e60fc00d456acfe9c24276
+
+% 0 1 0 14305d3f31083e250899460d27fcaa98
+
+% 0 1 0 1c71ceb239adf1860c498b2796ec9864
+
+% 0 1 0 1b300c265a2762f802ba21fcd122a31c
+
+% 0 1 0 0d17cc40666bfb130e43ede97af61bc9
+
+% 0 1 0 00c3a311475de32b0bb686a15b140026
+
+% 0 1 0 1709cafd8af991fa0ab378d61e31c354
+
+% 0 1 0 139d397e704860011e336bfa6dcb661d
+
+% 0 1 0 08db237dc73c30421bce8e6d65858a66
+
+% 0 1 0 068d5f4a78dbb8f20a293ca9f8964a89
+
+% 0 1 0 1c896b919d5d1e110354fe1a0dd2889b
+
+% 0 1 0 09964b440723e3f517861083b42d932a
+
+% 0 1 0 127f717b72e47a4b1ff7b88eb262db60
+
+% 0 1 0 0429902132d3990306cb5eb2a96475ab
+
+% 0 1 0 1da8cf6321c047fd1d36deb5e9c2df9c
+
+% 1 1 0 15e4db487d184958073649684a20edfc
+
+@ 0 4 0 1dfa9e0a1f17e07c1981b9a9f0a81f59
++           这些编号是错误的子代码，并且是冻结的：1 到 8 保留它们最初发布时的含义，这就是 `Other` 不按字母顺序排在 8 的原因，此后添加的每个代码都从 9 开始往后追加。
++           枚举不认识的代码会成为 `Other`，因此解码是全函数，驱动程序发送的代码永远不会丢失。
+
+% 2 1 0 0dc8cc4164f76df81c1284a7ea6ffdc7
+
+% 3 1 0 1c978e3a561382171d4c4f10e40e273f
+
+% 4 1 0 17af307283c9cf9b048951511cbe2e81
+
+% 5 1 0 1fc41dd8cbfee9b51a2d0c3ea7a2f33d
+
+% 6 1 0 0b7137f8a518e2af1cd5023b401feeff
+
+% 0 1 0 1ca5903ed5be0b6f0dc7bd6b55ee3e78
+
+% 0 1 0 02b830a610c3a7851f58e1a2c692a14f
+
+% 1 1 0 1896481952ccbd39099a07cb776ae7c0
+
+@ 0 2 0 13ac5d21c8c857ff0bda594f9c5cba4e
++       entry .apply   把 W3C 错误代码（例如 `no such element`）解码为它的 `Reason`
++           全函数：无法识别的代码为 `Other(code)`。
+
+% 2 1 0 05fdc9ff6edd43040bf9756c5db86988
+
+% 3 1 0 12f73c9a9d8c136316e29b20857a9afa
+
+% 0 1 0 11199e623d377f5c069ad3137bb3e6d9
+
+% 1 1 0 0bb7a3ea578283480733dd1907ad17b1
+
+@ 0 13 0 045932373f0732250d1ff0ee3509543f
++       entry .Other   枚举没有命名的错误代码，按驱动程序发送的原样保留
++         entry #code0   与驱动程序拼写完全一致的代码
++       entry #number   原因的冻结子代码，从 1 到 29
++       entry #code   按规范拼写的代码，例如 `no such element`
++     entry .communicable   把每个 `Reason` 渲染为一个句子，例如 _the requested element was not found_
++         `WebDriver.Error.Reason` 的 `Communicable` given，位于其伴生对象的作用域中，它填充错误消息中的 `reason`。
++     entry #reason   驱动程序报告的 W3C 错误代码，以 `WebDriver.Error.Reason` 表示
++     entry #detail   驱动程序的消息，或者当回复不是 W3C 错误对象时的原始回复
++     entry #browserStacktrace   驱动程序的堆栈跟踪，每个元素一行；驱动程序没有发送时为空
++     entry #data   错误对象的可选 `data` 成员，它携带打开的提示框的文本
++         在 `UnexpectedAlertOpen` 中，`data.text` 是提示框的文本，因此调用者可以读取它，并在 `WebDriver.Session#acceptAlert` 和 `WebDriver.Session#dismissAlert` 之间做出决定。
+
+% 2 1 0 13b062223e8b45d31420759f5482c14e
+
+% 3 1 0 1802cafacd3a908a1bc7dd078b92ce48
+
+% 4 1 0 1f8aca460a1045a3181cf9b01a5a6d26
+
+% 5 1 0 108ed5b082a045871264d3d7e2c104f0
+
+% 6 1 0 0b3676ae449f1d5b1cb5601d179654c5
+
+% 0 1 0 058b42b48d82265a0f278871853365f6
+
+% 1 1 0 09549d82c47aa41302437a4880f67ba6
+
+@ 0 1 0 041c4e24ccca76bf163f9bb32784efc7
++   entry .Element   页面节点的句柄：一个纯值，只能在其会话位于作用域内时使用
+
+% 1 1 0 046b6ffed56b53a9000402e4c1ac94de
+
+@ 0 6 0 0ccf01550a39d2f417d1a3f10e517d62
++         驱动程序为 DOM 节点返回的不透明引用，只对产生它的会话有意义。
++         它是一个既不持有能力、也不持有其会话的纯值，因此可以自由地构建并传递由它们组成的 `List`；对它的每个操作（`click`、`innerText`、`value`、`attribute`、`element` 以及 `tarantula` 包中的其他扩展）都以上下文参数的形式接受 `WebDriver.Session`，因此元素在其会话的块之外是无效的。
+
+% 2 1 0 138f873ceb273f4e041df021a7c5bd82
+
+% 3 1 0 013a2107b00a390819e4eb4f9fb86609
+
+% 4 1 0 044b98343a0491d41cefe5456f9b08ef
+
+% 5 1 0 1ea4be0269e9b0ff1298093d6142ee99
+
+% 6 1 0 07a5a128297af12707ecf2a8be94b71d
+
+% 7 1 0 12cfe3e182b776611a742300fca36bf5
+
+% 0 1 0 1e8aae6d9dd6b3451c8e57d4272f5d87
+
+% 0 1 0 16c9ac6d8f7ae40e0f54cb34fd7268a8
+
+% 0 1 0 09949608108bfe1809a15ad04c54afac
+
+% 1 1 0 1766cf770ca0179d15b23f9ec9bae3e8
+
+@ 0 2 0 1c65fd224ce995cc01f12caa9f2d642f
++         泄漏出去的元素只是一个悬空的 id，而不是活动的句柄。
++         在页面改变后使用的元素会以原因 `StaleElement` 抛出 `WebDriver.Error`。
+
+% 1 1 0 175c4e3d15f5688b1f1032282ff4117f
+
+% 0 1 0 1a11913ce1b1629a127ecbc253effb25
+
+@ 0 12 0 1314a094a6f5579501c7aad3a83b4868
++     entry .encodable   把元素编码为脚本参数或指针原点所接受的传输形式
++         即 W3C 的 _web element identifier_ 形式 `{"element-6066-11e4-a52e-4f735466cecf": id}`，因此元素可以以 `element.in[Json]` 的形式传入 `WebDriver.Session#execute` 的参数，脚本在那里看到的是活动的 DOM 节点。
++     entry .\   元素之下、或元素列表中每个元素之下，定位器的所有匹配项
++         `element \ Li` 向驱动程序请求与任意 `Focusable` 定位器（HTML 标签、`cls"…"` 类列表、`Name[DomId]`、`SelectorList`、`XPath` 或链接文本）匹配的每个后代，并按文档顺序返回它们，没有则返回空列表。
++         第二种形式作用于 `List[WebDriver.Element]`，从到目前为止找到的每个元素中选择，因此选择可以链接：`element \ Name[DomId](t"menu") \ Li \ cls"item"`。
++         协议没有批量查找，因此链接形式会为每个元素发出一个请求，并且不进行任何去重。
++         它需要作用域内有 `WebDriver.Session`。
+
+@ 0 5 0 02ed0c50a57f09c10e6bd5d266651a9d
++         它写作 `\` 而不是 `/`，因为 `soundness` 导出的 symbolism 的泛型 `/` 会为每个接收者占用那个名称。
++         两种形式都位于 `WebDriver.Element` 的伴生对象中，因此无需导入。
++     entry #elementId   驱动程序为该节点分配的不透明 id
++   entry .ShadowRoot   元素所承载的开放 shadow root，作为在其中查找元素的句柄
+
+% 1 1 0 00fc0ac9fa18be3915dd8474d37640f7
+
+@ 0 6 0 062e7e56fadedeba0c61da1e7f9bc83f
++         用 `element.shadowRoot()` 获得。
++         协议把 shadow root 与元素分开寻址，而且对 shadow root 只有查找是有效的，因此它是一个单独的纯句柄：在作用域内有 `WebDriver.Session` 的情况下，用 `\` 搜索所有匹配项，或用 `element` 搜索恰好一个。
++         只有*开放的* shadow root 可以访问；请求封闭的 shadow root 会以原因 `NoSuchShadowRoot` 抛出 `WebDriver.Error`，而使用宿主已离开页面的 shadow root 会抛出 `DetachedShadowRoot`。
+
+% 2 1 0 0ff176a595d0126d1e8cd4aa6f27d4df
+
+% 3 1 0 0533bca5b1f5d0ae0fa952cff13c026e
+
+% 4 1 0 1322003d3af3fcf91f5b27a5b695f0f7
+
+% 5 1 0 1ee9519ce8bed5b716640d884be9a896
+
+% 6 1 0 0dbad0de67cab3921a1e204d7c5d9491
+
+% 0 1 0 0314158a1abfe6de1df50dd39e1ae058
+
+% 0 1 0 08a46857efed93f402d6471cdbf30b39
+
+% 0 1 0 0944991f00cfc2a1085fdcffc41eecdf
+
+% 1 1 0 077fc631aae46e6c0c26ce723b370fc6
+
+@ 0 6 0 1edfa4c0c5d933da1acc2c6a091f7f4c
++     entry .\   shadow root 中定位器的所有匹配项，按文档顺序
++         `root \ Button` 返回 shadow 树中与任意 `Focusable` 定位器匹配的每个元素，或空列表。
++         它需要作用域内有 `WebDriver.Session`，并位于 `WebDriver.ShadowRoot` 的伴生对象中，因此无需导入。
++     entry #shadowId   驱动程序为该 shadow root 分配的不透明 id
++   entry .Session   活动的 WebDriver 会话：一个浏览器、它的窗口和 cookie，限制在它的块中
+
+% 1 1 0 112a8d6b356c202516c645971bc813ad
+
+@ 0 4 0 1eace512ca5831df0e5bb09993bb60c7
++         与驱动程序对话的近端，在 `base/session/id` 之下寻址。
++         会话从不直接构造：`WebDriver` 或 `WebDriver.Local` 上的 `session` 打开一个会话，把它作为上下文值借给块，并在块结束时删除它（从而关闭浏览器）。
++         在块内，`browser` 指代它。
+
+@ 0 4 0 0e57c7c672e2fbf8004ab6134e821d4a
++         它是一种能力，因此捕获检查把它以及捕获它的每个闭包限制在拥有它的块中：返回会话或使用它的 lambda 都是编译错误。
++         它的命令返回的东西（`Text`、`Data`、`Json`、`WebDriver.Element`、矩形）都是纯数据，因为每个命令都是一次完整的往返。
+
+@ 0 2 0 0ae4b24605a8a86113cd344d30074f51
++         脚本一次增长一个阶段：打开会话、导航、查找、操作，然后读回结果。
+
+% 2 1 0 1166e742314911670d07d6e794c40789
+
+% 3 1 0 1229cd80e79320430605e6d2e8b48dcf
+
+% 1 1 0 147cde430ef7ec391f9a15f41aff2bcd
+
+@ 0 1 0 11af3d58c187e2061b04261e551d7d75
++           label 打开会话
+
+% 1 1 0 171a97b7e15aafce1c7185bf227433a4
+
+% 2 1 0 1e8d69c454f2d1561bf42e10570ef3a6
+
+% 3 1 0 0dbd271fc06c90d40660e0f766753e6b
+
+% 1 1 0 1fbc571c49f300e60df56a7a54624c0b
+
+% 2 1 0 156801387e7a22d1045d0f441e3bdfa2
+
+@ 0 1 0 12875ed68ffa23cd004f509225b4363d
++           label 导航到页面
+
+% 1 1 0 0dfceed57ce96ded123536439c1e56f9
+
+% 2 1 0 0eeb0960a86cd72d1ad954711fbeb166
+
+% 3 1 0 06e427409314871a05903c3e127ce7aa
+
+% 4 1 0 1be29960bfd5a54205a66c2f9ccfbfd9
+
+% 1 1 0 00784074d3baad0a0f3f34db45faa2d1
+
+% 2 1 0 154d5111807cb0eb1d9687cc728d40fe
+
+@ 0 1 0 0c1dbd8bada00ea1004e3b9d1e55774e
++           label 查找字段并向其中键入
+
+% 1 1 0 00940c5cb726390709acfe6856133a77
+
+% 2 1 0 086481ce43f2be320706e3195506370e
+
+% 3 1 0 184b19ad07ca9b05049a6b6aaafbedf1
+
+% 4 1 0 19fae91be8e43d961a3c3ef21d2244b1
+
+% 0 1 0 0d533f7c8b7dcff01bd229feb59bf37d
+
+% 0 1 0 035b93ff22e97afd147c8f8d1523b869
+
+% 0 1 0 15f054d1e318983402d68eb4724e59c0
+
+% 1 1 0 151fe02c2b2202c70ea58ca121d6e04f
+
+@ 0 1 0 0f3f2b0234cbad6d0ff74f70e9ebdf06
++           label 提交，并等待结果
+
+% 1 1 0 0e0d68bba211e49813652bfa2c66c618
+
+% 0 1 0 18a2de4b811ff7d81641b23ff6513453
+
+% 1 1 0 09fc488cfe98061114cb5f1503e280d8
+
+% 2 1 0 01b83d79b7742b381b9db736daa513bf
+
+% 3 1 0 11c7e1cb5eb689a51f60a1ee229127dd
+
+% 0 1 0 03e189da4e1c43071f7de124362b014e
+
+% 0 1 0 02b5341640fefcf106596c631c9784a1
+
+% 0 1 0 167e44fba51333c01c6fae4fcec6bb29
+
+% 1 1 0 127e5273c7cdc2f314f01830af4c9a6d
+
+% 1 1 0 15f916aeae550be3198d58aa0afe3867
+
+@ 0 4 0 15cd5ee019f1896315cae7dd3c09dedc
++         每个命令都通过打开会话时作用域内的 `Tactic` 抛出 `WebDriver.Error`，不再需要别的东西。
++         等待操作（`#awaitElement`、`#awaitElements`、`#awaitUntil`）还要在调用处接受一个 `Tenacity`、一个 `Monitor` 和一个 `Tactic[Tenacity.Error]`。
+
+% 0 1 0 1cdb4a832530052101923a6e0586e211
+
+% 0 1 0 1426e38a41ec875f1b64af6556bfa38e
+
+% 0 1 0 0ca07e555fc44cc20aa9c960a8e053a0
+
+@ 0 1 0 0c5b9387a76932d908079c38ea75df26
++     entry .Rect   元素或窗口的边界框，以 CSS 像素为单位
+
+% 1 1 0 0a09ea2f5005ee6d0a1d95c08f749b54
+
+@ 0 3 0 0f9cd11b32ad276d0d52c4a09904973e
++           由 `WebDriver.Session` 的 `windowRect`、`maximize`、`minimize` 和 `fullscreen` 命令以及元素上的 `rect` 扩展返回，并由 `windowRect(rect)` 接受，用于移动窗口和调整其大小。
+
+% 2 1 0 08633a1f5c3fec4803bd0b01bbcd6c40
+
+% 3 1 0 15f3877c87823f8a0d7cafc413e57e2f
+
+% 4 1 0 1581b8763388f9ba0bc2a18c7ed4d294
+
+% 5 1 0 17b62b782085455b0525b3dbab0adb46
+
+% 0 1 0 0f0ff23650bd596b0dbcb0a2d6bb079e
+
+% 0 1 0 0948a3e93215c337130e82185a538e6a
+
+% 0 1 0 1a046e45dc61104e1b0a5fd8bfcd6134
+
+% 1 1 0 0c04bd29c322ff0f0f5d0f9135caca0b
+
+@ 0 8 0 0cea81a2bccccc3b04c9571cc842db5d
++       entry #x   左边缘，从视口或屏幕的原点算起
++       entry #y   上边缘，从视口或屏幕的原点算起
++       entry #width   宽度，以 CSS 像素为单位
++       entry #height   高度，以 CSS 像素为单位
++     entry .cm   以厘米表示的长度，即打印页面和页边距所接受的 `Quantity[Metres[1]]`
++         `WebDriver.Session.cm(1.5)` 是十五毫米。
++         在 `Page` 或 `Margin` 中，任何长度数量都可以（`21.0*Centi(Metre)`、`8.5*Inch`），因此这只是一种便利。
++     entry .Page   打印所用的纸张尺寸；默认为 US Letter
+
+% 1 1 0 079a880c258fc248114d41fa732a7336
+
+@ 0 3 0 07d249bf8878c84c110f76da2624ce57
++           长度是 `Quantity[Metres[1]]`，因此可以用任何单位书写，并以协议要求的厘米发送给驱动程序。
++           默认值就是规范自己的默认值：21.59cm × 27.94cm。
+
+% 2 1 0 17c1ec4a00e052ac1f75322ddabb2a63
+
+% 3 1 0 09910379a21c0397083cc9b5bfb71fd5
+
+% 0 1 0 1f5a241d45ad8a2f06701af1fb17f975
+
+% 1 1 0 1e85056f7252cbec0378ba6f4ca12f21
+
+@ 0 3 0 0b3d460c6ce7c04506cf3ee6c1a684c2
++       entry #width   页面的宽度，作为长度
++       entry #height   页面的高度，作为长度
++     entry .Margin   打印页面的四个页边距；默认各为一厘米
+
+% 1 1 0 165fcbd8264546811816c8fccb019864
+
+@ 0 3 0 06aa9fcbeb9b615008487d1a7ef21a32
++           长度是 `Quantity[Metres[1]]`，以厘米发送给驱动程序。
++           `.uniform` 生成四个相等的页边距。
++       entry .uniform   四个给定长度的相等页边距
+
+% 1 1 0 1ca9ddf99ae8d0f319ca6e1f5f440524
+
+% 2 1 0 04e1bb9d46b1445b0b05a6f557aea5ca
+
+% 0 1 0 18294c8f8712ffbf15cbebed68596caa
+
+% 1 1 0 1b5c8e75968a85f015eaed34525d565a
+
+@ 0 7 0 0f2237ba2ad65b671379820db56c18b1
++       entry #top   上页边距
++       entry #bottom   下页边距
++       entry #left   左页边距
++       entry #right   右页边距
++     entry .Orientation   页面按 `Portrait` 还是 `Landscape` 打印
++       entry #name   按协议拼写的方向：`portrait` 或 `landscape`
++     entry .Print   `WebDriver.Session#printPage` 接受的选项：方向、缩放、纸张、页边距、页面
+
+% 1 1 0 1f62a6e433e2f6620e393ef1ab71209c
+
+@ 0 4 0 1dfad21399f731e80f11567bb2405719
++           每个字段都有规范的默认值：`Portrait`、缩放 `1.0`、不打印背景图形、US Letter `Page`、一厘米的 `Margin`、缩小以适应页面，以及所有页面。
++           `pageRanges` 是协议自己的文本形式，例如 `List(t"1-3", t"5")`，因为那里的范围可以是开放的。
+
+% 2 1 0 139be46c39cf4e301999a565c040d351
+
+% 3 1 0 1ed840cd9afb53391a124a5b18af564b
+
+% 4 1 0 0cf357c0777f2767049b23fdc41eefef
+
+% 0 1 0 017360e941375dd80ff3d29b79883100
+
+% 2 1 0 1510c277d9fe6df01e981aab15dddeba
+
+% 3 1 0 0ed6fff562beb6971568841f6a57defd
+
+% 0 1 0 0cd4aa0a13026cca10a457077fe5f2cb
+
+% 0 1 0 071248c8298740a303333c875d521121
+
+% 0 1 0 1b0e8bb0a74248580de4c5f5ef66ac83
+
+% 1 1 0 0a575a4b8d09ed9b017d00d3a099b1db
+
+@ 0 8 0 032821cee9d6c9ce05898a866fdbacc8
++       entry #orientation   `Portrait` 或 `Landscape`
++       entry #scale   缩放因子，从 0.1 到 2.0；默认为 `1.0`
++       entry #background   是否打印背景颜色和图像；默认为 `false`
++       entry #page   纸张尺寸，以 `WebDriver.Session.Page` 表示
++       entry #margin   页边距，以 `WebDriver.Session.Margin` 表示
++       entry #shrinkToFit   是否缩小内容以适应页面宽度；默认为 `true`
++       entry #pageRanges   要打印的页面，以 `1-3` 或 `5` 这样的文本表示；为空时打印所有页面
++     entry .Timeouts   会话保持的三个超时，以毫秒为单位
+
+% 1 1 0 133a92f5975c224308b2d2201dd2d981
+
+@ 0 4 0 11894181b8c3750407708d5e638f5fd4
++           `implicit` 是查找命令在报告 `NoSuchElement` 之前重试的时长，也是脚本无需休眠就能等待页面稳定的方式；`pageLoad` 限制导航，`script` 限制 `WebDriver.Session#execute` 和 `WebDriver.Session#executeAsync`。
++           为 `Unset` 的字段保持驱动程序中的原样。
+
+% 2 1 0 1d5fda7d318793a106ccaa2f82156cf5
+
+% 3 1 0 083e0c960f70e03d0f7c8d3193a3afa2
+
+% 4 1 0 0891427e32cc3dd7089f25ad5ae2207b
+
+% 5 1 0 05d3c54a8d9d8e7b0873f2bfaa2f970b
+
+% 6 1 0 19ad628264a0f26a09a15b45940f90c0
+
+% 0 1 0 050105380e470147037b626914882c3e
+
+% 0 1 0 0c0af9414306a65d12912899c2631a54
+
+% 1 1 0 031a0ea4813ed7261da528d001e83f06
+
+@ 0 6 0 16cefc09e6579dd4006e3b7ddb695e62
++           隐式超时只覆盖查找命令，不覆盖其他任何东西：按钮变为可用或标题文本改变，要用 `WebDriver.Session#awaitUntil` 等待。
++       entry #implicit   查找在放弃之前重试的时长，或用 `Unset` 保持原样
++       entry #pageLoad   导航可以花费的时长，或用 `Unset` 保持原样
++       entry #script   脚本可以运行的时长，或用 `Unset` 保持原样
++     entry .Action   键盘或指针输入序列中的一步，用于 `WebDriver.Session#perform`
+
+% 1 1 0 1738a2c00e045cac15a88de00cfc0f53
+
+@ 0 4 0 0d3a0c903e53e33418ac7e5ad713e40a
++           W3C `/actions` 端点是发送修饰键、组合键、悬停或拖动的唯一方式，而一个 `Action` 就是其中的一步：按下或松开一个键、暂停、按下或松开一个指针按钮，或一次指针移动。
++           一个步骤列表针对一个输入源执行，即一个 `WebDriver.Session.Action.Source`。
+
+% 2 1 0 10c116a4a74b3840068f3c42767e10a4
+
+% 3 1 0 061f1de970a6689b0eb007776000e9da
+
+% 4 1 0 0315712a1413343a047c30e1fbb2c5af
+
+% 0 1 0 110eef0dd2587103140bb2233ab3fa17
+
+% 2 1 0 1c2030c3232e80600b8806c2c053fc91
+
+% 3 1 0 1237175569cf8e7618ca587b5b9e25c7
+
+% 0 1 0 1add21a3c6b5671e0d998231e61694e9
+
+% 0 1 0 1bfdbf41bb76347415eaa19d418986d8
+
+% 0 1 0 0d2f95c18e96e17f04ccc536af114b33
+
+% 0 1 0 0e1ed13bb4437bf112ff1cede04e58b7
+
+% 1 1 0 0b835eab80d0aa05054638ecdbf3e875
+
+@ 0 4 0 13fc056888277f161db5d4066da95a53
++           向字段中输入普通文本，用元素上的 `value` 扩展更简单也更快；按键则用 `WebDriver.Session#press` 最简单，它用 `.steps` 构建步骤。
++       entry .Source   一个动作序列驱动的输入源：`Key` 或 `Pointer`
+
+% 1 1 0 0e8098eda548a1c216700ccf992b8a2e
+
+@ 0 14 0 0e02a55f538edb3c196284e41b4a0768
++             一次 `perform` 调用驱动一个输入源。
++             规范中还有一个 "none" 输入源，但它只能暂停，而这两者都能做到；两个步调一致的输入源需要把组装好的 JSON 传给 `WebDriver.Session#actions`。
++         entry #id   输入源在序列中的 id：`keyboard` 或 `pointer`
++         entry #kind   输入源的类型：`key` 或 `pointer`
++       entry .LeftButton   鼠标左键，`0`，按规范对按钮的编号
++       entry .MiddleButton   鼠标中键，按 DOM 的编号为 `1`
++       entry .RightButton   鼠标右键，按 DOM 的编号为 `2`，而不是人们可能猜测的 `1`
++       entry .codepoint   一个 `Keypress` 键入的字符，或具名键的私用码位
++           字符键就是它本身；`Enter`、`Tab`、`Backspace`、`Escape`、方向键、`Home`、`End`、`PageUp`、`PageDown`、`Insert`、`Delete` 以及 `F1` 到 `F12` 是规范在 Unicode 私用区中从 U+E000 起为它们分配的码位。
++           单独的修饰键、1 到 12 之外的功能键或终端转义序列为 `Unset`。
++       entry .steps   把一个 `Keypress` 表示为产生它的键动作，修饰键在其前后保持按下
+
+% 1 1 0 0071a5ccab02a992088be0ddc7585a04
+
+@ 0 3 0 174d8aadf35fcf5e129db7b4cc318794
++             带修饰键的按键变为：按下其修饰键，敲击内部的按键，再松开修饰键，可以嵌套任意深度，因为协议没有“按住 Control 键入这个”的命令。
++             在浏览器中没有对应物的按键不产生任何步骤。
+
+% 0 1 0 17e783c4bd3cb224175227ce43b79ad6
+
+% 1 1 0 1745a1123e19efec07fdf7ab02417a61
+
+@ 0 1 0 060260145c9b7b2a0eaed23c3971e5ca
++               label 具名键
+
+% 1 1 0 10a3dab65d3c6b370e8986db380eaa8e
+
+% 0 1 0 0611c1647660a2a6167994d917dbdd22
+
+% 0 1 0 13d1d2bf743c1896182158bea15a292c
+
+% 1 1 0 019d0195ee44f0df1a406e0555e7819e
+
+@ 0 1 0 09a83cc658dfeba41c043960ad52ff9d
++               label 按住 Control
+
+% 1 1 0 110949f84ced48cc00e23ce4e400970a
+
+% 0 1 0 014db0ad76fadd5500ae892dbc8d8dca
+
+% 0 1 0 101050d2d43c5a42151f4f5d18614685
+
+% 1 1 0 1fe6e4f88c787faf08528046de95b213
+
+@ 0 1 0 1e21b51c6701571b15a55e7f1bd8b053
++               label 按住 Control 和 Shift
+
+% 1 1 0 0f300c7d03cf79160df6738b875021bc
+
+% 0 1 0 1b5365f0423930540d25190b90b97a9a
+
+% 0 1 0 0ea4e9d50a4eaa8b13298ea10005b489
+
+% 0 1 0 04359be001a2f6db06dd6a2779db54e3
+
+% 0 1 0 1770f2a480f8390e043db7cf9df77021
+
+% 0 1 0 0886f09d22a849f8174ec96cea203f24
+
+@ 0 34 0 18db5dca9ba0b64f1c3b463d4defd8cc
++       entry .encodable   把动作编码为规范的 JSON，例如 `{"type":"keyDown","value":"a"}`
++           手工编写，因为判别字段是一个值为驼峰式的 `type` 字段，而每个变体都携带自己的键；没有原点的 `PointerMove` 相对于 `viewport`。
++       entry .KeyDown   按下一个键，由它键入的字符或码位指定
++         entry #value   该键，以字符或来自 `WebDriver.Session.Action.codepoint` 的私用码位表示
++       entry .KeyUp   松开一个键，由它键入的字符或码位指定
++         entry #value   该键，以字符或来自 `WebDriver.Session.Action.codepoint` 的私用码位表示
++       entry .Pause   在下一步之前等待若干毫秒
++         entry #duration   暂停时长，以毫秒为单位
++       entry .PointerDown   按下一个指针按钮；默认为左键
++         entry #button   按钮，按 DOM 的方式编号：`0` 左键，`1` 中键，`2` 右键
++       entry .PointerUp   松开一个指针按钮；默认为左键
++         entry #button   按钮，按 DOM 的方式编号：`0` 左键，`1` 中键，`2` 右键
++       entry .PointerMove   移动指针，相对于视口或某个元素的中心
++         entry #x   水平偏移，以 CSS 像素为单位
++         entry #y   垂直偏移，以 CSS 像素为单位
++         entry #duration   移动所需的时长，以毫秒为单位；默认为 `100`
++         entry #origin   偏移量所相对的中心所在的元素，或用 `Unset` 表示视口
++     entry #sessionId   驱动程序在创建这个会话时为它分配的 id
++     entry #capabilities   驱动程序同意的能力，可能与所请求的不同
++         来自驱动程序对 `POST /session` 的回复中协商后的能力对象：它指明了作出回答的浏览器及其版本，并说明可选行为（例如 `setWindowRect` 或 `acceptInsecureCerts`）是否可用。
++         厂商键（`moz:*`、`goog:*`）保留为 `Json`；`#browserName`、`#browserVersion` 和 `#platformName` 读取通用的键。
++     entry #browserName   作出回答的浏览器的名称，来自协商后的能力
++     entry #browserVersion   作出回答的浏览器的版本，如果驱动程序没有说明则为 `Unset`
++     entry #platformName   浏览器运行所在的操作系统，如果驱动程序没有说明则为 `Unset`
++     entry #navigateTo   在当前窗口中加载一个 URL，并等待它加载完成
++         接受一个 `HttpUrl`，例如 `url"https://…"` 的结果，或任何 `Abstractable across Urls to Text` 的 URL 类型。
++         `HttpUrl` 的重载之所以存在，是因为插值器的结果具有单例类型 `Url["https"]`，而为 `Url["http" | "https"]` 声明的泛型形式会拒绝它。
+
+% 2 1 0 04b7112f29987b59056b8f5949c03318
+
+% 3 1 0 12e68a88926921120cb475c882bea24e
+
+% 4 1 0 11d26e5e691b04191a209bd73128c41c
+
+% 5 1 0 150ab01fe746374e1bd5ff044ba90c59
+
+% 6 1 0 0e72c4acbbecb7ac01032c6c9783302a
+
+% 7 1 0 0e265cd0b05108c503bf968e26dc8ec8
+
+% 0 1 0 0990e01b944660ee0940d9052533a679
+
+% 1 1 0 16addebd2d85bbf91976c26ff69ca169
+
+@ 0 21 0 1b3bf92d024176a4157ad7498abb2f53
++     entry #url   当前窗口的 URL，以调用者选择的 URL 类型表示
++         `browser.url[HttpUrl]()`，或任何 `Instantiable across Urls from Text` 的类型。
++     entry #back   在当前窗口的历史中后退一页
++     entry #forward   在当前窗口的历史中前进一页
++     entry #refresh   重新加载当前页面
++     entry #title   当前页面的标题
++     entry #source   当前页面的标记，按浏览器对其 DOM 的序列化
++         是序列化后的当前 DOM，而不是服务器发送的字节：页面脚本所做的任何更改都包含在内。
++     entry #screenshotData   当前视口或某个元素的 PNG，以原始字节表示
++         `screenshotData()` 捕获视口，`screenshotData(element)` 捕获一个元素。
++         这些字节就是驱动程序发送的、从 Base64 解码后的字节。
++         `tarantula.image` 组件中的 `screenshot` 扩展会把它们进一步解码为 `Raster in Png`。
++     entry #window   当前窗口或标签页的句柄
++     entry #windows   每个打开的窗口和标签页的句柄，无特定顺序
++     entry #closeWindow   关闭当前窗口，返回其余窗口的句柄
++         在 `#switchTo` 选择另一个窗口之前，命令不发往任何窗口；就驱动程序而言，关闭最后一个窗口会结束浏览器的会话。
++     entry #switchTo   按句柄让另一个窗口或标签页成为每个命令的目标
++         只有当前窗口响应命令，因此来自 `#newWindow` 或 `#windows` 的句柄要先传到这里，窗口才能使用。
+
+% 2 1 0 08d0d3b17bffda000790a8d834d83546
+
+% 3 1 0 0305c37c4c493aee1be90d05fdfead3f
+
+% 4 1 0 19639491cbbf78bd0b5564eafb534ff8
+
+% 5 1 0 1613db3b7ec6ce8b0be822b68bdab811
+
+% 6 1 0 1dfca410de76f2260b719ed7504b499e
+
+% 0 1 0 0e617a0fb5cb0b6804db94b9fa9029d4
+
+% 0 1 0 0c8af247c46e5c86105a1add7d21b582
+
+% 0 1 0 0f06ab0406714996188947d611667009
+
+% 1 1 0 0f61f530d926c67907f925cd3156c5db
+
+% 0 1 0 061a8449fc12c1ce1b95ecd1fbb833fb
+
+% 0 1 0 1d5e18186d29465e13505c9bf14d1cdf
+
+% 1 1 0 1dac21afe45b5de8090603b22d16016c
+
+@ 0 15 0 118c3207dc873e6f15cf072b1b0262c6
++     entry #newWindow   打开一个新标签页或窗口，返回它的句柄，但不切换到它
++         `newWindow()` 打开一个标签页，`newWindow(tab = false)` 打开一个窗口。
++         按照规范，当前窗口保持不变：把句柄传给 `#switchTo` 才能使用它。
++     entry #windowRect   当前窗口的位置和大小，或者移动窗口并调整其大小
++         `windowRect()` 读取窗口的 `WebDriver.Session.Rect`；`windowRect(rect)` 请求一个新的矩形，窗口管理器可能不会完全满足，无头浏览器可能会忽略它。
++     entry #maximize   最大化当前窗口，返回它实际采用的几何尺寸
++     entry #minimize   最小化当前窗口，返回它实际采用的几何尺寸
++     entry #fullscreen   让当前窗口全屏，返回它实际采用的几何尺寸
++     entry #frame   按元素或索引进入一个框架，使其成为每个命令的目标
++         命令针对当前的浏览上下文，因此进入框架是一种模式的改变，而不是每个命令的一个参数。
++         `#parentFrame` 向外退出一层，`#topFrame` 从任意深度返回顶层文档。
++         不存在的框架会以原因 `NoSuchFrame` 抛出 `WebDriver.Error`。
+
+% 2 1 0 0f530068a53a4c1901db0174f22e4747
+
+% 3 1 0 1d21e3b513d5d3ed04c9808224de2b15
+
+% 4 1 0 10083954f5cad0d01bf5505bc304d602
+
+% 5 1 0 0a98c00371e53ebb159ef2d7d342b27e
+
+% 6 1 0 1ab360243dbd9d351069c0ef55999779
+
+% 0 1 0 1f8e5c9640e203b10f2bd41d77f8757c
+
+% 0 1 0 1247269ec5990d121c6760ffdc6d4a15
+
+% 0 1 0 09662b3bad2c8e501fa58852258030f2
+
+% 1 1 0 1d3475ea931c957b112e238402c7071e
+
+@ 0 28 0 16507dc4f479f72002223200727566e4
++     entry #parentFrame   离开当前框架，进入包含它的框架
++     entry #topFrame   从任意深度的框架返回顶层文档
++         发送一个显式的 `null` 框架 id，协议把它与缺失的 id 区分开来。
++     entry #acceptAlert   接受打开的警告框、确认框或提示框，就像点击它的 OK 按钮一样
++         提示框打开时，其他每个命令都会以原因 `UnexpectedAlertOpen` 的 `WebDriver.Error` 失败，其 `WebDriver.Error#data` 携带提示框的文本；没有打开的提示框时，这个命令会抛出 `NoSuchAlert`。
++     entry #dismissAlert   关闭打开的警告框、确认框或提示框，就像它的 Cancel 按钮那样
++     entry #alertText   打开的提示框的消息，或者向它输入一个回答
++         `alertText()` 读取打开的警告框、确认框或提示框的消息；`alertText(text)` 在 `#acceptAlert` 提交之前向 `prompt` 中输入内容。
++     entry #timeouts   会话的超时，或者设置它们
++         `timeouts()` 读取生效的 `WebDriver.Session.Timeouts`；`timeouts(timeouts)` 设置其中不为 `Unset` 的那些，其余保持不变。
++     entry #cookies   当前页面可见的每个 cookie
++         每个都是 telekinesis 的 `Cookie.Value`，其字段即协议所用的名称。
++         它没有 `sameSite`，因此该属性既不读取也不设置。
++     entry #cookie   当前页面可见的、具有给定名称的 cookie
++         如果不存在，则以原因 `NoSuchCookie` 抛出 `WebDriver.Error`。
++     entry #addCookie   在当前页面的域上设置一个 cookie
++         接受一个 `Cookie.Value`。
++         用于另一个域的 cookie 会以原因 `InvalidCookieDomain` 抛出 `WebDriver.Error`，因此要先导航到该域。
++         需要 `sameSite` 属性的 cookie 可以改用 `#execute` 设置。
++     entry #deleteCookie   删除具有给定名称的 cookie
++     entry #deleteCookies   删除当前页面可见的每个 cookie
++     entry #perform   在一个输入源上执行一系列 `WebDriver.Session.Action`
++         把这些步骤作为单个序列发送到 `/actions` 端点，在键盘或指针输入源上执行。
++         保持按下的键和按钮会一直按下，直到 `#releaseActions`。
+
+% 2 1 0 10e203573dbef0c40f5aaa9f428ae8ae
+
+% 3 1 0 055a838ca19c78f10f06e9bdf8815e14
+
+% 4 1 0 03d73e22e990aad403b07d946ceefdf0
+
+% 0 1 0 1af20e7383fc818f0b91c08d2e608108
+
+% 2 1 0 0f9c560f8f4e83b11e9c5de26197df5a
+
+% 3 1 0 13ea9945dc42538603d469033847369b
+
+% 0 1 0 1800c6d5ac1813130e5ba6a4b92c18bf
+
+% 0 1 0 01d4cab10cc394350085fa0a23da544a
+
+% 0 1 0 173b62f8621adef111c2a56441199517
+
+% 1 1 0 05fcf96238f00be709f4a33f852d7c59
+
+@ 0 9 0 19c351136643020a13e8764207146ad1
++     entry #actions   发送一个组装好的 `/actions` 载荷，用于步调一致地移动的输入源
++         `#perform` 之下的逃生舱口，用于少见的跨键盘和指针的组合操作：`Json` 作为请求正文 `{"actions": […]}` 原样发送。
++     entry #press   键入一系列按键，修饰键在其前后保持按下
++         每个 `Keypress`（一个字符、一个具名键如 `Keypress.Enter` 或 `Keypress.FunctionKey(3)`，或者包装在 `Ctrl`、`Shift`、`Alt` 或 `Meta` 中的按键）都会成为 `WebDriver.Session.Action.steps` 的键动作，全部在一个请求中于键盘输入源上执行。
++         用普通文本填写字段，最好用元素上的 `value` 扩展：一个请求，而不是每个字符若干个动作。
+
+% 2 1 0 03fe683268a8e43c02989dbfc490bdf9
+
+% 3 1 0 07a5f40e67bc88e1177d5fdac72cf3ee
+
+% 4 1 0 1e796425b205000015c4e822f36a9fb2
+
+% 5 1 0 1a16ca391b339acf187e3a319701d70e
+
+% 6 1 0 0fb6781ee1a4fbc41f9d074ab760004a
+
+% 0 1 0 1a567eaebd33c0e51b3ea30a5949c86f
+
+% 0 1 0 13414d853295eaa90cb81181be17d36e
+
+% 1 1 0 0b69177196ad3ba70b4c54b1ecdc5903
+
+@ 0 12 0 1c7489b6b6fb64b40f5a317e572f3490
++     entry #releaseActions   松开每个保持按下的键和按钮，并清除输入状态
++     entry #printPage   以 PDF 打印的当前页面，以原始字节表示
++         接受 `WebDriver.Session.Print` 选项，未给出时使用规范的默认值。
++         这是页面打印出来的样子，而不是渲染出来的样子：后者由 `#screenshotData` 捕获。
++         并非每个驱动程序都实现了它（Safari 就没有），没有实现的驱动程序会以原因 `UnknownCommand` 或 `UnsupportedOperation` 抛出 `WebDriver.Error`。
++     entry #execute   在页面中运行一个 JavaScript 函数体，并以 `Json` 返回其结果
++         用于协议未建模的任何东西的逃生舱口。
++         脚本是一个函数体，因此它使用 `return`，它的参数是 `arguments[0]`、`arguments[1]` 等等：以 `element.in[Json]` 传入的 `WebDriver.Element` 会作为活动的 DOM 节点到达，而返回的元素会以传输形式传回。
++         抛出异常的脚本会以原因 `JavascriptError` 抛出 `WebDriver.Error`。
+
+% 2 1 0 082e5c2ffd1d324110d38141793f8aa7
+
+% 3 1 0 1ecd383b4087730607a51ab885e87cd9
+
+% 4 1 0 196448b43e8a12ef0a7de9e8392f45e5
+
+% 5 1 0 034e0f1585fbdd360c041fafe1422474
+
+% 6 1 0 1eabb28706f913841eeabed91a68e831
+
+% 0 1 0 1a7c57efde7b30b80fec863fdb176cd9
+
+% 0 1 0 0f01ae1311bd2e171b44c2e3ffea5a66
+
+% 1 1 0 0b596cf1ed71f4ba0121b465f645ed8f
+
+@ 0 11 0 06204627e59565270f2d1bf3643dd5ea
++     entry #executeAsync   运行异步 JavaScript，返回它传给回调的值
++         与 `#execute` 相同，但脚本会得到一个回调作为最后一个参数，命令在脚本调用它时完成；在 `script` 超时内没有调用它的脚本会以原因 `ScriptTimeout` 抛出 `WebDriver.Error`。
++     entry #element   定位器匹配的那一个元素，在页面范围内，或在某个元素或 shadow root 之下
++         `browser.element(H1)` 向驱动程序请求任意 `Focusable` 定位器的第一个匹配项：HTML 标签、`cls"…"` 类列表、`Name[DomId]`、`SelectorList`、`XPath`，或作为链接文本的 `Text`。
++         没有匹配项时，在会话的隐式超时之后，以原因 `NoSuchElement` 抛出 `WebDriver.Error`。
++         接受 `WebDriver.Element` 或 `WebDriver.ShadowRoot` 的形式在其之下搜索，通常通过 `element` 扩展书写：`menu.element(Li)`。
+
+% 2 1 0 0e518c0f10ac91dc1f8dcb42b134ab25
+
+% 3 1 0 0c6ab1d144eb15361232c80f63b8c58b
+
+% 4 1 0 0a91e5e73444beec17bbd2c737fcefc7
+
+% 5 1 0 15e6ac16d50b62ed033d8ae48f446ba2
+
+% 6 1 0 01495440d730147103391db13461db64
+
+% 0 1 0 1a19e8296eed8f93182828a84905eb72
+
+% 0 1 0 13de9e9731e3a96e1825838968be0184
+
+% 1 1 0 16dfb264f382b6d31b2dc44c2abbd94e
+
+@ 0 15 0 1a3ee3abc726386b10aa3e950b3b2e26
++     entry #elements   定位器匹配的每个元素，在页面范围内，或在某个元素或 shadow root 之下
++         与 `#element` 相同，但按文档顺序返回每个匹配项，没有匹配项时返回空列表而不是错误。
++         `browser \ Li` 在页面范围内与它相同。
++     entry #\   定位器在页面范围内匹配的每个元素，如 `browser \ Li`
++         `#elements` 的另一个名称。
++         选择用 `\` 而不是 `/`，因为 `soundness` 导出的 symbolism 的泛型 `/` 为每个接收者占用了这个名称。
++         在结果上，再次使用 `\` 会在找到的每个元素之下选择：`browser \ Ul \ Li`。
++     entry #activeElement   拥有焦点的元素
++     entry #awaitElements   定位器的每个匹配项，轮询直到至少有一个
++         除了查找的隐式超时之外，协议没有等待命令，因此这个方法在作用域内的 `Tenacity`（即调用者选择的调度）下轮询 `POST /elements`，并在方针放弃时抛出 `Tenacity.Error`。
++         它还需要一个 `Monitor`。
++         它有意轮询复数形式的端点：该端点把缺失报告为空列表，而单数形式的端点会抛出错误，这个错误被路由到会话自己的战术，无法在这里捕获以驱动重试。
+
+% 2 1 0 13eef65e8b3407261ba11f550e25f18b
+
+% 3 1 0 0f9c2400c1a89a130e9dbe2416e421bb
+
+% 4 1 0 067aae7bbc686f1a05bfe75d2a609458
+
+% 5 1 0 08cd7aefe2a79bde1d1eabbf22b42418
+
+% 7 1 0 0fd75f3b4e0f996910c7c1ba6b1e5c4d
+
+% 8 1 0 1a4067525ecd0fc905c6e71d90f01102
+
+% 0 1 0 0b4c89af7bce30481890400fe4b38e9e
+
+% 1 1 0 1555b2c1ee6699f51773feb98dd543aa
+
+@ 0 7 0 01879198dd8a6faa1cfcc75d0c207ff6
++     entry #awaitElement   定位器的第一个匹配项，轮询直到出现一个
++         与 `#awaitElements` 相同，返回找到的第一个元素；需要一个 `Tenacity`、一个 `Monitor` 和一个 `Tactic[Tenacity.Error]`。
++     entry #awaitUntil   在作用域内的 `Tenacity` 下轮询一个条件，直到它成立
++         通用的等待，适用于调用者无需抛出就能求值的任何东西：标题、元素数量、属性、cookie。
++         条件在每次尝试时重新求值，方针放弃时抛出 `Tenacity.Error`。
+
+% 2 1 0 1f6aa92520d79dfa189a16a999ef7de3
+
+% 3 1 0 1042b9311de5599c0e953a6910c0bbf7
+
+% 4 1 0 020e96ac6d91a11c1d59ff477491096d
+
+% 5 1 0 16f561229983049e1d5ec8e9e8d6afc5
+
+% 7 1 0 09303e875f6f9ee919d0950b857071f6
+
+% 8 1 0 14d87c35847b100914314435d835e958
+
+% 0 1 0 00323f5ee9446eac0f0fed255fd96b91
+
+% 0 1 0 1c3a641e6e3c560c094a7e9006f3495b
+
+% 1 1 0 1e0d1fb1745cf7180c5c4547d339246c
+
+@ 0 29 0 0dc5210e56f2ba7d1088e95a7389d90d
++     entry #shadowRoot   元素承载的开放 shadow root
++         通常通过元素上的 `shadowRoot` 扩展书写。
++         封闭的或不存在的 shadow root 会以原因 `NoSuchShadowRoot` 抛出 `WebDriver.Error`。
++     entry #click   在元素中心点击它，先把它滚动到视图中
++         通常通过 `click` 扩展书写：`button.click()`。
++         被另一个元素覆盖的元素会以原因 `ElementClickIntercepted` 抛出 `WebDriver.Error`，无法点击的元素则以 `ElementNotInteractable` 抛出。
++     entry #clear   清空一个可编辑的元素，例如输入框或文本区域
++     entry #value   像键盘那样向元素中键入文本
++         通常通过 `value` 扩展书写：`field.value(t"search terms")`。
++         文本会追加到已有内容之后；要替换它，先用 `#clear` 清空。
++     entry #innerText   元素渲染出的文本，按 `innerText` 算法
++         是读者所看到的内容，省略隐藏的文本，并在布局安排的位置换行，而不是 DOM 的 `textContent`。
++         命名为 `innerText` 而不是 `text`，因为后者已经是 `soundness` 总括包中的一个扩展。
++     entry #tagName   元素的标签名，例如 `h1`
++     entry #role   元素计算出的 ARIA 角色，例如 `button` 或 `heading`
++     entry #label   元素计算出的无障碍名称，即屏幕阅读器会读出的名称
++     entry #enabled   表单控件是否可用
++     entry #selected   复选框、单选按钮或选项是否被选中
++     entry #attribute   标记中的属性，如果元素没有该属性则为 `Unset`
++         一旦脚本触及该节点，它就与 `#property` 不同：输入框的 `value` 属性是页面送达时的值，而它的特性则是字段当前持有的值。
++     entry #property   元素的一个活动 DOM 特性，如果没有则为 `Unset`
++     entry #css   元素上某个 CSS 属性的计算值，例如 `color`
++     entry #rect   元素的边界框，以 CSS 像素为单位的 `WebDriver.Session.Rect`
++     entry #displayed   元素是否显示，按规范的可显示性检查
++         W3C 规范删除了 JSON Wire Protocol 的 `displayed` 命令，因此这个方法像每个符合规范的客户端一样，把元素的 `getClientRects().length > 0` 作为脚本运行。
+
+@ 0 5 0 120c0911513e0f2b065d7df19c066080
++ entry .browser   作用域内的 `WebDriver.Session`，使命令读作 `browser.title()`
++     在 `session` 块内，句柄是一个上下文值；`browser` 指代它，并保持其捕获集与会话自身的相同，因此它返回的任何东西都被限制在同一个块中。
++     它是一个以具名上下文参数接受会话的方法，而不是 `summon`，因为后者会生成一个新的能力，而不是引用块所拥有的那个。
+
+% 2 1 0 07c47f44650ee6ad1fef66883ac9b76c
+
+% 3 1 0 05bcaf69e4f0c19f04da76ecca256f2b
+
+% 4 1 0 116879f4fb62d55f08bf1fb7f4fd6b22
+
+% 5 1 0 02c196a54cbf10df09e5db5687849af2
+
+% 6 1 0 07bc9e430d2b8a74155db6cecd788b1b
+
+% 7 1 0 1c5420126eed9ac31fc801d91fd98e76
+
+% 0 1 0 1e7e289bc95ae2bb1beefd334f52538b
+
+% 1 1 0 1a92ef2e485fd73a19b972be6fa04c00
+
+@ 0 3 0 023af3b21e522e191110e54531791c0b
++ entry .click   通过作用域内的 `WebDriver.Session`，在元素中心点击它
++     `WebDriver.Element` 上的扩展，委托给 `WebDriver.Session#click`。
++     被另一个元素覆盖的元素会以原因 `ElementClickIntercepted` 抛出 `WebDriver.Error`。
+
+% 2 1 0 0879055c577bcf7304f6f549083680ff
+
+% 3 1 0 11363a435f62c3cb01339c5d1db1ce0e
+
+% 4 1 0 1208a3c3df48a27c195b5a02f7a10b68
+
+% 5 1 0 1a604b2a108ee4b21be14efdcaab67a8
+
+% 6 1 0 1464894699b2122d18d7f172bb01b96c
+
+% 0 1 0 1917ae27646b72700aff6991dca436da
+
+% 1 1 0 1fbb70079832f71d12c93c717d3ef2d1
+
+@ 0 2 0 004b9345f9ef9e580459938bd2372ba9
++ entry .clear   通过作用域内的 `WebDriver.Session` 清空一个可编辑的元素
++     `WebDriver.Element` 上的扩展，委托给 `WebDriver.Session#clear`。
+
+@ 0 4 0 1974223faa9b7a500dc1ef8d6f771023
++ entry .innerText   通过作用域内的 `WebDriver.Session` 获取元素渲染出的文本
++     `WebDriver.Element` 上的扩展：按 `innerText` 算法得到读者所看到的内容，而不是 DOM 的 `textContent`。
++     它不叫 `text`，因为 `text` 已经是 `soundness` 总括包中的一个扩展。
+
+@ 0 2 0 1ac6479be837997311b2eaa422149ee0
++ entry .tagName   通过作用域内的 `WebDriver.Session` 获取元素的标签名，例如 `h1`
++     `WebDriver.Element` 上的扩展，委托给 `WebDriver.Session#tagName`。
+
+@ 0 2 0 0daa16f15ef8a3d702de670903c12693
++ entry .enabled   通过作用域内的 `WebDriver.Session` 判断表单控件是否可用
++     `WebDriver.Element` 上的扩展，委托给 `WebDriver.Session#enabled`。
+
+@ 0 3 0 01fb7eef921da5bd1493d5b84c5aca59
++ entry .selected   复选框、单选按钮或选项是否被选中
++     `WebDriver.Element` 上的扩展，委托给 `WebDriver.Session#selected`；它需要作用域内有会话。
+
+@ 0 3 0 1901638394b8e61804b11e973f1afff8
++ entry .displayed   通过作用域内的 `WebDriver.Session` 判断元素是否显示
++     `WebDriver.Element` 上的扩展。
++     W3C 协议没有可显示性命令，因此 `WebDriver.Session#displayed` 以脚本的方式求值。
+
+@ 0 2 0 015e9b31001e0d0903da1c4ce90f0d18
++ entry .role   通过作用域内的 `WebDriver.Session` 获取元素计算出的 ARIA 角色
++     `WebDriver.Element` 上的扩展，委托给 `WebDriver.Session#role`。
+
+@ 0 3 0 19d26a523c8b706506a88bb7f50031d3
++ entry .label   通过作用域内的 `WebDriver.Session` 获取元素计算出的无障碍名称
++     `WebDriver.Element` 上的扩展，委托给 `WebDriver.Session#label`：屏幕阅读器会读出的名称，来自它的文本、它的 `aria-label` 或与它关联的 `<label>`。
+
+@ 0 4 0 1d08303bbde164df120db14af1581832
++     `soundness` 总括包还导出了 wisteria 的 `label`，即派生中字段或分支的名称，因此在 `import soundness.*` 之下，这两个名称会冲突，`element.label()` 可能无法解析；`browser.label(element)` 不经扩展即可访问同一个命令。
+
+@ 0 3 0 11a1d8abba392c3408b36f7dd7f64cad
++ entry .cssValue   元素上某个 CSS 属性的计算值，例如 `color`
++     `WebDriver.Element` 上的扩展，委托给 `WebDriver.Session#css`；它需要作用域内有会话。
+
+% 2 1 0 1354af91a6e2d3b41aa3d133ad900cc2
+
+% 3 1 0 105ce92d3292792613a5abce90dfac2e
+
+% 4 1 0 0717e730048924851e479655f1298933
+
+% 5 1 0 18c43cc7657fd4b20eb1abf8f50c45f8
+
+% 6 1 0 167635ef992f2b6902cabb34096bd614
+
+% 0 1 0 1f69de3b552f5104021066310e4953e9
+
+% 1 1 0 025c417c3e41109d168bf6325b0382ac
+
+@ 0 4 0 01b73c252c0345080b337b9d2116c34e
++ entry .shadowRoot   通过作用域内的 `WebDriver.Session` 获取元素承载的开放 shadow root
++     `WebDriver.Element` 上的扩展，返回一个可用 `\` 或 `element` 搜索的 `WebDriver.ShadowRoot`。
++     封闭的或不存在的 shadow root 会以原因 `NoSuchShadowRoot` 抛出 `WebDriver.Error`。
+
+@ 0 2 0 1f2679f5f4c9621c1fdcdc6ad8804b5c
++ entry .rect   通过作用域内的 `WebDriver.Session` 获取元素以 CSS 像素为单位的边界框
++     `WebDriver.Element` 上的扩展，返回一个 `WebDriver.Session.Rect`。
+
+@ 0 4 0 01a1aef68056265b09d9f448b52a1265
++ entry .value   通过作用域内的 `WebDriver.Session` 向元素中键入文本
++     `WebDriver.Element` 上的扩展，委托给 `WebDriver.Session#value`。
++     文本会追加到字段已有的内容之后，无论多长都只是一个请求；具名键和组合键需要 `WebDriver.Session#press`。
+
+% 2 1 0 0b8420ac59e5039e01e24fcd0774ccb7
+
+% 3 1 0 08d2ae041fea9dfd0610e58ac7edcbdb
+
+% 4 1 0 1354f9f251a5a4f1010d4db95834523e
+
+% 5 1 0 0f39f803123d30731e62b7f880ad8716
+
+% 6 1 0 117cbf340e2fa9ab1eec6b3a962afd2c
+
+% 0 1 0 134843b65074c1af1ecad3d29b595c43
+
+% 0 1 0 0442255b8ff7f58b0b3c976cc7009cfe
+
+% 0 1 0 0fe2647209d6af5f0a33bd95992dc192
+
+% 0 1 0 134fe6486c7a1c660c81b416d4768a94
+
+% 1 1 0 0f017719092bf5d00860c1994c1a6c9f
+
+@ 0 3 0 0124dde36c3884040b9e6a2ff6a6d0e0
++ entry .screenshotData   通过作用域内的 `WebDriver.Session` 获取一个元素的 PNG，以原始字节表示
++     `WebDriver.Element` 上的扩展。
++     `tarantula.image` 中的 `screenshot` 扩展会把同样的字节解码为 `Raster in Png`。
+
+@ 0 4 0 081ec4740481478e15d64361ce899fe5
++ entry .attribute   标记中元素的属性，如果没有则为 `Unset`
++     `WebDriver.Element` 上的扩展，需要作用域内有会话。
++     一旦脚本触及该节点，它就与 `property` 不同：输入框的 `value` 属性是页面送达时的值，而它的 `value` 特性是字段当前持有的值。
+
+@ 0 2 0 1be74d2a2e652810197fe5ef0cb3bb82
++ entry .property   元素的一个活动 DOM 特性，如果没有则为 `Unset`
++     `WebDriver.Element` 上的扩展，需要作用域内有会话。
+
+% 2 1 0 0b14321ab5ed961b12adceaba6b99c21
+
+% 3 1 0 15052e9de51b95141be5dec00f2f78bd
+
+% 4 1 0 1af7e357d97b82710d1a0c4af25431a9
+
+% 5 1 0 0866a33306e7fa451f767e71a2c2fe1b
+
+% 6 1 0 0ddeb0468b3e15550cb6fc24fc7fbcb8
+
+% 0 1 0 0cea0ffeede83aef0b02b4aa50832888
+
+% 0 1 0 0e0d1e1cc0097ccc09c04c9f5bb8968e
+
+% 0 1 0 1f928ea03d265c3a0c8c18e9c3c1cc35
+
+% 1 1 0 1b2ff60c362a8ef2030ed6ec9684dcd8
+
+@ 0 5 0 0f2d0a50c2d05f811b865cb2f460fbbf
++ entry .element   在某个元素或 shadow root 之下，定位器匹配的那一个元素
++     `WebDriver.Element` 和 `WebDriver.ShadowRoot` 上的扩展，接受任意 `Focusable` 定位器，需要作用域内有会话：`menu.element(Li)`。
++     没有匹配项时以原因 `NoSuchElement` 抛出 `WebDriver.Error`；`\` 则返回每个匹配项，没有时返回空列表。
+
+% 2 1 0 0165219911708ad210660c67b1cc682a
+
+% 3 1 0 12e4a058107fa883067d96a49ec097f3
+
+% 4 1 0 0b0a15401ee7989612bd2da6c64ceaab
+
+% 5 1 0 1b9bcb36b4e6a8541760d28585a27ef3
+
+% 6 1 0 15b856436a12c3980511b02df5cbe88b
+
+% 0 1 0 00916b1ebe02deb012168d7752b17d56
+
+% 0 1 0 1fc704690165685e1cc3f4c92e43e2a3
+
+% 1 1 0 17cd2d7448331c151906a65187c0705d
+
+@ 0 5 0 1e0d61bfa80408c80c57fdc5bf09c5b0
++ entry .screenshot   视口或一个元素的截图，解码为 `Raster in Png`
++     `WebDriver.Session` 和 `WebDriver.Element` 上的扩展，位于 `tarantula.image` 组件中，这使图像编解码器不进入浏览器自动化：即由 hallucination 的 PNG 编解码器解码的 `screenshotData`。
++     编解码器无法读取的截图会被抛出，因为那意味着驱动程序发送的东西不是 PNG。
+
+% 2 1 0 137b066b948da42b119c9db506fb4de8
+
+% 3 1 0 1d0bb6eb741758691abc8a207573a107
+
+% 4 1 0 179a459f2cd103f208be9234ee788562
+
+% 5 1 0 0e97572254e8917616324afc76ca2869
+
+% 6 1 0 0fa8e6c724d57a250a7bdbe9e81f5812
+
+% 7 1 0 1b3e9cc9442e7e5e1031a86a872f1cd9
+
+% 0 1 0 005266ddb4c8c0f51b2c34cf201a1958
+
+% 0 1 0 13b8951ae283025203374e920ed55633
+
+% 1 1 0 1bf7e46559a177c01f6b861765cf23ae

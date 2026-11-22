@@ -1,0 +1,1693 @@
+orthant 2 language
+
+% 0 1 0 0f04ec4b9ac2d4270a232409219e1f6b
+
+% 0 1 0 15a79ecf9193b41d08b338a67c1c74b4
+
+% 0 1 0 0b5938ce7315323607e1922cbc4d93e2
+
+@ 0 1 0 18a73cbf36db49000b31a7ff44697573
++ info   测试框架：作为值的测试套件、带结构化对比的断言，以及供宿主使用的带类型事件流
+
+% 0 1 0 0ca6d61ddd9511ea1cdae38f1414f6fe
+
+@ 0 6 0 16e72a68d9901b151609bd1b2aec7caa
++     _Probably_ 是 Soundness 的测试框架。
++     测试是一个**值**：`test(m"…")` 为它命名，下面的代码块产生一个结果，而 `assert`、`check` 或 `matches` 说明该结果必须满足什么。
++     失败的相等断言不是以两个 `toString` 的形式报告，而是以预期值与观测值的结构化**对比**（chiaroscuro 的 `Juxtaposition`）报告，并且每个结果都以带类型的 `TestEvent` 离开套件，因此宿主可以按自己喜欢的方式渲染这次运行。
+
+% 2 1 0 1d7a38919fdae0941821c2d44d56d552
+
+% 3 1 0 1f3524100f14ef5b0ada9b3fcfff6983
+
+% 0 1 0 09d36b8a1c1202c71cd9e02bf572e5a8
+
+% 0 1 0 0a9de0b62369958e032f3dc0052472d9
+
+% 0 1 0 11c97151aafb539d10219f1e737f28c0
+
+% 0 1 0 0505914d45a7d63910e10da63e9d8742
+
+% 0 1 0 08276fd2a86277760ab4e293cb8aacaf
+
+% 1 1 0 0578abe7559af877164177e31345002f
+
+% 0 1 0 18404f8d39f8a64c10a601eb2ab4cb0c
+
+% 0 1 0 118b4f55d30a236a010ea49dde1ffdcc
+
+% 0 1 0 18b42bd6d5c7ad900151e8cb76790d6b
+
+% 1 1 0 15f2df14b6470ca10cd59efda6cee03b
+
+% 1 1 0 08d13d5edb07f3c21c10bdb014ca60ef
+
+@ 0 8 0 061fc18794c4faaa1c2ee716b7483f9e
++     `Suite` **不是主类**，测试也没有 `main`：beneficence 编译器插件把每个 `Suite` 对象列在 `META-INF/services/probably.Suite` 中，把每个测试列在 `META-INF/probably/tests` 中，而 `fume` 运行器在已构建的类路径上从这些索引中发现套件，通过 `Suite#invoke` 并附带一个事件数据汇来驱动每个套件，并渲染这些 `TestEvent`。
++     `events` 组件把它们作为带长度前缀的 BinTEL 帧（`Streamer`）跨越类加载器边界传送，或者从一个单独的 JVM 中传出（`Standalone`）。
++     想要为 CI 提供普通 `java` 入口点的仓库写 `Suite.main(arguments, Tests)`，它为每个完成的测试打印一行，并以各套件的状态退出。
+
+@ 0 1 0 0031065f2dc8fd2d136cbcd30c9214d4
++     各个部分，从表层往下：
+
+@ 0 22 0 141e2eed77dcc3781e901145a7fb9def
++     - **声明**：`test`、`suite`、`impromptu` 和 `aspirationally` 是包级函数；每个都需要作用域中有一个 `Testable`（`Suite` 自己的、`suite` 代码块的或 `impromptu` 代码块的），要断言时还需要一个 `Runner`。测试可以带一个稳定的代号（`n"square"`）和标签（`n"slow"`），两者都是 `n"…"` 字面量，在编译时对照 `Probing` 和 `Tagging` 命名平面进行检查。
++     - **断言**：`Test#assert` 和 `Test#check` 是宏，它们找到 `Runner` 及其报告类型的 `Inclusion`，运行主体，并记录一个 `Verdict`。`assert` 要求**纯**主体（不闭包任何能力），这正是让排队式运行器（`--workers=<n>`）能在工作线程上运行它的原因；`check` 接受任意主体，内联运行它并返回其值。两者都不会解析任何关于如何展示失败的东西：失败的断言是事后诊断的，并且只在宿主要求时才诊断（`--diagnose=…`；见 `Diagnosis`）。
++     - **展开**：`Test.Id#over` 对 `Axis` 的每个值（或两个轴的每种组合）运行一次测试，把每个判定记录在单个命名测试的相应坐标上。
++     - **运行**：`Runner` 由一个 `Selection`（从命令行项解析而来：哈希、代号、通配模式、`kind:`、`tag:`、`not:`、轴约束、`--list`、`--scale=`、`--workers=`）和一个 `Reporter` 构建；`Reporter.report` 累积一个 `Report`，即一棵由 `Entry` 组成的树，其单元格持有由 `Metric` 组成的 `Run`，并把每个数据项作为 `TestEvent` 发出。
++     - **测量**：`Benchmark`、`Strain` 和 `Hotspots` 是三种计时类别（基准测试、压力测试、性能剖析，通过 sedentary 库声明）的结果，每种都有一个 `Inclusion[Report, …]`，把它作为某个坐标上的度量记录下来。
+
+@ 0 11 0 1c329d577e48e36b0a7ab042056c9d59
++     该库有四个组件。
++     `probably.core`（JVM、Scala.js 和 Scala Native）包含除 `Suite` 和传输格式之外的一切；`probably.cli` 添加 `Suite`；`probably.events` 添加 `Streamer` 和 `Standalone`，即供宿主使用的事件流 BinTEL 分帧；`probably.diagnosis`（仅 JVM）添加 `Dissector`，即诊断失败断言的引擎，并随之引入对编译器的依赖。
++     除 `probably.Tag` 之外，所有内容都导出到 `soundness` 总括包，因为在那里这个名称属于 honeycomb 的 HTML 标签：必须指明该类型时写 `probably.Tag`（标签通常写作 `n"…"` 字面量）。
++     hypotenuse 的检查词汇——`===`、`!==`、`+/-`、`±`、`Checkable` 和 `Tolerance`——在此重新导出，使 `import probably.*` 仍然提供它们。
++     选择包 `harnesses` 和 `decimalizers` 持有需要按名称导入的 given，因为 `import probably.*` 不导入 given。
+
+@ 0 4 0 05b331b9c42a29a9199cdbad6f492d1b
++     列表（`--list`，这是宿主在暂存任何东西之前为一次运行做预算的方式）会执行整个 `run()`：未被选中的 `assert` 主体会被跳过，但每个 `check` 主体都会运行，测试之间的每条语句也会运行，因此只在测试主体中使用的 `val` 最好设为 `lazy`。
+
+% 0 1 0 16c984898692604517e2e92b3c9518f9
+
+% 0 1 0 16df343634c20762131a5431b1cbb45e
+
+% 0 1 0 190bcb346d1952440bc4c807d0b1fbe7
+
+% 0 1 0 0d64ecec458e8b390962c97835796ad3
+
+% 0 1 0 15e2503a0704dd491d66f83e9ee832f3
+
+% 0 1 0 190bc98bfc70b6331251f026351307c2
+
+% 0 1 0 179c3dfbc1570928005eea298ec5f5b9
+
+@ 0 1 0 0396e174688c5fe414874cf960bd781e
++ entry .test   通过描述声明一个测试，可带可选的代号和标签
+
+% 1 1 0 0c4750caa41b96861196c632a5407ca2
+
+@ 0 6 0 0b0be6a9076f1b730e4bdf5dce21ecb7
++       `test(m"…")` 由一个描述、作用域中的 `Testable`（它说明测试属于哪个套件）和调用处的 `Codepoint` 构造一个 `Test.Id`；把该 id 应用于一个代码块就得到一个 `Test`，再由 `assert`、`check` 或 `matches` 运行它。
++       描述之后可以带标签，`test(m"fetches", n"slow", n"network")`，选择可据此接纳或排除该测试；每个标签都是一个 `n"…"` 字面量，对照 `Tagging` 规则（标识符字符和 `-`）进行检查。
+
+@ 0 3 0 02d32ba03b95b4d00980ad1ef4fe88ad
++       第二种形式先用一个**代号**为测试命名，`test(n"square", m"square a number")`：一个经编译时检查的 Java 标识符，无论描述如何改写，它都能在选择和图表中稳定地指向该测试。
+
+% 2 1 0 1a6af09365070626199d9b4e9d11aafc
+
+% 3 1 0 007cfff478f7dca51ef06a8484b907c8
+
+% 4 1 0 1a2417821f775aa514ad0460d37db985
+
+% 6 1 0 0afc5dadde2ab76914688ce5b875a7ba
+
+% 3 1 0 0e3d1025a1b9fe2a08c61a7d1bd0f955
+
+% 0 1 0 06bc1580fb355db00b9a50251b94e31d
+
+% 0 1 0 069fce817e4dbb721f7617d49701e953
+
+% 1 1 0 17556d1a7b9e6f2a13015103bafef6e2
+
+@ 0 5 0 0744daeca4d82a1a06a4a8cf756c6ddd
++       作用域中没有 `Testable` 的 `test` 是编译错误：_a test must be declared for a Suite — in its body, or in a method taking `(using Testable of "<the suite's name>")` — or inside an `impromptu` block_。
++       为某个套件声明测试的方法通过其 id 指明该套件，`def numbers()(using Testable of "parser"): Unit`，或者在主题上是泛型的，`[topic <: Label](using Testable of topic)`。
+
+% 1 1 0 042692cf66a94da01ffac212e000814a
+
+% 1 1 0 07bb8c49fdc4f1dc1c67a2a258627c89
+
+% 0 1 0 1c9aea237a4092c70d819bcb4ed03ce2
+
+@ 0 1 0 0bf66ced2c94a445150b49bfda84d40a
++ entry .suite   把测试归入一个名称之下，作为作用域中套件的嵌套套件
+
+% 1 1 0 1f877c65f81c7b0c0646785c16ef1555
+
+@ 0 6 0 1fec6b17fe6578a10d8df0f1b07fbf5b
++       `suite(m"Numbers") { … }` 声明一个分组：代码块以一个与外层主题相同的新 `Testable` 运行，因此其中的测试属于该分组，而该分组属于套件，它们的路径（`parser/Numbers/a decimal integer parses`）和 id 都反映这一点。
++       它需要外层的 `Testable`、一个 `Runner`（它进入该分组并报告其开始和结束）以及一个 `Codepoint`。
++       第二种形式为分组提供一个代号，`suite(n"numbers", m"Numbers")`。
+
+@ 0 4 0 079832ad22bb64d702daf9205d859b49
++       无论选择如何，分组总会被进入：它的主体开销很小，而按名称剪枝会使按哈希或代号选择其中的测试失效。
++       使用排队式运行器时，分组的 `SuiteEnded` 事件会被推迟，直到其中排队的最后一个断言完成。
+
+% 1 1 0 11d26f283887ab9d17b2f1b4b2c25bfc
+
+% 1 1 0 1d7da67f3428d33715438001e93e43f0
+
+@ 0 1 0 02851ccdab783e5e1ef23fb81e1e9b28
++ entry .impromptu   接纳没有任何 `Suite` 静态声明的测试
+
+% 1 1 0 0581ab007e2b2fd71c490002d0fa712f
+
+@ 0 7 0 14dcf23321fa28ef00032e4b356d2b86
++       程序在运行时临时生成的测试——一致性语料库中每个文件一个——或者在调用方自己的 `Runner` 上、在任何套件之外运行的测试，都在 `impromptu` 代码块中声明。
++       在其中，`test`、`suite` 等照常工作，如果存在外围的 `Testable` 则归属于其位置（否则为 `Testable.detached`），但它们的 `Testable` 的主题是 `Impromptu`，因此 beneficence 插件会把它们排除在其写入的测试索引之外，宿主只有在它们运行时才得知它们。
+
+% 2 1 0 1e05c73a04d240cb09257c624cf35e56
+
+% 3 1 0 04895e28117a6adc18de006bcc15e71b
+
+% 5 1 0 16210dc211f877f61a317c30328c0c0f
+
+% 6 1 0 0fa794e4bdab66f20fb6e9d89b3009f7
+
+% 2 1 0 0477f7f55aa1d53116502438a40f92c8
+
+% 0 1 0 019cca88fb1057ab06c87cbfaf2c7060
+
+% 0 1 0 1f189306eee82e1107369672921dbbc3
+
+% 1 1 0 093f76ef9c76c5e81402baf1b625a262
+
+@ 0 1 0 06749a2d6759d35f0f9cd76aaa33413b
++       代码块的结果会被返回，因此 `impromptu(test(m"probe"))` 是一个 `Test.Id`。
+
+% 1 1 0 1509a6c5a6d15600188c3274fe2a5903
+
+% 1 1 0 1f01927154ada7e70004cd1567d63a07
+
+@ 0 1 0 127f99ae33b7ffa80a9aba8ffb78d1f1
++ entry .aspirationally   把代码块中的每个断言记录为期望，既不失败也不被遗忘
+
+% 1 1 0 1892b6fbe691ba8a1d157dd9ea07f072
+
+@ 0 7 0 14f800edbc1dde000e3c35bc753e6645
++       一个*应当*通过但已知尚未通过的测试，与其他测试写法相同，只是放在 `aspirationally` 代码块中。
++       其中的每个判定都被记录为 `Verdict.AspirePass` 或 `Verdict.AspireFail`（异常记录为 `AspireFail`），因此运行不会因它而失败，而一旦它开始通过，宿主会单独报告。
++       代码块看到的是上下文运行器的 `Runner.Aspirational` 视图，它共享运行器的状态和报告，只在判定的记录方式上有所不同；在 `--workers` 下，纯的期望与其他断言一样被排队。
+
+% 2 1 0 1bb955e3187bf21f14affec3f14bc6bd
+
+% 3 1 0 1ae2bd8c24ec666f1a28b06de605817c
+
+% 5 1 0 09b947f69921150f10529640dff1a711
+
+% 6 1 0 0cd32a79ff66034d04e52bc469dd882a
+
+% 0 1 0 0c52cf27a569c90e08e13e2d3afc08bf
+
+% 0 1 0 14561097192d2e010b785e01cfe1c933
+
+% 0 1 0 0fd1b8e0e27c94fd13988a6697ee292e
+
+% 0 1 0 12b2bd9689dcddfb1249c094dcdfb35d
+
+% 1 1 0 184e366e8f3209d609e0ca70bf4c9679
+
+% 1 1 0 0b19f1f1cb4922ea1e8bc98ea62d80c7
+
+% 1 1 0 0d33ed41d59ace62024d548c094f0fdb
+
+@ 0 1 0 110367fc5461f162198391248b58df8c
++ entry .Suite   测试套件：一个带有标题、id 和 `run()` 主体的对象，由宿主通过 `invoke` 驱动
+
+% 1 1 0 0eb5a2efc1a492c71018ee005deb1036
+
+@ 0 6 0 0039e783f9e955671f0be398d541ffe6
++       `Suite` 是宿主运行的单位。
++       它是一个扩展 `Suite(id, title)` 或 `Suite(title)` 的 `object`，其 `#run` 主体声明测试，并且它**不是主类**：beneficence 插件把每个 `Suite` 对象记录在 jar 的 `META-INF/services/probably.Suite` 索引中，fume 运行器在那里发现套件，通过 `#invoke` 并附带一个事件数据汇来驱动每个套件，并渲染 `TestEvent` 流。
++       套件本身什么也不渲染。
+
+% 2 1 0 11e9cb92c4e501910106f08a0588cac4
+
+% 3 1 0 02ab662639b691a31f4af379bbc564ed
+
+% 4 1 0 152ae1da069417491a06650c5fa956b1
+
+% 0 1 0 0e636f17610c418313f06ee6ac052dd8
+
+% 1 1 0 101e6f126de9c9621f147f64b5f699d3
+
+% 0 1 0 1dee046c3f7e7eee1b4f98799669803c
+
+% 0 1 0 005b58f2c611d8f71d8eb69bf426213c
+
+% 0 1 0 1109e2c89bad9009186e40f8aa1590eb
+
+% 0 1 0 18d2279a23523aed01989e084081c5b1
+
+% 1 1 0 1c221e79f8b55aea0e77df640291aa49
+
+@ 0 8 0 17dea4705b6e74a5145cddb7125a32a0
++       套件有一个**标题**和一个 **id**。
++       id 是选择和路径用来识别它的名称，要么以字符串字面量的形式在标题之前给出，要么由 `.derive` 从标题派生：`Suite(m"Honeycomb Tests")` 的 id 是 `honeycomb-tests`。
++       给定的 id 也是套件的 `Topic` 类型：在其主体中，上下文 `Testable` 是一个 `Testable of "parser"`，每个 `suite` 代码块都把该主题传递下去，而为该套件声明测试的方法用 `(using Testable of "parser")` 表明这一点。
++       id 为派生的套件，其主题是 `Derived`，没有任何字面量与之相等，因此它的测试要写在它的主体中，或者写在一个在主题上为泛型的方法中。
+
+@ 0 5 0 17117f8d92c966ba125d65264ec612cf
++       套件是一个 `Testable`（其名称是标题，其 `key` 是 id），并向其主体提供两个 given：`#testable`，它自身的纯视图，以及 `#runner`，当前调用的运行器。
++       宿主可以通过同一个类加载器任意多次调用一个套件：每次 `#invoke` 都会安装一个新的运行器，而 `#runner` 是 `inline` 的，因此每个断言读取的都是当前的运行器。
+
+@ 0 2 0 1311ad80e0455b9102920548b164baaa
++       对于 CI，或者太旧而无法读取 jar 事件 schema 的宿主，`.main` 和 `.run` 是一个普通的入口点：测试对象自己的 `main` 就是 `Suite.main(arguments, Tests)`。
+
+% 1 1 0 1a9404b7e600a127095c57efa1171557
+
+% 1 1 0 024ca385db0ea80b0f2ea8b8c3b3c45b
+
+% 1 1 0 142cb7662f0b21a80b1dd71cb9e0654f
+
+% 1 1 0 0d0c1e21ae9d50cc1e1fc6ad8250aa1f
+
+@ 0 17 0 152eedb7588aa0ec0e4739a3231ae3f2
++   entry .Derivation   把仅有标题的套件的主题确定为 `Derived` 的证据
++       `Suite(title)` 有一个不受任何其他东西约束的类型参数；`Derivation` 唯一的实例 `.derivation` 是 `Derivation[Derived]`，正是它给这样的套件赋予主题 `Derived`。
++       这不是用户会写的东西。
++   entry .derivation   given `Derivation[Derived]`，位于隐式作用域中
++   entry .derive   由标题派生的 id：小写字母和数字，各段之间以 `-` 分隔
++       每一段由字母或数字以外的任何字符组成的连续内容都变为一个 `-`，两端都没有 `-`，如果什么都不剩则为 `suite`：`Suite.derive(t"Honeycomb Tests")` 是 `honeycomb-tests`，`Suite.derive(t"  y\"…\" interpolator (v2) ")` 是 `y-interpolator-v2`。
++   entry .run   在作用域中的 `Stdio` 上以纯文本报告运行套件，并给出其状态
++       `Suite.run(arguments, suites*)` 用这些参数（选择项，以空格或换行分隔；空文本表示全部）调用每个套件，每个完成的测试打印一行 `[pass] parser / Numbers / a decimal integer parses`，其下是 `DetailMessage`，或 `DetailCompare` 的 `expected:`/`found:`，对于被终止的运行打印 `suite threw: …`，最后打印 `3 passed, 1 failed`。
++       它返回最差的状态：0 表示通过，1 表示有失败，2 表示有套件抛出异常。
++       它需要一个 `Stdio`，例如 `stdios.javaLangSystemStdio`。
+
+% 2 1 0 1ed1210949b568bc05ff46dc20aff95b
+
+% 3 1 0 1231d90ccd896808149de3517a1884f9
+
+% 0 1 0 1d0b2713fa1789c10c19a076366533d2
+
+% 2 1 0 05e4428ed03bf51f0686e343c2fc9fec
+
+% 0 1 0 097fba90868731c313f59422748889f5
+
+% 0 1 0 1ca744e6b3cde6050bd25e43aa9d5004
+
+% 1 1 0 1bc4d70fff214b32175b2a4b4e875f38
+
+@ 0 13 0 0a321758a2f4a9f5036c83cba6feb051
++   entry .main   测试对象的 `java` 入口点：运行套件，然后以其状态退出
++       `Suite.main(arguments, Tests)` 就是在标准 `Stdio` 上的 `.run`，随后执行 `Exit(status).terminate()`。
++       想以 `java -cp … Tests` 启动的测试对象定义 `def main(arguments: Array[String]): Unit = Suite.main(arguments, Tests)`；fume 这样的宿主从不需要它。
++   entry #Topic   套件的主题：作为字面量类型的 id，或 `Derived`
++   entry #workers   宿主进行排队时，该套件排队的断言可以在多少个工作线程上运行
++       使用 `--workers=<n>` 时，运行器取宿主的数量与该值中较大的一个；默认值 1 保持声明顺序。
++       在纯断言可以并行运行的套件中覆盖它。
++       只有编译器验证为纯的断言才会排队，因此由套件代码块限定作用域的任何东西都不能在工作线程之间共享，但检查器不跟踪的效应（原始 JDK I/O、系统属性、线程亲和的库）仍由套件自己负责。
+
+% 2 1 0 09d18066f3398b8d1133e6ffe7526b39
+
+% 3 1 0 01ff550f55e7904f1af7c38fb4697b81
+
+% 4 1 0 0c91b8008771f7c4062ad6f5066e417c
+
+% 0 1 0 0a2666563368cab1123dd9c74af4e90a
+
+% 0 1 0 1fbc55b5c0b08de000d4d2c3cf2357fb
+
+% 0 1 0 1d6fc7b78ec9508d170ad8e41df010ce
+
+% 1 1 0 061691119e5e2ff814163b68255441ad
+
+@ 0 26 0 008c00f5c78383b81a872eeda83fd3e6
++   entry #runner0   当前调用的运行器，每次 `invoke` 都会替换它
++       每次运行的状态。
++       它之所以是公共 `var`，只是为了让 `#runner` 可以成为读取它的 `inline given`；套件的主体通过 `#runner` 获取运行器，宿主则通过 `#invoke`。
++   entry #runner   套件主体用来断言的 given `Runner[Report]`
++       内联的，因此每次召唤都读取*当前的*运行器：memoize 的别名会保留套件见到的第一个运行器，这对于在同一个类加载器中被多次调用的套件来说是错误的——无论调用者是通过同一个加载器运行多个套件的宿主，还是把它作为嵌套套件调用的另一个套件。
++   entry #testable   套件主体为之声明测试的 given `Testable of Topic`
++       套件的纯 `Testable` 视图，而不是套件本身——后者捕获了其运行器，因而是一种能力。
++       `Testable` 的相等性是结构性的（名称和父级），因此在测试被分组或报告的任何地方，该视图都可以与套件互换。
++   entry #run   套件的主体：声明其测试的地方
++       抽象的；其中的每条语句在每次调用时都会运行，包括 `--list` 调用，因此只在测试主体中使用的值最好声明为 `lazy`。
++   entry #apply   把套件的主体作为作用域中运行器的嵌套套件运行
++       在另一个套件的主体中，`Tests()` 在调用方的运行器上把本套件作为那个套件的一个分组进入，在此期间该运行器成为本套件的 `#runner`。
++   entry #invoke   用一个事件数据汇运行套件，并返回其退出状态
++       `invoke(arguments, sink)` 把参数解析为一个 `Selection`（在一个 `Text` 中以换行分隔的各项，空文本表示无），安装一个新的运行器，其报告通过 `sink` 把每个数据项作为 `TestEvent` 发出，然后运行 `#run`，排空所有排队的断言，并返回 0（通过）、1（有失败）或 2（套件抛出异常，在一个 `RunTerminated` 事件之后）。
++       事件流以 `RunCompleted` 结束；什么都不接纳的选择会先发出 `NothingMatched`。
+
+@ 0 4 0 068864593521d8e21e1e22e0a4810320
++       参数中带有 `--list` 时什么都不运行：遍历会记录选择所接纳的内容，并为每个被接纳的测试发出一个 `TestScheduled`，附带其类别、预计测量时间、标签和轴，宿主正是以此在暂存任何东西之前为一次运行做预算。
+
+% 2 1 0 1b250c8c524caf0113bdc1a0556a9906
+
+% 3 1 0 10a4b421fd36d3b10eb6104a0c0b07e9
+
+% 5 1 0 1528ae978e0fe1ec1862c8b2f8471d54
+
+% 1 1 0 14cb300d1f86823b10489eedc776d05f
+
+% 0 1 0 1a4360cdcc1239691068da04b017d244
+
+% 0 1 0 1e92350ae479102d133dcaef0ae2ff4c
+
+% 0 1 0 04a6cbcba78d64a419bc4e8671c2710e
+
+% 0 1 0 1e046f71bcfda4f81a90d87f37ba26d0
+
+% 1 1 0 0a42ed35f4dd2c490a674d74a935329f
+
+@ 0 2 0 03359035ed7417dc182402e7e55ac254
++       数据汇是一个纯函数（`TestEvent -> Unit`），在 `--workers` 下可能从工作线程调用，因此它必须能够安全地被并发调用。
+
+@ 0 1 0 00c52d6d6c04e3d815ecaab445e3223d
++ entry .Testable   测试所附属的对象：一个 `Suite`、一个 `suite` 分组或一个 `impromptu` 代码块
+
+% 1 1 0 15bf09be10c654cd0efdfeada1a2c0ef
+
+@ 0 7 0 1b20fdfbdd77398704f7c48df2484550
++       每个 `test` 和 `suite` 声明都接受一个 `Testable` 作为上下文参数，它说明测试属于何处；它的 `#Topic` **静态地**说明这一点：测试为之声明的 `Suite` 的字面量 id（`Testable of "parser"`），其中的每个 `suite` 分组都把它传递下去；对于 id 由标题派生的套件是 `Derived`；对于只有运行后才知道的测试是 `Impromptu`。
++       因此，编译器会拒绝不属于任何地方的测试，而 beneficence 插件从它编译的每个声明中读取主题，无需运行任何东西就能列出每个套件的测试。
+
+@ 0 4 0 0862453795c4053401843fcc97912535
++       `Testable` 有一个 `#name`（一个 `Message`）、一个可选的 `#parent`、一个可选的 `#moniker`，对于套件还有一个 `#key`（其 id）。
++       相等性是结构性的——名称和父级——因此在不同的行上为层级结构中同一位置构建的两个值是相等的，而 `Test.Id#id` 只是各名称文本的函数。
+
+% 2 1 0 0b220132041f9e69078c141bc829eb23
+
+% 3 1 0 0068f9994aeafa1700325faff86cf5af
+
+% 0 1 0 1a82537c8ccbfded0549558574f81c20
+
+% 0 1 0 025f170ab08f18ff0998d6e2ee0e45b5
+
+% 0 1 0 1205b6ccf06baff904b0685e67322ccf
+
+% 1 1 0 03624fa2b3b5e86f0718eb713fba68e3
+
+% 1 1 0 06a5c0ce3df87dea0bacc76394a86da9
+
+% 1 1 0 18c37e73bebb2c100500983de13d0c8b
+
+% 1 1 0 1886e396d31f391d132c91db01de766e
+
+% 0 1 0 0aadd1e1bfcc1f6e173418802d748fa1
+
+@ 0 22 0 1c7ef3b48beb8c500df2e48494aaa09b
++   entry .orphan   作用域中没有 `Testable` 的 `test` 所产生的编译错误
++       每个声明的参数上 `@missingContext` 注解的文本：_a test must be declared for a Suite — in its body, or in a method taking `(using Testable of "<the suite's name>")` — or inside an `impromptu` block_。
++   entry .of   由一个名称构造 `Testable of topic`，可带可选的父级、代号和键
++       `Testable.of[topic](name, parent, moniker, key)` 需要一个 `Codepoint`，它标记声明的位置。
++       `suite` 用它从外层的 `Testable` 构造每个分组的 `Testable`。
++   entry .impromptu   与某个 `Testable` 在层级结构中位置相同、主题为 `Impromptu` 的 `Testable`
++       用于不静态归属于给定 `Testable` 的测试：`impromptu` 以这种方式构建代码块的上下文，因此临时测试在外围套件的位置上报告，但不在索引中。
++   entry .detached   没有 `Testable` 包围代码块时，`impromptu` 测试的去处
++       一个名为 `impromptu` 的根 `Testable of Impromptu`，也是在任何套件之外运行测试时（例如在 REPL 或教程中）应绑定为 given 的值。
++   entry #Topic   测试所属的套件，作为类型：字面量 id、`Derived` 或 `Impromptu`
++   entry #name   套件或分组的标题
++   entry #moniker   分组的稳定代号，如果为它指定了的话
++   entry #key   套件的 id，作为文本；分组为 `Unset`
++       与代号不同，id 不必是 Java 标识符（`html-5` 就是一个 id），因此它是纯文本，指明它的选择可能被解析为通配模式。
++   entry #parent   本分组或套件所在的分组或套件，根节点为 `Unset`
++   entry #id   套件或分组本身的 `Test.Id`：路径和报告节点用来识别它的标识
+
+@ 0 4 0 1325b7623eaa2199007c113a40c012d6
++ entry .Impromptu   其测试在编译时不归属于任何 `Suite` 的 `Testable` 的主题
++     一个没有任何字面量与之相等的不透明 `Label`：在 `Testable of Impromptu` 下声明的测试（在 `impromptu` 代码块中，或为接受 `(using Testable of Impromptu)` 的方法声明）只有运行后才能知道，任何不运行套件而做出的列表都不包含它们。
+
+@ 0 5 0 1142414bf30122871e28217f5e1b744c
++ entry .Derived   id 由标题派生的套件的主题
++     与 `Impromptu` 一样，是一个没有任何字面量与之相等的不透明 `Label`，因此 `Suite(m"Jacinta tests")` 的测试只能在其自身的 `Testable` 处于作用域中的地方——它的主体——声明，或者在一个在主题上为泛型的方法 `[topic <: Label](using Testable of topic)` 中声明。
++     指定了 id 的套件则以该 id 为其主题。
+
+@ 0 1 0 1cd9e1c0228d2401022b9740adc87555
++ entry .Test   一个已声明的测试及其主体，可以进行断言、检查或匹配
+
+% 1 1 0 10cdbdda22643e6517966343c09534bd
+
+@ 0 3 0 18dbcef5e891101c0ebba8291a31444a
++       `Test[result]` 把一个 `Test.Id` 与一个 `#action`——作为运行它的 `Harness` 的函数的主体——配成一对，通过把 `Test.Id` 应用于一个代码块来构造：`test(m"…")(body)`。
++       伴生对象的扩展方法是运行测试的三种方式：
+
+@ 0 10 0 1cff00a92a3a624a092b069bcc7608cf
++       - `.assert(predicate)` 运行主体，应用谓词，记录一个 `Verdict`，并返回 `Unit`。它的主体必须是**纯**的——不能闭包任何能力（来自外层 `supervise` 的 `Monitor`、`Online`、已启动的服务器）——因为排队式运行器可能在限定该能力作用域的代码块退出之后才在工作线程上运行它。需要能力的主体要在自身内部创建它，否则该测试就应改为 `check`。未被选中的 `assert` 根本不会运行。
++       - `.check(predicate)` 接受任意主体，内联运行它，记录判定，并**返回该值**，使后续测试可以在其基础上构建。未被选中的 `check` 仍会运行（其值继续向后传递），但不记录任何内容。
++       - `.matches { case … }` 断言该值符合某个模式。
+
+% 2 1 0 00e812cc4835509c186994839fe0a40d
+
+% 1 1 0 08d9458eb73012351c93056f35e51984
+
+@ 0 1 0 02673415149e3cd2086e02e3d5c1994a
++         label 测试是一个命名的值
+
+% 1 1 0 068d034c1bd349d30250e61d66fd6eef
+
+% 2 1 0 146bc98a616803790124c7772f4f2104
+
+% 4 1 0 1516ed574110415b0e9580b6f3991b02
+
+% 5 1 0 023312f6ba7753db1709d3792fff1178
+
+% 7 1 0 19ff268ef9a0e225175d73a0f23c61fa
+
+% 0 1 0 0400a891b63f5c23038995aecca0fb46
+
+% 1 1 0 11746f8389a0b6921a9b12f875292d29
+
+@ 0 1 0 00110fb8b7bd16d815ac92638f46b456
++         label 断言记录一个判定，不返回任何值
+
+% 1 1 0 12f07540d46b7d800346c18ce954f14b
+
+% 2 1 0 170be942ebb6ac5f0097e859cf3b5648
+
+% 3 1 0 03e3bcd7a718ae621ad2c9e47616d385
+
+% 5 1 0 0a9478c087a0d57f18c786121c0fc010
+
+% 6 1 0 161fb19c5cc56db00fe600091746a2e8
+
+% 8 1 0 0a1007f632c4827a15a348509fc6b76e
+
+% 0 1 0 0266961267021b3607e4916866b789e9
+
+% 1 1 0 1d18d388b25dd5fd1d2ed7470954ccea
+
+@ 0 1 0 1387fb6d50f0be011060cc42e9bdcf68
++         label 检查返回该值，供后续测试在其基础上构建
+
+% 1 1 0 04b49aaa56f2626912a0403f26c1dfbe
+
+% 2 1 0 1a65f73c0e32ba2411ffd5788600f124
+
+% 3 1 0 15d4353cc3c1abb009ddd30346bb08f1
+
+% 5 1 0 060ef5207dc249861038dbafd725b8a1
+
+% 6 1 0 0af84b0b6e2df7e503d9939dec9c13b5
+
+% 8 1 0 1ab03fa05f7bae6206722d37b67b0aba
+
+% 0 1 0 0b6e5c30591f88211c651d8607733a4f
+
+% 0 1 0 0e4b7df6c6778e3908963ec834ea559b
+
+% 1 1 0 08f6055ab353e18a09eee7ac91881732
+
+@ 0 1 0 10d7724afbe569ff10c08b1f646b0dac
++         label 失败的相等比较以逐字段对比的形式报告
+
+% 1 1 0 1cc98a39e8150ebd08a35ad4d4b8aaad
+
+% 2 1 0 13f79a07c4d860a917f4ba090cd8345d
+
+% 3 1 0 056300f5d837926f0fea3077aa032f6e
+
+% 5 1 0 1c76a96c1145f65d1117d2fbef28fc7b
+
+% 6 1 0 05fc5cb5d452a7d51e6a8b9c64525852
+
+% 8 1 0 0b6ec48ddfd450de1fb46dd17ba069bc
+
+% 0 1 0 0ea2eee90952a7141318367f6e8d2ecf
+
+% 0 1 0 166f47a2278e821a0bb53037a07bc712
+
+% 1 1 0 0d804373d0fae29e0efb0bb3e6a36883
+
+% 1 1 0 1a277342ea9dfdc5113023e785963c91
+
+@ 0 12 0 09019798abe4575413c6e9c2ebe40079
++       `assert` 和 `check` 都是宏，它们找到作用域中的 `Runner`（否则是编译错误：_No `Runner` instance is available_）以及其报告类型的 `Inclusion[report, Verdict]` 和 `Inclusion[report, Verdict.Detail]`。
++       在断言处不解析任何其他东西：它记录谓词书写的位置，并且只在失败时收集谓词所闭包的局部变量。
++       失败的谓词随后被交给已安装的 `Diagnostician`（如果运行被要求诊断失败的话），它对失败的说明——谓词中间值的 `Verdict.Detail.Dissection`，以及对于相等比较，其两侧的 `Verdict.Detail.Compare`——会被记录下来，并作为 `TestEvent.DetailDissection` 和 `TestEvent.DetailCompare` 发出。
++       抛出异常的主体记录 `Verdict.Throws`；抛出异常的谓词记录 `Verdict.CheckThrows`。
++       失败测试期间用 `Harness#capture` 捕获的值被记录为 `Verdict.Detail.Captures`。
+
+% 1 1 0 0d9cf07f5adc422404acc29251562888
+
+% 1 1 0 00227d75aba64b8419b9cadb64f01567
+
+% 1 1 0 1ec124565bf3b65b0731f73feb850132
+
+% 1 1 0 10f675517d27b73613862b81c9e9c5a0
+
+% 1 1 0 079b9330fe7bf9d407b04fb552c13739
+
+@ 0 18 0 004e2db5df6f4860175effd17cb0104e
++   entry .assert   运行一个纯测试并记录其谓词是否成立；`assert()` 记录它已运行
++       `Test[test]` 上的扩展方法。
++       `assert(predicate)` 记录 `Pass` 或 `Fail`（在 `aspirationally` 中则为 `AspirePass`/`AspireFail`）；不带谓词的 `assert()` 只要主体返回就算通过。
++       主体必须是纯的：在经过捕获检查的编译单元中，捕获了能力的 `Test` 会在调用处被捕获检查器拒绝，因为展开结果会把它传给类型为纯 `Test[test]` 的参数。
++       只有编译器验证为纯的断言才会在 `--workers` 下排队；来自未经捕获检查编译的单元的断言则按顺序内联运行。
++   entry .matches   断言该值符合偏函数的模式
++       `test(m"…")(value).matches { case Some(_) => }` 就是 `assert(pf.isDefinedAt(_))`。
++   entry .check   内联运行任意测试，记录判定，并返回其值
++       `Test[test]^` 上的扩展方法，因此主体可以闭包能力。
++       返回的值供后续测试使用；抛出异常的主体在记录 `Verdict.Throws` 之后重新抛出，因为没有可返回的值。
++       即使选择不接纳它，以及在 `--list` 下，`check` 也会运行，因此只为后续断言所需的耗时计算会让每次列表都付出代价。
++   entry .Id   测试的身份：它的名称、套件、声明位置，以及它的代号、标签和键
+
+% 1 1 0 02cc942834040e3a0d43abb34984c083
+
+@ 0 5 0 168b721de8d119790b8958f5369c8853
++         `Test.Id` 是 `test(m"…")` 在给出主体之前返回的东西，也是每个报告行、事件和选择所依据的键。
++         它的 `#id` 是六个十六进制数字，只根据名称和各套件名称的**文本**计算，因此读取 beneficence 插件索引的宿主无需构造测试就能得到相同的 id。
++         它按从根开始的 id 路径以字典序 `Comparable`。
+
+@ 0 2 0 032e644c616443d61b336c5e4d37d3f4
++         把 id 应用于代码块就得到一个 `Test`；`#over` 则把它在一个或两个轴上展开。
+
+% 0 1 0 1be038fca72645e01fb87bce5d0b3fce
+
+% 0 1 0 08248bb1543949521c28c5e6760d3893
+
+@ 0 26 0 1a63d099dc4f2fc4010520848c265dea
++     entry .comparable   按从根套件开始的哈希路径对 id 排序
++     entry #name   描述，作为 `Message`
++     entry #suite   测试为之声明的 `Testable`，根为 `Unset`
++     entry #codepoint   测试的声明位置：源文件和行号
++     entry #moniker   稳定的 `n"…"` 标识符，如果给出了的话
++     entry #tags   声明的标签，按声明顺序
++     entry #key   套件的 id；测试或分组为 `Unset`
++     entry #timestamp   id 的构造时间，以自纪元起的毫秒数表示
++     entry #id   六个十六进制数字：名称哈希的低 24 位
++         设 `h(suite)` 为套件名称及其各祖先名称文本的 `String#hashCode` 之和，则 id 是 `h(suite) ^ name.text.hashCode` 的低 24 位的十六进制形式，因此 `Probably Tests/group` 下的 `a quoted name` 的 id 是任何读取这些名称的人都能计算出来的。
++     entry #ids   从本条目到根的各 id，本条目在前
++     entry #label   除哈希和名称之外指向本条目的标识：一个代号，或套件的 id
++     entry #apply   由主体构造一个 `Test`，主体可以使用作用域中的 `Harness`
++         `test(m"…")(body)`：主体是一个 `Harness ?=> result`，因此它可以调用 `capture`。
++         主体对任何能力的捕获都落在返回的 `Test`（`Test[result]^{body}`）上，而不是 `result` 上，因此断言通过某种能力计算出的纯值的测试，不会把该能力印在值的类型上。
++     entry #over   把测试在一个或两个轴上展开，主体定义的每个值对应一个单元格
++         `over(axis)(body)` 是一个 `Spread`：主体对 `Axis` 的每个值运行一次，每个判定都记录在这一个命名测试中该值的坐标上。
++         偏主体（`{ case … }`）在它未定义的值处留下空缺。
++         枚举的伴生对象可以代替轴，`over(Codec)`，以枚举的各分支作为其值。
++         `over(first, second)` 是在两个轴的网格上的 `Spread2`。
+
+% 0 1 0 136a5f198bdaf3ac1a788e9525f64741
+
+% 0 1 0 0a9c20ea134f3fa702331949e4fc1ca4
+
+% 0 1 0 11484d296722d2901d59412f447e10fb
+
+% 0 1 0 02b23851acf6cc14036aebc5882c785c
+
+% 0 1 0 14c6a61b109d3fc90a0fde7def253b07
+
+% 0 1 0 0bae4a69a36e11e610be3c56d7cbcfc3
+
+% 0 1 0 18cdbedc4f5ed69f1b2aa2dc71a380cc
+
+% 0 1 0 051e13b32723cd8612ac72b1a91cc67d
+
+% 0 1 0 0abba437830a5d4906e96e60c4129248
+
+% 0 1 0 01358bbbbf19d48104ef1f0c77673d5b
+
+% 0 1 0 02125690b11d560710feb200e65921bd
+
+@ 0 3 0 143a3d11b715cd651276bd899e6ad604
++     entry #depth   本条目距根有多少层
++   entry #id   测试的 `Test.Id`
++   entry #action   主体，作为运行它的 `Harness` 的函数
+
+@ 0 1 0 11c3386f893ef06507888dc57d54338c
++ entry .Tag   测试上的一个标签，与其名称正交：`slow`、`network`、`nightly`
+
+% 1 1 0 0ccfff7a60736a7c141e2bbfe947c7c6
+
+@ 0 5 0 0e263d4a6e7654b00822d3758842d734
++       标签写作测试描述之后的 `n"…"` 字面量，`test(m"fetches", n"slow", n"network")`，在编译时对照 `Tagging` 规则（`[A-Za-z_][A-Za-z0-9_-]*`，因此它可以不加引号地在命令行上输入，并由 shell 补全）进行检查。
++       选择按标签接纳（`tag:slow,network`：任意一个）和按标签排除（`not:tag:slow`），宿主可以从索引中枚举一个类路径所带的标签。
+
+@ 0 4 0 04a3c3e437396a51197f9224f96e9be6
++       `Tag` 是独立的类型而不是 `Text`，因此声明不会把描述误当作标签；它也是一个 `into` 类型，因此 `Name[Tagging]` 字面量可以被直接接受。
++       它**没有**导出到 `soundness` 总括包，因为在那里 `Tag` 是 honeycomb 的 HTML 标签：必须写出该类型时，把它写作 `probably.Tag`。
+
+% 0 1 0 0584ac7ea544517111ff119d161b4304
+
+% 1 1 0 0f1ccabcd97cf8d81bb425d24b709662
+
+@ 0 8 0 1f80db6d9f1f3d99025d9e8e59625dce
++   entry .showable   把标签渲染为其文本
++   entry .inspectable   把标签渲染为 `Tag(slow)`
++   entry .conversion   使 `n"…"` 字面量可以作为标签的 `Conversion[Name[Tagging], Tag]`
++       当 `Probing` 的平面也在作用域中时，一个是有效 Java 标识符的字面量会被推断为两个平面的交集，并通过协变成为 `Name[Tagging]`；带有 `-` 的字面量则只能是标签。
++   entry #name   标签，作为经过验证的 `Name[Tagging]`
++   entry #text   标签的文本
+
+@ 0 1 0 0b983a100a9a0ab905362e7e209befe7
++ entry .Tagging   标签的命名平面：`Name[Tagging]`
+
+% 1 1 0 1ea1b1e56b237f6a14e9a88f67515800
+
+@ 0 5 0 1c8544289e2383b11996bc65e61849e6
++       一个没有自身值的密封特质，用作标签的 nomenclature 名称平面。
++       它的 `.nominative` 规则是 `MustMatch["[A-Za-z_][A-Za-z0-9_-]*"]`，并在包级别导出为 `taggingNominative`，因此在任何导入了 `probably` 的地方 `n"no-network"` 都是有效的。
++   entry .nominative   标签名称必须匹配的规则：标识符字符和 `-`
+
+@ 0 1 0 019027ec5d5306220a98195ea713a9ef
++ entry .Probing   代号的命名平面：`Name[Probing]`
+
+% 1 1 0 1eae97b59bb64d14035911cc66839b12
+
+@ 0 6 0 0c547dc1db704e41085c480b1f403490
++       一个没有自身值的密封特质，用作稳定的测试、套件和轴标识符的平面。
++       它的 `.nominative` 规则是 `JavaIdentifier`，并在包级别导出为 `nominative`，因此在任何导入了 `probably` 的地方 `n"square"` 都是有效的；代号在选择、图表和历史比较中指向测试，与其描述无关。
++   entry .nominative   代号必须匹配的规则：有效的 Java 标识符
+
+@ 0 5 0 084e872f3f41012e04f7bdac82fea33f
++ entry .nominative   `Probing.nominative`，导出后 `n"…"` 代号可与 `import probably.*` 一起使用
++     它和 `taggingNominative` 同时处于作用域中，因此在两个平面中都有效的字面量（`n"slow"`）会被推断为它们的交集，既可用作代号也可用作标签；带有 `-` 的字面量则只能是标签。
++     `soundness` 总括包以同样的名称导出它，因此使用 `n"…"` 字面量的套件要按名称导入 `soundness.nominative`。
+
+@ 0 1 0 00efcd0d875dc3c402fa3571ab20ac9c
++ entry .taggingNominative   `Tagging.nominative`，导出后 `n"…"` 标签可与 `import probably.*` 一起使用
+
+@ 0 6 0 190ab6a78d8c820f02cae9919f8397e4
++ entry .Checkable   hypotenuse 的 `Checkable`，重新导出：`===` 如何把一个值与另一个值比较
++     检查词汇——`===`、`!==`、`+/-`、`±`、`Checkable` 和 `Tolerance`——位于 `hypotenuse.check` 中，使只比较值的模块无需依赖测试框架，并在此重新导出，使 `import probably.*` 仍然提供它们。
++     `left === right` 需要一个 `left is Checkable against right`：相等的冻结数组、逐元素比较的链、任何 `Commensurable` 值，或者一个值对照一个 `Tolerance`。
+
+% 2 1 0 0254c86f158f7dcc09b642eee48afc1d
+
+% 3 1 0 00a61528876178a5067fc205bcda4a3a
+
+% 0 1 0 050b2b72426fbf11149ed98c04ef8033
+
+% 0 1 0 1fb326121d1db29004cc168ddf7361e7
+
+% 0 1 0 18d586290779212d0608249e003e7a5d
+
+% 1 1 0 0b1bed186660021809ae6c6759a79e46
+
+@ 0 4 0 13a08b4bc1a9d51d00342b0e0d49659f
++ entry .Tolerance   hypotenuse 的 `Tolerance`，重新导出：一个带误差范围的值，由 `+/-` 或 `±` 构造
++     `base +/- tolerance`（或 `base ± tolerance`）是一个 `Tolerance[value]`，它 `covers` 严格落在误差范围内的任何值，用于精确相等并不合适的数值断言中的 `===`。
+
+@ 0 1 0 0c3d23680fe7ad6508f5df94175065be
++ entry .Harness   测试主体运行时所处的环境：一个为失败报告捕获命名值的地方
+
+% 1 1 0 13d3e43915023f84052593da3a10869d
+
+@ 0 6 0 1e7eefe4d5619d310f070d65d173ed2b
++       每个测试主体都是一个 `Harness ?=> result`；运行器在每次运行时提供一个新的 `Harness`，`#capture` 在其上记录一个命名值。
++       测试失败时，捕获的值被记录为 `Verdict.Detail.Captures` 并作为 `TestEvent.DetailCaptures` 发出，因此报告会在判定旁边显示中间值。
++       `harnesses.threadLocalHarness` given 通过运行器当前的执行框架进行捕获，供没有自己的 `Harness` 的代码使用。
+
+% 2 1 0 11460e7e40dd79fe065afdb74d383ea0
+
+% 3 1 0 0296899e2559020719b85e1a6450ea6c
+
+% 5 1 0 1c25b00dbc25695c04b05c684363087e
+
+% 6 1 0 05da82368410452c156c4f1c56edf954
+
+% 0 1 0 01625f8d295eda8009eefe2f6da534cf
+
+% 0 1 0 10f21de0d58ad99111676bc776f4ff19
+
+% 0 1 0 12b71f3942364ab00745ec26d755d2ed
+
+% 0 1 0 00f3b51ba3acff0f137a556b7adf0557
+
+% 0 1 0 1504fa6f948001c3194edaec6b636f7d
+
+% 1 1 0 0218613d52112a1c044238e194478fcf
+
+@ 0 3 0 1383d913a1cc9da716987a820ef6168b
++   entry #capture   记录一个命名值，为报告分解它，并原样返回它
++       需要该值类型的 `Decomposable`（为 case class、集合以及任何 `Inspectable` 派生）；渲染结果是分解结果的 `inspect`。
+
+@ 0 1 0 1441bde88e60e53b17b962aa4ac6c7cd
++ entry .Diagnosis   失败的断言如何在事后被诊断：请求，以及位置
+
+% 1 1 0 030d192820bf1ba113ce554164f5183c
+
+@ 0 5 0 1f2d5323ca762bb90cfbbb555827ba4f
++       断言处不包含任何渲染逻辑。
++       当其谓词失败，并且运行是以 `--diagnose=<presentations>` 启动的时候，已安装的 `Diagnostician` 会得到该位置、失败的值以及谓词所闭包的局部变量，并以 `Verdict.Detail` 作答。
++       测试的主体不会再次运行；谓词会在同一个值上再求值一次。
+
+% 1 1 0 1c2c7607776589810100c81512c2dd11
+
+% 0 1 0 1dd798981ee15bec1c1a7dea38b2c991
+
+% 1 1 0 140afe7f809f173103fd41c7d54be28d
+
+@ 0 5 0 194e06d225380346008d6b53c306d26c
++       由于渲染方式是在进行诊断时才选择的，套件可以提供 `Inspectable`、`Showable` 和 `Contrastable` 实例——在伴生对象中、通过位于断言之前的导入，或作为编写套件的那个对象的成员——而无需知道是否会有任何前端请求它们。
++       方法内部的局部 given，或者类（而不是对象）的成员 given，是看不到的。
+
+% 1 1 0 10b4ad9765963dd807c48cc3f43fdc20
+
+% 1 1 0 057958c328ed37001f4d0b8aad3af27e
+
+@ 0 13 0 06324554b77e24ad1a22525b1beeb894
++   entry .Presentation   展示失败的一种方式：`Inspect`、`Show`、`Contrast` 或 `Dissect`
++       `Inspect` 通过 `Inspectable` 渲染每个值，`Show` 通过 `Showable` 渲染（两者互为回退）；`Contrast` 对失败的相等比较的两侧进行结构化比较；`Dissect` 给出谓词的每个中间值。
++   entry .Request   宿主所请求的展示方式
++     entry .none   完全不诊断，这是默认值
++     entry .parse   读取由 `inspect`、`show`、`contrast` 和 `dissect` 组成的逗号分隔列表，忽略其他词
++     entry #nil   是否什么都没有请求
++     entry #has   是否请求了某种展示方式
++   entry .Site   谓词书写的位置：其外围顶层类、其源码偏移量及其文本
++       偏移量是谓词的树在该类 TASTy 中的偏移量，引擎正是借此重新找到它。
++       对于不是在断言处书写的谓词，例如 `assert()` 的谓词，`#known` 为 false。
+
+@ 0 1 0 05980b86a5c6a4e11b294c3a96841d7b
++ entry .Diagnostician   能够说明失败谓词的引擎
+
+% 1 1 0 15639446330ba76f0540a398e07c140a
+
+@ 0 4 0 033acf17887118750da22ac8c3ba5d05
++       `#diagnose` 给出失败的详细信息，或者在无话可说时给出 `Nil`；它从不抛出异常。
++       用 `.install` 为一个类加载器安装引擎，当 `probably.diagnosis` 位于类路径上时，`Streamer.stream` 会这样做。
++       没有安装引擎时，被诊断的失败会把值的 `toString` 记录为一条消息。
+
+% 1 1 0 0293b2926a966ba21be98a867be5f888
+
+@ 0 2 0 0667e414bf1105a9197dc38c00afe832
++   entry .install   使一个引擎成为失败断言的处理者
++   entry .apply   已安装的引擎，如果有的话
+
+@ 0 1 0 0a3e7e92a2de888506678e888e50c307
++ entry .Dissector   从 TASTy 中读取失败的谓词并编译其插桩副本的引擎
+
+% 1 1 0 00f39fe32b20c93316c3477a55fb7828
+
+@ 0 6 0 1d4a2bc2e4fbfb791a503b2148cca396
++       位于依赖编译器的 `probably.diagnosis` 中。
++       对每个失败的位置执行一次：从包含该谓词的类的 TASTy 中读取谓词的树（TASTy 在内联之前序列化，因此其中保存的是书写时的样子）；每个子表达式都被包装在一个内联记录器中，参数变为失败的值，每个自由局部变量变为该位置捕获的值；结果由分阶段执行编译器在套件的类加载器中编译。
++       由哪个类型类渲染一个值，直到那时才解析。
+
+@ 0 4 0 15b05b462f82c0fa09267b12facd87c0
++       无法插桩的谓词——它使用了私有成员或局部方法，或者其插桩副本无法编译——会以较粗的粒度诊断：先不深入内联调用的参数，再仅凭失败的值。
++       设置系统属性 `probably.diagnosis.debug` 会打印原因。
+
+% 1 1 0 1cb9118fd16e1e761e25804be466b5d9
+
+@ 0 1 0 09d19207d7ee20b6156d1c2830f8a488
++   entry #diagnose   一次失败的详细信息，来自该位置缓存的诊断
+
+@ 0 1 0 17cdc4444ecce98e019d5785b9e6ece7
++ entry .harnesses   各种 `Harness` 方针，每个都是需要按名称导入的 given
+
+% 1 1 0 197fe4bd364380a003bc62c2ca6c1797
+
+@ 0 6 0 0315f2a1af0266e4079b93cc3750fbc7
++       `Harness` 通常是测试主体通过上下文接收到的那个。
++       这里给出的那个服务于手头没有执行框架但在测试中运行的代码。
++   entry .threadLocalHarness   通过当前线程上正在运行的测试进行捕获的 `Harness`
++       `capture` 委托给运行器为该线程设置的当前执行框架（`Runner.run` 在每个测试主体执行期间安装一个），在没有测试运行时原样返回该值。
+
+@ 0 1 0 133ce82e227af5df0cb5c26fe0b92925
++ entry .decimalizers   数值比较中小数的默认渲染方式，一个需要按名称导入的 given
+
+% 1 1 0 0ce31bcf169057f211acbb91c8b94733
+
+@ 0 3 0 14f0a48da32c8ca412a1fa7fbd9bd505
++       `Axable.double` 用 `show` 为轴的值加标注，这需要一个 `Decimalizer`；本包提供默认值，而不是让 `import probably.*` 静默地提供。
++   entry .fourDecimalPlaces   一个 `Decimalizer(4)`
+
+@ 0 1 0 1ecae4ba9012004d0f43bfbce0f8ce7b
++ entry .Verdict   一次检查运行的结果：通过、失败、抛出异常，或者一个期望
+
+% 1 1 0 0606f6be87a50f271391ec324bb77d9a
+
+@ 0 7 0 0c402bc0a7595f3d05d0291c3da25dc1
++       `Pass(duration)` 和 `Fail(duration)` 是谓词的回答；`Throws(exception, duration)` 表示主体抛出了异常，`CheckThrows(exception, duration)` 表示谓词抛出了异常；`AspirePass` 和 `AspireFail` 是 `aspirationally` 代码块中的判定，在其中异常也是 `AspireFail`。
++       时长以纳秒为单位。
++       具有多个单元格的测试，当其判定全部为 `Pass`、全部为 `AspirePass` 或全部为 `AspireFail` 时通过；任何失败、异常或混合都会使它失败。
++       在线上，判定是一个 `TestEvent.Outcome`，其中的异常渲染为 `TestEvent.Trace`。
+
+% 0 1 0 087fe600c2a523430625369efa469921
+
+% 1 1 0 006fb71a6ce060191f92c715488465cd
+
+@ 0 10 0 0229dbf74bd1513b03ae1d38bd894391
++   entry .Detail   失败的佐证信息：堆栈跟踪、捕获值、对比或消息
++       `Throws(stack)` 和 `CheckThrows(stack)` 携带 `StackTrace`；`Captures(values)` 携带用 `Harness#capture` 按名称捕获的值；`Compare(expected, found, juxtaposition)` 携带失败的相等比较两侧分解后的文本及其 `Juxtaposition`；`Dissection(source, rows, reproducible)` 携带失败谓词的中间值，以及为诊断而求值时它是否再次失败；`Message(message)` 携带自由文本。
++       每一种都通过 `Inclusion[Report, Verdict.Detail]` 记录，并作为对应的 `TestEvent.Detail…` 发出。
++   entry #timestamp   作出判定的时间，以自纪元起的毫秒数表示
++   entry #duration   主体耗时多久，以纳秒为单位
+
+@ 0 1 0 0b61d0124340a437090a47e77ea77b9e
++ entry .Trial   运行测试主体的原始结果：其值或其异常，带计时和捕获值
+
+% 1 1 0 03b0f468dd4494d50e1951d31171e512
+
+@ 0 5 0 036e86c63e77da5b099bc40926cae27b
++       `Runner#run` 返回一个 `Trial`：`Returns(result, duration, context)` 或 `Throws(exception, duration, context)`，其中 `context` 是名称到捕获值的映射，而异常是一个会重新抛出它的 thunk。
++       `assert` 和 `check` 把一次试验转换为一个 `Verdict`。
++   entry #get   结果，或者重新抛出异常
+
+@ 0 1 0 15630c4d2114fe6a0fedb7d83c949721
++ entry .Runner   在某个选择下运行测试，并通过 `Reporter` 报告
+
+% 1 1 0 1a4d1e3c13c1ede5186d7a0ac221ec85
+
+@ 0 6 0 03762dd3820d170a1d94eb1b5d5d18aa
++       `Runner[report]` 是 `assert`、`check`、`suite` 以及各种测量类测试为记录结果而召唤的对象：它持有决定运行哪些测试的 `Selection`、迄今累积的 `#report`，以及在选择要求时使用的工作线程队列。
++       `Suite` 每次调用创建一个，并将其作为 given 提供；在套件之外，`Runner()` 会基于 `Selection.all` 和隐式作用域中的 `Reporter[Report]` 创建一个。
+
+% 2 1 0 07596ea427cdaa670c777b4ec9cc7e21
+
+% 3 1 0 1e30c68dbb725a5e1fbbe33f124c9cb0
+
+% 4 1 0 1d13e407a0903d400cc986d3b4182847
+
+% 6 1 0 1ae3c7390dab9046024df7ce95c6e575
+
+% 0 1 0 0bed739c563a4c570dcd3091ce85f594
+
+% 2 1 0 01b3c057be74c22111c2bf9b2458172f
+
+% 0 1 0 174b633390d030bc03e27d1e6b302a46
+
+% 0 1 0 1e65846d1c17fff900de1f6ba2798914
+
+% 1 1 0 1500ed529343d03f1b5d4bdb21b999e6
+
+@ 0 8 0 0d2c874a707ae47306804fe575158d74
++       **排队执行。**
++       使用 `--workers=<n>`（`Selection#workers`）时，纯断言不会在遍历遇到它的地方运行：它的 thunk 被放入队列，通知报告器，并由 `n` 个虚拟线程工作者之一运行，同时遍历继续进行，因此套件中测试之间的代码只运行一次，而调度表的生成速度与测试体运行的速度一样快。
++       只有编译器已验证为纯的断言才会排队，因此工作者永远不会触及遍历已释放的资源；`check` 以及其他一切都就地运行。
++       `#drain` 会等待所有工作者，然后由 `#complete` 判定运行是否通过；从工作者中逃逸的 `Throwable` 会在遍历所在的线程上重新抛出。
+
+@ 0 3 0 1fa5b1f94c35dd9707ec368eec52e508
++       **列出。**
++       使用 `--list`（`Selection#listOnly`）时，`#skip` 记录每个被接纳的测试而不运行它，`#listed` 即调度表：每个测试一行，包含其种类、预期测量时间和轴。
+
+% 1 1 0 10489ce0f8f0819a05c8fd8995092878
+
+% 0 1 0 0e31493a8622dec30306e4b060d1ccd5
+
+% 1 1 0 00f5d50c6c07411d0c47002c92ebb02d
+
+% 1 1 0 1f7573f0949f7bb2123e211b42d7d783
+
+@ 0 5 0 05d9a68d9c60912f1d4e7a4de6df482a
++   entry .apply   基于某个选择的根运行器，可选指定工作者数量，向作用域中的 `Reporter` 报告
++       `Runner(selection, workers)` 是一个 `Runner.Root`。
++       工作者数量会覆盖选择中的数量（套件可以要求比宿主所提供的更多的工作者，但不能在宿主未要求时启用排队）。
++   entry .Scheduled   列表中的一行：一个测试、其种类、预期时间和轴
+
+% 1 1 0 1e831453ecfe96ac02552dd96955362b
+
+@ 0 44 0 01ef0975435895f4138875a0f5c232ac
++         这是 `--list` 为每个被接纳的测试产生的内容。
++         轴向展开测试的每个单元都会调用 `#skip`，但它们是一个带坐标的测试，而不是许多测试，因此该行的 `#expected` 是其被接纳单元之和，其 `#axes` 按首次出现的顺序携带所见的不同值，后跟任何已声明的涌现轴。
++     entry #id   测试的 id
++     entry #kind   check、bench、stress 或 profile
++     entry #expected   该测试将用于测量的纳秒数，对其各单元求和；对不计时的种类则不存在
++     entry #axes   测试的轴，附带其被接纳单元的值或已声明的界限
++     entry #tags   测试自身的标签
++   entry .Aspirational   `aspirationally` 代码块中的运行器：即基础运行器，但将判定记录为期望结果
++       与基础运行器共享状态和报告；只有 `#aspirational` 不同。
++   entry .Root   `Runner.apply` 创建的运行器：选择、列表、队列和报告合而为一
++   entry #aspirational   判定是否记录为 `AspirePass`/`AspireFail`；除 `Runner.Aspirational` 外均为 `false`
++   entry #report   迄今累积的报告
++   entry #queued   纯断言是否排队交给工作者，而不是就地运行
++   entry #defer   将断言的其余部分排队交给工作者，并将其通知为已调度
++       工作者在第一次延迟时启动，因此不排队任何内容的运行不会有线程。
++   entry #drain   等待每个已排队的断言，重新抛出工作者放走的任何 `Throwable`
++   entry #scale   选择的时长倍数，计时类测试将其应用于各自的目标
++   entry #skip   某个测试或轴向测试的某个单元是否被选择排除
++       `skip(id, kind, coordinates, expected)` 会结合测试的标签查询 `Selection#admits`；在列出模式下，每个测试都会被跳过，被接纳的测试连同 `expected` 一起记入 `#listed`，`expected` 是调用者对其测量耗时的纳秒估计（属于声明的元数据，而非承诺；普通检查为 `Unset`）。
++       较短的形式 `skip(id)` 和 `skip(id, kind, coordinates)` 传入 `Check` 和 `Unset`。
++   entry #declare   为列表声明测试的一条涌现轴，以及其值将落入的界限
++       压力扫描的 `N` 只有在运行产生值时才获得这些值；用 `least` 和 `most` 声明它，可以让宿主提供它的一个范围，而无需迭代尚不存在的单元。
++       在列出模式之外不执行任何操作，并且只有当测试本身被列出时才会报告。
++   entry #listed   `--list` 运行产生的调度表：每个被接纳的测试一个 `Runner.Scheduled`，按首次出现的顺序
++   entry #admitted   选择接纳了多少测试或单元，用于 `NothingMatched` 事件
++   entry #run   在新的 `Harness` 下运行测试体并计时，前后由报告器的 `started` 和 `ended` 括起
++       返回一个 `Trial`：值，或测试体抛出的 `Exception`，以及时长和捕获的值。
++       `Error` 不会被捕获，但括号仍会闭合，因此终止不会把该测试报告为仍处于活动状态。
++   entry #suite   进入一个分组：声明它，用其 `Testable` 运行其代码块，然后结束它
++       无论选择如何，分组总会被进入。
++       若代码块中仍有已排队的断言，分组的结束会在其中最后一个完成时报告。
++   entry #terminate   放弃已排队的内容，等待正在执行的内容，并将运行报告为已终止
++       当 `run()` 抛出异常时由 `Suite#invoke` 调用：报告器的 `fail` 接收该错误以及当时处于活动状态的测试，随后是 `complete`。
++   entry #complete   了结本次运行：在此判定 `Report#passed` 并发出 `RunCompleted`
++   entry #maybeRun   除非选择跳过，否则运行测试，返回 `Trial` 或 `Unset`
+
+@ 0 1 0 126b81048c12bf8411909264db6376d0
++ entry .Reporter   运行器如何为某个报告类型声明、括起并了结它所记录的结果
+
+% 1 1 0 170caf7d0f61ad950129aefdef6d396b
+
+@ 0 7 0 027dcc77647eaa1e0d7af6ee4920334a
++       `Reporter[report]` 创建 `Runner` 累积结果所用的 `#report`，并接收运行的生命周期：每个分组的 `#declare`，每个测试和分组前后的 `#started`/`#ended`，每个已排队断言的 `#scheduled`，已终止运行的 `#fail`，以及结束时的 `#complete`。
++       判定和测量结果则通过 `Inclusion[report, …]` given 进入报告。
++       `.report` 是基于 `Report` 的标准报告器；`Suite` 会安装它自己的报告器，其报告将每个数据项作为 `TestEvent` 发出；只需要列表的宿主可以向 `Unit` 报告。
+
+% 2 1 0 1674c018ca8495681da1fc14c91d10bc
+
+% 3 1 0 0d1ed6357e08ed4c1cc0a45ef4a3acc6
+
+% 0 1 0 1294f659d6cb8b3c0a4e9c360eee6d9c
+
+% 0 1 0 0d6c7ff289d43b8d038e2bb573c341e2
+
+% 0 1 0 0de3ea42cc7d1ba605a092adb41d60ca
+
+% 0 1 0 036986b93efad98c025740da4f05fa8e
+
+% 0 1 0 0fbbd0ee8203f6b91b768a8f4229173f
+
+% 0 1 0 08456b909e8598e009b6624211f86459
+
+% 1 1 0 1a71896e24f42d12058712423afd66b1
+
+% 1 1 0 1378673f555b7bc00d077d92b363d60e
+
+% 1 1 0 08dceaffe8a687060cfd9efc276442e3
+
+% 1 1 0 1067ad8527d7c96411303c8680f73c1e
+
+@ 0 8 0 15de3777cd28a7a90fa7cbf79856c5ca
++   entry .report   隐式作用域中的 given `Reporter[Report]`：每次运行一个新的 `Report`
++   entry #report   创建一次运行所累积的报告
++   entry #fail   运行在给定测试处于活动状态时因错误而终止
++   entry #declare   进入了一个分组或套件
++   entry #complete   运行结束；由报告判定是否通过
++   entry #started   一个测试（或当 `suite` 为 true 时，一个分组）已开始；默认不做任何事
++   entry #ended   一个测试或分组已结束；默认不做任何事
++   entry #scheduled   一个纯断言已排队交给工作者；它稍后在工作者的括号内开始和结束
+
+@ 0 1 0 168cb48048d955fe10c2914245016112
++ entry .Report   一次运行的累积结果：一棵套件树，其叶子是由单元组成的 `Entry`
+
+% 1 1 0 0e1143d1e873888f03731a94c339dfe9
+
+@ 0 5 0 1b0b0accb0cf2fc61863a4e6bfa4a61a
++       报告的中间表示。
++       套件仅用于划分命名空间；每个叶子是一个 `Entry`——任何种类的每个具名测试各一个——持有该测试的轴和一个稀疏的单元映射，每个单元是由若干 `Run` 组成的 `Tally`。
++       渲染是使用方的事：安装了数据汇时（如 `Suite#invoke` 所做的），每个记录的数据项也会作为 `TestEvent` 发出，而 `#complete` 发出 `RunCompleted`，不渲染任何内容。
+
+@ 0 3 0 08c9d9301b9714050dff949579dd3994
++       判定、详情和测量结果通过伴生对象中的 `Inclusion` given（`.verdict`、`.detail`、`.anchor`）以及 `Benchmark`、`Strain` 和 `Hotspots` 中的 given 进入报告，每个 given 都在某个坐标处记录一个 `Run`，并发出相应的事件。
+
+% 2 1 0 01e9a973dc9e5d451f698d180c6b913b
+
+% 3 1 0 058fd30e573ed6720224525c3610dcfe
+
+% 5 1 0 0e77c8a2fb67557b09573d3e64962405
+
+% 6 1 0 04dc5ba0c86984cf0c1aed5735b22620
+
+% 0 1 0 0c6e63aab6448eb60bfd608a14801051
+
+% 0 1 0 0376665915c879740b5ff7fb5f56f0b7
+
+% 0 1 0 192aa2f87936809806679525a5ba08ae
+
+% 1 1 0 0599231fcf58a28e1342dee307c36af8
+
+@ 0 2 0 1f4f01f05cb8993619c7a039cbb142fb
++       没有计入任何内容的运行不算通过：检查在得到判定后计入，测量则只要运行过就计入。
+
+% 0 1 0 1138b9d9526dd8451f82a8fccf4d448d
+
+% 0 1 0 09843eff3fec3d840cbc60f36f8cfe0e
+
+% 1 1 0 1065e5f50d90e166130dce078e967e36
+
+% 1 1 0 1b48d034febbfed41dc1dc75618561e1
+
+@ 0 19 0 1a2146addee2437a0d204564fb2703be
++   entry .verdict   `Inclusion[Report, Verdict]`：将判定连同其时长记录为一个 `Run`，并发出 `TestCompleted`
++       `Throws` 或 `CheckThrows` 判定还会将其堆栈跟踪记录为详情，并发出 `DetailThrows`。
++   entry .anchor   `Inclusion[Report, Anchor]`：设置测试的比较锚点，并发出 `AnchorRecorded`
++   entry .detail   `Inclusion[Report, Verdict.Detail]`：记录一条详情，并发出相应的 `Detail…` 事件
++   entry #passed   运行是否通过：没有终止、有内容被计入，且没有失败的条目
++       由 `#complete` 判定；在此之前为 `false`。
++   entry #resolve   从根开始找到某个 `Testable` 的 `ReportLine.Suite` 节点
++   entry #declare   记录一个套件或分组，发出 `SuiteStarted`；对同一 id 的第二次声明会合并
++       两个不同的套件可以共享一个 `Test.Id`（身份由名称和父级决定，所有同名的顶层套件都有相同的 id），因此声明会合并到已有节点中，而不是替换其子树。
++   entry #fail   记录一次终止：错误，以及发生时处于活动状态的测试；发出 `RunTerminated`
++   entry #record   在某个测试的某个坐标处记录一个 `Run`，首次遇到时创建条目
++       对相同坐标的重复运行会在单元中累积；给出 `headline` 时，它指定该条目的主要指标。
++   entry #addDetail   向测试的详情追加一条 `Verdict.Detail`
++   entry #anchor   设置测试条目的比较锚点；若测试没有记录任何单元，则不执行任何操作
++   entry #complete   了结本次运行：判定 `#passed` 并发出 `RunCompleted`
+
+@ 0 4 0 0a7626c80460ec09105e63fe9222d8a9
++ entry .ReportLine   `Report` 的一个节点：带子节点的套件，或持有一个 `Entry` 的项
++     `ReportLine.Suite(suite, tests)` 是一个命名空间节点，其 `tests` 是其子节点的 `TestsMap`，以 `Test.Id` 为键；`ReportLine.Item(entry)` 是叶子。
++     根是一个没有 `Testable` 的 `Suite`。
+
+@ 0 5 0 12264b2cb2dec6731a7c94aa7aa47832
++ entry .TestsMap   一个套件节点内按插入顺序排列、受互斥锁保护的报告行映射
++   entry #list   按插入顺序排列的行及其 id
++   entry #apply   某个测试 id 对应的行，或 `Unset`
++   entry #update   设置某个测试 id 对应的行
++   entry #getOrElseUpdate   某个测试 id 对应的行；若不存在则插入给定的行
+
+@ 0 1 0 1f51974f6f5c065c041b0f2294e32393
++ entry .Inclusion   一条测试数据如何在测试的坐标处纳入报告
+
+% 1 1 0 09a02b82675d5fc114d49196d51e9ec6
+
+@ 0 5 0 0d3c3bd52e96ddc0114ee631ff11b3d3
++       `Inclusion[report, data]` 是 `assert`/`check` 宏以及各种测量类测试为在类型为 `report` 的报告中记录 `Verdict`、`Verdict.Detail`、`Benchmark`、`Strain`、`Hotspots` 或 `Anchor` 而召唤的类型类。
++       `Report` 为每一种都提供了 given；调用者自己的报告类型则提供自己的 given。
++       不带坐标记录的数据属于测试的唯一单元。
+
+% 2 1 0 100177820ccddd6101a8a2744561ed43
+
+% 3 1 0 04f7abb810fc26320380ac6a74c93be1
+
+% 0 1 0 065a0c10f03c2849184b6420dcd836cd
+
+% 0 1 0 03df2fa47cecfffe01c3679031416a4f
+
+% 1 1 0 0ca88ee78384682308ba13dd4540ad33
+
+% 1 1 0 1535b89b57fbf3940457714ae20cc279
+
+@ 0 2 0 1b25c0692fcce28d0b7effb8f7d52fc8
++   entry #include   在给定测试的给定坐标处记录该数据项，返回报告
++       三参数形式在 `Nil` 处记录，即没有轴的测试的唯一单元。
+
+@ 0 1 0 140804aea7e1c6321d0f60c49a2cb24f
++ entry .Entry   一个具名测试及其结果：一个有序的轴列表和一个稀疏的单元映射
+
+% 1 1 0 0fcda11736103e4f037c162f57c1dbec
+
+@ 0 5 0 061d80d8861c53750888a297926d183a
++       `Report` 的叶子。
++       它的 `#axes` 可能在运行期间增长，因为涌现轴会获得坐标；它的 `#cells` 以轴空间中的坐标为键，按位置与轴对齐，每个都是该地址上各次运行的 `Tally`。
++       没有轴的测试恰好有一个单元，位于 `Nil`；没有单元的轴值组合是空缺，在网格中渲染为空位。
+
+% 1 1 0 0d6a69f364ee20230a3e2954da6e87b9
+
+% 1 1 0 0f2cb85b918f7d2516d54c3cc2b5890e
+
+% 0 1 0 1e80f490f8798dba0b939f2778b07a8c
+
+@ 0 15 0 07bfe618bbb66b70110a115437714246
++   entry .Kind   四种条目：`Check`、`Bench`、`Stress` 和 `Profile`
++       即 `kind:test`、`kind:bench`、`kind:stress` 和 `kind:profile` 所选择的种类，也是 `TestCompleted` 事件的 `kind` 字段（`check`、`bench`、`stress`、`profile`）。
++   entry #id   测试的 id
++   entry #kind   条目的种类
++   entry #headline   网格或比较为该条目显示的指标（如果指定了的话）
++   entry #anchor   比较锚点（如果 `Report#anchor` 设置了的话）
++   entry #axes   迄今所见的轴，按首次出现的顺序
++   entry #cells   每个单元及其坐标值
++   entry #cell   给定坐标处的 `Tally`，若不存在则创建
++       追加任何尚未见过的轴，并按首次出现的顺序登记每条轴的值。
++   entry #values   某条轴的坐标值，按呈现顺序
++       离散轴按首次出现的顺序，整数轴或小数轴按数值顺序。
+
+@ 0 1 0 0d5f6130394735b10cda7fe433408905
++ entry .Run   某个单元的一次执行：判定、记录的指标、失败详情以及任何载荷
+
+% 1 1 0 1abcbb5f565c8d4e09143591e9668d33
+
+@ 0 13 0 10bdff8d3d6b613d07d4403b4af0d806
++       对于检查，`#verdict` 存在，`#metrics` 持有 `Metric.Duration`；对于测量，判定不存在，指标携带各项数字（插入顺序即呈现顺序）。
++       `#payload` 持有数字无法表达的结构：性能剖析的热点帧，或基准测试的操作大小单位。
++       在容量搜索中，`#sustained` 标记胜出的那次运行。
++   entry .Payload   数值指标无法携带的结构
++       `Frames(hotspots)` 是性能剖析的 `Hotspots`；`Sizing(operationSize, operationRate)` 是基准测试预先格式化的单位。
++   entry #verdict   判定，用于检查
++   entry #metrics   记录的指标，按呈现顺序
++   entry #details   附加到此次运行的失败详情
++   entry #payload   结构性载荷（如果有的话）
++   entry #sustained   此次运行是否为容量搜索中胜出的那一行
+
+@ 0 1 0 0dab6c20838217ef11cb747653824efb
++ entry .Tally   测试某个坐标处累积的运行
+
+% 1 1 0 17465921df33840c154e783032ec8fca
+
+@ 0 5 0 0df6eb229efcec9b1fd3d3cbbbe1872b
++       对同一单元的重复执行汇集于此，这将重复判定的累积推广到每种测试。
++       由于排队运行器的工作者会并发记录，它受互斥锁保护。
++   entry #record   追加一次运行
++   entry #runs   迄今的运行
+
+@ 0 1 0 186cdffb7cccb8be00c4393961f36083
++ entry .Axis   测试的一个输入变量：一个带标注的值域，其中每个值都是测试单元的一个坐标
+
+% 1 1 0 1648191eb735e7a510871b791560c792
+
+@ 0 8 0 110363947b4015661b7feb5428f73405
++       大多数测试没有轴。
++       有一条轴时，`Test.Id#over` 对每个值运行一次测试体，并将每个判定记录在单个具名测试中该值的坐标处；比较型基准测试有一条由各实现构成的离散轴，不同大小的输入数据则构成一条数值轴。
++       轴可以由标注和值构建，即 `Axis(t"n")(1, 2, 3)`；也可以由标注和范围构建，即 `Axis(t"n")(1 to 64)`；还可以由枚举的伴生对象构建，即 `Axis(Codec)`，其标注是小写的枚举名，其值是枚举的各个分支。
++       `Axis` 是一个 `into` 类型，因此在任何期望具体轴的地方都可以直接接受枚举伴生对象（`.companion`）。
+
+% 2 1 0 1155b1b14e1cbdcd099fb4677ff65c9d
+
+% 3 1 0 0ee1872eff9a6fcd057e0ba33b8b42e1
+
+% 0 1 0 06b67ea4407e0dd81cb5c417684df7db
+
+% 0 1 0 064ae291c697f504086bdba4ff8ab2fa
+
+% 0 1 0 1275e2a880afddf1023ad07fb222e8fe
+
+% 0 1 0 1ff9051654b7d5821b460e961c77ffe4
+
+% 0 1 0 0587467006b4df470e31093668e7e4b1
+
+% 0 1 0 0712225afcdb55e2099150576f1f62ce
+
+% 1 1 0 1635e50496930e0b0f25b00434baa538
+
+@ 0 2 0 075185a9639b21e2030d7ac736079c5c
++       值的类型需要一个 `Axable`，它为每个值提供一个稳定的标注，对于数值域还提供一个数字，从而使轴可以排序、可以绘制成图表。
+
+% 0 1 0 0aff5bdda8b75102175c672ffc94177c
+
+% 1 1 0 03fbe8e83c171a31045c3388274019a0
+
+% 1 1 0 016ce3509efb85d81fb1bef77d33990a
+
+@ 0 2 0 1417c793bd0b1a2d16fce846a2c4120c
++   entry .Domain   轴的种类：按声明顺序排列的 `Discrete` 标注，或按数值顺序排列的 `Integral`/`Decimal` 坐标
++   entry .Spec   报告所记录的轴的擦除后描述：其标注、值域以及是否为涌现轴
+
+% 1 1 0 04338fd3ed60208516e5f2ea6a391995
+
+@ 0 7 0 05f41f441e87b9161ca7a74e288b3032
++         这是选择、渲染和制图所使用的内容。
++         涌现轴从运行本身（压力扫描的 `N`）而不是从声明的值域获得坐标值。
++     entry #label   轴的标注，即诸如 `N<32` 的轴约束所指的名称
++     entry #domain   离散、整数或小数
++     entry #emergent   值是否由运行而非声明产生
++   entry .Schedule   在任何内容运行之前，列表所知道的测试某条轴的信息
+
+% 1 1 0 1385795309401bd90bb9ab202f840a91
+
+@ 0 25 0 18a506129cae16e219f51948044d8208
++         规格、选择所接纳的单元按首次出现顺序排列的不同值（涌现轴则没有），以及对于其生产者声明了界限的涌现轴，其值将落入的界限。
++         宿主据此补全轴约束。
++     entry #spec   该轴
++     entry #values   被接纳单元的值；涌现轴为空
++     entry #least   涌现轴将产生的最小值（如果已声明）
++     entry #most   涌现轴将产生的最大值（如果已声明）
++   entry .apply   由标注和值、标注和 `Range`，或枚举的伴生对象构建的轴
++       `Axis(label)(values*)` 需要值类型的 `Axable`；`Axis(label)(range)` 是一个 `Axis[Int]`；`Axis(companion)` 接受一个带 `Enumerable` 的枚举伴生对象（任何带 `valueOf` 的对象），以小写的枚举简单名称作为标注。
++   entry .emergent   没有声明值、由运行填充的轴
++       `Axis.emergent[Int](t"N")`：规格被标记为涌现，`Entry#cell` 会在坐标到达时扩展轴的值。
++   entry .companion   让枚举伴生对象代替轴的 `Conversion`
++       诸如 `over` 这样的泛型位置无法驱动此转换，因此它们改为提供显式的伴生对象重载。
++   entry #label   轴的标注
++   entry #values   声明的值，按声明顺序
++   entry #emergent   值是否来自运行
++   entry #axable   值类型的 `Axable`
++   entry #spec   擦除后的 `Axis.Spec`
++   entry #point   以 `Value` 表示的一个值
++   entry #coordinate   以 `(Axis.Spec, Value)` 对表示的一个值，单元即以此寻址
+
+@ 0 1 0 1b6dda17a1a086381a0bd09f803b3ed3
++   entry .Value   一条轴上的一个坐标：离散标注、整数或小数
+
+% 1 1 0 0c6188de0a3dd0601afc6adcf7a838c5
+
+@ 0 7 0 07e0828463c03b9d1c43e94396612c3d
++         测试的单元由一个按位置与测试的轴对齐的值列表寻址；没有轴的测试只有唯一的地址 `Nil`。
++         `Value(x)` 通过作用域中的 `Axable` 创建一个值：离散域为 `Discrete(label)`，数值域为 `Integral(number)` 或 `Decimal(number)`。
++     entry .apply   通过其 `Axable` 由值域中的值创建的坐标值
++     entry #text   选择所匹配的标注：离散标注，或显示出的数字
++     entry #numeric   数字；离散值则为 `Unset`
+
+@ 0 1 0 1b6f6f76e7c60e0b1c3b7a79e93cd1d1
++ entry .Axable   值域中的值如何成为轴上的点：一个稳定的标注，以及对数值域而言的一个数字
+
+% 1 1 0 1b79088e24c1e393108cc20dc2e50cba
+
+@ 0 4 0 0c4b525299dbc4a0190229cde5f3c993
++       `Axis` 背后的类型类。
++       伴生对象涵盖 `Int` 和 `Long`（整数）、`Double`（小数，用作用域中的 `Decimalizer` 生成标注）、`Text`（离散）以及每个带 `Enumerable` 的 `reflect.Enum`（离散，以分支名称为标注）。
++       调用者自己的类型提供 `label`，若为数值类型还提供 `domain`/`numeric`。
+
+% 1 1 0 1a0caaa1004e2f71083d25160785d2b1
+
+% 1 1 0 14d5f11fe0bf3e2617d963004158c811
+
+@ 0 8 0 1f7e655eb77a8aa803079c30d93ada61
++   entry .int   整数轴上的 `Int`
++   entry .long   整数轴上的 `Long`
++   entry .double   小数轴上的 `Double`
++   entry .text   离散轴上的 `Text`，以其自身为标注
++   entry .enumerable   任何带 `Enumerable` 的枚举，位于以分支名称为标注的离散轴上
++   entry #domain   该类型的轴值域；默认为 `Discrete`
++   entry #label   值的稳定文本，用于报告，并被 `axis=value` 选择所匹配
++   entry #numeric   值作为数字，用于数值域；默认为 `Unset`
+
+@ 0 1 0 0c61012d5b3711fe1549cc840e4778b5
++ entry .Anchor   测试中特殊的比较点：一条轴上的一个值，附带 `Baseline` 设置
+
+% 1 1 0 10f6afbc6716ebb91d8f2e4c46fdffbf
+
+@ 0 6 0 15d2b09180c57f9c13a282e99d950d7a
++       比较型基准测试锚定一个轴值，该轴上的其他每个单元都相对于它进行渲染。
++       通过 `Report.anchor` 记录，并作为 `TestEvent.AnchorRecorded` 发出。
++   entry #axis   锚点所在的轴
++   entry #value   被锚定的值
++   entry #baseline   其他单元如何与它比较
+
+@ 0 1 0 02b89aa08a76b7270729083295ff21ef
++ entry .Baseline   单元如何与锚点比较：哪个统计量、哪个指标、哪种平均值
+
+% 1 1 0 016c05abaa3b027c149c99895673c3c8
+
+@ 0 9 0 1089830fee3b89d511ce8ac11fec9b27
++       `Baseline(compare, metric, mode)` 默认为 `Geometric` 模式下 `Cadential` 指标的 `Mean`。
++       这三个枚举的分支都在包级别导出，因此 `Baseline(Min, Temporal, Arithmetic)` 读起来无需限定。
++   entry .Compare   比较单元的哪个统计量：`Min`、`Mean` 或 `Max`
++   entry .Metric   比较哪个数字：`Cadential`（吞吐量）或 `Temporal`（时间）
++   entry .Mode   用哪种平均值概括比较：`Geometric` 或 `Arithmetic`
++   entry #compare   统计量
++   entry #metric   数字
++   entry #mode   平均值
+
+@ 0 7 0 1dc58a379c85a88118cecbdc25466372
++ entry .Min   `Baseline.Compare.Min`，在包级别导出
++ entry .Mean   `Baseline.Compare.Mean`，在包级别导出
++ entry .Max   `Baseline.Compare.Max`，在包级别导出
++ entry .Cadential   `Baseline.Metric.Cadential`，在包级别导出
++ entry .Temporal   `Baseline.Metric.Temporal`，在包级别导出
++ entry .Arithmetic   `Baseline.Mode.Arithmetic`，在包级别导出
++ entry .Geometric   `Baseline.Mode.Geometric`，在包级别导出
+
+@ 0 1 0 1d23130e05b58645038611e3e7305720
++ entry .Benchmark   基准测试的测量结果：迭代次数、计时、置信度和内存分配
+
+% 1 1 0 0cc06bb758f7ecdc06670c7dab257d8a
+
+@ 0 7 0 0b8b4ebfe2194d711a116044ca3a3d3a
++       这是 sedentary 库的 `Bench` 为一个单元产生、并通过 `.inclusion` 记录的内容：在 `#runs` 个批次中对 `#iterations` 次操作测量了 `#nanoseconds`，每次操作耗时（纳秒）的 `#mean`、`#min`、`#max` 和标准差 `#sd`，区间的 `#confidence` 百分位，以及可选的 `#operationSize`、`#operationRate`、`#operationQuantity` 和每次操作分配的 `#allocation` 字节数。
++       时间以纳秒计；声明了操作大小时主要指标是 `Throughput`，否则是 `Mean`。
+
+% 1 1 0 0bfa10cfa33550e90a73ae457a755050
+
+% 0 1 0 1c72aea31cb3ed901de16e442bd5ffa4
+
+% 0 1 0 115fbdc33a1fefee14498e416da9bb9e
+
+@ 0 23 0 16a53548f8781a710409e87ac640831e
++   entry .inclusion   `Inclusion[Report, Benchmark]`：将各项数字作为指标记录在某个坐标处，并发出 `BenchmarkRecorded`
++       指标包括 `Iterations`、`Mean`、`Least`、`Most`、`Deviation`、`Percentile`、`Confidence`（区间半宽占平均值的比例）、`Throughput`，以及测量了时的 `Allocation`；声明的单位以 `Run.Payload.Sizing` 传递。
++   entry .Percentiles   基准测试可报告的置信水平：`80 | 85 | 90 | 95 | 96 | 97 | 98 | 99`
++   entry #nanoseconds   总测量时间
++   entry #iterations   计时的操作次数
++   entry #runs   统计量所基于的独立测量运行次数
++   entry #mean   每次操作的平均耗时，以纳秒计
++   entry #min   最快一次运行的平均值
++   entry #max   最慢一次运行的平均值
++   entry #sd   各次运行平均值的标准差
++   entry #confidence   置信区间的百分位
++   entry #operationSize   一次操作预先格式化的大小（如果已声明）
++   entry #operationRate   预先格式化的速率单位（如果已声明）
++   entry #operationQuantity   一次操作的大小，以数字表示，单位由 `operationSize` 指定
++       `TestEvent.BenchmarkRecorded` 尚未携带它，因此宿主看不到它。
++   entry #allocation   每次操作分配的字节数（当执行框架测量了它时）
++   entry #tQuantile   给定百分位和自由度的单侧学生 t 分位数
++       自由度最高制表到 29（超出表的自由度向下取整，使区间稍宽），超出则使用正态分位数。
++   entry #confidenceInterval   置信区间的半宽，以纳秒计
++   entry #throughput   每秒操作数，由平均值得出
+
+@ 0 1 0 1da12fb2af1645081f690880e6d673c0
++ entry .Strain   压力测试的测量结果：并发下的吞吐量、内存和延迟
+
+% 1 1 0 0997cd600e7198cd00e136a8f4237eb0
+
+@ 0 9 0 048bd0deb6e3c0451ba8e5b268572704
++       `Benchmark` 在内存和扩展性方面的对应物，由 sedentary 的 `Stress` 为一个单元产生：`#concurrency` 个工作者在长度为 `#nanoseconds` 的挂钟时间窗口内反复运行测试体，总共完成 `#operations` 次操作；`#allocation` 是窗口内分配的堆内存，`#peakHeap` 是峰值，`#retained` 是运行后一次回收之后的存活集（内存有界的设计会显示一个平稳且较小的值），`#gcCount`/`#gcTime` 是垃圾回收器的增量（时间以毫秒计）。
++       可选的 `#p50`、`#p90`、`#p99` 和 `#p999` 是每次操作延迟的百分位数，以纳秒计。
++       在容量搜索中，`#compliance` 是延迟阈值以内的操作所占比例，`#sustained` 标记胜出的那一行。
+
+% 1 1 0 1a332407d675edc81b9e56f363d5a81f
+
+% 1 1 0 0988baa1a543713d06301d8721c37716
+
+@ 0 20 0 07858e39571db95d02be1ef6a715c868
++   entry .inclusion   `Inclusion[Report, Strain]`：将各项数字作为指标记录在涌现的 `N` 轴上，并发出 `StrainRecorded`
++       并发度是坐标而不是指标：每个压力结果都落在一条涌现的整数轴 `N` 上（除非生产者提供了一条），因此一次扫描的各步累积为同一条目的各个单元。
++       主要指标是 `Throughput`。
++   entry #concurrency   运行测试体的工作者数量
++   entry #operations   完成的操作次数
++   entry #nanoseconds   窗口的长度
++   entry #allocation   窗口内的堆分配总量，以字节计
++   entry #peakHeap   堆内存池的峰值，以字节计
++   entry #retained   运行后一次回收之后的存活集，以字节计
++   entry #gcCount   窗口内的回收次数
++   entry #gcTime   回收所用时间，以毫秒计
++   entry #p50   每次操作延迟的中位数，以纳秒计（如果测量了）
++   entry #p90   第 90 百分位延迟（如果测量了）
++   entry #p99   第 99 百分位延迟（如果测量了）
++   entry #p999   第 99.9 百分位延迟（如果测量了）
++   entry #compliance   容量搜索中延迟阈值以内的操作所占比例
++   entry #sustained   这是否为容量搜索中胜出的那一行
++   entry #throughput   窗口内每秒的操作数
++   entry #allocationRate   每次操作分配的字节数
+
+@ 0 1 0 03ce88ff0e733ced15ee8a9ec17947d5
++ entry .Hotspots   性能剖析的测量结果：执行采样和最热的方法
+
+% 1 1 0 169b57286ded749201030eafdf6d87cd
+
+@ 0 4 0 00ede69dd444b014032a5d52bbdd4d74
++       由 sedentary 的 `Profile` 根据 JFR 执行采样产生：在剖析窗口内共采集了 `#total` 个样本，`#frames` 是按自身时间的样本数降序排列的最热方法。
++       宿主将它们渲染为按包着色的直方图。
+
+% 1 1 0 018f85bfecd8f79900b48d8ecac9f433
+
+@ 0 7 0 0c18b016803b250c0404f087b9270aff
++   entry .inclusion   `Inclusion[Report, Hotspots]`：将 `Samples` 记录为指标、将各帧记录为载荷，并发出 `HotspotsRecorded`
++   entry .Frame   一个热点方法：经名称还原的类名和方法名，以及落在其中的样本数
++     entry #className   类，经名称还原
++     entry #method   方法
++     entry #samples   栈顶帧为该方法的样本数
++   entry #total   采集的样本数
++   entry #frames   最热的方法，样本最多者在前
+
+@ 0 1 0 1d4a641a62c6117c05c740fea34c73b2
++ entry .Metric   一次运行可记录的封闭量集合，每个量都有一个量纲、一个方向和一个标注
+
+% 1 1 0 006591e8b622b20a121ee9e1ea76adc0
+
+@ 0 12 0 06e36f4e99481d091c36ae9eb3b1679c
++       测试的每个单元都存储一个从这些量到值的映射，其中之一（对于检查则是判定）是该测试的主要指标。
++       时间以纳秒计，内存以字节计，速率以每秒操作数计，比例在单位区间内。
++       分支有 `Duration`、`Mean`、`Least`、`Most`、`Deviation`、`Percentile`、`Confidence`、`Iterations`、`Throughput`、`Operations`、`Allocation`、`PeakHeap`、`Retained`、`GcCount`、`GcTime`、`P50`、`P90`、`P99`、`P999`、`Compliance` 和 `Samples`。
++       在线上，指标以其分支名称为键，分支名称是稳定的，而标注则不然。
++   entry .Dimension   值的物理含义：`Time`、`Memory`、`Rate`、`Count` 或 `Fraction`
++   entry .Sense   越小越好还是越大越好：`LowerIsBetter`、`HigherIsBetter` 或 `Neutral`
++   entry #dimension   指标的量纲，决定其格式
++   entry #sense   哪个方向是改进，用于比较和图表朝向
++   entry #label   显示标注：`μ`、`σ`、`p99`、`Alloc·op¯¹`……
+
+@ 0 1 0 1be19ab96dbf56b6040c6646a58771c7
++ entry .Selection   一次运行接纳哪些测试及其哪些单元，由命令行参数解析而来
+
+% 1 1 0 055c81b9fc76613e0d556c344c9ed467
+
+@ 0 9 0 0eebe74ca87d09bf161acd12462fba10
++       `Selection.parse(terms)` 读取宿主传给 `Suite#invoke` 的参数项。
++       身份项——六位十六进制哈希、代号和名称通配模式——彼此取并集；`kind:test|bench|stress|profile` 项、`tag:a,b` 项（列出的任一标签；第二个 `tag:` 项取交集）以及轴约束（`parser=jacinta`、`N<32`、`N>=4`、`N=4..64`、`N=4..`、`N=..64`）与该并集取交集；`not:<term>` 项最后减去，每一项移除其所接纳的内容。
++       无法识别的项被视为名称通配模式。
++       通配模式遵循 kaleidoscope 的规则：`*` 只在路径中以 `/` 连接的一段内匹配，因此跨越套件需要 `**`，如 `jacinta/**` 或 `**/parseJson`；套件的 id（可能含有 `-`）也会被匹配。
++       空选择接纳一切。
+
+% 2 1 0 1a78cf8b3c9d5cdb1708b50936bcd9d8
+
+% 3 1 0 06336fc246ca0d1f1ce6305c15752e3f
+
+% 0 1 0 1a3e9ad4ef158f9d1e1d66a18d74eaec
+
+% 2 1 0 111117ffb3560b80168fbb55ca95d674
+
+% 0 1 0 109bacbff0cf4e211c2cb360bc0415c0
+
+% 0 1 0 1965a768ca3abdc4061f47cba7e75a11
+
+% 0 1 0 1326344d935638481ea5daf2e3c5061a
+
+% 0 1 0 0d132094b32e2cd60972d9248d23c264
+
+% 0 1 0 03959b5d6039c5e806730dd59c404c15
+
+% 1 1 0 1869225ba07cd4c91f411e4567b392ec
+
+@ 0 5 0 0364cbf7abe65bd51e2fee0c6c1bb621
++       另有三个项不是选择，但出现在同一命令行上：`--list`（枚举，不运行任何内容）、`--scale=<factor>`（将每个声明的测量时长相乘；非正数或无法解析的因子会被忽略）以及 `--workers=<n>`（将纯断言排队交给 `n` 个工作者；默认值 0 表示一切就地运行）。
+
+% 1 1 0 0e7c643d9b5a9e4c06766e4eb751b9c8
+
+% 0 1 0 01fa7351c072a8b40d8f875e3ae0619d
+
+% 1 1 0 0215f004b872ba910a87105b711097ff
+
+@ 0 2 0 1aeb53a409392e181d499f01fc70de53
++   entry .Term   身份项：`Identifier`（代号或哈希）或 `Glob`（与名称和路径匹配）
++   entry .Constraint   轴约束：`Membership`、`Least`、`Most` 或 `Interval`
+
+% 1 1 0 0cc8e1d21080a85203ad14c17068dbf0
+
+@ 0 20 0 0e234047fd2acb5a05614f8ed0574061
++         `Membership(axis, values)` 即 `N=4,8`；`Least(axis, limit, inclusive)` 即 `N>4` 或 `N>=4`（以及 `N=4..`）；`Most` 与之对称；`Interval(axis, least, most)` 即 `N=4..64`，两端均包含。
++         对单元所没有的轴的约束会接纳该单元，但作为 `not:` 项时不移除任何内容。
++     entry #axis   约束所指的轴标注
++   entry .all   空选择，接纳一切
++   entry .parse   由命令行参数项构建的选择
++   entry #terms   身份项，取并集
++   entry #kinds   被接纳的种类；为空表示全部
++   entry #constraints   轴约束，取交集
++   entry #tags   每个 `tag:` 项作为一组备选项；各组取交集
++   entry #exclusions   `not:` 项，每个都是单项选择，在接纳之后减去
++   entry #listOnly   是否给出了 `--list`
++   entry #scale   每个声明的测量时长的倍数；默认为 1.0
++       几何意义上：2.0 让每次测量运行两倍时长，0.25 则为四分之一。
++       延迟阈值不缩放，因为它们是通过/失败的判据而不是时长。
++   entry #workers   执行已排队断言的工作者数量；0 表示不排队
++   entry #diagnosis   如何诊断失败的断言（`--diagnose=…`）；默认不诊断
++   entry #trivial   该选择是否未特别选择任何内容：没有项、种类、约束、标签或排除
++   entry #admits   某个种类、某些坐标、带某些标签的测试是否被接纳
+
+@ 0 1 0 03dfbe00321a278c18bd589a6de54e19
++ entry .Spread   在一条轴的值域上展开、等待断言的测试
+
+% 1 1 0 053d9cdac41d1a26056988f169c91e46
+
+@ 0 5 0 14644fa3055698ed1824dc8ee394641d
++       `test(m"…").over(axis)(body)` 是一个 `Spread[value, result]`。
++       它的 `.assert` 对测试体所定义的每个轴值运行一次测试体，并将每个判定记录在该具名测试中该值的坐标处；偏函数测试体未定义的值是空缺。
++       与 `Test.assert` 的测试体一样，该测试体是纯的；断言可以只看结果，也可以同时看轴值和结果。
+
+% 1 1 0 0a4ae4d72c16b51e154fd8923de1e781
+
+% 1 1 0 041440e3aec2844e0a0248bc820feabe
+
+@ 0 6 0 187f27cf222fb2b60af513ea036fdb13
++   entry .assert   对每个单元进行断言：不带谓词、带一个关于结果的谓词，或带一个关于值和结果的谓词
++       与 `Test.assert` 一样，需要作用域中有 `Runner` 以及用于判定和详情的 `Inclusion`。
++   entry #id   测试的 id
++   entry #axis   该轴
++   entry #action   测试体：每个执行框架一个、作用于轴值的偏函数
+
+@ 0 1 0 1ef57aeea574f4c419bf2afb60d1df9f
++ entry .Spread2   在两条轴的值域上展开的测试：测试体所定义的每个组合一个单元
+
+% 1 1 0 01f9f99e3363fa4e06895234ca607d2f
+
+@ 0 3 0 07305c2687323cf00386694652658097
++       `test(m"…").over(first, second)(body)` 是一个 `Spread2[left, right, result]`，渲染为一个网格，未定义的组合处为空缺。
++       传给 `.assert` 的谓词可以只接受结果，也可以接受两个轴值和结果。
+
+% 0 1 0 1b4903f07b31195307026841a7800055
+
+@ 0 5 0 055c2a3b48367b1d090b6a602aa44da2
++   entry .assert   对网格中每个已定义的单元进行断言
++   entry #id   测试的 id
++   entry #first   第一条轴
++   entry #second   第二条轴
++   entry #action   测试体：每个执行框架一个、作用于值对的偏函数
+
+@ 0 1 0 0c16accd313c09c314cc29acd8358767
++ entry .TestEvent   一次运行产生的带类型事件流，供自行渲染结果的宿主使用
+
+% 1 1 0 18b812898b9a23a109c3a6ed945a255c
+
+@ 0 11 0 096cc3268f6db04c176b4d418f9722fd
++       `Report` 累加器的底层对应物：一次运行记录的每个数据项，也会通过 `Suite#invoke` 安装的数据汇，作为这些事件之一发出，而宿主（fume 或 `Suite.run`）将它们渲染为终端显示、HTML 或其他任何形式。
++       事件内容丰富，但**可安全传输**：每个载荷都是由标量、`Optional`、`List` 和 `Map[Text, Text]` 组成的扁平 case class，因此整个枚举无需手写实例即可派生出 BinTEL schema 和编解码器，并且 `Streamer` 可以将其跨越类加载器边界传递。
++       递归结构按结构展平：堆栈跟踪变为按顺序排列的原因链（`Trace`），`Juxtaposition` 变为按深度编号的行（`CompareRow`），渲染器可据此重建树，指标账簿则变为带标注的值列表（`MetricValue`）。
++       `Message` 在此边界处渲染为 `Text`。
+
+@ 0 1 0 129e42db53b254270d296e549d9be67a
++       各分支按一次运行发出它们的顺序排列：
+
+@ 0 20 0 035f2d9da0a93d280b150dd230ee9f6f
++       - `TestScheduled(test, kind, expected, tags, axes)`——调度表：`--list` 选择所接纳的每个测试一个，或排队运行器延迟的每个断言在运行前一个。
++       - `SuiteStarted(suite, timestamp)` 和 `SuiteEnded(suite, timestamp)`——位于套件或分组前后；结束事件会推迟到分组中最后一个已排队断言完成时发出。
++       - `TestStarted(test, timestamp)` 和 `TestEnded(test, timestamp)`——仅表示进度，为实时显示括起测试的执行。
++       - `TestCompleted(test, kind, coordinates, outcome, metrics, timestamp)`——检查的结果，紧随 `TestEnded` 之后。
++       - `DetailCaptures(test, values)`、`DetailCompare(test, expected, found, rows)`、`DetailDissection(test, source, rows, reproducible)`、`DetailMessage(test, message)` 和 `DetailThrows(test, check, stack)`——失败的辅助信息（`check` 表示抛出异常的是谓词而不是测试体）。
++       - `BenchmarkRecorded`、`StrainRecorded`、`HotspotsRecorded`——测量类测试在某个坐标处的数字，字段与 `Benchmark`、`Strain` 和 `Hotspots` 一一对应。
++       - `AnchorRecorded(test, axis, discrete, integral, decimal, compare, metric, mode)`——比较锚点。
++       - `NothingMatched(admitted)`——非平凡的选择没有接纳任何内容。
++       - `RunTerminated(error, active, timestamp)`——套件抛出了异常，附带处于活动状态的测试。
++       - `RunCompleted(passed, timestamp)`——总是最后一个。
+
+% 2 1 0 16b8dd92bc84291e0e0497c0d521eb0a
+
+% 3 1 0 1a4a627bf1da1b350aca2ff066b06cab
+
+% 5 1 0 1b80ee04b6aa1eb51d0fe7a72dc864c7
+
+% 0 1 0 0dbf25190c2a3a96070f1e5077f8fd3a
+
+% 0 1 0 18b14d94067595f715bd046b71376360
+
+% 0 1 0 0986dee5c16c50e81efe184b18be0946
+
+% 0 1 0 1360703f17a3c4cd0e19260f19bc1ca9
+
+% 0 1 0 0c700cebb05147360ca28f5b7e9fa647
+
+% 0 1 0 108ad0eaf7af7f2d01cb27be4cbf9cdb
+
+% 1 1 0 1650c1bc0d5134c806cccdbc2b5e2a4a
+
+@ 0 3 0 06675052723df18a1650d245fda90624
++       对任何分支字段的改动都会改变事件流的布局和 `Streamer.fingerprint`，因此基于其他版本构建的宿主会将该套件报告为不兼容，而不会误读它。
+
+% 1 1 0 079b3603bc3b9ef21fc168b000617495
+
+% 1 1 0 1ceecad80b6bed630c58eabbfed62117
+
+% 1 1 0 060d1b88c138ee9c0e2ed4f1e6abf01d
+
+@ 0 1 0 0847be007e514bf4126c8221392888e9
++   entry .Ref   测试或套件在线上的身份：哈希、名称、代号、路径和声明位置
+
+% 1 1 0 06f0c4eb2e01320702ddb0a47b165a0b
+
+@ 0 27 0 180b519531fae76310df7d548bad041f
++         `path` 是从根套件到该条目（包括条目本身）的完整名称或代号路径，因此仅凭 ref 即可重建树。
++         对于套件，`name` 是其标题，`moniker` 是其 id。
++     entry .of   某个 `Test.Id` 的 ref
++     entry #id   六位十六进制哈希
++     entry #name   显示名称
++     entry #moniker   代号，或套件的 id（如果有的话）
++     entry #path   从根套件到该条目的标注
++     entry #file   声明所在的源文件
++     entry #line   声明所在的行
++   entry .Frame   一个栈帧：类、方法、文件和行
++     entry #className   帧的类
++     entry #method   方法
++     entry #file   源文件
++     entry #line   行（如果已知）
++   entry .Hotspot   性能剖析中的一个热点方法：类、方法和样本数
++     entry #className   类，经名称还原
++     entry #method   方法
++     entry #samples   栈顶帧为该方法的样本数
++   entry .TraceComponent   展平的原因链中的一个异常：其类名、消息和帧
++     entry #className   异常的类名
++     entry #message   其渲染后的消息
++     entry #frames   其栈帧
++   entry .Trace   展平为原因链的堆栈跟踪，最外层在前
++     entry .of   某个 `StackTrace` 的跟踪
++     entry #components   原因链，最外层异常在前
++   entry .Outcome   不带实时异常的判定：`pass`、`fail`、`throws`、`check-throws`、`aspire-pass` 或 `aspire-fail`
+
+% 1 1 0 11e8ba99267085c006ddd336eb9a1a52
+
+@ 0 6 0 05c0c69acaf5c84f10c808e2a77b7259
++         两种抛出异常的结果携带 `stack`；`duration` 以纳秒计。
++     entry .of   某个 `Verdict` 的结果
++     entry #outcome   结果词
++     entry #duration   测试体的时长
++     entry #stack   跟踪，用于抛出异常的结果
++   entry .DissectRow   被剖析谓词的一个中间值，按先序排列并带深度
+
+% 1 1 0 0763a305f01b02190a59eaebdfbde396
+
+@ 0 4 0 11b124cb00c308ee056d0e1b3d24545e
++         `start` 和 `end` 是谓词源码中的偏移量，`code` 是该片段，因此渲染器可以将每个值放在它所属的子表达式之下。
++         `kind` 为 `value`，或者对于抛出异常的谓词的根为 `thrown`。
++   entry .CompareRow   展平的 `Juxtaposition` 中的一行，按先序排列并带深度
+
+% 1 1 0 143e9600ed83b61a013bfef36085c2af
+
+@ 0 11 0 066009345be280030cc11642a5e0f459
++         `kind` 为 `same`、`different` 或 `collation`；collation 的类型名通过 `difference` 传递，其子项在 `depth + 1` 处紧随其后，因此渲染器可以重建树。
++     entry .flatten   某个 `Juxtaposition` 的各行
++     entry #depth   该行在树中的深度
++     entry #label   字段名或序列索引
++     entry #kind   `same`、`different` 或 `collation`
++     entry #left   预期的一侧
++     entry #right   观察到的一侧
++     entry #difference   差异，或 collation 的类型名
++   entry .Coordinate   线上的轴坐标：规格的各字段，以及以三个 `Optional` 之一表示的值
+
+% 1 1 0 1e89e353578971d718f77ef3ecc08fee
+
+@ 0 22 0 01935387078a4d2e11c484323da5e07f
++         `discrete`、`integral` 和 `decimal` 中恰好有一个存在，取决于 `domain`。
++     entry .of   由规格和值构建的坐标，或由坐标构建的列表
++     entry #axis   轴标注
++     entry #domain   `discrete`、`integral` 或 `decimal`
++     entry #emergent   该轴是否为涌现轴
++     entry #discrete   标注，用于离散轴
++     entry #integral   整数，用于整数轴
++     entry #decimal   数字，用于小数轴
++   entry .MetricValue   结果中的一项指标，以 `Metric` 分支名称为键
++     entry .of   某个指标账簿的各个值
++     entry #metric   分支名称，跨版本稳定，而标注则不然
++     entry #value   值
++   entry .AxisSchedule   已调度测试的一条轴：其规格、被接纳值的标注和声明的界限
++     entry .of   某个 `Axis.Schedule` 的传输形式
++     entry #axis   轴标注
++     entry #domain   `discrete`、`integral` 或 `decimal`
++     entry #emergent   该轴是否为涌现轴
++     entry #values   被接纳单元的值的标注；涌现轴则没有
++     entry #least   涌现轴将产生的最小值（如果已声明）
++     entry #most   最大值（如果已声明）
++   entry .kindName   某个 `Entry.Kind` 的线上名称：`check`、`bench`、`stress` 或 `profile`
+
+@ 0 1 0 051e1f4f7b7bf9031b3121a6bc978e46
++ entry .internal   `Test.assert` 和 `Test.check` 背后的宏实现
+
+% 0 1 0 1c18810b564d59e609a88422cf8dd919
+
+% 1 1 0 0f71597c1b0bc6cb112bae74ffdfb433
+
+@ 0 12 0 0e934ade7ad105c401c165079288537d
++       不供直接使用。
++       该对象的存在是为了让断言宏有一个稳定的归宿；`assertion` 是两者都展开成的运行时代码，`Spread` 和 `Spread2` 直接调用它。
++   entry .check   `Test.check` 背后的宏：返回其值的 `Trial`
++   entry .assert   `Test.assert` 背后的宏：让测试经过 `pure`，并记录该单元是否经过捕获检查
++   entry .pure   `Test[test]` 上的恒等函数，捕获检查器会以其纯参数类型约束它
++   entry .succeed   总是成立的谓词，用于 `assert()` 和 `check()`
++   entry .assertion   运行、评判并记录一个断言，就地执行或排队执行
++       跳过未被选中的 `assert`，运行未被选中的 `check` 但不记录，当运行器有工作者时将选中的纯 `assert` 排队，否则就地运行；记录判定、提升了期望值时失败相等比较的对比结果，以及捕获的值。
+
+@ 0 1 0 1cb29cf62ad67054174ef2eebf78058b
++ entry .Streamer   把一次运行的 `TestEvent` 作为带长度前缀的 BinTEL 帧写入宿主的 `OutputStream`
+
+% 1 1 0 17f26b331e0907680bb55aa98fc57115
+
+@ 0 7 0 1eea09090d81bb3e0d42cf008e016eb2
++       这是 `events` 组件中唯一以 JDK 类型表示的接口，因为宿主（fume 之类运行测试的工具）可能从**另一个类加载器世界**以反射方式调用 `.stream`，那里的 Soundness 类并不是这里的这些：它擦除为 `stream(String, String, OutputStream): int`。
++       第一帧是 schema **指纹**：两端各自从自己的 `TestEvent` 派生出 BinTEL schema 并加以比较，因此会改变线上布局的版本偏差在解码任何事件之前就被检测出来。
++       每一帧先是 4 字节大端序的长度，然后是载荷，写入后即刷新。
+
+% 2 1 0 06d5744eceefbd6600bfab196e2df011
+
+% 3 1 0 03713fd3c0154970184488cca690c9cd
+
+% 4 1 0 0cf8cb434bcc97271a080e88bf71ba26
+
+% 0 1 0 15111d8815179d2f11e0a97037a7e372
+
+% 0 1 0 1d2e53abe3fbabc20952ee17bc4fc439
+
+% 1 1 0 15907a74b411d7fd0116bc6c8d5bf862
+
+% 1 1 0 19ec8d69d695ba3c125e9b3cae4dcb80
+
+% 1 1 0 01a67ce0d1a30dac0e045a9bf58bfea9
+
+% 0 1 0 1a0a4da59c92712407ea22a2834df45c
+
+@ 0 19 0 10a3a165ddc1915a02a07d113d8c6f14
++   entry .reentrant   `true`：此类路径上的套件可以通过同一个类加载器被反复调用
++       宿主以反射方式探测这个方法；它的缺失意味着较旧的 Probably，其套件会 memoize 第一个运行器，每次都需要一个新的加载器。
++   entry .queued   `true`：此类路径上的套件理解 `--workers=<n>`
++       像 `.reentrant` 一样以反射方式探测；对较旧的 Probably 而言，这一项是一个不匹配任何东西的名称通配模式，因此宿主不能盲目地传入它。
++   entry .diagnostic   `true`：此类路径上的套件理解 `--diagnose=<presentations>`
++       像 `.reentrant` 一样以反射方式探测。
++   entry .fingerprint   派生出的 `TestEvent` schema 结构的 BLAKE3 哈希
++       线上布局的指纹：`TestEvent` 在任何字段、顺序或分支上有差异的两个版本会产生不同的指纹。
++   entry .read   把一帧的载荷解码回 `TestEvent`
++       解码的逆操作，供自身模块经过分离检查、无法自行展开派生解码器的宿主使用。
++       解码失败会抛出异常；请把调用包在 `safely` 中。
++   entry .stream   以选择项运行一个具名套件，先写入指纹，再为每个事件写入一帧
++       `stream(suite, arguments, output)` 加载所指名的 `Suite` 对象（`parser.Tests`，从这个类加载器加载），以换行符分隔的选择项调用它，在互斥锁下写入每个事件，关闭流，并返回套件的状态：0 表示通过，1 表示有失败，2 表示套件或运行机制抛出了异常。
+
+@ 0 1 0 055c4512f4f8818e07c350d253aa9708
++ entry .Standalone   在独立的 JVM 中运行一个套件的入口点
+
+% 1 1 0 0d9cfab1b98082a302241abb73f1c02f
+
+@ 0 6 0 0f6cccf7fa9bbd281f7b4f8f14af5ea7
++       当套件不能共享其进程时，宿主启动的就是 `java -cp <classpath> probably.Standalone <suite> <term>…`。
++       运行过程完全按照 `Streamer.stream` 的方式以流输出，输出到标准输出，而标准输出专留给帧使用：套件自身打印到标准输出的任何内容都被发送到标准错误。
++       JVM 以套件的状态退出（0 表示通过，1 表示有失败，2 表示抛出了异常；未指名套件时也是 2）。
+
+% 1 1 0 0a0481a5bfc9d29806e0ff7a2ae860ae
+
+@ 0 1 0 1ba21580b811ce591e27e5fc48ed164e
++   entry .main   运行第一个参数所指名的套件，以其余参数作为选择项，并以其状态退出

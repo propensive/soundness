@@ -1,0 +1,250 @@
+orthant 2 language
+
+% 0 1 0 0f04ec4b9ac2d4270a232409219e1f6b
+
+% 0 1 0 112f433dd235acf61601691ede4cb2e4
+
+% 0 1 0 0b5938ce7315323607e1922cbc4d93e2
+
+@ 0 1 0 166fcb9214aa69d3101d6173570fb605
++ info   一个编译器插件，把代码块的编译错误和警告捕获为值，用于测试
+
+% 0 1 0 0ca6d61ddd9511ea1cdae38f1414f6fe
+
+@ 0 6 0 0a59d7955d7939bd17b1c96def7de828
++     _Larceny_ 让编译失败变得可测试。
++     包裹在 `demilitarize` 中的代码会被单独编译，落在其中的错误和警告以 `List[CompileError]` 的形式交付给程序，而不会导致构建失败。
++     于是测试可以断言一个无效的字面量、一次币种错误的加法或一个未声明的关系确实无法编译：当不变量存在于类型之中时，不可能性本身就是功能，而这就是测试它的方式。
+
+% 2 1 0 0762838422b359a8070ecb6b2a1ffbd3
+
+% 3 1 0 0dab47b159ebbac61b2a2b5f3331cf57
+
+% 4 1 0 03bc766bd43f0367101b203a926b0167
+
+% 5 1 0 1edf626254384227184b9e55b7f83ba7
+
+% 0 1 0 0b37b4b2167c832e1f237ad128b46fc6
+
+% 1 1 0 1dff888dd1ed2bd40322bc80b1175855
+
+% 1 1 0 0672f655d214027710b3cd43bfcce752
+
+% 0 1 0 0e1ee0cd344335e80570133032f659bd
+
+% 1 1 0 0ce7505fab0b7967074f8384d4beda3a
+
+% 2 1 0 16abe7e07f43009e1705249ffef35adc
+
+@ 0 7 0 001352af2d0345cc0b9386bffafa369a
++     该库是一个编译器插件，没有它，`demilitarize` 什么也不做：对于每个其源码使用了它的编译，都必须启用该插件，方法是把它的 jar 以 `-Xplugin:<path to the larceny plugin jar>` 传给编译器（该 jar 的 `plugin.properties` 指明 `larceny.LarcenyPlugin`）。
++     该插件作为独立的制品发布，而不在 Soundness 的捆绑包中，因为一个 `-Xplugin` jar 必须恰好声明一个插件；它还必须位于编译类路径上，因为 `demilitarize` 和 `CompileError` 都是普通的符号。
++     Soundness 自己的测试模块两者都会添加。
+
+@ 0 10 0 0a05d6b364dfce8b0058acfc3ac68b7a
++     该插件在解析之后、类型检查之前运行。
++     对于每个包含 `demilitarize` 块的编译单元，它会在一个子编译中再次编译同一份源码，使用相同的类路径和相同的语言设置、前导（`-Yimports`、`-Yno-predef`）、`-Ycc-new`、`-Z` 特性、`-preview`、警告标志（`-deprecation`、`-feature`、`-unchecked`、`-Wall`、`-Wunused`、`-Wconf`）以及其他插件，但不包括它自己。
++     位置落在每个块内的诊断信息会被捕获，并在主编译中替换为构造相应 `CompileError` 值的代码；类型检查随后只看到这些构造，因此只要 `demilitarize` 块之外没有错误，构建就会成功。
++     `-Werror` 被刻意地不传播，因此警告会作为警告被捕获。
+
+@ 0 6 0 16163ce3920087b01c8c1c03857b8728
++     早期阶段的错误会阻止后续阶段运行。
++     为了不让一个失败的块掩盖另一个块的诊断信息，插件会把每个包含错误的块替换为 `{}` 并重新编译，需要多少次就重复多少次，这就是包含许多 `demilitarize` 块的文件编译得比其大小所暗示的更慢的原因。
++     在一个块内，错误会抑制该块的后期阶段警告（其中包括弃用警告），因为编译永远到不了那些阶段。
+
+@ 0 3 0 0eeaafe8c814ba891bfe4baa4ed0db02
++     在 `demilitarize` 块内，通过内联扩展语法糖进行的调用可能会在代理类型中对不透明集合进行去别名，并报告 `scala.collection` 与 `proscenium` 类型之间的虚假不匹配；在这样的块中，请直接调用底层方法。
+
+@ 0 3 0 16c38e08aebeee300ef53e49f6c0b6af
++     该库是单一的、仅限 JVM 的源集 `larceny.plugin`，它依赖 Scala 编译器，不依赖 Soundness 的任何部分。
++     `CompileError` 和 `demilitarize` 被导出到 `soundness` 总括包。
+
+% 0 1 0 0141e3d9b45e3e9f16f8308ab00f6534
+
+% 0 1 0 057d0d63d42ebd960ee33c0f28dabf6e
+
+% 0 1 0 1975e75192374a421896f0d007cb7e83
+
+@ 0 5 0 0a86b32d189385f80d716caff9833cc8
++ entry .demilitarize   单独编译一个代码块，并把其编译错误和警告作为值返回
++     `demilitarize(code)` 由 larceny 插件在类型检查之前改写为 `code` 内部每个诊断信息组成的 `List[CompileError]`，顺序与编译器报告它们的顺序相同。
++     能干净编译的代码得到一个空列表。
++     该块本身在主编译中从不进行类型检查，因此它可以包含任何能被解析的内容。
+
+% 2 1 0 12e3489b19580966122dd2747da65f3c
+
+% 3 1 0 123ab041c859a5b60029dafcaccf56a7
+
+% 4 1 0 17aa33153e4ceb061e43910c6b10546e
+
+% 5 1 0 03f83296092f1ece0b4ff8506577a4c4
+
+% 0 1 0 0f6232e2bc37417c131a7e210f9c5dd3
+
+% 0 1 0 08c27ac2f465d9650437ca40636bc27c
+
+% 0 1 0 0b03c8b2e82a750317d246c33feb6b08
+
+% 1 1 0 0c3231f370da4c2e15e25d6009020925
+
+% 0 1 0 08ad9ad34e1bbf9216fc481fdcf023b0
+
+% 1 1 0 1ba40fe08d30b73802114476190154d8
+
+% 0 1 0 0cdaaca70851d5a616a0d33e2affec03
+
+% 1 1 0 092a92ed42e834ba0bd737ac49eda9b2
+
+% 2 1 0 06101ec9e7e37a681ad10189f69b12ee
+
+@ 0 4 0 0bca7b7f5c95ef331472490b143b2ec0
++     未启用插件时，该调用是一个普通方法，返回空列表：此时每个关于失败的断言都会失败，而不是默默通过。
++     含有错误的块不会报告它自己的任何后期阶段警告，因为该块的编译在错误处就停止了。
+
+@ 0 4 0 05cfe83393c02186006984dde9201f78
++ entry .procrastinate   通过 `Subcompiler` 把一段源码的编译推迟到运行时
++     插件把 `procrastinate(code)` 改写为对 `Subcompiler` 的调用，携带该块的源文本和类路径，从而使代码在程序运行时编译，而不是在构建时编译。
++     没有插件时，它返回其参数。
+
+@ 0 1 0 05f7cfc4e556e41501cbb1bc9888cb1c
++ entry .CompileError   由 `demilitarize` 捕获的一条诊断信息：其原因、消息、位置和严重性
+
+% 1 1 0 1a765ec200c1df63153c6a492dc85910
+
+@ 0 5 0 1409897ad47acf090761175e816d3349
++       一个 case class，描述来自 `demilitarize` 块内的单条编译器错误、警告或提示信息。
++       `#reason` 是编译器自己的消息标识符，类型为 `CompileError.Reason`，这是最可靠的断言对象；`#message` 是其完整文本；`#focus` 是该诊断信息覆盖的源文本；`#importance` 说明它是错误、警告还是提示信息。
+
+% 0 1 0 14116fcaa006993f068c95fd1ec862a2
+
+% 0 1 0 0ff09fd85a6fbb540f3b2a2530c17d7e
+
+% 0 1 0 05324ab952d132031fa7821cd90c1137
+
+% 0 1 0 03e156f9b4684ee71e065e8ff9f301d3
+
+% 0 1 0 1eaa6f959b7ee02b03f3be3758d531a0
+
+% 0 1 0 0a0ab87ac720e22b155c0a8a266cc703
+
+% 0 1 0 00b0c9e4ee824acd15243a0528555649
+
+% 0 1 0 1e93f88dfaae2911026fa84afad97845
+
+% 0 1 0 14162e0d294e75031b28f956606da924
+
+% 0 1 0 163ab2c8a5ce58550a7b2c35bbc2d6f8
+
+% 0 1 0 1b250c3ec7801aeb08bbf38791b0b178
+
+% 0 1 0 18233de54dc657b118d1cd7c26747087
+
+@ 0 4 0 1ef3665fa189b00609c119d3a60994b4
++       即使诊断信息是在内联或宏展开中抛出的，位置也取自用户的源码：插件取编译单元中位于调用点之内的最窄位置，因此 `#focus` 会是（例如）插值器中有问题的拼接，而不是整个字面量。
+
+% 0 1 0 0d6676f448e169f0022629e5d2f9bcb1
+
+% 0 1 0 11aafa57d56bb34613eda9497c7c1810
+
+@ 0 5 0 0864b110969fa7460532c0412d5ff14c
++   entry .apply   由原因序数、消息、焦点文本、起始位置、偏移量和严重性级别构造一个 `CompileError`
++       这是插件生成的形式。
++       比 `CompileError.Reason` 所知更新的序数会变为 `NoExplanation`，超出已知范围的级别会变为 `Error`，从而使来自更新版本编译器的诊断信息仍被捕获，而不是被默默丢弃。
++   entry .Importance   所捕获诊断信息的严重性：`Info`、`Warning` 或 `Error`
+
+% 1 1 0 04dc0f09fc96b3771ef219ef0008bc82
+
+@ 0 5 0 00011cf0ab793d511cc1e7480b0efa1c
++         一个枚举，其分支对应 Scala 编译器的诊断级别，命名与 `anthology.Importance` 的分支相同。
++         之所以在这里重新声明，是因为插件不依赖 Soundness 的任何部分。
++     entry .apply   编译器诊断级别对应的严重性，未知级别视为 `Error`
++   entry .Reason   编译器对诊断信息种类的标识符，例如 `TypeMismatch`
+
+% 1 1 0 1c67d14758992a8903aa15c2066f559d
+
+@ 0 7 0 144c3e904649d92b17798f7cca54f986
++         一个枚举，Scala 3 编译器的每个 `ErrorMessageID` 对应一个分支，顺序相同，从而可以按种类而不是按消息措辞来匹配所捕获的诊断信息：`TypeMismatch`、`NotAMember`、`MissingImplicitArgument`、`AmbiguousOverload`、`PatternMatchExhaustivity`、`MatchCaseUnreachable` 等等。
++         `NoExplanation` 是没有具体标识符的诊断信息的原因，其中包括宏用 `halt` 抛出的每个错误和每个 `compiletime.error`。
++         源码中标记为 _old_ 的分支是已退役的标识符，为保持其位置而保留。
+
+% 0 1 0 0af85d2d4584af9d12bb8605bb68e43c
+
+% 0 1 0 1df5341098744f941cc2cd12aa621758
+
+% 0 1 0 06815e163f7fc80707491a0170cb6846
+
+% 0 1 0 0a9c20ea134f3fa702331949e4fc1ca4
+
+% 0 1 0 02660c3ffe200bb508b57acfa1152426
+
+% 0 1 0 0a8178f38f3d06500a346c08ea923a92
+
+% 0 1 0 19d6d7d1a6324d7009047ed4d978ac10
+
+% 0 1 0 1b0e0764abfb386f0a06b4f8bb451057
+
+% 0 1 0 09128362491f487919752aeab2a16e17
+
+% 0 1 0 02125690b11d560710feb200e65921bd
+
+@ 0 12 0 0d02f053f8a2430004c74f34c96958f7
++   entry .Id   按其 `CompileError.Reason` 匹配 `CompileError` 的提取器
++       `case CompileError.Id(reason) =>` 绑定错误的原因；它总是匹配。
++       它以前是单独的类型 `CompileErrorId`。
++   entry #reason   编译器对诊断信息种类的标识符，类型为 `CompileError.Reason`
++   entry #message   诊断信息的完整文本，与编译器写出的一致
++   entry #focus   诊断信息位置所覆盖的源文本
++   entry #start   诊断信息的跨度在源文件中开始处的偏移量
++   entry #offset   诊断信息的定位点与其跨度起点之间的距离
++   entry #importance   该诊断信息是错误、警告还是提示信息
++   entry #point   诊断信息的定位点在源文件中的偏移量：`#start` 加 `#offset`
++   entry #warning   该诊断信息是否为警告
++   entry #error   该诊断信息是否为错误
+
+@ 0 1 0 10938b283332ee761e2a82603962c315
++ entry .LarcenyPlugin   编译器插件类，在 larceny 的 `plugin.properties` 中指明
+
+% 1 1 0 0e40596355a0768c09b6cd327634fc94
+
+@ 0 2 0 0e2e0b32ea3dea4811aea6053a5d84a5
++       当 larceny 的 jar 通过 `-Xplugin:` 传入时，编译器实例化的 `StandardPlugin`。
++       它安装单个阶段 `LarcenyTransformer`，不直接使用。
+
+% 0 1 0 157715bb850a8b9f1ce2ea77dc08ea74
+
+@ 0 1 0 01b2c434f4daf7b10df1850d1a5193d7
++   entry #name   插件的名称，`larceny`
+
+@ 0 1 0 14cc39b91734552d1849084d2a80bf91
++ entry .LarcenyTransformer   查找 `demilitarize` 块并替换为其错误的插件阶段
+
+% 1 1 0 148a4d2149169b2c14b96886c2193edd
+
+% 2 1 0 00ff6cccdd4a1dc807cec6f873b0c0a2
+
+@ 0 8 0 13736ac6ef4f1d42156f723d7f90a9ec
++       不供直接使用。
++       一个名为 `errorcap` 的阶段，在 `parser` 之后、`typer` 之前运行，它收集一个单元中每个 `demilitarize` 块的区域，在该单元的源码上运行 `Subcompiler`，并把每个块改写为构造其所捕获的 `CompileError` 的代码。
++   entry .isLarceny   一个 `-Xplugin` 路径（jar 或目录）是否就是 larceny 插件本身
++       从该路径的 `plugin.properties` 中读取；插件借此把自己排除在自己的子编译之外，否则会无限递归。
++   entry #phaseName   该阶段的名称，`errorcap`
+
+@ 0 1 0 039de50815d375b5064d80f3e67205b3
++ entry .Subcompiler   编译一份源码并收集其诊断信息的子编译
+
+% 1 1 0 106491663e55fe8d0b559129f3dd376c
+
+% 2 1 0 0d8f1295e1188fd20281ae28a6ec4577
+
+@ 0 6 0 12fd3c11f7b4c0280d6237cb45ae80ff
++       不供直接使用。
++       `.compile` 用一个全新的编译器编译一份源码，把每个诊断信息收集为 `CompileError`；给定区域时，它会把每个含有错误的区域清空并重新编译，直到不再出现新的错误，从而使一个块的错误无法掩盖另一个块的诊断信息。
++   entry .compile   编译一份源码，并把其诊断信息作为 `CompileError` 返回
++   entry .CustomReporter   把诊断信息记录为 `CompileError` 的编译器报告器
+
+% 1 1 0 1ac60320c74122f61c7f53034d36731b
+
+@ 0 4 0 190b83d903c8415503b70d9f0a2cbe36
++         把每个诊断信息放在编译单元自身源码中、位于用户调用点之内的最窄位置。
++     entry #errors   迄今记录的诊断信息
++     entry #doReport   把一条诊断信息记录为 `CompileError`

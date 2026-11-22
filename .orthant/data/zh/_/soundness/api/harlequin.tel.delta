@@ -1,0 +1,975 @@
+orthant 2 language
+
+% 0 1 0 0f04ec4b9ac2d4270a232409219e1f6b
+
+% 0 1 0 077abfe3620ebdd316b20af5894b01d7
+
+% 0 1 0 0b5938ce7315323607e1922cbc4d93e2
+
+@ 0 1 0 12b8f2eb07f1c73311f74a9b8c2bff2e
++ info   由 Scala 编译器本身高亮的 Scala 和 Java 源代码，带有类型、诊断信息和补全
+
+% 0 1 0 0ca6d61ddd9511ea1cdae38f1414f6fe
+
+@ 0 8 0 06f91b45cd1400ac1f7ab86cfdd853ab
++     _Harlequin_ 通过在 Scala（和 Java）源代码上运行真正的编译器来高亮它，而不是用正则表达式近似这门语言。
++     词法分析器和解析器完全按照编译器读取的方式对每个词法单元分类——软关键字只在特定位置才是关键字，插值字符串是字符串，`val` 的名称是绑定，之后对它的引用是使用——而当作用域中有编译器和类路径时，整个前端也会运行，于是每个标识符都带有编译器赋予它的*类型*，编译器的诊断信息会定位到源代码中返回，而一个插入点位置会把高亮变成补全。
+
+@ 0 4 0 16fca05f2d9be75a120f708765029e1d
++     `Scala.highlight` 的结果是一个 `SourceCode`：一个由行组成的网格，每行是 `SourceCode.Token` 的 `List`，其中每个词法单元有它的文本、一个 `Accent`（调色板映射到某种颜色的颜色类别）、一个可选的 `Token.Role`（绑定或使用）、以 `Span` 表示的位置，以及在更深的层级上，一个保存其类型的 `SourceCode.Token.Meta`。
+
+% 0 1 0 0797c6bf77c3030003eb6d7db95ad910
+
+% 0 1 0 1ce8fe6ca033a15a0bd38efcfa5b98d2
+
+% 0 1 0 1c7e83a7f58ea1b318fdee3f9de39764
+
+% 0 1 0 0d0258a7ca2f9f2218ca173ce8f16f98
+
+% 0 1 0 1b4ce3cce227e09e1ec14998b96575e7
+
+% 1 1 0 102df4e3de81f9b0115a09652b4acf5a
+
+@ 0 7 0 06fc183c3a88d73118e7e44fb9c231b2
++     高亮的深度由作用域中的 `Highlight` given 决定，它是 `highlighting` 包中的三个之一：默认的 `tokenizedScala`（它也是 `Highlight.default`，因此 `Scala.highlight` 无需任何导入即可工作）只需要文本；`typecheckedScala` 和 `compiledScala` 需要 anthology 的 `Scalac` 和 hellenism 的 `LocalClasspath` 作为 given，而 `sessionScala` 需要一个已预热的编译器会话的 `Scalac.Session.Frontend`。
++     这些需要按名称导入，因为 `import highlighting.*` 不会导入 given。
+
+% 2 1 0 03daed8d7f5bb21d00f570ce496547a4
+
+% 0 1 0 1a8ec18672c39e03185024ae675e9c25
+
+% 1 1 0 0c5ceab6fcbd3b691fba3cf9ed81c8a0
+
+% 0 1 0 0da7686689dbeb930de62b97601ee87d
+
+% 0 1 0 19a7dbcfbf9b3c810df80cb2a6798b8a
+
+% 0 1 0 121a5301b989bd911288c1f35ffa54d6
+
+% 0 1 0 17d80058e21e961415e559b18473cda4
+
+% 0 1 0 05aa7805e95aca161a5d2b6ce6dd5bed
+
+% 0 1 0 1d8f6f12bd0272d80f7ffdc3ff3d3ef7
+
+% 1 1 0 00ae7f80667b7c62146f34555fe56e69
+
+@ 0 1 0 0817a1e27c20e18418d14aff8e72a5fa
++     这个库按各部分所需的依赖拆分为多个源码集：
+
+@ 0 13 0 1e2c82ced88233ca1dd49fc67ff835ac
++     - `harlequin.core`——`SourceCode`、`SourceCode.Token`、`Accent`、`Token.Role`、带有 `Scala` 和 `Java` 的 `ProgrammingLanguage`、`Highlight` 和 `Depth`、`Diagnostic`、`Fragment`、`Lexis`、`Completion`/`Completions`（从 prophesy 重新导出）以及 `highlighting.tokenizedScala`。它内嵌了 Scala 编译器，因此只能用于 JVM。
++     - `harlequin.typed`——`highlighting.typecheckedScala`、`highlighting.compiledScala` 和 `highlighting.sessionScala`，它们针对 hellenism 的 `LocalClasspath` 运行 anthology 的 `Scalac`。
++     - `harlequin.ansi`——`ScalaSyntaxPalette` 以及把 `SourceCode` 渲染为 escapade `Teletype`（带或不带行号）的 `syntaxHighlighting` given。
++     - `harlequin.md`——`CommonFormattable`，即围栏代码块的 HTML 渲染，位于 punctuation 的 `formattables.scalaFormattable` 和 `formattables.javaFormattable` 背后。
++     - `harlequin.compiler`——对编译器内部 API 的 `Shim`，这部分 API 在 Scala 3.9 和 3.10 两条版本线之间有差异；不供直接使用。
+
+@ 0 6 0 1524393ba277b22d05dde8a18f9154c6
++     除了在 `soundness` 总括包中发生冲突的名称外，一切都导出到总括包：在总括包中，`Fragment` 属于 honeycomb，`Completion`/`Completions` 属于 exoskeleton，因此 harlequin 的这些名称要通过 `harlequin.Fragment`、`harlequin.Completion` 和 `harlequin.Completions` 访问；同样，`syntaxHighlighting.tokenTeletypeable` 只能作为 `harlequin.syntaxHighlighting.tokenTeletypeable` 访问。
++     `highlighting`、`syntaxHighlighting` 和 `formattables` 这几个选择包与总括包自己的同名包合并。
+
+% 0 1 0 10013c8522abd368023745223d075b55
+
+% 0 1 0 09ebe97501406f4e0f02e4adcdc15d54
+
+% 0 1 0 1dd4000558e0cf540daa5d4190bce7f1
+
+% 0 1 0 102fe4b88ed6fbf404ef8121feaaf51c
+
+% 0 1 0 0c85dc324096592e0f01e4c83be988d0
+
+% 0 1 0 04d35f5dcee8ff2100174f449779c83f
+
+@ 0 1 0 12ad258386c503c01fce6d7e3571ebce
++ entry .SourceCode   高亮后的源代码：由带着色类别的词法单元组成的网格，附带诊断信息和补全
+
+% 1 1 0 1ea15dbc258bc3f4098f47d7a18fee4c
+
+@ 0 6 0 1a302b835d27370205c0121d966e83da
++       `SourceCode` 是 `Scala.highlight` 和 `Java.highlight`（以及直接调用的 `SourceCode.apply`）产生的结果：`#lines`，一个由行组成的数组，每行是一个 `List[Token]`，从 `#offset` 开始编号（对新高亮的文本为 `1`，对 `#fragment` 则为第一行的行号）；类型检查或编译运行所收集的 `#diagnostics`；以及在给出插入点时，该处的 `#completions`。
++       由 `#extract` 设置的 `#focus` 跨度是带行号的终端渲染器加下划线标出的部分。
+
+@ 0 3 0 07dfe876f69bf5bc0d986484d412d280
++       每行的词法单元按顺序恰好覆盖该行的文本，空白和注释是 `Accent.Unparsed` 词法单元，因此把一行中各词法单元的文本连接起来就得到该行本身。
++       行尾的换行符不是词法单元。
++       制表符渲染为两个空格。
+
+% 2 1 0 0125b783449378111defa1bda8f1db7e
+
+% 3 1 0 05c17d6531f891ff03479a858e28960b
+
+% 0 1 0 16477e7438b9b0800668d72058ada090
+
+% 0 1 0 1a095682c45ce5570153d00dd623fa31
+
+% 0 1 0 00dc0ad1f6e5f61e17604f8d7133350b
+
+% 0 1 0 01329dbfb6ffda6b1076413e9f50ee9a
+
+% 0 1 0 1d1bdf8fbf9a9cf91998462502903605
+
+% 1 1 0 05d75a73a62f6066045d47f278194522
+
+@ 0 5 0 1f6d910fb164294703619a7202090bfe
++       产生它的高亮深度由调用处的 `Highlight` given 决定：在 `Depth.Tokenized` 下，没有词法单元带有 `Token.Meta`，`#diagnostics` 为空；在 `Depth.Typechecked` 和 `Depth.Compiled` 下，类型检查器解析过的每个标识符都带有其类型，诊断信息来自编译器。
++       编译错误永远不会使高亮失败：源代码会*连同*其错误一起被高亮。
+
+% 0 1 0 110d4ce243b932a01303925d2aac8be3
+
+% 1 1 0 191a4cdddaef270c16875fcc7a6ace4b
+
+% 1 1 0 008a92bfa4c4553f1a1653ff32f4e461
+
+% 0 1 0 0a9179d13ca2f44a0e35cdb8b2a26984
+
+@ 0 8 0 055d0c87e096e3b50ee0fed8dcd97cfb
++   entry .apply   以作用域中 `Highlight` 的深度，高亮某种语言的文本
++       `SourceCode(language, text, caret)(using Highlight)` 是 `ProgrammingLanguage#highlight` 背后的引擎，后者是调用它的常用方式。
++       它用编译器的扫描器（对 `Java` 则用 Java 扫描器）对文本做词法分析，再叠加解析树来判定哪些标识符是项、哪些是类型，以及其中哪些是绑定；在 `Depth.Typechecked` 或 `Depth.Compiled` 下，它还会运行 `Highlight.Compilation` 的前端以收集类型、展开信息和诊断信息，并在给出 `caret` 时收集补全。
+
+@ 0 6 0 1acb14edc01cd34d018d7a2253a98ef6
++       软修饰符（`inline`、`opaque`、`open`、`transparent`、`infix`、`erased`、`tracked`、`using`……）只在它们充当修饰符的位置——即在硬关键字之前——才着色为 `Modifier`，在其他位置则为 `Term`，与解析器的处理方式一致。
++       输入末尾未终止的字符串或字符字面量会被扫描器拆成一个错误词法单元和一个溢出的最后字符，这里会把它们折叠回一个 `Error` 词法单元，因此正在输入的字面量会作为一个整体高亮。
+
+@ 0 38 0 09d8e092a7c0dd5115630694262c13c7
++       词法分析流水线以编译器的 `-source future` 运行，且不带类路径，因此它只需要文本；`Highlight` 是一个上下文参数，未导入任何 `Highlight` 时使用 `Highlight.default`（词法分析级）。
++   entry #language   源代码被当作哪种语言高亮：`Scala` 或 `Java`
++   entry #offset   第一行的行号：整个文本为 `1`，片段则为其第一行的行号
++       行号是带行号的终端渲染器打印出来的数字，也是 `#apply`、`#extract` 和 `#fragment` 接受的参数。
++   entry #lines   各行，每行是一个恰好覆盖该行文本的 `List[Token]`
++       一个从零开始索引的 `Array[List[Token]]`；`#apply` 则按行号索引它。
++       换行符不是词法单元，因此一行中各词法单元的文本连接起来就是该行。
++   entry #focus   一个关注的跨度（如果有），由带行号的渲染器标出
++       除非由 `#extract` 或 `#fragment` 设置，否则为 `Unset`。
++       `syntaxHighlighting.numberedTeletypeable` 会在单行焦点下方画出插入符（`╱╲`）或下划线（`‾‾‾`），并在多行焦点覆盖的各行的边栏中画出 `║`。
++   entry #diagnostics   编译器的诊断信息，在 `Depth.Tokenized` 下为空
++       每个 `Diagnostic` 都有一个指向文本的偏移模式 `Span`、它的消息和它的 `Diagnostic.Importance`。
++       在 `Depth.Typechecked` 下它们来自前端；在 `Depth.Compiled` 下还包括后续阶段的诊断信息。
++   entry #completions   插入点处的补全，未给出插入点时为 `Unset`
++       `Completions` 是所选补全要替换的文本跨度以及它的各个 `Completion` 条目。
++       给出插入点时，无论深度如何，总会提供关键字补全，它们来自 prophesy 对插入点之前词法单元的模式树；当作用域中有编译器时，编译器自己的补全——成员、作用域内的名称、类型位置上的类型，以及从 `Completable` 伴生对象得到的 `Dynamic` 接收者的成员——会被合并进来。
++       示例见 `Scala`。
++   entry #lastLine   最后一行的行号：`offset + lines.length - 1`
++   entry #apply   按行号取得一行的词法单元
++       `code(n)` 是从 `#offset` 开始计数、编号为 `n` 的行，因此 `code(code.offset)` 是第一行，`code(code.lastLine)` 是最后一行。
++       超出该范围的行号是一个错误。
++   entry #extract   一个跨度周围的各行，作为聚焦于该跨度的片段
++       接受一个行模式的 `Span`（例如 `Token#span`），给出从其第一行到其最后一行之后一行（多行跨度则为之后两行）的 `#fragment`，并以该跨度作为 `#focus`，从而可以在上下文中显示一条诊断信息或一个词法单元。
++   entry #fragment   从一个行号到另一个行号的各行，作为一个独立的 `SourceCode`
++       `code.fragment(startLine, endLine, focus)` 保留编号从 `startLine` 到 `endLine`（含）的各行，并把 `#offset` 设为 `startLine` 以保留它们的行号，以 `focus` 作为新的 `#focus`。
++       诊断信息和补全不会被带过去。
+
+@ 0 1 0 06e2b0d58dec6dde17f4af343ca5092f
++   entry .Token   高亮后源代码中的一个词法单元：它的文本、着色类别、位置、角色和类型
+
+% 1 1 0 1a380c5db186c69113f25b6158312b35
+
+@ 0 5 0 07597212c0af97a61de898e2095afda1
++         词法单元是构成 `SourceCode` 的单位：一段从不包含换行符的 `#text`、对它分类的 `#accent`、定位它的 `#span`，以及对于项或类型标识符，它作为绑定或使用的 `#role`。
++         在类型检查或编译深度下，类型检查器解析过的标识符还有一个 `#meta`，以 stenography `Syntax` 的形式保存其类型，在被调用者上还保存类型检查器在该调用处展开的内容。
+
+% 0 1 0 136a5f198bdaf3ac1a788e9525f64741
+
+% 0 1 0 0a9c20ea134f3fa702331949e4fc1ca4
+
+% 0 1 0 1c49e0a70aeae8f718fcee017a719300
+
+% 0 1 0 09e2e4440c22ed3f0ff06645ed10edc9
+
+% 0 1 0 07eeec7b907cc0eb1440342ec6595d9f
+
+% 0 1 0 02125690b11d560710feb200e65921bd
+
+@ 0 3 0 005f3eebe477eae710c3c04f7036ed80
++         两个词法单元在全部五个字段都相等时才相等，`Token.Newline` 正是这样在流中被找到的。
++         词法单元作为 `Showable` 只显示其文本，这正是渲染后的代码清单所需要的；作为 `Inspectable` 则显示每个字段。
+
+% 0 1 0 12bbafd9c9f0c569014e32ffaafe1549
+
+% 0 1 0 05f2b164e2c172fe0cf96d55ebf609db
+
+% 0 1 0 1d6e0d5789ea077f1e897ec722f2b758
+
+@ 0 9 0 14c378b6b357a4e41ed232771164609a
++     entry .Newline   在组装源代码时分隔各行的词法单元
++         `Token("\n", Accent.Unparsed)`。
++         它从不出现在完成的 `SourceCode` 的各行中，因为各行正是按它拆分的。
++     entry .showable   词法单元显示为其文本
++     entry .inspectable   词法单元以积形式检视，显示每个字段
++         `Token(text:t"val" ╱ accent:Keyword ╱ meta:○ ╱ span:⟪∅⟫ ╱ role:○)`。
++         存在的 `#meta` 显示为不带类型的 `｢Meta｣`，因为渲染 `Syntax` 需要一个 `Imports` 上下文，而检视无法提供它；存在的角色显示为 `｢Binding｣` 或 `｢Usage｣`。
++     entry .Meta   类型检查器对一个词法单元所知的内容：它的类型，以及对其调用的任何展开
+
+% 1 1 0 1a6cf28f029677e3029a26de3caaab37
+
+@ 0 5 0 1ce1eb27e1ba455107a8f9ceb90b18d2
++           只在 `Depth.Typechecked` 或 `Depth.Compiled` 下附加到词法单元上，而且只附加到类型检查器赋予了类型的标识符上：`val`/`def` 的名称带有其声明的或推断的类型，选择或标识符带有其类型，类型树带有其类型。
++           编译器无法确定类型的词法单元（由于附近有错误，或者类型无法由 stenography 渲染）就没有 `Meta`；高亮绝不会因此失败。
+
+% 0 1 0 16e5dd92da138cdb1a8049c3ab21a689
+
+% 0 1 0 1c2fd15b30390e3506e0f272e8cd0f7d
+
+% 0 1 0 06d7630252786fc7146a6e450199213b
+
+% 0 1 0 049d98ed308ed6091e647657d39fb749
+
+% 0 1 0 109e0c56664e26f71e76577319fa5a56
+
+% 0 1 0 166aac36e6c2d883090dd4637c225bf3
+
+% 0 1 0 1b695ea2965638710ea8fa0d5201a360
+
+% 0 1 0 060753e95147af6e12a6bea9b3041b07
+
+% 0 1 0 0880fd5ed8bb365403c1d8bb8dca7f54
+
+% 0 1 0 1d7b83c6765623720d5a423e86f3fbbb
+
+% 0 1 0 123a0907bc5281d81252c9897a10e235
+
+% 1 1 0 193f11c6cceb75ad09460a0fc68d45ea
+
+@ 0 24 0 03156fab1f9feb430bb8f98a229bc058
++       entry #tpe   词法单元的类型，以 stenography `Syntax` 表示
++           用 `Syntax#text`（根据作用域中的 `Imports` 缩写）或 `Syntax#qualified` 渲染。
++       entry #elaboration   类型检查器在这个调用处添加的内容（如果有）
++           出现在被调用者词法单元上，前提是类型检查器对其调用做了超出源代码文本的展开：一个 `prophesy.Elaboration`，列出推断出的类型参数和合成的 `using` 参数，每个参数都指明所解析的 given。
++           显式写出的参数从不记录。
++     entry #text   词法单元的文本，从不包含换行符
++     entry #accent   颜色类别：关键字、项、类型、数字、字符串、符号……
++     entry #meta   类型检查器对该词法单元所知的内容，在词法分析深度下为 `Unset`
++     entry #span   词法单元所在的位置：由从 0 开始的行、列和长度组成的行模式 `Span`
++         手工创建的词法单元为 `Span.empty`；`SourceCode` 中的词法单元带有行和列，通过 `span.startLine`、`span.startColumn` 和 `span.endColumn` 读取，每个都是一个 `Ordinal`。
++     entry #role   对于项或类型标识符为 `Role.Binding` 或 `Role.Usage`，否则为 `Unset`
++         由解析树决定，因此在每种深度下都存在：`val`、`def`、参数、模式或类型定义的名称是绑定，引用它的标识符是使用。
++         关键字、字面量和标点没有角色。
++     entry #length   词法单元文本的长度
++     entry #snip   在某个字符偏移处一分为二的词法单元
++         `token.snip(point)` 是一对词法单元，分别带有 `point` 之前和从 `point` 开始的文本，二者都保留原词法单元的着色类别、元信息、跨度和角色。
++     entry .Role   项或类型词法单元是绑定一个名称还是引用一个名称
+
+% 1 1 0 0d654f0686d897aa060a9be8ced2e118
+
+@ 0 6 0 15b91e785f54d0e907a7eccc0d90ba72
++           `Binding` 是正在定义的名称——`val`、`var`、`def` 或参数的名称，模式变量（包括元组模式中的每个名称、`case` 绑定符或 `for` 推导式的生成器），或者类、特质、对象、类型或类型参数的名称——而 `Usage` 是引用在别处绑定的名称的标识符。
++           它仅由解析树决定，因此在词法分析深度下也存在；对于既不是项也不是类型的词法单元，它为 `Unset`。
+
+% 0 1 0 1347c58a42787fa91b2b19aa23e9089b
+
+% 0 1 0 16c0b404a7d26af80d6112a507e67420
+
+% 0 1 0 0ce2808ea372ea2203d5e7fe777b4476
+
+% 0 1 0 1ea4c5d636767740058ac591d3499d05
+
+% 0 1 0 1849258b284566cb1e3dc74a4fd3f760
+
+% 1 1 0 1d8b89767a4f80a41a2cf77e5d49ea46
+
+@ 0 2 0 18c2ba8efcd0127818a0b6f50f988fad
++           角色显示为其小写名称。
++       entry .showable   角色显示为其小写名称
+
+@ 0 1 0 0b2fc68361e8427919fdff2bc941b8af
++ entry .Accent   词法单元的颜色类别，调色板把它映射为一种颜色
+
+% 1 1 0 0a8cdecb653e180b0e06cd23e65a8a84
+
+@ 0 8 0 0a5b71b0f3f368f519813e1732c83511
++       着色类别只是一个颜色类别，别无他意。
++       `Error` 是扫描器无法读取的词法单元（例如未终止的字面量）；`Number` 是数字字面量；`String` 是字符串、字符或插值字符串字面量；`Term` 是项标识符，包括 `+` 和 `::` 之类的符号运算符，Scala 把它们当作标识符；`Typal` 是类型标识符；`Keyword` 是硬关键字；`Modifier` 是修饰符关键字（`private`、`lazy`、`override`，以及在充当修饰符时的软修饰符，例如 `inline`）；`Symbol` 是 `=`、`=>`、`:` 或 `,` 之类的标点词法单元；`Parens` 是括号；`Unparsed` 是空白、注释以及扫描器跳过的其他任何内容。
+
+@ 0 5 0 00fbd49ab0924cc919b206d329531af7
++       一个 `Term` 或 `Typal` 词法单元是定义名称还是使用名称，是另一项单独的附加信息 `Token.Role`，因此 `val` 的名称和对它的使用共享同一个着色类别，而样式方针可以在颜色之上为绑定添加斜体或粗体。
++       在终端中，`ScalaSyntaxPalette` 为每个着色类别赋予颜色；在 HTML 中，`CommonFormattable` 把每个着色类别变成一个同名小写的 CSS 类。
+
+@ 0 2 0 0b365f27704de7ae0683a3b57803985d
++       着色类别显示为其小写名称：`Accent.Keyword.show == t"keyword"`。
++   entry .showable   着色类别显示为其小写名称
+
+@ 0 1 0 080a95a4174730cf0e06c67ac21aec2f
++ entry .ProgrammingLanguage   harlequin 能够高亮的语言：`Scala` 或 `Java`
+
+% 1 1 0 13b62f8da22518411d7909c80b7c3913
+
+@ 0 4 0 13bdd63ba7169cdc1a6e7fa3e8acfd97
++       一个密封特质，有两个实例，即对象 `Scala` 和 `Java`。
++       它的 `#highlight` 方法是这个库的入口，而它的 `#Context` 类型让语言说明片段被什么包围——一个 Scala 项或类型，而不是整个文件——从而使不是完整编译单元的片段仍能解析。
+
+% 1 1 0 0ca680b18fb975f90969d3a3fe576bd4
+
+% 0 1 0 1e1214df94810b4705822d446986141e
+
+% 1 1 0 1f606b890395d9f20d55f569b3b75fd6
+
+@ 0 9 0 185285ec74494a72112f084b2978ab31
++   entry #Context   这种语言的片段可以嵌入的上下文
++       `Scala.Context` 是 `Top`、`Term` 或 `Type`；`Java.Context` 只有 `Top`。
++   entry #highlight   以作用域中 `Highlight` 的深度高亮这种语言的文本
++       `language.highlight(text, context, caret)(using Highlight)`：按 `context` 的要求包装文本（`#preprocess`），用 `SourceCode.apply` 高亮它，再从结果中去掉包装（`#postprocess`）。
++       `context` 默认为 `Unset`，即一个完整的编译单元；`caret` 是指向文本的 `Ordinal` 偏移，默认为 `Unset`，表示不计算补全。
++       `Highlight` given 决定深度；`Highlight.default` 是词法分析级的，因此普通高亮无需导入。
+
+% 2 1 0 04ea994001a1e4b00a8e31b50bbeeef7
+
+% 3 1 0 052ca99b2414608d06e516066018caf1
+
+% 0 1 0 05345434cb59ff010d71fc826bfbc860
+
+% 0 1 0 0ef41b787639101b16ec807e5bbbc221
+
+% 0 1 0 06f6d881cfd4c9491e0fcd468d107556
+
+% 1 1 0 01c9b9f2233d096610ea4f73736adc1d
+
+@ 0 5 0 17c41aad3170cc3e04f8a9501b15fb28
++   entry #preprocess   语言在高亮片段之前包裹在其外围的文本
++       对完整的编译单元（`Unset` 或 `Top`）不做改变；`Scala` 把 `Term` 包装进一个 `val`，把 `Type` 包装进一个 `type` 别名。
++   entry #postprocess   从高亮结果中去掉包装
++       删除 `#preprocess` 添加的行，使结果的各行就是片段自身的行。
+
+@ 0 1 0 0f0ec912dbdf36f11f52c1fafc7c9eaa
++ entry .Scala   Scala 语言：`Scala.highlight`，以及 Scala 片段可以处于的上下文
+
+% 1 1 0 01dd6d04df47a8d404f50eec22f625d8
+
+@ 0 6 0 0ccab36ab0f3226704ecd9b551ca4794
++       Scala 3 的 `ProgrammingLanguage`。
++       `Scala.highlight(text)` 用编译器自己的扫描器和解析器对文本做词法分析；当作用域中有编译器时（`highlighting. typecheckedScala` 或 `compiledScala`，需要 `Scalac` 和 `LocalClasspath`，或 `sessionScala`，需要 `Scalac.Session.Frontend`），它还会运行前端，于是每个标识符都知道自己的类型，而 `compiledScala` 还会运行后续阶段，以得到只有这些阶段才会产生的诊断信息。
+
+% 2 1 0 1b424960b98c5d68110b3d9a389b5923
+
+% 0 1 0 0ec8f40a121e51bc0100e2649c5e26af
+
+% 1 1 0 16d9950ef3b5e76d0cd212af5ce30add
+
+% 2 1 0 19145a8ee7d353f300a36f03b7b6a183
+
+% 0 1 0 1c5b9c2a56f89c19161f534704c48407
+
+% 1 1 0 18d5eadf9bea9b4a0eb1a138408959af
+
+% 0 1 0 037dda275c2f6fb900eac78d00b3dbde
+
+% 0 1 0 036da6185fde40810850cef65b465413
+
+% 0 1 0 0cb8a951767ed38119ae7b3efd6df2e0
+
+% 1 1 0 0699089f532fbf78101fdba9d6965c93
+
+% 2 1 0 077e0ba7fc0fefaf1a60985c2f1b29ac
+
+% 3 1 0 0c3f24745b7615ae1c5221a60290ea07
+
+% 4 1 0 038ace529601bcff049cec75b90445ae
+
+% 0 1 0 19d5ebd6a20fc7cb054ff3a505023881
+
+% 1 1 0 05134832ff9b864118bdd79775c3b966
+
+% 0 1 0 080210cfb3a0a21d19dc4954ea1cdc61
+
+% 0 1 0 1df856f3f7d749a10df12c9436635be2
+
+% 0 1 0 05e6dfc8503dd2a6027c7a8ae8e4e148
+
+% 1 1 0 0fe1a81cf6606443187574b20334333d
+
+% 2 1 0 1002df2f504a389e1c65260d5c88d420
+
+% 3 1 0 0f5e95e5793133d311543bd3a70e8dca
+
+% 4 1 0 09f5fd619c505f1c12142ecc5ad28960
+
+% 0 1 0 129c6596fff31bd90949582a5912e5da
+
+% 0 1 0 1270e020ba556e470bd9c4c46f7ec4e3
+
+% 1 1 0 1c44ac3e48123e161c33f03929858c70
+
+% 2 1 0 037894ec05d42aab136e63d3e890b95d
+
+@ 0 3 0 18a1100bdea0fdca1a29984460942f5e
++       不是完整编译单元的片段——一个单独的表达式，或一个类型——在一个 `Scala.Context` 中高亮，该上下文会包装它使其能够解析，并从结果中去掉包装：
+
+% 2 1 0 033229daf82e02421aa5c0dd3dbec9d6
+
+% 3 1 0 0ab9b30a78862a921c13ff7021bc0c20
+
+% 0 1 0 13285a0364320aad0ce902959ddee97d
+
+% 0 1 0 056658ae190fd80d1ce43e1b3a86091e
+
+% 1 1 0 00ea9ba88b214a1e1eae1baebfa76f75
+
+@ 0 6 0 1225f2ea584145a706b58dddbe43af40
++       `caret` 偏移会把高亮变成补全。
++       关键字补全来自插入点之前的词法单元，不需要编译器：语句开头的 `va` 会提供 `val` 和 `var`，`xs match ` 会提供 `case`，而必须是新名称的位置（`val ` 之后）或类型位置则完全不提供关键字。
++       当作用域中有编译器时，编译器的交互式引擎会在 `.` 之后添加成员，为单独的标识符添加作用域内的名称，在类型位置则只添加类型、模块和包。
+
+% 2 1 0 0c2e19744f5afca81367e6fe0901b0bc
+
+% 3 1 0 00f3b877cd09afa80e1f7474b496f8bb
+
+% 0 1 0 09f4411141aaec02158c7b6c10b84f23
+
+% 0 1 0 1a6aafe99b7c17330736b9c3f3955978
+
+% 0 1 0 0459a0677f9309f518b3a566e69ab91c
+
+% 1 1 0 063e89c110f79d330aaa0e4a11627d17
+
+% 2 1 0 02534176a96c8b0c186dfffa6f1daf35
+
+% 3 1 0 1f7f4ea47e4aacba07532d821e374bcf
+
+% 4 1 0 054ab02e63fb37dd1dcca5710d0252c5
+
+% 5 1 0 07ba3af21457813e14064b97bed59250
+
+% 6 1 0 03bacf0da4f7117918b8dfc2fe2f0418
+
+% 7 1 0 16c64429410d3fd01aa4e4864c95bdf3
+
+% 0 1 0 1660bd84cced823d1fa728679741c8b8
+
+% 0 1 0 17976cfac8aef4c010e72249fe27c752
+
+% 0 1 0 092b493386f27a5f1b64548f30275861
+
+% 1 1 0 0d6750d125983d6b0d4ee75bf3b01886
+
+@ 0 4 0 035af921fde245470d3052b63192bdd7
++       `scala.Dynamic` 接收者的成员没有可供补全的符号，因此当插入点位于从 `Dynamic` 类型进行的选择上时，会在当前 JVM 中加载该类型的伴生对象，如果它实现了 `prophesy.Completable`，就询问它接收者的细化类型允许哪些成员。
+
+% 1 1 0 0c1ec9494bfe76ca0d99e1ee5a352e78
+
+% 1 1 0 0d9870b369bec2fb10ca5f847f8c03fc
+
+% 1 1 0 09d1cd43521aba4d0d74c7499e9f9582
+
+@ 0 5 0 07f32a27de1db2b90dbfe234ee46f99c
++   entry .Context   Scala 片段是什么：整个编译单元、一个项或一个类型
++       `Top` 是完整的编译单元，等同于不给出上下文。
++       `Term` 把片段包装为一个 `val` 的主体，使单独的表达式能够解析；`Type` 则把它包装为 `type` 别名的右侧，使 `Map[Text, Int]` 作为类型高亮；在这两种情况下，包装用的行都会从结果中删除。
+
+@ 0 1 0 0280be9cba5760741d4cfde4f0c4e785
++ entry .Java   Java 语言：`Java.highlight`，用编译器的 Java 扫描器做词法分析
+
+% 1 1 0 08c68804b53fc25800879a405a3da1db
+
+@ 0 4 0 0101f9fd5d8338970be27218c87dcd07
++       Java 的 `ProgrammingLanguage`。
++       `Java.highlight(text)` 用 Scala 编译器的 Java 扫描器做词法分析，因此 Java 的关键字、字面量和标识符都会得到各自的着色类别；只适用词法分析深度，因为 Scala 前端不对 Java 做类型检查。
++       它唯一的 `Java.Context` 是 `Top`，即一个完整的编译单元。
+
+% 2 1 0 1161f9eb5f444d1218d5e28076b7fc26
+
+% 3 1 0 0785fce4a90227420349510a5b9b6767
+
+% 0 1 0 163d7da5c8570e6f1e2c7d99303063ba
+
+% 1 1 0 0da0ba13e606970c01f9358fd4bd16c2
+
+% 1 1 0 0619a925ed1fc51706d74dd574c2cf92
+
+@ 0 1 0 1ce581e6dcb54dbf1505934fa4b8dfa6
++   entry .Context   Java 片段唯一可以处于的上下文：`Top`，一个完整的编译单元
+
+@ 0 1 0 0cecea8adc326d6804637dbbbb2ac7d5
++ entry .Highlight   高亮的深度及其运行的编译器：每次 `highlight` 调用处的 given
+
+% 1 1 0 113788b5d0d3be121114941feec701d7
+
+@ 0 4 0 16a9c70af95e9e3e04f02c87dad633d9
++       `Highlight` 是 `Scala.highlight` 和 `SourceCode.apply` 接受的上下文值：它的 `#depth` 说明是只做词法分析、运行类型检查器，还是也运行后续阶段，而它的 `#compilation` 描述当深度需要编译器时要运行的编译器。
++       其实例是 `highlighting` 包中的 given，按名称导入：
+
+% 2 1 0 0330409942b35f3712d7c2e8e4bfcd4e
+
+% 3 1 0 104ef177596fe7fd08c41e29dbb0483f
+
+% 0 1 0 1ad604366fe28bbe0a03fa3ada5e4852
+
+% 1 1 0 024876a7f6907d750da7b5e5c55f78b0
+
+@ 0 4 0 0590a9fca0dcfca91a3abaa4b5fc1914
++       `Highlight.default` 是词法分析级的那个，位于伴生对象中，因此无需导入就能找到；按名称导入 `typecheckedScala`、`compiledScala` 或 `sessionScala` 的优先级高于它。
++       自定义的 `Highlight` 是一个带有 `Depth` 和 `Highlight.Compilation` 的值，作为局部 given 绑定。
+
+% 1 1 0 025d0ffff01518300197bc3d5c29c9eb
+
+% 1 1 0 1c1f4b132967ba2a09999782426c1933
+
+@ 0 4 0 1cd389fad219f95d04353c84803e76c8
++   entry .default   默认的高亮，`highlighting.tokenizedScala`，位于隐式作用域中
++       只要词法作用域中没有其他 `Highlight`，就会通过伴生对象找到它，因此 `Scala.highlight(text)` 做词法分析级高亮无需导入。
++   entry .Compilation   类型检查级或编译级高亮对编译器的要求
+
+% 1 1 0 13f258f463c0513405b7273aa35a04aa
+
+@ 0 15 0 106bd6a1045e45361150ee24cb99c63e
++         前端运行所需的参数、类路径和编译器实例，经过抽象，使 `harlequin.core` 对 anthology 和 hellenism 一无所知：`harlequin.typed` 用 `Scalac` 和 `LocalClasspath`，或用已预热会话的 `Scalac.Session.Frontend` 构建一个这样的值。
++         自带编译器的工具可以直接实现它。
++     entry #arguments   编译器的命令行参数
++     entry #classpath   类路径，以平台 `-classpath` 形式的单个文本表示
++     entry #compiler   一个要运行的全新 `dotty.tools.dotc.Compiler`
++     entry #context   用于类型检查的上下文，适用于让编译器保持预热的编译
++         默认为 `Unset`，此时每次运行都会根据 `#classpath` 和 `#arguments` 重新创建上下文，每次都加载类路径的符号表。
++         已预热的会话则给出它的基础上下文：每次运行都得到它的一个新的子上下文，因此会话已经加载和编译的内容都在作用域中。
++   entry #depth   `Tokenized`、`Typechecked` 或 `Compiled`
++   entry #compilation   要运行的编译器，在 `Tokenized` 深度下为 `Unset`
+
+@ 0 8 0 00a6382ba1d8d3241ac0769d7a1913de
++ entry .Depth   高亮的三种深度：词法分析级、类型检查级、编译级
++     `Tokenized` 仅用扫描器和解析器对词法单元分类，不需要类路径。
++     `Typechecked` 运行编译器前端直至类型检查器，因此标识符带有其类型（`SourceCode.Token.Meta`），诊断信息会被收集，插入点会产生编译器的补全。
++     `Compiled` 另外运行类型检查器之后的各阶段（在生成字节码之前停止，因此不写出任何东西），纯粹是为了呈现只有这些阶段才能产生的诊断信息；类型仍然从停在类型检查器的那次运行中读取，因此它们保持在源代码层面。
++     作用域中的 `Highlight` given 携带深度。
+
+@ 0 1 0 14b52b1983a4a0600b78f06d6a6f8d91
++ entry .highlighting   `Highlight` given，每种深度一个，每个都按名称导入
+
+% 1 1 0 0db6dfbcd651847e0b2f7b0002c1c735
+
+@ 0 4 0 0a0ac40d844e9eda0c903636ab1a3f0b
++       `Scala.highlight` 在哪种深度下工作，由作用域中的 `Highlight` given 决定，而 `import highlighting.*` 不会导入 given，所以要按名称导入其中一个。
++       `tokenizedScala` 也是 `Highlight.default`，因此无需任何导入即可生效；其他三个位于 `harlequin.typed` 中，需要编译器。
+
+% 2 1 0 15660f78add619cf073924280361999e
+
+% 3 1 0 1ead2ef2a4ead2a30d93cbe58c8814aa
+
+% 4 1 0 19e0090e8d1748a51a41e67382bc0347
+
+% 5 1 0 03eaf3d8a7bef3d41c8e0b1fe4ef9b97
+
+% 6 1 0 171f51446cc6b4c51e3cba294f0ab394
+
+% 7 1 0 00cd5eb0007d18ad018f710e0488cb7b
+
+% 0 1 0 1ade2f57974836c009e7c7cc5666afb9
+
+% 1 1 0 160fc8ad9197131e0068681e36457bc3
+
+@ 0 3 0 0635e4587d0820150a7bbc40a4d6ebbd
++       `LocalClasspath` 应当是待高亮代码所针对的那个类路径：`LocalClasspath.of(Classloader[SomeClass])` 表示正在运行的程序自身的类所来自的类路径。
+
+% 1 1 0 15765921bb99994d0599825392448e0f
+
+% 1 1 0 059a6993953ccb780933e8b828078f57
+
+@ 0 19 0 14d4599610bf9f9113d5a5bd5a39dec4
++   entry .tokenizedScala   词法分析级高亮：着色类别和角色，没有类路径，不运行编译器
++       不带 `Highlight.Compilation` 的 `Depth.Tokenized`。
++       位于 `harlequin.core` 中，也是伴生对象的 `Highlight.default`。
++   entry .typecheckedScala   通过 `Scalac` 和 `LocalClasspath` 的类型检查级高亮
++       `Depth.Typechecked`：以给定的 anthology `Scalac` 的命令行参数，在给定的 `LocalClasspath`（其目录和 JAR 条目，以平台分隔符连接）上运行它的前端。
++       需要二者都作为 given 位于作用域中。
++       每次调用都会创建一个新的编译器上下文并加载类路径的符号表，因此针对同一个类路径高亮许多代码片段时，通过会话和 `sessionScala` 会更快。
++       位于 `harlequin.typed` 中。
++   entry .compiledScala   通过 `Scalac` 和 `LocalClasspath` 的编译级高亮
++       与 `typecheckedScala` 相同，但处于 `Depth.Compiled`：类型检查之后的各阶段也会运行，以得到只有它们才会产生的诊断信息。
++       位于 `harlequin.typed` 中。
++   entry .sessionScala   在已预热的编译器会话中进行的类型检查级高亮
++       `Depth.Typechecked`，根据作用域中的 `Scalac.Session.Frontend` given——即在 `scalac.on(classpath).session:` 中由 `compilation.frontend` 给出的值——在会话自己的编译器上、在其基础上下文的一个子上下文中运行。
++       代码片段会针对会话已编译的一切进行类型检查，而无需再次加载类路径的符号表，因此 REPL 可以针对之前的定义高亮每一行。
+
+% 2 1 0 1bd3527b67c2dd9f1fc9b738849ce9af
+
+% 3 1 0 0f26902b36ae8dba0fe5dd303555a361
+
+% 4 1 0 045b508f9641bb7704baf3f08446fb39
+
+% 0 1 0 0f690ce8861de30a192d0bdc055b7ccb
+
+% 0 1 0 12a618ab3fc8ab800817fdfca2fcb19c
+
+% 0 1 0 0b9a872872b0d33c160f9349282eead7
+
+% 0 1 0 1a594ea3c86bc7cd1405f34514ac5ebf
+
+% 0 1 0 03f5dd233c5c27da01f1bdd626442203
+
+% 0 1 0 0aa392d8591e65a216df27dd163f4cbe
+
+% 0 1 0 106b4623b584404a1dc6e5e47605a25a
+
+% 1 1 0 1645d9a8544e7716115617efe5fe0be2
+
+@ 0 5 0 13856199a3b3435809d015a21cb51313
++       有两点需要注意：它必须在会话的线程上运行，就像会话自己的编译一样（编译器会把它的上下文基础固定到其首次运行的线程上）；而且由于代码片段被当作会话的一个源文件进行类型检查，它定义的顶层名称会一直留在那里的作用域中，直到下一个代码片段替换它们。
++       每次使用时都会重新获取前端，因为会话在崩溃时会替换它的编译器。
++       位于 `harlequin.typed` 中。
+
+@ 0 1 0 149ee827f9f9b5ac0cfc9bf25ee20c85
++ entry .Diagnostic   高亮时捕获的编译器诊断信息：它的跨度、消息和重要程度
+
+% 1 1 0 195e04b498ab82c31f0f311674c6e06d
+
+@ 0 6 0 08f9d723056121df05fce9c8d57dbabe
++       `SourceCode#diagnostics` 在 `Depth.Typechecked` 或 `Depth.Compiled` 下所保存的内容。
++       `#span` 是一个偏移模式的 `Span`（指向文本的字符偏移和长度），与词法单元流分开保存，因为一条诊断信息可能覆盖一个词法单元的一部分或多个词法单元；渲染器会把它重新应用到与之重叠的词法单元上。
++       没有位置的诊断信息会被丢弃，并且编译器自身对同一位置重复消息的去重同样适用。
+
+% 2 1 0 0ea2bfe2d0959ca40594d2b8a6742112
+
+% 3 1 0 1dedb247c675e58c026438105bc5d898
+
+% 4 1 0 1a61793f29f6853e17705e989dc591a8
+
+% 5 1 0 1b39705cab8d215a04c3c8e9c1515c18
+
+% 6 1 0 175205ec7873040b02dc80668374f3d4
+
+% 7 1 0 1c8866a9ad24b49d1bfeac602699215a
+
+% 0 1 0 0df5fdcad8106f33165e3d110d83b46e
+
+% 0 1 0 1c5d1f8a1bef0ae21aaff8cd8cf9a9e0
+
+% 1 1 0 19bda19216cfcccd1bc090c9896acade
+
+% 1 1 0 164bc98d326d120209452ed9ee235bbf
+
+@ 0 6 0 1986cf347978e52a1b6ab96be89be6a4
++   entry .Importance   诊断信息的严重程度：`Info`、`Warning` 或 `Error`
++       Harlequin 自己的枚举，与 anthology 的 `Importance` 和 larceny 的同名，从而使 `harlequin.core` 不依赖 anthology。
++   entry #span   诊断信息所在的位置：指向被高亮文本的偏移模式 `Span`
++   entry #message   编译器的消息，以文本表示
++   entry #importance   `Info`、`Warning` 或 `Error`
+
+@ 0 8 0 1e428518294770f20d50b94bf13f78cf
++ entry .Completion   补全候选项：名称、种类和签名
++     从 prophesy 重新导出（`prophesy.Completion`），因为 harlequin 的补全是用 prophesy 的类型表达的。
++     `Completion` 有要插入的 `name`、它的 `kind`（`Term`、`Method`、`Given`、`Extension`、`Type`、`Module`、`Package` 或 `Keyword`）、以 stenography `Syntax` 表示的 `signature`（方法的完整参数和结果签名、值的类型，或关键字本身），以及一个可选的 `documentation`。
++     在 `soundness` 总括包中，`Completion` 这个名称属于 exoskeleton，因此这里的要通过 `harlequin.Completion` 访问。
+
+@ 0 6 0 0c9078b0ea686d2d108c51374510a695
++ entry .Completions   补全请求的结果：要替换的跨度和候选项
++     从 prophesy 重新导出（`prophesy.Completions`）：`replace` 是所选补全要替换的部分名称的偏移模式 `Span`（尚未输入任何内容时，是插入点处的空跨度），`items` 是各个 `Completion`，关键字在前并已排序。
++     给出插入点时，`SourceCode#completions` 保存的就是它。
++     在 `soundness` 总括包中这个名称属于 exoskeleton，因此这里的要通过 `harlequin.Completions` 访问。
+
+@ 0 1 0 1a314707e5385d210cd51ffd3b0b259d
++ entry .Fragment   在任何编译器运行之前，对光标周围代码片段的分析
+
+% 1 1 0 18f8d7bd3d79e07b1d15a4bab436a842
+
+@ 0 7 0 1c4f003446c87da80a32d374d43149be
++       补全宿主——REPL、调试器控制台——在决定是否调用编译器之前所做的纯文本和词法分析级的拆分：光标处的部分标识符从哪里开始，它是否在选择成员，它之前的词法单元是否是一个等待中缀方法的值，哪些括号未闭合，以及一行中深度为零的 `:` 或 `=` 在哪里。
++       这些都不需要类路径；`infixBase` 用扫描器做词法分析，其余只靠文本。
++       偏移是指向文本的字符偏移，光标紧跟在偏移 `offset - 1` 处的字符之后。
+
+% 2 1 0 04aa4225d2d299b81e97b6b4927c0520
+
+% 3 1 0 02c9494183f0ddf60a916bd8fe5d42a8
+
+% 0 1 0 007968fca71aa9ce09f368212b302b1a
+
+% 0 1 0 1ae93907747142ea02a04f67d5828454
+
+% 0 1 0 16ccf6396543468c196badf60f2f1fd4
+
+% 0 1 0 13d20117e359dd8d1cd2c37052de4e0c
+
+% 0 1 0 00fa7280df3018cf14cbe9d5603b19bf
+
+% 1 1 0 1a8b6e210d10d7a70c3114dd70e97093
+
+@ 0 2 0 174f67c55f1201c806ade274d2a01159
++       在 `soundness` 总括包中，`Fragment` 这个名称属于 honeycomb，因此这里的要按名称导入为 `harlequin.Fragment`。
+
+% 0 1 0 15a39807b75f835b0c86af505da8e2a0
+
+% 1 1 0 0448ba3478cf9f3a01d7f36d9d07e679
+
+@ 0 51 0 00f250d37c5635d00e6ab4b5d968bc6e
++   entry .identifierChar   一个字符是否可以构成字母数字标识符的一部分
++       字母、数字或 `_`。
++   entry .identifierStart   结束于某个偏移处的部分标识符的起始偏移
++       从 `offset` 向回扫描 `identifierChar`；当光标不跟在标识符字符之后时，等于 `offset`。
++   entry .memberBase   光标处的成员选择基础和部分名称
++       `memberBase(code, offset)` 在光标处把文本拆分为基础——直到并包括紧挨部分成员名称之前的 `.` 的所有内容——和部分名称。
++       当光标不是在选择成员时（第一个词法单元的标识符、import 的第一段），基础为 `Unset`，因此没有可供枚举的确定类型。
++       `memberBase(t"text.length", 7)` 是 `(t"text.", t"le")`：部分名称在光标处结束，而不是在输入末尾。
++   entry .introducers   其后的标识符是名称而不是值的关键字
++       `val`、`var`、`def`、`type`、`class`、`object`、`trait`、`enum`、`given`、`package`、`import`、`export`、`case`、`extension` 和 `new`：跟在其中之一后面的名称正在被定义、导入或构造，因此它不是中缀接收者。
++   entry .infixBase   空格和部分名称之前的值接收者，附加一个合成的 `.`
++       当光标处于 `<value> <space> <partial>`——一个值后跟空白，即正在输入一个中缀方法——时，`infixBase(code, offset)` 是添加了末尾 `.` 的值表达式（从而由成员补全路径处理它）以及部分名称：`infixBase(t"xs ma", 5)` 是 `(t"xs.", t"ma")`。
++       没有值接收者时基础为 `Unset`：空格之前的词法单元是关键字（硬关键字或软关键字：每个 Scala 3 关键字都被拒绝，因此 `erased ab` 和 `inline de` 不给出接收者）、运算符、逗号或左括号，或者处于定义或导入位置的名称（`val xs ma`）。
++       带括号的接收者作为一个平衡的组扫描，因此 `hal(nym, sly) ma` 得到 `hal(nym, sly).`。
++   entry .expressionStart   结束于文本末尾的值表达式的起始位置
++       向回扫描标识符字符、`.` 和平衡的括号组，在深度为零的运算符、空格或左括号处停止：`expressionStart(t"a + hal.nym")` 是 `4`，而对于 `hal(nym).sly` 则是 `0`。
++   entry .unclosed   为未闭合的括号给出的右括号，最内层在前
++       `unclosed(t"hal(nym, List[Int")` 是 `List(']', ')')`，因此按顺序追加它们即可补全片段。
++       字符串和字符字面量（普通、转义和三引号）内部以及行注释和块注释内部的括号不计入；没有对应左括号的右括号会被忽略，因此从某个组内部截取的片段仍然可以扫描。
++       扫描器看不到插值的 `${…}` 内部，它作为字符串处理。
++   entry .outermost   第一个满足某个测试的深度为零的字符的偏移
++       `outermost(code, ':')` 是位于所有括号组、字符串和注释之外的第一个 `:` 的偏移——即 `def f(a: Int): String` 中返回类型的冒号，而不是某个参数的——没有时为 `Unset`；`outermost(code)(predicate)` 则改为测试每个深度为零的字符的偏移，用于诸如“后面不跟 `>` 的 `=`”这样的测试。
++   entry .split   文本在分隔符的各个深度为零的出现之间的部分
++       `split(t"a.*, b.{c, d}, e.given", ',')` 是 `a.*`、` b.{c, d}` 和 ` e.given`：括号内的分隔符不会拆分。
++       各部分既不修剪，为空时也不丢弃，因此可以还原分隔符的位置；没有顶层分隔符的文本本身就是唯一的部分。
++   entry .groups   在深度为零处打开的每个括号组的内容，按顺序排列
++       `groups(code)` 给出定义头部不带括号的参数子句——`def f[T](a: T, b: (Int, Int))(using c: C): T` 给出 `a: T, b: (Int, Int)` 和 `using c: C`——而 `groups(code, '[')` 给出它的类型参数子句。
++       打开后从未闭合的组会被省略，因为它尚未完成。
+
+@ 0 1 0 0e0a7b88532e54920462e406ea276c07
++ entry .Lexis   harlequin 的词法单元映射到 prophesy 的 `Lexeme` 字母表上，用于关键字补全
+
+% 1 1 0 181d00e0669699e119796ce7ec9b81f8
+
+@ 0 9 0 11fec2e5334320270bb772b2d4f1d93c
++       关键字补全是语法层面的：插入点之后可以出现什么，取决于它之前的词法单元，而不取决于任何符号表。
++       `Lexis` 把词法单元流映射为 prophesy 的 `Lexeme`——在这种抽象中标识符文本无关紧要（项标识符只是 `Term`），但每个关键字和符号都有意义，并在每个语句边界处有 `Break`——并提取插入点处的反向上下文，供 prophesy 的 `ScalaKeywords.pattern` 查找。
++       同一个映射既服务于运行时的补全，也服务于派生出模式树的语料分析，因此二者对上下文的形态总是一致的。
++       带插入点的 `Scala.highlight` 会使用它；想要上下文本身的宿主则调用 `context`。
+
+% 2 1 0 0548a510b62e6e1408a53be6f65c9f45
+
+% 3 1 0 12abd6e178049b360259435116055e59
+
+% 0 1 0 154f59fe455a909d04684671b33268f7
+
+% 0 1 0 130ab1d339c5351b0801b2ee68a894db
+
+% 0 1 0 0cab33ce56e500ba1126ae7a393f6144
+
+% 1 1 0 13f04f1478701d600f5d9def60a14462
+
+% 0 1 0 1c47372dcad07f410677dec019254fe9
+
+@ 0 18 0 1d233569dd3b0e531b18591ca6cd7cd1
++   entry .lexeme   一个词法单元的词素，空白则为 `Unset`
++       标点只按其文本分类，从不按其着色类别（`(` 是 `Open(Round)`，`=` 是 `Symbol`）；关键字或修饰符按其文本分类；项标识符是 `Term`，除非它是 `inline` 或 `using` 之类的软修饰符，这时它无论出现在哪里都是 `Keyword`，因为在插入点之前无法把它与标识符区分开；类型是 `Typal`；数字和字符串是 `Literal`；`Unparsed` 词法单元不贡献任何内容。
++   entry .lexemes   `SourceCode` 的完整词素序列，`Start` 在最前
++       在每个开始新语句的行边界处插入 `Break`：即缩进不超过前一个非空行的非空行。
++       缩进更深的行延续其外围表达式，因此不产生边界。
++   entry .context   插入点处的部分标识符，以及它之前的反向词素上下文
++       `context(text, caret, limit)` 是与插入点相接的标识符片段（插入点不跟在标识符字符之后时为 `Unset`）以及它之前的词素，最近的在前，最多 `limit` 个（默认为 8）。
++       片段之前的文本会以词法分析深度重新做词法分析，因此不会运行编译器。
++       位于空行上、缩进不超过上一个有效行的插入点，会产生该语句在输入后将会有的 `Break`。
+
+@ 0 8 0 06cb0264545ea99b199f6626867e956b
++ entry .ScalaSyntaxPalette   每个着色类别对应一种颜色的调色板，用于在终端中渲染源代码
++     `syntaxHighlighting` 渲染器作为 given 接受的类型：一个 `Form = Srgb` 的 iridescence `Palette`，经过细化，为每个 `Accent` 提供一种颜色——`scalaError`、`scalaNumber`、`scalaString`、`scalaTerm`、`scalaType`、`scalaKeyword`、`scalaSymbol`、`scalaParenthesis`、`scalaModifier` 和 `scalaComment`（用于 `Unparsed` 词法单元，以斜体渲染）——另外还有三种用于带行号渲染器的边栏：`margin` 作为其背景，`accented` 用于行号，`subdued` 用于分隔线和错误标记。
++     `Palette` 本身要求 `background` 和 `foreground`。
+
+@ 0 2 0 1ae7f8f519dfe3c91b7c90888155a6b0
++     没有任何库提供默认值，因为调色板是对颜色的一种选择；程序把它定义为一个 given，用 iridescence 颜色填充各字段：
+
+% 2 1 0 15b054493bc6e83310f7245c80120b93
+
+% 1 1 0 0a47f914ed53260906bd03717b3d64ff
+
+@ 0 1 0 048e6dcaed9f474e0dc661747b5de4d6
++       label 一个 iridescence 调色板，带有每个调色板都有的两种颜色
+
+% 1 1 0 1ae4ad7ad37691970d37420c82b4674f
+
+% 2 1 0 105b58b0bff9912b1e1aff0a63e89455
+
+% 3 1 0 085ef1c599d5ad6f0c1290a4f9162696
+
+% 0 1 0 1c5105bf2ded1a6c183d4b520816a133
+
+% 0 1 0 12be1f334bff8e0e029d03aba2aa7e05
+
+% 1 1 0 121369581c344c8e03fe5814df6ad70c
+
+@ 0 1 0 108e2b37694051d31a749ceb23d54205
++       label 每个着色类别一种颜色
+
+% 1 1 0 0dfed74f1fb6f0f60a8fe86dacb49e5b
+
+% 2 1 0 1cd0a39ccb000de7066cb0f12668379f
+
+% 3 1 0 07b5d3d98573dbe008f1ed0360338ff4
+
+% 4 1 0 046af0df7b880bb01916ca87eef751c7
+
+% 5 1 0 0de06815052ab2240844ea0542eeb852
+
+% 6 1 0 159304fdddb5bf221db5fbbe59cbecdf
+
+% 7 1 0 0732ec1bf5b875d41565a71e2c928712
+
+% 8 1 0 14a97170fadc8375145f5ba74698f8f7
+
+% 9 1 0 1e02b96f93d5e00d1df50155789619c0
+
+% 10 1 0 060af502a1be25b809427c4bfa8a159f
+
+% 11 1 0 0baec0da803afef61a6f84d5420c810b
+
+% 12 1 0 09df46bbb18ed18e0799749a79fa438d
+
+% 13 1 0 056a2353b08972581e304d1e076f97f4
+
+% 14 1 0 1c4d202dadc05db307e0031b358d4f13
+
+% 15 1 0 0d6410dc0858ebaa138e92f3f5ab5088
+
+% 1 1 0 154ae048216c3eba1e3041795da1bdcd
+
+@ 0 1 0 0ef6ac7810bc7c37097ad21efd52f3b7
++       label 再加上带行号渲染器的边栏使用的三种颜色
+
+% 1 1 0 1ab440d7ef199a9c116e5c0324d9d714
+
+% 2 1 0 0f405c77f41a88691906908e39e3cce1
+
+% 3 1 0 03be81da507ec1e71f33937f0052e8dd
+
+% 4 1 0 134c592785ef68411cbc246336d38b42
+
+% 5 1 0 1d576a6ba7d4351c0ca65c83bf0a132e
+
+% 6 1 0 0d68a79acce413c90abc3b85405b05d0
+
+% 7 1 0 06312efffb43c6931d91b9d73e7a2f3a
+
+% 8 1 0 075130b416dd866511ca63a2412e599c
+
+% 9 1 0 159c89f9473d65ca1f23b29234adb1c3
+
+% 10 1 0 16c7aba49e7038c21d389cf211b99a0d
+
+% 11 1 0 1d53be140ecd49991b50d1aa2ffec3d1
+
+% 12 1 0 10b04b41fa58fdd20dabdbd6ef9e599d
+
+% 13 1 0 05f3f35d073db10301dc67bffd8998fb
+
+% 14 1 0 1381c5c45c0e8ff60ae46ed99cc0c148
+
+% 15 1 0 06fd9c3eb88fb6921be688bbfd104fb1
+
+% 0 1 0 0d90f83bc3f6cf2f0af1fd58929d39cd
+
+% 0 1 0 05524847f758719e001046b28d2e84ef
+
+% 0 1 0 1d8ed67aeda2162c07754abb715e4439
+
+% 1 1 0 059d7ba465bd36050d11b3cf6ad4baea
+
+% 1 1 0 11e767d9efb47d1a0f4b85a0051bf1dd
+
+@ 0 4 0 05a28952c44505c608823da5b9844dc7
++     调色板只把每个着色类别映射为一种颜色，别无他用：词法单元是绑定还是使用，是它的 `Token.Role`，对绑定的任何进一步样式都是在其上施加的方针。
++     同一个调色板也服务于 punctuation 的 `scalaTeletypeFormattable` 以及 delicious 对编译器消息的 `teletype` 渲染。
++     位于 `harlequin.ansi` 中。
+
+@ 0 1 0 1ee590af26df71fe13cdbbebeac545a7
++ entry .syntaxHighlighting   高亮源代码的终端渲染器，每个都是按名称导入的 given
+
+% 1 1 0 0b113dd5104cd4be140416bba505276f
+
+@ 0 4 0 0c08b3267c5445bb123f56ac3f41810c
++       三个 escapade `Teletypeable` given，位于 `harlequin.ansi` 中，每个都需要作用域中有一个 `ScalaSyntaxPalette` given。
++       `numberedTeletypeable` 和 `unnumberedTeletypeable` 都渲染 `SourceCode`，因此只按名称导入其中一个；`tokenTeletypeable` 渲染单个 `SourceCode.Token`，另外两个正是用它来渲染每个词法单元。
+
+% 2 1 0 07463a9a7e93f2ad0fa3198d1ca3fb4c
+
+% 0 1 0 098cedece490c6d1187f4b64f2ba4f23
+
+% 1 1 0 0e62336eeefa0b5f128f127e98f40e04
+
+% 2 1 0 0c9aba39c514347e1cdf601477946b00
+
+% 0 1 0 163face8aa7685061f9dcb3af3a9c903
+
+% 1 1 0 063b17405d48ecfb0f74c8544acac5d7
+
+% 2 1 0 198efb978632431d01ad5794fdc20441
+
+% 0 1 0 1d9b6b00bfb2c2810612825c51089ae9
+
+% 0 1 0 0415394804b2e16d1d89fda257973ac7
+
+% 0 1 0 0864d805beb13bff02855545ed68159e
+
+% 1 1 0 1a681e5f152d919c0d170fa686d03561
+
+% 2 1 0 1a85ef6219e86978125c4953898ba1fa
+
+% 0 1 0 1b1e3515306f437106327e63297d5c2a
+
+% 1 1 0 1b47376bb9a3d6310e526250fa84bfae
+
+% 2 1 0 06eeb4d69d88b9a210f860c02f9d9b32
+
+% 0 1 0 002f8514c84cc1c016073d8c9b3e9e1b
+
+% 0 1 0 04482772b3ea7f800b9389a811248f97
+
+% 1 1 0 1b80c9285a4498591ab89a9c41cfbfd4
+
+% 2 1 0 1ed52e6502364ca202ba582a21502ccf
+
+@ 0 3 0 1c6c184d59b85deb176ae972cc421448
++       只有 `numberedTeletypeable` 和 `unnumberedTeletypeable` 在 `soundness` 总括包的 `syntaxHighlighting` 包中有镜像；`tokenTeletypeable` 要导入为 `harlequin.syntaxHighlighting.tokenTeletypeable`。
+
+% 0 1 0 173eead191544d4b16bbfa86edb81f5f
+
+% 1 1 0 1752b63d1c2e0eb112c92d4c7f128236
+
+@ 0 15 0 1ae756e66c0ef71e0034b4c1c194c879
++   entry .tokenTeletypeable   以其着色类别在调色板中的颜色渲染一个 `Token`
++       每个着色类别都以调色板中同名的颜色渲染（`Error` 用 `scalaError`，`Parens` 用 `scalaParenthesis`，依此类推），而 `Unparsed` 词法单元——空白和注释——以 `scalaComment` 和斜体渲染。
++       词法单元的角色不加样式。
++       需要一个 `ScalaSyntaxPalette`。
++   entry .numberedTeletypeable   渲染带行号边栏的 `SourceCode`，并标出其焦点
++       每行前面加上它的行号（从 `SourceCode#offset` 开始），按最后一行行号的宽度右对齐，以调色板的 `accented` 颜色显示在其 `margin` 背景上，后跟一个 `subdued` 颜色的 `┋` 分隔线。
++       `SourceCode#focus` 会被标出：宽度为零的单行焦点在其所在列下方得到一个 `╱╲` 插入符，有宽度的单行焦点得到一条 `‾` 下划线，二者都使用 `scalaError`；跨越多行的焦点则在边栏中用 `║` 标出它覆盖的各行。
++       需要一个 `ScalaSyntaxPalette`。
++   entry .unnumberedTeletypeable   只把 `SourceCode` 渲染为各行，按着色类别上色
++       各行以换行符连接，每个词法单元使用其着色类别的颜色，没有边栏，也不标出焦点。
++       需要一个 `ScalaSyntaxPalette`。
+
+@ 0 1 0 01fcb0d30ecd6d6b194a80a2439b9f26
++ entry .CommonFormattable   把围栏代码块渲染为 HTML，每个词法单元一个 `<code>` 元素
+
+% 1 1 0 153f30c2cec9bfc6111f5e854c808094
+
+@ 0 7 0 05e2f5552b155fa6112606c2ed446908
++       位于 `harlequin.md` 中、`formattables.scalaFormattable` 和 `formattables.javaFormattable` 背后的 punctuation `Formattable`：Markdown 文档中标记为 `scala` 或 `java` 的围栏代码块用 `Scala.highlight` 或 `Java.highlight` 高亮，并渲染为 `<div class="amok"><pre>…</pre></div>`，每行是一个 `<span class="line">`，每个词法单元是一个 `<code>`，其 class 为它的着色类别和角色。
++       样式表就是这个前端的样式方针：`.keyword` 为关键字上色，而 `.binding` 可以在绑定的着色类别颜色之上把它们设为斜体。
+
+% 2 1 0 1b3ec30ec96a63b61397e4c61196e09a
+
+% 3 1 0 116d8a966cc82f8714fe4b6c1ff77f6c
+
+% 0 1 0 1e0628804613fc050acf27853468e6a3
+
+% 0 1 0 06ef0ad5c547523e0be5c0168cb74eb2
+
+% 1 1 0 1d5146cbbfb7cf311b1e6e766770e870
+
+@ 0 3 0 150ae4d805c3433500d9e8ed51b0ac34
++       针对另一种语言的自定义前端用一个 `Self` 类型（围栏标签）和一个 `format` 来扩展这个特质，`format` 高亮内容并把 `SourceCode` 传给该特质的 `postprocess`。
+
+% 0 1 0 0c00e5e96b09d4a91d217845bff4fa78
+
+% 0 1 0 0fd5d0ca9465838a047f7bbfdfa290cc
+
+@ 0 7 0 13c0fb89c04599ad15f25527982cf14d
++   entry #lineClass   允许元素带有 `class="line"` 和 `class="amok"` 的 given
++   entry #classes   词法单元的 CSS 类：它的着色类别，以及它的角色（如果有）
++       `classes(accent, role)` 是一个 `ClassList`，包含着色类别的小写名称（`keyword`、`term`、`typal`……），对于项或类型标识符还包含 `binding` 或 `usage`。
++   entry #element   作为 `<code class="…">text</code>` 的词法单元
++       `element(accent, role, text)` 是以 `#classes` 作为 class 属性、以词法单元文本作为内容的 `code` 元素。
+
+@ 0 1 0 0a76c069f46b9f3c1ef25d40f27c97ac
++ entry .Shim   harlequin 所包装的编译器内部 API 的写法，按编译器版本线区分
+
+% 0 1 0 1c18810b564d59e609a88422cf8dd919
+
+% 1 1 0 0f71597c1b0bc6cb112bae74ffdfb433
+
+@ 0 7 0 19318569f70d92601f59180d6417fdc4
++       不供直接使用。
++       `harlequin.compiler` 为 Scala 3.9 版本线和 3.10 版本线各保存一个 `Shim`，针对各版本线的结构定义相同的名称，从而使 harlequin 的其他部分都不知道使用的是哪一个。
++   entry .interactiveDriver   基于编译器设置的 `InteractiveDriver`，用于补全
++       3.10 把驱动程序的 `Option[LogicalPackage]` 参数替换为一个没有默认值的 `CachedLogicalPackage`；3.9 的 shim 省略它，3.10 的 shim 传入 `CachedLogicalPackage.none`，这是同样的空情形。

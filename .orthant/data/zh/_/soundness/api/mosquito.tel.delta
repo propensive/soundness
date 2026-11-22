@@ -1,0 +1,517 @@
+orthant 2 language
+
+% 0 1 0 0f04ec4b9ac2d4270a232409219e1f6b
+
+% 0 1 0 1215aba0f96e415a1fcddaa063eb1a68
+
+% 0 1 0 0b5938ce7315323607e1922cbc4d93e2
+
+@ 0 1 0 1b54bc16cb4f36f9141571ab3411c8fb
++ info   维度写在类型中的向量与矩阵，对任何支持算术运算的元素通用
+
+% 0 1 0 0ca6d61ddd9511ea1cdae38f1414f6fe
+
+@ 0 9 0 191dc8e953fab6d71c6370de25c11f0d
++     _Mosquito_ 是一套在代码编译时检查形状的线性代数。
++     `Vector[element, size]` 是固定数目的分量，`Matrix[element, rows, columns]` 是一个网格，二者都把维度作为类型参数携带：两个大小不同的向量不能相加，矩阵乘积只在内侧维度一致时才有定义，而 `determinant`、`inverse` 和 `trace` 只存在于方阵上——每一种都是编译错误，而不是运行时的形状检查。
++     元素类型对任何具备某个运算所需算术的类型通用，通过 symbolism 的类型类解析，因此由 `Int`、`Double`、精确有理数或有类型的量构成的向量都能使用，而长度的点积是面积，因为单位也一起相乘了。
+
+% 0 1 0 0797c6bf77c3030003eb6d7db95ad910
+
+% 0 1 0 1ce8fe6ca033a15a0bd38efcfa5b98d2
+
+% 0 1 0 009e5eda30a6d17907732460496aec47
+
+% 0 1 0 144376e231de1cd509285f5eee297eb3
+
+% 0 1 0 090efb631fff0c141965602265691b93
+
+% 0 1 0 1418b23960e501a117609c038c8aacad
+
+% 0 1 0 19c53883930f326d1f1328a71f29f348
+
+% 0 1 0 1d53db87e28b4aa7030d21a5e1e00655
+
+% 0 1 0 0770af2cb597b87f16ad23ef8e237d36
+
+% 0 1 0 168239551f36d8bc1e239869a99fc0b9
+
+% 0 1 0 0f2a396a71fd035a006155b7c916eded
+
+% 0 1 0 00b6c8a2ea8c7ec502ddaba0ec33f117
+
+% 0 1 0 0ffd2706393d28c30b8676f5156f4da2
+
+% 0 1 0 1600c795e2349e0d1933c4db73278b7a
+
+% 0 1 0 15a7ef9394ccd37701e62d8d0b0cc7c4
+
+% 0 1 0 1a33ee6b4a3bba2500aa229743c7c755
+
+@ 0 8 0 0717971b4ba7da7c140455312310a480
++     整个过程没有任何装箱。
++     `Vector[Double, n]` 存储一个 `double[]`（量的向量也是如此，因为量在不透明类型之下就是 `Double`），算术实例和访问器都是 `inline` 的，并在展开处解析元素自身的运算，两个 `Vector[Double, 3]` 的和编译为由 `daload`、`dadd` 和 `dastore` 组成的循环。
++     代价是形状必须是字面量类型：`Vector[Int, 3]` 由三元组构造，`Matrix[2, 3]` 由两行、每行三个元素构造，而只在运行时才知道的大小用 `Vector.take` 从列表得到，结果是一个 `Optional` 向量，其大小由参数的单例类型指定。
+
+@ 0 1 0 1e1e3f50c7e0b95b192252a13b76d1ec
++     三种类型，都位于 `mosquito.core`，适用于 JVM、Scala.js 和 Scala Native：
+
+@ 0 10 0 0c9392923775ff0d0ae7361744751880
++     - `Vector`——构造、元素访问、`map`、`norm`、`unitary`、`dot`、`cross`（三维和七维），以及算术运算 `+`、`-`、一元 `-`，与标量或同样大小的向量逐元素的 `*` 和 `/`。
++     - `Matrix`——逐行构造、`identity`、`zero`、元素、行和列的访问、`transpose`、`submatrix`，算术运算 `+`、`-`、一元 `-`，与标量的 `*` 和 `/`，矩阵乘积和矩阵与向量的乘积，以及方阵的 `determinant`、`trace`、`minor`、`cofactor`、`adjugate`、`inverse`、`solve`、`rank`、`frobeniusNorm` 和（对 `Double` 元素的）`eigenvalues`。
++     - `Affine`——以 3×3 矩阵表示的二维仿射变换，采用 SVG 和 PDF 的六数顺序，带有 `transform` 和 `andThen`。
+
+@ 0 7 0 0cf5cbbbe94daf5f1ca2bf2b914f42b9
++     一切都导出到 `soundness` 总括包。
++     普通数与向量或矩阵之间的算术依赖编译器的 `into` 转换，因此 `import scala.language.experimental.into` 要与 `import soundness.*` 一起出现；把向量或矩阵显示为带括号的网格需要一个 `Text is Measurable` given（`import textMetrics.uniformMetric`）；而 `Affine` 的 `transform` 和 `andThen` 必须按名称导入，即 `import mosquito.Affine.{andThen, transform}`，因为在 `import soundness.*` 之下，其他库中同名的泛型扩展方法优先级更高。
+
+% 0 1 0 1c0c8cc43e28abb1053adafdbf621ff9
+
+% 0 1 0 0ef17cb65501016f0af8a3634ba205b6
+
+% 0 1 0 13e5aa826c9111650d2e8e26906d3e2e
+
+@ 0 1 0 1692a6c528ed6cc311fe90ea4a405d08
++ entry .Vector   固定数目的分量，大小写在类型中：`Vector[Int, 3]`
+
+% 1 1 0 1f838cf4b02ff36c1c6a1d11d7725311
+
+@ 0 7 0 1a10743817993e9c1d5466212b5d8ac1
++       `Vector` 是导出到这里的类 `mosquito.internal.Vector`：它是 `Tuple`（大小在静态时已知）与集合（元素共享一个类型）的混合体。
++       它由元组构造，元组的长度成为大小，元组的公共元素类型成为元素类型——`Vector(1, 2, 3)` 是 `Vector[Int, 3]`，`Vector(1.0*Metre, 2.0*Metre)` 是 `Vector[Quantity[Metres[1]], 2]`，单分量向量写作 `Vector(Mono(42))`——其分量存储在元素自身类的 `Array[element]^{}` 即 `#data` 中，因此 `Double` 或量的向量就是一个 `double[]`。
+
+% 2 1 0 14f4359a817a18800ebc94b4b99c4f49
+
+% 3 1 0 18fa41311df8ddc31ef9fd4f5cd54b4a
+
+% 4 1 0 05acb37d318f56cb03aeeec9e8dba7a3
+
+% 5 1 0 1897662628631e8702498a10f157a60f
+
+% 0 1 0 022946d814015f3c09aada6565bab986
+
+% 0 1 0 015bfe0b0226126d1c6f82b13cd6cfb6
+
+% 0 1 0 1d1900a455fba56012a316194f5847f4
+
+% 0 1 0 017cbd42bff680f7144cf82977aa9b76
+
+% 0 1 0 0edde86379bfb22f1049d1af91cb6aaf
+
+% 0 1 0 1971e90724d527eb1fc02320f2c3555a
+
+% 0 1 0 102ebcee2a9eef6801c4b22a8ae89799
+
+% 0 1 0 1a03dc209c006193034228dbf7d863f6
+
+% 0 1 0 1136682c4c96b9940175109c3a212c79
+
+% 0 1 0 069d4a6b4966bc8517f10b201debd18e
+
+% 0 1 0 1e977043db95f7a815e8590f810e1a13
+
+% 0 1 0 0fcfd79278c579510518a5978b0d79c5
+
+% 0 1 0 0b9d53f058052275190ae54053856824
+
+% 1 1 0 01341e6250f846421abe894278cefde2
+
+@ 0 12 0 0f765946e308cbc6138ca359b7d43666
++       算术通过类型类实例实现，每个实例都是 `inline` 的并以大小为键，因此不匹配的情况无法编译：同样大小的两个向量之间的 `+` 和 `-`（`.addable`、`.subtractable`），一元 `-`（`.negatable`），与标量的 `*` 和 `/`（`.scalarMultiplicable`、`.scalarDivisible`），或与另一个同样大小的向量逐元素的 `*` 和 `/`（`.vectorMultiplicable`、`.vectorDivisible`）。
++       两个向量的标量积是 `dot`，而不是 `*`；标量写在右边（`v*2`，而不是 `2*v`）；结果由元素决定，因此英尺向量加米向量得到米，两个米向量的逐元素乘积是平方米向量。
++       不属于实例的操作——`element`、`apply`、`list`、`iarray`、`size`、`norm`、`map`、`unitary`、`dot` 和 `cross`——是声明在 `mosquito.internal` 中的扩展方法，通过 `import soundness.*` 即可使用，每个在那里都有自己的页面。
+
+@ 0 2 0 01324a22a4c5a42f1f7a714984c8dea9
++       两个向量的分量相等时它们就相等，无论声明的元素类型是什么；`hashCode` 与之一致。
++       `toString` 是 `Vector(1, 2, 3)`。
+
+@ 0 2 0 00f434c0cd868f101f6169473baeda1d
++       伴生对象的构造器和实例，以及类的 `data`，都声明在 `mosquito.internal.Vector` 上，每个在那里都有自己的页面。
+
+% 1 1 0 038544fe5003b799140e8793cf091530
+
+% 0 1 0 0a98c7eac7e184f210978c1cc04892e2
+
+% 0 1 0 134d7649a363840e1501725ec369b335
+
+@ 0 1 0 1d593762e68ab1131f8459c45d5b9cee
++ entry .Matrix   行数和列数写在类型中的网格：`Matrix[Int, 2, 3]`
+
+% 1 1 0 155d8b7734a99313092b64081ed062ac
+
+@ 0 6 0 1142aa69fcea63ac0a428c72794c955c
++       `Matrix[element, rows, columns]` 是 `#rows` 乘 `#columns` 个元素，按行优先存储在 `Array[element]^{}` 即 `#elements` 中。
++       它的写法是把形状作为类型参数、把各行写成元组，即 `Matrix[2, 3]((1, 2, 3), (4, 5, 6))`，元素类型由行推断；`Matrix.identity[Double, 3]` 和 `Matrix.zero[Double, 2, 3]` 是常量矩阵。
++       乘积只在形状一致时才有定义，结果的形状在类型中计算：
+
+% 0 1 0 14116fcaa006993f068c95fd1ec862a2
+
+% 1 1 0 08d9458eb73012351c93056f35e51984
+
+@ 0 1 0 0f56b93f75e7c6ba0eace23a0c9e4689
++         label 一个 2×3 矩阵，逐行写出
+
+% 1 1 0 1d4641a0c2803065162837e05c9a25da
+
+% 0 1 0 1386ffb620a70aab000a6ad84acab8e7
+
+% 1 1 0 0ea218c9bfb71c450e6e77a15f33a0b6
+
+@ 0 1 0 002dfd4b4f9c334d08ed24e0bdf91332
++         label 一个 3×2 矩阵
+
+% 1 1 0 06660a5b4ecec1ea1fa02299c77b540b
+
+% 2 1 0 00e70f05379df0a01d2415769148373e
+
+% 0 1 0 1f9d122d9141fd911232c1c7013dfc07
+
+% 1 1 0 10a487ca401c933210016444289303a0
+
+@ 0 1 0 191b068cc2c906b51de41d67117b86d5
++         label 二者的乘积：内侧维度一致，因此结果是 2×2
+
+% 1 1 0 0cdb70a3a28f80fa1595de2d7c3d5725
+
+% 2 1 0 16f94e638aacaf9000bfa2af7063cde7
+
+% 3 1 0 0f0913edf661429210d11c641b7879f7
+
+% 0 1 0 0c30b73114ff2df31f9de43ce1f2a4e2
+
+% 1 1 0 132d1f35bccb5d2706e42e97160b8ef8
+
+@ 0 1 0 025c19c6d5813f7a1119c96486ce4c5a
++         label 换个顺序，得到 3×3
+
+% 1 1 0 1d6b85e32e56e7fa11e9b093c53a1412
+
+% 2 1 0 1010f259ff9065920d06cc707f9eaee6
+
+% 3 1 0 0aad1d6bcd784c320f0540c8a6d29a60
+
+% 0 1 0 12c5be79da91bcf71c653f828065b5db
+
+% 1 1 0 05378bfcc18bfea30c2e1a68d48f0696
+
+@ 0 1 0 0df2fd59684bf2eb014ff4ba80ab3191
++         label 矩阵乘以长度正确的向量
+
+% 1 1 0 05baddee8cc83c3306911753c13aafe0
+
+% 2 1 0 0e1036e09bbcb6cf0965ff194b861800
+
+% 0 1 0 0a539ff246d6902d05e67fd29faef369
+
+% 1 1 0 16f63992782c10651218e192e341b250
+
+@ 0 1 0 02509338b2f06439137cd5094b1af2ce
++         label 而形状不匹配则无法编译
+
+% 1 1 0 08fe87edf43bccc604834839f0cc4b92
+
+% 2 1 0 0c54bda7c1015f531095ce39da6a0383
+
+% 0 1 0 08dc6b39878556b71b262deac4c47b47
+
+% 0 1 0 05324ab952d132031fa7821cd90c1137
+
+% 1 1 0 1a277342ea9dfdc5113023e785963c91
+
+@ 0 10 0 1f1ea67d77365bc516df76def10bb59c
++       算术通过内联类型类实例实现：同一形状的矩阵之间的 `+` 和 `-`（`.addable`、`.subtractable`），一元 `-`（`.negatable`），与标量的 `*` 和 `/`（`.scalarMultiplicable`、`.scalarDivisible`），矩阵乘积（`.matrixMultiplicable`）以及矩阵与向量的乘积（`.vectorMultiplicable`）。
++       两个矩阵之间的 `*` 始终是矩阵乘积，从不是逐元素乘积。
++       方阵还另有 `determinant`、`trace`、`minor`、`cofactor`、`adjugate`、`inverse` 和 `solve`，它们是 `Matrix[element, n, n]` 上的扩展方法，而 `Double` 方阵还有 `eigensystem`、`eigenvalues` 和 `eigenvectors`。
++       每个操作都会解析元素的算术，因此量的矩阵可以相加，`Q32` 有理数的矩阵可以精确相乘。
+
+% 2 1 0 02353ecd1d21984c1a4c2a13a8351b19
+
+% 3 1 0 1df33e4167bbde830ccd89fece6db9f9
+
+% 4 1 0 1cc921f5ea12f54208d131f109ceaa78
+
+% 5 1 0 009c3bd4562e08ff0ae3d745d742138a
+
+% 0 1 0 06b21ab1711cd7cb0fd1b6eafff6a708
+
+% 0 1 0 1b097172f6a6987406241e4fdd7fcd67
+
+% 0 1 0 02a4ca99c9dce70811acb1eb55b11344
+
+% 0 1 0 04e7ae1ad18c59ce146cc3b41def4616
+
+% 0 1 0 0c8715c658fcf962101ad4e614f85682
+
+% 0 1 0 06a4d228d9842f53098896943ee02bb8
+
+% 0 1 0 19ead65254a29f2e1c34bd703dc449a4
+
+% 0 1 0 1edf8d945d4f6a840809da822fb4f71f
+
+% 0 1 0 0af32bc81fc93e7313cc41aafb64b369
+
+% 0 1 0 059c03961e872a9d040d44605a583f82
+
+% 0 1 0 10296640812fa6f01be93934d350692d
+
+% 0 1 0 18f14c2699971b4112d5c6654e277be9
+
+% 0 1 0 1533d4359668d0e71ec6312469f7c992
+
+% 0 1 0 0b3895c3ac21d2c10094a678fdb0e329
+
+% 0 1 0 1dfc4d5056cc0f820791823dfce5c270
+
+% 1 1 0 0493b37faa19eb441705d41996785471
+
+@ 0 2 0 162375aab2f6f5411efd13c477d208ed
++       两个矩阵的元素相等时它们就相等，无论声明的元素类型是什么。
++       `toString` 是扁平的元素列表 `[1, 2, 3, 4, 5, 6]`。
+
+% 0 1 0 07fa0d29d2b788f00cff9ebbaf1ae246
+
+% 0 1 0 1fd32ae8011feea314f351e48026007b
+
+@ 0 65 0 15a72d62d09cc2a702bb666d4b98f421
++   entry .apply   `Matrix[2, 3]((1, 2, 3), (4, 5, 6))`：由各行构造矩阵，形状作为类型参数
++       透明内联：行数和列数作为类型参数给出，并与由行元组组成的元组相核对——行数必须是 `Rows`，每一行必须有 `Columns` 个元素，并且每个元素必须是同一类型，该类型成为元素类型。
++       单行矩阵用 `Tuple1` 写成 `Matrix[1, 2](Tuple1((4, 6)))`。
++       元素的 `ClassTag` 在调用处找到。
++   entry .identity   `Matrix.identity[Double, 3]`：某个大小的单位矩阵
++       通过元素的 `Unital` 和 `Zeroic` 实例，对角线为一，其余为零；大小是带有 `ValueOf` 的类型参数。
++       它是内联的，因此存储操作是有类型的数组写入。
++   entry .zero   `Matrix.zero[Double, 2, 3]`：某个形状的零矩阵
++       每个元素都是 `Zeroic` 的零；形状是两个带有 `ValueOf` 的类型参数。
++   entry .addable   同一形状的两个矩阵之间的 `m + n`：元素逐对相加
++       一个内联实例，需要元素类型的 `a is Addable by b to result` 和一个 `ClassTag[result]`；两个 `Matrix[Double, 2, 2]` 在由 `dadd` 组成的循环中相加，两个量的矩阵通过检查单位的求和相加。
++       形状不同则无法编译。
++   entry .subtractable   同一形状的两个矩阵之间的 `m - n`：元素逐对相减
++   entry .negatable   `-m`：每个元素取负
++       `-Matrix[2, 2]((1, -2), (3, 4))` 是 `Matrix[2, 2]((-1, 2), (-3, -4))`，等于 `m*(-1)`。
++   entry .scalarMultiplicable   `m*scalar`：每个元素乘以标量
++       `Matrix[2, 3]((1, 2, 3), (4, 5, 6))*10` 是 `Matrix[2, 3]((10, 20, 30), (40, 50, 60))`。
++       标量只能在右边。
++       `Matrix` 操作数会改为匹配 `.matrixMultiplicable`，`Vector` 操作数则匹配 `.vectorMultiplicable`。
++   entry .scalarDivisible   `m/scalar`：每个元素除以标量
++       `Matrix[2, 3]((1, 2, 3), (4, 5, 6))/2` 是 `Matrix[2, 3]((0, 1, 1), (2, 2, 3))`：元素按其类型的方式相除。
++   entry .matrixMultiplicable   `m*n`：矩阵乘积，只在内侧维度一致时才有定义
++       `Matrix[a, rows, columns]` 乘以 `Matrix[b, columns, rightColumns]` 得到 `Matrix[result, rows, rightColumns]`，需要 `a is Multiplicable by b to result` 和 `result is Addable by result to result`；列数必须是 `ValueOf`。
++       内侧维度不同的乘积无法编译。
++       从不逐元素相乘。
++   entry .vectorMultiplicable   `m*v`：矩阵乘以长度为 `columns` 的列向量，得到长度为 `rows` 的向量
++       `Matrix[2, 3]((1, 2, 3), (4, 5, 6))*Vector(7, 8, 9)` 是 `Vector(50, 122)`，`Matrix.identity[Int, 3]*v` 是 `v`。
++       长度不对的向量无法编译。
++   entry .inspectable   单行的调试渲染：`⌈1 ∣ 2 ⫽ 3 ∣ 4⌋`
++       各行以 `⫽` 分隔，行内元素以 `∣` 分隔，外面是角括号，代替 `show` 所用的高括号；凡是元素为 `Inspectable` 的矩阵都可使用。
++   entry .showable   把矩阵渲染为高括号之间的网格，各列右对齐
++       每一行占一行文本，顶部是 `⎡ 1 2 ⎤`，底部是 `⎣ 3 4 ⎦`，中间是 `⎪ … ⎪`；它需要元素是 `Showable`，并且作用域中要有一个 `Text is Measurable`（`import textMetrics.uniformMetric`）来测量列宽。
++   entry .determinant   方阵的行列式，通过拉普拉斯展开计算
++       `Matrix[element, n, n]` 上的扩展方法，需要元素自身类型上的 `Multiplicable`、`Addable` 和 `Subtractable`：`Matrix[3, 3]((2, -3, 1), (2, 0, -1), (1, 4, 5)).determinant` 是 49。
++       在非方阵上调用它无法编译。
++       展开的复杂度对 `n` 是指数级的，适合形状写在类型中的小矩阵。
++   entry .trace   方阵对角线元素之和
++       内联，加法在调用处解析：`Matrix.identity[Int, 4].trace` 是 4。
++   entry .minor   `m.minor(row, column)`：去掉该行和该列之后的矩阵的行列式
++   entry .cofactor   `m.cofactor(row, column)`：余子式，在行列下标之和为奇数时变号
++       取负需要元素的 `Zeroic`。
++   entry .adjugate   余因子矩阵的转置，在任何环上都有定义
++       `Matrix[2, 2]((1, 2), (3, 4)).adjugate` 是 `Matrix[2, 2]((4, -2), (-3, 1))`，而 `m*m.adjugate` 是行列式乘以单位矩阵。
++       它不需要除法，因此整数矩阵在没有逆矩阵时也有伴随矩阵。
++   entry .inverse   方阵的逆矩阵，奇异时为 `Unset`
++       伴随矩阵除以行列式，除了环运算之外还需要元素的 `Divisible`：`Matrix[2, 2]((1.0, 2.0), (3.0, 4.0)).inverse` 是 `Matrix[2, 2]((-2.0, 1.0), (1.5, -0.5))`，而行列式等于元素零值的矩阵给出 `Unset`。
++       非方阵无法编译。
+
+% 2 1 0 1a03c0b479efaa421ce440b0ec255f9b
+
+% 3 1 0 1d1c969e10c6566711dda4f6a7d30621
+
+% 0 1 0 08555ff1d50b527c0265026b6994bbed
+
+% 0 1 0 045e4ae917a4433806522a04c48bad53
+
+% 1 1 0 1cafef948d5be81f0fe2bcb14ad4f3d3
+
+@ 0 39 0 1f80b51814969242047ae8821dbc79e5
++   entry .solve   `m.solve(b)`：通过高斯消元求出满足 `m*x == b` 的 `x`，奇异时为 `Unset`
++       方阵 `Matrix[element, n, n]` 上接受一个 `Vector[element, n]` 的扩展方法，使用部分选主元（主元为零时交换行），需要元素的 `Zeroic`、`Subtractable`、`Multiplicable` 和 `Divisible`：`Matrix[2, 2]((2.0, 1.0), (1.0, 3.0)).solve(Vector(3.0, 4.0))` 是 `Vector(1.0, 1.0)`。
++   entry .eigensystem   对称 `Double` 矩阵的特征值和特征向量，或 `Unset`
++       `Matrix[Double, n, n]` 上的扩展方法，使用雅可比旋转，只对对称矩阵收敛：对于不对称（容差为 10⁻¹²）或未能收敛的矩阵，结果为 `Unset`；否则是一个二元组，包括作为 `Vector[Double, n]` 的特征值，以及作为 `Matrix[Double, n, n]` 各列的特征向量，每个都是单位向量。
++   entry .eigenvalues   对称 `Double` 矩阵的特征值，或 `Unset`
++       `Matrix[2, 2]((2.0, 1.0), (1.0, 2.0)).eigenvalues` 包含 1.0 和 3.0；即 `eigensystem` 的前一半。
++   entry .eigenvectors   对称 `Double` 矩阵的特征向量（作为各列），或 `Unset`
++       `eigensystem` 的后一半。
++   entry #rows   行数，作为值
++   entry #columns   列数，作为值
++   entry #elements   按行优先排列的元素，作为冻结的 `Array[element]^{}`
++   entry #apply   `m(row, column)`：一个元素，从零开始编号
++       内联，因此从 `Matrix[Double, m, n]` 读取就是一条 `daload`。
++       `Affine` 也是矩阵，在它上面对两个数的应用就是这个访问器，这就是为什么它的点变换命名为 `transform`。
++   entry #row   `m.row(i)`：作为 `Vector[element, columns]` 的一行
++       内联；调用处有元素的 `ClassTag` 时用有类型的数组访问复制，否则用反射复制，因此它从不向调用者索要 `ClassTag`。
++   entry #column   `m.column(j)`：作为 `Vector[element, rows]` 的一列
++   entry #transpose   转置，即 `Matrix[element, columns, rows]`
++       需要元素的 `ClassTag`；`m.transpose.transpose == m`。
++   entry #submatrix   `m.submatrix(row, column)`：去掉该行和该列之后的矩阵，每个维度少一
++       类型为 `Matrix[element, rows - 1, columns - 1]`；`Matrix[2, 3](…).submatrix(0, 1)` 是 `Matrix[Int, 1, 2]`。
++   entry #frobeniusNorm   元素平方和的平方根
++       内联，需要元素的 `Multiplicable`、`Addable` 和 `Rootable[2]`：`Matrix[2, 2]((3.0, 0.0), (0.0, 4.0)).frobeniusNorm` 是 5.0。
++   entry #rank   秩，通过高斯消元计算
++       线性无关的行的数目，需要元素的 `Zeroic`、`Subtractable`、`Multiplicable` 和 `Divisible`；对任何形状都有定义：`Matrix[2, 2]((1.0, 2.0), (2.0, 4.0)).rank` 是 1。
+
+@ 0 1 0 044d376f39c83a6901d7c0eae8715f66
++ entry .Affine   二维仿射变换：由 SVG 和 PDF 的六个数构造的 3×3 矩阵
+
+% 1 1 0 1db0d5be80fd5da30c163ac94d22e9da
+
+@ 0 3 0 1977e8589f4f181a17ffebd022b81e50
++       `Affine[element]` 是 `Matrix[element, 3, 3]` 的不透明子类型，保存二维仿射变换的齐次矩阵，由六个有效项构造，其顺序是 SVG 的 `matrix(a, b, c, d, e, f)` 和 PDF 的 `a b c d e f cm` 共同采用的顺序：
+
+% 0 1 0 0d2523ced4fb8ce31bd4b9e3b3275137
+
+% 0 1 0 10560dcb6382d41e0af4817d9bfc9334
+
+% 0 1 0 1fa6ddc7f7b9de800aa94e1d45a580f7
+
+@ 0 4 0 145251692c72567f103c9476efa9094d
++       它作用于列向量。
++       `transform` 把它应用到一个点上，`andThen` 组合两个变换，分别只需六次和十二次乘法，而不是通用矩阵乘积的二十七次，并且元素算术是内联的。
++       组合顺序是 SVG 和 PDF 约定唯一不同的地方，因此它是一个具名操作，而不是 `*`。
+
+% 2 1 0 1437b632e627b1d507e45bed1438736c
+
+% 3 1 0 02b46cb78d69e0f1008c75bf86c5d613
+
+% 0 1 0 1d8767710e1c95ab06e950ff91f6a026
+
+% 0 1 0 1dc100e003bf2f7b16777ab637bdf2d9
+
+% 0 1 0 124c89b507bd28dd05ba071f1d51e1d2
+
+% 0 1 0 1e840ebd672669f1040a86a9cf979e94
+
+% 0 1 0 1f78056ce8ead34f0dc73ffedef988da
+
+% 1 1 0 0dcc2ec929c6b2f41b28bce59c6bf31c
+
+@ 0 6 0 0f7b9bbbe15588531517972506a412ea
++       在 `import soundness.*` 之下，`transform` 和 `andThen` 必须按名称导入：总括包中泛型的 `transform`（来自 savagery）和 `andThen`（函数上的）在那里处于词法作用域中，而词法作用域中的扩展方法优先于伴生对象中的扩展方法，并且会报告自己的失败，而不是回退到后者。
++       作为一个 `Matrix`，`Affine` 也具有所有矩阵操作，包括 `apply(row, column)`，这就是为什么点变换不叫 `apply`。
+
+% 1 1 0 068e4ecebed125c604d561af502913a2
+
+@ 0 19 0 19b0cb2f7aa2e4fb02065bf61cc3414e
++   entry .apply   `Affine[Double](a, b, c, d, e, f)`：由六个项构造变换
++       固定的最后一行需要元素的 `Zeroic` 和 `Unital`，另外还需要一个 `ClassTag`。
++       与 `Matrix` 的构造器不同，它不是内联的，这样它的结果在调用处被视为 `Affine`。
++   entry .identity   `Affine.identity[Double]`：恒等变换
++   entry .a   第一项：x 方向缩放
++   entry .b   第二项：y 方向错切
++   entry .c   第三项：x 方向错切
++   entry .d   第四项：y 方向缩放
++   entry .e   第五项：x 方向平移
++   entry .f   第六项：y 方向平移
++   entry .transform   `affine.transform(x, y)`：点 `(a·x + c·y + e, b·x + d·y + f)`
++       内联，需要元素自身类型上的 `Multiplicable` 和 `Addable`；`Affine[Double]` 用六条 `dmul` 和四条 `dadd` 变换一个点。
++       按名称导入：`import mosquito.Affine.transform`。
++   entry .andThen   `first.andThen(next)`：先应用 `first` 再应用 `next` 的变换
++       列向量乘积 `next*first`，即 PDF 行向量约定下的 `first*next`，专门化为六个有效项。
++       需要元素的 `Multiplicable`、`Addable`、`Zeroic`、`Unital` 以及一个 `ClassTag`。
++       按名称导入：`import mosquito.Affine.andThen`。
+
+@ 0 5 0 118bca2c7278738e074b3c6f9d0c6725
++ entry .slide   `list.slide(n)`：列表的滑动窗口，作为由大小为 `n` 的 `Vector` 组成的惰性 `Chain`
++     `List[element]` 上的扩展方法（需要 `ClassTag`）：`List(1, 2, 3, 4).slide(2)` 是由 `Vector(1, 2)`、`Vector(2, 3)`、`Vector(3, 4)` 组成的链，每个都是由参数确定类型的 `Vector[element, n.type]`，用 `Vector.take` 构造，在剩余元素少于 `n` 个时停止。
+
+@ 0 1 0 131caaa5fe0272d8026e53c2561d7d65
++ entry .internal   `Vector` 类、它的扩展方法以及内联元素算术的所在之处
+
+% 0 1 0 1c18810b564d59e609a88422cf8dd919
+
+% 1 1 0 0f71597c1b0bc6cb112bae74ffdfb433
+
+@ 0 15 0 0383c7df731c4e6b013df1479f34d62c
++       不供直接使用：这个对象之所以存在，是为了让 `Vector` 的内联实例能在其展开处解析元素自身的运算。
++       `Vector` 从这里导出到 `mosquito` 包，它在那里的页面有完整说明；它的构造器和实例记录在这里的 `Vector` 条目上。
++       这里声明的向量扩展方法——`element`、`apply`、`list`、`iarray`、`size`、`norm`、`map`、`unitary`、`dot` 和两个 `cross` 乘积——通过 `import soundness.*` 即可使用。
++   entry .Vector   向量类及其伴生对象；参见 `mosquito.Vector`
++     entry .apply   `Vector(1, 2, 3)`：由元组构造向量，推断其大小和元素类型
++         对任何元组都适用的透明内联构造器：大小就是元组的大小，元素类型是各分量的类型，它们必须全部相同——`Vector(1, 2.0)` 是编译错误 _Cannot prove that Int | Double =:= Int_，而不是一个 `AnyVal` 向量。
++         单分量向量写作 `Vector(Mono(42))`，因为 `Vector(42)` 会把 42 本身当作元组。
++         存储是元素所属类的数组，通过调用处的 `ClassTag` 找到，因此 `Vector(2.0, 4.0)` 的读取和计算都不涉及装箱。
+
+% 2 1 0 0c4609ce8d51b2ea02f8495b4dfabbc5
+
+% 3 1 0 0f13bab761920b900c2015056e8aa3a0
+
+% 0 1 0 1084ce22168fe358156691d11e979518
+
+% 0 1 0 1259869ebaf041ba07e511bbb577b9f9
+
+% 0 1 0 1a2f2f1fe7e0f3c612b9831bce67bf27
+
+% 1 1 0 1fd8e905092441e90267920889b591c7
+
+@ 0 5 0 0493f46ec9901dcf07dc3056ff155362
++     entry .take   `Vector.take(list, n)`：列表的前 `n` 个元素构成的向量，元素不足时为 `Unset`
++         用于只在运行时才知道大小的构造器：结果是 `Vector[element, n.type]`，其类型由参数的单例类型确定，列表太短时为 `Unset`。
++         `Vector.take(Nil, 0)` 是空向量。
++         它需要元素的 `ClassTag`。
+
+% 2 1 0 1465d2f9b11e86d711bbfbbf862b0edd
+
+% 3 1 0 10dac79786bfa60a005fdf784327db74
+
+% 0 1 0 06d0acb42eac51a71a85fc969a4f1c06
+
+% 0 1 0 0c9e66012e2841c0015043e6a40b310c
+
+% 1 1 0 007db9d3fdfab0fa1621780808ada384
+
+@ 0 65 0 0cb21e6c903104ab09b5089d4e2ca758
++     entry .addable   同样大小的两个向量之间的 `v + w`：元素逐对相加
++         一个内联实例，需要两个元素类型的 `value is Addable by value2 to result` 和一个 `ClassTag[result]`；结果是 `Vector[result, size]`。
++         元素加法在展开处解析，因此两个 `Vector[Double, n]` 在由 `dadd` 组成的循环中相加，两个量的向量则通过 quantitative 检查单位的求和相加：`Vector(1.0*Foot, 1.0*Foot) + Vector(3.0*Metre, 4.0*Metre)` 以米为单位。
++         大小不同则无法编译。
++     entry .subtractable   同样大小的两个向量之间的 `v - w`：元素逐对相减
++         与 `.addable` 相同，需要 `value is Subtractable by value2 to result`。
++     entry .negatable   `-v`：每个元素取负
++         需要 `value is Negatable to result`；`-Vector(1, -2, 3)` 是 `Vector(-1, 2, -3)`。
++     entry .scalarMultiplicable   `v*scalar`：每个元素乘以标量
++         需要 `value is Multiplicable by scalar to result`：`Vector(1, 2, 3)*2` 是 `Vector(2, 4, 6)`，`Vector(1.0*Metre, 2.0*Metre)*2.0` 是米向量。
++         标量只能在右边；`2*v` 没有定义。
++         `Vector` 操作数会改为匹配 `.vectorMultiplicable`，因为没有哪个元素能乘以向量。
++     entry .scalarDivisible   `v/scalar`：每个元素除以标量
++         需要 `value is Divisible by scalar to result`：`Vector(2.0, 4.0)/2.0` 是 `Vector(1.0, 2.0)`，`Vector(7, 8, 9)/2` 是 `Vector(3, 4, 4)`，即按元素的除法进行整数除法。
++     entry .vectorMultiplicable   同样大小的两个向量之间的 `v*w`：元素逐对相乘
++         哈达玛积，需要 `value is Multiplicable by value2 to result`：`Vector(1, 2, 3)*Vector(4, 5, 6)` 是 `Vector(4, 10, 18)`，两个米向量相乘得到平方米向量。
++         标量积是 `dot`。
++         大小不同则无法编译。
++     entry .vectorDivisible   同样大小的两个向量之间的 `v/w`：元素逐对相除
++         `Vector(8, 9)/Vector(2, 3)` 是 `Vector(4, 3)`。
++     entry .inspectable   单行的调试渲染：`⟨1 ∣ 2 ∣ 3⟩`
++         凡是元素为 `Inspectable` 的向量都可使用；分隔符 `∣` 与 `Matrix` 在一行元素之间使用的相同。
++     entry .showable   把向量渲染为高括号之间的一列
++         `Vector(1, 3, 6).show` 是三行：`⎛ 1 ⎞`、`⎜ 3 ⎟`、`⎝ 6 ⎠`，元素按最宽者右对齐；二维向量没有中间行，一维向量是 `( 42 )`。
++         它需要元素是 `Showable`、大小是 `ValueOf`，并且作用域中要有一个 `Text is Measurable`（`import textMetrics.uniformMetric`）来测量元素的宽度。
++     entry #data   各分量，作为元素自身类的冻结 `Array[element]^{}`
++   entry .element   `v.element(i)`：一个分量，从零开始编号
++       内联，因此从 `Vector[Double, n]` 读取就是一条 `daload`；不要求边界证明，下标越界时会抛出异常。
++   entry .apply   `v(i)`：一个分量，从零开始编号；与 `element` 相同
++   entry .list   作为 `List[element]` 的各分量
++   entry .iarray   各分量，即存储它们的那个冻结 `Array[element]^{}`
++   entry .size   分量的数目，作为值，取自类型中的大小
++   entry .norm   欧几里得长度：各分量平方和的平方根
++       内联，需要元素的 `Multiplicable`、`Addable` 和回到元素类型的 `Rootable[2]`：`Vector(3.0, 4.0).norm` 是 5.0，米向量的范数以米为单位。
++   entry .map   `v.map(f)`：同样大小的向量，对每个分量应用 `f`
++       函数是内联的，在循环体中应用，而不是通过 `Function1`，因此基本类型的元素在途中不会装箱；它可以改变元素类型（`Vector(1, 2, 3).map(_.toString)`），只要有结果类型的 `ClassTag`。
++       `Vector(1.0*Metre, 2.0*Metre).map(_*Metre)` 是平方米向量。
++   entry .unitary   同方向的单位向量，即 `Vector[Double, size]`
++       每个分量除以 `norm`：`Vector(3.0, 4.0).unitary` 是 `Vector(0.6, 0.8)`。
++   entry .dot   `v.dot(w)`：同样大小的两个向量的标量积
++       逐对乘积之和，其类型由元素的 `Multiplicable` 给出：`Vector(1, 2, 3).dot(Vector(4, 3, 7))` 是 31，`Vector(5*Inch, 2*Inch, Inch).dot(Vector(2*Inch, 3*Inch, 6*Inch))` 是 22 平方英寸。
++       内联，元素算术在调用处解析。
++       大小不同则无法编译。
++   entry .cross   `v.cross(w)`：向量积，三维或七维
++       两个重载，分别在 `Vector[left, 3]` 和 `Vector[left, 7]` 上——只有这两个维度存在向量积——每个都需要元素的 `Multiplicable`、`Addable` 和 `Subtractable`：`Vector(1, 2, 3).cross(Vector(4, 3, 7))` 是 `Vector(5, 5, -5)`，它反交换，并与两个操作数都正交。
++       七维乘积遵循法诺平面的下标三元组。
++       其他任何大小都无法编译。

@@ -1,0 +1,321 @@
+orthant 2 language
+
+% 0 1 0 1ed9f8220e20843a1230937a4ae3f670
+
+@ 0 1 0 02ed9263154c2802081b650b8e2f33e5
++ ### 概述
+
+@ 0 6 0 112b0f4b7fb4521b0a16979cc937182d
++ 远程过程调用假装方法调用跨越了网络。
++ 在这里，这种假装在两端都有类型。
++ RPC 接口是一个普通的特质，其方法标记为 `@rpc`。
++ 由这一个定义，*服务器*把传入的调用分派给一个实现，而*客户端*桩把方法调用转换为线上消息。
++ 这适用于基于 HTTP 的 [JSON-RPC 2.0](https://www.jsonrpc.org/specification)，以及基于 HTTP/2、使用 [Protocol Buffers](protobuf.md) 的 [gRPC](https://grpc.io/)。
+
+@ 0 4 0 05d251ef412e92a419abb45ab4f9a68a
++ 在这些协议之下，是消息流的共享底层设施：[服务器发送事件](https://en.wikipedia.org/wiki/Server-sent_events)，以及*分帧*，它通过长度前缀、`Content-Length` 头部或行尾，把字节流或文本流切分为一条条消息。
+
+@ 0 1 0 0e85539c26356abc00570fd462f4991c
++ ### 关于远程调用
+
+@ 0 4 0 00c180ef443f963517d97a8a179d175c
++ RPC 协议的线上格式是机械的：方法名、参数编码、id 关联、错误封装。
++ 为每个接口手工编写它，会招致常见的偏差，客户端和服务器对某个参数的名称意见不一。
++ 代码生成器可以避免这种偏差，却又带回了语言内的[派生]所避免的构建机制。
+
+@ 0 4 0 04868e8f304eb057009698858c3cbe50
++ 在这里，两端都从特质派生。
++ 特质是唯一的事实来源。
++ 一个宏读取其 `@rpc` 方法、它们的参数名和类型，并生成分派代码和桩代码，其编码在构造上就是一致的。
++ 客户端和服务器不可能对它们共享的方法产生分歧，这就是构造即[正确](../../philosophy/correctness.md)。
+
+@ 0 2 0 0044493e8229c6c90bbd93eca1ec2429
++ 一切都来自 `soundness` 包，再加上跨越线路的字节所用的编码，最后一个导入让示例能够打印其结果：
+
+% 2 1 0 079793f79097ed5710291a47e9771fb8
+
+% 0 1 0 1bca28db88d8e18d0fbcefeaacfc679c
+
+% 0 1 0 0db1a0ecc5cc04ab14e285e7be2d415a
+
+% 0 1 0 0d72380027637f36161a75b41303b8f1
+
+% 0 1 0 043dfcd8bd81c19b0632f778285bd52b
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 1 1 0 02a8d4cb9fa86f7a19de906d90204517
+
+@ 0 1 0 0e74850a5892ceff0c5a66db76620a81
++ ### 接口
+
+@ 0 1 0 02078a7832a29a4e065ae848a647017f
++ RPC 接口是一个由带标注的方法组成的特质，载荷使用 case class：
+
+% 2 1 0 0483ac200eb828c318443570ca8e98f8
+
+% 0 1 0 0fab1938df50230f128efdb61ef2f135
+
+% 0 1 0 0f04079b5eb86e981af354278d159697
+
+% 0 1 0 1e4d25440edd14881b699ac1475b3d4a
+
+% 0 1 0 076f931dd18fac7f176077f0872a2c00
+
+% 1 1 0 12d32087e2dfe5471e8dfce54e8cc64d
+
+@ 0 2 0 058ba10c74fa12bf07ce844dc1048a74
++ 返回 `Unit` 的方法是一个*通知*。
++ 它是发后即忘的，不期待响应，这是 JSON-RPC 规范所做的区分。
+
+% 0 1 0 19c254993f82fd3704ecdb3757aa1f6d
+
+@ 0 2 0 1aba60549336ab02079d94306f76bc5c
++ `JsonRpc.serve` 把一个实现变成一个分发器，可以放在任何传输层之后，通常是一个 [HTTP](http-server.md) 处理函数：
+
+% 2 1 0 153673ee5a7b49210b8120af7847a253
+
+% 0 1 0 087428175a8356e40deac13fc8194beb
+
+% 0 1 0 1c9ca5336eb0c09906535868eaead6c6
+
+% 0 1 0 1b340ee4f9d4aa5605cbd0f07ee92f2e
+
+% 1 1 0 000be0858f2f5dd1163803b96a67df10
+
+@ 0 2 0 1e5d948c01b1866c19922c5d636c51d0
++ 分发器是一个从请求 `Json` 文档到[可选]响应的函数。
++ 通知不产生响应。
++ 路由处理函数用请求的正文调用它：
+
+% 2 1 0 11b7f91fb731994d1a33ea63d313d1cf
+
+% 3 1 0 1bebf01f927ddeda0826da277aef1e60
+
+% 4 1 0 024d17106aa88d9006c0318bdc67a5af
+
+% 0 1 0 026901931200bf591262a034768d6b95
+
+% 0 1 0 0c71c3295d9a8c521734e39d9ae38460
+
+% 0 1 0 02b8916a5bbe062110c29566c0013da2
+
+% 1 1 0 1656bfdf708d97730f3eb3b3fbf3f72e
+
+@ 0 2 0 1e277a633aea3f6317ff65931854c73d
++ 在调用方，`remote` 从同一个特质制造出一个客户端。
++ 它把每次调用作为一个请求发送到该 URL：
+
+% 2 1 0 17ae543a9288198112652d4ad2d4cae4
+
+% 3 1 0 1556999c7f5a95f9154ed0433291ad14
+
+% 4 1 0 028fb611ba6816d8064837cee8e314bf
+
+% 0 1 0 0222c0b25d9c91bd0cdaed58cf7da29b
+
+% 0 1 0 1fdff17c321725490f051bf9abc7d833
+
+% 1 1 0 08dcd545b175c3170237148a4f45d786
+
+% 0 1 0 166d528ce6a687e417ad2e1f82d0c2bd
+
+@ 0 4 0 12deeda1c4441c8609ed071cbfcd0e05
++ 同样形状的特质也适用于 gRPC。
++ `Grpc.Channel` 在一个 [HTTP/2](http-server.md) 连接上打开，`Grpc.remote` 派生出桩。
++ 返回值的方法发出一元调用，返回 `Stream` 的方法发出服务端流式调用。
++ 载荷是 Protocol Buffers 消息：
+
+% 2 1 0 1331bda66acee3f103a165f0fefc40da
+
+% 3 1 0 09f71529c0d2f84c08d2b7c117e82cb7
+
+% 4 1 0 1fcd138a6f6fd6141d6971735ee0cb5b
+
+% 0 1 0 10d199dc1f673997065b6030312b5591
+
+% 0 1 0 0ef43ebb468b6866066a6976c6eee4e9
+
+% 0 1 0 10b23da8489c5a5010fd6d3e77471a89
+
+% 0 1 0 07e2cd564ae26ae60d2bca9b2ff8480e
+
+% 0 1 0 11d5de95cbbb427e19f1f566cf419196
+
+% 0 1 0 1ee4229ff0327da31782794707d71a55
+
+% 0 1 0 066237b90393a95d0d3e35899c51f8b0
+
+% 0 1 0 041b32b1d11c02fd012fc7965cffa8ab
+
+% 0 1 0 1cb90ba8eef648cd0769fc57409ff7ac
+
+% 1 1 0 07f38762941c7af41d701fa8f2a9e3f6
+
+@ 0 2 0 0ace40869c202a29035bf3c58caa70ab
++ 非 OK 的响应会抛出一个 `Grpc.Error`，它以有类型的值携带规范的状态码，例如 `NotFound` 或 `Unauthenticated`。
+
+@ 0 1 0 171e9e42aaeca50c0ac90b55493019ad
++ ### 服务器发送事件
+
+@ 0 4 0 0dc7d0384d2c41c70011295a730a6c93
++ 一个 `Sse` 值是 SSE 流中的一个事件，带有其事件名、数据行、id 和重试间隔。
++ 由它们组成的流以 `text/event-stream` 提供。
++ `Sse.Source` 缓冲事件，并从客户端最后看到的 id 开始重放它们，这正是该协议所要求的重连行为。
++ 最后看到 id 为 `0` 的事件的客户端会收到下一个事件：
+
+% 2 1 0 119d683d54e0c3cb08192ed5a8bf39a4
+
+% 3 1 0 0b3abbf02456176d093204889d7877f0
+
+% 4 1 0 176388ad730b2b631c321ed4bfaa6216
+
+% 0 1 0 0a36da4aa286f3ac0ac2fc44e153f3e5
+
+% 0 1 0 0fa84890aac9f8920d00e60acf79b85c
+
+% 0 1 0 034540fc98568f3a0cf7695481f2ab4a
+
+% 0 1 0 0f7e367de0e41acb0340e57a1f321cc4
+
+% 1 1 0 1a22b9625aa9740d03db38d41914eebe
+
+@ 0 1 0 17e9ce2f834785f50b5a3be4fb0bfc62
++ ### 分帧
+
+@ 0 2 0 051a8c229e536ab0113a6f35e136d62b
++ 原始流中消息的边界由 `frames` 恢复，它指明所用的约定：
+
+% 0 1 0 0a7c55b4c0ac40601a46d9fdcd155626
+
+@ 0 9 0 10b51eeb300581cf074a498eeea076f7
++ column  约定
++ column  分帧对象
++ column  每条消息是
++ row  `LengthPrefix`  `Data`  一个四字节大端序长度，后跟该数量的字节
++ row  `ContentLength`  `Data`  一个 `Content-Length` 头部块（LSP 使用这种方式），后跟该数量的字节
++ row  `CrLf`  `Text`  以 CRLF 结尾的一行
++ row  `Linefeed`  `Text` 或 `Data`  以单独换行符结尾的一行
++ row  `CarriageReturn`  `Text`  仅以 CR 结尾的一行
++ row  `Grpc.Framing`  `Data`  一个标志字节和一个四字节长度，后跟该数量的字节
+
+% 1 1 0 068be8d2c303b4991ea7f598e5c5bdb5
+
+% 2 1 0 08a7f2ed1d747c8615a9dad5db38053c
+
+% 0 1 0 10433ba4c17f00910151452177ee80fe
+
+% 0 1 0 1754adb1bb1142260a1ca3919f81cb55
+
+% 0 1 0 1083a43622bd99501a903ebbe97b0b12
+
+% 1 1 0 19e6bdbdd95b7a400b805584b1eaaa7f
+
+% 2 1 0 1525a46c87e9e0571e7d21b8e7c42b7a
+
+% 3 1 0 04c049ea837a3e4c17c50ffc346d11a6
+
+% 4 1 0 1025778e8f9b9a8b0fdea80a22512f3a
+
+% 0 1 0 04863fe2239de1b41be9cb544b7a3a33
+
+% 0 1 0 0ce96c1771fc060e16184992666cd079
+
+% 0 1 0 1a72e27fde7bd20512d7ded8adff7f8e
+
+% 1 1 0 155b6d5a0682f1ce0403f7b7944b858d
+
+@ 0 1 0 1de935e186b6820e1165f4230c66caed
++ gRPC 自己的分帧 `Grpc.Framing` 也以同样的方式使用。
+
+@ 0 6 0 1e594ebc317a39121acf242f10112498
++ 承载 BinTEL 消息的 `Duplex`，例如守护进程基于 TLS 的协议，或经由 UNIX 域套接字连接本地工具的协议，通过指明它读取什么、发送什么来进行 `framed`。
++ 每次 `send` 写入一条带长度前缀的记录，其正文是该值的 BinTEL 编码。
++ `messages` 把对端的记录读回为值。
++ schema 在连接被分帧时由两个类型派生一次，而不是每条消息派生一次。
++ 一端的 `Framed from Reply to Request` 与另一端的 `Framed from Request to Reply` 相对接：
+
+% 2 1 0 16ae21bdca9e134c016207268a7bde21
+
+% 3 1 0 02acd111fc52af9d1a90ac9689ff0cff
+
+% 4 1 0 0f2f4adf2ecd9eff03a6617feb19d4e1
+
+% 0 1 0 18e20e64f0fa9ff5112a5b04181ee3bd
+
+% 0 1 0 0612585c9771caeb117cd1299ba8ef59
+
+% 0 1 0 10d8428c3d7a1af1003b6ae3a90e56c0
+
+% 0 1 0 0964167350c5f0b10c8c8de78048e884
+
+% 0 1 0 0fc8c1e8576e14df086997fc2e583b52
+
+% 0 1 0 1d19443449768c671c8443518df0c6fc
+
+% 0 1 0 0b33234595abbc9a15ddb0e3f756244f
+
+% 0 1 0 19b29527b09110720cb5905837fda525
+
+% 0 1 0 01116e05178d8d7813c2922f33e7111d
+
+% 0 1 0 16ebc3d39ee965c91bea8dfdfcf75c99
+
+% 1 1 0 1fdc31f62156a3e90665f98552fe622c
+
+@ 0 2 0 19c835d7873852b21852529dea82bb36
++ 截断的记录会抛出 `Framing.Error`，而正文不是预期消息时会抛出 `Bintel.Error`，两者都在读取记录时抛出。
+
+@ 0 3 0 0c1ccc53a76aef7c076f6dce9c5bae17
++ 分帧与字节如何到达无关。
++ 跨三个数据块拆分的消息、位于同一个数据块中的两条消息，以及没有终止符的最后一条消息，都能得到处理，因为分帧器保存自己的位置，不对数据块的边界做任何假设：
+
+% 2 1 0 01c205ecb5caf3cb02dc071c7bf103ed
+
+% 3 1 0 19368150f1781a8403de4da95dcb55bb
+
+% 4 1 0 05793a475f874a82196f3ef72eecad96
+
+% 0 1 0 19c47730946efed6150c5d606d8f4a12
+
+% 1 1 0 1f5bb00fa8ec4b9516df626b9f14017e
+
+@ 0 2 0 08352df71f76c2391da28ad86d5dec7f
++ 截断或格式错误的帧会抛出一个指明问题所在的 `Framing.Error`，因此协议故障是一个诊断结果，而不是一次挂起。
+
+@ 0 1 0 1b9dd92133c5c1690e1232a54346dbdc
++ ### 验证线上格式
+
+@ 0 5 0 1f27a3907a2d1c8903f10c271c71a027
++ 只与自身做往返测试的协议实现证明不了什么。
++ 两个相互匹配的缺陷看起来与正确完全一样。
++ 因此，HTTP/2 和 gRPC 编解码器除了做往返测试外，还要对照*黄金字节*进行检查，即每个帧必须序列化成的确切八位组，它们在测试中写明。
++ gRPC 消息的分帧是一个标志字节加一个四字节长度，编码器会被检查是否恰好产生这些字节：
+
+% 2 1 0 0464c6a4a40586221792f03a0aa880c5
+
+% 3 1 0 00e935375d3943000ba55d5dc9a53f00
+
+% 4 1 0 084733291598d0a2058f956987f66a15
+
+% 0 1 0 0b21de5890a84d8d05926f25583daec4
+
+% 0 1 0 1b158037ce0151ee0dcf4ebbb7456ee1
+
+% 1 1 0 0b41648e8e767f501e398b971fee1f6b
+
+@ 0 4 0 10b8cbabb93a0a4200138136a94ba72a
++ HPACK 的头部压缩针对 [RFC 7541](https://datatracker.ietf.org/doc/html/rfc7541) 附录中的每个示例进行了验证，包括使用和不使用 Huffman 编码的情况，而 `Huffman` 编解码器则针对规范中列表给出的字符串进行了验证。
++ 凡是规范公布了测试向量的地方，实现都以它们为衡量标准。
+
+@ 0 1 0 0a15ebad305c934c1527dd3a42e83d7a
++ ### 相关
+
+@ 0 7 0 107ab3226dabd824037d2e3eaeea929c
++ - [HTTP 服务器](http-server.md)托管 JSON-RPC 分发器，以及 gRPC 运行于其上的 HTTP/2。
++ - [HTTP 客户端](http-client.md)承载 JSON-RPC 桩的请求。
++ - [JSON](json.md) 和 [Protobuf](protobuf.md) 编码载荷。
++ - [TEL](tel.md) 介绍 BinTEL，即分帧后的 `Duplex` 所承载的内容。
++ - [套接字](sockets.md)介绍 `Duplex` 和 `Endpoint`。
++ - [MCP](mcp.md)、[ACP](acp.md) 和 [LSP](lsp.md) 是构建在 JSON-RPC 之上的协议。
++ - [容器](docker.md)通过 gRPC 与 containerd 守护进程通信。

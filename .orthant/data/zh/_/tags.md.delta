@@ -1,0 +1,148 @@
+orthant 2 language
+
+@ 0 145 0 1eac3b5143d22de705f5ec848ba3f436
++ abacist: 复合单位 混合基数 时间分解 量
++ acyclicity: 图 dag 有向图 偏序集 graphviz dot 子图
++ adversaria: 注解 元数据 反射 编译时反射
++ ambience: 环境变量 系统属性 配置 xdg 目录 环境
++ anamnesis: 数据库 实体 持久化 存储 数据访问
++ anthology: scala编译器 编译 程序化编译器 诊断信息
++ anticipation: 集成 类型类桥接 抽象类型类 跨模块
++ aperture: 打开 创建 作用域资源 句柄 能力 授权 模式
++ apoplexy: openapi swagger api规范 rest schema
++ archimedes: mathml 方程 数学记法 渲染
++ austronesian: pojo java互操作 序列化 类加载器隔离
++ aviation: 时间 日期 日历 时区 iso8601 rfc1123 节假日 闰秒 tzdb
++ baroque: 复数 数学 虚数 代数
++ beneficence: 构建插件 发布 制品 分发
++ bitumen: tar 归档 pax tar包 unix权限
++ breviloquence: cbor 二进制json 简洁二进制 序列化
++ burdock: 引导 安装程序 自安装程序
++ cacophony: 音频 声音 aiff wav 播放 录音 立体声 波形
++ caduceus: 电子邮件 smtp mime 发件人 附件 信封
++ caesura: csv tsv dsv 电子表格 工作表 分隔值
++ camouflage: 缓存 lru缓存 记忆化
++ capricious: 随机 随机数生成器 概率 高斯分布 伽马分布 分布 采样 种子
++ cardinality: 细化类型 数值范围 有界数值 范围
++ cartouche: 标注布局 标题 障碍物 编排器 避免碰撞 图表标注
++ cataclysm: css 样式表 选择器 关键帧 媒体查询 字体 类型安全css
++ charisma: 化学 元素周期表 化学方程式 分子 化学式
++ chiaroscuro: 差异 比较 对比 相似度 测试断言 分解
++ clavichord: 键盘 按键 键 修饰键 输入
++ coaxial: 套接字 tcp udp 多播 dns 网络 域套接字 可绑定 连接
++ concordance: 集合 拼接 可追加 可前置 连接
++ contextual: 字符串插值 插值器 类型安全插值 自定义插值器
++ contingency: 错误处理 异常 战术 恢复 校验 效应
++ corpuscular: 校验和 crc32 crc64 adler32 非加密哈希 完整性
++ cosmopolite: i18n 国际化 区域设置 语言 多语言 l10n
++ degustation: tasty api表面 api原子 检查 库标识
++ delicious: 语义诊断 编译器错误 解释 诊断信息
++ dendrology: 树形图 dag图 ascii树 可视化 树渲染
++ denominative: 序数 索引 从零开始 从一开始 区间
++ digression: 堆栈跟踪 码点 全限定类名 内省 调试
++ dissonance: 差异 myers差异 文本差异 编辑距离 变更检测
++ distillate: 解码器 编码器 类型类 转换 提取
++ diuretic: java互操作 适配器 遗留java 兼容性 java类型
++ embarcadero: docker 容器 容器运行时
++ enigmatic: 密码学 aes rsa hmac 加密 签名 pem 公钥
++ escapade: ansi转义 终端样式 颜色 文本样式 超链接 ribbon teletype
++ escritoire: 表格 制表 网格 制表符 终端表格 列对齐
++ espionage: acp 智能体客户端协议 编程智能体 ide集成 json-rpc
++ ethereal: 守护进程 ipc 后台进程 服务安装程序 客户端服务器
++ eucalyptus: 日志 日志记录 领域 日志记录器 结构化日志
++ exegesis: lsp 语言服务器协议 ide集成
++ exoskeleton: cli 命令行 应用框架 入口点 shell补全
++ facsimile: pdf cos 文档 页面树 文本提取 注解 书签
++ frontier: 隐式 given搜索 编译时反射 枚举
++ fulminate: 错误消息 诊断信息 快速失败 结构化消息 国际化消息
++ galilei: 文件系统 io 文件 目录 符号链接 卷 posix
++ gastronomy: 哈希 摘要 sha256 md5 crc32 feistel 校验和
++ geodesy: 地理定位 罗盘 坐标 方向 地理 基本方位
++ gesticulate: mime 媒体类型 multipart content-type 资源
++ gigantism: 宏 元编程 编译时 scala编译器内部
++ gnossienne: 引用 外键 实体引用 可解析
++ gossamer: 文本 字符串 文本工具 十进制格式化 双向文本 unicode 连接
++ graffiti: 页面 范式 html页面 主视觉 报头 面包屑 版末题记 网站图标 仪表盘
++ guillotine: shell 进程 子进程 命令执行 posix sh
++ hallucination: 图像 png jpeg gif bmp 光栅 图像io
++ harlequin: 语法高亮 源代码 词法分析 scala解析器
++ hellenism: 类路径 类加载器 jvm 资源 jar
++ hieroglyph: unicode 编码 字符编码 utf8 字素 文本编码
++ honeycomb: html html5 dom 类型安全html 标签 属性
++ hyperbole: tasty scala编译器 内省 ast 宏调试
++ hypotenuse: 数值 溢出 除法 整数运算 有序
++ imperial: 目录布局 主目录 基础目录 文件系统布局 xdg
++ inimitable: uuid 标识符 guid
++ iridescence: 颜色 色彩空间 rgb cielab hsl srgb 调色板 主题 色度学
++ jacinta: json 解析器 序列化 json-pointer json-schema schema校验 动态访问
++ kaleidoscope: 正则 glob 模式匹配 扫描器 正则表达式
++ larceny: 编译器插件 编译错误 测试 编译时测试
++ legerdemain: 表单 部件 html表单 输入 字段
++ locomotion: protobuf 协议缓冲区 线上格式 二进制序列化
++ mandible: 字节码 jvm 类文件 class文件
++ mercator: 函子 单子 应用函子 类型类 函数式编程
++ metamorphose: 排列 组合数学 阶乘进制 lehmer
++ monotonous: base64 base32 十六进制 二进制编码 基数编码 序列化
++ mosquito: 矩阵 线性代数 数学 向量
++ murmuration: 集合 类型类 可遍历 可折叠 可映射 可过滤
++ nomenclature: 名称校验 类型级 约束 细化类型 字符串字面量类型
++ obligatory: rpc json-rpc sse 服务器发送事件 分帧 长度前缀 协议
++ octogenarian: git 版本控制 git仓库 提交 ssh-url
++ orthodoxy: oauth 认证 授权 oauth2 权限范围
++ panopticon: 透镜 光学组件 可组合 case-class 访问器
++ parasite: 异步 线程 并发 任务 promise 守护进程 监管
++ perihelion: websocket 帧 ws协议
++ phoenicia: 字体 排版 ttf truetype 字体度量 opentype
++ plutocrat: 货币 金钱 价格 金融 luhn isin 定点数
++ pneumatic: 压缩 deflate gzip zlib brotli xz lzma2 lzw
++ polaris: 二进制序列化 缓冲区 打包 解包 字节缓冲区
++ polysyllabic: 断字 liang算法 断行 排版
++ polyvinyl: 结构类型 记录 匿名记录 类型提供器
++ praxinoscope: 正则 re2 自动机 线性时间 正则引擎 redos
++ prepositional: 类型类 类型基础设施 细化类型 抽象类型
++ prescience: 分阶段执行 宏类型类 代码生成 展开时
++ probably: 测试 测试运行器 属性测试 基准测试 断言
++ profanity: 终端 tui 键盘 行编辑器 交互式 控制台
++ prophesy: 补全 动态类型 tab补全 ide建议
++ proscenium: 再导出 标准库 工具 减少样板代码
++ punctuation: markdown commonmark 散文 文本格式化
++ quantitative: 单位 量 量纲分析 国际单位制 测量 物理
++ querencia: dom 浏览器 类型化dom web界面 客户端
++ revolution: jar清单 语义化版本 版本管理
++ rudiments: 工具 核心库 双射 循环 可索引
++ savagery: svg 矢量图形 2d图形 路径 形状
++ scintillate: http服务器 servlet web框架 http路由
++ sedentary: 基准测试 性能测试 微基准测试
++ serpentine: 路径 文件系统路径 posix windows linux 相对路径 绝对路径
++ sibylline: llm anthropic openai gemini 聊天补全 工具调用 结构化输出 流式传输
++ spectacular: show 美化打印 显示 检视
++ stenography: 类型名 限定名 导入 符号渲染 scala类型
++ stratiform: tel 配置语言 记录 schema 二进制tel
++ superlunary: 分阶段执行 远程执行 多阶段编程 分布式计算
++ surveillance: 文件监视器 文件系统 文件事件 目录监控 nio
++ susurration: ssh ssh客户端 已知主机 身份 传输层 会话 远程命令
++ symbolism: 运算符 算术 类型类 运算符重载 代数
++ syndesis: mdns dns-sd 零配置 bonjour 服务发现 多播
++ synesthesia: mcp 模型上下文协议 llm ai协议
++ tarantula: webdriver 浏览器自动化 chrome firefox safari edge selenium 无头
++ tasseomancy: 图表 图形 绘图 数据可视化 svg 基准测试 条形图 折线图 饼图 直方图
++ telekinesis: http http客户端 cookie 认证 rest客户端 web请求
++ tessellate: 布局 制表符 重排 对齐 弹性布局 文本布局
++ turbulence: 流 io 标准输入输出 流式处理 响应式 行分隔
++ typonym: 类型级 类型列表 类型映射 异构 反射
++ ultimatum: 终端布局 窗格 进度条 旋转指示器 仪表 迷你图 tui
++ ulysses: 布隆过滤器 概率数据结构 palimpsest
++ umbrageous: 编译器插件 着色重命名 命名空间隔离
++ urticose: 主机名 电子邮件地址 ip地址 mac地址 端口 网络标识符 端点 dns
++ vacuous: 可选 空安全 option maybe 可空
++ vexillology: 位标志 标志 枚举 位域
++ vicarious: 目录 代理对象 类型索引 记录
++ virility: roff 手册页 man手册页 troff 文档 cli帮助
++ vivisection: 调试 jdi 断点 单步执行 dap 调试适配器 变量
++ wisteria: 派生 积类型 和类型 case-class 类型类派生 magnolia
++ xenophile: ffi 外部互操作 wit webidl typescript kotlin wasm 原生
++ xylophone: xml xml-schema 类型安全xml 动态xml
++ yossarian: pty 终端模拟器 ansi转义 屏幕缓冲区 vt100 光标
++ ypsiloid: yaml 解析器 序列化 yaml-ast 锚点
++ zephyrine: 解析器 解析 游标 发射器 稀疏格式
++ zeppelin: zip 归档 zip文件 压缩

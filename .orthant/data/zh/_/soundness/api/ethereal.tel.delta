@@ -1,0 +1,1279 @@
+orthant 2 language
+
+% 0 1 0 0f04ec4b9ac2d4270a232409219e1f6b
+
+% 0 1 0 056c57bc4ef7bf5506a0d19322e2ba39
+
+% 0 1 0 0b5938ce7315323607e1922cbc4d93e2
+
+@ 0 1 0 1cd070e7e6856e821e25c6f6561fc98c
++ info   守护进程化的命令行应用程序：一个预热的 JVM 通过原生启动器为每次调用提供服务
+
+% 0 1 0 0ca6d61ddd9511ea1cdae38f1414f6fe
+
+@ 0 6 0 094b1663d30bbd2106dc2822098a8983
++     _Ethereal_ 把命令行应用程序变成一个**守护进程**：一个在首次调用时启动并常驻的 JVM，此后的每次调用都由一个小型原生**启动器**分派给它，并以原生工具的速度返回，JVM 的启动开销及其即时编译器的预热只付出一次，而不是每次运行都付出。
++     应用程序的代码与普通 CLI 相同：一个 `application` 代码块的主体，只是改用 `cli` 包裹。
+
+% 2 1 0 1dd141755db302680a80b90fcbf43d75
+
+% 3 1 0 09ba168a1aa797dc0ad97e45fd22a0dc
+
+% 4 1 0 0370b28a3281ffcc0db58d694d6d9575
+
+% 5 1 0 1466603a795504f006a7c95689d1905c
+
+% 7 1 0 1187a29642ba00cf00485f2af9d470ca
+
+% 8 1 0 138f34899bd26cbb1394297dd19133ce
+
+% 9 1 0 192f59ba094d137916b61d42409da0de
+
+% 10 1 0 17bb1afae4ea1b7d0fb8f3e22abd56ce
+
+% 12 1 0 066bbd17daaa269e0a955b019af44fcc
+
+% 13 1 0 0f8e0627f0ee786c0ec5ff12a74cd3ab
+
+% 14 1 0 0a29c91b98467a37109c6b43db6de4c8
+
+% 0 1 0 1135438ce87c7c5f098050a294733649
+
+% 1 1 0 1186081b12d6a74a1622b23bd12c83d9
+
+% 2 1 0 1e66fc695cf9d6eb1952e4953757c3d6
+
+@ 0 11 0 0447c687c3b9ba981688a3c0dae838a4
++     不同之处在于进程模型。
++     普通的 `application` 每次调用就是一个进程，其参数、环境、工作目录、标准流和信号都属于该进程本身。
++     在 `cli` 下，一个进程——守护进程——同时为许多调用提供服务，而上述这些*没有一样*是全局的：每次调用都通过自己的连接到达，带着自己的参数、自己的 `Environment`、自己的工作目录、自己的 stdin、stdout 和 stderr、自己的退出状态和自己的信号，全部由启动器转发，并且全部通过与普通应用程序相同的 `arguments`、`Out`、`Err`、`Exit`、`trap` 和 `Environment` 读取。
++     Scala 自身的 `println` 写入守护进程的 `System.out`，到达不了任何用户：输出要经过 `Out` 和 `Err`，它们解析出该调用的 `Stdio`；而写入 `System.out` 的库可用 `Stdio.divert` 重定向，它跟随的是线程及其下派生的任务，而不是 JVM。
+
+@ 0 13 0 1b04aee981e01c531655ac7a21b4ed85
++     启动器是 `propensive/xek` 发布的 Rust 运行器（`curl -fsSL https://propensive.dev/xek | sh` 可安装它），`xek build mytool.jar` 把平台的桩、一条配置记录和应用程序 JAR 合并为一个可执行文件。
++     对该可执行文件的一次调用就是通过 Unix 域套接字与守护进程建立的一个连接，承载 `ethereal-launcher` TEL schema 的 BinTEL 文档（`Launcher.schemaText`，即资源 `ethereal/ethereal-launcher.tel`）：先是一个 `init` 文档，包含该调用的参数、环境、工作目录、用户、终端标志和描述符，然后是在每个流各自的额度下传输的各个流的 `data` 数据块、`signal`/`signal-ack`、`mode`、`run`/`exited` 和 `closed`，直到守护进程的 `exit-status` 结束该会话。
++     每个文档都带有 schema 的 33 字节签名，因此基于不同契约构建的启动器和守护进程会在第一个文档时就互相拒绝，而不是互相误读；`Launcher.Message` 是镜像该 schema 的枚举，`Launcher.encode`/`Launcher.decode` 是其编解码器。
+
+@ 0 16 0 1417c38defe346dc06c6fae205e131b7
++     **守护进程**由启动器在 `/` 中、以 umask `077`、用一个经过清理的专属环境启动，这样守护进程的状态就与碰巧启动它的是谁毫无关系：读取 `environments.javaBaseEnvironment` 或 `workingDirectories.javaBaseWorkingDirectory` 的代码看到的是这一状态，而不是调用的状态。
++     调用自己的环境和工作目录是 given `environments.daemonClientEnvironment` 和 `workingDirectories.daemonClientWorkingDirectory`（需按名称导入——`import soundness.*` 不导入任何 given），而守护进程自身启动时所带的环境是 `DaemonEnvironment`，即 given `environments.daemonEnvironment`。
++     守护进程把状态保存在 `$XDG_RUNTIME_DIR/<name>/`（或状态主目录）下：一个 `socket`、一个 `pid` 文件、一个记录其启动来源启动器的 `build` 文件，以及一个指明其所用 schema 的 `acceptance` 文件；它以 `ethereal` 为名把 `DaemonLogEvent` 记录到 syslog，在空闲六小时后、状态文件被删除时、启动器被重新构建时或被要求时自行退役，而内置的 `'{admin}'` 子命令可报告其 pid（`pid`）、结束它（`kill`）或排空它（`shutdown`：不再为新的调用提供服务，进行中的调用完成后退出）。
++     在 shell 中设置 `ETHEREAL_DEBUG=1`，可让启动器把它所做的事情跟踪输出到 stderr。
+
+@ 0 8 0 058b0cdab6938a88148db22f10be6d9a
++     在代码块内部，`resident` 是调用对守护进程的句柄，一个 `Resident`：哪些流是终端（`cliInput`、`cliOutput`、`cliError`）、调用可执行文件时所用的名称、umask、终端的实时尺寸、并发调用之间带类型的消息 `bus`、请求启动器切换到规范模式的 `cooked` 和 `concealed` 代码块、在客户端终端上运行编辑器或 `sudo` 的 `terminal`，以及排空守护进程的 `retire()`。
++     `Installer.install` 把可执行文件复制到 `PATH` 上，而 `Upgrade` 暂存一个签名的替换版本，启动器在下一次调用开始时验证它并将其换入，不会打扰正在运行的守护进程的客户端。
+
+@ 0 7 0 19b1a5d1c0b794a01f7a3870089a9403
++     该库是一个源集 `ethereal.core`，面向 JVM；它构建于 `exoskeleton`（CLI 机制：`Cli`、`Executive`、`arguments`、`execute`、`Help`）、`coaxial`（域套接字）、`stratiform`（BinTEL 协议）、`surveillance`（监视状态文件）、`galilei`、`guillotine`、`profanity` 和 `turbulence` 之上。
++     第二个源集 `ethereal.example` 包含测试和教程使用的 `run` 和 `fixture` 入口点。
++     所有内容都导出到 `soundness` 总括包，其 `environments` 和 `workingDirectories` 选择包与总括包自身的同名包合并。
+
+% 0 1 0 0e061a3fa7b2d06d12605d986a235875
+
+% 0 1 0 0a62337f801f53a70065f038ab643aa2
+
+% 0 1 0 0cbbe490b6f76ec9138d91f21a26c8b6
+
+% 0 1 0 0617736c3b31639710ab6ae532f58561
+
+% 0 1 0 19d85e7a1e11b43604e88c751eb60ee6
+
+@ 0 1 0 0b4be2c42650d47e01e5828838903a6f
++ entry .cli   把主体作为守护进程运行：一个常驻 JVM，在各自的连接上为每次启动器调用提供服务
+
+% 1 1 0 1a7ffda3d67aed571cc66d0a9b511394
+
+@ 0 9 0 1ed23e248120447e1705aadf77f8e035
++       `cli` 是 `application` 的守护进程化对应物：相同的主体、相同的补全结构、相同的 `execute`、`arguments`、`Out` 和 `Exit`，但由一个常驻的进程运行，它为可执行文件的每次调用提供服务，直到退役。
++       它自己不接受参数——启动器会转发调用的参数、环境、工作目录、标准流、终端尺寸和信号——代码块在每个客户端连接上运行一次，以该调用的 `Resident over bus`、执行器的 `Interface`（即 `Cli`）、它的 `Environment` 和一个 `Monitor` 作为上下文值，因此 `resident`、`arguments`、`execute`、`Environment[Text](t"HOME")` 和 `task` 在其中都能解析。
+
+% 2 1 0 113a1387f163c5b91f60067f2c94c579
+
+% 3 1 0 10235eb385f2eab201268197cb12fb3c
+
+% 1 1 0 196763793b32db02032b83bb4b7efc71
+
+@ 0 1 0 0bc35960eb1a6b281828c532651f8200
++         label 一个普通的命令行应用程序
+
+% 1 1 0 14d81defea7e368c1113f8119bedec4e
+
+% 2 1 0 082bef5c54688db81863e54023fc7d6f
+
+% 4 1 0 0dc6f67ee07c27c21512b9d8a8872e01
+
+% 5 1 0 06ebe32c52b9dda7007d5f68eb9ba191
+
+% 6 1 0 0bef36cbefe69c59098bed7bfacee5e5
+
+% 7 1 0 19de36845bec704702ba56534f625a38
+
+% 9 1 0 061b41740448234306fc4a82d62078c7
+
+% 0 1 0 14b9227aa498132317b3b55d44cd55bd
+
+% 1 1 0 136a1a9266ba28f20d03424d2ef88689
+
+% 2 1 0 16f9ded4702b3b7512bc117caaded41d
+
+% 3 1 0 07bb325edd1c28f41dabab0fb41c8cae
+
+% 4 1 0 0cfb7a90e1cba44b15869fecc46389ef
+
+@ 0 1 0 141cffdc7d8cecd80fbe63aa20c84852
++         label 同样的主体，常驻运行：用 `cli` 代替 `application`
+
+% 1 1 0 0792ab4ea12f514c06f1ef0aab818e0e
+
+% 2 1 0 1e56ceeced7f829e042322ab01a16aac
+
+% 4 1 0 17092bc4c5951c8d14a62a237454a151
+
+% 5 1 0 0c2eb30042d9fa08014c588380887921
+
+% 6 1 0 10a2c753d3d244950401b60d99079e6e
+
+% 7 1 0 1f2239a5a467004a1bb145d1ddb7f27f
+
+% 9 1 0 0a1169af22ccdc2311d65b178f856ead
+
+% 10 1 0 13022d9f3a67e66703a95d156504974a
+
+% 11 1 0 0a9a0fd8b626dca40f110e883b11f4d6
+
+% 2 1 0 020c52e3298a905e1f508018ec71e9df
+
+% 3 1 0 168f3c8e3655688c067c4df22137bd1e
+
+% 4 1 0 15a3dff6dbc2c7ff131be1a28f9be02b
+
+@ 0 1 0 192b25e0b0c43fd21dd5ecaf0a40b9fc
++         label 调用通过 `resident` 了解到的客户端信息
+
+% 1 1 0 1c14f6f9c802ed5204bc94072e752696
+
+% 2 1 0 0a3d48b66e8bae970c4f37e29ab61579
+
+% 4 1 0 170db18c8b6d10f20ef1bc4a5f7aacea
+
+% 5 1 0 12ec38e4d7af24c51ffb842aeec86448
+
+% 6 1 0 11368cbe75ed4f801f43c597ee43de97
+
+% 7 1 0 117d8b5203e964421c1820f7872bb628
+
+% 9 1 0 1862a5de0200678e093407f0a68d29be
+
+% 10 1 0 044d227767c427b411350221f7a6a62b
+
+% 11 1 0 1449f90b78e446a204151ee322256cc8
+
+% 0 1 0 16a3fb1b0d8ed65b080f95ed50589537
+
+% 0 1 0 0d95e6b69489f05e17c83923d9ef94bc
+
+% 0 1 0 0680d2fcf2b97e811fee575a94d6203e
+
+% 1 1 0 1b16da8b0cefb45804d54fb997330962
+
+% 2 1 0 134a955fb5bcae2212831bda88afea82
+
+@ 0 1 0 0e0db99c8b4b10141954340f4f578fd3
++         label 守护进程的并发调用之间带类型的总线
+
+% 1 1 0 06817cfabb5dccb316515f84d53ab8e3
+
+% 2 1 0 1840479683d14c181d5325b82c51ac13
+
+% 4 1 0 06869070e8589a7e0511f80eacede402
+
+% 5 1 0 0bb7b500632b5fa201a7d6fd86aa2ae6
+
+% 6 1 0 1ffbb5dd479822961a4222ffb05bd23e
+
+% 7 1 0 04c62ed1e94e258c1b0f1a3e345482fa
+
+% 0 1 0 179a94d0634727f80468eeb81fa8e565
+
+% 0 1 0 0f64eee0d043e81a14dc61009cccb155
+
+% 2 1 0 0dff69b1286239941680e2f33dd8a7d7
+
+% 0 1 0 1f1920d750b6da0611198783873a6dfe
+
+% 1 1 0 171a66ec35fd809802815031a5ae8c8b
+
+% 0 1 0 0744bf5df021563a0f6fb35083300322
+
+% 1 1 0 0d322f2feeb557f91bd4d387397e80ad
+
+% 2 1 0 00f298891c0e70d00a013f732fcaa511
+
+% 1 1 0 1d0872aa195bc1e90f7bf2c14e2bf418
+
+% 1 1 0 1a277342ea9dfdc5113023e785963c91
+
+@ 0 9 0 059e22eb0633b1a20fd1b4c9e3cfda43
++       类型参数 `bus` 是守护进程的各个调用通过 `resident.bus` 和 `resident.broadcast` 交换的消息的类型；它是 `Matchable`，对于不交换消息的守护进程则不予应用。
++       `cli` 需要的上下文值与 `application` 相同——一个 `Executive`（用于 Tab 补全的 `executives.completionsExecutive`，这是唯一能产生 `resident.help()` 的树的执行器）、一个 `Interpreter`、一个 `Threading` 和一个 `Backstop`——外加一个 `Watcher`，它用来监视自己的状态文件（默认值来自 `Watcher` 的伴生对象）。
++       代码块运行在连接的任务上，因此它只能捕获*持久的*能力——守护进程的监视器、日志记录器和标准流；独占的资源要在代码块内部打开并持有。
+
+@ 0 11 0 0db5f04d04ae9af2113b893e80b30ff3
++       首次调用会启动守护进程：启动器以属性 `ethereal.name`（可执行文件的名称）、`ethereal.script`（其路径）、`ethereal.user.id`/`ethereal.user.name`、`ethereal.startTime`、`build.id` 和 `ethereal.environment=stdin` 启动 JVM；`cli` 从标准输入读取 `DaemonEnvironment`，写入 `acceptance` 文件，绑定套接字，写入 `build` 和 `pid` 文件（启动器在连接前会等待它们），并启动一个任务来监视这些文件和启动器本身，这样被删除的状态文件或被重写的可执行文件会迅速结束守护进程，而不是让它继续提供失效的空操作服务。
++       不经启动器运行的 JVM——`java -jar mytool.jar`——没有 `ethereal.name`，会打印 _This application must be invoked through its XEK launcher_ 以及应运行的 `xek build` 命令行，并以状态 1 退出。
+
+@ 0 7 0 1f86507955f52d8c17c218df09db895d
++       此后每个连接都以一个 `Launcher.Message` 开始：`Init` 启动一个 `Session`，并用为其构建的 `Resident` 运行代码块；`Shutdown` 排空守护进程；`Verify` 回答启动器文件的内容是否仍与守护进程启动时相同，若不同则排空守护进程；其他 schema 的文档会被记录为 `DaemonLogEvent.ProtocolMismatch` 并关闭连接；不是套接字所有者的对端，或来自其他用户的 `Init`，都会被拒绝（`PeerRefused`）。
++       在守护进程排空期间到达的调用会以退出状态 2 被拒绝。
+
+@ 0 11 0 0a9fedaab3db1b000636f2d73719e4cc
++       无论代码块做什么，会话都以一个退出状态结束：`Egress.Error`（向读取方已离开的流写入，例如 `head` 退出后的 `mytool | head -1`）以状态 141 结束调用，正如 `SIGPIPE` 会结束一个进程；其他任何 throwable——包括 `java.lang.Error`——都会被记录为 `DaemonLogEvent.Failure` 并交给 `Backstop`，由它在调用的 stderr 上报告并选择状态。
++       守护进程在空闲六小时后退役（`DaemonLogEvent.IdleTimeout`），而一次排空——来自 `'{admin}' shutdown`、过期判定或 `resident.retire()`——会等待进行中的调用，最多三十秒，然后退出。
++       不是有效 UTF-8 的参数和环境条目到达时，出错的字节会被替换为 U+FFFD，正如 JVM 本身交付它们的方式，它们的原始字节可通过 `resident.rawArgument` 和 `resident.rawEnvironment` 获得。
+
+% 1 1 0 16de7a40dc1091ed1ca1b1e7d9ab30ed
+
+% 1 1 0 0125474b7720626e1bc8d67de743cd7e
+
+% 1 1 0 1590f76bfd6415920e07ae1041e4f4a6
+
+% 0 1 0 1cbb8b9d5ba260de1002e0eaf0af00e1
+
+% 0 1 0 0fbbebc6556549f00bd2c4fc280257ef
+
+@ 0 5 0 08935edc7d73836e052222c701e7c44e
++ entry .resident   调用的 `Resident`，即 `cli` 代码块内为其提供服务的守护进程的句柄
++     `resident` 召唤 `cli` 为当前调用提供的 `Resident over bus`，使得 `resident.cliInput`、`resident.invokedAs`、`resident.cooked`、`resident.broadcast` 等在代码块内读起来很自然。
++     它是一种能力，因此结果会保留它：它不能被存储到调用结束之后，也不能传给另一个调用。
+
+% 2 1 0 19d1fd7b2f5bf9451dd8ee6173f7c126
+
+% 3 1 0 143651ed23ea923808c2670a504852e1
+
+% 4 1 0 0ef54f73748fbfcd0c9cc4bfd99aec3d
+
+% 5 1 0 0ff35aeed836a3f11aa873f9d197c27b
+
+% 7 1 0 124f72a6669fc9d909c5a30836e20b51
+
+% 8 1 0 0673885743aab533099acabf9cbce21e
+
+% 9 1 0 087f5485e47570920f9efa6ba7ef1371
+
+% 10 1 0 19ee806eadf3e4ab1e5abadae15e87a9
+
+% 12 1 0 00d25f3b303935b21f24fd58f288b351
+
+% 13 1 0 03ec2b7a0e9d3f0c1bed44c3a80e5c3c
+
+% 14 1 0 17600cdc40b0cae31c59d9264b905bb5
+
+% 0 1 0 193d8d4eefb4ddbc1ce55eaf523b30af
+
+% 1 1 0 1d1c3cbd2cd922db0c88ca1ba0aa7169
+
+% 2 1 0 0c4892d63c514f6f1bb0814d81fdbacd
+
+@ 0 1 0 0ee2c3d0b9ddfe6d00ca1bd34874452c
++ entry .Resident   调用对守护进程的句柄：启动器告诉它的客户端信息，以及守护进程的控制
+
+% 1 1 0 00623f18cd702eaa14ddaac7959e2de7
+
+@ 0 6 0 01c9296b594530b00edc5b9bc605b283
++       `Resident` 是 `cli` 为每次调用构建、由 `resident` 在代码块内召唤的能力。
++       它持有守护进程所知的关于客户端的一切——这些只能从启动器的 `init` 文档得知，因为守护进程持有的是一个套接字，而不是客户端的进程——以及守护进程自身的控制：并发调用之间带类型的消息总线、通过会话回传的终端模式请求和终端运行请求，以及排空守护进程的 `retire()`。
+
+% 2 1 0 16337afc43092d48129d0ba9504d3030
+
+% 3 1 0 012d88f32567d757061588819f013db7
+
+% 4 1 0 0e84a0f82013872d1c498136e840f725
+
+% 5 1 0 08463a5c8e639e7610851e03fec52329
+
+% 7 1 0 0418033a46c7f8330884745830c44060
+
+% 8 1 0 1ba67e9fc7fc4de7089bb0a700796073
+
+% 9 1 0 10858e52f991d002115584fdcd4ba906
+
+% 10 1 0 164a16e5c7a6a87b0e751e41c2b199eb
+
+% 12 1 0 196cbbc986aea47a1e7c3e31ce5692cc
+
+% 13 1 0 0c29253214d6cf7c1733344363d956d8
+
+% 14 1 0 0272f7dd9c4f29b216a8c62c679fd588
+
+% 0 1 0 111060f4a0fe5ea91c0bfb0fb441e5fe
+
+% 0 1 0 1bbfd5271465aba31abc1e9907c21813
+
+% 0 1 0 08cf5df4c74e4fe60c49b739ca5790ef
+
+% 0 1 0 0620f51defe09c881f52abf435b6b5bf
+
+% 0 1 0 15dcf910ff8972d31c3ebef3a9cc775c
+
+% 0 1 0 11b4fbb3cbac28de1a806ae03dd7b834
+
+% 2 1 0 15f87bc34c9b870a1997aa843275a295
+
+% 3 1 0 039b2eb04fe0e76f15a72cc7099b4036
+
+@ 0 7 0 199902a238edcbdd0fa6223920fc193e
++       它是一个 `Entrypoint`（`#script`、`#executable`、`#retire`）、一个 `Umask.Provider`（其 `#umask` 是文件系统库对调用所创建的一切所应用的值），也是一个 `Fdtable.Provider`（其 `#fdtable` 决定了来自 `mytool <(…)` 的 `/dev/stdin` 或 `/dev/fd/63` 如何打开*客户端的*描述符——它通过会话传送——而不是守护进程自己的描述符）。
++       类型成员 `#Transport` 是总线的消息类型，写作 `Resident over Message`；这是 `cli[Message]` 提供的类型。
++       作为独占能力，它不能被存储到调用结束之后。
+
+@ 0 4 0 01d62b568191a569171b3ee6e413a0f8
++       它的大多数构造函数参数是守护进程根据 `init` 文档填充的公共 `val`；其中的 thunk（`#shutdown`、`#helpThunk`、`#setMode`、`#run`、`#sizeThunk`）是 `#retire`、`#help`、`#cooked`、`#terminal` 和 `#windowSize` 背后的原始钩子，后者才是应调用的方法。
+
+% 1 1 0 1d0b26d6244456a2008fa24576efa349
+
+% 1 1 0 1869cb6cdb87dcf20e71c8116e0be18e
+
+% 0 1 0 048901eb78408994046451246fbe4a6e
+
+% 0 1 0 06cb0d549e867cb71832c928104f8307
+
+@ 0 7 0 06ce493e0628ea0b02ac7b2dce655f1a
++   entry #Transport   此守护进程的各个调用通过总线交换的消息的类型
++       抽象类型，以 `Matchable` 为上界，由 `cli` 的类型参数确定：在 `cli[Message]` 中，resident 是一个 `Resident over Message`，因此 `#broadcast` 接受 `Message`，`#bus` 产生 `Message`。
++       没有类型参数的守护进程不交换任何消息。
++   entry #bus   守护进程的其他调用广播的消息，按到达顺序
++       一个随着其他调用调用 `#broadcast` 而增长的 `Chain[Transport]`：读取它会阻塞，直到下一条消息到来。
++       调用自己的广播不会投递给它自己。
+
+% 2 1 0 1b76ba48a25eaada0161b9864c53af7c
+
+% 3 1 0 024105e7fe0b8f1d0fc641cb774be860
+
+% 4 1 0 001442c655f8b4f20dc353a6ba7d4c43
+
+% 5 1 0 09354f5a6a6f4da019fe8d3354d8a97d
+
+% 7 1 0 15f9370095ce9ce505f70c6e8488d0fc
+
+% 8 1 0 0fc8c7319a40c9201c6e5687e7e5db72
+
+% 9 1 0 0911b1c98d7bb9be1a5381570ff9f283
+
+% 10 1 0 1624780318500f391b8435d5e6584650
+
+% 0 1 0 13c480d646110f1313a35ce6fab9ad30
+
+% 0 1 0 00d10b82d2435fd90648bb39d93e748b
+
+% 2 1 0 0029d6d2a696fcc9176f502de28b6fc4
+
+% 0 1 0 162188eb6b41edaa11e6d65aaec04127
+
+% 1 1 0 18024a47fb045499101570c204cbab72
+
+% 0 1 0 1a275177d219fa5d1cfaabca4d5782ff
+
+% 0 1 0 14aee964dc17e2cf1ca13474cf7a8c6c
+
+% 2 1 0 02ec42a43d28b8b11935c50391332c1e
+
+% 3 1 0 0d0ef454b26f0c6e09f519b230c33e0a
+
+@ 0 74 0 1be0a5ef0f7766300b755f97b5499dc0
++   entry #broadcast   向守护进程的其他每个调用发送一条消息
++       把消息投递到当前已连接的、除发送者之外的每个调用的 `#bus`。
++       正在运行的 `watch` 就是这样得知另一个调用刚刚更改了配置。
++   entry #retire   请求守护进程在本次调用结束后离开
++       守护进程停止接受调用，让进行中的调用完成（最多三十秒），然后退出；下一次调用会启动一个全新的守护进程。
++       `'{admin}' shutdown` 子命令在 shell 中做同样的事。
++       它覆盖了 `Entrypoint#retire`，后者对普通应用程序什么也不做，因此针对 `Entrypoint` 编写的工具在两种情况下都能工作。
++   entry #shutdown   `#retire` 调用的 thunk：守护进程的排空
++   entry #pid   启动器报告的客户端进程的 pid
++       为用户 shell 服务的*启动器*进程的 pid，而不是守护进程的；它是守护进程已连接客户端表的键，`DaemonLogEvent.Init` 和 `CloseConnection` 都携带它。
++   entry #cliInput   客户端的 stdin 是终端还是管道
++       一个 `Terminus`：启动器报告 stdin 连接到终端时为 `Terminal`，否则为 `Pipe`。
++       守护进程自己无法判断——它的流是启动器的套接字——因此这只是启动器的报告，别无其他。
++       除非这是 `Terminal`，否则 `#cooked` 和 `#concealed` 都是空操作。
++   entry #cliOutput   客户端的 stdout 是终端还是管道
++       与 stdin 分开报告，因为两者确实会不同：在终端中运行的 `mytool > file`，其 stdin 在终端上，stdout 在文件上。
++       stdout 不是终端时，调用的 `Termcap` 没有宽度，因此什么都不会换行。
++   entry #cliError   客户端的 stderr 是终端还是管道
++   entry #executable   调用所运行的启动器可执行文件的路径
++       `init` 文档的 `script` 字段，作为 `Path on Local`：可执行文件的规范路径。
++       `Installer.install` 把这个文件复制到 `PATH` 上。
++   entry #script   守护进程所获得的可执行文件名称
++       启动器启动守护进程时所带的 `ethereal.name` 属性：命令的名称，它也是守护进程状态目录和数据目录的名称。
++   entry #startTime   守护进程的启动时间，以纪元毫秒表示
++       来自 `ethereal.startTime` 属性，没有启动器时则来自 JVM 的时钟。
++       `#started` 和 `#uptime` 将它读取为带类型的值。
++   entry #helpThunk   `#help` 背后的 thunk：执行器的帮助树，或 `Unset`
++   entry #setMode   `#cooked` 和 `#concealed` 背后的钩子：向启动器请求一种 `Tty` 模式
++       通过会话发送一个 `Launcher.Message.Mode`。
++       只有启动器能改变客户端的终端，而 stdin 不是其所拥有的终端的启动器会忽略该请求。
++       应优先使用 `#cooked` 和 `#concealed`，它们会在之后恢复原始模式。
++   entry #run   `#terminal` 背后的钩子：从命令、其参数和目录得到它结束时的状态
++   entry #invokedAs   调用可执行文件时所用的名称：调用方提供的 `argv[0]`
++       在未报告它的启动器下为 `Unset`。
++       通过符号链接以多个名称安装的同一个可执行文件可以据此分派，而所有别名共享同一个预热的守护进程；路径保持调用方书写的样子，因此要取其最后一段作为裸名称。
++   entry #sizeThunk   `#windowSize` 背后的 thunk：最近一次测量的终端尺寸
++   entry #umask   调用的文件创建掩码，如果启动器报告了的话
++       一个 galilei `Umask`，从 `init` 文档的八进制 `umask` 字段解析而来。
++       文件系统库通过 `Umask.Provider` 把它应用于调用所创建的一切，因此守护进程创建的文件具有客户端 shell 会赋予它的模式，而不是守护进程自己的 `077`。
++   entry #fdtable   客户端的描述符表，用于指明描述符的路径
++       文件系统库在打开任何东西之前都会查询的 `Fdtable`：`/dev/stdin`、`/dev/stdout`、`/dev/stderr`、`/dev/fd/N` 和 `/proc/self/fd/N` 指明的是*客户端的*描述符——0、1 和 2 是会话自身的流；描述符背后的普通文件按其真实路径；`mytool <(…)` 这样的管道在向启动器请求后作为流传送——而客户端未公布的描述符什么都不指明，无论守护进程自己的表在该编号上有什么。
++       没有启动器时为 `Unset`。
++   entry #raws   文本丢失了部分内容的每个参数、环境条目或工作目录的原生字节
++       `init` 文档的 `Launcher.Raw` 记录：在通常情况下为空，此时每个值都是有效的 UTF-8。
++       `#rawArgument`、`#rawEnvironment` 和 `#rawWorkingDirectory` 查找它们。
++   entry #windowSize   客户端终端的尺寸（列数，行数），按启动器最近一次的测量
++       在连接时以及每次 `WINCH` 和 `CONT` 时测量，因此它是实时的；调用的 `Termcap` 读取同一测量值，因此表格和换行文本会适配终端当前的样子。
++       客户端的 stdout 不是终端或未报告尺寸时为 `Unset`。
++   entry #cooked   在客户端终端处于带回显的规范模式下运行一个代码块
++       启动器在连接之前把终端置于原始模式，以便把按键转发给交互式会话；这对只想读入一行输入的命令是不对的，因为没有回显，而且 Backspace 会作为行内的一个字节到达。
++       `cooked` 在代码块执行期间向启动器请求规范模式——此时由终端驱动程序提供回显和行编辑——并在之后于 `finally` 中恢复原始模式。
++       `#cliInput` 不是终端时它是空操作，在太旧、不提供控制通道的启动器下则静默无效。
+
+% 2 1 0 15e324fb2d682549032fa0d4d813d76a
+
+% 3 1 0 0b2a3fdeb2608e0205a0286646c9ebbe
+
+% 4 1 0 1affdc3ce9ce74751183cec0a915815b
+
+% 5 1 0 1e9d0b7d64daa0fb1348f927a8a84c5f
+
+% 7 1 0 162d789a7dc434ef195131f5f67cca98
+
+% 8 1 0 07cae91c76fb2ccd156cb1ad3dc9bcd1
+
+% 9 1 0 0c2632634853399d18202bb6709f6710
+
+% 10 1 0 11a427ddd6d161c00ae86ecb1b3bd8c0
+
+% 12 1 0 1f78bdb23125e3fe0cf6cdfe0b62e4a6
+
+% 0 1 0 0c88ac1c1f2fef7e0fa77c260c1d4924
+
+% 1 1 0 06dcd2230c4ac5410014d8af6376b9a5
+
+% 0 1 0 14ff90ba9d3e658b0402cba3ef272a61
+
+% 0 1 0 1aec06132a346e4e057c751053ff8852
+
+% 0 1 0 138bff2b59c8e5cd1dd5a46f79562c32
+
+% 0 1 0 1002a9c25a85f1a11ebca16707cc4429
+
+% 1 1 0 1f869170c6ceba800150eb133b1b6710
+
+% 2 1 0 0eed422ce40344f10ac5f7f7af8001c0
+
+@ 0 13 0 0ba6d801fe3ac0270423ba231f7d4bc8
++   entry #concealed   在不回显任何内容的规范模式下运行一个代码块：读取密码的方式
++       与 `#cooked` 相同，在代码块执行期间具有终端驱动程序的行编辑功能，但没有回显；之后恢复原始模式。
++       stdin 不是终端时它是空操作。
++   entry #terminal   在客户端的终端上运行一个命令，并给出它结束时的状态
++       用于编辑器、分页器、`ssh` 或 `sudo`：这些程序需要终端，而守护进程的进程脱离了任何终端，无法触及它。
++       启动器停止转发终端的输入并暂存调用的输出，恢复终端保存的状态，以客户端的环境和标准流运行该命令——如果给定了 `pwd` 则在其中运行——并在命令结束时把终端恢复原状并报告状态：退出码、128 加上致其终止的信号，或者无法运行时为 127，客户端的 stdin 不是终端时也是这个答复。
++       一次只运行一个命令。
++       它的输出到达终端，而不是调用；要捕获程序的输出，应在本进程中用 `sh"…".exec` 运行它。
+
+% 2 1 0 0d1abdd88af359c613a81c8491e6beb7
+
+% 3 1 0 1d52f3708c472f9e00485c24defb5520
+
+% 4 1 0 0eaedc0acf634125003a4f3bfba193ff
+
+% 5 1 0 1195bae3826cda0e093f824d805a789a
+
+% 7 1 0 0a8d4ee15eb9f3e507411dbe13a3aa68
+
+% 8 1 0 0d5175fdb6bc11490c8a7e1e369f63b0
+
+% 9 1 0 0034259de9ce65b90ec046dca30c9424
+
+% 10 1 0 1d4b4f11e556dfe61435a5baedaa5ebe
+
+% 12 1 0 0eee76151e3b31620243d77aa81cd984
+
+% 0 1 0 173649a6212830dc00cc31d3d26c52c4
+
+% 1 1 0 19083e0a9b00ecd21c6a0024b1fa1dfa
+
+% 0 1 0 1f3e4cbf24c0c8cc06dd2b892f716046
+
+% 0 1 0 1489c10d10263cb20ad75173a5645514
+
+% 1 1 0 13eae29cdf9fb2950523dbce53e2297d
+
+@ 0 28 0 136b5667a06a4f241688adf53c5e7bae
++   entry #rawArgument   某个索引处参数的操作系统原生字节，在其文本丢失了部分内容时
++       不是有效 UTF-8 的参数到达 `arguments` 时，出错的字节会被替换为 U+FFFD，正如 JVM 交付它的方式；此方法给出位于 `index`（从 0 开始计数）的参数的原始字节——在 Unix 上就是字节本身，在 Windows 上是小端序的 UTF-16 代码单元。
++       对于文本能准确承载的参数——这是通常情况——它为 `Unset`，因此调用方会回退到文本。
++   entry #rawEnvironment   某个索引处环境条目（`NAME=value`）的操作系统原生字节
++       与 `#rawArgument` 相同，针对启动器转发的环境中位于 `index` 的条目；对于文本准确的条目为 `Unset`。
++   entry #rawWorkingDirectory   工作目录的字节，在其文本无法承载它们时
++   entry #help   此命令的结构化帮助树，来自补全执行器
++       由守护进程惰性生成并 memoize：应用程序的纯部分在 Tab 补全模式下重新运行，以发现其子命令和标志树。
++       只有 `executives.completionsExecutive` 能产生这棵树；在其他执行器下，它是一个只带命令名称、下面空无一物的根 `Help`。
++   entry #localHelp   收窄到本次调用目前已匹配的子命令的帮助树
++       需要调用的 `Cli`：`help().local(cli.matches)`，使应用程序的某个部分只为自身提供文档，在未匹配任何内容或所匹配的路径不在树中时回退到完整的树。
++   entry #buildId   守护进程启动来源的可执行文件的构建 id；没有启动器时为零
++       启动器传入的 64 位 `build.id` 属性（xek 的 `--build-id`），没有启动器时为 `build.id` 类路径资源，否则为零。
++       在暂存 `Upgrade` 之前，把它与所提供版本的构建 id 进行比较。
++   entry #started   守护进程的启动时间，可表示为任何由纪元毫秒构造的瞬时类型
++       `resident.started[Instant]`，适用于任何 `Instantiable across Instants from Long`。
++   entry #uptime   守护进程已运行的时长，可表示为任何由纳秒构造的时长类型
++       `resident.uptime[Duration]`，适用于任何 `Instantiable across Durations from Long`；从不为负。
+
+@ 0 1 0 131e47acbb0a92ef03cf720d02d88522
++ entry .Launcher   启动器到守护进程的协议：`ethereal-launcher` TEL schema、其消息及其 BinTEL 编解码器
+
+% 1 1 0 00522e759a580c73117a5ac368148636
+
+@ 0 14 0 1fcb7480f7308aee058b0a7d69184ed8
++       `Launcher` 是 Ethereal 启动器——`propensive/xek` 发布的 Rust 运行器——与其守护进程之间的契约。
++       一次调用就是一个连接：它以一个 `init` 文档开始，然后双向承载会话的文档——各个流的 `data` 数据块、`end`、`credit`、`open`、`signal`/`signal-ack`、`mode`、`run`/`exited` 和 `closed`——直到守护进程的 `exit-status` 将其结束；`verify` 和 `shutdown` 则在各自的短连接上请求。
++       TEL schema 就是规范：其文本是 ethereal 自身 jar 中的资源 `ethereal/ethereal-launcher.tel`，与 xek 的 `spec/ethereal-launcher.tel` 逐字节相同，而 `.Message` 逐个变体地镜像它。
++       线上的每个文档都是一个分帧的 BinTEL 文档——魔数、长度、schema 的 33 字节 `.signature`、正文——双方在读取任何字段之前都会比较签名，因此基于不同 schema 构建的启动器和守护进程会在第一个文档时就互相拒绝（`DaemonLogEvent.ProtocolMismatch`），而不是误读字段。
++       守护进程从不受信任的对端读取，因此声明长度超过 `.maximumLength` 的文档会在被处理之前就遭到拒绝。
+
+% 2 1 0 094dd935b9eb1b48187b02752fcd74c2
+
+% 3 1 0 12c0048936a7c4f81bcb90047bf2cd44
+
+% 0 1 0 15197dcf0196e01b079447687171f2d6
+
+% 0 1 0 0abad2860619fc471fbd13fc658fa1ea
+
+% 0 1 0 169ec0141778a3f41243c7207b6f24db
+
+% 1 1 0 18718fa4de8a1ce404caa60f6143050d
+
+@ 0 3 0 0d1dd33cfb6e674b172d9ced1f4dabe8
++       应用程序从不自己使用该协议：由 `cli` 和 `Session` 负责。
++       该对象是公开的，以便直接驱动守护进程的工具，或者将线上字节与运行器的字节进行比对固定的测试，能够构建和读取相同的文档。
+
+% 1 1 0 1c5f318544675c6412d5bb8bbf74c4dd
+
+% 0 1 0 1832d31b21f1cfa70bae914e70f57824
+
+@ 0 25 0 18ccefedc3055e040a87536cae7520de
++   entry .schemaText   `ethereal-launcher` TEL schema 的文本，从 ethereal 自身的 jar 中读取
++       资源 `ethereal/ethereal-launcher.tel`，通过 ethereal 自己的类加载器（`Classloader[Launcher.type]`）读取一次，因此第一个需要它的线程可以带有任意上下文类加载器。
++       缺少它是打包错误，会抛出异常。
++   entry .schema   编解码器据以编码的、经过解析和验证的 `Tels` schema
++       从 `.schemaText` 解析一次；格式错误的 schema 是编程错误，而不是运行时条件。
++   entry .signature   schema 的 33 字节 palimpsest 签名，每个文档都携带
++       接收时逐字节比较：对于带有其他签名的文档，`.decode` 给出 `Unset`。
++       守护进程还把它写入其 `acceptance` 状态文件，供启动器在连接前查阅。
++   entry .maximumLength   守护进程会读取的最长文档：一 MiB
++       声明长度超过它时，`.readDocument` 不读取正文就给出 `Unset`。
++       一个数据块最多为 `.maximumChunk`，而调用的环境和参数绰绰有余地容纳其中。
++   entry .maximumChunk   一个 `data` 文档承载的最多字节数：65536
++       也是每个流在每个方向上开始时的额度（`Session.window`）。
++   entry .encode   把一条消息编码为一个分帧的 BinTEL 文档
++       魔数、长度 varint、`.signature`、正文。
++       `Data` 消息手工分帧，其字节直接进入帧，中间没有 BASE-256 文本，因为每个流的每个数据块都走这条路。
++       不会失败：各元素都是根据库自身的 schema 构建的。
++   entry .decode   分帧文档承载的消息，或 `Unset`
++       当文档格式错误、带有其他 schema 的签名或不符合 `.Message` 时为 `Unset`；`Data` 文档按 `.encode` 写入的方式手工读取。
+
+% 2 1 0 1407a8db742030040a6e87d65ebdf2b0
+
+% 3 1 0 00c4cd1e6429af2f153664e53cbc88c4
+
+% 0 1 0 05273ff249c4eab8071c612c7cc57733
+
+% 1 1 0 112ebe47a4a7816b0f36be0a11955485
+
+@ 0 6 0 0c4e80291795c88706809d60722baa91
++   entry .readDocument   从 `java.io.InputStream` 中恰好读取一个分帧文档
++       读取四字节魔数、长度 varint，然后读取所声明数量的字节，保留后续内容不读，并给出整个帧供 `.decode` 使用。
++       在输入结束、头部格式错误、长度超过 `.maximumLength` 或流在达到声明长度之前结束时为 `Unset`。
++   entry .Descriptor   客户端持有的文件描述符，按 `init` 文档的公布
+
+% 1 1 0 191554fd0930a4990a2b463178c1488b
+
+@ 0 10 0 0d34264539d0a28b14624dab6dc1a260
++         客户端的描述符按客户端所见的编号（其中包括 0、1 和 2），每个都带有其方向、种类，对于普通文件还有守护进程可直接打开的真实路径；其他任何描述符都通过 `Launcher.Message.Open`，以其编号命名的流的方式打开来访问。
++         `Resident#fdtable` 查询这些描述符。
++     entry #fd   描述符的编号，按客户端持有的编号
++     entry #direction   `r`、`w` 或 `rw`，按描述符被打开的方式
++     entry #kind   `file`、`pipe`、`tty`、`socket` 或 `other`
++     entry #path   普通文件的真实路径；否则为 `Unset`
++   entry .Raw   `init` 文档中某个值的操作系统原样形式，在其文本丢失了部分内容时
+
+% 1 1 0 1d7297d5ea0f8c570c93d63e041c613e
+
+@ 0 9 0 08d5f861866b854e02de0a6b49637b29
++         不是有效 UTF-8 的参数或环境条目（或在 Windows 上含有不成对代理项的），或者工作目录，会以文本形式发送，无法承载的部分替换为 U+FFFD，并再以 `Raw` 发送一次：平台自身的字节——在 Unix 上是字节，在 Windows 上是小端序的 UTF-16 代码单元。
++         `Resident#rawArgument`、`Resident#rawEnvironment` 和 `Resident#rawWorkingDirectory` 查找它们。
++     entry #kind   `argument`、`environment` 或 `pwd`
++     entry #index   在参数或环境条目中的位置，从 0 开始；对于 `pwd` 为 `Unset`
++     entry #bytes   该值的平台原生字节
++   entry .Message   协议的文档，schema 的每个变体对应一个分支
+
+% 1 1 0 18c5b78d5c48089215dacab4c6b67594
+
+@ 0 5 0 1d4a575b04a262c20e8213717b9c44d7
++         schema 根 `select` 的十五个变体，按其顺序排列，因此每个分支的索引就是它在线上的变体索引。
++         启动器发送 `Init`、`Data`、`End`、`Credit`、`Signal`、`Closed`、`Exited`、`Verify` 和 `Shutdown`；守护进程发送 `Data`、`End`、`Credit`、`Open`、`SignalAck`、`Mode`、`Closed`、`Run`、`ExitStatus` 和 `Verdict`。
++         `Verify` 和 `Shutdown` 不带字段。
+
+% 0 1 0 136a5f198bdaf3ac1a788e9525f64741
+
+% 0 1 0 0a9c20ea134f3fa702331949e4fc1ca4
+
+% 0 1 0 1ea55570eda2a0d91aad24856340d0d2
+
+% 0 1 0 09f52cc11c8467c10f3d885a12ab3805
+
+% 0 1 0 1422f0b7fb29dd3f0aab36f019e9b412
+
+% 0 1 0 0ccb4f5ad6e7bf6610ed93fe129fb64e
+
+% 0 1 0 03833d4a5c8a68261da19d95a13e2276
+
+% 0 1 0 14bd6dfebf2c4e9d1b07527e9dd6cc24
+
+% 0 1 0 1140b2a5cf4b69680b8e2f6e7bf0e937
+
+% 0 1 0 05f6a2c155c6ee4d0192f811ed5d989d
+
+% 0 1 0 02125690b11d560710feb200e65921bd
+
+@ 0 7 0 16377d3c38c810e5178ce1a14644b7f2
++         `Verify` 在其自己的连接上询问守护进程启动来源的启动器文件是否仍具有它所记住的内容（在该文件的 mtime 与守护进程的 `build` 文件不一致时发送）；守护进程以 `Verdict` 作答，若已过期，则自行排空，以便启动器的新守护进程取而代之。
++         `Shutdown` 请求守护进程不再接受新的调用，让进行中的调用完成，然后结束；它不会得到答复。
++     entry .Init   一次新的调用，开启承载它的会话
+
+% 1 1 0 0e78c49ef3e12ebd1ee4d27be946e710
+
+@ 0 24 0 01214a4ca54881ef075a5c314ae92a44
++           每次调用的连接的第一个文档。
++           三个 tty 标志说明客户端的哪些流连接到终端，这一点守护进程无法自行判断；用户是平台的标识符（在 Unix 上是数字，在 Windows 上是 SID），来自守护进程自身用户之外的其他用户的 `Init` 会以退出状态 2 被拒绝。
++           正在排空的守护进程也以同样的方式拒绝它。
++       entry #pid   客户端进程的 pid
++       entry #uid   平台对用户的标识符：在 Unix 上是数字，在 Windows 上是 SID
++       entry #username   用户的登录名
++       entry #script   可执行文件的规范路径
++       entry #pwd   调用的工作目录
++       entry #stdinTty   客户端的 stdin 是否为终端
++       entry #stdoutTty   客户端的 stdout 是否为终端
++       entry #stderrTty   客户端的 stderr 是否为终端
++       entry #arguments   调用的参数，以文本形式
++       entry #environment   调用的环境，每个条目写作 `NAME=value`
++       entry #invokedAs   调用方提供的 `argv[0]`，供多调用二进制文件据此分派
++       entry #umask   调用的 umask，以八进制表示，如果有报告的话
++       entry #columns   stdout 为终端时终端的宽度
++       entry #rows   stdout 为终端时终端的高度
++       entry #inputCodepage   Windows 控制台的输入代码页，如果有的话
++       entry #outputCodepage   Windows 控制台的输出代码页，如果有的话
++       entry #descriptors   客户端持有的、守护进程可以作为流打开的描述符
++       entry #raws   文本形式丢失了部分内容的值，按操作系统给出的原样
++     entry .Data   一个流的一个数据块，最多 `Launcher.maximumChunk` 字节
+
+% 1 1 0 0def5007e78c5ace04c30da62b29f12d
+
+@ 0 6 0 1131e25ae2c859aa1affde4d3e0773a4
++           双向发送。
++           流是 `stdin`、`stdout`、`stderr` 或一个已打开描述符的编号，发送方在一个流上未确认的字节数绝不超过它为该流持有的额度。
++       entry #stream   `stdin`、`stdout`、`stderr` 或描述符的编号
++       entry #bytes   数据块的字节
++     entry .End   指定的流已结束，在此之前发送的每个数据块之后
+
+% 1 1 0 1bb398c87792bfe70161c82f7cb01a76
+
+@ 0 5 0 12be1476df2506d713ffdf0623a6223a
++           对守护进程中 stdin 或以读方式打开的描述符的读取方而言是文件结束，或者是守护进程关闭了以写方式打开的描述符。
++           该流上不再发送任何内容。
++       entry #stream   已结束的流
++     entry .Credit   流的接收方还能接收这么多字节
+
+% 1 1 0 08fc86de210c1958077bbc9b44b7fed6
+
+@ 0 7 0 1bb733cb4a7b600706ceaa509430b0e4
++           流量控制：每个流在每个方向上以 65536 字节的额度开始，接收方在消费时授予更多额度，以窗口的一半为单位，而不是按数据块。
++           客户端排空缓慢的生产者只会使它自己的流停滞，因此处于暂停状态的 `mytool | less` 仍能收到信号。
++       entry #stream   额度所针对的流
++       entry #bytes   在此前授予的额度之外，还可以发送的字节数
++     entry .Open   请求启动器开始传送客户端公布过的一个描述符
+
+% 1 1 0 179b26300910df7c06f2fd8d73228bd9
+
+@ 0 6 0 0384960b49afb9ea1782ecb33d425efe
++           当调用打开 `/dev/fd/N` 时由守护进程发送：如果描述符以读方式打开，则以来自客户端的 `Data` 文档传送；如果以写方式打开，则写入守护进程发送的 `Data` 文档。
++           不会得到答复；流就此开始。
++           守护进程未公布的描述符，或在已打开时再次打开的描述符，会被忽略。
++       entry #stream   描述符的编号
++     entry .Signal   客户端收到的信号，或 Windows 控制台控制事件
+
+% 1 1 0 12b25603ba2f63651323b931db442265
+
+@ 0 10 0 1bb793b497fa582b024175b174990b10
++           命名时不带 `SIG` 前缀。
++           `WINCH` 和 `CONT` 携带终端的当前尺寸；Windows 的关闭、注销或关机事件携带系统在强制结束客户端之前允许的毫秒数。
++           守护进程把它作为 profanity 的 `Signal` 分派给调用的陷阱，并以 `SignalAck` 作答；启动器在收到答复之前不会再发送信号。
++       entry #name   不带 `SIG` 前缀的信号名称，或 Windows 事件
++       entry #columns   终端的宽度，随 `WINCH` 和 `CONT` 一起
++       entry #rows   终端的高度，随 `WINCH` 和 `CONT` 一起
++       entry #deadline   Windows 关闭、注销或关机所允许的毫秒数
++     entry .SignalAck   调用是否接受了最近发送的信号
+
+% 1 1 0 06e3b463ac7f9814137a2005141b407d
+
+@ 0 5 0 0125cd8670c905dc18cc33b13ef22808
++           当某个陷阱以 `SignalResponse.Accept` 作答时，`accept` 为 true；为 false 时——陷阱拒绝或推迟了它、没有陷阱，或陷阱作答太慢——启动器会回退到操作系统对该信号的默认处理。
++       entry #accept   调用是否接受了该信号
++     entry .Mode   请求启动器把客户端的终端置于规范模式或原始模式
+
+% 1 1 0 165ad5937bb059930d315cd890ce88da
+
+@ 0 7 0 00a8b2fe995ec39e18080a86f7599ed4
++           `canonical` 请求规范模式，若同时设置了 `echo` 则带回显；不带回显的规范模式是读取密码的方式；两个标志都不设置则是原始模式。
++           启动器不作任何答复，并保持它不拥有的终端原样。
++           `Resident#cooked` 和 `Resident#concealed` 发送它。
++       entry #canonical   规范模式，为 false 时为原始模式
++       entry #echo   终端是否回显所键入的内容
++     entry .Closed   指定的流已失去其读取方
+
+% 1 1 0 156161a9d5e727fe09ad954d7631df0e
+
+@ 0 7 0 187aa1e611852ea0005d2dc60e663ab3
++           来自启动器时：客户端的 stdout 或 stderr，或以写方式打开的描述符，无法写入；调用此后对该流的写入会抛出 `Egress.Error`，正如管道破裂时那样。
++           来自守护进程时：调用在把一个以读方式打开的描述符读到末尾之前就关闭了它，启动器停止传送它。
++       entry #stream   读取方已离开的流
++     entry .ExitStatus   调用的退出状态，结束会话
+
+% 1 1 0 12190c840639a7cf1002e590935a758a
+
+@ 0 4 0 15d1f5eb7815e0ea0db9a7149d927692
++           守护进程写入的最后一个文档，位于每个流的每个数据块之后；启动器收到它后连接即关闭。
++       entry #code   退出状态
++     entry .Verdict   守护进程对 `Verify` 的答复：其启动器文件是否未变
+
+% 1 1 0 16b2d7d2729673ff0ff30ceb78cceadf
+
+@ 0 6 0 017cca875e3c57b80e308cf20002794d
++           当启动器文件的内容就是守护进程启动来源的内容时为 `fresh`（例如 `touch` 这类只改变元数据的修改，守护进程会记住它，从而不必重复计算哈希）；否则守护进程自行排空，而等待其终止的启动器会启动一个新的守护进程。
++       entry #fresh   启动器文件是否仍具有守护进程所记住的内容
++     entry .Run   请求启动器在客户端的终端上运行一个命令
+
+% 1 1 0 0222fc517ae0b4e60f8ef39fc55db1da
+
+@ 0 9 0 067cac8609d5f89a0785c4155cccccc0
++           用于编辑器、分页器、`ssh` 或 `sudo`。
++           启动器停止传送终端的输入，暂存调用的输出，恢复终端保存的状态，以客户端的环境和流运行该命令——如果给定了 `pwd` 则在其中运行——并在命令结束时以 `Exited` 作答。
++           stdin 不是其所拥有的终端的客户端会立即答复 `Exited(127)`。
++           `Resident#terminal` 发送它。
++       entry #command   要运行的命令
++       entry #arguments   它的参数
++       entry #pwd   运行它的目录，如果不是调用的工作目录的话
++     entry .Exited   守护进程请求运行的命令结束时的状态
+
+% 1 1 0 06c9800360d7d73a0bcb4d71ce441479
+
+@ 0 3 0 01467809d8f46f1b073567784c91bc68
++           退出码、128 加上致其终止的信号，或者命令无法运行时为 127。
++       entry #code   状态
+
+@ 0 1 0 10d1a488772dfc7c1df0431dde18943e
++ entry .Session   调用会话中守护进程的一半：一个连接、一个读取线程和一个写入线程
+
+% 1 1 0 0896673bcfd7675b018df2636d4631d6
+
+% 2 1 0 0c4cc088ac8235b0128da9acca2a7081
+
+@ 0 10 0 00826d135bb4ac9e03e6c21c477f1bc1
++       不供直接使用：`cli` 为每个 `Init` 创建一个，调用的 `Stdio` 建立在它的流之上。
++       它在每个流各自的额度下把调用的每个流作为 `Launcher.Message.Data` 文档传送，控制流量穿插其间：读取线程除了套接字之外从不等待任何东西——它把每个数据块存入其所属的流，立即处理每个控制文档，并把信号交给专门的线程，因为陷阱可能会睡眠——而写入线程是唯一写入连接的线程，控制文档排在数据之前。
++       流的生产者在任何锁之外等待额度，因此客户端排空缓慢的流只会使它自己的生产者停滞。
++       它的伴生对象持有协议的数值 `.window` 和 `.chunk`，以及 `.governed`，后者说明进程自身的哪些描述符路径指明一个描述符。
+
+% 1 1 0 08d458f20bc48dd61a6041f78ec623d8
+
+@ 0 18 0 06c212de1abd4a350e8891a7ffc20367
++   entry .window   每个流在每个方向上开始时的额度：65536 字节
++   entry .chunk   一个 `data` 文档承载的最多字节数：`Launcher.maximumChunk`
++   entry .governed   `/dev/stdin` 或 `/dev/fd/63` 之类路径所指明的描述符编号，如果它指明了的话
++       `/dev/stdin`、`/dev/stdout` 和 `/dev/stderr` 是 0、1 和 2；`/dev/fd/N` 和 `/proc/self/fd/N` 是 `N`，其中十进制数少于八位；其他任何路径为 `Unset`。
++       任何这样的路径都由客户端的表来解答，无论客户端是否持有该描述符，因此守护进程自己的表绝不会经由它被触及。
++   entry #send   为写入线程排入一个控制文档，排在任何数据之前
++   entry #finish   从本方结束会话：`exit-status` 排在此前排入的所有内容之后
++   entry #awaitWritten   在 `#finish` 之后等待写入线程的队列排空，以便状态到达启动器
++   entry #stdin   调用的 stdin，一个由启动器的 `data` 文档供给的 `SessionInput`
++   entry #stdout   调用的 stdout，一个在额度下发送的 `SessionOutput`
++   entry #stderr   调用的 stderr，一个在额度下发送的 `SessionOutput`
++   entry #windowSize   启动器最近一次测量的客户端终端尺寸，作为一个 `Atomic.Ref`
++   entry #terminal   用 `Run` 文档在客户端的终端上运行一个命令，并等待 `Exited`
++       一次一个；如果启动器已离开或从未作答则为 127。
++   entry #start   启动写入线程和读取线程
++   entry #fdtable   客户端的描述符，作为 `Fdtable`，供 `/dev/stdin` 之类的路径查询
+
+@ 0 1 0 00e4f62b3c104d1404f61fc5c841844c
++ entry .SessionInput   启动器发送的一个流的数据块，作为 `java.io.InputStream`
+
+% 1 1 0 0b8f32879c9ec1de12abf51ca9e96011
+
+% 2 1 0 067d2fa0a0108ab4041ddfa00aa4691c
+
+@ 0 10 0 183bcb19dd5a12391bb3aa78fa8f896a
++       不供直接使用：调用的 stdin 或以读方式打开的描述符背后的流。
++       数据块由会话的读取线程用 `#push` 存入，由读取调用 stdin 的代码取走；流在消费时以窗口的一半为单位向启动器授予更多额度，因此从客户端获取的输入不会多于调用所请求的。
++   entry #push   存入一个数据块；流结束后会被忽略
++   entry #end   标记流已结束：读取超出已存入的数据块时得到文件结束
++   entry #isEnded   启动器是否已为该流发送 `end`
++   entry #read   阻塞直到有数据块可用或流已结束
++   entry #available   已存入但尚未读取的字节数
+
+@ 0 1 0 0674b31ba9e20a0719dca2105b6d0e85
++ entry .SessionOutput   守护进程发送的流，缓冲至一个数据块，并在获得额度后发送
+
+% 1 1 0 16dc597fee12397c1dd02b3f1f0b8f5d
+
+% 2 1 0 1463cf3a95cd59c114ce4b76331169d2
+
+@ 0 9 0 13a411787ef4b00c0e7f30d9e1caf45c
++       不供直接使用：调用的 stdout 或 stderr 背后的流，或为写入而打开的描述符背后的流。
++       字节被缓冲至 `Session.chunk`，并在 `flush` 时发送——调用的 `PrintStream` 在每次写入后都会这样做——或者在缓冲区满时发送，每个数据块都要等启动器为它授予额度之后才发送。
++       一旦启动器报告该流已关闭，或者启动器已经不在，写入就会抛出 `Egress.Error`。
++   entry #severed   一旦客户端上该流的读取方不在就会设置：此后每次写入都会抛出 `Egress.Error`
++   entry #write   缓冲字节，每满一个数据块就冲刷
++   entry #flush   把缓冲的字节作为数据块发送，每个数据块都等待额度
++   entry #close   冲刷；连接由会话关闭，而不是由流关闭
+
+@ 0 1 0 1fbedda9791939ce1873e11aa4b79d7c
++ entry .Client   守护进程在调用的会话之外保存的关于该调用的信息：它的总线和它的 `Cli`
+
+% 1 1 0 1e7f0a47e29a875e17f425fb21240eb8
+
+% 2 1 0 0fd0bde47fc8e2971ad2e460dee9e2fa
+
+@ 0 10 0 09df864e6e072cc3141bc876e1fc1122
++       不供直接使用：守护进程对一个已连接客户端的记录，以客户端的 pid 为键，保存该客户端在消息总线上的位置及其 `Cli` 的 promise，会话的信号分派可能在调用创建 `Cli` 之前就需要它。
++       `Client[bus](pid)` 创建一个记录，其 `Topic` 是该总线的消息类型。
++   entry .apply   某个 pid 的客户端记录，其类型对应守护进程的总线
++   entry #pid   客户端进程的 pid
++   entry #Topic   总线的消息类型
++   entry #invocation   调用的 `Cli` 的 promise，在调用创建它之后完成
++   entry #bus   接收来自其他调用的广播、供客户端使用的中继
++   entry #receive   投递由另一个调用广播的消息
+
+@ 0 1 0 18977be9a59f7a7f0e4fed805e4c38da
++ entry .DaemonEnvironment   守护进程启动时所用的环境，即启动器发送过来的环境
+
+% 1 1 0 1862cfc4d7dbf93211b98c0ecbdea097
+
+@ 0 9 0 0663fbd71dc982431fa4f69c540c9b2b
++       启动器以它自己净化过的环境启动守护进程——只有 `PATH`、`HOME`、`USER`、`LOGNAME`、`SHELL`、`LANG`、`LC_*`、`TZ`、`TMPDIR`、`XDG_*` 基础目录、JVM 的选项变量和 `ETHEREAL_DEBUG`——使守护进程的状态不取决于碰巧是谁启动了它，并把启动器自身启动时所用的环境通过守护进程的标准输入发送过去，每个条目为 `NAME=value`，以一个 NUL 字节结尾，正如属性 `ethereal.environment=stdin` 所声明的那样。
++       `DaemonEnvironment` 就是这个环境，保存在内存中，从不写到任何地方；没有该属性时（较旧的启动器，或直接运行的 JVM），它就是 JVM 自己的环境，此时它也就是启动时的那个环境。
+
+@ 0 4 0 0b01f9824816aa6c05475e5182c25ad2
++       很少有东西需要它，而不是*调用的*环境，后者随每次调用一起到达，是 `cli` 代码块内的 `Environment` given（也就是选择 `environments.daemonClientEnvironment`）；它需要显式选择，即按名称导入的 given `environments.daemonEnvironment`。
+
+% 2 1 0 19727fb8699efa7b1fc23571f7e2cb34
+
+% 3 1 0 0f4f92e56247173c0a850f42b90d925b
+
+% 4 1 0 07bd8b5a689eb4cb1440317281e60b3c
+
+% 5 1 0 02349b4058dff59d1b65d4f144ed1701
+
+% 0 1 0 1e3d671d52d999f118e925f5619ad808
+
+% 0 1 0 012e2f36a656344304416be99d61addc
+
+% 1 1 0 0daae3e855d308df0c05c8e95684901c
+
+% 1 1 0 1394a766fe239927126cff2b7bd286d7
+
+% 0 1 0 176091ba11bc41320dc4bf4a486273ec
+
+@ 0 6 0 18c60c2fe2acd84a1c685e39a9c09899
++   entry .capture   读取启动器发送的环境，如果尚未读取的话
++       `cli` 在守护进程启动时、绑定套接字之前调用它：启动器只在等待套接字出现的期间发送环境，而守护进程的标准输入会被一直读到末尾。
++   entry .variable   一个变量的值，或 `Unset`
++   entry .entries   所有变量，作为一个 `Map`
+
+@ 0 1 0 0f67165628a3a51c1bf3a2354ac79e4f
++ entry .LazyEnvironment   基于 `NAME=value` 条目列表的 `Environment`，在首次使用时解析
+
+% 1 1 0 0a3c65d931ad43e9188ed68f4fa6a7dc
+
+@ 0 5 0 02788ef1a9c4e6cf04f32e3e4bee43e5
++       `cli` 代码块内调用的 `Environment`：启动器在 `init` 文档中转发的条目，在首次查询环境时按第一个 `=` 拆分（没有 `=` 的条目会被丢弃）。
++       given `environments.daemonClientEnvironment` 解析到的就是它，代码块内的 `Environment[Text](name)` 读取的也是它。
+
+% 2 1 0 0eb016d3d79c38670ba88c546f421475
+
+% 3 1 0 0afca2400dc8ae081def8fd0d0cd981f
+
+% 0 1 0 0cd771d84b3e4491050fa49ddb6ab2fb
+
+% 0 1 0 10af1c9d629871e6043d45dc26a6a331
+
+% 1 1 0 11c9673525b5e22a1dfcbfa871abb4b7
+
+@ 0 2 0 090308664b46a5360d12eb4883fb8cb7
++   entry #variable   一个变量的值，或 `Unset`
++   entry #entries   所有变量，作为一个 `Map`
+
+@ 0 1 0 09e53f357b45af3b0c2b7a2711e303f8
++ entry .DaemonLogEvent   守护进程在提供服务、排空和退役时记录到 syslog 的内容
+
+% 1 1 0 1fa1ef6ce912677906a38406eace3740
+
+@ 0 5 0 1f6b81ebc3b0c2f91bfc9c3a760fc660
++       守护进程以 `ethereal` syslog 身份记录的每个事件，每个都标有所属的 `Log` 类别（`Log.Process`、`Log.Network`、`Log.Protocol`、`Log.Filesystem`、`Log.Scheduler` 或 `Log.Runtime`）。
++       伴生对象提供把每个事件渲染为消息的 `Communicable`，以及让日志记录器接收它们的 `Message transcribes DaemonLogEvent`，二者都在隐式作用域中。
+
+@ 0 9 0 175bd018307ce7ae1fe34db619eebeb9
++       单例分支：`Shutdown`（正在关闭）；`Termination`（正在终止客户端连接：启动器被重写或给出了过期判定，在守护进程退出前记录为警告）；`IdleTimeout`（空闲六小时后关闭）；`NewCli`（实例化一个新的 CLI，级别为 `fine`）；`UnrecognizedMessage`（不是启动器消息的文档，或者本应在会话内部、却在会话之外到达的文档）；`ProtocolMismatch`（另一种启动器协议 schema 的文档：针对不同契约构建的启动器）；以及 `Draining`（不再接受新的调用；进行中的调用结束后退出）。
++       `Installer.install` 记录 `WriteExecutable`，其余的由 `cli` 记录。
+
+% 1 1 0 089232da6cd7b92e128d9e74d070941f
+
+@ 0 5 0 1844b6fa4c3f5461044686b1ffc52768
++   entry .transcribable   让 `Logger` 以 `Message` 的形式接收守护进程事件
++   entry .communicable   把每个事件渲染为消息
++   entry .WriteExecutable   安装器正在写入可执行文件：_writing the executable to `location`_
++     entry #location   正在写入的路径
++   entry .Failure   某次调用抛出了异常：_the invocation failed: `error`_
+
+% 1 1 0 0796f4e6bc7240e31800675085553fe7
+
+@ 0 10 0 1e5d2ef430ab36da17dbff1ddc78ff81
++         在把 throwable 交给 `Backstop` 之前记录为失败，`Backstop` 会在调用的 stderr 上报告它并选择退出状态。
++     entry #error   throwable，渲染为文本
++   entry .ReceivedSignal   启动器转发了一个信号：_received signal `signal`_
++     entry #signal   收到的 `UnixSignal` 或 `WindowsSignal`
++   entry .CloseConnection   一次调用结束：_closing the connection from `pid`_
++     entry #pid   客户端的 pid
++   entry .Init   一次调用开始：_initialising `pid`_
++     entry #pid   客户端的 pid
++   entry .PeerRefused   来自另一个用户的连接被拒绝：_refusing a connection from another user: `user`_
+
+% 1 1 0 13912359eeec09620faf45cc92b74b84
+
+@ 0 7 0 15b8ed65afcb49a312d1367a833e9b0d
++         套接字只接纳其所有者：内核报告的用户不是守护进程用户的对端，或者声称另一个用户 id 的 `Init`，都会在读取之前被拒绝。
++     entry #user   对端的用户
++   entry .Refused   一次调用在守护进程排空期间到达：_refusing invocation `pid`: the daemon is shutting down_
++     entry #pid   客户端的 pid
++   entry .Closed   客户端上某个流的读取方已经不在：_the invocation's `stream` has no reader_
++     entry #stream   `stdout`、`stderr` 或描述符的编号
+
+@ 0 1 0 1f62adacdea5fdbb10b94099feb45979
++ entry .Egress   调用的 stdout 或 stderr：一旦启动器报告其读取方不在就会失败的流
+
+% 1 1 0 1bedfb9ec862975b1fb335b6520f6431
+
+@ 0 6 0 0b0c7d0cb2db47d9101a89cc051abb4b
++       调用的 `Out` 和 `Err` 背后的 `java.io.OutputStream`：它委托给会话的流，直到启动器为它发送 `closed`——例如 `mytool | head -1` 中 `head` 已经退出之后——此后每次写入都会抛出 `.Error`，使一直写到无法再写的程序结束，就像它在写管道时那样。
++       `cli` 捕获该错误，并以状态 141 结束调用，就像 `SIGPIPE` 结束一个进程那样（128 加 13），而不咨询 `Backstop`，因为后者会写入同一个流。
+
+% 1 1 0 1d448f571a733b9a0ba05e4782ec04d7
+
+@ 0 1 0 1a430acc810f50871fa70e1934531df7
++   entry .Error   向读取方已不在的调用 stdout 或 stderr 写入时抛出
+
+% 1 1 0 01a4b54c3c149f131e1739c1fe942100
+
+@ 0 7 0 16d3155091f585260d346754a28a52a5
++         _the invocation's `stream` has no reader_：相当于写管道的进程会得到的 `EPIPE`，在守护进程中的对应物。
++         它刻意不是 `IOException`，因为 `java.io.PrintStream` 会吞掉后者：它必须到达调用，而 `cli` 会以退出状态 141 结束调用。
++         想要在丢失输出后继续存活的调用，可以用 `case error: Egress.Error` 捕获它。
++     entry #stream   `stdout` 或 `stderr`
++   entry #write   写入底层流，一旦读取方不在就抛出 `Egress.Error`
+
+@ 0 1 0 07b1e5db1caddcd30e01b3d64499adcf
++ entry .Installer   从守护进程内部把正在运行的可执行文件复制到 `PATH` 上
+
+% 1 1 0 1d68399e04d2235e142b32d134098690
+
+@ 0 6 0 13e51abe33cd6da01217d94499cd63a6
++       用 `xek build` 构建的应用程序是一个文件——原生启动器存根、一条配置记录和 JAR——而 `Installer.install` 把它的一个副本放在 shell 能找到的地方：`PATH` 上第一个可写的目录，优先选择 XDG `bin` 目录、`/usr/local/bin` 和 `/usr/bin`，或者调用者选择的 `target`。
++       内置的 `'{admin}' install` 子命令运行的就是它，应用程序也可以用自己的名称提供它。
+
+% 2 1 0 0e44827552716d79110504f2906715d0
+
+% 3 1 0 17b6219ae6a7e2ec00447da0a7768638
+
+% 4 1 0 1cfbc0b575ccb2811636b2ca1abd7ee3
+
+% 5 1 0 1b4f578d8432ce7817d974c72de98593
+
+% 6 1 0 108606e2ee731e001a6d4bd91c677c28
+
+% 0 1 0 0b1a7e211e92884b152d013f713fb2b2
+
+% 2 1 0 1ff9c31895a143dc01e69d28a1f55dd7
+
+% 3 1 0 105dfb4013424fe70cd7c43b02a35f57
+
+% 4 1 0 18626929ebb33fcd10bd0bad41a99e44
+
+% 5 1 0 0bece7c829df61e80caf7497fa374ea1
+
+% 7 1 0 1a41178c8717f6cb1342a81431ecd57e
+
+% 8 1 0 186495b85eaa7022084ccb2bc2c2409b
+
+% 0 1 0 0fdc8129bb44091518883861c5fd576f
+
+% 0 1 0 15ab98637993c0dc03ff720448c6c0c0
+
+% 0 1 0 0deb762eb28b035101e67765529e6b7f
+
+% 0 1 0 00fa9843221a5d021f6dd3d77ed8ead9
+
+% 0 1 0 1b697ea6f3a606bb1634db7cdf91f26a
+
+% 0 1 0 10475d1d38be3b820246e1a78a983146
+
+% 0 1 0 0f35258e106b05761ce8ff1ae77a1d74
+
+% 0 1 0 187dbbfc1f6b1a1211adf117c6aee03c
+
+% 0 1 0 14090552b70065da168291e95a15a78f
+
+% 0 1 0 15663324a500adc3018351365ee97a19
+
+% 0 1 0 0ec7fb98364197ce0613d9bdaf88b485
+
+% 0 1 0 07310c69e5abba8103b3401453d54b16
+
+% 1 1 0 03f7f08584cec25e172027ab6d8af63e
+
+@ 0 8 0 098e4a724e141bca0ec7bce5520fe0bb
++       副本省略了启动器内嵌的载荷（其他平台的运行器存根，启动器以 `ethereal.payloadSize` 和 `ethereal.jarSize` 传递它们的大小），并把 JAR 的 ZIP64 定位符重新定位到新的偏移量，因此安装后的文件是其运行平台上的一个普通启动器。
++       它先写入一个隐藏的同级文件，再重命名覆盖目标，这会给目标一个新的 inode：在 macOS 上，代码签名缓存是按 vnode 保存的，就地覆盖一个曾经执行过的二进制文件的内容会污染该缓存，使之后的每次 exec 都被 `SIGKILL` 杀死——手动对已安装的启动器执行 `cp new old` 也会落入同样的陷阱；请使用 `mv`，或先删除它。
+
+% 1 1 0 189fe3347ac481a9024bada5a372a092
+
+@ 0 1 0 0f1b79d549c805f50153984cac3374bf
++   entry .Result   `Installer.install` 所做的事
+
+% 1 1 0 0507da6d2786c9fa0e0db0112e74102a
+
+@ 0 31 0 0f1e8f759573f1631b586746c8f0b528
++         `Installed(script, path)`——_The `script` command was installed to `path`._；`AlreadyOnPath(script, path)`——_The `script` command is already installed at `path`._，当 `command -v` 已经把该名称解析为正在运行的可执行文件且未给出 `force` 时；以及 `PathNotWritable`——_No directory on the PATH environment variable was writable_，当无法创建临时文件时。
++         伴生对象的 `Communicable` 把每一种渲染为消息。
++     entry .communicable   把结果渲染为消息
++     entry .AlreadyOnPath   该命令已经解析为正在运行的可执行文件
++       entry #script   命令的名称
++       entry #path   它的安装路径
++     entry .Installed   可执行文件已被复制到 `PATH` 上的一个目录中
++       entry #script   命令的名称
++       entry #path   它被安装到的路径
++   entry .candidateTargets   `PATH` 上可写的目录，最佳者在前
++       `PATH` 变量中每个存在且可写的目录（从作用域中的 `Environment` 读取——在 `cli` 代码块内就是调用的环境），排序时 XDG `bin` 目录在最前，然后是 `/usr/local/bin`、`/usr/bin`、`/usr/local/sbin`、`/opt/bin` 和 `/bin`，其他目录按 `PATH` 中的顺序排在它们之后。
++       需要一个 `Resident`、一个 `System`、一个 `Tactic[Install.Error]`（`PATH` 无法读取或其中有无效路径时以原因 `Environment` 抛出，文件系统失败时以原因 `Io` 抛出）和一个 `DaemonLogEvent is Loggable`。
++   entry .install   把正在运行的可执行文件安装到 `PATH` 上，或安装到选定的目录
++       `install(force, target)`：`target` 是要安装到的目录，默认为 `.candidateTargets` 中的第一个；`force` 使得即使该命令已经解析为正在运行的可执行文件也照样安装。
++       需要一个 `Resident`（用于 `executable` 和 `script`）、用来读取 `PATH` 的 `Environment`、一个 `Effectful`（它是文件系统上的副作用）、`Diagnostics`、一个 `Tactic[Install.Error]` 和一个 `DaemonLogEvent is Loggable`，并在写入时记录 `DaemonLogEvent.WriteExecutable`。
++       当名称、路径、`PATH` 或启动器的大小属性无法读取时，以原因 `Environment` 抛出 `Install.Error`；当复制、ZIP 重新定位或重命名失败时，以原因 `Io` 抛出。
+
+@ 0 1 0 01a1fb6f8fbc103f1e5e46b7d38f5cbb
++ entry .Upgrade   暂存一个已签名的替换可执行文件，供启动器验证和应用
+
+% 1 1 0 1366a03dc161e3bf157a80002b41506d
+
+@ 0 12 0 0034488e204c5cba1deafac674ced45f
++       从守护进程一侧进行的自升级。
++       应用程序把一个完整的已签名可执行文件的字节——用 `xek build --build-id … --public-key … --app-id …` 构建并用 `xek sign` 签名的发布版本——作为 `.pending` 暂存到其数据目录中（`$XDG_DATA_HOME/<name>/` 或 `~/.local/share/<name>/`；在 Windows 上为 `%LOCALAPPDATA%\<name>\`），其余的由启动器在该命令**下一次**调用开始时完成：它根据*正在运行的*可执行文件记录中的密钥和应用程序标识符验证候选文件，要求其构建 id 更新，把它换到位，把被替换的可执行文件保留在旁边，重新 exec，并把它所做的事记录在 `.upgrade-result` 中。
++       随后它的过期检查会自行取代正在运行的守护进程，因此这里没有任何东西会退出或重新派生，守护进程正在服务的客户端也会不受干扰地继续运行。
++       Scala 一侧不验证任何东西：验证发生在启动器中，在 JVM 启动之前，因此没有任何应用程序代码位于信任边界上。
+
+% 2 1 0 1edd9eb2a10a13281dbbbdad37495a0f
+
+% 3 1 0 03f247c12dd739390a43eb96c5947f83
+
+% 4 1 0 0db5ffe5f73ac0640454faa6e251bd45
+
+% 5 1 0 074b5cf42fb05f3d1f9a96737ce5e3c6
+
+% 6 1 0 1d4dbee9ca0a1da91749212af1e380b8
+
+% 7 1 0 10b2707fddf6366c1fbc7623ae5e9d8d
+
+% 0 1 0 0116a331765d22681fde66f1f935428d
+
+% 0 1 0 1884f26bf28188a80dd0c391c47df8c6
+
+% 0 1 0 0d95e158a2e74a4308f5a7dadf486a7f
+
+% 0 1 0 12a618ab3fc8ab800817fdfca2fcb19c
+
+% 0 1 0 1c32320d2604466d0639d7a7b6f55d2f
+
+% 0 1 0 1501b6df3804c4840ff4d33b251f778e
+
+% 0 1 0 01fc928ffa17d5480ce3ed1836b2fe6a
+
+% 0 1 0 09c891a3bbe5157a025fff54c6539899
+
+% 0 1 0 10e5e04cfa4e120f0aac1b871a151223
+
+% 0 1 0 07c40df96ae514d2190cffa088d8f11b
+
+% 1 1 0 017add060fb14f900b35914c1f4b79ab
+
+@ 0 7 0 072fa0d37c3673c804299fc04446d1b9
++       每个方法都需要一个 `Environment` 和一个 `System`（在 `cli` 代码块内，即调用的环境 `environments.daemonClientEnvironment`）来找到数据目录和 `ethereal.name` 属性。
++       `.outcome` 读取启动器对上一个候选文件所做的事，`.acknowledge` 清除它，使每个结果只报告一次；`.enabled` 表明正在运行的可执行文件的启动器是否会接受已签名的候选文件，而 `Resident#buildId` 是正在运行的构建的标识符，用于与提供的发布版本比较。
+
+% 1 1 0 04c2afc3706a350b0fdf10c5943cfa5f
+
+% 1 1 0 01421a22e629075f14354ce27cc9158c
+
+@ 0 16 0 15d13f747b16ca920dfc9c6e19ef4223
++   entry .stage   把候选可执行文件写为 `.pending`，供启动器下次应用
++       接受任何 `Readable to Data` 的来源——文件、HTTP 响应、流——把它完整读取，写入 `.pending` 旁边的一个临时文件，再重命名到位，因此同时启动的启动器永远不会读到不完整的候选文件。
++       它会正常返回：升级在下一次运行该命令时生效，应用程序应当把这一点告诉用户。
++       当守护进程没有从启动器获得其名称时，以原因 `CannotResolveName` 抛出 `Upgrade.Error`；当数据目录或文件无法写入时，以原因 `CannotWritePending` 抛出；当来源无法读取时，以原因 `CannotReadSource` 抛出。
++   entry .pending   是否有一个暂存的候选文件在等待启动器
++       数据目录中是否存在 `.pending`；无法解析该目录时为 false。
++   entry .outcome   启动器最近对暂存候选文件所做的事，直到被确认为止
++       从数据目录读取 `.upgrade-result`：结果词、候选文件和先前可执行文件的构建 id，以及发生的时间。
++       当没有记录、记录无法读取，或者记录指明的结果是这个版本不认识的时，为 `Unset`。
+
+% 2 1 0 0869379b5f06112b1d572a098d4cb7fd
+
+% 3 1 0 0eeccbcc70fb07a115f9a5a777b00772
+
+% 4 1 0 0039843ae483513f1364f9c8e70e6768
+
+% 5 1 0 0e8dd59a80b76e3403d7277feed43887
+
+% 6 1 0 007d7ba6a028bfe113919c24533a7c31
+
+% 7 1 0 161349d4e4179a53082376a93f43c13c
+
+% 0 1 0 0df44814831ba12603ea0f5db931fbd6
+
+% 0 1 0 091e4a60da0e612718de5f2fded4e2be
+
+% 0 1 0 073218ebef3804371da5d8973e63e9ee
+
+% 0 1 0 0029f2db5afd66f00b108564ad94586c
+
+% 1 1 0 1c261bba6a47a6f9064ba62cff7d0d90
+
+@ 0 8 0 12602106ddc831d30f3073ad7616979c
++   entry .acknowledge   忘记上一个结果，使应用程序对每个结果只报告一次
++       删除 `.upgrade-result`；删除失败会被忽略。
++   entry .enabled   正在运行的可执行文件的启动器是否会接受已签名的升级
++       启动器设置的 `ethereal.upgradable` 属性：对于没有发布密钥和应用程序标识符的可执行文件——开发构建，其启动器拒绝所有候选文件——为 false，属性不存在时（较旧的启动器，或没有启动器）也为 false。
++       需要一个 `System`。
++   entry .Outcome   启动器对暂存候选文件所做的事：结果、构建 id 和时间
+
+% 1 1 0 0bdce2fa8884300119844dca284eee9b
+
+@ 0 4 0 12bd85d4b15d39361d924821f7995ba4
++         由 `Upgrade.outcome` 从启动器写下的记录中读回。
++         `candidate` 是暂存的可执行文件的构建 id（若它没有记录则为零），`previous` 是检查它的那个可执行文件的构建 id，因此报告可以说明哪个构建替换了哪个。
++     entry .Result   启动器对候选文件的判定
+
+% 1 1 0 14248996274bd89d1f273be1b9ac9f92
+
+@ 0 20 0 10ddbf79572f4a10165600fec4a7dfd2
++           `Applied`——_the upgrade was applied_；`Disabled`——_the running executable does not accept upgrades_（没有内置密钥或应用程序 id）；`NoRecord`——_the candidate is not an XEK executable_；`WrongApplication`——_the candidate was built for another application_，即使用同一个密钥签名也是如此；`BadSignature`——_the candidate's signature does not verify_，未签名或被篡改的文件会得到这一结果；`NotNewer`——_the candidate is not newer than the running executable_，除非该发布版本是用 `--allow-downgrade` 签名的；`SwapFailed`——_the candidate could not be swapped into place_。
++           用恢复密钥签名的发布版本，与用发布密钥签名的一样会被应用。
++       entry .communicable   把每个结果渲染为消息
++       entry .parse   启动器的结果词所指的结果，对于这个版本不认识的词则为 `Unset`
++           `applied`、`disabled`、`no-record`、`wrong-application`、`bad-signature`、`not-newer` 和 `swap-failed`。
++     entry #result   启动器的判定
++     entry #candidate   暂存的可执行文件的构建 id，若它没有记录则为零
++     entry #previous   检查候选文件的那个可执行文件的构建 id
++     entry #time   发生的时间，以纪元毫秒表示
++     entry #when   发生的时间，作为任何由纪元毫秒构造的瞬时类型
++         `outcome.when[Instant]`，适用于任何 `Instantiable across Instants from Long`。
++   entry .Error   无法暂存候选文件时抛出
+
+% 1 1 0 114447d4942a7522146a13d672c59ae8
+
+@ 0 7 0 1307c8eff37ef6af16edece447d2a72d
++         错误 `↯/s.140.1`：_could not stage the upgrade because `reason`_，由 `Upgrade.stage` 抛出。
++         原因是一个 `Clarification`，因此完整的代码是 `↯/s.140.1.1` 到 `↯/s.140.1.3`：`CannotReadSource`（1）——_the upgrade source could not be read_；`CannotWritePending`（2）——_the .pending file could not be written_；`CannotResolveName`（3）——_the running application's name is not available_，在没有启动器的情况下运行的 JVM 就是如此。
++     entry .Reason   无法暂存候选文件的原因
+
+% 1 1 0 1690d163d4862fce1792f6660bc47fe7
+
+@ 0 5 0 0d9309b46db27f24135d9fd222220549
++           `CannotReadSource`、`CannotWritePending` 或 `CannotResolveName`，编号为 1 到 3；伴生对象的 `Communicable` 会渲染每一种。
++       entry .communicable   把每个原因渲染为消息
++       entry #number   该原因在错误 `↯/s.140.1` 中的编号
++     entry #reason   无法暂存候选文件的原因
+
+@ 0 1 0 1dc02c91de0e7a361cba8fca521c012a
++ entry .Terminus   客户端的某个标准流所连接的对象：终端或管道
+
+% 1 1 0 1d8af006801c661c139a50b8770f61eb
+
+@ 0 7 0 0e6ca6ca72d48f94026ca3b307f51b42
++       `Terminal` 或 `Pipe`。
++       守护进程自己无法判断——它的流是启动器的套接字，而不是客户端的终端——因此 `Resident#cliInput`、`Resident#cliOutput` 和 `Resident#cliError` 都是启动器在 `init` 文档中报告的结果，而这三者确实可能不同：从终端运行的 `mytool > file`，其 stdin 在终端上，stdout 在文件上。
++       文件、套接字或空设备都算作 `Pipe`。
++       它编码为小写文本 `terminal` 和 `pipe`，也从它们解码。
+
+% 2 1 0 0d57ac00aba9908d1c875f33faf5ca05
+
+% 3 1 0 0dc92000c69b468a0272a6be1ff78262
+
+% 4 1 0 14ab552f1bddd2d00f463ccf1402f261
+
+% 5 1 0 139c45d6cbe844161597b58b1b813801
+
+% 7 1 0 04654627ee76ff011f8f2201e572c86f
+
+% 8 1 0 09b64098cdd9cd6d03f2196b3695d401
+
+% 9 1 0 09d1fdc7e8ce3edf10811e39529eb003
+
+% 10 1 0 10defd038c9286f717d94bcc4d25da47
+
+% 12 1 0 0a75bf29d839c8490a42c7900582bdeb
+
+% 13 1 0 03b71b6a259d192312b3cfeeb43d0bb1
+
+% 14 1 0 05ae8da65bd611fa0c1d9b477f98ee46
+
+% 0 1 0 1dc100b8dea0d1b5055bc4f1d3b04b65
+
+% 0 1 0 059792989eed65001336b077420e3136
+
+% 0 1 0 082d58cb682c34d1127d2f2059e657a0
+
+% 2 1 0 0978c4cfc33050bf1795fe6d63692bb8
+
+% 3 1 0 1d39378daa00fede18a21f7d4ab2ca5c
+
+% 1 1 0 0589d39ede868c391917be9fd22bd7dc
+
+@ 0 2 0 1019260ea467f316052696fcc71d8f18
++   entry .decoder   把 `terminal` 或 `pipe`（不区分大小写）读取为 `Terminus`
++   entry .encodable   把 `Terminus` 写为 `terminal` 或 `pipe`
+
+@ 0 1 0 054397a2c6f411d91a0e5b542f8d215e
++ entry .Tty   对客户端终端要求的模式：原始模式、带回显的规范模式，或不带回显的规范模式
+
+% 1 1 0 19ebc14406eeeaa818bd165c60017992
+
+@ 0 7 0 1b4614e676d4f91014377652ad86d0a9
++       启动器在连接之前把终端 stdin 设为原始模式，以便把单个按键转发给交互式会话。
++       需要普通行输入的命令会通过会话请求 `Canonical`——这时终端驱动程序自己提供回显和行编辑——或者请求 `Concealed`，即不回显任何内容的规范模式，读取密码就是用这种方式；`Raw` 把它恢复回来。
++       `Resident#cooked` 和 `Resident#concealed` 发出这些请求，并在之后恢复 `Raw`；`#canonical` 和 `#echo` 是每个请求所变成的 `Launcher.Message.Mode` 文档中的两个标志。
+
+% 1 1 0 1c4535dc6f7145991438f2d0a4dc13e0
+
+@ 0 2 0 1f0976c8097bf409056f22a9636d61b3
++   entry #canonical   该模式是否为规范模式：对 `Canonical` 和 `Concealed` 为 true
++   entry #echo   终端是否回显输入的内容：只对 `Canonical` 为 true
+
+@ 0 8 0 1da828f6fc5584f10ec95eb386f2fafd
++ entry .Transcoder   把 Windows 控制台的输入从其代码页逐字符重新编码为 UTF-8
++     一个包装另一个流的 `java.io.InputStream`，以控制台的输入代码页解码字节（当它不是 65001 即 UTF-8 时，`init` 文档会以 `inputCodepage` 报告它），并交付它们的 UTF-8 编码，使守护进程的其余部分以 UTF-8 读取调用的输入。
++     它一次读取一个字符——代理对作为一个字符——因此从连接中取走的客户端输入不会多于调用所请求的。
++     当代码页需要时，`cli` 会用它包装会话的 stdin；`available()` 是最后一个字符尚未交付的字节，`close()` 关闭底层的读取器。

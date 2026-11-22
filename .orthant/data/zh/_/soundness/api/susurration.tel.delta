@@ -1,0 +1,1569 @@
+orthant 2 language
+
+% 0 1 0 0f04ec4b9ac2d4270a232409219e1f6b
+
+% 0 1 0 0b040cf822ce15ef18fff5ee534dad92
+
+% 0 1 0 0b5938ce7315323607e1922cbc4d93e2
+
+@ 0 1 0 1db4ef96f90d0e33015c642b578fe240
++ info   原生 SSH-2 客户端：主机密钥、客户端配置、传输层、认证和远程命令
+
+% 0 1 0 0ca6d61ddd9511ea1cdae38f1414f6fe
+
+@ 0 9 0 136498f704958ab7076e70c21aab0f06
++     _Susurration_ 是一个完全用 Scala 编写的 SSH-2 客户端：不启动任何 `ssh` 可执行文件，也不经由 JNI 访问任何东西。
++     它读取每个客户端都会读取的两个文件，即作为 `KnownHosts` 的 `known_hosts` 和作为 `SshConfig` 的 `~/.ssh/config`；它在同轴的 `Duplex` 上实现 RFC 4253 的传输层（`Transport`：标识交换、密钥交换和加密的数据包协议），按 RFC 4252 的描述用公钥认证（`Signer`，来自已加载的 `PrivateKey` 或 `ssh-agent`），并通过 RFC 4254 的连接协议运行命令（`Session` 和 `Channel`）。
++     每条消息都用 RFC 4251 的线上类型编码，由 `Wire.Reader` 和 `Wire.Writer` 读写。
+
+@ 0 3 0 0d4e4e224c7d37ee0770b0d105df2ad7
++     这些部件由 `Ssh.Endpoint` 组装起来：一个主机、一个端口、一个用户，以及证明该用户身份的签名者。
++     它的 `session` 建立连接，对照作用域中的 `Ssh.HostKeys` 方针检查服务器的主机密钥，进行认证，并借出一个运行命令的 `Session`：
+
+% 2 1 0 15bea52a78219d94091838f8b3fdbf51
+
+% 3 1 0 11917a34ab01378106646bc5835ee0a9
+
+% 1 1 0 0c5ceab6fcbd3b691fba3cf9ed81c8a0
+
+% 0 1 0 1ce8fe6ca033a15a0bd38efcfa5b98d2
+
+% 0 1 0 0323f27fc4985e0804a43d7947f66e41
+
+% 0 1 0 15d9e9539b91fada08baa01cab1bcfc5
+
+% 0 1 0 09583daf6313cc2613f1f3df627c02f3
+
+% 0 1 0 1166258a5e9c00d8005e2019d58fd80e
+
+% 0 1 0 11638efeb008c55609d015e26792ca37
+
+% 0 1 0 14a68bffa6b708411ac2ce37360b6c83
+
+% 0 1 0 03f91ab3dc19c4f9112c539014548423
+
+% 0 1 0 19d9cd25dbdd427008960b33feb31ce2
+
+% 0 1 0 1ef4e1c4939a2d8918a69110e3dc72dd
+
+% 0 1 0 0c93b0cece99d3950e84029f9398b35b
+
+% 0 1 0 1078672f4bcce65b0d8aded88e475a63
+
+% 0 1 0 120d472e0d84702d04f5ad59f0d79da4
+
+% 0 1 0 12cb7b4c07cf84a714feac848280a015
+
+% 0 1 0 1bff5a5414aaca200fc8eb1fde9fb9f8
+
+% 0 1 0 04589a5261f958cb12c6e099e08f8670
+
+% 1 1 0 1cd065fdad2dbb08092e76ebfeca6b60
+
+@ 0 4 0 00c98debb6341b831a1b71aeaca2be50
++     在端点之下，每一层都可以单独使用，需要命令以外的东西（比如 git 的打包协议）的程序，可以在它所需的那一层之上构建。
++     观察这些层如何逐层叠加，是理解这个库如何组合在一起的最清楚的方式：
+
+% 2 1 0 0350ffb5c76b81cc04d7272bf1b3ef29
+
+% 3 1 0 1d6a559b4594bb9a032f19caa3655251
+
+% 1 1 0 0ba4bcdec8ddbebd0e9feee2186cf033
+
+@ 0 1 0 0c5fbddd72f64a440c4c6513134609b3
++       label 传输层：在已连接的双工通道上进行标识交换和密钥交换
+
+% 1 1 0 09fba7d48915001e07fd6fed7cb8b4f0
+
+% 2 1 0 0f8b576b991fb54e169a6944db6b92ec
+
+% 3 1 0 16a5a46b29277e7e1134cc69947373c9
+
+% 4 1 0 0ecbd6c12a3577690f4fdee3458c518a
+
+% 0 1 0 0aacc9eea8da631419e969eb77e10325
+
+% 1 1 0 06c4d37e33adf13e1f1ad05e3056a117
+
+@ 0 1 0 17f8941edb987d1b0ab8a5871a1bdf65
++       label 认证：服务器接受的第一个签名者胜出
+
+% 1 1 0 0b3d738ce307ca5c0bff8c1e66218c64
+
+% 2 1 0 1db9e90484c12a6c1e3984d2f94af710
+
+% 3 1 0 06f970f6c2925fc312ab1f1e194b4a8a
+
+% 4 1 0 023b20d022113d8d06eb74162e21f568
+
+% 5 1 0 049efc7135f7161101394e5cbe12d8ec
+
+% 1 1 0 1711b987648f8f8c12bb6b1153037c4e
+
+@ 0 1 0 017765fb06e9437306b4184356be5fc2
++       label 已认证传输层之上的会话运行一个命令
+
+% 1 1 0 0580e7c64758df1700bda42d7a697122
+
+% 2 1 0 13a50ecd2706f66f0cb99227acae19f4
+
+% 3 1 0 1a98bfa29bc27496136dbb3bdb4e58aa
+
+% 4 1 0 1b14064adf1cb1ae0066e38bfa6cd1d2
+
+% 5 1 0 018017b864817b42169a95ca64cc00b9
+
+% 0 1 0 19cc7a660a3d35b80f6b4ee26821fc42
+
+% 0 1 0 05fbcc2dcaeb6832144e599491184d96
+
+% 0 1 0 02828580cd693b0c12fb1607231ccf2e
+
+% 0 1 0 15f10310e91ad69e0d76c40deecdfd0e
+
+% 1 1 0 10ce56935fa9767e095a4629c28839cc
+
+@ 0 1 0 0f32909e02fbdc36096ee09ad3a4e56b
++       label 端点的会话完成以上全部，并在之后关闭连接
+
+% 1 1 0 0ecf946b527f2d23097b6f733d30c6c7
+
+% 0 1 0 1c886aeb788d3857187383c24f777db3
+
+% 0 1 0 029259315e8534c11e7b4dadcee1444c
+
+% 1 1 0 1c916a3859781e1611bcafe8152131af
+
+% 1 1 0 11e767d9efb47d1a0f4b85a0051bf1dd
+
+@ 0 7 0 1f806fdddab164b01cc9ebaa879b30aa
++     这个客户端刻意是单线程的：传输层由一个线程驱动，该线程发送消息并读取返回的内容，这正是命令或 git 客户端所做的每次交换的形状。
++     它提供的密码算法是当前每个服务器都具备的 AEAD 算法（`chacha20-poly1305@openssh.com`、`aes256-gcm@openssh.com`、`aes128-gcm@openssh.com`），密钥交换是 `curve25519-sha256` 和 `ecdh-sha2-nistp256`，主机密钥可以是 Ed25519、ECDSA P-256 或 RSA（基于 SHA-2）。
++     目前还不会在达到 RFC 4253 的限制后重新协商密钥。
+
+@ 0 7 0 0d62e5073ec80fb90f64da6595346064
++     各层所需的上下文值：一个 `Ssh.Provider`（具有 X25519、ECDH、Ed25519、ECDSA、AES-GCM 和 ChaCha20 的 `Crypto`，`providers.javaBaseProvider` 就是），一个 `Ssh.Algorithms`（`Ssh.Algorithms.default` 在隐式作用域中），一个 `Ssh.HostKeys` 方针（由作用域中的 `KnownHosts` 构建的 given，或 `Ssh.HostKeys.trustOnFirstUse`），一个 `Hash in Sha2[256]`，一个 `Socket.Backend`（`socketBackends.javaBaseSockets`），端点的会话还需要 `Online`（`internetAccess.online`），以及 `Diagnostics` 和一个 `Tactic[Ssh.Error]`。
++     从 PEM 加载密钥需要一个 `Cloak`（`cloaks.heapCloak`）。
+
+@ 0 7 0 091abf9f0017d5c719c18aedeea04fb7
++     这个库只有一个源码集 `susurration.core`，面向 JVM。
++     总括包导出 `Ssh`、`Wire`、`KnownHosts` 和 `SshConfig`；其他类，即 `Transport`、`Channel`、`Session`、`Signer`、`Identity`、`Agent` 和 `Invocable`，与其他库导出的名称冲突，因此从 `soundness` 要以 `Ssh.Transport`、`Ssh.Session` 等方式访问，而在 `package susurration` 内，裸名称保持不变。
++     在 `session` 块内，句柄必须命名（`endpoint.session: ssh ?=> …`）：裸的 `session.exec` 会解析为 aperture 的 `session` 扩展。
+
+% 0 1 0 1674a7560e30fa4812aced92cd51b00b
+
+% 0 1 0 0f721dd6d25763c90bfbfd858ac3a490
+
+% 0 1 0 0a0a6152ffe7d9f309855a93db04fd48
+
+% 0 1 0 01fd39836a5af29e0ef1f8e15cf33348
+
+% 0 1 0 00283ac8d5d483b51024f5d281be438b
+
+@ 0 1 0 012b3db6192a379303fd88c21d847677
++ entry .Ssh   协议的常量、客户端的决定，以及总括包通往其他类的入口
+
+% 1 1 0 198e98cd8bd0c18a0093a19bf476f13d
+
+@ 0 7 0 068b03a1e95d81f31a8bb3e32369b149
++       `Ssh` 保存 SSH-2 协议所固定的东西，即 `.Version`（客户端的标识字符串）和 `.Message`（RFC 4250 的消息编号），以及客户端所做的决定：`.Algorithms`，提供哪些算法、以什么顺序提供；`.HostKeys`，是否信任主机的密钥；`.Credentials`，在只知道 URL 时身份从哪里来；以及 `.Endpoint`，一个目的地，它的 `session` 建立连接、进行认证并运行命令。
++       `.Error` 是每一层都会抛出的那一个错误，连接失败的每种方式各有一个 `Reason`，而 `.Provider` 是传输层所需的 `Crypto` 细化。
+
+% 2 1 0 1aed98e4134797d30c34516f34819e2f
+
+% 3 1 0 0687b8d2dd4dcf5206dff72c6b003672
+
+% 4 1 0 1aa60d8fbfc2131903800f8ce21cd936
+
+% 5 1 0 04947e895880196e075678d3e425d1e7
+
+% 6 1 0 1205000f98ea21f90e0d07c9e2aff0ba
+
+% 7 1 0 01e4f116741c14f61f2e764bf0fa29ff
+
+% 8 1 0 0e173935dce3077a19a420747cc6223f
+
+% 9 1 0 1305ef45900d5cfa03d27abd3151445d
+
+% 10 1 0 1ad6d40bef79dd351394767149c9eb04
+
+% 11 1 0 09d3e0d3a161f2f017421dea6d17453e
+
+% 0 1 0 1cf68bd0bb102d450636cc1f59fee82d
+
+% 0 1 0 0dda17c4b634ac0617bd822238043838
+
+% 2 1 0 066fe3a6c16640e00d63a2e1f081b36f
+
+% 3 1 0 148da0912fb7256414f3102734ae6d74
+
+% 4 1 0 0fbfcbef98535be1060e4af35f785dbe
+
+% 1 1 0 02c713548b0fbc2b07f4a2725d8b47c8
+
+% 0 1 0 06bec98cf28a048400e96f960f29dbca
+
+% 1 1 0 19ecfd801ceb8d3c168a7f191af2bd09
+
+@ 0 6 0 1fb3592d609b92d701f0cfabe776c77b
++       从 `soundness` 总括包来看，这个库的类是 `Ssh` 的成员，即 `Ssh.Transport`、`Ssh.Channel`、`Ssh.Session`、`Ssh.Signer`、`Ssh.Identity`、`Ssh.Agent` 和 `Ssh.Invocable`，因为其他库导出了它们自己的 `Transport`、`Channel`、`Session`、`Agent` 和 `Identity`。
++       每一个都是一个类型别名加一个伴生值，因此 `Ssh.Signer(key)` 和 `Ssh.Transport.Negotiated` 的用法与 `package susurration` 内的裸名称相同。
+
+% 1 1 0 0f5762804699c310116d13e2a88b0a0e
+
+% 1 1 0 0b8c5438e058322106bf47283623c81e
+
+% 2 1 0 0f938b517d07e38500a70eb211243fc2
+
+% 0 1 0 0345773b3d15fb640016392b1ff437d0
+
+@ 0 24 0 041642b5242c0e3812f8974079bbabb1
++   entry .Transport   `susurration.Transport`，即传输层，从总括包以 `Ssh.Transport` 访问
++       一个类型别名加一个伴生值，因此 `Ssh.Transport(duplex, host, port)` 和 `Ssh.Transport.Negotiated` 就是该类及其伴生对象。
++       完整说明见 `susurration.Transport`。
++   entry .Channel   `susurration.Channel`，即会话通道，从总括包以 `Ssh.Channel` 访问
++       一个类型别名加一个伴生值；`Ssh.Channel.Event` 是通道的事件类型。
++       完整说明见 `susurration.Channel`。
++   entry .Session   `susurration.Session`，即已认证的连接，从总括包以 `Ssh.Session` 访问
++       一个类型别名加一个伴生值；`Ssh.Session.Result` 是 `exec` 返回的东西。
++       完整说明见 `susurration.Session`。
++   entry .Signer   `susurration.Signer`，即身份证明，从总括包以 `Ssh.Signer` 访问
++       一个类型别名加一个伴生值，因此 `Ssh.Signer(key)` 基于已加载的私钥创建一个签名者。
++       完整说明见 `susurration.Signer`。
++   entry .Identity   `susurration.Identity`，即密码算法的密钥如何为 SSH 签名，以 `Ssh.Identity` 访问
++       一个类型别名加一个伴生值。
++       完整说明见 `susurration.Identity`。
++   entry .Agent   `susurration.Agent`，即 `ssh-agent` 客户端，从总括包以 `Ssh.Agent` 访问
++       一个类型别名加一个伴生值，因此 `Ssh.Agent(socketPath).identities()` 把代理的密钥列为签名者。
++       完整说明见 `susurration.Agent`。
++   entry .Invocable   `susurration.Invocable`，即命令如何变成命令行，以 `Ssh.Invocable` 访问
++       一个类型别名加一个伴生值。
++       完整说明见 `susurration.Invocable`。
++   entry .Version   这个客户端发送的标识字符串：`SSH-2.0-susurration_0.72`
++       在任何其他内容之前发送的那一行，以 CR LF 结尾（RFC 4253 §4.2），也是作为 `V_C` 哈希进交换哈希的文本。
++       服务器自己的那一行是 `Transport#serverVersion`。
++   entry .Message   RFC 4250 §4.1.2 的消息编号，作为具名的 `Byte` 常量
+
+% 1 1 0 187eb65cc9b64f341a0c8b128e4daa76
+
+@ 0 10 0 1375f4832448169c095b12d3915e252a
++         每个数据包载荷的第一个字节指明它的消息。
++         以下是传输、认证和连接协议所使用的编号：`Disconnect`（1）、`Ignore`（2）、`Unimplemented`（3）、`Debug`（4）、`ServiceRequest`（5）、`ServiceAccept`（6）、`ExtInfo`（7）、`KexInit`（20）、`NewKeys`（21）、`KexEcdhInit`（30）、`KexEcdhReply`（31）、`UserauthRequest`（50）、`UserauthFailure`（51）、`UserauthSuccess`（52）、`UserauthBanner`（53）、`UserauthPkOk`（60）、`GlobalRequest`（80）、`RequestSuccess`（81）、`RequestFailure`（82）、`ChannelOpen`（90）、`ChannelOpenConfirmation`（91）、`ChannelOpenFailure`（92）、`ChannelWindowAdjust`（93）、`ChannelData`（94）、`ChannelExtendedData`（95）、`ChannelEof`（96）、`ChannelClose`（97）、`ChannelRequest`（98）、`ChannelSuccess`（99）和 `ChannelFailure`（100）。
+
+@ 0 2 0 067d7f0adbe92c8813f9a677daafe1c4
++         它们是 `Transport#expect` 所接受的，也是 `Wire.Writer` 开始一个载荷时所写的：
+
+% 2 1 0 1f93919d9b0faec114721da46634320c
+
+% 3 1 0 132e661b1fc56f7d19558e1dde2cce15
+
+% 2 1 0 1b9b76c0e5ee49061e2cfda9a448befe
+
+% 0 1 0 0b63c05dd8a8dcd403732184fe8f8323
+
+% 0 1 0 10097aadf65273601d568288b1c6ca30
+
+% 0 1 0 1ff4ecbe5a40eabd167e840aaa7927f0
+
+% 1 1 0 09b6ec0da0182e6d06a03ae509bece4b
+
+% 0 1 0 1d784d7dcee20b580786991d8abfa559
+
+% 0 1 0 0fbd2bd73b52f27c1fc73abf69b1f3a9
+
+% 0 1 0 1d257956b1e8d49b08f792a7de50b300
+
+% 0 1 0 1ac8df5b1a28446a1408c04df3875d5a
+
+% 0 1 0 1e12c396efa0c4d7121723c403d5e728
+
+% 0 1 0 1b45f285a061d6661694e40e07865c2c
+
+% 0 1 0 1fb3c79affd4331c1ecccb9c50613dfd
+
+% 0 1 0 1c653596071b56011f3e79e94a013ee2
+
+% 0 1 0 18533b8c97b773cd189451646793ae0a
+
+% 0 1 0 1467753ec5349b301f43adfb85898b65
+
+% 0 1 0 0304b6471c64c8611cc211feaf018218
+
+% 0 1 0 0205d63528b4d82109551212937b6454
+
+% 0 1 0 1efaaf113d4691d400790d6fd982b377
+
+% 0 1 0 0c1bb52820684d2d1e65096f8cb3a0fd
+
+% 0 1 0 0cf877104e7245c514438c1f7e8527c3
+
+% 0 1 0 0261f8163895b21b0a939c3bdc4e86c0
+
+% 0 1 0 17ab715cfc8c3561024f5cfb867e5397
+
+% 0 1 0 0195eaa88605192f06e1be90fd808ee8
+
+% 0 1 0 161027141b0a32c60d25228dc60adc06
+
+% 0 1 0 104eb9fce7f6a5fa00532b635df488c0
+
+% 0 1 0 1cde17cc88bf18330c52520171eccb96
+
+% 0 1 0 09f2b7d1eed3115313e0e4e7978474c2
+
+% 0 1 0 0ee58c7f313e89e0143a84467365c626
+
+% 0 1 0 037b4973167de06216878624b2f0a187
+
+% 0 1 0 12db4fd2503a59960c42afc2209b7a9a
+
+% 0 1 0 14ef3c6af92b090a0762369ed86bc9df
+
+% 0 1 0 1017bfd0ff84418e1fb63fc4c713737d
+
+% 0 1 0 0c99775036abccff1a63e65f8b4f042b
+
+% 0 1 0 078e20ad43bb904a0f15c40c0f00182e
+
+% 0 1 0 0ba0f052e9529a231451f425f13b23d9
+
+@ 0 9 0 012420f4c69171ed0677d9974f8aab30
++   entry .Provider   传输层所需的 `Crypto` 提供者：X25519、ECDH、Ed25519、ECDSA、AES-GCM 和 ChaCha20
++       enigmatic 的 `Crypto` 的一个细化，带有密钥交换、主机密钥验证和 AEAD 密码算法所调用的成员：`x25519` 和 `ecdh`（各为一个 `Crypto.KeyAgreement`）、`ed25519` 和 `ecdsa(digest)`（各为一个 `Crypto.SignatureScheme`）、`aesGcm`（一个 `Crypto.Aead`）和 `chaCha20`（一个 `Crypto.StreamCipher`），以及每个提供者都有的随机来源、HMAC 和 RSA。
++       `providers.javaBaseProvider` 满足它，它是 `Transport`、`Identity` 的 given 以及 `Ssh.Endpoint` 的会话的上下文参数。
++   entry .Algorithms   客户端提供的算法，按偏好顺序，以其注册名称给出
+
+% 1 1 0 0688a27ec57163a10366c3eb25b7fc71
+
+@ 0 5 0 19cce5ae3bee2e390d8932755218c478
++         `Transport` 在它的 `KEXINIT` 中发送这些列表，每类中服务器也支持的第一个被选中（RFC 4253 §7.1）；某一类没有共同算法时，抛出带 `NoCommonAlgorithm(kind)` 的 `Ssh.Error`。
++         伴生对象的 `.default` given 把默认值放入隐式作用域，因此满足于默认值的客户端无需提及该类型；不满足的客户端则把自己的绑定为局部 given。
+
+% 2 1 0 030f7b642d5331000b7d598ff02c1c53
+
+% 3 1 0 1d705ba5d87caeb70508ac081cbf1ca2
+
+% 0 1 0 152c3839fe0796da1bb75556ca6f1ec9
+
+% 0 1 0 01b8bd0789e032c21b867a401c328c76
+
+% 0 1 0 0007cc5b68494564199c9576544982e9
+
+% 0 1 0 0b12a1277bbd1a6d0c07ad27646668fa
+
+% 1 1 0 0c84d84bfa4e62da0008076381670900
+
+@ 0 18 0 068eb49f72cceed018edbe81bed0cf85
++         各字段：`kex`，密钥交换方法（`curve25519-sha256`、`curve25519-sha256@libssh.org`、`ecdh-sha2-nistp256`）；`hostKey`，主机密钥算法（`ssh-ed25519`、`ecdsa-sha2-nistp256`、`rsa-sha2-512`、`rsa-sha2-256`）；`cipher`，在两个方向上提供（`chacha20-poly1305@openssh.com`、`aes256-gcm@openssh.com`、`aes128-gcm@openssh.com`）；`mac`（`hmac-sha2-256`），AEAD 密码算法从不使用它，但协议要求指明它；以及 `compression`（`none`）。
++         不在这些默认值中的名称会按原样发送给服务器，但传输层并不实现它，因此 `Ssh.Algorithms(cipher = List(t"none"))` 会被每个服务器拒绝，而不是达成一致。
++     entry .default   提供默认列表的 given：Curve25519、Ed25519 和 ChaCha20-Poly1305 优先
++         通过伴生对象位于隐式作用域中，因此 `Transport` 无需导入即可使用默认值；局部的 `given Ssh.Algorithms` 优先级高于它。
++     entry #kex   密钥交换方法，最偏好的在前
++     entry #hostKey   主机密钥算法，最偏好的在前
++     entry #cipher   密码算法，最偏好的在前，在两个方向上提供
++     entry #mac   MAC 算法，为协议的需要而指明；AEAD 密码算法自带完整性保护
++     entry #compression   压缩方法：`none`
++   entry .HostKeys   关于服务器主机密钥的方针：根据它出示的密钥决定是否继续
+
+% 1 1 0 10228bfb52cef58d01cbbf8da55d0e04
+
+@ 0 6 0 0b44cf49558258ac0b7fc536ddc6f3e1
++         在信任任何东西之前，密钥交换把主机、端口、密钥类型（`ssh-ed25519`、`ecdsa-sha2-nistp256`、`ssh-rsa`）及其 OpenSSH 数据块交给方针，由 `#accept` 说明是否继续；`false` 会使 `Transport#connect` 抛出带 `HostKeyRejected(keyType)` 的 `Ssh.Error`。
++         `Transport` 和 `Ssh.Endpoint` 的会话都把方针作为上下文值接受，而且没有默认值：必须做出选择。
+
+% 2 1 0 0f5c9b7a143792ab02471d0ac2eb63ca
+
+% 3 1 0 0b162a1e1210afe719923541084cd83c
+
+% 1 1 0 1d965623f602ebf81d0863967e38b4b9
+
+% 0 1 0 0341371a3e710e251515820ee736de03
+
+% 0 1 0 0e94fa3e8a7ac4bc0fc42ed9d5416329
+
+% 0 1 0 1a50f96456ebc31316b94759595933cc
+
+% 1 1 0 03cfb0092098a0b81ddaaeb22d29b86b
+
+@ 0 6 0 150504b62c567bb31932a7e33efc60be
++         `.knownHosts` 是一个基于作用域中 `KnownHosts` 的 given，因此单是 `given KnownHosts = …` 就能使严格方针可用；`.trustOnFirstUse` 接受文件中未提及的密钥，就像 `ssh` 在 `StrictHostKeyChecking=accept-new` 下所做的那样；而 `.insecurelyAcceptAll` 用于针对其密钥不值得记录的服务器的测试。
++         接受首次见到的密钥的方针应当记录它，`KnownHosts.line` 会以该文件自身的形式写出它。
+
+% 0 1 0 046c89c6d3d84f8e1257a54cfd971896
+
+@ 0 14 0 19571fd9faef2b4012a4027f73f2eafb
++     entry .knownHosts   严格方针：只有作用域中的 `KnownHosts` 说密钥是 `Known` 时才接受它
++         一个由作用域中的 `KnownHosts` 和 `Crypto` 构建的 given，因此一旦存在 `given KnownHosts` 就无需导入；`Changed`、`Revoked` 或 `Unknown` 的判定会拒绝该密钥。
++         它也可以直接调用：`Ssh.HostKeys.knownHosts(using known, crypto)`。
++     entry .trustOnFirstUse   接受 `Known` 或 `Unknown` 的密钥，拒绝 `Changed` 或 `Revoked` 的密钥
++         即 `ssh` 在 `StrictHostKeyChecking=accept-new` 下的做法：文件中从未见过的主机受信任，而密钥与文件中记录的不同的主机不受信任。
++         对哈希化的条目需要 `Crypto`。
++         调用者负责记录它所接受的密钥，因为方针不会写入文件。
++     entry .insecurelyAcceptAll   接受每个密钥，不做任何验证
++         用于针对一次性服务器的测试。
++         这种方针下的连接是加密的，但未经认证：路径上的任何人都可能是那个服务器。
++     entry #accept   根据出示的主机、端口、密钥类型和密钥数据块决定是否继续
++   entry .Credentials   传输层只得到一个 URL 时身份从哪里来：用户和签名者
+
+% 1 1 0 0147a503cfaecdf10bbaf8cd7663c029
+
+@ 0 4 0 09923f5459661e3a161f8d8600d718b7
++         git 传输层，或任何拿到 `ssh://user@host/path` 的客户端，对一个主机需要知道以哪个用户身份登录（如果 URL 没有说明）以及在那里尝试哪些签名者；`Credentials` 回答这两个问题。
++         Octogenarian 的 `gitTransports.soundnessSsh` 把它作为上下文值接受。
+
+% 2 1 0 04670e0fa62f014a17ece49f82375d96
+
+% 3 1 0 1765e04839db677518f78ea117155341
+
+% 4 1 0 0f2b4df49df38eb3165488d5bc07d309
+
+% 5 1 0 13b64a54ce652d691bb101deb0a807a3
+
+% 2 1 0 0f6a6202aaa143731b8242e1e1de2d1a
+
+% 1 1 0 18cdc960d5cd8a211e44256cd0d6aed1
+
+% 0 1 0 19daf6e41b87cd2b0475c5ef50776afc
+
+% 1 1 0 1002ebe31c5daae7106ccb5e0706905d
+
+@ 0 2 0 17e2f230ca98cf191b8edda799f87a37
++         `Ssh.Credentials(signers*)` 向每个主机提供相同的签名者，对用户不作主张；`.agent` 提供 `ssh-agent` 持有的每个密钥。
+
+% 0 1 0 130797d3c93e9fc61f7fa9e78fb1b5d7
+
+% 0 1 0 1949e4ae27fedfdf0b74d8a430fddd4a
+
+@ 0 10 0 1e525375d614376912fbc18679570502
++     entry .apply   对每个主机使用相同的签名者，对用户不作主张
++         `Ssh.Credentials(Ssh.Signer(key1), Ssh.Signer(key2))`：对每个主机 `user` 都是 `Unset`，而无论主机和用户为何，`signers` 都是给定的列表。
++     entry .agent   位于某个套接字路径的 `ssh-agent` 持有的每个密钥，每次调用时重新列出
++         需要 `Socket.Backend` 和 `Diagnostics`。
++         `signers` 每次都向代理请求其身份；无法访问的代理产生空的签名者列表而不是错误，因此随后认证会以 `Unauthenticated` 失败。
++     entry #user   在某个主机上使用的用户，`Unset` 表示使用 URL 中的或调用者的
++     entry #signers   对某个主机和用户要尝试的签名者，按顺序
++   entry .Endpoint   目的地：主机、端口、用户和签名者，它的 `session` 建立连接、进行认证并运行命令
+
+% 1 1 0 0b0d35b0bdad10f6134a67dd673bb5c1
+
+@ 0 5 0 01c69571fb72b2780d98fe8d2b34b508
++         `Endpoint` 是 `Sessional`（通过 `.sessional`），因此 `endpoint.session: ssh ?=> …` 打开一个 TCP 连接，执行密钥交换，对照作用域中的 `Ssh.HostKeys` 检查主机密钥，以 `#user` 身份用 `#signers` 认证（服务器接受的第一个胜出），把一个 `Session` 借给块，并在块结束时（无论以何种方式结束）断开连接并关闭套接字。
+
+% 2 1 0 0f7d12a9c543d2ec0f0e24a7d34db3f0
+
+% 3 1 0 1195fab0899d0bd8158e157ab0ce4351
+
+% 4 1 0 0d4b1a5ae14f075a16089caad8b491e0
+
+% 5 1 0 062669d4a3c2186708495ebb7cc1c13b
+
+% 2 1 0 0fa4331ff26c2bb01f9015f6cb3acddb
+
+% 3 1 0 0936963771dcd08a1ca00e9c60c2b437
+
+% 1 1 0 0f173221c2aa9384153235e384a73d0f
+
+% 0 1 0 18464b19ab8acee113076f882fe63822
+
+% 0 1 0 0a2e252fedb67daa153c82ae9a1e2c86
+
+% 1 1 0 0972f93f3fc5e790017b3c9975ea599d
+
+% 0 1 0 1cc3b0e519c77d4c1c98c05c46dfe672
+
+% 0 1 0 18bedf4f231657dd01e3928261366abe
+
+% 0 1 0 10c2dbeb812baf2e02ea066e413669df
+
+% 0 1 0 0fb9e38a6025e33914d9df573dc04272
+
+% 0 1 0 018052ee56965d9f12185afc6e0ed849
+
+% 0 1 0 1abdabe4d61121cd1b4eabfd80b1b326
+
+% 0 1 0 05d2c76b83f6009b1ea303915249dbb4
+
+% 1 1 0 12665113cd9f6d460876088d634dfae4
+
+@ 0 6 0 0087e02b1484b5f01fde5f7fa225427c
++         会话需要 `Online`、`Socket.Backend`、`Every[Socket.Option.Tcp]`、`Ssh.Provider`、`Ssh.Algorithms`、`Ssh.HostKeys`、`Hash in Sha2[256]`、`Tactic[Ssh.Error]` 和 `Diagnostics`。
++         无法建立的连接会抛出带 `Unreachable(reason)` 的 `Ssh.Error`；1–65535 之外的端口抛出 `Malformed`。
++         句柄必须在块中命名，即 `ssh ?=>`，因为块内的裸 `session` 会解析为 aperture 的 `session` 扩展，而不是借出的值。
+
+@ 0 2 0 11dc29aa5cc1e6220ab988a0480a1a53
++         `#resolved` 应用一个 `SshConfig`，因此以用户在命令行上所用的名称（`work`）命名的端点，会变成配置所说的主机、端口和用户。
+
+% 0 1 0 1029cb56995d36e518d438073ea70f9b
+
+% 0 1 0 1899ba6bd14b174203e5a13bc92c35ef
+
+@ 0 13 0 1e658004e0514d091aa3e01d8f9d79ea
++     entry .sessional   使 `Endpoint` 成为 `Sessional` 的 given，把一个 `Session` 借给块
++         一个 `EndpointSessional`，捕获构建它时所用的 `Online` 和 `Tactic[Ssh.Error]`。
++         通过伴生对象位于隐式作用域中；它所需的上下文值列在 `Ssh.Endpoint` 上。
++     entry #host   要连接的主机，以名称或地址给出
++     entry #port   TCP 端口，标准服务器为 22
++     entry #user   用于认证的用户
++     entry #signers   要提供的身份证明，按顺序；使用服务器接受的第一个
++     entry #resolved   经 `SshConfig` 解析后的端点：其 `HostName`、`Port` 和 `User`
++         `endpoint.resolved(config)` 把 `#host` 作为 `Host` 模式查找，用配置的 `HostName` 替换主机，用其 `Port` 替换端口，如果设置了 `User` 则用它替换用户（否则保留端点自己的）。
++         签名者保持不变：`IdentityFile` 是调用者必须自行加载的路径。
+
+% 2 1 0 014b031bffd130331048a92776fc3dc5
+
+% 3 1 0 17cbb5cd18da1d170bd030a1eb6ff5fd
+
+% 4 1 0 1f1542a2632443fc01d36750298b1347
+
+% 0 1 0 120f2babb24f70821a3d1eff92c10552
+
+% 0 1 0 0a5d3175c4a717a418a9d5e7f107db08
+
+% 0 1 0 19225d95cd79142a0c4e75c5eebfaf37
+
+% 1 1 0 06fe7612153b574105061ad72f7ccc7e
+
+@ 0 1 0 19acfd450103a4580ea4f1b4ff337f2c
++   entry .EndpointSessional   `Ssh.Endpoint#session` 背后的 `Sessional` 实例
+
+% 1 1 0 1b874eb48876953507ce65d7110d41fb
+
+@ 0 5 0 0abfb9b7a8fcb96a1682032757bb7b41
++         是一个具名类而不是匿名 given，这样它的 `Result` 类型成员 `Session^` 就不会被类型推断新鲜化。
++         它由 `Ssh.Endpoint.sessional` 从作用域中的上下文值构造，用户通常不会直接指明它。
++     entry #session   建立连接、进行认证并把一个 `Session` 借给块，之后关闭一切
++   entry .Error   连接失败时每一层都会抛出的错误，带有说明失败方式的 `Reason`
+
+% 1 1 0 146513e2c9d1f68b14065ab2594bd278
+
+@ 0 4 0 0ec18997a2a17682167c453e4e215510
++         错误 `↯/s.122.2`：_the SSH connection failed because …_，后接原因自己的消息和编号。
++         一个错误类型同时服务于传输、认证和连接协议，因此 `Tactic[Ssh.Error]` 是它们任何一个所需的唯一战术；来自格式错误消息的 `Wire.Error` 会作为 `Malformed` 并入其中。
+
+% 2 1 0 0d662a3a485767e90e7865ea61e8f69a
+
+% 3 1 0 12b4ec81b13df6a711d144a689faa601
+
+% 4 1 0 00e2ff06281897c81ce6b923e15d5ff5
+
+% 0 1 0 06dc15c047182bd40d9e861f38721fad
+
+% 0 1 0 1ef0105e4efff4cb091df97e0041b808
+
+% 1 1 0 04109648f45e38f40c6cfdd419a5ab00
+
+@ 0 2 0 08471f0dc997ccc401ab31646f866bb8
++     entry .communicable   把每个 `Reason` 呈现为其消息
++     entry .Reason   连接失败的各种方式，各带编号和消息
+
+% 1 1 0 12175bfea6918f710901343728060f6b
+
+@ 2 4 0 11e1efca3a0c744d0861bd2cd8a7e823
++         column  分支
++         column  代码
++         column  消息
++         column  说明
+
+% 0 1 0 07171baff44bc53a1dda77f764b8f0eb
+
+@ 0 7 0 00691563a92a0cf21a5ecc641dd2e7f3
++         row  `Unexpected(message)`  2  _the server sent an unexpected message `message`_  包括 `SSH_MSG_UNIMPLEMENTED` 的 `3`：服务器不理解这个客户端发送的某些内容
++         row  `NoCommonAlgorithm(kind)`  3  _the server offers no supported `kind` algorithm_  `key exchange`、`host key` 或 `cipher`
++         row  `HostKeyRejected(keyType)`  4  _the server's `keyType` host key was not accepted_  `Ssh.HostKeys` 方针拒绝了该密钥
++         row  `BadSignature`  5  _the server's signature over the exchange is wrong_  主机密钥对交换哈希的签名验证失败
++         row  `Disconnected(code, text)`  6  _the server disconnected with code `code`: `text`_  服务器发送了 `SSH_MSG_DISCONNECT`
++         row  `ClosedConnection`  7  _the connection was closed_  套接字在消息中途关闭
++         row  `Integrity`  8  _a packet failed its integrity check_  其 AEAD 检查
+
+% 0 1 0 105dcd02270ed6790ecbc90d99fd2c75
+
+@ 0 5 0 05dc4b4695cba4520c21c54a5d2bfb3b
++         row  `Unauthenticated(methods)`  10  _no identity was accepted; allowed: `methods`_  没有签名者被接受；方法是服务器所允许的那些，`publickey` 或 `publickey,password`
++         row  `Agent(detail)`  11  _the SSH agent `detail`_  无法访问 `ssh-agent`，或它没有列出其密钥，或拒绝签名
++         row  `ChannelRefused(detail)`  12  _the server refused to open a channel: `detail`_  会话通道
++         row  `RequestRefused(kind)`  13  _the server refused the `kind` request_  `exec` 请求
++         row  `Unreachable(reason)`  14  _the server could not be reached: `reason`_  无法建立 TCP 连接；携带 `Socket.Error.Reason`
+
+% 1 1 0 1dae7ee167fceeb903275c37feed7127
+
+@ 0 1 0 1de2b7f6347ab5ee0e67ca475c8eb49a
++     entry #reason   连接失败的原因
+
+@ 0 1 0 12043259fdccfdc202d9c4c4610d0289
++ entry .Transport   已连接的 `Duplex` 之上的 SSH 传输层：密钥交换、加密数据包、认证
+
+% 1 1 0 10d162f6096af53319814964efc4e00d
+
+@ 0 8 0 1d8ebc214e5f297711e0e4ee2d2e121e
++       `Transport(duplex, hostname, port)` 包装一个已连接到服务器的同轴 `Duplex`。
++       `#connect` 执行标识交换和第一次密钥交换（RFC 4253 §4 和 §7：双向的 `KEXINIT`、一次 ECDH 往返、交换哈希、主机密钥对它的签名，以及 `NEWKEYS`），在信任任何东西之前对照作用域中的 `Ssh.HostKeys` 方针检查服务器的密钥；此后 `#send` 和 `#receive` 每次传送一个数据包的载荷，在协商好的 AEAD 密码算法下加密。
++       `#authenticate` 是在它们之上实现的 RFC 4252 公钥认证，而 `Session` 是再在其上实现的连接协议。
+
+% 2 1 0 142872ab04bf203b1443ad0a03c30c7a
+
+% 3 1 0 0bc8227b3118a95612112ab290e1c119
+
+% 4 1 0 039c0b56cac663bd048cd545fa62667d
+
+% 5 1 0 0c7c043c9e2b2c4b0ba5d6b905e0a9ec
+
+% 6 1 0 1ad6ae5fac297b6306f0c7ff1884d670
+
+% 7 1 0 1d40cfcf1ec337c2179c0ff0432769bb
+
+% 8 1 0 0cd2e70f7f46dbdd01e324e44aed4bf2
+
+% 9 1 0 1801a6a490cfc3c3059861dfe53f5348
+
+% 10 1 0 129520bd1095c0bb050a81e4b7d41849
+
+% 11 1 0 17961043907077320fce479c12e877f7
+
+% 5 1 0 0b6e49032e57d5100ea6ea6985b4592d
+
+% 2 1 0 1b98970a8d8d7b5418115f24d24ee8e7
+
+% 3 1 0 0961e2d9321bd24c123d0cb5381ac8eb
+
+% 4 1 0 19f2125286da553307f854a61acda61a
+
+% 0 1 0 14992d8421b941401e98bf28f952235d
+
+% 1 1 0 0f7849e46cea362b13f4e6ee861446d9
+
+% 0 1 0 09993cb2bc9c900d0392591cadca0ea7
+
+% 0 1 0 0630bf5b246ea6ff14abd1ee82d91f4c
+
+% 1 1 0 0dc959bfc5edfb7f1b0de6cfe777007c
+
+@ 0 5 0 0ef53a32609f66dc14c5420906568019
++       构造函数把 `Ssh.Provider`、`Ssh.Algorithms`、`Ssh.HostKeys` 和 `Hash in Sha2[256]` 作为上下文值接受；每个操作都接受 `Tactic[Ssh.Error]` 和 `Diagnostics`。
++       `hostname` 和 `port` 是向主机密钥方针询问的内容，因此它们应当是用户所熟知的服务器名称（如 `known_hosts` 中那样），而不是解析后的地址。
+
+@ 0 8 0 1a8b71f43c974ce118f305c61068e7bb
++       传输层由一个线程驱动：消息的发送与其回复的读取由同一个调用者完成，传输层由一个 `Session` 以及在其上打开的每个 `Channel` 共享。
++       其中没有任何东西可以安全地从两个线程同时调用。
++       密码算法是 AEAD 算法，即按 OpenSSH 定义的 `chacha20-poly1305@openssh.com`，以及按 RFC 5647 定义的 `aes256-gcm@openssh.com` / `aes128-gcm@openssh.com`，因此不使用单独的 MAC，而且目前还不会在达到 RFC 4253 的限制后重新协商密钥。
++       传输层自己的内务消息（`IGNORE`、`DEBUG`、`EXT_INFO`）由 `#receive` 消耗；来自服务器的 `DISCONNECT` 会抛出带 `Disconnected(code, text)` 的 `Ssh.Error`。
+
+% 1 1 0 0fc00af0a1779b750493bba149a11879
+
+% 1 1 0 04cef0dfec01fd9a083b7eb5ebd89d1d
+
+% 2 1 0 1dc41ce288ad771d1dd35d21669cf3a4
+
+@ 0 1 0 0b788f57d1bfbf52125a6d04db76eaca
++   entry .Negotiated   一次密钥交换所协商的算法：kex 方法、主机密钥算法和密码算法
+
+% 1 1 0 1ce2fce57290dc6c0bcd5ad19b5725de
+
+@ 0 3 0 07fbe0eae74602fd0f9c253509844957
++         `connect` 完成后，可作为 `Transport#negotiated` 获取。
++         `cipher` 是客户端到服务器方向的密码算法；服务器到客户端方向的密码算法单独协商，但来自同一个偏好列表。
+
+% 2 1 0 0be5e9f29c6bb5ca11d4e72878aadd71
+
+% 3 1 0 039a8c983808faf514cb65a11f828244
+
+% 0 1 0 0f12f2830648859b0381f7a8a0739cd9
+
+% 1 1 0 107a565651a69e99130785cfad1a0cf4
+
+@ 0 49 0 18d73fc6aeb86bb3022b8eec21c2cbeb
++     entry #kex   协商的密钥交换方法：`curve25519-sha256`、`curve25519-sha256@libssh.org` 或 `ecdh-sha2-nistp256`
++     entry #hostKey   协商的主机密钥算法：`ssh-ed25519`、`ecdsa-sha2-nistp256`、`rsa-sha2-512` 或 `rsa-sha2-256`
++     entry #cipher   为这个客户端发送的数据包协商的密码算法
++   entry #sessionId   第一次密钥交换的交换哈希，它标识会话；在此之前为 `Unset`
++       RFC 4253 §7.2：无论之后进行多少次密钥交换，会话标识符都不会改变，它也是公钥认证所签名的内容，因此签名无法在另一个连接上重放。
++   entry #negotiated   密钥交换所协商的算法，`connect` 之前为 `Unset`
++   entry #serverVersion   服务器的标识行，例如 `SSH-2.0-OpenSSH_10.0`，`connect` 之前为 `Unset`
++       协议允许在 `SSH-` 行之前出现其他行，它们会被跳过，最多一百行；该行被检查是否以 `SSH-2.0-` 或 `SSH-1.99-` 开头，其他任何开头都会抛出带 `Malformed` 的 `Ssh.Error`。
++   entry #connect   标识交换和第一次密钥交换，之后连接处于加密状态
++       发送 `Ssh.Version`，读取服务器的行，并执行密钥交换：发送客户端的偏好列表，选出每类中服务器也有的第一个（否则为 `NoCommonAlgorithm(kind)`），协商一个临时的 X25519 或 P-256 密钥，把服务器的主机密钥交给 `Ssh.HostKeys` 方针（被拒绝时为 `HostKeyRejected(keyType)`），在协商的算法下验证它对交换哈希的签名（验证失败时为 `BadSignature`），并在 `NEWKEYS` 处让两个方向都切换到派生出的密钥。
++       之后 `#negotiated`、`#sessionId` 和 `#serverVersion` 都已设置。
++   entry #send   发送一个带有给定载荷的数据包，在当前密钥下填充并加密
++       RFC 4253 §6：载荷用随机字节填充到密码算法的分组大小（至少四个字节的填充；对 AEAD 密码算法，长度字段不计入对齐，与 OpenSSH 的计算方式相同），封装后写入双工通道。
++       载荷的第一个字节应当是一个 `Ssh.Message` 编号。
++   entry #receive   下一个数据包的载荷，传输层内务已处理，`DISCONNECT` 会被抛出
++       读取并解封一个数据包（AEAD 认证码验证失败时为 `Integrity`），剥离填充，并返回载荷；例外是 `IGNORE`、`DEBUG` 或 `EXT_INFO`，它们被消耗，转而读取下一个数据包；`UNIMPLEMENTED`，它抛出 `Unexpected(3)`，因为它意味着服务器不理解这个客户端；以及 `DISCONNECT`，它抛出 `Disconnected(code, text)`。
++       关闭的套接字抛出 `ClosedConnection`。
++   entry #expect   接收一个必须为给定 `Ssh.Message` 类型的数据包，作为越过其第一个字节的读取器
++       `transport.expect(Ssh.Message.ServiceAccept)` 返回一个定位在消息字节之后的 `Wire.Reader`；任何其他类型的数据包都会抛出带 `Unexpected(number)` 的 `Ssh.Error`。
++   entry #service   请求一个服务，例如 `ssh-userauth`，服务器必须接受
++       发送 `SERVICE_REQUEST` 并期待指明同一服务的 `SERVICE_ACCEPT`（否则为 `ServiceRefused(name)`）。
++       在这个传输层上已获准的服务不会再次请求，因此自行请求 `ssh-userauth` 的 `#authenticate` 可以无害地跟在调用者自己的请求之后。
++   entry #authenticate   以某个用户身份进行公钥认证，依次尝试每个签名者，直到服务器接受其中一个
++       RFC 4252 §7，按顺序使用签名者：对每一个，先询问服务器是否会接受该密钥（不带签名的 `USERAUTH_REQUEST`），只有可接受的密钥才会被要求签名，这对持有许多密钥的代理很重要，因为服务器会统计被拒绝的尝试次数。
++       签名覆盖 `#sessionId` 和请求。
++       横幅会被跳过。
++       没有签名者被接受时，抛出带 `Unauthenticated(methods)` 的 `Ssh.Error`，其中 `methods` 是服务器所允许的逗号分隔列表，例如 `publickey`。
+
+% 2 1 0 007b50f4141e12da0b85cfd6b9136f98
+
+% 3 1 0 1f4a2c4eac5bbd01025759bb7aeb1993
+
+% 4 1 0 04ebb34df9de587e0a45d21f97e91ab3
+
+% 5 1 0 0317f27f5409d58614f984d247fd78f1
+
+% 6 1 0 172dd2c8d20638b0075eb8da38224558
+
+% 7 1 0 125e36c6040624fd098bb21e3dda4781
+
+% 8 1 0 0bf7e1fd0712bbe20d6de8a692bd00ef
+
+% 9 1 0 1160619a68ff6dab016ef9cc293db8d9
+
+% 10 1 0 1e58f3af9e9aaef218558e7c37ada96c
+
+% 11 1 0 082f299b4e53aea11f9d44917efbb5e3
+
+% 12 1 0 0d65bd746905dbf1029c389ff2eafbe8
+
+% 14 1 0 06b1d39bb605224f05e8203f3a8d314d
+
+% 15 1 0 11320139ef1ac3420e618ebee1df0f7c
+
+% 0 1 0 168909f810ae192117f7b0bd7c8e7eef
+
+% 2 1 0 0b1c2b7db3c4e3690594e872f05dd681
+
+% 3 1 0 0521443cab66e4810ee89ddc280b1da0
+
+% 4 1 0 11924e7b71a15fb0092b2755699d267d
+
+% 0 1 0 14ae2da87c2efc480978ad49ffd20f83
+
+% 1 1 0 1a7f3aae35bb4f6b03b8910fd1a2b5da
+
+@ 0 3 0 1cc4351dfb67348717e0f6da74895a1e
++   entry #disconnect   用 `SSH_MSG_DISCONNECT`（by application）礼貌地结束连接，并关闭双工通道
++       RFC 4253 §11.1。
++       `Session#close` 调用它，`Ssh.Endpoint` 的会话在其块结束时也这样做。
+
+@ 0 1 0 13b44240636883bb14342570b8a332a6
++ entry .Session   在服务器上运行命令的已认证连接
+
+% 1 1 0 07362d31a1a98d6b16b7d3e39e9cfe82
+
+@ 0 6 0 149cf28f66b2535e1cf5a447b46d5c40
++       `Session(transport)` 是在一个已连接并已认证的 `Transport` 之上的 RFC 4254 连接协议：`#exec` 以一次交换运行一个命令（写入输入，收集输出和标准错误，等待退出状态），而 `#channel` 把一个 `Channel` 借给块，用于交错读写的协议，例如 git 的协议。
++       会话通常由 `Ssh.Endpoint#session` 借出，而不是手工构建。
+
+% 2 1 0 06cca4cd07432be618ab052f29902cf2
+
+% 3 1 0 1fbab8339384c9b11aea654944ce3cfc
+
+% 4 1 0 17cdb4591a3417800fc0211453e3a2fa
+
+% 5 1 0 19a23ca851324f3c04981fabf13faf3a
+
+% 6 1 0 1bfa660d0d730cf8102f26bb67179072
+
+% 7 1 0 0fb22a1a95bc95c31f40f6f56dbb3496
+
+% 8 1 0 1023829a296ad9c11a94ef5a56f9ff22
+
+% 9 1 0 1a43cda41027567b02cf38c4b2feed89
+
+% 10 1 0 033c33480da6f1510e456e6ae6ed6ef5
+
+% 11 1 0 058622e0ff3a2b460c8d421c2cace636
+
+% 12 1 0 04bc26ec48854a6c12d17005db2bccff
+
+% 14 1 0 105d8eef2260ced707dee926bc5ef009
+
+% 15 1 0 04ab130f6df413bb0981132156684b07
+
+% 16 1 0 12949a65b8c06d7915a8e6d638c1c2c2
+
+% 18 1 0 113d8f4b3e0bfa041e291e63b40218aa
+
+% 0 1 0 123055d28fffbb6e1c1a43c8d9d278ae
+
+% 0 1 0 0447b201e0d529a60f045609209dca5b
+
+% 0 1 0 0492974d8b72177c01c20d11a749f89b
+
+% 0 1 0 14c71b715bc8422e1981ee157e661326
+
+% 1 1 0 0243e2cd9f20be20027796e5a126c814
+
+% 0 1 0 0652ba882ff62b76187167e4ba89e6f0
+
+% 1 1 0 0c70d406d3817ef508a7fa3f97aa4ee1
+
+% 0 1 0 01bf6047448e6a54065fc63636adc627
+
+% 0 1 0 0276d0295a0c47cf0bd6fd1677a13eb9
+
+% 1 1 0 078c901bd6ad31ba0408dacf76a7950c
+
+@ 0 3 0 07ff78da090e9b491091749a30179851
++       多个命令可以在同一个会话上依次运行：每个命令打开自己的通道。
++       每个操作都接受 `Tactic[Ssh.Error]` 和 `Diagnostics`，而会话与它所驱动的传输层一样，只供一个线程使用。
+
+% 0 1 0 01302a4f56d33f4f19e716b1b7380789
+
+% 1 1 0 12ae76193576534d16b4a0f7928e3f74
+
+% 1 1 0 1ef8f3e8281a43d50a2ae6dce86a81ff
+
+@ 0 1 0 0f8f78e325428fd3099ad997bea0c8fa
++   entry .Result   命令写出了什么、如何退出
+
+% 1 1 0 1e262eab0fdf76b5177b4c9716b149cf
+
+@ 0 22 0 118e3abd606a94e2067a17b7ce16ea91
++         由 `Session#exec` 返回。
++         `stdout` 和 `stderr` 是各自流的全部内容，以 `Data` 给出；`status` 是服务器报告的退出状态，如果通道关闭时没有报告（比如进程被信号杀死），则为 `Unset`。
++         这些字段是数组，因此两个结果只按引用相等：应比较 `stdout.read[Text]`，而不是比较结果。
++     entry #stdout   命令写到标准输出的所有内容
++     entry #stderr   命令写到标准错误的所有内容
++     entry #status   退出状态，未报告时为 `Unset`
++   entry #open   打开一个会话通道，调用者必须关闭它
++       RFC 4254 §5.1 和 §6.1：为 `session` 发送 `CHANNEL_OPEN` 并等待确认，如果服务器拒绝，则抛出带 `ChannelRefused(detail)` 的 `Ssh.Error`。
++       服务器先发送的全局请求（OpenSSH 以这种方式通告其主机密钥）会被拒绝并跳过。
++       `#channel` 与之相同，只是关闭操作已被处理。
++   entry #exec   用给定的标准输入和环境运行一个命令，并收集其输出和状态
++       `ssh.exec(command, input = Data(), environment = Nil)` 打开一个通道，设置每个环境变量（服务器只在其 `AcceptEnv` 允许该名称时才应用，无论如何都不作回应），启动命令（服务器不允许时为 `RequestRefused(t"exec")`），写入输入，关闭输入，把两个输出流读到末尾，然后关闭通道。
++       命令可以是由远程 shell 解释的 `Text`，也可以是来自 `sh"…"` 的 guillotine `Command`，其参数逐个加引号，使得包含空格或 shell 字符的值仍是单个参数（参见 `Invocable`）。
+
+% 2 1 0 0bacd7a87bd8e4151557868c473994e8
+
+% 3 1 0 0e0a9b852b7587f204fc526b1c09aa70
+
+% 4 1 0 0de1523543379e0e0f853a3074779f41
+
+% 5 1 0 02bd33d4483f90660932d715fbc585f9
+
+% 6 1 0 1facd2a04772630e130c1963e666a210
+
+% 7 1 0 0929175cb362f98c0bd7c9aeb912950c
+
+% 8 1 0 122934a867e930340e6d196379edd8a3
+
+% 9 1 0 1ad12e2b1ddf6d560b7e55dbdfd96ca1
+
+% 10 1 0 0be04184bc2c1764090c4bbc1e80a800
+
+% 11 1 0 12f43efbe1d7f8a510154649a9995a2f
+
+% 12 1 0 187cd8b3ad9499d402b01e1739ea9882
+
+% 14 1 0 14cbfe7266a882b702db0aa49e08d2f8
+
+% 15 1 0 1e82aaa5fd7801d71b19491baa7e235e
+
+% 16 1 0 171cfee848276fe30d0c731bf5b9558f
+
+% 0 1 0 0a135823aa111b0515df2811fab7d4db
+
+% 2 1 0 08120a1423ba0c9d1f0a410571b146ec
+
+% 0 1 0 01df3ecfdda16f1204dbbd1842ce2b1b
+
+% 0 1 0 08b6688ee6b3edfa0c9c5ce1654aaee9
+
+% 1 1 0 10e741e2d1f0269a11fb4deeab02c92d
+
+@ 0 10 0 1bbeb6d489e612c3060ca7eac336e185
++       数兆字节的数据可以在每个方向上传输，跨越流量控制的窗口调整；标准输出的全部内容都保存在内存中，因此输出应当流式处理的命令要改用 `#channel` 和 `Channel#stdout`。
++   entry #channel   把一个打开的会话通道借给块，之后关闭它
++       用于交错写入和读取的协议，`Channel` 的 `exec`、`write`、`eof`、`stdout` 和 `next` 都可使用，并且无论块以何种方式结束，关闭都有保证。
++   entry #close   断开传输层
++       `Transport#disconnect`：礼貌的 `SSH_MSG_DISCONNECT`，并关闭双工通道。
++       `Ssh.Endpoint` 的会话在其块结束时会自行完成这一步。
+
+@ 0 1 0 0ab58e665e674e2917ff91ea98e745a9
++ entry .Channel   会话通道：一个远程进程、它的标准流、它的退出状态以及流量控制
+
+% 1 1 0 1f7b887a82bdcf5c1eb80707b2fecd70
+
+@ 0 7 0 168f1a7313ea376e04d3b5c561c34252
++       RFC 4254 §5–6。
++       通道是服务器上的一个进程：它的标准输出以 `CHANNEL_DATA` 到达，标准错误以 `CHANNEL_EXTENDED_DATA` 到达，退出状态以请求的形式到达，而每个方向上的数据只能在对方窗口允许的范围内流动。
++       通道由 `Session#open` 打开或由 `Session#channel` 借出，由传输层的单个线程驱动：写入会推动连接，直到服务器授予窗口；读取会推动连接，直到下一个事件，其间到达的其他内容排队等候。
+
+% 2 1 0 12f48d3b62110c7f1dae5efafabaca8e
+
+% 3 1 0 101cda01be2a8429170c9308306193cb
+
+% 4 1 0 0aef722fd88207340d2551bfddf55822
+
+% 5 1 0 15bafbe91bb6816b19c607195218a29c
+
+% 6 1 0 06100fdca01a2ec90b826f7c1da4db46
+
+% 7 1 0 186352ae6d349c1704637e500ba15722
+
+% 8 1 0 138db0d3c961bc7b1f0049a41d2dbece
+
+% 9 1 0 052657109005fead197cdbf49b7eb44e
+
+% 10 1 0 11ed36a226080f730e25b647e153a762
+
+% 11 1 0 0e6399623775451101694e49208017bd
+
+% 12 1 0 035da120522633ef175bcd399ae020ff
+
+% 14 1 0 10d307e63374e3770ea17964327a816a
+
+% 15 1 0 1651070f8e5075be0d95348beee57784
+
+% 16 1 0 006c464cf3cc2e9704db1dd0dec1c3b6
+
+% 18 1 0 1a5b3498d56808421fd763f273bed607
+
+% 19 1 0 11c563db1b7f3bab0503157402ef6327
+
+% 0 1 0 0540d6816449b4671022aa343b514ae6
+
+% 0 1 0 093ecfbf7a17e44316df008887c95434
+
+% 0 1 0 1fde36cb0225a0c61d6388360462adeb
+
+% 1 1 0 10b89a030828eed5021af6499b8368ea
+
+% 0 1 0 10bee944f5f8ad1c0f1bb985142a81de
+
+% 0 1 0 1477a347f2fe97930ba82bc2b763c3e4
+
+% 0 1 0 1f38aec62d86032b1504bb5bdd8ba761
+
+% 1 1 0 02f6d2a34017281f0acd37ccc13b61d1
+
+@ 0 5 0 13e8ab2e58990c5217f1bb6ca0323fec
++       通常的顺序是 `#env`（可选），然后 `#exec`，然后 `#write` 和 `#eof`，然后 `#stdout` 或 `#next`，最后 `#close`。
++       每个操作都接受 `Tactic[Ssh.Error]` 和 `Diagnostics`。
++       在流中途到达的来自服务器的全局请求，如果需要回答就被拒绝，否则被忽略；发给另一个通道的消息会抛出 `Malformed`。
+
+% 1 1 0 077a3274a2131d721ff3dca34c5e2795
+
+% 1 1 0 1bec1d5058e42380103fad17fbdcffd4
+
+@ 0 20 0 11241053528e13b704494c3df8c5625f
++   entry .InitialWindow   这个客户端在打开时授予服务器的窗口：2 MiB
++       即服务器在客户端调整窗口之前可以发送的量；用掉一半后就会补足，因此输出流永远不会因客户端一侧而停顿。
++   entry .MaxPacket   这个客户端在通道上接受的最大数据包：32768 字节
++   entry .Event   通道交付的东西：输出、错误输出、退出、信号、回复、输入结束或关闭
++       由 `Channel#next` 返回。
++       `Stdout(data)` 和 `Stderr(data)` 是两个流的数据块；`Exit(status)` 是进程的退出状态；`Signal(name)` 是杀死它的信号；`Reply(success)` 是对以 `reply = true` 发出的请求的回答；`Eof` 是服务器输出的结束；`Closed` 是服务器的关闭，此后 `next` 为 `Unset`。
++   entry #closed   服务器是否已关闭它那一侧的通道
++   entry #exitStatus   服务器报告后的进程退出状态
++       在 `exit-status` 请求到达时设置，这发生在输出结束之后：在 `#stdout` 被耗尽或 `#next` 返回 `Closed` 之后再读取它。
++   entry #request   发送给定种类的通道请求，带 `reply` 时等待服务器的回答
++       `channel.request(kind, reply)(writer => …)` 通过 lambda 写入请求特有的字段并发送；`reply` 为 true 时，它推动连接直到收到服务器的 `CHANNEL_SUCCESS` 或 `CHANNEL_FAILURE`，并返回是哪一个，否则立即返回 `true`。
++       `#exec` 和 `#env` 构建在它之上；服务器不理解的请求返回 `false`。
+
+% 2 1 0 13e2a0287d205bc210e400d27c423db5
+
+% 3 1 0 049d14e433bdf7b80eb685fb17314bb1
+
+% 4 1 0 1f509f0644f8bf5d1a7eac40ef642182
+
+% 5 1 0 0ee1484021f919ca1d449b887a8d9865
+
+% 6 1 0 007f21725e03a59c1483ea090fc62894
+
+% 7 1 0 0021d56d1a167c3b1b9face71fed3c2a
+
+% 8 1 0 00b8702f92139ec602b6102f1a893bbe
+
+% 9 1 0 030be7a53b26e9ee17a8c02b3011166d
+
+% 10 1 0 1fb840e2c19357fb1558e7757c010cc2
+
+% 11 1 0 063ef26b17341c1e0016267fe2129ba4
+
+% 12 1 0 12caad659b2edc51172dd3baa9d156fa
+
+% 14 1 0 18ef2dbb2b2743630e9d1d546ec0ed8b
+
+% 15 1 0 065d28df80b3d45b0481e2dad898dbd2
+
+% 16 1 0 1e20d7078640b6d104b3d8d014b3e4ae
+
+% 18 1 0 0c4643c1260325b216995b3294b3d55e
+
+% 19 1 0 07cf104622196b520522d8a1a76ea7bc
+
+% 0 1 0 0c92d7b01e634e971a00ae6c167d6a1b
+
+% 1 1 0 19426c72127320fc1a04ed17a77cfd20
+
+@ 0 33 0 19f2087423fa2b6107b4f58e6c5c0d05
++   entry #env   为进程设置一个环境变量，服务器只在其 `AcceptEnv` 允许时才应用
++       一个不要求回复的 `env` 请求，因此服务器无论如何都不作回应：服务器的 `AcceptEnv` 未列出的变量会被悄悄丢弃。
++       必须在 `#exec` 之前。
++   entry #exec   启动一个命令，服务器必须接受
++       一个要求回复的 `exec` 请求：`Text` 按原样由用户的 shell 运行，而 guillotine `Command` 逐个参数加引号（`Invocable`）。
++       如果服务器拒绝，则抛出带 `RequestRefused(t"exec")` 的 `Ssh.Error`，带有 `ForceCommand` 的 `sshd` 或受限密钥就会这样。
++   entry #write   写入进程的标准输入，没有窗口时等待窗口
++       以不超过服务器窗口和最大数据包大小的数据包发送，每当窗口耗尽时就推动连接以等待 `CHANNEL_WINDOW_ADJUST`。
++       其间到达的任何事件都排队供 `#next` 使用。
++       向已关闭的通道写入不做任何事。
++   entry #eof   结束进程的标准输入
++       发送一次 `CHANNEL_EOF`；第二次调用，或在通道关闭后的调用，不做任何事。
++       把输入读到末尾的命令（`cat`、`sort`、`tr`）在发送它之前不会退出。
++   entry #next   来自进程的下一个事件，通道关闭且不再有剩余内容后为 `Unset`
++       先是排队的事件，然后是连接交付的任何内容，持续推动直到有一个到达。
++       `#stdout` 是消费通道的常用方式；`next` 用于必须按顺序看到每个事件（包括 `Reply` 和 `Signal`）的协议。
++   entry #stdout   作为惰性数据块链的进程标准输出，在进程结束时结束
++       一个 `Chain[Data]`，在被强制求值时推动连接：产出 `Stdout` 数据块，把 `Stderr` 数据块留给 `#stderr`，链在 `Closed` 处结束。
++       它是惰性的，因此长时间运行的命令的输出可以在到达时处理；把它强制求值到末尾后，`#exitStatus` 就已设置。
++   entry #stderr   目前为止收到的标准错误数据块，按顺序
++       在 `#stdout` 被强制求值（或调用 `#next`）时填充；通道关闭后即完整。
++   entry #close   关闭通道，耗尽服务器的事件直到它也关闭了自己那一侧
++       发送（一次）`CHANNEL_CLOSE`，并推动连接直到服务器自己的关闭到达，这样退出状态就被记录下来，传输层停留在两个数据包之间，为下一个通道做好准备。
++       `Session#channel` 和 `Session#exec` 在 `finally` 中调用它。
+
+@ 0 1 0 10af5daf3e4956ea1b1f0b49eba57519
++ entry .Signer   身份证明：一个已加载的私钥，或 `ssh-agent` 持有的密钥，用来对认证请求签名
+
+% 1 1 0 16b87b9dfb5da7310f42ba2c0968ef46
+
+@ 0 7 0 09cd30f2e8881e2d0efca51d255b835e
++       `Transport#authenticate` 和 `Ssh.Endpoint` 所接受的东西：`#algorithm` 是向服务器提供的签名算法（`ssh-ed25519`、`ecdsa-sha2-nistp256`、`rsa-sha2-256`……），`#blob` 是 OpenSSH 线上形式的公钥，`#sign` 是对服务器将要验证的数据生成的 RFC 4253 §6.6 完整签名数据块（先是算法名称，然后是签名）。
++       基于本进程中密钥的签名者用 `Signer(key)` 创建；基于代理所持密钥的签名者来自 `Agent#identities`，签名时密钥从不离开代理。
+
+% 2 1 0 114ddc8d8a0658fc09c0f26665257142
+
+% 3 1 0 0cb908e1256054e2082ce1614fa177f5
+
+% 4 1 0 156c8daa0159420707627acac9c7e978
+
+% 5 1 0 0c747457b4f859ac1952b613edd3cbda
+
+% 4 1 0 04122962340fd5a60b8db0cf6a4f440e
+
+% 5 1 0 08958a3d15fa774f078a287b87bccce7
+
+% 1 1 0 186ee4fc2e0ced620735883da98b3837
+
+% 0 1 0 0bc03ff50930604c02b4eb890cfce50d
+
+% 0 1 0 00723f135afde9b412a9b6e7e47e4609
+
+% 0 1 0 0ba8bd8d98e1db800c9ee9712452044d
+
+% 0 1 0 05f67b39eee70df11d2229d001abb1ea
+
+% 1 1 0 1631efa0804da6bc11d82f7ba331b595
+
+% 0 1 0 18d2eb270c44c5b90d7a21e1012175f9
+
+% 0 1 0 172773169de7a44e03b4f62955b93910
+
+@ 0 13 0 044d6e1a436f3f51134a2c029a36301b
++   entry .apply   基于本进程所持私钥的签名者，适用于任何具有 `Identity` 的密码算法
++       `Signer(key: PrivateKey[cipher]^)` 要求密码算法具有 `Identity`（Ed25519、`Ecdsa[256 | 384 | 521]` 或 `Rsa[2048 | 3072 | 4096]`）和 `KeyAlgorithm`，并要求密码算法本身作为上下文值，一旦用某个提供者读取了密钥，它就在作用域中。
++       结果会捕获该密钥。
++       RSA 密钥以 `rsa-sha2-256` 签名；不提供基于 SHA-1 的 `ssh-rsa`。
++       从 PEM 读取的密钥（未加密的 PKCS#8、PKCS#1、SEC1 或 `openssh-key-v1`）需要一个 `Cloak`（`cloaks.heapCloak`）来持有它。
++   entry #algorithm   向服务器提供的签名算法名称
++   entry #blob   OpenSSH 线上形式的公钥，即 `known_hosts` 或 `authorized_keys` 行在类型之后所编码的内容
++   entry #sign   对数据的签名数据块（先是算法名称，然后是签名）
++       实际上是对会话标识符和认证请求签名。
++       拒绝签名的代理会产生一个空数据块，随后服务器把它作为普通失败拒绝。
+
+@ 0 1 0 0a5217ce2c706a0001be12a30b311374
++ entry .Identity   密码算法的密钥如何向 SSH 服务器标识用户：算法名称，以及签名的线上形式
+
+% 1 1 0 0e3fa772873af32f111af86cef0b23cb
+
+@ 0 7 0 0e5a0715aa2149b20e96a7546fe4bcc4
++       RFC 4252 §7。
++       一个类型类，私钥可能采用的每种密码算法各有一个实例：`.ed25519` 以 `ssh-ed25519` 进行原始签名（RFC 8709）；`.ecdsa` 以 `ecdsa-sha2-nistp256`、`-nistp384` 或 `-nistp521` 签名，`r` 和 `s` 编码为 `mpint`（RFC 5656 §3.1.2），使用与其曲线配对的摘要；`.rsa` 以 `rsa-sha2-256` 签名（RFC 8332）。
++       每个实例都从作用域中的 `Ssh.Provider` 召唤其密码算法，因此无论周围有什么 `Signature.Digest`，ECDSA 密钥都会在正确的摘要下签名。
++       这些 given 位于伴生对象中，因此 `Signer(key)` 无需导入即可找到它们。
+
+% 1 1 0 176a918dabb9a3be0c6a1c0c124b9ef5
+
+@ 0 10 0 1f5da3d522b78cc91f87227830ec07dd
++   entry .ed25519   `Ed25519` 密钥的 `Identity`：`ssh-ed25519`，原始的 64 字节签名
++       需要作用域中有 `Ssh.Provider`。
++   entry .ecdsa   `Ecdsa[256]`、`Ecdsa[384]` 和 `Ecdsa[521]` 密钥的 `Identity`，以 `ecdsa-sha2-nistp*` 签名
++       提供者的 DER `SEQUENCE { r, s }` 按 SSH 线上形式的要求重新编码为两个 `mpint`；摘要按曲线为 SHA-256、SHA-384 或 SHA-512。
++       需要作用域中有 `Ssh.Provider`。
++   entry .rsa   `Rsa[2048]`、`Rsa[3072]` 和 `Rsa[4096]` 密钥的 `Identity`，以 `rsa-sha2-256` 签名
++       基于 PKCS#1 v1.5 的 SHA-256。
++       需要作用域中有 `Ssh.Provider`。
++   entry #algorithm   认证请求所携带的签名算法名称
++   entry #sign   用给定私钥对数据生成的签名，采用该算法的线上形式
+
+@ 0 1 0 08b28036c2a7fc980ee6bd8dc0fa4910
++ entry .Agent   `ssh-agent` 客户端：列出代理持有的密钥，并用它们签名，而从不看到密钥本身
+
+% 1 1 0 0c2b01ad0713c0ea0a49fe503857f644
+
+@ 0 4 0 1e87b703a788570a010003cecf59fd32
++       `Agent(path)` 通过位于 `path` 的 Unix 域套接字（即 `SSH_AUTH_SOCK` 环境变量所指的套接字）访问代理，使用 draft-miller-ssh-agent 协议：每个操作都是在一个新连接上的一次请求和一次回复。
++       它需要一个 `Socket.Backend`（`socketBackends.javaBaseSockets`）和 `Diagnostics`。
+
+% 2 1 0 17af3a2bb7c56a59087fe0855b4a97b8
+
+% 3 1 0 15a1551b84852f9118dd60621c846f25
+
+% 4 1 0 0ccdc8000dfc69b60d263a795c6529c4
+
+% 5 1 0 0c4b39e83ad3782c05bd56bc687f32e9
+
+% 6 1 0 1bfb88024adb2e8c0b5385bcf3db9fdb
+
+% 7 1 0 13a57d6528fa34ab151fbe73dbb0d569
+
+% 1 1 0 12a3314cbed13efc075d2d240f9c888e
+
+% 0 1 0 112891b88b3d9232001e5e91403981f0
+
+% 0 1 0 127066072c4c0ec6031c045b2e5211b8
+
+% 1 1 0 0028d7d0b6e2e8db0d06262062a3f05b
+
+@ 0 3 0 0c02dbdd2a3f8c3619ddd3ba89e8157e
++       无法访问、不列出其密钥、关闭连接或发送错误长度的代理，会抛出带 `Agent(detail)` 的 `Ssh.Error`。
++       `Ssh.Credentials.agent` 把一个代理包装为 `Credentials`，供只得到一个 URL 的传输层使用。
+
+% 1 1 0 1410b70faf729f560d4c2e2e8e4a5d8f
+
+% 1 1 0 1691a3718b2060b309c67ecde5ae7a29
+
+@ 0 6 0 1dcd79437e038a5207e66bcfa3cedb21
++   entry #identities   代理持有的密钥，每个都是一个交由代理处理的 `Signer`
++       接受一个 `Tactic[Ssh.Error]`。
++       每个签名者的 `algorithm` 是密钥的类型，但 `ssh-rsa` 密钥以 `rsa-sha2-256` 提供，并通过标志要求代理生成 SHA-256 签名；它的 `blob` 是代理所列出的密钥；它的 `sign` 发送一个签名请求，返回代理给出的完整签名 blob，如果代理拒绝，则返回一个空 blob（以便服务器把它当作普通失败拒绝）。
+
+@ 0 1 0 0b2bc8a1c8b63b220804a88a7b03a3d2
++ entry .Invocable   一个值如何成为 SSH 服务器的 shell 所运行的命令行
+
+% 1 1 0 0abfbd7c4000666f0439639a09ab88b2
+
+@ 0 4 0 12000dd6bd44612d1bbbef7118745753
++       RFC 4254 §6.5 把 `exec` 请求的命令交给用户的 shell。
++       `Text` 按原样运行（`.text`），因此由 shell 解释它；来自 `sh"…"` 的 guillotine `Command` 则逐个参数加引号（`.command`），因此含有空格或 shell 字符的值仍是一个参数，就像在本地一样。
+
+% 2 1 0 160be210235950581e870fcb4f6c7603
+
+% 3 1 0 02cd1f2771e0df94141f5ca88c2cfe4e
+
+% 0 1 0 19575a63e052847619852b0d975f8758
+
+% 0 1 0 09d2336a757a0f9b1e20c4565c5d3378
+
+% 0 1 0 029f7f47b39946cf0a750a445c3f1381
+
+% 1 1 0 05d7daee60aa48fc02018f7b30724df9
+
+@ 0 7 0 013306916b6a603104184a089362ee75
++       `Session#exec` 和 `Channel#exec` 接受任何 `Invocable` 值。
++       实例在伴生对象中，因此无需导入。
++   entry .text   `Text` 就是按原样写出的命令行，由远程 shell 解释
++   entry .command   guillotine `Command` 逐个参数加引号，因此参数不会被重新拆分
++       界限写作 `[command <: Command]` 而不是 `Command` 本身，因为 `sh"…"` 产生的是一个由其可执行文件名细化的 `Command`。
++   entry #line   一个值对应的命令行
+
+@ 0 1 0 15777f1e6d89f2e60024d1be837386df
++ entry .KnownHosts   OpenSSH 的 `known_hosts` 文件：每个主机此前出示过的密钥，以及对现在出示的密钥的判定
+
+% 1 1 0 0f83dc6e9dc74b1e1cef17fec8b7bce1
+
+@ 0 8 0 1c8887a0aafe1bd60984c1bde8f66e7a
++       `KnownHosts(text)` 把文件的各行解析为 `#entries`，跳过注释和不是密钥的行，与 OpenSSH 的跳过方式相同。每行的形式为 `hosts type base64 [comment]`，其中 `hosts` 是逗号分隔的模式列表，支持 `*` 和 `?` 通配符、`!` 否定以及用于非默认端口的 `[host]:port`，或者是一个哈希过的 `|1|salt|hash` 条目（主机名在盐下的 HMAC-SHA1），前面可以带 `@revoked` 或 `@cert-authority`。
++       `#verify` 就是主机密钥检查的全部：对于一个主机、端口、密钥类型和服务器出示的密钥，给出它是 `Known`、`Changed`（每个 SSH 用户都读过的那条大写警告）、`Unknown` 还是 `Revoked`。
+
+% 2 1 0 17ca206b01d450fa1f3547d369632578
+
+% 0 1 0 1720e2e8c4ef9f5412ebc0f8ad1cbd33
+
+% 1 1 0 1102363ac460b3a9166ac8fe16ad51c3
+
+% 2 1 0 0d3d1cd40cc7dbeb0bd0655fbe8e377f
+
+% 1 1 0 0ca12eff289b0eaf0c7db8af9b3a72f1
+
+% 1 1 0 08523b61cabc55b8031ce33d4330dd85
+
+% 2 1 0 02517437717415010d102ae6d87cd432
+
+% 0 1 0 1ec2f892c862419318567fdf2818c523
+
+% 0 1 0 13f875df8efcc5eb09cd608dd5301f10
+
+% 0 1 0 1ba7c810812aaaa31d529f99f410daf5
+
+% 0 1 0 1d1efced66b3c7b8079678b5320d85e3
+
+% 0 1 0 1a2e2f0d43881a0708d4d680b2689fb3
+
+% 1 1 0 08c68627b91f2b03192be11f7bd7ef68
+
+% 0 1 0 0409e58ce448c7c402709032b6c1e518
+
+% 0 1 0 0f8add520d82583c01dc3d6ee67726ac
+
+% 0 1 0 1b31d35b7301d15d161dc9921117a7ef
+
+% 0 1 0 18c55af9f402553a06b400dea551c5a0
+
+% 0 1 0 1266d4724a675d8d0a58b003795fd5f6
+
+% 0 1 0 15fcf97e1010285902f5b7a41d8f9528
+
+% 0 1 0 0a03e00f31c91e46163957798544db86
+
+% 1 1 0 16a4087ea732ec1b035120fe3fa17bc4
+
+@ 0 8 0 098f5acade917f7c13142ceaed794a9c
++       主机名不区分大小写，并按行上的任何别名匹配；非默认端口只匹配其带方括号的条目。
++       匹配哈希过的条目需要作用域中有一个 `Crypto`（`providers.javaBaseProvider`）来计算 HMAC。
++       密钥按 OpenSSH 自己的 blob 进行比较，即类型之后的 base64 字段，这正是传输层收到的内容，也是 `OpenSsh.publicKey` 读取的内容，因此任何密钥类型的条目都无需解码即可比较。
++       `Ssh.HostKeys.knownHosts` 和 `Ssh.HostKeys.trustOnFirstUse` 把 `KnownHosts` 变成 `Transport` 所查询的主机密钥方针；`.line` 为新接受的密钥写出一行。
+
+% 1 1 0 1466cd754f16fa5a0db304291aafc641
+
+@ 0 7 0 085bef0623b9394611bfb8c4d64076ba
++   entry .Verdict   出示的密钥对该文件而言是什么：`Known`、`Unknown`、`Changed` 或 `Revoked`
++       `Known`：该主机的某个非认证机构条目带有此密钥。
++       `Changed`：该主机有此密钥类型的条目，但没有此密钥。
++       `Unknown`：该主机没有此类型的条目，或者根本没有条目。
++       `Revoked`：某个 `@revoked` 条目带有此密钥，无论文件中还有什么。
++       `@cert-authority` 条目担保的是证书，而不是普通密钥，因此它永远不会使一个密钥成为 `Known`。
++   entry .Host   一行的主机说明：它所列出的模式，或隐藏这些模式的哈希
+
+% 1 1 0 197b1bc39d439b95037f3808e8937e8e
+
+@ 0 10 0 0429ce26247efa9f1be0d6483df5d406
++         `Patterns(patterns)` 保存按原样写出的逗号分隔列表，如 `github.com`、`*.internal`、`!bad.internal`、`[example.com]:2222`；`Hashed(salt, hash)` 保存一个 `|1|salt|hash` 条目，在知道主机之前，它不会透露所指的是哪个主机。
++     entry #matches   主机和端口是否被列出：某个 glob 匹配且没有否定排除它，或者 HMAC 一致
++         端口 22 匹配不带端口的主机名；其他端口只匹配其 `[host]:port` 形式。
++         模式用 `KnownHosts.glob` 不区分大小写地匹配；哈希过的条目通过计算带方括号的名称在盐下的 HMAC-SHA1 来匹配，这需要作用域中有一个 `Crypto`。
++   entry .Entry   文件的一行：它的标记、主机、密钥类型、密钥 blob 和注释
+
+% 1 1 0 178750f07fadd89213f457ad2bf3e29a
+
+@ 0 23 0 1ae379251af4ccf9092c9f9eddc0dcff
++         密钥按 OpenSSH 自己的 blob 保存，因此可以与任何类型的出示密钥比较，并按读入时的原样重新编码。
++     entry #marker   `@revoked`、`@cert-authority`，普通条目则为 `Unset`
++     entry #host   指明主机的模式或哈希
++     entry #keyType   行中所写的密钥类型：`ssh-ed25519`、`ecdsa-sha2-nistp256`、`ssh-rsa`
++     entry #key   从 base64 解码的密钥 blob；它以自己的类型开头，该类型必须与行中所写的一致
++     entry #comment   行中密钥之后的其余部分，或 `Unset`
++     entry #revoked   标记是否为 `@revoked`
++     entry #authority   标记是否为 `@cert-authority`
++   entry .apply   解析整个文件的文本，跳过注释和不是密钥的行
++       每个可解析的行对应一个 `Entry`，按文件顺序排列。
++       base64 无法解码的行，或 blob 不以行中所写类型开头的行，不是密钥，会被跳过，与 OpenSSH 的做法相同。
++   entry .entry   解析一行，如果该行为空、是注释或不是密钥，则为 `Unset`
++       字段按空格拆分；开头的 `@…` 词是标记；随后是主机、类型和 base64，再往后的都是注释。
++       盐或哈希无法解码的哈希主机为 `Unset`。
++   entry .glob   带 `*` 和 `?` 的 shell 风格 glob，像 OpenSSH 匹配主机名那样不区分大小写地匹配
++       `KnownHosts.glob(t"*.example.com", t"Git.Example.COM")` 为 `true`。
++       同一个匹配器也用于 `SshConfig` 的 `Host` 模式。
++   entry .line   一个主机及其密钥的 `known_hosts` 行，与 `ssh-keyscan` 写出的形式相同
++       `KnownHosts.line(hostname, port, keyType, key)`：端口为 22 时主机不带端口，否则带方括号和端口，然后是类型，再然后是 base64 形式的密钥 blob。
+
+% 2 1 0 174bce05116aeea90b069ed6883d2f21
+
+% 3 1 0 18217f72b9ea9dde01a3d819dadea695
+
+% 1 1 0 1387f6bcc1070d071a8a9f69b8395044
+
+% 2 1 0 12fd99b76c399c410cfe8e16f6230575
+
+% 0 1 0 06351ef421f72ea6001b4be16dcf8793
+
+% 0 1 0 087560863082bdd213bf479d86b428a1
+
+% 0 1 0 01395b8b0158425311975a8cbf5312a9
+
+% 1 1 0 0d1daf4794baa17b14b14c58efaf90b8
+
+@ 0 9 0 0077b2b359e30e4f1a0a33f31770ecfb
++   entry #entries   文件的条目，按文件顺序
++   entry #lookup   指明某个主机和端口（默认为 22）的条目，无论是否已吊销，按文件顺序
++       哈希过的条目需要一个 `Crypto`。
++       认证机构条目也包括在内；`#verify` 会把它们过滤掉。
++   entry #verify   对主机所出示密钥（以 OpenSSH 的 blob 形式）的判定
++       `verify(hostname, port, keyType, key)`：如果任何标为 `@revoked` 的匹配条目带有该密钥，则为 `Revoked`；否则，如果任何未吊销的非认证机构条目带有它，则为 `Known`；否则，如果该主机有该密钥类型的条目，则为 `Changed`；否则为 `Unknown`。
++       哈希过的条目需要一个 `Crypto`。
+
+@ 0 1 0 15bd07e3fe399f271bc904a3f93754e6
++ entry .SshConfig   客户端像用户自己的 `ssh` 那样访问主机所需的那部分 `~/.ssh/config`
+
+% 1 1 0 0566ab1b5516d8251f8a517210894eec
+
+@ 0 8 0 065f0376957362201075a93fa9053444
++       `SshConfig(text)` 读取文件中的 `Host` 块（模式支持 `*`、`?` 和 `!`，匹配方式与 `KnownHosts.glob` 相同），以及块中的 `HostName`、`User`、`Port` 和 `IdentityFile`，写法可以是 `Keyword value` 或 `Keyword=value`。
++       对于用户所指明的目标，`#resolve` 给出要连接的主机、用户、端口和身份文件，与 OpenSSH 一样，最先得到的值优先（因此具体的块要放在 `Host *` 之前），只是每个 `IdentityFile` 都会累积。
++       `HostName` 和 `IdentityFile` 中的 `%h` 展开为所给的主机；`~` 留给调用者处理，因为调用者知道主目录。
+
+% 2 1 0 03069dac618cc8b11ca8205b30fa8d7d
+
+% 3 1 0 1a53a6ac9bb601dd0d503d34fa24cab3
+
+% 0 1 0 17d4247d18ab8826183bea09eee7bc11
+
+% 0 1 0 10ecaddebc9914210192044103bfb7a7
+
+% 0 1 0 12d5e2bd019cbdac12ddb3ea9930042c
+
+% 0 1 0 1493fbab4a8859fb0c101a3f172eba44
+
+% 0 1 0 0df89ae07bf1967509c58a941f482fe5
+
+% 0 1 0 06f823fead74faaa12e2ac307262fa05
+
+% 0 1 0 0742b5d0ef360036150a82675e5b68a3
+
+% 0 1 0 1d56c64f1e4133c90207c15b323097ff
+
+% 0 1 0 18e5c74240e608b60f83c8c69fdcd92d
+
+% 0 1 0 10326529cd821dd11f4b495b4d1d7d9a
+
+% 0 1 0 1ccd839a765b96ab11ae7b25c1d26056
+
+% 0 1 0 0523b0609d920335007048adaea86898
+
+% 1 1 0 027ab906eee0254000d6127d649f3cbb
+
+% 0 1 0 0e325e9c37903c9d0a42346764aa661e
+
+% 0 1 0 00583d8d88f947201da4223d6599b9a3
+
+% 0 1 0 08c692d3bb86dfd902aede75b87a87e3
+
+% 0 1 0 0bca67c251d3fb151b01e116b12785ad
+
+% 0 1 0 0a02b6e993959a5a005b5025e415c975
+
+% 0 1 0 1a7c27f86ca25c3411fb2d5d9255e154
+
+% 1 1 0 0042836c15661a8907855348a4744dc8
+
+@ 0 3 0 10ce305d3a755f25097850ccbc820003
++       `Match` 块、`Include` 和其他所有关键字都不予解释：`Match` 块的内容被完全跳过，`Host` 块中的未知关键字被忽略。
++       `Ssh.Endpoint#resolved` 把配置应用到一个端点上。
+
+% 0 1 0 1736e843b109aad41307ea2791d94a8a
+
+@ 0 1 0 09895b457a469fea04c2efabe9aca5c3
++   entry .Resolution   配置对一个主机的说明：它的主机名、用户、端口和身份文件
+
+% 1 1 0 024f10006ba92b19129bf740815049d6
+
+@ 0 8 0 124c1ff57bf02f1e1439584c87ad3b38
++         由 `SshConfig#resolve` 返回。
++         `hostName` 回退为所给的主机，`port` 回退为 22；没有块设置 `user` 时它为 `Unset`，此时由调用者提供。
++     entry #hostName   要连接的主机：第一个 `HostName`（`%h` 已展开），或主机本身
++     entry #user   第一个 `User`，或 `Unset`
++     entry #port   第一个是数字的 `Port`，或 22
++     entry #identityFiles   每个 `IdentityFile`，按顺序，`%h` 已展开，`~` 保持原样
++   entry .Block   一个 `Host` 块：它适用的模式及其设置（小写），按顺序
+
+% 1 1 0 1b07749399a1886a19f2ca6afc89b141
+
+@ 0 19 0 13e1241f964ff439002eb480fb2a8119
++         第一个 `Host` 行之前的关键字组成一个模式为 `*` 的块，适用于所有地方，并排在最前面。
++         关键字名称转为小写，因此 `HostName` 和 `hostname` 是同一个设置；值按原样保留。
++     entry #patterns   块的主机模式，`!` 表示否定
++     entry #settings   块的 `(keyword, value)` 对，关键字为小写，按文件顺序
++     entry #matches   主机是否被某个模式指明且未被任何模式排除
++   entry .apply   把配置文件的文本解析为其中的块
++       空行和 `#` 注释被跳过；`Keyword value`、`Keyword=value` 和 `Keyword = value` 都能读取；`Match` 行开始一个没有模式的块，没有东西匹配它，因此其内容被忽略。
++   entry #blocks   `Host` 块，按文件顺序，最前面是为任何 `Host` 之前的设置而隐含的 `*` 块
++   entry #values   某个主机的某个关键字的每个值，按得到的顺序
++       `config.values(t"work", t"IdentityFile")`：关键字不区分大小写地匹配，遍及模式匹配该主机的每个块，按文件顺序。
++       对 `HostName`、`User` 和 `Port`，`#resolve` 取第一个值；对 `IdentityFile` 则取全部。
++   entry #resolve   一个主机的主机名、用户、端口和身份文件
++       第一个 `HostName`（`%h` 替换为主机）或主机本身；第一个 `User` 或 `Unset`；第一个可解析为数字的 `Port`，或 22；以及每个 `IdentityFile`，其中 `%h` 已替换。
+
+@ 0 1 0 0a8f6116a55e2b7511335e1896fa73f5
++ entry .Wire   RFC 4251 §5 的 SSH 线上编码：基于其字段类型的 `Reader` 和 `Writer`
+
+% 1 1 0 0d7d457c5c46a9b5185578c01e932fb5
+
+@ 0 6 0 1cab74c9f89a8b91024622dd323ca5b8
++       传输、认证和连接协议的每条消息都是几种字段类型的序列：`byte`、`boolean`、大端序的 `uint32` 或 `uint64`、带长度前缀的 `string`（二进制，或 UTF-8 的 `text`）、二进制补码的 `mpint`，以及逗号分隔的 `name-list`。
++       `Wire.Writer` 把它们累积为一条消息的 `data`，而 `Wire.Reader` 是消息上的游标，把它们读回来，并把过短或过大的消息报告为 `Wire.Error`。
+
+% 2 1 0 07d9976bc59aad20131b3a67706fc5a9
+
+% 3 1 0 04c4f44dbd7e55bf160cd1562a27d301
+
+% 4 1 0 02eb8ff76e05ad3517e7c3912f2daba7
+
+% 5 1 0 083618f6c769f89a11ffd41e0fb8da02
+
+% 0 1 0 1b1bf3b11b93e3a70a2d7a50c984b431
+
+% 0 1 0 19c394c73fed1efc1544307a16590b32
+
+% 0 1 0 1e6047e9fb1d7e5e15eac36bdc269670
+
+% 0 1 0 0377579f7408414d12cce3e2ad0a1081
+
+% 0 1 0 07dad37cb453d0461e0ab6fa59ac51d4
+
+% 0 1 0 1854b52facaa71fd0178238145ab010f
+
+% 0 1 0 02abbe5584e5ad171e25ca49b8b9e2da
+
+% 0 1 0 03f4eeba9b8535b80618a3b577634634
+
+% 0 1 0 1d69ecaa3b6b166e0b7b9514db4538c3
+
+% 0 1 0 17693b51efb193f0153650ef0d02e81d
+
+% 0 1 0 01efec4ddb56b060037c09c686a123bb
+
+% 1 1 0 1f813a6427e0e89519fc50a0d7100138
+
+@ 0 9 0 0e4f76cfc7583c76048a9fd2c2a482f0
++       读取器和写入器都是 `caps.Mutable`，因此它们是局部的、只有单一所有者的值：读取器的方法是 `update` 方法，每次读取都接受一个 `Tactic[Wire.Error]` 和 `Diagnostics`。
++       传输层把 `Wire.Error` 并入 `Ssh.Error`，作为 `Malformed`；`ssh-agent` 客户端则把它并入 `Agent(detail)`。
++   entry .Limit   读取器接受的最大字段：16 MiB
++       实际中 SSH 数据包最多 256 KiB（RFC 4253 §6.1 要求接受 32 KiB），因此超过此值的长度意味着损坏或恶意的消息，会在分配任何东西之前报告为 `Oversized`。
++   entry .Error   当消息比其字段声称的更短、更长或更古怪时，由 `Wire.Reader` 抛出
+
+% 1 1 0 0a6834c31b97989f05713b19c5fb4542
+
+@ 0 3 0 073a36b88d1fa89a14927390eaa049f1
++         错误 `↯/s.122.1`：_could not decode the SSH message because …_，后附原因。
++         通过每次读取都接受的 `Tactic[Wire.Error]` 抛出，因此读取器本身不捕获任何东西。
+
+% 2 1 0 06ea74af5a0c7c5806cf716c293110e4
+
+% 3 1 0 08987da35ec9a7531a54c15540602a37
+
+% 4 1 0 013f24e9a705bd531483eb51382f3f9b
+
+% 3 1 0 132131ca82e09cbe129279f9d140d3b7
+
+% 0 1 0 0296bbd438c41f291804b43f81a9fc92
+
+% 0 1 0 14380b4002e94fe61c4aae6edb005461
+
+% 0 1 0 184ad7f1307e5a7a0d7716ec073faa4b
+
+% 1 1 0 1fb55ea3cdc7e57e050454a95b6760bc
+
+@ 0 2 0 088cedb5350b40cd0334f616dbf26dfc
++     entry .communicable   把每个 `Reason` 渲染为它的消息
++     entry .Reason   `Truncated`、`Oversized(length)`、`Trailing(count)` 或 `Negative`
+
+% 1 1 0 109fb90510dc90b507fbcc13258adfdd
+
+@ 2 4 0 04e1487e8667c0d1139ceea0cd705456
++         column  分支
++         column  代码
++         column  消息
++         column  备注
+
+% 0 1 0 0a12bd7ae463ba1d0df249d5aacf6762
+
+@ 0 2 0 1d6433a0fcfff45b1cfaf03e7ad6c769
++         row  `Oversized(length)`  2  _a field claimed a length of `length` bytes_  超出 `Wire.Limit`
++         row  `Trailing(count)`  3  _`count` bytes followed the end of the message_  来自 `Reader#end`
+
+% 0 1 0 18d39ac9dd1e39731644f7e7ea143139
+
+% 1 1 0 152c4e8fd08257f602eff6c0cfffa8dc
+
+@ 0 2 0 09b938a0207ff02f0db4887bd3e0a62d
++     entry #reason   消息无法解码的原因
++   entry .Reader   消息上的游标，每次读取一个字段并检查边界
+
+% 1 1 0 1431fcbe21ed3c2e1c048d06ab12acd3
+
+@ 0 5 0 0a4118b9e52293e40fef81777528dce0
++         `Wire.Reader(data)` 从第一个字节开始。
++         每次读取都会推进游标，如果消息在字段结束前就结束，则抛出 `Wire.Error`（`Truncated`），如果长度前缀超过 `Wire.Limit`，则在分配任何东西之前抛出 `Wire.Error`（`Oversized`）。
++         `Reader` 是 `caps.Mutable`：它的读取是 `update` 方法，应由创建它的代码消费。
+
+% 2 1 0 1e2661a656db0fae0eee5f3e290bcd3e
+
+% 3 1 0 0a26f741cae41e161d1f99e29e01ad1e
+
+% 2 1 0 12e155153954ac4514590ff8b945257a
+
+% 3 1 0 1ebba5fbef5d91101d17cdfacefec595
+
+% 3 1 0 079af4869c213e840ab51975ecb3e25a
+
+% 0 1 0 18edc8fa67da6713007100a2aa5ef15c
+
+% 0 1 0 0313cbdfbee104cc10b5ead2039115ba
+
+% 0 1 0 09b39bd8a3c7cda911e807ae062d9f93
+
+% 0 1 0 152be6482e97d766150ced5d0a1e0bd7
+
+% 0 1 0 0864b3ecddc6e5051482f5fb6b18e6c1
+
+% 0 1 0 107ec2e37f0377ab014eb7db4ae0a026
+
+% 0 1 0 042d8a1607fb7ee60075da628fe8530a
+
+% 1 1 0 0b3d0c76b6428c931dd76059f0c060ae
+
+@ 0 17 0 19626dae32bd6eb1116a33ced7028962
++     entry #remaining   尚未读取的字节数
++     entry #finished   是否已读取每个字节
++     entry #byte   一个字节
++     entry #boolean   一个字节，不为零时为 `true`
++     entry #uint32   大端序的 32 位整数，作为 `Int`（因此 `0xffffffff` 读作 `-1`）
++     entry #uint64   大端序的 64 位整数，作为 `Long`
++     entry #string   一个 `uint32` 长度，后跟这么多字节
++         协议的二进制 `string`：密钥 blob、签名、数据包的通道数据。
++     entry #bytes   接下来的 `count` 个字节，没有长度前缀：一个固定大小的字段，例如 16 字节的 KEX cookie
++     entry #text   按 UTF-8 解码的 `string`
++         服务名、用户名、算法名和命令行都是 `text`。
++     entry #mpint   一个 `string`，其中是二进制补码的大端序整数，作为 `BigInt`；空字符串为零
++     entry #names   一个逗号分隔名称的 `text`，作为列表；空文本为 `Nil`
++         即 `KEXINIT` 的算法字段和 `USERAUTH_FAILURE` 的方法所用的 `name-list`。
++     entry #rest   所有尚未读取的内容，用于形状取决于前面内容的载荷
++     entry #end   断言消息已被完全消费，否则抛出 `Trailing(count)`
++   entry .Writer   累积式的消息写入器，其 `data` 是迄今为止的消息
+
+% 1 1 0 028028395c74714e1e067c2e71c79a5d
+
+@ 0 3 0 15daee1c7f1e72d300b543ac88b38c6d
++         `Wire.Writer()` 初始为空；每个方法追加一个字段，`#data` 是已写入的全部内容的新副本。
++         `Writer` 是 `caps.Mutable`，因此它是由一段代码构建和读取的局部值。
+
+% 2 1 0 12d9b7f95436bda11a21eb931820b3a5
+
+% 3 1 0 13da73a9948731b307fa5d07be8d13bc
+
+% 0 1 0 01e7fb8b2ea0f1ec00c5c82c3f525d26
+
+% 2 1 0 1df30285af365cb615fdd0495060e93c
+
+% 0 1 0 165b2243b55551410e9ef62ee9f2e1f7
+
+% 0 1 0 1bff1c90cd4b80d60481982cba95a224
+
+% 0 1 0 04ee216ed39e164c04f563588957991c
+
+% 0 1 0 19fe402fc8f85b9507bfe95b2e973d86
+
+% 1 1 0 045642b1f9d0b9de11d168b780b1836a
+
+@ 0 15 0 13f5918790b8d53811a75f3e81719770
++     entry #length   迄今写入的字节数
++     entry #byte   一个字节
++     entry #boolean   一个字节：`true` 为 `1`，`false` 为 `0`
++     entry #uint32   大端序的 32 位整数
++     entry #uint64   大端序的 64 位整数
++     entry #string   一个 `uint32` 长度，后跟这些字节
++     entry #bytes   不带长度前缀的字节：一个固定大小的字段，或一条已编码的消息
++         `Session` 用它拼接命令的输出数据块，传输层用它把一条消息嵌入另一条消息（已签名的认证请求）。
++     entry #text   UTF-8 形式的文本，带长度前缀
++     entry #mpint   最短二进制补码形式的 `BigInt`，带长度前缀；零为空字符串
++         按 RFC 4251 的规定：最高位为 1 的正数会得到一个前导零字节（`0x80` 编码为 `00 80`），负数则编码为其二进制补码。
++     entry #names   用逗号连接的名称列表，作为带长度前缀的文本
++     entry #data   迄今写入的全部内容，作为新的 `Data`

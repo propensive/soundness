@@ -1,0 +1,46 @@
+orthant 2 language
+
+% 0 1 0 00e330ee60ae4afe1c0f8bfc7985e3c3
+
+@ 0 2 0 0b8660f8e3df04db044d694dc7af3b28
++ 当 Kaleidoscope 无法解析正则表达式字面量时抛出。
++ 每个变体都精确指出语法问题所在。
+
+@ 0 1 0 1d8ed6a2d2412a231ea0d46e12dff5b7
++ ## 原因
+
+@ 0 5 0 0570416fff1ec5601cec0c11ae65af38
++ `r"…"` 正则插值器在编译时解析模式。
++ 当解析器无法接受输入时，它抛出一个 `Regex.Error`，携带检测到问题的字符位置 `index`，以及说明期望内容的 `Reason`。
++ 构造出的消息是 `the regular expression could not be parsed because $reason at $index`。
+
+@ 0 1 0 0982d44e8aec0bbd176df78e68656684
++ ## 变体
+
+% 0 1 0 0a7c55b4c0ac40601a46d9fdcd155626
+
+@ 0 16 0 0e78ad915d67804b0db769ed4b9aca02
++ column  代码
++ column  原因
++ column  含义
++ column  消息
++ column  解决方法
++ row  `↯/s.34.1.1`  `UnclosedGroup`  用 `(` 打开了一个捕获组，但从未用 `)` 关闭。  `[↯/s.34.1.1] the regular expression could not be parsed because a capturing group was not closed at 11`  补上缺失的 `)`；如果想要字面量括号，则转义 `(`。
++ row  `↯/s.34.1.2`  `ExpectedGroup`  在要求其后紧跟一个捕获组的上下文中使用了提取器模式，但没有找到组。  `[↯/s.34.1.2] the regular expression could not be parsed because a capturing group was expected immediately following an extractor at 0`  将模式中被提取的部分包在 `(…)` 中。
++ row  `↯/s.34.1.3`  `BadRepetition`  重复范围 `{n,m}` 中 `m < n`。  `[↯/s.34.1.3] the regular expression could not be parsed because the maximum number of repetitions is less than the minimum at 5`  交换上下界；如果不需要上界，则使用 `{n,}`。
++ row  `↯/s.34.1.4`  `Uncapturable`  一个捕获组嵌套在重复组内部，这意味着无法无歧义地提取它。  `[↯/s.34.1.4] the regular expression could not be parsed because a capturing group inside a repeating group can not be extracted at 7`  改用非捕获组 `(?:…)` 以去掉该捕获，或重新组织模式，使重复位于捕获内部而非外部。
++ row  `↯/s.34.1.5`  `UnexpectedChar`  遇到了一个不属于重复范围的字符。  `[↯/s.34.1.5] the regular expression could not be parsed because the repetition range contained an unexpected character at 9`  在 `{` 和 `}` 之间只使用数字和单个逗号。
++ row  `↯/s.34.1.6`  `NotInGroup`  遇到了一个没有对应 `(` 的 `)`。  `[↯/s.34.1.6] the regular expression could not be parsed because a closing parenthesis was found without a corresponding opening parenthesis at 4`  补上缺失的 `(`；如果 `)` 应为字面量则转义它；或删除多余的右括号。
++ row  `↯/s.34.1.7`  `IncompleteRepetition`  用 `{` 打开了一个重复范围，但从未用 `}` 关闭。  `[↯/s.34.1.7] the regular expression could not be parsed because the repetition range was not closed at 8`  补上缺失的 `}`。
++ row  `↯/s.34.1.8`  `InvalidPattern`  底层解析器拒绝了该模式，其原因不属于任何更具体的变体。  `[↯/s.34.1.8] the regular expression could not be parsed because the pattern was invalid at 3`  检查所报告位置附近的模式；查阅所用结构的正则语法。
++ row  `↯/s.34.1.9`  `UnclosedEscape`  模式以一个没有可转义对象的 `\` 结尾。  `` [↯/s.34.1.9] the regular expression could not be parsed because nothing followed the escape character `\` at 12 ``  删除末尾的反斜杠，或转义本应跟在它后面的字符。
++ row  `↯/s.34.1.10`  `EmptyCharClass`  字符类 `[…]` 中不含任何字符。  `[↯/s.34.1.10] the regular expression could not be parsed because the character class is empty at 2`  在字符类中至少加入一个字符，或删除空的 `[]`。
++ row  `↯/s.34.1.11`  `ZeroMaximum`  重复范围的最大值为零，例如 `{0,0}` 或 `{0}`。  `[↯/s.34.1.11] the regular expression could not be parsed because the maximum number of repetitions must be greater than zero at 6`  使用大于零的最大值；如果重复的子模式永远不应匹配，则将其整个删除。
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 1 0 004f241cb4a4ed0405cb108ee75b2611
++ ## 另请参阅
+
+@ 0 1 0 1f8561d54f1107fd1037b1c896bbc860
++ - 源代码：`lib/kaleidoscope/src/core/kaleidoscope.Regex.scala`

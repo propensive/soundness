@@ -1,0 +1,630 @@
+orthant 2 language
+
+@ 0 1 0 13b5d03f782821c801928e6bb8db9789
++ # 自 0.76.0 以来的变更
+
+@ 0 3 0 19820ba8dd70bdea0cf9883a0c26ac43
++ 本文件供 LLM 智能体读取，用于把使用 Soundness 库的代码从 0.76.0 升级到下一个版本。
++ 每个条目准确说明了发生的变化；格式见 `AGENTS.md`。
++ 条目按模块分组，在同一模块内，最近添加的条目排在最后。
+
+% 0 1 0 1e04ab5b4397387d110427d6d7cda432
+
+@ 0 7 0 19d6ab245d4c4a45104c1ccf0d01adac
++ - 当作用域中有 `UnitsNames` given 时，`Quanta` 值的 `Showable` 把每个分量与其自身单位所在位置的名称配对；以前它从列表末尾取名称，因此除最小单位外任一单位为零的值会被标错（`(Quanta(5, 0): Height).show` 以前给出 `5"`，现在给出 `5'`）。
++   (#2520)
++ - 所有分量都为零的 `Quanta` 值显示为 `0` 后跟其最小单位的名称（`0oz`；有 `UnitsNames` 时为最后一个名称）；以前它显示为空文本，或在作用域中有 `UnitsNames` 时抛出 `NoSuchElementException`。
++   (#2520)
+
+% 0 1 0 0cf85ff1a957438516d4d35b804c8f50
+
+@ 0 8 0 08705711aa0919c809c4f23e9a31f91d
++ - `abscission.Shrink#apply(classpath: LocalClasspath, entryPoints: List[Fqcn], out: Path on Linux)` 现在是 `apply[plane <: galilei.Platform: Filesystem](classpath: LocalClasspath, entryPoints: List[Fqcn], out: Path on plane)`。
++   `Path on Linux` 参数仍能编译；没有平台的参数（`% / "out"`，或没有预期类型的 `temporaryDirectory / name`）必须为其指定一个平台，例如 `.on[Local]`。
++   (#2527)
++ - `abscission_linker.scala` 的两条边（`Tool.run` 的实现）中，`abscission.Shrink#run` 的 `out` 参数是 `Path on Local`，以前是 `Path on Linux`，与 `anthology.Toolchain.Tool#run` 一致。
++   (#2527)
+
+% 0 1 0 16f13521983facf213aed73653b0ed8a
+
+@ 0 13 0 0e4a27645d6e4352032f5b97d0fdd737
++ - `acyclicity.Layering[node]` 的构造器参数改变了类型：`layers` 从 `scala.collection.immutable.List[List[Layering.Vertex[node]]]` 改为 `proscenium.Sequence[proscenium.Sequence[Layering.Vertex[node]]]`，`links` 从 `scala.collection.immutable.List[List[(Int, Int)]]` 改为 `proscenium.Sequence[proscenium.List[(Int, Int)]]`。
++   内容和顺序不变。
++   以 `Int` 调用的 `layering.layers(i)` 和 `layering.links(i)` 不再能编译；改用 `Ordinal` 读取（`layering.layers.at(i.z)`），它返回 `Optional`。
++   不再需要对两者应用 `List.from(…)` 或 `.to(List)` 来得到 Soundness 集合。
++   (#2522)
++ - `acyclicity.Layering#rank` 和 `#position` 是 `proscenium.Map[node, Int]`；以前是 `scala.collection.immutable.Map[node, Int]`。
++   `layering.rank(node)` 和 `layering.position(node)` 不再能编译；`layering.rank.at(node)` 返回 `Optional[Int]`，对不在图中的节点返回 `Unset`，而 stdlib 的 `apply` 会抛出 `NoSuchElementException`。
++   (#2522)
+
+% 0 1 0 1aab646960980e9a05191d9a19be16ba
+
+@ 0 3 0 019b412c51a2e2040296a9ebb2bece1e
++ - `anamnesis.Database#store`、`#assign` 和 `#unassign` 在整个读-改-写过程中都持有数据库的锁，因此并发调用不再丢失更新，也不再给一个值两个引用。
++   签名不变。
++   (#2520)
+
+% 0 1 0 1868a4f3222d8611045fe84bfb530658
+
+@ 0 5 0 08ffa31f8796803914049b46933c34ca
++ - `anthology.Compiler.Notice` 在 `markup` 之后新增了第六个参数 `code: Optional[fulminate.Bolt] = Unset`：即在 `-Zbolt-codes`（`anthology.scalacOptions.boltCodes`）下 Proscala 赋予错误或警告的 bolt 代码，否则为 `Unset`。
++   构造不受影响；位置模式需要加上通配符：`case Compiler.Notice(importance, file, message, span, markup)` 改为 `case Compiler.Notice(importance, file, message, span, markup, _)`。
+
+% 0 1 0 1b4772c35371366918c64e4bbd604764
+
+@ 0 21 0 087f16c7521f8a940e0a5cd53def2957
++ - `anthology.Kotlinc#apply` 在编译源文件的异步任务中把源文件写入一个临时目录（galilei 的 `Scratch`，位于 `java.io.tmpdir` 之下），并在编译结束时在该任务中删除它；以前它在返回之前同步写入源文件。
++   创建或写入该目录失败，现在报告为所返回的 `Compiler.Process` 上的 `Compiler.Result.Crash`，而不是从 `apply` 抛出；`Compiler.Event.Running` 也从编译任务中记录，而不是在 `apply` 返回之前记录。
++   (#2524)
++ - anthology API 中的每个宿主路径都是 `Path on galilei.Local`，以前是 `Path on galilei.Linux`：`Toolchain.Tool#run` 及其每个实现（apk、dex、link、linker、nir、oci、java、kotlin 和 scala 边）的 `out` 参数；`Toolchain#produce` 的 `out` 参数和结果；`Deliverable.Emission(out, classpath)`、`Deliverable.Product(file)`，以及 `Deliverable#emission` 和 `Deliverable#product` 的结果；`Compilation(out, classpath)`；`NirPlugin(jar)`；`Wasi.World(directory, world)`；以及 `dexOptions.platform(jar)` 的参数。
++   类型为 `Path on Linux` 的值用 `.on[Local]` 转换；`temporaryDirectory[Path on Linux]`、`workingDirectory[Path on Linux]`、`text.as[Path on Linux]` 和 `import pathInterfaces.pathOnLinux` 改为对应的 `Local` 版本。
++   对 `Path on Local` 的操作（`encode`、`/`、`existent`、读取和写入）需要一个 `ambience.System` given，例如 `systems.javaBaseSystem`，而 `Path on Linux` 不需要。
++   (#2527)
++ - `anthology.Bundler.assemble(classpath: LocalClasspath, jarfile: Path on Linux, main: Optional[Fqcn]): Path on Linux` 现在是 `assemble[plane <: galilei.Platform: Filesystem](classpath: LocalClasspath, jarfile: Path on plane, main: Optional[Fqcn]): Path on plane`。
++   没有平台的 `jarfile` 参数必须为其指定一个平台。
++   (#2527)
+
+% 0 1 0 1281cf5693caddee047e57c2960f2348
+
+@ 0 3 0 0096fa667c1211ad1599470b5b829ded
++ - `bitumen.Tarfile#extractTo[plane <: Posix: Filesystem](root: Path on plane)` 的上界现在是 `plane <: galilei.Platform`，因此它接受 `Path on Local` 或 `Path on Windows`。
++   现有调用处无需修改。
++   (#2527)
+
+% 0 1 0 0ef4c64348822baf04644f2877e95bc9
+
+@ 0 7 0 18c6150fbbd926b703222f965937400f
++ - `burdock.Repackager.repackage(inputJar: Path on Linux, outputJar: Path on Linux, resolve, cached, bootstrapClass, progress)` 现在是 `repackage[plane <: galilei.Platform: Filesystem](inputJar: Path on plane, outputJar: Path on plane, …)`，其他参数不变。
++   两个路径必须在同一平台上；没有平台的参数必须为其指定一个平台。
++   (#2527)
++ - `burdock.repackage` 的 jar 缓存是解码为 `Path on Local` 并按元素逐级下降得到的 `<user.home>/.cache/soundness/jars`；以前它是解码为 `Path on Linux` 的文本 `$home/.cache/soundness/jars`，对以驱动器为根的主目录会失败。
++   (#2527)
+
+% 0 1 0 0a4cdd5273865dd7126f966067eddb4e
+
+@ 0 2 0 13a5760fddec0b3817380eee4826aacc
++ - `caduceus.couriers.resendCourier` 把信封的回复地址作为 JSON 字段 `reply_to` 发送，Resend 会读取该字段；以前它发送的是 `replyTo`，Resend 会忽略它。
++   (#2520)
+
+% 0 1 0 0e8186e51a950acf19869503c43d7b4d
+
+@ 0 11 0 1e50cbdebb38d3da15191f0c41d92955
++ - `capricious.toss()` 从上下文中的 `Random` 抽取（当 `random.long() < 0L` 时为 `true`）；以前它从 `scala.math.random` 抽取，在 `Seed` 下不可复现。
++   (#2520)
++ - `capricious.Random.apply(seed: Seed)(using Randomization): Random` 现在是 `inline def apply(seed: Seed): Random`：`Randomization` 在内部解析，并以 `seed` 作为作用域中的 `Seed`，因此在 `randomization.seededRandomization` 下，生成器从 `seed` 开始（以前从不读取它）。
++   显式传入 `Randomization` 的调用必须改为让它位于作用域中。
++   (#2520)
++ - 派生的 `Randomizable` 实例（`Randomizable.derived`、`conjunction`、`disjunction`）从传给 `randomize` 的 `Random` 中抽取每个字段和变体。
++   以前它们根据派生实例处作用域中的 `Randomization`（和 `Seed`）构建新的生成器，因此在 `seededRandomization` 下，每个派生值都从该种子重新开始；派生不再需要作用域中有 `Randomization`。
++   (#2520)
+
+% 0 1 0 17d39e5779908e921d761fda8f0cce70
+
+@ 0 5 0 1613f305d5adbf691e930ef5b90c365d
++ - `Reaction.Stoichiometric` 显示为 `=`，`Reaction.Resonance` 显示为 `↔`；以前两者各自显示为对方的字形。
++   (#2520)
++ - 在系统命名中，当 `enn` 位于 `nil` 之前时，`charisma.PeriodicTable.element` 省略一个 `n`：元素 190 是 `Unennilium`（以前是 `Unennnilium`），290、390、490、590、690、790、890、900–909 和 990 同样如此。
++   (#2520)
+
+% 0 1 0 1b963d061ec457af154e1006b71b17d4
+
+@ 0 10 0 04432f75f3b8a04e1952a20e27995bf2
++ - `Endpoint[Udp.Port]` 上的 DNS 扩展方法 `coaxial.query`（两个重载，位于 `coaxial.dns`）更名为 `ask`：`resolver.query(dns"example.com")` 改为 `resolver.ask(dns"example.com")`，`resolver.query(message)` 改为 `resolver.ask(message)`。
++   该名称在 `soundness` 中与 telekinesis 的 `query` 冲突；删除为绕过该冲突而写的 `import coaxial.query`。
++   (#2520)
++ - given `Multicast.subscribable`、`Multicast.bindable` 和 `Multicast.showable` 现在适用于任何 `multicast <: Multicast`，因此 `Multicast(ip"224.0.0.251", udp"mdns").subscribe(…)` 无需把值标注为 `Multicast` 即可编译（字面量端口会细化类型）。
++   现有代码不受影响；为绕过此问题而添加的类型标注可以删除。
++   以显式 `Self` 指名该 given 的调用，例如 `summon[Multicast is Subscribable]`，仍能解析。
++   (#2520)
+
+% 0 1 0 1b6b21af68bfe90d0119e7d6717ec6c0
+
+@ 0 3 0 15e4cb416c0d3fbb01e86426ab1a8b9b
++ - `cosmopolite.Locale.decodable` 把输入转为小写，并忽略从第一个 `-` 或 `_` 开始的所有内容，因此 `t"FR"`、`t"fr-CA"` 和 `t"fr_CA"` 解码为 `Locale(fr)`（`pl`、`de`、`es` 同样如此）；以前它们解码为 `Locale(en)`。
++   无法识别的代码仍解码为 `Locale(en)`。
++   (#2520)
+
+% 0 1 0 07f33a1bf4fa2505029751dde4102879
+
+@ 0 6 0 012bea711dfa74c91967e812f483114d
++ - `degustation.Inspection.atomize(tastyFiles: List[Text], classpath: List[Text])` 接受 `(using backend: FilesystemBackend on Local)`，以前是 `FilesystemBackend on Linux`，并把每段文本解码为 `Path on Local`。
++   指名后端平台的调用者必须指名 `Local`；`filesystemBackends.javaBaseFilesystem` 两者都能满足。
++   TASTy 文件相对于类路径的路径根据路径的元素计算，在每个宿主上都以 `/` 分隔；以前它通过在编码后的文本中搜索 `/` 来计算。
++   (#2527)
+
+% 0 1 0 15965c13323b4da117df6152721cd841
+
+@ 0 10 0 00efb7efb1d7eaee1e70938ffe0a0114
++ - `dendrology.LayeredDagDiagram[node]` 的构造器参数 `rows` 是 `proscenium.List[(proscenium.List[DagDiagram.Tile], proscenium.Map[Int, node])]`；以前它是以 `scala.collection.immutable.List` 和 `Map` 表示的相同形状。
++   `LayeredDagDiagram#tiles` 返回 `proscenium.List[proscenium.List[DagDiagram.Tile]]`，`#nodesAt` 返回 `proscenium.List[proscenium.Map[Int, node]]`，以前两者都是对应的 stdlib 类型。
++   内容和顺序不变。
++   (#2522)
++ - `dendrology.LaneDagDiagram.Style#serialize(tiles, glyphs, widths, label)` 接受的 `glyphs` 是 `proscenium.Map[Int, line]`；以前是 `scala.collection.immutable.Map[Int, line]`。
++   `Style` 的实现必须修改该参数的类型，直接调用者必须传入 `proscenium.Map`。
++   `LaneDagDiagram.TextualStyle#serialize` 随之改变。
++   (#2522)
+
+% 0 1 0 1c4d783a18693f681e38c16afefeb132
+
+@ 0 5 0 09fc0021e68311431bd1bd1479080247
++ - `distillate.Irrefutable.intDoule` 更名为 `distillate.Irrefutable.intDouble`。
++   (#2520)
++ - 对于匹配 `[+-]?[0-9]+` 但超出类型范围的文本，`distillate.Decodable.int` 和 `distillate.Decodable.long` 抛出带 `Number.Error.Reason.OutOfRange` 的 `Number.Error`；以前抛出的是带 `Reason.Unparseable` 的错误。
++   `Decodable.byte` 和 `Decodable.short` 对超出 `Int` 范围的此类文本同样给出 `OutOfRange`，以前给出的是 `Unparseable`。
++   (#2520)
+
+% 0 1 0 11d5d50734a7e80a1e85faf7259fa0fc
+
+@ 0 3 0 1060d008a000746519bebce918f070d0
++ - `diuretic.JavaLongDuration` 固定了 `type Domain = Durations`，因此 `anticipation.durationInterfaces.javaLongDuration` 现在满足 `Long is Abstractable across Durations to Long`。
++   (#2520)
+
+% 0 1 0 09df00b428737c7f1cf98680616b6f7e
+
+@ 0 21 0 0d47501d0135346711e1b92530e239ef
++ - `enigmatic.HmacCipher` 从组件 `enigmatic.cose` 移到了 `enigmatic.core`；其包名和名称不变，并从同一个 `soundness` 总括包导出。
++   仅为 `HmacCipher` 而依赖 `enigmatic.cose` 的构建可以改为依赖 `enigmatic.core`。
+
+% 0 1 0 003324af396e407911652bf2c69bc5cd
+
+@ 0 5 0 053ff804b8b2e20c173a255ff52b4a7b
++ - `enigmatic.HmacCipher[algorithm]#genKey()`，以及由此而来的 `SymmetricKey.generate[HmacCipher[algorithm]]()`，返回与哈希输出等长的密钥（`Sha2[256]` 为 32 字节，`Sha2[384]` 为 48 字节，`Sha2[512]` 为 64 字节）；以前对每种哈希都返回 32 字节。
++   `HmacCipher#Size` 和 `#keySize` 是哈希的位宽；以前是字面量 `256`。
++   (#2530)
++ - `enigmatic.SymmetricKey#verify` 用该密钥检查签名；以前它用零字节的密钥检查，因此对该密钥自己生成的每个 MAC 都返回 `false`。
++   签名不变。
++   (#2530)
++ - `enigmatic.AesGcm[bits]` 的上界是 `128 | 192 | 256`；以前是 `128 | 256`。
++   (#2530)
++ - `enigmatic.Crypto.Error.Reason` 有一个新分支 `BadWrap`（编号 7）；对它的穷尽匹配需要加上该分支。
++   (#2530)
++ - `enigmatic.Cose.Verifier` 有一个新的抽象成员 `algId: Long`，其 given `Cose.Verifier.asymmetric` 和 `Cose.Verifier.symmetric` 多接受一个上下文参数 `cipher is Cose.Algorithm`。
++   没有 `Cose.Algorithm` given 的密码算法不再有 `Cose.Verifier`。
++   (#2530)
++ - 当消息受保护的头部指名的 `alg` 与密钥的密码算法不同时，`enigmatic.Cose#verifyWith`，以及由此而来的 `authenticate[Cose]`，抛出 `Cose.Error(Cose.Error.Reason.AlgorithmMismatch(expected, actual))`；以前它忽略该头部。
++   (#2530)
++ - `enigmatic.Cose.Algorithm` 有三个带默认实现的新成员：`scheme`、`wire` 和 `native`。
++   `Cose.Authenticator.asymmetric` 在设置了 `scheme` 时用它签名，并通过 `wire` 写出签名，因此用 `Ecdsa` 密钥生成的 COSE_Sign1 携带 RFC 9053 §2.1 规定的定宽 `r ‖ s` 签名。
++   以前 `Ecdsa` 密钥无法生成这样的消息，因为它没有 `Cose.Algorithm`。
++   (#2530)
+
+% 0 1 0 154e8c2a4c3287e30895275cffbeafd7
+
+@ 0 4 0 0881d187c4b9e423194476b6037be6b6
++ - `escapade.escapes.foreground.BrightWhite` 用 `[39m`（前景色默认值）而不是 `[49m` 重置。
++   (#2520)
++ - 不带 `reset` 构造的 `Escape` 不再在其括起的跨度结束处插入一个单独的 `\e`；那里不插入任何内容。
++   (#2520)
+
+% 0 1 0 07d3f5d0de80f0000d3a20dc61ea01c4
+
+@ 0 7 0 016f14572f29bce9178973b0007e19fc
++ - `ethereal.Installer.candidateTargets()` 返回 `List[Path on Local]`，以前是 `List[Path on Linux]`；`ethereal.Installer.install(force: Boolean, target: Optional[Path on Linux])` 接受 `target: Optional[Path on Local]`。
++   (#2527)
++ - `ethereal.Upgrade` 的数据目录（供 `stage`、`pending`、`outcome` 和 `acknowledge` 使用）解析为 `Path on Local`；以前是 `Path on Linux`，因此在 Windows 上，由于它位于 `%LOCALAPPDATA%` 之下，无法解析，上述每个操作都会失败或什么也不报告。
++   (#2527)
+
+% 0 1 0 0331d6d0302087a20afc43473d6ee718
+
+@ 0 10 0 09f1a5608caf5dd61e48bc6ed046f94c
++ - `eucalyptus.dateFormat` 是 `java.time.format.DateTimeFormatter`（模式为 `yyyy-MMM-dd HH:mm:ss.SSS`，使用系统默认时区）；以前是 `java.text.SimpleDateFormat`。
++   调用 `dateFormat.format(millis: Long)` 改为 `dateFormat.format(java.time.Instant.ofEpochMilli(millis))`。
++   (#2520)
++ - 由 `eucalyptus.logFormats.ansiTimestampedLogFormat` 和 `eucalyptus.logFormats.googleCloudPlatformLogFormat` 格式化的记录以 `\n` 结尾，与 `timestampedLogFormat` 和 `untimestampedLogFormat` 的记录一样；以前它们没有行尾。
++   (#2520)
++ - `eucalyptus.Logger.apply` 为每一对调用处（`Codepoint`）和 `destination`（用 `==` 比较）保留一个缓冲队列和写入守护进程；以前它为每个调用处保留一个，因此在同一源码位置为不同目标创建的日志记录器全都写入第一个目标。
++   (#2520)
+
+% 0 1 0 0dcece4e80bf175c0e1cc8af95d96f6e
+
+@ 0 11 0 121bc6148fe0bcb5091ddf346f4f8c38
++ - `exoskeleton.Enclave.Launcher#sandbox` 在 `Tactic[Path.Error]` 之后多接受一个上下文参数 `Tactic[galilei.Io.Error]`：它运行工具时使用的临时主目录是位于 `java.io.tmpdir` 之下的 galilei `Scratch` 目录，以进程的掩码创建（以前是模式 `0700`），并在代码块结束、守护进程被终止之后删除。
+
+% 1 1 0 172f7e40ec4fad350e89cd18ab6b29bd
+
+@ 0 11 0 00852c090331fb0c00e30d8f364fc316
++ - `exoskeleton.Enclave.Tool` 新增第四个字段 `runtime: Optional[Path on Linux] = Unset`，`Enclave.scratch` 和 `Enclave.environment` 新增可选的 `runtime` 参数：给定该参数时，运行工具及其测试启动的 shell 时，`XDG_RUNTIME_DIR` 指向它。
++   `sandbox` 为每个工具提供各自的运行时目录，即位于 `/tmp` 之下的 `Scratch` 目录，因此无论临时目录多长，其守护进程的套接字路径都保持在 macOS 允许的 104 字节之内，且任何工具都不会遇到真实用户的守护进程。
++   用三个参数构造的 `Tool` 仍能编译；模式 `Tool(path, pid, home)` 需要第四个绑定者。
++   (#2524)
++ - `exoskeleton.Completions` 的 PowerShell 安装把 PowerShell 报告的配置文件路径解码为 `Path on Local`；以前解码为 `Path on Linux`，因此以驱动器为根的配置文件总是被报告为 `Installation.InstallResult.NoWritableLocation(Shell.Powershell)`。
++   其他 shell 的目录、`Completions.install` 和 `Manpages` 仍使用 `Linux`。
++   (#2527)
++ - `exoskeleton.Enclave` API 中的每个路径都是 `Path on galilei.Local`，以前是 `Path on galilei.Linux`，与 `superlunary.Rig#stage` 一致：`Enclave.Error(tool)`；`Enclave.Tool(path, pid, home, runtime)`；`Enclave.scratch` 和 `Enclave.environment` 的 `home` 和 `runtime` 参数；`Enclave.keygen(prefix)` 的参数和两个结果；`Enclave.Launcher(path)`；`Enclave.Launcher#sign` 的 `seed` 和 `out` 参数及其结果；`Enclave` 的 `releaseKey` 和 `recoveryKey` 字段；`Enclave#Target`；`Enclave#stage(out)` 的参数和结果；以及 `Enclave#invoke` 的 `Stage[output, Text, Path on Local]` 参数。
++   (#2527)
+
+% 0 1 0 1d90f9f17b0aa66b0d7b52e54244edf6
+
+@ 0 3 0 18d6b043597393001eae331db2691071
++ - `Scratch` 目录在其作用域结束时的删除会跳过已经消失的条目，而不是以 `Io.Error` 失败：作用域结束时仍在该目录中完成工作的进程，可能在列出文件和删除文件之间删除某个文件。
+
+% 1 1 0 0f4902a3c7b43a5c0b42d3602659cfea
+
+@ 0 10 0 01bd41ced8eb0eff109d1e29f0644cd8
++ - `Path on plane` 上的扩展方法 `published[record]` 更名为 `observe[record]`，它借出的能力 `galilei.Published[record]` 更名为 `galilei.Observer[record]`（同样，`soundness.Published` 改为 `soundness.Observer`，导出的 `published` 改为 `observe`）。
++   签名和行为不变：`file.published[Ratel] { reader => … }` 改为 `file.observe[Ratel] { reader => … }`。
++   源文件是 `galilei.Observer.scala`；`Edition` 和 `Owner` 不变。
++   (#2518)
++ - `galilei.FilesystemBackend` 新增一个抽象成员 `holding(path: Path on Plane, reserve: Long, mode: Optional[Int])(using Tactic[Io.Error]): FilesystemBackend.Hold^`，该特质的实现必须定义它；没有可写内存映射的实现以 `Io.Error(path, Operation.Open, Reason.Unsupported)` 中止，WASI 后端就是如此。
+
+% 0 1 0 1d8689c9568ced04018b19cdd59b1a5a
+
+@ 0 19 0 1fce60c3e3cc16041a9355afd81c0a2f
++ - `Path on <plane <: Searchpath>` 上的搜索路径扩展方法 `galilei.search` 更名为 `discover`：`path.search()` 改为 `path.discover()`。
++   该名称在 `soundness` 中与 gossamer 的 `search` 冲突；删除为绕过该冲突而写的 `import galilei.search`。
++   `locations`、`listing` 和 `destination` 不变。
+
+% 1 1 0 1a269e098d364f0b179b7e646dffe949
+
+@ 0 15 0 1edf12b63a0122a60fff4697286b0396
++ - `create[Directory]`、`create[File]`、`create[Fifo]`、`create[Sock]` 和 `create[Ram]` 现在遵从调用处作用域中的 `CreateParents` 方针：在 `import filesystemOptions.createParents` 下，`path.create[Directory]()` 会像 `CreateFlag.Parents` 一样创建缺失的祖先目录，而以前它抛出带 `Reason.Nonexistent` 的 `Io.Error`。
++   不要求任何方针，`CreateFlag.Parents` 仍然有效。
++   在该导入位于作用域中时依赖 `create` 因父目录缺失而失败的代码，必须改为在该作用域中导入 `filesystemOptions.requireParents`。
++   类 `Creation.DirectoryCreatable`、`FileCreatable`、`FifoCreatable`、`Ram.RamCreatable` 和 `SocketCreation.SocketCreatable` 以第一个参数子句接受该方针，它们的 given 是 `inline` 的；只调用 `create` 的代码不受影响。
++   (#2520)
++ - 文件系统选项 `filesystemOptions.createNonexistentParents` 更名为 `filesystemOptions.createParents`，其方针特质 `galilei.CreateNonexistentParents` 更名为 `galilei.CreateParents`：把 `import filesystemOptions.createNonexistentParents` 替换为 `import filesystemOptions.createParents`，把 `CreateNonexistentParents on plane` 替换为 `CreateParents on plane`。
++   `filesystemOptions.requireParents` 不变。
++   行为不变。
++   (#2520)
++ - given `galilei.Local.submissible: [root] => root is Submissible on Local` 使 `Path#on[Local]`（以及到预期类型 `Path on Local` 的隐式转换）对任意根类型的路径都能编译：`(% / "etc").on[Local]`、`(Drive('C') / "x").on[Local]`、`p"/etc/hosts".on[Local]`，以及 `Path on Linux`、`Path on MacOs`、`Path on Posix` 或 `Path on Windows` 值。
++   以前它们都以 `cannot reduce summonFrom` 编译失败。
++   根的文本在转换运行时检查：既不是 `/` 也不是驱动器根（`C:\`）的根会抛出 `Path.Error(Path.Error.Reason.InvalidRoot)`。
++   每个元素仍按 `Local.Rules`（`Windows.Rules & MacOs.Rules`）检查。
++   (#2527)
++ - 把不以 `/` 开头且少于三个字符的文本解码为 `Path on Local` 时，抛出 `Path.Error(Path.Error.Reason.InvalidRoot)`；以前抛出 `StringIndexOutOfBoundsException`。
++   (#2527)
++ - `path.executable`（以及 `galilei.FilesystemAttribute.Executable[plane]`）对 `plane <: Platform` 的 `Path on plane` 可用，以前是 `plane <: Posix`，因此 `Path on Local` 或 `Path on Windows` 也有它。
++   在没有可执行位的宿主上，设置它不起作用。
++   `hardLinks()` 仍以 `Posix` 为上界。
++   (#2527)
+
+% 0 1 0 05a039658357a62915cb363c5761cf36
+
+@ 0 3 0 05ff9253019269ad0d9577fe5ab1f0c8
++ - `gastronomy.Sha384` 和 `gastronomy.Sha512` 连同其 given `gastronomy.Multicodec.sha384` 和 `gastronomy.Multicodec.sha512` 一起被移除；改用 `Sha2[384]` 和 `Sha2[512]`（以及代码相同的 `Multicodec.sha2_384`、`Multicodec.sha2_512`）。
++   两个被移除的类型都没有 `Hash` 实例。
+
+% 1 1 0 0c38d8fe5d2057011f54786bf80ce617
+
+% 0 1 0 0f8801d07578e6311608c798ab4d808f
+
+@ 0 4 0 0724f59882f8b32b0dac9b722ebf9646
++ - `gossamer.justify` 现在可用：`text.justify(width)` 返回把 `text` 的单词分布在 `width` 列中的结果，多余的空格在各间隔之间尽可能均匀地分配（`t"a b c d".justify(12)` 是 `t"a  b   c   d"`）；以前它只返回第一个单词。
++   已经比 `width` 宽的文本以单个空格分隔返回，单个单词原样返回。
++   签名不变。
++   (#2520)
+
+% 0 1 0 0bfdc02cf06b2ef71ab35144a7590d48
+
+@ 0 2 0 1802fb9942d52be317f7a753b519d1ca
++ - 空的 `hallucination-ansi` 制品（组件 `hallucination.ansi`，没有源文件）不再发布；删除对它的任何依赖。
++   它没有导出任何内容。
++   (#2520)
+
+% 0 1 0 162fdd68f08c465a12122d34e6c4d9a3
+
+@ 0 4 0 00f0edfcc4e6792c09a1882842031413
++ - `hellenism.Classpath.Entry.classify(path)`、针对路径的 `LocalClasspath#+` 以及 `LocalClasspath.running(classloader)` 把每个路径解码为 `Path on Local`，前两者使用 JVM 自身的 `ambience.System`；以前它们解码为 `Path on Linux`，会拒绝以驱动器为根的条目。
++   签名不变。
++   (#2527)
+
+% 0 1 0 1158a6567f5d98ee0a180931c96339da
+
+@ 0 6 0 1373ea84b69f19f00bbda94d76fbf99a
++ - 新方针 `hieroglyph.EncodingSanitizer` 决定 `Codepage` 如何处理其编码无法表示的字符。
++   默认方针（given `EncodingSanitizer.substitute`，无需导入即可找到）与以前一样写出编码的替代字符。
++   `import encodingSanitizers.strictEncodingSanitizer` 使 `Codepage#encoded` 以及通过 `codepages` given 编码的一切（`in[Data]`、`write`、……）改为抛出 `Codepage.Error(char, encoding)`，并需要 `Tactic[Codepage.Error]`。
++   保持旧行为无需任何修改。
+
+% 1 1 0 0c8fd29d80141fa70d98ccdc3c74d337
+
+@ 0 10 0 1ac73e8310c440160d300a7f530bcc08
++ - `codepages` 的各个 given（`utf8Codepage`、`utf16Codepage`、`utf16LeCodepage`、`utf16BeCodepage`、`asciiCodepage`、`iso88591Codepage`）都接受一个 `(using EncodingSanitizer)`；`import codepages.utf8Codepage` 和 `codepages.utf8Codepage.encoded(…)` 不受影响。
++   `Codepage` 有第二个带默认值的构造器参数 `sanitizer: EncodingSanitizer`，以及一个新方法 `sanitized(sanitizer)`。
++   (#2520)
++ - `charsets.iso88591Charset` 与其他 `charsets` given 一样，接受作用域中的 `TextSanitizer`；以前它固定使用 `textSanitizers.skipSanitizer`，不需要清理器。
++   导入它的代码还必须在作用域中有一个清理器：添加 `import textSanitizers.skipSanitizer` 以保持旧行为。
++   每个字节都是有效的 ISO-8859-1，因此清理器的选择不会改变解码结果。
++   (#2520)
+
+% 0 1 0 165131e53f5576cf05d71a204ac48013
+
+@ 0 16 0 028afc5055823bbd152883f424ab86a9
++ - `honeycomb.Whatwg#Area.Default`、`Area.Rect`、`Area.Circle` 和 `Area.Poly` 是 `Tag.Void of "area"`，序列化为 `<area shape="…">`；以前它们是 `Tag.Void of "input"`，序列化为 `<input shape="…">`。
++   (#2520)
++ - `honeycomb.Whatwg#Legend` 是 `Tag.Container of "legend"`，序列化为 `<legend>`；以前它的标注和主题是 `"label"`，因此序列化为 `<label>`，并被 `Fieldset` 拒绝。
++   (#2520)
++ - `honeycomb.Whatwg#Iframe` 是 `Tag.container["iframe", "", Whatwg]()`，而不是 `Tag.Void`：它序列化时带结束标签（`<iframe …></iframe>`），解析器期望 `</iframe>`。
++   (#2520)
++ - `honeycomb.Whatwg.usemap` 是属性 `usemap`（类型为 `"usemap" is Attribute on "img" | "input" | "object" of HashName`）；以前它被注册为 `usemaptype`。
++   (#2520)
++ - `honeycomb.Whatwg.headingreset` 是属性 `headingreset`（类型为 `"headingreset" is Attribute of Presence`）；以前它被注册为第二个 `headingoffset`。
++   (#2520)
++ - `honeycomb.Whatwg.acceptCharset` 是属性 `accept-charset`（类型为 `"accept-charset" is Attribute on "form" of Utf8`），与 `honeycomb.Html4Transitional.acceptCharset` 一样；以前它被注册为 `acceptCharset`。
++   (#2520)
++ - `honeycomb.Whatwg#Meta` 固定了 `type Topic = "meta"`、`type Transport = ""` 和 `type Form = Whatwg`，与 `Area`、`Input`、`Link` 和 `Track` 一样。
++   (#2520)
+
+% 0 1 0 17f94539b937dacb1c8f57fb7f04ec71
+
+@ 0 2 0 019d1a3ac7a12bf30b1bde76b14a3add
++ - `hyperbole.tastySymbolTeletypeable` 用 `TastyPalette#flagOn` 绘制已设置的标志；以前它对已设置和未设置的标志都使用 `flagOff`。
++   (#2520)
+
+% 0 1 0 10336422395755bf1e478ba611fcc433
+
+@ 0 20 0 1292913bca84908c08f682cdc514e0fe
++ - `B8`、`B16`、`B32` 和 `B64` 上的 `binary` 现在会终止，并返回位图自身的位，最高有效位在前，用零填充到类型的宽度（8、16、32 或 64 个字符）；以前它永不返回。
++   (#2520)
++ - `U8#hex` 返回十六进制（`U8` 255 给出 `t"ff"`）；以前它返回八进制形式，与 `U8#octal` 相同。
++   (#2520)
++ - 大于 255 的 `U8` 字面量是编译错误（`↯/s.27.9`）；以前 256 到 65535 的值会被接受，并截断为其低八位。
++   (#2520)
++ - `Byte#int` 返回 `Int`，`Byte#short` 返回 `Short`（`hypotenuse` 中的扩展方法）；以前两者都返回 `Long`。
++   (#2520)
++ - `B8#ones`、`B8#zeros`、`B8#leadingZeros`、`B16#ones`、`B16#zeros` 和 `B16#leadingZeros` 只计算类型自身的位；以前在最高位被设置时，它们会把符号扩展也计算在内（`B8` `0x80` 给出 25 个 1 和 -17 个 0）。
++   `B64#zeros` 计算全部 64 位，以前只计算低 32 位。
++   (#2520)
++ - `U16` 上的 `<=` 和 `>=` 按无符号比较，与 `<` 和 `>` 一直以来的做法相同；以前 32768 及以上的值按负数比较。
++   (#2520)
++ - `F32.apply(sign: Boolean, exponent: B16, mantissa: B32)` 构建 IEEE 754 binary32：符号位于第 31 位，`exponent` 的低 8 位位于第 23-30 位，再加上 `mantissa` 的低 23 位。
++   以前无论其他参数为何，`sign = true` 都给出 `-0.0f`，并且指数被放在第 22 位，尾数为 22 位。
++   `F64.apply(sign: Boolean, exponent: B16, mantissa: B64)` 使用 `exponent` 的低 11 位，以前使用低 8 位。
++   (#2520)
+
+% 0 1 0 08aeb0597d80bda715e9265307be8d6a
+
+@ 0 7 0 0db9fd5b1f4e2fad068b059783388911
++ - `Home.Config`、`Home.Cache`、`Home.Local.Share`、`Home.Local.State` 和 `Home.Local.Bin` 现在遵循 XDG Base Directory 变量（`XDG_CONFIG_HOME`、`XDG_CACHE_HOME`、`XDG_DATA_HOME`、`XDG_STATE_HOME`、`XDG_BIN_HOME`）：当变量被设置为绝对路径时，布局解析为该路径，而不是其在 `$HOME` 下的固定位置。
++   相对值或空值会被忽略。
++   无论环境如何都需要固定位置的代码，应从 `Home` 构建它，如 `Home[Path on Linux]() / ".config"`。
++   `BaseLayout` 新增了第三个参数 `variable: Optional[Text] = Unset` 和一个方法 `relocation`。
++   (#2520)
+
+% 0 1 0 1596bb652e5891230b44b58e4458fbe5
+
+@ 0 2 0 1628805a021a91ef11fdccbdb207c47b
++ - 对调色板中没有的名称，`iridescence.Palette#selectDynamic` 以 `field <name> is not defined for this palette` panic；以前会有 `java.lang.NoSuchMethodException` 逸出。
++   (#2520)
+
+% 0 1 0 1b8860e67aa4a1c91891b47a0b5ee058
+
+@ 0 16 0 1e5594ab0970065517040d13478cc468
++ - `mandible.Classfile` 在创建时就被解析，格式错误的字节会抛出 `Classfile.Error`，而不是在首次使用时抛出 JDK 的 `IllegalArgumentException`。
++   因此 `Classfile(name)`、`Classfile[type]` 以及 `read[Classfile]` 背后的 `Aggregable` given 需要作用域中有 `Tactic[Classfile.Error]`：把调用包在 `safely(…)` 中以保持 `Optional` 结果，或者在外围签名中添加 `raises Classfile.Error`。
++   公共构造器 `new Classfile(data)` 被工厂方法 `Classfile(data)` 取代，后者抛出同样的错误。
++   (#2520)
++ - 空栈上的 `Bytecode.Opcode.Dup.transform` 原样返回栈，与其他 `Dup*` 和 `Swap` 分支一样；以前它抛出 `NoSuchElementException`。
++   (#2520)
++ - 不可达的宏实现 `mandible.internal.disassemble` 和对象 `mandible.internal` 被移除，连同只由它抛出的错误 `↯/s.88.1`。
++   公共的 `mandible.disassemble` 不变。
++   (#2520)
++ - `Classfile#Method#bytecode` 是 `Optional[Bytecode] raises Classfile.Error`：格式错误的代码属性抛出 `Classfile.Error`，而不是抛出 JDK 异常，因此调用需要作用域中有 `Tactic[Classfile.Error]`（把它包在 `safely(…)` 中，或在外围签名中添加 `raises Classfile.Error`）。
++   没有代码的方法（抽象方法或本地方法）给出 `Unset`；以前抛出 `NoSuchElementException`。
++   (#2520)
+
+% 0 1 0 15ea6feaac12c1f31aef1231a48de2e8
+
+@ 0 16 0 08786389cc941d0a09c8a233f6f2e314
++ - `metamorphose.Permutation` 现在作用于序列的前端，而不是末端：它重排其前 `extent` 个位置，并固定之后的每个位置，因此 `Permutation(Sequence(0, 2, 1))` 等于 `Permutation(Sequence(0, 2, 1, 3, 4))`（以前等于 `Permutation(Sequence(1, 0))`），而把排列应用于更长的列表时，会重排开头的元素并保留末尾的元素（以前保留开头的元素）。
++   对于第一个索引保持不动的排列，`permutation(n)` 现在是正确的。
++   编号已经改变：对于大多数排列，排列的 `Factoradic` 编号，以及由此而来的 `Permutation(Factoradic(n))`、`permutation.factoradic`、`Permutation.bySize(n)` 的顺序和 `Encodable in Data` 字节，都与 0.76.0 不同（`Permutation(Sequence(1, 4, 2, 3, 0))` 以前是 `Factoradic(45)`，现在是 `Factoradic(104)`）；恒等排列仍为 0，完全逆序不变。
++   早期版本存储的编号或编码字节必须根据其索引序列重新生成。
++   (#2520)
++ - `Permutation#lehmer` 被移除。
++   改用 `inversions`（逆序表，每个位置一项，最低有效位在前）或 `extent`（排列所重排的开头位置的数量，取代 `lehmer.size`）。
++   `expansion` 现在在最后一个移动的索引处停止，因此它省略末尾的固定索引，而以前省略的是开头的固定索引。
++   `Permutation.Error.Reason.TooShort(length, min)` 以 `extent` 作为其最小值报告。
++   (#2520)
+
+% 0 1 0 198a8a0f50e011a109d8b4e58d765f40
+
+@ 0 11 0 015cf0f72eef416a1aef7b4935b3f474
++ - `monotonous.Alphabet` 只能由字符串字面量创建，并在编译时检查。
++   把 `Alphabet(t"0123456789ABCDEF", false)` 替换为 `Alphabet("0123456789ABCDEF", false)`（普通的 `"…"` 字面量，而不是 `t"…"`）；在没有预期类型给出编码的地方，写成 `Alphabet[Hex]("…", false)`。
++   对于该编码，字面量必须恰好有 `2^bits` 个字符（2、4、8、16、32 或 64），当 `padding` 为 `true` 时再加一个填充字符，任何字符都不能重复，且全部为 ASCII；否则调用不能编译。
++   构造器 `new Alphabet(…)` 和 `copy` 是私有的，因此不再能用运行时计算出的文本构建字母表。
++   第三个参数 `tolerance` 不变。
++   (#2520)
++ - `Alphabet` 有一个新字段 `bits: Int`，`Serialization.Bits[scheme]` 以类型的形式给出同样的宽度（`Serialization.Bits[Base64]` 是 `6`）。
++   模式 `case Alphabet(chars, padding, tolerance)` 需要第四个通配符。
++   (#2520)
+
+% 0 1 0 05984bb5afb584fc059e170ac7d22325
+
+@ 0 2 0 0f048776906fdb08132dd6f6c692b455
++ - `octogenarian.SshUrl#text` 渲染 git 的类 scp 形式 `user@hostname:path`，没有用户时为 `hostname:path`；以前它渲染为 `user:@hostnamepath`（没有用户时为 `@hostnamepath`）。
+
+% 1 1 0 08cec5cbff77faa910ed3ec6f1ae94d2
+
+@ 0 27 0 0b754be2952d013413662fedaf0201db
++ - `octogenarian.Commandline.Event.Exec(event)` 的消息是 `git: <event>`；以前是 `the git operation did not execute: <event>`。
++   (#2520)
++ - `octogenarian.SshKeygen.Verifier#verify` 和 `octogenarian.Gpg.Verifier#verify` 把签名写入 galilei 的 `Scratch.File`（模式 `0600`，位于 `java.io.tmpdir` 之下），并在验证结束时删除；创建或写入它失败时抛出 `Git.Error(Git.Error.Reason.SigningFailed(_))`，以前则是未捕获的 `java.io.IOException`。
++   (#2524)
++ - octogenarian API 中的每个宿主路径都是 `Path on galilei.Local`，以前是 `Path on galilei.Linux`：`Git.Backend`（以及由此而来的 `Commandline` 和 `Native`）的方法的每个 `gitDir`、`commonDir`、`worktree`、`target` 和 `path` 参数及每个路径结果；`Git.Backend.Location(gitDir, commonDir, worktree)`；`Git.Backend.WorktreeEntry#path`；`Git.Config.Source.Effective(gitDir)`、`Source.File(path)` 和 `Source.Repository(gitDir, scope)`；`Git.Repo.Handle#gitDir`、`#commonDir` 和 `#worktree`；`Git.Worktree.Entry#path`；`addWorktree`、`moveWorktree` 和 `pruneWorktrees` 的结果；`SshKeygen.Signer(key)` 和 `SshKeygen.Verifier(allowedSigners)`；以及 given `searchpathGitCommand`，现在是 `(Path on Local) is Instantiable across Paths from Text`。
++   `Git.Worktree.Handle` 的 `type Under` 是 `Local`，因此 `worktree.Plane` 类型的结果（`Git.PathStatus[worktree.Plane]`）位于 `Local` 上。
++   `Git.Repo`、`Git.Worktree` 和 `Git.Config` 的 `Openable` 实例针对 `path <: Path on Local`，以前针对 `path <: Path on Linux`：作为其中任何一个打开的 `Path on Linux` 用 `.on[Local]` 转换。
++   接受任意 `Abstractable across Paths to Text` 的 `Git.init`、`Git.clone`、`Git.cloneCommit`、`addWorktree` 和 `moveWorktree` 不变。
++   (#2527)
++ - 原生后端解析由 git 自身文件（`commondir`、`.git` 文件的 `gitdir:`、`objects/info/alternates`、`include.path`、引用或索引路径）指名的路径时，按 `/` 拆分文本，逐个元素地下降 `Path on Local`；以前它用 `/` 连接文本，并把结果解码为 `Path on Linux`。
++   这样的文本在能解码为 `Path on Local` 时（以 `/` 或驱动器根开头）被视为绝对路径，以前是在以 `/` 开头时；远程 URL 按同样的检验被当作本地路径。
++   在分隔符为 `/` 的宿主上，行为不变。
++   (#2527)
+
+% 0 1 0 12a5154887295d701791e765afcca89e
+
+@ 0 6 0 045e17abcb4f88cd1572bda8cd6d5498
++ - `orthodoxy.Authorization` 在 `refresh` 之后有第五个构造器参数 `identityToken: Optional[Text] = Unset`：即令牌响应中未经验证的 `id_token` 成员。
++   构造器调用不受影响；模式 `Authorization(key, scopes, expiry, refresh)` 需要第五个位置。
++   (#2530)
++ - `orthodoxy.OAuth.Error.Reason` 有一个新分支 `Identity(detail: Text)`（编号 8）；对它的穷尽匹配需要加上该分支。
++   (#2530)
+
+% 0 1 0 1bd70fbb7fb9eb1c1af80784b13c3b46
+
+@ 0 6 0 00e806442779076c031f74708f2f060a
++ - 字体覆盖范围类型 `phoenicia.Coverage` 被嵌套为 `phoenicia.Font.Coverage`，并且不再以裸名称导出到 `soundness` 中，它在那里与 probably 的测试 `Coverage` 冲突。
++   把 `Coverage`、`Coverage.Entry`、`Coverage.Unknown`、`Coverage.Entries`、`Coverage.of`、`Coverage.combine` 和 `Coverage(…)` 替换为加上 `Font.` 前缀的相同名称（`Font.Coverage.of(file)`）；在 `import soundness.*` 下，裸的 `Coverage` 现在总是指 `probably.Coverage`。
++   成员和行为不变。
++   (#2520)
+
+@ 0 6 0 037a7d048800247d05fdc581600eb3a2
++ - 新分支 `phoenicia.Font.Error.Reason.TruncatedTable(tag: Sfnt.Table.Tag)`，编号 11：当表比其固定布局短时，`Sfnt#head` 和 `Sfnt#hhea` 抛出带该分支的 `Font.Error`；以前它们抛出 `ArrayIndexOutOfBoundsException`。
++   对 `Font.Error.Reason` 的穷尽匹配需要加上新增的分支。
++   (#2521)
++ - `phoenicia.Sfnt#HeadTable` 和 `#HheaTable` 是 `zephyrine.Structural`；以前是 `polaris.Debufferable`。
++   它们的字段不变。
++   (#2521)
+
+% 0 1 0 0df414010222d74504d15692ff05ea32
+
+@ 0 3 0 19198dca722d1500125a35417711c5f5
++ - `plutocrat.currencies.Cop` 的符号是 `$`（其类型为 `"COP" is Currency of "Colombian Peso" in "$" over 100`）；以前是 `$$`。
+
+% 1 1 0 1c37367fcb7408f113c985f5b476503a
+
+@ 2 0 0 1c37367fcb7408f113c985f5b476503a
++ - `plutocrat.Money.underlying` 是 `Underlying[Money in currency, Long]`；以前声明为 `Int`。
++   (#2520)
+
+% 0 1 0 0ec6bf76333b603510f2d73726ea2dd6
+
+@ 0 24 0 1959c277973683141f34c371eb3d47c9
++ - 该库被移除，连同 `polaris.Debufferable`、`Bufferable`、`Unpackable`、`Sextant`、`sextant`、`unpack`、`unpackFrom` 和 `byteWidth` 及其在 `soundness` 中的导出。
++   其替代品是 `zephyrine.Structural`（组件 `zephyrine.layout`），同样从 `soundness` 导出。
++   迁移方法：
++   - 把 `given T is Debufferable = Debufferable.derived`（以及对其自动派生的任何依赖）替换为 `given T is Structural = Structural.derived`，并在声明的作用域中导入一种字节序：`import byteOrders.bigEndianByteOrder` 再现 polaris 的行为，后者总是大端序。
++     本身是 case class 的记录字段现在需要它自己的显式 `Structural` given。
++   - 把 `data.unpackFrom[T](offset)` 替换为 `data.unpack[T](offset)`。
++     当记录放不下时，它 `raises Structural.Error`，而 polaris 抛出 `ArrayIndexOutOfBoundsException`，因此调用处需要 `Tactic[Structural.Error]`。
++   - 把 `data.unpackFrom[Array[T]^{}](offset)(count)` 和 `unpack[Array[T]^{}](count)` 替换为 `data.unpack[T](offset, count)`。
++   - 对记录类型 `T`，把 `byteWidth[T]` 替换为 `Structural.width[T]`。
++     定宽整数（`U16`、`Int`、……）不再有自己的实例：它们是记录的字段，或者用 `data.u16be(offset)` 及其同类方法直接加载。
++   - 没有读取游标：把由连续 `unpack[T]` 调用组成的 `data.sextant { … }` 代码块，替换为包含这些字段的单个记录类型，或者替换为在显式偏移处的 `data.unpack[T](offset)` 调用（`Structural.width[T]` 给出每一步的步长）。
++   - 把手写的 `Debufferable(width)((bytes, offset) => value)` 替换为一个 `new Structural`，定义 `type Self`、`width`、`load(data: Data, offset: Int): Self` 和 `store(value: Self, target: Array[Byte]^, offset: Int): Unit`。
++   - `Bufferable` 没有实例，无法使用；写入用 `value.pack: Data`。
++     (#2521)
+
+% 0 1 0 1fd7cf066d81d4361578e0fb3723c8da
+
+@ 0 2 0 1f415aa1398139191246dda11acb71ee
++ - 分阶段执行的召唤（B 层）在实例加载后删除其代码片段被编译到的目录，其 `report.info` 消息不再以 `; classes in <directory>` 结尾。
+
+% 1 1 0 1fffd210c303db9907fa55e8b441d8ab
+
+% 0 1 0 180f3ce4211ce4c80f4c87efbb23bc3f
+
+@ 0 14 0 0491aab2d116e73a039bbed0fd0b2e9e
++ - `probably.Coverage.probes(unit: Int, size: Int)` 现在返回 `Array[Long]` 而不是 `Array[Boolean]`：每个探针一个计数，由插桩代码递增，以前存储的是 `true`。
++   由早期 `probably.Instrumenter` 插桩的类必须重新编译；其缓存键涵盖插桩器，因此 `Instrumenter.plan` 会自行完成重新编译。
++   (#2515)
++ - `probably.Coverage.drain()` 现在返回 `java.util.Map[String, Array[Array[Long]]]` 而不是 `java.util.Map[String, Array[Array[Boolean]]]`：即每个探针被到达的次数，从未到达的为 `0`；运行多次的测试得到各次运行计数之和，以前得到的是并集。
++   (#2515)
++ - `probably.Coverage.enter(test: String)` 现在返回 `probably.Coverage.Tally | Null` 而不是 `probably.Coverage.Collector | Null`，`probably.Coverage.exit` 接受 `probably.Coverage.Tally | Null`。
++   (#2515)
++ - `probably.Instrumenter.Reached#probes` 现在是 `List[(Int, Int, Long)]` 而不是 `List[(Int, Int)]`：即每个被到达的探针的单元索引、探针索引和被到达的次数（至少为 1）。
++   (#2515)
+
+% 0 1 0 11e02d8c8ffc6085101e736478178d35
+
+@ 0 3 0 0a1113732b6c853f06f71161a41a304d
++ - 空的 `punctuation-html` 制品（组件 `punctuation.html`，没有源文件）不再发布；删除对它的任何依赖，或改为依赖 `punctuation-core`。
++   它没有导出任何内容。
++   (#2520)
+
+% 0 1 0 0b62431f4ac242a0138ee9746bc81b2b
+
+@ 0 13 0 003f0c861b28064c0fb7af4d0c1b7bc5
++ - `quantitative.Dyne`、`Erg`、`Maxwell`、`Gauss`、`Stokes`、`Phot` 和 `Lambert` 以及 `quantitative.constants.MagneticConstant` 的值是原来的十分之一：分别为 10⁻⁵ N、10⁻⁷ J、10⁻⁸ Wb、10⁻⁴ T、10⁻⁴ m²·s⁻¹、10⁴ lx、10⁴/π cd·m⁻² 和 4π×10⁻⁷ N·A⁻²。
++   (#2520)
++ - `quantitative.constants.BoltzmannConstant` 是 1.380649×10⁻²³ J·K⁻¹；以前是 1.380649×10⁻¹³。
++   (#2520)
++ - `quantitative.constants.GravitationalConstant` 的量纲是 N·m²·kg⁻²（`6.67430e-11*Newton*Metre*Metre/(Kilo(Gram)*Kilo(Gram))`）；以前其类型是 N·kg⁻² 的类型。
++   (#2520)
++ - `quantitative.Poise` 是 `MetricUnit(0.1*Pascal*Second)`，即动力黏度；以前是 `0.1*Pascal`，即压强。
++   `quantitative.Kayser` 是 `MetricUnit(Quantity[Measure](100)/Metre)`，即波数；以前是 `100/Second`，即频率。
++   两者的类型都改变了。
++   (#2520)
++ - `quantitative.Days.designation` 是 `Designation[Days[1]]`（以前是 `Designation[Hours[1]]`），因此以天为单位的量用符号 `d` 渲染。
++   (#2520)
++ - `quantitative.Amount.TempratureGradient` 更名为 `TemperatureGradient`。
++   (#2520)
+
+% 0 1 0 0297adaaf208f36b050fef6919e7a155
+
+@ 0 8 0 0fea60f3573c9c831e8da613c1b046f9
++ - `sedentary.NetworkDevice#undeploy` 和 `sedentary.NetworkDevice.Session#undeploy` 从远程主目录中删除 `<uuid>.jar`，即 `deploy` 复制到那里的文件；以前它们对 JAR 的本地路径运行 `rm`。
++   (#2520)
++ - sedentary 各测试装置的暂存 jar 路径是 `Path on galilei.Local`，以前是 `Path on galilei.Linux`：`Bench`、`Stress` 和 `Profile` 中的 `type Target` 以及 `stage(out)` 的参数和结果；它们的 `invoke` 的 `Stage[output, Text, Path on Local]` 参数；以及 `BenchmarkDevice#deploy`、`#invoke` 和 `#undeploy` 及其在 `NetworkDevice`、`NetworkDevice.Session` 和 `LocalhostDevice` 中的实现的 `path` 参数。
++   (#2527)
+
+% 0 1 0 0ed19456d6998e511992f280a95ea1f6
+
+@ 0 50 0 13a0c48af5f7c10f08ef97aeb0e60495
++ - RaTEL 镜像的字节改变了，在版本字节不变的情况下，改为 tel#52 之后的 RaTEL 规范所规定的字节：200 字节的头部，其目录项为 `(offset, length, capacity)`；每一行在其存在位图之前有 8 字节的行头（`u32` 父项、`u16` 链接、`u16` 标志）；可重复的结构体成员存储为指向子列表的 `u32` 引用，取代 `(start, count)`；数组、引用数组和 select 列表存储为 `(capacity, count, elements)`，空的存储为引用 `0xFFFFFFFF`；32 字节的表和索引目录项；每个索引是由 4096 字节页面组成的 B+ 树；摘要部分包含两个摘要（先正文，后头部），取代原来的六个。
++   0.76.0 写出的镜像无法读取：它会以其头部首先遇到的 `BadDirectory`、`ReservedSet` 或 `InvalidState` 之一被拒绝。
++   没有转换方法：从其文档重新写出这样的镜像。
++   `Ratel.encode`、`tel.ratel(schema)` 和 `value.ratel` 的签名不变，它们写出的是密封镜像（头部标志位 2），且总是带有值哈希。
+
+% 0 1 0 14c3f1f675436b5c0b5f8b5fd202fb00
+
+@ 0 12 0 0104949eb3c19119033952a959675b91
++ - `stratiform.Ratel.Error.Reason` 遵循规范的 `↯/t.5` 代码，后者新增了三个。
++   更名：`SectionsOverlap` 改为 `ExtentsOverlap`（6；现在也包括表的行或索引的页面与任何内容重叠），`IndexUnsorted` 改为 `BadTree`（24；现在指任何违反 B+ 树不变式的情况）。
++   新增：`InvalidState`（28）、`Dirty`（29）、`BadRowHeader`（30）。
++   重新编号，因此带有以下原因之一的 `Ratel.Error` 的 bolt 代码中的变体会改变：`NestingLimitExceeded` 由 28 改为 31，`Unencodable` 由 29 改为 32，`Oversized` 由 30 改为 33，`Unindexed` 由 31 改为 34，`Unknown` 由 32 改为 35，`Inapplicable` 由 33 改为 36，`Absent` 由 34 改为 37，`Unwritable` 由 35 改为 38，`Mismatched` 由 36 改为 39。
++   对于指名空闲行的记录索引，现在也抛出 `BadRecordIndex`（15）；对于不是文件最后 64 字节的摘要部分，现在也抛出 `DigestMismatch`（7）。
++   (#2518)
++ - `stratiform.Ratel.Reader` 新增了 `state: Ratel.State`（`Sealed` 或 `Unsealed`）。
++   读取器拒绝头部带有脏标志的文件（`Reason.Dirty`）。
++   `Reader#verify()` 还会对照到达每一行的槽位检查该行的行头，检查每个存活的行都被到达，把每个索引作为 B+ 树检查，并对密封镜像检查其是否紧凑。
++   (#2518)
++ - `stratiform.Tels.tels[value]` 不再把声明了编码的标量留在持有它的字段之内。
++   类型具有 `Tel.Encoded[name]` 实例的字段以前声明为 `Tels.Scalar(Array.empty, name)`；现在声明为 `Tels.Reference(typeName)`，schema 的 `scalars` 包含 `Tels.ScalarDefinition(typeName, Array.empty, Unset, name)`，其中 `typeName` 是编码的名称，其中每段连续的 ASCII 字母和数字首字母大写，其他一切都去掉（`decimal-varint` 给出 `DecimalVarint`），如果 schema 中已有同名的记录、select 或标量，则追加 `Scalar`。
++   这样的 schema 现在可以渲染（以前 `Tels.Renderer.element` 对它抛出 `InlineScalar`），因此它有签名，对该类型不带 schema 参数的 `value.ratel` 也能工作。
++   通过把字段的 `fieldType` 与 `Tels.Scalar` 匹配来读取其编码的代码，必须通过 `schema.scalars` 解析该引用。
++   带有任何标量定义、键或索引的 schema 还会像 `Tels.Validation.validate` 检查组合 schema 那样被检查，因此 `Tels.tels` 可能为它抛出那些 `Tel.Error` 原因。
++   没有编码标量的类型的 schema 不变。
++   (#2518)
++ - `stratiform.Ratel` 新增了一个抽象类型成员 `Topic`，不接受 schema 的扩展方法 `value.ratel` 返回 `Ratel of value`（`Ratel { type Topic = value }`），以前返回 `Ratel`。
++   `Ratel of T` 是一个 `Ratel`，因此把结果作为 `Ratel` 接受的代码不受影响；由它推断类型的 `val` 现在是细化后的类型。
++   `Ratel(data)`、`Ratel.encode` 和 `tel.ratel(schema)` 仍给出普通的 `Ratel`。
++   (#2518)
++ - given `stratiform.Ratel.encodable` 和 `stratiform.Ratel.viewable` 对镜像的类型是泛型的：`[ratel <: Ratel] => ratel is Encodable in Data` 和 `[ratel <: Ratel] => ratel is Viewable`，以前两者都只是 `Ratel` 的实例。
++   指名其中任一 given 并将其标注为 `Ratel is Encodable in Data` 或 `Ratel is Viewable` 的用法仍能编译；在预期非泛型值的地方传入它的用法需要 `Ratel.encodable[Ratel]`。
++   (#2518)
++ - 以包含 `aperture.Write` 的模式作为 `Ratel`（或 `Ratel of T`）打开时，不再总是以 `Ratel.Error.Reason.Unwritable` 中止。
++   在目标能借出其字节以供修改的情况下——后端为写入而映射文件的 `Path`，或 `zephyrine.Holding`——镜像被打开以供就地修改（RaTEL §10）：对文件加排他锁，密封镜像被解封（清除头部标志位 0 到 2 和值哈希，清空摘要部分），在代码块执行期间设置脏标志并在结束时清除，交给代码块的读取器接受 `Rows#insert`、`Rows#move`、`Row#set`（也可写成赋值 `row.lines = value`，其名称是驼峰形式的关键字）、`Row#unset`、`Row#delete` 和 `Row#replace`。
++   无法做到这一点的目标（`Ratel` 值、只读的 `Terrain`）仍以 `Unwritable` 中止，通过未以写入方式打开的读取器执行这些操作也是如此。
++   依赖路径的 `Write` 被拒绝的代码不得传入它。
++   (#2518)
+
+% 0 1 0 0dfcf29c1bceffc41205596c976dfcce
+
+@ 0 3 0 062612bbaa1120611cb1e792cf2bdc19
++ - `superlunary.Rig#classpath(out)` 和 `Rig#stage(path)` 及其实现 `Jvm#stage(out)` 和 `Isolation#stage(out)` 接受 `Path on galilei.Local`，以前是 `Path on galilei.Linux`。
++   覆盖 `stage` 或声明 `type Target = Path on Linux` 的 rig 必须指名 `Local`。
++   (#2527)
+
+% 0 1 0 174231ea3a507bbb0da3030ca3b5bc65
+
+@ 0 3 0 07ec6e03136f72a4195814419eb2fc66
++ - 可变参数的 `Out.println(lines*)` 和 `Err.println(lines*)` 接受 `(using Stdio^)`，与 `print`、`write` 和无参数的 `println` 一样；以前它们接受未跟踪的 `Stdio`，因此无法把作用域中被跟踪的 `Stdio^` 传给它们。
++   现有调用处无需修改。
++   (#2520)
+
+% 0 1 0 1c4ce86cb0fa16570db4798767364955
+
+@ 0 5 0 173cb10d3241a02c0f5f3f273e9a4d8f
++ - 新构造器 `zephyrine.Spring.apply`：`Spring[Data](expression)` 创建一个 `Spring`，它在每次 `apply()` 时对 `expression` 求值以得到新的流，取代匿名类 `new Spring[Data]: def apply()(using Tactic[Truncation.Error]): (Stream[Data] over Credit)^ = expression`。
++   匿名类形式仍能编译；无需修改。
++   在编译器否则会报告元素类型上的捕获不匹配的地方，显式给出类型参数。
+
+% 1 1 0 0504e72dfd34c9580d7a06228d411452
+
+@ 0 9 0 0075301d7b38e008010aed3abc7e5716
++ - 新组件 `zephyrine.layout`（依赖 `hypotenuse.core`）：`zephyrine.Structural`，即具有固定字节布局的类型的类型类，带有用于由定宽整数（`B8`…`B64`、`U8`…`U64`、`S8`…`S64`、`Byte`、`Short`、`Int`、`Long`）和其他 `Structural` 类型组成的 case class 的 `Structural.derived`；`Structural.width[T]`；`Structural.Error(offset, width, size)`；`zephyrine.ByteOrder` 以及 given `byteOrders.bigEndianByteOrder` 和 `byteOrders.littleEndianByteOrder`，派生布局处必须导入其中之一；`data.unpack[T](offset: Int)`、`data.unpack[T](offset: Int, count: Int)` 和 `expanse.unpack[T](offset: Long)`，均抛出 `Structural.Error`；以及 `value.pack: Data`。
++   它们全部从 `soundness` 导出。
++   它取代 polaris；见该部分。
++   (#2521)

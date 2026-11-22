@@ -1,0 +1,36 @@
+orthant 2 language
+
+@ 0 3 0 057cb6a0b5366b3706bfd474a63e20a4
++ entry .toss   公平的抛硬币：等概率地给出 `true` 或 `false`
++     `toss()` 从作用域中的 `Random` 抽取，规则与 `arbitrary[Boolean]()` 相同（取一个 `Long` 的符号），因此抛硬币可以通过 `Seed` 复现。
+
+@ 0 9 0 0c63b6d6a010510f0f4d8dc6bca26ab7
++   entry .global   基于一个共享的无种子生成器的 `Random`，无需作用域即可使用
++       每次调用都包装同一个进程级的生成器，该生成器由 `randomization.unseededRandomization` 惰性创建，因此从中抽取的值永远不可复现。
++       `random` 使用它。
++   entry .apply   根据作用域中的 `Randomization` 创建的新 `Random`，以给定的 `Seed` 为种子
++       `Random(seed)` 根据上下文 `Randomization` 初始化一个生成器，解析该 `Randomization` 时 `seed` 位于作用域中：在 `seededRandomization` 下，生成器从 `seed` 开始，与在 `Seed#stochastic` 中一样，而无种子的随机化方式会忽略它。
++   entry .Size   随机集合有多少个元素，作为上下文值
+
+@ 0 24 0 04a55a33bab0309b039431791e6f182e
++   entry #randomize   从 `Random` 中抽取一个值
++   entry #apply   从上下文 `Random` 中抽取一个值：`summon[Int is Randomizable]()`
++   entry #map   另一类型的实例，变换每个抽取出的值
++       `randomizable.map(lambda)` 通过本实例抽取并应用该 lambda；结果会捕获两者。
++   entry .long   抽取一个均匀随机的 `Long`
++   entry .byte   抽取一个 `Byte`，即随机 `Long` 的低八位
++   entry .short   抽取一个 `Short`，即随机 `Long` 的低十六位
++   entry .int   抽取一个 `Int`，即随机 `Long` 的低三十二位
++   entry .char   抽取一个 `Char`，即随机 `Long` 的低十六位
++       任何 UTF-16 码元，包括不成对的代理项和控制字符。
++   entry .seed   根据一个随机 `Long` 抽取一个六十四位的 `Seed`
++   entry .boolean   抽取一个 `Boolean`：随机 `Long` 为负时为 `true`
++   entry .list   抽取一个 `List`，其大小来自作用域中的 `Random.Size`
++   entry .set   抽取一个最多含作用域中 `Random.Size` 个元素的 `Set`，重复项会合并
++   entry .frozenArray   抽取一个冻结的 `Array[element]^{}`，大小由作用域中的 `Random.Size` 决定
++       除 `Random.Size` 外，还需要元素类型的 `ClassTag`。
++   entry .double   通过作用域中的 `Distribution` 抽取一个 `Double`
++       没有默认分布：在代码说明它指的是哪种 `Double` 之前，无法抽取 `Double`，这可以防止把均匀抽取当作正态抽取。
++       可以从 `randomDistributions` 导入一个，或把 `Gaussian`、`PolarGaussian`、`UniformDistribution` 或 `Gamma` 声明为 given。
++   entry .conjunction   积类型的派生实例：从同一个 `Random` 依次抽取每个字段
++   entry .disjunction   和类型的派生实例：均匀选取一个变体，然后从同一个 `Random` 抽取它

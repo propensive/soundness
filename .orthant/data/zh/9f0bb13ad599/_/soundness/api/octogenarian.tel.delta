@@ -1,0 +1,23 @@
+orthant 2 language
+
+% 0 1 0 0f026212a2b772471c4fb8468bb5c5ff
+
+% 0 1 0 1751e012accd74720c57d65fd8292233
+
+@ 0 18 0 0392750bc2a343160e360fff43d2cf1b
++         `Exec(event)` 包装一个 `guillotine.Exec.Event`，带有 `Log.Process` 标签；`.execEvent` 将 guillotine 的事件转录为它，因此后端只需要作用域中有一个 `Commandline.Event is Loggable`。
++         `logging.silentLogging` 会丢弃它们。
++     entry .execEvent   将 guillotine 的 `Exec.Event` 转录为 `Commandline.Event`
++     entry .communicable   将事件渲染为 _git: `event`_
++   entry .Outcome   一次 `git` 调用的产物：其退出状态、标准输出和标准错误
++     entry #exit   退出状态
++     entry #stdout   标准输出，作为文本
++     entry #stderr   标准错误，作为文本
++     entry #ok   退出状态是否为零
++     entry #lines   标准输出中的非空行
++   entry .reason   将 git 的标准错误读取为 `Git.Error.Reason`
++       匹配 git 的消息——它们足够稳定，可以用来匹配——以识别 `NoRepository`、`Moved`、`RefExists`、`Locked`、`NoSuchRef`、`Unmerged`、`NoSuchObject`、`NothingToCommit`、`Detached`、`Dirty`、`NotFastForward`、`LeaseFailed`、`OutsideWorktree`、`Untracked`、`NoOperationInProgress`、`NoSuchRemote`、`RemoteExists`、`Unauthorized`、`Unreachable`、`RemoteRejected`、`InvalidConfig`、`NoteExists`、`BadSignature`、`SigningFailed`、`NoSuchWorktree` 和 `Conflict`；其他任何内容都为 `Unexpected`。
+
+% 7 1 0 1629a76aa3214d6912f2ede136ce4616
+
+% 7 1 0 07f206a66839aca11ebfcd26c08e27a7

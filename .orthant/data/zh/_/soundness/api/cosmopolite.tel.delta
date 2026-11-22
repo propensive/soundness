@@ -1,0 +1,287 @@
+orthant 2 language
+
+% 0 1 0 0f04ec4b9ac2d4270a232409219e1f6b
+
+% 0 1 0 1fc916799ef1cbf203fbda3104132af4
+
+% 0 1 0 0b5938ce7315323607e1922cbc4d93e2
+
+@ 0 1 0 0567e3f7199cb3e6152259c15fb8e4c9
++ info   多语言值，其类型记录了所含语言、区域设置以及每种语言的排序顺序
+
+% 0 1 0 0ca6d61ddd9511ea1cdae38f1414f6fe
+
+@ 0 7 0 0e8b391b24f6604406d3d2f3f2043164
++     _Cosmopolite_ 把程序的翻译放在代码里，把语言集合放在类型里。
++     每种受支持的语言——`en`、`fr`、`de`、`es`、`pl`——都是一个值，它把一条翻译提升为单语言的 `Polyglot`；备选项用 `|` 组合，组合后的类型是所提供语言的交集，因此 `Polyglot[Text, en & fr]` 带有英文和法文文本。
++     读取它需要一个它所携带语言的 `Locale`；缺少所需语言的翻译集合会成为编译错误，而不是在选择了该语言的那位用户面前发生运行时回退。
+
+% 2 1 0 06928b9882ea310c106426b95a3ad997
+
+% 3 1 0 0978c67f00208b7b1e2bfa6f5bf2f445
+
+% 0 1 0 16c7199e38baff371def840df2225808
+
+% 0 1 0 199ac6db22b1ca9d166dd25357305c97
+
+% 0 1 0 102a84127e9686181fb1607f07d74f0a
+
+% 1 1 0 13fe8aa73375478e0428cf94476b011d
+
+@ 0 4 0 0b13c0572c086e9a081dbc78ba38d427
++     `Locale` 通常在运行时到来，来自某个头部或某项设置：语言代码会解码为 `Locale[en & pl & fr & de & es]`，遇到不认识的代码时回退到英语。
++     `Polyglot` 可以携带任何类型，而不仅是文本——日期格式、货币惯例、整个页面都可以。
+
+@ 0 6 0 018fb9355fd576dc163f15ad6c8fa7bd
++     每种语言还有一个排序顺序，即它的 `Collatable` 实例，遵循 CLDR：波兰语和西班牙语对 Unicode 排序规则做了定制（ó 在 o 之后，ñ 在 n 之后），而英语、法语和德语使用根表。
++     顶层 given `localeCollation` 把作用域中的 `Locale` 转换为 gossamer 文本比较所用的 `Collation`；它是顶层 given，因此需按名称导入（`import soundness.localeCollation`），同时导入用于按排序规则对 `Text` 排序的 `soundness.collationComparable`。
+
+% 2 1 0 08b11785441b3b0115db90d0cde39d02
+
+% 3 1 0 1ea1f83a71dcaa920f44dddf0d5c5b02
+
+% 4 1 0 125f3b7265e620960e1b214a9a268942
+
+% 5 1 0 16d759693a345a14105e9127010db5bb
+
+% 6 1 0 17d58ba1e99cd1bc166eb6e2560e8029
+
+% 0 1 0 1f07939082561f6b01d157dcbadaca95
+
+% 0 1 0 16e46bff212645670657bbf5fb0ec2a7
+
+% 1 1 0 1202208597f3b6561fc9810588101bf4
+
+@ 0 2 0 1d8a7a73d952a5f414a9dc40f9d088ce
++     该库只有一个源集 `cosmopolite.core`，可为所有平台编译。
++     一切都导出到 `soundness` 总括包。
+
+% 0 1 0 1931403e0d0177791b6b419a347a318a
+
+% 0 1 0 1c2bc6a3c1e9fbaa1f85103eb4350f27
+
+% 0 1 0 18f71fb6cb6d95a408c1bd5950f3af93
+
+% 0 1 0 13807dfd1ef3f3d41527bc52b41e643c
+
+@ 0 1 0 0c08230b60b23a330d967eb87a4f739f
++ entry .Language   一种自然语言，它把一条翻译提升为单语言的 `Polyglot`
+
+% 1 1 0 06fc8dc7474a9a3b0d324d1b4a721143
+
+@ 0 4 0 0d203c77af57576714d3fc1d6ea1d870
++       `Language` 是语言对象 `en`、`fr`、`de`、`es` 和 `pl` 的父类型。
++       每个语言对象都有一个两字母的 `#code`，以及一个类型成员 `#Code`，指明其幻影类型标签（同名的 trait），因此 `en.Code` 就是 `en`。
++       把语言应用于一个值，就得到以该语言携带该值的 `Polyglot`：
+
+% 2 1 0 198ae6421ff7079501cdfc1db5e00cd3
+
+% 3 1 0 18ecd1e7e6764285004499d2fa23919d
+
+% 0 1 0 0431e0a3995d79ff0a14135ab6afda81
+
+% 0 1 0 0536fee2a2af1711053e83c8af645ee0
+
+% 1 1 0 12faf559df59d014058b5eccd502a7fc
+
+@ 0 4 0 1358ec724e0edc1704a65ff297336ad7
++       翻译是以该语言的 `Locale` 为参数的上下文函数，因此计算它的代码——排序、格式化——看到的是该语言的区域设置，无论调用方使用哪种区域设置。
++       新语言是一个继承 `Language(code)` 并带有 `type Code` 的对象，与一个用作其标签的 trait 配对。
+
+% 1 1 0 0682b7f6ce299649100be42bc7e87330
+
+@ 0 6 0 00cc7589ce3e289518522f9bfa86113f
++   entry #code   该语言的 ISO 639-1 代码，例如 `t"fr"`
++   entry #Code   标记该语言中的值的幻影类型，例如 `fr`
++   entry #apply   以该语言表示的一条翻译，作为单语言的 `Polyglot`
++       `fr(t"Bonjour")` 是一个 `Polyglot[Text, fr]`。
++       参数在作用域中有该语言的 `Locale` 时求值，因此对文本进行排序或格式化的翻译会以它自己的语言进行。
+
+@ 0 1 0 02528ea6236facf01f7764566c4ce26e
++ entry .Polyglot   以多种语言表示的值，其类型确切记录了是哪些语言
+
+% 1 1 0 0a09fc49c72faa2d031597b34e99f917
+
+@ 0 3 0 0bf8d324157233d0135524e6615ad520
++       `Polyglot[V, L]` 为交集 `L` 中的每种语言持有一个 `V`：由 `en(…) | fr(…)` 构造的是 `Polyglot[V, en & fr]`。
++       要求它具有其缺少的语言将无法编译，因此缺失的翻译会在写下该值的地方被发现。
+
+% 2 1 0 1d4c43b78380c5b001cb5583fe7a918b
+
+% 3 1 0 17138392e4e143400312f95467d56145
+
+% 0 1 0 0771a8da371f47f207a4a183aa5c8189
+
+% 0 1 0 17c7812fcebf80cb0f6c8ef49efefbaa
+
+% 0 1 0 04f591eba48517e81ab49d7fe2675380
+
+% 0 1 0 1151969e1558da4211f2cca0e57a2fd1
+
+% 1 1 0 01e8fa7c2ca8ca3e060b4a8ac3da3ddc
+
+@ 0 2 0 1dcb0648f66c74a7093b814833eb8d19
++       `#apply()` 以作用域中 `Locale` 的语言读取该值，该 `Locale` 必须是此 polyglot 所含语言的 `Locale`。
+
+% 0 1 0 051bb2d15ff0c0f613efb6b473de070f
+
+% 0 1 0 02e6909420d0ec6b03b1caf89f3e29f8
+
+@ 0 10 0 01e7647b2750e3fa034d2b02c2e47c2a
++   entry #values   各条翻译，以 `Language` 为键
++   entry #|   组合翻译；若作用域中有覆盖两者的 `Locale`，则立即选出其一
++       `a | b` 把两个 polyglot 合并为一个，其语言类型是两者的交集。
++       它是 transparent inline 的：如果在写下该表达式的地方，作用域中已有覆盖两组语言的 `Locale`，它会立即读取该区域设置对应的值，结果就是值本身而不是 `Polyglot`。
++       当两者都携带某种语言时，右侧的翻译胜出。
++   entry #apply   以作用域中 `Locale` 的语言表示的值
++       需要一个以 polyglot 的语言类型 `L` 为参数的 `Locale[L]`；由于该区域设置指明的是该值所携带的语言之一，读取不会落空。
+
+@ 0 1 0 1fd1a71bbb71f736184e1a9ce0475406
++ entry .Locale   程序正在使用的语言，作为上下文值
+
+% 1 1 0 0419b5168d05ceb316621fbe9d2863ed
+
+@ 0 4 0 153a95b3a909f1b719e40ff58a844573
++       `Locale` 持有一个 `Language`，其类型参数说明它可能是哪些语言：`Locale[en & fr]` 是英语或法语之一，这正是读取 `Polyglot[V, en & fr]` 所需要的。
++       该参数是逆变的，因此已知为法语的区域设置，可以用在要求包含法语的任一语言集合的地方。
+
+% 2 1 0 04ece14564e1bf02053b68d6648247cb
+
+% 3 1 0 0a2d4d27aa124576184e0cb12f000203
+
+% 0 1 0 08b6dab8420797d5104e746179b68987
+
+% 1 1 0 0165929eaac0788e16eb9d202b247d4b
+
+@ 0 1 0 0a63739b6c5de3990375c92080d211e8
++       作用域中的 `Locale` 还会通过 `localeCollation` 选择其语言的排序顺序。
+
+% 1 1 0 0519f8199624fc2f0aee34a837521f96
+
+% 1 1 0 12867a34b95b585c1d86a8acb11d5ad1
+
+@ 0 8 0 1bd1b9520550c3e00586817b6cc3f0e6
++   entry .encodable   把区域设置写为其语言的代码，例如 `t"fr"`
++   entry .inspectable   区域设置的调试呈现，形如 `Locale(fr)`
++       采用构造器形式，因此不会与 `.encodable` 写出的裸代码混淆。
++   entry .decodable   从语言代码读取区域设置，回退到英语
++       解码为 `Locale[en & pl & fr & de & es]`：`t"pl"`、`t"fr"`、`t"de"` 和 `t"es"` 对应各自的语言，其他任何文本——包括 `t"fr-CA"` 这样的地区形式或大写形式——都会被静默地视为 `en`。
++       如果回退行为很重要，请先规范化代码。
++   entry #language   该区域设置所使用的语言
+
+@ 0 1 0 080997ad3f128bca0d13257f5e2bb829
++ entry .Collatable   为语言提供排序顺序（以 `Collation` 表示）的类型类
+
+% 1 1 0 0116bdc992bb90cd0e4dd0c51c67a5d9
+
+@ 0 4 0 149693cee96942400e01d24350dc643d
++       `pl is Collatable` 提供波兰语文本据以排序的 `Collation`；其主体是该语言的幻影标签。
++       每个语言对象都以 `collatable` 持有自己的实例，因此它位于隐式作用域中。
++       代码通常不会召唤它：`localeCollation` 会把作用域中的 `Locale` 转换为其语言的排序规则。
+
+% 1 1 0 1b707a12ed8c88e00f9d70567dfb9880
+
+@ 0 1 0 085fa100071b3eac0bc2c3c9b4f01b55
++   entry #collation   该语言的排序规则
+
+@ 0 1 0 0f9cd78d07e161ba16ad318a964f8fd0
++ entry .en   英语，代码为 `en` 的语言，及其幻影类型标签
+
+% 1 1 0 0bc4d25657ec7f2d0256e0fc6e54a86c
+
+@ 0 5 0 1b2ea24b7ea7a8780a0e661c2f3b07ee
++       一个 `Language`：`en(value)` 构造一个 `Polyglot[V, en]`。
++       作为类型，`en` 标记英语的值和区域设置。
++       英语按根 Unicode 排序规则排序，带重音的字母与其基本字母排在一起（`cafe < café < caff`，`año < anzuelo`）。
++   entry .Code   英语的幻影标签：`en`
++   entry .collatable   英语排序规则：根 Unicode 排序规则表
+
+@ 0 1 0 0f662312d3f1a7530e3aed44b422c69f
++ entry .fr   法语，代码为 `fr` 的语言，及其幻影类型标签
+
+% 1 1 0 1c4bf45bfe64fda6168e627c570850e5
+
+@ 0 6 0 0904494f77b6a3251876118b49a5ccfb
++       一个 `Language`：`fr(value)` 构造一个 `Polyglot[V, fr]`。
++       作为类型，`fr` 标记法语的值和区域设置。
++       法语按根 Unicode 排序规则排序，次级重音按正向比较（`cote < coté < côte < côté`），与 CLDR 的 `fr` 一致；不使用传统法语（现为加拿大法语）的反向重音。
++   entry .Code   法语的幻影标签：`fr`
++   entry .collatable   法语排序规则：根 Unicode 表，次级重音按正向比较
+
+@ 0 1 0 0be0e3c8d5ba2ddf15a1c58294e48b6a
++ entry .de   德语，代码为 `de` 的语言，及其幻影类型标签
+
+% 1 1 0 1aca6ab4d287b47a0178fd45a14cfdae
+
+@ 0 6 0 06e6d5fff5f09eaf1a9027a0e9f6c107
++       一个 `Language`：`de(value)` 构造一个 `Polyglot[V, de]`。
++       作为类型，`de` 标记德语的值和区域设置。
++       德语按根 Unicode 排序规则排序，其中变音字母仅在次级层面上与其基本字母不同（`ab < äb`，`äa < ab`），与 CLDR 的标准德语一致；不提供 DIN 电话簿顺序。
++   entry .Code   德语的幻影标签：`de`
++   entry .collatable   德语排序规则：根 Unicode 表，变音字母在次级层面上不同
+
+@ 0 1 0 0560d1aa74dcb15e1004652cd73f108a
++ entry .es   西班牙语，代码为 `es` 的语言，及其幻影类型标签
+
+% 1 1 0 1ae09c28c7bb15550cb8a267235fe535
+
+@ 0 5 0 132289cf41b58d1212e9858a10d4d1b3
++       一个 `Language`：`es(value)` 构造一个 `Polyglot[V, es]`。
++       作为类型，`es` 标记西班牙语的值和区域设置。
++       西班牙语把 ñ 当作位于 n 和 o 之间的独立字母排序，因此 `ano < anzuelo < año`，Ñ 是 ñ 的三级（大小写）变体。
++   entry .Code   西班牙语的幻影标签：`es`
++   entry .collatable   西班牙语排序规则：CLDR 的规则，ñ 是位于 n 和 o 之间的字母
+
+@ 0 1 0 0e6cc2b11f71d92913ec6e22e444252b
++ entry .pl   波兰语，代码为 `pl` 的语言，及其幻影类型标签
+
+% 1 1 0 1df7588e5510f40705bd1a1ccad38336
+
+@ 0 6 0 1cf9af7d81bbcbe11e6fca931b5feff6
++       一个 `Language`：`pl(value)` 构造一个 `Polyglot[V, pl]`。
++       作为类型，`pl` 标记波兰语的值和区域设置。
++       波兰语把它的九个带变音符号的字母——ą ć ę ł ń ó ś ź ż——当作独立字母排序，每个都排在其基本字母之后，ż 排在 ź 之后（`z < ź < ż`），每个大写字母是其小写字母的三级变体。
++   entry .Code   波兰语的幻影标签：`pl`
++   entry .collatable   波兰语排序规则：CLDR 的规则，九个带变音符号的字母排在其基本字母之后
+
+@ 0 4 0 02d9913310c6f6111ebf190735236fe0
++ entry .via   在某个区域设置下计算的值：`Text via pl` 即 `Locale[pl] ?=> Text`
++     以 `Locale` 为参数的上下文函数的中缀类型别名。
++     类型为 `T via L` 的定义在作用域中有 `Locale[L]` 时求值，因此它计算的任何东西——排序、格式化的数字——都遵循该区域设置，而其调用方必须提供一个区域设置。
+
+% 2 1 0 14e3b5a5676c6d5c0cfe60ceb9eb83a9
+
+% 3 1 0 1a2df9149fcfddaf1948392802a34240
+
+% 4 1 0 061886456fda79f806613e76ecc9a352
+
+% 5 1 0 0b48c9cfe0293aae0713b388967bf941
+
+% 0 1 0 1a0251f7ed8e312b1958ba0eb09ac074
+
+% 2 1 0 00504e50fbb438361d38888d533e58a6
+
+% 0 1 0 17567a2451c351311104988208cd4159
+
+% 1 1 0 02dd38ed8652b8391a3a5b857e672b72
+
+@ 0 6 0 0e375002fec115b41931f9ea88290bb0
++ entry .localeCollation   作用域中 `Locale` 所用语言的 `Collation`，用于对文本排序和比较
++     一个顶层 given，需要一个 `Locale[L]` 和一个 `L is Collatable`：它提供 gossamer 文本排序所用的 `Collation`，因此 `Text` 上的 `sort`、`<` 和 `minimum` 遵循该区域设置的语言。
++     它位于包层级，因为两个伴生对象都无法容纳它——`Collation` 属于 gossamer，语言标签属于 cosmopolite——所以必须按名称导入，即 `import soundness.localeCollation`，同时导入 `soundness.collationComparable`。
+
+% 2 1 0 15be0909a012a8640a1b82234d46257b
+
+% 3 1 0 043ad870606d08eb1a6164aad841c256
+
+% 4 1 0 1bd0853bdcfb16db0d6d5eb2906d4f4b
+
+% 5 1 0 0e7bdd2b458dda6906db8169cf97f0ad
+
+% 6 1 0 1ff3eaf9e02f8448041a6f16f08ee03d
+
+% 2 1 0 07aabde1aa40f0b907cc30ea3a90a700
+
+% 0 1 0 0b6839bd9503dafe0b72f54dff52a6e1
+
+% 1 1 0 1a5643b84e9c12cb1d36a9e6fcf61fa2

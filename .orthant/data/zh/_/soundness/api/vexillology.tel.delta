@@ -1,0 +1,116 @@
+orthant 2 language
+
+% 0 1 0 0f04ec4b9ac2d4270a232409219e1f6b
+
+% 0 1 0 1c6eb85f7715f09e0792c007bb737bcf
+
+% 0 1 0 0b5938ce7315323607e1922cbc4d93e2
+
+@ 0 1 0 0ef7c4cc2e63dd810c6206205ed7ba3c
++ info   把枚举的分支集合打包进一个 `Long` 的各个位中，按分支测试和设置
+
+% 0 1 0 0ca6d61ddd9511ea1cdae38f1414f6fe
+
+@ 0 6 0 1b1fcf8214caf5a702984d9496d7b683
++     _Vexillology_ 为位标志提供了有类型的接口。
++     `Flags[Color]` 是基于枚举 `Color` 各分支的一组开关标志，保存在单个 `Long` 的各个位中，每个分支占有与其序数对应的那一位。
++     标志通过指明分支来测试和设置，而不是通过魔数位号，因此无法触及表示其他含义或毫无含义的位；而且这个值始终只占一个机器字——复制无代价，存储开销小，在二进制格式中也很自然——而 `Set[Color]` 则需要分配内存。
+
+% 0 1 0 0797c6bf77c3030003eb6d7db95ad910
+
+% 0 1 0 1ce8fe6ca033a15a0bd38efcfa5b98d2
+
+% 0 1 0 0af2a59cff40b5c9019c56f5eb1885de
+
+% 0 1 0 1d10a572fae04e8d116974175da28781
+
+% 0 1 0 0f95d5f3aa2e937907b24d60a5df4719
+
+% 0 1 0 1ea3958aaf72c5d1030cf913cd96d8af
+
+% 0 1 0 05864085c650310810828bfe91691b4f
+
+% 0 1 0 1d74062d421567f01384f1f939695848
+
+% 0 1 0 14d13d1f18f362680275d3558af476f8
+
+% 0 1 0 04750537132403ad175598283296cd59
+
+% 0 1 0 0b63a119e100ded215b7b51dc46bb03a
+
+% 0 1 0 1a33ee6b4a3bba2500aa229743c7c755
+
+@ 0 3 0 13d852fb4e6865270cd75ac7683e2cee
++     `Flags` 值是不可变的：每次赋值都会生成一个新值，因此变量通过更新语法 `flags = flags(Orange) = true` 重新赋值。
++     这些操作要求枚举是 `Enumerable` 的，而每个由单例分支构成的 Scala 3 `enum` 都满足这一点。
+
+@ 0 2 0 11aa7e266e6b3a240797cec39786981c
++     该库只有一个源集 `vexillology.core`，所有内容都导出到 `soundness` 总括包。
+
+% 0 1 0 019efc2e4f73acb506f6381eb98952b6
+
+@ 0 1 0 07886f05135c25460305f18b26b45578
++ entry .Flags   枚举分支的集合，以位的形式打包进一个 `Long`
+
+% 1 1 0 108f60404f206b9f1823848ae630da0a
+
+@ 0 4 0 14ae1779cab1ce7c0411612a59a20745
++       `Flags[Enumeration]` 是在此导出的不透明类型 `vexillology.internal.Flags`：一个 `Long`，当序数为 *n* 的枚举分支在集合中时，第 *n* 位被置位。
++       `Flags[Color]()` 是空集，有三个扩展方法使用它，它们无需任何导入即位于隐式作用域中：
+
+@ 0 4 0 035a5a79821fbfc11012114c1a3b43ab
++       - `flags(case)` 测试某个分支是否被置位；
++       - `flags(case) = enabled`（即 `flags.update(case, enabled)`）生成一个将该分支置位或清除后的新值；
++       - `flags.set` 把标志读出为由各分支组成的普通 `Set`。
+
+% 0 1 0 18315661a642cc4713beb70855b927f5
+
+% 0 1 0 03e156f9b4684ee71e065e8ff9f301d3
+
+% 0 1 0 1089ca35127374810e7f548d669d576d
+
+% 0 1 0 1ab3b3d18b9086f913e0e0c49c4017ed
+
+% 0 1 0 1357cfbd063de8db0a6312f5733e37c2
+
+% 0 1 0 0ac63c7898504d7716ef4bfa572027f7
+
+% 0 1 0 10bf6b93c183bf69142d0a47a493c686
+
+% 0 1 0 0f7fab3690ef35161d5744336c2b581a
+
+% 0 1 0 1728e0adebfc754c06dddcd449b8c88b
+
+% 0 1 0 18233de54dc657b118d1cd7c26747087
+
+@ 0 4 0 112c8c89532d487617e1b1876bb21caf
++       `Long` 有 64 位，因此至多 64 个分支的枚举可以容纳。
++       超出之后，分支的位位置会回绕，与某个较低的分支共用一位：这里没有任何检查。
++       每个方法都接受单例类型的分支，因此带参数的 enum 分支不能作为标志。
+
+% 0 1 0 03c3be223d45fc1602f45e1db973199e
+
+@ 0 1 0 061e5d2caf21abe6084796807bee42af
++ entry .internal   不透明类型 `Flags` 及其操作的所在之处
+
+% 0 1 0 1c18810b564d59e609a88422cf8dd919
+
+% 1 1 0 0f71597c1b0bc6cb112bae74ffdfb433
+
+@ 0 5 0 17e7a57fc22507730b884c4c68297440
++       不供直接使用：该对象的存在是为了容纳不透明类型 `Flags` 及其上的扩展方法，由于它们共享外围对象，因此在任何有 `Flags` 的地方都位于隐式作用域中。
++       `Flags` 从这里导出到 `vexillology` 包，该包的页面有完整说明。
++   entry .Flags   打包进一个 `Long` 的枚举分支集合；参见 `vexillology.Flags`
+
+% 0 1 0 0eb601d2d8703d0a0cbc3f0c257d69cf
+
+@ 0 10 0 1ac5189c5f90b6850ebef677d5050144
++         基于 `Long` 的不透明类型。
++         它在 `vexillology` 包下的页面有完整说明。
++     entry .apply   一个枚举上没有任何位被置位的空标志集，`Flags[Color]()`
++   entry .apply   某个分支是否在某组标志中被置位，`flags(case)`
++       要求枚举是 `Enumerable` 的，以便找到分支的序数。
++   entry .update   某组标志的副本，其中某个分支被置位或清除，`flags(case) = enabled`
++       返回新的 `Flags` 而不是修改接收者，因此保存标志的变量需要重新赋值：`flags = flags(Orange) = true`。
++   entry .set   某组标志中被置位的分支，作为该枚举的 `Set`
++       只访问被置位的位，从最低位开始。

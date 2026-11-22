@@ -1,0 +1,14 @@
+orthant 2 language
+
+@ 0 8 0 1431c98063de65a00a71fea57e055f77
++ column  顺序
++ column  呈现方式
++ row  1  该类型自己的 `Inspectable` 实例
++ row  2  它的 `Encodable in Text` 实例，置于 `⸤` 和 `⸥` 之间
++ row  3  它的 `Showable` 实例，置于 `⸢` 和 `⸣` 之间
++ row  4  对于 `Optional`，是它持有的值，置于 `｢` 和 `｣` 之间；若未设置，则为 `○`
++ row  5  由其形状派生的结构化呈现
++ row  6  最后手段的呈现，即置于 `“` 和 `”` 之间的 `toString`
+
+@ 0 2 0 00ab82423b62806a0907786a980e61f6
++ 这些括号标出一种借自另一个类型类或借自 `toString`、而不是该类型自己的呈现。

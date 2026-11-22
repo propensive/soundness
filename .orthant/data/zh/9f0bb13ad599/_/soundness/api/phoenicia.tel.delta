@@ -1,0 +1,165 @@
+orthant 2 language
+
+@ 0 9 0 008acd1957c03e4c17f124619041addf
++     上层是**排版请求**。
++     `Typeface` 是以名称表示的字体族，名称同时也是它的类型（`Typeface["Inter"]` 是 `Typeface of "Inter"`）；`Face` 说明它应如何排版——一个 `Weight`、一个 `Slant`、一个 `Stretch`、在其他 `Variation` 轴上的位置，以及要启用或禁用的 `Face.Feature`——而不涉及字体从何而来。
++     `Typesettable` 供给说明一个 `Medium`（网页、印刷，或渲染器定义的任何媒介）如何获得该字体族，以及随后能排版哪些字样，表示为一个 `Font.Coverage`。
++     `Font` 把一个字样与该媒介中其字体族在作用域内的供给配对，并且是渲染器接受字体的唯一形式，因此文档无法使用它未携带的字体族，也无法向供给索要它排不了的字样。
+
+@ 0 3 0 106f71e07ee1dc50021075046a65f996
++     所有内容都导出到 `soundness` 总括包：`Face`、`Font`（及 `Font.Coverage`）、`Glyph`、`Medium`、`Opentype`、`Sfnt`、`Slant`、`Stretch`、`Truetype`、`Typeface`、`Typesettable`、`Variation` 和 `Weight`。
+
+% 0 1 0 1f5b57c39275a8b706212d467a0bcaa9
+
+@ 0 35 0 1055a95d4dc34c8210182563bae6681f
++   entry #leftSideBearing   字符的左侧边距，以字体的设计单位表示
++       字符字形在 `hmtx` 中的边距；对于超出度量数量的字形，边距在单独的数组中延续。
++       如果缺少所需的表，抛出 `Font.Error`。
++   entry #head   `head` 表：每 em 单位数、边界框、创建日期以及 `loca` 格式
++       解包为 `HeadTable`；缺失时以 `MissingTable` 抛出 `Font.Error`，表的校验常量不是格式规定的 `0x5f0f3cf5` 时以 `MagicNumber` 抛出。
++   entry #cmap   `cmap` 表：字符到字形的映射
++       类型为 `CmapTable`，其 `best` 子表按 Unicode 偏好选出，其 `glyph` 解析字符。
++       缺失时以 `MissingTable` 抛出 `Font.Error`。
++   entry #hhea   `hhea` 表：上伸部、下伸部、行距以及度量数量
++       解包为 `HheaTable`；缺失时以 `MissingTable` 抛出 `Font.Error`。
++   entry #hmtx   `hmtx` 表：按字形给出的步进宽度和左侧边距
++       类型为 `HmtxTable`，大小由 `hhea.numberOfHMetrics` 决定；任一表缺失时抛出 `Font.Error`。
++   entry #maxp   `maxp` 表：字形数量
++       类型为 `MaxpTable`；缺失时以 `MissingTable` 抛出 `Font.Error`。
++   entry #post   `post` 表：斜体角度、下划线度量以及字体是否等宽
++       类型为 `PostTable`；缺失时以 `MissingTable` 抛出 `Font.Error`。
++   entry #os2   `OS/2` 表：字重和字宽等级、排版度量、嵌入权限
++       类型为 `Os2Table`；缺失时以 `MissingTable` 抛出 `Font.Error`。
++   entry #name   `name` 表：字体的本地化名称，按 `Sfnt.NameId` 索引
++       类型为 `NameTable`；缺失时以 `MissingTable` 抛出 `Font.Error`。
++   entry #fontName   字体的 PostScript 名称，或 `Unset`
++       即 `name(Sfnt.NameId.PostScriptName)`，吸收任何 `Font.Error`：PDF 和 PostScript 文档引用字体时使用的名称。
++       字体未记录该名称或没有 `name` 表时为 `Unset`。
++   entry #familyName   字体的族名，或 `Unset`
++       即 `name(Sfnt.NameId.Family)`，吸收任何 `Font.Error`。
++   entry #fvar   可变字体的 `fvar` 表；静态字体为 `Unset`
++       可变字体的轮廓沿之变化的轴，每个轴带有其范围。
++       该表存在时，`Font.Coverage.of` 从这里读取字重和字宽范围。
++   entry #features   字体实现的布局特性，按标签给出，来自 `GSUB` 和 `GPOS`
++       两个布局表的特性列表，作为 `Face.Feature` 并去重。
++       两个表都没有的字体不实现任何特性。
++       `Font.Coverage.of` 记录的就是这些，因此启用字体所缺特性的字样会被拒绝。
+
+@ 0 3 0 1f7f25c466bd475a0abd4fbc998db4a2
++         `post` 表。
++         斜体角度是以度为单位的定点数，向右倾斜时为负，它是 `Font.Coverage.of` 判断文件是否为斜体时读取的标志之一。
+
+@ 0 6 0 138abd00d5ec0ca8165957791bd517a3
++         `OS/2` 表，按其版本定义的偏移量逐字段读取。
++         字重等级（1–1000，即 `Weight` 使用的刻度）和字宽等级（1–9，由 `Stretch.widthClass` 命名）是 `Font.Coverage.of` 为静态字体记录的内容；选择位说明字样是否为斜体；排版上伸部、下伸部和行距，Windows 上升值和下降值，x 字高和大写字高，是 PDF 字体描述符所需要的。
++         表的版本早于其出现的字段为 `Unset`。
+
+% 2 1 0 1f73c1a5f8923e2b1c025d7bca71e9ef
+
+% 2 1 0 1a756beb42af85831b2aee23afb61f8d
+
+% 1 1 0 150c2fc23330bbfb08b251d0243382d0
+
+@ 0 15 0 001c18f27659e34107e6103281905812
++         一个具名类，使该供给具有稳定的类型。
++         它是 `in Medium`，其来源是每个文件一个 `Source.Embedded`，其覆盖范围是对各文件的 `Font.Coverage.of` 进行 `Font.Coverage.combine` 的结果。
++     entry #Self   所提供的字体族
++     entry #Form   `Medium`：嵌入的文件服务于每种媒介
++     entry #sources   每个字体文件一个 `Typesettable.Source.Embedded`
++     entry #coverage   各文件覆盖范围的并集，从其表中读取
++   entry .embedded   由字体文件生成的供给，`in Medium`，覆盖范围从文件中读取
++       两个重载。
++       `Typesettable.embedded[family](sfnts*)` 接受任意数量已在手中的 `Sfnt`，生成一个 `Typeface of family is Typesettable in Medium`；字体族显式给出，或从 given 声明的类型推断。
++       `Typesettable.embedded (source)` 接受一个 `Locative` 的可流式读取来源（一个 `cp"…"` 资源），读取它，并把其路径保留为供给的 `Locus`，因此由该供给生成的 `Font` 会在代码编译时，对照编译器类路径上该路径处的文件进行检查。
++       文件不在编译器类路径上时，检查留到运行时进行。
+
+@ 0 4 0 1f117e921219aa87022930cd335d0960
++         错误 `↯/s.89.1`，_the font could not be used because …_，带有一个 `Reason`，其编号是该错误的子代码。
++         读取表相关的原因由 `Sfnt` 的访问器抛出；覆盖范围相关的原因在供给的 `Font.Coverage` 拒绝该字样时，由 `Font(…)`、`Font.of[…](…)` 和 `Font.paired` 抛出。
+
+@ 0 88 0 1f4c85e5263b77dc049383139277fd5e
++       entry #number   原因的编号，1 到 10，即该错误的子代码
++     entry .communicable   把每个原因渲染为其消息
++     entry #reason   原因
++   entry .Coverage   供给能排版哪些字样：字重、倾斜、宽度、轴和特性
++     detail
++         `Font.Coverage` 要么是 `Unknown`，即对来源所提供的字样一无所知，因此接受每一个字样；要么是 `Entries(entries)`，一个 `Font.Coverage.Entry` 列表，每一项是供给提供的一个字样，或可变字体提供的一系列字样。
++         只有覆盖范围接受的字样才能生成 `Font`；`#complaint` 给出不接受时的 `Font.Error.Reason`，接受时给出 `Unset`。
++
++         覆盖范围的匹配方式与浏览器匹配 `@font-face` 声明的方式相同：先找出跨越该字重的条目，再从中找出具有该倾斜的条目，然后是宽度，最后对照剩下的条目检查字样的变体值和特性。
++         第一个失败的步骤决定拒绝的原因：`UncoveredWeight`、`UncoveredSlant`、`UncoveredStretch`、`UnknownAxis`、`AxisOutOfRange` 或 `MissingFeature`。
++
++         `.of(sfnt)` 从字体文件的表中读取其覆盖范围：可变字体的 `fvar` 轴，否则是 `OS/2` 表记录的单一字重和宽度、`OS/2` 和 `post` 的意大利体位，以及 `GSUB` 和 `GPOS` 的特性；`.combine` 求多个文件覆盖范围的并集。
++         `Font.Coverage(weights = …, italic = …)` 为文件不在手边的来源（一个 URL 或已安装的字体）声明覆盖范围；只接受所声明的内容，因此声明为某一字重的链接字体会拒绝对另一字重的请求，而不是让浏览器合成它。
++
++         ```scala
++         import soundness.*
++         import strategies.throwUnsafely
++
++         val file: Sfnt = Sfnt(cp"/fonts/Inter-BoldItalic.ttf")
++         Font.Coverage.of(file).complaint(Typeface["Inter"].bold.italic)    // Unset
++         Font.Coverage.of(file).complaint(Typeface["Inter"].light)          // UncoveredWeight("Inter", 300)
++
++         val declared: Font.Coverage = Font.Coverage(weights = Weight.Light to Weight.Bold, italic = true)
++         ```
++     refer phoenicia.Typesettable
++     refer phoenicia.Face
++     entry .Entry   供给提供的一个字样，或可变字体提供的范围
++       detail
++           所跨越的字重和宽度、该条目是直立、意大利体还是两者皆有、其他轴及其范围，以及所实现的布局特性；对于没有文件而声明的字样，特性为 `Unset`，此时接受任何特性。
++
++           ```scala
++           import soundness.*
++
++           val boldItalic = Font.Coverage.Entry(Weight.Bold.range, false, true, Stretch.Normal.range, Nil, Nil)
++           ```
++       entry #weights   字重的跨度
++       entry #upright   是否提供直立字样
++       entry #italic   是否提供意大利体字样
++       entry #stretches   宽度的跨度
++       entry #axes   其他变体轴，各带其范围
++       entry #features   所实现的特性；未知时为 `Unset`
++       entry #sets   该条目的字重、倾斜和宽度是否接受某个字样
++       entry #complaint   该条目无法给出的第一个变体值或特性设置，或 `Unset`
++           `complaint(name, variations, settings)` 对照 `axes` 检查每个变体值的轴和值（`UnknownAxis`、`AxisOutOfRange`），对照 `features` 检查每个设置的特性（`MissingFeature`），并在原因中指明字体族。
++           未知的特性接受任何东西。
++     entry .apply   为文件不在手边的来源声明的覆盖范围
++         `Font.Coverage(weights, upright, italic, stretches, axes)`，各参数都有默认值（常规字重、仅直立、正常宽度、无轴），生成一个特性未知的 `Entry`。
++         用于 URL 或已安装的字体，它们的字样就是声明所说的那些，别无其他。
++     entry .of   字体文件的覆盖范围，从其表中读取
++         对于可变字体，取自其 `fvar`：`wght` 轴作为字重跨度，`wdth` 作为宽度跨度，`ital` 或 `slnt` 轴表示两种姿态都提供，每个轴都作为一个 `Variation.Range`。
++         对于静态字体：`OS/2` 的字重类别和宽度类别作为单一字重和宽度。
++         `OS/2` 的意大利体位和非零的 `post` 斜体角度使该条目成为意大利体。
++         特性为 `Sfnt#features`。
++         表无法读取的文件具有 `Unknown` 覆盖范围，接受一切，而不是拒绝它很可能具备的字样。
++     entry .combine   多个覆盖范围的并集；任何一个 `Unknown` 都会使整体成为 `Unknown`
++     entry #complaint   某个字样为何无法依此覆盖范围排版；可以排版时为 `Unset`
++         两个重载。
++         `complaint(face)` 检查整个字样。
++         `complaint(name, weight, slant, stretch, variations, features)` 只检查给出的部分：以 `Unset` 传入的部分不做检查，当字样的字重或倾斜在运行时才确定时，编译时检查使用的就是这种形式。
++         `Unknown` 覆盖范围从不报错。
++   entry .apply   `Font(face)`：在预期类型所指的媒介中，把字样与作用域中的供给配对
++       一个内联方法，其媒介从预期类型推断：`Font in Web` 或 `Optional[Font in Web]`，因为 `Form` 是类型成员，预期类型会将其固定。
++       需要一个 `Typeface of family is Typesettable in (? >: medium)` 和一个 `Tactic[Font.Error]`。
++       当供给带有 `Locus` 时，字样所记录的请求会在编译时检查；无论如何，随后都会执行运行时检查。
++       没有预期类型时，使用 `.of`。
++   entry .of   `Font.of[Web](face)`：同样的配对，但指明媒介
++       返回一个 `.Of[medium]`，其 `apply` 接受字样，这样只需写出媒介，字体族从字样推断。
++       Cataclysm 的 `Web.font(face)` 就是 `Font.of[Web](face)`。
++   entry .Of   `.of` 返回的辅助对象，其 `apply` 接受字样
+
+@ 0 17 0 109cccf83e089ae60844da884dc4852d
++     entry .widthClass   OS/2 宽度类别 1 到 9 所对应的宽度；5 或未知值对应 `Normal`
++     entry .Range   宽度的闭区间
++       entry #lower   区间中最窄的宽度
++       entry #upper   区间中最宽的宽度
++       entry #contains   某个宽度是否位于该区间内
++     entry .showable   把宽度显示为百分比：`100.0%`
++     entry .inspectable   把宽度检视为 `Stretch(100.0)`
++     entry .percentage   以正常宽度百分比表示的宽度
++     entry .to   `lower to upper`：两个宽度之间的闭区间
++     entry .range   仅包含此宽度的区间
++   entry .id   字形在其字体中的 id；0 是缺失字形
++   entry .font   `Font(face)` 和 `Font.of[medium](face)` 背后的宏
++       从供给的类型中读取其 `Locus`；如果它是一个字符串字面量，指向编译器类路径上的某个资源，就读取该字体（每个路径一次），推导其 `Font.Coverage`，并对照它检查字样的 `Weights`、`Slanting` 和 `Enabled` 类型成员，拒绝时以 _phoenicia: the font at `path` cannot set this face: …_ 中止。
++       然后展开为 `Font.paired`。

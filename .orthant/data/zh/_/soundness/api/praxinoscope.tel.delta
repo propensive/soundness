@@ -1,0 +1,596 @@
+orthant 2 language
+
+% 0 1 0 0f04ec4b9ac2d4270a232409219e1f6b
+
+% 0 1 0 026dba39094ed9ac08404b0481ba81d6
+
+% 0 1 0 0b5938ce7315323607e1922cbc4d93e2
+
+@ 0 1 0 1f86def002901d0d1ddd908b1aa994e9
++ info   RE2 正则表达式引擎：线性时间匹配，以及可判定的模式包含关系
+
+% 0 1 0 0ca6d61ddd9511ea1cdae38f1414f6fe
+
+@ 0 8 0 14b0e81f11cfc39217dabbf013702c04
++     _Praxinoscope_ 是 [RE2](https://github.com/google/re2/wiki/Syntax) 语法的纯 Scala 实现：一个无论模式如何，匹配时间都与输入长度成线性关系的正则表达式引擎。
++     它的做法是把模式编译为有限自动机，并在不回溯的情况下模拟它；这之所以可行，是因为 RE2 子集省去了自动机无法表达的构造——反向引用、前瞻与后顾、占有量词和原子组——并在解析模式时拒绝它们。
++     同一限制还让另外两个问题变得可判定：一个模式是否匹配另一个模式所匹配的一切（`subsumes`），以及是否有任何输入同时匹配两者（`intersects`）。
+
+@ 0 6 0 1d74a54fb531421111ae1655698cd641
++     模式被解析为一个 `Motif`，它持有自己的结构化 `Motif.Node` 树、捕获组的数量和编译后的 `Motif.Program`，并通过 `matches`、`seek`、`search`、`groups` 和 `spans` 进行匹配。
++     字符类是码点的集合，即 `Motif.Ranges`；`Pike` 虚拟机在任何 `Symbolizer` 能解码为符号的输入上运行程序（目前是作为 Unicode 码点的 `Text`）；`Subsumption` 在编译后的程序上判定包含与相交。
+
+% 2 1 0 0fc0e01fdc003bb00b1325900c0443d8
+
+% 3 1 0 02cdf2650c3a18c40a5149e1855581de
+
+% 0 1 0 0323f27fc4985e0804a43d7947f66e41
+
+% 0 1 0 19da03f730fc3f9910c014e2c8138632
+
+% 0 1 0 00692078999f67fd0c877cb213366c27
+
+% 0 1 0 184209af5d76b6771ec523177ad1c485
+
+% 0 1 0 1ca0b9f609e366fe0238f054a2aba244
+
+% 0 1 0 0b7a7093ffb74799144fe2dd404fc8c4
+
+% 0 1 0 110973c05d89ba4f147ac2df3792732c
+
+% 1 1 0 0c781181596d3d3b0262a3fa50b38d81
+
+@ 0 7 0 0b8e9192e2837b490fef55c404ef4ed5
++     通常使用该引擎的途径不是 `Motif`，而是 kaleidoscope 的 `r"…"` 字面量，配合 `import regexBackends.re2`：作用域中的每个字面量随后都会在代码编译时被解析和编译，若超出 RE2 子集就在那里被拒绝，并被分阶段执行到其提取器中，因此运行时不做任何解析，而没有捕获的字面量还会被进一步编译为静态自动机 `Fsa`。
++     标记类型 `Re2` 用来标记这样的 `Regex in Re2`；它的 `Regex.Engine` 实例位于 kaleidoscope 中，而 kaleidoscope 处在本库之上。
+
+@ 0 12 0 12c5dfe10b0364a30d9e0ec1bd040cef
++     所接受的语法就是 RE2 的语法：字面量和 `.`；转义 `\n \t \r \f \a \v \e`、`\xHH`、`\x{…}` 以及转义的标点；ASCII 类 `\d \w \s` 及其补集；方括号内的 POSIX 类 `[[:alpha:]]` 和 `[[:^alpha:]]`；Unicode 通用类别和文字 `\pL`、`\p{Lu}`、`\p{Greek}`、`\P{…}` 和 `\p{^…}`；带范围和取反的方括号类；引用段 `\Q…\E`；选择；捕获组、非捕获组 `(?:…)` 和命名组 `(?<name>…)`/`(?P<name>…)`（名称不起作用，组按位置编号）；量词 `* + ? {n} {n,} {n,m}`，可带勉强后缀 `?`，重复次数至多为 `Motif.maxRepetition`（1000）；行内标志 `i`（大小写折叠）、`m`（多行锚点）、`s`（点匹配换行）和 `U`（交换贪婪性），写作 `(?i)` 时作用到外围组的末尾，写作 `(?i:…)` 时只作用于一个组，`(?-i)` 用于清除；以及锚点 `^ $ \A \z \b \B`。
++     匹配以 Unicode 码点为单位，因此一个星际平面字符是一个符号。
+
+@ 0 3 0 1f538f8514f5287d186b0280d0f099af
++     该库只有一个源集 `praxinoscope.core`，可编译到 JVM、Scala.js 和 Scala Native，并且不进行捕获检查：Pike 虚拟机按设计是可变的。
++     所有内容都导出到 `soundness` 总括包。
+
+% 0 1 0 0943afc710b4907404c244469294b459
+
+% 0 1 0 1941f0c78b1f80dc0a6c537cac896203
+
+% 0 1 0 084e71060ece581002859e84951a5ad9
+
+% 0 1 0 1c6c5751fd70a988035a851cdd9c25fc
+
+% 0 1 0 06ff01176f41801e04d884f364d24005
+
+% 0 1 0 1d6f5ed891f1ceca1083ed4c7ae25a4e
+
+@ 0 8 0 1e81a7c9afa077421b5019fc9f3d19d6
++ entry .Re2   RE2 引擎的标记：kaleidoscope 中 `Regex in Re2` 的 `Form`
++     一个没有成员的密封幻影特质。
++     kaleidoscope 的 `Regex in Re2` 是一个标记为由本库匹配的正则表达式：它是在 `import regexBackends.re2` 下编译的 `r"…"` 字面量的类型，也是 `Regex#re2` 的类型，后者在对照 RE2 子集检查一个正则表达式之后重新标记它。
++     `Re2` 的 `Regex.Engine` 实例不能放在这个特质的伴生对象中，因为 `Regex` 定义在本库之上，所以它是 kaleidoscope 中的 `Regex.Engine.re2`——它仍在隐式作用域中，因此匹配 `Regex in Re2` 不需要任何导入。
+
+% 2 1 0 1d6da639705377d11794e5bd65d09b52
+
+% 3 1 0 1ed5fe9efda107d21f4de1e0f176aab9
+
+% 0 1 0 141f233fcd26b6930e8e815f40388dc8
+
+% 0 1 0 0a93c6c32257479d090e4298cb7036fb
+
+% 0 1 0 06049b0b6773827a19e65c627cd6cd2f
+
+% 1 1 0 00342a8f8c0528211dfe85896da1375d
+
+@ 0 1 0 0f73bdb4725ba503073fc1a0b044c93e
++ entry .Motif   解析后的 RE2 正则表达式：它的模式、节点树、捕获和程序
+
+% 1 1 0 1376cd144cc46cea1dbacca0a07d967d
+
+@ 0 5 0 0453ed98f3c44f9e1b578f4328a5a560
++       `Motif` 是解析 RE2 语法模式的结果：源模式 `#pattern`、结构化的 `#node` 树、捕获组的数量 `#captures`，以及匹配器运行的编译后的 `#program`。
++       `.parse`（或 `.apply`）构建一个 `Motif`，对语法拒绝的任何内容（包括 RE2 有意省去的每一种构造）抛出带有位置和原因的 `Motif.Error`。
+
+@ 0 5 0 0c05865350344fc30151f14fab57df4f
++       匹配总是与输入成线性关系：`#matches` 是对整个输入的测试，`#seek` 从某个位置起找到最左侧的匹配，`#search` 依次找到每个匹配，`#groups`、`#spans` 和 `#slots` 报告每个捕获组匹配了什么。
++       `#subsumes` 和 `#intersects` 比较两个 motif 的语言，这只有自动机引擎才能判定。
+
+% 2 1 0 1430da8beadfb5c80254432888ac87fb
+
+% 3 1 0 12fa36b64c8568eb08ba7206d4ae160b
+
+% 4 1 0 07396bcf11563e921f387022b0b1cc46
+
+% 0 1 0 1f09c0d97e67b35b120b4f682f7a78e7
+
+% 0 1 0 0382a60058b2c7940ad2edcffd07bdc4
+
+% 0 1 0 0b88a7684dde5bf70fcd14ad3e116395
+
+% 0 1 0 1b9ade2a74d31cc80a04358e09736d72
+
+% 0 1 0 180c544ccaa9bd87130f5e59ee2c0d3d
+
+% 1 1 0 1b39a9fa59a5c6c40bbbaae0b9e372a5
+
+@ 0 4 0 00ed87580386ce230cb497c89fb36555
++       任何带有 `Symbolizer` 的输入类型都可以被匹配；所提供的是 `Text`。
++       在 `regexBackends.re2` 下由 `r"…"` 字面量产生的 motif，会在编译时通过 `.staged` 分阶段执行为程序，因此它的 `#node` 是 `Node.Empty`：只有程序参与匹配。
+
+% 1 1 0 1d9f7410cee67d180258edef4a6ede63
+
+% 0 1 0 1d51df9b8ec3bb160ff753ef0f944313
+
+% 0 1 0 1d9369dd9432fdb2159bf13ebb3f06c2
+
+% 0 1 0 0db9cb07ce2870de09053fad4fdb5ad5
+
+@ 0 6 0 093e0e64246bbbfb09f6bea0cd035fe8
++   entry .parse   把 RE2 语法解析为 `Motif`，或在出错的位置抛出 `Motif.Error`
++       一个针对 `praxinoscope` 包上所列 RE2 语法的递归下降解析器：字符类在解析过程中被解析为 `Ranges`（因此取反的类和它的补集是同一个节点），捕获组按左括号的顺序从 1 开始编号，行内标志的作用域限于外围组，节点树在最后被编译为 `Program`。
++       需要一个 `Tactic[Motif.Error]`。
+
+% 2 1 0 064b3987c4a090080a970f9bcdcdc510
+
+% 3 1 0 0ebc012a72f4a63216d9cb9ce02ee39a
+
+% 4 1 0 17dd813d14b1e48f0ea331fe589271f1
+
+% 0 1 0 16aa1f845545e01816d2761a77c88b19
+
+% 0 1 0 0578aae5f6f1391900c5b615e7832df2
+
+% 0 1 0 12cf823e716946de12864edb7a9fb5ab
+
+% 0 1 0 175de8784fadd61001cd95f93a9e18d0
+
+% 0 1 0 18b1fea2dd5a83760e26c72b962eec33
+
+% 1 1 0 0424ebbedb18c8fa10a24fda15ab3a11
+
+@ 0 19 0 1771f598a5c36d5101c1f2757d5a9c3c
++       被拒绝的内容及原因：反向引用 `\1` 或 `\k<name>`（`Backreference`），环视 `(?=…)`、`(?!…)`、`(?<=…)`、`(?<!…)`（`Lookaround`），占有量词 `*+`（`PossessiveQuantifier`），原子组 `(?>…)`（`AtomicGroup`），`i`、`m`、`s`、`U` 以外的标志字母（`Flag`），超过 1000 的重复次数（`RepetitionTooLarge`），对没有含义的字母的转义（`InvalidEscape`），以及各种结构性错误：未闭合的组、类或重复，多余的 `)`，空的 `[]` 或颠倒的 `[z-a]`。
++       后面不跟数字的 `{` 是字面量，与 RE2 的读法一致，因此 `a{x}` 匹配这四个字符。
++   entry .apply   `Motif(text)`：与 `.parse` 相同
++   entry .staged   重建一个在编译时编译的 motif，每个模式至多一次
++       `Motif.staged(pattern, captures, program)` 是分阶段执行的 motif 展开后的形式：程序是传名参数，只在某个模式第一次调用时物化，之后从以模式文本为键的缓存中提供。
++       `regexBackends.re2` 下的 `case r"…" =>` 每次匹配都会构造它的提取器，因此没有缓存的话，分阶段执行得到的表每次都会被重建。
++       分阶段执行的 motif 的 `node` 是 `Node.Empty`。
++   entry .maxRepetition   `{n,m}` 量词可以指定的最大次数：1000，与 RE2 的设定一致
++       有界重复通过展开来编译，因此这个上限限制了程序的大小；超出它就是 `Motif.Error.Reason.RepetitionTooLarge`。
++   entry .Node   解析后模式的结构形式
+
+% 1 1 0 182f6fb72b1982330f55b18f234b997b
+
+@ 0 8 0 0e594d23be7aeb87109ddcd622d00ac0
++         一个有八个分支的枚举。
++         `Empty` 匹配空字符串；`Literal(codepoint)` 匹配一个码点；`Klass(ranges)` 匹配 `Ranges` 中的任意码点（每一种类的形式——`[…]`、`.`、`\d`、`\p{…}`、`[[:…:]]`——都会变成这样一个节点，取反已经应用）；`Sequence(nodes)` 和 `Alternation(options)` 进行连接和选择；`Repeat(child, minimum, maximum, reluctant)` 表示任意量词，无上界时 `maximum` 为 `Unset`；`Group(child, index)` 是一个组，其 `index` 是从 1 开始的捕获编号，非捕获组则为 `Unset`；`Boundary(anchor)` 是零宽测试，取 `Node.Anchor` 之一。
+
+% 2 1 0 0b3d99911d950a6e1f3822d1d3bd3aea
+
+% 3 1 0 15484e91dd0bb08802fa93b1f92e3905
+
+% 0 1 0 007d86684f8769fe09636d5f556d8a87
+
+% 0 1 0 03d4fd48b124361b1f8b57f864a43c93
+
+% 0 1 0 14ec70927ea6fa1a1acf42fda950cc41
+
+% 1 1 0 136fbc53234504480d868f53d15da598
+
+@ 0 1 0 1b8015c17d8057951e7bf560332ea3f8
++     entry .Anchor   零宽测试：`Start`、`End`、`WordBoundary`、`NonWordBoundary`、`LineStart`、`LineEnd`
+
+% 0 1 0 1682596b9e5a64c91ea7da6dc8713ea7
+
+@ 0 9 0 0fd33a6721ea3dc911cfd3d006b5af4f
++         column  锚点
++         column  写法
++         column  匹配
++         row  `Start`  `^` 或 `\A`  整个输入的开头
++         row  `End`  `$` 或 `\z`  整个输入的结尾
++         row  `WordBoundary`  `\b`  单词字符（`\w`，ASCII）与非单词字符相接之处
++         row  `NonWordBoundary`  `\B`  不相接之处
++         row  `LineStart`  `m` 标志下的 `^`  输入的开头，或紧跟换行符之后
++         row  `LineEnd`  `m` 标志下的 `$`  输入的结尾，或紧挨换行符之前
+
+% 1 1 0 036d356c4c4bcb5c092418a65d75b056
+
+@ 0 3 0 15115f44849489d315abc8db8a0f1b7b
++         包含关系分析无法建模后四种，对含有其中之一的程序抛出 `Unverifiable`。
++   entry .Error   在模式不是 RE2 语法，或某项分析无法作答时抛出
+
+% 1 1 0 0bc741daa135adf5191d363c7060cbb4
+
+@ 0 7 0 0e762ab953a8320b1d6b190e0468ef03
++         错误 `↯/s.33.1`：_the regular expression could not be compiled because `reason` at `index`_，以原因的编号作为子编号。
++         由 `Motif.parse` 通过 `Tactic[Motif.Error]` 在出错字符的偏移处抛出；由 `Program.compile` 在程序超过 `Program.maxOps` 时抛出；由 `Subsumption`（因而也由 `Motif#subsumes`、`Motif#intersects` 和 kaleidoscope 的 `Regex#subsumes`）对含有单词或行边界的模式、或者超出 `Subsumption.maxStates` 的探索抛出；还由 kaleidoscope 的 `Regex#re2` 抛出，它在为本引擎重新标记一个正则表达式时会解析它。
+
+% 2 1 0 11049fa13392726b0e0784976e02d970
+
+% 3 1 0 0db0405c83d6cc991f760a60b4bb428e
+
+% 0 1 0 0483013d33748f6811bc39a224aadaf7
+
+% 1 1 0 1214283a9bbc83d91470efafaaf610e9
+
+@ 0 1 0 05ab83ddbca06d870644534ed2a5ee20
++     entry .Reason   模式被拒绝的原因，取二十一个编号分支之一
+
+% 0 1 0 0f0c06beeb68e4ca19dd934fb64b22c4
+
+@ 0 2 0 04cfeb5096710fe11cba485d6ba3f0da
++           每个分支的 `number` 就是错误的子编号。
++           分支 11 到 16 是 RE2 省去的构造，17 到 19 是限制，其余是结构性错误：
+
+% 0 1 0 01eaeca5798d1a3b02d48ba44beec41c
+
+@ 0 4 0 04af6999f7a3c8f2148ac6a8f2bbcb05
++           column  分支
++           column  代码
++           column  消息
++           column  说明
+
+% 0 1 0 0dbd608b927438ed1052771639ddeb10
+
+@ 0 2 0 1ece6f28827fd0bd03a844d891e8a6b8
++           row  `NotInGroup`  2  _a closing parenthesis was found without a corresponding opening parenthesis_  多余的 `)`
++           row  `UnexpectedChar`  3  _an unexpected character was found_  位置不当的量词或格式错误的重复
+
+% 0 1 0 0c6b3bc1475dad3e0129c98fbfaa22e0
+
+% 0 1 0 04db4ba7ac9d7d9d1ad60e57cf750d90
+
+% 0 1 0 05e62773619e333f1af1c40e8fe4d7bf
+
+% 0 1 0 1e00e4df3df3b3a5198a2ff42ca7f983
+
+% 0 1 0 1c3016cd07456abe164ef5cec774022c
+
+@ 0 1 0 0afb260550bef2be10a9ab0c4d8084e1
++           row  `InvalidEscape`  9  _the escape sequence is not valid_  没有含义的转义字母，或错误的 `\x` 形式
+
+% 0 1 0 1bec5736c562a99d1d699955ae500a3f
+
+% 0 1 0 0661484c219229a8003f2583d887f94b
+
+% 0 1 0 1468ff2e860244300977343cfe963128
+
+% 0 1 0 054d95a8f533ca111b5c4e12b427c55d
+
+% 0 1 0 1129704098cf0bc611cd78d5dc49ef36
+
+@ 0 5 0 1d3195ef487ad50018c57c8733591885
++           row  `UnsupportedGroup`  15  _the group syntax is not supported_  后面不跟 `<` 的 `(?P`
++           row  `Flag`  16  _inline flags are not supported_  `i`、`m`、`s` 或 `U` 以外的标志字母
++           row  `RepetitionTooLarge`  17  _the number of repetitions exceeds the limit of 1000_  超过 `Motif.maxRepetition` 的次数，或超过 `Motif.Program.maxOps` 的程序
++           row  `BudgetExceeded`  18  _the analysis exceeded its computation budget_  超出 `Subsumption.maxStates` 的包含关系分析
++           row  `Unverifiable`  19  _the pattern contains constructs which the analysis cannot verify_  关于含有单词或行边界的模式的包含关系问题
+
+% 0 1 0 1861a6dfe59bf5f30ef06f4d0bdd08b0
+
+% 0 1 0 17acb28af431b1fa038f134c5fca3ffd
+
+% 0 1 0 1325124b3afc2ca70063c3f620bd5dcc
+
+@ 0 17 0 1ffc1aa9bfb784d1027f82f622ec5f6f
++       entry .communicable   把每个原因渲染为一条消息：_backreferences are not part of RE2 syntax_，……
++       entry #number   原因的编号，1 到 21，即其 `Motif.Error` 的子编号
++     entry #index   在模式中发现错误的偏移；分析失败时为 0
++     entry #reason   `Motif.Error.Reason`
++   entry #pattern   解析时的模式
++   entry #node   结构树，一个 `Motif.Node`；对在编译时分阶段执行的 motif 为 `Node.Empty`
++   entry #captures   捕获组的数量
++   entry #program   Pike 虚拟机运行的编译后的 `Program`
++   entry #matches   整个输入是否匹配
++       对整个输入的测试，两端都锚定：`Motif.parse(t"abc").matches(t"xabcx")` 为 false。
++       接受任何带有 `Symbolizer` 的输入；所提供的是 `Text`。
++       与输入成线性关系。
++   entry #seek   在 `start` 处或之后最左侧匹配的区间，或 `Unset`
++       最左优先：即回溯引擎会最先找到的那个匹配。
++       `start` 是一个 `Ordinal`，默认为 `Prim`，`Interval` 以 UTF-16 单元为单位、从零开始。
++       必须以某个字面量开头的模式，通过在该字面量的各次出现之间跳跃来查找（`Program#prefix`），必须以某类符号开头的模式则通过扫描这类符号来查找；可为空的模式在 `start` 处匹配空串。
+
+% 2 1 0 0d4544e0c0e06fa9130912721c0a2e19
+
+% 3 1 0 1dad5799a5d0f3b71eb34e9f4145bb28
+
+% 4 1 0 0d7bc01f85e229940320821c44594079
+
+% 0 1 0 0f700c0c300ab9890b0e98591ae5e899
+
+% 0 1 0 168d546d0780109a0647c8b9d6ec730e
+
+% 1 1 0 00f1ee6ea97f33641b8b3c95b6321a23
+
+@ 0 5 0 1210a9f201e2dfd21fd40c7cbb1cffc5
++   entry #search   在 `start` 处或之后的每个匹配，作为惰性构建的区间 `Chain`
++       每次查找都从上一个匹配的末尾继续，若该匹配为空则从末尾之后一位继续，因此 `a*` 在 `ab` 上得到区间 0–1、1–1 和 2–2。
++       kaleidoscope 在 `Regex in Re2` 上的 `Regex#search` 与此不同，它总是从每个匹配末尾之后一位继续，以便与 `java.util.regex` 一致。
+
+% 2 1 0 14f3e641ca2402240f96beaf7b6e4cca
+
+% 3 1 0 048403be1b8ccdb40e292b5359eafc25
+
+% 4 1 0 09b5af39d5f4e10a1cb84a72404a8c8b
+
+% 0 1 0 1ef322299d71a67408985454260f3fab
+
+% 0 1 0 17890b4b30f5961a10b42fa945c9845a
+
+% 1 1 0 0c8615a002720044169bcd1b2aeb9414
+
+@ 0 8 0 088d9de641ca59230a710ed9b6a921cb
++   entry #subsumes   此 motif 是否匹配另一个 motif 所匹配的每个输入，或一组 motif 共同匹配的每个输入
++       `motif.subsumes(that)` 判定 `L(that) ⊆ L(this)`；`motif.subsumes(those)` 判定 `L(⋂those) ⊆ L(this)`，即被一组 motif *全部*同时匹配的输入的包含关系，这是任何单个 RE2 模式都无法表达的（RE2 没有交运算符），而逐对检查会得出错误结论。
++       两者都是在编译后的程序上进行的 `Subsumption.subsumes`，对任一模式中的单词或行边界（`Unverifiable`）或耗尽预算的一对模式（`BudgetExceeded`）抛出 `Motif.Error`。
++       等价的模式互相包含，因此两次检查即可判定等价性。
+
+% 2 1 0 137c4a3486a1c0630c5c719ef0f8f437
+
+% 3 1 0 18c2914225019a440f5b20056dbd08f7
+
+% 4 1 0 0204d68a603630f00f7dfaf53bd5e53f
+
+% 0 1 0 00bde870845fdb5e0a3290d7ef9f8ebd
+
+% 0 1 0 0e11b8ab513adf0c1b52e65f7e1daf76
+
+% 0 1 0 142642c374ee9635089915b9d5399804
+
+% 0 1 0 1d37c0486d2b0e2316f287193e1cd396
+
+% 0 1 0 1568f680644b4b9a19a49305e1f53fc9
+
+% 0 1 0 1d9ef17f845f09e80dd2e3f42d3cd2b7
+
+% 1 1 0 1b95c51dfd6ba8931f4180154bac3fec
+
+@ 0 4 0 1708a28c47b05feb0a1104912386b50a
++   entry #intersects   是否有某个输入同时匹配此 motif 和另一个 motif
++       在两个程序上进行的 `Subsumption.intersects`：与 `#subsumes` 不同，这是一个多项式时间的可达性问题。
++       两个可为空的模式在空输入上相交。
++       对任一模式中的单词或行边界抛出 `Motif.Error`。
+
+% 2 1 0 06cf3d650b6f01c6181bf950491ad8bd
+
+% 3 1 0 1d8ddbb1e44133920bc154eaeab364e2
+
+% 4 1 0 1dcde43e6d8161b610f89fc46154887e
+
+% 0 1 0 0d3d9151e64b0a70022671434fad695b
+
+% 0 1 0 0672453af2523de00db40f08368a5f41
+
+% 1 1 0 1ecccf02ee621dc417aaa85c83d8ea61
+
+@ 0 4 0 1f82eb2a8c03b8c208a0dbed9c0b68ea
++   entry #groups   在整个输入匹配时每个捕获组匹配了什么，按组的顺序
++       `Optional[List[Optional[Interval]]]`：输入不匹配时为 `Unset`，列表中没有参与任何一次迭代的组为 `Unset`。
++       重复的组记录其最后一次迭代；贪婪组尽可能多地捕获，勉强组尽可能少地捕获。
+
+% 2 1 0 1c52d24b97392fbb0fdb39badd3974b1
+
+% 3 1 0 0ec68399e22b4de50b81b0cf82353e23
+
+% 4 1 0 0aa264f9c719c9c205e04cff3789e074
+
+% 0 1 0 11fa89adc119d4b613240df335cceab1
+
+% 0 1 0 01df58a78f05353d033f6fa7f109d7d8
+
+% 1 1 0 1944e17512f90cf21485a4d0cae33d2c
+
+@ 0 9 0 138a991615504caa0fef40da64bb3e3e
++   entry #spans   与 `#groups` 相同，但整个匹配位于下标 0，并可选择从 `start` 起不锚定
++       `anchored` 为 true（默认）时，整个输入必须匹配；为 false 时，报告从 `start` 起最左侧的匹配，与 `#seek` 找到的一致。
++   entry #slots   匹配的原始捕获槽位数组：组 `n` 的边界位于 `2n` 和 `2n + 1`
++       获胜线程的槽位，作为一个 `Array[Int]`，整个匹配位于 0 和 1，没有线程到达的槽位为 `-1`；没有匹配时为 `Unset`。
++       它与 `#spans` 并存，是因为 `Interval` 无法记录空匹配的*位置*，而逐个处理重复匹配的调用者需要这个位置。
++       `anchored` 为 false 时，从 `start` 开始查找，而不要求整个输入匹配。
+
+@ 0 1 0 0e96103ccb380d5202e533618c6f9478
++   entry .Program   编译为扁平指令数组的模式，供 Pike 虚拟机和包含关系分析使用
+
+% 1 1 0 1621b2c671ca647507cc709bf33bdf7c
+
+@ 0 6 0 16214606bb41027c10ee8a3f86765107
++         `Program` 是模式的 `#ops`，即一个 `Program.Op` 数组，捕获组 `n` 把它的边界记录在槽位 `2n` 和 `2n + 1` 中，整个匹配记录在槽位 0 和 1 中，因此 `#slots` 是 `2 × (captures + 1)`。
++         `.compile` 从 `Motif.Node` 构建一个程序，`Motif#program` 持有它；`Pike.run` 执行它，`Subsumption` 分析它。
++         惰性计算的 `#nullable`、`#firstBounds` 和 `#prefix` 让不锚定的查找能够跳过不可能开始匹配的位置。
+
+% 1 1 0 11a36b717fcf0dea10ef716e6d325fbb
+
+% 0 1 0 08c5b9c39794f37d0d37aa799129316a
+
+@ 0 30 0 1b2ad6c35958e53814c63748ebdcf29b
++     entry .compile   把节点树编译为程序，若程序超过 `.maxOps` 则抛出 `Motif.Error`
++         每个字面量或类发出一个 `Symbol` 操作，选择和重复发出 `Split`（优先分支在前，贪婪与勉强就是这样编码的），循环发出 `Jump`，捕获组前后发出 `Save`，锚点发出 `Test`，最后发出一个 `Accept`。
++         有界重复 `{n,m}` 会被展开，因此嵌套的有界重复会按几何级数增长；超过 `maxOps` 个操作时，编译会抛出 `Motif.Error.Reason.RepetitionTooLarge`。
++     entry .maxOps   程序长度的上限：100000 个操作
++     entry .Op   一条指令：`Symbol`、`Split`、`Jump`、`Save`、`Test` 或 `Accept`
++         `Symbol(bounds, next)` 消耗一个落在交错的 `lo, hi, lo, hi, …` 边界内的符号（这是为无分配扫描而展平的 `Ranges`），并在 `next` 处继续；`Split(preferred, alternate)` 派生出一个线程，优先第一个；`Jump(target)` 在别处继续；`Save(slot, next)` 把当前位置记录到一个捕获槽位中；`Test(anchor, next)` 只在 `Motif.Node.Anchor` 成立的地方通过；`Accept` 结束一次匹配。
++         只有 `Symbol` 消耗输入；其余指令在虚拟机的 ε 闭包中无代价地跟随。
++     entry #ops   指令，按程序计数器索引
++     entry #slots   捕获槽位的数量：每个组两个，另加两个用于整个匹配
++     entry #captures   捕获组的数量
++     entry #entry   开始执行的程序计数器：0
++     entry #nullable   匹配是否可以不消耗任何内容；若是，查找时不能跳过任何位置
++     entry #firstBounds   匹配可以由之开始的每个符号的交错边界，已合并
++         没有符号可以开始匹配时为空。
++         对没有字面量前缀的模式进行不锚定查找时，会先扫描落在这些边界内的符号，再启动线程。
++     entry #prefix   每个匹配都必须以之开头的最长字面量，或空文本
++         上限为 32 个 UTF-16 单元，当第一个消耗输入的操作不是单个唯一符号时为空。
++         不锚定的查找用 `Symbolizer#find` 在它的各次出现之间跳跃（对 `Text` 来说就是 `String.indexOf`），而不是逐个位置前进。
++   entry .Ranges   作为有序、不相交的码点段的符号集合：每个字符类所采用的形式
+
+% 1 1 0 0b10706c7b9020781eb9f8df68edd836
+
+@ 0 6 0 18ba5e8e65e80c610796c2a9ca8ae1bd
++         `Ranges` 把它的 `#spans` 保存为包含端点的交错边界列表 `lo :: hi :: lo :: hi :: …`，有序、不相交且从不相邻，因此两个集合相等当且仅当它们的段相等。
++         构造器是私有的；`.apply`、`.point`、`.empty` 和各个命名的类构建规范化的集合，而 `#union`、`#negate`、`#intersect` 和 `#folded` 保持这一不变式。
++         符号是一个有序字母表中以 `Int` 编码的成员，目前是不超过 `.maxSymbol` 的 Unicode 码点。
+
+% 2 1 0 098db9929ceac719015cc7e79c477e85
+
+% 3 1 0 034a68e9e85023190e13839279ae0e5f
+
+% 0 1 0 16664aac82dbcac41fb8be1ecfa86284
+
+% 0 1 0 0b477e35de0aa03c04d6713accc85ec1
+
+% 0 1 0 060a4cbea73abc71086f0e579c4d03e0
+
+% 0 1 0 1a2aadf9b2f82cb51f0ee7ae1b9fa6b1
+
+% 0 1 0 11ccd510f51dec37174dd15c05206f88
+
+% 0 1 0 12ff04ca2fb232e21e2f3561bd64cab0
+
+% 1 1 0 018ba37588e1c941164874dc04749887
+
+@ 0 2 0 1193a59fa51825141b8e9194c6a6e249
++         解析器把每种类的形式都解析为 `Ranges`，因此 `Motif.parse(t"[a-cd-f]").node` 是 `Klass(Ranges('a', 'f'))`，相邻的段已被合并。
+
+% 1 1 0 0e1fa9c91bbb895f018f5823215afc8c
+
+@ 0 38 0 1363baab91141ece0e59dd77c82b70d6
++     entry .maxSymbol   Unicode 码点域中最大的符号：`0x10ffff`
++         `#negate` 求补集时所对照的上界。
++         任何其他符号域都更小，因此它是一个安全的通用上界。
++     entry .empty   没有符号的集合
++     entry .apply   `Ranges(lo, hi)`：从 `lo` 到 `hi` 的包含端点的段
++     entry .point   `Ranges.point(symbol)`：只含一个符号的集合
++     entry .digit   `\d`：ASCII 数字 `0`–`9`
++         RE2 的 perl 类只限于 ASCII，`.word` 和 `.space` 也是如此。
++     entry .word   `\w`：ASCII 字母、数字和 `_`
++     entry .space   `\s`：制表符、换行符、垂直制表符、换页符、回车符和空格
++     entry .any   `.`：除换行符外的每个码点
++         在 `s` 标志下，`.` 改为 `.anySymbol`。
++     entry .anySymbol   每个码点：`\p{Any}`，以及 `s` 标志下的 `.`
++     entry .where   谓词所接纳的每个符号，作为合并后的段
++         扫描整个码点域一次，Unicode 类正是这样在不另存一份 Unicode 数据库的情况下做到精确的：由 JDK 自己的 `Character` 表回答谓词。
++         每个不同的类扫描一遍，`.unicode` 会对其进行缓存。
++     entry .posix   `[[:name:]]` 的 POSIX 类，按名称索引，全部只限于 ASCII
++         `alnum`、`alpha`、`ascii`、`blank`、`cntrl`、`digit`、`graph`、`lower`、`print`、`punct`、`space`、`upper`、`word` 和 `xdigit`，作为一个 `Map[String, Ranges]`；不在其中的名称在解析时是 `Motif.Error.Reason.InvalidPosixClass`。
++     entry .unicode   按 `\p{…}` 所用名称给出的 Unicode 通用类别或文字，或 `Unset`
++         `Any` 是整个域；`Lu` 或 `Nd` 这样的两字母类别被精确匹配；`L` 这样的单字母组是其子类别的并集，与 RE2 的定义一致；其他任何名称都被当作文字来尝试，如 `Greek` 或 `Han`。
++         结果会被缓存，因为每个类都要扫描整个域一遍。
++         未知的名称在解析时是 `Motif.Error.Reason.UnknownUnicodeClass`。
++     entry #spans   交错的包含端点的边界，`lo :: hi :: lo :: hi :: …`
++     entry #vacant   集合是否为空
++     entry #contains   某个符号是否在集合中
++     entry #union   属于任一集合的符号，已合并
++     entry #negate   不在集合中的符号，直到 `max`（默认为 `Ranges.maxSymbol`）
++     entry #intersect   同时属于两个集合的符号
++     entry #folded   集合在简单大小写折叠下的闭包，按 `i` 标志的定义
++         折叠轨道并不总是一对——`K`、`k` 和开尔文符号折叠在一起——因此闭包是按轨道计算的，而不是把每个符号上下映射。
++         只检查随大小写变化的码点，因此代价与它们的数量成正比，而不是与集合的大小成正比。
+
+@ 0 1 0 1708042325488d8d0956d3aaee6e24f1
++ entry .Pike   在线性时间内对输入运行 `Program` 的虚拟机
+
+% 1 1 0 02f813c8c5a1f44206eaedcb0411da52
+
+@ 0 7 0 10af1e65c95fda2419a91589490fcd63
++       Pike 虚拟机以广度优先的方式模拟自动机：在每个输入位置，它持有一个按优先级排序的线程列表，每个程序计数器一个线程，让每个线程一次性越过该符号，并且从不回溯。
++       每个程序计数器至多加入某个位置的线程列表一次，因此无论模式如何，一次运行的代价至多是输入长度乘以程序长度，这正是整个库赖以成立的保证。
++       线程顺序就是优先顺序，因此第一个接受的线程，就是回溯引擎会最先找到的那个匹配，捕获边界也相同。
+
+% 1 1 0 1599e6c900928d0f033abaa1a547e3c4
+
+% 1 1 0 07fc889f22c4dee617b8d635fed7bb23
+
+@ 0 8 0 1c5a3496d2b8be260a135ee4542ea078
++   entry .run   从某个 UTF-16 偏移开始运行程序，返回获胜线程的捕获槽位或 `Unset`
++       `Pike.run(program, input, start, anchoredStart, anchoredEnd)`，适用于任何带有 `Symbolizer` 的输入。
++       `anchoredStart` 为 false 时，在找到匹配之前，每个位置都会加入一个新的最低优先级线程——即最左优先的 `seek` 语义——而不可能开始匹配的位置会借助 `Motif.Program#prefix` 或 `Motif.Program#firstBounds` 跳过；`anchoredEnd` 为 true 时，匹配必须到达输入的末尾。
++       槽位是一个 `Array[Int]`，没有线程保存过位置的地方为 `-1`。
++       `Motif#matches`、`#seek`、`#search` 和 `#slots` 是通常的调用者。
+
+@ 0 1 0 12ace39a58a502f114e06e6d88842444
++ entry .Subsumption   判定编译后程序的语言之间的包含与相交
+
+% 1 1 0 05e2fca2c0db1577027411265afe0d3f
+
+@ 0 8 0 1b2603b19ecce2301c8db2b1661c984e
++       这是回溯引擎无法回答的两个问题，在这里之所以可判定，是因为 RE2 模式是正则语言：`.subsumes`，即一个程序匹配的每个输入另一个程序是否也都匹配（最坏情况下是指数级的：覆盖程序是即时确定化的，因此探索受 `.maxStates` 的预算限制），以及 `.intersects`，即是否有某个输入同时匹配两者（多项式时间）。
++       `Motif#subsumes`、`Motif#intersects` 以及 kaleidoscope 的 `Regex#subsumes` 和 `Regex#intersects` 是提出这些问题的通常途径。
++       单词和行边界依赖于上下文，而这些分析不对此建模，因此含有其中之一的程序会抛出 `Motif.Error.Reason.Unverifiable`。
+
+% 1 1 0 0f5a471778a43182172894f29cb3d647
+
+% 1 1 0 111002e0e861d1011d9ca12132e04e30
+
+@ 0 12 0 04826fadd4692fa803fc43980c380272
++   entry .maxStates   探索状态的预算：100000，超过后 `.subsumes` 抛出 `BudgetExceeded`
++   entry .subsumes   被一个程序（或被一组程序全部）匹配的每个输入，是否都被覆盖程序匹配
++       `Subsumption.subsumes(first, second)` 判定 `L(second) ⊆ L(first)`；`Subsumption.subsumes(cover, candidates)` 判定 `L(⋂candidates) ⊆ L(cover)`：在覆盖程序被确定化的同时，逐个程序计数器地探索每个候选程序，若在某个可达状态上每个候选程序都接受而覆盖程序不接受，包含关系就不成立。
++       空的候选列表回答 `false`，即以失败告终，而不是去判定覆盖程序是否匹配一切。
++       对 `Unverifiable` 或 `BudgetExceeded` 抛出 `Motif.Error`。
++   entry .intersects   是否有某个输入同时被两个程序匹配
++       在两个自动机的乘积中，判定两者都接受的某个点是否可达。
++       对 `Unverifiable` 或 `BudgetExceeded` 抛出 `Motif.Error`。
+
+@ 0 1 0 192e139c74be97fd1f927693a1ba9451
++ entry .Symbolizer   如何把输入读作一系列以 `Int` 编码的符号，使程序能够在其上运行
+
+% 1 1 0 131863d3c37729fe00d5cd7e29b8e6bd
+
+@ 0 7 0 0bd06c363ce6f1760c64da8ef6d8476f
++       一个类型类 `input is Symbolizer`，它把输入解码为 `Motif.Program` 所消耗的符号：它的 `#length`、某个 UTF-16 偏移处的 `#symbol`、`#next` 符号的偏移、某个偏移之前的符号 `#before`、某个符号是否为 `#word` 字符，以及 `#find`，它为加速查找而定位字面量。
++       程序表示不依赖于输入的任何其他方面，因此可以在不改变 `Motif.Program` 或 `Pike` 的情况下，添加一个用于流式或原生匹配的 UTF-8 字节域。
++       `.text` 是所提供的唯一实例，作用于作为 Unicode 码点的 `Text`，位于隐式作用域中。
+
+% 0 1 0 06a3482c0d7db7ec0577c7feb5e48d30
+
+@ 0 10 0 0593113c319c728607deda3f77374088
++   entry .text   `Text is Symbolizer`：UTF-16 文本上的 Unicode 码点
++       使用 `codePointAt` 和 `codePointBefore`，因此一个星际平面字符是一个符号；`find` 是 `String.indexOf`，JVM 会把它内建为向量化扫描。
++   entry #Self   输入类型
++   entry #length   以偏移计的输入长度
++   entry #symbol   某个偏移处的符号
++   entry #next   某个偏移处符号之后的偏移
++   entry #before   在某个偏移处结束的符号
++   entry #word   某个符号是否为单词字符（`\w`，ASCII），用于 `\b` 和 `\B`
++   entry #find   字面量在 `from` 处或之后第一次出现的偏移，若没有则为负数
+
+@ 0 1 0 0f3fdf6dcf0abbf10bd64ecbcb60cfa5
++ entry .Fsa   在代码编译时生成的整输入匹配器：针对单个模式的静态自动机
+
+% 1 1 0 005bdaba259950b80c8d635ead3151b1
+
+@ 0 8 0 1400f26c67fbf1db0367d5cbccf294d7
++       `Fsa` 包装一个从 `Text` 到 `Boolean` 的 `#test`，它由子集构造为 `regexBackends.re2` 下没有捕获的 `r"…"` 字面量生成：一张基于模式符号类的稠密转移表，由一个既不回溯也不跟踪线程的无分配循环驱动。
++       它是一个具名的持有者而不是裸函数类型，这样进行捕获检查的使用者就能把它带过引用代码。
++       对含有单词或行边界的模式，或自动机超过 512 个状态的模式，生成器会放弃——该字面量随即回退到它分阶段执行得到的 `Motif.Program`。
++       程序不会手工构建 `Fsa`。
+
+% 0 1 0 0490c245d46a921d14849afbd7cd88dd
+
+@ 0 5 0 10c1ed0ec104f8e0197a691349c7b18b
++   entry .of   某个模式的匹配器，至多构建一次
++       `Fsa.of(key)(fsa)`：`fsa` 是传名参数，只在第一次见到 `key`（模式的字符串字面量）时求值，因为每次匹配都会构造提取器。
++   entry #test   生成的整输入测试
++   entry #matches   整个文本是否匹配
+
+@ 0 1 0 0d6d73a683c4f693102942fde59bcb8b
++ entry .internal   把 motif 和程序分阶段执行到编译后的代码中，以及静态匹配器生成器
+
+% 0 1 0 1c18810b564d59e609a88422cf8dd919
+
+% 1 1 0 0f71597c1b0bc6cb112bae74ffdfb433
+
+@ 0 4 0 0fb0b651419061f914bed7b56968a78d
++       不供直接使用：让 kaleidoscope 的 `r"…"` 宏把 `Motif`（作为 `Motif.staged` 调用）、`Motif.Program`、每个 `Motif.Program.Op` 和每个 `Motif.Node.Anchor` 拼接到它所发出的提取器中的 `ToExpr` given，以及 `matcher`，它通过子集构造把程序编译为没有捕获的字面量所使用的 `Fsa`。
+
+% 0 1 0 089aac5872cfd9120426d9f1d9567cd2
+
+% 0 1 0 16825a90dfe47cf40aa0c1f291873d09
+
+@ 0 7 0 1b6defa793eba4d90831ffb63f71ab12
++   entry .program   `ToExpr[Program]`：作为数组字面量的操作
++   entry .motif   `ToExpr[Motif]`：一个 `Motif.staged(pattern, captures, program)` 调用，按模式缓存
++   entry .maxStates   生成的自动机的上限：512 个状态，超过后 `.matcher` 放弃
++   entry .matcher   为程序生成一个 `Fsa` 表达式，或 `Unset`
++       子集构造为一张基于字母表等价类的稠密表，ASCII 使用直接索引的类映射，更高的码点使用二分查找；对含有单词或行边界的程序，或状态数超过 `.maxStates` 的程序，为 `Unset`。

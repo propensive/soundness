@@ -1,0 +1,148 @@
+orthant 2 language
+
+@ 0 1 0 1697104509eaad480ac7b84102fc11d4
++ entry .Terrain   字节位于内存中并就地读取的 `Expanse`：内存映射文件，或堆上的字节
+
+% 1 1 0 1d2d43abbc556280043457e64eb6d264
+
+@ 0 13 0 110b3ddc217ac7a50f82398a9c83af58
++       整数可以在任意偏移量处以小端序加载，无需复制；`slice` 是同一块内存的较窄视图。
++       地形属于某个作用域（文件在一个代码块的期间内被映射），因此它以被跟踪的 `Terrain^` 形式借出，不会从已不再映射的内存中加载任何内容。
++       `Terrain(data)` 是覆盖已在堆上的字节的地形。
++   entry #u8   某个偏移量处的无符号字节，作为 `Int`
++   entry #u16   某个偏移量处的无符号 16 位整数，作为 `Int`
++   entry #u32   某个偏移量处的无符号 32 位整数，作为 `Long`
++   entry #u64   某个偏移量处的 64 位整数，作为 `Long`
++   entry #i32   某个偏移量处的 32 位，作为有符号 `Int`
++   entry #slice   内存一部分的视图，共享该内存及其生命周期
++   entry #same   某个偏移量处的字节是否与某个 `Data` 的字节相同，就地比较
++   entry #compare   某些字节相对于某个 `Data` 的顺序，就地比较，真前缀排在前面
+
+@ 0 1 0 07161a9b0652a0aa1a17db213819117e
++ entry .Structural   字节布局固定的类型的类型类：由定宽整数组成的记录，由 `unpack` 读取、由 `pack` 写入
+
+% 1 1 0 1dbdb63afee1f932156ed79702a8c661
+
+@ 0 6 0 128e315dd90f3568120e87157c8b8686
++       字段均为定宽整数（`B32`、`U16`、`S64`……，或普通的 `Byte`、`Short`、`Int` 和 `Long`）的 case class *就是*一种二进制布局：每个字段的类型说明了它的宽度和解释方式，`Structural.derived` 按声明顺序将它们组合起来，在声明布局的地方计算出每个偏移量。
++       字段内字节的顺序属于格式本身，因此派生处的作用域中必须有某个 `byteOrders` given，并在那里固定下来。
+
+% 2 1 0 1028348aece70ff31c7aaeed6837ca1c
+
+% 3 1 0 1896b8c0fd7e20bf1ab326a30c99f925
+
+% 1 1 0 08179c3df5912f8c1f58536a294a48ae
+
+% 0 1 0 145c2a0e5b655f4a01551ae66745ea11
+
+% 0 1 0 168466ec95ae64f612bc885cb2b2841d
+
+% 0 1 0 093c6418b1f1700a18f1408c98a066b3
+
+% 0 1 0 0615a36d4f727fca02926d57d58112ad
+
+% 0 1 0 189ffa41490178111b536fb9e978357e
+
+% 0 1 0 0d039d9fc0a074461f06c4c8881b3917
+
+% 0 1 0 0623aad5d5ab330b14edbda2daf2aa25
+
+% 0 1 0 1ddb200b0bd0fd091d26a860a273ba8d
+
+% 1 1 0 0d40c4a93de9c323126dc8a441ea820a
+
+@ 0 5 0 15c8c758d092fc251614546e2bfce78a
++       派生展开为每个字段在其偏移量处的一次加载（以及一次存储），因此读取一条记录只需一次边界检查，加上与字段数量相同的加载次数。
++       其他任何类型的字段都需要自己的 `Structural` 实例：记录就是这样嵌套的，每条记录保留其声明时的字节序；字段也是这样获得定宽整数所不提供的表示形式的。
+
+@ 0 2 0 13110f9cb023a7e71678dba20250a369
++       它位于组件 `zephyrine.layout` 中，该组件为定宽整数增加了对 hypotenuse 的依赖，并可在所有平台上编译。
+
+% 0 1 0 1ccfba1656f9ccc70c9054f4bd681ef1
+
+% 0 1 0 058d7a75c2bb1d1903db18c18ef15834
+
+% 0 1 0 1ef84f397a13cf410f01323e64924852
+
+@ 0 8 0 0401c90956d974790c8c8732f11cdb5a
++   entry .derived   case class 的布局，采用作用域中的字节序；没有字节序，或某个字段没有固定布局时，它不能编译
++   entry .width   某类型的值占用的字节数，无需手头有值
++   entry .Error   在某个偏移量处请求一条记录，但那里没有其完整宽度
++       携带 `offset`、记录的 `width`，以及数据或区域的 `size`。
++       `↯/s.60.3`。
++   entry #width   该布局占用的字节数
++   entry #load   某个偏移量处布局的值，不做检查：`unpack` 是做检查的入口
++   entry #store   在字节数组的某个偏移量处布局一个值，不做检查：`pack` 是做检查的入口
+
+@ 0 5 0 073bbbd5db87b69d1bc422484fb59138
++ entry .unpack   在某个偏移量处从 `Data` 或 `Expanse` 读取一条固定布局的记录
++     `data.unpack[T](offset)` 一次性检查整条记录是否都在，不在则抛出 `Structural.Error`，然后加载它。
++     `data.unpack[T](offset, count)` 将由 `count` 条记录组成的重复段读取为数组。
++     在 `Expanse`（如映射内存的 `Terrain`）上，偏移量是 `Long`，并且只读取记录自身的字节。
+
+@ 0 1 0 1a8068e940a69be61d8478647b738c6b
++ entry .pack   固定布局值的字节：其数量恰好等于布局的宽度
+
+@ 0 3 0 08bb951cb83163ed1539cbb483ceb5f2
++ entry .ByteOrder   多字节字段中字节的顺序：`BigEndian` 或 `LittleEndian`
++     在声明布局处由 `Structural.derived` 通过从 `byteOrders` 导入的 given 查询。
+
+@ 0 3 0 06b7ea3d72d532bf1160db93d95677f1
++ entry .byteOrders   各种字节序，每种都是在派生布局处按名称导入的 given
++   entry .bigEndianByteOrder   最高有效字节在前，网络格式和字体文件采用这种顺序
++   entry .littleEndianByteOrder   最低有效字节在前
+
+@ 0 1 0 0833390a9f3ea0de00a05e7c4ef60e79
++ entry .layoutInternal   `Structural.derived` 背后的宏，以及它展开成的存储操作
+
+% 1 1 0 0f148338f1aac85318242f2f9b2fe261
+
+@ 0 1 0 1c20bcc328e8566b052a425d501b2b14
++ entry .Holding   可以就地修改的 `Terrain`：在偏移量处存储，并可扩大
+
+% 1 1 0 05f75a5b3e3bdc5b121c3e8a020f114f
+
+@ 0 14 0 1fc606f03c17fca60f8681cc5ca8bb55
++       就地保存和修改的格式就是通过它修改的：由拥有它的唯一进程为写入而映射的文件（galilei 的 `hold`），或堆上的字节（`Holding(size)`、`Holding(data)`）。
++       每次存储都在某个偏移量处进行，并且不会交出指向其内存的地址，因为 `expand` 可能会移动它；`slice` 通过其来源的 holding 读取，在扩大之后依然有效。
++   entry #set8   在某个偏移量处存储一个字节
++   entry #set16   在某个偏移量处以小端序存储一个 16 位整数
++   entry #set32   在某个偏移量处以小端序存储一个 32 位整数
++   entry #set64   在某个偏移量处以小端序存储一个 64 位整数
++   entry #write   从某个偏移量开始存储某个 `Data` 的字节
++   entry #zero   在一个范围上存储零字节
++   entry #move   将一个范围复制到另一个偏移量，两者可以重叠
++   entry #expand   使该 holding 至少达到给定大小，新字节为零；它从不缩小
++   entry #flush   在有文件可供持久化时，使已存储的内容持久化
+
+@ 0 1 0 0d8f4cf87083945e1a83c5e80dcf998d
++ entry .Viewable   其字节可以在一个代码块的期间内作为 `Terrain` 借出的值的类型类
+
+% 1 1 0 02d61088aef9e5921be1c93bfc7a44dd
+
+@ 0 8 0 0bef3200f1a8e8871cba9f72bec143a9
++       路径是 `Viewable` 的，其文件在该代码块期间被映射；已在堆上的镜像和已在手头的地形也是。
++       就地读取的格式可以同样从其中任何一种打开。
++   entry #view   将该值的字节作为 `Terrain` 借出
++   entry #hold   将该值的字节作为 `Holding` 借出以供修改，如果不能修改则以 `otherwise` 作答
++       文件在排他锁下为写入而映射，手头的 holding 按原样借出；不可变的字节，就像任何没有另行声明的东西一样，以 `otherwise` 作答。
+
+@ 0 1 0 1d63dd87fd4f5677117bdc5b51b32bce
++ entry .Surveyable   从其字节视图就地读取的形式的类型类：`Form is Surveyable by Flag to Handle`
+
+% 1 1 0 145174b3209a5d680323fbd5ec8e1ae5
+
+@ 0 4 0 16f068234f5f4b8b18a0176f5834c305
++       它是针对形式的实例，而不是针对借出视图者的实例；正因如此，本身就是能力的借出者（某个已发布名称的 `Observer`）才能把视图作为形式打开。
++   entry #survey   以给定标志将视图作为该形式打开，并在一个代码块的期间内以上下文方式提供句柄
+
+@ 0 8 0 17dc62c86d3ce90c1f9827154fa5f3ca
++       `Stream` 只能读取一次；`Spring[medium]` 可以被拉取任意多次，每次 `apply()` 都给出一个覆盖相同内容的新流。
++       它是一个特质而不是函数类型，因为 lambda 不能把一个新的作用域能力作为结果创建出来，而方法的结果会在每个调用点重新定级；又由于 `apply` 接受一个 `Tactic[Truncation.Error]`（拉取是报告来源被截断的地方），lambda 不能转换为它。
++       `Spring(expression)` 创建一个在每次 `apply()` 时重新求值该表达式的 spring；在仅凭期望类型无法确定类型参数时，要给出类型参数，如 `Spring[Data](…)`。
++       匿名类也可以。
+
+% 0 1 0 01b8dfabb485bf69089d4d5c0df0dc55
+
+@ 0 1 0 01b50f4322e8d8860d8e2d8aaf23d35c
++   entry .apply   `Spring(expression)`：每次拉取都重新求值该表达式以得到新流的 spring

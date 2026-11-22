@@ -1,0 +1,113 @@
+orthant 2 language
+
+@ 0 6 0 18bde842eaafb6c2030a76a358be455a
++     除排序相关的类型外，一切都导出到 `soundness` 总括包，五个选择包（`charsets`、`codepages`、`textSanitizers`、`textMetrics` 和 `communication`）与总括包中同名的包合并。
++     由于 `import soundness.*` 不导入任何 given，程序要指明它想要的编码、清理器和度量：`import codepages.utf8Codepage`、`import textSanitizers.strictSanitizer`、`import textMetrics.uniformMetric`。
+
+@ 0 24 0 042551b43aa4a8ed0c7cfbd51e672c4a
++         _The byte sequence at position `position` could not be decoded with the encoding `encoding`_。
++         由 `textSanitizers.strictSanitizer` 在第一个无法解码的序列处，以及由 `textSanitizers.accrueSanitizer` 在每一个这样的序列处（它会继续解码），通过 `Tactic[Charset.Error]` 抛出。
++         位置是输入中的字节偏移量，解码流时跨数据块计数；在输入末尾仍不完整的序列在输入的长度处报告。
++         跳过式和替换式清理器从不抛出它。
++     entry #position   无法解码的序列的字节偏移量
++     entry #encoding   无法解码它的编码
++   entry #encoding   此 charset 解码所用的编码
++   entry #sanitizer   在每个无法解码的字节序列处咨询的清理器
++       创建 charset 时作用域中的 `TextSanitizer`。
++       `charsets` 中的 given 从使用处获取它，因此同一个 `charsets.utf8Charset` 可以在一个块中是严格的，在另一个块中是宽容的，取决于那里导入了哪个清理器。
++   entry #Self   此 charset 产出的类型：`Text`
++   entry #Form   此 charset 消费的类型：`Data`
++   entry #decoded   一组字节的文本，或由字节流得到的文本流
++       `decoded(bytes)` 把整个 `Data` 解码为一个 `Text`。
++       `decoded(stream)` 接受 `Chain[Data]` 并给出 `Chain[Text]`，在每批缓冲数据到达时解码，并把不完整的多字节序列带到下一个数据块，因此输入如何分块永远不影响文本；空数据块会从输出中删去。
++       二者都在每个错误处咨询 `#sanitizer`，因此在 `strictSanitizer` 或 `accrueSanitizer` 下可能通过其战术抛出 `Charset.Error`。
++       双参数重载 `decoded(bytes, omit)` 与 `decoded(bytes)` 相同。
+
+@ 0 6 0 027a366880bc28e70fdf77d69d3c289f
++       编码无法表示的字符默认会被替换（用编码的替代字符，ASCII 为 `?`）。
++       在 `encodingSanitizers.strictEncodingSanitizer` 下，它改为抛出 `Codepage.Error`；由召唤 codepage 处作用域中的 `EncodingSanitizer` 决定。
++       编码流是增量的，并通过缓冲区暂存字符，因此跨两个数据块分开的代理对会被编码为一个星界字符，而逐块单独编码则会损坏它。
+
+@ 0 20 0 0ccaf61ff7ef5bc905e5ba9b37da6bdb
++         错误 `↯/s.35.1`：_character `char` cannot be encoded with the encoding `encoding`_。
++         超出编码字符集范围的字符的错误类型。
++         `Codepage#encoded` 在 `encodingSanitizers.strictEncodingSanitizer` 下抛出它；默认情况下，无法映射的字符会被替换，就像 `String#getBytes` 那样。
++     entry #char   无法编码的字符
++     entry #encoding   无法编码它的编码
++   entry #encoding   此 codepage 编码所用的编码，已知能够编码
++       类型为 `Encoding { type CanEncode = true }`。
++   entry #sanitizer   在每个无法编码的字符处咨询的 `EncodingSanitizer`
++   entry #sanitized   同一个 codepage，但使用另一个 `EncodingSanitizer`
++   entry #Self   此 codepage 消费的类型：`Text`
++   entry #Form   此 codepage 产出的类型：`Data`
++   entry #encoded   一段文本的字节，或由文本流得到的字节流
++       `encoded(text)` 通过使用已解析 charset 的 `String#getBytes`，把整个 `Text` 编码为一个 `Data`。
++       `encoded(stream)` 接受 `Chain[Text]` 并给出 `Chain[Data]`，逐批缓冲数据地编码：两半落在不同数据块中的代理对会被带过去并整体编码，有状态的编码在末尾刷新一次，空数据块会从输出中删去。
++       格式错误或无法映射的输入会被替换，或报告给该 codepage 的 `EncodingSanitizer`，严格的清理器会将其作为 `Codepage.Error` 抛出。
+
+@ 0 5 0 138fc8d8625833211edf37a0e1c0bbaf
++       字节按哪种编码读取，由作用域中的 `Charset` given 决定，而这一选择从不是隐式的：`import soundness.*` 不引入其中任何一个，要按名导入一个。
++       每个 given 都在使用处解析作用域中的 `TextSanitizer`，因此同一个 `utf8Charset` 在导入了 `strictSanitizer` 的地方是严格的，在导入了 `skipSanitizer` 的地方是宽容的。
+
+@ 0 9 0 1dda4ae744c35904149839a2db4da54c
++   entry .utf8Charset   UTF-8，使用作用域中的清理器
++   entry .utf16Charset   UTF-16，读取字节顺序标记，默认为大端序，使用作用域中的清理器
++   entry .utf16LeCharset   UTF-16 小端序，使用作用域中的清理器
++   entry .utf16BeCharset   UTF-16 大端序，使用作用域中的清理器
++   entry .asciiCharset   US-ASCII，使用作用域中的清理器
++       任何高于 `0x7f` 的字节都是错误，按清理器的规定处理。
++   entry .iso88591Charset   ISO-8859-1（Latin-1），使用作用域中的清理器
++       每个字节都是有效的 Latin-1 字符，因此从不咨询清理器，但与其他 charset 一样，作用域中必须有一个清理器。
+
+@ 0 5 0 0c97b3626f1d4e1c1543be1670b76195
++   entry .utf16Codepage   UTF-16，以大端序写出，带字节顺序标记
++   entry .utf16LeCodepage   UTF-16 小端序，不带字节顺序标记
++   entry .utf16BeCodepage   UTF-16 大端序，不带字节顺序标记
++   entry .asciiCodepage   US-ASCII；高于 `0x7f` 的字符写为 `?`
++   entry .iso88591Codepage   ISO-8859-1（Latin-1）；高于 `0xff` 的字符写为 `?`
+
+@ 0 1 0 1bc692221253160f18d8f7ecab39c967
++ entry .encodingSanitizers   处理无法编码的字符的方针，每个都是按名导入的 `EncodingSanitizer` given
+
+% 1 1 0 1ab2e89e538479b9199f81ef40088bc0
+
+@ 0 4 0 055f70e00e9156cf02611047e6f9478c
++       `Codepage` 在其编码无法表示的每个字符处，咨询召唤它之处作用域中的 `EncodingSanitizer`。
++       与 `TextSanitizer` 不同，它总是可用的：默认实例位于 `EncodingSanitizer` 的伴生对象中，会静默替换，因此只有要求严格时才需要从这里导入。
+
+% 2 1 0 0d265841fd66f0660ee65995c72b9c46
+
+% 3 1 0 06005ff627f1186c053afedd24b76537
+
+% 4 1 0 03853ef122c99fb50c5e2b25bfa3e36b
+
+% 0 1 0 0c7b755c69ee0d141ba010d0da8a937c
+
+% 0 1 0 0e6e5d8e1e031ce3087b20699ab0bd3f
+
+% 1 1 0 0c530ade344c65d91c67e27daf40aeaf
+
+% 0 1 0 0baccc87ced1e1611112b9893061fec9
+
+% 1 1 0 01ee8f0601beefb10a5954e97f18f3c5
+
+@ 0 2 0 18d3d243c215bd8109ed481526b17f43
++   entry .strictEncodingSanitizer   无法编码的字符抛出 `Codepage.Error`；需要 `Tactic[Codepage.Error]`
++   entry .substituteEncodingSanitizer   无法编码的字符写为编码的替代字符：即默认行为，按名提供
+
+@ 0 1 0 068c32a217fbcc0805caabeb0770c513
++ entry .EncodingSanitizer   `Codepage` 如何处理其编码无法表示的字符
+
+% 1 1 0 0eb394207208d7b719dec6109c4e1d5d
+
+@ 0 5 0 19d8ad7719c3f5bd16cde99f8119495b
++       `TextSanitizer` 在编码方向上的对应物。
++       codepage 对每个无法编码的字符调用 `#unmappable`；如果它正常返回，就在该字符的位置写入编码的替代字符。
++       `#substitutes` 为 `true` 的实例从不被调用，替换交给 JDK 的编码器完成，这就是默认实例所走的快速路径。
+
+% 0 1 0 14ea65ce9236353e0f565d84047c5f16
+
+@ 0 3 0 0f10f4f4f142417a1415e654ec1b327e
++   entry .substitute   默认实例：静默替换
++   entry #substitutes   是否在不调用 `#unmappable` 的情况下替换无法编码的字符
++   entry #unmappable   以每个无法编码的字符及编码为参数调用

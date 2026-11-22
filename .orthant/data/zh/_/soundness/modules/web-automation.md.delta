@@ -1,0 +1,301 @@
+orthant 2 language
+
+@ 0 1 0 1683d3798e6598930c0f174aa56f32a2
++ ## Web 自动化
+
+@ 0 1 0 02ed9263154c2802081b650b8e2f33e5
++ ### 概述
+
+@ 0 4 0 0f591615f6e77b8a0edd57ae264cdc53
++ 驱动浏览器和为页面编写脚本是 Web 自动化的两个方面，本页对两者都有介绍。
++ 浏览器通过 [WebDriver](https://www.w3.org/TR/webdriver2/) 协议驱动。
++ 启动 Chrome 或 Firefox，打开一个[会话]，导航页面，查找元素、点击元素、向元素输入文字，这些就是端到端测试的机制。
+
+@ 0 3 0 1fc59d8db8413cdb18664757881ea576
++ 浏览器一侧的行为以*有类型的* JavaScript 编写。
++ DOM 表达式在代码编译时依据浏览器自身的 [WebIDL](https://en.wikipedia.org/wiki/Web_IDL) 接口定义进行检查，并渲染为页面事件处理函数所用的 JavaScript。
+
+@ 0 1 0 01e33bd4ea64d6e80b098f5b4185ba4e
++ ### 关于 Web 自动化
+
+@ 0 4 0 1c31f6cb3b247e83120a503b58af65ed
++ 浏览器自动化脚本在两个层面上都是“字符串类型”的。
++ 元素通过选择器字符串定位，注入的行为是字符串字面量中的 JavaScript，在浏览器运行之前不受任何检查。
++ 拼错的 DOM 方法，例如 `getElementByld`，正是编译器理应捕获的那类错误，也正是这些字符串所掩盖的那类错误。
+
+@ 0 6 0 104ae37710c055960725f0c2e0018b20
++ 在这里，两个层面都有类型。
++ 元素通过与 [CSS](css.md) 和 [HTML](html.md) 相同的有类型选择器和经过验证的标识符来定位。
++ DOM 脚本依据 DOM 实际的接口定义进行检查，因此只能写出确实存在的方法，且参数类型正确。
++ 限定在其代码块内的会话，以及依据 DOM 自身定义检查的页面脚本，遵循[限定作用域](../../philosophy/delimited-scopes.md)和[构造即安全](../../philosophy/safety-by-construction.md)的原则。
+
+@ 0 2 0 159e7253226fe6d109786f5e34739131
++ 一切都来自 `soundness` 包，同时作用域中需要有互联网访问、用于与驱动程序通信的 HTTP 客户端，以及驱动程序进程所需的并发：
+
+% 0 1 0 05f2ae76781bc53c0f28815590cdc90c
+
+% 0 1 0 1bca28db88d8e18d0fbcefeaacfc679c
+
+% 0 1 0 18ae396b9904f6e1093e5037604e75ac
+
+% 0 1 0 126ea9b3e0450b920c7880db223bf337
+
+% 0 1 0 08a1699a28eaa36e15c02fc5fa78fa3d
+
+% 0 1 0 0ef43ebb468b6866066a6976c6eee4e9
+
+% 0 1 0 0189ca70729c68090dc6a72473b09ed5
+
+% 0 1 0 07e2cd564ae26ae60d2bca9b2ff8480e
+
+% 0 1 0 0db1a0ecc5cc04ab14e285e7be2d415a
+
+% 0 1 0 0cac328595c4173e1ea47b6f00edbe51
+
+% 0 1 0 1346275f0ca3e4a003aa4260910f7dac
+
+% 1 1 0 0e23e86ae81b750f047cfaa2192660e5
+
+@ 0 1 0 03ab0efadb174eab0d9be849ee5779d7
++ 驱动浏览器的示例只编译而不运行。
+
+@ 0 1 0 082da622afb8974b1563de0d63f6add6
++ ### 驱动浏览器
+
+@ 0 2 0 1f07a9b2dfb8f251135e40d81f6efb81
++ 浏览器会话会启动驱动程序、打开会话，并在代码块结束时将两者关闭，无论代码块是正常返回还是抛出异常。
++ 在其中，会话可以导航和查询：
+
+% 2 1 0 1b1c307c2188b9b612a251813584719f
+
+% 3 1 0 09cd9dc7db64c38f1ba16211c3d4f78f
+
+% 4 1 0 17df9d385a03692a0b3df37da6104e04
+
+% 5 1 0 01f9d58fb3986bce13a81eee29ce73c1
+
+% 6 1 0 1cc477e17b71d557097fadcb7b5d358b
+
+% 0 1 0 0c6bc228d82d96011233283748bfd5e0
+
+% 0 1 0 0bb780337a7cf1461316e1346ac661d0
+
+% 1 1 0 083eb6a5f8834bbe0bacb3e90ce4bbb7
+
+@ 0 3 0 06fa3b6233d86b59041437c5898a55f3
++ `WebDriver.Firefox`、`WebDriver.Safari` 和 `WebDriver.Edge` 的用法完全相同，各自驱动其标准的驱动程序可执行文件。
++ `WebDriver(url"http://localhost:4444", capabilities)` 通过同样的接口驱动一个已在运行的驱动程序，包括远程网格。
+
+@ 0 5 0 0aa1cb1a2e226d3d0a119edf660d931a
++ 会话句柄是一种[能力]，由捕获检查限定在拥有它的代码块之内。
++ 返回它，或返回任何捕获了它的东西，都是编译错误，因为程序不应持有一个已经关闭的会话。
++ 相比之下，元素句柄是纯值。
++ 但对元素句柄的每个操作都需要作用域中有会话，因此在会话之外它们不起作用。
+
+@ 0 1 0 0eeba2e8552706e504512797b9ae52d6
++ ### 查找和使用元素
+
+@ 0 1 0 02f54ca385b2db3d13c7a69848150edc
++ 元素通过有类型的条件定位。
++ `\` 返回所有匹配项，`element` 恰好返回一个：
+
+% 2 1 0 022d05f4c84c97ea0c23ee750d0bd0df
+
+@ 0 9 0 17fac7d62a276ac60468f70725d4c6dd
++ column  定位器
++ column  写法
++ column  匹配依据
++ row  HTML 标签  `H1`, `Button`  标签名
++ row  CSS 选择器列表  `SelectorList.parse(t"nav li")`  CSS 选择器
++ row  经过验证的 DOM id  `Name[DomId](t"query")`  CSS 选择器，id 前加 `#`
++ row  类列表  `ClassList["checkbox"]()`  CSS 选择器，每个类前加 `.`
++ row  XPath  `xp"//li"`  XPath
++ row  `Text`  `t"Sign in"`  链接文本
+
+% 1 1 0 1b86897a11eb85fb14f3f78413807be8
+
+@ 0 2 0 1d2cbcae91af76540671034c6ca30b13
++ 在元素内查找元素会沿树向下，每个元素都提供测试所需的操作：
+
+% 2 1 0 14a8b54a27d4c1611d5caae6b20bccb4
+
+% 3 1 0 14562c58cce498130a9fafd49ee687ff
+
+% 4 1 0 003fdce09ac5bd2316b874038642a405
+
+% 0 1 0 1842b9c5dc5960d41f15df4cf22b7ce2
+
+% 0 1 0 1fc9838b78d8789711406c3ffe982615
+
+% 2 1 0 02f6338c0aceacd416f7d72f910bb21b
+
+% 3 1 0 1643c3f6be77d43d00447e85634f7cfd
+
+% 0 1 0 142b725252c61a541a20af1ce4eec0b2
+
+% 0 1 0 0f949dd57a77e2f20f2c5a678cc04f6e
+
+% 0 1 0 1705c47398c79dea0ab647719370e736
+
+% 0 1 0 06c1dd2ca393ee0514edb1b4b91f3b7b
+
+% 0 1 0 06447f83973c2ec916832cbfccfea5ab
+
+% 0 1 0 0a2cf4c7c678ebc203c65a0c101b22b8
+
+% 0 1 0 1717ce40cc28f70b1ec750c966a25f42
+
+% 0 1 0 0402c34679e196720eb16e6f3c712a52
+
+% 0 1 0 1400ae6cb3c50b700055d944d87dc299
+
+% 1 1 0 1b168b8d5addf4320de4d518efc2f9a1
+
+@ 0 2 0 093a7b2816df73ae1bfdfff59277f442
++ `property` 读取实时的 DOM 属性，而不是标记。
++ 以下是元素上的操作，它们都需要作用域中有会话：
+
+% 2 1 0 098a45806171da7c15d47d340a0790d2
+
+@ 0 13 0 1b75ebc267eb8af905d75ce46584874f
++ column  操作
++ column  作用
++ row  `click()`, `clear()`  点击元素，或清空输入框
++ row  `value(text)`  向输入框输入文字
++ row  `innerText()`  读取渲染后的文本
++ row  `attribute(name)`, `property(name)`  以 `Optional` 形式读取标记中的属性或实时的 DOM 属性
++ row  `cssValue(name)`  读取计算后的 CSS 值
++ row  `tagName()`, `role()`, `label()`  读取元素的标签、无障碍角色和无障碍标注
++ row  `enabled()`, `selected()`, `displayed()`  报告元素的状态
++ row  `rect()`  读取元素的位置和大小
++ row  `screenshot()`, `screenshotData()`  将元素截取为 `Raster in Png` 或 PNG 字节
++ row  `element(locator)`, `\`  在其中查找元素
++ row  `shadowRoot()`  访问其开放的 shadow root
+
+% 1 1 0 0b0aee203bf2ec8104bfe6498136f9d7
+
+@ 0 5 0 1850cd75c656dc4f0166ec4bf348c45f
++ 定位器无法表达的一切都通过 `execute` 实现，它在页面中运行 JavaScript，并以 `Json` 形式返回结果。
++ 修饰键、组合键、悬停和拖拽通过 `perform` 和有类型的动作 API 完成。
++ 任何类型的失败都以 `WebDriver.Error` 的形式出现，其中携带驱动程序报告的 W3C 错误代码、错误消息，以及浏览器一侧的堆栈跟踪。
+
+@ 0 1 0 1929ffb4de3748920d5d609e19cbab8e
++ ### 等待
+
+@ 0 2 0 10a34aa8d90d9a170621011ac5aba71e
++ 浏览器自动化之所以不稳定，大多源于时序，而协议只能解决其中一部分。
++ WebDriver 的*隐式*超时适用于查找命令，并为整个会话设置一次：
+
+% 2 1 0 19008e8a8b4a83d5097b5300bef1140f
+
+% 3 1 0 0a0514df068f27d506dba54a8a3556a8
+
+% 4 1 0 101708dbb6a8f12b133a1c53391aa385
+
+% 5 1 0 1db29423a965660a1c4fe90b6f3a5820
+
+% 6 1 0 0b2e90e973596ba91dd6d41062c2a6e6
+
+% 0 1 0 02c5afc32e3d9e3e11bc474e6defb97d
+
+% 1 1 0 01eec85da9c1a1ce1902c1fd5d373878
+
+@ 0 2 0 16ceae27f45a973106e37104de7f9db2
++ 其他操作在服务器端都没有等待的概念。
++ 对于会变为可用的按钮，或文本会改变的标题，有三个方法会在作用域中的重试方针下轮询：
+
+% 2 1 0 0bb5e9dbab69083e01189aa395a4f6b3
+
+@ 0 6 0 16212bb91db7b5750a8bfcd9dfb52f7a
++ column  方法
++ column  等待直到
++ column  返回
++ row  `awaitElement(locator)`  有元素匹配  第一个匹配项
++ row  `awaitElements(locator)`  有任何元素匹配  所有匹配项
++ row  `awaitUntil(condition)`  条件成立  无
+
+% 1 1 0 1f89a33ecd55a2d21ec406c59ff3195c
+
+% 2 1 0 1525a46c87e9e0571e7d21b8e7c42b7a
+
+% 3 1 0 1ba4ca4d3f4f3c581e95b14aed4cf220
+
+% 4 1 0 1ef3f9c56b399d0f1fcb7e5a6eea1603
+
+% 0 1 0 041f58525b124e6a1e2ea54b00b4cad7
+
+% 2 1 0 11d32dba5a0e50df08bd723ed67612ed
+
+% 3 1 0 07bf6983b14664221ee336bc0656964f
+
+% 0 1 0 1735b48893f649a5131e6267fa4ca880
+
+% 0 1 0 158e18e44a64ab61189af8013e15ba4c
+
+% 1 1 0 069f241e40e9aa0a196798d12b032adc
+
+@ 0 6 0 12202d9859fcbe451235aeef8245108c
++ 该方针是一个 `Tenacity`，即其他地方使用的同一种[重试计划](concurrency.md#retrying)，因此间隔和尝试次数由调用者决定。
++ 用尽这些尝试会抛出 `Tenacity.Error`。
++ 这些方法轮询复数形式的端点，该端点将不存在报告为空列表而不是错误。
++ 这是有意为之。
++ 会话的错误[策略]在会话打开时就已固定，因此在被轮询的代码块中抛出的失败无法在这里捕获，从而驱动下一次尝试。
+
+@ 0 1 0 0ee277fbab855a691cad92900b1e0ace
++ ### 有类型的页面脚本
+
+@ 0 4 0 02ba42bf86d41b33114324d84db5a6a1
++ 附加到页面上的行为，例如 `onclick` 或 `onchange`，以有类型的 DOM 表达式编写，而不是 JavaScript 字符串。
++ `document` 和 `window` 值在 DOM 的真实接口中导航，依据 WebIDL 检查，并在 [HTML](html.md) 属性需要脚本的地方渲染为 JavaScript：
+
+% 2 1 0 09680ae80952cf6f02812324170353a2
+
+% 0 1 0 08a86cbdc9b8cb0109ed8ce5b435ce67
+
+% 1 1 0 0cd6459499a6bd5203d659b3bcc1b6aa
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 0 1 0 10a015fbb549ff8011f948ce95f0e5d2
+
+% 0 1 0 09473cf9e8f4146b1c839348c664a020
+
+% 1 1 0 029aca4d1d8ac11f1c3a8530e08ebe4b
+
+@ 0 1 0 1d2aad6c43d6316c06f0d35b5f53b3f3
++ DOM 未定义的方法，或类型错误的参数，都是编译错误：
+
+% 2 1 0 18695607f2a3a2390d429a4723942e11
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 0 1 0 036507956a3da5f908cf31ec98bf4ed3
+
+% 1 1 0 07f2b8311cc534e60b2b7413314b03b3
+
+% 0 1 0 1825a32e774c34a00d9b21e4eb91a863
+
+% 1 1 0 14cb5e96844c9a1414e0e452e3419bae
+
+@ 0 2 0 1ac568729aa89f0b0ab156d415a0c5c9
++ 到达页面的 JavaScript 已知对其调用的接口而言是格式良好的。
+
+@ 0 1 0 1b567a34a312e8bd1837dbd47b0d9d83
++ ### 各自的适用场景
+
+@ 0 4 0 1c1abcbb952ffa350835f9b63927a7ad
++ 两半在测试中相遇。
++ 处理函数由经过检查的表达式生成的页面，由定位器为经过检查的选择器的驱动程序来测试。
++ 生成、提供、驱动和断言的整个往返过程都留在类型系统之内，浏览器是唯一未经检查的组件。
+
+@ 0 1 0 0a15ebad305c934c1527dd3a42e83d7a
++ ### 相关
+
+@ 0 8 0 10a35aa49d7a42a21abebc59fa88aebf
++ - [HTML](html.md) 和 [CSS](css.md) 介绍定位器和处理函数共用的有类型文档、选择器和标识符。
++ - [浏览器 DOM](dom.md) 介绍在浏览器自身中、在 Scala.js 下运行的脚本。
++ - [外部互操作](foreign-interop.md) 解释如何读取 WebIDL 定义。
++ - [测试](testing.md) 承载驱动浏览器的端到端测试。
++ - [并发](concurrency.md#retrying) 介绍控制等待的 `Tenacity`。
++ - [图像](images.md) 介绍截图所得的 `Raster in Png`。
++ - [文件系统](filesystem.md)、[终端](terminal.md)和 [XML](xml.md) 介绍浏览器会话所用的句柄、按键和 XPath 定位器。

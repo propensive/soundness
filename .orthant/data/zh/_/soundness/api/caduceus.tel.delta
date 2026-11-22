@@ -1,0 +1,444 @@
+orthant 2 language
+
+% 0 1 0 0f04ec4b9ac2d4270a232409219e1f6b
+
+% 0 1 0 07e53f3de3fd2d2c0bd6471728e693c3
+
+% 0 1 0 0b5938ce7315323607e1922cbc4d93e2
+
+@ 0 1 0 02038a9ec49aa55d1a80d0aef80afd20
++ info   由带类型的部分组成的电子邮件，通过作用域内选定的投递器发送
+
+% 0 1 0 0ca6d61ddd9511ea1cdae38f1414f6fe
+
+@ 0 6 0 0ba0d551b9e81bf8068af2d174e23bcf
++     _Caduceus_ 用带类型的部分组成电子邮件——文本、HTML 或两者兼有的正文，内联内容和附件——并通过 `Courier`（即投递服务，它是一个上下文值）发送。
++     MIME 结构由内容决定（文本加 HTML 为 `multipart/alternative`，带内联内容为 `multipart/related`，带附件为 `multipart/mixed`），地址是 urticose 的 `EmailAddress`，写成 `email"…"` 字面量时在代码编译时就被检查。
+
+@ 0 3 0 1e452a5de5abce540cb4270080aed1b0
++     任何 `Sendable` 的东西——`Text`、带有媒体类型的文档（例如 HTML 页面），或组合好的 `Email`——都用 `send` 发送，它接收主题和收件人，并要求作用域内有一个 `Courier` 和一个 `Sender`：
+
+% 2 1 0 19131b85c88bf3dc11aba0e458545462
+
+% 3 1 0 0d63d29b8b9158f206a4e322f6fa6a7b
+
+% 4 1 0 17c82306264d1bb6124677c13495db0e
+
+% 5 1 0 03e120a31c951a44097d81d54d5f86fc
+
+% 6 1 0 08c73028ce0bdd321fc8a6d8829a39ab
+
+% 7 1 0 0b9e1d765ba1f3f805b0bd9605b5cafa
+
+% 8 1 0 016ef003097081eb08952e01981ce485
+
+% 9 1 0 126b5c62da9f38900b02fa192014f014
+
+% 0 1 0 055bee1611938ddc0e54e567c7ffef73
+
+% 1 1 0 0fe7a29ee0f5170700e823f985719b0c
+
+% 0 1 0 0b4ee182bacbc5d915f88aa97ff9e12f
+
+% 0 1 0 0ae1e022b087dbfd0cce418b43b2112f
+
+% 1 1 0 0ce1033e2711eaa301c335d7c91a7db3
+
+@ 0 2 0 1bd9ce2956662af50950766cfb01c3cc
++     `send` 的结果是投递器自己的 `Result` 类型：Resend 投递器返回 `Resend.Receipt`，其他投递器可能返回别的东西，或 `Unit`。
+
+@ 0 1 0 077df09bc24708d50aa8247034b55636
++     这个库有两个源集：
+
+@ 0 5 0 1a160b5a2c63e2171b0c06a7ed7c3a0b
++     - `caduceus.core`——`Email`、`Envelope`、`Sender`、`Courier`、`Sendable` 和 `Attachable` 类型类，以及扩展方法 `send`。它需要一个投递器才能做任何事。
++     - `caduceus.resend`——`Resend` 和 given `couriers.resendCourier`，后者通过 [Resend](https://resend.com/) 的 HTTP API 投递。它仅限 JVM，因为它需要一个 HTTP 客户端。
+
+@ 0 3 0 03432ec8e08b97bb097df4449282112d
++     一切都导出到 `soundness` 总括包。
++     投递器通过从 `couriers` 选择包中按名称导入来选定，因为 `import couriers.*` 不会导入 given；该包会与总括包自己的同名包合并。
+
+% 0 1 0 14796e252ed6e26c1b77dad1df6a7eea
+
+% 0 1 0 067bb704e114285301e73353f6c80976
+
+% 0 1 0 19e47db073b361d11d987303c5cbed6f
+
+% 0 1 0 1edaa5787b66fe1911389bf194dc2f8a
+
+% 0 1 0 0293a070f9126adc157138b1dc4d75b4
+
+@ 0 5 0 06bb7a67316da708050cb1f1a478748b
++ entry .send   通过作用域内的 `Courier`，把任何 `Sendable` 值作为电子邮件发送，带有主题和收件人
++     `value.send(subject, to, cc, bcc, replyTo)` 借助值的 `Sendable` 把它变成 `Email`，根据作用域内的 `Sender` 和各个参数构建一个 `Envelope`，再把两者交给作用域内的 `Courier`。
++     `to`、`cc`、`bcc` 和 `replyTo` 中的每一个都接收单个 `EmailAddress` 或由它们组成的 `List`；除 `to` 之外，其余默认都为空。
+
+% 2 1 0 10681245943b095602255db22008ecab
+
+% 3 1 0 008b3a593bebdf0c1f566ce4757d2d62
+
+% 4 1 0 195d7c9259c4b7f01cc7db60d4d20949
+
+% 5 1 0 1bfc6763e8024ade13484d041710d26d
+
+% 6 1 0 1164e8994e8521a712f83da14b5dc6d3
+
+% 7 1 0 02cc9acf5b300c750de48af358571c8a
+
+% 8 1 0 0dea2a4a6c79972804f563b0ea941c5a
+
+% 9 1 0 067781534e8ff7e21f3e97513e9f6596
+
+% 0 1 0 0e3f0fcc8256783d0bb95f5dfc1002e6
+
+% 1 1 0 09f67f9a2ab97bb912ad1a4f7d0ecb4d
+
+% 0 1 0 017fe614f93018621488e05762be9243
+
+% 0 1 0 15f4ae15d0abb29d16ab954696802106
+
+% 0 1 0 0624eed76b04e9cb07a173998d870840
+
+% 0 1 0 03949c3479c5054b141c22a2b5faa942
+
+% 1 1 0 025acb249ecd472104cb589f3090f11b
+
+@ 0 2 0 098e389bc6970c4810d31f1903aa2597
++     结果类型是投递器的 `Result`，失败由投递器负责报告：Resend 投递器抛出 `Courier.Error`。
+
+@ 0 1 0 0537c7925b3332e709cdc14f7b43bb0f
++ entry .Sender   发送电子邮件所用的地址，作为上下文值
+
+% 1 1 0 1324b5400a6fde8e09b62d8dfb8446e5
+
+@ 0 4 0 0ac070b473cdd4c11ce01f0f53b14626
++       `given Sender = Sender(email"noreply@example.com")`：`send` 从作用域内的 `Sender` 取得信封的 `from` 地址，因此它只需为一个程序或一个作用域选定一次，而不必在每次发送时重复。
++   entry #email   发件人的地址
+
+@ 0 1 0 09e12d46a7e1dc150efc367d783aadb7
++ entry .Envelope   电子邮件的发件人、收件人和主题：投递器在消息之外所需的东西
+
+% 1 1 0 03eb80a3c8a059391954613b00fb9832
+
+@ 0 12 0 03bd18b7cc5b69121ce4c347ff93a804
++       `Document[Email]` 的元数据：发件人，`to`、`cc`、`bcc` 和 `replyTo` 收件人，以及主题。
++       `send` 根据它的参数和作用域内的 `Sender` 构建它；`Courier` 从文档的 `metadata` 中读取它。
++   entry .many   单个值或由它们组成的列表，统一为列表
++       `Envelope.many(address)` 为 `List(address)`，`Envelope.many(addresses)` 就是该列表本身。
++       `send` 正是借此让每个收件人字段接受两种形式之一。
++   entry #from   发件人的地址
++   entry #to   主要收件人
++   entry #cc   抄送的收件人
++   entry #bcc   密送的收件人，不对其他人显示
++   entry #replyTo   回复应发往的地址，如果不是发件人的话
++   entry #subject   主题行
+
+@ 0 1 0 18a1633c8c316d040bac363387f5cdc0
++ entry .Email   一封电子邮件消息：头部，文本、HTML 或两者兼有的正文，内联内容和附件
+
+% 1 1 0 003dc32dd6fe4edb1087472caf4dc956
+
+@ 0 5 0 15e388d77eedd2ed081b6512bf250870
++       `Email` 是一个由额外头部组成的映射加上一个 `Email.Message`，后者把一个 `Email.Content`（一个 `Email.Body` 和任意多个 `Email.Inline`）嵌套在一个附件列表中，每个附件是一个 `Asset`。
++       每一层都报告自己的 MIME 内容类型，它由该层所含的内容推导而来。
++       电子邮件是 `Documentary` 的，以 `Envelope` 为元数据，因此投递器接收的是 `Document[Email]`。
+
+% 2 1 0 1670be706feada051e138bd40b621e7a
+
+% 1 1 0 08d9458eb73012351c93056f35e51984
+
+@ 0 1 0 188bcd9e354a606f0f55a6c0819e8f10
++         label 只有文本
+
+% 1 1 0 0e0ae5c3e10b232b17a2153169e2645c
+
+% 2 1 0 080629a45b31ad8d0adf208962eac9e3
+
+% 0 1 0 0d6ec7600c40e0b203ad68d7f5aab751
+
+% 0 1 0 0aba77f389a48d4b127444835f4b4d3e
+
+% 1 1 0 032e9a7981207afb1b7b71319b7397c2
+
+@ 0 1 0 1f2c9d645d5f2ff21e36ac6b3d1412c4
++         label 文本加 HTML
+
+% 1 1 0 199018d2fedd3ca419d1ac254b796dcb
+
+% 2 1 0 1b5e8853a5c4dc9217b0e01c3d08634f
+
+% 4 1 0 0b4d23b2270dbd3e1198a9d536751188
+
+% 0 1 0 169554eba9f06c7b1862b182b25d1e33
+
+% 0 1 0 059eaf49bbed3f670ac7ac1a49bd884b
+
+% 1 1 0 1ebec5aba4e068ea03cba084cdcda264
+
+@ 0 1 0 0261c7ad1f0c7a06045a9cc46bf8ef60
++         label 带有附件
+
+% 1 1 0 1459fce406f884a613988a9ff5f1ffdc
+
+% 2 1 0 1fb93c9b849c50650332afeaea196f22
+
+% 4 1 0 0531a84d5cdf432c1e4843edd019a6f8
+
+% 0 1 0 105342b7b9425f541a306be932dfebe6
+
+% 0 1 0 17ccd87eb66850940df22c7d406f9979
+
+% 0 1 0 162ccfe9a01cb0ac13eb35974412ebf2
+
+% 1 1 0 1d730ea3f4cbc3e70a35a73edbecd25e
+
+% 1 1 0 1a277342ea9dfdc5113023e785963c91
+
+@ 0 2 0 0655973d78a05cc2042d9c85fcdb72b5
++       电子邮件用 `#text`、`#html`、`#inlines` 和 `#attachments` 报告它的各个部分，因此组合好的消息可以在发送之前被检查。
+
+% 0 1 0 074e17cc3a2215cf0b1455194bd451bb
+
+% 0 1 0 110fdbcbdad69e970b9ee010fc5d89c4
+
+% 0 1 0 11a23e0551e024510784d2c9437d0488
+
+@ 0 5 0 08fbcce876853c100ccd61221f82ec5f
++   entry .apply   由任何 `Sendable` 值构成的电子邮件：`Email(t"hello")`
++       使用值的 `Sendable`：文本成为纯文本正文，HTML 文档成为仅 HTML 的正文，`Email` 就是它自身。
++       结果没有头部、内联内容或附件。
++   entry .Body   电子邮件的正文：文本、HTML，或两者作为备选
+
+% 1 1 0 06c7e9063d3ce7f3170eead1998f7922
+
+@ 0 4 0 0e867e91161d1acf0f8f742d434bfca9
++         一个有三个分支的枚举：`TextOnly(content)`、`HtmlOnly(content)` 和 `Alternatives(textContent, htmlContent)`。
++         最后一个以 `multipart/alternative` 发送，因此能显示 HTML 的客户端显示 HTML，其他客户端显示文本。
+
+% 0 1 0 136a5f198bdaf3ac1a788e9525f64741
+
+% 0 1 0 0a9c20ea134f3fa702331949e4fc1ca4
+
+% 0 1 0 15027c01b2f1e1f41c0d709fa1c6b4c1
+
+% 0 1 0 010b11b3d8c3c96317e7fecfffac221d
+
+% 0 1 0 196b9977168da0fb18655f347d1bdd70
+
+% 0 1 0 02125690b11d560710feb200e65921bd
+
+@ 0 5 0 1e83626dddf89c8713716c5daa61d067
++     entry .apply   文本正文，或文本与 HTML 两种备选：`Email.Body(text, html)`
++     entry #html   HTML 版本；对仅文本的正文为 `Unset`
++     entry #text   文本版本；对仅 HTML 的正文为 `Unset`
++     entry #contentType   `text/plain`、`text/html` 或 `multipart/alternative`，取决于正文有哪些版本
++   entry .Inline   HTML 正文通过内容 ID 引用的内容，例如嵌入的图片
+
+% 1 1 0 16afa03eeaa0102c00536c9431cac31a
+
+@ 0 7 0 078e7bec05acec550aaec46a9d3c48ed
++         内联部分有一个内容 ID `cid`（HTML 以 `cid:…` 引用它）、一个媒体类型和一个正文。
++         它的存在使内容成为 `multipart/related`。
++         Resend 投递器不发送内联部分。
++     entry #cid   HTML 所引用的内容 ID
++     entry #contentType   内联内容的媒体类型
++     entry #body   内联内容
++   entry .Content   一个正文，连同它所引用的内联内容
+
+% 1 1 0 1dc1cf2f24e157b406d5a05d514196c6
+
+@ 0 19 0 149bd41b54f8df7e198f3734dac0bae1
++         `Email.Content(body, inlines*)`。
++     entry #body   文本或 HTML 正文
++     entry #inlines   正文所引用的内联部分
++     entry #contentType   有内联内容时为 `multipart/related`，否则为正文的类型
++   entry .Message   电子邮件的内容，连同其附件
++     entry #content   正文及其内联部分
++     entry #attachments   附加的文件，按顺序
++     entry #contentType   有附件时为 `multipart/mixed`，否则为内容的类型
++   entry #headers   额外的头部，按名称
++   entry #message   正文、内联内容和附件
++   entry #Self   文档类型，即 `Email` 本身
++   entry #Metadata   电子邮件文档的元数据：一个 `Envelope`
++   entry #html   正文的 HTML 版本；如果没有则为 `Unset`
++   entry #text   正文的文本版本；如果没有则为 `Unset`
++   entry #inlines   内容的内联部分
++   entry #attachments   附加的文件，按附加的顺序
++   entry #attach   在末尾添加了一个附件的电子邮件
++       接收任何 `Attachable` 值：一个 `Asset`，或任何具有名称、媒体类型和字节流的东西。
++       电子邮件是不可变的，因此 `attach` 返回一封新的电子邮件。
+
+% 2 1 0 0ff9829287cc373a08b1e3f5ec011c83
+
+% 3 1 0 019d56ed747f519e0c2823efb12164e1
+
+% 0 1 0 1ef7996c4e3931960b260a7edfb87b14
+
+% 0 1 0 0d0083e3e5984721030f99dd3363160c
+
+% 1 1 0 1fb37cccd2ac5af01b26ab0b39087c38
+
+@ 0 1 0 0e6868dee12c87381c751ec1a5aec3ad
++ entry .Sendable   可作为电子邮件发送的值的类型类
+
+% 1 1 0 1b143225cda10c640fb795f1ac121987
+
+@ 0 4 0 01dd1738ffb9b28e08912bb790549e21
++       `value.send(…)` 和 `Email(value)` 接受任何具有 `Sendable` 的值，`Sendable` 把它变成 `Email`。
++       为 `Text`、`Email` 本身以及任何带有媒体类型、以文本形式流式传输的文档（例如来自 honeycomb 的 HTML 页面）提供了实例。
++       新的类型通过映射到一个已经可发送的类型而变得可发送：
+
+% 2 1 0 01caba7933f461751b035902f67370d9
+
+% 3 1 0 1e00d9cc3eedf0971d1d2dc6f01bebd3
+
+% 0 1 0 1ccc7f7c4179ab711cb96aa5a2a978a5
+
+% 0 1 0 0d7598ec7a95c78c0307734bbee43cb6
+
+% 1 1 0 05a095e0aa856b7e05c91e613ac6f712
+
+@ 0 8 0 013318d286cfad2d1f87d83fe413eec2
++   entry .text   文本作为纯文本正文发送
++   entry .document   带有媒体类型的文档以其文本发送，如果是 `text/html` 则为仅 HTML 的正文
++       适用于任何具有 `Media` 和 `Streamable by Text` 的类型：媒体类型为 `text/html` 的文档成为 `HtmlOnly` 正文，其他的成为文本正文。
++       文档在创建电子邮件时被完整读取。
++   entry .email   电子邮件以其自身发送
++   entry #email   作为电子邮件的值
++   entry #contramap   另一个类型的 `Sendable`，它先把该类型转换为这个类型
+
+@ 0 1 0 00befc19f7e1e0f61d1995b69a40c75a
++ entry .Attachable   可附加到电子邮件的值的类型类
+
+% 1 1 0 099ca588d97d2f0e198ce5fef30a6289
+
+@ 0 10 0 1ee3c0d599a9ba1b03ccfdd8a084063d
++       `Email#attach` 接收任何具有 `Attachable` 的值，`Attachable` 把它变成 `Asset`：一个名称、一个媒体类型和字节。
++       `Asset` 以其自身作为附件，任何具有名称（`Nominable`）、媒体类型（`Media`）和字节流的值无需额外工作即可附加。
++   entry .generic   附加任何具有名称、媒体类型和字节流的值
++       适用于具有 `Nominable`、`Media` 和 `Streamable by Data` 的类型：资源以值的名称作为文件名，取其媒体类型，并以流的形式取其字节。
++   entry .asset   `Asset` 以其自身作为附件
++   entry #attachment   作为待附加资源的值
++   entry #contramap   另一个类型的 `Attachable`，它先把该类型转换为这个类型
+
+@ 0 1 0 158da013069726a21334ee785ebdf672
++ entry .Courier   电子邮件的投递服务，作为上下文值选定
+
+% 1 1 0 1aec6a696664da1501e8206ac9214d42
+
+@ 0 3 0 03b068df2dff101d10c4252100b87054
++       `Courier` 发送一个 `Document[Email]`——电子邮件及其 `Envelope`——并返回一个由它自己选择的 `Result`。
++       所提供的是 `couriers.resendCourier`；其他服务只需实现这一个方法即可接入：
+
+% 2 1 0 1dbe9805e9072660039cfcca6150d699
+
+% 3 1 0 084c5b80683655e2110a96644de8fc63
+
+% 0 1 0 1fe4bfb356b3bce90f1149b1baac6357
+
+% 0 1 0 19f448fc1bd758f0103f0ad6892c4995
+
+% 0 1 0 061863b080fbea9c03c375486deb7d32
+
+% 0 1 0 0390482d9817f18f1c5a1993b023e38a
+
+% 1 1 0 075b5674b15cd15814c490682f32dfe1
+
+@ 0 2 0 08eb07dc3a004749160b821967bb2a13
++       投递器是一种能力：它由其他能力（一个 HTTP 客户端、一个 `Tactic`）构建，并保留它们。
+
+% 0 1 0 1fdc4baa5e9023620e0a79fc2d7223d7
+
+@ 0 1 0 0b0a3722d1061f2f12ef76e2e3b1d8ba
++   entry .Error   投递器无法投递电子邮件时抛出
+
+% 1 1 0 1d58274a4431a5371d95e72f74ee607a
+
+@ 0 7 0 129d9df656656c550b75f19a468d0b78
++         错误 `↯/s.107.1`：_unable to send email from `from` to `to` with subject `subject`_。
++         Resend 投递器在连接失败、HTTP 错误状态或无法读取的响应等任何失败时抛出它。
++         `to` 是信封的主要收件人中的第一个。
++     entry #from   发件人的地址
++     entry #to   第一个主要收件人的地址
++     entry #subject   电子邮件的主题
++   entry #send   投递一封电子邮件及其信封，返回投递器的 `Result`
+
+@ 0 1 0 1b7dc90d177140b903ffae4b777fa6a3
++ entry .Resend   Resend 投递器的设置和结果
+
+% 1 1 0 0024329820ebda9a1a74c3ad6d11a366
+
+@ 0 3 0 00d7bc9a87f0848515fcaae80cb613fb
++       [Resend](https://resend.com/) 是一个带有 HTTP API 的电子邮件投递服务。
++       它的投递器 `couriers.resendCourier` 从 given `Resend.ApiKey` 取得 API 密钥，并为每封发出的电子邮件返回一个 `Resend.Receipt`。
+
+% 0 1 0 08cb027500f1a5ee0802a6fba8af4b2a
+
+@ 0 1 0 1a49cd5ae364e9e905c3b69c268221da
++   entry .ApiKey   Resend 的 API 密钥，作为上下文值
+
+% 1 1 0 0bed7bd1d9e20a38038eed4908c638ea
+
+@ 0 5 0 108b360478ac5d4f0e648b5b0bc4be9a
++         `given Resend.ApiKey = Resend.ApiKey(t"re_…")`。
++         它作为持有者令牌随每个请求发送。
++         应从环境变量或密钥存储中读取它，而不是把它写进源代码。
++     entry #key   密钥，作为文本
++   entry .Receipt   Resend 对它已接受的电子邮件的确认
+
+% 1 1 0 0b857952bce497800550b3236d09ced9
+
+@ 0 3 0 1597fd2ab7ff54b10a323383e379dde3
++         从发送请求的 JSON 响应中解码得到。
++         其 ID 在 Resend 的 API 和控制台中标识该电子邮件。
++     entry #id   该电子邮件在 Resend 的 ID
+
+@ 0 1 0 014d67d3b3ef54f71c829509d6f082d1
++ entry .couriers   所提供的电子邮件投递器，每个都是要按名称导入的 given
+
+% 1 1 0 0ab14400c58df02108680c4eb25d1325
+
+@ 0 3 0 06940dc59a891aa811429ff934332f6d
++       一个选择包，与总括包的 `couriers` 合并。
++       由哪个服务投递电子邮件，取决于作用域内的 given `Courier`，而 `import soundness.*` 不会引入任何投递器：须按名称导入一个。
+
+% 2 1 0 001d2d2d6ac8b83516bd1bbfd3e82d17
+
+% 3 1 0 0b5ff29358ffac9a0291a46f30ee5d98
+
+% 2 1 0 1ab22b42e16385d1083cf8240e6bd996
+
+% 1 1 0 120479115a50a4761f5d05ddf97e909f
+
+@ 0 6 0 1e0446e3457a356d01769df6fd95842a
++   entry .resendCourier   通过 Resend 的 HTTP API 投递电子邮件，返回 `Resend.Receipt`
++       把每封电子邮件，连同其文本和 HTML 正文、额外头部及附件（以 Base64 编码），发布到 `https://api.resend.com/emails`，由作用域内的 `Resend.ApiKey` 授权。
++       它需要一个 `Tactic[Courier.Error]`、`Online`（来自 `internetAccess`）、一个 `Http.Client`（例如 `httpBackends.javaNetHttp`）和 API 密钥，并把它的 HTTP 请求记录为 `Http.Event`。
+
+% 2 1 0 1f18be80eaf84f1015f33f92007d3379
+
+% 0 1 0 0ff09fd85a6fbb540f3b2a2530c17d7e
+
+% 1 1 0 10f090fe19e7ee750458b0e6da583f6b
+
+% 1 1 0 05e58c57513ff4fb1664b4fb5914cddd
+
+% 2 1 0 1a73ed501bc05b9609c7ade416500758
+
+% 0 1 0 1884f26bf28188a80dd0c391c47df8c6
+
+% 0 1 0 0d95e158a2e74a4308f5a7dadf486a7f
+
+% 0 1 0 12a618ab3fc8ab800817fdfca2fcb19c
+
+% 0 1 0 01d1437f6d67cab0197176d451a04963
+
+% 0 1 0 1687bf0756babc9e1c45ad2e22eaf34f
+
+% 0 1 0 003d1a042ee935141a0456949a47f253
+
+% 1 1 0 1c30cc213fa31402001a60513fcddf7c
+
+@ 0 3 0 171fac63a3e3461601065f5db5ae0e24
++       连接失败、错误状态或无法读取的响应会抛出 `Courier.Error`；底层原因会先打印到标准输出。
++       内联部分不会被发送，没有 `to` 收件人的电子邮件会失败，而不是抛出错误。

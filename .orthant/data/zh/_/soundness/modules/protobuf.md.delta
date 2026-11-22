@@ -1,0 +1,434 @@
+orthant 2 language
+
+% 0 1 0 1630e7091312466c0f737431da6aa76f
+
+@ 0 1 0 02ed9263154c2802081b650b8e2f33e5
++ ### 概述
+
+@ 0 2 0 1ec2d88ba0b2b414141a6c6cc07c9eda
++ [Protocol Buffers](https://protobuf.dev/) 是 gRPC 的线上格式，也是服务领域中大部分系统的线上格式。
++ 它紧凑，由 schema 驱动，并由 Google 的 proto3 规范定义。
+
+@ 0 3 0 1a8cc37ba2a7714609282ee3bb3a82c8
++ 在这里，它直接从 Scala 类型编码和解码。
++ 一个带编号字段的 case class *就是*一条消息的定义。
++ 无需编写 `*.proto` 文件，也无需运行代码生成器，生成的字节与 `protoc` 为等价 schema 生成的字节一致。
+
+@ 0 1 0 1d56f680be8752971b612723ca30f540
++ ### 关于 Protocol Buffers
+
+@ 0 5 0 1d459428aff297530553ad4220cfccf3
++ 传统的工作流程把 schema 放在语言之外。
++ 消息在 `*.proto` 文件中定义，由生成器输出源代码，再由构建保持两者同步。
++ 这层间接换来的是可在多种语言之间共享的 schema。
++ 对于一个 Scala 程序与另一个 Scala 程序通信，或者只是必须使用某个现有 proto3 协议的程序来说，这是毫无益处的机制。
+
+@ 0 6 0 176c0611bce450690cad74019e56e0b5
++ 在这里，线上格式由 case class 本身[派生]而来。
++ 字段编号是 proto3 需要而 Scala 没有的唯一东西，它们来自一个注解。
++ 其余一切都由字段的类型决定：varint、zig-zag 编码、带长度前缀的消息以及打包的 repeated 字段。
++ 因此线上格式与代码不可能不一致，这就是只有一个定义的[正确性](../../philosophy/correctness.md)。
++ 该编码已对照 `protoc` 自身的输出进行验证。
+
+@ 0 2 0 15acddcd363eaa3f0f4197312adb9f3a
++ 一切都来自 `soundness` 包。
++ 示例把任何错误作为异常抛出，最后两个导入让它们能够打印结果，字节以十六进制写出：
+
+% 2 1 0 1d8fb0479565ac840034588c0ef79ff8
+
+% 0 1 0 1bca28db88d8e18d0fbcefeaacfc679c
+
+% 0 1 0 0db1a0ecc5cc04ab14e285e7be2d415a
+
+% 0 1 0 0b21de5890a84d8d05926f25583daec4
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 1 1 0 02a8d4cb9fa86f7a19de906d90204517
+
+@ 0 1 0 0fea20cf03941bff0686881cc407e498
++ ### 消息
+
+@ 0 1 0 138f5203fac4ebff0731e13241b0718e
++ 消息是一个 case class，其字段带有各自的 proto3 字段编号：
+
+% 2 1 0 102a04dff5cd3a850bfd1f0255984095
+
+% 0 1 0 09c425e64775366b03effcce4077ce26
+
+% 1 1 0 1544ee30e73ab20d0a1862b76e50816d
+
+@ 0 2 0 15cc21d570dbcba9120e0782ff1a3e78
++ `in[Protobuf]` 把一个值编码为消息，`encode` 给出消息的字节。
++ `read[Person in Protobuf]` 把字节读回该类型：
+
+% 2 1 0 0fb887a54f5479da133c0a8a6316d689
+
+% 0 1 0 1097122d5306045c01e925367c6b76d4
+
+% 1 1 0 197647e241e1126f02a7433d1ced1ce9
+
+% 3 1 0 087d1d64a6135c620d340dc267803220
+
+% 4 1 0 14589ce55d7ba3bb036e0d88184b5b80
+
+% 5 1 0 0bc0d086a53ea84c1f08d64ecf3f806c
+
+% 0 1 0 13423416dcdf23d6180ec02a126fafb0
+
+% 0 1 0 155fbde3fab96d13112e9c7e7318e530
+
+% 1 1 0 1c730d309b9ec5c119aaa74ade107ada
+
+@ 0 2 0 11aef426bd88cc6602e9fe1f4b81d028
++ 解码也可以停在通用消息这一步，留待之后检视或转换。
++ `read[Protobuf]` 给出一个 `Protobuf` 值，`as[Person]` 对其进行转换。
+
+@ 0 3 0 12df9020243084500162ba60747637d7
++ 未加注解的字段按声明顺序编号。
++ 编号可以是稀疏的，例如有 `@field(3)` 和 `@field(7)`，中间什么也没有，这正是协议演进所需要的。
++ [注解](annotations.md)一节描述了 `@field` 是如何读取的。
+
+@ 0 1 0 1cfdcc13b266d99f0e35b97b06065c70
++ ### 字段类型
+
+@ 0 3 0 149c55d46779ce7d0c21027f3b35eaf6
++ Scala 类型决定 proto3 编码。
++ 定长的[数值类型](numbers.md#numeric-types)精确对应 proto3 的各种整数，因此选择类型就是选择线上编码：
+
+% 2 1 0 1c30a055bfa2ed7d1987c8d8cbcfb5ac
+
+@ 0 3 0 0d2edc6975a147e5181483bff9dc958a
++ column  Scala 类型
++ column  Proto3 类型
++ column  线上编码
+
+% 0 1 0 01d32ff0eebd70221a4b3c2ae201bfce
+
+% 0 1 0 012b2e753a6ede14076364ebc3eaa477
+
+% 0 1 0 138f2e6ffb380e8e0ebd94012f9478f0
+
+% 0 1 0 01f00c38b9ac6c4901fce6ee765e3375
+
+% 0 1 0 1a7ca44e3ec6889816cee3eab31117d1
+
+% 0 1 0 1e785bbec8eea4390caab135db0a1038
+
+% 0 1 0 011bc928594be9671079f0463be7aa63
+
+@ 0 11 0 04668866833ede4e0c6d8ba007dabd45
++ row  `B32`  `fixed32`  四个字节
++ row  `B64`  `fixed64`  八个字节
++ row  `Float`  `float`  四个字节
++ row  `Double`  `double`  八个字节
++ row  `Text`  `string`  带长度前缀的 UTF-8
++ row  `Data`  `bytes`  带长度前缀
++ row  case class  嵌套消息  带长度前缀
++ row  枚举或密封层次结构  `oneof`  由字段编号选定的变体
++ row  `Optional[T]`  `T`，带显式存在性  为 `Unset` 时不写任何内容
++ row  `List[T]`  `repeated T`  对数值或 `Boolean` 打包
++ row  `Map[K, V]`  `map<K, V>`  重复的键值条目
+
+% 1 1 0 01041c275d7f28c01d701e2bccba607d
+
+@ 0 1 0 0729f9881babb30f0b893674c394e8a2
++ 一条消息可以自由混用它们：
+
+% 2 1 0 17f611aeaa4ad3e206a48400967936ec
+
+% 0 1 0 05dc8976bbc480cd191aa89d12d46ba7
+
+% 0 1 0 001b9e38b03d63d701056fda17b7b8e6
+
+% 0 1 0 17a116b892de11b41d3265145b33d763
+
+% 0 1 0 0fefdaa78beee7f202bac112679ed3a4
+
+% 1 1 0 1fe727fbc8a236b217214c8e3036ca89
+
+@ 0 5 0 1c89f1b4ac6db3bd0ceed7d0da135e39
++ repeated 字段也可以是冻结数组，即 `Array[Long]^{}`、`Array[Double]^{}` 或 `Array[Message]^{}`，其字节与 `List` 形式相同。
++ 对于[直接读取或写入](#parsing-directly)的数据，应选择这种表示。
++ 解析器填充它时不会为每个元素分配一个单元，也不会对数值装箱，打印器则按索引遍历它。
+
+@ 0 1 0 0e2a7c415c6010de06d6fe012b106b94
++ ### 存在性、重复与映射
+
+@ 0 2 0 0fd885dfa3ef6d5a0bd7c86e30357267
++ proto3 对缺失的处理是众所周知的困惑来源。
++ 在这里，由类型说明适用哪种行为：
+
+% 2 1 0 1b406e3e0b6aa5c10e3665d0a6427ccc
+
+% 0 1 0 1a2d56dabd7a6e461bb4e7231c7806c6
+
+% 0 1 0 1ffc3e5bd292ae1c12a97ba61250be55
+
+% 0 1 0 06d36fe798bbd3e91885939b5044ef24
+
+% 1 1 0 0a94a5070c775bd11dbbc4c8b5d05490
+
+@ 0 2 0 0422b8efd2e33ab001e480a720b5da26
++ `Optional` 字段具有显式存在性。
++ 未设置时它不写任何内容，读回时为 `Unset`，这与存在但为空的字段不同：
+
+% 2 1 0 07941b7d1d2666c806ab096833358a8d
+
+% 3 1 0 0a340f3c56f93406108503758f05eb61
+
+% 4 1 0 18838239412d83b01ceee68c22697d96
+
+% 0 1 0 0efb0cde629c5a891bc84c15b5ecf912
+
+% 0 1 0 1b8f5253fa07ac8d009cecb7e25db0ca
+
+% 1 1 0 0a510acf99e5bad50abbabf0c3764882
+
+@ 0 4 0 09a268fae9cbd769177fc31cd2ee41cd
++ `List` 字段是 repeated 字段。
++ 它保持顺序，并保留具有默认值的元素：列表 `0, 1, 2` 读回时为三个元素，不会丢失零。
++ 重复的数值被打包进单个带长度前缀的字段，这是 proto3 对写入方的要求。
++ 读取方同时接受打包和未打包两种形式，这是 proto3 对读取方的要求。
+
+@ 0 2 0 15f6af7ab23222b2137039080488ad4e
++ `Map` 会变成由键和值组成的标准 repeated 消息，因此 `Map[Text, Int]` 在线上与 `map<string, int32>` 完全相同。
+
+@ 0 1 0 0e55b9e10d81bff31990227db99a2950
++ ### 在消息中导航
+
+@ 0 3 0 12388a9cd0b33ca103370ba381d2ed05
++ 消息的字段以编号而非名称为键，因此光学组件按编号选择字段：`Prim` 是字段 1，`Sec` 是字段 2，依此类推。
++ [透镜](optics.md)可以深入嵌套消息，替换一个字段而不扰动其余部分：
+
+% 2 1 0 041c8ea85c6165d006e52b32dada43c8
+
+% 0 1 0 0c6cc914be2147521db841611263ae02
+
+% 0 1 0 1480eea5d63c739e10bf3e419318e0d1
+
+% 0 1 0 01ce9b1f20a249dd0a94a3be6168c190
+
+% 0 1 0 095a9c715a9fe5ba045c1f8ae2152f70
+
+% 1 1 0 1a66dc59c6d30b520ef090dc18d5ac65
+
+% 3 1 0 1050d4a66e55c55301f568d81a36ee7c
+
+% 4 1 0 069b7deb2f92afa218cb60253e742ab0
+
+% 5 1 0 177a7334879920061a8a2e8e0d08715d
+
+% 0 1 0 1c61c07464a3b3db009087ab80fd038b
+
+% 1 1 0 17be8062455485f70202053395a09c55
+
+@ 0 2 0 00b5d89b9cf0f57f1025e49c39a03530
++ 当一条消息必须在修改一个字段后转发、而其余一切原样传递（包括本程序不认识的字段）时，就该用它。
+
+@ 0 1 0 0cc2c6ad40b665a60a8186deeb082e3f
++ ### 错误
+
+@ 0 2 0 11d8432f63c4283b1455fa17bee71b9f
++ 格式错误的消息会抛出 `Protobuf.Error`。
++ 它指出问题所在，若是字节中的错误，还会给出其偏移量，因此线上的错误可以从错误信息而不是十六进制转储中调试：
+
+% 2 1 0 07c00ab9bb896713155a8899bb56a830
+
+@ 0 7 0 1cf2225535256ae705dd52b63e3bd0ec
++ column  原因
++ column  抛出时机
++ row  `Truncated`  数据在某个字段中间结束
++ row  `MalformedVarint`  某个 varint 格式错误
++ row  `UnexpectedWireType`  某个字段的线上类型无法由其 Scala 类型读取
++ row  `Overflow`  某个数值对其类型来说过大
++ row  `MissingField`  缺少必需字段；它给出字段编号，而不是偏移量
+
+% 1 1 0 0268b7a98f54f84107ccf05f9d409bd1
+
+@ 0 2 0 1be3132d2e0caf7210bb6d7f0c4ecef1
++ 偏移量是正在解析的消息或嵌套消息中的位置。
++ 这里丢失了已编码 `Person` 的最后一个字节：
+
+% 2 1 0 14bae7783c3f1caa11829835e6d049b4
+
+% 3 1 0 07645d32310a672a08b3fc4eb793351a
+
+% 0 1 0 036507956a3da5f908cf31ec98bf4ed3
+
+% 1 1 0 07f2b8311cc534e60b2b7413314b03b3
+
+% 0 1 0 0b47b20191ec5a610ced22e2ac8e4b97
+
+% 1 1 0 115fca36959c88bc0bf55ca5ae69bc68
+
+@ 0 1 0 0e3bb68f6ccb7bb70a610920dd1efe90
++ ### 兼容性
+
+@ 0 2 0 0a0bef5f7ad3cbfd1d88c1d2564a5df4
++ 与 `protoc` 的兼容性既由构造保证，也由测试保证。
++ Protocol Buffers 文档中的经典示例消息被编码为其文档所列的字节 `08 96 01`：
+
+% 2 1 0 135d43ac53a0dd361f979a70c5ed7799
+
+% 0 1 0 00a20308385bd42d02944c5664f97c39
+
+% 1 1 0 0c542529c6c8c3640ec60cafc78f6ddc
+
+% 3 1 0 1ffd655bcae95e9a1a8b11734819bcac
+
+% 4 1 0 0d96e4c3517d82f00087f20b6aa49f31
+
+% 5 1 0 06219e2a1d7bfaa510642bab15b55514
+
+% 0 1 0 0776f562a70603cd130d258a4f9323dd
+
+% 1 1 0 18224491e314102f01cb68317853eb24
+
+@ 0 3 0 17103336169b872710e8fc9b7bfd6d03
++ 定长数值类型的编码是对照记录下来的线上数据检查的，而不只是写入再读回，因为即使两者都错，写入和读取也会彼此一致。
+
+@ 0 3 0 0cea8b00a7fb91a10be24797488df0d6
++ 当消息不需要互操作时，可以完全省略字段编号。
++ 没有注解的消息按声明顺序从一开始为字段编号，这正是 `protoc` 对相同声明会生成的结果：
+
+% 2 1 0 14a90a76bbbe3b1119b5a42086bd145c
+
+% 0 1 0 0ca22e7e25807c4b1bae144ef355b864
+
+% 1 1 0 1c388e93c408d8981692577bd062d418
+
+@ 0 1 0 0d7d72dd795d6afd0ab45189385226ce
++ ### 直接解析
+
+@ 0 3 0 1099374a9151d56100ddc9604d227842
++ 拥有 `Protobuf.Parsable` 实例的类型直接从线上字节逐字段读取，不会构建中间的 `Protobuf` 值。
++ 该实例在[编译时]派生，并为这种确切形状的消息组合出一个解析器：
+
+% 2 1 0 1538f11f825f70570c757fb4fbd9d7a4
+
+% 3 1 0 10720197723e35c81e8b39f41af10c50
+
+% 4 1 0 1458100a672abb7f1917ef9619a88a89
+
+% 0 1 0 19956a4741695f110530020d8e4ca10e
+
+% 0 1 0 062ed8701236046300587e7836ed585a
+
+% 0 1 0 0f34afb80a8d9f2f0fb88b175ad15b27
+
+% 1 1 0 1c59905b481005c60d1416f828f69a37
+
+@ 0 3 0 134ecdc33ac2f09919a51d03d12a90eb
++ 该派生需按名称导入。
++ 如果消息的字段类型具有手写的 `Inlinable` 实例，还需要 `locomotion.staged` 模块，它在代码编译时对这些实例求值。
++ 没有它，这样的字段会通过其 `Decodable in Protobuf` 解码。
+
+@ 0 6 0 185475710071c24a0eaf7e600f432189
++ 从[流](streams.md)读取的方式相同，输入永远不会先被拼装起来。
++ 解析器在每个数据块到达时读取它，因此跨两个数据块拆分的字段，与完整到达的字段读取结果完全相同。
++ 占用的内存以正在读取的那一个字段为界，但 oneof 除外，在选定其变体期间会保留其消息。
++ 相比之下，`read[Protobuf]` 会把整条消息读入内存，因为 `Protobuf` 值就是它的字节。
+
+@ 0 1 0 1abd37e896cbdb3e12c3207c12bff33f
++ ### 直接打印
+
+@ 0 5 0 076bbac385dc49d205b83332248e0705
++ 同一个派生也生成写入一侧。
++ `Protobuf.Printable` 实例把值的字段直接写入输出数组。
++ 它分两遍进行，一遍测量每个嵌套长度，一遍写入。
++ 没有字段会被编码为中间的 `Protobuf` 值，也没有嵌套消息会先被编码再复制到其父消息中。
++ 当作用域中有实例时，`in[Protobuf]` 会使用它：
+
+% 2 1 0 0e6d976f67ff78601177597e807238d8
+
+% 3 1 0 02ed5603b9b83af51812f9f7bd667946
+
+% 4 1 0 0a9f5ed0edd4dc13074c58d61e6849c0
+
+% 0 1 0 15d88510bf3ee27a1b82d34b7f764fa9
+
+% 0 1 0 11efaf3a47554a351b4ed306b2f06dd1
+
+% 1 1 0 084d02545e5bbfb20f32bb9884be09fd
+
+@ 0 3 0 183c6d9b8af63a080cbccd962a867647
++ 其字节与派生编码写出的字节完全相同。
++ 因此，一条消息可以在连接的一端直接打印，在另一端通过 `Protobuf` 值解码。
+
+@ 0 3 0 1697a8ae416d8ac716523f36597e503b
++ `in[Data over Protobuf]` 一步写出字节，是 `read[Person in Protobuf]` 的镜像。
++ 存在 `Printable` 时它直接打印，否则通过 `Protobuf` 值编码：
+
+% 2 1 0 18c7083c41802e441d63de73b2475831
+
+% 0 1 0 03c801bf8d5fea8208606aadd6c5fa70
+
+% 1 1 0 1e3fddd8869469010d668f36f791c031
+
+% 3 1 0 1b20d6811d74dbbb0b7efd5cee74bcd9
+
+% 4 1 0 06e37187686ce73c119548a6a32a9aff
+
+% 5 1 0 104bb116f25ddb06074cca367b8ef1d5
+
+% 0 1 0 14fe786655b59ef71698ce47aeadf86d
+
+% 1 1 0 1806acb76d44d4f40e63440023137f55
+
+@ 0 1 0 1c555ed5399ee61c077ba377bf165e62
++ ### 为每个类型选择路线
+
+@ 0 2 0 091846eaf15f4bc80b41b28f66c8ea4d
++ 为每个类型声明实例是选择启用的一种方式。
++ 消息也可以一次把它的两个实例都生成到其伴生对象中：
+
+% 2 1 0 08cfa78ef3157635113e4a04aee8eea5
+
+% 0 1 0 17fa726b107642630e155ba9c6bdc4a4
+
+% 1 1 0 0af73fd2e2f580250c45cf18bec729e1
+
+@ 0 2 0 09b3e91d07f424e51a0cd457fb445698
++ 然后，单个导入即可为作用域中的每个消息和 oneof 选择路线，无需任何声明。
++ 泛型 case class 或集合既不是消息，也不是 oneof：
+
+% 2 1 0 11563f180ef238bd0801b45a5aee7ae9
+
+@ 0 6 0 0b5a104f3eebb47e12327d605e10bbb4
++ column  导入
++ column  对于消息或 oneof
++ column  对于其他任何类型
++ row  `codecs.direct`  生成的解析器和打印器  派生的编解码器
++ row  `codecs.derived`  派生的编解码器，即使作用域中有直接实例  派生的编解码器
++ row  `codecs.strict`  生成的解析器和打印器  编译错误
+
+% 1 1 0 1c4a5ca0c3b60b3f0303bde3b2d28ecc
+
+@ 0 1 0 0611235d2f5642a31571e7cd0e240bd3
++ 这些模式互为替代，因此一次只导入一个。
+
+@ 0 3 0 18693999764dea6a1fbae92c198bcfbf
++ 在 `codecs.direct` 下，派生了 `Protobuf.Direct` 的类型使用它一次性生成的实例，而不是在每次使用时重新生成，后者会耗费编译时间。
++ 两种路线的结果相同。
++ 只有速度不同，以及错误中报告的位置不同。
+
+@ 0 4 0 0bd395e700bf1597112c46355e87be7d
++ `codecs.strict` 是供不得回退的代码使用的 `codecs.direct`。
++ 对没有直接编解码器的类型使用 `read[Play in Protobuf]` 或 `in[Data over Protobuf]` 是一个编译错误，错误中会指出该类型。
++ `in[Protobuf]` 指的是线上值本身，不受限制。
+
+@ 0 1 0 1aafd36eb32adf7712df97508aec736e
++ ### 基于 HTTP 的 Protocol Buffers
+
+@ 0 4 0 1aea70cc2abd54a600d2310312575a6c
++ `Protobuf` 值可以作为请求正文或响应正文，媒体类型为 `application/protobuf`，正文到达时会被解析回来。
++ 因此，二进制 API 的使用和提供与 [JSON API](json.md#json-over-http) 使用相同的代码。
++ 只有格式的类型不同。
++ [RPC](rpc.md) 在这样的消息之上构建类型化的远程调用。
+
+@ 0 1 0 0a15ebad305c934c1527dd3a42e83d7a
++ ### 相关
+
+@ 0 1 0 1c00c681a61d589f0f5a2d6d0279de30
++ - [二进制数据](binary-data.md)描述了线上格式之下的字节。

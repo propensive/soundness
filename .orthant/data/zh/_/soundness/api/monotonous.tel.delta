@@ -1,0 +1,507 @@
+orthant 2 language
+
+% 0 1 0 0f04ec4b9ac2d4270a232409219e1f6b
+
+% 0 1 0 0327746607af0d4d017246e3ef92dff4
+
+% 0 1 0 0b5938ce7315323607e1922cbc4d93e2
+
+@ 0 1 0 1fef54c88e7aa6b413c770f1985fe026
++ info   字节到文本的基数编码：Base64、Base32、十六进制、八进制、四进制和二进制
+
+% 0 1 0 0ca6d61ddd9511ea1cdae38f1414f6fe
+
+@ 0 5 0 041f8eaa2e3bc6cd05abf95fddc86001
++     _Monotonous_ 以二进制到文本的编码把字节序列化为文本，并把文本反序列化回字节，支持的编码有：Base64、Base32、十六进制（`Hex`）、`Octal`、`Quaternary` 和 `Binary`。
++     编码以类型命名，而确切的字符集——即 `Alphabet`——是一个 given，通过从 `alphabets` 包中按名称导入来选择，因此 Base64 的标准形式与 URL 安全形式只差一行。
+
+% 2 1 0 17718bfddd19c98f0ac55cc76d761666
+
+% 3 1 0 168bc7db22b549b019549e55d2f8290d
+
+% 4 1 0 194b794db4544dfa07cdf12b1f14f48c
+
+% 0 1 0 1ce543c070756ca7033d2356903af397
+
+% 1 1 0 16cc6d8804722b8a0f7317e8512d864e
+
+% 0 1 0 1abfbad6ff4729681f28e58b312328fc
+
+% 0 1 0 15772585f9bff79911c339727e6616b6
+
+% 0 1 0 109138fe5c33b8090eecec60aedf49d6
+
+% 1 1 0 0c62cf8e7fb88c0212cc83d314a1cb22
+
+@ 0 5 0 1014dcc6be9089cd095705eaf1a3313c
++     这是*序列化*，而不是 JSON 或 XML 意义上的编码：字节变成文本，而不考虑字节的含义，这就是这些操作叫作 `serialize` 和 `deserialize` 的原因。
++     `serialize` 接受任何 `Encodable in Data` 的值；`deserialize` 根据字母表校验每个字符，遇到字母表中没有的字符就抛出 `Serialization.Error`，因此它需要一个 `Tactic[Serialization.Error]`。
+
+@ 0 6 0 08d5886aed073b641cf91f837339086a
++     默认情况下作用域中没有任何字母表：`alphabets` 包中的 given 必须按名称导入，因为 `import alphabets.*` 不会导入 given，而 `import alphabets.given` 会一次引入每种编码的所有字母表，从而产生歧义。
++     *严格*字母表只读回自己的字符，而*包容*字母表还接受公认的等价字符（例如十六进制的另一种大小写），因此解码的严格程度由导入来选择。
+
+@ 0 3 0 0ca39e65ab7d04d0023fe1b4deaf6fd7
++     `Alphabet` 也是一个流阶段：`Stream[Data]` 在流动中被序列化，`Stream[Text]` 则被反序列化，无论如何划分数据块，结果都与整值形式相同。
+
+@ 0 3 0 034dd2fdf48f4a0c02e5fab505ae6fb0
++     本库是单一源集 `monotonous.core`，可编译到 JVM、Scala.js 和 Scala Native。
++     一切都导出到 `soundness` 总括包，它的 `alphabets` 包与总括包自己的同名包合并。
+
+% 0 1 0 15791d729f3279830a38588c4d50a8db
+
+% 0 1 0 0be7dd9e12e1dcab08304bca93c0ce3c
+
+% 0 1 0 0ad2782591f60d140d6d818658f06074
+
+% 0 1 0 11d744a95c39c8a71bd90d006bb0c8c6
+
+@ 0 5 0 199e9f7e5dff08d506c7f5d4d885bd02
++ entry .serialize   把字节或字节流渲染为某种基数编码的文本
++     `value.serialize[Base64]` 接受任何 `Encodable in Data` 的值——`Data` 本身，或任何具有实例的类型——并用 `Serializable in Base64` given 渲染其字节，该 given 从作用域中的 `Alphabet[Base64]` 取用字符。
++     编码就是类型参数：`Base64`、`Base32`、`Hex`、`Octal`、`Quaternary` 或 `Binary`。
+
+% 2 1 0 11d153101cf128d611722288423c16a5
+
+% 0 1 0 04aa9f2aeb9a8e550a7b1ac07fa54615
+
+% 1 1 0 0fb7adc0dbd193ce010934a82736d35c
+
+% 2 1 0 0d6a4f06c551a2f213f950866ed189fa
+
+% 0 1 0 1308721e9fd643b408a63cf26791c6d4
+
+% 0 1 0 1552e7416596c4b31f5d5e5ec233ce93
+
+% 0 1 0 13cacd78d4d5211416f0bf275f449ec2
+
+% 1 1 0 0ff91a5187174e831853eada38985058
+
+% 2 1 0 062265059c0f7bf81c46488cac19c2a2
+
+% 0 1 0 043d811fd97799f61ec772c9b3e4492b
+
+% 0 1 0 0f1a72561a705c280373dca8a88f2e54
+
+% 0 1 0 08c43137b0b925f30ef8ddb259c2b270
+
+% 1 1 0 174031c42525f4d3002161adde210dc2
+
+% 2 1 0 02f178740b82fede0d787a6ea7b5e5ee
+
+% 3 1 0 166c78db06ac943801db709e06e4fc74
+
+% 0 1 0 076b4168cf38fc170c341c1818673f36
+
+% 0 1 0 07104998c1f996680a1b6ccdb4b1d9c1
+
+% 1 1 0 00da2af86b746d140ddda03e5fb0313a
+
+% 2 1 0 0ba92c2d73b7d5d711c5d3ca2b54a135
+
+% 0 1 0 0ca887bff9f67d880734233f28a8f71d
+
+% 0 1 0 1fad99c5e061e4db00bd63b42af35fcd
+
+% 1 1 0 01862e42227681ce06651135b63c02c7
+
+% 2 1 0 013e12b24eb884021a1c7de1b8369896
+
+@ 0 4 0 14e1016bd024e0da03241a1478e85939
++     URL 安全的 Base64 字母表用 `-` 和 `_` 代替 `+` 和 `/`。
++     带填充的字母表会把输出填充到完整的一组（Base64 为四个字符，Base32 为八个），就像标准 Base64 字母表用 `=` 填充那样；不带填充的字母表（如 URL 安全字母表）则在最后一个携带数据的字符处结束。
+
+@ 0 4 0 0cfbbd85fab95d681d3f04cf978fa5b4
++     同名的扩展方法也作用于 `Stream[Data] over Credit`，它在流动中把流序列化为 `Stream[Text] over Credit`，把作用域中的 `Alphabet` 用作流阶段，并使用一个 `Buffering`（其伴生对象中有一个标准的）。
++     跨越两个数据块的组会被携带过去，因此流式输出的文本与整值形式相同。
+
+@ 0 7 0 16b3763b2df564ca1497728a49537b04
++ entry .deserialize   把某种基数编码的文本或文本流读回字节
++     `text.deserialize[Base64]` 用 `Deserializable in Base64` given 把 `Text` 读回 `Data`，该 given 取用作用域中的 `Alphabet[Base64]`。
++     每个字符都根据字母表（包括其容许的替代字符）进行检查，第一个不在其中的字符会连同其位置作为 `Serialization.Error` 抛出；末尾的填充被忽略。
++     它需要一个 `Tactic[Serialization.Error]`。
++     包容字母表接受两种大小写，严格字母表只接受自己的字符：
+
+% 2 1 0 1181737baa083907044290edd4c1cef0
+
+% 0 1 0 08ee26f810439b7b0c705e123fe53216
+
+% 1 1 0 0f10db0bd285002a08ef84e08442f200
+
+% 2 1 0 1d4be4c411116d3117a112405887374a
+
+% 3 1 0 1a81c24a752a8c57096333b1e6d27668
+
+% 0 1 0 0798179fd46066390d73f0f2d8a2bf3e
+
+% 0 1 0 0981ac514ae6fb101412636bdc705e7c
+
+% 0 1 0 063b62b393e46e681d656407b9eb73f9
+
+% 1 1 0 0f498632080902fe1b0b2aa80395a3fb
+
+% 2 1 0 15088b5fd7fc4660112a4506b4265bbd
+
+% 0 1 0 04a436886cee81b01f4f775d062a4d25
+
+% 0 1 0 0fb73bd7d860aebb126dfbc40ec5c7e4
+
+% 0 1 0 09ebe81a86b7351f1fb089bc001636ca
+
+% 1 1 0 16e40de5c5f5242e1d71b9c056d3cc74
+
+% 2 1 0 138c62310dad30220d53b98a9bbabfec
+
+@ 0 4 0 1e9d8f42bb6b1a161526e49992fecab7
++     同名的扩展方法也作用于 `Stream[Text] over Credit`，它在文本流动中进行反序列化，得到 `Stream[Data] over Credit`。
++     它需要作用域中的 `Alphabet`、一个 `Buffering` 和一个 `Tactic[Serialization.Error]`；跨数据块拆分的不完整组和填充会被携带过去，因此无论如何划分数据块，得到的字节都与整值形式相同。
+
+% 2 1 0 12d111da7033c970106ad7aad13f164e
+
+% 3 1 0 101719b909b67b8606632dd829cb219b
+
+% 4 1 0 10c01e0d87ef9389138ec0bd559e54fe
+
+% 1 1 0 19e747950bc9ebb10b491f80514456ba
+
+% 0 1 0 0c5749270dcb646c1f8444e2f8bd7b15
+
+% 0 1 0 138db56aaaf6a6be189bb24ac75d42c1
+
+% 1 1 0 00137dc69f68c0401d4ffa5c872d7dfa
+
+@ 0 1 0 036a95cdb6ba0fc308fd8651f6f41a8f
++ entry .Serialization   各编码的超类型，也是 `Serialization.Error` 的所在
+
+% 1 1 0 0a275e42099b27f408f26364d0b8c88c
+
+@ 0 3 0 03166c5eb9c94e47114540f706bd0b78
++       每种编码都是 `Serialization` 的一个密封子特质——`Base64`、`Base32`、`Hex`、`Octal`、`Quaternary` 和 `Binary`——只用作类型参数，如 `serialize[Base64]` 或 `Alphabet[Hex]`，从不被实例化。
+
+% 0 1 0 17b38e8389e4ec64114faef8f9440c91
+
+@ 0 1 0 1faa862aa2236e1c0adc23a99d6494d5
++   entry .Error   当待反序列化的文本含有不在字母表中的字符时抛出
+
+% 0 1 0 0eb601d2d8703d0a0cbc3f0c257d69cf
+
+@ 0 4 0 0b62d62cd04332730f4aaddf4e06fff9
++         错误 `↯/s.61.1`：_the character `char` at `position` was not valid_。
++         当一个字符既不是字母表自身的字符，也不是其容许的替代字符时，由 `deserialize` 和流式反序列化器抛出。
++         对于字母的另一种大小写，严格字母表会抛出它，而包容字母表则会接受。
+
+% 0 1 0 136a5f198bdaf3ac1a788e9525f64741
+
+% 0 1 0 0a9c20ea134f3fa702331949e4fc1ca4
+
+% 0 1 0 08f78e8db000949909e262ba3b2976b0
+
+% 0 1 0 1ba67de784c51935003aea00479115f5
+
+% 0 1 0 0d77071b9678a6ed168e164da2650df9
+
+% 0 1 0 02125690b11d560710feb200e65921bd
+
+@ 0 2 0 153ab41a97aeae51051fd13ae1085dfd
++     entry #position   无效字符在文本中的索引，从零开始
++     entry #char       无效字符
+
+@ 0 5 0 08e3ac2ce25065e30661c2202f2e57f4
++ entry .Base64   Base64 编码：每个字符六位，四个字符一组，对应三个字节
++     `serialize`、`deserialize` 和 `Alphabet` 的类型参数，从不被实例化。
++     它在 `alphabets` 包中的字母表有 `base64Standard`（RFC 4648，带填充）、`base64Unpadded`、`base64Url`、`base64Xml`、`base64Imap`、`base64Yui`、`base64Radix64`、`base64Bcrypt`、`base64Sasl` 和 `base64Uuencoding`。
+
+% 2 1 0 145603d0a090d740189a249c9f718ddc
+
+% 3 1 0 17f525f123198f951c403777d7e5890b
+
+% 4 1 0 057a63036a1610550e77cde88124c251
+
+% 0 1 0 0dfc58b0a79bc7e30b1d17e92fe642fd
+
+% 1 1 0 0feea18a5b3478a51cf79b8dc199ef47
+
+@ 0 5 0 1b1ae427b73e00aa05e3be50345b563b
++ entry .Base32   Base32 编码：每个字符五位，八个字符一组，对应五个字节
++     `serialize`、`deserialize` 和 `Alphabet` 的类型参数，从不被实例化。
++     它在 `alphabets` 包中的字母表包括 RFC 4648 字母表的严格与包容、大写与小写形式（`base32UpperCase`、`base32StrictUpperCase`……）、扩展十六进制形式、z-base-32、Geohash、词安全字母表以及 Crockford 字母表。
+
+% 2 1 0 123d237920f0624a1d8a57d9f0290e17
+
+% 3 1 0 053618a3e13bb3571d8c51421037f26f
+
+% 0 1 0 0a1109bb809e3ac7025a75bbcfde00e2
+
+% 0 1 0 1a436d8d95f843441588e8b8254e064a
+
+% 1 1 0 1b4dc0e3e024d4ca02e180035d3c07dd
+
+@ 0 1 0 0787e7a1d915d8871251f8de897a6c2d
++ entry .Hex   十六进制：每个字符四位，每个字节两个字符
+
+% 1 1 0 0e69e313d70124900d9b07828ed15251
+
+@ 0 4 0 05df174d7c4df130128f019c01850a26
++       `serialize`、`deserialize` 和 `Alphabet` 的类型参数，从不被实例化。
++       它在 `alphabets` 包中的字母表有读取两种大小写的 `hexUpperCase` 和 `hexLowerCase`、严格的 `hexStrictUpperCase` 和 `hexStrictLowerCase`，以及 `hexBioctal`。
++       十六进制从不填充。
+
+% 2 1 0 1892b96c669b36f10bbd9bbea182b3a6
+
+% 3 1 0 018cc473346149d6190c412847c4405d
+
+% 0 1 0 1265d55fb370a4731d5207a8e44c19ca
+
+% 1 1 0 19827d1ebbb69ca915d2d2bb97c56130
+
+% 2 1 0 17f10dd6c2fd6a7c16ed3ec8ad3c1214
+
+@ 0 5 0 1b25d84def5ac98d1db8541f967bbec8
++       `Hex` 对象也是一个提取器，用于以文本形式书写的十六进制数（`.unapply`）。
++   entry .unapply   匹配表示十六进制数的文本，以 `Int` 给出其值
++       `case Hex(n)` 匹配 `Integer.parseInt(text, 16)` 能读取的文本——两种大小写的数字，可带符号——并绑定其值；其他任何文本，或大到 `Int` 容纳不下的数，都不匹配。
+
+% 2 1 0 1463ca1b1373b7980ba60d786b106556
+
+% 3 1 0 08055441a840eb390216e1f0c48d75c9
+
+% 0 1 0 18bd61c638979ed10682f82c2807b7fe
+
+% 0 1 0 18523af9c96dc7e90754040e8f6e4dcd
+
+% 0 1 0 16022c53941c7173173820287c178e17
+
+% 1 1 0 1f6ea3052e8d602806f88fe0c88752b8
+
+@ 0 4 0 18752538c045316c1d3040150caf9f57
++ entry .Octal   八进制：每个字符三位
++     `serialize`、`deserialize` 和 `Alphabet` 的类型参数，从不被实例化。
++     它唯一的字母表是 `alphabets.octalStandard`，即数字 `0` 到 `7`，不带填充；由于三位不能整除一个字节，最后一个字符携带的数据位可能更少。
+
+@ 0 4 0 0c382bd0d53ae46b1e6df829201a0707
++ entry .Quaternary   四进制：每个字符两位，每个字节四个字符
++     `serialize`、`deserialize` 和 `Alphabet` 的类型参数，从不被实例化。
++     它的字母表有 `alphabets.quaternaryStandard`（`0123`）和 `alphabets.quaternaryDnaNucleotide`（`ATCG`）。
+
+% 2 1 0 1a032d918d150a770ed5e6123483d709
+
+% 3 1 0 0cc22f752ebcd47a19009fcfc6acd922
+
+% 0 1 0 1155e234de655baa10f06e4cecaf2b29
+
+% 0 1 0 19b2d4a47d4d39ab1007687308c4f633
+
+% 1 1 0 1f8f33ead6b4f8131a772d6575b5a6f7
+
+@ 0 3 0 04b5ff42a663571009654eebf7dd5f3a
++ entry .Binary   二进制：每个字符一位，每个字节八个字符
++     `serialize`、`deserialize` 和 `Alphabet` 的类型参数，从不被实例化。
++     它唯一的字母表是 `alphabets.binaryStandard`，即数字 `0` 和 `1`。
+
+@ 0 1 0 0fc9e53ce4b513820cc98ebc59456ce4
++ entry .Alphabet   基数编码所用的字符、其填充，以及它容许的替代字符
+
+% 1 1 0 1da5b4b39949b26806ab2c1607528339
+
+@ 0 5 0 01b87c074faf0cd218fec5c311a019f7
++       `Alphabet[encoding]` 按值的顺序保存编码的 `#chars`——`Binary` 两个、`Hex` 十六个、`Base64` 六十四个——如果设置了 `#padding`，其后还跟着填充字符。
++       它的 `#tolerance` 把更多字符映射到值，反序列化也接受这些字符：正是这一点让 `hexLowerCase` 能读取大写数字，让 `base32Crockford` 把 `O` 读作 `0`、把 `I` 和 `L` 读作 `1`。
+
+@ 0 2 0 09eb0465db99013f1db3400cf28525e8
++       标准字母表是 `alphabets` 包中的 given，按名称导入。
++       自定义字母表是一个局部 given：
+
+% 2 1 0 03ccbd77d06786d108c041dfed090fbc
+
+% 3 1 0 1d5b8bcbabee9daa163683a8435c6a04
+
+% 0 1 0 09a7dc3eb0345cf408250cda173d0613
+
+% 1 1 0 1541872469f891af186c72619753f842
+
+% 2 1 0 1d8c96556b9218f808c086f0d2700f2b
+
+@ 0 3 0 10e4c4dfb1aa481a175e2a26d9473d47
++       文本必须恰好有该编码所需的 `2^bits` 个字符，当 `padding` 为 `true` 时再加一个填充字符；没有任何检查，长度错误会产生错误的输出。
++       字母表是纯的（`caps.Pure`），因此不能捕获能力。
+
+@ 0 4 0 01069ccf6ab6da8c0b76a675c9b3fbaf
++       借助伴生对象的 `.serialization` 和 `.deserialization` given，字母表也是一个流阶段：`stream.via(alphabet)` 根据流的元素类型，序列化一个 `Stream[Data]` 或反序列化一个 `Stream[Text]`。
++       流上的 `serialize` 和 `deserialize` 扩展方法就是这样做的，只是由它们召唤字母表。
+
+% 2 1 0 0545c851535ce90e07804710f490ee5c
+
+% 3 1 0 084293d0770d336e1d8e213dd987a26e
+
+% 0 1 0 03775d0ecd055392006e7b2cb3ffcda6
+
+% 0 1 0 06b1bea58736d4870146a033f3901b5d
+
+% 1 1 0 02df7ddaca8004b912e31bf580814adf
+
+% 0 1 0 1dfbd7c3f0bcf3f80707065b8e9b2043
+
+% 1 1 0 1cc10e992055a5ea15a676924977d41b
+
+@ 0 26 0 1b305ec1c81bbbec0e12e01a86ba610d
++   entry .serialization     把字节作为流阶段通过字母表，得到文本
++       让 `via(alphabet)` 把 `Stream[Data] over Credit` 序列化为 `Stream[Text] over Credit` 的 `Ductile` given。
++       需求按该基数的精确算术换算，因此下游请求 1024 个十六进制字符时，会向上游请求 512 个字节；如果字母表带填充，填充在流结束时写出。
++   entry .deserialization   把文本作为流阶段通过字母表，得到字节
++       让 `via(alphabet)` 把 `Stream[Text] over Credit` 反序列化为 `Stream[Data] over Credit` 的 `Ductile` given。
++       它需要一个 `Tactic[Serialization.Error]`，用于不在字母表中的字符，且该实例会捕获这个战术。
++       在数据块之间拆分的组和填充会被携带过去。
++   entry #chars        按值的顺序排列的编码字符，若有填充字符则随后是填充字符
++   entry #padding      输出是否用 `#chars` 的最后一个字符填充到完整的一组
++   entry #tolerance    反序列化时额外接受的字符，映射到它们所代表的值
++       严格字母表的这一项为空。
++       对包容字母表而言，它通常是另一种大小写的严格字母表的逆，例如 `hexUpperCase` 的就是 `hexStrictLowerCase.inverse`。
++   entry #apply        某个值对应的字符，从零开始
++   entry #invert       某个字符的值，或在给定位置的 `Serialization.Error`
++       `alphabet.invert(position, char)` 在 `#inversions` 中查找该字符；没有值的字符会抛出 `Serialization.Error(position, char)`，因此它需要一个 `Tactic[Serialization.Error]`。
++   entry #inverse      字母表接受的每个字符，映射到其值
++       字母表自身的字符（若有填充字符，则其值排在最后一个之后）以及它的 `#tolerance`，合为一个 `Map`。
++   entry #inversions   以字符码为索引的稠密表形式的 `#inverse`，无值处为 `-1`
++       惰性地只计算一次，使得反序列化对每个字符读取数组而不是 `Map`。
+
+@ 0 1 0 039e84b9529349600064e0347883def2
++ entry .Serializable   把字节渲染为某种编码的文本：`serialize` 背后的类型类
+
+% 1 1 0 175fb857eaf0b85b0e5d8f9e1754830e
+
+@ 0 6 0 0be48b9664f7613a16b3cc2de96e6935
++       `Serializable in Base64` 用 `#encode` 把 `Data` 转为 `Text`。
++       它没有 `Self` 类型，仅凭其 `#Form` 选择。
++       伴生对象为每种编码提供一个 given，各自由作用域中该编码的 `Alphabet` 构建，因此恰好在导入了字母表时才存在实例。
++       Base64、Base32 和十六进制的内核经过特化，且都直接写入 ASCII 字节，因此序列化得到的 `Text` 无需逐字符复制即可构建。
+
+% 2 1 0 0d8dd2ca86b84793195dadd7fc82cb51
+
+% 3 1 0 0dd4dac4b2230ceb0a5783d2e473de2c
+
+% 4 1 0 0f16d09986bbae9206e92c36f14613f7
+
+% 0 1 0 144c3be9f265b7b118f2826e71300cd6
+
+% 1 1 0 0925090354dc13fd1584d6751dfc55e0
+
+@ 0 2 0 0a290453a96855540d70811009dab581
++       `Serializable` 是 `Findable` 的，因此缺少它时的编译错误可以提出能够提供它的字母表导入。
+
+% 1 1 0 0da6319d255de44c1cd01816d63573d2
+
+% 0 1 0 0770be41efdaba9e09c6633478ee6eca
+
+@ 0 11 0 0b7a275505c2d866121ebd2dea4d7b4d
++   entry .base         针对每字符给定位数的编码、基于作用域中 `Alphabet` 的 `Serializable`
++       `Serializable.base[Base64](6)`，伴生对象中各 given 背后的构造器，新的 `Serialization` 子类型可以配合自己的字母表使用它。
++   entry .binary       序列化 `Binary`，使用作用域中的 `Alphabet[Binary]`
++   entry .quaternary   序列化 `Quaternary`，使用作用域中的 `Alphabet[Quaternary]`
++   entry .octal        序列化 `Octal`，使用作用域中的 `Alphabet[Octal]`
++   entry .hex          序列化 `Hex`，使用作用域中的 `Alphabet[Hex]`
++   entry .base32       序列化 `Base32`，使用作用域中的 `Alphabet[Base32]`
++   entry .base64       序列化 `Base64`，使用作用域中的 `Alphabet[Base64]`
++   entry #Form         该实例序列化成的编码
++   entry #encode       字节，渲染为该编码的文本
+
+@ 0 1 0 12115f674619b01117dba8730efe075d
++ entry .Deserializable   把某种编码的文本读回字节：`deserialize` 背后的类型类
+
+% 1 1 0 1ef358b44d9c2027146e392ab9d7c8d6
+
+@ 0 5 0 0cd59c6d2e276c150d85931d712d507e
++       `Deserializable in Base64` 用 `#deserialize` 把 `Text` 转为 `Data`，遇到不在字母表中的字符时抛出 `Serialization.Error`。
++       它没有 `Self` 类型，仅凭其 `#Form` 选择。
++       伴生对象为每种编码提供一个 given，各自由作用域中该编码的 `Alphabet` 构建。
++       错误处理按每次调用进行，因此实例不捕获任何东西。
+
+% 2 1 0 17751e84719e7a1e0b0ead6c247c9bc0
+
+% 3 1 0 101c9d3524fbfe381c0aab6c5da6eca3
+
+% 4 1 0 116fea0c52788f000955ae11f9efc34c
+
+% 0 1 0 12a618ab3fc8ab800817fdfca2fcb19c
+
+% 0 1 0 049f461ce6fe415a10fb13700bdf76ce
+
+% 1 1 0 03b98998a6b48ddd0687822383d3d9a0
+
+@ 0 2 0 0cd2d46b2af42db30b13930f116f589c
++       `Deserializable` 是 `Findable` 的，因此缺少它时的编译错误可以提出能够提供它的字母表导入。
+
+% 0 1 0 0d301b55e59ce57119548c1456c1d2c3
+
+% 0 1 0 1d5de3750da5170d0bba304e4585fe85
+
+@ 0 14 0 0cb429baaa8a6699163db0ba9c6ab23b
++   entry .base         针对每字符给定位数的编码、基于作用域中 `Alphabet` 的 `Deserializable`
++   entry .base64       反序列化 `Base64`，使用作用域中的 `Alphabet[Base64]`
++   entry .base32       反序列化 `Base32`，使用作用域中的 `Alphabet[Base32]`
++   entry .hex          反序列化 `Hex`，使用作用域中的 `Alphabet[Hex]`
++   entry .octal        反序列化 `Octal`，使用作用域中的 `Alphabet[Octal]`
++   entry .quaternary   反序列化 `Quaternary`，使用作用域中的 `Alphabet[Quaternary]`
++   entry .binary       反序列化 `Binary`，使用作用域中的 `Alphabet[Binary]`
++   entry #Form         该实例从中反序列化的编码
++   entry #deserialize   把该编码的文本读回字节，抛出 `Serialization.Error`
++       `deserialize(text)` 读取整段文本，需要一个 `Tactic[Serialization.Error]`。
++       四参数形式 `deserialize(previous, current, index, last)` 解码较长文本中的一个数据块，前一个数据块的末尾可供跨越两者的组使用，而 `last` 在最后一个数据块时设置，其末尾的填充会被丢弃；它是增量解码的基础构件。
+
+@ 0 1 0 004c2d505b04c58c11eae37f67be5542
++ entry .alphabets   每种编码的标准字母表，每个都是按名称导入的 given
+
+% 1 1 0 0742e4fa5200007f16f352b8c31e70c5
+
+@ 0 3 0 186ed42b95fae9ca1225c810f7eb4497
++       作用域中的字母表决定 `serialize` 和 `deserialize` 的确切字符，默认情况下作用域中没有任何字母表：需要按名称导入一个，因为 `import alphabets.*` 不会导入 given。
++       导入同一编码的两个字母表会产生歧义。
+
+% 2 1 0 0497db849f9891ff152ea7d509bfdc9d
+
+% 3 1 0 15f51e7f116c716703aef9a5546fd83b
+
+% 0 1 0 08f8b8dc07cf8439133657af70f81bd2
+
+% 1 1 0 05235898f5649801149f46749e6f57be
+
+@ 0 4 0 12b0633e6411262b15014e9a1d567bfe
++       大多数编码都有一个*严格*字母表，只反序列化自己的字符，还有一个*包容*字母表，同时接受另一种大小写：`hexLowerCase` 写出小写、读取两者，而 `hexStrictLowerCase` 只读取小写。
++       包容字母表的名称中不带 `Strict`，因为它们是通常的选择。
+
+% 0 1 0 0cf4e9bd1c0d48a5152d6401343504ae
+
+@ 0 34 0 10e8c4bbda9449280164271eb4b18041
++   entry .binaryStandard               二进制：`0` 和 `1`
++   entry .quaternaryStandard           四进制：`0123`
++   entry .quaternaryDnaNucleotide      以 DNA 核苷酸表示的四进制：`ATCG`
++   entry .octalStandard                八进制：数字 `0` 到 `7`，不带填充
++   entry .hexStrictUpperCase           大写十六进制，只读取大写
++   entry .hexStrictLowerCase           小写十六进制，只读取小写
++   entry .hexUpperCase                 大写十六进制，读取两种大小写
++   entry .hexLowerCase                 小写十六进制，读取两种大小写
++   entry .hexBioctal                   “bioctal”十六进制，使用数字 `01234567` 和字母 `cjzwfsbv`
++   entry .base32StrictUpperCase        大写的 RFC 4648 Base32，带填充，只读取大写
++   entry .base32StrictLowerCase        小写的 RFC 4648 Base32，带填充，只读取小写
++   entry .base32UpperCase              大写的 RFC 4648 Base32，带填充，读取两种大小写
++   entry .base32LowerCase              小写的 RFC 4648 Base32，带填充，读取两种大小写
++   entry .base32ExtendedHexUpperCase   大写的 RFC 4648“base32hex”（`0`–`9`、`A`–`V`），带填充
++       写出大写。
++       它的容许字符取自小写的标准 Base32 字母表，而不是小写的扩展十六进制字母表。
++   entry .base32ExtendedHexLowerCase   小写的 RFC 4648“base32hex”（`0`–`9`、`a`–`v`），带填充
++       写出小写。
++       它的容许字符取自大写的标准 Base32 字母表，而不是大写的扩展十六进制字母表。
++   entry .base32ZBase32                z-base-32，面向人类的排列顺序，带填充
++   entry .base32ZBase32Unpadded        z-base-32，不带填充
++   entry .base32Geohash                Geohash 字母表，不带填充
++   entry .base32WordSafe               词安全字母表，避免拼出单词，不带填充
++   entry .base32Crockford              Crockford 的 Base32，不带填充，把 `O` 读作 `0`，把 `I` 和 `L` 读作 `1`，读取两种大小写
++   entry .base64Standard               RFC 4648 Base64，使用 `+` 和 `/`，以 `=` 填充
++   entry .base64Unpadded               RFC 4648 Base64，使用 `+` 和 `/`，不带填充
++   entry .base64Url                    URL 和文件名安全的 Base64，使用 `-` 和 `_`，不带填充
++   entry .base64Xml                    用于 XML 名称的 Base64，使用 `+` 和 `-`，以 `.` 填充
++   entry .base64Imap                   IMAP 邮箱名称的修改版 Base64，使用 `+` 和 `,`，不带填充
++   entry .base64Yui                    YUI 库的 Base64，使用 `.` 和 `_`，不带填充
++   entry .base64Radix64                OpenPGP 的 Radix-64，标准字母表，以 `=` 填充
++   entry .base64Bcrypt                 bcrypt 的 Base64，以 `.` 和 `/` 开头，不带填充
++   entry .base64Sasl                   SASL 的 Base64，使用 `+` 和 `,`，不带填充
++   entry .base64Uuencoding             uuencoding 字符，从 `!` 到 `_`，不带填充

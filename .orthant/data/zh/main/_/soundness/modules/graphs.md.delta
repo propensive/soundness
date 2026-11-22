@@ -1,0 +1,8 @@
+orthant 2 language
+
+@ 0 7 0 0f69aa704889b83009468d9357fd3e7e
++ - [树](trees.md)把树和图绘制为文本。
++ - [集合](collections.md)介绍图所共享的词汇，以及 `dysasymptotics` 中的代价确认。
++ - [并发](concurrency.md)运行依赖图所排序的任务。
++ - [不可能状态](../../philosophy/impossible-states.md)解释为什么 `Dag` 不能含有环。
++ - [图表](charts.md)把图绘制为环形图，而[编译器](compiler.md)把工具链构建为一个图。

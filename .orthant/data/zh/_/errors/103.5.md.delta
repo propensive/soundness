@@ -1,0 +1,78 @@
+orthant 2 language
+
+% 0 1 0 16eb7807439918eb0e93df5cdcf01599
+
+@ 0 1 0 1bc17e73757ad821185ab2819e0693e9
++ 当 Telekinesis 无法建立 TCP/TLS 连接时抛出。
+
+@ 0 1 0 1d8ed6a2d2412a231ea0d46e12dff5b7
++ ## 原因
+
+@ 0 3 0 1d605ca80eb27d6c0ff1b9dc773e3319
++ `Connect.Error` 报告连接建立过程中的失败，此时尚未发生任何 HTTP 交换。
++ 消息是 `the TCP connection failed because $reason`。
+
+@ 0 1 0 0982d44e8aec0bbd176df78e68656684
++ ## 变体
+
+% 0 1 0 195eb014e5f6a968082360a4ebaf599b
+
+@ 0 1 0 15fcb2bd8cb9f04a14faebd23104a2c7
++ 无法解析服务器的主机名。
+
+@ 0 1 0 1744e137e508c8a9140df9154c19ebff
++ **示例。** `[↯/s.103.5.1] the TCP connection failed because the server address could not be resolved by DNS`
+
+@ 0 1 0 1513e4df6d01695211baefa37a13a8e5
++ **解决方法。** 确认主机名正确且 DNS 可达。
+
+% 0 1 0 0760008c4207c13205ef4e330d6e9ec8
+
+@ 0 2 0 0ce6f1de3ade498a07b794936fa52e22
++ 服务器主动拒绝了连接（例如该端口上没有任何程序在监听）。
+
+@ 0 1 0 075b40a0993d308306676cba4198ec58
++ **示例。** `[↯/s.103.5.2] the TCP connection failed because the connection was refused`
+
+@ 0 2 0 128ebb63b2441b0a10538c7a1ab6267c
++ **解决方法。** 确认服务器正在运行，并在预期端口上监听；检查防火墙。
+
+% 0 1 0 0e78d0f49813296115caa60898973eda
+
+@ 0 2 0 053de12d95c5949904651faafd904281
++ TLS 握手失败。
++ 嵌套的 `Ssl.Reason` 区分 `Handshake`、`Key`、`Peer` 和 `Protocol` 几类失败。
+
+@ 0 1 0 03cf6eeb763c44170fcc836bdd75a47e
++ **示例。** `[↯/s.103.5.3] the TCP connection failed because the SSL/TLS layer could not be established because the remote peer's identity could not be verified`
+
+@ 0 3 0 09e43bdcbfc4a88c1bb02723adc2a966
++ **解决方法。** 检查内层原因：检查证书和信任链（`Peer`）、密钥材料（`Key`）、支持的协议版本（`Protocol`）或密码套件协商（`Handshake`）。
+
+% 0 1 0 1b5ddd0ae49cb2b909aef043e8d4af7a
+
+@ 0 1 0 1dcb661dcfb3750514199e17ef03eb18
++ 服务器未在允许的时间内响应。
+
+@ 0 1 0 149a6622e99353ec1b028d07f9265256
++ **示例。** `[↯/s.103.5.4] the TCP connection failed because the server did not respond within the time limit`
+
+@ 0 2 0 11ddc6b6043db8c51931a3118530cf82
++ **解决方法。** 用更长的超时时间重试，或调查服务器为何缓慢。
+
+% 0 1 0 115f811f400a7ae2039df4254b9a4138
+
+@ 0 1 0 0a421aea22ad484805c112a8c14fbe8a
++ 原因不属于任何更具体的变体。
+
+@ 0 1 0 146f9e23d7e31dc31db8204c2a0b1c9a
++ **示例。** `[↯/s.103.5.5] the TCP connection failed because an unrecognized error occurred`
+
+@ 0 1 0 13efeb42befe83eb0920f372080aa165
++ **解决方法。** 检查日志以及附加在错误上的任何原因。
+
+@ 0 1 0 004f241cb4a4ed0405cb108ee75b2611
++ ## 另请参阅
+
+@ 0 1 0 1a64f4547cd1c4f50851e87816b6a570
++ - 源代码：`lib/telekinesis/src/core/telekinesis.Connect.scala`

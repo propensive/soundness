@@ -1,0 +1,40 @@
+orthant 2 language
+
+@ 0 9 0 1a241fe6c66dbd9507172f836d70279f
++       队列和写入守护进程属于**调用点**和目的地：在同一源码位置为相等的目的地构建的每个 `Logger` 共享同一套，因此每次召唤都会重新求值的 given 不会每次都启动新线程，而一个在同一行为不同路径构建 `Logger(path)` 的辅助方法会为每个路径各得到一个队列。
++   entry #accepts   日志记录器是否记录某个级别的事件：达到或高于其阈值
++   entry #submit   将转写后的事件连同级别和时间戳排入队列，等待格式化和写入
++       在 `#accepts` 和 `admits` 通过后由 `Loggable.fanOut` 调用；事件在调用线程上格式化，其记录排入队列等待写入守护进程。
++       通常不直接调用。
+
+@ 0 4 0 1f408433dcd1404302e9905c86c98c22
++ entry .dateFormat   带时间戳格式的日期和时间模式：`2026-Nov-04 09:30:00.250`
++     一个按 JVM 默认时区格式化 `yyyy-MMM-dd HH:mm:ss.SSS` 的 `java.time.format.DateTimeFormatter`，由 `timestampedLogFormat` 和 `ansiTimestampedLogFormat` 使用。
++     它是不可变的，因此可以安全地从多个线程使用。
+
+@ 0 18 0 04ccd8bc38e978cb08d9b89461024798
++       `timestampedLogFormat` 和 `untimestampedLogFormat` 可格式化任何 `Communicable` 值，`ansiTimestampedLogFormat` 和 `googleCloudPlatformLogFormat` 则只格式化 `Message`，`Logger[…, Message]` 会把每个事件转写成它。
++       渲染 `Log.Level` 的 `textLevelLogFormat` 和 `teletypeableLogFormat` 由其他格式使用。
++   entry .timestampedLogFormat   一行文本：日期和时间、方括号中的级别，以及消息
++       `2026-Nov-04 09:30:00.250 [INFO] server listening on 8080`，以换行符结尾，适用于任何 `Communicable` 事件，时间戳由 `dateFormat` 格式化。
++   entry .untimestampedLogFormat   一行文本：方括号中的级别，以及消息
++       `[INFO] server listening on 8080`，以换行符结尾，适用于任何 `Communicable` 事件。
++       适合会自行添加时间戳的目的地，例如 `Syslog`。
++   entry .textLevelLogFormat   把 `Log.Level` 渲染为 `FINE`、`INFO`、`WARN` 或 `FAIL`
++       文本格式在插值中使用的 `Log.Level` 的 `Showable`。
++   entry .ansiTimestampedLogFormat   一种 teletype：暗淡的日期和时间、彩色底色上的级别、`>` 以及消息
++       一个 `Message is Inscribable in Teletype`，用于终端，位于 `eucalyptus.ansi` 中。
++       它需要作用域中有 `LogPalette` 来提供颜色。
++       消息被切分为最多 76 个字符的行，每个续行都缩进到与第一行的消息对齐。
++       以 `Out` 为目的地时，它还需要 `writables.outTeletypeWritable` 和一个 `Stdio`。
+
+@ 0 11 0 190478ab175d462714e45d0774375a5a
++       每条记录都以换行符结尾。
++   entry .teletypeableLogFormat   把 `Log.Level` 渲染为该级别对应的 `LogPalette` 颜色上的粗体标签
++       `ansiTimestampedLogFormat` 所用的 `Log.Level` 的 `Teletypeable`，位于 `eucalyptus.ansi` 中。
++       它需要一个 `LogPalette`。
++   entry .googleCloudPlatformLogFormat   每个事件一个紧凑的 JSON 对象，带有 `severity` 和 `message`
++       一个 `Message is Inscribable in Text`，位于 `eucalyptus.gcp` 中，它写出 `{"severity":"WARNING","message":"…"}`，即 Google Cloud 日志代理从容器标准输出读取的结构化形式。
++       各级别映射为 `DEBUG`、`INFO`、`WARNING` 和 `ERROR`；消息是其不带样式的纯文本。
++       不写出时间戳，因为代理会记录自己的时间戳。
++       每条记录都以换行符结尾：每行一个对象。

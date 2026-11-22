@@ -1,0 +1,749 @@
+orthant 2 language
+
+% 0 1 0 0f04ec4b9ac2d4270a232409219e1f6b
+
+% 0 1 0 05ea6290cf383b1415d25369611b31e6
+
+% 0 1 0 0b5938ce7315323607e1922cbc4d93e2
+
+@ 0 1 0 0f4c16a21204bad9072e5e555bd0e99e
++ info   从文本和其他形式出发的带类型转换：`as[T]`、`As` 提取器及其类型类
+
+% 0 1 0 0ca6d61ddd9511ea1cdae38f1414f6fe
+
+@ 0 4 0 1e0f174c3b1dfb1a02e93d38ac1035e9
++     _Distillate_ 把松散的值——命令行参数、环境变量、正则表达式捕获组、解析后文档中的一个字段——转换为带类型的值，并让每种转换可能失败的方式在其类型中可见。
++     它通过三个类型类做到这一点，每个都有自己的失败方式：
+
+@ 0 5 0 1f40c8e4af3c372b0131c492189d8432
++     - `Decodable` 从某种形式中*读出*一个值（`Int is Decodable in Text`），无法读出时通过 `Tactic` 抛出一个带类型的错误；
++     - `Extractable` 朝着某个结果*进行*转换（`Text is Extractable to Int`），拒绝转换时产生 `Unset`，这正是模式匹配所需要的；
++     - `Irrefutable` 进行不会出错的转换（`Byte is Irrefutable to Int`）。
+
+@ 0 2 0 03e046b02184756402acc3ed8e36ca2e
++     日常使用的接口只有两个名称：负责解码的 `as` 扩展方法，以及在模式中负责提取的 `As` 提取器。
+
+% 2 1 0 0b5bafb24f15e461180c83d322b978fb
+
+% 3 1 0 0a27c92abba46e151a001ffa0a3c6a77
+
+% 4 1 0 028090d4d24e2d1e0fb1479a17df6561
+
+% 0 1 0 15d9e9539b91fada08baa01cab1bcfc5
+
+% 0 1 0 05d3bce67d532d2404eaa96a1aba7f7c
+
+% 0 1 0 0d4fa444f9ea8c421b6dd2ef1fd9559b
+
+% 0 1 0 11d9e8d37bd2051e05fd9b2fd4e3497f
+
+% 0 1 0 0aa9d2abc67dc526112a149d803d0377
+
+% 0 1 0 1e49d9c9e84f2caa0d73fe7c506aa055
+
+% 1 1 0 1d9592f73a83d45301b58585e3ac221f
+
+@ 0 8 0 1e7d2d323cfe691c1fd01ce31c14c789
++     该库还提供每种数据格式共用的组件：`Enumerable`，即 `enum` 的派生描述，每种格式的编解码器都用它来命名枚举的分支；`Identifiable`，即命名约定之间的双向映射；`Parsable`，即 `Decodable` 的流式对应物，直接从格式的词法单元读取器中读取值；`Optional` 字段所参考的三种方针 `Decodable.Absence`、`Decodable.Nullity` 和 `Decodable.Fault`；以及 `Codecs`，即在格式的派生编解码器和直接（生成的）编解码器之间进行选择的上下文模式。
++     编码方向，即 `Encodable` 和 `value.in[Format]`，属于位于本库之下的 `anticipation`。
+
+@ 0 4 0 0533d9d3a406aef00a860caf5c6be16d
++     有两个选择包持有必须按名称导入的 given，因为 `import pkg.*` 不会导入 given：`truths`，其中 `Truth` 的各种拼写会被 `Boolean` 解码器在 `true`/`false` 之外一并接受；以及 `codecs`，其中的三种模式一次性为每种格式选择编解码器路径。
+
+@ 0 3 0 0feea3bb2d1ca4ed0670ebde16da78c2
++     该库只有一个源集 `distillate.core`，适用于所有平台。
++     所有内容都导出到 `soundness` 总括包，`truths` 和 `codecs` 包会与总括包自身的同名包合并。
+
+% 0 1 0 18eee1eb80ef1f0010edb99c2b432c96
+
+% 0 1 0 03feafdbc00573331eeff869629b76bc
+
+% 0 1 0 02d222113c027073070fd840449a835f
+
+% 0 1 0 1126c6cb023dff86198187c9e341670e
+
+% 0 1 0 191417dbb69f19ea1cb2cd8a514fcfa1
+
+@ 0 6 0 1c45b9aa1122046a033c2bd96f1e439e
++ entry .as   用 `T is Decodable in` 其形式的实例把值解码为 `T`，或用给定的 `Irrefutable` 进行转换
++     `value.as[T]` 召唤一个 `T is Decodable in F`（其中 `F` 是 `value` 的静态类型）并应用它。
++     由 `Tactic` 构建的解码器（数字解码器需要 `Tactic[Number.Error]`，`Boolean` 解码器需要 `Tactic[Truth.Error]`）通过它抛出错误，因此由作用域中的策略决定解码失败时是抛出异常、在 `safely` 下产生 `Unset`，还是累积错误。
++     解码器的任何部分都不会被保留：结果是一个普通的值。
+
+% 2 1 0 034b6010bb70de160a362b03ac9011dc
+
+% 3 1 0 0cb66c7984b36d441a4980541933949e
+
+% 4 1 0 009359c5327bcbef19d8213ed069d134
+
+% 0 1 0 025b7e36cf092eed07ca38a2243d52b1
+
+% 0 1 0 0e6e7c2a8394e9ae11d720d91eb96799
+
+% 1 1 0 050c9814b2e13294106f7dc0fb57db1f
+
+@ 0 2 0 1cb95139f4c733000f914945f347f5c2
++     第二个重载 `value.as[T](irrefutable)` 显式接受一个 `Irrefutable`，作为普通参数而非上下文参数，并应用它；它不会失败。
+
+@ 0 1 0 186fe446a4d0935816ea357c775720f2
++ entry .As   提取器 `As[T]`，匹配能产生 `T` 的被匹配值并绑定该值
+
+% 1 1 0 00638b1b4bb4bd9214328d369354085f
+
+@ 0 4 0 0752560b1e45fbda18bd92af6e210aac
++       模式中的 `As[T](binding)` 召唤 `scrutinee.type is Extractable to T`，在它产生值时匹配，在它产生 `Unset` 时落入下一个分支。
++       由于它是一个普通的提取器，它可以嵌套在任何模式中：在 `r"…"` 模式的捕获组中、在列表模式内部，或与其他提取器并列。
+
+% 2 1 0 011310976d1797cf0936c3f76a72c20c
+
+% 3 1 0 10d279ab671d4d2918abffb9fc51e092
+
+% 0 1 0 171b8ae5b22e903717e5c3d1f02a7c7a
+
+% 0 1 0 1b0d3ef135a04dd0037a2aff2378f36d
+
+% 0 1 0 1de7b6efbc68fd4204be7e0ed4115006
+
+% 0 1 0 15475c2498c297d61636677955f69f57
+
+% 0 1 0 0a10a96b80746a8b0268dbeb5312ba5b
+
+% 0 1 0 13dc03c2da2bfa7b0dcf17072ac36121
+
+% 1 1 0 180b89ece618f0120a493c9d409829e9
+
+@ 0 4 0 16daec072d67ec75111cb4b17eb9dc6f
++       在捕获检查下，`As[T]` 的显式类型参数会迫使被匹配值经过一个单例类型，而检查器无法把它绑定到实例的 `Self`；结果类型固定的提取器 `As.Int` 和 `As.Boolean` 不接受类型参数，可以在经过捕获检查的代码中使用。
+
+% 1 1 0 1074f8deb6f75860080c281d3cb5350d
+
+@ 0 2 0 1b8c19e70c2337c00749be2984e04588
++   entry .unapply   匹配其单例类型可 `Extractable` 为结果类型的被匹配值
++   entry .Int   固定为 `Int` 的提取器，不带类型参数，供经过捕获检查的代码使用
+
+% 1 1 0 1dcacf4e0db85dc60f69584b97eff31e
+
+@ 0 5 0 1beb115dae1d63f113f436be01e8c171
++         `case As.Int(number) =>` 匹配作用域中有 `scrutinee is Extractable to Int` 的任何被匹配值，从所匹配的值而非单例推断被匹配值的类型，因此实例在捕获检查下能干净地解析。
++     entry .unapply   匹配 `Extractable to Int` 的被匹配值
++   entry .Boolean   固定为 `Boolean` 的提取器，不带类型参数，供经过捕获检查的代码使用
+
+% 1 1 0 14cae39e6d0e7711190bc18088c36193
+
+@ 0 3 0 19cfcfcfdcf8913211e197e9f170bb1e
++         `case As.Boolean(flag) =>` 匹配作用域中有 `scrutinee is Extractable to Boolean` 的任何被匹配值；对文本而言，即恰好为 `true` 或 `false` 的文本。
++     entry .unapply   匹配 `Extractable to Boolean` 的被匹配值
+
+@ 0 1 0 0ab14ede12f714211579a1e27fbe1d75
++ entry .Decodable   从 `Form` 中读取 `Self` 的类型类，无法读取时抛出带类型的错误
+
+% 1 1 0 064101130e0056ae0e6db54d2b268019
+
+@ 0 5 0 07e98f2c5b177a6416f47fdfb0e2cd70
++       `T is Decodable in F` 是单个函数 `F => T`，即 `#decoded`。
++       它就是 `value.as[T]` 所应用的东西，也是每种数据格式的编解码器的构建基础：`Person is Decodable in Json`、`Int is Decodable in Text`。
++       可能失败的实例以上下文参数形式接受其错误的 `Tactic` 并通过它抛出，因此错误是该 given 所需条件的一部分，而策略在调用 `as` 的地方选择。
+
+@ 0 2 0 175ddaa29c8da5d41ed57a3a391b146e
++       编写实例就是编写这个函数；放在伴生对象中时，无需导入即可找到它。
+
+% 2 1 0 03c9f6a886f8d8f815c4238b8f492e94
+
+% 3 1 0 0e2f18436597be350eb291197f62a843
+
+% 4 1 0 0f19f0c84500869504c3b764b50028e1
+
+% 0 1 0 045b2e8f1474650417954b11a8811d54
+
+% 0 1 0 174099191763bace1654c4c598c14280
+
+% 0 1 0 043633eea5fbd1e70e989b5d7f9bc89e
+
+% 0 1 0 11f9d08a09eea6f803cff33f6f4d5e43
+
+% 0 1 0 0f9ef0564f67647a05fdf695e8d72c8f
+
+% 0 1 0 1f1ced82adada7ce1d4ebbe60c0791de
+
+% 0 1 0 0fb1ecd6457bcf8f1ddec4d6cda99cc2
+
+% 0 1 0 16983d2de67932e805b072a1f296454f
+
+% 0 1 0 0088927ebcc57ad4038a7aedd584b6cd
+
+% 1 1 0 1ab5502455d192f70225e10b0da2d2b2
+
+@ 0 4 0 190785f33a6dc33f15e2d98e6e263965
++       伴生对象持有从 `Text` 到各基本类型以及到任何 `enum` 的解码器，以及 `Optional` 字段所参考的三种方针（`.Absence`、`.Nullity`、`.Fault`）。
++       它扩展了 `Decodable2`，后者中优先级较低的 `generic` 把任何处于自身形式的值解码为其本身。
+
+@ 0 3 0 0043893ce89d7997180ac67c5e6d5743
++       格式的兜底 given（`[value] => value is Decodable in Json` 之类）会与任何基于裸类型参数的伴生对象 given 打平，这是一个歧义错误；类型参数有界（`[item <: Item]`）的 given 更具体，因此胜出。
+
+% 1 1 0 1c1e269b6271aad71020835811fd277b
+
+% 1 1 0 1eb427962326df06140cffe5375e596d
+
+% 1 1 0 07c1273d3005620213081d2dfd33bb5a
+
+% 0 1 0 0938c754f8aebe5607a202ce9f4b4013
+
+@ 0 27 0 172b854ce9c583161939ad0ee6e2bbc2
++   entry .int   从十进制文本解码 `Int`，无法解析时抛出 `Number.Error`
++       需要一个 `Tactic[Number.Error]`。
++       用 `Integer.parseInt` 解析，因此文本必须是可带符号的十进制整数，两侧不能有空格；任何失败，包括溢出，都是 `Number.Error.Reason.Unparseable`。
++   entry .byte   从十进制文本解码 `Byte`，区分无法解析和超出范围
++       需要一个 `Tactic[Number.Error]`。
++       不是整数的文本以 `Reason.Unparseable` 抛出 `Number.Error`；超出 −128 到 127 的整数以 `Reason.OutOfRange` 抛出它。
++   entry .short   从十进制文本解码 `Short`，区分无法解析和超出范围
++       需要一个 `Tactic[Number.Error]`。
++       不是整数的文本以 `Reason.Unparseable` 抛出 `Number.Error`；超出 `Short` 范围的整数以 `Reason.OutOfRange` 抛出它。
++   entry .long   从十进制文本解码 `Long`，无法解析时抛出 `Number.Error`
++       需要一个 `Tactic[Number.Error]`；用 `java.lang.Long.parseLong` 解析。
++   entry .double   从文本解码 `Double`，无法解析时抛出 `Number.Error`
++       需要一个 `Tactic[Number.Error]`；用 `java.lang.Double.parseDouble` 解析，因此指数、`NaN` 和 `Infinity` 按 Java 的规则被接受。
++   entry .float   从文本解码 `Float`，无法解析时抛出 `Number.Error`
++       需要一个 `Tactic[Number.Error]`；用 `java.lang.Float.parseFloat` 解析。
++   entry .char   把文本的第一个字符解码为 `Char`
++       不需要战术。
++       第一个字符之后的文本被忽略，也不检查文本是否为空：宜改用 `As[Char]`，它只匹配恰好一个字符的文本。
++   entry .boolean   根据作用域中任何 `Truth` 拼写、不区分大小写地解码 `Boolean`，抛出 `Truth.Error`
++       需要一个 `Tactic[Truth.Error]`，并收集作用域中的每个 `Truth`（`Every[Truth]`）。
++       文本先去除首尾空白并转为小写，然后依次交给每种拼写；没有任何拼写能识别的文本会抛出 `Truth.Error`。
++       位于 `Truth` 伴生对象中的 `Truth.trueFalse` 总在作用域中，每导入一个 `truths` given，就在它之外增加一种拼写，而不是替换它。
+
+% 0 1 0 14116fcaa006993f068c95fd1ec862a2
+
+% 1 1 0 08d9458eb73012351c93056f35e51984
+
+@ 0 1 0 05ac48424d5a46fa00da1a5f4395d9aa
++         label 只有 true 和 false
+
+% 1 1 0 14ba17509e2a01fd0b208a6db3cdc2cb
+
+% 2 1 0 0c9f1f2234209f970a3c86d120e81b8b
+
+% 3 1 0 17934a0db3514ec511149243c6052024
+
+% 0 1 0 0991a9e8233d719e041fb7d8a3dee6ee
+
+% 0 1 0 0cfb68515eb24ad3069d7c3c87e9d167
+
+% 1 1 0 0eb413b51ea127b8046e515d1c8bd6b9
+
+@ 0 1 0 1da467d1a4b7d15a023368b5f41ed8d7
++         label 增加 yes 和 no
+
+% 1 1 0 0c7ab6496c8c9b651717e185a36aa190
+
+% 2 1 0 0b68b5fdcb1aa0750dade8e0bbd23fa0
+
+% 3 1 0 0bda3ab1adbd0a23089b0381ee32dc9f
+
+% 0 1 0 0200d10b8c4c94fe1a27aee6ad721c56
+
+% 0 1 0 00acdf0e21956f74107132a1429f635e
+
+% 0 1 0 13056ca6d6d006c3135f256a75c9fa98
+
+% 1 1 0 1440c68972f55850061dcf3e511c7a0e
+
+@ 0 1 0 1964bcd8a38f694f1f144d12fe64dcf3
++         label 再增加 on/off 和 1/0
+
+% 1 1 0 042289cc336b7679039b6beb3f0bdebb
+
+% 2 1 0 1f7fd978ecc659a3031a7d0c3521b46c
+
+% 3 1 0 14c760ca98ed0269007d0b429d32f8fe
+
+% 0 1 0 1ec884492935962c0e2f09857b54d72a
+
+% 0 1 0 1edd28f9e631eb331c2b3c6efee88418
+
+% 0 1 0 05324ab952d132031fa7821cd90c1137
+
+% 1 1 0 1a277342ea9dfdc5113023e785963c91
+
+@ 0 7 0 1723b63b019fcae11e31cf493ee42893
++   entry .enumeration   根据名称解码 `enum` 的分支，名称不对应任何分支时抛出 `Enumerable.Error`
++       适用于作用域中有 `Enumerable`（自动派生）和 `Identifiable` 以及一个 `Tactic[Enumerable.Error]` 的任何 `enum`。
++       文本首先经过 `Identifiable` 的 `#decode` 映射，因此可以在文本与分支名称之间放置一种命名约定（输入为蛇形命名，输出为驼峰命名）；错误会列出有效的名称，这些名称经同一个 `Identifiable` 编码回去。
++   entry .Absence   针对文档省略的键的方针：宽松时产生 `Unset`，严格时抛出错误
+
+% 1 1 0 0c74acaa9ac5586d09bea475f2543071
+
+@ 0 6 0 15b3d5ad7118f6a818ee489c0b6ae06a
++         一种按格式索引的方针（`Decodable.Absence in Json`），每种解码 `Optional` 或 `Option` 字段的格式都会参考它。
++         默认值 `.default` 对每种格式都是宽松的：省略的键读作 `Unset`（或 `None`）。
++         格式的 `optionalityOptions` 包提供一个以该格式命名的严格 given（`strictJsonAbsence`），按名称导入，其优先级高于默认值；也可以在局部声明一个。
+
+% 2 1 0 04d2735b6cf48c831f190b9b1a3bc067
+
+% 3 1 0 1c5834e8f858e43a1cc58f87744ff78e
+
+% 0 1 0 0d40d8693ddf593c1b985c24d3ce91d2
+
+% 0 1 0 1bac8baa5acbe6d305ff0039830c895b
+
+% 0 1 0 0a1762596a0bd6ae1a967f5795bb2523
+
+% 0 1 0 0b6b0e2d39ac03b210fe23f432065057
+
+% 1 1 0 0771fb5474794e571cdf29d26d34ce77
+
+@ 0 4 0 0427d94c67170d0b0dfc6a17c2ad694c
++     entry .apply   针对某种形式的缺失方针，严格或宽松
++     entry .default   伴生对象为每种形式提供的默认值：宽松
++     entry #strict   省略的键是否是错误，而不是 `Unset`
++   entry .Nullity   针对格式中显式 null 的方针：宽松时产生 `Unset`，严格时抛出错误
+
+% 1 1 0 129ff32be998367e0207346001298e7a
+
+@ 0 8 0 0d01f8a8fbd275620380095990592436
++         一种按格式索引的方针（`Decodable.Nullity in Json`），只有具有 null 字面量的格式才会参考它。
++         默认值 `.default` 是宽松的：null 读作 `Unset`（或 `None`）。
++         格式的 `optionalityOptions` 包提供一个以该格式命名的严格 given（`strictCborNulls`），按名称导入，其优先级高于默认值。
++     entry .apply   针对某种形式的空值方针，严格或宽松
++     entry .default   伴生对象为每种形式提供的默认值：宽松
++     entry #strict   显式 null 是否是错误，而不是 `Unset`
++   entry .Fault   针对存在但被内层解码器拒绝的值的方针：严格时抛出错误，宽松时产生 `Unset`
+
+% 1 1 0 0f8921d6c7911ad41601861c7ab274e2
+
+@ 0 19 0 0bd5edab8c9641410ba9578446d488a2
++         一种按格式索引的方针（`Decodable.Fault in Json`）。
++         默认值 `.default` 是严格的：内层解码器的错误会原样传出。
++         格式的 `optionalityOptions` 包提供一个以该格式命名的宽松 given（`lenientYamlFaults`），按名称导入；在它之下，被拒绝的值在环境战术的 `tolerate` 下解码，因此在累积式战术下也不会累积任何内容，并读作 `Unset`（或 `None`）。
++     entry .apply   针对某种形式的故障方针，严格或宽松
++     entry .default   伴生对象为每种形式提供的默认值：严格
++     entry #strict   被拒绝的值是抛出其错误，还是读作 `Unset`
++   entry #decodable   这个实例本身，作为在 lambda 中使用的稳定引用
++   entry #decoded   把该形式的值解码为 `Self`
++       唯一的抽象方法：类型为 `Form => Self` 的 lambda 就是一个实例。
++       它可以通过实例在解析时捕获的战术抛出错误。
++   entry #position   用已知的关于所解码形式的信息丰富一个位置焦点
++       默认为恒等。
++       解码器会跟踪值在文档中位置的格式（Jacinta 的 `Json.Decodable`）覆盖它，在解码后用从 `Form` 得到的信息细化焦点。
++   entry #map   同一形式下针对新类型的解码器，在解码后应用一个函数
++       `summon[Int is Decodable in Text].map(Percent(_))` 解码一个 `Int` 并将其包装。
++       结果同时捕获这个解码器和该函数。
+
+@ 0 1 0 00d3a3ff4c35149a0d74487d592a91eb
++ entry .Decodable2   `Decodable` 伴生对象中优先级较低的 given
+
+% 1 1 0 1797feabbfbe3b4402bfb183a1304ae4
+
+@ 0 5 0 1ce067269c2698ef1dda493948858953
++       `Decodable` 伴生对象所扩展的特质，使其中的 `generic` given 的优先级低于伴生对象自身声明的每个 given。
++   entry #generic   把任何处于自身形式的值解码为其本身：`T is Decodable in T`
++       恒等解码器，因此 `json.as[Json]` 或 `text.as[Text]` 不需要单独的实例。
++       由于它位于伴生对象的父类型中，其优先级低于伴生对象中的具体 given。
+
+@ 0 1 0 194ff3f7d8cf348f106524daec041b51
++ entry .Extractable   把 `Self` 朝 `Result` 转换的类型类，拒绝转换时产生 `Unset`
+
+% 1 1 0 1bf4fcd2d29ceb101cec1b68d548ab8a
+
+@ 0 3 0 16c88828a013173605fde210a1783b2a
++       `Text is Extractable to Int` 是单个函数 `Text => Optional[Int]`，即 `#extract`；它的 `#unapply` 是 `As[T]` 提取器所调用的方法，因此一个实例就是一个模式。
++       它从不抛出错误：无法转换的输入产生 `Unset`，匹配则落入下一个分支。
+
+@ 0 6 0 1259f3879484518e061d2bead3b72ebe
++       伴生对象持有从文本到每种基本类型的转换、数值类型之间的每种收窄（当值无法经受往返转换时都会拒绝）、从文本按名称到 `enum` 分支的转换以及从 `Int` 按序数到枚举分支的转换、经由 `Optional` 的提升，以及一个来自任何 `Decodable in Text` 的桥接，它在 `safely` 下运行解码器。
++       正是这个桥接让 `As[EmailAddress]` 或 `As[Uuid]` 对每个可从文本解码的类型都有效。
+
+@ 0 1 0 120ab1b0428fb007010b4c859b8db7b4
++       实例可以借用一个已有的实例：
+
+% 2 1 0 068f775d4ec116ca1f759d733b8e43bd
+
+% 3 1 0 0b6b0f0b760e57230d07eb2a16d8d2a1
+
+% 0 1 0 035909b90ccd67ea151c13bb1cab9cbe
+
+% 0 1 0 194227e2fc4d24ee142450195dbe27ec
+
+% 0 1 0 0a8722d2bd58a8d2192173456963f921
+
+% 0 1 0 1caa744938283c5e03e994997539ff37
+
+% 0 1 0 0f8a541d978a52780187be28ba9b8b0b
+
+% 0 1 0 1e55cb4ec318aa0818bebd73a2a280df
+
+% 0 1 0 0ebb44c51cf6a89b0660a84a5b7b1e37
+
+% 1 1 0 19784a7d054438bb10a7c8db1397dec4
+
+% 0 1 0 080db42da7bc15e405b077d27fe1e8a9
+
+% 1 1 0 09b7b55571385cbb0d49806872a1b581
+
+% 0 1 0 041a5fc90ebd79391834188a079b87e6
+
+@ 0 42 0 1dadf24f0be30ae50c78634d9064a8dd
++   entry .decodable   提取任何具有 `Decodable in Text` 的类型，在解码器抛出错误处产生 `Unset`
++       从 `Decodable` 到 `Extractable` 的桥接：解码器在 `safely` 下应用，因此它抛出的任何错误都变为 `Unset`。
++       它让每个可从文本解码的类型都能与 `As[T]` 一起使用。
++   entry .optional   经由 `Optional` 提升提取器：`Unset` 仍为 `Unset`
++   entry .irrefutable   `String` 先转换为 `Text`，再用 `Text` 的 `Irrefutable` 转换
++   entry .textChar   从恰好一个字符的文本中提取 `Char`
++   entry .textByte   从文本中提取 `Byte`，拒绝无法解析或超出范围的文本
++   entry .textShort   从文本中提取 `Short`，拒绝无法解析或超出范围的文本
++   entry .textInt   从文本中提取 `Int`，拒绝不是放得下的十进制整数的文本
++   entry .textLong   从文本中提取 `Long`，拒绝不是放得下的十进制整数的文本
++   entry .textFloat   从文本中提取 `Float`，拒绝不是数字的文本
++   entry .textDouble   从文本中提取 `Double`，拒绝不是数字的文本
++   entry .textBoolean   从恰好为 `true` 或 `false` 的文本中提取 `Boolean`，区分大小写
++       与会去除首尾空白、转为小写并参考作用域中每个 `Truth` 的 `Boolean` 解码器不同，`As[Boolean]` 只匹配这两个确切的单词。
++   entry .shortByte   把 `Short` 收窄为 `Byte`，拒绝放不下的值
++   entry .intByte   把 `Int` 收窄为 `Byte`，拒绝放不下的值
++   entry .intShort   把 `Int` 收窄为 `Short`，拒绝放不下的值
++   entry .intFloat   把 `Int` 转换为 `Float`，拒绝 `Float` 无法精确表示的值
++   entry .longByte   把 `Long` 收窄为 `Byte`，拒绝放不下的值
++   entry .longShort   把 `Long` 收窄为 `Short`，拒绝放不下的值
++   entry .longInt   把 `Long` 收窄为 `Int`，拒绝放不下的值
++   entry .longFloat   把 `Long` 转换为 `Float`，拒绝 `Float` 无法精确表示的值
++   entry .longDouble   把 `Long` 转换为 `Double`，拒绝 `Double` 无法精确表示的值
++   entry .floatByte   把 `Float` 转换为 `Byte`，拒绝不是放得下的整数的值
++   entry .floatShort   把 `Float` 转换为 `Short`，拒绝不是放得下的整数的值
++   entry .floatInt   把 `Float` 转换为 `Int`，拒绝不是放得下的整数的值
++   entry .floatLong   把 `Float` 转换为 `Long`，拒绝不是放得下的整数的值
++   entry .doubleByte   把 `Double` 转换为 `Byte`，拒绝不是放得下的整数的值
++   entry .doubleShort   把 `Double` 转换为 `Short`，拒绝不是放得下的整数的值
++   entry .doubleInt   把 `Double` 转换为 `Int`，拒绝不是放得下的整数的值
++   entry .doubleLong   把 `Double` 转换为 `Long`，拒绝不是放得下的整数的值
++   entry .doubleFloat   把 `Double` 转换为 `Float`，拒绝 `Float` 无法精确表示的值
++   entry .valueOf   通过枚举的 `valueOf`，从恰好为其名称的文本中提取 `enum` 分支
++       只需要编译器提供的枚举 `Mirror`：`As[Direction]` 无需编写实例即可匹配 `t"North"`。
++       名称必须与分支名称完全一致；带参数的分支没有 `valueOf`，永远不会匹配。
++   entry .fromOrdinal   按序数从 `Int` 中提取 `enum` 分支
++       拒绝超出枚举范围的序数。
++   entry #extract   转换一个值，无法转换时产生 `Unset`
++   entry #unapply   把值转换为 `Option`，供提取器使用
+
+@ 0 1 0 0e40f143828bc6250eb2293add9b552e
++ entry .Irrefutable   以不会失败的方式把 `Self` 转换为 `Result` 的类型类
+
+% 1 1 0 1030fb2fe54984570781e1d022bd240e
+
+@ 0 4 0 1416d982c70797aa088fe7ad81de95df
++       `Byte is Irrefutable to Int` 是单个函数 `Byte => Int`，即 `#unapply`；由于它是不带 `Option` 的 `unapply`，实例就是一个不可反驳的模式。
++       伴生对象持有 `String` 与 `Text` 之间的转换、恒等转换，以及数值类型之间的每种拓宽。
++       它是一个 `Typeclass.Pure`：实例不捕获任何东西。
+
+@ 0 1 0 0d25e491362704190b80662f3cd0f86b
++       `value.as[T](irrefutable)` 显式地应用一个实例。
+
+% 2 1 0 1f446875b146959c04f918c2c7329a17
+
+% 3 1 0 1079b43257b38de612afa92c3336c37a
+
+% 0 1 0 0ad02bff0579145a0127ee5c57936bd3
+
+% 1 1 0 1c071e94139853821fa7a97dcb29dd4b
+
+% 1 1 0 1f6ce7810dfe8f410bf4290fb3ce2432
+
+% 1 1 0 1758979d56b8b7df087fa2296e159b28
+
+@ 0 18 0 034be711923613e317a323dc8ed3ac92
++   entry .stringText   把 `String` 转换为 `Text`
++   entry .irrefutable   `String` 先转换为 `Text`，再用 `Text` 的 `Irrefutable` 转换
++   entry .textString   把 `Text` 转换为 `String`
++   entry .ident   把任何值转换为其本身
++   entry .byteShort   把 `Byte` 拓宽为 `Short`
++   entry .byteInt   把 `Byte` 拓宽为 `Int`
++   entry .byteLong   把 `Byte` 拓宽为 `Long`
++   entry .byteFloat   把 `Byte` 拓宽为 `Float`
++   entry .byteDouble   把 `Byte` 拓宽为 `Double`
++   entry .shortInt   把 `Short` 拓宽为 `Int`
++   entry .shortLong   把 `Short` 拓宽为 `Long`
++   entry .shortFloat   把 `Short` 拓宽为 `Float`
++   entry .shortDouble   把 `Short` 拓宽为 `Double`
++   entry .intLong   把 `Int` 拓宽为 `Long`
++   entry .intDoule   把 `Int` 拓宽为 `Double`（源代码中的名称拼写有误）
++   entry .floatDouble   把 `Float` 拓宽为 `Double`
++   entry #unapply   转换一个值；它不会失败
++   entry #contramap   来自新类型的不可反驳转换，先应用一个纯函数
+
+@ 0 1 0 0cd006d94d9b83fd0cd9dd86c64cb8b2
++ entry .Enumerable   `enum` 的派生描述：其名称、其分支，以及按名称和序数的查找
+
+% 1 1 0 032ac40b0e026ae01a37087808b3ac42
+
+@ 0 6 0 1a5ac804b3b8163f0264836bda8ee404
++       任何所有分支都是单例的 `enum` 都会派生出 `Enumerable`，无需编写实例：`.derived` 从伴生对象的 `values` 读取各分支。
++       它给出枚举的 `#name`、按声明顺序排列的 `#values`，以及两个方向上的查找，每种查找都返回 `Optional` 而不是抛出错误，因为名称和序数都不保证对应某个分支。
++       每种格式的派生编解码器都用它来命名枚举的分支，因此它们的结果全都一致。
+
+% 2 1 0 17ac936828b77cef1d99bd9ba7beb2e3
+
+% 3 1 0 139cfc9a8a58bc700da333a2ff7e6387
+
+% 0 1 0 04f7d1f6e7978ec51a6e6e62367a998c
+
+% 0 1 0 07c8340a8c5cf84214e2defb7d537c26
+
+% 0 1 0 0a4d36eba12d4ab2045842ce52f49da7
+
+% 0 1 0 1d5c375f2282ad1516eeea06a3198f98
+
+% 0 1 0 0db73de48733f548179c9810fb6b7754
+
+% 0 1 0 05d3051684910fbb18213351a666c61c
+
+% 0 1 0 1adc3a2c3b4fa27a0346a81225b450c0
+
+% 0 1 0 087c20e3a986fb4815ba4214426d30be
+
+% 1 1 0 045588de78f6723e06e98fc8cc7d8594
+
+@ 0 2 0 1f203ccdf021012411c33918a81cdbd6
++       对于没有 `values` 方法的枚举，即带有参数化分支的枚举，派生会以 _enum `T` is not a simple choice_ 中止。
+
+% 0 1 0 145ca79242ed388e089653ac6f6cdbe5
+
+% 0 1 0 09d985b0912f82fc0c7a8b14633403b9
+
+@ 0 2 0 0f4f925746e2fbf116220397d57f4816
++   entry .derived   通过宏为由单例分支组成的 `enum` 派生 `Enumerable`
++   entry .Error   作为枚举解码、但不对应任何分支名称的文本
+
+% 1 1 0 1697f3e701cdf7b716d1b4b3873a5546
+
+@ 0 14 0 1187999dac0a733102ecb6ed35b2b393
++         错误 `↯/s.25.3`：_the specified variant (`inputLabel`) is not one of the valid variants (`validVariants`) of the enumeration `sum`_。
++         由 `Decodable.enumeration` 解码器抛出。
++     entry #inputLabel   未对应任何分支的文本
++     entry #sum   枚举的名称
++     entry #validVariants   每个分支的名称，与解码器所接受的形式一致
++   entry #name   枚举的名称，或其某个分支的名称
++       不带参数时，是编译器所显示的枚举类型名称；应用于某个分支时，是该分支的名称。
++   entry #values   枚举的每个分支，按声明顺序
++   entry #value   具有给定名称或位于给定 `Ordinal` 处的分支（若存在）
++       `value(t"North")` 按确切名称查找分支，`value(Prim)` 按位置查找；没有对应分支时都产生 `Unset`。
++   entry #index   分支从零开始的序数，为 `Int`
+
+@ 0 1 0 0bb07cc37759328313c03564f9f89970
++ entry .Identifiable   命名约定与类型成员名称之间的双向映射
+
+% 1 1 0 112bebbf2c3663601152b1aa38455d3b
+
+@ 0 4 0 09bb7cd9627595d9191b088a2ee01056
++       `Identifiable` 是一对文本函数：`#encode` 把 Scala 名称转换为该约定，`#decode` 再转换回来。
++       `Decodable.enumeration` 解码器在查找分支之前先经过它解码，并报告经它编码的有效名称，因此格式可以把 `first_name` 读作 `firstName`。
+
+% 2 1 0 10a46ba7773c5e000a89492938cf40e2
+
+% 3 1 0 0bdd6b4e3c30ab0713034ce34c096a7b
+
+% 0 1 0 15eb20b547aad48012e54248c30fd66f
+
+% 0 1 0 04802773760a9ac01f9b8c5d82e6bdeb
+
+% 1 1 0 1702470ab58be9960a3983e279acfedb
+
+@ 0 4 0 105e0419856da5120dd64a298665e3f9
++       它是一个 `Typeclass.Pure`，因此实例不捕获任何东西，可以自由共享。
++   entry .apply   由一个编码函数和一个解码函数构造 `Identifiable`
++   entry #encode   把 Scala 名称转换为该约定
++   entry #decode   把该约定中的名称转换回 Scala 名称
+
+@ 0 1 0 1a5bba2902747482096dfe1685ba3da6
++ entry .Parsable   `Decodable` 的流式对应物，直接从格式的词法单元读取器中读取 `Self`
+
+% 1 1 0 08462ecf88c8a92713539f3ec3f71170
+
+@ 0 5 0 0c723fbb9cc937410183ad7c73710fd8
++       `Decodable` 接收的是已构建好的语法树（`Json`、`Xml`），而 `Parsable` 在输入上驱动格式的词法单元读取器，因此复合值在构建时没有中间树：既不分配中间树，也不装箱，也没有第二次遍历。
++       `Transport` 指明格式（`Person is Parsable over Json`），每种格式的子特质固定 `#Reader`（Jacinta 的 `Json.Parsable` 把它设为 `Json.Reader`）。
+
+@ 0 5 0 021cb96a6971efe9084107d95debea26
++       读取器是一个独占的有状态能力，在 `#parse` 的整个过程中被借出；结果中不得保留它的任何部分。
++       错误经由读取器（它携带自己的战术）传递，或经由实例在解析时捕获的战术传递，因此 `#parse` 本身不声明任何错误。
++       用户很少手写这种实例：每种格式都会派生它们（`derives Json.Direct`），由 `codecs` 包选择何时使用它们。
+
+% 1 1 0 12b5f6bf2e8b9349154ab8947fee2c78
+
+% 1 1 0 12c690a5a6f7301f1b365aef66b68fce
+
+@ 0 2 0 09e61e365a27db5610de1ae57b854438
++   entry #Reader   格式的词法单元读取器能力，由每种格式的子特质固定
++   entry #parse   从读取器中读取一个 `Self` 值
+
+@ 0 1 0 01bce77e02edac1f118067a29999386d
++ entry .Number   `Number.Error` 的所在，该错误在文本无法解码为数字时抛出
+
+% 1 1 0 1f74c6d1f4f420810bd280f07eb4d071
+
+@ 0 2 0 00a31ed0956088a71768bad57d7b17ce
++       一个除了其错误类型之外没有任何成员的对象。
++   entry .Error   无法解码为数字，或其数字超出范围的文本
+
+% 1 1 0 10eefdec2f945ee31d0891662ce7fbc0
+
+@ 0 2 0 1a66bcdb63afc0c91c90b5e1f3887a0e
++         错误 `↯/s.25.1`，带有一个表示其 `#reason` 的子代码：_`text` is not a valid `specializable` because `reason`_。
++         由 `Decodable` 伴生对象中的数字解码器抛出。
+
+% 2 1 0 1be13447bc9c4dd419a05c04ab2d4a42
+
+% 3 1 0 101c68c812a8f93f02e279a6cb01198e
+
+% 0 1 0 007d86684f8769fe09636d5f556d8a87
+
+% 0 1 0 1b9accabb61c6934142725b4d9ded9c3
+
+% 0 1 0 14fb3b0fa5a421b41de75f12b33e47b7
+
+% 1 1 0 1de4c9131267adc8046786eb7cfb49da
+
+@ 0 1 0 08ed73cf67302ea809aa4a1446db26b7
++     entry .Reason   数字无法解码的原因：`Unparseable` 或 `OutOfRange`
+
+% 0 1 0 0f0c06beeb68e4ca19dd934fb64b22c4
+
+@ 0 7 0 09836c4c447d4dcf160b025124a152b6
++           一个有两个分支的枚举：`Unparseable`（子代码 1），用于根本不是数字的文本；`OutOfRange`（子代码 2），用于目标类型无法表示的数字。
++       entry #number   该原因为错误编号贡献的子代码
++     entry .communicable   把 `Number.Error.Reason` 渲染为错误消息中的从句
++     entry #text   无法解码的文本
++     entry #specializable   文本被解码为的数值类型
++     entry #reason   无法解码的原因，为 `Number.Error.Reason`
+
+@ 0 1 0 18aa1dfa97365d6d0a5f316fad4e77c7
++ entry .Truth   表示真与假的一种拼写，在作用域中时会被 `Boolean` 解码器接受
+
+% 1 1 0 01d18012762ecc8106aad7f098bda338
+
+@ 0 5 0 0375ad595fa8f5311024635dfad575ab
++       `Truth` 是一对单词：`#affirmative` 和 `#negative`。
++       `Boolean` 解码器收集作用域中的每个 `Truth`，并在对文本去除首尾空白、转为小写之后，接受其中任何一种拼写，因此可以同时有多个 `Truth` 在作用域中。
++       这个伴生对象中的 `.trueFalse` 总能被找到；`truths` 包通过导入增加 `yes`/`no`、`on`/`off` 和 `1`/`0`，是在它之外增加，而不是取代它。
+
+% 2 1 0 1f763295fdc24cdd1a5b676b3097438e
+
+% 3 1 0 04c144829e2fe83f081083c1cba916d3
+
+% 4 1 0 0a3bd6a72c398f481df9c44ad73d643d
+
+% 0 1 0 151794df2d5bf322001700fa158b50fc
+
+% 0 1 0 1124dbb75d2d9be1004a6400f5427f11
+
+% 1 1 0 042d80cb1c98d10b09e8d32c674ca477
+
+% 0 1 0 1a3e6e88a58119be062aab94a1d38efb
+
+% 0 1 0 13ca79f151dac2c114990c791fb342c2
+
+@ 0 2 0 1fd945b992554fe0049f7ef9fa0c45ae
++   entry .trueFalse   拼写 `true`/`false`，总是通过伴生对象在作用域中
++   entry .Error   作用域中没有任何 `Truth` 能识别为 `Boolean` 的文本
+
+% 1 1 0 1ee7ebbaeb44e8050b2c4f4c3dc3b72f
+
+@ 0 6 0 12872974d5595bd1179d4f78ce336bf3
++         错误 `↯/s.25.2`：_`text` is not a recognized Boolean_。
++         由 `Boolean` 解码器抛出。
++     entry #text   原样给出的文本
++   entry #affirmative   表示 `true` 的单词，小写
++   entry #negative   表示 `false` 的单词，小写
++   entry #apply   若文本是这两个单词之一，则读作 `true` 或 `false`，否则产生 `Unset`
++       精确比较：`Boolean` 解码器在调用它之前会去除首尾空白并转为小写。
+
+@ 0 1 0 12ed1f512889a09c0b89a222386fa5ab
++ entry .truths   `Boolean` 的更多拼写，导入后各自在 `true`/`false` 之外被接受
+
+% 1 1 0 193dade30f77e1841e5dae48fe69b6fa
+
+@ 0 3 0 00b340a8a5fae8161cb4cae3fee86e77
++       一个选择包，其中的 given 需按名称导入，因为 `import truths.*` 不会导入 given。
++       与大多数选择包不同，导入是叠加的：`Boolean` 解码器收集作用域中的每个 `Truth`，因此每次导入都会增加一种拼写。
+
+% 2 1 0 1db39401a4f7118a06b7aef0bfc61db0
+
+% 3 1 0 13ce7595d3bf3b4a003ce8ec45f74bb8
+
+% 4 1 0 0a570789d1f9a7e70957d5fffe424d7c
+
+% 0 1 0 095d08b9debd08d806fef95026a94d05
+
+% 0 1 0 163bc075406b1e9018842272303dbf26
+
+% 1 1 0 1b71a7e84755160a19c1a914cfb6d6f6
+
+% 0 1 0 147f2ca999da4a4209fc6e103cf50ab6
+
+@ 0 3 0 1ed53d23a26917f516ed8db47bf77098
++   entry .yesNoTruth   把 `yes` 和 `no` 接受为 `Boolean`
++   entry .onOffTruth   把 `on` 和 `off` 接受为 `Boolean`
++   entry .oneZeroTruth   把 `1` 和 `0` 接受为 `Boolean`
+
+@ 0 1 0 1fe5b45965fe7d730ae065b8eb45912a
++ entry .Codecs   在格式的派生编解码器和直接编解码器之间进行选择的上下文模式
+
+% 1 1 0 14b96725c505264302bc31814b8f8503
+
+@ 0 7 0 0963dd4a3c4bd00b0e01378126dfb22a
++       每种具有生成（“直接”）编解码器的格式都提供两条通往带类型值的路径：派生路径，它构建格式的语法树再对其解码（或编码为语法树）；直接路径，它驱动格式的词法单元读取器或打印器，直接读入或写出该值。
++       格式的伴生对象提供以其中某种模式为条件的 given，因此从 `codecs` 包中做一次导入，就能一次性为每种格式选择路径。
++       作用域中没有任何模式时，类型恰在它拥有自己的直接实例（显式 given 或 `derives`）时走直接路径，否则走派生路径。
+
+@ 0 2 0 1549b958197863e9145f755aabc1ec71
++       两条路径上的结果相同；只有速度和错误诊断信息中的位置不同。
+
+% 0 1 0 161310760b33b0b5027589f7ae117d2c
+
+% 1 1 0 0fce97824206fe4f059cfd21fe86cf27
+
+@ 0 11 0 0a47e9ac98284851106e85252e3b1112
++   entry .Direct   只要类型可内联，就采用生成的编解码器的模式
++   entry .Derived   即使存在直接实例，也采用派生编解码器的模式
++   entry .Strict   采用生成的编解码器、并在类型没有生成编解码器时报编译错误的模式
++       `Strict` 是一种 `Direct`，因此格式的生成实例在两者之下都适用；严格性在入口处（`read[Play in F]`、`in[Text over F]`、`in[Data over F]`）添加，格式用 `.strictFailure` 对这些入口进行门控。
++   entry .strictFailure   在 `codecs.strict` 下，格式针对没有直接编解码器的类型报告的编译错误
++       一个以 _`format`: `T` has no direct codec, and `codecs.strict` does not take the derived one_ 中止编译的宏。
++       它在某个 given 已被选中之后从该 given 内部抛出，因此它是搜索的结果，而不是搜索可以跳过的一个失败候选项。
++       供格式作者使用。
+
+@ 0 1 0 0a54052477f669f406532b4a1edc8099
++ entry .codecs   三种编解码器模式，每种都通过导入一次性为每种格式选择路径
+
+% 1 1 0 104cfcdd81c04ca510869d5410d67e5e
+
+@ 0 3 0 19b4db39dd3d6aea028e38a9d03332cf
++       一个选择包，其中的 given 需按名称导入，因为 `import codecs.*` 不会导入 given。
++       这些模式互为替代：同时导入两种，会使它们的 given 在两者都适用之处产生歧义。
+
+% 2 1 0 18caec70af55971d19a1476cbd158081
+
+% 3 1 0 0fa68b6c371e66cc0ae71f8aa4e76a6e
+
+% 0 1 0 0ebe51ab68611d87121007de000a5ab5
+
+% 1 1 0 108b47b7dabf996810445e03678a3a21
+
+@ 0 3 0 0405daf87bd3f69d1d124c8355bf14f3
++       `import codecs.derived` 即使存在直接实例也采用派生编解码器；`import codecs.strict` 采用生成的编解码器，并在原本会悄无声息地走派生路径之处报告一个指明该类型的编译错误。
+
+% 1 1 0 0429a1c3d9114fcd15811370b1c226fd
+
+@ 0 3 0 019a9b7e03f0ccd00c3df2ff6aa10baf
++   entry .direct   为每种格式选择生成的编解码器，只要类型可内联
++   entry .derived   选择派生编解码器，即使作用域中有直接实例
++   entry .strict   选择生成的编解码器，并使没有生成编解码器的类型成为编译错误
+
+@ 0 1 0 0dcea2174f0c852710c1dddb48fdc065
++ entry .internal   `Enumerable.derived` 和 `Codecs.strictFailure` 背后的宏实现
+
+% 0 1 0 1c18810b564d59e609a88422cf8dd919
+
+% 1 1 0 0f71597c1b0bc6cb112bae74ffdfb433
+
+@ 0 3 0 1d995df1e43af4ce0442edaa5a240b8a
++       不供直接使用。
++   entry .strictFailure   `Codecs.strictFailure` 背后的宏
++   entry .enumerable   `Enumerable.derived` 背后的宏

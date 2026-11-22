@@ -1,0 +1,481 @@
+orthant 2 language
+
+% 0 1 0 0644568f5405b1e00e9500a4928391bb
+
+@ 0 1 0 02ed9263154c2802081b650b8e2f33e5
++ ### 概述
+
+@ 0 6 0 0a23682563811afb07731f3dad54f4aa
++ [OpenAPI](https://www.openapis.org/) 文档描述一个 REST API：它的路径、参数，以及请求和响应的 schema。
++ 在这里，这份描述在代码编译时就成为一个*有类型的客户端*。
++ 将 `Api` 指向一份规范，就得到一个值，其导航方式与 API 的路径一一对应。
++ 每个路径段、每个路径参数、每个查询或头部参数以及每个响应类型，都会对照规范进行检查。
++ API 未提供的调用，或类型错误的参数，都无法编译。
+
+@ 0 1 0 1df74c705133fb781e9128941b78cf0f
++ ### 关于 API 规范
+
+@ 0 4 0 08c7043d2f0510ee199443ed842c3fd1
++ OpenAPI 文档是一份机器可读的契约。
++ 遵守它的通常做法是代码生成：一个构建步骤生成客户端，再由工具对其进行编译、版本管理并保持同步。
++ 契约得到了执行，代价是生成的源代码和一条构建流水线。
++ 一旦跳过生成器，调用就只能依据记忆中的 URL 和期望中的 schema 进行。
+
+@ 0 4 0 0422141fedde81c40a716618351dc306
++ 这里则是在编译期间读取规范。
++ 没有需要维护的生成代码。
++ 客户端*就是*规范，由编译器解释，代码与契约之间的偏差就是代码中的编译错误。
++ 这是通过构造、而不是通过审查得到的[正确性](../../philosophy/correctness.md)。
+
+@ 0 1 0 1481fbf4af732f4e15ee7bb06e2a39ac
++ 一切都来自 `soundness` 包，另有几个经过深思熟虑的选择按名称导入：
+
+% 2 1 0 07516880e8d1f7b80c40b81f87a4c6f5
+
+% 0 1 0 1bca28db88d8e18d0fbcefeaacfc679c
+
+% 0 1 0 0db1a0ecc5cc04ab14e285e7be2d415a
+
+% 0 1 0 0ef43ebb468b6866066a6976c6eee4e9
+
+% 0 1 0 08a1699a28eaa36e15c02fc5fa78fa3d
+
+% 0 1 0 0189ca70729c68090dc6a72473b09ed5
+
+% 0 1 0 0f8f39f974ac0234141ba83612357fac
+
+% 0 1 0 04c370b82515acc8175229615827ab1a
+
+% 0 1 0 0d72380027637f36161a75b41303b8f1
+
+% 0 1 0 026901931200bf591262a034768d6b95
+
+% 0 1 0 126ea9b3e0450b920c7880db223bf337
+
+% 1 1 0 0ae73885e623b9501acf5cf6512aaf4e
+
+@ 0 1 0 06a553890939a7f01eb452c4239bf098
++ 本页的示例通过网络调用 API，因此只编译而不运行。
+
+@ 0 1 0 1c6fde30451710861521811ced5b13e9
++ ### 有类型的客户端
+
+@ 0 3 0 1c1b0b3fefc7ae540669e398d4a15511
++ `Api` 在代码编译时从[类路径](classpath.md)读取规范。
++ 规范可以是 JSON 或 YAML，可以是 OpenAPI 3.0 或 3.1。
++ 所得的值按路径进行导航：
+
+% 2 1 0 1cab025b1d0d88b115e399a5c3591c80
+
+% 3 1 0 1bba0033e30343c1144bf6c14908124d
+
+% 4 1 0 10340d4b806ec10c0c40919a06e797a9
+
+% 0 1 0 13b5ee570e3b2db41cda5add7a406e3a
+
+% 0 1 0 174d7eaa319f322e0b38247dab7d0b07
+
+% 0 1 0 0940d1dffaa66c4a1d08976b7c652b41
+
+% 1 1 0 065d00d74c6894b703c52ee19cf7f9c7
+
+@ 0 2 0 0c76a2a7641cff5c06cb0452f5f04572
++ `api.pets` 是 `/pets` 路径，`api.pets(42)` 是 `/pets/{petId}`，其参数的类型由规范决定。
++ 规范中没有的路径无法编译：
+
+% 2 1 0 1fc81c7bda6582ad164c3d42930822ca
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 0 1 0 036507956a3da5f908cf31ec98bf4ed3
+
+% 1 1 0 07f2b8311cc534e60b2b7413314b03b3
+
+% 0 1 0 18ea679918f5c0fe11c19c4c51f33e26
+
+% 1 1 0 0701f3ae4a4c886f1f4a3cd77e01c45a
+
+@ 0 5 0 13e55d41662c65b11be18a03e54237f7
++ 类型错误的路径参数，例如规范要求整数而传入文本，同样是编译错误，在编写调用的地方就会被发现。
++ `type: integer` 且 `format: int64` 的参数是 `Long`，同时也接受 `Int`。
++ 规范中用 Scala 标识符不允许的字符书写的路径段，要用反引号书写，如 `` api.`museum-hours` `` 或 `` api.users.`@me` ``。
+
+@ 0 4 0 0d90e6ec3fab90a61d5e68dd946a563d
++ 基础 URL 来自规范中的第一个服务器，其 `{variables}` 取默认值，并在代码编译时作为 URL 进行检查。
++ 如果规范的服务器是相对的，例如 `/api/v3`，或者没有声明任何服务器，就必须由调用者提供基础 URL。
++ 然后由相对的服务器 URL 扩展该基础 URL：
+
+% 2 1 0 1ed1fade12ad4b351da8e719f802ad84
+
+% 3 1 0 1c505354bfab7ca100848bb9d4105f5b
+
+% 4 1 0 0fbc63455de848e204e9b0d41fb2d79d
+
+% 0 1 0 172d73a2e5505804039a62d23ca9b71f
+
+% 1 1 0 1aa94a5183e1618d00d51ce643dfd073
+
+@ 0 2 0 095bc71d8254a88e010ab32b8bcd4a92
++ 即将发送的内容也是一个值。
++ 在任何经过导航的 `Api` 或 `Api.Response` 上调用 `request`，都会得到一个 `Api.Request`，其字段如下：
+
+% 2 1 0 1dac6cef8913b50104868f85df0cde62
+
+@ 0 10 0 15fdc30c1856712a0cc2e2c89ffd5100
++ column  字段
++ column  包含
++ row  `method`  `Http.Method`
++ row  `base`  基础 `HttpUrl`
++ row  `path`  路径模板
++ row  `substitutions`  模板变量的值
++ row  `query`  `Query`
++ row  `headers`  各个 `Http.Header`
++ row  `body`  正文及其 `MediaType`
++ row  `accept`  所请求的媒体类型
+
+% 1 1 0 0ae6695ef28e25670a653878281b46c0
+
+@ 0 1 0 059fa4f2aa430c9f1899c71925f85586
++ ### 调用
+
+@ 0 3 0 0383effd24f3df7d0d2d9e235002e54b
++ 端点通过其方法调用，查询参数和头部参数作为具名参数传入，请求正文作为一个值传入。
++ `call` 执行请求，并将响应读取为所请求的类型，该类型必须符合规范所声明的响应 schema：
+
+% 2 1 0 1ceb05d89234e95e00bfe58c62f46ecf
+
+% 0 1 0 0907612f06fa588f11e2be0c177dab1d
+
+% 0 1 0 140a1e52810a2ac91f8b8821f2018d0a
+
+% 1 1 0 1ef2d508d77e26920c83bf5a3aebf40c
+
+% 3 1 0 1b065437443ffbd5148d6a1eba967e96
+
+% 4 1 0 148d2f2b445d1c2a17bfb1bdde19fddb
+
+% 5 1 0 06137503110dff361186aaba9e88c881
+
+% 0 1 0 08f0f7200d7efd931582dadd26704fd1
+
+% 0 1 0 0fa9be43f0b030f702b13e7516db7548
+
+% 0 1 0 1c1ca6edae5048bd1e087dcebeced9b1
+
+% 0 1 0 1d810ed057c034660c4382c192dcdc73
+
+% 1 1 0 1b280af1de865ed31354c72432f8f4ad
+
+@ 0 2 0 10be5dce6c6b9e0904e6e840ef595fba
++ 第一个是 `GET /pets/42`，按 schema 解码。
++ 第三个发送一个有类型的请求正文。
++ 最后一个以 `204` 应答且没有正文，因此其结果是 `Unit`。
+
+@ 0 5 0 172b525010ce2d7e021b5618ace9d610
++ 在路径项上声明的参数适用于该路径上的每个操作。
++ 以 `$ref` 写入、指向文档组件的参数会被追踪，`$ref` 形式的响应和请求正文也一样。
++ 当一个操作声明了多个成功响应时，优先选择 `200`，其次是 `201`，再次是编号最小的那个。
++ 请求响应 schema 不支持的类型是编译错误。
+
+@ 0 1 0 1b7f86e886b9e6721eac333f0c5015c3
++ ### 安全
+
+@ 0 6 0 1263aea226c8426b14bfcbe15540f9b7
++ API 的规范会列出其安全方案（可以是位于头部、查询参数或 cookie 中的 API 密钥，HTTP 身份验证，OAuth 2 或 OpenID Connect），并说明每个操作需要其中哪些方案。
++ 凭据来自 [OAuth](oauth.md)。
++ `Credential` 是一个以方案命名的[上下文值]，它持有该类方案所要求的值。
++ 需要凭据而无人提供的操作无法编译，错误会列出能满足每种备选方案的 given：
+
+% 2 1 0 120e0ab2d0d2dd750143b3fead5f98eb
+
+% 0 1 0 1e980b6a0a3dbd71080a01901e24976e
+
+% 0 1 0 11f132c0a80de09f006d96282b02317a
+
+% 0 1 0 0720aaeac5a9afb61537b9a4ee4360f9
+
+% 0 1 0 1fd06584c21e6e4a0fe252f58555f157
+
+% 1 1 0 00ca532c0bd8bc8d0eb3b174e70711ec
+
+% 3 1 0 0a84df6952e5e1ff1a05c7076c58aaff
+
+% 4 1 0 16395928d6c887f40e0dc6cb72a67374
+
+% 5 1 0 0b18c27a78a11e850686ef4c985d1c72
+
+% 0 1 0 194e7ef66c0ffd8c0b48856fc6b0c109
+
+% 0 1 0 0f489ec4d893cce600d1aeb79d94a360
+
+% 1 1 0 1183cf485c773c831dd9162b4a113bca
+
+@ 0 3 0 136a60ac200e3a2e083830fffcd394ec
++ 第一个调用按规范的要求发送 `api_key`。
++ 在第二个调用中，`api_key` 是一个头部参数，因此作为头部发送。
++ 每类方案接受自己的凭据，并以自己的方式发送：
+
+% 2 1 0 0e7006fa5d4a851a18238d530b6471f2
+
+@ 0 7 0 06864b78321b171b0ed4c1dd4ff1503e
++ column  方案
++ column  凭据
++ column  发送方式
++ row  API 密钥  `Credential to Text`  放在方案所指定的头部、查询参数或 cookie 中
++ row  HTTP 身份验证  `Credential to Auth`  放在 `Authorization` 头部中
++ row  OAuth 2、OpenID Connect  `Credential to Authorization`，或对于在别处获得的令牌使用 `Credential to Auth`  作为 `Bearer` 授权
++ row  双向 TLS  不支持
+
+% 1 1 0 0284adf5e07bbf3e1735efbff2f4312d
+
+@ 0 4 0 0c71800e5a7a17cc1d7a5de0e871d5de
++ OAuth 2 或 OpenID Connect 令牌会在请求发出之前，对照该要求所列出的作用范围进行检查。
++ 缺少其中某个作用范围的令牌会抛出 `OAuth.Error`。
++ 当一个操作提供多种备选要求时，使用第一个每种方案都在作用域中有凭据的要求。
++ `security` 为空的操作不需要任何凭据。
+
+@ 0 1 0 0cc2c6ad40b665a60a8186deeb082e3f
++ ### 错误
+
+@ 0 2 0 0945625acabbde4b1258c20f3da6fbb4
++ 操作在成功范围之外声明的每个响应都有自己的错误类型，以其状态命名：
+
+% 2 1 0 1800d77836f4e58419b38e7cabc4f3cc
+
+@ 0 5 0 0e7fdcfd5dd08abe0a3823420bd022e7
++ column  声明的响应
++ column  错误类型
++ row  telekinesis 有命名的状态，例如 `404`、`400` 或 `429`  以它命名的类型：`Api.NotFound`、`Api.BadRequest`、`Api.TooManyRequests`
++ row  `4XX` 范围  `Api.ClientError`
++ row  `5XX` 范围  `Api.ServerError`
+
+% 0 1 0 0824bba54ec3aa6b068fcaf32657fce8
+
+% 1 1 0 0fd047243061e39d120affd8b1964f1b
+
+@ 0 2 0 1d147d3f1bfdadd203eeba9caf16fb69
++ 每个错误都携带错误正文，按以下第一条适用的规则，解释为规范为其声明的类型：
+
+% 2 1 0 03c7258ebf73b6c513806cc93da12bc5
+
+@ 0 6 0 146bde0590f146b905c959dc3f7b7631
++ column  错误正文
++ column  解释为
++ row  JSON 对象  由错误 schema 确定类型的记录
++ row  具有载体的媒体类型  该媒体类型的载体
++ row  其他任何内容  `Text`
++ row  未声明  `Unit`
+
+% 1 1 0 1b5eb0a69de13a27125fbde20826821d
+
+@ 0 3 0 0f1cb4a5d5c578201f4d5b5c0fa60003
++ 操作的 `Api.Response` 将它们的并集记录为其 `Failure`。
++ 因此 `attempt` 给出一个恰好覆盖所声明错误的 `Attempt`，编译器会检查对它的 `match` 是否穷尽：
+
+% 2 1 0 0752ad4507ec75e11805c8bcb793c553
+
+% 3 1 0 030f081d54fbad8500c14f7b600184ab
+
+% 4 1 0 17f52dac9b41791a040cddf682cda8aa
+
+% 0 1 0 1e22c35285e34f1e178a602dec629435
+
+% 0 1 0 18463426bc787b3e1c1537a5ae9763fe
+
+% 0 1 0 0fe56e0114e93240132ffd5b663bae27
+
+% 0 1 0 142a7b7e333251cb0cda5403842e9c83
+
+% 0 1 0 03d0ea359f9335161989e23711282840
+
+% 0 1 0 127c6939262fabdc1ce07085da150749
+
+% 0 1 0 00179837798ebc3a03ee03e89fbb381b
+
+% 0 1 0 0f743abe0d62b05b04144348430dad66
+
+% 0 1 0 09e619aa0d53bf6e1136fff451d4446f
+
+% 1 1 0 047221f06ec1d2b70ef46cd157f54ac8
+
+@ 0 4 0 0185fda21525408f0631483934e0cf99
++ 针对规范未声明的状态的分支，例如对这些操作使用 `Api.Conflict`，无法编译。
++ `call()` 本身通过 [contingency](errors.md) 抛出所声明的错误，每个声明的类型对应一个[战术]，由 `recover` 或 `mitigate` 逐个分支提供。
++ 遗漏其中某个错误的处理函数是编译错误，错误信息会指出遗漏的是哪一个。
+
+@ 0 4 0 10372d0225a706ce0ba89376daaf1cb3
++ 服务器并不总是遵守其规范。
++ 状态未声明的响应会抛出 `Api.Violation`，它携带状态和正文的字节。
++ 每次调用都可能遇到它，它与所声明的错误分开处理。
++ 它是对契约的违背，而不是契约中的某个分支。
+
+@ 0 1 0 03b2b0f7daf019ba05264bc8050f6a19
++ ### 媒体类型及其载体
+
+@ 0 5 0 073d63dd5c6144e307c51bb4d4ecd22a
++ 规范为每个正文指定媒体类型，而 `Construable` 指定承载该媒体类型的类型：`("application/json" is Construable to Json)`，或 `("image/png" is Construable to (Raster in Png))`。
++ 这个[类型类]不带任何操作。
++ 工作由载体的读取器和写入器完成。
++ 每种映射都是 `construables` 系列中的一个上下文值，按名称导入，因此任何内容都不会在没有经过深思熟虑的选择时被解释：
+
+% 2 1 0 0229610353aae7f7155c83fd92a86447
+
+% 3 1 0 199a5b81442b1905098713f4f2aedda2
+
+% 4 1 0 0ea7667a1f27aad80b77267fc0edbc7a
+
+% 0 1 0 11fa83b9ad8352e10f08dbb27105ef09
+
+% 0 1 0 0fdedd74c4b44edb1270fedb5da98917
+
+% 0 1 0 00d857b4e6d1aedf0b9ee7722370611c
+
+% 0 1 0 0f615e10857173b01f2d7da845a3f97b
+
+% 0 1 0 027f52309808a22702f31bbe9ffe4992
+
+% 0 1 0 15fe1026a959dc3811e3b0f2fb441343
+
+% 1 1 0 1636a10c59c9594c0c7746f81d1d7498
+
+@ 0 1 0 1a05da482a183afd176b303cc48b3ef7
++ 以下是所提供的 `Construable`：
+
+% 2 1 0 094354f1f0a1a8320b2f33c7f0f83e72
+
+@ 0 3 0 0b039ffc037adb601d3e7134a2eaa992
++ column  媒体类型
++ column  载体
++ column  given
+
+% 0 1 0 12f608666249c5701bcb9c145ace9d00
+
+% 0 1 0 12185ceb671289d11edce3c892266a89
+
+% 0 1 0 161e36a0c39e0d59075bcc56c2a5b94d
+
+% 0 1 0 040c80190262677c024db0d6ed4025f5
+
+% 0 1 0 1ad4b7632ab2fb12042a443430fede5f
+
+% 0 1 0 0b824b85770b62381e82dea125676cc0
+
+% 0 1 0 1ef625bd694e345e0f41a0f9314ec02f
+
+% 0 1 0 1192d6b9bfb71fb803392fe8e59dbe51
+
+% 0 1 0 16bce76044fcb64e0787051b734de19c
+
+% 0 1 0 0aa00e289fbf1a7c115563158fde6333
+
+% 0 1 0 158fdca274341df91ab4826383af791f
+
+% 0 1 0 02597b2d32cd04d502555fa722562562
+
+% 0 1 0 03699934f42523ce185c71a8340a5b55
+
+% 0 1 0 0072a5710472e2cd0ad4b52577216674
+
+% 0 1 0 11e285cf51cda5c71280c18254fa054a
+
+% 0 1 0 139880ac6f4ffd070b9e83740b423484
+
+% 0 1 0 1797ecc2c1ba2f651c2cff53a80d2c03
+
+% 0 1 0 094e0b8c8470fa781d4ad4e50442b20f
+
+% 0 1 0 08d06da0a0a23535151a3dfeb1335f27
+
+% 0 1 0 11028f4c1625e7de1f40f737ed615fed
+
+% 0 1 0 1b197bc924daed720b57faa12b17d0ea
+
+% 1 1 0 02626f74693f8fc019351e3174547c6f
+
+@ 0 3 0 1ed65689e0c8c2500b117600eea7c147
++ 结构化语法后缀会回退到它所指明的类型，因此 `application/problem+json` 由 JSON 映射解释。
++ 当一个操作提供多种媒体类型时，选择第一个在作用域中有映射的类型，`application/json` 排在最前。
+
+@ 0 4 0 0cf3d5b020c6132e0feb6b729a5ed95a
++ 请求正文被编码为媒体类型的载体，并由该载体的 `Postable` 写出，`Postable` 同样按名称导入，如 `postables.jsonPostable` 或 `postables.xmlPostable`。
++ 本身*就是*载体的值，例如用于 `application/x-www-form-urlencoded` 的 `Query` 或用于 `application/octet-stream` 的 `Data`，按原样发送。
+
+@ 0 1 0 101c62e946dfcef219672f0b763e58f0
++ ### 来自响应的记录
+
+@ 0 1 0 06cc9264d1ea0d340b538351543c0d14
++ 响应可以用以下四种方式之一读取：
+
+% 2 1 0 13b32556be23a19606ecc2fd62a66878
+
+@ 0 6 0 1002d04234df22f803957e6498747ada
++ column  方法
++ column  将响应读取为
++ row  `call[T]()`  一个 `T`，抛出所声明的错误
++ row  `attempt[T]()`  一个覆盖 `T` 和所声明错误的 `Attempt`
++ row  `record()`  由响应 schema 确定类型的记录
++ row  `tuple()`  由响应 schema 确定类型的具名元组，及早读取
+
+% 1 1 0 0269751da2298bc61e243e90894667e4
+
+@ 0 4 0 15c69d98d45751d3008c19cbdf9706f2
++ JSON 响应完全可以不借助镜像类来读取。
++ `record()` 给出一个由响应 schema 确定类型的[记录](records.md)，每个属性一个成员，其类型就是 schema 所声明的类型。
++ 嵌套对象和对组件 schema 的引用是嵌套的记录，对象数组则是由它们组成的 `List`：
+
+% 2 1 0 01f475359b5980690eee6c33305bd1ca
+
+% 3 1 0 00b26259fff5614713aa6a068c077724
+
+% 4 1 0 0206576a57e08cb10de1da03727915ac
+
+% 0 1 0 08e78fb869afc2c7065fcf4a92d1c46f
+
+% 0 1 0 02f6354c8330c000116816375a683e78
+
+% 0 1 0 1507280dd54b63ef107e87532d7ce072
+
+% 0 1 0 10b60cd9b6e7d67f15bf7ef071d92ff8
+
+% 1 1 0 06e29fe3260a24e71c9f74b03a091165
+
+@ 0 3 0 0f2d19d800492b4c09aabc55ab3ad4b9
++ `tuple()` 将同一个 schema 及早读取为具名元组。
++ 两者都需要 schema 描述一个对象或对象数组的 JSON 响应。
++ 其他任何情况都是编译错误，并会建议使用 `call[T]()`。
+
+@ 0 1 0 1babaab688d4db2c0b366b251df96662
++ ### 文档模型
+
+@ 0 5 0 11f5b7f82efc16880886ef4e6c6943b2
++ 规范本身也是一个值。
++ `OpenApi` 将 JSON 或 YAML 格式的 OpenAPI 3.x 文档解码为有类型的各个部分：信息、带变量的服务器、路径、操作、参数、请求正文、响应，以及组件中的 schema、参数、响应和请求正文。
++ 这服务于检视 API 而非调用 API 的工具。
++ YAML 文档会被转换为 JSON，并由同一个解码器读取，因此两种形式不会出现偏差。
+
+@ 0 4 0 1fbe6da9377234cb0d25e6b22cac3af5
++ 以 `$ref` 写出的参数、响应或请求正文保留为 `OpenApi.Ref`，并在给定文档时由 `apply()` 按需解析。
++ schema 引用也以同样的方式解析，每次一跳，因此循环的 schema 仍是有限的。
++ 版本不受支持或无法解析的文档会抛出 `OpenApi.Error`，并指出问题所在。
+
+@ 0 3 0 0dd467b580ca8da7139f35b3fb59097b
++ 模型和客户端都针对一个由真实描述组成的语料库进行测试：OpenAPI Initiative 的示例、Swagger 的 Petstore、Redocly 的 Museum、Twilio、Kubernetes、Discord、Box 和 Stripe。
++ 它们连同来源信息一起签入在 `lib/apoplexy/res/test/openapi` 下。
+
+@ 0 1 0 11417ab92365bfc40a2218f6b1c1075c
++ ### 局限
+
+@ 0 3 0 00740b72e6630fa6068947feafd418a7
++ Cookie 参数、`callbacks`、`links`、`security` 要求、`webhooks` 以及对其他文档的引用，在模型中有相应位置的地方会被读入模型，但客户端不会据此采取行动。
++ `multipart/form-data` 正文目前尚不会被解释。
+
+@ 0 1 0 0a15ebad305c934c1527dd3a42e83d7a
++ ### 相关
+
+@ 0 7 0 06c1313ae2246e99184f8d5438eeebac
++ - [HTTP 客户端](http-client.md)承载请求，并描述各个后端。
++ - [OAuth](oauth.md) 描述 `Credential` 值和令牌流程。
++ - [记录](records.md)描述 `record()` 所给出的有类型记录。
++ - [JSON](json.md)、[XML](xml.md) 和 [YAML](yaml.md) 描述常见媒体类型的载体。
++ - [错误](errors.md)描述 `attempt`、`recover` 和 `mitigate`。
++ - [媒体类型](media-types.md)描述为每个正文命名的 `MediaType` 值。

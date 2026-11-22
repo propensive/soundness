@@ -1,0 +1,685 @@
+orthant 2 language
+
+% 0 1 0 0f04ec4b9ac2d4270a232409219e1f6b
+
+% 0 1 0 1e8bbf48ecb8ae4b17d80e9572aae0cc
+
+% 0 1 0 0b5938ce7315323607e1922cbc4d93e2
+
+@ 0 1 0 0d1a657f9da0f8ab1bb0692d104ddbe3
++ info   作为不可变值的 ZIP 归档和 JAR：有类型的条目路径、流式内容、限定作用域的读取
+
+% 0 1 0 0ca6d61ddd9511ea1cdae38f1414f6fe
+
+@ 0 8 0 0b0a295f7248a9ca1543ebb169ddfae1
++     _Zeppelin_ 读写 ZIP 归档，以及作为带清单的 ZIP 归档的 JAR 文件，不使用 `java.util.zip` 的可变随机访问对象。
++     `Zipfile` 是由 `Zip.Entry` 组成的不可变列表，每个条目都带有一个经过校验的、相对于归档的路径——即一个 `Path on Zip`，它不能是绝对路径，也不能爬升到归档的根之上，因此像 `../../etc/passwd` 这样的条目名称会被拒绝，而不会被解压——以及在读取时以流的形式产生的内容。
++     归档序列化为字节流，因此写入归档与写入任何其他值无异；而读取归档时，每个条目只在被读取时才以有界的数据块增量地解压。
+
+% 2 1 0 1a448366d47d40d70434e60dc1e4bb1a
+
+% 3 1 0 0c514026b44fe92912664c42ba7f454e
+
+% 0 1 0 0b1e22680a708fa418dc46e682b2353f
+
+% 0 1 0 1ce543c070756ca7033d2356903af397
+
+% 1 1 0 09c267d03fbd154c133e88f6b7f1fda4
+
+% 0 1 0 1d2af722c8e4b261066c45ab5c60c654
+
+% 0 1 0 03f91ab3dc19c4f9112c539014548423
+
+% 1 1 0 1f5fcfc0ea8e3f9f0728c798d9ffcd49
+
+% 0 1 0 12c5c459f0fc46b61a922ccc93d29672
+
+% 0 1 0 0d5bf406e74cd04a13d75d4030990ef7
+
+% 0 1 0 1bea4071f15eeb820f218f7a33ce6017
+
+% 0 1 0 07d57cd5146c8b3616aa98ff287388ae
+
+% 0 1 0 02bacfd70fe85ef60f817389619d9d23
+
+% 0 1 0 1d9f9d44d85c577f051a097907178a9d
+
+% 1 1 0 1001f2843aa2f9b811ddbf46a0cc52c3
+
+@ 0 6 0 0656958534e0338108c6f61897b02023
++     归档有两种用法。
++     `Zipfile.read` 给出一个分离的 `Zipfile`，其条目在每次读取时重新打开文件，因此在任何地方都可使用。
++     `path.open[Zip]()`（或 `data.open[Zip]()`）则打开一个作用域，其中 `zipfile` 是一个 `Zip.Handle`，它通过在代码块期间保持打开的同一个文件视图进行读取，因此条目必须在代码块内消费；`path.open[Jar]()` 给出一个 `Jar.JarHandle`，即带有已解析清单的同一种句柄。
++     `directory.archive[Zip]()` 以确定的方式归档整个目录树。
+
+@ 0 6 0 1e8df00c17681147197e6078ec97cad7
++     从归档中读取的条目保留其内容周围的每个头部字段，因此写回时会逐字节重现原文件，只有 ZIP64 记录例外，它们会被重建；条目可以为内存映射而对齐，就像 Android 的 `zipalign` 那样；归档可以带有一段前导字节 `prefix`，自解压或可直接执行的归档就是这样制作的；而超出原始格式 4 GiB 和 65,535 个条目限制的归档则借助 ZIP64 记录来写入和读取。
+
+@ 0 4 0 1d860c69c21c0dcf17bed53b4c0d90c1
++     压缩是一个上下文中的 `Zip.Compression` 方针：默认通过 pneumatic 的纯 Scala 压缩器进行 deflate 压缩，当 deflate 无法使条目变小时就回退为存储。
++     每个失败都是一个 `Zip.Error`，其 `Zip.Error.Reason` 说明出了什么问题。
+
+@ 0 4 0 0d810cea298ed0b3016139afafeb01cf
++     这个库只有一个源集 `zeppelin.core`，凡是 galilei 的 `FilesystemBackend` 能编译的地方它都能编译，因为每个文件都通过作用域中的后端读取。
++     目前归档只以只读方式打开：`Write` 模式会被拒绝。
++     一切都导出到 `soundness` 总括包。
+
+% 0 1 0 18aabcbb4496be941e25c71009534a0e
+
+% 0 1 0 012a33d9804eb76f1c243a7d444b58d5
+
+% 0 1 0 13daa7adc91d932c0cc858f4a7e49723
+
+% 0 1 0 1804693b49c7c27a174ad557d9dbc257
+
+@ 0 1 0 09a4cee687f134831e159c172205cb22
++ entry .Zip   ZIP 形式和平面：条目、压缩、错误以及限定作用域的归档句柄
+
+% 1 1 0 13353c89dab52cb2128c08c932ebbc9f
+
+@ 0 6 0 0a96c1a227dd97121b50d34c6d25af3e
++       `Zip` 是共用一个名称的两样东西。
++       作为**类型**，它是归档的_形式_，在 `path.open[Zip]()` 和 `directory.archive[Zip]()` 中指明，同时也是归档内路径的**平面**：条目的路径是一个 `Path on Zip`，以 `/` 分隔，相对于归档的根，每个路径段都须符合 `.Rules`。
++       作为**对象**，它容纳每个归档都用到的类型——`Entry`、`Compression`、`Method`、`Error`、`Event` 和 `Handle`——以及无需导入即可让形式和平面生效的 given。
+
+% 2 1 0 1ac6c56b08ffcf431d0b13f203c703a8
+
+% 3 1 0 13228830c744fdef0bf066c875f0616b
+
+% 4 1 0 008aa55b73960d2c09d9b27515fdf029
+
+% 5 1 0 035977da03a6b64e1909beebaae088b4
+
+% 1 1 0 032851a103b17b3b10f22217df890ee2
+
+% 0 1 0 07669de67c0de995108800a72ecdeaba
+
+% 0 1 0 1962f3b4d9401952177858ac5562ac2a
+
+% 0 1 0 00c483949672a8770beaf3bf2c44f07a
+
+% 0 1 0 03cf93040e3573620320233fd4821b27
+
+% 0 1 0 001a3686c3052a84139808bc642561cc
+
+% 1 1 0 1b721ea274c782721df4fd666ed3b79a
+
+@ 0 3 0 050b64c25121dd580618e430aa51797b
++       `Zip` 平面上的路径在编码时不带前导 `/`，因为 ZIP 条目名称是相对的，而 `java -jar` 会拒绝绝对名称；命名绝对路径、用 `..` 向上爬升，或含有 Windows 或该格式所禁止字符的文本都无法解码。
+
+% 1 1 0 10b43204e6a55c57093a6b12f542bf0a
+
+% 1 1 0 11706be789f004c60c219e20a1fb6d7b
+
+% 2 1 0 19a16cf2a8500ccc04e10250a65e7aa9
+
+@ 0 33 0 14c78ca3aea3b356174b9d1e2247dba5
++   entry .Rules   ZIP 归档内路径的一个路径段可以是什么
++       路径段不得包含 `\`、`"`、`/`、`:`、`*`、`?`、`<`、`>` 或 `|`，也不得是 `.` 或 `..`。
++       读取归档时，这些规则会应用于每个条目名称，因此一个穿越式（Zip Slip）的名称会抛出原因为 `InvalidName` 的 `Zip.Error`，而不会产生逃逸出归档的路径。
++   entry .compliant   表明 Linux 路径段是有效的 ZIP 条目路径段
++       即 `Linux is Compliant on Zip` given，它让 Linux 文件系统上的路径可以被重新解释为归档内的路径。
++   entry .compliant2   表明 macOS 路径段是有效的 ZIP 条目路径段
++       即 `MacOs is Compliant on Zip` given，作用与 `.compliant` 之于 Linux 相同。
++   entry .nominative   使 ZIP 路径段须符合 `.Rules` 的 given
++   entry .submissible   接受用 `path.on[Zip]` 移到 ZIP 平面上的任何路径的根 `%`
++       路径移到另一个平面时会检查其根；归档的根是隐含的，因此检查总能通过。
++   entry .filesystem   作为 `Filesystem` 的 ZIP 平面：以 `/` 分隔，没有唯一的根
++       名为 `ZIP`，以 `/` 为分隔符，以 `.` 和 `..` 作为自身和父级路径段。
++   entry .radical   把归档的根写为空文本，因此路径编码为 `a/b.txt`
++   entry .eradicable   从文本读取归档的根，不会失败
++       归档的根隐含在每个条目的名称中，因此不占用任何字符，任何文本都解码为根 `%`。
++   entry .openable   把某个路径上的归档作为 `Zip` 打开：`path.open[Zip]()`
++       这是作用域中有 `FilesystemBackend` 的平面上任何路径类型的 `Openable` given。
++       它需要该后端、一个 `Tactic[Zip.Error]` 和一个 `Tactic[Io.Error]`，并且位于 `Zip` 的伴生对象中，因此无需导入。
++       其结果是一个 `Zip.Handle`，在代码块中以 `zipfile` 访问。
++   entry .dataOpenable   把内存中的归档作为 `Zip` 打开：`data.open[Zip]()`
++       这是 `Data` 的 `Openable` given，需要一个 `Tactic[Zip.Error]`。
++       这里不涉及任何通道，但为了与从路径打开的归档保持一致，访问同样限定在作用域内。
++   entry .archivable   把目录树归档为 `Zipfile`：`directory.archive[Zip]()`
++       位于 `Zip` 的伴生对象中，因此无需导入。
++       它需要一个 `FilesystemBackend`、一个 `Tactic[Io.Error]`、一个 `Tactic[Zip.Error]` 和一个 `Zip.Compression`（默认的 deflate 压缩位于隐式作用域中）。
++       归档哪些内容，参见 `Zip.Archivable`。
++   entry .Archivable   `directory.archive[Zip]()` 背后的归档器：每个后代，按固定顺序
+
+% 1 1 0 07bce91f7192965f0ecfb47021733a90
+
+@ 0 5 0 1746e3ad45796ff0140a51da7ffa8529
++         目录的每个后代都成为一个条目——目录成为目录条目，文件连同其内容和修改时间一起——按先序排列，每个目录的子项按码点顺序排序，因此同一棵树总是逐字节地产生同一个归档。
++         zeppelin 所写的 ZIP 没有符号链接，因此会跟随链接。
++         除非作为标志传入一个 `Zip.Compression`，否则使用上下文中的那个。
+
+% 2 1 0 1a2e5668e97a9b1f13a2aea256138ddc
+
+% 3 1 0 0ef5c8b703113b7a1971dd1ea7462194
+
+% 4 1 0 024d0cb38cfcf8210c8b7a66eb624cc7
+
+% 5 1 0 10f2c2cffd437c2a0c54e5faec466292
+
+% 0 1 0 1fc240acafda73dd16e0bbcd13b68942
+
+% 0 1 0 134eb99f061417b01184bb4cedcc9aba
+
+% 0 1 0 034a7bf5dcaa67e2007122258741e1f3
+
+% 0 1 0 0bac0e053e933caa0a2f8aca728e1848
+
+% 1 1 0 091a4b29c6c3c14105e6d7e825932934
+
+@ 0 4 0 0ac60586bb6559740a0fac6da36eaf5b
++         不能成为 `Path on Zip` 的名称会抛出原因为 `InvalidName` 的 `Zip.Error`，不可读的文件会抛出 `Io.Error`。
++     entry #archive   归档某个路径下的树，可带一个可选的 `Zip.Compression` 标志
++   entry .Method   记录在条目上的压缩方法：`Stored` 或 `Deflate`
+
+% 1 1 0 1abce7a9b40c70f807b0bec7b123c5db
+
+@ 0 6 0 03ff912a447de2130bf0cc3c101cc531
++         这是条目的字节在归档中的实际形式，而不是所要求的 `Zip.Compression` 方针：如果条目经 deflate 压缩后不会比其内容更小，那么无论方针如何，它都是 `Stored`。
++         使用任何其他方法的归档在读取时会抛出原因为 `UnsupportedMethod` 的 `Zip.Error`。
++     entry #id   该方法在 ZIP 头部中的编号：`Stored` 为 `0`，`Deflate` 为 `8`
++   entry .Compression   压缩新条目的方针：存储，或 deflate 压缩
+
+% 1 1 0 0020eec6def441a6081909b1f388391f
+
+@ 0 5 0 1be7479db49a124b1d83bcc51c5b0ac5
++         从原始内容构造 `Zip.Entry` 时，作为上下文值被查阅；也作为标志传给 `directory.archive[Zip]`。
++         `Stored` 保持每个条目的字节原样；`Deflate(level)` 进行 deflate 压缩，对于 deflate 无法使其变小的条目则回退为存储。
++         deflate 由 pneumatic 实现，它只有一个压缩级别，因此 `Deflate(0)` 会存储，就像 zlib 的 0 级那样，而其他所有级别的压缩效果都相同。
+
+% 0 1 0 0af85d2d4584af9d12bb8605bb68e43c
+
+% 0 1 0 1a6fba7ec3b71bd81f5deb1485204af9
+
+% 1 1 0 0cd1aba26319078c140ac2cb1c113554
+
+% 2 1 0 147a87a87b21c5c4040d47e3c180225c
+
+% 0 1 0 1c78a6f7f43d5ba11f3f8d0ead58c5dd
+
+% 0 1 0 03277e74cabbf3650feacd7afde9a504
+
+% 0 1 0 0f00e7dc253c4a000ef8be9a86d23b3a
+
+% 1 1 0 01d3090a793502d41149cf9101647381
+
+% 2 1 0 1a7baf6b5554e22c1f69cc3447bcd5cc
+
+% 4 1 0 04383e9f3746d6410a35fc2250c3fca4
+
+% 0 1 0 0802c79896e2e59107d65f54d69c8e34
+
+% 1 1 0 0ed9573c86708cb1118a9e13e9ff9c2d
+
+% 2 1 0 0dde70f3a15f360316e4a275ff04d616
+
+% 0 1 0 1f4d6e8610fe8c731e1e0379d9d4d31d
+
+% 1 1 0 1281c1be559e2d791a62fb1771bd5123
+
+% 2 1 0 1d02534c76211bbb116a687110487a27
+
+% 4 1 0 0fdf24510c43849f13fd6bd0aca2eb95
+
+% 0 1 0 050869e88ce8b8311dedc5aad66b4347
+
+% 1 1 0 0fa8148b4d43057a1fe3836eb1289b70
+
+% 2 1 0 0f649d006a58f34d19d06d22de61a7a9
+
+% 0 1 0 06815e163f7fc80707491a0170cb6846
+
+% 1 1 0 15f916aeae550be3198d58aa0afe3867
+
+@ 0 4 0 0a6eba7c67b3e4751189320a82837c66
++     entry .default   默认方针 `Deflate(-1)`，无需导入即可在隐式作用域中找到
++     entry .Deflate   对每个条目进行 deflate 压缩，除非这样不能使其变小
++       entry #level   所要求的级别；`0` 表示存储，其他所有级别的压缩效果都相同
++   entry .Entry   ZIP 归档的一个条目：其路径、压缩后的内容和头部字段
+
+% 1 1 0 060056013e5b2b6e170b588431b19a92
+
+@ 0 5 0 1ea0fd054bc474e30a9e771752efbf70
++         一个不可变值：一个相对于归档的 `#ref`、存储其字节所用的 `#method`、这些字节的 CRC-32 和大小、所存储字节的生产者、一个 DOS 时间戳，以及归档可以携带的所有其他头部字段。
++         条目可以从任何 `Streamable by Data` 的内容构造，在上下文中的 `Zip.Compression` 下压缩一次，并通过 `.streamable` given 以增量解压的方式读取为任何类型。
+
+% 2 1 0 1b8b0377d0b08924065604fb7bfe2b4e
+
+% 3 1 0 1a3f2b71ffbbd23f1a1aa45feada48ba
+
+% 4 1 0 196da67c7a875d5904ad04af9abd89ca
+
+% 0 1 0 15c01b294fb63eeb12f214421a322d6b
+
+% 0 1 0 09a207a70e7ba39814ab584185d9547d
+
+% 0 1 0 0cdde7fb0901bfc502360e39466648ea
+
+% 0 1 0 051aed030c7067db0c583232446896a7
+
+% 0 1 0 03c84cd7fcd484cb0bc3348cce4bfdc9
+
+% 1 1 0 060d5a3ef4d9d5dc1fcb2cb3f9f06ac6
+
+@ 0 8 0 0c2cac832d51aeb4199cd625f07fdf71
++         `#alignment` 之后的头部字段之所以存在，是为了让单独读取的归档可以逐字节地写回：`Unset` 表示由 zeppelin 自行推导的值（恰在名称需要时设置 UTF-8 标志；版本 20，ZIP64 条目为 45；目录的外部属性为 `0x10`，否则为 0；没有额外字段），而给出的值则原样写入。
++         用 `#withHeaders` 修改这些字段，用 `#aligned` 修改对齐，用 `#asDirectory` 修改目录标志：case class 自身的 `copy` 无法在经过捕获检查的代码中调用，因为它会把 `#storedBytes` 生产者通过一个纯参数传递。
+
+% 0 1 0 171463546db9ece10cc4ddf84f6d2fb6
+
+% 0 1 0 065ddf38b7b25ce11485515cf3f3cde0
+
+@ 0 10 0 0ec81c24b319b3f30ac42b8b2ec58c76
++     entry .apply   由任何可流式传输的内容构造的条目，在作用域中的方针下压缩
++         `Zip.Entry(ref, content)` 读取内容一次，计算其 CRC-32，并按上下文中的 `Zip.Compression` 的指示存储或 deflate 压缩，以 DOS 纪元（1980 年 1 月 1 日）作为时间戳。
++         case class 的完整构造器显式接受每个字段，名称相同。
++     entry .at   由内容构造的条目，修改时间可以用任何瞬时类型给出
++         与 `.apply` 相同，只是时间以 UTC 记录在条目的 DOS 日期和时间字段中，因为 ZIP 时间戳不记录时区。
++         瞬时可以是任何 `Abstractable across Instants to Long` 的类型；早于 1980 年的瞬时无法用 DOS 表示，会被记录为 1980 年的第一秒，而 DOS 时间以两秒的精度存储。
+
+% 2 1 0 0830a6e334adf5a40076ce1e8c68dd77
+
+% 3 1 0 0d45bbae3a69ca710185d596c5ddf0c8
+
+% 0 1 0 0c67f2a717400322177809ffaa236967
+
+% 1 1 0 116c96e182f70ef809aa058f34cf18aa
+
+@ 0 43 0 1af734adab5eeb4717fe597d53d200dc
++     entry .streamable   把条目解压后的内容读取为字节，或任何可解码的类型
++         即 `Streamable by Data over Credit` given，因此条目可以 `read[Text]`、`read[Data]`，或读取为任何可从流中解码的类型；每次读取都是 `#contents` 的一个新流。
++     entry #ref   条目在归档中的路径
++     entry #method   存储其字节所用的压缩方法，以 `Zip.Method` 表示
++     entry #crc32   未压缩内容的 CRC-32
++     entry #uncompressedSize   内容的大小，以字节计
++     entry #compressedSize   存储在归档中的字节的大小
++     entry #storedBytes   所存储的（可能经过压缩的）字节的生产者，每次读取调用一次
++         每次读取都会重新调用，因此从分离的 `Zipfile` 读取的条目每次都会重新打开其来源，并保持可重复使用。
++         `#contents` 是解压后的形式。
++     entry #dosTime   修改时间，采用压缩的 DOS 时间格式
++     entry #dosDate   修改日期，采用压缩的 DOS 日期格式
++     entry #directory   条目是否为目录，目录的名称写出时带有尾随的 `/`
++     entry #comment   条目的注释，或 `Unset`
++     entry #alignment   条目数据必须起始于的字节倍数；`1` 表示不对齐
++     entry #flags   通用位标志，或 `Unset` 表示由 zeppelin 推导的标志
++         第 3 位把条目标记为流式（`#streamed`）：其 CRC 和大小写在载荷之后的数据描述符中，向不能定位的数据汇写入归档时就是这样做的。
++         第 11 位表示名称为 UTF-8，默认恰在名称需要时设置。
++     entry #versionMadeBy   中央头部的“version made by”，或 `Unset` 表示 zeppelin 自己的值
++     entry #localVersion   本地头部的“version needed to extract”，或 `Unset` 表示 zeppelin 自己的值
++     entry #centralVersion   中央头部的“version needed to extract”，或 `Unset` 表示 zeppelin 自己的值
++     entry #internalAttributes   内部文件属性，或 `Unset` 表示无
++     entry #externalAttributes   外部文件属性，Unix 模式存放于此，或 `Unset` 表示默认值
++         对于目录，默认值为 DOS 目录属性 `0x10`，否则为 0。
++         Unix 模式存放在高十六位中。
++     entry #localExtra   本地头部的额外字段，不含其 ZIP64 记录，或 `Unset`
++     entry #centralExtra   中央头部的额外字段，不含其 ZIP64 记录，或 `Unset`
++         两个额外字段都不包含 ZIP64 记录，因为写入器会根据条目的大小和偏移量重建它。
++     entry #localSizes   流式条目的本地头部是否重复其 CRC 和大小
++         写入器各不相同：有的会重复，有的则把它们留为零，只依靠数据描述符。
++         对于非流式条目，此字段被忽略。
++     entry #streamed   条目的载荷之后是否跟有数据描述符，由 `#flags` 的第 3 位决定
++     entry #contents   条目解压后的内容，每次调用都是一个新流
++         `Deflate` 条目以增量方式解压，因此任何大小的载荷，包括超过 2 GiB 的载荷，都以有界的数据块读取、解压和消费。
++     entry #aligned   同一条目，要求其数据起始于某个字节偏移量的倍数
++         像 `zipalign` 那样，通过用零字节填充本地头部的额外字段来实现。
++         它只对存储的条目有意义，读取器可以直接对其字节进行内存映射：对齐的 `classes.dex` 或 `resources.arsc`，或按页对齐（`4096`）的本地库，都无需复制。
+
+% 2 1 0 1b910724c891c639093b71f62918262e
+
+% 3 1 0 0cfbc21604f5c37e1839b97802068a81
+
+% 4 1 0 14358a597b70e2d106b3bbe05ecc19c7
+
+% 0 1 0 0bcd14ac3af2545219185a5b360c9820
+
+% 0 1 0 1ff27b9257ecc4e217ec9f07a585be08
+
+% 1 1 0 013461966d21e51b012dacdda0f16c01
+
+@ 0 7 0 1365bc334ebe1b420c19c5a60d07a42e
++     entry #asDirectory   同一条目，记录为目录
++         其名称序列化时带有尾随的 `/`，并设置 DOS 目录属性。
++     entry #withHeaders   同一条目，替换了其中一些头部字段
++         每个参数——`flags`、`versionMadeBy`、`localVersion`、`centralVersion`、`internalAttributes`、`externalAttributes`、`localExtra`、`centralExtra` 和 `localSizes`——默认为条目当前的值，因此调用时只需指明要设置的字段。
+
+% 2 1 0 14ecc634ccbd903f1202918070364eed
+
+% 3 1 0 06185d486e293e941c0ccb7eca2ada6e
+
+% 4 1 0 12fb9f6a70d9a07b0e02fb46819a4403
+
+% 0 1 0 1414bc1c113341ec1d7137992d78882d
+
+% 0 1 0 1401e9bea5172c7a078d35a08d979aee
+
+% 1 1 0 10d597a2b4981ed50fa5d485c205dde6
+
+@ 0 1 0 086dcc165fe69fb000d5727ffdcec60f
++   entry .Error   读取、写入或打开 ZIP 归档时的失败，附带原因
+
+% 1 1 0 110d78b99dc114a01b574d1883464cf6
+
+@ 0 4 0 1859a4047b9eaf381569c1b9b9332fd9
++         错误 `↯/s.136.1`：_the ZIP operation failed because `reason`_，以 `Zip.Error.Reason` 的编号作为其子代码。
++         由 `Zipfile.read`、`Zipfile#entry`、序列化 `Zipfile`、把归档作为 `Zip` 或 `Jar` 打开，以及 `Zipfile.rebase` 抛出。
+
+% 2 1 0 1fd4dfd08a6b8e341db528bf0ac6b558
+
+% 3 1 0 0c5622044e6cf7c50df77b4a7a2c5e31
+
+% 1 1 0 10c75085845bdbdf08b47c1db265ea53
+
+% 0 1 0 0192ef8f5c8f67f2163d849f2e5ab4c4
+
+% 0 1 0 19f616cedf5fd96c1eb49b733b60b39d
+
+% 1 1 0 1b024bb482f12f020ff5eeedee48e2bb
+
+@ 0 1 0 19aa2ea90119289003f3c5f9ccca9d39
++     entry .Reason   ZIP 归档或操作出了什么问题，每种都有稳定的编号
+
+% 0 1 0 0f0c06beeb68e4ca19dd934fb64b22c4
+
+@ 0 1 0 1dc99bc41c9997701b7c6ca7547e3b49
++           每个分支都有一个稳定的编号：
+
+% 0 1 0 01eaeca5798d1a3b02d48ba44beec41c
+
+@ 0 5 0 045dad35057d87ef163dd9869d22cadf
++           column  分支
++           column  代码
++           column  消息
++           column  说明
++           row  `DuplicateEntry(path)`  1  _the path `path` is a duplicate entry_  在序列化任何字节之前即被拒绝
+
+% 0 1 0 133d54a35e467a211464d3a9124c88c5
+
+@ 0 3 0 0e3a229cb87bcbe102ecf874290a3aba
++           row  `InvalidName(name)`  3  _the name `name` is not valid for a ZIP entry_  不是有效的 `Path on Zip`
++           row  `UnsupportedMethod(method)`  4  _the compression method `method` is not supported_  存储或 deflate 以外的任何方法
++           row  `MissingEocd`  5  _no end-of-central-directory record could be found_  因此这些字节不是 ZIP 归档
+
+% 0 1 0 10cc00bda4dbac7a1e1d21b6ec1f7fe1
+
+% 0 1 0 1910ab939c0cc6181c26bfec0309caae
+
+% 0 1 0 17ab75001486a54a110a31afb0a967d2
+
+@ 0 1 0 1b29a216d3ec3e580b8b8a97deda3bf5
++           row  `WriteUnsupported`  9  _ZIP archives cannot yet be opened for writing_  以带 `Write` 的模式打开的归档
+
+% 0 1 0 1e1142f93520fd4f15bfab13e688393a
+
+% 0 1 0 06eefce5ebc9bdf9143d81cdaad67e8c
+
+% 0 1 0 1325124b3afc2ca70063c3f620bd5dcc
+
+@ 0 16 0 1d4a16a2c3cf626b1a534384cd0e5ee3
++       entry .DuplicateEntry   一个归档中有两个条目共用同一路径
++         entry #path   重复的路径
++       entry .NotFound   归档在所要求的路径上没有条目
++         entry #path   所要求的路径
++       entry .InvalidName   条目名称不是归档内的有效路径
++         entry #name   该名称，按归档中的写法
++       entry .UnsupportedMethod   条目使用了存储或 deflate 以外的压缩方法
++         entry #method   该方法的编号，来自条目的头部
++       entry .BadSignature   记录的签名不是该位置上预期的签名
++         entry #expected   预期的签名
++       entry .CannotWrite   无法写入归档
++         entry #detail   出了什么问题
++       entry #number   原因的子代码，从 1 到 11
++     entry .communicable   把每个 `Zip.Error.Reason` 渲染为一句话，例如 _the ZIP archive ended unexpectedly_
++     entry #reason   出了什么问题，以 `Zip.Error.Reason` 表示
++   entry .Event   读取 ZIP 归档时记录的日志
+
+% 1 1 0 078b72eed5bccc321c02bc337c0d88ca
+
+@ 0 8 0 0d370e517fb84fbd15ef8174de2aa148
++         从路径执行 `Zipfile.read` 时，会以 `info` 级别记录 `Read`，带有标签 `Log.Serialization`。
++         进行这种读取时，作用域中必须有一个 `Zip.Event is Loggable`；`logging.silentLogging` 会丢弃它。
++     entry .communicable   把每个事件渲染为一条消息
++     entry .Read   读取了一个归档：_read `entries` entries from the zip archive `path`_
++       entry #path   归档的路径，以文本表示
++       entry #entries   归档所含条目的数量
++   entry .Handle   在代码块期间打开的归档，以 `zipfile` 访问
+
+% 1 1 0 12c958ba9ea3ee8000258b12e0172abd
+
+@ 0 5 0 15ea76fa7f4921ad01b7a5787c0e9c46
++         `path.open[Zip]()` 和 `data.open[Zip]()` 提供的限定作用域的句柄，在代码块内由 `zipfile` 指称。
++         分离的 `Zipfile` 的条目每次读取都会重新打开文件，而 `Zip.Handle` 则通过同一个文件视图读取，该视图由文件系统后端在代码块期间保持打开，因此读取条目时无需每次打开和关闭——相应地，条目也必须在代码块内消费。
+
+% 2 1 0 0c08b6e60940bc8d0448fa40f0be5578
+
+% 3 1 0 075f5224f7690df801afb4aa4864e425
+
+% 4 1 0 09f61b59ca1fb8991de5e3a86e5b7307
+
+% 5 1 0 1d0e2bbf007d91cf080bbea4ba128071
+
+% 1 1 0 1df72dbc1dce8f6407bf7b8e5628418d
+
+% 0 1 0 0ce457194c18199d0a664f021fe2a429
+
+% 0 1 0 0ff4261ea2b89eb30e4e1c9af76c72a3
+
+% 0 1 0 167de41d58746bc719076025ec9d0fa8
+
+% 0 1 0 12d9f97331248bd71fb79675402ce514
+
+% 1 1 0 1bb7b8c50a4e2fe010aca076dd6a0642
+
+@ 0 2 0 0d3fc781ab6f5a2319f185aa126d4680
++         它是一个能力，因此对于启用捕获检查编译的调用方，句柄及其产生的条目都被限制在代码块内。
+
+% 0 1 0 05b78bb8bce360c70daa5fa4c47c4629
+
+% 0 1 0 02598879ef218ece01db3985c3f0735a
+
+@ 0 4 0 13ba76083714c01e07326f507f0dfe40
++     entry #entries   归档的条目，按其中央目录中的顺序
++     entry #entry   某个路径上的条目，若不存在则抛出原因为 `NotFound` 的 `Zip.Error`
++     entry #comment   归档的注释，或 `Unset`
++   entry .Openable   `path.open[Zip]()` 背后的打开器，适用于任何带有文件系统后端的平面上的路径
+
+% 1 1 0 1986abdca09a669d083309930d9fdfa8
+
+@ 0 4 0 1c8158d0d386abc10188cfe4a8135c07
++         由 `Zip.openable` given 构造；调用方从不指明这个类。
++         带 `Write` 的模式会抛出原因为 `WriteUnsupported` 的 `Zip.Error`，因为目前归档只以只读方式打开。
++     entry #open   通过后端的文件视图解析归档，并运行代码块
++   entry .DataOpenable   `data.open[Zip]()` 背后的打开器，适用于已在内存中的归档
+
+% 1 1 0 0c6d618b6bee5be5054451f1a3f1e335
+
+@ 0 3 0 0957840be91c536b07c05fba15506441
++         由 `Zip.dataOpenable` given 构造。
++         带 `Write` 的模式会抛出原因为 `WriteUnsupported` 的 `Zip.Error`。
++     entry #open   从字节解析归档，并用其句柄运行代码块
+
+@ 0 1 0 05f315dc490d349f078e29dc482b0793
++ entry .Zipfile   作为不可变值的 ZIP 归档：其条目、注释和前导字节
+
+% 1 1 0 133736b562abd07f12c853da278e6731
+
+@ 0 5 0 0cb81c70b78e75890be3a4dc88b55dff
++       `Zipfile` 是手中的整个归档：一个由 `Zip.Entry` 组成的 `List`、一个可选的归档注释，以及一段放在归档本体之前的可选原始字节 `prefix`。
++       它可以直接由条目构造，用 `.read` 从路径或字节读取，或者由 `directory.archive[Zip]()` 产生；它序列化为流，因此可以用 `write` 写到任何目的地。
+
+% 2 1 0 128d018e3eced88b14642f855795377c
+
+% 3 1 0 15381a93ddc6e8a0095551b1cf498501
+
+% 4 1 0 0a5085fb407d2284176445729e8cbc87
+
+% 5 1 0 13df7869f2c0e00c061047eceb55aa46
+
+% 6 1 0 1ce3d14f3ef38ae10bc1cfe5b845204c
+
+% 0 1 0 0b1a7e211e92884b152d013f713fb2b2
+
+% 1 1 0 041863eca0f6d4e71b29eb621b1a83f0
+
+% 2 1 0 0be81e5794b1ee14108c0284f63e7871
+
+% 0 1 0 1c0776b8e34a019e0658cd09129183c4
+
+% 0 1 0 0e4e84be3dad8958021eba426c1ae340
+
+% 0 1 0 0493806620a27ab903a45370e2590736
+
+% 0 1 0 1c19913b0acf881b1050932e304f238b
+
+% 0 1 0 0f9802a621b9fcd915b974e515a98840
+
+% 0 1 0 10d7d3e3e15d6777141a49f0ce1f29c9
+
+% 1 1 0 0f078e4e5eac7d311809ad5f92ac5810
+
+@ 0 3 0 0c67c64b9f93d06317107c3fbf942d68
++       从路径读取的 `Zipfile` 的条目是分离的：每次读取都通过后端重新打开文件，因此这个值可以在任何地方使用，代价是每次读取都要打开一次。
++       `path.open[Zip]()` 则在代码块期间通过同一个打开的视图读取。
+
+@ 0 5 0 13e3dd5612e983250edc1bfd71ac2287
++       ZIP 读取器从文件末尾而不是开头定位归档的目录，并且它记录的每个偏移量都是相对的，因此拼接在任意前导字节之后的归档仍然可以读取。
++       这正是 `prefix` 的用途：自解压或可直接执行的归档就是一个启动器后面跟着一个 ZIP。
++       读取带有前导字节的归档时，这些字节会作为其 `prefix` 返回。
+
+% 1 1 0 166c77553d0abd5619d549a5acfe5d78
+
+% 2 1 0 0f092eb3504f211f022695f81be2f8a2
+
+@ 0 7 0 17a6f13b79e8aee711e0018884dabd5a
++   entry .read   从路径或内存中的字节读取归档
++       `Zipfile.read(path)` 通过作用域中的 `FilesystemBackend` 读取中央目录，需要一个 `Tactic[Io.Error]` 和一个 `Tactic[Zip.Error]`，并记录 `Zip.Event.Read`，因此作用域中还必须有一个 `Zip.Event is Loggable`。
++       `Zipfile.read(data)` 从字节读取，不记录任何日志。
++       这里只读取目录和每个条目的本地头部；载荷在读取条目时才读取。
++       对于不是 ZIP 归档的字节，抛出原因为 `MissingEocd` 的 `Zip.Error`；对于会逃逸出归档的条目名称，抛出原因为 `InvalidName` 的 `Zip.Error`。
+
+% 2 1 0 1dd3b76c34af240a14d497ce3a078a6d
+
+% 3 1 0 05e8e2a67a921b5d10bd9bb7142c84f3
+
+% 1 1 0 08179c3df5912f8c1f58536a294a48ae
+
+% 0 1 0 1196fba2dd8f4bfd10ac74e8e9957175
+
+% 1 1 0 1061ce2d980c10d10d8cc7f9e9ce55aa
+
+@ 0 10 0 1902e1fc5787a7260878ba30a130cf07
++   entry .rebase   在 ZIP64 归档前面添加字节之后，平移其唯一的物理偏移量
++       ZIP 归档记录的每个偏移量都相对于其中央目录，只有一个例外：ZIP64 定位器指向 ZIP64 中央目录结束记录的指针是文件中的物理偏移量。
++       通过拼接在归档前面添加前缀，或者从归档中截去字节，恰好会使这个字段失效。
++       Zeppelin 的读取器能容忍这种情况，但 JDK 的读取器会跟随该指针，然后拒绝打开归档，且不给出任何诊断信息。
++       `Zipfile.rebase(path, delta)` 通过作用域中的 `FilesystemBackend`，就地把该指针平移 `delta` 个字节；没有 ZIP64 定位器的归档——任何少于 65,535 个条目且小于 4 GiB 的归档，几乎涵盖一切——保持不变。
++       会使指针超出文件的平移会抛出原因为 `Zip64Error` 的 `Zip.Error`。
+
+@ 0 17 0 00c985ea42edd9960a44e96a0076ab34
++       带有 `prefix` 写出的 `Zipfile` 无需重定基址，因为其偏移量是在前缀就位的情况下计算的。
++   entry .streamable   把 `Zipfile` 序列化为字节流，从而可以写到任何地方
++       即 `Streamable by Data over Credit` given，它需要一个 `Tactic[Zip.Error]`，因为序列化会拒绝重复的条目名称。
++       它位于 `Zipfile` 的伴生对象中，因此 `path.write(zipfile)` 无需导入。
++   entry #entries   归档的条目，按写出的顺序
++   entry #comment   归档的注释，或 `Unset`
++   entry #prefix   放在归档本体之前的原始字节，或 `Unset`
++   entry #entry   某个路径上的条目，若不存在则抛出原因为 `NotFound` 的 `Zip.Error`
++   entry #serialize   作为惰性字节流的归档，其条目的载荷依次打开
++       如果两个条目共用同一路径，则在产生任何字节之前抛出原因为 `DuplicateEntry` 的 `Zip.Error`，因为没有读取器能够分辨它们。
++       最先是前缀，然后是每个条目的本地头部、载荷和数据描述符——每个载荷只在流到达它时才打开，并以有界的数据块排空——接着是中央目录和结束记录，凡是条目、偏移量或条目数超出原始格式之处，都带有 ZIP64 记录。
+
+@ 0 1 0 181845abf83ae2b51af592b209e1c946
++ entry .Jar   Java 归档的形式：`path.open[Jar]()` 给出带有已解析清单的 ZIP 句柄
+
+% 1 1 0 1fd6bd6bf6dc9c7b1ddb4350b5d3dee3
+
+@ 0 4 0 11a64dcfc709cf1d015adb33ec7fc9d4
++       JAR 就是 ZIP，因此把它作为 `Jar` 打开会给出一个 `Jar.JarHandle`，即用 `META-INF/MANIFEST.MF` 的主属性细化的 `Zip.Handle`；条目及其内容的行为与 `Zip` 形式完全相同。
++       JAR 的写法与任何其他 `Zipfile` 相同，把 `Jar.manifest` 构造的条目放在最前面。
+
+% 2 1 0 1aacd1083e7d329d0a9df3137e2281da
+
+% 3 1 0 1903f8e0bf945b251680fbd494de3546
+
+% 4 1 0 10e9e30f6c5ca83810768e9fbbbd79e2
+
+% 5 1 0 12f235b16154c3a414cfff25e78f7476
+
+% 6 1 0 1c13324f10efa80317b18932d3152765
+
+% 1 1 0 09b61aaf44ce2be11b600e13eb868346
+
+% 2 1 0 1048afc7b48242b60b74171c696ebe01
+
+% 0 1 0 1d9dba871db33e261045fd93bd8a9c54
+
+% 0 1 0 01f4842cf4f321aa12bb2c4e1f60ef5f
+
+% 0 1 0 009b058abbc575c6004ef491e6a7d1b2
+
+% 0 1 0 0ca07f862bff4ebc0efa056d5cdc19e2
+
+% 0 1 0 07a36df3657642d80750581d3bbd0857
+
+% 1 1 0 0d46e106fdf179c81fda7e1239a320f5
+
+% 1 1 0 11cd4683cd52e9b6136115739f4d3e32
+
+% 1 1 0 18397302048da7ed0147a291589430b2
+
+@ 0 6 0 17bf4c589d7529ea15b9fcdcbac270a8
++   entry .manifest   一组主属性对应的 `META-INF/MANIFEST.MF` 条目
++       每个属性写为 `Key: value`，按 JAR 规范的 72 字节用以空格开头的续行折行，使用 `\r\n` 行结束符，并以一个空行结束主节。
++       该条目在作用域中的 `Zip.Compression` 下压缩，按惯例最好放在 `Zipfile` 的最前面。
++   entry .JarHandle   一个已打开的 JAR：带有其清单主属性的 `Zip.Handle`
+
+% 1 1 0 05e94faea536d34c07514d505fc36c61
+
+@ 0 7 0 104e6021f622271406e605171275f9cf
++         在 `path.open[Jar]()` 或 `data.open[Jar]()` 代码块内由 `zipfile` 指称的东西。
++         它的条目以及条目的读取方式，都与 `Zip.Handle` 相同。
++     entry #manifest   清单的主属性，若归档没有清单则为空映射
++         从 `META-INF/MANIFEST.MF` 读取：按规范要求，续行（以空格开头）会重新并入其前面的属性；解析在第一个空行处停止，该空行结束主节，因此不包含各条目的节。
++   entry .JarOpenable   `path.open[Jar]()` 背后的打开器，适用于任何带有文件系统后端的平面上的路径
+
+% 1 1 0 1d010e583ae55e9a0073bc5e84050080
+
+@ 0 4 0 1ac2c74acd579ddf1a17d368f5d530e1
++         由 `Jar.openable` given 构造。
++         带 `Write` 的模式会抛出原因为 `WriteUnsupported` 的 `Zip.Error`。
++     entry #open   通过后端的文件视图解析归档，并运行代码块
++   entry .JarDataOpenable   `data.open[Jar]()` 背后的打开器，适用于已在内存中的 JAR
+
+% 1 1 0 05deddc83025555b03c3f80f6064b941
+
+@ 0 7 0 0939113282c865220d799a87cab2222c
++         由 `Jar.dataOpenable` given 构造。
++     entry #open   从字节解析归档，并用其句柄运行代码块
++   entry .openable   把某个路径上的 JAR 作为 `Jar` 打开：`path.open[Jar]()`
++       需要该路径所在平面的 `FilesystemBackend`、一个 `Tactic[Zip.Error]` 和一个 `Tactic[Io.Error]`。
++       位于 `Jar` 的伴生对象中，因此无需导入。
++   entry .dataOpenable   把内存中的 JAR 作为 `Jar` 打开：`data.open[Jar]()`
++       需要一个 `Tactic[Zip.Error]`。
++       位于 `Jar` 的伴生对象中，因此无需导入。
+
+@ 0 4 0 0457a0ae1821056f0440a90e4e93a454
++ entry .zipfile   在 `path.open[Zip]()` 或 `open[Jar]` 代码块内，作用域中的归档句柄
++     指称上下文中的 `Zip.Handle`，就像 galilei 的 `file` 指称一个打开的文件。
++     它是透明的，因此其类型就是句柄自身的精确类型：在 `open[Jar]` 代码块内是带有 `manifest` 的 `Jar.JarHandle`。
+
+% 2 1 0 05d096a49379936c1bd44a6010244f15
+
+% 3 1 0 1cfbe987c1d0012707a3ab56d49eadcc
+
+% 1 1 0 0131c69c6998e20b073cb77c91c7dfbd
+
+% 1 1 0 07780dfd83bc4a2306ed804b6de043b1
+
+% 0 1 0 0bf6db96624e2cda0e2f2ce05bb912a3
+
+% 0 1 0 105a46f3f55eb1f617c3717ba8e2564f
+
+% 0 1 0 1d14c913af4e82a11ef36885e9790056
+
+% 0 1 0 134a594970cb4c031733a19a40b45e13
+
+% 1 1 0 078bc06d88eacf88186e10b746cc98dd

@@ -1,0 +1,65 @@
+orthant 2 language
+
+@ 0 1 0 156914880018765e15b73637402051e7
++ info   作为可逆重排的排列，以阶乘进制的逆序表紧凑存储
+
+@ 0 7 0 0b0b3fa346652b010b400ba0e2dc5136
++     在内部，排列就是它以阶乘进制写出的 [逆序表](https://en.wikipedia.org/wiki/Inversion_(discrete_mathematics))，即一个 `Factoradic`：唯一标识该排列的一个整数，因此排列便于紧凑地存储和枚举，`Permutation.bySize(n)` 按顺序列出全部 `n!` 个排列。
++     *n* 个元素的排列占用 O(*n* log *n*) 位，即信息论意义上的最小值。
++     `Factorial` 提供该编码所依据的阶乘。
+
+@ 0 1 0 1d26461196f23b53060f7a77f7f68e42
++ entry .Permutation   对序列的可逆重排，以其阶乘进制逆序表存储
+
+% 0 1 0 12f1691e82eb607a119924e35c1f9b25
+
+% 0 3 0 191ec179f21eac24041f768279364dba
+
+@ 0 7 0 15bf6ad78c4a6277137f8ef993e37197
++       应用于列表时，它重排其元素（`#apply`）；`#inverse` 撤销重排。
++       排列不记录构建它时的长度，只记录它所重排的开头位置，即它的 `#extent`：任何大小的恒等排列都是 `Permutation(Factoradic(0))`，而 `Permutation(Sequence(0, 2, 1))` 等于 `Permutation(Sequence(0, 2, 1, 3, 4))`。
++       它是自然数的一个排列，只移动其中有限多个。
++       应用于更长的列表时，它重排前 `#extent` 个元素，让其余元素保持原位。
+
+@ 0 8 0 08eefffb16b65507134784a8c70cfbc2
++         column  分支
++         column  代码
++         column  消息
++         column  说明
++         row  `BaseRange(value, base)`  1  _the value `value` is too large for its positional base `base`_  传给 `Factoradic(List(…))` 的某个数字不小于其位置的基数
++         row  `DuplicateIndex(index, element)`  2  _the index `index` was duplicated at `element`_  `Permutation(Sequence(…))` 第二次遇到某个索引；`element` 是它再次出现的位置
++         row  `InvalidIndex(last, max)`  3  _the index `last` appears, but every index should be in the range 0-`max`_  传给 `Permutation(Sequence(…))` 的某个索引为负数，或不小于序列的长度
++         row  `TooShort(length, min)`  4  _the input, of size `length`, is too short for the permutation of size `min`_  传给 `Permutation#apply` 的列表比排列的范围短
+
+@ 0 23 0 0231e4924be1658c1bc45d381f39ea72
++           由 `BaseRange`、`DuplicateIndex`、`InvalidIndex` 和 `TooShort` 构成的枚举，每个分支都带有消息所指明的值；各自何时抛出见 `Permutation.Error`。
++           每个分支都有一个 `#number`，1 到 4，即该错误的次级代码。
++       entry #number   原因的次级错误代码，1 到 4
++     entry .communicable   把每个 `Permutation.Error.Reason` 渲染为一条消息
++     entry #reason   排列无法创建或应用的原因
++   entry #factoradic   排列的编号，以阶乘进制表示
++   entry #extent   排列重排的开头位置个数：比它移动的最后一个位置多一
++       恒等排列为零。
++       从 `#extent` 起的每个位置都保持不动。
++   entry #inversions   逆序表：对每个位置，其前有多少个位置持有更大的索引
++       前 `#extent` 个位置各有一项，按顺序排列。
++       位置 *i* 的项至多为 *i*，因此它是以 *i* + 1 为基数的一位数字：这些就是 `#factoradic` 的各位数字，最低位在前。
++       在所有被移动的位置之后保持原位的位置，其前没有更大的索引，这就是末尾的固定位置不会为该数增加任何值的原因。
++   entry #expansion   重排后的索引：将排列应用于 `0` 到 `extent - 1` 的结果
++       传给 `.apply` 的那些索引，直到最后一个会移动的索引为止：对 `Permutation(Sequence(3, 1, 4, 2, 0, 5))` 而言是 `List(3, 1, 4, 2, 0)`。
++       它与 `#extent` 等长，因此省略了排列保持原位的所有末尾索引。
++   entry #apply   重排一个列表，或给出某个位置从哪个索引取其元素
++       `permutation(list)` 重排一个至少与 `#extent` 等长的列表，否则以 `TooShort` 抛出 `Permutation.Error`；更长的列表重排其前 `#extent` 个元素，其余元素保持原位。
+
+@ 0 1 0 01cf5a1c79149f4814f8f1324782e4d9
++ entry .Factoradic   阶乘进制中的非负整数，即逆序表的书写方式
+
+@ 0 9 0 09b0fffac4d2358314803651c90f4b7a
++   entry .apply   由各位数字（最高位在前）构成的阶乘进制数，每位都检查是否小于其基数
++       最后一位的基数为 1，因此必须为 0；倒数第二位的基数为 2，依此类推。
++       不小于其基数的数字会以 `BaseRange` 抛出 `Permutation.Error`，因此需要一个 `Tactic[Permutation.Error]`。
++       case class 构造器 `Factoradic(number)` 直接接受 `BigInt`。
++   entry #number   该整数，作为 `BigInt`
++   entry #expand   该数的各位数字，最高位在前，没有前导零
++       `Factoradic(0).expand` 是 `Nil`；否则列表以总是为零的个位数字结尾。
++       将其反转，就是排列的 `#inversions`。

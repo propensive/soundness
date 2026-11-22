@@ -1,0 +1,617 @@
+orthant 2 language
+
+@ 0 1 0 0331bbf45b2df7d50929d40d79ef2eb7
++ # 自 0.68.0 以来的变更
+
+@ 0 3 0 11d8496c469f225c1506c69312aac5ae
++ 本文件供 LLM 智能体读取，用于把使用 Soundness 库的代码从 0.68.0 升级到下一个版本。
++ 每个条目准确说明变更的内容；格式参见 `AGENTS.md`。
++ 条目按模块分组，同一模块内最近添加的条目排在最后。
+
+% 0 1 0 1eecc11d4eed23d30cc8cf10b4de468a
+
+@ 0 25 0 10624877649fc5e809c672179ff9a1a7
++ - `anticipation.Termcap` 在 `width` 旁新增了 `def height: Int = Int.MaxValue`，它对行的含义与 `width` 对列的含义相同：高度未知或无界时为 `Int.MaxValue`。
++   已经声明了名为 `height` 的成员的实现必须将其标记为 `override`。（#2064）
++ - 移除了模块 `anticipation.html`，连同 `anticipation.GenericHtmlAttribute[-value]`（成员为 `type Self <: String & Singleton`、`def name: Text`、`def serialize(value: value): Text`）及其导出 `soundness.GenericHtmlAttribute`。
++   没有任何代码使用该类型类；honeycomb 的 `Attribute` 才是 HTML 属性的类型类。（#2082）
++ - 行为变更：given `anticipation.Checkable.stream`（`Chain[left] is Checkable against Chain[right]`）现在要求两条链长度相同；此前它在较短的链上逐元素比较，因此 `Chain(1, 2) === Chain(1)` 原为 `true`，现为 `false`。
++   `anticipation.check` 不再依赖 `rudiments.core`。（#2082）
++ - `tarantula.Focusable` 移至 `anticipation.Focusable`（新模块 `anticipation.focus`，位于 `base` 捆绑包中；`soundness.Focusable` 现在来自 anticipation）。
++   成员不变（`def strategy: Text`、`def focus(value: Self): Text`、工厂 `Focusable(strategy, focus)`），并且它现在是 `Typeclass.Pure`。
++   其实例移入了主体类型的伴生对象：`Text`（`Focusable.text`）、`honeycomb.Tag.focusable: [tag <: Tag] => tag is Focusable`、`honeycomb.ClassList.focusable: [classes <: ClassList] => classes is Focusable`、`nomenclature.DomId.focusable: Name[DomId] is Focusable`、`cataclysm.SelectorList.focusable` 和 `xylophone.XPath.focusable`；`tarantula.Focusable.{text, tag, domId, cssClass, selector, xpath}` 已不再存在。
++   策略和渲染结果不变。（#2082）
++ - 新模块 `anticipation.net`（`anticipation.EmailAddresses`、`anticipation.Hostnames`、`anticipation.IpAddresses`，以及 `anticipation.Urls` 之类的密封域标记）和 `anticipation.uuid`（`anticipation.Uuids`），二者都位于 `base` 捆绑包中，并从 `soundness` 导出。（#2089）
+
+% 0 1 0 0f65516622e01f5401b594a2ce4c1b1b
+
+@ 0 138 0 006ea1f76d33755c15a6a60e6e40d048
++ - 移除了 given `apoplexy.OpenApi.Parameter.decodableYaml: (Tactic[Yaml.Error], Tactic[JsonPointer.Error], Tactic[OpenApi.Error]) => Parameter is Decodable in Yaml`、`apoplexy.OpenApi.Operation.decodableYaml`（同上，针对 `Operation`）和 `apoplexy.OpenApi.jsonSchemaYaml: (Tactic[Yaml.Error], Tactic[JsonPointer.Error]) => JsonSchema is Decodable in Yaml`。
++   YAML 文档的读取方式是用新的 `apoplexy.OpenApi.json(yaml: Yaml): Json` 将其转换为 JSON，再对结果解码；因此，YAML 文档中 schema 的 `enum` 值现在会被保留（此前会被丢弃）。（#2091）
++ - `apoplexy.OpenApi.Operation.parameters: List[OpenApi.Parameter]` 变为 `List[OpenApi.Referable[OpenApi.Parameter]]`，`Operation.requestBody: Optional[RequestBody]` 变为 `Optional[Referable[RequestBody]]`，`Operation.responses: Map[Text, Response]` 变为 `Map[Text, Referable[Response]]`，`OpenApi.PathItem.parameters: List[Parameter]` 变为 `List[Referable[Parameter]]`，其中 `type Referable[value] = value | OpenApi.Ref`，而 `case class Ref(pointer: JsonPointer)` 表示一个未解析的 `$ref`。
++   扩展方法 `Operation#response(status: Http.Status)` 现在返回 `Optional[Referable[Response]]`。
++   新的扩展方法 `[value <: Parameter | Response | RequestBody: OpenApi.Componental] (referable: Referable[value]) def apply()(using OpenApi): value raises OpenApi.Error` 将引用解析到 `#/components/{parameters,responses,requestBodies}/…` 中（否则抛出 `Reason.UnresolvableRef` 或 `Reason.UnsupportedRef`）。
++   此前 `$ref` 参数无法解码，而 `$ref` 响应或请求正文会被解码为空对象。（#2091）
++ - `apoplexy.OpenApi.Components(schemas: Map[Text, JsonSchema])` 新增了末尾字段 `parameters: Map[Text, Referable[Parameter]] = Map()`、`responses: Map[Text, Referable[Response]] = Map()`、`requestBodies: Map[Text, Referable[RequestBody]] = Map()`；`OpenApi.Server(url, description)` 新增了 `variables: Map[Text, OpenApi.ServerVariable] = Map()`（新的 `case class ServerVariable(default: Text, enum: Optional[List[Text]] = Unset, description: Optional[Text] = Unset)`）和方法 `resolved: Text`（把每个 `{variable}` 替换为其默认值后的 URL）；`apoplexy.Api.Request(method, base, path, substitutions, query, body)` 新增了末尾字段 `headers: List[(Text, Text)] = Nil`。
++   位置模式会多出元素。（#2091）
++ - `apoplexy.Api` 宏的行为变更：路径项自身的 `parameters` 现在适用于其上的每个操作（此前被忽略，因此路径级的路径参数被类型化为 `Text`，路径级的查询参数被当作未知参数拒绝）；具名实参可以填充 `in: header` 参数，该参数作为请求头部发送（此前被拒绝）；`head`、`options` 和 `trace` 与 `get` 一样是可导航的动词；在多个 2xx 响应中，优先选择 `200`，其次是 `201`，再次是最小的状态码（此前是字典序最小的）；`type: integer` 且 `format: int64` 的参数或响应 schema 被类型化为 `Long`（仍接受 `Int` 实参；对任何整数 schema，`call[T]()` 接受 `Long` 或 `Int` 字段，对数字 schema 接受 `Float` 或 `Double`）；规范中第一个 `servers` URL 的 `{variables}` 会被替换为其默认值。
++   新的 `Api(resource, base: Text)`：`base` 会被加在相对服务器 URL（`/api/v3`）之前，并替换绝对 URL。（#2091）
++ - 移除了 `apoplexy.Api.Body.Json(value: jacinta.Json)` 和 `Api.Body.Xml(value: xylophone.Xml)`；`Api.Body` 现在是 `Empty | Content(mediaType: Text, spring: Spring[Data])`，由 `Api.Body.content[carrier](mediaType: Text, value: carrier)(using carrier is Postable)` 构建。
++   请求正文的格式来自规范声明的媒体类型，经由作用域中针对该类型的 `gesticulate.Construable`（见下文）决定，其字节则来自该载体的 `telekinesis.Postable`，它必须在编写调用的位置处于作用域中（JSON 使用 `import postables.jsonPostable`，并提供它所需的 `Codepage` 和 `Json.Formatting`；XML 使用 `postables.xmlPostable`，它是 `xylophone.http` 模块中的新内容）。
++   此前 JSON 和 XML 正文以内置默认方式序列化，无需任何导入。（#2091）
++ - `apoplexy.Api.send(request: Api.Request, accept: Text)(…)` 变为 `send(request: Api.Request)(…)`；`accept` 头部来自新字段 `Api.Request.accept: Optional[Text] = Unset`（一个末尾字段；位置模式会多出一个元素），`invoke` 宏会将其设为响应被解释为的媒体类型。（#2091）
++ - 移除了 given `apoplexy.Conformant.json: (Json is Conformant) over Json`、`Conformant.xml: (Xml is Conformant) over Xml`、`LowPriorityConformant.jsonDecodable: [value: Decodable in Json] => (value is Conformant) over Json` 和 `LowPriorityConformant.xmlDecodable`，trait `apoplexy.LowPriorityConformant` 也随之移除。
++   替代品对载体是泛型的：`Conformant.carrier: [carrier: Aggregable by Data] => (carrier is Conformant) over carrier`、`Conformant2.carrierText: [carrier: Aggregable by Text] => Charset => …`、`Conformant2.decodable: [value, carrier] => (carrier is Aggregable by Data, value is Decodable in carrier) => (value is Conformant) over carrier` 以及 `Conformant3.decodableText`（对应的 `by Text` 版本）。
++   格式错误的正文现在抛出载体自身的解析错误（例如 `zephyrine.Parse.Error` 或 `jacinta.Json.Error`），而不是 `Api.Error(Reason.Malformed)`。（#2091）
++ - 行为变更：不带类型实参的 `apoplexy.Api.Response#call()` 此前总是返回 `Unit`；现在它返回响应的 `Transport`：即规范中响应媒体类型所解释为的载体类型（`application/json` 为 `Json`，`image/png` 为 `Raster in Png`，……）；若操作的成功响应未声明内容，则为 `Unit`；若作用域中没有任何东西能解释该媒体类型，则为原始的 `Http.Response`（并伴随编译时警告）。
++   其上下文参数 `value is Defaulting to Unit` 变为 `value is Defaulting to Transport`。
++   `Api.Response` 的 `Transport` 成员现在是该载体类型，而不再仅限于 `Json` 或 `Xml`；导航类型上的 `Api over Json`/`over Xml` 不变。（#2091）
++ - `apoplexy.Api` 宏现在根据作用域中有哪些 `gesticulate.Construable` given 来决定操作的媒体类型：对于规范提供的每种媒体类型（先是 `application/json`，然后按名称排序；`application/problem+json` 之类的结构化语法后缀回退到 `application/json`），宏都会查找一个 `(<media> is Construable)` given。
++   因此，调用 JSON API 的代码必须 `import construables.jsonConstruable`（模块 `jacinta.http`），调用 XML API 的代码必须导入 `construables.xmlConstruable` 或 `textXmlConstruable`（模块 `xylophone.http`）；若没有导入，响应会被读作原始的 `Http.Response`，而请求正文会导致编译错误。
++   此前 `application/json`、`application/xml` 和 `text/xml` 会被无条件识别，其他所有媒体类型都被当作 JSON。（#2091）
++ - 模块 `apoplexy.core` 现在依赖 `xylophone.http` 和 `ypsiloid.http`（均为新模块，位于 `web` 捆绑包中），取代 `xylophone.core` 和 `ypsiloid.core`。（#2091）
++ - 模块 `apoplexy.core` 现在还依赖 `polyvinyl.core`；新的 `apoplexy.Api.Records`（一个 `Json.Provider.Primitives`）和 `Api.jsonOf(response: Http.Response)(using Tactic[Parse.Error]): Json` 支持新的 `Api.Response#record()` 和 `#tuple()`。（#2091）
++ - `apoplexy.Api.Request(method: Http.Method, base: Text, path: Text, substitutions: Map[Text, Text], query: List[(Text, Text)], body: Api.Body, headers: List[(Text, Text)], accept: Optional[Text])` 变为 `Request(method: Http.Method, base: HttpUrl, path: Text, substitutions: Map[Text, Text] = Map(), query: legerdemain.Query = Query(), body: Api.Body = Api.Body.Empty, headers: List[Http.Header] = Nil, accept: Optional[MediaType] = Unset)`；`Api.Body.Content(mediaType: Text, spring)` 变为 `Content(mediaType: MediaType, spring)`，`Api.Body.content` 接受 `MediaType`；`Api(resource, base: Text)` 变为 `Api(resource, base: HttpUrl)`；`Api.send(request) (using Online, Http.Event is Loggable, Tactic[Connect.Error], Tactic[Url.Error])(using client)` 失去了它的 `Tactic[Url.Error]`（URL 是构建出来的，而非解析出来的）。
++   新增 `Api.extend(base: HttpUrl, server: Text): HttpUrl`。
++   行为：若规范的第一个服务器 URL 缺失、是相对 URL 或不是有效 URL，则除非给出 `base`，否则现在会在 `Api(resource)` 处产生编译错误（此前 base 是原始文本，在发送时才失败）；路径替换现在会进行百分号编码（空格编码为 `%20`）。（#2091）
++ - `apoplexy.Api.Error(reason: Api.Error.Reason)`（含 `Reason.Status(code: Int)` 和 `Reason.Malformed`）被一个密封层次结构取代：`sealed abstract class Api.Error[+payload] (val status: Http.Status, val payload: payload)(using Diagnostics)`（`SN-914.1`），telekinesis 在 2xx 范围之外命名的每个状态都有一个 case class——`Api.BadRequest[+payload](payload)`、`Api.NotFound[+payload](payload)`、……`Api.NetworkAuthenticationRequired[+payload](payload)`，各自固定了 `status`——另有 `Api.Informational[+payload](status, payload)`、`Api.Redirection`、`Api.ClientError`、`Api.ServerError`（对应 `1XX`–`5XX` 范围键，以及 telekinesis 未命名的编号状态）和 `Api.OtherError[+payload](status, payload)`（对应 `default`）；载荷是协变的，因此编译器的穷尽性检查能覆盖它们的联合；此外还有 `case class Api.Violation(status: Http.Status, body: Data)(using Diagnostics)`（`SN-914.2`），用于操作未声明的状态。
++   `Api.Response` 新增了类型成员 `Locus`、`Verb` 和 `Failure <: Hazard`，最后一个由宏按操作设为其已声明的错误响应所抛出的错误类型的联合（未声明任何错误响应时为 `Nothing`）；对于 JSON 对象或对象数组，每个错误的载荷是按错误 schema 类型化的 polyvinyl `Record`（引用最多跟随两层；受约束的成员放宽为其普通类型），否则为该媒体类型的载体，再否则为 `Text`，没有正文的响应则为 `Unit`。
++   `call()`、`record()` 和 `tuple()` 会在编写它们的位置为 `Failure` 的每个成员召唤一个 `Tactic`，再加上一个 `Tactic[Api.Violation]` 和一个 `Diagnostics`，并为响应的状态抛出相应错误（先精确状态，再范围，再 `default`，否则为 `Violation`）；缺少 `Tactic` 会导致编译错误，错误信息会指出该错误类型。
++   新增 `Api.Response#attempt[value]()`（一个基于已声明错误的 `Attempt[value, Failure]`）和 `Api.Response#ensure(response)`。
++   `Conformant` 的 given（`carrier`、`carrierText`、`decodable`、`decodableText`、`unit`）不再接受 `Tactic[Api.Error]`，也不再检查状态；移除了 `Conformant.successful`。（#2091）
++ - `apoplexy.OpenApi.Components` 新增了 `securitySchemes: Map[Text, OpenApi.SecurityScheme] = Map()`，`OpenApi.Operation` 新增了 `security: Optional[List[OpenApi.Requirement]] = Unset`，`OpenApi` 新增了 `security: List[OpenApi.Requirement] = Nil`，其中 `type Requirement = Map[Text, List[Text]]`，而 `case class SecurityScheme(type: Text, description, name, in, scheme, bearerFormat, flows: Optional[SecurityScheme.Flows], openIdConnectUrl)` 带有 `def kind: SecurityScheme.Kind`（`ApiKey | Http | OAuth2 | OpenIdConnect | MutualTls | Unknown`）。
++   位置模式会多出元素。
++   `Api` 宏的行为变更：带有安全要求（操作自身的，否则为文档的）的操作，现在在调用它的位置需要为某个备选方案中的每个方案提供一个以该方案命名的 `orthodoxy.Credential` given——`apiKey` 方案为 `("name" is Credential to Text)`，`http` 为 `to Auth`，`oauth2`/`openIdConnect` 为 `to Authorization`（或 `Auth`）——否则无法编译；凭据按方案的规定提交（头部、查询参数、cookie 或 `authorization` 头部），并且在构建请求时会对照要求的作用域检查令牌，失败时抛出 `OAuth.Error`（对带作用域的要求，调用处需要一个 `Tactic[OAuth.Error]`）。
++   此前安全要求会被忽略。
++   新增 `Api.apiKey`、`Api.cookieKey`、`Api.httpAuth`、`Api.tokenAuth`。
++   模块 `apoplexy.core` 现在依赖 `orthodoxy.core`。（#2091）
+
+% 0 1 0 0a4cdd5273865dd7126f966067eddb4e
+
+@ 0 9 0 18f8c9804a6868a00f3b06b8bb8ecf90
++ - given `caduceus.Sendable.htmlDoc: (dom: Dom, monitor: Monitor, probate: Probate) => (Document[Html] is Sendable)^{monitor}` 被 `Sendable.document: [document: Media] => (streamable: (document is Streamable by Text over Credit)^) => (document is Sendable)^{streamable}` 取代，后者把 `text/html` 文档作为 `Email.Body.HtmlOnly` 发送，其他文档则作为 `Email.Body(text)` 发送。
++   `Document[Html]` 仍通过 honeycomb 的 `Html.media` 和 `Html.streamable` 解析（后者与此前一样，在使用处需要一个 `Monitor` 和 `Probate`）；不再需要 `Dom`。
++   `caduceus.core` 现在依赖 `gesticulate.core` 和 `turbulence.core`，而不是 `honeycomb.core`，因此仅通过 caduceus 获得 honeycomb（或 parasite）的使用方必须自行声明该依赖。（#2082）
+
+% 0 1 0 0a2330b2780f03b71aba65d339a6e0e3
+
+@ 0 2 0 15d2130d5f27172d1a957fa3e34baf4f
++ - `cartouche.core` 不再声明对 `hypotenuse.core` 的依赖（它仍会通过 `capricious.core` 传递引入）。（#2082）
+
+% 0 1 0 02c92e6303dfc9ad1a801cd1587ac61f
+
+@ 0 24 0 11de21f44e6fcab9055967fd1edb98e2
++ - given `cataclysm.Css.Convertible.srgb: Srgb is Css.Convertible of "color"` 和 `Css.Convertible.chroma: Chroma is Css.Convertible of "color"` 被单个 `Css.Convertible.chromatic: [color] => ((? >: color) is Chromatic) => color is Css.Convertible of "color"` 取代，它把任何对自身或某个超类型具有 `Chromatic` 实例的颜色（每种 iridescence 颜色形式，经由 `Color.chromatic`，以及 `Chroma` 本身）渲染为 `#00ff88` 样式的三元组。
++   `Srgb` 值的渲染结果相同。
++   `cataclysm.core` 依赖 `anticipation.color`，不再依赖 `iridescence.core`；仅通过 cataclysm 获得 iridescence 的使用方必须自行声明该依赖。（#2082）
++ - `cataclysm.core` 不再附带也不再读取类路径资源 `/cataclysm/properties.json` 和 `/cataclysm/syntaxes.json`：MDN 属性表和语法表在构建时从 `lib/cataclysm/data` 编译为字符串表（`cataclysm.CssData`，私有）。
++   `PropertyDef` 和 `SyntaxMatcher` 的行为不变。
++   `cataclysm.core` 不再依赖 `jacinta.core` 或 `hellenism.core`，也不再标记为仅限 JVM/JS；`cataclysm.html`（它用 `cp"…"` 读取样式表）自行声明 `hellenism.core`。
++   仅通过 `cataclysm.core` 获得 jacinta 或 hellenism 的使用方必须自行声明该依赖。（#2082）
++ - 新模块 `cataclysm.fonts`（位于 `web` 捆绑包中；依赖 `cataclysm.core`、`phoenicia.core`、`monotonous.core`、`anticipation.url`）现在承载 cataclysm 中与字体相关的那一半：`cataclysm.Web`（及其通用字体族 `Typesettable` given）、`cataclysm.FontFace`、`phoenicia.Face` 和 `Font` 上的 `style` 扩展方法，以及 `Css.fontFace(font)`/`Css.fontFaces(fonts*)`，后两者现在是该模块中定义在 `Css.type` 上的扩展方法，而不是 `object Css` 的方法（在 `import cataclysm.*` 或 `import soundness.*` 的前提下，调用处不变）。
++   包和名称不变；`soundness` 对 `Web`、`FontFace` 和 `style` 的导出移到了 `soundness_cataclysm_fonts`。
++   `cataclysm.core` 不再依赖 `phoenicia.core`、`monotonous.core` 或 `anticipation.url`；通过 `cataclysm.core` 使用其中任何一个或字体 API 的使用方必须声明 `cataclysm.fonts`（savagery 和 tasseomancy 现在已经这样做了）。（#2082）
+
+% 0 1 0 1281cf5693caddee047e57c2960f2348
+
+@ 0 11 0 056494f674ba36410f11c1d898c8e6b0
++ - `bitumen.Tar.Body`（类、`Tar.Body.apply(chunks: Data*)` 和 `Tar.Body.empty`）重命名为 `bitumen.Archive.Body`，从 `soundness` 以 `Archive` 导出；`Tar.Body` 已不再存在。
++   `Tar.Entry.File#data`、`Tar.Entry.Sparse#data` 以及 `Tar.Entry.apply` 的 `data` 实参现在的类型为 `Archive.Body`。
++   行为不变。（#2080）
++ - `bitumen.TarHeader`（该 case class 及其伴生对象，含 `blockSize`、`checksumOffset`、`checksumLength`、`parse`、`verifyChecksum`、`decodeOctal`、`decodeNulText` 和 `isZeroBlock`）重命名为 `bitumen.Tar.Header`；移除了顶层名称及其 `soundness` 导出。
++   签名和行为不变。（#2080）
++ - `bitumen.TarDataOpenable` 重命名为 `bitumen.Tar.DataOpenable`；移除了顶层名称及其 `soundness` 导出。
++   given `Tar.dataOpenable` 现在产生 `Tar.DataOpenable^{tarTactic, streamTactic}`。
++   签名和行为不变。（#2080）
+
+% 0 1 0 1b963d061ec457af154e1006b71b17d4
+
+@ 0 9 0 043132e0c4585e0f1cde9b8a10150fb7
++ - `coaxial.Connection` 新增了第三个构造参数 `peer: Optional[Text] = Unset`：内核报告的连接用户的主体名称（`SO_PEERCRED`），平台或传输方式不提供时为 `Unset`。
++   `Connection(in, out)` 仍可编译；对 `Connection(in, out)` 的模式匹配必须绑定第三个字段。（#2064）
++ - JVM 上的 `DomainSocket#listenConnections` 扩展方法在其处理函数参数列表中新增了第二个参数 `ownerOnly: Boolean = false`：`listenConnections(handler, ownerOnly = true)` 在绑定后立即把套接字文件的模式设为 `0600`（在支持 POSIX 权限的文件系统上），而此前绑定的套接字总是采用进程的 umask。
++   现有的 `listenConnections(handler)` 调用不变。（#2064）
+
+@ 0 6 0 1a8aad1edaf57115012c4d00d5e6548c
++ - `coaxial.Trust` 新增了第五个构造参数 `pinned: Optional[Data] = Unset`：连接所接受的唯一对端证书的 SHA-256 摘要（参见 `TlsAcceptance#pinning`）。
++   `Trust(expired, selfSigned, hostname, anchors)` 仍可编译；对 `Trust(expired, selfSigned, hostname, anchors)` 的模式匹配必须绑定第五个字段。
++   `coaxial.Socket.Error.Reason` 新增了变体 `Handshake`（编号 4）；对 `Reason` 的穷尽匹配必须处理它。（#2092）
+
+% 0 1 0 0fbbcccf924d26c213f6a4fc8ac4c96d
+
+@ 0 6 0 194cdeaa846fa19502f3c212430008c2
++ - `corpuscular.Crc64.table: Array[Long]^{}` 的形状变了：它现在包含首尾相接展平的八张切片表（2048 个条目，对 `0 until 8` 中的切片 `k` 以 `k*256 + n` 索引），此前是单张 256 个条目的逐字节表。
++   前 256 个条目与此前的逐字节表相同，因此按字节值索引它的代码不受影响；依赖 `table.length == 256` 或遍历整张表的代码必须改用 `table.readable.take(256)`。
++   `Crc64.Accumulator` 的结果不变。
+
+% 0 1 0 145763af4f1ed07f04ae07081edacae4
+
+@ 0 4 0 0e07a5bed622eea7147971757b5636d7
++ - 移除了 `anthology.Notice` 上的扩展方法 `delicious.semantic`（`def semantic: Optional[SemanticMessage]`，以 `soundness.semantic` 导出）；请改写为 `notice.markup.let(SemanticMessage.parse(_))`。
++   `delicious.scala` 不再依赖 `anthology.core`。（#2082）
+
+% 0 1 0 15965c13323b4da117df6152721cd841
+
+@ 0 2 0 0d61770a9659e89016cdda6fdf54dce4
++ - `dendrology.dag` 不再依赖 `tessellate.core`；使用了 tessellate 中的名称却未依赖 `tessellate.core` 或 `dendrology.tree` 的 `dendrology.dag` 使用方必须自行声明该依赖。（#2082）
+
+% 0 1 0 027a003138628fc617497a87b3252999
+
+@ 0 8 0 15d497b24ae276f7102bcb1adb1b5d52
++ - 行为变更：`digression.teletypeables.stackTraceTeletype`（以及委托给它的 `exceptionTeletype`）现在把每个帧的类、分隔符和方法渲染为一个连续的词，把其文件、冒号和行号渲染为另一个词（`pkg.Tests.run()  Tests.scala:42`），而此前它们各自是单独的表格列，中间隔着空白单元格（`pkg.Tests . run()  Tests.scala : 42`）。
++   各行仍在分隔符和冒号处对齐：类和文件在右侧填充至堆栈跟踪中最宽者的宽度，方法和行号左对齐。
++   没有行号的帧不渲染冒号。
++   匹配渲染文本的代码（例如 `Tests.scala : 42`）必须改为期待连续的形式。（#2052）
+
+% 0 1 0 1c4d783a18693f681e38c16afefeb132
+
+@ 0 6 0 1751711e848facc115a83fc40edd176e
++ - `distillate.Decodable.enumeration`（为 `reflect.Enum` 子类型提供的 `enumeration is Decodable in Text` given）现在抛出 `distillate.Enumerable.Error(inputLabel: Text, sum: Text, validVariants: List[Text])`（`SN-900`），而此前抛出的是带有相同三个字段的 `wisteria.Variant.Error`；其 `Tactic` 要求相应地改变。
++   `distillate.core` 现在依赖 `contingency.core`，而不是 `wisteria.core`，因此仅通过 distillate 获得 wisteria（或 vicarious）的使用方必须自行声明该依赖。（#2082）
+
+% 0 1 0 09df00b428737c7f1cf98680616b6f7e
+
+@ 0 26 0 0a529673985bcc3907e7ca04fa33b397
++ - 属于新增，但会改变哪些调用能够编译：given `enigmatic.SignatureAlgorithm.mlDsa: [level <: 44 | 65 | 87: ValueOf] => MlDsa[level] is SignatureAlgorithm` 使 `Certificate.selfSigned` 接受 `PrivateKey[MlDsa[level]]`（此前会报缺少 given 的错误）。
++   它写入 `id-ml-dsa-44/65/87`（`2.16.840.1.101.3.4.3.17/18/19`，无参数），并忽略作用域中的 `Signature.Digest`。
++   同样新增的还有 `enigmatic.Certificate.issued[holder <: Cipher, signer <: Cipher](subject: Distinguished, key: PublicKey[holder], issuer: Distinguished, issuerKey: PrivateKey[signer], validity: Period[Instant over Unix], serial: BigInt, authority: Boolean = false, alternatives: List[Text] = Nil)(using signer & Signing, signer is SignatureAlgorithm, Signature.Digest, Hash in Sha2[256], erased Permit[Weakness[signer]])(using Tactic[Certificate.Error], Tactic[Asn1.Error], Diagnostics): Certificate`（添加 `AuthorityKeyIdentifier` 扩展；`selfSigned` 的输出不变）和 `enigmatic.Certificate#verify[cipher <: Cipher](issuer: PublicKey[cipher])(using cipher & Signing, erased ProcessingPermit[Weakness[cipher]]): Boolean`。（#2073）
++ - 行为变更：通过 JDK 提供者（`JavaBaseCrypto`：RSA、ECDSA、DSA 和 ML-DSA）调用的 `enigmatic.PublicKey#verify`，对于 JDK 无法解码的签名（长度错误、DER 格式错误、ML-DSA 提示超出范围）现在返回 `false`，而此前会有 `java.security.SignatureException` 逃逸出来。（#2073）
++ - `enigmatic.Pem`（连同 `Pem.Label`、`Pem.Error`、`SN-389` 及其 `Decodable`/`Aggregable` given）从模块 `enigmatic.core` 移到了 `enigmatic.asn1`；包和名称不变，`enigmatic.core` 仍通过其对 `enigmatic.asn1` 的依赖传递地重新导出它。
++   `soundness` 对 `Pem` 的导出从 `soundness_enigmatic_core` 移到了 `soundness_enigmatic_asn1`（名称相同，仍为 `soundness.Pem`）。（#2082）
++ - `enigmatic.Signing`（`def sign(data: Data, privateKey: Data): Data`、`def verify(data: Data, signature: Data, publicKey: Data): Boolean`）移到了 `gastronomy.Signing`（模块 `gastronomy.core`），其 `soundness` 导出也随之移动（仍为 `soundness.Signing`）。
++   `Rsa`、`Dsa`、`Ecdsa`、`MlDsa` 和 `HmacCipher` 仍扩展它。（#2082）
+
+% 0 1 0 154e8c2a4c3287e30895275cffbeafd7
+
+@ 0 2 0 0a9f919c049547d201f9ebe8a9d1fbf6
++ - `escapade.core` 不再依赖 `mercator.core` 或 `zephyrine.core`；仅通过 escapade 获得其中任何一个的使用方必须自行声明该依赖。（#2082）
+
+% 0 1 0 07d3f5d0de80f0000d3a20dc61ea01c4
+
+@ 0 32 0 0b4497d2140568c90455a60929703853
++ - `ethereal.Stdin` 重命名为 `ethereal.Terminus`，其分支 `Terminal` 和 `Pipe` 以及 `Terminus is Decodable in Text` / `Terminus is Encodable in Text` given 不变。
++   `soundness` 总括包导出 `Terminus` 以取代 `Stdin`。（#2046）
++ - `ethereal.DaemonService` 的 `cliInput` 参数现在的类型为 `ethereal.Terminus` 而不是 `ethereal.Stdin`，并且在它之后插入了两个参数，因此构造器现在是 `DaemonService[bus <: Matchable](pid: Pid, shutdown: () => Unit, cliInput: Terminus, cliOutput: Terminus, cliError: Terminus, executable: Path on Local, deliver: bus => Unit, bus: Chain[bus], script: Text, startTime: Long, helpThunk: () => Optional[Help], setMode: Tty => Unit)`。
++   `cliInput` 仍报告客户端的 stdin 是否为终端；`cliOutput` 和 `cliError` 对其 stdout 和 stderr 报告同样的信息，这是守护进程无法自行判断的。
++   `DaemonService#cooked` 仍只依据 `cliInput`。（#2046）
++ - `ethereal.Launcher.Message.Init` 的 `tty: Boolean` 参数在同一位置被 `stdinTty: Boolean`、`stdoutTty: Boolean` 和 `stderrTty: Boolean` 取代，因此该分支现在是 `Init(pid: Int, uid: Int, username: Text, script: Text, pwd: Text, stdinTty: Boolean, stdoutTty: Boolean, stderrTty: Boolean, arguments: List[Text], environment: List[Text])`。（#2046）
++ - `ethereal-launcher` 的传输 schema 相应改变：`record Init` 的 `tty` 字段变为 `stdin-tty`、`stdout-tty` 和 `stderr-tty`，其 `argument` 和 `environment` 字段从索引 6 和 7 移到了 8 和 9。
++   因此 `ethereal.Launcher.signature` 现在是 `eeced165c15f73119cf7710812671924aa558722927d29f37538e7b3953296c2ce`，此前是 `4701ec19cd0fd3ecfc0e1b8a6525b4edc3a3b1deda370f681986db9aa39c1da692`。
++   启动器和守护进程会在每个文档上比较签名，并拒绝不匹配的签名，因此基于本版本构建的守护进程将完全无法与 XEQ 0.6 或更早版本的启动器通信：用较旧 `xeq` 打包的每个可执行文件都必须用 `xeq` 0.7 或更高版本重新打包。（#2046）
++ - `ethereal.DaemonLogEvent.Failure` 此前是无参分支，现在是 `case Failure(error: Text)`，携带导致调用失败的 throwable 的 `toString`。
++   其 `Communicable` 渲染从 "the connection handler failed" 变为 "the invocation failed: <error>"。
++   对 `DaemonLogEvent.Failure` 的模式匹配必须绑定或忽略该参数。
++   行为变更：若调用抛出的 `java.lang.Throwable` 不是 `Exception`，现在会通过 `Backstop` 确定客户端的退出状态（对每个已提供的 backstop 均为 `Exit(2)`），而此前客户端会无限期等待。（#2033）
+
+@ 0 46 0 0fb406c54aca7601060615322b765f04
++ - `ethereal-launcher` 的传输 schema 现在是 XEQ 0.8 的 schema：`record Init` 新增了 `invoked-as`、`umask`、`columns`、`rows`、`input-codepage` 和 `output-codepage`（索引 10–15；已有字段保持其索引）；`record Signal` 新增了 `columns`、`rows` 和 `deadline`（索引 2–4）；`select Message` 新增了变体 `closed`（10）和 `shutdown`（11）；`uid` 是平台的用户标识符，在 Windows 上是 SID。
++   因此 `ethereal.Launcher.signature` 现在是 `e50b7e82c11b06783dafa8a2ecc4e35f7ba31044ecd38fc5d9fe9e47a7c11e59e5`，此前是 `eeced165c15f73119cf7710812671924aa558722927d29f37538e7b3953296c2ce`，所以基于本版本构建的守护进程只能与 XEQ 0.8 或更高版本的启动器通信：用较旧 `xeq` 打包的每个可执行文件都必须重新打包。
++   `etc/xeq.tsv` 中固定的 `xeq` 版本是 0.8。（#2064）
++ - `ethereal.Launcher.Message.Init` 现在是 `Init(pid: Int, uid: Text, username: Text, script: Text, pwd: Text, stdinTty: Boolean, stdoutTty: Boolean, stderrTty: Boolean, arguments: List[Text], environment: List[Text], invokedAs: Optional[Text] = Unset, umask: Optional[Text] = Unset, columns: Optional[Int] = Unset, rows: Optional[Int] = Unset, inputCodepage: Optional[Int] = Unset, outputCodepage: Optional[Int] = Unset)`：`uid` 原为 `Int`，并在末尾追加了六个可选参数。
++   `Message.Signal` 现在是 `Signal(pid: Int, name: Text, columns: Optional[Int] = Unset, rows: Optional[Int] = Unset, deadline: Optional[Long] = Unset)`，此前是 `Signal(pid: Int, name: Text)`。
++   对这两个分支中任一个的模式匹配必须绑定或忽略新字段。
++   新增了分支 `Message.Closed(pid: Int, stream: Text)` 和 `Message.Shutdown`；对 `Message` 的穷尽匹配必须处理它们。（#2064）
++ - `ethereal.DaemonService` 新增了三个末尾构造参数，因此它现在是 `DaemonService[bus <: Matchable](pid: Pid, shutdown: () => Unit, cliInput: Terminus, cliOutput: Terminus, cliError: Terminus, executable: Path on Local, deliver: bus => Unit, bus: Chain[bus], script: Text, startTime: Long, helpThunk: () => Optional[Help], setMode: Tty => Unit, invokedAs: Optional[Text], sizeThunk: () => Optional[(Int, Int)], umask: Optional[Umask])`。
++   它现在还扩展 `galilei.Umask.Provider`，因此作用域中的 `DaemonService` 使本次调用的 `Umask` 可被召唤；它还重写了 `Entrypoint#retire()`。
++   其 `shutdown` thunk 现在会*排空*守护进程——不再为新的调用提供服务，进行中的调用完成后进程退出——而此前一旦发起调用的那次调用结束，进程就会退出，从而中断其他进行中的调用。（#2064）
++ - 守护进程现在把其套接字的模式设为 `0600`，并拒绝以下连接：内核报告的对端用户不是套接字的所有者，或者其 `init` 文档声称的 `uid` 不是守护进程自身的 `ethereal.user.id`（作为文本读取，此前作为 `Int` 读取）；被拒绝的调用以状态 2 退出。
++   以过期结论回答 `verify` 的守护进程现在会像 `shutdown` 一样排空，而不是立即退出，排空最多持续 30 秒。（#2064）
++ - 行为变更：在启动器报告客户端的 stdout 或 stderr 已失去读取方（`closed`）之后，本次调用对该流的下一次写入会抛出新的 `ethereal.Outlet.Error(stream: Text)`，任由它逃逸的调用以退出状态 141 结束，且不会咨询 `Backstop`；此前这样的写入会被静默丢弃，调用继续运行。（#2064）
++ - `ethereal.DaemonLogEvent` 新增了分支 `PeerRefused(user: Text)`、`Draining`、`Refused(pid: Pid)` 和 `Closed(pid: Pid, stream: Text)`；穷尽匹配必须处理它们。（#2064）
++ - `soundness` 总括包还额外导出 `ethereal.Outlet` 和 `ethereal.Transcoder`。（#2064）
++ - `ethereal.core` 不再依赖 `telekinesis.jvm` 或 `urticose.url`；仅通过 ethereal 获得 telekinesis、urticose 或 `legerdemain.query` 的使用方必须自行声明该依赖。（#2082）
+
+% 0 1 0 0dcece4e80bf175c0e1cc8af95d96f6e
+
+@ 0 71 0 18ec7a632b3b0f491ff11ce7b62843e1
++ - `exoskeleton.Enclave.Launcher#sandbox` 需要多一项证据，因此其上下文参数列表现在是 `(using Tactic[Enclave.Error], Tactic[Exec.Error], Tactic[Number.Error], Tactic[Path.Error])`。
++   当沙箱化工具的守护进程对 `{admin} pid` 请求没有输出时，会抛出新的 `exoskeleton.Enclave.Error(tool: Path on Linux)`；此前这种情况表现为解码空字符串时产生的 `distillate.Number.Error`。（#2046）
++ - `exoskeleton.Enclave.Launcher#sandbox` 现在在每次退出代码块时（包括中止或抛出异常）都会终止守护进程并删除已安装的补全脚本；此前清理只在代码块正常返回时运行，失败后会留下一个存活的守护进程。（#2046）
++ - `exoskeleton.Manpages.install(page: Roff, force: Boolean = false)` 在第二个 `using` 子句中新增了必需的 given `ambience.Environment` 和 `ambience.System`：`(using erased effectful: Effectful)(using Environment, System, Diagnostics)(using (Io.Event is Loggable)^)(using Tactic[Install.Error])`。
++   它不再自行导入 `environments.javaBaseEnvironment` 或 `systems.javaBaseSystem`。
++   XDG 目录现在根据 given 的 `Environment` 解析，而不是根据 JVM 的环境。
++   作用域中的 `exoskeleton.Cli` 提供 `Environment`（通过 `Environment.Provider`）；`systems.javaBaseSystem` 提供 `System`。（#2034）
++ - `exoskeleton.Completions.ensure(force: Boolean = false)` 新增了必需的 given `ambience.Environment` 和 `ambience.System`：`(using Entrypoint^, Environment, System, WorkingDirectory, Diagnostics)(using (CliEvent is Loggable)^)`，此前是 `(using Entrypoint^, WorkingDirectory, Diagnostics)(using (CliEvent is Loggable)^)`。
++   解析方式和语义与 `Manpages.install` 相同。（#2034）
++ - `exoskeleton.Completions.install(force: Boolean = false)` 新增了必需的 given `ambience.Environment` 和 `ambience.System`：`(using entrypoint: Entrypoint^)(using erased effectful: Effectful)(using Environment, System, WorkingDirectory, Diagnostics)(using (CliEvent is Loggable)^)(using Tactic[Install.Error])`，此前没有 `Environment, System`。
++   重载 `install(shell: Shell, command: Text, scriptName: Name[Linux], dirs: List[Path on Linux])` 不变。（#2034）
++ - `exoskeleton.Cli.arguments(textArguments: List[Text], focus: Optional[Int] = Unset, position: Optional[Int] = Unset, tab: Optional[Ordinal] = Unset)` 的语义变了：索引 `focus` 处的 `Argument` 现在的 `cursor = position.or(text.length)`，而此前为 `cursor = position`，因此获得焦点的实参总是带有光标（`position` 为 `Unset` 时位于词尾）。
++   其他索引处的实参，以及 `focus` 为 `Unset` 时的所有实参，均不变。（#1964）
++ - `interpreters.posixInterpreter` 和 `interpreters.posixClusteringInterpreter` 的 `exoskeleton.Interpreter#focus` 语义变了：焦点现在从带有光标的实参推导——若该实参是标志，则为其自身的片段，否则为它前面的标志——当没有实参带有光标时为 `Unset`。
++   此前它总是从命令行上的最后一个标志推导。
++   因此，标志操作数的 `Discoverable` 现在无论该标志位于何处都会被咨询，而不仅仅是在它位于最后时。（#1964）
++ - `exoskeleton.Completion#serialize` 的语义变了：当正在补全的文本以 `-` 开头时，`core` 不以 `-` 开头的光标建议会被丢弃，若一个也不剩，则提供标志列表，而此前任何光标建议都会抑制标志列表；并且仅当焦点就是正在补全的实参时，才会用获得焦点的实参的格式包装建议，焦点是其前面的标志时则不会。
++   应用程序不再需要在其 `Subcommand` 模式之前放置一个“标志优先”的匹配分支，`--fl<TAB>` 也能提供标志。（#2035）
++ - `exoskeleton.Flag` 新增了 `def present(using Cli, Interpreter, Topic is Interpretable, (? <: Topic) is Discoverable): Boolean` 和 `def value(using Cli, Interpreter, Topic is Interpretable, (? <: Topic) is Discoverable)(using erased Effectful): Optional[Topic]`，它们是普通（非 inline）的读取方法，会像 `apply()` 一样注册该标志。
++   在 `inline def` 中读取 `flag().present` 的代码必须改用 `flag.present`：在那里透明的 `apply()` 不会展开，`.present` 会经由 vacuous 的 `Optional` 扩展方法针对 `Prospective[Topic] | Optional[Topic]` 解析，从而无条件地返回 `true`。（#2032）
++ - `exoskeleton.Login.id` 现在是 `Optional[UserId]`，此前是 `Optional[Int]`：新的不透明类型 `exoskeleton.UserId`（位于 `args` 模块中，由 `soundness` 导出）把平台的用户标识符包装为文本——在 Unix 上是数字 uid，在 Windows 上是 SID——并提供 `text`、`unix: Optional[Int]` 和 `sid: Optional[Text]`。
++   把 `login.id` 作为 `Int` 读取的代码必须改用 `login.id.let(_.unix)`；用数字 id 构造 `Login` 的代码必须将其包装起来：`Login(name, UserId(t"501"))`。（#2064）
++ - `exoskeleton.Cli#trap` 和顶层的 `exoskeleton.trap` 现在接受 `PartialFunction[Signal, SignalResponse]`，此前接受 `PartialFunction[UnixSignal | WindowsSignal, SignalResponse]`；`Cli#dispatchSignal` 接受 `profanity.Signal`，而不是 `UnixSignal | WindowsSignal`。
++   处理函数 `case Interrupt.Int => …` 变为 `case Signal(Interrupt.Int, _, _, _) => …`，`case _: UnixSignal => …` 变为 `case Signal(_: UnixSignal, _, _, _) => …`。（#2064）
++ - `exoskeleton.Entrypoint` 新增了 `def retire(): Unit = ()`，补全执行器的 `{admin}` 子命令新增了调用它的 `shutdown`。（#2064）
++ - `exoskeleton.core` 依赖 `galilei.core` 而不是 `galilei.jvm`；仅通过 exoskeleton 获得 `galilei.jvm` 或 `guillotine.core` 的使用方必须自行声明该依赖。（#2082）
+
+% 0 1 0 1d90f9f17b0aa66b0d7b52e54244edf6
+
+@ 0 31 0 105352dcda7ad3df0113045ecb1ec41a
++ - `galilei.FilesystemBackend` 的创建原语接受一个模式参数：`createDirectory(path, mode: Optional[Int])`、`createFile(path, mode: Optional[Int])`、`createFifo(path, mode: Optional[Int])` 和 `open(path, flags, mode: Optional[Int])(lambda)`，其中 `mode` 是创建时使用的精确 POSIX 权限位，`Unset` 则表示交由进程的 umask 决定。
++   每个 `FilesystemBackend` 实现都必须添加该参数（在没有权限位的平台上可以忽略它，WASI 后端就是如此）；每个直接调用都必须传入它。（#2064）
++ - `galilei.Creation.DirectoryCreatable`、`FileCreatable` 和 `FifoCreatable` 以及 `galilei.FileOpenable` 多接受一个上下文参数 `umask: Umask`，构造它们的 given `Platform.directoryCreatable`、`fileCreatable`、`fifoCreatable` 和 `File.openable` 也是如此。
++   新的不透明类型 `galilei.Umask`（由 `soundness` 导出）在伴生对象中有一个 given `inherited: Umask`，其值等于 `Umask.process`，因此不召唤 umask 的代码行为不变；作用域中的 `Umask` given 或 `Umask.Provider` 会应用于通过 `create[File]`、`create[Directory]`、`create[Fifo]` 和 `open[File](…, OpenFlag.Create)` 创建的每个文件和目录。（#2064）
++ - `galilei.Device.create[plane <: Posix: Filesystem](path: Path on plane, kind: Kind, major: Int, minor: Int)(using CreateNonexistentParents on plane, OverwritePreexisting on plane, WorkingDirectory, guillotine.Exec.Event is Loggable): Path on plane raises Io.Error` 失去了最后两个 `using` 参数：它现在在 JVM 的工作目录中通过原始的 `ProcessBuilder` 运行 `mknod`，不再记录该命令；进程启动失败时抛出 `Io.Error(path, Operation.Create, Reason.PermissionDenied)`，而此前抛出 `Reason.Unsupported`。
++   `galilei.jvm` 不再依赖 `guillotine.core`；仅通过 `galilei.jvm`（或通过 `hellenism.jvm`、`zeppelin.core`、`exoskeleton.core`、`octogenarian.core`、`bitumen.jvm`、`facsimile.file`、`hyperbole.stacks`、`reliquary.derive`）获得 guillotine 的使用方必须自行声明该依赖。（#2082）
++ - given `serpentine.Navigable.uuid: [plane, uuid <: Uuid] => uuid is Navigable on plane` 移到了 `galilei.Platform.uuidNavigable: [uuid <: Uuid, filesystem <: Platform] => uuid is Navigable on filesystem`：`Uuid` 在每个操作系统文件系统平面（`Local`、`Linux`、`MacOs`、`Posix`、`Windows`）上仍是路径段，但在其他平面（URL、JSON 指针、YAML 路径、类路径）上不再是。
++   `serpentine.core` 不再依赖 `inimitable.core`，而 `galilei.core` 现在依赖它。（#2082）
+
+% 0 1 0 0fa8f427fcee06bf094db708d8d4518a
+
+@ 0 23 0 0ad2e3019fe58f7c0a1ce211e5e0de62
++ - given `gesticulate.MediaType.formenctype`、`MediaType.media`、`MediaType.enctype` 和 `MediaType.htype`（均为 `("…" is GenericHtmlAttribute[MediaType])`）随 `anticipation.GenericHtmlAttribute` 一同移除。
++   `gesticulate.core` 不再依赖 `anticipation.html`。（#2082）
++ - `gesticulate.core` 不再附带也不再读取类路径资源 `/gesticulate/media.types`：IANA 注册表在构建时从 `lib/gesticulate/data` 编译为字符串表（`gesticulate.MediaTypeData`，私有）。
++   `media"…"` 宏对未注册类型的检查不变。（#2082）
++ - `gesticulate.Part#body` 现在是 `zephyrine.Spring[Data]`（调用 `body()` 可获得一个新的 `Stream[Data] over Credit`），而不是 `Chain[Data]`；`Multipart.parse` 不再物化正文：每个部分的正文都以零拷贝方式从正在解析的输入中借出，且只有当该部分是当前部分时才可读取。
++   强制求值 `Multipart#parts` 的下一个部分（或 `Multipart#at`，它会强制求值匹配项之前的每个部分）会跳过前一个正文的剩余内容，此后该正文读取为空。
++   请在继续之前读取正文：`part.read[Data]` 和 `Part is Streamable` 不变；把 `part.body` 作为值保存并在稍后读取、或遍历其数据块的代码，必须在该部分为当前部分时通过 `part.body()`（一个流）读取。
++   `Part(disposition, headers, name, filename, body)` 在最后一个位置接受 `Spring[Data]`。（#2098）
++ - 基于流或基于 `Data` 数据块链的 `zephyrine.Cursor`，现在只要自身没有任何活动内容，就会就地读取其来源借出的区域，而不是把每个区域都复制到自己的缓冲区中；当某个保持跨越一次填充时，它仍像以前一样复制。
++   因此，解析器通过 `unsafeBuffer`/`unsafeDataBuffer` 观察到的缓冲区，在任何一次重新填充之后都可能是另一个数组，而不仅仅是增长后的数组——现有的“仅在下一次游标操作之前有效”约定本就要求调用方作此假设。（#2098）
+
+% 0 1 0 0f8801d07578e6311608c798ab4d808f
+
+@ 0 25 0 1fb1e0b0ccf9841b11e857ef185fd6fa
++ - `join` 扩展方法（`join`、`join(separator)`、`join(left, separator, right)`、`join(separator, penultimate)` 和 `join(left, separator, penultimate, right)`）不再要求被连接的类型是 `gossamer.Textual`，只要求它是 `gossamer.Joinable`。
++   该扩展方法的类型参数从 `[self, element, textual >: element]`（带 `(using source: self is Joinable.Source by element)(using joinable: textual is Joinable, textual0: textual is Textual)`，结果类型为 `textual`）变为 `[self, element, result]`（带 `(using source: self is Joinable.Source by element)(using assembly: self is Joinable.Assembly by element to result)`，结果类型为 `result`）；每个分隔符、前缀和后缀参数的类型现在都是 `assembly.Part` 而不是 `textual`。
++   对于文本和 `Message` 元素，结果类型和分隔符类型不变。
++   显式传入 `join` 类型实参的代码必须重写。（#2057）
++ - 新的 `gossamer.Joinable` given：`Joinable.list: [element] => List[element] is Joinable`、`Joinable.chain: [element] => Chain[element] is Joinable`、`Joinable.sequence: [element] => Sequence[element] is Joinable` 和 `Joinable.set: [element] => Set[element] is Joinable`（即 `proscenium` 的各种形状），它们通过拼接（对 `Set` 则为并集）进行连接，因此对这些集合构成的集合调用 `join`（可选地带一个分隔符集合）现在可以编译：`List(List(1), List(2)).join(List(0))` 的结果是 `List(1, 0, 2)`。（#2057）
++ - 新的 `gossamer.Joinable.Assembly` 类型类（`self is Joinable.Assembly by element to result { type Part >: element }`），带有 given `Assembly.joinable`（元素是 `Joinable` 的情形；`Part` 和 `Result` 就是该类型），以及优先级较低的 `Assembly.interleaving`（`self is Reshapable by element to result`；`Part = element`）。
++   后者为元素不是 `Joinable` 的集合上的 `join` 赋予了第二种含义：分隔符是元素，被交错插入一个按接收者形状重建的集合中，因此 `List(1, 2, 3).join(0)` 的结果是 `List(1, 0, 2, 0, 3)`，而此前它无法编译。（#2057）
+
+% 0 1 0 0aebba901602cb461334bf128bd66cd1
+
+@ 0 19 0 12f561769742ad3b171c793ab28d24ec
++ - `harlequin.Fragment.infixBase` 现在拒绝把任何 Scala 3 关键字（无论硬关键字还是软关键字）作为中缀接收者，它使用新的 `prophesy.ScalaKeywords.all` 取代了自身的私有列表，那个列表缺少 `erased`、`macro`、`throws` 和 `tracked`。
++   因此，像 `erased x ma`（光标位于末尾）这样的片段会产生 `(Unset, t"ma")`，而此前产生的是 `(t"x.", t"ma")`。
++   其结果的其他方面均未改变。
++ - `harlequin.Highlight` 的形状变了：`def scalac: Optional[Scalac[?, ?]]` 和 `def classpath: Optional[LocalClasspath]` 被 `def compilation: Optional[Highlight.Compilation]` 取代，其中新的 `Highlight.Compilation` trait 具有 `def arguments: List[Text]`、`def classpath: Text` 和 `def compiler(): dotty.tools.dotc.Compiler`。
++   `harlequin.highlighting` 现在是一个包（原为对象）：`highlighting.tokenizedScala` 留在 `harlequin.core` 中；`highlighting.typecheckedScala` 和 `highlighting.compiledScala`（均为 `(using Scalac[?, ?], LocalClasspath): Highlight`，签名不变）移到了新模块 `harlequin.typed`（位于 `tool` 捆绑包中；依赖 `harlequin.core`、`anthology.scala`、`hellenism.jvm`）。
++   在依赖该模块的前提下，`import highlighting.typecheckedScala` 和 `harlequin.highlighting.typecheckedScala` 仍能解析。（#2082）
++ - `harlequin.Diagnostic#importance` 现在的类型为 `harlequin.Diagnostic.Importance`（一个新的枚举，分支同样为 `Info`、`Warning`、`Error`），而不是 `anthology.Importance`。（#2082）
++ - `harlequin.core` 不再依赖 `anthology.scala` 或 `hellenism.jvm`（因而也不再经由它们依赖 `anthology.core`、`hellenism.core`、`galilei`、`ambience`、`guillotine`、`aperture`）；仅通过 `harlequin.core` 获得其中任何一个的使用方必须自行声明该依赖，或声明 `harlequin.typed`。（#2082）
+
+% 0 1 0 1158a6567f5d98ee0a180931c96339da
+
+@ 0 19 0 0a24b78ff57bed0f112ba8adcbe21a7c
++ - `hieroglyph.CharDecoder` 重命名为 `hieroglyph.Charset`（字节到文本），`hieroglyph.CharEncoder` 重命名为 `hieroglyph.Codepage`（文本到字节）；导出 `soundness.CharDecoder` 和 `soundness.CharEncoder` 现在是 `soundness.Charset` 和 `soundness.Codepage`。
++   成员不变，因此嵌套类型和工厂也随之改名：`CharDecoder.Error` → `Charset.Error`，`CharDecoder.Focus` → `Charset.Focus`，`CharDecoder.system` → `Charset.system`，`CharDecoder.unapply` → `Charset.unapply`，`CharEncoder.Error` → `Codepage.Error`，`CharEncoder.system` → `Codepage.system`，`CharEncoder.unapply` → `Codepage.unapply`。
++   源文件现在是 `hieroglyph.Charset.scala` 和 `hieroglyph.Codepage.scala`。
++ - 族包 `hieroglyph.charDecoders` 和 `hieroglyph.charEncoders`（及其镜像 `soundness.charDecoders`/`soundness.charEncoders`）重命名为 `charsets` 和 `codepages`，每个成员都采用新的角色后缀：`charDecoders.utf8Decoder` → `charsets.utf8Charset`，`utf16Decoder` → `utf16Charset`，`utf16LeDecoder` → `utf16LeCharset`，`utf16BeDecoder` → `utf16BeCharset`，`asciiDecoder` → `asciiCharset`，`iso88591Decoder` → `iso88591Charset`；`charEncoders.utf8Encoder` → `codepages.utf8Codepage`，`utf16Encoder` → `utf16Codepage`，`utf16LeEncoder` → `utf16LeCodepage`，`utf16BeEncoder` → `utf16BeCodepage`，`asciiEncoder` → `asciiCodepage`，`iso88591Encoder` → `iso88591Codepage`。
++   把 `import charEncoders.utf8Encoder` 替换为 `import codepages.utf8Codepage`，把 `import charDecoders.utf8Decoder` 替换为 `import charsets.utf8Charset`。
++   与以前一样，ISO-8859-1 成员只存在于 `hieroglyph` 包中，不在 `soundness` 镜像中。
+
+% 0 1 0 165131e53f5576cf05d71a204ac48013
+
+@ 0 6 0 1762458ff3a0b4940190442410695402
++ - `honeycomb.core` 不再附带也不再读取类路径资源 `/honeycomb/entities-html4.tsv` 和 `/honeycomb/entities-extra.tsv`：具名字符引用表在构建时从 `lib/honeycomb/data` 编译为字符串表（`honeycomb.EntityData`，私有）。
++   `Html4Transitional.entities` 和 `Whatwg.entities` 不变。
++   `honeycomb.core` 不再依赖 `hellenism.core`，也不再标记为仅限 JVM/JS；仅通过 honeycomb 获得 hellenism 的使用方必须自行声明该依赖。（#2082）
+
+% 0 1 0 10336422395755bf1e478ba611fcc433
+
+@ 0 6 0 0d3ae8ddab3c80540277efd118d7a8f9
++ - 模块 `anticipation.check` 移到了 `hypotenuse.check`，其包从 `anticipation` 变为 `hypotenuse`：`anticipation.Checkable`、`anticipation.Tolerance` 以及扩展方法 `===`、`!==`、`+/-` 和 `±` 现在是 `hypotenuse.Checkable`、`hypotenuse.Tolerance`、`hypotenuse.===` 等。
++   `soundness` 的导出以及 probably 的重新导出（`import probably.*`）不变；通过 `import anticipation.*` 导入它们的代码需要改为 `import hypotenuse.*`。
++   成员、签名和行为不变。（#2082）
+
+% 0 1 0 14802db87637bb240c0e50c6611271aa
+
+@ 0 3 0 0bf27116eac3b86405e27b4b2c90af22
++ - `inimitable.core` 现在依赖 `anticipation.uuid`。
++   新的选择包 `uuidInterfaces` 包含 `given soundnessUuid: (tactic: Tactic[Uuid.Error]) => ((Uuid is Instantiable across Uuids from Text)^{tactic})`，并在 `soundness` 中有镜像。（#2089）
+
+% 0 1 0 1596bb652e5891230b44b58e4458fbe5
+
+@ 0 2 0 1a6ad13588ff2aa61a76116f40640d8a
++ - `iridescence.core` 不再依赖 `contextual.core`；仅通过 iridescence 获得 contextual 的使用方必须自行声明该依赖。（#2082）
+
+% 0 1 0 021b852f7dba238b06ccff9a0d2bb561
+
+@ 0 138 0 1efb506d311e4a5608483587c4dbf818
++ - `jacinta.JsonPointer(url: Optional[HttpUrl] = Unset, path: Path on JsonPointer = JsonPointer)` 变为 `JsonPointer(path: Path on JsonPointer = JsonPointer)`：`url` 字段已被删除，从来没有任何代码路径设置过它（解码器会拒绝任何不以 `#` 开头的引用）。
++   模式匹配 `JsonPointer(url, path)` 变为 `JsonPointer(path)`；`pointer.url` 已不再存在。
++   因此 `JsonPointer is Encodable in Text` 总是渲染为 `#` 或 `#/…`，实际上它一直如此。（#2082）
++ - 移除了 `jacinta.JsonPointer.Registry`（一个 `beneficence.Findable`，带有 `update(url: HttpUrl, document: Json): Unit`、`apply(url: HttpUrl): Optional[Json]` 和 `protected def lookup(url: HttpUrl): Optional[Json]`）、`JsonPointer#apply(using registry: JsonPointer.Registry^)(document: Json)(using Tactic[JsonPointer.Error]): Json`（它总是返回 `document`），以及 given `jacinta.jsonPointerRegistries.standaloneRegistry` 和 `jsonPointerRegistries.fetchingRegistry`（模块 `jacinta.schema`，也以 `soundness.jsonPointerRegistries.*` 导出）。
++   没有替代品：`JsonPointer` 只寻址当前文档。（#2082）
++ - 移除了 `jacinta.JsonPointer.Error.Reason.UnknownDocument`（`SN-415.1`）；`ExpectedHash`、`ExpectedSlash` 和 `BadEscape` 保持编号 2、3 和 4。（#2082）
++ - `jacinta.core` 直接依赖 `serpentine.core`，不再依赖 `urticose.url`；仅通过 jacinta 获得 urticose 的使用方必须自行声明该依赖。（#2082）
++ - `jacinta.Json.Provider` 的构造参数是 `into[Json.Provider.Schema]`，并带有 given 转换 `Json.Provider.Schema.json: Conversion[Json, Schema]` 和 `Schema.readable: [source] => (source is Readable to Json) => Conversion[source, Schema]`，因此提供者可以基于已解析的 JSON、类路径资源（`Json.Provider(cp"/schema.json")`，作用域中需有 `Classloader` given）、文件或 JSON 文本来声明。
++   `Provider#schema: Json` 不变。（#2089）
++ - `jacinta.JsonBlueprint`（模块 `jacinta.records`）移到了 `jacinta.Json.Provider`（模块 `jacinta.core`，它现在依赖 `polyvinyl.core`、`anticipation.url`、`anticipation.time`、`anticipation.net` 和 `anticipation.uuid`）；移除了模块 `jacinta.records` 及其导出 `soundness.JsonBlueprint`。
++   构造器现在直接接受 schema 文档本身：`abstract class Json.Provider(val schema: Json)`（原为 `JsonBlueprint(val doc: JsonBlueprint.Doc)`），因此 `object X extends JsonBlueprint(text.read[Json].as[JsonBlueprint.Doc])` 变为 `object X extends Json.Provider(text.read[Json])`。
++   移除了 `JsonBlueprint.Doc`、`JsonBlueprint.Property` 和 `JsonBlueprint.entries`；schema 遍历由 `Json.Provider.fieldsOf(schema: Json): List[(Text, Member)]` 完成。
++   `JsonBlueprint.Error` 和 `JsonBlueprint.Error.Reason` 现在是 `Json.Provider.Error`（仍为 `SN-624`）和 `Json.Provider.Error.Reason`。
++   移除了 `JsonBlueprint.intensional`、`JsonBlueprint.structural` 和 `JsonBlueprint.record`：请改用 `polyvinyl.Intensional(accessor)` 和 `polyvinyl.Record(data, access)`。（#2089）
++ - 移除了 `Json.Provider` 的可选 given `optionalBoolean`（`"boolean?"`）、`optionalText`（`"string?"`）、`optionalInteger`、`optionalNumber`、`optionalDateTime`、`optionalDate`、`optionalTime`、`optionalDuration`、`optionalUriReference`、`optionalEmail`、`optionalIdnEmail`、`optionalHostname`、`optionalIpv4`、`optionalIpv6`、`optionalUri`、`optionalIri`、`optionalIriReference`、`optionalUuid`、`optionalUriTemplate`、`optionalJsonPointer`、`optionalRegex`、`optionalPattern`，以及 `Structural` given `array`、`optionalArray`、`module`（`"object"`）和 `optionalModule`（`"object?"`）：可选性和重复由 polyvinyl 的宏根据成员的 `Multiplicity` 施加。
++   未在 `required` 中列出的属性仍读作 `Optional[T]`；`type` 包含 `"null"`、`enum` 包含 `null`、或者某个 `anyOf`/`oneOf` 备选项类型为 `null` 的属性，现在即使是必需的也读作 `Optional[T]`，且 `null` 值读作 `Unset`。（#2089）
++ - `Json.Provider` 把 `array` 属性的 `items` 作为 schema 读取（`{"type": "string"}`、`{"type": "object", "properties": {…}}`），该字段读作元素类型的 `List[T]`，缺失的数组读作 `List()`（此前 `items` 被当作属性映射读取，字段读作 `List[Record]`，非必需数组读作 `Optional[List[…]]`）。
++   没有 `items` schema、`items` 为元组形式的列表、或者元素本身是数组的数组，读作 `List[Json]`。（#2089）
++ - `Json.Provider` 现在会跟随本地 `$ref`（`#`、`#/definitions/…`、`#/$defs/…`、任何 JSON 指针），合并由对象组成的 `allOf`，读取 `enum`/`const`（在缺少 `type` 时根据值推断类型，并统一全部为字符串的 `anyOf`/`oneOf` 备选项），并在 `pattern`、`minimum` 和 `maximum` 之外遵循 `minLength`、`maxLength`、`exclusiveMinimum` 和 `exclusiveMaximum`（布尔值或数值）。
++   命名多个类型的 `type`，或属于不同 JSON 种类（字符串、数字、布尔值、对象、数组）的 `anyOf`/`oneOf` 备选项，读作各备选项类型的 Scala 联合类型（`Text | Record {…}`、`Text | List[Text]`），根据值的种类选择；带有承载 schema 的 `additionalProperties`、或 `patternProperties` 全部为同一类型、且没有 `properties` 的对象，读作 `Map[Text, T]`（缺失时为空）。
++   当无法确定单一类型时——备选项属于同一种类或不属于任何单一种类、`not`、既无 `properties` 也无值 schema 的对象、对其他文档的引用、递归引用——该字段读作 `Json`（新标注 `"json"`，given `Json.Provider.json`）。
++   此前以上任何一种情况都会按其字面 `type` 标注解码，或者失败。（#2089）
++ - `Json.Provider.fieldsOf`（因而还有展开提供者的 `record`）对于根是数组、标量、或只能通过对其他文档的引用到达的 schema，现在以 `fulminate.Panic("the schema's root does not describe an object with properties…")` 失败，并读取根 `anyOf`/`oneOf` 中的对象备选项。
++   此前这样的根会在解码 `JsonBlueprint.Doc` 时失败。（#2089）
++ - 缺失的必需属性现在会在读取该字段时立即抛出 `Json.Error(Json.Error.Reason.Absent)`，`object` 属性也是如此（此前缺失的必需对象会产生一个所有字段都缺失的记录）。（#2089）
++ - `Json.Provider` 的 `email`、`idnEmail`、`hostname`、`ipv4`、`ipv6` 和 `uuid` given 现在对 anticipation 的域是多态的（`[email: Instantiable across EmailAddresses from Text] => ("email" is Intensional in Json.Provider from Json to email)`，`Hostnames`、`IpAddresses`、`Uuids` 同理），因此记录的字段具有表示类型，且没有 `raises` 子句（`Tactic` 在构建记录的位置被捕获），实例必须在调用处处于作用域中：`import emailAddressInterfaces.soundnessEmailAddress`、`hostnameInterfaces.soundnessHostname`、`ipAddressInterfaces.{soundnessIpv4, soundnessIpv6}`、`uuidInterfaces.soundnessUuid`、`urlInterfaces.soundnessUrl`。
++   此前结果类型为 `EmailAddress raises EmailAddress.Error`、`Hostname raises Hostname.Error`、`Ipv4 raises IpAddress.Error`、`Ipv6 raises IpAddress.Error` 和 `Uuid raises Uuid.Error`。
++   提供者不认识的 `format` 现在读作 `Text`（此前会找不到实例）。（#2089）
++ - `Json.Provider` 的 `boundedInteger`（`"integer!"`）和 `pattern` given 现在是类 `Json.Provider.BoundedInteger` 和 `Json.Provider.Pattern`，它们是 `Result = Int` / `Text`、`Error = Json.Provider.Error` 的 `polyvinyl.Intensional.Fallible` 实例；记录的字段仍读作 `Int raises Json.Provider.Error` / `Text raises …`。
++   `BoundedInteger` 的参数现在有四个（`minimum`、`maximum`、`exclusiveMinimum`、`exclusiveMaximum`，每个都可能为空），而不是两个。
++   新的可失败类和 given `BoundedNumber`（`"number!"`）、`BoundedString`（`"string!"`）和 `Enumeration`（`"enum"`），以及新的原因 `Json.Provider.Error.Reason.NumberOutOfRange(value: Double, minimum: Optional[Double], maximum: Optional[Double])`（`SN-624.5`）、`LengthOutOfRange(value: Text, minimum: Optional[Int], maximum: Optional[Int])`（`SN-624.6`）和 `NotPermitted(value: Text, permitted: List[Text])`（`SN-624.7`）。
++   未在 `required` 中列出的有界整数属性现在读作 `Optional[Int] raises Json.Provider.Error`（此前总是 `Int raises …`）。（#2089）
++ - `Json.Provider.duration`（`"duration"`）现在与其他所有实例一样声明为 `from Json`（此前只有 `to duration`）。（#2089）
++ - `jacinta.JsonSchema.Format` 新增了分支 `Int32, Int64, Float, Double, Byte, Binary, Password` 和 `Other(name: Text)`；该枚举不再是纯枚举，因此 `Format.values` 和 `Format.valueOf` 已不再存在，对 `Format` 的 `match` 需要一个 `Other` 分支。
++   `Format is Decodable in Text` 现在是全函数：枚举之外的名称解码为 `Other(name)`（此前抛出 `IllegalArgumentException`）；`Other(name)` 编码为 `name`。（#2091）
++ - `jacinta.JsonSchema.Integer(description, maximum: Optional[Int], minimum: Optional[Int], exclusiveMinimum: Optional[Int], exclusiveMaximum: Optional[Int], optional)` 变为 `Integer(description, maximum: Optional[Long], minimum: Optional[Long], exclusiveMinimum: Optional[Long], exclusiveMaximum: Optional[Long], optional, format: Optional[JsonSchema.Format] = Unset)`：四个边界都是 `Long`，并在末尾追加了第七个字段 `format`（从 schema 的 `format` 关键字读取）。
++   位置模式会多出一个元素。（#2091）
++ - `jacinta.JsonSchema.Object` 新增了五个末尾字段，默认值均为 `Unset`：`additionalSchema: Optional[JsonSchema]`、`allOf: Optional[List[JsonSchema]]`、`anyOf: Optional[List[JsonSchema]]`、`not: Optional[JsonSchema]`、`const: Optional[Json]`。
++   位置模式会多出五个元素。
++   当该关键字的值是 schema 时，`additionalProperties: Boolean` 现在也为 `true`，该 schema 则由 `additionalSchema` 承载（此前值为 schema 的 `additionalProperties` 无法解码）。（#2091）
++ - 行为变更：`jacinta.JsonSchema is Json.Decodable` 对任何 JSON Schema 文档都是全函数。
++   以数组形式给出的 `type` 读取其第一个非 `"null"` 条目；`"null"` 条目或 OpenAPI 3.0 的 `nullable: true` 会把 schema 的 `optional` 设为 `true`；布尔 schema `true`/`false` 读作 `Object(additionalProperties = true/false)`；布尔型的 `exclusiveMinimum`/`exclusiveMaximum`（draft 4 和 OpenAPI 3.0）会把 `minimum`/`maximum` 移入 `exclusiveMinimum`/`exclusiveMaximum`；JSON 类型不符合预期的关键字会被忽略，而不是抛出 `Json.Error`。
++   `"null"` 类型读作 `Null(description, optional = true)`（此前为 `optional = false`）。（#2091）
++ - `jacinta.Json.Provider` 现在扩展新的 `Json.Provider.Primitives`（一个 `polyvinyl. Specification`，其 `Origin = Json`、`Form = Json.Provider`，带有读取原语 `access`、`absent`、`required`、`kind`、`elements`、`pairs`、`entries`、`repeated`，但不含 schema）；`Provider` 自身保留 `schema` 和 `fields`。
++   schema 遍历的行为变更：`type: integer`、`format: int64` 且无边界的属性现在通过新的 `Json.Provider.long` 实例（`"long"`，读作 `Long`）读取，而不是 `integer`（读作 `Int`）；有界的 int64 仍读作 `"integer!"`。
++   新的 `Json.Provider.memberOf(document: Json, node: Json, limit: Int = Int.MaxValue): polyvinyl.Member` 在更大的文档中遍历一个 schema 节点，最多跟随 `limit` 层引用（超出部分读作原始 `Json`），并缓存所跟随的每个引用。（#2091）
+
+% 0 1 0 05984bb5afb584fc059e170ac7d22325
+
+@ 0 3 0 0e7c9a4b3d4e638f16f29a25fdc0ce31
++ - `octogenarian.core` 依赖 `enigmatic.asn1`，而不是 `enigmatic.core`；仅通过 octogenarian 获得 `enigmatic.core`（或 `gastronomy.core`、`aperture.core`）的使用方必须自行声明该依赖。（#2082）
+
+% 0 1 0 162fdd68f08c465a12122d34e6c4d9a3
+
+@ 0 19 0 0341c8f4c319d9d7014f3f3fee6bba0a
++ - `hellenism.Classpath#classloader` 现在在 `parent: Classloader = classloaders.platformClassloader` 之前接受一个必需的第一个参数 `delegation: Classloader.Delegation`。
++   `Classloader.Delegation` 是一个新枚举，其分支为 `Deferential`（父优先，即 JVM 的标准顺序）和 `Preferential`（子优先）。
++   原来的 `classpath.classloader()`（在给定的父加载器或平台父加载器之上子优先）变为 `classpath.classloader(Classloader.Delegation.Preferential)`，若原先传入了 `parent` 实参则保留它；原来无参的 `classpath.classloader`（在平台加载器之上父优先）被移除，变为 `classpath.classloader(Classloader.Delegation.Deferential)`。
++   行为变更：在两种模式下，`Classpath.Entry.JavaRuntime` 条目都不再作为 `jrt:/` URL 传给加载器（平台父加载器提供 JDK），无参形式原本就省略了它。（#2070）
++ - `hellenism.Classloader#apply(path: Text)` 现在是 `inline` 的，并以 `using` 子句 `(using (Classpath.Event is Loggable)^)` 接受其日志上下文，取代 `logs Classpath.Event` 语法糖；其结果仍为 `Optional[Data]`，作用域中有 `Loggable` 的调用不受影响。
++   结果现在不保留任何能力，因此原先将其强制转换为 `Optional[scala.IArray[Byte]]`、或通过原始的 `java.lang.ClassLoader` 读取资源以获得纯值的调用方，可以直接调用 `apply`，包括在 `safely` 内部。
++   新的 `Classloader#resource(path: Text): Optional[Data]` 是不记录日志的同一读取操作。
++   二者都在读取后关闭资源的流。（#2071）
+
+% 0 1 0 12a5154887295d701791e765afcca89e
+
+@ 0 29 0 08ffafb7bfd818660d9bcf878c515d69
++ - 模块 `orthodoxy.core` 不再依赖 `scintillate.server` 或 `telekinesis.jvm`；scintillate 中间件移至新模块 `orthodoxy.server`（位于 `web` 捆绑包中，导出为 `soundness.{Authorizations, oauth, require}`）。
++   `orthodoxy.Issuer#oauth(…)` 和 `Issuer#require(…)` 现在是 `orthodoxy.server` 中的扩展方法，参数相同，只是 `require` 还额外接受 `(using Tactic[OAuth.Error])`。（#2091）
++ - `orthodoxy.Issuer(init: HttpUrl, exchange: HttpUrl, redirect: HttpUrl, client: Text, secret: Optional[Text] = Unset)` 变为 `Issuer(exchange: HttpUrl, client: Text, secret: Optional[Text] = Unset, init: Optional[HttpUrl] = Unset, redirect: Optional[HttpUrl] = Unset)`，其字段现在是公开的 `val`；新增了客户端授权方法 `grant(parameters: Query)`、`clientCredentials(scopes: Text*)`、`refresh(token: Text)`、`refresh(authorization: Authorization)`、`exchangeCode(code: Text, pkce: Optional[Pkce] = Unset)`，每个都是 `(using Online, (Http.Event is Loggable)^, Http.Client onto Origin["http" | "https"])(using Tactic[OAuth.Error]): Authorization`，以及 `authorizationUrl(scopes: List[Text], state: Text, pkce: Optional[Pkce] = Unset)(using Tactic[OAuth.Error]): HttpUrl`。
++   这些授权方法使用作用域中的 `Http.Client`，而不是内置的 `javaNetHttp` 后端。（#2091）
++ - `orthodoxy.OAuth`（该类，一个按 `Session` 存储、带有 `update`/`apply` 的存储）更名为 `orthodoxy.Authorizations`（模块 `orthodoxy.server`），以 `ConcurrentHashMap` 为后备存储；`orthodoxy.OAuth.State(redirect, uuid, access, refresh, expiry)` 变为 `Authorizations.State(redirect: Path on Www, uuid: Uuid = Uuid(), access: Optional[Authorization] = Unset)`，其 `expired` 现在读取授权凭据的过期时间（原来的 `refresh`/`expiry` 字段从未被设置）。
++   `OAuth.Error.Reason` 新增了 `Misconfigured(detail: Text)`（`SN-840.7`）。（#2091）
++ - `orthodoxy.Authorization` 新增了 `bearer: Auth`、`expired: Boolean`、`grants(required: List[Text]): Boolean`，以及伴生对象中的 `Authorization.parse(json: Json)(using Tactic[OAuth.Error]): Authorization`（RFC 6749 §5.1；`scope`、`expires_in` 和 `refresh_token` 为可选——此前没有 `scope` 的令牌响应是 `InvalidJsonResponse`）。
++   新增 `orthodoxy.Pkce(verifier: Text)`，带有 `challenge`（S256）和 `Pkce()`；新增类型类 `orthodoxy.Credential`（`type Self <: Label; type Result; def value: Result`，构造器为 `Credential[name, result](value)`）。（#2091）
+
+% 0 1 0 046683a3b9afdfab0fd015fb2638c92b
+
+@ 0 13 0 1922a31e978487481dbb790accb7d243
++ - 新增 `pneumatic.Brotli.continuation(base: Data, next: Data, window: Int = Brotli.Window): Data` 和 `pneumatic.Brotli.prefix(base: Data, window: Int = Brotli.Window, block: Int = Brotli.Block): Data`，以及常量 `Brotli.Window = 24` 和 `Brotli.Block = 1 << 24`。
++   `continuation` 在预先载入了 `base` 的 LZ77 窗口上编码 `next`，仅为 `next` 生成元块，不带流头部，并以 ISLAST = 1 结束；`prefix` 构建 RFC 7932 所固定的预热流（WBITS 头部，`base` 作为每个至多 `block` 字节的未压缩元块，然后是空的元数据元块 `0x06`），使得 `(prefix(base, w, b) ++ continuation(base, next, w)).decompress[Brotli]` 等于 `base ++ next`。
++   为此目的自带编码器移植版本的代码（`lira.Priming`）应改为调用这些方法。
++   现有的 `compress[Brotli]` 输出逐字节保持不变。（#2047）
++ - `pneumatic.core` 不再依赖 `turbulence.stdio`；任何 pneumatic 模块的使用方，若使用了 turbulence 的名称却未依赖 turbulence，必须声明 `turbulence.core` 或 `turbulence.stdio`。（#2082）
+
+% 0 1 0 1828e4d97834300a121cab8d2d6afc7f
+
+@ 0 57 0 18a0dcd5e7524c551a1867388b98a790
++ - `polyvinyl.Member.Value(fieldType: Text, params: Text*)` 现在是 `Member.Value(fieldType: Text, params: List[Text] = Nil, multiplicity: Multiplicity = Multiplicity.One)`，`Member.Record(fieldType: Text, fields: List[(Text, Member)])` 现在是 `Member.Record(fields: List[(Text, Member)], multiplicity: Multiplicity = Multiplicity.One)`：嵌套记录不再以标注作为键。
++   新增 `enum polyvinyl.Multiplicity { One, Optional, Many }` 以及 `Member#multiplicity`、`Member#of(multiplicity)`、`Member#optional`、`Member#many`。
++   宏将 `Optional` 成员读取为 `Optional[T]`（在规范的 `absent` 成立处为 `Unset`），将 `Many` 成员读取为 `List[T]`；可失败的 `T = S raises E` 变为 `Optional[S] raises E` / `List[S] raises E`。
++   `"…?"` 标注约定已不复存在。（#2089）
++ - `polyvinyl.Specification` 现在声明了 `transparent inline def record(inline value: Origin): Record` 和 `transparent inline def tuple(inline value: Origin): NamedTuple.AnyNamedTuple`，每个规范对象都会继承它们，因此不再需要逐个对象声明的 `transparent inline def record(…) = ${build('…)}` 和 `tuple`，并且必须将其移除（它们现在与继承的成员冲突）。
++   移除了 `Specification#build(value: Expr[Origin])` 和 `#tuple(value: Expr[Origin])`（宏的另一半）；宏现在是 `Specification.record[self, origin, form]` 和 `Specification.tuple[self, origin, form]`。
++   `build(data: Origin, transform: Text -> Origin -> Any): Record` 保留。
++   规范对象现在在展开时通过反射加载（按其二进制名称，经由宏类加载器），因此它仍须在其调用点之前编译，并且必须是 `object`。（#2089）
++ - 移除了 `polyvinyl.Structural[constructor[_]]` 及其导出 `soundness.Structural`。
++   嵌套记录用 `Member.Record` 表示；重复用 `Multiplicity.Many` 表示。（#2089）
++ - 新增 `polyvinyl.Multiplicity.Keyed`（读取为 `Map[Text, T]` 的字段）和 `polyvinyl.Member.Union(alternatives: List[(Text, Member)], multiplicity: Multiplicity = One)`（读取为其各备选项类型之联合的字段，由规范针对该值的 `kind` 选择备选项；只有一个备选项的联合会嵌套其备选项的多重性）。
++   新增了 `Member#keyed`。
++   `polyvinyl.Specification` 新增了钩子 `def entries(name: Text, value: Origin): List[(Text, Origin)]`、`def kind(value: Origin): Text`、`def elements(value: Origin): List[Origin]` 和 `def pairs(value: Origin): List[(Text, Origin)]`，每个都有一个会引发 panic 的默认实现；使用 `Keyed` 或 `Union` 成员的规范必须重写它们。（#2089）
++ - 新增 `polyvinyl.Intensional.Fallible`（`type Self <: Label; type Error <: Hazard; def transform(data: Origin, params: List[Text])(using Tactic[Error]): Result`）：宏先召唤 `label is Intensional in Form from Origin`，再召唤 `label is Intensional.Fallible …`，并将可失败的字段读取为 `Result raises Error`。
++   `Result` 本身为 `S raises E` 的 `Intensional` 仍按原来的方式读取。（#2089）
++ - `polyvinyl.Specification` 新增了抽象成员 `def absent(value: Origin): Boolean` 和 `def repeated(name: Text, value: Origin): List[Origin]`；`def build(data: Origin, transform: Text -> Origin -> Any): Record` 现在有了默认实现（`Record(data, transform)`）。（#2089）
++ - `polyvinyl.Record` 的成员 `val data: Origin` 和 `def access: Text => Origin => Any` 现在是 `val recordData: Origin` 和 `def recordAccess: Text -> Origin -> Any`，以便规范可以声明名为 `data` 或 `access` 的字段；`record.data` 仍作为扩展方法（`Record.data`）在任何记录上可用。
++   `Record#selectDynamic(name)` 现在在分派之前解码 JVM 编码的名称（`street$$minusaddress`），因此以符号命名的字段（`street-address`、`+to`、`$$schema`）可以通过反引号名称选取；未声明的名称现在以 `fulminate.Panic("the record has no field named …")` 失败（此前为 `NotImplementedError`）。
++   新的工厂方法有 `polyvinyl.Record(data, access)`、`polyvinyl.Intensional[name <: Label, form, origin, value](accessor: origin => value): (name is Intensional in form from origin to value)^{accessor}` 和 `Intensional.parametric(accessor: (origin, List[Text]) => value)`。（#2089）
++ - 记录的细化类型现在固定了 `Origin`（`Record { type Origin = Json; … }`），因此 `record.data` 具有该来源类型，而不是抽象的 `record.Origin`。（#2089）
++ - `polyvinyl.Specification` 新增了 `def required(name: Text, value: Origin): Origin = value`，宏在 `Multiplicity.One` 下读取每个字段时，会先应用它，再应用该字段的 `Intensional`；规范可以重写它，以便在值缺失时失败。（#2089）
++ - 宏错误 `could not find a Structural instance for the field …` 不再出现；未知的标注总是报告 `could not find an Intensional instance …`。（#2089）
+
+% 0 1 0 110b77734cfed03a118adecece7f9e5b
+
+@ 0 2 0 0ea872fe32cc5ef4004d7a66e14d2cfe
++ - `praxinoscope.core` 不再依赖 `contextual.core`；仅通过 praxinoscope 获得 contextual 的使用方必须自行声明该依赖。（#2082）
+
+% 0 1 0 0172194e0cc326ed063fbc1a966cec9f
+
+@ 0 15 0 00d0d4f9b04c1d3b1dc260157fb51429
++ - 新增 `profanity.Signal(interrupt: UnixSignal | WindowsSignal, columns: Optional[Int] = Unset, rows: Optional[Int] = Unset, deadline: Optional[Quantity[Seconds[1]]] = Unset)`，由 `soundness` 导出，`Console#trap` 的处理函数现在接收的就是它：`Console#trap` 接受 `PartialFunction[Signal, SignalResponse]`，此前为 `PartialFunction[UnixSignal | WindowsSignal, SignalResponse]`。
++   处理函数的改写方式参见 `exoskeleton` 条目。（#2064）
++ - `profanity.WindowsSignal` 的 `Close`、`Logoff` 和 `Shutdown` 分支现在具有短名称 `CTRL_CLOSE`、`CTRL_LOGOFF` 和 `CTRL_SHUTDOWN`，此前为 `CLOSE`、`LOGOFF` 和 `SHUTDOWN`；其 `Decodable in Text` given 按短名称（`CTRL_C`、`CTRL_BREAK`……）解码，而此前它要求分支名称（`Ctrlc`），因而一个也无法解码。（#2064）
++ - `profanity.Terminal` 在 stdio 的 `Termcap`（`width`/`height`）带有尺寸时，从中获取初始尺寸，优先于 `LINES`/`COLUMNS`；在收到带有尺寸的 `WINCH` 或 `CONT` 时，它记录该尺寸并直接发出 `Terminal.Info.WindowSize`，只发送锚点查询，而不发送光标位置尺寸探测；信号不带尺寸时，仍会发送该探测。（#2064）
+
+% 0 1 0 1e700bdc822d8d6600877dea2cb39769
+
+@ 0 38 0 03affbe80f2ebcf11c7811e55b3b24f8
++ - `reliquary.core` 依赖 `gastronomy.core` 的 `Signing`（名称不变，参见 enigmatic）和 `revolution.semver`，而不是 `enigmatic.core` 和 `revolution.core`；仅通过 reliquary 获得 `enigmatic.core`、`aperture.core`、`revolution.core` 的清单类型或 `turbulence` 的使用方必须自行声明它们。（#2082）
++ - `reliquary.Lira.Hash` 此前只是一个对象，现在同时也是 `case class Hash private(bytes: Data)`，按内容判等（`Blob.compare(bytes, that.bytes) == 0`），并有相应的 `hashCode`。
++   伴生对象保留 `epoch`、`size`、`Domain`、`text(hash: Data): Text` 和 `emptyBlob`，并新增了 `text(hash: Lira.Hash): Text`。
++   `Lira.Hash.apply(domain: Lira.Hash.Domain, content: Data)` 返回 `Lira.Hash` 而不是 `Data`；它原先返回的字节是 `Lira.Hash(domain, content).bytes`。
++   `Lira.Hash` 不是 `Data`：在需要字节之处（blob 存储查找、`Blob.compare`、`Atom#valueHash`、`TreeEntry#blob`、`Blob#hash`、`serialize`）传入 `hash.bytes`。
++   类型从 `Data` 改为 `Lira.Hash` 的字段（以及 `Optional[Data]` → `Optional[Lira.Hash]` 和 `List[Data]` → `List[Lira.Hash]`）：`Lira.Manifest#lineage`、`Lira.Manifest#delta`、`Lira.Manifest.Api#atoms`、`Lira.Manifest.Dependency#api`、`Lira.Manifest.Dependency#build`、`Lira.Manifest.Dependency#uses`、`Lira.Manifest.Dependency#spans`、`Lira.Manifest.Requires#api`、`Lira.Manifest.Requires#uses`、`Lira.Manifest.Payload#hash`、`Lira.Manifest.Signature#key`、`reliquary.Section#tree`、`Section#derivative`。
++   结果类型从 `Data` 改为 `Lira.Hash` 的有：`reliquary.Snapshot.apply(atomizations: List[Atomization])`、`reliquary.Lira.Payload.hash(blobStream: Data)`、`reliquary.ManifestSigning.fingerprint(publicKey: Data)`、`reliquary.Derivative.hash(tree: Lira.Tree, store: Blobstore)`。
++   参数类型从 `Data` 改为 `Lira.Hash` 的有：`reliquary.Lira.Payload.decompress(compressed: Data, length: Long, declaredHash: Lira.Hash)`、`reliquary.Lineage.check(lineage: List[Lira.Hash], snapshot: Lira.Hash)`、`reliquary.Lineage.contains(lineage: List[Lira.Hash], required: Lira.Hash)`、`reliquary.ManifestSigning.Keyring#find(fingerprint: Lira.Hash)`、`reliquary.Buildpath#byDerivative(hash: Lira.Hash)`、`reliquary.Versioning.extendLineage(lineage: List[Lira.Hash], snapshot: Lira.Hash, grade: Grade, forceMajor: Boolean = false): List[Lira.Hash]`，以及 `reliquary.LiraAssembler.assemble` 的 `lineage: List[Lira.Hash] = List()`。
++   不变的有：`reliquary.Lira.Delta`、`reliquary.Lira.Tree`、`TreeEntry`、`Atom` 和 `Blob` 仍以 `Data` 携带其哈希，`Buildpath#hostRequirements` 的 `used: Data => …` 仍接收字节。（#2098）
++ - `reliquary.Lira.Manifest.decode(tel: Tel): Lira.Manifest raises Lira.Error` 现在由 stratiform 的 `Tel.Decodable` 从清单的 case class 派生而来。
++   对有效清单的结果不变。
++   对无效清单，`Lira.Error.Reason.InvalidManifest(detail)` 的详情文本发生了变化：它是底层 `stratiform.Tel.Error.Reason` 的渲染结果（例如，缺少必需字段时为 `Absent`，哈希、树路径、保证或资源模式无法解析时为 `NotScalar(value, expected)`），或者对于 `revolution.Semver` 拒绝的版本为 `bad version <text>`，而此前它是诸如 `the payload record is missing or repeated` 或 `a hash is malformed` 之类的叙述文字。
++   出现两次的不可重复字段不再由 `decode` 本身拒绝（读取第一次出现的值）；`Lira.read` 仍会在解码之前通过 schema 校验拒绝它。（#2098）
+
+% 0 1 0 1ef5846a9736da7d16e61c9efa496965
+
+@ 0 6 0 1d88c2042da5e0440bfb0d8827e9b323
++ - 新模块 `revolution.semver`（位于 `tool` 捆绑包中；依赖 `gossamer.core`、`distillate.core`，跨平台）包含 `revolution.Semver`、`revolution.Compatibility`、`v"…"` 插值器和 `revolution.internal.semver`；`revolution.core` 依赖它，并保留 `Manifest`、`EncodableManifest`、`DecodableManifest` 和 `manifestAttributes`。
++   包和名称不变。
++   `soundness` 对 `Semver`、`Compatibility` 和 `v` 的导出移至 `soundness_revolution_semver`。（#2082）
+
+% 0 1 0 012115d2210015c8084b240aed3fed8f
+
+@ 0 3 0 08c8c76e706529051687c3540e34d89d
++ - `savagery.core` 依赖 `geodesy.angle`，而不是 `geodesy.core`；通过 savagery 使用 `Geolocation`、`Compass` 或其他 `geodesy.core` 类型的使用方必须声明 `geodesy.core`。（#2082）
+
+% 0 1 0 101a8988acb4345d0341a393aab67281
+
+@ 0 23 0 1a179571439c14230f407e43c8837192
++ - `sibylline.Llm.Reply#id` 和 `sibylline.Llm.Event.Started#id` 现在是 `Optional[Llm.Id[Llm.Reply]]`，而不是 `Optional[Text]`。
++   `Llm.Id` 是基于 `Text` 的不透明类型，其类型由它所标识的对象决定；用 `id.text` 读取文本，或用 `reply.id.let(_.text) == t"msg_1"` 进行比较。
++   它是 `Showable`、`Inspectable` 的，并且可以在 `Text` 中编码和解码，因而也可以在 JSON 中编码和解码。（#2092）
++ - `sibylline.Llm.Exchange` 新增了第五个参数 `format: Optional[JsonSchema] = Unset`；用四个实参按位置构造不受影响，但模式 `Exchange(system, history, tools, settings)` 不再匹配。
++   `Llm.Dialect` 新增了 `def structured: Boolean = false`；当方言的线上协议遵循 `format` 时，方言将其重写为 `true`。（#2092）
++ - `session.elicit[value](prompt)` 现在在结构化方言（Anthropic）上将派生出的 schema 作为回复的 `format` 发送，并解码回复的文本，在其他方言上则保留强制工具调用的路径。
++   对调用者而言行为相同；`Scripted` 测试方言若将 `structured` 重写为 `true`，则必须以回复文本的形式返回 JSON 文档。（#2092）
++ - 新增：`sibylline.Llm.Request(id: Llm.Id[Llm.Request], prompt: Text)`、`sibylline.Llm.Outcome[value](id, result: value | Llm.Error)`、`Llm.Id.request(text)`（对于 `[A-Za-z0-9_-]{1,64}` 之外的标识符，抛出原因为 `Invalid` 的 `Llm.Error`）、`Anthropic#elicitAll[value](requests): Anthropic.Batch[value]`、`Anthropic#batch[value](id)`、带有 `id`、`status`、`counts`、`refresh()`、`await(seconds = 30)` 和 `outcomes()` 的 `Anthropic.Batch[value]`、`Anthropic.Batch.Status` 和 `Anthropic.Batch.Counts`，以及 `Anthropic#caching`（系统提示词上的提示词缓存断点）。
++   均为新增内容。（#2092）
++ - `sibylline.Anthropic` 的私有构造器新增了末尾参数 `cached: Boolean`；只有 `Anthropic.apply` 调用它。（#2092）
+
+% 0 1 0 0ed19456d6998e511992f280a95ea1f6
+
+@ 0 82 0 10404e486071ffa11163514abf56f063
++ - 移除了 `stratiform.Tel.Error.Reason.UnconstrainedScalar`（E224）：`Tels.Validation` 不再拒绝既未声明 `validate` 也未声明 `pattern` 的 `scalar`，因此这样的 schema 现在能通过校验，而此前会抛出 `Tel.Error(Reason.UnconstrainedScalar)`。
++   对该分支进行匹配的代码必须删除这一分支；错误编号 224 保持保留，不会被重用。（#2048）
++ - `stratiform.SchemaResolver.resolve` 现在在解析的第 1 步就应答内置的 `acceptance` schema（BinTEL §8.4），与 `tels` 相同：引用为 `specification.tel/acceptance`（不带选择器或带 `:1.0.0`）或签名为 `SchemaResolver.acceptanceSignature` 的编译指示，解析为 `Tels.Axiom.acceptance`，其中 `Resolved.step == Tels.Resolution.Step.Builtin` 且 `Resolved.document == Unset`，而此前它会落到各个存储、库和委托上；曾提供该坐标或签名的存储或委托不再因此被查询。（#2051）
++ - 移除了模块 `stratiform.binary`；它提供的所有内容——`stratiform.Bintel`、`stratiform.Varint`、`stratiform.BintelParser`、`stratiform.BintelReader`、`stratiform.SchemaSignature`、`stratiform.SchemaResolver`，以及 `Tel`、`Tel.Element` 和 `Tel.Encodable` 值上的扩展方法 `bintel`、`bintelDocument` 和 `valueHash`——现在都在 `stratiform.core`（制品 `stratiform-core`）中，包和签名不变。
++   依赖 `stratiform.binary` 的构建定义必须改为依赖 `stratiform.core`；`stratiform.binaryStaged` 现在依赖 `stratiform.core`。
++   `ulysses.core` 和 `stratiform.core` 在 JVM 上不变；`ulysses.core` 现在还额外发布 Scala.js 和 Scala Native 制品，`stratiform.core` 现在依赖 `gastronomy.core` 和 `ulysses.core`。（#2051）
++ - `stratiform.Tels.tels[T](name)` 派生出的 schema 形状不同。
++   类型为 case class 的字段原为 `Tels.Field(_, _, keyword, Tels.Struct(members, validators), _)`；现在是 `Tels.Field(_, _, keyword, Tels.Reference(typeName), _)`，并在 `Tels#records` 中注册 `Tels.RecordDefinition(typeName, members, Array.empty)`（`typeName` 是 case class 的简单名称；根类型自身的记录只有在某个成员引用它时才会注册）。
++   密封类型中分支为积类型的变体同样携带 `Tels.Reference(caseName)`。
++   嵌套在积类型中的和类型字段现在会在 `Tels#selects` 中注册其 `Tels.SelectDefinition`（此前是一个无法解析的 `Reference`）。
++   必需字段的 `required` 极性现在是 `Tels.Polarity.Implicit`，原为 `Tels.Polarity.Tight`；`Map` 字段的 `key`/`value` 成员现在是 `Implicit`，原为 `Tight`。
++   值的 BinTEL 传输形式不变。
++   因此，基于派生 schema 构建的 `stratiform.TelBlueprint` 记录会将 case class 字段公开为嵌套的 `Record`（此前为 `Tel`）。（#2056）
++ - `stratiform.TelSchematic` 新增了带默认实现的成员——`fieldType: Tels.Type`、`definitions(seen: scala.collection.immutable.Set[Text]): TelSchematic.Definitions`、`layers(seen: scala.collection.immutable.Set[Text]): List[Tels.Layer]`、`rootLayers: List[Tels.Layer]`——其 `polarity` 默认值也从 `Tels.Polarity.Tight` 改为 `Tels.Polarity.Implicit`；重写了 `polarity` 的实例不受影响，依赖默认值的实例现在会派生出隐式极性。（#2056）
++ - `stratiform.Tel.Error.Reason.ValidatorRejected`（E310）此前是无参分支，现在是 `case ValidatorRejected(message: Text)`，携带校验器所应答的 `Tel.Validator.Diagnostic` 的消息。
++   其 `Communicable` 渲染从 "a scalar value or struct failed a named validator" 变为 "a scalar value or struct failed a named validator: <message>"。
++   针对 `Reason.ValidatorRejected` 的模式匹配和相等性检验必须绑定或忽略该参数（`case Reason.ValidatorRejected(_) =>`）。（#2067）
++ - `stratiform.Tel.Type.assign(tel, schema, validators)` 和 `assign(tel, schema, validators, codecs)` 现在在赋值遍历*期间*而不是之后运行 §21 的检查（具名校验器、模式、编码），因此在 `validate[Tel.Focus]` 边界下，E310、E312、E313 或 E315 会与提供该值的复合项的 `Tel.Focus` 一起累积——即一个指针，在文档以 `parsing.trackPositions` 解析时还有一个跨度——而此前它们累积时不带焦点（`prior == Unset`）。
++   因此，累积的错误按文档顺序与结构性错误（E301–E311、E314）交错排列，而不是全部排在它们之后；错误的集合不变。
++   由父行按位置赋值的值，其焦点在父复合项上；由子复合项提供的值，其焦点在该子项上。（#2067）
++ - `Tel.Type.assign` 为*可重复*成员的子项累积的 `Tel.Focus` 指针，现在在关键字之后带有该子项在同一关键字的兄弟项中从零开始的出现索引——原为 `/module/source`，现为 `/module/1/source`——从而成为可解析的 TELP（telp.md §5），并定位到正确的复合项；不可重复的成员和未知关键字不变。
++   相应地，`Tel#locate(path)` 和 `Tel#locateKey(path)`（`Tel is Positionable by Telp` given）接受关键字之后的全数字组成部分作为该出现选择器，而此前它不匹配任何子项；不带该部分的关键字仍选择第一个。
++   将累积的指针与字面路径进行比较的代码，必须为可重复成员加上索引。（#2068）
++ - `stratiform.TelBlueprint`（模块 `stratiform.records`）移至 `stratiform.Tel.Provider`（模块 `stratiform.core`，它现在依赖 `polyvinyl.core`）；移除了模块 `stratiform.records` 及其导出 `soundness.TelBlueprint`。
++   `TelBlueprint.fieldsOf` 即 `Tel.Provider.fieldsOf`；移除了 `TelBlueprint.intensional` 和 `TelBlueprint.record`（改用 `polyvinyl.Intensional(accessor)` 和 `polyvinyl.Record(data, access)`）；移除了 given `optionalString`、`optionalIdentifier`、`optionalTypeName` 和 `optionalSigil`（可选性由宏施加）。（#2089）
++ - 行为变更：`Tel.Provider` 记录中 schema 类型为指向记录定义的 `Tels.Reference` 的字段，现在读取为嵌套的 `Record`（此前宏会以 `could not find a Structural instance` 失败），`repeatable` 极性为 `Loose` 的字段读取为包含每次出现的 `List[T]`（此前只读取第一次出现）。
++   `Tel.Provider` 新增了 `absent(tel: Tel): Boolean` 和 `repeated(name: Text, tel: Tel): List[Tel]`。（#2089）
++ - 行为变更：`Tel.Provider` 记录中类型为内联 `Tels.Struct` 的字段，现在读取为嵌套的 `Record`（此前为原始的 `Tel`，标注为 `"tel"`）；`Tels.SelectRef` 成员现在为其 `Tels.SelectDefinition` 的每个变体贡献一个字段，每个都是 `Optional`（select 可重复时为 `List`；`Flag` 变体读取为 `Boolean`），而此前 select 成员被忽略；缺失的必需字段现在在读取时抛出 `Tel.Error(Tel.Error.Reason.Absent)`（此前 `String` 字段读取为 `t""`）。（#2089）
+
+% 0 1 0 1b8a4df21a24e9b507d1dd74e6543c8d
+
+@ 0 5 0 1a5ba8d3ad86f91a0df30b0309a6b930
++ - `surveillance.Watch.Event#path[directory: Instantiable across Paths from Text]: directory` 现在是 `path[directory](using (directory is Instantiable across Paths from Text)^): directory`：路径证据可以捕获（如 `Path on Local` 的证据那样，通过其文件系统）。
++   调用点不变；此前因发生捕获而被拒绝的显式 `using` 实参现在会被接受。（#2076）
+
+@ 0 2 0 0d59fd176314d2e51b726149d1a3094a
++ - `surveillance.core` 不再声明对 `gossamer.core` 的依赖（它仍通过 `turbulence.core` 传递引入）。（#2082）
+
+% 0 1 0 19751db48a45fac8054f045dab5ba311
+
+@ 0 3 0 04aea5b5f4f63e86150b6ad901916384
++ - `tarantula.core` 不再依赖 `cataclysm.core` 或 `xylophone.core`（参见 anticipation：`Focusable` 及其实例已移出 tarantula）；仅通过 tarantula 使用其中任一个（或通过 cataclysm 使用 jacinta、hellenism、phoenicia、quantitative）的使用方必须自行声明该依赖。（#2082）
+
+% 0 1 0 09d3188b2c45560007c7207681d04236
+
+@ 0 8 0 0fbc89895554a591025cfff0b4835783
++ - given `telekinesis.Http.Method.formmethod` 和 `Http.Method.method`（各为 `("…" is GenericHtmlAttribute[Method])`）随 `anticipation.GenericHtmlAttribute` 一同移除。（#2082）
++ - `telekinesis.Auth.showable: Auth is Showable` 变为 `[auth <: Auth] => auth is Showable`，因此类型为某个分支（`Auth.Bearer`）的值渲染为其头部值；此前它会落到通用的 `reflect.Enum` 实例上，渲染为 `Bearer(…)`。
++   `Auth is Decodable in Text` 现在能正确解码 `Basic` 凭据：先解码单个 base64 文本，再在其第一个冒号处分割（此前是在解码之前就在冒号处分割编码后的文本，因此没有任何真实的 `Basic` 头部能被解码；现在密码可以包含冒号）。（#2091）
+
+% 0 1 0 174231ea3a507bbb0da3030ca3b5bc65
+
+@ 0 19 0 00dcd48d36d006c90976284305909dae
++ - `turbulence.shred(mean: Double, variance: Double)(using Random): Chain[Data]`（作用于 `Chain[Data]`）变为 `shred(chunkSize: => Int): Chain[Data]`：现在由调用者提供每个数据块的大小（每个数据块重新求值，下限为 1），而不是伽马分布的参数。
++   原来的行为相当于在 `Random` 下先写 `given Distribution = Gamma.approximate(mean, variance)`，再写 `stream.shred(arbitrary[Double]().toInt)`。
++   `turbulence.core` 不再依赖 `capricious.core`，因此仅通过 turbulence 获得 capricious（或 wisteria、hypotenuse）的使用方必须自行声明该依赖。（#2082）
++ - 新模块 `turbulence.async`（位于 `base` 捆绑包中；依赖 `turbulence.core`、`parasite.core`）包含 `turbulence.Confluence`、`turbulence.Divergence` 以及分离的泵，`turbulence.core` 不再依赖 `parasite.core`。
++   泵扩展方法 `(Stream[medium] over transport)^ # flow(intake: (Intake[medium] over transport)^)(using Monitor, Probate): Task[Unit]` 更名为 `convey`（`Chain` 模式辅助方法 `flow[result](termination) (proceed)` 保留其名称）；`soundness` 对 `Confluence`、`Divergence` 和 `convey` 的导出来自 `soundness_turbulence_async`。
++   `Confluence`、`Divergence` 或 `convey` 的使用方必须声明 `turbulence.async`；仅通过 `turbulence.core` 获得 parasite（或 digression、mercator、nomenclature、spectacular、hypotenuse、anticipation.time）的使用方必须自行声明该依赖——在本仓库中，这些使用方是 anthology、cataclysm、coaxial、ethereal、eucalyptus、exoskeleton.args、graffiti、guillotine、honeycomb、locomotion、mandible、profanity、revolution、surveillance、ultimatum 和 xylophone。（#2082）
+
+% 0 1 0 01a924463d4d2ade199e4991ad39d095
+
+@ 0 7 0 0be9396e894cfa8b0dab70e482744dd2
++ - `urticose.core` 现在依赖 `anticipation.net`。
++   新的选择包（在 `soundness` 中有镜像）：`emailAddressInterfaces.soundnessEmailAddress: (tactic: Tactic[EmailAddress.Error]) => ((EmailAddress is Instantiable across EmailAddresses from Text)^{tactic})`、`hostnameInterfaces.soundnessHostname`（`Hostname`、`Hostnames`、`Hostname.Error`）、`ipAddressInterfaces.soundnessIpv4` 和 `soundnessIpv6`（`IpAddresses`、`IpAddress.Error`），以及 `urticose.url` 中的 `urlInterfaces.soundnessUrl`（`HttpUrl is Instantiable across Urls from Text`，与 `Url.instantiable` 为同一实例）。（#2089）
+
+% 0 1 0 0daabac2e02218c20d4f9d914c51325b
+
+@ 0 17 0 188efe075f05f1d90bf22ccd919b114b
++ - `vivisection.Jdwp.Capabilities` 新增两个字段：`canGetBytecodes: Boolean` 插入为第三个参数（位于 `canWatchFieldAccess` 之后），`canGetConstantPool: Boolean` 追加在最后，因此构造器现在是 `Capabilities(canWatchFieldModification, canWatchFieldAccess, canGetBytecodes, canGetSyntheticAttribute, canPopFrames, canGetSourceDebugExtension, canUseSourceNameFilters, canGetConstantPool)`。
++   按位置构造和模式匹配都必须加上这两个字段。（#2059）
++ - `vivisection.Debug#step(thread: ThreadId, depth: Jdwp.StepDepth)(handler: Debug.Handler): Unit`（逻辑单步）在落点位于以下位置时不再运行 `handler`：桥接方法、除 lambda 主体（名称包含 `$anonfun$`）之外的合成方法、lazy val 的访问器、平凡的 getter、setter 或同名转发器，或者名称匹配 `java.*`、`javax.*`、`jdk.*`、`sun.*`、`com.sun.*` 或 `scala.runtime.*` 的任何类；它会改为再次单步（单步进入时为 `Into`，否则为 `Out`），直到落点位于上述位置之外，或达到现有的 64 次迭代上限。
++   其请求现在还为这六个模式携带 `ClassExclude` 修饰符。
++   依赖逻辑单步停在 JDK 类或生成的方法内部的代码，必须使用原语 `Debug#step(thread, depth, size): Int` 和 `Debug#events`，它们保持不变。（#2059）
++ - `vivisection.dap` 依赖 `harlequin.typed`，而不是 `harlequin.core`。（#2082）
+
+% 0 1 0 1e9899a0d30c19b70ffd7df14fc9c9a9
+
+@ 0 51 0 1a52b268399b52751c3026f105d5e590
++ - `xylophone.core` 现在依赖 `anticipation.focus`（新增内容：`XPath.focusable`）。（#2082）
++ - `xylophone.Element` 不再是 `case class`：它是 `class Element(val label: Text, val attributes: Attributes, val children: Array[Node]^{}, val scope: Xml.Scope = Xml.Scope.empty)`，带有伴生对象中的 `apply(label, attributes, children, scope = Xml.Scope.empty)` 和产生 `(Text, Attributes, Array[Node]^{})` 的 `unapply`。
++   构造和三字段模式不变；`copy`、`productArity`、`productIterator`、`productElement` 和 `Element.tupled` 已不复存在。
++   `equals`/`hashCode` 忽略 `scope`。（#2089）
++ - XML 解析器现在会解析命名空间前缀。
++   若元素名或属性名的前缀（`xml` 和 `xmlns` 除外）在作用域中没有 `xmlns:prefix` 声明，现在会以 `Parse.Error` 失败，其问题为新的 `Xml.Issue.UnboundPrefix(prefix: Text)`，而此前能够解析。
++   如需以前的行为，导入 `xylophone.namespaceOptions.lenientNamespaces`（也位于 `soundness.namespaceOptions` 下）；`strictNamespaces` 是默认值。
++   声明仍然是属性，已解析文档的序列化不变。（#2089）
++ - 解析 given `Xml.aggregable`、`Xml.aggregable2`、`Xml.instantiable`、`Xml.loadable`、`Xml.aggregableParsed`、`Xml.readableParsed` 和 `Xml2.aggregableIn` 在 `schema: XmlSchema` 之外还接受另外两个上下文参数 `(scope: Xml.Scope, namespacing: Xml.Namespacing)`；二者在伴生对象中都有默认值（`Xml.Scope.xml`、`Xml.Namespacing.Strict`），因此调用点无需更改，除非它们指名了这些 given 的类型。
++   `Xml.XmlParser.from*` 同样接受 `(using XmlSchema, Xml.Scope, Xml.Namespacing)`。（#2089）
++ - `Xml#selectDynamic(name)` 和 `Xml#applyDynamic(name)(ordinal)` 在已擦除的 `DynamicXmlEnabler` 旁新增了上下文参数 `scope: Xml.Scope`，带前缀的 `name` 若其前缀已被绑定（在作用域中，或在父元素上），现在按解析后的命名空间和本地名称匹配子元素，而不是按原始标注匹配；未绑定的前缀仍按原始标注匹配。
++   `optics.xmlLens` 新增了同样的上下文参数 `scope: Xml.Scope`。（#2089）
++ - `xylophone.XPath` 新增第二个参数 `scope: Xml.Scope = Xml.Scope.xml`；前缀被该作用域绑定的 `NodeTest.Name(prefix, local)` 或 `NodeTest.PrefixWildcard(prefix)` 按解析后的名称匹配，`namespace-uri()` 返回解析后的 URI，而不是空字符串。
++   `xp""` 插值器通过作用域中的 `Namespace` given 绑定其路径所用的前缀。
++   `XPathEngine.evaluate` 接受第四个参数 `scope: Xml.Scope = Xml.Scope.xml`。（#2089）
++ - `Xml.xmlDiscriminable.discriminate` 现在返回元素的本地名称，而不是其标注，因此像 `<s:Book>` 这样带前缀的元素会选中 `Book` 变体。（#2089）
++ - 当字面量使用的前缀既没有由字面量内的祖先声明、也没有由作用域中的 `Namespace` given 绑定时（除非作用域中有 `namespaceOptions.lenientNamespaces`），`x""` 插值器现在会编译失败，并为每个提升的 `Element` 赋予这些绑定和声明所蕴含的作用域。（#2089）
++ - 序列化（`Xml#show`、`Xml.writeXml`）现在会为这样的元素写出 `xmlns`/`xmlns:prefix` 声明：其 `scope` 对它自身或其属性所用的某个前缀、或对其默认命名空间的绑定，不同于输出在其上方已声明的绑定，并且它自己的属性也没有声明该绑定。
++   已解析的文档，以及用默认空作用域构建的元素，仍按原来的方式写出。（#2089）
++ - 派生的 `Encodable in Xml`/`Decodable in Xml` 遵循新的 `Xml.xmlns(uri: Text, qualified: Boolean = true)` 和 `Xml.unqualified()` 注解以及新的 `Xml.Namespaced` 类型类（`given T is Xml.Namespaced = Xml.Namespaced(uri, qualified = true)`）；对于未加注解的类型，派生的解码器现在在没有子元素具有原始标注时，也会按本地名称匹配子元素。（#2089）
++ - `adversaria`：用具名实参书写的注解（`@xmlns("u", qualified = false)`）现在会由 `Annotated` 报告；此前它们被静默丢弃。（#2089）
++ - `xylophone.core` 现在依赖 `polyvinyl.core`、`anticipation.time` 和 `anticipation.url`（新增内容：`Xsd` 和 `Xml.Provider`）；`xylophone.Xml3` 现在扩展新的 `xylophone.Xml4`，后者包含 `Xml.Provider`。（#2089）
+
+% 0 1 0 1f752abdd12c4f920aa1fc7c0aca23a0
+
+@ 0 11 0 16726f1550ea17e21c3333b4f3196b87
++ - `ypsiloid.YamlPath(url: Optional[HttpUrl] = Unset, path: Path on YamlPath = YamlPath)` 变为 `YamlPath(path: Path on YamlPath = YamlPath)`：任何代码路径都从未设置过的 `url` 字段已被移除。
++   模式匹配 `YamlPath(url, path)` 变为 `YamlPath(path)`；`path.url` 不再存在。
++   `YamlPath is Encodable in Text` 总是渲染 `#…`，实际上它一向如此。（#2082）
++ - 移除了 `ypsiloid.YamlPath.Registry`（一个带有 `update`、`apply` 和 `protected def lookup` 的 `beneficence.Findable`，均以 `HttpUrl` 为键）和 `YamlPath#apply(using registry: YamlPath.Registry)(document: Yaml): Yaml raises YamlPath.Error`（它总是返回 `document`）。
++   没有替代品。（#2082）
++ - 移除了 `ypsiloid.YamlPath.Error.Reason.UnknownDocument`（`SN-546.1`）；`ExpectedHash`、`ExpectedSlash` 和 `BadEscape` 保留编号 2、3 和 4。（#2082）
++ - `ypsiloid.core` 不再依赖 `urticose.url`；仅通过 ypsiloid 获得 urticose 的使用方必须自行声明该依赖。（#2082）
+
+% 0 1 0 00f35d5d7c41def71e715ddeb1b22857
+
+@ 0 19 0 15e64decf9b413eb0d59b36b3e3c0c71
++ - `zeppelin.Zip.Entry` 在 `alignment: Int = 1` 之后新增了九个末尾参数：`flags: Optional[Int] = Unset`、`versionMadeBy: Optional[Int] = Unset`、`localVersion: Optional[Int] = Unset`、`centralVersion: Optional[Int] = Unset`、`internalAttributes: Optional[Int] = Unset`、`externalAttributes: Optional[Long] = Unset`、`localExtra: Optional[Data] = Unset`、`centralExtra: Optional[Data] = Unset` 和 `localSizes: Boolean = true`。
++   按名称构造或使用前六个位置参数构造不受影响；`Zip.Entry.unapply` 现在产生二十个字段而不是十一个，因此模式 `Zip.Entry(a, b, c, d, e, f, g, h, i, j, k)` 不再匹配。（#2045）
++ - `zeppelin.Zipfile.read` 和 `zeppelin.Zipfile.parse`（因而也包括 `path.open[Zip]()`）现在会根据归档的头部填充这九个字段，而 `zeppelin.Zipfile#serialize` 会原样写出已设置的字段，而此前它会推导这些值：通用标志在名称为非 ASCII 时为 `0x800`，否则为 `0`，两个版本字段都为 `20`（ZIP64 为 `45`），两个属性字段都为 `0`（目录的外部属性为 `0x10`），额外字段为空。
++   因此，从归档读取再写回的条目会重现原始的头部值，并且在 `flags` 的第 3 位被设置时，会在其载荷之后重现数据描述符，而不是被规范化为 zeppelin 的默认值。
++   依赖这种规范化的代码必须在写出之前重置这些字段（用 `Zip.Entry#withHeaders`，设为 `Unset` 且 `localSizes = true`）。
++   `Zipfile.read` 现在还会立即读取每个条目的本地头部，而此前它会将这次读取推迟到读取条目内容时。（#2045）
+
+% 0 1 0 1c4ce86cb0fa16570db4798767364955
+
+@ 0 3 0 0250c147ac046c2601f8557fe9a13a74
++ - 管道阶段的 given `zephyrine.Ductile.charDecoder: Instance[CharDecoder, Data, Text, Credit, Credit]` 和 `zephyrine.Ductile.charEncoder: Instance[CharEncoder, Text, Data, Credit, Credit]` 更名为 `Ductile.charset` 和 `Ductile.codepage`，与上文 hieroglyph 的更名保持一致。

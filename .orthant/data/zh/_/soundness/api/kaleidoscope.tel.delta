@@ -1,0 +1,862 @@
+orthant 2 language
+
+% 0 1 0 0f04ec4b9ac2d4270a232409219e1f6b
+
+% 0 1 0 112a52ea087cdd310b80e7eaa4d3fa16
+
+% 0 1 0 0b5938ce7315323607e1922cbc4d93e2
+
+@ 0 1 0 1d131d08c08d348f1b8f4c1e1abe9db2
++ info   作为模式提取器的正则表达式和 glob，在代码编译时完成检查并确定类型
+
+% 0 1 0 0ca6d61ddd9511ea1cdae38f1414f6fe
+
+@ 0 8 0 0df642b341fc1a20064fe8d448f10d7f
++     _Kaleidoscope_ 将正则表达式写作 `r"…"`，将 glob 写作 `g"…"`，并使二者都成为**模式**：在 `match` 中，`case r"hello $name(.*)"` 检验文本，并将 `name` 绑定到该组所匹配的内容。
++     表达式在代码编译时解析，因此不平衡的括号、`{2,1}` 这样的重复，或后面没有组的捕获，都会在出错的字符处成为编译错误；每个 `$name` 的类型由它所在位置之后的模式决定：普通组绑定 `Text`，单个字符类或简写（`[aeiou]`、`\d`、`.`）绑定 `Char`，重复的组（`+`、`*`、`{n,m}`）绑定 `List`，可选的组（`?`）绑定 `Optional`。
+
+% 2 1 0 0740b5cd6300e49e0c5366ef3057ab08
+
+% 3 1 0 0e4dc20d534d29ca00fe68aa9123cef2
+
+% 0 1 0 0ecc4953966f81501c2b0249deb801e2
+
+% 0 1 0 1624d49cc1e714ae0a2366aec686f4b6
+
+% 0 1 0 00994f60eedb7110164110a6a2acaa1c
+
+% 0 1 0 016f85ffa75a13c91da3b2049bcee144
+
+% 0 1 0 0ef1062c04c503fb1aa44ffd85cc76df
+
+% 0 1 0 0e50104f908996870c5ebc4b32c7fb32
+
+% 1 1 0 01b1dfe3195b12d210b8469325302ad2
+
+@ 0 7 0 030b1e3963158d2e1c185ba546707495
++     在模式之外，同样的插值器是表达式，其值为 `Regex`：包括其源 `pattern`、每个 `Regex.Group` 的位置和性质，以及匹配方法 `matches`、`seek` 和 `search`。
++     凡是指正则表达式之处，Soundness 都使用 `Regex` 类型，从不用 `Text` 表示正则表达式，因此像 gossamer 的 `sub(from: Regex, to: Text)` 这样的签名表明了哪个参数是模式。
++     `Glob` 是文件路径的通配符语法——`*` 在一个路径段内，`**` 跨越路径段，`?` 表示一个字符，以及 `[a-z]` 和 `[!a-z]`——它被翻译为正则表达式。
+
+@ 0 10 0 1132d1eaaeecceed1a931ce35b0cbb18
++     正则表达式以其**引擎**作为 `Form` 来打标签，即 `Regex in JavaBaseRegex` 或 `Regex in Re2`，由该形式对应的 `Regex.Engine` 类型类执行匹配。
++     默认引擎是 `JavaBaseRegex`，即平台的 `java.util.regex`，它的回溯接受其语法的所有构造，但在病态的模式和输入上可能耗费指数级时间。
++     `Re2` 是 praxinoscope 的自动机引擎，其匹配时间与输入呈线性关系，并拒绝自动机无法表达的构造（反向引用、环视、占有量词、原子组），对字面量而言在编译时就拒绝。
++     字面量的引擎通过从 `regexBackends` 包中按名称导入一个 `Regex.Backend` given 来选择，因为 `import soundness.*` 不导入任何 given；运行时构建的 `Regex` 用 `Regex#re2` 重新打标签。
+
+% 2 1 0 107657fa7ea419f70eea47d445488840
+
+% 3 1 0 0600603c594f8095077d640f15c12a59
+
+% 0 1 0 141f233fcd26b6930e8e815f40388dc8
+
+% 0 1 0 0a0cbbca0af04b0401bd4aa835fef718
+
+% 0 1 0 1d71470c2cb9668600fa91557473a800
+
+% 0 1 0 02a8c43d509152ba05146947c6ea97fa
+
+% 1 1 0 1324f687c62ca2c1082c91617b7cfdbe
+
+@ 0 7 0 1f27503bf5bf59540fc9196ca3d03301
++     该库只有一个源集 `kaleidoscope.core`，可编译到 JVM、Scala.js 和 Scala Native，使用 `java.util.regex` 或平台对它的模拟实现。
++     有状态的匹配——例如 gossamer 的 `extract`，它逐个遍历文本中相继的匹配——通过 `Scanner` 驱动提取器，`Scanner` 是一个被独占持有的可变游标。
++     所有内容都导出到 `soundness` 总括包，而 `regexBackends` 与总括包自身的同名包合并，因此程序写 `import soundness.*`，若需要线性时间引擎，再写 `import regexBackends.re2`。
+
+% 0 1 0 06ff01176f41801e04d884f364d24005
+
+% 0 1 0 06b6530622ebb8fa156ad426515811ca
+
+% 0 1 0 18d696af2e36d6691597594330848341
+
+% 0 1 0 18d696af2e36d65e1597594330848336
+
+% 0 1 0 1d6f5ed891f1ceca1083ed4c7ae25a4e
+
+% 0 1 0 0943afc710b4907404c244469294b459
+
+@ 0 6 0 16d446ccced6db4814645da640a92789
++ entry .r   `r"…"` 插值器：作为模式或作为 `Regex` 值的正则表达式
++     `r"…"` 是 `StringContext` 上的透明内联扩展方法，它在代码编译时解析正则表达式。
++     在 `case` 中，它是提取器：模式必须匹配整个文本（通过作用域中的 `Scanner` given；参见 `Scanner`），每个 `$name` 绑定紧随其后书写的捕获组。
++     在表达式位置，它是 `Regex in JavaBaseRegex`，导入了 `regexBackends.re2` 时则是 `Regex in Re2`。
+
+@ 0 3 0 1d841400ec8ef4fd109a30170d7632ff
++     `$name` 必须直接位于组、字符类、`.` 或简写 `\d`、`\D`、`\w`、`\W`、`\s`、`\S` 之一的前面；绑定的类型取决于它前置的内容及其后的量词。
+
+% 0 1 0 15d6d2800841da9e1c6e709ce05d6a7d
+
+% 1 1 0 0a47f914ed53260906bd03717b3d64ff
+
+@ 0 1 0 16ec39b953935e6106bdbd3e4f23b815
++       label 字面量模式，匹配或不匹配
+
+% 1 1 0 1ffba79aaa398f35044fe2440510b662
+
+% 2 1 0 097fafc6c642375f1d7f530aebd79bfd
+
+% 0 1 0 050ffdbbab250cb8071fb5a205f3fe4c
+
+% 0 1 0 136a45ae3c4991b813c41d691fc19574
+
+% 0 1 0 0e34962ae847be3d1664017d8985d145
+
+% 1 1 0 142046773d9b5aa21f6bf8c2c9159d08
+
+@ 0 1 0 0a04c0e6ef54785d0bb777360aa45bfa
++       label 绑定到 `digit` 的简写：一个 `Char`
+
+% 1 1 0 1e9ece328abe8587039951a2b4a16884
+
+% 2 1 0 0bfc8264aa42dc710d4709179b6a6803
+
+% 0 1 0 0580bebc650468560e9c45eb3a3ec3f5
+
+% 0 1 0 047c2548818acf5816cb11108be8db15
+
+% 0 1 0 195aa2afc5ce1b270e98a0811a527669
+
+% 1 1 0 173d7b0dbfcac373007e45147140a380
+
+@ 0 1 0 110aaf0aeec0f1640018c3ae25121e92
++       label 用 `+` 重复：一个 `List[Char]`
+
+% 1 1 0 074c91c67aa0269c126e642122cebcf7
+
+% 2 1 0 1dbd4c6d470199501c0578b647703015
+
+% 0 1 0 0807d2282446121504a5d8cc05e02b78
+
+% 0 1 0 06c988300c7fee6e00df240b767fce6e
+
+% 0 1 0 1651e315c2ea707a0f6b4da4ac9d3173
+
+% 1 1 0 044d96eb6c794e260104188b1657ff1f
+
+@ 0 1 0 010d3546af8d11341e1477ef3c34b248
++       label 用 `?` 设为可选：一个 `Optional[Char]`
+
+% 1 1 0 1465f12ad6736d841e7c9f2f00acfe84
+
+% 0 1 0 059bcec3dd475959122f01418f65edd2
+
+% 0 1 0 05c239538da8d2ae0dfb94be3d9028d2
+
+% 0 1 0 0ab325f580c9f8c0070c6a60734b9bf1
+
+% 0 1 0 10d1ab54ff070f640e1c45e3b8495342
+
+% 1 1 0 1d73fe6de3d3797d0a8053ef04b4e330
+
+@ 0 1 0 0d588d7fbf0edcfb128365854a6afbe0
++       label 第二个组，位于括号中：一个 `Text`，两者作为一对绑定
+
+% 1 1 0 07c984f6a3eef67d1d5c556473fb1872
+
+% 2 1 0 1c3ff8fcac4239ed170d92cf7f1c55d5
+
+% 0 1 0 0de791ab4e7689770abbdc5f98ee8dfb
+
+% 0 1 0 1a6c4f06bc058190181f3d3fdc7f8e7c
+
+% 0 1 0 160f47ea84541a5e03d601ce9c524edc
+
+% 0 1 0 0472326144a49ce71767be845f62f575
+
+% 1 1 0 11e767d9efb47d1a0f4b85a0051bf1dd
+
+@ 0 5 0 0ae814561c2cb89a182992435a03cf55
++     没有 `$name` 的组会被匹配但不会被绑定，因此 `r"(hello) $second(world)"` 要求出现第一个单词，但只绑定第二个。
++     组可以嵌套，如 `r"(($first(hello)) world)"`。
++     重复组内部的捕获是被禁止的（`Regex.Error.Reason.Uncapturable`），因为它无法绑定一组固定的变量。
++     在 `val` 的左侧，模式断言提取成功，并一次绑定其全部捕获：
+
+% 2 1 0 04a07c8944511a1001dea66fad45aee8
+
+% 3 1 0 07f53a8561a46601004d9862d4a83f8c
+
+% 0 1 0 061e322c7076d2671379591def1ec4a5
+
+% 0 1 0 0a6fbc162859b47b1fcfac374795d8dd
+
+% 0 1 0 1d23e94eadf3bf341031491145c479ce
+
+% 1 1 0 017748f0c563fb9608357ea748de747d
+
+@ 0 8 0 1c0cf9c2ece3b753110c4fad03b71c17
++     在 `r"…"` 内部，反斜杠就是反斜杠——只适用正则表达式自身的转义，因此字面括号写作 `r"\("`——而 `$` 要写成 `$$` 才表示其本身。
++     无法解析的模式是编译错误，它指明原因并指向出错的字符，_[↯/s.34.1.1] the regular expression could not be parsed because a capturing group was not closed at 11_；后面没有组的 `$name` 则是 _[↯/s.34.1.2] … a capturing group was expected immediately following an extractor_。
++     在 `regexBackends.re2` 下，模式还会对照 RE2 子集进行检查，因此反向引用或环视会在编译时被拒绝，而不是在首次使用时。
+
+% 2 1 0 1169456c3818781c048f9738c98f2a70
+
+% 3 1 0 14a22011d5e60e441b520096992e3452
+
+% 0 1 0 08d286c0775214da0e5e1d417d1a5521
+
+% 1 1 0 07efd3709c55d4b5050734a109f59376
+
+@ 0 3 0 0e1857cec76249cb1e343309d3a7041e
++     在模式中使用的 `Regex` 值（`case ipAddress() =>`）作为整体匹配，不绑定任何组；只有在字面书写模式之处才能获得捕获，因为只有在那里编译器才能看到它们。
+
+@ 0 7 0 0a20cdd19e45106e09f553d56cdb10ba
++ entry .g   `g"…"` 插值器：作为模式或作为 `Regex` 值的 glob
++     `g"…"` 书写 glob——文件路径的通配符语法——其余方面与 `r"…"` 相同：在 `case` 中是模式，在表达式位置是 `Regex`，并在 `regexBackends` 所选的引擎下编译。
++     `*` 匹配不含 `/` 和 `\` 的任意字符序列，`**` 跨路径段匹配，`?` 恰好匹配一个非分隔符字符，`[a-z]` 是范围，`[!a-z]` 是其否定，其他每个字符都匹配其本身。
++     `$name` 绑定一个路径段（直到下一个分隔符之前的任意内容），因此后面不需要组。
+
+% 2 1 0 1c0e8a406da76afe07e4bca5b7477564
+
+% 3 1 0 0edf3f333b2ccb98195446258039f204
+
+% 2 1 0 069458a8f83d8cd605dd223d65c34067
+
+% 0 1 0 1f188349c6805bc40aad0243c62befbf
+
+% 0 1 0 043d096dccabcc270d9ff8c3dbff8eb9
+
+% 2 1 0 1807604aef535039079d800b5c209bdf
+
+% 0 1 0 03a358009e2c5e551054660721f06878
+
+% 0 1 0 1233c02affd258971818212af7c54ecb
+
+% 0 1 0 1cb78bc62e9e3ea9172de72c8c260414
+
+% 0 1 0 0f99bf88258441bd0bd9e16ef060f525
+
+% 0 1 0 064eeed5823e59b319f43f0db5a4ab59
+
+% 1 1 0 02827bcf279936230a56a0a777dcd61e
+
+@ 0 3 0 053dd26a6a7b4c971e76896db013ef7d
++     翻译为同一模式的 glob 和正则表达式是相等的——`g".local/*" == r"\.local/[^/\\]*"`——而 `Glob.parse(text).regex` 显示该翻译结果。
++     glob 是全函数式的：每个文本都是一个 glob，因此 `g"…"` 从不会编译失败。
+
+@ 0 1 0 05b7c05d5d17a4d91acb085a0452ab40
++ entry .regexBackends   两种匹配引擎，各自是一个需按名称导入的 given
+
+% 1 1 0 05f7aeccaa80ea16035de5faa9b78e5e
+
+@ 0 3 0 02d2051c12471f3805fb26369aada640
++       字面量模式为哪种引擎编译，是在代码编译时由作用域中的 `Regex.Backend` given 决定的，而 `import soundness.*` 两者都不引入：不导入时默认为 `java.util.regex`，线性时间引擎则需按名称选择。
+
+% 2 1 0 0f57bc01a075f85c04f58ef00b607dd2
+
+% 3 1 0 1906755da4a2ed1b1e8801764f48dbff
+
+% 4 1 0 12416cb3e62194c71bf73ece6a862cbe
+
+% 0 1 0 15871343f55672100057bd03c9c11cb3
+
+% 0 1 0 1f7ac37378826a661c1bcffecd22f498
+
+% 0 1 0 06d5017a3df7ac7d10ea2a9bb14f4236
+
+% 1 1 0 1737d735f59432b31ac0cc95dc778512
+
+@ 0 7 0 066ff33687cc240c0a3503401d993f4d
++       对于两者都接受的每个模式，两种引擎在哪些输入匹配、匹配在何处开始和结束、以及每个捕获组绑定什么方面完全一致。
++       它们的区别在于接受什么：`java.util.regex` 接受反向引用、环视、占有量词和原子组，并可能在病态模式上耗费指数级时间；RE2 在编译时拒绝这些构造，其时间与输入呈线性关系，并且还在 `Regex in Re2` 上提供 `subsumes` 和 `intersects` 分析。
++       该导入与其他导入一样具有作用域，因此文件中的一个代码块可以使用 RE2，而其余部分保持默认。
+
+@ 0 1 0 1126d74a677c353f04a3728a5a16bc83
++       同一个字面量在任一引擎下给出相同的答案，但类型不同：
+
+% 0 1 0 14116fcaa006993f068c95fd1ec862a2
+
+% 0 1 0 11d29d4f917bacb710bba6d022b0e964
+
+% 1 1 0 012b8bff74c75256170debd6de725eb5
+
+% 0 1 0 056eb600675706c017f0c516973ecb26
+
+% 0 1 0 1526f217f1b7d00f0f28393db71508ea
+
+% 0 1 0 1862f90b75ae5600150162c4f07045e0
+
+% 0 1 0 1ad2707a5825ac3112104209d8e2c3eb
+
+% 1 1 0 00b81c9da980240417f7803c595d104e
+
+% 0 1 0 06f28554ec9c28420ade3c85047cd029
+
+% 0 1 0 11d33bc7084c29401d8548e523c8a06f
+
+% 0 1 0 1717e8c4628bfbc11f5c84336cdefee6
+
+% 0 1 0 07be10c945f7090607a463ada9266a5f
+
+% 0 1 0 0a0324a20e6a13d8033053cfd8a6bdd1
+
+% 0 1 0 05324ab952d132031fa7821cd90c1137
+
+% 1 1 0 1a277342ea9dfdc5113023e785963c91
+
+@ 0 1 0 090581f7fb9635bd0a3324a77da85042
++       RE2 无法表达的构造是编译错误，而不是运行时的意外：
+
+% 2 1 0 094957d093841b14058fd04f7cbc52a1
+
+% 0 1 0 007382f27533bf6f1f4528acb2cf6a0e
+
+% 0 1 0 168e738336a4138311f42dcae0dc7316
+
+% 0 1 0 07f4e26568ec4f9319237b4963dc4220
+
+% 1 1 0 03313d8b24ad892108c581a610ca328f
+
+@ 0 13 0 12a9ec48d439e44f05952d95bc057654
++   entry .javaBaseRegex   平台的 `java.util.regex` 引擎：它是默认引擎，因此很少需要导入
++       `Regex.Backend[JavaBaseRegex]`，即不导入任何内容时字面量所编译的目标引擎。
++       它的存在使得默认引擎可以被指名——例如在已导入 `re2` 的作用域中希望某个字面量使用回溯引擎时——并作为 `Glob#matches` 的默认值。
++   entry .re2   praxinoscope 的 RE2 引擎：线性时间匹配，RE2 子集，在代码编译时检查
++       `Regex.Backend[Re2]`。
++       导入它之后，作用域中的每个 `r"…"` 和 `g"…"` 都会在代码编译时被解析为 praxinoscope 的 `Motif`，若使用了反向引用、环视、占有量词或原子组就在此时被拒绝，并以分阶段执行的方式嵌入提取器，因此运行时不会发生任何解析或编译。
++       没有捕获的字面量会进一步编译为静态有限自动机（`Fsa`），即一种不分配内存的整体输入检验，前提是其状态数保持在生成器的预算之内。
++       表达式位置的字面量是 `Regex in Re2`，其上可以使用 `subsumes` 和 `intersects`。
+
+@ 0 1 0 159823f238cd66721dfa0491523606ef
++ entry .Regex   已解析的正则表达式：其模式、其组，以及通过其引擎进行的匹配
+
+% 1 1 0 14db756bf5eccc9b175b49a9327ca961
+
+@ 0 6 0 19992e5dd1326c650fd71b849cc9879c
++       `Regex` 包含作为 `Text` 的源 `#pattern` 及其 `#groups` 树，每个组都是一个 `Regex.Group`，记录带括号的组、字符类或单字符词法单元的偏移量、其量词和贪婪性，以及它是否被 `$name` 捕获。
++       它是表达式位置上 `r"…"` 或 `g"…"` 的值，也可以在运行时用 `.apply` 或 `.parse` 从文本构建，模式无法解析时，这两者会在相应位置以相应原因抛出 `Regex.Error`。
+
+@ 0 7 0 15db6285a7019284096f441f42392aa6
++       正则表达式是 `Formal` 的：其 `Form` 类型成员指明匹配它的引擎，而 `#matches`、`#seek` 和 `#search` 操作接受一个根据该标签解析出的 `Form is Regex.Engine`。
++       `Regex in JavaBaseRegex`——即 `.apply`、`.parse` 以及每个未使用 `regexBackends.re2` 编译的字面量的类型——分派到 `java.util.regex`；`Regex in Re2` 分派到 praxinoscope，它由 `import regexBackends.re2` 下的字面量产生，或由任意正则表达式通过 `#re2` 产生，后者在重新打标签时对照 RE2 子集检查模式。
++       裸 `Regex` 没有引擎，无法进行匹配。
+
+% 2 1 0 0bfd149e9ca6e5381425f06d9a408b7c
+
+% 3 1 0 08d8426c946e913c0753c09944935285
+
+% 4 1 0 1ef6bdd7fa4c660916ea00cabf3d405f
+
+% 0 1 0 0d3ce2d6c7e1bdab08c9dc795faf0bc3
+
+% 0 1 0 10d43b460d00f31f09a2c17bf440b3be
+
+% 0 1 0 1ff7c0e76382896e1d222049d6e38276
+
+% 0 1 0 19e7d31883a0e0bc0f3c0976f58efe32
+
+% 0 1 0 0390418bf53f8be0169f36f57d40c5c3
+
+% 0 1 0 1e13efc3c8fbedc004326cbaaf156580
+
+% 1 1 0 0c076fd4254dd5170fdbd9e0c4cfe3c6
+
+@ 0 5 0 1ebc36fb58ccd26b0f2a9e79d8d3e24a
++       匹配操作是方法而不是扩展方法，这样它们就永远不会被同名的通用集合扩展方法 `seek` 和 `search` 遮蔽，而 `soundness` 包同样导出了这些扩展方法。
++       两个正则表达式在其模式和组树都相等时相等，因此 `g".local/*" == r"\.local/[^/\\]*"` 成立，但 `r"[xy]"` 和 `r"[yx]"` 虽然匹配相同的输入，却并不相等。
+
+@ 0 3 0 19090262b3748e5a09c1ffc3eb56c74d
++       凡是指模式之处，Soundness 处处使用 `Regex`：gossamer 中 `Text` 上的 `sub`、`cut` 和 `search` 接受它，jacinta 的 JSON 蓝图将其 `regex` 访问器的类型定为 `Regex in JavaBaseRegex`。
+
+% 0 1 0 0e8cd9066a5ee0c50d81471efa662f03
+
+% 1 1 0 1d1853336d5a5778178e37d48bcbd0f0
+
+% 0 1 0 17b1880b547d8167005689e599bd9f52
+
+% 0 1 0 003a49549f542e691c9f230fac20cb04
+
+% 0 1 0 0ffe79b76f9b813408eeff007d9dcf29
+
+@ 0 5 0 0970ae2d9239ef4005a9f21dc75e0d68
++   entry .apply   将一个文本解析为供 `java.util.regex` 引擎使用的正则表达式
++       `Regex(text)` 即 `Regex.parse(List(text))`：结果是没有捕获组的 `Regex in JavaBaseRegex`；文本无法解析时，则通过 `Tactic[Regex.Error]` 抛出 `Regex.Error`。
++       对于编写代码时就已知的模式，`r"…"` 会改为在编译时检查它。
+
+% 2 1 0 0608bf27035d6742039af8e20c7555e2
+
+% 3 1 0 1b6b2692681b0ecf00629f20e3088276
+
+% 4 1 0 0743fe464c5ede660313f5db8c0dd8c9
+
+% 0 1 0 073574ef4456bde20c8514190794a035
+
+% 1 1 0 046accfa9a9c41ec1c8df8e43c31bbc5
+
+@ 0 6 0 16f1dc4d1f7c80d51ea020d48d95dbd2
++   entry .parse   解析插值模式的各个部分，每个边界标记一个捕获组
++       `Regex.parse(parts)` 是 `r"…"` 背后的解析器，可在运行时使用。
++       各部分是模式中位于其 `$name` 替换之间的片段，因此第一部分之后的每个部分都必须以组、字符类、`.` 或 `\d` 式简写开头（否则为 `Regex.Error.Reason.ExpectedGroup`），并且该元素被标记为已捕获。
++       结果是 `Regex in JavaBaseRegex`，并且需要 `Tactic[Regex.Error]`。
+
+% 2 1 0 08e6a0a32e698c090f99de182208795d
+
+% 3 1 0 1de2c82db5fd129b020ad6666a68b98c
+
+% 4 1 0 08a9639eb8fb32d01ab37ef19759a6cc
+
+% 0 1 0 0a65b73118d532890b6c8b350dc5fc52
+
+% 0 1 0 1f868526aebb535703423ea43fe10269
+
+% 1 1 0 17135acc2ca19f6f0c48d3dd03126485
+
+@ 0 17 0 0bf9a5aec20fec54192a7208dc813d86
++       解析器拒绝未闭合的组、多余的 `)`、空字符类 `[]`、格式错误的 `{n,m}` 重复、小于最小值或等于零的最大值，以及重复组内的捕获组（`Uncapturable`），后者无法绑定一组固定的变量。
++       之后它用 `java.util.regex.Pattern` 检查整体，将任何进一步的拒绝报告为 `InvalidPattern`。
++   entry .unsafeFrom   从已知可解析的各部分构建正则表达式，没有错误通道
++       `Regex.unsafeFrom(parts)(using Unsafe)` 是丢弃了 `Regex.Error` 的 `parse`，用于宏已经验证过的部分：`r"…"` 提取器在每次匹配时调用它。
++       已擦除的 `Unsafe` 令牌表明，是调用者而非类型系统断言这些部分有效；无法解析的部分会抛出异常。
++   entry .makePattern   将组树渲染回模式文本，为其组命名或只加上普通括号
++       `#capturePattern` 背后的渲染器：遍历 `todo`（`pattern` 中从偏移量 `last` 到 `end` 的组），用括号包裹每个组——`named` 为真时是带名称的 `(?<gN>…)`，`index` 递增计数，为假时是普通的 `(…)`——带量词的组还会再加一对内层括号。
++       返回下一个组索引和渲染后的文本。
++       它是公开的，供引擎使用；程序应改为读取 `#capturePattern`。
++   entry .Engine   匹配给定 `Form` 的 `Regex` 的类型类：`java.util.regex` 或 RE2
+
+% 1 1 0 1976ab400e671c0d1ebffae40b6bbfa9
+
+@ 0 7 0 1936375cd4f467531b4ab0d9d5516ed2
++         `form is Regex.Engine` 是 `Regex in form` 进行匹配的方式。
++         `JavaBaseRegex` 的实例是 `JavaBaseRegex.engine`，位于该类型的伴生对象中；`Re2` 的实例是 `.re2`，位于本伴生对象中，因为 praxinoscope 的 `Re2` 位于本库之下，无法指名 `Regex`。
++         两者都在隐式作用域中，因此 `Regex in Re2` 永远不会回退到 `java.util.regex`，两者也都不需要导入。
++         每个引擎都实现整体输入的和由扫描器驱动的 `#matches`、最左侧的 `#seek` 和重复的 `#search`，以及 `r"…"` 提取器所用的捕获组提取。
+
+@ 0 23 0 1f7ae8342d950757198eb6ae64df2acf
++         引擎通过 `Regex` 的方法（`regex.matches(text)`）来调用，而不是直接调用；该特质是公开的，以便可以指名 `Regex.Engine.re2` 和 `JavaBaseRegex.engine`。
++     entry .re2   用于 `Regex in Re2` 的引擎实例，桥接到 praxinoscope 的 `Motif`
++         `Re2 is Regex.Engine`。
++         它按模式（重新渲染为每个组都带普通括号的形式）在缓存中查找该正则表达式的 praxinoscope `Motif`；每个 `Regex in Re2` 在创建时都已被纳入该缓存——或者由 `regexBackends.re2` 下的 `r"…"` 展开纳入，它将 motif 以分阶段执行的方式嵌入提取器，或者由 `Regex#re2` 纳入，它在那时解析 motif。
++         从未被纳入的 `Regex in Re2` 是一个缺陷，会引发 panic 而不是抛出错误。
++         捕获组被映射到 praxinoscope 按括号顺序排列的组编号上；重复组的各次迭代通过用该组的主体重新扫描其跨度来恢复。
++         不重叠的 `search` 从每个匹配结束处之后一位重新开始，与 `JavaBaseRegex` 引擎一样，因此紧邻的匹配同样会被跳过。
++     entry #Self   此引擎所匹配的形式：`JavaBaseRegex` 或 `Re2`
++     entry #matches   正则表达式是否匹配整个文本，或从 `Scanner` 的位置起的下一个匹配
++         `Scanner` given 的 `nextStart` 未设置时，是整体输入匹配。
++         设置为某个位置时，是在该位置或其后找到的下一个匹配，并将其起点加一记录在 `nextStart` 中、将其终点记录在 `matchEnd` 中，gossamer 的 `extract` 就是这样遍历文本的。
++     entry #seek   在 `start` 处或其后最左侧匹配的区间，或 `Unset`
++     entry #search   从 `start` 起的每个匹配，作为区间的惰性 `Chain`，可重叠或不重叠
++         `overlap` 为假时，每次搜索从上一个匹配结束处之后一位继续；为真时，从上一个匹配起点之后一位继续，因此匹配之间可以共享文本。
++   entry .Greed   带量词的组如何争夺输入：贪婪、勉强或占有
+
+% 1 1 0 0b8f263e3ea432ac0c5f6ea87c0eff5d
+
+@ 0 6 0 094719f88ef495b402b5d5d951756432
++         量词之后的后缀：`Greedy`（尽可能多）没有后缀，`Reluctant`（尽可能少）为 `?`，`Possessive`（尽可能多，且从不让出任何内容）为 `+`。
++         `Regex.Group#greed` 记录它，`#serialize` 渲染它。
++         RE2 引擎拒绝占有量词，因为自动机无法表达它。
++     entry #serialize   后缀：空、`?` 或 `+`
++   entry .Quantifier   组重复多少次：恰好若干次、至少若干次，或介于两个次数之间
+
+% 1 1 0 19427ccd2ecc62a703b6325dd2169bf0
+
+@ 0 1 0 0000e091ea1a07c411a68e2a2cffdfac
++         每个量词的写法，以及它所修饰的捕获的类型：
+
+% 2 1 0 12dc3366efe7a14311a42a3fb0ad1cd9
+
+@ 0 4 0 1742f2ca6a389d9102bc99f62941cc59
++         column  量词
++         column  写法
++         column  捕获类型
++         row  `Exactly(1)`  无：未加量词的组  `Text` 或 `Char`
+
+% 0 1 0 1c6b17fcf1c9b3d7095f4e2e2642345d
+
+% 0 1 0 13ebe7d84e055beb171e3f5795f9b1ff
+
+% 0 1 0 1f5b4a3efa53be231a892b60825f602b
+
+% 0 1 0 170465de6b90b1ae1cc2e3ef3704a6b6
+
+@ 0 1 0 14fad307a2b69b830208b779f67d9198
++         row  `Between(0, 1)`  `?`  `Text` 或 `Char` 的 `Optional`
+
+% 0 1 0 160943650f5fa17618e37a6cc94825a8
+
+% 1 1 0 18ad113afdcc57f0133ec618b27d98cc
+
+@ 0 3 0 1b25fdd08f54172b0c0ff64712593260
++     entry #serialize   书写形式的量词：`Exactly(1)` 为空，或 `*`、`+`、`?` 或某种 `{…}` 形式
++     entry #unitary   是否为 `Exactly(1)`，即未重复的组的量词
++   entry .Group   模式中的一个组：其偏移量、其量词，以及它是否被捕获
+
+% 1 1 0 03491d6652fac1650ffd4282c8de69a4
+
+@ 0 6 0 0205e227b210ad540f3f84b12e20481d
++         `Group` 通过其内容在模式中的偏移量来记录带括号的组、字符类，或者——在被 `$name` 捕获时——单字符词法单元（`.`、`\d`、`\w`……）：`#start` 和 `#end` 界定内容，`#outerEnd` 是闭合括号及任何量词之后的偏移量，`#outerStart` 是开括号的偏移量。
++         嵌套的组是 `#groups`。
++         `r"…"` 宏读取这棵树来确定每个捕获的类型，引擎读取它来重建模式并提取组。
+
+% 2 1 0 066f0523fc874e8919b09f29267f27fc
+
+% 3 1 0 045ed673f860e83b114a4aa55790fef6
+
+% 0 1 0 007d86684f8769fe09636d5f556d8a87
+
+% 0 1 0 079e25c818306727045494f4eb061df4
+
+% 0 1 0 17f266ba25fa86f008746bbae2f66217
+
+% 1 1 0 14a1c430ad2185ed094bb26aeb0e4690
+
+@ 0 21 0 1e5131b41d5c3577049e0d3a56a8b2d3
++     entry #start   组的第一个内容字符的偏移量
++     entry #end   组的最后一个内容字符之后的偏移量
++     entry #outerEnd   组的闭合括号及量词之后的偏移量
++     entry #outerStart   组的开括号的偏移量，对于裸简写则是该词法单元本身的偏移量
++     entry #groups   直接嵌套在此组内的组
++     entry #quantifier   组重复的频度，未加量词时为 `Exactly(1)`
++     entry #greed   重复是贪婪、勉强还是占有
++     entry #capture   是否有 `$name` 捕获此组
++     entry #charClass   此组是否是 `[…]` 字符类而不是带括号的组
++     entry #singleChar   此组是否是单字符词法单元：`.` 或 `\d` 式简写
++     entry #charMatcher   组是否一次匹配一个字符：字符类或单字符词法单元
++         匹配字符的组绑定 `Char`（或 `List[Char]`、`Optional[Char]`），而带括号的组绑定 `Text`。
++     entry #allGroups   任意深度嵌套的每个组，按模式顺序排列
++     entry #captureGroups   任意深度嵌套的每个被捕获的组，按模式顺序排列
++     entry #serialize   将此组渲染为模式文本，带有命名的或普通的捕获括号
++         给定整个模式、下一个捕获索引以及是否将组命名为 `(?<gN>…)`，返回此组之后的索引及其文本；带量词的带括号组会多出一层内层 `(…)`，使名称包住整个重复。
++         由 `Regex.makePattern` 使用。
++   entry .Error   模式无法解析时抛出：位置和原因
+
+% 1 1 0 073ff64345c3927101d9118a3bdc0571
+
+@ 0 6 0 14d68d01cc6308800c4bf6c54ff8a679
++         错误 `↯/s.34.1`：_the regular expression could not be parsed because `reason` at `index`_，以原因的编号作为错误的子编号，因此未闭合的组是 `↯/s.34.1.1`。
++         由 `Regex.apply` 和 `Regex.parse` 通过 `Tactic[Regex.Error]` 抛出，并由 `r"…"` 报告为编译错误，指向出错的字符。
++         索引按各部分连接后的字符计数，`$name` 替换处不占任何位置。
+
+% 2 1 0 105b4478ca0e9e9d15c7df63e5c0b671
+
+% 3 1 0 1e793ffc3d5c44c4171c12689906dbc5
+
+% 0 1 0 0e408515afba552216b90328af10e8a0
+
+% 1 1 0 12f1857bb8f9a68c06e575ecced2021d
+
+@ 0 1 0 0c94adc74f29465e1e1db4b8ad05f1c0
++     entry .Reason   模式被拒绝的原因，为十一个带编号的分支之一
+
+% 0 1 0 0f0c06beeb68e4ca19dd934fb64b22c4
+
+@ 0 1 0 0792c14fa31fe6b90908fc9dcde67bb9
++           每个分支的 `number` 就是错误的子编号：
+
+% 0 1 0 01eaeca5798d1a3b02d48ba44beec41c
+
+@ 0 4 0 04af6999f7a3c8f2148ac6a8f2bbcb05
++           column  分支
++           column  代码
++           column  消息
++           column  说明
+
+% 0 1 0 0a2bdd86c5c716eb0f0a27542c58cf7a
+
+@ 0 1 0 16b9d842f713542911461c89ea2d7c9a
++           row  `ExpectedGroup`  2  _a capturing group was expected immediately following an extractor_  后面没有组的 `$name`
+
+% 0 1 0 13cc4c70a6b15c1a1bc211d8c584566c
+
+% 0 1 0 0c93d642139f98ca1a308e46c7393b7b
+
+% 0 1 0 0c588c7b5b2c635b1004875120b93b05
+
+% 0 1 0 106143f138bbd71e0f282c75676fb743
+
+% 0 1 0 05fb41f4bc4f2a5d164e0a7b5a8fd98e
+
+@ 0 1 0 078fc7a5c4ec82b01784ad3851112772
++           row  `InvalidPattern`  8  _the pattern was invalid_  `java.util.regex` 拒绝而解析器未拒绝的任何内容
+
+% 0 1 0 12713f9146e9f9741ec546a00faf7941
+
+% 0 1 0 07ad72cce40c0cd20723df593b80a53f
+
+% 0 1 0 1ced95513fc05a27078fa6ca52cfcf59
+
+% 0 1 0 1325124b3afc2ca70063c3f620bd5dcc
+
+@ 0 12 0 0c6ce58c24a1f2f4075bd36c6018ac89
++       entry .communicable   将每个原因渲染为 `Regex.Error.Reason` 上所引用的消息
++       entry #number   原因的编号，1 到 11，即其 `Regex.Error` 的子编号
++     entry #index   在模式中发现错误的偏移量
++     entry #reason   `Regex.Error.Reason`
++   entry #pattern   书写时的模式，去掉了其中的 `$name`
++   entry #groups   模式的顶层组，每个都是带有其自身嵌套组的 `Regex.Group`
++   entry #re2   为 RE2 引擎重新打标签的此正则表达式，此时对照 RE2 子集进行检查
++       将模式解析为其 praxinoscope `Motif`（对于反向引用、环视、占有量词、原子组或其他任何 RE2 语法之外的内容，通过 `Tactic[Motif.Error]` 抛出 `Motif.Error`），将其纳入引擎的缓存，并将同一个正则表达式作为 `Regex in Re2` 返回。
++       因此每个 `Regex in Re2` 都是经过检查的模式，其首次匹配从不会因语法原因失败。
+
+% 2 1 0 00b22a10fe5df7300e5d52384ce148d7
+
+% 3 1 0 0f4f9b621046caa919e1dbc48a985d8e
+
+% 4 1 0 0230cf009416fa330c4ae3ebc1548077
+
+% 0 1 0 10a7460156fc7bb4009eed525b4255bd
+
+% 0 1 0 0655b5bc656146091f0ce5db59f9d368
+
+% 0 1 0 074c25af511d5ea80e6f287bb6a96275
+
+% 1 1 0 1c88718216e49a8214e8298abea86266
+
+@ 0 8 0 0473e344feb9c7131c3487c4b8bcf9d6
++   entry #unapply   作为模式的 `Regex` 值：`case regex() =>` 匹配整个文本
++       不使用扫描器进行匹配，因此整个文本必须匹配，且不绑定任何内容：值的组对编译器不可见，因此只有字面量 `r"…"` 才能绑定捕获。
++   entry #matches   文本是否匹配，整体匹配或从 `Scanner` 的位置起匹配
++       需要此正则表达式引擎对应的 `Form is Regex.Engine`（两种形式都在隐式作用域中）以及一个 `Scanner^`，其默认 given 是没有位置的全新扫描器，因此普通调用是整体输入匹配。
++       设置了 `nextStart` 的扫描器从该位置起查找下一个匹配，并记录它所在的位置。
+
+% 2 1 0 132c08c86ad4699c134b9f58edfbaaeb
+
+% 3 1 0 032462efc9e96e6206b4e2fa87444cb6
+
+% 4 1 0 1c68b8ef110215250991ae01224fecc6
+
+% 0 1 0 19a5a71d8cbd81ac016e5674cd0a9981
+
+% 0 1 0 1452a714ed0873a30f3b29ead7b08199
+
+% 1 1 0 00f1c677622c5d651e4e420e8bb1ff1f
+
+@ 0 3 0 1cfd34f42e8e40d313eff80984c535ad
++   entry #seek   在 `start` 处或其后最左侧匹配的区间，没有匹配时为 `Unset`
++       `start` 是 `Ordinal`，默认为 `Prim`。
++       `Interval` 以文本的 UTF-16 单元为单位、从零开始计数，与 gossamer 的 `segment` 所接受的形式一致。
+
+% 2 1 0 098bc383758d35b41b8efe0dfc96086a
+
+% 3 1 0 175eb5fd9ff274c8153c37e540dcf7c3
+
+% 4 1 0 1d4d8396c22ff2521c2bdb626c7abb47
+
+% 0 1 0 1cfed3a637ae2f9806b012e90b5aac73
+
+% 0 1 0 1fb9b021500c1fd30b628261c04ca0c5
+
+% 1 1 0 1b391dd3beedcaaf07693aceda809341
+
+@ 0 5 0 1dbc0b213255fd420e31c5c633c7beff
++   entry #search   在 `start` 处或其后的每个匹配，作为惰性构建的区间 `Chain`
++       `overlap` 为假（默认）时，搜索从每个匹配结束处之后一位继续；为真时，从起点之后一位继续，因此一个匹配可以在前一个匹配内部开始。
++       `Chain` 在读取时才构建，因此对长文本的搜索只耗费所消耗部分的成本。
++       Gossamer 的 `text.search(regex)` 将这些区间映射为所匹配的文本段。
+
+% 2 1 0 0ad462eb5b664b231b12bb67ffe25e16
+
+% 3 1 0 0ed037024c1d856918daf5bb7af83d39
+
+% 4 1 0 06a2372c5e71328b073425f2e2a9feca
+
+% 0 1 0 10a2a41368dfe5130a9651bfb9976faa
+
+% 0 1 0 17890b4b30f5961a10b42fa945c9845a
+
+% 1 1 0 0c8615a002720044169bcd1b2aeb9414
+
+@ 0 10 0 042ef07b83a0b62202f80506f6446bd1
++   entry #capturePattern   每个组都加上括号、每个捕获都命名为 `g0`、`g1`……之后渲染的模式
++       交给 `java.util.regex` 的文本：被捕获的组变为 `(?<gN>…)`，按模式顺序编号，带量词的被捕获组会被包裹起来，使名称覆盖整个重复，例如 `a$xs(bc)*` 对应 `a(?<g0>(bc)*)`。
++   entry #subsumes   此正则表达式是否匹配另一个所匹配的每个输入；仅限 RE2 形式
++       `L(that) ⊆ L(this)`，由 praxinoscope 的 `Subsumption` 在两个编译后的程序上判定。
++       两个正则表达式都必须是 `Regex in Re2`——这个问题只有在没有反向引用和环视时才可判定——对于无法验证的模式（含有单词或行边界的模式，`Unverifiable`）或耗尽其状态预算的一对模式（`BudgetExceeded`），分析会抛出 `Motif.Error`。
+
+% 2 1 0 02f6633000c8d366073649c167e5598c
+
+% 3 1 0 0fdecf27a735bafe08869168a5750ced
+
+% 4 1 0 06778fa4aa09f62a045c51529a7c27a8
+
+% 5 1 0 0041381f0c77ede71722f9b044c10dc0
+
+% 0 1 0 1e63eaef3661c1851a3c72c00d5c6d65
+
+% 0 1 0 015d39caaeffa85917587a25c895b8a7
+
+% 0 1 0 1ca485e248cc72b30adb8a4cfcbd3651
+
+% 1 1 0 1cca800fed1e5d6407d2e8518ca16796
+
+@ 0 4 0 16543cd6f9e3cf420af3fb6bb2203097
++   entry #intersects   是否存在某个输入同时匹配此正则表达式和另一个；仅限 RE2 形式
++       在两个自动机的乘积中，判断是否能到达两者都接受的点；这是一个多项式问题，而 `#subsumes` 在最坏情况下是指数级的。
++       两个正则表达式都必须是 `Regex in Re2`，任一个中出现单词或行边界都会抛出 `Motif.Error`。
+
+% 2 1 0 1217a62abeef9d2a1c12ae28d0fd2d89
+
+% 3 1 0 01fdb9fbd29a5c31092e934573f89740
+
+% 4 1 0 1aee7821532cd94f04facd9ad8fe8172
+
+% 5 1 0 0b15a2250f48d42a1b8e48e421bfdd2e
+
+% 0 1 0 1bfaa06c542a1eb91050d5bf62ac3cdd
+
+% 0 1 0 12411910f69d35f5135dec6a78aaeb89
+
+% 1 1 0 0c755c2b1960a04d14921fb5b0676813
+
+@ 0 2 0 01636095f51b84330ae048fd4ef339f8
++   entry #allGroups   任意深度的每个组，按模式顺序排列
++   entry #captureGroups   任意深度的每个被捕获的组，按模式顺序排列：即 `r"…"` 所绑定的组
+
+@ 0 7 0 038b799dbd19fba5114dffd0f765c26a
++   entry .Backend   `regexBackends` given 所携带的标记，由 `r"…"` 和 `g"…"` 在展开时读取
++       `Backend[form]` 是一个没有成员的密封幻影特质。
++       `r"…"` 和 `g"…"` 宏在展开时召唤 `Backend[Re2]`：导入了 `regexBackends.re2` 时，字面量为 praxinoscope 的引擎编译，对照 RE2 子集进行检查，并打上 `Regex in Re2` 标签；否则打上 `Regex in JavaBaseRegex` 标签。
++       `Glob#matches` 接受同一个 given，默认为 `regexBackends.javaBaseRegex`。
++       其他任何东西都不读取它，程序也从不实现它。
+
+@ 0 1 0 0cc8dda843cdd7741cf0b0ee35994df8
++ entry .JavaBaseRegex   `java.util.regex` 引擎的标记：每个 `Regex` 的默认 `Form`
+
+% 1 1 0 0e8f188a5809a57d01aca1f1e2544048
+
+@ 0 5 0 14ce34ad5a18e9ca102e774ae5a35cc3
++       一个没有成员的密封幻影特质，将平台的 `java.util.regex`（在 Scala.js 和 Scala Native 上则是平台对它的模拟实现）指名为 `Regex in JavaBaseRegex` 的引擎。
++       它是 `Regex.apply`、`Regex.parse` 以及每个未使用 `regexBackends.re2` 编译的 `r"…"` 和 `g"…"` 的形式。
++       其引擎实例 `.engine` 位于此处，即主体类型的伴生对象中，因此无需导入。
+
+@ 0 5 0 196863f3a3055fb516c530da8cf5315d
++       该引擎将每个不同的 `Regex#capturePattern` 编译一次，存入缓存的 `java.util.regex.Pattern`，因此用同一个正则表达式匹配许多文本只需编译一次。
++       它的回溯接受 Java 语法的所有构造，包括反向引用和环视，代价是在病态的模式和输入上耗费指数级时间；`regexBackends.re2` 是线性时间的替代方案。
+
+% 1 1 0 174dd154543e2e5f13ee01fecfcd3be6
+
+% 1 1 0 00d87776994983b30923d7912187eb01
+
+@ 0 6 0 1be555726828fb891d3b53fdec3177f6
++   entry .engine   匹配 `Regex in JavaBaseRegex` 的 `Regex.Engine` 实例
++       `JavaBaseRegex is Regex.Engine`，位于隐式作用域中。
++       整体输入的 `matches` 是 `Matcher#matches`；由扫描器驱动的匹配是 `Matcher#find(position)`；`seek` 和 `search` 是从起始位置开始的 `find`，在每个匹配结束处（启用重叠时则是起点）之后一位继续。
++       重复的被捕获组的各次迭代通过在其跨度上重新匹配该组的主体来恢复。
+
+@ 0 1 0 04054da1238ad81a0cc05d68df64bf17
++ entry .Scanner   贯穿文本的可变游标，由一连串匹配推进
+
+% 1 1 0 147a5ebc4e8ed5b11b2c8ec5508b4f19
+
+@ 0 6 0 12464b78b47092ac0c3b468960525544
++       `Scanner` 携带下一个匹配应开始的位置（`#nextStart`）以及上一个匹配结束的位置（`#matchEnd`）。
++       `r"…"` 和 `g"…"` 提取器以及 `Regex#matches` 以 `(using Scanner^)` 的形式接受它：`nextStart` 未设置时，匹配是整体输入匹配，这正是普通代码中的 `case r"…"` 所做的；设置了它时，引擎在该位置或其后找到下一个匹配，并将扫描器推进到该匹配起点之后一位，gossamer 的 `extract` 就是这样逐一遍历文本中的每个匹配的。
+
+@ 0 5 0 17c54009232233261165920bc5300d03
++       该类是 `caps.Mutable`，因为匹配会改变其状态，所以只有独占引用才能驱动它：手写的 given 声明为 `given (Scanner^) = Scanner(Unset)`，而裸的 `given Scanner = …` 是只读的，在匹配需要它的地方会被拒绝。
++       默认 given `.default` 在每次使用时创建一个没有位置的全新扫描器。
+
+% 1 1 0 1a5b6c60fab482941709931e1e95a852
+
+@ 0 7 0 155783b05f24f4df0736049f24cfcc51
++   entry .default   没有位置的全新扫描器，因此不加限定的匹配是整体输入匹配
++       类型为 `Scanner^`，在每次召唤时重新构建（通过已擦除的 `DummyImplicit`），因此除非程序有意绑定一个扫描器，否则任何两个匹配都不会共享游标。
++   entry #nextStart   下一个匹配开始搜索的位置，整体输入匹配时为 `Unset`
++       在由扫描器驱动的匹配之后，它是该匹配起点之后一位，因此重复匹配会找到下一次出现；没有更多匹配的文本会使它保持不变。
++   entry #matchEnd   上一个由扫描器驱动的匹配结束的位置，在任何匹配之前为 `Unset`
+
+@ 0 1 0 1cc25123045e06f81c4b97ab82fb4c9c
++ entry .Glob   以词法单元表示、翻译为正则表达式的 glob——`*`、`**`、`?`、`[a-z]` 通配符
+
+% 1 1 0 059f147177c54aed19d7052e824e3366
+
+@ 0 7 0 1359e1f6c3f7b3c405b6bf4b362351a8
++       `Glob` 是从文件路径通配符语法解析出的一系列 `Glob.Token`，而 `#regex` 是它到正则表达式的翻译：`*` 变为 `[^/\\]*`（不跨越分隔符的任意字符序列），`**` 变为 `.*`，`?` 变为 `[^/\\]`，范围或集合原样保留并以 `!` 表示否定，其他每个字符都是其本身，若正则表达式语法会另作解读则加以转义。
++       `g"…"` 插值器是作为模式的 glob；`.parse` 在运行时从文本读取 glob，而 `.decodable` 使取值为 glob 的标志或配置值可以用 `as[Glob]` 读取。
+
+% 2 1 0 193734460bafbb010a86695909134a14
+
+% 3 1 0 1993d7a520b1fce90df96d0f101506dd
+
+% 0 1 0 024d3c6757a7d99404c178afffbffd14
+
+% 0 1 0 04f4e64f98c9037b0d264642efddbb56
+
+% 0 1 0 10e934628a0c58de0fca484a792e6d19
+
+% 0 1 0 19d536079cad70a01975bdfde05e1a58
+
+% 0 1 0 0d33936b7d2a91ba0f885c5f83089e16
+
+% 1 1 0 10cd71c2b29c5df41515a40d919985e8
+
+@ 0 2 0 103763f5e8584f2d14ebf32bf0858c62
++       解析是全函数式的：每个文本都是一个 glob，因为通配符语法之外的任何字符都是 `Exact` 词法单元。
+
+% 0 1 0 0e8cd9066a5ee0ba0d81471efa662ef8
+
+% 1 1 0 19dbf27d9d411248120a17f3dc7af902
+
+@ 0 8 0 1d8e6e2938ed528f0e49609c6bbedcb9
++   entry .parse   从文本读取 glob；从不失败
++       `*` 是 `Star`，紧随其后的第二个 `*` 使这一对成为 `Globstar`；`?` 是 `OneChar`；`[…]` 在三字符的 `a-z` 形式下是 `Range`，否则是 `Specific` 集合，内容以 `!` 开头时各自为 `inverse`；其他任何内容都是 `Exact`。
++   entry .decodable   用 `as[Glob]` 读取 glob：位于隐式作用域中的 `Decodable in Text` given
++       作为编解码器的 `Glob.parse`，因此 glob 可以像任何其他可解码值一样来自命令行标志或配置文件，且没有需要处理的错误。
++   entry .Token   glob 的一个元素：通配符、字符类或字面字符
+
+% 1 1 0 1c2799120e6dd57b1766352a81a93d8c
+
+@ 0 2 0 11e3fc0a8d002f550ddca07aa2dd07da
++         每个词法单元、它所来自的 glob 语法，以及 `#regex` 给出的它的正则表达式翻译：
+
+% 2 1 0 0e401f5e21d24d8406e487506a1e768a
+
+@ 0 1 0 038836df8ba252b107a7440045acf6da
++         column  词法单元
+
+% 0 1 0 0ca2cfa75f3f3f8b14189da93f5c58a2
+
+@ 0 8 0 0b06baadb0fdfff219640323bbdb7431
++         column  匹配
++         column  正则表达式
++         row  `Star`  `*`  路径段内的任意字符序列  `[^/\\]*`
++         row  `Globstar`  `**`  跨路径段的任意字符序列  `.*`
++         row  `OneChar`  `?`  路径段内的一个字符  `[^/\\]`
++         row  `Exact(char)`  任何其他字符  该字符本身  其本身，若是正则表达式元字符则前加 `\`
++         row  `Range(start, end, inverse)`  `[a-z]` 或 `[!a-z]`  在该范围内或不在该范围内的字符  `[a-z]` 或 `[^a-z]`
++         row  `Specific(chars, inverse)`  `[aeiou]` 或 `[!aeiou]`  在该集合内或不在该集合内的字符  `[aeiou]` 或 `[^aeiou]`
+
+% 1 1 0 05930b07d1604e33108b18ffd97c0f0b
+
+@ 0 10 0 0024744f59d3837a0545a32062cfed9f
++     entry #regex   作为正则表达式文本的词法单元，字面字符在必要时被转义
++         各翻译结果已在 `Glob.Token` 上列表给出。
++         范围的两端和集合的成员与 `Exact` 字符一样被转义。
++   entry #tokens   glob 的词法单元，按顺序排列
++   entry #regex   翻译为正则表达式的 glob，作为 `Text`
++   entry #matches   整个文本是否匹配该 glob，使用 `regexBackends` 所选的引擎
++       接受一个 `Regex.Backend[form]`（默认为 `regexBackends.javaBaseRegex`，因此 `import regexBackends.re2` 会切换它，如同切换插值器一样）以及该形式的 `Regex.Engine`。
++       引擎按渲染后的模式缓存编译结果，因此用同一个 glob 匹配许多候选文本只编译一次。
+
+@ 0 1 0 0d4397a75bd37e560e5ba07a7b94af2b
++ entry .internal   `r"…"` 和 `g"…"` 背后的宏，以及它们展开成的提取器类
+
+% 0 1 0 1c18810b564d59e609a88422cf8dd919
+
+% 1 1 0 0f71597c1b0bc6cb112bae74ffdfb433
+
+@ 0 19 0 1542a3bbdc7c401d1f091124a89f7b99
++       不供直接使用：该对象容纳插值器的展开逻辑以及模式所展开成的两个类。
++       `expandRegexJvm`、`expandRegexRe2`、`expandGlobJvm` 和 `expandGlobRe2` 是 `r` 和 `g` 根据作用域中是否有 `Regex.Backend[Re2]` 而分派到的透明内联入口点；`regexJvm`、`regexRe2`、`globJvm` 和 `globRe2` 是它们的宏实现。
++       每一个都用 `Regex.parse` 解析各部分，将 `Regex.Error` 报告为定位于出错字符的编译错误，根据各组的量词计算捕获类型，并拼接出 `NoExtraction` 或 `RExtractor`；在 RE2 下，它还将模式解析为 praxinoscope 的 `Motif`，拒绝 RE2 子集之外的任何内容，并将 motif——对于无捕获的模式还有静态 `Fsa` 匹配器——以分阶段执行的方式嵌入提取器。
++   entry .expandRegexJvm   为 `java.util.regex` 引擎展开 `r"…"`
++   entry .expandRegexRe2   为 RE2 引擎展开 `r"…"`
++   entry .expandGlobJvm   为 `java.util.regex` 引擎展开 `g"…"`
++   entry .expandGlobRe2   为 RE2 引擎展开 `g"…"`
++   entry .regexJvm   `expandRegexJvm` 背后的宏
++   entry .regexRe2   `expandRegexRe2` 背后的宏
++   entry .globJvm   `expandGlobJvm` 背后的宏：先用 `Glob.parse` 翻译每个部分
++   entry .globRe2   `expandGlobRe2` 背后的宏
++   entry .NoExtraction   没有捕获的模式所展开成的提取器
+
+% 1 1 0 0cd1940cb0dac42f198c5a1cf5cf509b
+
+@ 0 6 0 0749630ce2d55353074460f5c36e6bbe
++         保存模式文本、以分阶段执行方式嵌入的 `Motif`（在构造提取器时安装到 RE2 引擎的缓存中），以及——在能够生成时——无需引擎即可回答整体输入匹配的静态 `Fsa`。
++     entry #apply   作为 `Regex in form` 的模式，用于表达式位置的字面量
++     entry #unapply   文本是否匹配：存在 `Fsa` 且未设置扫描器位置时由 `Fsa` 判定
++   entry .RExtractor   带捕获的模式所展开成的提取器，其类型由其捕获决定
+
+% 1 1 0 0f48c3de9d4b6ca71a49abda57583cc7
+
+@ 0 4 0 1005fc41fd3a90c31026f3bd348af01d
++         `RExtractor[result, form]` 保存模式的各部分和以分阶段执行方式嵌入的 `Motif`；对于类型为 `T` 的单个捕获，`result` 是 `Option[T]`，对于多个捕获则是 `Option[(T1, …, Tn)]`。
++     entry #unapply   匹配的捕获，作为带类型的结果，或 `None`

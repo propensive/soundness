@@ -1,0 +1,1364 @@
+orthant 2 language
+
+% 0 1 0 0f04ec4b9ac2d4270a232409219e1f6b
+
+% 0 1 0 1f5833b64febbc391dfd68b455ef5b25
+
+% 0 1 0 0b5938ce7315323607e1922cbc4d93e2
+
+@ 0 1 0 07810fa37386b2841145bd095841df34
++ info   作为类型化值的 CSS：根据真实语法检查的样式表、选择器和属性
+
+% 0 1 0 0ca6d61ddd9511ea1cdae38f1414f6fe
+
+@ 0 7 0 069510c983c180ea1dbd5740495f3c14
++     _Cataclysm_ 将 CSS——样式表、其中的规则和选择器，以及其属性的值——表示为类型化的值，根据每个属性真正的语法进行检查，而不是留给浏览器去忽略。
++     浏览器从不拒绝 CSS：拼错的属性或格式错误的值以什么也不做的方式失败。
++     在这里，同样的错误在运行时读取文本时是一个 `Css.Error`，在写入 `css"…"` 字面量或 `Css.Style(…)` 构造器时则是一个编译错误，两者都根据 MDN 数据中六百多个属性的值定义语法进行检查。
+
+@ 0 9 0 1dd74f4461c977dd14de6fc8d94343bc
++     核心类型是 `Css`：作为 `Css.Node` 列表的样式表——规则、声明和 at 规则——用 `read[Css]` 从文本读取，用 `css"…"` 插值器书写，用 `+` 连接，并在按名称从 `formatting` 包中选择的 `Css.Formatting` 下用 `show` 渲染。
++     规则的选择器是由 `Selector` 组成的 `SelectorList`，每个 `Selector` 是由 `Selector.Combinator` 连接起来的、由 `Selector.Simple` 部分组成的 `Selector.Compound`，覆盖了 Selectors Level 4 的全部内容。
++     属性值是类型化的：长度、角度、时间和网格弹性系数是以 CSS 自身单位表示的量（`4.0*Px`、`90.0*Deg`、`200.0*Ms`、`2.0*Fr`），颜色渲染为十六进制三元组，`Css.Convertible` 类型类说明哪种原生类型可用于哪种值定义类型。
+
+% 2 1 0 1a257b602f1fee4e0b752b96f1b70b87
+
+% 3 1 0 0aacf5c7c1e2ef2d1ddec05a106f7565
+
+% 4 1 0 1238f33caae5a3c71f32cef7fce1a5f1
+
+% 5 1 0 0359ba011e66231d1a3b756e79ace53b
+
+% 0 1 0 0b014b2c52185b23001af5573e592715
+
+% 0 1 0 1dbeabf7faf35a0207e7efe71a3bb312
+
+% 1 1 0 028065ec59253bd214e476227eea4848
+
+% 0 1 0 03c376ea4340b39b1946e5f08dffe69c
+
+% 0 1 0 12c3817e848da3db000fb963c091dfa1
+
+% 0 1 0 02e3d7ad5804118f18c3d2c26bf57487
+
+% 0 1 0 043231e68ecb1c9e01b3b2150977aa79
+
+% 0 1 0 0d01e097593e8eb8047158bf73bd9ca1
+
+% 1 1 0 12a6040a24546d660d668b8c881464b4
+
+@ 0 4 0 1d6766da4be6647913ec34be27a1c55e
++     读取会把每一个错误——未知属性、错误的值、未终止的注释——累积到一个 `Css.Errors` 中，而不是在第一个错误处停止，因此样式表可以一次改正完毕。
++     错误需要作用域中有一个 `Diagnostics`，例如 `errorDiagnostics.stackTracesDiagnostics`。
+
+@ 0 1 0 1c2315358367c5db196b18bacc02b83e
++     该库分为三个源码集：
+
+@ 0 13 0 01b86c7132a5e90d1935d62809b2a4fd
++     - `cataclysm.core`——`Css` 及其节点、错误、关键字和 `Css.Convertible`；选择器模型（`SelectorList`、`Selector`、`Selector.Compound`、`Selector.Simple`……）；属性数据集（`PropertyDef`、`Css.Syntax.Matcher`、`Css.Syntax`、`ValueToken`、`Css.Outcome`）；单位（`Px`、`Rem`、`Vw`、`Pct`、`Deg`、`Fr`……）；`css"…"` 插值器；`classes` 和 `ids` 扩展；以及 `formatting` 和 `construables` 包。可编译到 JVM、Scala.js 和 Scala Native。
++     - `cataclysm.fonts`——`Web` 媒介及其字体族供给（`Web.linked`、`Web.imported`、`Web.local`、通用字体族），`FontFace`、`Css.fontFace` 和 `Css.fontFaces`，以及将 phoenicia 的 `Face` 或 `Font` 转换为选择它的 `Css.Style` 的 `style` 扩展。
++     - `cataclysm.html`——honeycomb 绑定：`inlineStyle` 让 `Css.Style` 可以作为 `style` 属性，`Styles` 配合 `cssBindings.checkedBinding` 在代码编译时根据类路径上的样式表检查模板中的每个类名和 id 名。
+
+@ 0 5 0 02e17f91ed1c8d1913eef9d1ee919f45
++     所有内容都导出到 `soundness` 总括包。
++     `formatting`、`construables` 和 `cssBindings` 包与总括包自身的同名包合并，其中的 given 按名称导入，因为 `import soundness.*` 不导入 given：程序在渲染样式表之前写 `import formatting.indentedCssFormatting`（或 `compactCssFormatting`），并写 `import cssBindings.checkedBinding` 来开启类名检查。
+
+% 0 1 0 07ce35ed5adcf912137e4969eb82aa49
+
+% 0 1 0 1e76a5bc6f0eb468009d699aed48f969
+
+% 0 1 0 0dd1f832fb8c066609e118cb295c1e2f
+
+% 0 1 0 1b8b5a251a8376950c2b1b40128db44e
+
+% 0 1 0 127fa8577891928b1c4c2f045c784deb
+
+% 0 1 0 1bd33b1ba6cc0bb10f3bb8f198e4cf9e
+
+% 0 1 0 05d54a31471a1d230b48892305a6d3ce
+
+@ 0 1 0 01bbbd690e12eb2c000782917ac32410
++ entry .Css   样式表：由规则、声明和 at 规则组成的列表，可读取、书写、连接和渲染
+
+% 1 1 0 136b8849e2f8bbf409ab28ab3008984d
+
+@ 0 6 0 168fe9b0434d714a11d4751e499a8c85
++       `Css` 是作为值的样式表：它的 `#rules` 是 `Css.Node`，每个节点要么是带有已解析 `SelectorList` 和主体的规则，要么是一个属性及其值的声明，要么是带有名称、前导和可选主体的 at 规则。
++       它可以通过读取文本（`.aggregable`）、通过 `css"…"` 插值器、通过 `Css.fontFace` 从字体构造，或直接从节点构造；两个样式表用 `+`（`.addable`）连接成一个包含两者规则列表的样式表。
+
+% 2 1 0 1192de110b3c8e55022837b6be00015a
+
+% 3 1 0 037ba08fce5d53300def16d5525d07f9
+
+% 4 1 0 11ea339f5674227e12ee30f3903320c4
+
+% 5 1 0 0bb9f456f3aefe10058c9f2af9eaf66f
+
+% 1 1 0 08f6eccee8d2c96b1f8e7d0b180960c8
+
+% 0 1 0 1ed2830211ce9d8a004a8e9f2cfe0fab
+
+% 0 1 0 0dee864c9f6372d519615db2552f2fde
+
+% 0 1 0 18f2111631ed00fe0d4cff22198faeec
+
+% 0 1 0 13d5fd7b18071a781219a5be4f3dc8f0
+
+% 1 1 0 01470bc32e860e400e2b8e5fcc272953
+
+@ 0 7 0 1c83e5cb6e6ca54f02bb0d5395786c47
++       读取会根据属性的语法校验每个声明，并把每个问题累积到一个 `Css.Errors` 中，在最后一次性抛出。
++       渲染经过作用域中的 `Css.Formatting`——`formatting.indentedCssFormatting` 把每条规则和每个声明放在单独的缩进行上，`formatting.compactCssFormatting` 去掉每个非必要的字符——可以作为 `show`（`.showable`）、作为惰性的 `Stream[Text]`（`.streamable`），或作为 HTTP `text/css` 正文（`.media`）。
++       在每种样式中，每个声明之后都跟一个 `;`，包括最后一个。
+
+@ 0 4 0 1907c4649b564c571d2efdb8bc8b97ec
++       伴生对象中还有 CSS 全局关键字（`.inherit`、`.initial`、`.unset`、`.revert`、`.revertLayer`）和颜色关键字（`.transparent`、`.currentColor`），作为可供替换的类型化值，以及用于内联样式的 `.Style` 构造器、`.Convertible` 类型类、`.Syntax` 语法类型和各个 `.Error`。
+
+% 0 1 0 155d931f148ccac60ccc59a389e97b03
+
+% 1 1 0 11991a81ee71faaf17bb6a7ddc29ba8b
+
+% 0 1 0 1f88529129e197f613ba16389aeb2267
+
+% 0 1 0 11f9dd4bdb9d48741676827e28912b4a
+
+@ 0 7 0 1cf499503d2b46fb19890116cff87b34
++   entry .aggregable   从文本读取样式表，把每个 `Css.Error` 累积到一个 `Css.Errors` 中
++       让文本可以 `read[Css]` 的 given。
++       解析会校验每个声明——属性必须是已知的，其值必须满足该属性的语法——并在 `track` 下运行，因此每个 `Css.Error` 都被累积，而不是终止解析，最后抛出一个包含全部错误的 `Css.Errors`。
++       完全有效的样式表得到 `Css`，不抛出任何错误。
++       它需要作用域中有一个 `Tactic[Css.Errors]` 和一个 `Diagnostics`。
+
+% 2 1 0 1b9332c42957904f0b8a52b91ac0fa0e
+
+% 3 1 0 021aa0602baf40e31740726eca48e9e2
+
+% 4 1 0 1b6c37c8e9c750061658a3f80f339956
+
+% 5 1 0 0490e819ae59e9cb0b9efea8e42aa841
+
+% 0 1 0 11027fce74fad78903fa89ddaa262c78
+
+% 0 1 0 0b8f2e07d4c19ddc0a13c131ad26c2ae
+
+% 0 1 0 0cb1ef552c2a79fb03dea1870d33cecb
+
+% 1 1 0 013e3e092d67b4221e995dfff9b76907
+
+@ 0 4 0 011d66183fad0553175ec738e991729b
++       自定义属性（`--name`）无需定义即被接受。
++       如果值的语法用到了匹配器未实现的类型，会报告为 `UnsupportedValue`，而不是悄悄放过。
++   entry .Formatting   样式表的渲染方式：带换行和缩进，或紧凑形式
+
+% 1 1 0 008da007572e478d1f38006613174426
+
+@ 0 7 0 0d29f620ed0a56f307b5f1b8194a8fbf
++         `Css.Formatting` 说明渲染时是否把每条规则和每个声明放在单独的缩进行上（`#newlines`），以及是否在 `:` 之后和 `{` 之前添加装饰性空格（`#spaces`）。
++         `Css` 的 `Showable`、`Streamable` 和 `Media` 实例各自以上下文值的形式接收一个 `Css.Formatting`，因此渲染时作用域中必须有一个：两个标准的分别是 `formatting.indentedCssFormatting`（两者都开启）和 `formatting.compactCssFormatting`（两者都关闭），按名称导入，`Css.Formatting(newlines, spaces)` 则可以构造其他任何组合。
+
+% 2 1 0 16d8090b072a1659081c318d43984b3a
+
+% 3 1 0 0e5accbf7522106c03ee770545cae12c
+
+% 4 1 0 07da06d43d5ef99f056db17ea60481ad
+
+% 5 1 0 092aa883f49df90d1957174fe543e7a8
+
+% 0 1 0 0795dadc4571c07c10992f14d10d7e93
+
+% 2 1 0 164af54cf5c4578d1e15fa6708660f91
+
+% 0 1 0 185126c59ec9115e040f741858f0fdd6
+
+% 0 1 0 146ddad6baf7650a000763f5d824ad52
+
+% 2 1 0 07dbd12b8e200b930361b5d7b1cd3659
+
+% 0 1 0 036c2537c44262f718d7ae0561bb0e09
+
+% 0 1 0 0bf685bf123631011095e3c27eac8995
+
+% 1 1 0 1a058ef924b516fb19264eb10f3447b9
+
+% 0 1 0 13421b03ae58513a079ac2c7eb922fd2
+
+@ 0 11 0 0b62871f02deafac08e7f401587b1279
++     entry .apply   具有给定换行和空格选择的格式
++     entry #newlines   每条规则和每个声明是否各占一个缩进行
++     entry #spaces   是否在每个 `:` 之后和每个 `{` 之前加一个空格
++   entry .Node   样式表中的一个节点：规则、声明或 at 规则
++       样式表所包含的三种节点，以枚举表示。
++       `Rule(selector, body)` 是带有已解析 `SelectorList` 和由更多节点组成的主体的规则，因此嵌套规则可以直接表示。
++       `Declaration(property, value)` 是一个属性及其值，两者都是文本，注释已去除，空白已规范化。
++       `At(name, prelude, body)` 是由名称（不含 `@`）、前导文本和主体组成的 at 规则；对于 `@import url("x.css");` 这样的语句型 at 规则，主体为 `Unset`，对于 `@media screen { … }` 这样的块型 at 规则，主体是节点列表。
+
+% 2 1 0 1fdaefcaa7f496721a3cfa6fe2e68850
+
+% 3 1 0 16d9e95b9a6a970714a8134eb2b536d4
+
+% 0 1 0 06a707affab00f8014cd1d73980e3f8e
+
+% 0 1 0 09d1e48e204a39571e6f9116092ab652
+
+% 0 1 0 0fedb8efbdb4e9ea092ef59013b0b202
+
+% 0 1 0 15315b59c8776cd11622e421a63d394c
+
+% 1 1 0 1a47bb0d039feb2e00dca2c42ff485b6
+
+@ 0 25 0 19aa7f0d3f146299123396b2e2b72b2a
++       直接构建的节点不经校验；`read[Css]` 和 `css"…"` 才是经过检查的途径。
++   entry .streamable   将样式表惰性地渲染为 `Stream[Text]`，用于提供服务
++       让 `Css` 可以逐块流式输出的 given，因此大型样式表从不作为一整个文本保存：生产者在一个任务中写出渲染结果，同时流被消费。
++       它需要作用域中有一个 `Monitor`、一个 `Probate` 和一个 `Css.Formatting`，并与 `.media` 配合，将样式表作为 HTTP 响应提供。
++   entry .showable   在作用域中的 `Css.Formatting` 下将样式表渲染为文本
++       `css.show` 将整个样式表写入一个 `Text`。
++       规则和声明的布局由格式决定：`formatting.indentedCssFormatting` 给出每块一条规则、两空格缩进并以换行结尾的形式，`formatting.compactCssFormatting` 给出 `a{color:red;}`。
++       渲染可以往返：从其自身的渲染结果读回的样式表与原样式表相等。
++   entry .interpolator   `css"…"` 背后的 `Interpolable`；参见 `cataclysm.css`
++       展开 `css"…"` 字面量的上下文插值器 given。
++       其结果类型是透明的：只有裸声明的字面量是 `Css.Style`，带有选择器或 at 规则的则是 `Css`。
++       不直接调用；`StringContext` 上的 `css` 扩展是它的外在形式。
++   entry .addable   `css + css`：一个依次包含两者规则列表的样式表
++       `Addable` given：`css"a { … }" + css"b { … }"` 是包含两条规则的样式表，`stylesheet + Css.fontFace(font)` 则把字体的 at 规则追加到页面自身的样式之后。
++   entry .media   样式表用于 HTTP 的媒体类型：`text/css; charset=UTF-8`
++       `Media` given，使 `Css` 能以正确的内容类型作为响应正文提供，并通过 `.streamable` 流式输出。
++   entry .Style   用于内联 `style="…"` 属性的一组声明，在代码编译时检查
+
+% 1 1 0 17ee461165e53d4212741f04874febee
+
+@ 0 5 0 1ab114043833e9cb07ff96d13ee4e2f8
++         `Css.Style` 是一个不带选择器的属性–值对列表，用于元素的 `style` 属性。
++         它用命名参数构建，每个名称是一个 camelCase 属性名（转换为 kebab-case：`borderWidth` 即 `border-width`），每个值是任何具有 `Css.Convertible` 的类型，且该属性接受其值定义类型——长度用 `4.0*Px`，颜色用颜色，`Css.inherit` 则处处可用：
+
+% 2 1 0 052616ee7334d3fe1ab9d356cc877ebe
+
+% 3 1 0 1a7760d08c542f001cff893743e0eb2e
+
+% 0 1 0 16234519696ec00e19150ecf53ccdaa9
+
+% 0 1 0 0dfaedb6e96a5e430fdaf862cca82b47
+
+% 0 1 0 18451809714387020aa23527d0361fc5
+
+% 0 1 0 17bcb3d80c1cb32e1456aecc190233e1
+
+% 0 1 0 0653ac124c80f6d51bc1bc3b0234670c
+
+% 0 1 0 17891a815bc686ad1488bcff35ecdfcb
+
+% 0 1 0 0fd15cbe0f8c1bba0dfb1e0106dde0bd
+
+% 1 1 0 13ac435a43806ee3026e226bf1224557
+
+@ 0 7 0 1293d4cb4743278e0980612f9fbfe003
++         数据集不认识的属性是一个编译错误，_cataclysm: `name` is not a known CSS property_，类型不对的值则是另一个编译错误，_cataclysm: a `length` value is not valid for the `color` property_。
++         只有裸声明的 `css"…"` 字面量（`css"color: red; width: 4px"`）也是 `Css.Style`，两个样式可以用 `+` 连接。
++         借助 `cataclysm.html`，`Css.Style` 可以直接作为 honeycomb 的 `style` 属性（`inlineStyle`）；`cataclysm.fonts` 的 `style` 扩展则构造一个选择 phoenicia `Face` 的样式。
+
+% 0 1 0 014b1384a91ba80514911d6179a23d50
+
+% 0 1 0 07ba80a1554ce3471aded571a7f4d248
+
+@ 0 15 0 050deb7b7e19b29900bd1c09e4da73ff
++     entry .of   由已渲染的属性–值对构成的样式，不经检查
++         `Css.Style.of(List(t"font-family" -> t"\"Inter\""))` 由文本对构建样式，不做任何检查；它是 `Css.Style(…)` 宏和字体 `style` 扩展所生成的工厂，也是携带数据集无法检查的声明的途径。
++     entry .applyDynamic   `Css.Style()`：空样式
++     entry .applyDynamicNamed   `Css.Style(property = value, …)`：经过检查的命名参数构造器
++         `Css.Style(borderWidth = 2.0*Px, color = red)` 背后的宏：每个名称作为字面量读取，由 camelCase 还原为其 CSS 属性，并召唤值的 `Css.Convertible`；该属性必须存在于数据集中，并且必须接受该可转换实例类型的值，否则代码无法编译。
++     entry .addable   `style + style`：一个依次包含两者属性列表的样式
++     entry #properties   属性–值对，每个都已渲染为文本
++     entry #text   作为 `style` 属性文本的声明：`color: #ff0000; width: 4px`
++         每个对渲染为 `name: value`，以 `; ` 连接，末尾没有分号。
++   entry .Value   带有其值定义类型标签的已渲染 CSS 值，`Css.Value of "length"`
+
+% 1 1 0 15981be65be319151e2bfac5302e4b8b
+
+@ 0 6 0 1472ceff838454391e2903d767904e76
++         `Css.Value` 是已为 CSS 渲染好的文本，其 `Topic` 类型成员指出它所满足的值定义类型：`"length"`、`"color"`、`"time"`、`"angle"`、`"percentage"`、`"number"`、`"integer"`、`"flex"`，对 CSS 全局关键字则为 `"*"`。
++         该特质是 `into` 的，因此具有 `Css.Convertible` 的原生值——一个量、一种颜色、一个 `Int`——在任何期望其主题的 `Css.Value of` 的地方都被接受，由 `.converter` 提升。
++         `Css.Value(text)` 将文本包装为没有主题的值。
+
+% 0 1 0 0d1bb26d2146bbbf0944a3085d600fa6
+
+@ 0 24 0 10546eaa6861644716a326f7572e670b
++     entry .apply   将已渲染的文本包装为没有主题的值
++     entry .converter   将任何 `Css.Convertible` 类型提升为其主题的 `Css.Value of` 的 `Conversion`
++         这是一个泛型 given，因此新增一个可转换类型只需要一个 `Css.Convertible` 实例，而无需自己的转换。
++     entry #text   作为 CSS 文本的值
++   entry .Keyword   CSS 全局关键字 `inherit`、`initial`、`unset`、`revert` 和 `revert-layer`
++       一个枚举，分支为 `Inherit`、`Initial`、`Unset`、`Revert` 和 `RevertLayer`，它们作为每个属性的唯一值都是有效的。
++       它们通过小写的值 `Css.inherit`、`Css.initial`、`Css.unset`、`Css.revert` 和 `Css.revertLayer` 访问，从而避免裸 `Unset` 与 vacuous 的 `Unset` 冲突；它们的 `Css.Convertible` 的主题是 `"*"`，因此在 `Css.Style(…)` 或 `css"…"` 中可用于任何已知属性。
++   entry .ColorKeyword   颜色关键字 `transparent` 和 `currentcolor`
++       一个枚举，分支为 `Transparent` 和 `CurrentColor`，以 `Css.transparent` 和 `Css.currentColor` 访问，其 `Css.Convertible` 的主题为 `"color"`。
++   entry .inherit   `inherit` 关键字，作为任何属性的值
++   entry .initial   `initial` 关键字，作为任何属性的值
++   entry .unset   `unset` 关键字，作为任何属性的值
++       以小写命名，以免遮蔽 vacuous 的 `Unset`。
++   entry .revert   `revert` 关键字，作为任何属性的值
++   entry .revertLayer   `revert-layer` 关键字，作为任何属性的值
++   entry .transparent   `transparent` 颜色关键字
++   entry .currentColor   `currentcolor` 颜色关键字
++   entry .Error   CSS 文本中的一个错误，带有其行、列和原因
+
+% 1 1 0 06c3c1cb68f6bc1f0b80b4f473d0ecaf
+
+@ 0 6 0 1f084579ffa8c4870a27b6efebc84333
++         错误 `↯/s.90.1`：_invalid CSS at line `n` column `n`: `reason`_，以原因自身的编号作为子代码。
++         读取样式表或解析选择器、语法或值时，每发现一个问题就抛出一个；`read[Css]` 把它们全部收集到一个 `Css.Errors` 中，而 `SelectorList.parse` 和 `Css.Syntax.Matcher.check` 则通过 `Tactic[Css.Error]` 抛出单个 `Css.Error`。
++         构造它需要一个 `Diagnostics`。
+
+% 2 1 0 0b47c26dd99ca38b00c23c0d0be03b56
+
+% 3 1 0 0318b808bd7a64da0f21f587e04ec87a
+
+% 4 1 0 17f21349a82b947400acffadb3ffc5e5
+
+% 5 1 0 1aaf28139e72c02c0515b86ace202b69
+
+% 0 1 0 008c4875626e08c00a3d5719dc6185fc
+
+% 0 1 0 0777326cdce2c61100e39c530edf78b4
+
+% 1 1 0 118bbb0ba9aaf01504e69832c9d226ea
+
+% 0 1 0 199d8570e7eb59dc0e0dc55a8037a8e8
+
+@ 0 1 0 197d6754ae7f5c75116d7cc176416a9e
++     entry .Reason   CSS 无效的原因：九种错误，各有编号
+
+% 1 1 0 03b9dc4c8e1bdebf0fdbd9d2178062e3
+
+@ 0 1 0 00d2fb736573525c1462c169294409fb
++           `Reason` 是带有 `#number` 的 `Clarification`，该编号成为错误的子代码：
+
+% 0 1 0 01eaeca5798d1a3b02d48ba44beec41c
+
+@ 0 4 0 04af6999f7a3c8f2148ac6a8f2bbcb05
++           column  分支
++           column  代码
++           column  消息
++           column  说明
+
+% 0 1 0 16bfc7654963ac8e0f33de3199ef0d63
+
+% 0 1 0 16788bef4b0475f20f40b9a517a9ddd9
+
+% 0 1 0 13a199f694608e1a1785cc238d8f266c
+
+% 0 1 0 068b2b0ea0adc4a1114ae978467baa03
+
+@ 0 1 0 1345781c2bcc687705f1866a368a7e9d
++           row  `EmptySelector`  5  _a selector was expected but none was found_  `{` 之前什么也没有的规则
+
+% 0 1 0 11f732d0771ea45a01e5b21e4b936544
+
+% 0 1 0 0978b9ebefd53070004951fecbe5109a
+
+@ 0 2 0 0541151e4d5c8da9066caafc7cf5f327
++           row  `UnsupportedValue(property, types)`  8  _the value of `property` uses an unsupported type_  该属性的语法用到了匹配器未实现的值类型，列在 `types` 中
++           row  `InvalidName(name)`  9  _`name` is not a valid CSS identifier_  类名或 id
+
+% 1 1 0 1f8f5da489b3945f063fc0e11ac04b21
+
+@ 0 6 0 00832669e398a8a5106514aa1d524b98
++       entry .communicable   将每个原因渲染为其消息
++       entry #number   原因的编号，1 到 9，即错误的子代码
++     entry #reason   出了什么问题
++     entry #line   错误所在的行，作为 `Ordinal`
++     entry #column   错误所在的列，作为 `Ordinal`
++   entry .Errors   读取样式表时发现的每个 `Css.Error`，一次性抛出
+
+% 1 1 0 09185f4ded35f1ec188d79181ea1c1b6
+
+@ 0 5 0 1c95e5dd62a786c41f96d0ab96443b70
++         _the CSS contained `n` errors_。
++         由 `read[Css]`（`Css.aggregable`）在整个样式表解析完毕后抛出，按文档顺序将每个错误保存在 `#errors` 中，因此含有多个错误声明的样式表会一次报告全部错误。
++         该类型是复数形式，因为对于含有多个错误的文档每次只报告一个，对 linter 或构建步骤而言是错误的形态。
+
+% 2 1 0 0a6793c37fe781cc0e584a3f231ea530
+
+% 3 1 0 0a94eec2f61942751c3081d407992261
+
+% 4 1 0 010ad11590df81ae06dc7def35fd0eff
+
+% 5 1 0 04f86e3f7925cbe61596c696efbe5b48
+
+% 0 1 0 1761800b0ad8298d04d13d53927462e2
+
+% 1 1 0 1d1920b13ed0c33118d47c289a882c7f
+
+@ 0 3 0 1bf2fa2ae4c2322815fcca98e150c1a4
++     entry #errors   各个错误，按文档顺序
++     entry #+   追加一个错误后的此聚合
++   entry .Convertible   哪些原生类型可以渲染为 CSS 值，以及属于哪种值定义类型
+
+% 1 1 0 008ca6a59c423ac219d5e842e7f3f26b
+
+@ 0 7 0 1fd7e7d1953a84651cfb01f7325dc497
++         `T is Css.Convertible of "length"` 表示 `T` 渲染成满足值定义类型 `<length>` 的 CSS 文本（`#value`）。
++         它是 `css"…"` 中每次替换以及 `Css.Style(…)` 每个参数背后的类型类：宏为值自身的类型召唤实例，读取其 `Topic`，并检查属性是否接受该类型的值，因此 `css"a { color: $length }"` 无法编译。
++         一个泛型 `Conversion`（`Css.Value.converter`）将任何可转换类型提升为 `Css.Value of Topic`，因此新增一个类型只需在这里提供一个实例。
+
+@ 0 6 0 12b112d9180208491c5a14e8f8c401ca
++         伴生对象中的实例涵盖 CSS 单位——`Pixels`、`Rems`、`Exs`、`Chs`、视口和百分比单位中的每个 `Quantity`，以及 quantitative 自己的 `Ems`、`Metres`、`Inches`、`Points`、`Picas` 和 `Seconds`——角度和弹性单位、`Int` 和 `Double`、关键字，以及任何具有 `Chromatic` 实例的颜色。
++         数字渲染时不带多余的 `.0`（`12px`，而不是 `12.0px`），并四舍五入到小数点后六位，以免换算后的物理长度泄露浮点噪声。
+
+% 2 1 0 0dd59ffc2177ae15191a1f021854832d
+
+% 3 1 0 1f37bb86c8f3d38e121d1cf3260d3787
+
+% 0 1 0 1d1dd5f871464c8418e211e5e71ffd1f
+
+% 0 1 0 1c49fccedb6a18f1181f92c8c2c3a538
+
+% 0 1 0 19b19d14f72935330e83da7dcff433c5
+
+% 0 1 0 13a1763fa87e92f118c57630aa45137a
+
+% 1 1 0 0251985269c0a3a3049d78b4ad74a492
+
+@ 0 4 0 01fac1821cb5ab43154e46b80ef9df22
++         用户定义实例的主题必须是属性语法所指名的类型：`"length"`、`"color"`、`"percentage"`、`"number"`、`"integer"`、`"time"`、`"angle"` 或 `"flex"` 会根据语法进行探测；任何其他主题都不经检查地接受。
+
+% 0 1 0 1386a1370919716110b2b850716783a6
+
+% 0 1 0 07a2e320d6a2e7af1b5e1f20fb2bc4a2
+
+@ 0 37 0 164705d2a3b77de619c3d19ad1562656
++     entry .pixels   作为 `<length>` 的 `Pixels` 量：`4px`
++     entry .ems   作为 `<length>` 的 `Ems` 量（quantitative 的）：`2em`
++     entry .rems   作为 `<length>` 的 `Rems` 量：`2rem`
++     entry .exs   作为 `<length>` 的 `Exs` 量：`1ex`
++     entry .chs   作为 `<length>` 的 `Chs` 量：`40ch`
++     entry .vws   作为 `<length>` 的 `ViewportWidths` 量：`100vw`
++     entry .vhs   作为 `<length>` 的 `ViewportHeights` 量：`100vh`
++     entry .vmins   作为 `<length>` 的 `ViewportMins` 量：`50vmin`
++     entry .vmaxes   作为 `<length>` 的 `ViewportMaxes` 量：`50vmax`
++     entry .metres   作为 `<length>` 的任意物理长度（`Metres` 量），以 `mm` 表示
++         `Distance` 量——写作 `3.0*Cm`、`10.0*Mm`、`1.0*Metre` 或任何 quantitative 长度——以毫米渲染，因为 CSS 对 `cm`、`mm` 和 `m` 的读取方式相同：`3.0*Cm` 即 `30mm`。
++         英寸、点和派卡保留各自的单位。
++     entry .inches   作为 `<length>` 的 `Inches` 量：`1in`
++     entry .points   作为 `<length>` 的 `Points` 量：`12pt`
++     entry .picas   作为 `<length>` 的 `Picas` 量：`1pc`
++     entry .percents   作为 `<percentage>` 的 `Percents` 量：`50%`
++     entry .chromatic   任何具有 `Chromatic` 实例的颜色，作为 `<color>`，渲染为十六进制
++         通过 `Color.chromatic` 实例涵盖 anticipation 的 `Chroma` 以及 iridescence 的每种颜色形式（`Srgb`、`Hsl`、`Cielab`……以及 `rgb"#3344ff"` 字面量），每种都由其红、绿、蓝通道渲染为六位十六进制三元组，并截断到 0–255。
++         该实例会在颜色的任何超类型中查找，因此当 `Css.Style(…)` 请求值的确切类型时，从其形式获得 `Chromatic` 的颜色类也能被找到。
++     entry .seconds   作为 `<time>` 的任意时间（`Seconds` 量），以 `ms` 表示
++         `200.0*Ms` 即 `200ms`；`1.5*S` 即 `1500ms`。
++     entry .degrees   作为 `<angle>` 的 `Degrees` 量：`90deg`
++     entry .radians   作为 `<angle>` 的 `Radians` 量：`1rad`
++     entry .turns   作为 `<angle>` 的 `Turns` 量：`0.5turn`
++     entry .flexes   作为 `<flex>` 的 `Flexes` 量：`2fr`
++     entry .integer   作为 `<integer>` 的 `Int`
++     entry .decimal   作为 `<number>` 的 `Double`，不带多余的 `.0`
++     entry .keyword   以 CSS 拼写形式表示的 `Css.Keyword`，对每个属性都有效
++         主题为 `"*"`，属性检查对任何已知属性都接受它。
++     entry .colorKeyword   作为 `transparent` 或 `currentcolor` 的 `Css.ColorKeyword`
++     entry #value   将原生值渲染为 CSS 文本
++   entry .Syntax   属性的值语法，以 CSS 值定义语法表示，作为一棵树
+
+% 1 1 0 1da14e63c935b2340591ec064f796812
+
+@ 0 4 0 037f8d752d8e36460da8f47202fd71fc
++         值定义语法字符串（如 `<line-width> || <line-style> || <color>`）的解析形式——MDN 数据集中描述每个属性所允许的值时使用的就是这种记法——`Css.Syntax.Matcher` 将具体的值与之进行匹配。
++         `PropertyDef#grammar` 是属性的 `Css.Syntax`。
+
+@ 0 10 0 05030362c8d802a01cc399a85cb549db
++         各分支遵循该记法。
++         `Keyword(name)` 是字面标识符，如 `auto`；`Literal(token)` 是字面词法单元，如 `/`、`,` 或带引号的 `'+'`；`Type(name, bounds)` 是 `<length>` 或 `<integer [1,4]>`，范围按原样保留；`Property(name)` 是对另一个属性语法的引用，`<'border-width'>`；`Function(name, body)` 是函数记法，`rgb( <number>#{3} )`；`Sequence(terms)` 是并置，按顺序；`OneOf(options)` 是 `|` 组合子（恰好一个）；`AnyOf(terms)` 是 `||` 组合子（一个或多个，任意顺序）；`AllOf(terms)` 是 `&&` 组合子（全部，任意顺序）；`Repeated(term, min, max, separated)` 是倍增符 `?`、`*`、`+`、`{m,n}` 和 `#`（逗号分隔），无上界时 `max` 为 `Unset`；`Mandatory(term)` 是 `!` 倍增符。
+
+% 2 1 0 10169b8d97ea61760408678017d39302
+
+% 3 1 0 14a6b9e9fcaa1c9a13ee179a4639fdaa
+
+% 0 1 0 1c8a1f422922e8240f1896c3e015d21a
+
+% 1 1 0 1b3dbba6fc98b72a17aeda64f24ddda6
+
+@ 0 2 0 02aa6566c5711204046e89dcb59441fb
++         它位于 `Css` 之下而不是顶层，以免在总括包中与 stenography 的 `Syntax` 冲突。
+
+% 0 1 0 1d0446be19eb7adf0e482ef490a27b14
+
+% 0 1 0 026b7fb46772449f1ed46aae6ce41462
+
+@ 0 2 0 0d3d6df6921ce97e07cbb50ff9ebe5c3
++   entry #rules   样式表的节点，按顺序
++     entry .Matcher   根据语法检查属性值：有效、无效或不支持
+
+% 1 1 0 00a70d75ba8457391414de0bc9e9b47c
+
+@ 0 11 0 056f5650113d0cc31af4bbf5dd39411f
++           `Css.Syntax.Matcher.check(property, value)` 对值进行词法分析（`ValueToken`），并以回溯方式将其与属性的 `Css.Syntax` 匹配，根据 MDN 的 `syntaxes.json` 数据集解析复合的 `<type>`，并在词法单元层面匹配叶子原始类型——`<length>`、`<percentage>`、`<number>`、`<integer>`、`<angle>`、`<time>`、`<resolution>`、`<frequency>`、`<flex>`、`<ratio>`、`<string>`、`<url>`、`<hex-color>` 以及标识符类型。
++           结果是一个 `Outcome`：`Valid`、`Invalid`，或当语法到达匹配器既未作为复合类型、也未作为原始类型实现的类型时为 `Unsupported(types)`，因此语法中未实现的角落会被报告出来，而不是悄悄通过或失败。
++           这就是 `read[Css]`、`css"…"` 和 `Css.Style(…)` 对每个声明施加的检查。
+
+@ 0 4 0 1e201df391ff98131a03b939dcca8516
++           包含任意替换函数 `var()` 或 `env()` 的值总是有效的，就像待替换值一样；CSS 全局关键字作为每个属性的唯一值都是有效的；`calc()`、`min()`、`max()`、`clamp()` 及其他数学函数在任何期望数值原始类型的地方都被接受。
+
+% 0 1 0 1347c58a42787fa91b2b19aa23e9089b
+
+% 1 1 0 06b2b3821b59f61500c87df20de0e769
+
+% 0 1 0 169a67029de3597111dd5ef561c10396
+
+% 0 1 0 1012e0401a4235931db671ec67f92f61
+
+% 0 1 0 03dfaca54a3b71b4088823f8e16f3484
+
+% 0 1 0 19250033e5fa0ece1479d8b37786414a
+
+% 0 1 0 10496e97d0f59c0702e448bf2160c270
+
+% 1 1 0 12c93b2706510cd21872d68bf2ce46d3
+
+% 0 1 0 0efb5e5172f3856800dcc3db18225d0d
+
+% 0 1 0 05d3a9ace20b225011950a8083d8975a
+
+% 0 1 0 086b29a4778fb6be12cac90fea05a216
+
+@ 0 5 0 0c2181a169f5ba1e137578f26a0a450e
++       entry .check   根据属性的语法检查值，或直接根据 `Css.Syntax` 检查
++           两个重载：`check(property: PropertyDef, value)` 使用属性的已解析语法，`check(grammar: Css.Syntax, value)` 使用任意语法。
++           两者都需要一个 `Tactic[Css.Error]`，只有当值的文本无法进行词法分析（未终止的字符串）时才会抛出。
+
+@ 0 4 0 180483d5490337ca08e1ac6f23276bc8
++   entry .Outcome   根据语法检查值的结果：`Valid`、`Invalid` 或 `Unsupported`
++       由 `Css.Syntax.Matcher.check` 返回的枚举。
++       `Valid` 和 `Invalid` 是确定的结论；`Unsupported(types)` 指出匹配器无法据以校验的值定义类型，`read[Css]` 将其报告为 `Css.Error.Reason.UnsupportedValue`。
+
+@ 0 7 0 1b400e3c3319883006f8dfa8729becfe
++ entry .css   `css"…"` 插值器：样式表或内联样式，在代码编译时检查
++     `css"a { color: red }"` 是 `Css`，而 `css"color: red; width: 4px"`——不带选择器的裸声明——是 `Css.Style`；结果类型是透明的，由内容决定。
++     字面量在代码编译时被解析和校验，检查与 `read[Css]` 相同：未知属性、不满足属性语法的值、未终止的注释或字符串，或格式错误的选择器，都是编译错误，在错误所在的行和列报告。
+
+@ 0 8 0 0d3abc69314df2641b6263cac69ae728
++     替换是类型化的。
++     在**值**位置，`$value` 必须是声明的完整值，其类型必须具有主题为该属性所接受的 `Css.Convertible`：`color` 用颜色，`width` 用长度，`transition-duration` 用时间，任何属性都可以用 CSS 全局关键字。
++     在**选择器**位置，`$name` 必须是 `Name[CssClass]` 或 `Name[DomId]`，它们分别渲染为类选择器（点加名称）或 id 选择器（井号加名称），并且可以与字面文本组合成复合选择器（`div$button`）。
++     其他任何位置——属性名、at 规则的前导部分，或在值内部与字面文本混合（`margin: $width 0`）——都是编译错误。
+
+% 0 1 0 15d6d2800841da9e1c6e709ce05d6a7d
+
+% 1 1 0 0a47f914ed53260906bd03717b3d64ff
+
+@ 0 1 0 0c8e70bf2437f7730f7b39c33f6f43ef
++       label 字面量样式表，在编译时检查
+
+% 1 1 0 1b02fab7a85088ee071c98206d7fc438
+
+% 2 1 0 019c679383089de2180c18171befb00f
+
+% 0 1 0 0aa0eda6dcda95d51d762d7fdd376ecf
+
+% 1 1 0 079ce60b3094a6ef067cf91954446c59
+
+@ 0 1 0 1ba70d013b74dbe91501177047a67b91
++       label 将颜色和长度替换进值中
+
+% 1 1 0 01cd5ae16189355e013370978d28112d
+
+% 2 1 0 17081356650e685d18aaf98e8b46ad93
+
+% 4 1 0 04a20c70d1b516a90a478028d0067ba0
+
+% 5 1 0 01b3ce7c349740b4066f5aa820379279
+
+% 0 1 0 05c64818bb601362085cb37a2cda11ef
+
+% 1 1 0 042c8e31f524000f16473a39107ab498
+
+@ 0 1 0 10a7f6ffe295f1050c923b44954285b7
++       label 将类名替换进选择器中
+
+% 1 1 0 18df31a39a8496551273b6f7392aa689
+
+% 2 1 0 13942dd81dce9ca917cfb582acb95952
+
+% 4 1 0 0a72e390a626ebd9023fdc58cfd753f0
+
+% 5 1 0 0787760edd216a520b4245fe4031e429
+
+% 6 1 0 1ffebc23edc976010b6c3599e1534257
+
+% 0 1 0 19204601251d48040c6721af4adc99d7
+
+% 1 1 0 15f491b954453c0c0925e34efa186009
+
+@ 0 1 0 08386460acbc195c0e1ed695734dec0c
++       label 类型错误的替换无法编译
+
+% 1 1 0 0a88442ebea951071bee4e47c6d29c46
+
+% 2 1 0 02dff1e227079d8f1379b59924869e92
+
+% 4 1 0 0d83be61ab054cf01b0d8811f540cc6a
+
+% 5 1 0 11acd002cee6fe2b09366a516ad2bad1
+
+% 6 1 0 01490461c186a04c01d38abe69b44f3e
+
+% 0 1 0 1f164169f6b5e1d61a9a5394fe759501
+
+% 0 1 0 0a13e4a3017b1f2b119dab972e32971c
+
+% 0 1 0 0472326144a49ce71767be845f62f575
+
+% 1 1 0 11e767d9efb47d1a0f4b85a0051bf1dd
+
+@ 0 3 0 0dda9743d00fbb9a1d073abb9f300f8e
++     结果是由解析出的节点构建的 `Css`，每个替换在运行时通过其 `Css.Convertible` 渲染，因此 `css"a { color: $red }"` 与 `t"a { color: #ff0000 }".read[Css]` 相等。
++     样式表可以用 `+` 连接，内联样式也一样。
+
+@ 0 6 0 100d615c96ee5bc803ea4c36ef8a60e3
++ entry .classes   样式表的选择器所提及的类名，作为 `Set[Name[CssClass]]`
++     `Css` 上的一个扩展。
++     遍历每条规则，包括嵌套在其他规则中和 at 规则主体中的规则，以及 `:is()`、`:where()`、`:not()`、`:has()` 和 `:nth-child(… of …)` 的选择器列表参数，收集每个 `Selector.Simple.Class`。
++     `Styles` 和 `cssBindings.checkedBinding` 正是根据这个集合检查 HTML 模板中的类名。
+
+% 2 1 0 1bcc9823b4d9ce55004a998a6a99fba0
+
+% 3 1 0 14f63afcfde333ac10f348d2ad541331
+
+% 4 1 0 0374ae47aceb40ea05565c698add238b
+
+% 5 1 0 1154b2e9c8b4d8740b750ce5acd4e047
+
+% 0 1 0 0f04776eed85fc821f3a0e662fdf2c73
+
+% 0 1 0 142af66c11a50d2e102a01ae90861bee
+
+% 1 1 0 163038994d2627e21013954a94f3995b
+
+@ 0 3 0 08b5b65c3732dd6e1ae15932083ad04a
++ entry .ids   样式表的选择器所提及的 id 名，作为 `Set[Name[DomId]]`
++     `Css` 上的一个扩展，是 `classes` 针对 `Selector.Simple.Id` 部分的对应物：每个选择器列表中的每个 id 选择器，无论嵌套多深。
+
+@ 0 1 0 0ca9228f0bc7615f1bf516c9e041b5fc
++ entry .formatting   样式表的两种标准渲染方式，每种都是按名称导入的 given
+
+% 1 1 0 0de3241572bfec6f1a4a6229a36305c7
+
+@ 0 3 0 19e90fd9813e7b0c0871a7e742ff6d81
++       渲染 `Css` 需要作用域中有一个 `Css.Formatting`，而 `import soundness.*` 不会引入任何一个：程序按名称导入其中之一，或者把自己的 `Css.Formatting(newlines, spaces)` 绑定为局部 given。
+
+% 2 1 0 0b725675bf1222831d95207992f983a1
+
+% 0 1 0 111d95d52c2ff33b11ad745df3b0669b
+
+% 1 1 0 0e5468dda34c539e0927db36e44bd2b2
+
+% 2 1 0 124a90d7384ad360019e9671381ff0cb
+
+% 3 1 0 00729481344fc36c0a07ffb9228797d2
+
+% 4 1 0 09dde44d19c9b53f12e393424d3e5fb6
+
+% 6 1 0 02a4d189c6605bc0091a693598962989
+
+% 8 1 0 09acd21a2f6a5b9a0395df8b44e440ec
+
+% 0 1 0 06cd5fa85ead98060d34bda35ddde442
+
+% 0 1 0 08124e87a7d06c741e676479cc61a536
+
+% 0 1 0 0595e598221146b1165c699509e4abe3
+
+% 1 1 0 12b1f2e7519fc2c708515716d18d30a0
+
+% 2 1 0 0308e45cd2f79ed6011e3b3aee16bbab
+
+% 3 1 0 0381fc73316444e908d79e6a12e6afa4
+
+% 4 1 0 04f07c20ced178420b9a6dca9bcc6c7f
+
+% 6 1 0 0439ae00ebaebd61149ecf9be5f532d0
+
+% 8 1 0 1f539e33627c693e051f90cf67680075
+
+% 0 1 0 05f5b9421db7b90b0e9e3f2841dbe9b7
+
+% 0 1 0 016b6c73e667be1813aecb9d2ff07097
+
+% 1 1 0 0281a551ca92c3bb150ff47a16879772
+
+% 2 1 0 098f5efcc745d9ad19bd29efe8133a96
+
+@ 0 7 0 1621495164e096d81dc734183414bb6f
++   entry .indentedCssFormatting   每块一条规则，声明位于缩进行上，以换行结尾
++       `Css.Formatting(newlines = true, spaces = true)`：每个 `{` 之前和每个 `:` 之后各有一个空格，每层两空格缩进，顶层规则之间有一个空行，并以换行结尾。
++   entry .compactCssFormatting   没有换行，也没有装饰性空格：`a{color:red;}`
++       `Css.Formatting(newlines = false, spaces = false)`。
++       每个声明之后仍然跟一个 `;`，包括块中的最后一个。
+
+@ 0 1 0 15ece9bc601c31c510ec7735ec2f0b45
++ entry .construables   样式表的媒体类型构造，一个按名称导入的 given
+
+% 1 1 0 1358bdde28d0f9581dc49098f2c66b67
+
+@ 0 5 0 181519e1262c383713e80a0ede882b22
++       `Construable` 包，其他库也会向其中添加内容：这里的 given 让给定媒体类型的正文可以构造为一个值。
++   entry .cssConstruable   从 `text/css` 正文构造 `Css`
++       `"text/css" is Construable to Css`：HTTP 正文或其他带媒体类型的 CSS 文本来源通过 `Css.aggregable` 读取为 `Css`。
+
+@ 0 1 0 00fe4d4904c3384913885fc06841df9f
++ entry .SelectorList   以逗号分隔的选择器列表，即规则的前导部分
+
+% 1 1 0 0fdc7195c25ac353154660ac5c81cab7
+
+@ 0 5 0 17d8e8acbc54aaed09678c03312225e0
++       CSS 选择器三个层级中最松散的一层：`SelectorList` 保存以逗号分隔的各个备选，每个都是一个 `Selector`（复杂选择器：由组合符连接的复合选择器），而其中的每个 `Selector.Compound` 都是一串 `Selector.Simple` 部分。
++       它是 `Css.Node.Rule` 所携带的内容，也是 `:is()`、`:not()`、`:has()` 和 `:where()` 所接收的参数。
+
+% 2 1 0 13852ea3d821814a052677ed1e978cff
+
+% 3 1 0 1230d45761f386d11577888a246b6067
+
+% 4 1 0 1f6728342b38caea1239a6190135e70a
+
+% 5 1 0 0f0a4ed3d59073e40f9d034e77df79af
+
+% 0 1 0 07dac6a9768e7d3f03b5307a985e74dc
+
+% 0 1 0 11f0e944e021a65b084e64cf12e867f8
+
+% 0 1 0 066e02f0885d2c130c3a404daddea0b7
+
+% 1 1 0 10cfe677a0cdc8710c37d89f2aa51fb3
+
+@ 0 5 0 154e99f52d8c47c50cccc7310ae20fc4
++       解析器遵循 Selectors Level 4：全部五种组合符，包括列组合符 `||`；带命名空间的类型选择器和属性选择器；每种属性匹配符以及 `i`/`s` 修饰符；带嵌套选择器列表的函数式伪类；带 `odd`、`even` 和 `of` 子句的 `An+B` 参数；以及嵌套选择器 `&`。
++       格式错误的选择器会抛出 `Css.Error`。
+
+% 0 1 0 0f4885655bd85e700e6edf26459d456a
+
+% 0 1 0 130cea9ab6bbacd11ba99433a99fee63
+
+% 0 1 0 17c50e0f9e7997960642a37f81c30e3b
+
+@ 0 14 0 021693a79a97004a17bb995b8eb8a8ea
++   entry .showable   渲染该列表，选择器之间以 `, ` 分隔
++   entry .focusable   让选择器列表可以作为 tarantula 的焦点，使用策略 `css selector`
++       `Focusable` given，使浏览器自动化查找可以接收已解析的选择器，而不是文本。
++   entry .parse   解析选择器文本，格式错误时抛出 `Css.Error`
++       需要一个 `Tactic[Css.Error]`。
++       文本被视为不含注释且空白已规范化，就像 `read[Css]` 去掉注释后的规则前导部分一样；完整的选择器列表之后多余的输入为 `UnexpectedChar`，空列表为 `EmptySelector`。
++   entry .unsafeRead   `css"…"` 展开所用的解析，由 `Unsafe` 门控
++       在运行时根据插值器在展开时已经解析过的文本重建规则的选择器，因此它不会失败；`Unsafe` 令牌断言了这一点。
++       任意文本应通过 `.parse`。
++   entry #selectors   各个备选，按顺序
+
+@ 0 1 0 163865b53faef6ef1bac16006c505b2c
++ entry .Selector   复杂选择器：一个起始复合选择器，以及其后由组合符和复合选择器组成的各步
+
+% 1 1 0 01ec5d6d7a5edd7017306f5027f1fb65
+
+@ 0 4 0 0ab8aeac4abbe60b1ad76cd5574bf284
++       `Selector(lead, head, rest)` 是诸如 `ul > li a` 的选择器：它的 `#head` 是第一个 `Compound`（`ul`），`#rest` 是其后的各步，每一步是一个 `Combinator` 及其到达的 `Compound`（`Child` 到 `li`，`Descendant` 到 `a`）。
++       `#lead` 只对相对选择器设置，即 `:has(> img)` 中的 `>`，否则为 `Unset`。
+
+% 2 1 0 0e48303ae1c7115e168b31776a3fb60b
+
+% 3 1 0 10d6ea5298519fd211100d0e76846ca9
+
+% 0 1 0 08c4f3d812be396e0c3ea6104b05f826
+
+% 0 1 0 04f7b019c1f4522e0436c803e38336ab
+
+% 0 1 0 154952d1ec5d9d4b1c06bcd3e795b943
+
+% 0 1 0 038ff332b3343a151d0deb6e06cecf9f
+
+% 1 1 0 0eaa8a0dcb34c3931df09f7468ffda65
+
+% 1 1 0 09402fd84985227516e549717a8ecba4
+
+% 0 1 0 02614ea18f2de5aa1511a8d05e6f9434
+
+@ 0 4 0 15ed835fda00ecd70415bf146c1761d1
++   entry .showable   渲染该选择器，除后代组合符外，每个组合符两侧各有一个空格
++   entry #lead   相对选择器的前导组合符，或 `Unset`
++   entry #head   第一个复合选择器
++   entry #rest   起始部分之后的各步，每一步是一个组合符及其到达的复合选择器
+
+@ 0 1 0 09b276293d0406ad0719d6b22611461b
++   entry .Compound   复合选择器：之间没有任何东西的若干简单选择器，`li.item:hover`
+
+% 1 1 0 0403478717ac0c6210e5b2cb049feaac
+
+@ 0 7 0 010a1e6d1ef9d2aa0069f3430c290c21
++         一串没有组合符、没有空白而结合在一起的 `Simple` 部分：类型选择器或通用选择器（如果有），后面跟着 id、类、属性选择器、伪类和伪元素。
++         `Compound(List(Simple.Type(Unset, t"a"), Simple.PseudoClass(t"hover", Unset)))` 即 `a:hover`。
++     entry .showable   将各部分连接起来渲染
++     entry #parts   简单选择器，按顺序
++   entry .Simple   一个简单选择器：类型、类、id、属性、伪类、伪元素、`*` 或 `&`
+
+% 1 1 0 101c9d266cbc250800c3af4642152533
+
+@ 0 7 0 1f05807b50db4e760ed1a93ca4475d8e
++         八种简单选择器，以枚举表示。
++         `Universal(namespace)` 是 `*`，带有可选的命名空间 `Prefix`；`Type(namespace, name)` 是元素名，如 `div` 或 `svg|rect`；`Id(name)` 是 id 选择器（井号加名称），类型为 `Name[DomId]`；`Class(name)` 是类选择器（点加名称），类型为 `Name[CssClass]`；`Nesting` 是嵌套规则中的 `&`；`Attribute(namespace, name, test)` 是 `[name]`，带有可选的 `AttributeTest`，如 `^="https" i`；`PseudoClass(name, argument)` 是 `:hover` 或 `:nth-child(2n+1)`，带有可选的 `PseudoArgument`；`PseudoElement(name, argument)` 是 `::before`。
+
+% 2 1 0 11aef3ba7f39f5e6069709031e3cdb94
+
+% 3 1 0 176c176a02168d76187fe48747cff13a
+
+% 0 1 0 0e98122967f320ad065c2370c39c9b71
+
+% 0 1 0 076db4ed83b2322d00d5ceac3ee39cfc
+
+% 0 1 0 185db11603769c830586a7fd79c373c2
+
+% 1 1 0 17fcc179ed92503019c6c650e58cafa4
+
+@ 0 3 0 00bff296fe9ef8df1172d2c44104a08f
++         类名和 id 名都是 `Name`，因此不是有效 CSS 标识符的名称在解析时被拒绝（`Css.Error.Reason.InvalidName`），`Css` 上的 `classes` 和 `ids` 返回的也是带类型的名称。
+
+% 0 1 0 1cf8a0429ccc56e413f1ddc109bddd26
+
+% 0 1 0 0afef677894ac0751b0157cf520abec2
+
+% 0 1 0 038f1466212e87a01d1927776a52dcc8
+
+@ 0 9 0 190779c347effb0f1fb451c3c82faab9
++     entry .showable   将每种选择器渲染为 CSS：`*`、`div`、id 或类选择器、`&`、`[a^=b i]`、`:is(…)`、`::before`
++         `An+B` 参数会被规范化：`1n` 渲染为 `n`，`-1n` 渲染为 `-n`，`a` 为零时只渲染 `b`。
++         属性值渲染时不带引号。
++   entry .Combinator   两个复合选择器之间的关系：后代、子、紧邻兄弟、后续兄弟或列
++       Selectors Level 4 中五种组合符的枚举：`Descendant`（空白）、`Child`（`>`）、`NextSibling`（`+`）、`SubsequentSibling`（`~`）和 `Column`（`||`）。
++       `Selector#rest` 将起始部分之后的每个复合选择器与一个组合符配对。
++       伴生对象中的 `showable` given 将每种组合符渲染为其符号，后代组合符渲染为一个空格。
++   entry .AttributeTest   属性选择器的右侧部分：匹配符、值和修饰符
+
+% 1 1 0 0d9e3135c8916f7d0d5bee9cc5933fca
+
+@ 0 21 0 105b5ea8dbe68482120e563285d7a2d5
++         `AttributeTest(matcher, value, modifier)` 是 `[href^="https" i]` 中的 `^="https" i`：`AttributeMatcher`、被比较的值（不带引号），以及可选的大小写敏感性修饰符 `i` 或 `s`。
++         没有测试的 `Simple.Attribute`，即 `[disabled]`，则保存 `Unset`。
++     entry #matcher   值的比较方式
++     entry #value   被比较的值，不带引号
++     entry #modifier   `i` 或 `s` 大小写修饰符，或 `Unset`
++   entry .AttributeMatcher   属性选择器比较其值的方式：`=`、`~=`、`|=`、`^=`、`$=` 或 `*=`
++       六种匹配符的枚举：`Exact`（`=`）、`Includes`（`~=`，以空白分隔的单词）、`DashMatch`（`|=`，该值或 `value-` 前缀）、`Prefix`（`^=`）、`Suffix`（`$=`）和 `Substring`（`*=`）。
++       `AttributeTest` 保存其中一种以及它所比较的值。
++   entry .Prefix   类型选择器、通用选择器或属性选择器的命名空间前缀
++       三种形式的枚举，它们含义不同，因而分别保留：`Any` 是 `*|`（任意命名空间），`Default` 是单独的 `|`（无命名空间），`Named(prefix)` 是已声明的命名空间，`svg|`。
++       完全没有前缀的选择器保存 `Unset`。
++   entry .PseudoArgument   函数式伪类的参数：选择器列表、`An+B` 或原始文本
++       三种形态的枚举。
++       `Selectors(list)` 是 `:is()`、`:where()`、`:not()` 和 `:has()` 中嵌套的 `SelectorList`，因此其内容本身也可以检视；`Nth(a, b, of)` 是 `:nth-child()` 及其同类中的 `An+B`，`odd` 规范化为 `2n+1`，`even` 规范化为 `2n`，可选的 `of` 选择器列表一并保留；`Raw(text)` 是其他任何函数的参数，如 `:lang(en)`，以文本形式保留。
+
+@ 0 1 0 1b64f832f7e578e0173277da10afaac5
++ entry .PropertyDef   来自 MDN 数据集的 CSS 属性定义：其名称和值语法
+
+% 1 1 0 168da26e540bb2fc17e643fc2cd3752a
+
+@ 0 5 0 140024ca9d024f921154cd81ea8cbe16
++       每个已知的 CSS 属性——六百多个，来自 MDN 的 `css/properties.json` 数据集（CC0），在构建时编译进库中——都是一个 `PropertyDef`，由其 `#name` 和 `#syntax`（原始的值定义语法字符串）组成，`#grammar` 按需将后者解析为 `Css.Syntax`。
++       `PropertyDef.of(name)` 查找一个属性；`.all` 是整张表，`.list` 是按数据集顺序排列的同一张表。
+
+% 2 1 0 08228765f7fcff641cb080b3410a684f
+
+% 3 1 0 1be8dd8431da57420aed9abca240056d
+
+% 4 1 0 12447d1c72aa6b740944f26eb6aca354
+
+% 5 1 0 133cb7a9aa4089f203a5829ce2dd8ffa
+
+% 0 1 0 0b0f81b16134aa9802f93a7bb8f5522c
+
+% 0 1 0 04adf092583363041da1b928e564d9e9
+
+% 0 1 0 031e0eda6d5ceb1509fe20e2154bfa02
+
+% 0 1 0 1042dfed1de4110019d80f925d1c6c41
+
+% 0 1 0 1f431b651d42916502c2a6c263cf0dd1
+
+% 1 1 0 13887cd5746beb7e0f455ca803f15741
+
+@ 0 2 0 13d4c41cee9c4f7a1cd571bf767e3a22
++       自定义属性（`--name`）无需定义即有效，由调用者负责：`of` 对它们返回 `Unset`。
+
+% 0 1 0 1a8a14ab85f11d760e2380a68041b00a
+
+% 0 1 0 091130df2e046a020e378b26cae4a4a5
+
+@ 0 6 0 1997c8251ae9322416b5e8df2d6cc4f5
++   entry .list   每个已知属性，按数据集顺序
++   entry .all   每个已知属性，在 `Dictionary` 中按名称索引
++   entry .of   具名属性的定义，若不是可识别的属性则为 `Unset`
++   entry #name   属性的名称，kebab-case 形式
++   entry #syntax   数据集所写的值语法，`<length> | auto`
++   entry #grammar   解析为 `Css.Syntax` 的值语法，首次使用时计算
+
+@ 0 4 0 09bc6d42674c3d0b1852b063883b99be
++ entry .ValueToken   属性值的一个词法单元：标识符、数字、维度、字符串、函数……
++     属性值在匹配之前被拆分成的单位，遵循 CSS Syntax Module Level 3 的词法分析器对值中出现的词法单元的处理。
++     `Css.Syntax.Matcher` 消耗它们；把它们公开是为了让工具可以检视值的词法形态。
++     各分支如下：
+
+% 0 1 0 1b6bea430224b167173b77cbfa415e01
+
+@ 0 11 0 1883b0c626334de7150f127668e3c2c2
++     column  分支
++     column  词法单元
++     row  `Whitespace`  空白
++     row  `Ident(value)`  标识符：`auto`、`solid` 或 `--my-var`
++     row  `Function(name)`  后面紧跟 `(` 的标识符
++     row  `Hash(value)`  `#ff0000`，保存 `ff0000`
++     row  `Quoted(value)`  字符串的内容，不带引号
++     row  `Url(value)`  不带引号的 `url(…)`
++     row  `Number(value, integer, raw)`  数字
++     row  `Percentage(value, raw)`  百分比
++     row  `Dimension(value, unit, raw)`  带单位的数字：`10px`
+
+% 0 1 0 10feff17d8b2e8ce125cbb444ce19797
+
+@ 0 2 0 06d96a51dbc549c81ccc5f5ff9bbaec7
++     row  `Open`, `Close`  `(` 和 `)`
++     row  `Delim(char)`  任何其他单个字符，如 `/` 或 `+`
+
+% 1 1 0 0ee300beb0cd6cc91b2d4f9583171ec4
+
+@ 0 9 0 0fe4cf025239e85802df3840168328c7
++ entry .Px   一个 CSS 像素，`Quantity[Pixels[1]]`：长度写作 `4.0*Px`
++     数字与之相乘即得到以像素为单位的长度的单位值，通过 `Css.Convertible.pixels` 渲染为 `4px`。
++     `Px` 是一个新的维度，与其他任何维度都没有比例关系，因此 `2.0*Px + 3.0*Cm` 和 `(1.0*Px).convert[Metres]` 无法编译：像素的物理尺寸由浏览器决定。
++     每个相对单位和视口单位（`Rem`、`Ex`、`Ch`、`Vw`、`Vh`、`Vmin`、`Vmax`、`Pct`）、角度单位（`Deg`、`Rad`、`Turn`）和网格弹性单位（`Fr`）也是如此；物理单位 `Cm`、`Mm`、`Pt`、`Pc` 以及 quantitative 自己的 `Inch` 和 `Metre` 共享 `Distance` 维度，照常相互换算，`S` 和 `Ms` 则是 quantitative 的秒。
+
+% 2 1 0 093c1b33b2e7dc3802cc6979782a60af
+
+% 3 1 0 05d0e9e444e6e77d193e71c34770e0f4
+
+% 1 1 0 10a8cb6a043cf5a2049209bb9d26b579
+
+% 0 1 0 1e640e86d47efbfe003fbf990f7947c3
+
+% 0 1 0 166b78631fb5e7c61211243523a9d42f
+
+% 1 1 0 0adb8906cb3d351b0f4b0c829083b6c8
+
+@ 0 26 0 1f8194715cce01571b59a4bf043f8189
++ entry .Rem   一个根元素字号，`Quantity[Rems[1]]`：`2.0*Rem` 渲染为 `2rem`
++ entry .Ex   元素字体的一个 x 高度，`Quantity[Exs[1]]`：渲染为 `ex`
++ entry .Ch   元素字体中 `0` 的一个步进宽度，`Quantity[Chs[1]]`：渲染为 `ch`
++ entry .Vw   视口宽度的百分之一，`Quantity[ViewportWidths[1]]`：渲染为 `vw`
++ entry .Vh   视口高度的百分之一，`Quantity[ViewportHeights[1]]`：渲染为 `vh`
++ entry .Vmin   视口较短边的百分之一，`Quantity[ViewportMins[1]]`：渲染为 `vmin`
++ entry .Vmax   视口较长边的百分之一，`Quantity[ViewportMaxes[1]]`：渲染为 `vmax`
++ entry .Cm   一厘米，作为 quantitative 的 `Metres`：`3.0*Cm` 渲染为 `30mm`
++     只是 `Metres` 的一个便利量级，而不是新类型：`3.0*Cm == 0.03*Metre`，每个物理长度都通过 `Css.Convertible.metres` 以毫米渲染。
++ entry .Mm   一毫米，作为 quantitative 的 `Metres`：`10.0*Mm` 渲染为 `10mm`
++ entry .Pt   一个印刷点，`Quantity[Points[1]]`：渲染为 `pt`
++     即 quantitative 的 `Points`，因此可以与英寸、派卡和米相互换算。
++ entry .Pc   一派卡，`Quantity[Picas[1]]`：渲染为 `pc`
++ entry .Pct   百分之一，`Quantity[Percents[1]]`：`50.0*Pct` 渲染为 `50%`
++     一个新的维度，而不是数字：百分比不能与长度或 `Double` 相加，`Css.Convertible.percents` 以主题 `"percentage"` 渲染它。
++ entry .S   一秒，作为 quantitative 的 `Seconds`：`1.5*S` 渲染为 `1500ms`
++     无论以什么量级书写，时间都以毫秒渲染。
++ entry .Ms   一毫秒，作为 quantitative 的 `Seconds`：`200.0*Ms` 渲染为 `200ms`
++ entry .Deg   一度，`Quantity[Degrees[1]]`：`90.0*Deg` 渲染为 `90deg`
++     角度是新的、彼此不可换算的维度：`1.0*Deg + 1.0*Rad` 无法编译。
++ entry .Rad   一弧度，`Quantity[Radians[1]]`：渲染为 `rad`
++ entry .Turn   一整圈，`Quantity[Turns[1]]`：`0.5*Turn` 渲染为 `0.5turn`
++ entry .Fr   网格轨道可用空间的一份，`Quantity[Flexes[1]]`：`2.0*Fr` 渲染为 `2fr`
+
+@ 0 15 0 0d63ba7de70b50eb15e73bb293def779
++ entry .Pixels   CSS 像素的单位 `Pixels[1]`，基于 `CssPixel` 量纲
++     `Px` 的单位类型；`Quantity[Pixels[1]]` 是以像素计的长度。
++     与每个 quantitative 单位类型一样，`Power` 类型参数是指数。
++ entry .Rems   根元素字号的单位，基于 `CssRootFontSize`
++ entry .Exs   x 高度的单位，基于 `CssXHeight`
++ entry .Chs   字符步进的单位，基于 `CssCharacterWidth`
++ entry .ViewportWidths   视口宽度百分比的单位，基于 `CssViewportWidth`
++ entry .ViewportHeights   视口高度百分比的单位，基于 `CssViewportHeight`
++ entry .ViewportMins   视口最小边百分比的单位，基于 `CssViewportMin`
++ entry .ViewportMaxes   视口最大边百分比的单位，基于 `CssViewportMax`
++ entry .Percents   百分比的单位，基于 `CssRatio`
++ entry .Degrees   角度（度）的单位，基于 `CssDegree`
++ entry .Radians   弧度的单位，基于 `CssRadian`
++ entry .Turns   圈数的单位，基于 `CssTurn`
++ entry .Flexes   网格弹性系数的单位，基于 `CssFlex`
+
+@ 0 19 0 0c85157476b97a791fa10506149669e9
++ entry .CssPixel   CSS 像素的量纲，与任何其他量纲都没有比例关系
++     这是一个自成一体的封闭量纲，因此像素长度既不能与任何物理长度或相对长度相加，也不能转换成它们。
++     每一个 CSS 专有量纲——`CssPixel`、`CssRootFontSize`、`CssXHeight`、`CssCharacterWidth`、`CssViewportWidth`、`CssViewportHeight`、`CssViewportMin`、`CssViewportMax`、`CssRatio`、`CssDegree`、`CssRadian`、`CssTurn` 和 `CssFlex`——都被有意设计为不可转换，因为它的物理大小由浏览器、字体或视口决定，而不是由样式表决定。
++ entry .CssRootFontSize   `rem` 长度的量纲，不可转换
++ entry .CssXHeight   `ex` 长度的量纲，不可转换
++ entry .CssCharacterWidth   `ch` 长度的量纲，不可转换
++ entry .CssViewportWidth   `vw` 长度的量纲，不可转换
++ entry .CssViewportHeight   `vh` 长度的量纲，不可转换
++ entry .CssViewportMin   `vmin` 长度的量纲，不可转换
++ entry .CssViewportMax   `vmax` 长度的量纲，不可转换
++ entry .CssRatio   百分比的量纲，不可转换为普通数字
++ entry .CssDegree   以度表示的角度的量纲，不可转换为弧度或圈数
++ entry .CssRadian   以弧度表示的角度的量纲，不可转换
++ entry .CssTurn   以圈表示的角度的量纲，不可转换
++ entry .CssFlex   网格弹性系数的量纲，不可转换
+
+@ 0 1 0 0eb0db0b7aa8f81913033a3ec608564c
++ entry .internal   `css"…"` 和 `Css.Style(…)` 背后的宏实现
+
+% 0 1 0 1c18810b564d59e609a88422cf8dd919
+
+% 1 1 0 0f71597c1b0bc6cb112bae74ffdfb433
+
+@ 0 15 0 018f5c2ca1a16d630bf2e3d76306c20b
++       不供直接使用：这个对象的存在是为了给宏一个稳定的归属。
++   entry .expand   `css"…"` 背后的宏：在展开时解析字面量，并将其重建为 `Css` 或 `Css.Style`
++       它在每个替换处用一个哨兵值连接字面量各部分，在编译时解析并验证整体（错误在其所在的行和列报告），然后把节点作为表达式拼接回去：单独由一个替换构成的声明值变成类型化的值，并通过 `propertyIssue` 对照属性检查；选择器中的替换必须是 `Name[CssClass]` 或 `Name[DomId]`。
++   entry .style   `Css.Style(property = value, …)` 背后的宏
++       它把每个字面量名称从驼峰形式还原为对应的属性，召唤值的 `Css.Convertible`，检查该属性接受这个可转换实例的主题，并生成 `Css.Style.of`。
++   entry .topicOf   `Css.Convertible` 实例的类型所携带的值定义主题，或为空
++   entry .propertyIssue   若属性接受某主题的值则为 `Unset`；否则为说明原因的消息
++       原因可能是未知属性，或是该主题的一个样例（`"length"` 为 `1px`，`"color"` 为 `#000000`，……）被属性的语法拒绝。
++       主题 `"*"` 对每个已知属性都被接受，没有样例的主题则不检查。
+
+@ 0 1 0 0d8fc098bc89a68c12f621c1e765daf6
++ entry .Web   作为排版媒介的 Web：浏览器如何获取字体族，以及通用字体族
+
+% 1 1 0 1e786ab39f5f92ac14d2893d600b0b9e
+
+@ 0 11 0 0fb32b7cf68e852e1896cb520cb7dd68
++       `Web` 是一个 phoenicia `Medium`：由浏览器根据 CSS 排版文本的媒介，在其中，如果页面为某个字体族携带了 `@font-face`，导入了携带它的样式表，或者指定了一个通用字体族，该字体族就可用。
++       字体族通过一个 given `(Typeface of "Inter") is Typesettable in Web` 为 Web 供给，它通过伴生对象的某个工厂方法声明一次——`.linked` 用于某个 URL 上的字体文件，`.imported` 用于字体服务的样式表，`.local` 用于读者已安装的字体——或者通过 phoenicia 的 `Typesettable.embedded` 以 `in Medium` 形式声明，用于页面中携带的文件。
++       六个 CSS 通用字体族（`.sansSerif`、`.serif`、`.monospace`、`.cursive`、`.fantasy`、`.systemUi`）已在此处提供，位于该媒介的伴生对象中，而它处在 `(Typeface of "sans-serif") is Typesettable in Web` 的隐式作用域内，因此它们既不需要声明，也不需要导入。
+
+@ 0 6 0 087d7304d880a6b30aaa9622c79fb182
++       `Font in Web` 是一个字样与作用域中为其字体族提供的供给配对的结果，用 `.font`（或 phoenicia 的 `Font.of[Web](face)`）创建；作用域中没有供给的字体族不能成为 Web 字体，而供给的覆盖范围无法排版的字样——例如来自一个声明为仅正体的文件的斜体——在配对时是一个 `Font.Error`。
++       随后，该字体的 at 规则是 `Css.fontFace(font)`，选择该字样的声明是 `font.style`。
+
+% 2 1 0 16bc24922b7cc0f005c86c389635d88d
+
+% 1 1 0 08d9458eb73012351c93056f35e51984
+
+@ 0 1 0 039d619bf9240d3317a4d926c3b5dee6
++         label 一个字体族，作为链接的字体文件为 Web 供给
+
+% 1 1 0 1995340f1fff09f81fbf3514ac0df656
+
+% 2 1 0 18be736f26df1e29079366bc1698fdeb
+
+% 3 1 0 047bf1a07b90d9e709c96c43f7f99607
+
+% 4 1 0 1dbb3ce86cbf5f511bb85d13204e4fbd
+
+% 6 1 0 1ffc32543e9ca51619e5c9ce0a99442c
+
+% 8 1 0 1977fb8e34ca09fa0f0af18da4d2f67d
+
+% 9 1 0 157f79cecc41af3a11430552e97a9333
+
+% 10 1 0 0db124faba3331f30aa0139e59c16009
+
+% 11 1 0 1625278c475ce34a128a8d258c56ad14
+
+% 1 1 0 0ecc045748105a4c00cb4e652d8d9403
+
+@ 0 1 0 01f2937430ea5de6122c05929733c097
++         label 与其供给配对的字样：一个 Web 字体
+
+% 1 1 0 0fa4888c8c1c8c301e3292149a24ca6c
+
+% 2 1 0 07b49417258f2fa7183db4a09381f115
+
+% 3 1 0 0355c22de0cf18721a24bf1d223f1e6f
+
+% 4 1 0 1b59359efbf26fac1c0bb1e489521051
+
+% 6 1 0 06c45e63c9b7820a098dfe4af956abc1
+
+% 8 1 0 173b3a13d38358491442423d6d08fa2a
+
+% 9 1 0 18bf8daf183e86cd061cc4f57504200c
+
+% 10 1 0 015aa60f87df5ea70d8522ae0190fd95
+
+% 11 1 0 1dda46fc4d1c61fc19f884a5ed186f72
+
+% 13 1 0 0bf7be817b9596d104d845e8fcbd5390
+
+% 1 1 0 0731751560ffa31918ec5113b4618166
+
+@ 0 1 0 1397335d7b61f07c0620ec6dc1c10af3
++         label 页面所需的 at 规则，以及选择该字样的声明
+
+% 1 1 0 04467541121d1c89179d54fdd6c2537e
+
+% 2 1 0 188160e468f0979f087e18b5f0cda13f
+
+% 3 1 0 1bbb659c27e3f47f09d61c8f645dbdc3
+
+% 4 1 0 0187659025b78a9009da50a373681598
+
+% 6 1 0 051918f4673063bd09902bb122c748bc
+
+% 8 1 0 08ebe3b5686e762905aecbb6ad3d4de3
+
+% 9 1 0 05cb61d350201bcf15ab67252afb5cba
+
+% 10 1 0 15400704a34161b20adbdef9530a6e11
+
+% 11 1 0 06fae3bb85c9bd24006f7e90c05965d7
+
+% 13 1 0 07b7d6ddd19ca3100c0eef39d6e59400
+
+% 0 1 0 0297529c3ba49bdd01f4e0aff5ee6416
+
+% 0 1 0 1d9867411d8fd2431c5a974d35111095
+
+% 0 1 0 071d5e8ae2bc98d80e1451ec1577285c
+
+% 0 1 0 126cf11fdc25fa7e102948834a335567
+
+% 1 1 0 0980e04a570ab26b1543f93d0127ee06
+
+% 2 1 0 0b4d6e5713a968c51daa7b54de22e564
+
+@ 0 6 0 049bb7a47a646cb60f770042f48e549f
++       具名 given 的类型按受限的 given 类型语法解析，其中中缀操作数不能是字面量类型，因此字体族要加上括号：`given inter: (Typeface of "Inter") is Typesettable in Web = …`。
++       浏览器以外的渲染器——SVG 的 `<style>`、PDF——也能使用的供给，要求的是 `Typesettable in (? >: Web)`，`Web` 供给和嵌入式 `Medium` 供给都满足它。
+
+% 1 1 0 0cce7d9b4eae472b004d432706a25e12
+
+% 0 1 0 05c8cabf634f0b23118d27e69a40cb1b
+
+% 0 1 0 01f127d5f0a0c64c1bdaa3ac9b67c0fd
+
+@ 0 1 0 1cd8e0a12386afb5193d73e99a82a0ba
++   entry .Provision   作为值的 Web 供给：它的来源和声明的覆盖范围
+
+% 1 1 0 0804590f42bc84a60d88d1a12029584a
+
+@ 0 32 0 0df8b63a566a8b3119c030156e5b52d0
++         这是 `Web` 中每个工厂方法返回的类，使供给有一个稳定的类型：`Web.Provision[family](sources, coverage)` 是一个 `(Typeface of family) is Typesettable in Web`，其 `#sources` 是浏览器获取该字体族所用的 `Typesettable.Source`，其 `#coverage` 是声明它时使用的 `Coverage`。
++         `FontFace.rules` 一次渲染一个来源。
++     entry #sources   浏览器获取字体族的地方：链接、导入、本地或通用
++     entry #coverage   声明该供给所提供的字重、倾斜、字宽和轴
++     entry #Self   所供给的字体族，`Typeface of family`
++     entry #Form   媒介，`Web`
++   entry .sansSerif   通用 `sans-serif` 字体族，在 Web 上无需声明即已供给
++       浏览器用它手头已有的字体排版每个通用字体族，因此该供给只有一个 `Generic` 来源和 `Coverage.Unknown`，后者接纳每一个字样；它不渲染任何 at 规则，并渲染不带引号的 `font-family: sans-serif`。
++   entry .serif   通用 `serif` 字体族，无需声明即已供给
++   entry .monospace   通用 `monospace` 字体族，无需声明即已供给
++   entry .cursive   通用 `cursive` 字体族，无需声明即已供给
++   entry .fantasy   通用 `fantasy` 字体族，无需声明即已供给
++   entry .systemUi   通用 `system-ui` 字体族，无需声明即已供给
++   entry .linked   来自浏览器从某个 URL 获取的字体文件的供给
++       `Web.linked[family](url, coverage, format)` 接受任何 `Abstractable across Urls to Text` 的 URL 类型（来自 `url"…"` 的 `HttpUrl`，或文本）、该文件声明具有的 `Coverage`——由于文件不在手边、无法读取，只接纳所声明的内容，因此声明为单一字重的字体会拒绝对另一字重的请求，而不是让浏览器合成它——以及一个可选的 `Typesettable.Source.Format`（`Ttf`、`Otf`、`Woff` 或 `Woff2`），用作 `format()` 提示。
++       `family` 类型参数通常从 given 声明的类型推断。
++       它渲染为一个 `@font-face`，其 `src` 为 `url("…") format("woff2")`。
++   entry .local   来自预期读者已安装的字体的供给
++       `Web.local[family](coverage)` 在 `src: local("Name")` 中指定字体族，字体族的名称就是 `family` 字面量。
++       没有任何东西保证读者拥有它，因此这是最弱的供给，其覆盖范围——除非给出，否则为接纳每个字样的 `Coverage.Unknown`——只说明所声明的内容。
+
+% 2 1 0 17fa1e0d38e4ddd41e39a95e0ff9fa68
+
+% 3 1 0 05934999dfd98b76111a09540f8a0931
+
+% 4 1 0 18149310ec53a6091b035bd6b83a1882
+
+% 1 1 0 153d7515339ef8d803587bc9d8f544fb
+
+% 0 1 0 0237c1b9d179fa560ecd81c7a9693b5b
+
+% 0 1 0 067b11d41706a4ac09dcffb2362d13dc
+
+% 0 1 0 1701a766acd79f470d91d1ad6c758cd2
+
+% 1 1 0 1cda5002adab070315a8a7ac1c1e3406
+
+@ 0 17 0 0af2834f533cc9ac17f4dca9726d089d
++   entry .imported   来自样式表（例如字体服务的样式表）的供给，该样式表自己声明字体族
++       `Web.imported[family](url, coverage)` 接受样式表的 URL（任何 `Abstractable across Urls to Text` 类型）以及声明它所提供的覆盖范围；随后页面携带 `@import url("…");`，`Css.fontFaces` 按 CSS 的要求把它放在所有其他规则之前。
++   entry .sansSerifFont   作为 `Font in Web` 的通用无衬线字体：一个不会失败的默认值
++       `Typeface.SansSerif.face` 与 `.sansSerif` 配对；由于通用字体族接纳每一个字样，这种配对从不抛出错误，并且它的 `Css.fontFace` 为空。
++   entry .font   与作用域中其供给配对的字样，作为 `Font in Web`
++       `Web.font(face)` 需要为该字样的字体族提供一个 `(Typeface of family) is Typesettable in (? >: Web)` given——Web 供给或嵌入式供给——以及一个 `Tactic[Font.Error]`，当供给的覆盖范围无法排版该字样时抛出。
++       作用域中没有供给的字体族是编译错误。
++       字样是内联参数，因此类型中带有请求的字样（`inter.bold.italic`）以及字体文件位于类路径上的供给会在代码编译时检查，同样的拒绝以编译错误报告。
++       在预期类型已经指明媒介的地方，phoenicia 的 `Font(face)` 就足够了。
+
+@ 0 1 0 08d3dfe7bfd653e605c6d296d61bc44d
++ entry .FontFace   字体的供给所需的 `@font-face` 和 `@import` 规则，作为 `Css.Node`
+
+% 1 1 0 1f162ba3e7666dfc022fc109fb868377
+
+@ 0 10 0 13fd315eddaca39119cbd5222a736de5
++       把供给的来源渲染为 at 规则：嵌入的字体成为一个 `@font-face`，其 `src` 是 base-64 `data:` URI（`Opentype` 用 `font/otf` 加 `format("opentype")`，其他情况用 `font/ttf` 加 `format("truetype")`），因此样式表——或携带它的 SVG——是自包含的；链接的字体成为带有其 URL 和格式提示的 `@font-face`；本地字体成为带有 `src: local("Name")` 的 `@font-face`；导入的样式表成为 `@import url("…");`；通用字体族则什么也不生成。
++       每个 `@font-face` 都携带 `font-weight`（单一字重或 `100 900` 范围），并在覆盖范围的字样与默认值不同时携带 `font-style` 和 `font-stretch`，涵盖覆盖范围的每个条目，使浏览器的字样匹配能找到文件所拥有的内容。
++       `Css.fontFace` 和 `Css.fontFaces` 是常用的接口。
+
+% 1 1 0 08b5a34a8feb295b1322853ac9330934
+
+% 0 1 0 096695ba1e0fa8e9087b1f0cf918cf86
+
+@ 0 4 0 0065336cfd1875bb06e06eeefa42254a
++   entry .rules   一个字体的字体族所需的 at 规则，作为节点
++   entry .stylesheet   多个字体的规则组成的样式表，每个字体族一次，`@import` 在前
++       接受一个字体的 `List`；出现多次的字体族只生成一次规则，并且每个 `@import` 都按 CSS 的要求移到 `@font-face` 之前。
+
+@ 0 6 0 015833c1cfe2ecf00ea9c6abf042c712
++ entry .fontFace   `Css.fontFace(font)`：页面为某个字体的字体族所需的 at 规则，作为 `Css`
++     `Css` 伴生对象上的扩展方法，位于 `cataclysm.fonts` 中，接受一个 `Font in (? >: Web)`——Web 字体，或供给为嵌入式 `Medium` 供给的字体——并返回其 `FontFace.rules` 构成的样式表。
++     它用 `+` 与样式表自身的规则连接，使页面携带其样式所指定的字体；通用字体族给出空样式表。
+
+% 2 1 0 15753ac2e28c248b1d6fa5befee68a03
+
+% 3 1 0 07ee49716cd297f90168077063bdc354
+
+% 4 1 0 1aa65ece10f7b8f40b850adfe7a6421b
+
+% 5 1 0 16515ab8aa2d6d5312d126545046e705
+
+% 7 1 0 0d543fd2827577b81daf3cc749249273
+
+% 0 1 0 1c40f0e944b40b261a3e7dc0c451c068
+
+% 0 1 0 08d49ac6a1beb64c1ac3ebad0a7323fe
+
+% 1 1 0 16d5aa23739a1ada034b47d622d2dace
+
+@ 0 2 0 1ee968e57ec15d4314e023973273fe4b
++     选择该字样的声明 `code.style` 是用于元素 `style` 属性的 `Css.Style`，而不是样式表中的规则。
+
+@ 0 3 0 04bce3f5840a790b022f7d8599367b9b
++ entry .fontFaces   `Css.fontFaces(fonts*)`：多个字体的规则，每个字体族一次，`@import` 在前
++     `Css` 伴生对象上的扩展方法，位于 `cataclysm.fonts` 中：对给定字体应用 `FontFace.stylesheet`，因此使用同一字体族两个字样的页面只声明它一次。
+
+% 2 1 0 12b4a252b089cdbe0805988b85b7e416
+
+% 3 1 0 1fb94814b932b59f14e3686d1c43ab3b
+
+% 4 1 0 0a10d441308edba70908f3e05a92474c
+
+% 5 1 0 03b8f0098032cfd81c29e441dda19245
+
+% 7 1 0 0c7227874adbdec1177a9d82c5e3b987
+
+% 0 1 0 00bc4a044a70b8f202c55cb40547a199
+
+% 0 1 0 05aff051718afb251de9ed7b47f45728
+
+% 0 1 0 16787f619320e2120cf6f76bf891c974
+
+% 1 1 0 03f1401c4d689e5618b5e5a5274b37d7
+
+@ 0 8 0 0dbab9f85273927a11e33654309e66e5
++ entry .style   选择 phoenicia `Face` 或 `Font` 的声明，作为 `Css.Style`
++     `Face` 上的扩展方法，也是 `Font` 上的（通过其字样），位于 `cataclysm.fonts` 中。
++     该样式总是带有 `font-family`——通用字体族不加引号，其他名称加引号——和 `font-weight`，并且只添加与默认值不同的部分：倾斜用 `font-style: italic` 或 `oblique 12deg`，字宽用 `font-stretch`，字体自身轴上的位置用 `font-variation-settings`，启用或禁用的布局特性用 `font-feature-settings`。
++     已注册的字重、字宽和斜体轴通过高层属性表达，因此静态字体和可变字体以同样的方式请求。
+
+% 2 1 0 193ad132b5473c5c06f812c2ad9186d5
+
+% 3 1 0 07596f66d01a0e5b0df5155fb6a3271c
+
+% 0 1 0 16f500912f13cb8f08eeb14977aa4460
+
+% 0 1 0 1e44ca007687b9671aefa04f736f3da2
+
+% 0 1 0 042d1a899d76748c0c2a8b2c1da6b429
+
+% 0 1 0 03fbeec2d686fcf31918aace7b3d14c8
+
+% 0 1 0 043a7e5e16719ee5046db5fab897f4f9
+
+% 0 1 0 18a3778012bf373c0d70cf7630056eea
+
+% 0 1 0 1043c88bf7f1c7f2122ea4b60b01e2db
+
+% 1 1 0 07b70998d9bf3f740b631702894a02c3
+
+@ 0 2 0 12c2cafaf89d767d0d4d2b85136dbe3c
++     结果是一个 `Css.Style`，因此它可以用 `+` 与另一个样式连接，并通过 `inlineStyle` 用作 honeycomb 的 `style` 属性。
+
+@ 0 1 0 1a33ef216a9d69a619861d2629ddebbd
++ entry .Styles   类路径上的样式表，经绑定后 HTML 的类名和 id 名会根据它进行检查
+
+% 1 1 0 125b6f372b7160ae10dd3b5ad31ee1a7
+
+@ 0 7 0 10e41b582ecd1cdd0caf96b941366f04
++       `Styles` 是一个标记，以 `Locus` 类型携带样式表的类路径路径：`Styles(cp"/site.css")` 是一个 `Styles at "/site.css"`。
++       将它作为 given 引入作用域，并导入 `cssBindings.checkedBinding`，就会让每个 honeycomb 归属 `Tag.name(…)` 在代码编译时根据样式表的 `classes` 和 `ids` 解析 `name`：类名附加 `class="name"`，id 附加 `id="name"`，样式表未提及的名称是编译错误，既是类又是 id 的名称也是编译错误，因此模板中拼错的类名无法到达浏览器。
+
+% 2 1 0 163c4900ecd0f6280499182757ac5fd6
+
+% 3 1 0 1c350d87f0c5287809ba383ce3f69d7c
+
+% 4 1 0 0fb2ce39cb59faa807bb88be92800e4f
+
+% 5 1 0 18c395cda1ce026a0e5f83c9dd5cff58
+
+% 6 1 0 12246ba9326e5c8e08e866b54053e74b
+
+% 8 1 0 0f9f826b5f5b7384070cff8cc4789e58
+
+% 9 1 0 0f956bfbee8acbef037ddba7b36f42be
+
+% 0 1 0 097d654e069ae4d913ecd2a3c2390ff3
+
+% 0 1 0 0dbe63b6552631ff131854da9bd9989f
+
+% 1 1 0 1f81570e6157d4c2089d875a6773ce69
+
+@ 0 5 0 08bf2d2915743c5000e98ac3fc84de24
++       资源在宏展开时被读取并解析（每个路径一次），因此样式表必须位于编译器的类路径上，并且具名 given 的类型要加上括号，因为带字面量的 given 类型必须如此。
++       无法读取或解析的样式表是一个指明该路径的编译错误。
++       只有 `cataclysm.html` 具备此功能；它依赖于 hellenism 和 honeycomb。
+
+% 0 1 0 1791425329c23fdc127add256328e171
+
+% 0 1 0 0ac410be3847382f1121e42b35ca4a89
+
+% 0 1 0 1e1b26233a2737e40298d059ecf4b437
+
+@ 0 4 0 0c9268bf6f5b1a7f0e0e39184548f954
++   entry .apply   `Styles(cp"/path.css")`：一个以资源路径为 `Locus` 的标记
++       这是一个宏，把 `cp"…"` 资源的 `Locus` 提升到结果类型中，因此 `Styles(cp"/site.css")` 的类型是 `Styles at "/site.css"`；没有 `Locus` 的资源是编译错误。
+
+@ 0 7 0 182401e38076570818326c3bc02f0f19
++ entry .attributeFor   某个名称在作用域中的 `Styles` 样式表里所表示的属性，`class` 或 `id`
++     `attributeFor["button"]` 根据作用域中的 `Styles` 样式表所声明的内容展开为 `t"class"` 或 `t"id"`，如果该名称两者都不是（_cataclysm: `name` is not a class or id in the stylesheet_）、两者都是（_… is both a class and an id in the stylesheet; rename one_），或者作用域中没有 `Styles` given（_cataclysm: no stylesheet is in scope; add a `given Styles at "/path"`_），则编译失败。
++     名称必须是字符串字面量。
++     `cssBindings.checkedBinding` 构建在它之上。
+
+@ 0 6 0 1ca501dcb030435e10f5c76272a8ccf4
++ entry .inlineStyle   让 `Css.Style` 成为 honeycomb `style` 属性的值
++     即 given `Css.Style is Attributive to Whatwg.Css`，位于 `cataclysm.html` 中，因此 `Div(style = Css.Style(color = red, width = 4.0*Px))` 渲染为 `style="color: #ff0000; width: 4px"`。
++     它是一个顶层 given，具有唯一的名称，只有按名称导入（`import soundness.inlineStyle`）或通过 `import cataclysm.inlineStyle` 导入时，才会随 `import soundness.*` 进入作用域。
+
+@ 0 1 0 0e4b54c2261fb56f0ef0aeaa949e2ca7
++ entry .cssBindings   HTML 中经过检查的类名和 id 名，一个按名称导入的 given
+
+% 1 1 0 1120a0daa08471f51dece44cd49f937f
+
+@ 0 3 0 14d34b3ea7bfd2660a9c1c4973fa0a3f
++       存放 `checkedBinding` 的包，它把 honeycomb 的 `Tag.name(…)` 归属变成根据作用域中的 `Styles` 样式表检查的名称。
++       它在声明 `Styles` given 之后按名称导入：
+
+% 2 1 0 0b05d33ce07b7c6e0b7b36b787c4c7f6
+
+% 3 1 0 01be99e34347bb44159644b595ab3847
+
+% 4 1 0 0b8b2cbb05975afc144256e013793974
+
+% 5 1 0 02e52007ecc784e50682cd33f9d02526
+
+% 6 1 0 124f8aed1f6240d5179d2c40a56a6894
+
+% 8 1 0 17571c125a70863d11183d65ae99ef9b
+
+% 9 1 0 0876acc0da80c5781346c0a2890ed8e2
+
+% 1 1 0 1b3ce83a7a540f331beeaac54a9c71cf
+
+@ 0 6 0 03cdf203582e356a11e3493b2a6d597c
++   entry .checkedBinding   让 `Tag.name(…)` 按作用域中样式表的规定附加 `class="name"` 或 `id="name"`
++       这是一个内联 given `Attribution of name`，适用于除 `apply` 之外的每个字面量名称，它通过 `attributeFor` 展开为正确的属性，或者对于作用域中的 `Styles` 样式表未声明的名称展开为编译错误。
++       与之对应的未检查版本是 honeycomb 的 `stylesheets.uncheckedClasses`，它为任何名称附加 `class="name"`；两者是互斥的选择，各自按名称导入，不能同时使用。

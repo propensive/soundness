@@ -1,0 +1,35 @@
+orthant 2 language
+
+@ 0 1 0 0edd19ffc2682e4206239fa0e323a55a
++ # `↯/s.87.4` — 缺少 `Parametric` 值
+
+@ 0 3 0 1334f017606d72de0ddd50f1e4bbe5c2
++ 当推断出的键类型没有可用的上下文 `Parametric` 实例时，由 Legerdemain 的 `query` 宏在编译时抛出。
+
+@ 0 1 0 1d8ed6a2d2412a231ea0d46e12dff5b7
++ ## 原因
+
+@ 0 2 0 0fdc3f40d7b5abdb108ff296bcd942d4
++ 该宏需要一个 `Parametric` 类型类实例，才能把键编码进查询字符串。
++ 如果作用域中没有这样的实例，宏就会终止。
+
+@ 0 1 0 1dde240f21b5409104721a1bcf5ec317
++ ## 示例消息
+
+% 1 1 0 1abf28c8819c4a100ba2af9cc74b39c0
+
+% 0 1 0 02b725d31caa0ffb06096ca0b9201dd3
+
+% 1 1 0 05b7d32fbe653e31199ba3aae35ddb0f
+
+@ 0 1 0 0a3dc9137d3cf72f0228e7373e7a2cbf
++ ## 解决方法
+
+@ 0 2 0 0c0dc62c2ae50a5009324cb0d31583d2
++ 将一个合适的 `given Parametric` 引入作用域，或把键类型改为具有 `Parametric` 实例的类型。
+
+@ 0 1 0 004f241cb4a4ed0405cb108ee75b2611
++ ## 另请参阅
+
+@ 0 1 0 0a4fea4398cc22eb06d923a346595883
++ - 源代码：`lib/legerdemain/src/query/legerdemain.internal.scala`

@@ -1,0 +1,2310 @@
+orthant 2 language
+
+% 0 1 0 0f04ec4b9ac2d4270a232409219e1f6b
+
+% 0 1 0 19d04e78f026516a15e11da4741944e7
+
+% 0 1 0 0b5938ce7315323607e1922cbc4d93e2
+
+@ 0 1 0 1f981af7af0a61fb1a37e844dc0e04e2
++ info   定宽整数、位模式、浮点数、有理数和十进制数，以及可选择启用的检查算术
+
+% 0 1 0 0ca6d61ddd9511ea1cdae38f1414f6fe
+
+@ 0 2 0 1a1bfe91c626d6b818f07a68244da6dd
++     _Hypotenuse_ 用一组规整的类型取代 JVM 杂乱的数值类型，每个类型都在名称中说明自己有多宽、其位应如何解读：
+
+% 0 1 0 1b6bea430224b167173b77cbfa415e01
+
+@ 0 8 0 10125f241502ba640f0f0ba62af09aa0
++     column  类型
++     column  值
++     row  `U8`, `U16`, `U32`, `U64`  无符号整数
++     row  `S8`, `S16`, `S32`, `S64`  二进制补码有符号整数
++     row  `F32`, `F64`  IEEE 浮点数
++     row  `B8`, `B16`, `B32`, `B64`  原始位模式，有移位、循环移位和掩码，但完全没有算术运算
++     row  `Decimal`  任意精度十进制数
++     row  `Q64`, `Q32`  打包进单个 `Long` 或 `Int` 的精确有理数
+
+% 1 1 0 0f6a763b0e5eb2560b9448802c941150
+
+@ 0 2 0 1dcf95b6f4b686e81729040dd56ef318
++     每一个都是 JVM 基本类型（对 `Decimal` 而言是冻结数组）之上的不透明类型，因此这些区别都不会保留到运行时。
+
+@ 0 10 0 16d342855da7cde10c4bbd8a1c2178aa
++     算术运算符不是这些类型的方法：`+`、`-`、`*`、`/` 和前缀 `-` 是 symbolism 的泛型运算符，通过每个类型伴生对象中的 `Addable`、`Subtractable`、`Multiplicable`、`Divisible` 和 `Negatable` 实例解析。
++     对整数类型而言，这些实例来自通过导入选定的**方针**：`+`、`-` 和 `*` 采用作用域中的 `CheckOverflow` given，`/` 采用 `DivisionByZero` given，而 `arithmeticOptions` 包为每种方针提供检查和不检查两种形式。
++     在 `uncheckedOverflow` 下，和会像硬件那样回绕；在 `checkedOverflow` 下，其类型变为 `S32 raises Arithmetic.Error`，溢出是一个被处理的失败，而不是无声的回绕。
++     没有导入方针时，运算符根本无法编译：选择总是要做出，而且是明明白白地做出。
+
+% 2 1 0 0181a14fff87ed4f071989b476941607
+
+% 3 1 0 06a74985228f65bd0565c0e895a58672
+
+% 0 1 0 1d74f9905b0b53f814c4c0d7f771a290
+
+% 0 1 0 17e6ec739583a34c116a6814bedea14d
+
+% 0 1 0 12140bb3acf0dd15104075622603f2df
+
+% 0 1 0 08852040d7ff64450bed1c4b41bd87b3
+
+% 0 1 0 1cf896c67738ca1e01d5c62f400fc295
+
+% 0 1 0 101d31a96536407f06b5b2ca798a5e4a
+
+% 0 1 0 19382d195068043d1a88a822d96bffac
+
+% 0 1 0 09428b3bfee513de1dcbaabf67b55ad0
+
+% 0 1 0 1c2485f011b348c116fb386fabb80d65
+
+% 0 1 0 138e8fea70e0c789058325fea0378b01
+
+% 0 1 0 1bd4f7e7562f3af80c46a8e963a01253
+
+% 0 1 0 13bd9831f7a1cf5e0908cd44c74a53e2
+
+% 1 1 0 03b85c963a3f5a2d0e9e375b61ae7cb3
+
+@ 0 7 0 1fd587e7f1ccadd71b252d5c39fa1a74
++     每种方针的实例都是以其单例类型命名的单例对象，这样内联器就能去掉它为它们引入的代理：`S32` 上不检查的 `a + b` 编译为硬件所具有的那一条 `iadd` 指令，不分配任何东西，而检查的版本是同一条指令再加上检测。
++     同样的模式为 `F64` 和 `F32` 提供了混合算术：`Double`、`Int` 或 `U8` 操作数通过一个 `Widening` 对象转换，该对象携带该操作数类型的实例，因此 `ratio*2` 的代价只是一次转换和一次乘法。
+
+@ 0 6 0 12d6a6ca8531c074024a588352a416c1
++     比较是一个编译时类型类 `Commensurable`，它的 `<`、`<=`、`>` 和 `>=` 是内联的，并且像数学中那样链式书写：`1.2 < x < 1.4` 是一次区间测试。
++     Java 分散在 `java.lang.Math` 中的数学函数是每种数值类型上的扩展方法（`abs`、`floor`、`round`、`**`、向下取整模 `%%`、`gcd`），三角函数和对数函数是作用于 `F64` 的普通函数，而 `median`、`minimum` 和 `maximum` 对集合进行归约。
+
+@ 0 1 0 16707b0243a5c7ae0b09cc91aab78a2f
++     这个库有两个源码集，都为 JVM、Scala.js 和 Scala Native 编译：
+
+@ 0 6 0 0ac3d28a4fb9b6491cd964d51bf6e9a1
++     - `hypotenuse.core`：上述所有类型、方针、`bin"…"` 和 `hex"…"` 字面量、扩展方法、数学函数以及 `arithmeticOptions` 包。
++     - `hypotenuse.check`：`===` 和 `!==` 运算符背后的 `Checkable` 类型类，以及用 `+/-`（或 `±`）构建、用于在一定误差范围内比较值的 `Tolerance`。probably 的断言正是用它来比较的。
+
+@ 0 4 0 03794873db494a481f64e33612a11c89
++     一切都导出到 `soundness` 总括包，而 `arithmeticOptions` 与总括包自己的同名包合并，因此用户写 `import soundness.*`，再按名称导入一种方针：`import p.*` 不导入 given，所以单独的 `arithmeticOptions.*` 不会把任何方针带入作用域。
+
+% 0 1 0 1140cf7c7210fcd1028be3837c8187bd
+
+% 0 1 0 171808e5efe4c6a00a6d52f66213c8fb
+
+% 0 1 0 1ca1db136099ad000b654c6c83ac92a6
+
+% 0 1 0 150e8d7fed2a5b1a1474c9dc59226ef2
+
+% 0 1 0 0ba3734075498434119b2fae91191348
+
+% 0 1 0 031c020006bdac5611fb53d948a8a00e
+
+% 0 1 0 15d03df12c0d858c1d0d6f133c71b670
+
+% 0 1 0 166bc1828f8ac56604e7ff7d5c48bdd9
+
+% 0 1 0 1a43dcdf69f9fe1e07e90d1b67e3707d
+
+% 0 1 0 0ba4d2423efd3a050b02a1b582ca3223
+
+@ 0 1 0 037d1b5360dcfdfc18e0f456a060fedb
++ entry .U64   无符号 64 位整数，范围从 `0` 到 `18446744073709551615`
+
+% 1 1 0 1bca25decc48b5d7070030fd15a9083d
+
+@ 0 4 0 16e02892da58a97c0435d72604bc10d2
++       `U64` 是 `Long` 之上的不透明类型，其位被读作无符号整数。
++       它由位模式构造，即 `U64(42L.bits)`，或者在启用 `genericNumberLiterals` 时由字面量构造，即 `val count: U64 = 123`，编译器用 `Long.parseUnsignedLong` 解析该字面量，超出范围时在编译时拒绝。
+
+% 2 1 0 0a12f988d94a36180c7d6c0d673d55c8
+
+% 3 1 0 1ba8d4e62590495f1d4ec8ecd61f96a9
+
+% 4 1 0 1ecc16fd733b4b29060e641e54878ad0
+
+% 1 1 0 0c790efc6148b78e1d323c30b9aa447b
+
+% 2 1 0 193902590a6e55ca0aa93c5657a8c281
+
+% 0 1 0 0813b3da7187493f10a3f03635efe5da
+
+% 0 1 0 0208cf1f8940096d048211204788ca0d
+
+% 0 1 0 1d4aaef7ee8ae77218d2214aa81fef6b
+
+% 0 1 0 1e24a1a015bd49410fa3e478d9aade03
+
+% 1 1 0 04ff3b6fdbacd80d1c3293b0ec888d57
+
+@ 0 7 0 001ea190866acf521cf2f9ce3e4ddd41
++       `+`、`-` 和 `*` 通过 `.addable`、`.subtractable` 和 `.multiplicable` 解析，它们各自是作用域中 `CheckOverflow` 方针的实例，而 `/` 通过 `.divisible` 解析，来自 `DivisionByZero` 方针；没有从 `arithmeticOptions` 导入方针时，运算符无法编译。
++       整数字面量操作数不会采用接收者的类型，因为泛型运算符的操作数是一个类型参数，所以要对它作类型标注：`count + (1: U64)`。
++       余数运算 `%` 不会溢出，它是一个始终可用的扩展方法，按无符号计算。
+
+@ 0 5 0 0b0138185a5a499f041bbaf84a14a494
++       `U64` 上的扩展方法有 `bits`（作为 `B64` 的位模式）、`text`、`base32`、`hex`、`octal` 和 `binary`（各进制下的无符号值，不带填充）、`%` 和 `gcd`。
++       用 `<`、`<=`、`>`、`>=`、`min` 和 `max` 进行的比较是无符号的（`.orderable`），而 `==` 只允许与另一个 `U64` 比较。
++       没有到 `F64` 的转换，因为那样的转换不精确。
+
+@ 0 2 0 15a4b4297e668ba30d83ecac3c8845a1
++       其伴生对象的成员声明在 `internal.U64` 中，该类型从那里导出，成员也在那里记述。
+
+% 2 1 0 1b355bf6f8afc26a1f4287a531d3a130
+
+% 2 1 0 06bf00f4f99287251f828bbf254fbaa2
+
+% 1 1 0 08f161a394c44ee5112df82aaaf30539
+
+@ 0 1 0 03a98f13d6642f251c06c6ca6f974d43
++ entry .U32   无符号 32 位整数，范围从 `0` 到 `4294967295`
+
+% 1 1 0 0697c94cdad80fef15a41097a7d35f74
+
+@ 0 5 0 0c961431e444e46d1e2a5c4ec6f9e7b0
++       `U32` 是 `Int` 之上读作无符号数的不透明类型。
++       它由位模式构造，即 `U32(0x80000000.bits)`，或者在 `genericNumberLiterals` 下由整数字面量构造，并在编译时检查是否在范围内。
++       与每种整数类型一样，`+`、`-` 和 `*` 采用作用域中的 `CheckOverflow` 方针，`/` 采用 `DivisionByZero` 方针；`/` 按无符号做除法。
+
+% 2 1 0 1926e3dfb1cfb94c17def2180be427ef
+
+% 3 1 0 05795a1727ceeb6f0a45eaa0f2e1dfa5
+
+% 1 1 0 0b302b6adca810041d4e878be5da792a
+
+% 2 1 0 06d23b9640412f170ba7584f670b8602
+
+% 0 1 0 021e7e19d45ad89118b0c8cedafae529
+
+% 0 1 0 0633844cb143f8d102506cef0e9ea520
+
+% 1 1 0 1fed63ddec7d7f8f1dec741d7438dcff
+
+@ 0 4 0 0cec171a598915ff14d6022b33343bff
++       `U32` 上的扩展方法有 `bits`、`text`、`base32`、`hex`、`octal`、`binary`、`long`（作为 `Long` 的无符号值）、无符号余数 `%`、`s64` 和 `u64`（精确的拓宽）以及 `gcd`。
++       `U32` 通过 `F64.u32Conversion` 隐式且精确地转换为 `F64`，因此 `F64(1.0) + u32` 和 `f64*u32` 无需强制转换。
+
+@ 0 2 0 09c4f047d104ef8800f80ad656db6bc5
++       其伴生对象的成员声明在 `internal.U32` 中，该类型从那里导出，成员也在那里记述。
+
+% 2 1 0 0769a8f49198f6061219855c450eb01d
+
+% 3 1 0 02fbfea3b02759850944a61f9961989e
+
+@ 0 1 0 0f70ce6964a8d2d81aa787709c75a353
++ entry .U16   无符号 16 位整数，范围从 `0` 到 `65535`
+
+% 1 1 0 1d3b2c48b0d2d1800984cd883c99c6fa
+
+@ 0 4 0 00b49252c74e63d81168e6daf05c48d7
++       `U16` 是 `Short` 之上读作无符号数的不透明类型。
++       它由位模式构造，即 `U16(256.toShort.bits)`，或者在 `genericNumberLiterals` 下由整数字面量构造，低于 `0` 或高于 `65535` 的字面量是编译错误。
++       `+`、`-` 和 `*` 采用作用域中的 `CheckOverflow` 方针，`/` 采用 `DivisionByZero` 方针。
+
+@ 0 4 0 0e24804ee422e0350673f3814b9f0a51
++       `U16` 上的扩展方法有 `bits`、`text`、`base32`、`hex`、`octal`、`binary`、`int` 和 `long`（无符号值）、无符号余数 `%`、精确拓宽 `s32`、`s64`、`u32` 和 `u64`，以及 `gcd`。
++       `U16` 通过 `F64.u16Conversion` 和 `F32.u16Conversion` 隐式且精确地转换为 `F64` 和 `F32`。
+
+@ 0 2 0 0cdd11270aa9e5151807ee820faa422d
++       其伴生对象的成员声明在 `internal.U16` 中，该类型从那里导出，成员也在那里记述。
+
+% 2 1 0 0827ae30bf602b8d0f1e7d032f656437
+
+@ 0 1 0 01743fa5e8931e0f0feeb08b1c01de78
++ entry .U8   无符号 8 位整数，范围从 `0` 到 `255`
+
+% 1 1 0 1327a328bee1e40d18866a5832ce3cb4
+
+@ 0 4 0 1b205e5f18f05dbb0994af9613d03c68
++       `U8` 是 `Byte` 之上读作无符号数的不透明类型，因此 `U8(200.toByte.bits)` 是 `200`，而不是 `-56`。
++       它由位模式构造，或者在 `genericNumberLiterals` 下由整数字面量构造。
++       `+`、`-` 和 `*` 采用作用域中的 `CheckOverflow` 方针，`/` 采用 `DivisionByZero` 方针。
+
+% 2 1 0 018254c3f97936340d203190fa212bf3
+
+% 3 1 0 16a561b99fa5215b038f9108f84d90dd
+
+% 4 1 0 1c74c4eafa5af0650ae494834aa7d765
+
+% 0 1 0 1482461767f08a961ee7d5ed53423944
+
+% 0 1 0 1e09dbb018ccae3b169e9ca4f722aa0e
+
+% 0 1 0 06f0065947551a9403b4106c8566d570
+
+% 1 1 0 01715454281dfe7313b8606264f844eb
+
+@ 0 5 0 144b53182c519aff0404ee4dbfd66dbc
++       `U8` 上的扩展方法有 `bits`、`text`、`base32`、`hex`、`octal`、`binary`、`byte`（原始字节）、`short`、`int` 和 `long`（无符号值）、无符号余数 `%`、精确拓宽 `s16`、`s32`、`s64`、`u16`、`u32` 和 `u64`，以及 `gcd`。
++       `U8` 通过 `F64.u8Conversion` 和 `F32.u8Conversion` 隐式转换为 `F64` 和 `F32`，大于 127 的值取其无符号值。
+
+@ 0 2 0 1fe907ebd8b2d4b40db0f7c603e0e343
++       其伴生对象的成员声明在 `internal.U8` 中，该类型从那里导出，成员也在那里记述。
+
+% 2 1 0 11efd6326db10b23076217f2c6fbcbc7
+
+@ 0 1 0 073a6fbe879a64d0048e61f3eb1f76e9
++ entry .S64   有符号 64 位整数，二进制补码，范围从 `S64.Min` 到 `S64.Max`
+
+% 1 1 0 1c1b6af7cd43cc9217890c469b5efcd3
+
+@ 0 5 0 067c954f108850930300f2e5d7690a9b
++       `S64` 是 `Long` 之上的不透明类型，其含义也恰好就是 `Long`：这个类型的存在，是为了把有符号 64 位数量与位模式（`B64`）和无符号数量（`U64`）区分开，并让其算术经过方针。
++       它由位模式构造，即 `S64(5L.bits)`，或者在 `genericNumberLiterals` 下由整数字面量构造，`long` 把 `Long` 取回。
+
+% 2 1 0 0f5f3c1942754d7e13562865031f3e64
+
+% 3 1 0 0afe417b98924b391638fbb9dc11b78e
+
+% 4 1 0 11d42a2e737732911f431a253c299680
+
+% 0 1 0 1fe29c91c3c0e65f160e747bd6c997eb
+
+% 0 1 0 01ecb959d6a90897042602f7f0d79e73
+
+% 0 1 0 1a955d36c30d249f1115e7571cfbf4fa
+
+% 0 1 0 1f42ab9e2ec7bf3c0b1e6199e8ef24a9
+
+% 1 1 0 034ede12041a6e4715e31f44edcc5259
+
+@ 0 6 0 0f07e61f4002881d0f13ee59688cedeb
++       `+`、`-` 和 `*` 采用作用域中的 `CheckOverflow` 方针，`/` 采用 `DivisionByZero` 方针。
++       检查时的检测是精确的：当两个操作数都具有和所缺少的符号时，和溢出；当两个操作数符号不同且结果的符号与被减数不同时，差溢出；当 `Math.multiplyHigh` 不是低位字的符号扩展时，积溢出，因此 `S64.Min + S64(-1)` 会被捕获，而普通的负数算术不受干扰。
+
+@ 0 6 0 00e39fde20f8cb48058604eb191761e0
++       `S64` 上的扩展方法有 `abs`、`long`、`octal`、`hex`、`base32` 和 `binary`（按 `java.lang.Long` 的呈现方式：负数用二进制补码）、`%%`（向下取整模，除数为正时从不为负）、`/-`（向下取整除法）、`%`（截断余数）、`**`（幂，结果为 `Double`）、`bits` 和 `gcd`。
++       `S64` 可以用 `==` 与任何有符号类型或浮点类型比较，但没有到 `F64` 的隐式转换，因为那样的转换不精确。
+
+@ 0 2 0 1fba74ed714a810318f44f2cbd0e0f5b
++       其伴生对象的成员声明在 `internal.S64` 中，该类型从那里导出，成员也在那里记述。
+
+% 2 1 0 13fb1133458913380a60418fbde5ee23
+
+% 3 1 0 14768573064994750f135b379e0aa982
+
+@ 0 1 0 1c3c5aeb2b27f4a10f48fdc026c52d6e
++ entry .S32   有符号 32 位整数，二进制补码，范围从 `S32.Min` 到 `S32.Max`
+
+% 1 1 0 07db680b16894e60039e2eacd3dd1634
+
+@ 0 5 0 1d8b8ae6099df0070b4f5a4ebf051cb7
++       `S32` 是 `Int` 之上的不透明类型。
++       它由位模式构造，即 `S32(42.bits)`，或者在 `genericNumberLiterals` 下由整数字面量构造，`int` 和 `long` 把基本类型值取回。
++       `+`、`-` 和 `*` 采用作用域中的 `CheckOverflow` 方针，`/` 采用 `DivisionByZero` 方针；不检查的加法编译为单条 `iadd`，检查的加法编译为同一条指令再加上精确的溢出测试。
+
+% 2 1 0 0d6654b22541fe08183beef22290b080
+
+% 3 1 0 12271a7523c07c071403ab3159f56522
+
+% 4 1 0 1f6b17b7d5f2c20b08abfd8aaba8560c
+
+% 1 1 0 09f71b3d5056d1a0153c1b1cce849dab
+
+% 1 1 0 13538521ec6d59a008137f6696ce2e56
+
+% 0 1 0 0b684d64159010ed170770c113b679ae
+
+% 0 1 0 00e9a8765b08969f0a32126ea6bcb66a
+
+% 0 1 0 1251b42006c1cedc0d5c13fb77ea7432
+
+% 0 1 0 075bdc600dd780281a2e556b32b6fcb1
+
+% 0 1 0 0fc204f3844aa06c0000d1329b97063e
+
+% 0 1 0 19fc2433e15ef36c0227b969756e99a2
+
+% 1 1 0 192eba82bb68a1c2000cc65058e84f8a
+
+@ 0 4 0 1fa9db4d4ca0f0de0e0a841e65ba2034
++       `S32` 上的扩展方法有 `int`、`long`、`abs`、`**`、`octal`、`hex`、`base32`、`binary`、`%%`、`/-`、`%`、`bits` 和 `gcd`。
++       `S32` 通过 `F64.s32Conversion` 隐式且精确地转换为 `F64`，并可以用 `==` 与任何有符号类型或浮点类型比较。
+
+@ 0 2 0 13dab10bc3e8e4e80c686d56d761357f
++       其伴生对象的成员声明在 `internal.S32` 中，该类型从那里导出，成员也在那里记述。
+
+% 2 1 0 002f5e30de7246d41d373f46d120fd0f
+
+% 3 1 0 00f0c032af86a7fd15896832114ec55e
+
+@ 0 1 0 041e2a7cb4fe52d51e9b73c7953f0be8
++ entry .S16   有符号 16 位整数，二进制补码，范围从 `-32768` 到 `32767`
+
+% 1 1 0 126404f5f0ffeef11a1cd5f5975a4a1f
+
+@ 0 5 0 04e142fb51e57db816fc661b89155b0a
++       `S16` 是 `Short` 之上的不透明类型，由位模式构造，即 `S16((1: Short).bits)`，或者在 `genericNumberLiterals` 下由整数字面量构造，超出 16 位范围的字面量是编译错误。
++       `+`、`-` 和 `*` 采用作用域中的 `CheckOverflow` 方针，`/` 采用 `DivisionByZero` 方针；每个运算都在 `Int` 中计算，再按方针的规定收窄或检查。
+
+@ 0 3 0 029651b176a233290ee6c9cede8fd5b7
++       `S16` 上的扩展方法有 `short`、`int`、`long`、`abs`、`**`、`octal`、`hex`、`base32`、`binary`、`%%`、`/-`、`%`、`bits` 和 `gcd`。
++       `S16` 通过 `F64.s16Conversion` 和 `F32.s16Conversion` 隐式转换为 `F64` 和 `F32`。
+
+@ 0 2 0 16f2d1eafd8dda750378510290300be8
++       其伴生对象的成员声明在 `internal.S16` 中，该类型从那里导出，成员也在那里记述。
+
+% 2 1 0 00ed636d0c397c5b1a3c36edbb77b129
+
+@ 0 1 0 0fe1cc62d47c8bf604f1850e0f75c6fa
++ entry .S8   有符号 8 位整数，二进制补码，范围从 `-128` 到 `127`
+
+% 1 1 0 0f3508c9ac2136cf1373ff1de32ddfe9
+
+@ 0 5 0 0dcbea836733a57206a36c3f456f8fc2
++       `S8` 是 `Byte` 之上的不透明类型，由位模式构造，即 `S8((-1: Byte).bits)`，或者在 `genericNumberLiterals` 下由整数字面量构造，超出 8 位范围的字面量是编译错误。
++       `+`、`-` 和 `*` 采用作用域中的 `CheckOverflow` 方针，`/` 采用 `DivisionByZero` 方针；在 `checkedOverflow` 下，`S8.Min*S8(-1)` 抛出 `Arithmetic.Error`，因为 `128` 放不下。
+
+@ 0 4 0 0b576097d15de7d51becdfb11ddcd312
++       `S8` 上的扩展方法有 `byte`、`short`、`int`、`long`、`abs`、`**`、`octal`、`hex`、`base32`、`binary`、`%%`、`/-`、`%`、`bits` 和 `gcd`。
++       `S8` 通过 `F64.s8Conversion` 和 `F32.s8Conversion` 隐式转换为 `F64` 和 `F32`。
+
+@ 0 2 0 12bf2e32d06b440a0d2effc5ff3e2bef
++       其伴生对象的成员声明在 `internal.S8` 中，该类型从那里导出，成员也在那里记述。
+
+% 2 1 0 00397e0045977253000ed4b80b2f0044
+
+@ 0 1 0 1d52291fa2ae6ab119d39e56396724dc
++ entry .F64   64 位 IEEE 浮点数，可与任何能拓宽为它的值进行混合算术
+
+% 1 1 0 0027fae8b374f71a0eb6e395afbb9f26
+
+@ 0 8 0 1cbae52b350f0b181bd8997f7e412c4c
++       `F64` 是 `Double` 之上的不透明类型。
++       它用 `F64(1.5)` 构造，用 `F64(bits: B64)` 由位模式构造，由符号、指数和尾数构造，或者在 `genericNumberLiterals` 下由字面量构造；`double` 把 `Double` 取回。
++       它的 `+`、`-`、`*`、`/` 和前缀 `-` 是 symbolism 的运算符，通过这个伴生对象中的实例解析，它们不仅接受另一个 `F64`，还接受任何具有 `Widening` 转换的操作数：`Double`、`Float`、`Int`、`Short`、`Byte`、`U32`、`S32`、`U16`、`S16`、`U8` 和 `S8`。
++       操作数被转换，运算是基本类型的运算，因此 `ratio*2` 的代价是一次转换和一次乘法，不分配任何东西。
+
+% 2 1 0 01d1a670df2d5c6507944a13927716fb
+
+% 3 1 0 16f126bf07b62e8a16cfa45e19ab7dca
+
+% 4 1 0 003a27bd52cbc377186b4cbcc227da84
+
+% 0 1 0 16d7fb99c41d313f0ae26d846493791a
+
+% 0 1 0 169c688196e3fff6147135a9a1d30f63
+
+% 0 1 0 08d6553ff63867d9129a2932543bff07
+
+% 0 1 0 0683e94f355a27531eb102cdba980eff
+
+% 0 1 0 070402f7f100b18109e733c10de535ec
+
+% 0 1 0 07aa442d8610efc70ac48cdec4746025
+
+% 0 1 0 00e381f020707cd414b62f67edc93990
+
+% 1 1 0 040197025299b9621a0dba3c02d49d8d
+
+@ 0 9 0 1aa32f3383885e7d184ca95906244c47
++       `Long`、`S64` 和 `U64` 没有拓宽，因为转换会不精确；这些类型的值要显式转换。
++       `F64` 上的扩展方法有 `double`、`**`（幂，可用任何可拓宽的操作数）、`mantissa`（作为 `B64` 的低 52 位）、`exponent`（作为 `B16`）、`abs`、`sqrt`、`cbrt`、`ceiling`、`floor`、`increment` 和 `successor`（向上的下一个可表示值）、`decrement` 和 `predecessor`、`round`（得到 `Long`）、`scalb`、`signum`、`ulp`、`bits` 和 `rawBits`（IEEE 位模式，分别对 `NaN` 规范化和不规范化），以及测试 `finite`、`infinite` 和 `nan`。
++       三角函数和对数函数 `sin`、`cos`、`exp`、`ln` 等是作用于 `F64` 的普通函数。
+
+@ 0 2 0 0147d9e71c143bf6034ecf700073ae97
++       其伴生对象的成员声明在 `internal.F64` 中，该类型从那里导出，成员也在那里记述。
+
+% 0 1 0 0599ddd10bd89ce10a029bbe433ce498
+
+% 0 1 0 16ff7b24085bc06412e333b37b33a0a1
+
+@ 0 1 0 1fc95932f111ab2f0ac94f61e6d9b654
++ entry .F32   32 位 IEEE 浮点数，可与任何能拓宽为它的值进行混合算术
+
+% 1 1 0 00c60e29c4e7c6cb1c24ededcd436186
+
+@ 0 7 0 16c8a610b092e9a9017a2df20f26f04c
++       `F32` 是 `Float` 之上的不透明类型，是 `F64` 的单精度对应物。
++       它用 `F32(1.5f)` 构造，用 `F32(bits: B32)` 由位模式构造，或者由符号、指数和尾数构造，`float` 和 `double` 把基本类型值取回。
++       它的 `+`、`-`、`*`、`/` 和前缀 `-` 通过这个伴生对象中的实例解析，并通过 `Widening` 接受 `Float`、`Short`、`Byte`、`U16`、`S16`、`U8` 或 `S8` 操作数；`Double`、`Int`、`U32` 和 `S32` 没有到 `F32` 的拓宽，因为那样不精确。
+
+% 2 1 0 1aaaa567ac91113a0dfa68136c66e37a
+
+% 3 1 0 1ba7fa403fc78c750585779fbceadf60
+
+% 0 1 0 08ca2fddbd89fa7c0233abceaf9547e2
+
+% 0 1 0 1399566348e8992300a7b7aacc6d7533
+
+% 0 1 0 03284e185a0fddd8015855a9d663e361
+
+% 1 1 0 03027ea0cefd301c1bc07e64dde5b92b
+
+@ 0 4 0 0c4e3693092340320255ee35ddb75db9
++       `F32` 上的扩展方法有 `float`、`double`、`**`、`abs`、`sqrt`、`cbrt`、`ceiling`、`floor`、`exponent`（作为 `Int`）、`increment`、`decrement`、`successor`、`predecessor`、`round`、`scalb`、`signum`、`ulp`、`bits`、`rawBits`、`finite`、`infinite` 和 `nan`。
+
+@ 0 2 0 156816056eb29fda16c2ed9a1ac6d4ba
++       其伴生对象的成员声明在 `internal.F32` 中，该类型从那里导出，成员也在那里记述。
+
+% 0 1 0 12581d6a9cc1b75c034f3a484d8e3e68
+
+@ 0 1 0 1408e2c4464101101acfe47c80869a9a
++ entry .B64   64 位模式：移位、循环移位、掩码和位寻址，但没有算术运算
+
+% 1 1 0 08235109eb09efcf189938ea0f8f1591
+
+@ 0 5 0 0b8c3fb20b94eb320e1a97436256e5d7
++       `B64` 是 `Long` 之上读作位集合的不透明类型。
++       它没有 `+`：`B64` 是数在被解读之前的样子，`s64` 和 `u64` 无代价地把它重新解读为有符号或无符号整数，就像 `F64(bits)` 把它解读为浮点数一样。
++       位模式可以用 `.bits` 由任何整数构造（`0xf0L.bits`），用 `B64(long)` 及其更窄的重载构造，或者用 `B64(bytes, offset)` 由八个大端字节构造。
+
+@ 0 3 0 0f5b59155652401b1aa0e99bbf4fb7ec
++       位按序数寻址，最低有效位是 `Prim`，因此索引不会与规范自身的计数约定混淆，而一段连续的位是一个 `Interval`：
+
+% 2 1 0 058bd5966e10a72e0bb30d797d2c2206
+
+% 3 1 0 05890b400723ed660070a822fad90977
+
+% 0 1 0 070a3dc62a8adf101368a4b90aba173d
+
+% 0 1 0 00a7670a49f3a4621d8dc1f93fee1052
+
+% 0 1 0 129118c197716ed210d9a44cea972fb0
+
+% 0 1 0 064bb3fd3c6127e912834da2cff39b15
+
+% 0 1 0 02894505526ef7a415c1ab7da2d142ae
+
+% 0 1 0 172ac9ea31da287413a65cb5c925e3b5
+
+% 1 1 0 1cd0cc03f1dd27cd0732b8c3582beea1
+
+@ 0 8 0 184831bcfda7ff27020ed0ad5261a421
++       `B64` 上的扩展方法有 `apply(interval)`（一段位，向下移位后的值）、`apply(bit: Int)`（按从零开始的位置取一位）、`bit`、`set`、`clear` 和 `flip`（各自按 `Ordinal` 或 `Interval`）、移位 `<<` 和 `>>`（后者是逻辑移位，从不做符号扩展）、循环移位 `<<<` 和 `>>>`、`&`、`|`、`^` 和前缀 `~`、`leadingZeros`、`trailingZeros`、`ones` 和 `zeros`（置位计数）、`reverse`、`bytes`（八个大端字节）、`hex` 和 `octal`（用零填充到该类型的完整宽度，分别为 16 和 22 个字符）、`binary`，以及重新解读 `s64` 和 `u64`。
++       `B64` 只能用 `==` 与另一个 `B64` 比较。
+
+@ 0 2 0 15735b6f01dc26b61a2f9471017f420b
++       其伴生对象的成员声明在 `internal.B64` 中，该类型从那里导出，成员也在那里记述。
+
+% 0 1 0 0ac4cfd7295265760c5eb7b823041ab4
+
+% 0 1 0 04978c25a901bf1b1fb6fbc281e7eaba
+
+@ 0 1 0 1520032befc971930d6b51ca54ebb100
++ entry .B32   32 位模式：移位、循环移位、掩码和位寻址，但没有算术运算
+
+% 1 1 0 1024705758d70ea214338f0d147a61a3
+
+@ 0 5 0 12355ce780f06ff31bd1ed0ae57430ff
++       `B32` 是 `Int` 之上读作位集合的不透明类型，具有与 `B64` 相同的 32 位运算：按区间或按位置的 `apply`、`bit`、`set`、`clear`、`flip`、`<<`、`>>`、`<<<`、`>>>`、`&`、`|`、`^`、`~`、`leadingZeros`、`trailingZeros`、`ones`、`zeros`、`reverse`、`bytes`（四个大端字节）、`hex`（八个字符）、`octal`（十一个字符）、`binary`，以及重新解读 `s32` 和 `u32`。
+
+% 2 1 0 0e4b791e0f3d8fb21b7b14ea156b3354
+
+% 3 1 0 122a66a5c99537da12ae4a173a61b368
+
+% 0 1 0 0a699dc795a76808100d16e145583b97
+
+% 0 1 0 1ecac4b5d17385e019f44805a006debf
+
+% 0 1 0 11bc6561c1e4599805a7395140f3ff27
+
+% 0 1 0 1829fdced77b6f541e53083a03efad08
+
+% 0 1 0 1308306de5969d6c06b62a95437a9c47
+
+% 0 1 0 1d4fff25c9e06f3e0cd055a187877f1b
+
+% 1 1 0 0bcae47f146bf88d154cb5d4c91a1d6c
+
+@ 0 2 0 09269ddaac12d4db0f1c1c0b6e3e66f2
++       呈现时填充到该类型的宽度，而不是去掉前导零，因此字符数说明了是哪个类型产生的。
+
+@ 0 2 0 0993978d547a8a9b0da3b29b1bd2682f
++       其伴生对象的成员声明在 `internal.B32` 中，该类型从那里导出，成员也在那里记述。
+
+% 2 1 0 15ffdd968864f51a1d2281d77ec67eca
+
+@ 0 1 0 1dcb6e1d8b9dba6919cde8992663dd58
++ entry .B16   16 位模式：移位、循环移位、掩码和位寻址，但没有算术运算
+
+% 1 1 0 13a6c5329e2ac2fa1e5738426aebf1f5
+
+@ 0 5 0 0d2d04ffef8375f6135d0e451cd1e572
++       `B16` 是 `Short` 之上读作位集合的不透明类型，具有 `B64` 的 16 位运算，其中 `bytes` 给出两个大端字节，`hex` 给出四个字符，`octal` 给出六个字符，以及重新解读 `s16` 和 `u16`。
++       它用 `(0x1234: Short).bits`、`B16(short)`、`B16(byte)` 或 `B16(bytes, offset)` 构造，`Short(bits: B16)` 把它转换回基本类型值。
+
+@ 0 2 0 0cabb86c8e1f802804b39646d4a13e98
++       其伴生对象的成员声明在 `internal.B16` 中，该类型从那里导出，成员也在那里记述。
+
+% 2 1 0 16bde2d2b62c2aa11a27797e691d32e4
+
+@ 0 1 0 026734759eccfa4e1bfe6b51360063fc
++ entry .B8   8 位模式：移位、循环移位、掩码和位寻址，但没有算术运算
+
+% 1 1 0 00ce6cfac42bfff7165f521864c8c85e
+
+@ 0 4 0 198fcbb5cffc3b6f0d21d1c4ac634d58
++       `B8` 是 `Byte` 之上读作位集合的不透明类型，具有 `B64` 的 8 位运算：`hex` 是两个字符，`octal` 是三个字符，`s8` 和 `u8` 把该字节重新解读为有符号或无符号整数。
++       它用 `(0xf0.toByte).bits` 或 `B8(byte)` 构造，而八位数字的 `bin"…"` 字面量给出可用来构造它的 `Byte`。
+
+% 2 1 0 1d9a547cd072623f03779b6166892cc2
+
+% 3 1 0 1afb4f531dc5501803b0551ee8a516f9
+
+% 0 1 0 19bd2028a4ded58e1b8d6db21355a1f1
+
+% 0 1 0 13bd95d0bf037cd502a7b4532be43ab0
+
+% 0 1 0 01474ae8b7e175e20ed22052eabff012
+
+% 0 1 0 0047e7d5eebcca770857e77b6062919f
+
+% 1 1 0 12a00f984d5199a30b66ed6d7c24cd82
+
+@ 0 2 0 02db738e0a0af66208de43c5d7d715a5
++       其伴生对象的成员声明在 `internal.B8` 中，该类型从那里导出，成员也在那里记述。
+
+% 2 1 0 1ceb8b3b0d795ed71339af8bd5ec3217
+
+% 0 1 0 06cdb8726de7fd9200e0fd9dde82ba88
+
+@ 0 1 0 1b713aff978c635909f7d27f9a491f08
++ entry .arithmeticOptions   溢出、除以零和有理数除法方针，每种都是按名称导入的 given
+
+% 1 1 0 15ae1f6be03125f00659611909b000ad
+
+@ 0 5 0 01e968c7a8511c361792717b3b4a4023
++       整数类型上的算术，`+`、`-` 和 `*` 需要作用域中有 `CheckOverflow` given，`/` 需要 `DivisionByZero` given，而 `import soundness.*` 两者都不带入：选择通过按名称导入每类中的一个 given 来做出，作用域中没有方针时使用的运算符无法编译。
++       两种检查相互独立，因此一个不能回绕、但信任其除数的程序只导入 `checkedOverflow`。
+
+% 2 1 0 14fed254df79e5270b98cb570a68d733
+
+% 1 1 0 08d9458eb73012351c93056f35e51984
+
+@ 0 1 0 1e20de3a96f23cfb091d633b531fe879
++         label 无方针：运算符无法解析
+
+% 1 1 0 1e45057bcc7fa7631afd4504800fa5ca
+
+% 2 1 0 09acc9e7017b5e8308ff3e98a4c96971
+
+% 2 1 0 1297857aa6a7a30e098eb11c931bf241
+
+% 0 1 0 15b7b7f999ec72d41570510f7f73edbb
+
+% 1 1 0 0189afa2aeb88c9d0e1347208dc11b0b
+
+@ 0 1 0 03e537e42740f67a040189b346451100
++         label 不检查：和像硬件那样回绕
+
+% 1 1 0 1c94f7c2affc2d43129a3c3364ea0569
+
+% 2 1 0 14f3ba61cd8312b61701541637d4c724
+
+% 0 1 0 065e74b0947a0cbe095504f19b23a40e
+
+% 2 1 0 06892ad813e2ba7405a94dfe87a17c45
+
+% 0 1 0 092c8f2a279c63fd05494b441bb6e1b0
+
+% 1 1 0 067cfd4e801316d512b757ef61f08072
+
+@ 0 1 0 185bf0d9674a37611d26149a2099f6c3
++         label 检查：结果类型可能抛出，`safely` 吸收该失败
+
+% 1 1 0 0c27548314d0ea0b079fa576d98ac344
+
+% 2 1 0 19c6fede75e2ba040cc4aa892bcc9bb6
+
+% 3 1 0 159ac016469c713e085f2a4c2fea2a32
+
+% 5 1 0 044f252cbcf3a500038cc0529bb99a9a
+
+% 0 1 0 005192d2bed59926102422b89dff4038
+
+% 1 1 0 0abe6c0e53ba1a7708d3cba63af0095e
+
+@ 0 1 0 1219ac884b9184761af68c727ca23e4b
++         label 检查并处理：失败是一个 `Arithmetic.Error`，由默认值替代
+
+% 1 1 0 0eb33e91712a1c911c28eccf57fc7420
+
+% 2 1 0 04e5cd9399684c360cdcd68ad03843ba
+
+% 3 1 0 023d03f3e9dfb3c006b0991870686538
+
+% 5 1 0 140e1b7da28de87a0130471a3b539ed5
+
+% 0 1 0 16d4fddcd9a233f21a8ac6321f18c1be
+
+% 1 1 0 032903b6556ee75e024d41e892544eec
+
+% 2 1 0 1b254f5bafb282e20dda84cf188f1bdc
+
+@ 0 7 0 16680ad1ce1329021a5cd827593257dd
++       每种方针都是一个单例对象，其 given 以该对象的单例类型为类型，这样在它之下内联的运算符引用的是一条纯路径，内联器会去掉它，而不是一个必须分配的实例：`S32` 上不检查的 `a + b` 是一条 `iadd`，检查的版本是同一条指令再加上溢出测试。
++       检查的 given 把运算符的结果类型变为 `Tactic[Arithmetic.Error]^ ?->{} result`，这是一个纯上下文函数，是 `result raises Arithmetic.Error` 的子类型，因此 `safely`、`recover` 和 `raises` 返回类型都接受它。
+
+@ 0 4 0 004347effd32356d177c46b8b4f48fb3
++       两个有理数 given 属于不同的种类：导入 `q64RationalDivision` 会使两个 `Q64` 上的 `/` 在该作用域中得出 `Double`，其优先级高于伴生对象中的精确除法，正是这一点让 `std`（其方差必须除出一个 `Double`）能对有理数集合解析。
+
+% 1 1 0 031557a59d517a0a0f2a3848f8235d07
+
+% 2 1 0 01036437bafe25520fe5bf095f9ec7c8
+
+% 2 1 0 10405821c1b2045509f06691b14ecb74
+
+@ 0 17 0 16aeac11dfd8419319929d01bcbfa126
++   entry .uncheckedOverflow   整数类型上的 `+`、`-` 和 `*` 像硬件那样回绕
++       `CheckOverflow.Unchecked`，以其单例类型给出。
++       每个运算符的结果都是裸类型，运算内联为对应的那一条指令。
++   entry .checkedOverflow   结果放不下时，整数类型上的 `+`、`-` 和 `*` 抛出 `Arithmetic.Error`
++       `CheckOverflow.Checked`，以其单例类型给出。
++       每个运算符的结果变为 `T raises Arithmetic.Error`（原因为 `Overflow`），因此要在 `safely`、`recover`、`unsafely` 或本身会抛出的方法中使用。
++       检测是精确的。
++   entry .uncheckedDivision   整数类型上的 `/` 像硬件那样做除法，除数为零时抛出异常
++       `DivisionByZero.Unchecked`，以其单例类型给出：零除数会抛出不受作用域约束的 `java.lang.ArithmeticException`。
++   entry .checkedDivision   除数为零时，整数类型上的 `/` 抛出 `Arithmetic.Error`
++       `DivisionByZero.Checked`，以其单例类型给出。
++       结果变为 `T raises Arithmetic.Error`（原因为 `DivisionByZero`）。
++   entry .q64RationalDivision   在此作用域中，两个 `Q64` 上的 `/` 以 `Double` 得出其商
++       以词法方式导入时，它的优先级高于伴生对象中的 `Q64.divisible`，因此 `List[Q64]#std` 能够解析；导入离开作用域后，精确除法重新是 `Q64.divisible`。
++   entry .q32RationalDivision   在此作用域中，两个 `Q32` 上的 `/` 以 `Double` 得出其商
+
+@ 0 1 0 16693d9f5bd07fee173123042aa62836
++ entry .CheckOverflow   定宽整数上 `+`、`-` 和 `*` 的方针：回绕，或抛出
+
+% 1 1 0 1b4195b95992b7c71151432498f55238
+
+@ 0 6 0 0033fef4026d67b11107fefd18d7e46f
++       `CheckOverflow` 为每个 `U*` 和 `S*` 类型提供 `Addable`、`Subtractable` 和 `Multiplicable` 实例，而 `#Wrap` 是它对每个结果的处理：对 `.Unchecked` 是裸类型，对 `.Checked` 是 `Tactic[Arithmetic.Error]^ ?->{} result`，一个满足 `result raises Arithmetic.Error` 的纯上下文函数。
++       伴生对象中的 given（`S32.addable` 即 `overflow.addS32`）转发到作用域中的方针，该方针从 `arithmeticOptions` 按名称导入。
+
+@ 0 7 0 11c525a61503359204f455f2e8e1e406
++       每个实例都是一个 `object`，从其 given 经由稳定路径到达，这样内联器为它们引入的代理就是纯路径，内联器会去掉它们：`a + b` 编译为硬件为它提供的那一条指令。
++       用 `new` 构造的实例，无论是匿名的还是 final 的，都会在内联后残留为每次运算一次分配。
++       自己的方针（记录日志的、饱和的）是一个扩展此特质的对象，其 24 个成员是扩展 `Arithmetic.Addition[S32, Wrap]` 及其同类的对象，并带有一个以该方针的单例类型为类型的 given。
+
+% 2 1 0 074c689f3ddb30441cb6a5d90fe19458
+
+% 3 1 0 1ac749779f41605614795309ca5cb71d
+
+% 4 1 0 162de86f8e974c291be8326ce4fd65e4
+
+% 0 1 0 14d875d08df1b6a41ab2550112334189
+
+% 0 1 0 065bafedb46c27eb194b6a0d416d1bb1
+
+% 1 1 0 1900104676380837095ef30d9e67bbdf
+
+% 2 1 0 137d17395069fb841f1575c11faea76d
+
+% 1 1 0 0c47588bf62d362413ede99e6f15b944
+
+% 2 1 0 0c700ecc4cb00d5b160a5359d2e6ebd3
+
+@ 0 10 0 11106c50d908a87618eba38c72fd9e30
++   entry .Unchecked   像硬件那样回绕的方针
++       `Wrap[result] = result`；每个运算都是基本类型的运算，收窄到该类型的宽度。
++       `arithmeticOptions.uncheckedOverflow` 就是这个对象。
++   entry .Checked   结果放不下时抛出 `Arithmetic.Error` 的方针
++       `Wrap[result] = Tactic[Arithmetic.Error]^ ?->{} result`。
++       当两个操作数都具有和所缺少的符号时，有符号和溢出；当无符号和小于任一操作数时，无符号和溢出；当积的高位字不是其低位字的符号扩展时，或者对较窄的宽度而言，在更宽类型中计算的积落在范围之外时，积溢出。
++       `arithmeticOptions.checkedOverflow` 就是这个对象。
++   entry #Wrap   方针对结果的处理：裸类型，或可能抛出的类型
+
+% 0 1 0 0bc0aff6c66e1f3b0df8a8f6d8ccbaf0
+
+% 0 1 0 1362171921760f8806706899a73a275e
+
+% 0 1 0 07324a9655b498d61591cf9faa827c76
+
+% 0 1 0 0ed3b1b8b0bc89230e098f4278efe8e4
+
+% 0 1 0 05d78f57035e69ce1f6cf9cadc42811e
+
+% 0 1 0 0d78f6795e665a1b17e4b96daaafed8c
+
+% 0 1 0 0b1744355d2fcf921a8717e9d259ffcf
+
+% 0 1 0 1e790e94707e963103d58078a3753cc7
+
+% 0 1 0 07fa7c3b6f2fa869048ad6b3250e7c31
+
+% 0 1 0 1497f7821ec9285d12e2a247d5de8fd8
+
+% 0 1 0 02deda055fbaa80c18ec51b3740a1510
+
+% 0 1 0 0f7c554c0f54280007441d4824da28b8
+
+% 0 1 0 0cb80f83d88d379b112b24fc8d0d8860
+
+% 0 1 0 19558aca8826b78f1f82f0913ddd9c07
+
+% 0 1 0 00e8aecb264b104f075cbf09f6a2435d
+
+% 0 1 0 078d553e3066c26807546e379461e00f
+
+% 0 1 0 18bb135e4acf241405f9b265b23d914f
+
+% 0 1 0 174cf2d61db9acce15e906faa16a6c62
+
+% 0 1 0 06581315a1dc94411ec13c2ddc48773c
+
+% 0 1 0 04e9f28d74c71cfb0eb090c2cb755250
+
+% 0 1 0 0e001c83cc9a09e60cc7a0542cb92b48
+
+% 0 1 0 0c91fbfb9f8492a01cb6f4e91be6065b
+
+% 0 1 0 0f45cb367fa8f6fc09f5de3e00584df4
+
+% 0 1 0 1c7daa0eba9f20e61af4e39afe671d21
+
+@ 0 1 0 1bf068666ecc4af403650305ff42b1e4
++ entry .DivisionByZero   定宽整数上 `/` 的方针：遇零抛出异常，或抛出错误
+
+% 1 1 0 01b653dd62c5269d0fbd9348e7e190da
+
+@ 0 6 0 0a06d90ac14654c81f9082d528502115
++       除法方面与 `CheckOverflow` 对应的方针：`DivisionByZero` 为每个 `U*` 和 `S*` 类型提供 `Divisible` 实例，而 `#Wrap` 是它对商的处理。
++       伴生对象中的 given（`U64.divisible` 即 `division.divideU64`）转发到作用域中的方针，该方针以 `arithmeticOptions.uncheckedDivision` 或 `checkedDivision` 按名称导入。
++       在任一方针下，无符号类型都按无符号做除法，而有符号类型像硬件那样向零截断；`/-` 是向下取整的除法。
+
+% 2 1 0 1abb283c87d03938021583b21812e06c
+
+% 3 1 0 1a8143a35c5c33340bdcdff6a41eafa7
+
+% 1 1 0 0238da460ba4709c1520f057cf6a17ba
+
+% 0 1 0 0ffb79b719b77abe00bc197de4646f2d
+
+% 0 1 0 15ef34d31d8ce5a407e72a201fbc85d2
+
+% 1 1 0 16f0158273446bae1cb84a475c64abd7
+
+% 2 1 0 1f9ea05eed6e19ca0d77f91a820bc7fa
+
+% 1 1 0 06f5a864a7c434081192ea822f3fafc9
+
+@ 0 10 0 1875b3d88f0997a417fd65ed65175fb2
++   entry .Unchecked   像硬件那样做除法，因此零除数会抛出 `ArithmeticException`
++       `Wrap[result] = result`。
++       `arithmeticOptions.uncheckedDivision` 就是这个对象。
++   entry .Checked   除数为零时抛出 `Arithmetic.Error`
++       `Wrap[result] = Tactic[Arithmetic.Error]^ ?->{} result`，原因为 `DivisionByZero`。
++       `arithmeticOptions.checkedDivision` 就是这个对象。
++   entry #Wrap   方针对商的处理：裸类型，或可能抛出的类型
++   entry #divideU64   `U64 is Divisible by U64 to Wrap[U64]`，无符号
++   entry #divideS64   `S64 is Divisible by S64 to Wrap[S64]`，截断
++   entry #divideU32   `U32 is Divisible by U32 to Wrap[U32]`，无符号
++   entry #divideS32   `S32 is Divisible by S32 to Wrap[S32]`，截断
+
+% 0 1 0 0ab84b36d2094c820871c817282df6e2
+
+% 0 1 0 0befb2c38ce020fc112abfb17075a007
+
+% 0 1 0 11a372979eec17f811426c1ecd4213eb
+
+% 0 1 0 00a6e1aeb77ff4d1194bc23c5fabadbd
+
+@ 0 1 0 1dddf096e43e9f24059f44cad85804de
++ entry .Arithmetic   算术运算的失败，以及各方针实例的形状
+
+% 1 1 0 143670cbc51d7f0a07f2dc455bb335a2
+
+@ 0 7 0 09f96a099633c3640fc9975c0164279f
++       当运算没有可表示的结果时抛出 `Arithmetic.Error`：在 `arithmeticOptions.checkedDivision` 下除以零，在 `checkedOverflow` 下溢出，或者用 `divide` 把 `Decimal` 除以零。
++       这两者是带有两个 `Reason` 的同一个错误类型，而不是两个类型，因为它们是同一个概念，而检测它们的检查仍然是相互独立的导入。
++       `Addition`、`Subtraction`、`Multiplication` 和 `Division` 这四个特质是 `CheckOverflow` 或 `DivisionByZero` 方针的实例所采取的形状：一个数与它自身运算，得到方针所包装的结果。
+
+% 2 1 0 0f0160ae8399e35516dd53493df7f70c
+
+% 3 1 0 1004f607547412761b899d5b7d1e78c1
+
+% 4 1 0 010f8c302e55c743001517cbc4a159f8
+
+% 0 1 0 1a7dcfada89e1abd14742255b1bef207
+
+% 1 1 0 02ce85aa0339fa1c1ba41d7cd86b5a9f
+
+% 1 1 0 1e690e7918be13c8001cb057b47d29c3
+
+% 2 1 0 040aaaa1c397bb7d160d3e7e5eb65041
+
+@ 0 1 0 0c4e55c230d4f6911a074f786c460a5d
++   entry .Error   当运算没有可表示的结果时抛出：零除数或溢出
+
+% 1 1 0 0d13184e43c2389d05c1267e5fa756f2
+
+@ 0 17 0 1585edd90b0a068514b572ebeb8e6c32
++         错误 `↯/s.27.15`，_the arithmetic operation could not be completed because `reason`_，其中原因是 `Reason.DivisionByZero`（_the divisor was zero_）或 `Reason.Overflow`（_the result exceeded the range of its type_）；原因的编号（1 或 2）就是该错误的细节编号。
++         由检查的方针通过 `Tactic[Arithmetic.Error]` 抛出，后者由 `safely`、`recover`、`unsafely` 或 `raises` 签名提供。
++     entry .Reason   运算失败的原因：`DivisionByZero` 或 `Overflow`
++         一个枚举，带有 `number`（`DivisionByZero` 为 1，`Overflow` 为 2）和一个把每个分支呈现为其消息的 `communicable` given。
++     entry .communicable   把 `Reason` 呈现为其消息
++     entry #reason   发生的是两种失败中的哪一种
++   entry .Addition   方针的 `+` 实例的形状：`number is Addable by number to wrap[number]`
++       一个固定 `Self`、`Operand` 和 `Result` 的特质，把 `add` 留给方针的对象；`F64.Addition` 和 `CheckOverflow.Unchecked.addS32` 是它的实例。
++   entry .Subtraction   方针的 `-` 实例的形状：`number is Subtractable by number to wrap[number]`
++   entry .Multiplication   方针的 `*` 实例的形状：`number is Multiplicable by number to wrap[number]`
++   entry .Division   方针的 `/` 实例的形状：`number is Divisible by number to wrap[number]`
+
+@ 0 1 0 1bce4239c166644b0e1759df79e43aac
++ entry .Commensurable   `<`、`<=`、`>` 和 `>=` 背后的编译时比较类型类
+
+% 1 1 0 0d30d516715bb9181f4ae54f56dddcdc
+
+@ 0 7 0 022268bfd300eeb91f2b4d8d8dc0ff6c
++       `left is Commensurable against right` 说明一个 `left` 如何与一个 `right` 比较，它通过一个内联方法 `#compare` 实现，其 `strict` 和 `greaterThan` 标志是内联常量，因此这四个运算符中的每一个都在编译时归约为它所表示的那一次基本类型比较。
++       运算符 `<`、`<=`、`>` 和 `>=` 是作用域中有这种实例的任何值上的扩展方法；`Orderable` 是类型与自身比较的特例，`min` 和 `max` 以及集合归约 `minimum` 和 `maximum` 需要它。
+
+@ 0 4 0 16181862478cf38504c1890ac92b675c
++       比较像数学中那样链式书写。
++       `1.2 < x < 1.4` 解析为 `(1.2 < x) < 1.4`，即一个 `Boolean` 与一个 `Double` 比较，由 `.numeric` given 处理：一个宏从该 `Boolean` 表达式中读回左侧的比较，并把整体改写为单次区间测试 `1.2 < x && x < 1.4`。
+
+% 2 1 0 1e7e5323bed22e970dd5799c88e0d643
+
+% 3 1 0 0a74b503922a731c02c3ca7ef691c581
+
+% 0 1 0 18324ade38fdca4c14d77360d5e9e199
+
+% 0 1 0 1e3aac79b0560bf81ecdd3ba6e04fb3d
+
+% 0 1 0 1d583f575cc6acfc080cad43f16b0ffe
+
+% 1 1 0 19de746b01c54a7004d7f9721a33fe34
+
+@ 0 5 0 0edddebd099f1d6d19f1abd91f19b9cf
++       链必须以左侧的边界开头：`1.4 > x > 1.2` 是错误 `↯/s.27.16`，_this cannot be written as a range expression_。
++       这个库中的每种数值类型在其伴生对象中都有 `Orderable`，`F64` 还能与 `Int` 和 `Double` 比较，而任何具有 symbolism `Comparable`（或通过 `Comparable` 的桥接具有标准库 `Ordering`）的类型都通过 `.orderable` 成为 `Orderable`。
+
+% 0 1 0 1bb15d1e1b5fb0c71556a10c68bcffa0
+
+% 0 1 0 0fe7fde55d9d79da16eb2f94b33afa87
+
+% 0 1 0 00979ee19cd915f81a63b0aeb71ee5ba
+
+@ 0 13 0 0280593e961ae1ad13dcf6472f3f5892
++   entry .numeric   `(a < x) < b`：基本类型上的链式比较，改写为单次区间测试
++       `Boolean is Commensurable against Int | Long | Double | Float | Char | Byte | Short`。
++       它的 `compare` 是一个宏，检查该 `Boolean` 是否为同一基本类型的比较，如果表达式不是，就以错误 `↯/s.27.16` 终止。
++   entry .memory   `Memory is Orderable`：内存大小按字节数比较
++   entry .ordinal   `Ordinal is Orderable`：`Prim < Sec`
++   entry .orderable   任何 `Comparable` 类型都是 `Orderable`，因此 `<` 和 `max` 可用于它
++       `[value: Comparable] => value is Orderable`：运行时的三路 `compare` 赋予它这四个编译时运算符。
++       顺序仍由标准库 `Ordering` 给出的类型，经由 `Comparable` 自己的低优先级桥接到达这里，因此这一个实例同时涵盖两者。
++   entry #compare   `compare(left, right, strict, greaterThan)`：四个运算符所归约成的那一次比较
++       `strict` 区分 `<` 与 `<=`，`greaterThan` 区分 `>` 族与 `<` 族；两者都是内联的，因此实现在编译时根据它们分支。
+
+@ 0 1 0 0bd6197dfb512d4c0b1c960d54046f65
++ entry .Orderable   与自身比较的类型：`Contrast = Self` 的 `Commensurable`
+
+% 1 1 0 1496a9db2feb95d20ea07f5de62b1bb9
+
+@ 0 4 0 10e616c8a4c6b49d1a0d1c4fa47d6eaf
++       `Orderable` 是每种数值类型在其伴生对象中保有的实例（`S32.orderable`、`Q64.orderable`、`Decimal.orderable`、`F64.orderable`），也是 `min`、`max`、`minimum`、`maximum`、`median` 和 `Checkable.commensurable` 所要求的。
++       顺序由另一个类型的顺序决定的类型，用 `#contramap` 得到一个：
+
+% 2 1 0 015343c38549de9b132debbb2c26f255
+
+% 3 1 0 0a68b2add9bc000b18bc5f3b4c6d6f64
+
+% 0 1 0 0a4d74c49ca30e9a09fa549eddb9e89f
+
+% 0 1 0 07abc21c17c93ab812192bad302b437f
+
+% 0 1 0 13459642b920470e1d7a69a140e47abb
+
+% 1 1 0 1547fffd39294e2c0f80212b6de1fc09
+
+% 0 1 0 1b6aef6b00bc52481a2a793d45865143
+
+@ 0 3 0 0dd67134b34793e51da44b985beb7f7b
++   entry #Contrast   被比较的类型：类型本身
++   entry #contramap   通过把另一个类型映射到这个类型，得到该类型的 `Orderable`
++       `orderable.contramap(f)` 通过比较两个值各自的 `f` 来比较它们。
+
+@ 0 1 0 14f0a46de10c4ae21c50c72d58ca7151
++ entry .Rational   文本不是有理数时抛出的错误
+
+% 1 1 0 1a48cd6c4a26130214b033c6b8d0a162
+
+@ 0 2 0 0d4aa2736e400f92160ab4fb9a1a37f8
++       对于既不是整数、也不是分数 `numerator/denominator`、也不是 `NaR` 的文本，`Q64.parse` 和 `Q32.parse` 抛出 `Rational.Error`。
+
+% 1 1 0 0023048d103c141f0c2e3c0dcb41dc9a
+
+@ 0 1 0 1d549f3a365d7ebb168def68ce57c798
++   entry .Error   错误 `↯/s.27.11`：_`text` is not a representable rational number_
+
+% 1 1 0 1e3806e208ae5d3c0ff6eab18c5bf43a
+
+@ 0 2 0 1ba253109efd61320be2f7608f6f1b60
++         由 `Q64.parse(text)` 和 `Q32.parse(text)` 通过 `Tactic[Rational.Error]` 抛出。
++     entry #text   无法解析的文本
+
+@ 0 1 0 045cb4b16bf3c4dc17d5294c605c4139
++ entry .Decimal   任意精度十进制数：符号、数值大小和标度，精确且规范
+
+% 1 1 0 0184e8bdaeeb7f4e06830d242307efc6
+
+@ 0 6 0 0a0428052c6268d81309a57bbe204559
++       `Decimal` 是一个符号、一个任意大小的数值和一个十进制标度，因此它能精确地保存货币总额、从文档中读出的坐标，或任何对自身大小毫无承诺的数字。
++       它是纯 Scala 实现，而不是对 JVM `BigDecimal` 的包装，因此可在每个平台上运行，其中没有任何东西需要原生 64 位算术：数值大小以 10⁹ 为基的分段保存，因此每个中间积都能放进一个 `Long`。
+
+% 2 1 0 12277d39866035680a35172746221c7e
+
+% 3 1 0 1796f92906150e5402275dae630c1eab
+
+% 4 1 0 1d8a6937d009648a0047a1aa50f45320
+
+% 0 1 0 12a618ab3fc8ab800817fdfca2fcb19c
+
+% 0 1 0 0e71121de4c184a402e29571779563e4
+
+% 0 1 0 086abf9d6282bee80f03746d17641072
+
+% 0 1 0 157008aca365654d0d062aec18d66524
+
+% 0 1 0 00fb7939126f15ee1a1ea8858381ac6a
+
+% 0 1 0 10e743c138cdef21048b15ba0411f5d1
+
+% 0 1 0 01e9adbbc8c54d5912f2d8b7ed0e1a64
+
+% 1 1 0 0a892471cde17bb30fbe75957ed2cf10
+
+@ 0 9 0 17adf3f69545cc001943300f3bfeadab
++       每个值都是规范的：构造值时，尾随零被吸收进标度，零只有一种表示，因此两个数值相等的十进制数是同一个值，也不存在 `BigDecimal` 中 `equals` 与 `compareTo` 不一致的对应问题。
++       `+`、`-`、`*` 和前缀 `-` 是通过这个伴生对象中的 given 实现的 symbolism 运算符，它们是精确的，不需要方针。
++       除法不可能总是精确的，所以它不是 `/`：`.divide` 接受结果的标度和一个 `Rounding`，除数为零时抛出 `Arithmetic.Error`。
++       八分之一保留两位时是一个平局：`HalfUp` 向上舍入，`HalfEven` 舍入到偶数位，保留十位时则无需舍入，而尾随零永远不会保留：
+
+% 2 1 0 0962298c2ffafbf40309b282eb3cccdb
+
+% 0 1 0 116130dfd63928ac09e2bfec1af21bdc
+
+% 1 1 0 14b5d9385ff1ad911cc2c70a0cc784de
+
+% 2 1 0 0884fdb13354e6231d0882c6b796674b
+
+% 3 1 0 0268e9b8a8be8f84090bac9e109ec249
+
+% 0 1 0 0b20c6da2855604708f581dc242d3a64
+
+% 0 1 0 186774a156de1a291d344c60e9a17bdf
+
+% 1 1 0 0c917a572eb0344e0e278e1930f69c4e
+
+% 2 1 0 087310f06d8b82b51726e7d8cb983e8f
+
+% 3 1 0 10c006dce95eb39c05ee5e04fcafefda
+
+% 0 1 0 09d073204a7da1e6023a1c96dc2ecf55
+
+% 0 1 0 13dc356a730fb29a1e759ba71583ed66
+
+% 1 1 0 1e1650542ff295300f481e80fad583b4
+
+% 2 1 0 00d7ba58801b9b9b0b29c417b96ab8b8
+
+% 3 1 0 1d493526912d708f075cf66775fe9c6a
+
+% 0 1 0 0c88f678df2bc2851663c00576dd5c0c
+
+% 0 1 0 0ff5871666839ed611e3c6486123fbc9
+
+% 1 1 0 1dc4e5ed1f29b12f1dbde21fd601fda1
+
+% 2 1 0 1cfe2e37036a048d08ecc2ab777658a0
+
+% 3 1 0 065dd866f28393e708811ec540d53bfa
+
+% 0 1 0 1d8e19a5f1b674de064230eba2edbcdf
+
+% 1 1 0 18ab9a5bf6822e8d18fb8e4cb82ca508
+
+% 2 1 0 073fccab8e414b9e0e21f58f9bd3c9e3
+
+@ 0 4 0 0c9dc4b9ca3319aa06d757198b112e8c
++       舍入模式与 `java.math.RoundingMode` 的一致，`text` 以不带指数的普通记数法呈现，与 `BigDecimal#stripTrailingZeros.toPlainString` 的结果相同。
++       `Decimal` 是 `Orderable`，通过 `Textualizable` 呈现，并且是纯值，因此十进制数的集合不会额外装箱任何东西。
+
+@ 0 2 0 0b6a69591bddf859109266cc6c1bfd97
++       其伴生对象的成员声明在 `decimalInternal.Decimal` 中，该类型从那里导出，成员也在那里记述。
+
+% 1 1 0 0329ef8fc551b2ce1ada1ef5470fba98
+
+% 1 1 0 1e0e58d76732d622180e83b451bd9102
+
+@ 0 1 0 01d149ff4f2ea9f7016a2ecbc9b5e36d
++ entry .decimalInternal   `Decimal` 的不透明作用域
+
+% 1 1 0 0dd96ff2a6176f56014ec580ccd4e959
+
+% 2 1 0 040b03a7657a49441e46732de66ab4da
+
+@ 0 5 0 02f94410f46a42340c9bde89c373476b
++       不供直接使用：这个对象的存在，是为了让 `Decimal` 的表示（一个冻结的 `Array[Int]^{}`：符号、标度，然后是以 10⁹ 为基的分段）即使对包的其余部分也是隐藏的，从而在外部各处保持伴生对象作用域中 given 解析的完整。
++       该类型及其伴生对象以 `Decimal` 的名称导出到 `hypotenuse`。
++   entry .Decimal   任意精度十进制数；参见 `hypotenuse.Decimal`
+
+% 1 1 0 1fd5b2de866864ee1af6ce58806eef0a
+
+@ 0 45 0 13dde1cb4e002507182168613ec8483a
++         不透明类型 `Decimal` 的伴生对象，与该类型一起导出到 `hypotenuse` 包。
++     entry .Zero   零的唯一表示
++     entry .Rounding   商如何舍入到其标度：`Up`、`Down`、`Ceiling`、`Floor`、`HalfUp`、`HalfDown` 或 `HalfEven`
++         `Up` 远离零舍入，`Down` 向零舍入；`Ceiling` 向正无穷舍入，`Floor` 向负无穷舍入；三种 `Half` 模式舍入到最近值，平局时分别远离零、向零或向偶数邻值舍入。
++         每一种都与同名的 `java.math.RoundingMode` 一致。
++     entry .apply   由 `Int`、`Long`、未标度的 `Long` 加标度，或 `Double` 构造 `Decimal`
++         `Decimal(unscaled, scale)` 是 `unscaled × 10⁻ˢᶜᵃˡᵉ`，因此 `Decimal(-1234567, 4)` 是 `-123.4567`，`Decimal(42, -3)` 是 `42000`。
++         `Decimal(double)` 通过有限 `Double` 的最短往返十进制表示来转换它，因此 `Decimal(0.1)` 恰好是 `0.1`，而不是 `java.math.BigDecimal` 的 `Double` 构造函数给出的 55 位二进制展开；对 `NaN` 或无穷大，它抛出 `Decimal.Error`。
++     entry .parse   由 `-12.34e+2` 这样的文本得到 `Decimal`，或者 `Decimal.Error`
++         语法是：可选的符号，带可选小数点的数字（小数点至少一侧有数字），以及带自身符号的可选指数。
++         其他任何内容，如 `1.2.3`、空字符串、单独的指数，都抛出 `Decimal.Error`。
++     entry .comparison   带符号的三路比较：`-1`、`0` 或 `1`
++         先按符号判定，再按小数点前的位数判定，只有两者一致时才对齐数值大小，因此病态的标度差异永远不会被展开。
++     entry .orderable   十进制数上的 `<`、`<=`、`>`、`>=`、`min` 和 `max`，依据 `Decimal.comparison`
++     entry .fromDigits   在 `genericNumberLiterals` 下由数值字面量构造 `Decimal`
++         `val price: Decimal = 12.99`。
++         字面量数字经编译器验证，因此对它们的解析不会失败。
++     entry .negation   符号翻转后的值；零保持不变
++     entry .sum   两个十进制数的精确和，对齐到较大的标度
++     entry .product   两个十进制数的精确积，标度相加
++     entry .addable   `Decimal + Decimal`，精确
++     entry .subtractable   `Decimal - Decimal`，精确
++     entry .multiplicable   `Decimal * Decimal`，精确
++     entry .negatable   `Decimal` 上的前缀 `-`
++     entry .textualizable   以普通记数法呈现十进制数，与 `.text` 相同
++     entry .signum   `Decimal` 上的扩展：`-1`、`0` 或 `1`
++     entry .scale   `Decimal` 上的扩展：数值大小所除以的十的幂次
++         对带尾随零的值为负，因为规范形式会吸收它们：`Decimal(42000).scale` 是 `-3`。
++     entry .abs   `Decimal` 上的扩展：绝对值
++     entry .divide   `Decimal` 上的扩展：按指定标度和舍入得到的商
++         `left.divide(right, scale, rounding)` 用以 10⁹ 为基的 Knuth 算法 D 计算到 `scale` 位小数的商，并按 `Rounding` 的规定舍入余数。
++         除数为零时，它通过 `Tactic[Arithmetic.Error]` 抛出 `Arithmetic.Error`（原因为 `DivisionByZero`）。
++         结果是规范的，因此所需位数少于 `scale` 的商，其位数也更少。
+
+% 0 1 0 136a5f198bdaf3ac1a788e9525f64741
+
+% 0 1 0 0a9c20ea134f3fa702331949e4fc1ca4
+
+% 0 1 0 007d86684f8769fe09636d5f556d8a87
+
+% 0 1 0 12b36630ba4606cc1e0225eb20246c2a
+
+% 0 1 0 1a973841f2b80cb516aca1b50e9a7595
+
+% 0 1 0 02125690b11d560710feb200e65921bd
+
+@ 0 6 0 09700a4050669ccc02c526cf09b0c025
++     entry .text   `Decimal` 上的扩展：普通十进制记数法，无指数，无尾随零
++         `Decimal(7, 5).text` 是 `0.00007`，`Decimal(1100, 2).text` 是 `11`；该文本能解析回同一个值。
++     entry .double   `Decimal` 上的扩展：正确舍入的最近 `Double`
++     entry .whole   `Decimal` 上的扩展：该值是否为整数
++     entry .Error   错误 `↯/s.27.10`：_`text` is not a representable decimal number_
+
+% 1 1 0 1d0038d69569ce75162c86c1c33d01f5
+
+@ 0 3 0 1de534a5ddf7c3c40bcf87ebcac2c52a
++           由 `Decimal.parse` 对语法之外的文本抛出，也由 `Decimal(double)` 对 `NaN` 或无穷大的 `Double` 抛出，均通过 `Tactic[Decimal.Error]`。
++       entry #text   被拒绝的文本，或 `Double` 的呈现形式
+
+@ 0 1 0 1ce735205f5b8eda1f33359f06180e4c
++ entry .Q64   存放在一个 `Long` 中的精确有理数：规范的，对除法封闭，用 `NaR` 表示未定义
+
+% 1 1 0 1b8612150522d4e61814c8d0647bc4a7
+
+@ 0 7 0 09fd8acc12e5343202dfa39112953620
++       `Q64` 是打包进单个机器字的有理数，因此它们的集合是原始的 `long[]`，其算术运算不分配任何内存。
++       数值大小是该值的连分数，经 Elias-gamma 编码，这使每个有理数恰好只有一种编码，并且已经是最简形式：位相等即值相等，任何地方都不存在 gcd 规范化。
++       符号位于最高位，数值大小全为零而符号位置位的值是 `NaR`，即“非有理数”，是除以零的结果，它在算术运算中传播，比较时视为无序，就像 `Double.NaN` 一样。
+
+% 2 1 0 0aa5d967ce205c8c02ce16d8c3d2dcdf
+
+% 3 1 0 1789c5c900da6f861434a7611d9a475b
+
+% 4 1 0 10bbd5c61c685829094d393b7992af67
+
+% 0 1 0 06cb8ba8bdcbbeb107ff22085f154492
+
+% 0 1 0 0ea907518411489b0bcd94b16fb0b677
+
+% 0 1 0 1c9008599f0f1e5d05fd73c970d25767
+
+% 0 1 0 17002a92750417c4125ae3fc277316d6
+
+% 0 1 0 003f2af69b97e9061da786eee7862345
+
+% 0 1 0 14624c233c51807d1cb9042d76490764
+
+% 0 1 0 029dd97150f898fe06824c825cc2bde9
+
+% 0 1 0 0aa69a5add03dcde0c05edc668261ce8
+
+% 0 1 0 09cb4cd54c77746d0ff8f20d1602029d
+
+% 0 1 0 1dc2d8504a226f3d0c9c92320a2b386f
+
+% 1 1 0 0965f8ab9d0f988110d9a8097eaedfe9
+
+@ 0 6 0 09ac83b569a68024006357ec4ea7dbe3
++       整数可达 `2³¹−2`（`Q64.Max`），单位分数可达 `1/(2³¹−1)`，分子和分母都不超过 `2²⁴` 的每个有理数都可以精确表示。
++       当精确结果需要超过 62 个载荷位时，编码器保留其连分数中能够容纳的最长前缀，因此结果是精确值的渐近分数或半渐近分数：即分母不更大的有理数中的最佳逼近，而不是回绕或异常。
++       `Q64(Long.MaxValue)` 饱和为 `Q64.Max`。
+
+@ 0 7 0 01ea50821ad2fd4d1a5ffa72f5ae2d42
++       `+`、`-`、`*`、`/`、前缀 `-` 和 `sqrt` 是 symbolism 的运算符，通过这个伴生对象中的 inline given 提供，无需导入任何方针；`*` 和 `/` 也接受 `Int`、`Long` 或 `Double` 操作数。
++       统计归约 `mean`、`median` 和 `variance` 在有理数上是精确的，而 `std` 在 `import arithmeticOptions.q64RationalDivision` 下才能解析，它使 `/` 产生 `Double`。
++       扩展方法有 `numerator`、`denominator`、`signum`、`nar`、`abs`、`whole`、`reciprocal`、`floor`、`ceiling`、`round`、`double`、`text` 和 `q32`。
+
+@ 0 2 0 0141c0be7761a9980188b76fffcfcc38
++       它的伴生对象的成员声明在 `rationalInternal.Q64` 中，该类型从那里导出，成员也在那里记录。
+
+% 0 1 0 1f63c4403ac9b54603854ecf1bd90fcb
+
+% 0 1 0 0fe7fde55d9d79fa16eb2f94b33afaa7
+
+% 0 1 0 02796616cbf494c11462d00ea587a853
+
+% 1 1 0 016bab2feb536d6715cb93f52868a3bc
+
+@ 0 1 0 15b2121d760cab7403fa75b9dc75c72d
++ entry .Q32   存放在一个 `Int` 中的精确有理数：`Q64` 的 32 位对应物
+
+% 1 1 0 08c24b21e413d5ee03367977d1992257
+
+@ 0 6 0 114792eac9cd0d9b024bc7285d787fcd
++       `Q32` 用 `Q64` 的编码以 30 个载荷位把有理数打包进一个 `Int`：整数可达 `±32766`，单位分数可达 `1/32767`，分子和分母都不超过 `2¹¹` 的每个有理数都是精确的。
++       它的算术运算与 `Q64` 相同：通过 inline given 提供 `+`、`-`、`*`、`/`、前缀 `-` 和 `sqrt`，`*` 和 `/` 可作用于 `Int`、`Long` 或 `Double`，除数为零时得到 `Nar`，超出容量时按最佳逼近舍入；`Q32` 可以用 `q64` 或隐式地精确拓宽为 `Q64`。
+
+% 2 1 0 03234a4f44b76a3d118ae0cad892c83e
+
+% 3 1 0 1b27b64950280e3f13f775d4a3020f6c
+
+% 0 1 0 11c8f0b6bee4670e102d9be461b73cde
+
+% 0 1 0 184a50e33d0ba79606ed4f6c1f0fb38d
+
+% 0 1 0 1642e546b5291a481ce949e4ed82a35e
+
+% 0 1 0 154184d3b5c50461113e7773a8242511
+
+% 1 1 0 1a9d3ff820e8875209029d4a662e1a88
+
+@ 0 2 0 01cbe05f81c0a3720033dfbffd98bc98
++       `Q32` 的数组是原始的 `int[]`，这正是这个类型在 `Q64` 之外存在的理由：对于能够容纳的分数，同样的内存可以存放两倍的有理数。
+
+@ 0 2 0 040450ad84da8d7912c7e542ddb4d5cd
++       它的伴生对象的成员声明在 `rationalInternal.Q32` 中，该类型从那里导出，成员也在那里记录。
+
+% 1 1 0 18336cabbb45881517cc5428a1077f75
+
+@ 0 1 0 1d576212bf40338007e4419e1b4484a7
++ entry .rationalInternal   `Q64` 和 `Q32` 的不透明作用域
+
+% 1 1 0 1c220f4faca37284180e4de57f4b3d3b
+
+% 2 1 0 1c167878a5063df9081e2b7f86b1ee55
+
+@ 0 5 0 02918418a6fbb8d10ce1ea653a6be06e
++       不供直接使用：这个对象限定了有理数的表示（Stern–Brocot 树中的一个位置，以 gamma 编码的连分数存放在 `Long` 或 `Int` 中），使它甚至对包内的其余部分也是隐藏的。
++       这两个类型及其伴生对象以 `Q64` 和 `Q32` 的名称导出到 `hypotenuse`。
++   entry .Q64   64 位有理数；参见 `hypotenuse.Q64`
+
+% 1 1 0 1a45518e895bb70f001460acd75b9d17
+
+@ 0 5 0 0a9c39185996eac71d28672523db748a
++         不透明类型 `Q64` 的伴生对象，与该类型一起导出到 `hypotenuse` 包。
++     entry .Zero   零，即全零的字
++     entry .One   一
++     entry .Nar   非有理数：除以零的结果，它会传播，比较时视为无序
++     entry .Max   最大的整数，`2147483646`
+
+% 0 1 0 0ab01c6c094358ff1cb56fe2733900b9
+
+@ 0 21 0 05dc4b621dc001c918144f51ecad5514
++     entry .underlying   `Q64` 底层是 `Long` 的证据
++     entry .canEqual   `Q64` 只能用 `==` 与另一个 `Q64` 比较
++     entry .classTag   使 `Array[Q64]` 成为原始 `long[]` 的 `ClassTag`
++     entry .apply   由 `Int` 或 `Long`、由分子和分母，或由 `Double` 构成的 `Q64`
++         `Q64(numerator, denominator)` 约分为最简形式，并把负号移到分子上；分母为零时得到 `Nar`，超出容量的值舍入为其最佳逼近。
++         `Q64(double)` 是有限 `Double` 的最佳可表示逼近（`Q64(0.375)` 恰好是 `3/8`），对 `NaN` 或无穷大则为 `Nar`。
++     entry .parse   由 `7`、`-5/3` 或 `NaR` 得到的 `Q64`，或 `Rational.Error`
++     entry .comparison   有符号的三路比较，`NaR` 排在一切之下
++         关系运算符本身把 `NaR` 视为无序；这是排序所需要的全序。
++     entry .orderable   有理数上的 `<`、`<=`、`>`、`>=`、`min` 和 `max`；与 `NaR` 的任何比较都为 false
++     entry .fromDigits   在 `genericNumberLiterals` 下，由整数或小数字面量得到的 `Q64`
++         `val ratio: Q64 = 0.35` 恰好是 `7/20`；只要分数能放进载荷，小数字面量就能精确转换。
++     entry .textualizable   把有理数渲染为 `7`、`-5/3` 或 `NaR`
++     entry .addable   `Q64 + Q64`，精确计算，或得到能够容纳的最佳逼近
++         它是 inline 的，带有 inline 的 `add`，因此在该类型本身上使用时，执行的是 `Long` 算术，没有实例调用，也没有装箱；其类型为 `[self <: Q64]`，因此像统计归约所产生的那种斯科伦化的元素类型仍能找到它。
+
+% 0 1 0 0b23483a54f1bc8e0137a21771403d3e
+
+% 0 1 0 153a36adc83e6f291dfcb4a1b2bd387b
+
+@ 0 36 0 136915f80e55836f1b29d39bac798288
++     entry .divisible   `Q64 / Q64`：全函数，除数为零时得到 `Nar`
++     entry .negatable   `Q64` 上的前缀 `-`；`-Nar` 是 `Nar`
++     entry .zeroic   `Q64.Zero` 作为加法单位元，用于 `total` 和 `mean`
++     entry .unital   `Q64.One` 作为乘法单位元
++     entry .rootable   `Q64` 上的 `sqrt`：对可表示有理数的平方是精确的，否则为最佳逼近
++         `Q64(2).sqrt` 以编码的全部深度逼近 √2；操作数为负时得到 `Nar`。
++     entry .divisibleDouble   `Q64 / Double`，除数先转换为有理数
++         集合大小和精确的一半都能精确转换，这正是让 `mean` 和 `median` 保持精确的原因。
++     entry .multiplicableDouble   `Q64 * Double`，乘数先转换为有理数
++     entry .multiplicableInt   `Q64 * Int`，对除两个极端值以外的每个 `Int` 都精确，两个极端值会被钳制
++     entry .multiplicableLong   `Q64 * Long`，在 `±(2³¹−2)` 范围内精确；更大的乘数会被钳制
++     entry .divisibleInt   `Q64 / Int`；除以零得到 `Nar`
++     entry .divisibleLong   `Q64 / Long`；除以零得到 `Nar`
++     entry .quotient   把 `Q64` 解构为 `case numerator /: denominator`；`NaR` 不匹配
++     entry .intConversion   `Int` 隐式转换为 `Q64`，除 `Int.MaxValue` 和 `Int.MinValue` 外都是精确的
++         这两个极端值舍入一位，变为 `±(2³¹−2)`。
++         没有从 `Long` 的转换，正如没有到 `F64` 的转换，因为它不会是精确的。
++     entry .shortConversion   `Short` 隐式转换为 `Q64`
++     entry .byteConversion   `Byte` 隐式转换为 `Q64`
++     entry .q32Conversion   `Q32` 隐式转换为 `Q64`，总是精确的
++     entry .numerator   `Q64` 上的扩展方法：最简形式下带符号的分子；零和 `NaR` 为 `0`
++     entry .denominator   `Q64` 上的扩展方法：最简形式下的分母；零为 `1`，只有 `NaR` 为 `0`
++     entry .signum   `Q64` 上的扩展方法：`-1`、`0` 或 `1`，`NaR` 为 `0`
++     entry .nar   `Q64` 上的扩展方法：该值是否为 `NaR`
++     entry .abs   `Q64` 上的扩展方法：绝对值
++     entry .whole   `Q64` 上的扩展方法：分母是否为一
++     entry .reciprocal   `Q64` 上的扩展方法：`1/q`，零得到 `Nar`
++     entry .floor   `Q64` 上的扩展方法：不大于该值的最大整数，作为 `Q64`
++     entry .ceiling   `Q64` 上的扩展方法：不小于该值的最小整数，作为 `Q64`
++     entry .round   `Q64` 上的扩展方法：最接近的整数，作为 `Long`，一半时向上舍入，与 `Double` 上的 `math.round` 相同
++     entry .double   `Q64` 上的扩展方法：正确舍入的 `Double`；`NaR` 为 `NaN`
++     entry .text   `Q64` 上的扩展方法：`7`、`-5/3`、`0` 或 `NaR`，`Q64.parse` 可以读回
++     entry .q32   `Q64` 上的扩展方法：最佳的 `Q32` 逼近，只要该值能够容纳就是精确的
++   entry .Q32   32 位有理数；参见 `hypotenuse.Q32`
+
+% 1 1 0 05c13f84414dcf7d118cf9080dc6869e
+
+@ 0 5 0 1ed25c0035b762c012a3bf1bdd38dd7b
++         不透明类型 `Q32` 的伴生对象，与该类型一起导出到 `hypotenuse` 包。
++     entry .Zero   零
++     entry .One   一
++     entry .Nar   非有理数：除以零的结果
++     entry .Max   最大的整数，`32766`
+
+% 0 1 0 19af62d74f44bc8517113c9788793bc0
+
+@ 0 10 0 06b4e3cc51241116170af94ae8be8a18
++     entry .underlying   `Q32` 底层是 `Int` 的证据
++     entry .canEqual   `Q32` 只能用 `==` 与另一个 `Q32` 比较
++     entry .classTag   使 `Array[Q32]` 成为原始 `int[]` 的 `ClassTag`
++     entry .apply   由 `Int` 或 `Long`、由分子和分母，或由 `Double` 构成的 `Q32`
++     entry .parse   由 `7`、`-5/3` 或 `NaR` 得到的 `Q32`，或 `Rational.Error`
++     entry .comparison   有符号的三路比较，`NaR` 排在一切之下
++     entry .orderable   `Q32` 上的 `<`、`<=`、`>`、`>=`、`min` 和 `max`；与 `NaR` 的任何比较都为 false
++     entry .fromDigits   在 `genericNumberLiterals` 下，由整数或小数字面量得到的 `Q32`
++     entry .textualizable   把 `Q32` 渲染为 `7`、`-5/3` 或 `NaR`
++     entry .addable   `Q32 + Q32`，inline 且不分配内存
+
+% 0 1 0 055ae450f6fed4441ea9786ab15093c6
+
+% 0 1 0 0f71d2c46a4b86df1b6e8af4f2cd8f04
+
+@ 0 5 0 051775dd10858d500ea06f376cb14d53
++     entry .divisible   `Q32 / Q32`：全函数，除数为零时得到 `Nar`
++     entry .negatable   `Q32` 上的前缀 `-`
++     entry .zeroic   `Q32.Zero` 作为加法单位元
++     entry .unital   `Q32.One` 作为乘法单位元
++     entry .rootable   `Q32` 上的 `sqrt`，对可表示有理数的平方是精确的
+
+% 0 1 0 0bd87688548051c2166f79e77b652b06
+
+% 0 1 0 11fdbe238594ed77175bd202e9622903
+
+@ 0 2 0 18f7713aed3ecb60168c3f6e8ac7e5e5
++     entry .multiplicableInt   `Q32 * Int`，在 `±32766` 范围内精确
++     entry .multiplicableLong   `Q32 * Long`，在 `±32766` 范围内精确
+
+% 0 1 0 01bbe77167115c8b0b206bff12299147
+
+% 0 1 0 17de5bf399e3635c1e3c95a779798814
+
+@ 0 16 0 14d47e764de88168125f69351ffc6988
++     entry .quotient   把 `Q32` 解构为 `case numerator /: denominator`
++     entry .shortConversion   `Short` 隐式转换为 `Q32`，除两个极端值外都是精确的
++     entry .byteConversion   `Byte` 隐式转换为 `Q32`
++     entry .numerator   `Q32` 上的扩展方法：最简形式下带符号的分子
++     entry .denominator   `Q32` 上的扩展方法：最简形式下的分母；`NaR` 为 `0`
++     entry .signum   `Q32` 上的扩展方法：`-1`、`0` 或 `1`
++     entry .nar   `Q32` 上的扩展方法：该值是否为 `NaR`
++     entry .abs   `Q32` 上的扩展方法：绝对值
++     entry .whole   `Q32` 上的扩展方法：分母是否为一
++     entry .reciprocal   `Q32` 上的扩展方法：`1/q`，零得到 `Nar`
++     entry .floor   `Q32` 上的扩展方法：不大于该值的最大整数
++     entry .ceiling   `Q32` 上的扩展方法：不小于该值的最小整数
++     entry .round   `Q32` 上的扩展方法：最接近的整数，作为 `Long`，一半时向上舍入
++     entry .double   `Q32` 上的扩展方法：正确舍入的 `Double`
++     entry .text   `Q32` 上的扩展方法：`7`、`-5/3`、`0` 或 `NaR`
++     entry .q64   `Q32` 上的扩展方法：作为 `Q64` 的相同值，总是精确的
+
+@ 0 1 0 045e03a50b49bb2c0eac247701bcccf8
++ entry .Bcd   打包的二进制编码十进制数，就像 JSON 或 YAML 解析器逐步累积的那样
+
+% 1 1 0 10a2cbe458986c9f110d6ac75c3a8b43
+
+@ 0 6 0 05d8d7a00720146e17afbe9c4414da2d
++       `Bcd` 按书写时的样子保存数字的各位（数字、小数点、指数及其符号，每项一个半字节），存放在一个冻结的 `Array[Double]^{}` 中，其第一个字是头部（符号和半字节数），其余每个字各承载十六个半字节。
++       它是 jacinta 的 JSON 解析器所用的数字表示，被移到这里，使 YAML 库不必依赖 JSON 库；它保留数字的精确文本，在被要求之前不必确定为 `Double`、`Long` 或 `BigDecimal`。
+
+@ 0 5 0 0c90936dc4c00c7e1584b40163e3114b
++       半字节 `0x0`–`0x9` 表示数字，`0xA` 表示 `.`，`0xB` 表示 `e`，`0xC` 表示 `e-`。
++       小数点前的前导 `0` 在存储时被省略，渲染时再重新插入。
++       除数组形式外，还有两种针对小数字的紧凑打包，使解析器可以把值保存在单个 `Long`（最多 14 个半字节）或 `Int`（最多 7 个）中，只在溢出时才构建 `Bcd`；`packBcdLong` 系列负责读写这两种形式。
+
+% 2 1 0 0485459b530ecbad18200a6da7db0488
+
+% 3 1 0 106e6ff9463922e212cc314ff8eb7fa6
+
+% 0 1 0 1c3393a2d692af78123a2aedf5bd6909
+
+% 0 1 0 023ab207fe552a2d1e7e22bf1da37e50
+
+% 0 1 0 1fa0d8da8d2ede3d0b8cd43e75938e70
+
+% 0 1 0 0735eb69782bdc0f1ef36af6c2da6ecb
+
+% 0 1 0 0571c0dc8506a6321eb6593db69b88bb
+
+% 1 1 0 046da2919424d8da0c8717f79edd00ec
+
+@ 0 27 0 0a6a8782fdce296a02a2f7b829eb316d
++   entry .adopt   把新构建的 `Array[Double]` 包装为 `Bcd`，一次性解除该数组的能力
++   entry .NibblesPerDouble   十六：一个数据字容纳的半字节数
++   entry .MaxBcdLongNibbles   十四：单 `Long` 打包最多容纳的半字节数
++   entry .packBcdLong   把累积的 `content`、其半字节数和符号打包成单 `Long` 形式
++       第 63 位是符号，第 56–62 位是计数，第 0–55 位是半字节，最新的位于最低的四位。
++       调用者负责检查计数不超过 `MaxBcdLongNibbles`；`0L` 保留给未初始化的槽位，因为有效的值至少有一个半字节。
++   entry .bcdLongNibbleCount   单 `Long` 值的半字节数
++   entry .bcdLongNegative   单 `Long` 值的符号
++   entry .bcdLongText   单 `Long` 值的规范 JSON 数字文本
++   entry .bcdLongToDouble   经由文本，把单 `Long` 值转为 `Double`
++   entry .MaxBcdIntNibbles   七：单 `Int` 打包最多容纳的半字节数
++   entry .packBcdInt   把累积的 `content`、其半字节数和符号打包成单 `Int` 形式
++       第 31 位是符号，第 28–30 位是计数，第 0–27 位是半字节。
++   entry .bcdIntNibbleCount   单 `Int` 值的半字节数
++   entry .bcdIntNegative   单 `Int` 值的符号
++   entry .bcdIntText   单 `Int` 值的规范 JSON 数字文本
++   entry .bcdIntToDouble   经由文本，把单 `Int` 值转为 `Double`
++   entry .repackBcdIntAsLong   把单 `Int` 形式重新编码为单 `Long` 形式
++   entry .packBcdIntFromLong   把单 `Long` 形式重新编码为单 `Int` 形式，适用于最多七个半字节的值
++   entry .fromContent15   直接从解析器的 `Long` 累加器得到的、恰好十五个半字节的 `Bcd`
++   entry .apply   `Bcd(bigDecimal)`：`BigDecimal` 的普通字符串的各位数字
++   entry .fromString   由正数值的数字字符串和一个符号标志构成的 `Bcd`
++       文本可以包含数字、一个 `.`，以及带可选符号的 `e`/`E` 指数；调用者去掉任何前导 `-`，并把它作为 `negative` 传入。
++       前导的 `0.` 在存储时去掉零，与解析器的做法相同。
++   entry .Builder   像解析器读取那样，逐个半字节地组装 `Bcd`
+
+% 1 1 0 1438a191b803da8b0eb2449e16184d53
+
+@ 0 21 0 188ed2c3579457be09202ebcd158443a
++         一个可变的累加器：`#add` 追加一个半字节，每满十六个提交一个数据字；`#overwriteLast` 改写最近的一个（当 `-` 跟在后面时，`e` 变为 `e-`）；`#seedFromLong` 在解析器的单 `Long` 累加器溢出时把它复制进来；`#finish` 连同符号冻结结果。
++     entry #add   追加一个半字节，`0x0`–`0xC`
++     entry #overwriteLast   替换最近添加的半字节
++     entry #seedFromLong   追加单 `Long` 累加器中保存的 `count` 个半字节
++     entry #nibbleCount   已添加的半字节数
++     entry #finish   带有给定符号的、完成的 `Bcd`
++   entry .negative   `Bcd` 上的扩展方法：该数是否为负
++   entry .nibbleCount   `Bcd` 上的扩展方法：该数有多少个半字节
++   entry .eachNibble   `Bcd` 上的扩展方法：从最早的开始访问每个半字节
++       命名为 `eachNibble` 而不是 `each`，因为 `Bcd` 是数字而不是集合，否则在导入 `Bcd.*` 的文件中，集合的 `each` 会对每个接收者都被遮蔽。
++   entry .text   `Bcd` 上的扩展方法：按书写时的样子、以规范 JSON 形式给出的数字
++       即数字、可选的小数点和小数部分，以及可选的 `e[-]digits` 指数；为负时带 `-` 前缀，前导小数点之前重新插入 `0`。
++   entry .toBigDecimal   `Bcd` 上的扩展方法：作为 `BigDecimal` 的精确值
++   entry .toDouble   `Bcd` 上的扩展方法：最接近的 `Double`
++   entry .toLong   `Bcd` 上的扩展方法：作为 `Long` 的值，如果它不是能够容纳的整数则为 `Unset`
+
+@ 0 7 0 01f3212b18a24bfb11fa2bbf6fa99036
++ entry .bin   `bin"…"` 字面量：由 8、16、32 或 64 个二进制位得到的 `Byte`、`Short`、`Int` 或 `Long`
++     `bin"00001111"` 是 `Byte` 值 `15`，在代码编译时检查：为便于阅读，各位之间可以用空格分隔，结果的类型由位数决定，因此 `bin"1111 0000 1111 0000"` 是一个 `Short`。
++     `0`、`1` 或空格以外的字符是错误 `↯/s.27.2`，_a binary value can only contain characters '0' or '1'_；位数不是 8、16、32 或 64 时是错误 `↯/s.27.5`。
++     结果是原始值；`bits` 把它变成 `B8`、`B16`、`B32` 或 `B64`。
+
+% 2 1 0 0e623ab6dc9b882b1341418eb156a9d1
+
+% 3 1 0 04a28a8aba2cca1b0423473298d5dfce
+
+% 0 1 0 02871b2c072f30651fae55d57d909739
+
+% 0 1 0 0ada551a194f9cbd16cd2237d6708189
+
+% 1 1 0 1e061f3393d5257c0b5383f8f858ca01
+
+@ 0 6 0 1d2cb3b0ccc1856204a2155e11284f87
++ entry .hex   `hex"…"` 字面量，即冻结的字节数组；以及任何整数的十六进制渲染
++     `hex"cafe babe"` 是由这些数字拼出的字节构成的 `Array[Byte]^{}`，在代码编译时构建：数字之间的空格和换行会被忽略，因此长常量可以分行排列，数字也可以使用任意大小写。
++     不是十六进制数字的字符是错误 `↯/s.27.4`，数字个数为奇数时是错误 `↯/s.27.3`，_a hexadecimal value must have an even number of digits_。
+
+% 2 1 0 1d8eb03b4980fde606c402e796cf077d
+
+% 3 1 0 07a839ffcdc69aa917f7123948b72294
+
+% 0 1 0 1bd5cba59df652aa18453fe6d77fbffc
+
+% 0 1 0 1721913b3bade5c5189a0489e5384e66
+
+% 1 1 0 04d2a81c02e2b11608f144466f4f6293
+
+@ 0 5 0 19d44d68fafb2b15070e0e7930904c7f
++     作为扩展方法，`hex` 以十六进制渲染 `Byte`、`Short`、`Int` 或 `Long`，与 `java.lang.Integer.toHexString` 相同：`Byte` 或 `Short` 按其无符号位模式（`(-1: Byte).hex` 是 `t"ff"`），`Int` 或 `Long` 按二进制补码，不补零。
++     `B8`…`B64` 的 `hex` 补齐到该类型的宽度，`U*` 或 `S*` 的 `hex` 是其无符号或有符号值的 16 进制表示。
+
+@ 0 4 0 07140f9554ea065815398e4a474182db
++ entry .minimum   集合中最小的元素，集合为空时为 `Unset`
++     它是任何 `Traversable` 集合和任何 `Iterable` 上的扩展方法，适用于具有 `Orderable` 的元素（严格地说，是与自身 `Commensurable against` 的元素）。
++     只遍历一次；有多个相等的最小元素时，第一个胜出。
+
+% 2 1 0 18a3320da57e1f3f1ea9363739dac3ba
+
+% 3 1 0 0df9b04467581c6405b557629142b95e
+
+% 0 1 0 1c772a86d178c19b110fc0b87c142dc9
+
+% 0 1 0 1bbf34a94c762ff911d7082997f609b0
+
+% 1 1 0 0a7a46cceaabe31a1aadbe35e8da783b
+
+@ 0 3 0 13b18c2b580b5f8d0427759635a4ef36
++ entry .maximum   集合中最大的元素，集合为空时为 `Unset`
++     与 `minimum` 一样，它是任何 `Traversable` 集合和任何 `Iterable` 上的扩展方法，适用于具有 `Orderable` 的元素。
+
+@ 0 8 0 0965bbeb5b699c4604871bfa794a5aa7
++ entry .median   集合的中间值，或两个中间值的平均值，或 `Unset`
++     它是任何 `Traversable` 集合和任何 `Iterable` 上的扩展方法。
++     中位数通过快速选择求得，这是选择而不是排序，因此整个集合从不被排序；当个数为偶数时，对两个中间值取平均，这就是为什么元素类型不仅需要 `Orderable`，还需要能与自身 `Subtractable`，其差能被 `Double` `Divisible`，结果还能 `Addable` 回元素上。
++     数字、物理量和有理数都满足条件，结果类型就是这次加法产生的类型。
+
+% 2 1 0 062435de85287adc05afa4dda395151f
+
+% 3 1 0 0def476fff35aacd1ae0a425394f6012
+
+% 0 1 0 1cb236a30814cc9c086f020c6f281acd
+
+% 0 1 0 140724088a6b3a360c2b2133dda447ac
+
+% 0 1 0 11b09a050df8a8f015808f2376df1920
+
+% 1 1 0 1232a6867d04b462097d75d4e7ee2b85
+
+@ 0 4 0 1d08f9fae514d5830a6094e0690da981
++ entry .abs   `Float`、`Double`、`Byte`、`Short`、`Int` 或 `Long` 的绝对值
++     它是每种原始类型上的扩展方法，与 `math.abs` 相同；有符号类型 `S8`…`S64`、`F32`、`F64`、`Q64`、`Q32` 和 `Decimal` 有各自的 `abs`。
++     与 Java 中一样，`Byte.MinValue.abs` 是 `Byte.MinValue`。
+
+@ 0 2 0 16c5cd7ffc39cd410e540511c32042e7
++ entry .ceiling   不小于某个 `Float` 或 `Double` 的最小整数值
++     即作为扩展方法的 `math.ceil`；`F32` 和 `F64`，以及 `Q64` 和 `Q32` 上也有。
+
+@ 0 3 0 0cce89173a5616401a3f5bfa36e0cb4a
++ entry .floor   不大于某个 `Float` 或 `Double` 的最大整数值
++     即作为扩展方法的 `math.floor`；`F32`、`F64`、`Q64` 和 `Q32` 上也有。
++     整数的向下取整除法是 `/-`。
+
+@ 0 2 0 06ff00c36c4114b30045662fbfff59b5
++ entry .exponent   `Float`（作为 `Int`）或 `Double`（作为 `B16`）的无偏二进制指数
++     即作为扩展方法的 `math.getExponent`；`F32` 和 `F64` 上也有。
+
+@ 0 2 0 0d00d4f08cf558db15a1b99a127a1dfa
++ entry .increment   比当前值大的下一个可表示的 `Float` 或 `Double`
++     即作为扩展方法的 `math.nextUp`；`successor` 与之相同。
++     `F32` 和 `F64` 上也有。
+
+@ 0 2 0 0186af7643ffc0a404c54918576cf893
++ entry .decrement   比当前值小的下一个可表示的 `Float` 或 `Double`
++     即作为扩展方法的 `math.nextDown`；`predecessor` 与之相同。
++     `F32` 和 `F64` 上也有。
+
+@ 0 1 0 04aff6b1945c42d41a126ed664ae2925
++ entry .successor   比当前值大的下一个可表示的 `Float` 或 `Double`，与 `increment` 相同
+
+@ 0 1 0 0e4161f1ca4d2402101d5dcc9a62639d
++ entry .predecessor   比当前值小的下一个可表示的 `Float` 或 `Double`，与 `decrement` 相同
+
+@ 0 2 0 00ba13341762fea80d5f07400cd54eb3
++ entry .round   舍入到最接近的 `Long` 的 `Float` 或 `Double`，一半时向上舍入
++     即作为扩展方法的 `math.round`；`F32`、`F64`、`Q64` 和 `Q32` 上也有。
+
+@ 0 2 0 1493507e1832d00a03461ac0fb749ec4
++ entry .scalb   乘以 2 的幂的 `Float` 或 `Double`：`value.scalb(n)` 是 `value × 2ⁿ`
++     即作为扩展方法的 `math.scalb`，对范围内的每个结果都是精确的；`F32` 和 `F64` 上也有。
+
+@ 0 3 0 04267a54596170490267efa84e2643c3
++ entry .signum   `Float` 或 `Double` 的符号，类型为 `-1.0 | 0.0 | 1.0`
++     即作为扩展方法的 `math.signum`，其结果的类型是它可能取的三个值的联合；`F32` 和 `F64` 上也有。
++     `Q64`、`Q32` 和 `Decimal` 有整数形式的 `signum`。
+
+@ 0 2 0 12749d03a64634261d572ac1a267a6f0
++ entry .ulp   `Float` 或 `Double` 的最后一位单位：到下一个值的距离
++     即作为扩展方法的 `math.ulp`；`F32` 和 `F64` 上也有。
+
+@ 0 6 0 1b783857993e79a31c507b1223aeaf5d
++ entry .bits   原始值的位模式，作为与其宽度对应的 `B8`、`B16`、`B32` 或 `B64`
++     `(0xf0: Byte).bits` 是 `B8`，`0xf0.bits` 是 `B32`，`0xf0L.bits` 是 `B64`，没有开销；反向转换是 `Short(bits)`、`Int(bits)` 和 `Long(bits)`。
++     对于 `Float` 和 `Double`，它是 IEEE 位模式（`floatToIntBits`、`doubleToLongBits`，`NaN` 被规范化），`Double` 的位模式为 `B64`。
++     `U*` 和 `S*` 类型各有一个给出其位模式的 `bits`，`F64` 和 `F32` 的 `bits` 给出 IEEE 位模式。
+
+% 2 1 0 17046065214043f70fc7bf064846eb74
+
+% 3 1 0 140ada37b2b706551fc705da59ca6a6c
+
+% 0 1 0 084b5411bad606ac171fff0332d40ee6
+
+% 0 1 0 0397f04c09f3b556079c858e22033bc9
+
+% 0 1 0 1c0bfa6fda682548158f99ec7252867b
+
+% 0 1 0 014fb2e5084016b9054faece4a98d0bb
+
+% 1 1 0 04ec562dd174735d07359650672c775e
+
+@ 0 3 0 1ff61d2faa4c9d160f45bf25e37a782d
++ entry .rawBits   `Float` 或 `Double` 的 IEEE 位模式，保留 `NaN` 的载荷
++     即作为扩展方法的 `floatToRawIntBits` 和 `doubleToRawLongBits`；`bits` 把每个 `NaN` 规范化为同一个位模式。
++     `F32` 和 `F64` 上也有。
+
+@ 0 2 0 0365fefe412f4f631c06eb12da94f956
++ entry .finite   `Float` 或 `Double` 是否既不是无穷大也不是 `NaN`
++     `F32` 和 `F64` 上也有。
+
+@ 0 2 0 07cc07176d1abfc719f4a18ffe0b14c4
++ entry .infinite   `Float` 或 `Double` 是否为正无穷大或负无穷大
++     `F32` 和 `F64` 上也有。
+
+@ 0 2 0 03b5ad2d0b6836e10562c54ea2b7f5de
++ entry .nan   `Float` 或 `Double` 是否为 `NaN`
++     `F32` 和 `F64` 上也有；有理数的未定义值则改用 `nar` 检测。
+
+@ 0 2 0 14d15a1e759666581144629663455781
++ entry .mantissa   `Double` 的 IEEE 位模式的低 52 位，作为 `B64`
++     它是 `Double` 和 `F64` 上的扩展方法。
+
+@ 0 6 0 02a4758536c52af204da27f60024da45
++ entry .**   求数的幂：`base ** exponent`，指数为 `Double`
++     它是 `Float`（得到 `Float`）以及 `Double`、`Byte`、`Short`、`Int` 和 `Long`（得到 `Double`）上的扩展方法，与 `math.pow` 相同：整数形式会拓宽而不是截断，因此 `(200: Short) ** 2.0` 是 `40000.0`，`2 ** 0.5` 是 `√2`。
++     `F64 ** x` 和 `F32 ** x` 接受任何能拓宽为它们的操作数，并返回它们自身的类型；`S*` 类型返回 `Double`。
+
+@ 0 5 0 065be12481b058451ec2af2d1c8abd02
++ entry .%%   向下取整取模：余数的符号与除数相同，除数为正时永不为负
++     它是 `Float`、`Double`、`Byte`、`Short`、`Int` 和 `Long` 以及 `S8`…`S64` 上的扩展方法。
++     `%` 取被除数的符号，而与之不同，`-7 %% 3` 是 `2`，`7 %% -3` 是 `-2`，因此值会像时钟的小时那样被带入一个范围；`/-` 是与之匹配的除法。
+
+% 2 1 0 07180cc7484066b60f6a91d6646165f1
+
+% 3 1 0 198e3698c372b74509df9432819ade7a
+
+% 0 1 0 0ce9056e152d176c017beab31fcc26e5
+
+% 0 1 0 11aaf2a26771f6a707a02e51eb6754b0
+
+% 0 1 0 10f874cb8ea2a5fc03c6b3848745e421
+
+% 1 1 0 049c8b6df93359dc11fea8dca90179e8
+
+@ 0 4 0 04210322b4decfb0086f27c2d8fd8803
++ entry ./-   向下取整除法：向负无穷方向舍入的商
++     它是 `Byte`、`Short`、`Int` 和 `Long` 以及 `S8`…`S64` 上的扩展方法，与 `math.floorDiv` 相同：`-7 /- 2` 是 `-4`，而 `/` 给出 `-3`。
++     它与 `%%` 配对，使得 `(a /- b)*b + (a %% b) == a`。
+
+@ 0 3 0 0681f3c4464997370757101290ce74d6
++ entry .long   拓宽为 `Long` 的 `Byte`、`Short` 或 `Int`
++     它是每种类型上的扩展方法；`S*` 类型也有 `long`，`U*` 类型的 `long` 是其无符号值。
+
+@ 0 2 0 0c53c4a59b626aad149735290b3e69b8
++ entry .int   拓宽后的 `Byte`；以及 `S8`、`S16`、`S32`、`U8` 或 `U16` 的 `Int` 值
++     `Byte` 上的扩展方法类型为 `Long`，`short` 也是如此。
+
+@ 0 1 0 13c508271ecbfee81dd687e22f321560
++ entry .short   拓宽后的 `Byte`；以及 `S8`、`S16` 或 `U8` 的 `Short` 值
+
+@ 0 4 0 1430cc32a0c69e7212a20f36f2a34e36
++ entry .octal   `Byte`、`Short`、`Int` 或 `Long` 的八进制表示
++     与 `toOctalString` 相同，`Byte` 或 `Short` 按其无符号位模式，不补齐：`(-1: Byte).octal` 是 `t"377"`。
++     `B*` 类型补齐到其宽度，`U*` 和 `S*` 类型以 8 进制渲染其值。
+
+@ 0 2 0 17faf11420e7333712d9406f56906743
++ entry .base32   `Byte`、`Short`、`Int` 或 `Long` 的 32 进制表示，使用数字 `0`–`9` 和 `a`–`v`
++     与 `java.lang.Integer.toString(value, 32)` 相同，带符号；`U*` 和 `S*` 类型上也有。
+
+@ 0 4 0 04012a19bceca6e413d7e429f29086e2
++ entry .binary   `Byte`、`Short`、`Int` 或 `Long` 的二进制表示
++     与 `toBinaryString` 相同，`Byte` 或 `Short` 按其无符号位模式，因此 `(-1: Byte).binary` 是八个 `1`。
++     `B*` 类型补齐到其宽度，`U*` 和 `S*` 类型以 2 进制渲染其值。
+
+@ 0 3 0 0d2e66b867e5b676082ad1264a5d609e
++ entry .gcd   用欧几里得算法求两个整数的最大公约数
++     它是 `Byte`、`Short`、`Int` 和 `Long` 以及每个 `U*` 和 `S*` 类型上的扩展方法，各自接受同类型的操作数。
++     `gcd(0)` 是接收者本身。
+
+@ 0 2 0 12527f00fa4268b00f0b9867a03f0c13
++ entry .lcm   两个 `Byte`、`Short`、`Int` 或 `Long` 的最小公倍数
++     即 `a*b/a.gcd(b)`，以接收者自身的宽度计算，因此超出该宽度的乘积会回绕。
+
+@ 0 5 0 1c61eff9bc8ca62e0ed63e914d4b6654
++ entry .\   `numerator \ denominator`：作为 `Q64` 的精确有理数
++     它是 `Int` 和 `Long` 上的扩展方法。
++     `\` 位于最高的优先级层，比 `*`、`/`、`+` 和 `-` 结合得更紧，因此无需括号，`1 \ 3 + 1 \ 6` 就是两个分数之和，`2 \ 3*3 \ 4` 就是它们之积。
++     分母为零时得到 `Q64.Nar`，负的分子或分母会移动符号：`-5 \ 3` 是 `Q64(-5, 3)`。
+
+% 2 1 0 0b5bd010af4599340b376de4e74a67db
+
+% 3 1 0 05c8b7f43d69773e11a2db7f85413bd0
+
+% 0 1 0 1733dcb37bf3000616b31caf141bf660
+
+% 0 1 0 05b07b38e58de798048857eab66d9bd3
+
+% 0 1 0 14fa7f061f8782280e2c9118c0d71843
+
+% 1 1 0 026afce1587beec5101d0f370b430563
+
+@ 0 6 0 0fbc190dd449586e1bdf4226484247fc
++ entry .apply   `Short(bits)`、`Int(bits)`、`Long(bits)`、`Double(long)`，以及大端读取 `Short(bytes)`、`Int(bytes)`、`Long(bytes)`
++     这些是原始类型伴生对象上的扩展方法。
++     `Short(bits: B16)`、`Int(bits: B32)` 和 `Long(bits: B64)` 把位模式重新解释为原始值，没有开销；`Double(long)` 即 `Double.longBitsToDouble`；`Short(bytes)`、`Int(bytes)` 和 `Long(bytes)` 把冻结的 `Array[Byte]^{}` 的前 2、4 或 8 个字节读作大端整数。
++     它们没有导出到 `soundness` 总括包，因此需要 `import hypotenuse.*`。
+
+@ 0 3 0 0e2e3f4e17ae50201f037811fa857a3e
++ entry .erf   高斯误差函数 `erf(x)`，精确到约七位小数
++     采用 Abramowitz 和 Stegun 的有理逼近（公式 7.1.26），其绝对误差处处低于 `1.5 × 10⁻⁷`。
++     `erf(0.0)` 是 `0.0`，`erf(x)` 趋于 `±1`。
+
+@ 0 1 0 18304d28887a6e7f1bcf094b03bdab04
++ entry .π   圆的周长与直径之比，`math.Pi`
+
+@ 0 1 0 06f2d07196901e6e11607e3b19763f77
++ entry .pi   `π`，供没有这个字符的键盘使用
+
+@ 0 1 0 02814a7eeb4ada1b042538e318d4be53
++ entry .euler   欧拉数，`math.E`
+
+@ 0 1 0 0d2a2d7c8ce6dfd512501e5218856895
++ entry .φ   黄金比例，`(1 + √5)/2`
+
+@ 0 1 0 00b58d9fe7bb6dc010ebdbdbdba97b44
++ entry .goldenRatio   `φ`，供没有这个字符的键盘使用
+
+@ 0 4 0 182fba8c5a3b38760d0b0aa24364dd8e
++ entry .cos   以弧度表示的角的余弦，作为 `F64`
++     每个三角函数和对数函数都接受任何能转换为 `F64` 的值（`Double`、`Int`、`F64`、`U8`），并返回 `F64`，因此这些函数无需强制转换即可组合：`cos(π/3)`、`ln(exp(2))`。
+
+% 2 1 0 0b4566c7e0e577fe157be0184bdca4ce
+
+% 3 1 0 09359d7bdbf6a9471174c9cd6f6b6908
+
+% 0 1 0 0e6c5483b8fa6d520f12f68bc82102ef
+
+% 0 1 0 0924d8ded15ccb740f93b5b4cba1a433
+
+% 0 1 0 06140d36234328730750bf0f6e6a61e4
+
+% 1 1 0 19df789265ee9fc717924f968b7d325d
+
+@ 0 1 0 12ca7cbf65de804e157a5fda0f3b2b19
++ entry .acos   反余弦，以弧度表示，作为 `F64`
+
+@ 0 1 0 12174d23caae1c8c179c8feabaa2c6c4
++ entry .cosh   双曲余弦，作为 `F64`
+
+@ 0 1 0 0a6db7534895a2ed1ef220fc8dbb3762
++ entry .sin   以弧度表示的角的正弦，作为 `F64`
+
+@ 0 1 0 02b99eddca078a7d01bba13e91985cf6
++ entry .asin   反正弦，以弧度表示，作为 `F64`
+
+@ 0 1 0 145f80c71cfd64281e4ed9834b3027f7
++ entry .sinh   双曲正弦，作为 `F64`
+
+@ 0 1 0 18b828bb35a741e40851c64f1f7d759c
++ entry .tan   以弧度表示的角的正切，作为 `F64`
+
+@ 0 1 0 149e6a882a4eff2110edc6dc3d56950c
++ entry .atan   反正切，以弧度表示，作为 `F64`
+
+@ 0 3 0 1592d7808fbc83bd06a9fde43ceac8ae
++ entry .hyp   `hyp(a, b)`：斜边 `√(a² + b²)`，没有中间溢出
++     即 `math.hypot`；第一个参数可以是任何能转换为 `F64` 的值，第二个参数是 `F64`。
+
+@ 0 1 0 0db2ac14f62f056517b462334e3bba47
++ entry .exp   `e` 的幂，作为 `F64`
+
+@ 0 1 0 1ad84b7e28b895721bf33f5b114a23eb
++ entry .expm1   `exp(x) - 1`，对较小的 `x` 是准确的
+
+@ 0 1 0 04793f0bfd2b6087096a7f309edeab48
++ entry .ln   自然对数，作为 `F64`
+
+@ 0 1 0 15072399d52743340b212982f69552f3
++ entry .log10   以 10 为底的对数，作为 `F64`
+
+@ 0 1 0 029e683fcc4d397102b87dd61e56c82a
++ entry .log1p   `ln(1 + x)`，对较小的 `x` 是准确的
+
+@ 0 5 0 1a82c0167e6571771984f2a51db08c0c
++ entry .<   `left < right`，适用于任何 `left is Commensurable against right`
++     它是任何值上的 inline 扩展方法。
++     它采用作用域内的 `Commensurable` given（每个数值类型伴生对象中的 `Orderable`、`F64` 与 `Int` 和 `Double` 的比较、通过 `Commensurable.orderable` 的任何 `Comparable` 类型），并且可以链式使用：`a < x < b` 是单个范围检测，由 `Commensurable.numeric` 改写。
+
+@ 0 1 0 1af27982775365a411eb334797767839
++ entry .<=   `left <= right`，适用于任何 `left is Commensurable against right`；与 `<` 一样可以链式使用
+
+@ 0 1 0 1afda7b4c5db02aa1af5ea1918b240ea
++ entry .>   `left > right`，适用于任何 `left is Commensurable against right`
+
+@ 0 1 0 092149d9fe4d94ae00829c2d43e1627a
++ entry .>=   `left >= right`，适用于任何 `left is Commensurable against right`
+
+@ 0 3 0 09be044cb94027db05a15832d2eb84db
++ entry .min   `left min right`：`Orderable` 类型的两个值中较小的一个
++     接收者的类型就是操作数的类型，因此 `S32.Max min S32(1.bits)` 和 `1.5 min 2.0` 都能解析；`minimum` 是集合形式。
+
+@ 0 1 0 10eacadd9e40b22c062aa0adf31b9b23
++ entry .max   `left max right`：`Orderable` 类型的两个值中较大的一个
+
+@ 0 1 0 0267e916d879b4340c9cd62b405a41f5
++ entry .internal   定宽类型及其扩展方法的不透明作用域
+
+% 1 1 0 07b631fa97e68eb513b255f885e65c35
+
+% 2 1 0 132551408c5c3b2c0e5aac666ffd4b6c
+
+@ 0 7 0 19abac9648e48aad1c545b0c7979cfc1
++       不供直接使用：`U8`…`U64`、`S8`…`S64`、`F32`、`F64` 和 `B8`…`B64` 是在这里声明的不透明类型，使它们的表示甚至对包内的其余部分也是隐藏的，它们以各自的名称导出到 `hypotenuse`，在那里各有自己的页面。
++       它们上面的扩展方法也在这里声明，并按名称列为它的条目；每个类型的页面说明它具有哪些扩展方法。
++   entry .Bits   `Bits[8 | 16 | 32 | 64]`：给定宽度的 `B*` 类型，作为匹配类型
++   entry .U64   无符号 64 位整数，从 `0` 到 `18446744073709551615`；参见 `hypotenuse.U64`
+
+% 1 1 0 0abd34581c3fb3f61258656ac92b10fc
+
+@ 0 29 0 13ec7f6afe9db97a085a3dc12a84a2bb
++         不透明类型 `U64` 的伴生对象，与该类型一起导出到 `hypotenuse` 包。
++     entry .Min   零
++     entry .Max   `18446744073709551615`，所有位都置位
++     entry .underlying   `U64` 底层是 `Long` 的证据，供不透明类型机制使用
++     entry .addable   `U64 + U64`，由作用域内的 `CheckOverflow` 方针定义
++         该实例是作用域内 `CheckOverflow` given 的 `overflow.addU64`，以其单例类型为类型，因此在 `arithmeticOptions.uncheckedOverflow` 下，加法内联为单条 `ladd`。
++         在 `checkedOverflow` 下，结果为 `U64 raises Arithmetic.Error`，当和小于任一操作数时抛出。
++     entry .subtractable   `U64 - U64`，由作用域内的 `CheckOverflow` 方针定义
++         即 `overflow.subtractU64`：在 `uncheckedOverflow` 下回绕；在 `checkedOverflow` 下，当减数较大时抛出 `Arithmetic.Error`。
++     entry .multiplicable   `U64 * U64`，由作用域内的 `CheckOverflow` 方针定义
++         即 `overflow.multiplyU64`：在 `checkedOverflow` 下，当乘积的高位字非零（`Math.unsignedMultiplyHigh`）时抛出 `Arithmetic.Error`。
++     entry .divisible   `U64 / U64`，无符号，由作用域内的 `DivisionByZero` 方针定义
++         即 `division.divideU64`，用 `Long.divideUnsigned` 做除法。
++         在 `arithmeticOptions.uncheckedDivision` 下，除数为零时抛出 JVM 的 `ArithmeticException`；在 `checkedDivision` 下抛出 `Arithmetic.Error`。
++     entry .canEqual   `U64` 只能用 `==` 与另一个 `U64` 比较
++     entry .fromDigits   在 `genericNumberLiterals` 下，由整数字面量得到的 `U64`
++         按无符号解析；不是有效无符号 64 位整数的字面量在编译时失败。
++     entry .textualizable   把无符号十进制值渲染为 `Text`
++     entry .apply   `U64(bits: B64)`：把位模式读作无符号整数
++         没有开销：位模式就是值。
++         `U64(Long.MinValue.bits)` 是 `9223372036854775808`。
++     entry .orderable   用于 `<`、`<=`、`>`、`>=`、`min` 和 `max` 的无符号比较
++         通过伴生对象处于隐式作用域中；用 `Long.compareUnsigned` 比较。
++   entry .U32   无符号 32 位整数，从 `0` 到 `4294967295`；参见 `hypotenuse.U32`
+
+% 1 1 0 11858a657fd3a8c115605f88556cd5f4
+
+@ 0 22 0 142b4cee4b3904b20b9f8189a8aa9f38
++         不透明类型 `U32` 的伴生对象，与该类型一起导出到 `hypotenuse` 包。
++     entry .Min   零
++     entry .Max   `4294967295`，所有位都置位
++     entry .underlying   `U32` 底层是 `Int` 的证据
++     entry .addable   `U32 + U32`，来自作用域内的 `CheckOverflow` 方针
++         即 `overflow.addU32`；在 `checkedOverflow` 下，当和超过 `4294967295` 时抛出 `Arithmetic.Error`。
++     entry .subtractable   `U32 - U32`，来自作用域内的 `CheckOverflow` 方针
++         即 `overflow.subtractU32`；在 `checkedOverflow` 下，当结果为负时抛出 `Arithmetic.Error`。
++     entry .multiplicable   `U32 * U32`，来自作用域内的 `CheckOverflow` 方针
++         即 `overflow.multiplyU32`；乘积在 `Long` 中计算，在 `checkedOverflow` 下按 32 位范围检查。
++     entry .divisible   `U32 / U32`，无符号，来自作用域内的 `DivisionByZero` 方针
++         即 `division.divideU32`，使用 `Integer.divideUnsigned`；除数为零时，在 `checkedDivision` 下抛出 `Arithmetic.Error`，在 `uncheckedDivision` 下抛出异常。
++     entry .canEqual   `U32` 只能用 `==` 与另一个 `U32` 比较
++     entry .fromDigits   在 `genericNumberLiterals` 下，由整数字面量得到的 `U32`
++     entry .textualizable   把无符号十进制值渲染为 `Text`
++     entry .apply   `U32(bits: B32)`：把位模式读作无符号整数
++     entry .orderable   用于 `<`、`<=`、`>`、`>=`、`min` 和 `max` 的无符号比较
++   entry .U16   无符号 16 位整数，从 `0` 到 `65535`；参见 `hypotenuse.U16`
+
+% 1 1 0 010d0aa6308df82918b50d6ee8fd92a7
+
+@ 0 21 0 1e7ab61061bb4c3a11358b5ec0a1dfec
++         不透明类型 `U16` 的伴生对象，与该类型一起导出到 `hypotenuse` 包。
++     entry .Min   零
++     entry .Max   `65535`，所有位都置位
++     entry .underlying   `U16` 底层是 `Short` 的证据
++     entry .addable   `U16 + U16`，来自作用域内的 `CheckOverflow` 方针
++         即 `overflow.addU16`；在 `Int` 中计算，在 `checkedOverflow` 下与 `65535` 比较检查。
++     entry .subtractable   `U16 - U16`，来自作用域内的 `CheckOverflow` 方针
++         即 `overflow.subtractU16`；在 `checkedOverflow` 下，负的结果抛出 `Arithmetic.Error`。
++     entry .multiplicable   `U16 * U16`，来自作用域内的 `CheckOverflow` 方针
++         即 `overflow.multiplyU16`；在 `checkedOverflow` 下，`U16(256) * U16(256)` 会溢出。
++     entry .divisible   `U16 / U16`，来自作用域内的 `DivisionByZero` 方针
++     entry .canEqual   `U16` 只能用 `==` 与另一个 `U16` 比较
++     entry .fromDigits   在 `genericNumberLiterals` 下，由整数字面量得到的 `U16`
++         对超出范围的字面量，在编译时报告错误 `↯/s.27.12`（_a U16 may not be less than 0_）和错误 `↯/s.27.14`（_a U16 may not be greater than 65535_）。
++     entry .textualizable   把无符号十进制值渲染为 `Text`
++     entry .apply   `U16(bits: B16)`：把位模式读作无符号整数
++     entry .orderable   用于 `<`、`<=`、`>`、`>=`、`min` 和 `max` 的无符号比较
++   entry .U8   无符号 8 位整数，从 `0` 到 `255`；参见 `hypotenuse.U8`
+
+% 1 1 0 163d6b95c112f3fe1a6b02f5582f73eb
+
+@ 0 18 0 1e45ec8f4c68ddd3163ba33ff54bbacd
++         不透明类型 `U8` 的伴生对象，与该类型一起导出到 `hypotenuse` 包。
++     entry .Min   零
++     entry .Max   `255`，所有位都置位
++     entry .underlying   `U8` 底层是 `Byte` 的证据
++     entry .addable   `U8 + U8`，来自作用域内的 `CheckOverflow` 方针
++         即 `overflow.addU8`；在 `checkedOverflow` 下，大于 `255` 的和抛出 `Arithmetic.Error`。
++     entry .subtractable   `U8 - U8`，来自作用域内的 `CheckOverflow` 方针
++     entry .multiplicable   `U8 * U8`，来自作用域内的 `CheckOverflow` 方针
++     entry .divisible   `U8 / U8`，来自作用域内的 `DivisionByZero` 方针
++     entry .canEqual   `U8` 只能用 `==` 与另一个 `U8` 比较
++     entry .fromDigits   在 `genericNumberLiterals` 下，由整数字面量得到的 `U8`
++         错误 `↯/s.27.8`（_a U8 may not be less than 0_）以及针对超过上界的字面量的错误 `↯/s.27.9` 在编译时报告。
++     entry .textualizable   把无符号十进制值渲染为 `Text`
++     entry .apply   `U8(bits: B8)`：把位模式读作无符号整数
++     entry .orderable   用于 `<`、`<=`、`>`、`>=`、`min` 和 `max` 的无符号比较
++   entry .S64   有符号 64 位整数，二进制补码，从 `S64.Min` 到 `S64.Max`；参见 `hypotenuse.S64`
+
+% 1 1 0 1250d42b01ce231306f984b7eca33eca
+
+@ 0 1 0 0c94f89bf0c548871a0378ea90524f3b
++         不透明类型 `S64` 的伴生对象，与该类型一起导出到 `hypotenuse` 包。
+
+% 0 1 0 0d3d5b378d78bd210e05d0fe2cace16c
+
+% 0 1 0 0f5292f3fc39cf321601525f2b95b064
+
+@ 0 21 0 0815cd1e8ad8f73d0a3b418bb7e89271
++     entry .underlying   `S64` 底层是 `Long` 的证据
++     entry .addable   `S64 + S64`，来自作用域内的 `CheckOverflow` 方针
++         即 `overflow.addS64`：在 `uncheckedOverflow` 下是单条 `ladd`；在 `checkedOverflow` 下，结果为 `S64 raises Arithmetic.Error`，当两个操作数的符号都与和的符号不同时抛出。
++     entry .subtractable   `S64 - S64`，来自作用域内的 `CheckOverflow` 方针
++     entry .multiplicable   `S64 * S64`，来自作用域内的 `CheckOverflow` 方针
++         在 `checkedOverflow` 下，`S64.Min*S64(-1)` 抛出 `Arithmetic.Error`，高位字（`Math.multiplyHigh`）不是低位字符号扩展的任何乘积也是如此。
++     entry .divisible   `S64 / S64`，截断，来自作用域内的 `DivisionByZero` 方针
++         `S64((-7L).bits)/S64(2L.bits)` 是 `-3`，因为 `Long` 除法向零截断；`/-` 是向下取整除法。
++     entry .canEqual   `S64` 可以用 `==` 与任何有符号、浮点或原始数值类型比较
++         即 `F64`、`F32`、`S64`、`S32`、`S16`、`S8`、`Float`、`Double`、`Long`、`Int`、`Short` 和 `Byte`。
++     entry .fromDigits   在 `genericNumberLiterals` 下，由整数字面量得到的 `S64`
++     entry .textualizable   把有符号十进制值渲染为 `Text`
++     entry .apply   `S64(bits: B64)`：把位模式读作有符号整数
++     entry .orderable   用于 `<`、`<=`、`>`、`>=`、`min` 和 `max` 的有符号比较
++   entry .S32   有符号 32 位整数，二进制补码，从 `S32.Min` 到 `S32.Max`；参见 `hypotenuse.S32`
+
+% 1 1 0 1beefd60ac2e361803ec57db41bdf96c
+
+@ 0 1 0 10e03a21d4befb80025635fa7d4cb97a
++         不透明类型 `S32` 的伴生对象，与该类型一起导出到 `hypotenuse` 包。
+
+% 0 1 0 132ef17d14896aa502e8843e7a19e743
+
+% 0 1 0 15c7f2e5072e7df619efc21f483bb4c4
+
+@ 0 15 0 07ee031a03501aca03984c41534287d2
++     entry .underlying   `S32` 底层是 `Int` 的证据
++     entry .addable   `S32 + S32`，来自作用域内的 `CheckOverflow` 方针
++         即 `overflow.addS32`；在 `checkedOverflow` 下，`S32.Max + S32(1)` 和 `S32.Min + S32(-1)` 抛出 `Arithmetic.Error`。
++     entry .subtractable   `S32 - S32`，来自作用域内的 `CheckOverflow` 方针
++     entry .multiplicable   `S32 * S32`，来自作用域内的 `CheckOverflow` 方针
++         乘积在 `Long` 中计算，在 `checkedOverflow` 下检查它能否放进 `Int`。
++     entry .divisible   `S32 / S32`，截断，来自作用域内的 `DivisionByZero` 方针
++     entry .canEqual   `S32` 可以用 `==` 与任何有符号、浮点或原始数值类型比较
++     entry .fromDigits   在 `genericNumberLiterals` 下，由整数字面量得到的 `S32`
++     entry .textualizable   把有符号十进制值渲染为 `Text`
++     entry .apply   `S32(bits: B32)`：把位模式读作有符号整数
++     entry .orderable   用于 `<`、`<=`、`>`、`>=`、`min` 和 `max` 的有符号比较
++   entry .S16   有符号 16 位整数，二进制补码，从 `-32768` 到 `32767`；参见 `hypotenuse.S16`
+
+% 1 1 0 05c5206ef886573a0d160243020e8d0f
+
+@ 0 1 0 1d2a8d64b12c8f37187aee5cb33b885e
++         不透明类型 `S16` 的伴生对象，与该类型一起导出到 `hypotenuse` 包。
+
+% 0 1 0 022e37e85a8ace2c1d4450f38f5a2249
+
+% 0 1 0 0efd97cbf50699d718ad9e2f4d7483f2
+
+@ 0 13 0 0787fd43d677aac00c4e2c2677f52d20
++     entry .underlying   `S16` 底层是 `Short` 的证据
++     entry .addable   `S16 + S16`，来自作用域内的 `CheckOverflow` 方针
++     entry .subtractable   `S16 - S16`，来自作用域内的 `CheckOverflow` 方针
++     entry .multiplicable   `S16 * S16`，来自作用域内的 `CheckOverflow` 方针
++     entry .divisible   `S16 / S16`，截断，来自作用域内的 `DivisionByZero` 方针
++     entry .canEqual   `S16` 可以用 `==` 与任何有符号、浮点或原始数值类型比较
++     entry .fromDigits   在 `genericNumberLiterals` 下，由整数字面量得到的 `S16`
++         错误 `↯/s.27.1`（_an S16 may not be less than -32768_）和错误 `↯/s.27.7`（_an S16 may not be greater than 32767_）在编译时报告。
++     entry .textualizable   把有符号十进制值渲染为 `Text`
++     entry .apply   `S16(bits: B16)`：把位模式读作有符号整数
++     entry .orderable   用于 `<`、`<=`、`>`、`>=`、`min` 和 `max` 的有符号比较
++   entry .S8   有符号 8 位整数，二进制补码，从 `-128` 到 `127`；参见 `hypotenuse.S8`
+
+% 1 1 0 1022fa8fc8d9dfcb1257b7290c0c58fd
+
+@ 0 1 0 19ade10f68d5662405819bbaa029eb03
++         不透明类型 `S8` 的伴生对象，与该类型一起导出到 `hypotenuse` 包。
+
+% 0 1 0 0561972a06975f5c10db68b2b7896cb3
+
+% 0 1 0 1363ae282b7bc2e413f7313f1482ad25
+
+@ 0 16 0 1041ec27029104861cf017f9cc9acfd0
++     entry .underlying   `S8` 底层是 `Byte` 的证据
++     entry .addable   `S8 + S8`，来自作用域内的 `CheckOverflow` 方针
++     entry .subtractable   `S8 - S8`，来自作用域内的 `CheckOverflow` 方针
++     entry .multiplicable   `S8 * S8`，来自作用域内的 `CheckOverflow` 方针
++     entry .divisible   `S8 / S8`，截断，来自作用域内的 `DivisionByZero` 方针
++     entry .canEqual   `S8` 可以用 `==` 与任何有符号、浮点或原始数值类型比较
++     entry .fromDigits   在 `genericNumberLiterals` 下，由整数字面量得到的 `S8`
++         错误 `↯/s.27.6`（_an S8 may not be less than -128_）和错误 `↯/s.27.13`（_an S8 may not be greater than 127_）在编译时报告。
++     entry .textualizable   把有符号十进制值渲染为 `Text`
++     entry .apply   `S8(bits: B8)`：把位模式读作有符号整数
++     entry .inquality   用于 `<`、`<=`、`>`、`>=`、`min` 和 `max` 的有符号比较
++         即 `S8 is Orderable` given，通过伴生对象处于隐式作用域中；它是其他每个数值类型的 `orderable` given 的对应物，只是名称不同。
++   entry .F64   64 位 IEEE 浮点数，可与任何能拓宽为它的类型进行混合运算；参见 `hypotenuse.F64`
+
+% 1 1 0 1db69c1ebdadfe050649128b05862b84
+
+@ 0 2 0 0a29581d83528ccb063cf418c1d8b586
++         不透明类型 `F64` 的伴生对象，与该类型一起导出到 `hypotenuse` 包。
++     entry .Min   `Double.MinValue`，最小的有限负值
+
+% 0 1 0 159826ad3fbbb7f10f0cef64a05f2a8f
+
+@ 0 14 0 117f2f022c23ba07040144aec082d3a5
++     entry .underlying   `F64` 底层是 `Double` 的证据
++     entry .Addition   `F64 + F64` 实例，一个单例对象，使 `add` 内联为 `dadd`
++     entry .Subtraction   `F64 - F64` 实例，一个单例对象
++     entry .Multiplication   `F64 * F64` 实例，一个单例对象
++     entry .Division   `F64 / F64` 实例，一个单例对象
++     entry .Negation   `F64` 的前缀 `-` 实例，一个单例对象
++     entry .addable   `F64 + F64`，以其单例类型给出的 `Addition` 对象
++         通过伴生对象处于隐式作用域中，因此 `F64` 无需导入即可满足泛型的 `[n: Addable by n to n]` 约束。
++     entry .subtractable   `F64 - F64`，以其单例类型给出的 `Subtraction` 对象
++     entry .multiplicable   `F64 * F64`，以其单例类型给出的 `Multiplication` 对象
++     entry .divisible   `F64 / F64`，以其单例类型给出的 `Division` 对象
++     entry .negatable   `F64` 上的前缀 `-`，以其单例类型给出的 `Negation` 对象
++     entry .Widening   到 `F64` 的转换，同时携带 `F64` 与该操作数之间的算术运算
+
+% 1 1 0 110ff93c2d63bdef1b85095213cf2a5f
+
+@ 0 10 0 118ff2cdbc3f69081ee5ee7d7f3b31fa
++           `Widening[right]` 扩展 `Conversion[right, F64]`，并持有四个单例对象 `Addition`、`Subtraction`、`Multiplication` 和 `Division`，每个都是对应 symbolism 类型类的实例，左边是 `F64`，右边是 `right`：右操作数先被转换，运算是原始运算。
++           这个伴生对象中的每个转换对象（`DoubleConversion`、`IntConversion`、`U8Conversion` 等）都扩展它，`addableWidening` 系列 given 通过它找到这些实例，`F64(1.5)*2` 和 `F64(0.5) + u8` 就是这样解析的。
++           为 `F64` 算术添加新操作数类型的库，需要提供一个扩展 `Widening[T]` 的对象，以及一个以其单例类型为类型的 given。
++       entry #Addition   `F64 + right`，先转换右操作数
+
+% 0 1 0 10ba01e83859a7ab0fec1d28837965c4
+
+% 0 1 0 1d1d8e347a43b86908388702dc310ee8
+
+% 0 1 0 18d1279f50f1cc1f0738ce25626b8ff8
+
+@ 0 38 0 1ebb0171638e7de010786589bc12ccd8
++     entry .addableWidening   对具有 `Widening` 的任何 `right` 提供 `F64 + right`，作为 `F64 is Addable by right to F64`
++         它是 transparent 的，带有普通的细化类型而不是依赖类型，因此搜索在查找 `Widening` 之前，先根据期望的操作数确定 `right`；召唤得到的实例仍具有该对象的单例类型，`add` 通过它内联。
++     entry .subtractableWidening   对具有 `Widening` 的任何 `right` 提供 `F64 - right`
++     entry .multiplicableWidening   对具有 `Widening` 的任何 `right` 提供 `F64 * right`
++     entry .divisibleWidening   对具有 `Widening` 的任何 `right` 提供 `F64 / right`
++     entry .canEqual   `F64` 可以用 `==` 与 `F64`、有符号整数、`Double`、`Long`、`Int`、`Short` 和 `Byte` 比较
++     entry .apply   `F64(double)`、`F64(bits: B64)` 或 `F64(sign, exponent: B16, mantissa: B64)`
++         `F64(bits)` 即 `Double.longBitsToDouble`；三参数形式由符号位、带偏置的指数和 52 位尾数组装出 IEEE 位模式。
++     entry .orderable   用于 `<`、`<=`、`>`、`>=`、`min` 和 `max` 的两个 `F64` 之间的比较
++         采用 IEEE 比较，因此与 `NaN` 的任何比较都为 false。
++     entry .commensurableInt   `f64 < 2`：`F64` 与 `Int` 的比较
++     entry .commensurable   `f64 < 2.5`：`F64` 与 `Double` 的比较
++     entry .DoubleConversion   `Widening[Double]`：`Double` 本身已经是 `F64`
++     entry .doubleConversion   让 `Double` 可以出现在需要 `F64` 的地方并作为其操作数的 given
++     entry .FloatConversion   `Widening[Float]`
++     entry .floatConversion   把 `Float` 转换为 `F64` 的 given
++     entry .IntConversion   `Widening[Int]`
++     entry .intConversion   把 `Int` 精确转换为 `F64` 的 given
++     entry .ShortConversion   `Widening[Short]`
++     entry .shortConversion   把 `Short` 转换为 `F64` 的 given
++     entry .ByteConversion   `Widening[Byte]`
++     entry .byteConversion   把 `Byte` 转换为 `F64` 的 given
++     entry .U32Conversion   `Widening[U32]`，按无符号值
++     entry .u32Conversion   把 `U32` 精确转换为 `F64` 的 given
++     entry .S32Conversion   `Widening[S32]`
++     entry .s32Conversion   把 `S32` 精确转换为 `F64` 的 given
++     entry .U16Conversion   `Widening[U16]`，按无符号值
++     entry .u16Conversion   把 `U16` 转换为 `F64` 的 given
++     entry .U8Conversion   `Widening[U8]`，按无符号值，因此 `U8(200)` 是 `200.0`
++     entry .u8Conversion   把 `U8` 转换为 `F64` 的 given
++     entry .S16Conversion   `Widening[S16]`
++     entry .s16Conversion   把 `S16` 转换为 `F64` 的 given
++     entry .S8Conversion   `Widening[S8]`
++     entry .s8Conversion   把 `S8` 转换为 `F64` 的 given
++   entry .F32   32 位 IEEE 浮点数，可与任何能拓宽为它的类型进行混合运算；参见 `hypotenuse.F32`
+
+% 1 1 0 067bc2e5c82af3911bd8dfad2f3711cc
+
+@ 0 2 0 1dad68f2be320135066cfb8db577a976
++         不透明类型 `F32` 的伴生对象，与该类型一起导出到 `hypotenuse` 包。
++     entry .Min   `Float.MinValue`，最小的有限负值
+
+% 0 1 0 112464be7767770f175c41e4676bfec7
+
+@ 0 12 0 1f65d25ba0cdd69f1fa14c0e2e4a65de
++     entry .underlying   `F32` 底层是 `Float` 的证据
++     entry .Addition   `F32 + F32` 实例，一个单例对象，使 `add` 内联为 `fadd`
++     entry .Subtraction   `F32 - F32` 实例，一个单例对象
++     entry .Multiplication   `F32 * F32` 实例，一个单例对象
++     entry .Division   `F32 / F32` 实例，一个单例对象
++     entry .Negation   `F32` 的前缀 `-` 实例，一个单例对象
++     entry .addable   `F32 + F32`，以其单例类型给出的 `Addition` 对象
++     entry .subtractable   `F32 - F32`，以其单例类型给出的 `Subtraction` 对象
++     entry .multiplicable   `F32 * F32`，以其单例类型给出的 `Multiplication` 对象
++     entry .divisible   `F32 / F32`，以其单例类型给出的 `Division` 对象
++     entry .negatable   `F32` 上的前缀 `-`，以其单例类型给出的 `Negation` 对象
++     entry .Widening   到 `F32` 的转换，同时携带 `F32` 与该操作数之间的算术运算
+
+% 1 1 0 11604bbd493e27820f0b1edd3c92ed6d
+
+@ 0 5 0 17f721dcde7a0fed1fa8ffc6b5b3b5a9
++           `Widening[right]` 扩展 `Conversion[right, F32]`，并持有左边为 `F32`、右边为 `right` 的 `Addition`、`Subtraction`、`Multiplication` 和 `Division` 实例，与 `F64.Widening` 对 `F64` 的作用相同。
++           转换对象 `FloatConversion` … `S8Conversion` 扩展它。
++       entry #Addition   `F32 + right`，先转换右操作数
+
+% 0 1 0 0dd8fae3081b23fd0f5ace042569e976
+
+% 0 1 0 1a3c872f4a0534bb07a737de7e21929a
+
+% 0 1 0 15f0209a20b3487106a77f01045c13aa
+
+@ 0 22 0 0605263a22c710e116a24bd1c3bcfeff
++     entry .addableWidening   对具有 `Widening` 的任何 `right` 提供 `F32 + right`
++     entry .subtractableWidening   对具有 `Widening` 的任何 `right` 提供 `F32 - right`
++     entry .multiplicableWidening   对具有 `Widening` 的任何 `right` 提供 `F32 * right`
++     entry .divisibleWidening   对具有 `Widening` 的任何 `right` 提供 `F32 / right`
++     entry .canEqual   `F32` 可以用 `==` 与 `F32`、有符号整数、`Float`、`Long`、`Int`、`Short` 和 `Byte` 比较
++     entry .orderable   用于 `<`、`<=`、`>`、`>=`、`min` 和 `max` 的两个 `F32` 之间的 IEEE 比较
++     entry .apply   `F32(float)`、`F32(bits: B32)` 或 `F32(sign, exponent: B16, mantissa: B32)`
++     entry .FloatConversion   `Widening[Float]`：`Float` 本身已经是 `F32`
++     entry .floatConversion   让 `Float` 可以出现在需要 `F32` 的地方并作为其操作数的 given
++     entry .ShortConversion   `Widening[Short]`
++     entry .shortConversion   把 `Short` 精确转换为 `F32` 的 given
++     entry .ByteConversion   `Widening[Byte]`
++     entry .byteConversion   把 `Byte` 转换为 `F32` 的 given
++     entry .U16Conversion   `Widening[U16]`，按无符号值
++     entry .u16Conversion   把 `U16` 转换为 `F32` 的 given
++     entry .U8Conversion   `Widening[U8]`，按无符号值
++     entry .u8Conversion   把 `U8` 转换为 `F32` 的 given
++     entry .S16Conversion   `Widening[S16]`
++     entry .s16Conversion   把 `S16` 转换为 `F32` 的 given
++     entry .S8Conversion   `Widening[S8]`
++     entry .s8Conversion   把 `S8` 转换为 `F32` 的 given
++   entry .B64   64 位的位模式：移位、旋转、掩码和按位寻址，但没有算术运算；参见 `hypotenuse.B64`
+
+% 1 1 0 181e8091b0cb16951e6be102882a59c4
+
+@ 0 9 0 0775573a68b185cc17d1cacce608f7d2
++         不透明类型 `B64` 的伴生对象，与该类型一起导出到 `hypotenuse` 包。
++     entry .underlying   `B64` 底层是 `Long` 的证据
++     entry .block   `B64.block(n)`：最低的 `n` 位置位
++     entry .set   按序数置位一位，或按区间置位一段连续位的掩码
++         `B64.set(Ter)` 是 `0b100`；`B64.set(Prim thru Ter)` 是 `0b111`。
++     entry .apply   由 `Long`、`Int`、`Short` 或 `Byte`，或由八个大端字节得到的 `B64`
++         `B64(bytes, offset = 0)` 把 `bytes(offset)` 读作最高有效字节。
++         较窄的原始类型按符号扩展，与 `toLong` 相同。
++   entry .B32   32 位的位模式：移位、旋转、掩码和按位寻址，但没有算术运算；参见 `hypotenuse.B32`
+
+% 1 1 0 1dc87c101dbab8fd0978f36f422f3224
+
+@ 0 6 0 05307900efcf7ac0014f4fb2471a61ad
++         不透明类型 `B32` 的伴生对象，与该类型一起导出到 `hypotenuse` 包。
++     entry .underlying   `B32` 底层是 `Int` 的证据
++     entry .block   `B32.block(n)`：最低的 `n` 位置位
++     entry .set   按序数置位一位，或按区间置位一段连续位的掩码
++     entry .apply   由 `Int`、`Short` 或 `Byte`，或由某个偏移处的四个大端字节得到的 `B32`
++   entry .B16   16 位的位模式：移位、旋转、掩码和按位寻址，但没有算术运算；参见 `hypotenuse.B16`
+
+% 1 1 0 14e237175a2bdac701d31c521d7bb958
+
+@ 0 6 0 0ad9ba7841448f3e0dea21e19048606a
++         不透明类型 `B16` 的伴生对象，与该类型一起导出到 `hypotenuse` 包。
++     entry .underlying   `B16` 底层是 `Short` 的证据
++     entry .block   `B16.block(n)`：最低的 `n` 位置位
++     entry .set   按序数置位一位，或按区间置位一段连续位的掩码
++     entry .apply   由 `Short` 或 `Byte`，或由某个偏移处的两个大端字节得到的 `B16`
++   entry .B8   8 位的位模式：移位、旋转、掩码和按位寻址，但没有算术运算；参见 `hypotenuse.B8`
+
+% 1 1 0 146ec9c66f2baef101e81e2616d79ac6
+
+@ 0 68 0 0c7e1f153a881e93028ea4fb83aa5051
++         不透明类型 `B8` 的伴生对象，与该类型一起导出到 `hypotenuse` 包。
++     entry .underlying   `B8` 底层是 `Byte` 的证据
++     entry .block   `B8.block(n)`：最低的 `n` 位置位
++     entry .set   按序数置位一位，或按区间置位一段连续位的掩码
++     entry .apply   `B8(byte)`：由 `Byte` 得到的位模式
++   entry .abs   绝对值：`S8`…`S64`、`F32`、`F64`
++   entry .long   作为 `Long` 的值：`S8`…`S64`，以及 `U8`…`U32` 的无符号值
++   entry .int   作为 `Int` 的值：`S8`、`S16`、`S32`，以及 `U8` 和 `U16` 的无符号值
++   entry .short   作为 `Short` 的值：`S8`、`S16`，以及 `U8` 的无符号值
++   entry .byte   `S8` 或 `U8` 的原始字节
++   entry .octal   8 进制的值：每个 `U*` 和 `S*` 类型；在 `B8`…`B64` 上补齐到宽度
++   entry .hex   16 进制的值：每个 `U*` 和 `S*` 类型；在 `B8`…`B64` 上补齐到宽度
++   entry .base32   32 进制的值：每个 `U*` 和 `S*` 类型
++   entry .binary   2 进制的值：每个 `U*` 和 `S*` 类型；在 `B8`…`B64` 上补齐到宽度
++   entry .text   `U8`…`U64` 的无符号十进制值，作为 `Text`
++   entry .%%   `S8`…`S64` 上的向下取整取模
++   entry ./-   `S8`…`S64` 上的向下取整除法
++   entry .%   `S8`…`S64` 上的截断余数，以及 `U8`…`U64` 上的无符号余数
++   entry .**   幂，在 `S8`…`S64` 上得到 `Double`，在 `F32` 和 `F64` 上得到同一类型
++   entry .bits   任何 `U*`、`S*` 或 `F*` 值的位模式，作为与其宽度对应的 `B*`
++   entry .gcd   每个 `U*` 和 `S*` 类型上的最大公约数
++   entry .s8   重新解释为有符号的 `B8`
++   entry .u8   重新解释为无符号的 `B8`
++   entry .s16   重新解释为有符号的 `B16`，或拓宽后的 `U8`
++   entry .u16   重新解释为无符号的 `B16`，或拓宽后的 `U8`
++   entry .s32   重新解释为有符号的 `B32`，或拓宽后的 `U8` 或 `U16`
++   entry .u32   重新解释为无符号的 `B32`，或拓宽后的 `U8` 或 `U16`
++   entry .s64   重新解释为有符号的 `B64`，或拓宽后的 `U8`、`U16` 或 `U32`
++   entry .u64   重新解释为无符号的 `B64`，或拓宽后的 `U8`、`U16` 或 `U32`
++   entry .apply   在 `B*` 上：`Interval` 范围内的位，向下移位；或按从零开始的位置取一位
++   entry .set   在 `B*` 上：将一位或一段连续位置位后的位模式
++   entry .clear   在 `B*` 上：将一位或一段连续位清零后的位模式
++   entry .flip   在 `B*` 上：将一位或一段连续位取反后的位模式
++   entry .bit   在 `B*` 上：某个序数处的位是否置位；`Prim` 是最低有效位
++   entry .<<<   在 `B*` 上：按位数循环左移
++   entry .>>>   在 `B*` 上：按位数循环右移
++   entry .<<   在 `B*` 上：左移
++   entry .>>   在 `B*` 上：逻辑右移，从不进行符号扩展
++   entry .&   在 `B*` 上：按位与，操作数可以是任何能转换为该位模式类型的值
++   entry .|   在 `B*` 上：按位或
++   entry .^   在 `B*` 上：按位异或
++   entry .unary_~   在 `B*` 上：按位取反，即前缀 `~`
++   entry .leadingZeros   在 `B*` 上：最高置位位之上的零位个数
++   entry .trailingZeros   在 `B*` 上：最低置位位之下的零位个数
++   entry .ones   在 `B*` 上：置位位的个数，作为 `S32`
++   entry .zeros   在 `B*` 上：宽度减去置位位的个数，作为 `S32`
++   entry .reverse   在 `B*` 上：各位顺序反转后的位模式
++   entry .bytes   在 `B16`、`B32` 或 `B64` 上：作为大端字节的位模式
++   entry .double   `F64` 或 `F32` 的 `Double` 值
++   entry .float   `F32` 的 `Float` 值
++   entry .mantissa   `F64` 位模式的低 52 位，作为 `B64`
++   entry .exponent   `F64`（作为 `B16`）或 `F32`（作为 `Int`）的无偏指数
++   entry .sqrt   `F64` 或 `F32` 的平方根
++   entry .cbrt   `F64` 或 `F32` 的立方根
++   entry .ceiling   `F64` 或 `F32` 的向上取整
++   entry .floor   `F64` 或 `F32` 的向下取整
++   entry .increment   向上的下一个 `F64` 或 `F32`
++   entry .decrement   向下的下一个 `F64` 或 `F32`
++   entry .successor   向上的下一个 `F64` 或 `F32`，与 `increment` 相同
++   entry .predecessor   向下的下一个 `F64` 或 `F32`，与 `decrement` 相同
++   entry .round   舍入到最接近的 `Long` 的 `F64` 或 `F32`
++   entry .scalb   乘以 2 的幂的 `F64` 或 `F32`
++   entry .signum   `F64` 或 `F32` 的符号，作为 `-1.0 | 0.0 | 1.0`
++   entry .ulp   `F64` 或 `F32` 的最后一位单位
++   entry .rawBits   `F64` 或 `F32` 的 IEEE 位模式，保留 `NaN` 的载荷
++   entry .finite   `F64` 或 `F32` 是否有限
++   entry .infinite   `F64` 或 `F32` 是否为无穷大
++   entry .nan   `F64` 或 `F32` 是否为 `NaN`
+
+@ 0 1 0 0f09cbf14874477f0beb94c116a3c864
++ entry .protointernal   `bin"…"`、`hex"…"`、带类型字面量以及链式比较背后的宏实现
+
+% 1 1 0 13ffd91eed20f64609258037d09d79ea
+
+% 2 1 0 0b41955e154e125a028841ee72825ccc
+
+@ 0 12 0 070de7423e6b3d6e04371e41da5d9c0b
++       不供直接使用：该对象的存在是为了让宏有一个稳定的归属。
++   entry .bin   `bin"…"` 背后的宏：校验各位数字，并拼接出一个 `Byte`、`Short`、`Int` 或 `Long`
++   entry .hex   `hex"…"` 背后的宏：校验各位数字，并拼接出一个冻结的字节数组
++   entry .parseU64   在编译时通过 `FromDigits` 解析 `U64` 字面量的各位数字
++   entry .parseS64   解析 `S64` 字面量的各位数字
++   entry .parseU32   解析 `U32` 字面量的各位数字
++   entry .parseS32   解析 `S32` 字面量的各位数字
++   entry .parseU16   解析 `U16` 字面量的各位数字，超出范围时中止
++   entry .parseS16   解析 `S16` 字面量的各位数字，超出范围时中止
++   entry .parseU8   解析 `U8` 字面量的各位数字，超出范围时中止
++   entry .parseS8   解析 `S8` 字面量的各位数字，超出范围时中止
++   entry .commensurable   `Commensurable.numeric` 背后的宏：把 `(a < x) < b` 改写为 `a < x && x < b`
+
+@ 0 1 0 1b5ef8f16c91692703c3b32e6e496b12
++ entry .Checkable   `===` 和 `!==` 背后的类型类：一个值是否与另一个（可能属于另一类型的）值相符
+
+% 1 1 0 0cb0619322e21bb81a9804e2d73b391a
+
+@ 0 6 0 1aac2c39965cbf8c04015743b8a314f1
++       `left is Checkable against right` 判定一个 `left` 是否与一个 `right` 相符，也是 `===` 所查阅的。
++       它刻意比 `==` 更宽松：两侧的类型可以不同，因此可以把一个值与 `Tolerance` 对照（`x === 1.0 ± 0.01`），按内容把一个冻结数组与另一个对照，或逐元素地把一个 `Chain` 与另一个 `Chain` 对照，而用 `===` 写成的测试断言读起来就是它所表达的比较。
++       它是 probably 的断言所使用的比较，位于 `hypotenuse.check` 中。
+
+% 2 1 0 1693f65ad7b622ad1bcf5c105d372cf7
+
+% 3 1 0 09ed7cbdc1b0a8040beb6271df1aa547
+
+% 0 1 0 18e69f60ed34507a1458127c33bbe0f3
+
+% 0 1 0 0bfac7570776361d1110321f71d6a5de
+
+% 0 1 0 16bc40d84af16d410aff81e68afd59e1
+
+% 0 1 0 116a719c7032233b1d8ef6c1ce6b9009
+
+% 0 1 0 08fbba636d59e5e20aebe5ad5b4d0166
+
+% 1 1 0 11ea0d224c249fe91d271b2397df89cd
+
+@ 0 2 0 043d300b49cfda560655dd75ca471b69
++       实例通过 `.apply` 写成一个 lambda，`#contramap` 则通过把某个类型映射到主体类型来为它派生一个实例。
+
+% 0 1 0 080cac64f0e17d4809ce4035aed741d8
+
+% 0 1 0 03b4a7b40688f87b0e51407c9d219f10
+
+@ 0 10 0 0810a770ecfcf2210a200f2f75ba3883
++   entry .frozenArray   当两个冻结数组的元素相符时，它们相符，无论元素类型为何
++   entry .stream   当元素是 `Checkable` 时，两个 `Chain` 逐元素相符
++       长度必须一致：较短的链并不算前缀匹配。
++   entry .tolerance2   当某个值的类型的 `Tolerance` 覆盖该值时，该值与之相符
++   entry .commensurable   任何可与自身比较的类型，在双方都不小于对方时相符
++       通过作用域中的 `Commensurable` 计算 `left <= right && right <= left`，因此每种数值类型无需自己的实例即可对自身 `Checkable`。
++   entry .apply   `Checkable((left, right) => …)`：由谓词构造的实例
++   entry #check   `left` 是否与 `right` 相符
++   entry #contramap   另一类型的实例，在检查之前先将其映射到本类型
+
+@ 0 1 0 163c7ab0fd684e0a1e1338badc76acf7
++ entry .Tolerance   两侧各有一段余量的值，`===` 用它来匹配某个值
+
+% 1 1 0 009e1bbb0eff7c1304f249c429ce35fb
+
+@ 0 3 0 1f8059ed029d8d440c7250c211e1bbfc
++       `Tolerance(base, tolerance)` 覆盖从 `base - tolerance` 到 `base + tolerance` 的每个值，包括边界。
++       在任何具有 `Orderable`、可与自身 `Addable` 且可与自身 `Subtractable` 的类型上，用 `+/-` 或 `±` 构造它，并用 `===` 进行对照：
+
+% 2 1 0 0cf24ed3b7924d37056cee1dffd2843b
+
+% 3 1 0 1ea0a9621ef29cb404ddcc381c391e38
+
+% 0 1 0 113d856c6e720a46119af05e4169799d
+
+% 0 1 0 0350d30819b260aa0b7901201de7c480
+
+% 0 1 0 1470c00a635281f11689f1f82f7738e6
+
+% 0 1 0 0781c7f5d8946cd70c878119958af75a
+
+% 1 1 0 0643ecefd18ab5b108e562409e85a406
+
+% 0 1 0 17c9655cd380655616309b10a5b4899f
+
+% 0 1 0 1aa4b8b636cbe89501c80ddebc045fe1
+
+@ 0 3 0 0be9cc8fba2cbf6315b2c5814f3d2686
++   entry #base   范围的中心
++   entry #tolerance   范围的半宽
++   entry #covers   某个值是否位于范围内，包括边界
+
+@ 0 5 0 10ee6e3716b89b7403ccb05b18ab6b70
++ entry .===   `left === right`：通过 `Checkable` 判断 `left` 是否与 `right` 相符
++     任何值上的扩展方法，位于 `hypotenuse.check` 中，取用作用域中的 `left is Checkable against right`。
++     与 `==` 不同，两侧可以是不同的类型，因此数字可以与 `Tolerance` 比较，也可以在不触及某个类型的 `equals` 的情况下，为它给出用于测试的等价概念。
+
+@ 0 1 0 02c8272964e7c78f0307185fe22185c4
++ entry .!==   `left !== right`：`===` 的否定
+
+@ 0 5 0 08dfab0c3f2553c00eea09feaa82ab8b
++ entry .+/-   `base +/- tolerance`：供 `===` 匹配的 `Tolerance`
++     任何类型可与自身 `Commensurable`、与自身 `Addable` 得到自身、与自身 `Subtractable` 得到自身的值上的扩展方法：基本类型、带类型的数字、量。
++     `10 +/- 2` 通过该类型 `Commensurable` 的 `>=` 覆盖从 `8` 到 `12` 的每个值，包括边界。
+
+@ 0 1 0 0268aca0f56ef4e31b3ce690bc98b4c2
++ entry .±   `base ± tolerance`：与 `+/-` 相同的 `Tolerance`，供带有该符号的键盘使用

@@ -1,0 +1,31 @@
+orthant 2 language
+
+% 0 1 0 10845fed894833bb0b53594a21d2dd5a
+
+@ 0 1 0 0d59322883cb12ad1de53e66420d2464
++ 当文本值无法解析为 ISO-8601 时长时抛出。
+
+@ 0 1 0 1d8ed6a2d2412a231ea0d46e12dff5b7
++ ## 原因
+
+@ 0 4 0 1567acc00a4f000c1f2bdefe8d184361
++ `Timespan` 的 `Decodable` 实例与 `dur"…"` 插值器共用同一个解析器。
++ 当它拒绝输入时（只有一个 `P`、缺少指示符，或各分量顺序错误），此错误会携带出错的文本。
++ 消息为 `$text is not a recognized duration`。
+
+@ 0 3 0 142ffd6f5ba293110eb256932824db97
++ 在时长与时刻分离之前，这是 `↯/s.73.3` 的一个变体：时长没有日期、没有钟面时间，也没有时区，因此读取时长失败并不是确定时刻失败。
+
+@ 0 1 0 1262b2985f54c3b214f87a1be9286940
++ **示例。** `[↯/s.73.4] P is not a recognized duration`
+
+@ 0 3 0 1818c7d9be5c5a4a04ab11516b196e84
++ **解决方法。** 提供完整的 ISO-8601 时长，例如表示一年两个月三天四小时五分钟六秒的 `P1Y2M3DT4H5M6S`。
++ `dur"…"` 字面量在编译时检查，不会抛出此错误。
+
+@ 0 1 0 004f241cb4a4ed0405cb108ee75b2611
++ ## 另请参阅
+
+@ 0 2 0 1ab10b974bc931010f83b0218eb959ec
++ - 源代码：`lib/aviation/src/core/aviation.Timespan.scala`
++ - 相关：`↯/s.73.3`（`Moment.Error`）

@@ -1,0 +1,266 @@
+orthant 2 language
+
+@ 0 1 0 0a4f483ea62cd8d10a65ca4e98ac46dd
++ ## 外语互操作
+
+@ 0 1 0 02ed9263154c2802081b650b8e2f33e5
++ ### 概述
+
+@ 0 4 0 15f516eae90c212a03b9cdb3af1f1177
++ 其他语言也有类型系统。
++ 它们的定义，例如 TypeScript 声明文件、C 头文件、[WebIDL](https://en.wikipedia.org/wiki/Web_IDL) 接口或 WebAssembly 的 [WIT](https://component-model.bytecodealliance.org/design/wit.html) 描述，都精确地说明了存在哪些成员以及它们接受什么。
+
+@ 0 3 0 0874b9139ae77229037a3fbbf26173aa
++ 这些定义在代码编译时被读取，*外来*表达式会依照它们进行检查。
++ 在外来类型中导航、选择成员和应用函数，每一步都依照该外语自己的声明进行验证。
+
+@ 0 5 0 1ccdbf808c9ec1981037f72dc9a0cdb4
++ `Ecosystem` 指名一个外来世界及其定义所用的语法。
++ `Interface` 为它加载一个定义文件。
++ `Foreign` 值在声明的类型中导航，并产生一个表达式，交给在那个世界中负责执行的东西。
++ 这正是浏览器中[类型化 DOM 脚本](web-automation.md)背后的机制，并且它对任何拥有可读接口语言的生态系统开放。
+
+@ 0 1 0 1db2a51914aba05b1e0c7a5fcc923fb8
++ ### 关于外来类型
+
+@ 0 4 0 1eb6fe842210528513a41f064aa55ffb
++ 互操作通常在边界处丢弃外来的类型系统。
++ 从 Scala 发起的 JavaScript 调用是一个字符串。
++ C 函数是一个手工声明的绑定。
++ 权威的声明，即 `*.d.ts`、头文件或 IDL，被搁置一旁无人阅读，而程序员则在手工转录它们，犯下的错误恰恰是外语编译器本可以捕获的那些。
+
+@ 0 5 0 0b5eb6e47eef01bf19e590a6868a0a03
++ 这里则改为读取这些声明。
++ 定义文件在[编译时]被解析，导航的每一步都依照它进行解析，而不存在的成员或外来类型错误的参数，都是 Scala 编译错误。
++ 依照外来世界自己的定义检查外来调用，就是跨越语言边界的[构造即安全](../../philosophy/safety-by-construction.md)。
+
+@ 0 1 0 19c6640c8bea873815109d890d75ca79
++ 一切都来自 `soundness` 包：
+
+% 2 1 0 128d8a54c105d7d2054418bec79c5bc7
+
+% 0 1 0 1bca28db88d8e18d0fbcefeaacfc679c
+
+% 1 1 0 09a8f67b183dcdd50adab2731fead1e5
+
+@ 0 1 0 02950028bc55726e10c6bd79633befc4
++ ### 加载接口
+
+@ 0 3 0 16475cb0a13eab311c19bcb3daafda5c
++ `Interface` 将一个生态系统绑定到[类路径](classpath.md)上的一个定义文件。
++ 该文件在代码编译时被读取，因此它必须位于编译器的类路径上。
++ 每种受支持的语法都是生态系统所指名的一个 `Dialect`：
+
+% 2 1 0 1c1712af55265b4c0ce3b3cb1805b78f
+
+@ 0 5 0 09cdfaaf0077e37e04bf6e3cd8b4de3f
++ column  定义
++ column  生态系统
++ column  方言
++ row  TypeScript 声明  `Typescript`  `TypescriptDialect`
++ row  C 头文件  `Native`  `CHeader.Dialect`
+
+% 0 1 0 1d1884dfc6698f8e1c8afb6e11398e33
+
+% 0 1 0 187bc859d5d36af8135f2ccd421503ca
+
+@ 0 1 0 0320087de8b38f4405223414cbfc10ea
++ row  类文件中的 Kotlin `@Metadata`  `Kotlin`  `KotlinDialect`
+
+% 1 1 0 1bce088b2cff5bd31ca785ec0b77824f
+
+@ 0 1 0 1ed02d4e2b0ef9771beb3a1fe8bb5c09
++ 例如，一个 TypeScript 接口：
+
+% 2 1 0 134dca16c9c82399184e6f8c70a33657
+
+% 3 1 0 18165897d10e0fed043a6c58b7704303
+
+% 4 1 0 0686ceefe78a5e88146bc147c2a812d8
+
+% 0 1 0 1956a1471c62b3b9112a90e1992d8036
+
+% 0 1 0 12146a8f0cdb735a04505ee23c0ade11
+
+% 1 1 0 166cccd7bbcbc01f063f1e935ec94d73
+
+@ 0 1 0 1ba4a720ba6ba66601b43af104ec9dae
++ ### 在外来类型中导航
+
+@ 0 4 0 00dae521d99128471de8936c066bf803
++ `Foreign` 值代表一个外来类型的值。
++ 它的成员可以像外来声明就是 Scala 一样导航。
++ 每一步的类型都来自声明，因此细化准确地跟踪外来类型系统所说的内容。
++ 这里 `Play` 声明了一个类型为 `Scene` 的成员 `scene`，以及一个接受字符串的方法 `greet`：
+
+% 2 1 0 0b7f91b1bb45f3390753c27269446d17
+
+% 3 1 0 156ade9bfa34357011ab974f939956bd
+
+% 4 1 0 1c9198223240f35802cc38183a011441
+
+% 0 1 0 19e5605409360863054e0dad196deb83
+
+% 0 1 0 03ba52d39d1e33cf1e600a96f2f38c86
+
+% 0 1 0 08a7bb1a93891cf009ae4a674a68cef6
+
+% 1 1 0 0d0271e595d0727808334b6d6b11ff9d
+
+@ 0 2 0 03e6253b5f79ee1e10c083692f3472b2
++ `Play` 没有声明名为 `missing` 的成员，`greet` 也不接受数字，因此下面两者都无法编译：
+
+% 2 1 0 19077b4994bdc3350721b0ef9a56da85
+
+% 3 1 0 12b750ab12f0fb150d887fa32cac407e
+
+% 4 1 0 1417ec5a17e8317214f613f351bb2e04
+
+% 5 1 0 199394c4ae59627a1755bcde0f57b2d7
+
+% 0 1 0 13d28bbdfc9485d202da2b176ed295c6
+
+% 1 1 0 1edc3f6268bff34d1d4b91d50a9a2cb3
+
+% 2 1 0 1525a46c87e9e0571e7d21b8e7c42b7a
+
+% 3 1 0 16af7c0135b043f705b99ffeb5ac97fb
+
+% 4 1 0 11e21ea8e3e4d91a0b31e7458e39bf4a
+
+% 5 1 0 1ff55a334cb9215f1a6cddcbac0719fd
+
+% 0 1 0 1de2300d865aaa2d0141b2a9bdeb000c
+
+% 1 1 0 0d38ddf0b30f4a0815d673b13e0f0182
+
+@ 0 3 0 0ff11043eb2745a808e56039541b6814
++ 只要有 `Interoperable` 实例把 Scala 值映射到外来类型上，Scala 值就可以作为参数传递：文本映射为字符串，带尺寸的数字映射为其外来宽度。
++ 边界在两个方向上都是类型化的。
+
+@ 0 1 0 116ede136c6400ab0333ed2b7ed3b497
++ ### Kotlin 和 Java 门面
+
+@ 0 5 0 16f644c656f5776616db48a2f7b5a7d3
++ 用 Kotlin 编写的 JVM 库位于同一个类路径上，因此它的声明不需要单独的文件。
++ 它们就在类文件中，在 Kotlin 编译器写入的 `@Metadata` 里。
++ 这些声明在编译时被读取，而*门面*包装一个活动的值，使其成员可以像 Scala 的成员一样被访问。
++ 每次访问都成为一次直接的、静态类型的 JVM 调用，没有反射，也没有包装对象。
++ 在类路径上有 Kotlin 标准库时：
+
+% 2 1 0 18964c2c8b5f92880438dd26bc732a65
+
+% 3 1 0 04dd4bcf1ba5caa50b02adabe7327b42
+
+% 4 1 0 0e0e035af2b9b18f03d258b113afa6f6
+
+% 0 1 0 0931057d568a2d2806efb45a77b014e9
+
+% 0 1 0 107135aa7e6d2d9514a1ebfc6121acc8
+
+% 0 1 0 05929ff42d0628961506778e66592923
+
+% 0 1 0 06fc7ecdea01c0b31f87975def3dde66
+
+% 1 1 0 1e105396e3e84d7e145b1d51d6495760
+
+@ 0 1 0 07cb3692d14184180326df9beab4f623
++ 有三个方法可以进入 Kotlin 类型：
+
+% 2 1 0 16ae707fc547824e1b6227156bf590c8
+
+@ 0 5 0 0c117d710abdf29f09d42f7da0862a80
++ column  方法
++ column  访问
++ row  `make[T](…)`  `T` 的新实例，通过其构造器
++ row  `companion[T]`  `T` 伴生对象的成员
++ row  `singleton[T]`  对象 `T` 的成员
+
+% 1 1 0 198d5e951a420b111e562cf0e03f427d
+
+@ 0 3 0 0261839636738ae708c3e86902a1ebf7
++ 类型会被代入，因此 `pair.first` 是 `Text` 而不是 `Any`，而在期望 `CharSequence` 的任何地方都可以传入 `Text`。
++ Kotlin 的可空性得到遵守。
++ 可能为 null 的结果是一个 [`Optional`](optional-values.md)，在 Kotlin 会返回 null 的地方为缺失。
+
+@ 0 4 0 07c45623de54ee3b067189b2c7c3fadf
++ 属性作为成员读取，`var` 属性可以通过 Kotlin 生成的 getter 和 setter 接受赋值。
++ 给 `val` 赋值无法编译。
++ 函数类型的 Kotlin 参数接受普通的 Scala lambda。
++ lambda 的参数本身是一个基于该 Kotlin 类型的门面，因此其中的值同样可以导航：
+
+% 2 1 0 1b5c90c3291f3e0e1bf438df78d555eb
+
+% 3 1 0 12ef33e501d06a4c09dcfab61b5a80d6
+
+% 4 1 0 10b89527640b4a7c0dd966734c96de6a
+
+% 0 1 0 0989acba7b22e7f6073706075ed64c61
+
+% 1 1 0 14679f478b565aca1137eb5f917e3340
+
+@ 0 3 0 1a50b23b833c0b7e1819f82e31c5cd31
++ 这里 `replaced` 是 `t"a<1>b<2>"`。
++ 类未声明的成员或类型错误的参数都是编译错误。
++ 当名称与某个真实名称相近时，错误会建议该名称，按 Kotlin 的拼写方式给出。
+
+@ 0 1 0 0ec83308f9f8dfdf0bb27d5b6dd1efc6
++ ### 是表达式，而非副作用
+
+@ 0 5 0 01e759a3b2f6ad8b1f6251c5f410f2cc
++ 导航构建的是一个*表达式*，一棵由引用、选择和应用构成的类型化的树，它本身不执行任何操作。
++ 运行表达式是生态系统的事。
++ 浏览器生态系统将其渲染为供事件处理函数使用的 JavaScript，而 WebAssembly 生态系统将 WIT 调用降低为导入。
++ 检查才是关键。
++ 当表达式离开 Scala 时，它的每一步都已经依照外来世界自己的定义验证过了。
+
+@ 0 1 0 03dc9a06030fd5a50b5d4721a13b66b5
++ ### Java 自己的类型
+
+@ 0 6 0 1042de90672b47ae1ad7eee5f7258d7d
++ JVM 的标准库为一些概念提供了类型，而这些库也为同样的概念有自己的类型：路径、URL、瞬时、时长。
++ 同时接触两个世界的代码需要在它们之间穿行，而不必手工复制值。
++ 这里不做转换，而是让每种 Java 类型成为该概念的一种*表示*。
++ 这样，任何要求其结果“作为路径”或“作为瞬时”的操作都可以直接产生 Java 类型。
++ 指的是哪一种表示，是一种选择，通过导入作出：
+
+% 2 1 0 1178ce7b9e2d691602ce61d6f1f9fcdf
+
+@ 0 10 0 059b325a2a4d5eb717a92f59c29c8af9
++ column  Java 类型
++ column  代表
++ column  导入
++ row  `java.nio.file.Path`  路径  `pathInterfaces.javaNioPath`
++ row  `java.io.File`  路径  `pathInterfaces.javaIoFile`
++ row  `java.net.URL`  URL  `urlInterfaces.javaNetUrl`
++ row  `java.time.Instant`  瞬时  `instantInterfaces.javaTimeInstant`
++ row  `java.util.Date`  瞬时  `instantInterfaces.javaUtilDate`
++ row  `Long`，自纪元起的毫秒数  瞬时  `instantInterfaces.javaLongInstant`
++ row  `Long`，纳秒  时长  `durationInterfaces.javaLongDuration`
+
+% 1 1 0 060aa7da670c23f3158144b75fec3ce1
+
+@ 0 1 0 0e938398b57a84e81bd4931330169119
++ 例如：
+
+% 2 1 0 1972af97ca8da61417baefc7e7375b71
+
+% 0 1 0 11b749a29b0fa45b0f03b7b68e79b6e4
+
+% 0 1 0 0fed01cae4da52fe159bae22d7269b65
+
+% 1 1 0 0c6122bfee5ca9301a8947f44855effb
+
+@ 0 3 0 07645d3514c382db055c5b7b7607000f
++ 这些在作用域中时，从文件或时钟读取的[时间](time.md)会以 `java.time.Instant` 的形式到达，时长则以纳秒数的 `Long` 形式到达，可以直接交给期望它们的 Java API。
++ 程序的其余部分保留自己的类型。
+
+@ 0 1 0 0a15ebad305c934c1527dd3a42e83d7a
++ ### 相关
+
+@ 0 6 0 084c15b112fb12471e630e320371b0ed
++ - [Web 自动化](web-automation.md)通过外来表达式对浏览器的 DOM 编写脚本。
++ - [类路径](classpath.md)描述了读取接口文件所用的类路径。
++ - [编译器](compiler.md)将 Kotlin 源码编译为门面所读取的类文件。
++ - [时间](time.md)和[路径](paths.md)描述了 Java 表示所代表的类型。
++ - [浏览器 DOM](dom.md) 和[语法高亮](syntax-highlighting.md)建立在外来接口定义之上。

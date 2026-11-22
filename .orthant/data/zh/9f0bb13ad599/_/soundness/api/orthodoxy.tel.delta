@@ -1,0 +1,7 @@
+orthant 2 language
+
+@ 0 1 0 1c948d45ba03373419b271c209842386
++     该库有三个源集：
+
+@ 0 2 0 113335bd803b4d9d14ffeb4720037c6d
++     - `orthodoxy.oidc`——OpenID Connect：`Oidc.discover` 用于读取提供方的元数据，`Oidc.identify` 则借助 sigillate 验证 `Authorization` 所携带的 ID 令牌。

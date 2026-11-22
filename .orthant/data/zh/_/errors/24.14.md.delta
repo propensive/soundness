@@ -1,0 +1,35 @@
+orthant 2 language
+
+@ 0 1 0 0c15b47abc24203912eb5764857678cb
++ # `↯/s.24.14` — 无法识别的 `Unapply`
+
+@ 0 2 0 1fcb7d71e062a1290a56a2d73c677b13
++ 当 `Unapply` 模式所声明的类型无法处理时，由 Contingency 的模式类型提取器抛出。
+
+@ 0 1 0 1d8ed6a2d2412a231ea0d46e12dff5b7
++ ## 原因
+
+@ 0 3 0 17ba19a8591295820e6f13746fdbd344
++ 自定义提取器通过 `unapply` 方法的签名公开其结果类型。
++ 当该签名与宏所期望的不符时，就会触发此中止，并给出该符号所声明的类型。
+
+@ 0 1 0 1dde240f21b5409104721a1bcf5ec317
++ ## 示例消息
+
+% 1 1 0 1abf28c8819c4a100ba2af9cc74b39c0
+
+% 0 1 0 1534ae7a050773b801285a922fb0f183
+
+% 1 1 0 0ff2b02d5a4f97141f829d6bea5cd846
+
+@ 0 1 0 0a3dc9137d3cf72f0228e7373e7a2cbf
++ ## 解决方法
+
+@ 0 2 0 180b0f27b9ad427d042161d085a8cbed
++ 改用 case class 模式，或调整提取器，使其公开一个可识别的结果类型。
+
+@ 0 1 0 004f241cb4a4ed0405cb108ee75b2611
++ ## 另请参阅
+
+@ 0 1 0 0a577f73475efca20b96d2f17614deed
++ - 源代码：`lib/contingency/src/core/contingency.internal.scala`

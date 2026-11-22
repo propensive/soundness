@@ -1,0 +1,440 @@
+orthant 2 language
+
+@ 0 1 0 19ad1079971b1ef215dd71a23109c47c
++ ## 套接字
+
+@ 0 1 0 02ed9263154c2802081b650b8e2f33e5
++ ### 概述
+
+@ 0 4 0 0bce33c1495f117e042c72aac5495dc2
++ HTTP 之下的网络通信通过一组操作处理，这组操作对传输层是泛型的：原始 [TCP](https://en.wikipedia.org/wiki/Transmission_Control_Protocol)、[UDP](https://en.wikipedia.org/wiki/User_Datagram_Protocol) 和 [Unix 域套接字](https://en.wikipedia.org/wiki/Unix_domain_socket)。
+
+@ 0 4 0 0b8e1ec1aa0d6d3415663e7d481cb9f4
++ 服务器在套接字上*监听*，为每个连接配备一个处理函数。
++ 客户端*发送*一条消息并读取回复，进行有状态的*交换*，或者打开一个*双工*连接以进行双向通信。
++ 由哪种传输层承载字节，取决于套接字值的类型，而不是取决于不同的 API。
+
+@ 0 1 0 04e63d1e274d5e881bbc5e6ec4402da0
++ ### 关于套接字
+
+@ 0 5 0 071bb6a8ab9939b51ea664c4b6f8d76d
++ 用套接字编程有一个对所有传输层都相同的形状：一侧绑定并接受，另一侧连接并对话。
++ 但每种传输层的 API 在细节上各不相同。
++ TCP 有连接，而 UDP 有数据包；域套接字用路径，而端口用数字。
++ 针对其中一种编写的代码很少能移植到另一种，而且它们都暴露阻塞式的流，调用者必须精确地管理其生命周期。
+
+@ 0 4 0 05795dbb3c58ecee053f7cd75b6534b1
++ 在这里，这个形状被抽象为[类型类]。
++ *可绑定*的值可以提供服务，*可连接*的值可以进行对话。
++ 各种传输层的区别仅在于存在哪些实例，因此在一种套接字上编写的协议，在合理的情况下，可以运行在另一种套接字上。
+
+@ 0 2 0 0436ccf6dc4215671dbde5b89b95636b
++ 一切都来自 `soundness` 包。
++ [并发](concurrency.md)也在作用域中，供连接的处理函数使用：
+
+% 2 1 0 144f61c5f750f1981a4ed6231b9bebc0
+
+% 0 1 0 1bca28db88d8e18d0fbcefeaacfc679c
+
+% 0 1 0 0db1a0ecc5cc04ab14e285e7be2d415a
+
+% 0 1 0 10d199dc1f673997065b6030312b5591
+
+% 0 1 0 07e2cd564ae26ae60d2bca9b2ff8480e
+
+% 0 1 0 0189ca70729c68090dc6a72473b09ed5
+
+% 0 1 0 043dfcd8bd81c19b0632f778285bd52b
+
+% 0 1 0 0d72380027637f36161a75b41303b8f1
+
+% 0 1 0 1002601e5c5dc4540f182d5a2321f2b1
+
+% 0 1 0 10b23da8489c5a5010fd6d3e77471a89
+
+% 1 1 0 0bebf89a4b673102173f41e5cf4c9ef9
+
+@ 0 1 0 1399de8b953cdbfe10e49d64b7d80912
++ 本页的示例会打开连接，因此只编译而不运行。
+
+@ 0 1 0 1353f137610bddec0f806bc903166d61
++ 各个操作如下，每个都会在下文介绍：
+
+% 2 1 0 018f1b0d548e2bf5027131b11d156ad7
+
+@ 0 9 0 04504fa10e87612a0080f3bf671f028e
++ column  操作
++ column  一侧
++ column  作用
++ row  `listen`  服务器  在代码块运行期间，为每个连接或数据包运行处理函数
++ row  `subscribe`  服务器  加入一个组播组，并为每个数据报运行处理函数
++ row  `transmit`  客户端  发送一条消息并返回回复流
++ row  `react`  客户端  以状态机的形式进行对话
++ row  `duplex`  客户端  打开一个持久的双向连接
++ row  `session`  客户端  把连接借给一个代码块，并在代码块结束时关闭它
+
+% 1 1 0 0e5c4f60a189487c1b6eb919597261b3
+
+@ 0 1 0 181964f461c030d701b6371a110e0b0c
++ ### 提供服务
+
+@ 0 3 0 13b9acada329f4411995f8447f00ad78
++ `listen` 绑定一个套接字，并为每个到达者运行处理函数：对 TCP 和域套接字是一个连接，对 UDP 是一个数据包。
++ 每个处理函数都在自己的任务上运行。
++ 监听器在给定代码块运行期间运行，代码块结束时停止：
+
+% 2 1 0 13eeb6fe487465d91523616705231e64
+
+% 3 1 0 14f38000f6c5706807cc4957a2a78a3c
+
+% 4 1 0 0f7e35e52b8c774c16c0da293ba4f399
+
+% 0 1 0 05af7644a005abcb092796af84753a23
+
+% 2 1 0 165362d573cf03bf1c7cdc3094755c3f
+
+% 0 1 0 096d9ea8b935877101162dcf440f28a7
+
+% 0 1 0 13a0e3817530661f1c8dd4b263a1ffd1
+
+% 1 1 0 1d758d506d9ec3b4199a98dd9378f66d
+
+% 2 1 0 0bb8363d24144be90dbe6f83a8f2f8b5
+
+@ 0 2 0 07d194498abeb359061ef4641f6f00f6
++ `Port[Tcp]()` 向操作系统请求一个[未被使用的端口](network-addresses.md#ports)。
+
+@ 0 4 0 1b5db4b8c63f0319065bc6ef3a81f326
++ 端点决定处理函数在两侧的形状。
++ 有状态的端点交给处理函数一个可以借以对话的东西。
++ 无状态的端点交给它一个载荷，并取回一个答复。
++ 因此，同一个 `listen` 对 TCP 连接和 UDP 数据报都读来通顺，处理函数无需说明它在处理哪一种。
+
+@ 0 2 0 0fe3b96c262c4bae16d1386234d47d76
++ UDP 处理函数接收一个 `Packet`，即数据报及其发送者。
++ 它以一个回复作答，或者保持沉默：
+
+% 2 1 0 16be206aeaa2a62e13a1a193aec4b773
+
+% 3 1 0 10a7f6125bce38c9162701c799d02f20
+
+% 4 1 0 0091c7c68894172d0adfe10c8c01e212
+
+% 1 1 0 0e8d146f6af1d04c05e0867a018ea3bf
+
+% 0 1 0 1e86a0cbb7810f451936412b71c42a9d
+
+% 1 1 0 06854df816d6d85f154b59a7b04bb607
+
+% 2 1 0 0fb76dfacf2997e109a1f4a64b26583b
+
+@ 0 1 0 1ca19c0d353f230a00bfd5816738cfee
++ 因此，每种传输层都由套接字值选定：
+
+% 2 1 0 0ca9ec1bbfc9989618ec47c9dfbf17a9
+
+@ 0 6 0 06e5e3de8590dfcc1c80658f50221bb8
++ column  传输层
++ column  套接字值
++ column  处理函数接收
++ row  TCP  `Port[Tcp]`，或要连接的其 `Endpoint`  一个连接
++ row  UDP  `Port[Udp]`，或要发送到的其 `Endpoint`  一个 `Packet`
++ row  Unix 域  一个 `Uds` 路径  一个连接
+
+% 1 1 0 0ea14db091298b750a1f9896309aedd8
+
+@ 0 1 0 04e181c0459a21670e38be8fe7dbd33d
++ ### 客户端
+
+@ 0 3 0 14003cb2120c6ab11b5b0d370b7a1ab5
++ 发出请求并期待响应的客户端，用 `transmit` 发送消息并读取回复的流。
++ 消息可以是任何*可传输*的东西：字节、文本，或任何能编码为文本的值。
+
+% 2 1 0 01b6146c7748c5b01e6ba385d986193c
+
+% 3 1 0 022f08161bad0ec4057834303d0389c9
+
+% 4 1 0 0d390868a3bc92f90c0dbe2437c10021
+
+% 0 1 0 18a7acc34f07f7621c22677afaf41624
+
+% 1 1 0 06b4690d2e0be9ba1c8ca781cb109a12
+
+@ 0 2 0 03da6fa35403746506ec6f8ef956a2c2
++ `duplex` 打开一个双向的持久连接，独立地发送和接收。
++ 它是 [HTTP/2](http-server.md#http2) 之下的传输层：
+
+% 2 1 0 05d4ed03f6a3a5130393bc547e6f38b4
+
+% 3 1 0 1e2107e5cf73f4b5153a4d4359ed838d
+
+% 4 1 0 1951b5016f1151740e11182cb4fcecf7
+
+% 0 1 0 1771d3f2959ab008195f51553224be45
+
+% 0 1 0 0ccc58dc665ca5a80ebc825cc6c4ef95
+
+% 0 1 0 09f853960e3c9dfd1472f0b434bd3230
+
+% 1 1 0 14b75da0a3b0a472073c75a831bd0623
+
+@ 0 1 0 1512ad337f808ec9020294bf4e8838b6
++ `duplex.source` 是读取一侧，一个 [`Stream[Data]`](streams.md)。
+
+@ 0 1 0 11b47e421d6c37bb1452912897d06265
++ ### 会话
+
+@ 0 3 0 002bf41eabc4b0480de1d087df6e62c5
++ [会话]是同一个概念，只是以作用域的形式表述。
++ `session` 打开到目标的连接，把它借给代码块，并在代码块结束时关闭它。
++ 仍在借用活动连接的值不能逃出代码块，而已读入内存的值可以：
+
+% 2 1 0 00861546e1db257f1a00c03e83d9ed22
+
+% 3 1 0 0499d438a736866d0e92df40a16ec57d
+
+% 4 1 0 1a8d17f7eb4ec7c21bb4eb432e2ea865
+
+% 0 1 0 0ef43ebb468b6866066a6976c6eee4e9
+
+% 0 1 0 190d2799638d62bd1d04c532435f05a8
+
+% 0 1 0 0fc7d4bdb54bc4891ab6ecf9316ac116
+
+% 0 1 0 11e476408769c4f308c09a5152e742da
+
+% 0 1 0 0db5fa0ee2c45e24188ce719fc348740
+
+% 1 1 0 14a95475b33be71515d1af97061feca9
+
+@ 0 3 0 0263b54fbbce94dc0a63cbb92e6e5b0d
++ [HTTP 会话](http-client.md#sessions)就构建于此。
++ 并发的请求正是这样共享一个 HTTP/2 连接的，无需停驻一个线程来管理它：借出操作与作用域重合。
+
+@ 0 1 0 118cd74113e39b640f954a3f79763fdb
++ ### 作为状态机的对话
+
+@ 0 3 0 0eeae6c7b68fc58607f1ba32539e9381
++ `react` 在客户端一侧以状态机的形式进行对话。
++ 收到的每条消息都给出一个 `Control`，说明接下来发生什么。
++ `Continue` 携带新的状态，或者不携带状态以保持不变。
++ `Terminate` 结束对话：
+
+% 2 1 0 1b5a158c009c7cb20b98b12532fa60f5
+
+% 3 1 0 02b04fcf55924ae412db0c5a01b76314
+
+% 4 1 0 1e17b974213cfe1f1b17661512e085cc
+
+% 0 1 0 07b33d7909c91aab1171898ac05cde59
+
+% 0 1 0 155e53aa5b790ee80946dea491457b80
+
+% 1 1 0 0b03676ef612a6e41b9a4393bbb0ba4c
+
+@ 0 2 0 08e7af73178def4b0e030e749b1f5bc1
++ 以这种方式编写协议，能让它的状态保持显式。
++ 状态不是由控制流恰好位于一串交错读写中的何处来隐含表示的。
+
+@ 0 1 0 0bc85202c2a8c45809699e22407a09f0
++ ### 消息及其转换
+
+@ 0 3 0 014ea1940dd39a1e1a8bc085fc6bb6ec
++ 套接字发送和接收的不是字节，而是值。
++ `Transmissible` 说明值在发出时如何变成字节。
++ `Ingressive` 说明字节在进入时如何变成值。
++ 因此，协议以它自己的词汇编写：
+
+% 2 1 0 06e0852fc321a76b0968665c1c73a09b
+
+@ 0 5 0 1b45eac541f0cb4f148ab3b95447f0b3
++ column  实例
++ column  消息接收为
++ row  `Ingressive.bytes`  原始 `Data`
++ row  `Ingressive.text`  文本，通过作用域中的字符编码解码
++ row  `Ingressive.decoder[Port]`  任何具有 [`Decodable`](decoding.md) 实例的类型，这里是 `Port`
+
+% 1 1 0 07a3807fd4138cf61a70e25604c8aa9e
+
+@ 0 2 0 11033a869d4784ae0f2843a984d19e7d
++ 因此，经线上接收的 `Port` 就是一个 `Port`，在到达时即已校验，而不是有待以后检查的文本。
+
+@ 0 1 0 131fcca0d6e249c302d801891a41790d
++ ### 组播
+
+@ 0 5 0 1fa90ce1b2010045185443b3ad8c2a51
++ 组播组是被订阅的，而不是在其上监听。
++ `subscribe` 在每个已启用且支持组播的网络接口上加入该组，并为组投递的每个数据报运行处理函数。
++ 它借出一个 `Multicast.Subscription`，后者还可以主动向组发送。
++ 这正是服务自我通告的形状，就像 mDNS 那样。
++ 处理函数可以回复给组、回复给单个发送者，或者不回复：
+
+% 2 1 0 1b211682d40c17160c54fdcea2ffb49e
+
+% 0 1 0 1460ddc5c9f921c51716cc9f0e2f9d0b
+
+% 1 1 0 163bee94799195f6042bd621847d7db1
+
+% 0 1 0 17f13357e6bab14b0bb00584ad6ddafc
+
+% 2 1 0 0b00590658fa408202d3a5abcdac3c31
+
+% 0 1 0 05b36c2afd29b91f1f11b92d68dfe7b5
+
+% 0 1 0 023a251ccf1df52a1198be1e6caa3adc
+
+% 0 1 0 160edfd95d5b0588063b48fcd62c5f5c
+
+% 1 1 0 1775ae778a81466a120b070021d41734
+
+@ 0 1 0 051ad3dd0c1e55f00b5748bbf8e190c4
++ 选项 `multicastLoopSocketOption` 让程序也能看到它自己的通告。
+
+@ 0 4 0 0e9f2e2cc5f20f380a90267b44ffc371
++ 组的端口在绑定时允许地址和端口复用，因此同一主机上的多个程序可以并排订阅，例如本程序和系统自己的 mDNS 响应程序。
++ 一个组就是一个地址，因此同时通过 IPv4 和 IPv6 组播使用的协议要订阅两个组。
++ [服务发现](service-discovery.md)就构建于此。
+
+@ 0 1 0 0252a5acf74b2e200de1b9b8118ac343
++ ### 数据报交换
+
+@ 0 3 0 0754e168875ed95809d2a14ef3b71e3c
++ 一些基于 UDP 的协议发出一个数据报，再收回一个：DNS 查询，或 NTP 请求。
++ 后端的 `exchangeUdp` 恰好做这件事，从一个临时端口发出，受作用域中 `Socket.Option.Timeout` 的限制。
++ `coaxial.dns` 在其上构建了一个有类型的 DNS 客户端。
+
+@ 0 4 0 183d0961f04f81fe0a22968c4593b059
++ 域名服务器是 UDP 端口的一个 `Endpoint`。
++ `query` 发送一个 [`Dns.Message`](network-addresses.md#dns-names-and-messages)，并返回答复它的回复。
++ 给定一个名称和一种记录类型（默认为 `A`），它直接提出这个常见问题，并返回答复它的记录：
+
+% 2 1 0 0ae63ff04819d14f0e86cd5ccd68f8af
+
+% 3 1 0 1104c91349f6221519802b8cb53a5f93
+
+% 4 1 0 0426067b093fb7350a6ce93bb4165f8e
+
+% 0 1 0 1568c9d0cead4929119648a53e093841
+
+% 0 1 0 1bdb69f9e2e8b3d9149093e9291e21ac
+
+% 0 1 0 1fb1205d037bcd391cb4de2f521cefae
+
+% 1 1 0 077c06acfee8f7db0bf1dc69e01511f9
+
+@ 0 2 0 0d56dc806970dd6917bd4a43bf322281
++ ID 或问题与查询不同的回复是一个游离的数据报，属于 `Dns.Error(Mismatch)`。
++ 始终没有到来的回复属于 `Dns.Error(Timeout)`。
+
+% 0 1 0 128bb70ceeaea11600e60cd617d815b2
+
+@ 0 8 0 0cbb833f3c5401980c6d244e88e13327
++ TLS 连接通过安全端点建立，信任方针是一个[上下文值]。
++ 握手时可以按偏好顺序提供 [ALPN](https://en.wikipedia.org/wiki/Application-Layer_Protocol_Negotiation) 协议，对端选定的协议会在连接上报告回来。
++ HTTP 客户端正是借此在同一个套接字上的 HTTP/2 驱动和 HTTP/1.1 驱动之间作出选择。
++ 不提供任何协议，则保留 `wss` 对端所期望的普通 TLS 握手。
++ [密码学](cryptography.md#certificates)负责生成服务器出示的证书。
+
+@ 0 1 0 170d6aeb162539931b04a203fed8f369
++ ### 套接字选项
+
+@ 0 4 0 1c853fb1cbd7b2b5171c485a83753fd6
++ 底层平台的套接字选项，例如 `SO_REUSEADDR`、keep-alive、缓冲区大小和超时，都是有类型的值，从作用域中收集。
++ 每个选项只对支持它的传输层有效，因此仅适用于 TCP 的选项不能应用到 UDP 套接字上。
++ 标志是一个 given，按名称导入：
+
+% 2 1 0 087f40475502593b0985c57f70fcd24e
+
+% 0 1 0 0fb4926dc50ffe4a0f08c461f184ef80
+
+% 0 1 0 0d1d960365544c820cd6fd54416d859d
+
+% 0 1 0 11a4bac4acb6d9701a9dadf7714e19ea
+
+% 1 1 0 0b20f165e27516560f9b1d730ead645c
+
+@ 0 2 0 02d229b227aa45d2196c1611e6a7b6a6
++ 带值的选项由同一个包中的方法创建，并以它自己的类型给出，如 `given Socket.Option.ReceiveBuffer = socketOptions.receiveBuffer(65536)`：
+
+% 2 1 0 1ffe506b1cdb013d0dbabc76a05d06d3
+
+@ 0 16 0 1ed4d178ffc5b63e14f02a9a3241d1c7
++ column  选项
++ column  引入作用域的方式
++ column  传输层
++ column  用途
++ row  `SO_REUSEADDR`  `reuseAddressSocketOption`  TCP、UDP、域  必须无需等待 `TIME_WAIT` 结束即可重启的服务器
++ row  `SO_REUSEPORT`  `reusePortSocketOption`  TCP、UDP  一个端口上的多个套接字（取决于操作系统）
++ row  `TCP_NODELAY`  `noDelaySocketOption`  TCP  不能等待 Nagle 算法的协议
++ row  `SO_KEEPALIVE`  `keepAliveSocketOption`  TCP  空闲连接上的 keep-alive 探测
++ row  `SO_BROADCAST`  `broadcastSocketOption`  UDP  向广播地址发送
++ row  `IP_MULTICAST_LOOP`  `multicastLoopSocketOption`  UDP  接收我们自己的组播数据报
++ row  `SO_RCVBUF`  `receiveBuffer(bytes)`  TCP、UDP、域  接收缓冲区的大小
++ row  `SO_SNDBUF`  `sendBuffer(bytes)`  TCP、UDP、域  发送缓冲区的大小
++ row  `SO_TIMEOUT`  `timeout(milliseconds)`  TCP、UDP、域  限制阻塞等待的时长
++ row  `SO_LINGER`  `linger(seconds)`  TCP、域  关闭时为未发送数据等待多久
++ row  `IP_TOS`  `trafficClass(value)`  TCP、UDP  流量类别
++ row  `IP_MULTICAST_TTL`  `multicastHops(count)`  UDP  组播数据报传播多少跳
+
+% 0 1 0 0f2bed8aa7e6961717544fd19f931ad4
+
+% 0 1 0 0ed568419db6988e15566084b5954923
+
+% 0 1 0 12b8c5e3f3ad77581a9f20dfad2bace8
+
+% 0 1 0 0d871831a234ae3b1f7bb20a81709367
+
+@ 0 1 0 0ee1d7d35ed7ac120563ebd89cdcb9dc
++   cell  完整接收的最大数据报：除非另行设置，否则为 1472 字节
+
+% 1 1 0 0bc8830baca69773117fac23f0206f4f
+
+@ 0 3 0 17f63ae208ee8c161ca6efb80fe88fc4
++ 选项作为一个集合从作用域中收集，而不是在每次调用时传入，因此程序针对其套接字的方针只需陈述一次。
++ 后端会静默跳过其平台不支持的选项，而不会失败。
+
+@ 0 1 0 0cc2c6ad40b665a60a8186deeb082e3f
++ ### 错误
+
+@ 0 4 0 0c4d8773940625671cfd306f52ac75d7
++ 绑定可能失败，因为端口已被占用，或权限被拒绝。
++ 这是 `Bind.Error`。
++ 已建立的连接可能在被接受时、传输期间或关闭时失败。
++ 这是 `Socket.Error`。
++ 每种错误都会指明其原因，并像其他任何[错误](errors.md)一样处理。
+
+@ 0 1 0 0f4ef2945e9b28a90956cbc6da521484
++ ### 选择后端
+
+@ 0 5 0 0819998fe8bb7aec0447338addfba0f0
++ 上面没有任何地方指名某个平台的 API。
++ 每个角色所需的原语操作被汇集到一个 `Socket.Backend` 中：绑定并接受、连接并对话、接收并回复，以及发出数据报。
++ 组合这些操作的循环在各平台之间保持中立。
++ 三个后端提供相同的操作，因此同一份协议代码可以在 JVM 上、在 WebAssembly 组件内部以及在原生二进制程序中运行：
+
+% 2 1 0 05b2c09bd4ee3917149dcbe5ce2cc2e1
+
+@ 0 7 0 1120ceaab2f530460c14311ff3ae3a36
++ column  后端
++ column  平台
++ column  基于
++ column  不支持
++ row  `socketBackends.javaBaseSockets`  JVM  `java.nio.channels`  无
++ row  `socketBackends.wasiSockets`  WebAssembly  `wasi:sockets`  Unix 域套接字、UDP、组播、TLS
++ row  `socketBackends.scalaNativeSockets`  Scala Native  Scala Native 的套接字  Unix 域套接字
+
+% 1 1 0 083b9e92bd7d9e270fdbce9dc97f0982
+
+@ 0 3 0 18878cb3ec34d5c5131a7338f0f970e4
++ 后端无法支持的操作会抛出相应的错误。
++ 它从不近似处理。
++ 把平台的表面收窄到这样小的一个接缝，就是在单个库内部应用[解耦](../../philosophy/decoupling.md)。
+
+@ 0 1 0 0a15ebad305c934c1527dd3a42e83d7a
++ ### 相关
+
+@ 0 5 0 0bf3d3cac94a1cfd0e38db65cb8408ea
++ - [HTTP 客户端](http-client.md)和 [HTTP 服务器](http-server.md)构建于这些套接字之上。
++ - [网络地址](network-addresses.md)描述了这里使用的端口、IP 地址和 DNS 名称。
++ - [流](streams.md)描述了连接读写的流。
++ - [RPC](rpc.md) 在连接之上构建有类型的远程调用。

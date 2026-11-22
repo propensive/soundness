@@ -1,0 +1,443 @@
+orthant 2 language
+
+@ 0 1 0 0b763b48a45ecea8051cb862888668b3
++ # 自 0.70.0 以来的变更
+
+@ 0 3 0 1927253d08deb58b176f4d393c6c49f6
++ 本文件供 LLM 智能体读取，用于把使用 Soundness 库的代码从 0.70.0 升级到下一个版本。
++ 每个条目准确说明了发生的变化；格式见 `AGENTS.md`。
++ 条目按模块分组，在同一模块内，最近添加的条目排在最后。
+
+% 0 1 0 0815a537589592e21b251a53558048d3
+
+@ 0 9 0 19dcf51e4108b6111da6e25c85bcff1c
++ - `ambience.temporaryDirectories.environmentTemporaryDirectory`（也作为 `soundness.temporaryDirectories.environmentTemporaryDirectory`）现在从给定的 `ambience.Environment` 读取 `TMPDIR`、`TMP` 和 `TEMP`；以前它忽略该 given，而是读取 `java.lang.System.getenv`。
++   它的类型不变。
++   用 `javaBaseEnvironment` 以外的 `Environment` 召唤它的代码，现在得到的是该环境的临时目录。
++   (#2180)
++ - `ambience.environments.javaBaseEnvironment` 与以前一样读取 JVM 自身的环境；在由 xek 1.2.0 启动器启动的守护进程中，该环境是经过清理的（见 `## ethereal`），因此通过它读取应用程序变量的守护进程代码必须改用本次调用的环境或 `environments.daemonEnvironment`。
++   (#2180)
+
+% 0 1 0 1868a4f3222d8611045fe84bfb530658
+
+@ 0 14 0 0adcfd612455b75d077822950d289152
++ - `anthology.Format` 新增抽象成员 `kind: anthology.Format.Kind`（新枚举：`Source`、`Ir`、`Application`），由 `Format.Source`、`Format.Ir` 和 `Format.Application` 以 `final def` 实现，并新增 `equals` 和 `hashCode` 的 `final override` 定义：两个格式在 `kind` 和 `id` 都相等时相等。
++   不通过这三个层级特质之一而扩展 `Format` 的类必须定义 `kind`；覆盖 `equals` 或 `hashCode` 的类不再能编译；扩展 `Format` 的 case class 不再有合成的结构化 `equals`。
++   同一种类、`id` 相同的两个格式，即使其他成员不同，现在也相等，因此参数能区分节点的格式必须把这些参数编码进它的 `id`（每个内置格式都已如此）。
++   (#2166)
++ - `anthology.WasiToolchain.apply()` 和 `anthology.nativeEdges.apply(triples*)`（`nir` 组件）现在接受 `(using WorkingDirectory, Environment)`，并用该环境探测它们的工具。
++   提供进程应当继承的 `Environment`：在工具中是本次调用的环境（`environments.daemonClientEnvironment`，或来自 `Cli` 的 `Environment.provided`），要保持以前的行为则用 `environments.javaBaseEnvironment`。
++   (#2180)
+
+% 0 1 0 0f65516622e01f5401b594a2ce4c1b1b
+
+@ 0 4 0 178b08acf1f899110016b0710d37f321
++ - `apoplexy.OpenApi.json(yaml: Yaml): Json` 被移除。
++   这一转换现在是顶层 given `apoplexy.yamlEncodableInJson: Yaml is Encodable in Json`（不由 `soundness` 导出），因此在作用域中有 `import apoplexy.yamlEncodableInJson` 的情况下，用 `yaml.in[Json]` 代替 `OpenApi.json(yaml)`。
++   输出不变。
++   (#2176)
+
+% 0 1 0 07409a9b4226d59e0356189f39895ad5
+
+@ 0 18 0 0b8b595e3f4ac02c17014289847000d2
++ - `archimedes.Ergo.Error.Reason.BadOpener(char: Text)`、`Unclosed(expected: Text)` 和 `MissingBody(char: Text)` 现在接受 `Char`，而不是单字符的 `Text`：`BadOpener(char: Char)`、`Unclosed(expected: Char)`、`MissingBody(char: Char)`。
++   渲染出的消息不变。
++   绑定该字段并将其与 `Text` 比较的模式，改为与 `Char` 比较。
++   (#2167)
++ - `archimedes.Mathml#htmlAttributes: List[(Text, Optional[Text])]` 被移除。
++   改用 `attributes`，它的 `List[(Text, Text)]` 在任何需要 `(Text, Optional[Text])` 对的地方都符合要求（例如 `honeycomb.Attributes(node.attributes*)`）。
++   (#2167)
++ - `archimedes.Math#xml: Xml` 和 `archimedes.Mathml#xml: Xml` 被移除，由 given `Math.encodableInXml: Math is Encodable in Xml` 和 `Mathml.encodable: [node <: Mathml] => node is Encodable in Xml` 取代。
++   用 `math.in[Xml]` 代替 `math.xml`，用 `element.in[Xml]` 代替 `element.xml`；在 `Math` 上使用 `in[Xml]` 而不是 `encode`，因为它还有一个 `Encodable in Math`。
++   输出不变。
++   (#2176)
++ - `archimedes.Math#html: Html of "math"` 和 `archimedes.Mathml#html: Html of "#foreign"` 被移除。
++   `math.html` 和 `element.html` 仍然可以原样编译，经由 honeycomb 的 `html` 扩展方法（通过 `import soundness.*` 或 `import honeycomb.*` 引入作用域），由现有的 `Math.renderable` 和新的 `Mathml.renderable: [node <: Mathml] => node is Renderable { type Form = "#foreign" }` 解析。
++   (#2176)
+
+% 0 1 0 0517ef2589655f410a0f4a460ea9ee15
+
+@ 0 12 0 1d65119388576bcd0799330266392f2b
++ - `aviation.Calendar#Mensual` 现在有 `Showable` 上下文界定（`type Mensual: Showable`），`Calendar#monthName(month: Mensual): Text` 现在渲染 `month.show`，以前渲染的是 `month.toString.tt`。
++   在 aviation 之外定义的日历，必须在定义该日历的地方让其月份类型的 `Showable` 处于作用域中；`enum` 月份已经通过 `spectacular.Showable.enumeration` 拥有一个，它与以前一样渲染分支名。
+
+% 0 1 0 100c052273e87bb90b6afcfdb502b270
+
+@ 1 0 0 100c052273e87bb90b6afcfdb502b270
++ - `aviation.AlexandrianCalendar` 从 `abstract class AlexandrianCalendar()` 改为 `trait AlexandrianCalendar`。
++   把 `extends AlexandrianCalendar()` 改写为 `extends AlexandrianCalendar`。
++   (#2173)
++ - given `aviation.CopticMonth.showable`、`aviation.EthiopianMonth.showable`、`aviation.FrenchRepublicanMonth.showable`、`aviation.IndianMonth.showable` 和 `aviation.PersianMonth.showable` 被移除；`spectacular.Showable.enumeration` 在它们的位置上解析，输出相同，因此只有显式指名这些 given 之一的代码需要修改。
++   (#2173)
+
+% 0 1 0 1370790ba805908e18fbb957e25dfabd
+
+@ 0 8 0 021d455e3be5d10c1f2e099d5f7fc861
++ - 编译器插件（`beneficence-plugin`）会向每个类路径上有 `probably.Suite` 和 `probably.Testable` 的编译输出写入一个新的资源目录 `META-INF/probably/tests`：每个声明了套件或测试的源文件对应一个文件，命名为 `<source file name>-<12 hex digits of the SHA-256 of its path>`。
++   格式记载于 `beneficence.TestsIndex`。
++   `META-INF/services/probably.Suite` 不变。
++   按显式资源路径列表打包编译器输出的构建，必须包含这个新目录，宿主（fume）才能在不运行测试的情况下列出它们；不需要合并规则，因为没有两个模块会写入同一个条目。
++   (#2169)
+
+% 0 1 0 1281cf5693caddee047e57c2960f2348
+
+@ 0 5 0 0e79b09e63b1c66412b7513a95fbf05f
++ - `bitumen.UnixMode#bytes: Data`、`bitumen.UnixUser#bytes: Data` 和 `bitumen.UnixGroup#bytes: Data` 被移除。
++   它们产生 USTAR 头部字段（七个以零填充的八进制 ASCII 数字），这是 tar 的格式而不是这些类型的格式，现在它们成为 `Tar.Header` 的私有成员。
++   需要该字段的代码，从 `mode.int`、`user.value` 或 `group.value` 写出 `value.octal.pad(7, Rtl, '0').in[Data]`。
++   (#2176)
+
+% 0 1 0 0f922ec341ccae34075ef751ece930db
+
+@ 0 8 0 11bc7393f68ced2403546e9e64c4b38f
++ - Soundness 用 Proscala `3.9.1-dev-p17` 编译（以前是 `3.9.0-p16`），该分支的 3.9 系列现在跟踪 scala/scala3 的 `lts-3.9` 分支；`build.mill` 中 `SOUNDNESS_SCALA_RELEASE`（下载的 proscala 发行标签）和 `SOUNDNESS_SCALA_VERSION`（坐标版本）的默认值都是 `3.9.1-dev-p17`，并且每个 `org.scala-lang` 依赖都被强制为该坐标。
++   使用者针对同一个分支版本编译。
++   (#2175)
++ - `etc/tools` 中的工具是 flare 0.5.0（编译 Soundness 所用的编译器插件）、fume 0.6.0（测试运行器，读取套件自 0.70.0 起发出的事件）和 flame 0.5.0；运行 Soundness 套件的项目需要 fume 0.6.0 或更高版本。
++   (#2158)
+
+% 0 1 0 1b963d061ec457af154e1006b71b17d4
+
+@ 0 24 0 0b5141b31b3c9ea80ae29973b2bb275f
++ - `coaxial.Socket.Error.Reason` 新增 `Timeout`（5），在配置了 `Socket.Option.Timeout` 的数据报套接字上的接收超时时抛出；对这些原因的穷尽匹配会多出一个分支。
+
+% 0 1 0 054919cd1017a7d90aeaafe3c634f2c7
+
+@ 0 6 0 1928485cf681a6e90dd987b91b6566bb
++ - `coaxial.Socket.Option` 新增 `MulticastLoop`（`IP_MULTICAST_LOOP`）、`MulticastHops(count)`（`IP_MULTICAST_TTL`）和 `DatagramSize(bytes)`（每个数据报的接收缓冲区，因此也是能完整接收的最大数据报；未设置时为 1472），以及 `socketOptions.multicastLoopSocketOption`、`multicastHops(n)` 和 `datagramSize(n)`。
++   对 `Socket.Option` 的穷尽匹配会多出三个分支。
++   (#2178)
++ - `coaxial.Socket.Backend` 新增抽象成员 `exchangeUdp(endpoint, interface, options, data): Packet`——从一个临时端口发出一个数据报，接收一个回复，受 `Option.Timeout` 限制——并且它在 JVM 和 Scala Native 后端上的 `DatagramSocket` 句柄类型现在是一个私有绑定，而不是 `java.net.DatagramSocket`。
++   第三方后端必须实现 `exchangeUdp`；依赖该句柄是 `DatagramSocket` 的代码必须改为通过后端的操作进行。
++   (#2178)
++ - 新增 `coaxial.Multicast(group: Ipv4 | Ipv6, port: Udp.Port)`，以及 `Multicast.Reply`（`Ignore`/`Group(data)`/`Unicast(data)`）、`Multicast.Subscription`（一个也能向组或单个目标 `send` 的 `Socket.Service`）、类型类 `coaxial.Subscribable` 及其针对 `Multicast` 的 given（还有基于它的 `Bindable` given，因此 `listen` 可用于组），以及借出操作 `multicast.subscribe(handler)(block)`。
++   `Multicast.interfaces(interface: Optional[MacAddress])` 列出订阅在哪些接口上加入。
++   `Socket.Backend` 新增抽象成员 `MulticastSocket`、`joinMulticast`、`receiveMulticast`、`sendGroup`、`sendTo` 和 `leaveMulticast`，它们在 JVM 上实现（每个接口加入一个 `DatagramChannel`），在 Scala Native 和 WASI 上抛出 `Socket.Error`；第三方后端必须实现它们。
++   (#2178)
++ - 新组件 `coaxial.dns`（在 `soundness-web` 捆绑包中）：`Endpoint[Udp.Port]` 上的 `endpoint.query(message: Dns.Message)` 和 `endpoint.lookup(name, rtype)`，通过 UDP 与域名服务器交换 DNS 消息；纯新增。
++   (#2178)
++ - JVM 和 Scala Native 后端的 `listenUdp` 现在在绑定套接字*之前*配置它，因此 `Socket.Option.ReuseAddress` 和 `ReusePort` 对 UDP 监听器生效（以前它们悄无声息地不起作用）。
++   (#2178)
+
+% 0 1 0 09df00b428737c7f1cf98680616b6f7e
+
+@ 0 3 0 1dfa60000ff174271606f282fe94ac93
++ - `enigmatic.Cose#bytes: Data` 被移除，由 given `Cose.encodable: [cose <: Cose] => cose is Encodable in Data` 取代。
++   用 `cose.in[Data]` 代替 `cose.bytes`；传输形式不变。
++   (#2176)
+
+% 0 1 0 10d5740d33bd672200a59ac24b495f6e
+
+@ 0 6 0 115d1bcb049169af1ea121c9e3729a36
++ - `espionage.Acp.connect` 在 `WorkingDirectory` 之后新增一个类型为 `ambience.Environment` 的 using 参数：`(using Monitor^{capture}, Probate, Diagnostics, WorkingDirectory, Environment, Tactic[Acp.Error])`。
++   `Agent.Process` 用该环境启动。
++   提供进程应当继承的 `Environment`：在工具中是本次调用的环境（`environments.daemonClientEnvironment`，或来自 `Cli` 的 `Environment.provided`），要保持以前的行为则用 `environments.javaBaseEnvironment`。
++   (#2180)
+
+% 0 1 0 07d3f5d0de80f0000d3a20dc61ea01c4
+
+@ 0 58 0 0adc8f35cdc36d2a07de3776815c3941
++ - `ethereal.DaemonService` 重命名为 `ethereal.Resident`（也导出为 `soundness.Resident`），其类型参数被类型成员取代：`case class DaemonService[bus <: Matchable](…)` 现在是 `abstract class Resident(…)`，带有 `type Transport <: Matchable`，即其客户端交换的消息的类型。
++   把 `DaemonService[X]` 写成 `Resident over X`（`prepositional.over`），把 `DaemonService[?]` 写成 `Resident`。
++   构造器不再接受 `deliver: bus => Unit` 或 `bus: Chain[bus]`；`bus: Chain[Transport]` 和 `broadcast(message: Transport): Unit` 是抽象成员，由守护进程实现。
++   由于不再是 case class，它没有 `copy`、`unapply`，也没有结构化的 `equals`/`hashCode`；它的其他构造器参数仍是公有的 `val`，名称不变。
++   (#2163)
++ - `ethereal.service[bus <: Matchable](using DaemonService[bus]): DaemonService[bus]^{service}`（也作为 `soundness.service`）重命名为 `ethereal.resident[bus <: Matchable](using Resident over bus): (Resident over bus)^{resident}`（也作为 `soundness.resident`）；`service` 被移除。
++   把 `cli` 块中的每个 `service.…` 改写为 `resident.…`。
++   `ethereal.cli[bus]` 接受的上下文函数现在提供 `Resident over bus`，而不是 `DaemonService[bus]`。
++   (#2163)
++ - `ethereal.Upgrade.apply[source](source: source): Nothing raises Upgrade.Error` 和 `Upgrade.applyBytes(bytes: Data): Nothing raises Upgrade.Error` 被移除；改用 `Upgrade.stage[source](source: source): Unit raises Upgrade.Error`，它接受同样的 `Readable to Data` 来源。
++   它把候选版本写为 `<data>/<name>/.pending`，然后*返回*：它不再启动启动器，也不再退出 JVM，由启动器在该命令下一次调用开始时应用升级。
++   依赖 `Upgrade(…)` 不返回的代码（例如把它作为 `Nothing` 类型方法的最后一个表达式）现在必须正常返回，并且应当告诉用户升级会在下次运行该命令时生效。
++   (#2171)
++ - `ethereal.Upgrade.Error.Reason.CannotRespawnLauncher` 被移除，`Upgrade.Error.Reason.CannotResolveLauncher` 重命名为 `CannotResolveName`（仍是 `SN-631.3`，在守护进程没有从启动器获得其名称时抛出）。
++   对二者之一的匹配要相应更新。
++   (#2171)
++ - `ethereal.Upgrade` 新增 `pending: Boolean`（是否有已暂存的升级在等待下一次调用）、`outcome: Optional[Upgrade.Outcome]`（启动器上一次如何处理升级，从 `<data>/<name>/.upgrade-result` 读取）、`acknowledge(): Unit`（清除该结果）和 `enabled: Boolean`（来自 `ethereal.upgradable` 属性；对于没有发行密钥和应用程序 id 而构建的可执行文件为 false）。
++   `Upgrade.Outcome(result: Outcome.Result, candidate: Long, previous: Long, time: Long)` 有 `when[instant]`，通过 `Instantiable` 得到一个 `Instant`；`Outcome.Result` 是由 `Applied`、`Disabled`、`NoRecord`、`WrongApplication`、`BadSignature`、`NotNewer` 和 `SwapFailed` 组成的枚举。
++   纯新增。
++   (#2171)
++ - `ethereal.Resident` 新增 `buildId: Long`，即正在运行的可执行文件的构建 id（`build.id` 属性，或零）。
++   守护进程现在把 `build.id` 以及代替它的 `build.id` 类路径资源读作 64 位 `Long`，而不是 `Int`。
++   纯新增。
++   (#2171)
++ - `ethereal-sign` Rust crate（`lib/ethereal/Cargo.toml`、`src/sign`）被移除：它签名的记录格式（`ETHRCFG` v2）已没有任何现行启动器读取。
++   用 `xek` 1.1.0 或更高版本签名（`xek keygen --out <prefix>`、`xek sign --key <seed> --in <binary> --out <signed>`；需要 Java 24 或更高版本）。
++   可执行文件需要 xek 1.1.0 或更高版本（`ETHRCFG` v4）才能升级，并且除了 `--public-key` 之外还要用 `--app-id <identifier>` 构建。
++   从 xek 1.1.0 起，每条 `xek` 命令行都以子命令开头：在以前写 `xek [options] <app.jar> [<output>]` 的地方写 `xek build [options] <app.jar> [<output>]`，包括守护进程在没有启动器的情况下运行时打印的用法行。
++   (#2171)
++ - 由 xek 1.2.0 启动器启动的守护进程运行在 `/`（Windows 上为系统驱动器的根目录）中，umask 为 `077`，不继承 2 以上的描述符，并且使用经过清理的 JVM 环境，其中只保留 `PATH`、`HOME`、`USER`、`LOGNAME`、`SHELL`、`LANG`、`LC_*`、`TZ`、`TMPDIR`、`XDG_*` 基础目录、`JAVA_TOOL_OPTIONS`、`JDK_JAVA_OPTIONS`、`_JAVA_OPTIONS` 和 `ETHEREAL_DEBUG`（见 xek 的 `spec/launcher.md` 中 *The daemon process* 一节）。
++   读取 `workingDirectories.javaBaseWorkingDirectory`、`user.dir`、`environments.javaBaseEnvironment` 或 `System.getenv` 的守护进程代码，现在看到的是这一状态，而不是第一次调用时的状态；它必须使用本次调用的状态（`daemonClientWorkingDirectory`、`daemonClientEnvironment`），或者，若要得到启动守护进程时的环境，使用新的 `ethereal.DaemonEnvironment`（作为 `environments.daemonEnvironment` 给出，也作为 `soundness.environments.daemonEnvironment`），它保存启动器在守护进程标准输入上发送的环境（由 `-Dethereal.environment=stdin` 宣告），在守护进程启动时读取，并回退到 JVM 的环境。
++   守护进程的标准输入不再是空设备。
++   (#2180)
+
+% 0 1 0 0f2fae5b9c5fe06518c74765d22a1341
+
+@ 0 7 0 0a95f573ec4bb93302216c16d4cb7c02
++ - `exegesis.LspSessional` 的构造器在 `WorkingDirectory` 之后新增一个 using 参数 `ambience.Environment`；given `exegesis.Lsp.Server.sessional` 在 `working` 之后新增 `environment: Environment`；`exegesis.Lsp.proxy` 和 `exegesis.Lsp.Proxy.run` 在 `WorkingDirectory` 之后新增 `Environment`。
++   `Lsp.Server.Process` 用该环境启动。
++   提供进程应当继承的 `Environment`：在工具中是本次调用的环境（`environments.daemonClientEnvironment`，或来自 `Cli` 的 `Environment.provided`），要保持以前的行为则用 `environments.javaBaseEnvironment`。
++   (#2180)
+
+% 0 1 0 0dcece4e80bf175c0e1cc8af95d96f6e
+
+@ 0 22 0 00c351ad01c509901522e7d6bf768d92
++ - `exoskeleton.Enclave`（`exoskeleton-rig`）现在从环境变量 `$XEK` 而不是 `$XEQ` 中找到它用来打包的构建器，默认值为 `dist/xek` 而不是 `dist/xeq`。
++   设置了 `$XEQ` 或把构建器获取到 `dist/xeq` 的测试环境，改为设置 `$XEK` 或获取到 `dist/xek`；`$XEQ` 不再被读取。
++   (#2157)
++ - `exoskeleton.Enclave` 的 `buildId` 参数现在是 `Optional[Long]`（以前是 `Optional[Int]`）；`Int` 参数由编译器拓宽。
++   `Enclave` 还接受 `releaseKey: Optional[Path on Linux]`、`recoveryKey: Optional[Path on Linux]` 和 `appId: Optional[Text]`，默认值都是 `Unset`，分别作为 `--public-key`、`--recovery-key` 和 `--app-id` 传给 `xek`；`buildId` 之后的位置参数不受影响，因为这些参数位于它之后。
++   `Enclave.keygen(prefix)` 和 `Enclave.Launcher#sign(seed, out, foreign = false)` 运行 `xek keygen` 和 `xek sign`（需要 Java 24 或更高版本）。
++   `Enclave` 现在运行 `xek build`，因此需要在 `$XEK` 或 `dist/xek` 中有来自 xek 1.1.0 或更高版本的构建器。
++   `xek` 打包可执行文件失败时，现在会带着一条消息 panic，以前抛出的是 `NotImplementedError`。
++   (#2171)
++ - `hidden = true` 的 `Subcommand` 在匹配、补全和帮助方面不变，但当某个位置上的*每一个*子命令候选项都被隐藏时，补全现在也会提供标志，而不是（在 bash、fish 和 PowerShell 中）什么也不提供。
++   (#2171)
++ - `exoskeleton.Enclave.Tool#completions` 现在接受 `(using Monitor, Environment)`，`exoskeleton.Enclave.Launcher#sandbox` 把 `Environment` 作为第一个 using 参数；`exoskeleton.Tmux` 在 `workingDirectory` 之后新增字段 `environment: Environment`，`exoskeleton.tmux`、`Tmux.resize`、`Tmux.screenshot`、`Tmux.attend`、`Tmux.completions` 和 `Tmux.progress` 在 `WorkingDirectory` 之后接受 `Environment`。
++   工具和 tmux 的命令用该环境运行。
++   (#2180)
+
+% 0 1 0 1cc5e70970ad42a51e424017e29c8c25
+
+@ 0 3 0 02e8e19402a8eb1d078af0e575261111
++ - `facsimile.Print.baseFont(standard: Pdf.Font.Standard): Text` 被移除。
++   PostScript 名称现在是枚举的字段 `facsimile.Pdf.Font.Standard#baseFont: Text`，因此用 `standard.baseFont` 代替 `Print.baseFont(standard)`；名称不变。
++   (#2173)
+
+% 0 1 0 1aa1711c33dc078f11fd7629dab81114
+
+@ 0 12 0 10c71e483996dda60826e3ce539a7393
++ - 当 `frontier.context.explainMissingContext` 或 `soundness.explainMissingContext` 处于作用域中时（后者由 `import soundness.*` 引入），`scala.util.NotGiven[X]` 以前无论 `X` 的实例是否可用都会解析；现在它当且仅当对 `X` 的搜索失败时才解析，与规范一致。
++   这个兜底 given 作为 `NotGiven[X]` 目标的候选项被尝试时，现在返回 `scala.util.NotGiven.value` 而不是中止，编译器的逐候选项否定会把它变成一次失败，于是由 `NotGiven` 自己的实例来决定。
++   对在总括包下编译的现有代码的影响：由 `NotGiven` 守护、而其主体存在的 given 不再有资格，因此以前报告两个歧义备选项（一个有守护、一个没有）的搜索，现在选择没有守护的那个，例如在 `Calendar` 下对 `date + n*Month` 选择 `aviation.Timespan.dateMonths` 而不是 `dateRegular`，而在 `Teletype is Textual` 处于作用域的地方，`escapade.Teletype.add` 不再适用；仅仅因为这样的守护被绕过才能编译的代码（例如 `summon[NotGiven[Ordering[Int]]]`）现在会以缺少 given 的错误失败。
++   (#2123, #1955)
+
+% 0 1 0 1566b19ab23a3dd01b479ed03ce8f585
+
+@ 0 5 0 06c7dfc6745283071e64217267891ac6
++ - `graffiti.Archetype#html: Html of "html"`（一个 `final def`）被移除，由 given `Archetype.renderable: [page <: Archetype] => page is Renderable in "html"` 取代。
++   `page.html` 经由 honeycomb 的 `html` 扩展方法（通过 `import soundness.*` 或 `import honeycomb.*` 引入作用域）原样编译，`Archetype#document` 不变。
++   自己定义了 `html` 成员的页面现在会遮蔽该扩展方法，而不是编译失败。
++   (#2176)
+
+% 0 1 0 052d6af0cb62d1bd1fbc477fa1ee3ea7
+
+@ 0 16 0 16bc9a99d2bc97841d5afcc7ea5228db
++ - `guillotine.Executable#fork[result]()`（因而还有 `Command#fork` 和 `Pipeline#fork`）现在接受 `(using working: WorkingDirectory, environment: ambience.Environment)`；`Executable#exec[result]()` 接受 `(using computable: (result is Computable)^, working: WorkingDirectory, environment: Environment)`；内联的 `Executable#apply()` 在 `working` 之后接受 `environment: Environment`。
++   作用域中没有 `Environment` 的调用点不再能编译。
++   提供进程应当继承的 `Environment`：在工具中是本次调用的环境（`environments.daemonClientEnvironment`，或来自 `Cli` 的 `Environment.provided`），要保持以前的行为则用 `environments.javaBaseEnvironment`。
++   (#2180)
++ - 语义：当给定 `Environment` 的新成员 `entries` 不是 `Unset` 时，进程恰好以这些变量启动，而不是以 JVM 的变量启动；名称中不含 `/` 的命令会先在该环境的 `PATH` 上查找，用其绝对路径代替名称作为 `argv[0]`；在那里找不到的名称交给 JDK 处理。
++   当 `entries` 是 `Unset` 时（例如写成 lambda 的 `Environment`），与以前一样继承 JVM 的环境。
++   `environments.javaBaseEnvironment` 定义了 `entries`，因此在它之下启动的进程与以前一样得到 JVM 的环境。
++   (#2180)
+
+% 0 1 0 165131e53f5576cf05d71a204ac48013
+
+@ 0 18 0 137f9e8050b3dfad1c325dd57fdf1d0d
++ - `honeycomb.Node`、`honeycomb.Element`、`honeycomb.Comment`、`honeycomb.Doctype` 和 `honeycomb.Fragment` 连同它们的伴生对象移入了 `Html` 伴生对象：它们现在是 `honeycomb.Html.Node`、`honeycomb.Html.Element`、`honeycomb.Html.Comment`、`honeycomb.Html.Doctype` 和 `honeycomb.Html.Fragment`（因此 `Element.foreign` 是 `Html.Element.foreign`）。
++   它们各自从 `soundness` 总括包的导出中移除，因此裸名称 `Node`、`Element`、`Comment`、`Doctype` 和 `Fragment` 不再能通过 `import soundness.*` 或 `import honeycomb.*` 解析；在类型、构造器调用和模式中写 `Html.Element`、`Html.Fragment` 等（`case Html.Element(label, attributes, children, _)`）。
++   行为不变。
++   (#2167)
++ - `honeycomb.TextNode` 重命名为 `honeycomb.Html.Text`，`TextNode.foreign` 重命名为 `Html.Text.foreign`；`TextNode` 被移除，包括从 `soundness` 总括包的导出中移除。
++   行为不变。
++   在导入了 `Html.*` 的作用域内，裸名称 `Text` 现在指这个节点类型，而不是 `anticipation.Text`；这样的导入应当换成限定引用。
++   (#2167)
++ - `honeycomb.Honeycomb`（也导出为 `soundness.Honeycomb`）被移除。
++   它的成员 `extractor`、`interpolator` 和 `attributes` 是 `honeycomb.internal` 中宏实现的未使用的副本，`h""` 插值器和标签应用调用的是后者；不需要替代品。
++   (#2173)
+
+% 0 1 0 17f94539b937dacb1c8f57fb7f04ec71
+
+@ 0 8 0 1288fd6d8e9adc76070722edfedde1c0
++ - `hyperbole.StackResolver` 现在接受 `(using classloader: Classloader, working: ambience.WorkingDirectory)`；given `hyperbole.stackResolutions.tastyStackResolution`（也作为 `soundness.stackResolutions.tastyStackResolution`）的类型是 `(Classloader, WorkingDirectory) => StackTrace.Resolver`，以前是 `Classloader => StackTrace.Resolver`；扩展方法 `StackTrace#resolved` 接受 `(using Classloader, WorkingDirectory)`。
++   TASTy 中相对于 `-sourceroot` 记录的源路径，现在相对于给定的 `WorkingDirectory` 解析，以前是相对于 `workingDirectories.javaBaseWorkingDirectory`（`user.dir`）解析。
++   提供编译代码时所在的目录。
++   (#2180)
+
+% 0 1 0 14802db87637bb240c0e50c6611271aa
+
+@ 0 3 0 0bbe004bac5e1292086453d15f57c355
++ - `inimitable.Uuid#bytes: Data` 被移除，由 given `Uuid.encodableInData: Uuid is Encodable in Data` 取代。
++   用 `uuid.in[Data]` 代替 `uuid.bytes`；使用 `in[Data]` 而不是 `encode`，因为 `Uuid` 还有一个 `Encodable in Text`。
++   这十六个字节不变。
++   (#2176)
+
+% 0 1 0 1596bb652e5891230b44b58e4458fbe5
+
+@ 0 2 0 1efbe9c5c9294adc019682a3bcacb63b
++ - `iridescence.Rgb12#hex: Text`（一个扩展方法）被移除。
++   `rgb12.inspect` 渲染出相同的 `#0f8` 风格文本，与以前一样。
++   (#2176)
+
+% 0 1 0 021b852f7dba238b06ccff9a0d2bb561
+
+@ 0 6 0 178bfc03155cd9b00326f1b93280f67b
++ - `jacinta.Json.apply` 在 `apply(value: Any)` 之外新增重载 `apply(value: Int)`、`apply(value: Short)`、`apply(value: Byte)`、`apply(value: Float)`、`apply(value: Long)` 和 `apply(value: Double)`。
++   对 `Int`、`Short` 或 `Byte` 而言，`Json(i)` 现在保存该整数（存储为 `Long`），以前它原样保存 `Int`，而 AST 把它读作打包的小十进制数，因此读回的值是错的（通常是 `0`）；`Float` 存储为 `Double`。
++   静态类型为 `Any` 的值仍然原样交给 `apply(value: Any)`。
++   (#2162)
+
+% 0 1 0 15ea6feaac12c1f31aef1231a48de2e8
+
+@ 0 3 0 1804c58fcbe4fabd048865be94c54285
++ - `metamorphose.Permutation#bytes: Data` 被移除，由 given `Permutation.encodable: Permutation is Encodable in Data` 取代。
++   用 `permutation.in[Data]` 代替 `permutation.bytes`；字节不变。
++   (#2176)
+
+% 0 1 0 05984bb5afb584fc059e170ac7d22325
+
+@ 0 16 0 02ff9fd16441b9f71a7546bc4e87b125
++ - 每个运行 `git` 的 `octogenarian` 操作现在都在其 `WorkingDirectory` 之后紧接着接受一个类型为 `ambience.Environment` 的 using 参数，并用该环境运行 `git`：`Git.init`、`Git.initBare`、`Git.cloneCommit`、`Git.clone`、`Git.cloneBare`、`Git.uncheckedCloneCommit`、`Git.uncheckedClone`、`Git.uncheckedCloneBare`；`Git.Repo#pushTags`、`push`、`fetch`、`config.get`、`tags`、`tag`、`deleteTag`、`deleteBranch`、`renameBranch`、`remotes`、`addRemote`、`removeRemote`、`log`、`diff`、`reflog`、`revParse`、`notes.show`、`notes.add`、`notes.append`、`notes.remove`、`notes.list`、`notes.copy`、`worktrees`、`addWorktree`、`removeWorktree`、`pruneWorktrees`；`Worktree#checkout`（全部三个重载）、`switch`、`pull`、`commit`、`branches`、`branch`、`makeBranch`、`add`、`reset`、`unstage`、`mv`、`diff`、`merge`、`cherryPick`、`revert`、`lock`、`unlock`、`move`、`remove`、`status`；扩展方法 `NoteRef#content`；以及 given `octogenarian.gitCommands.searchpathGitCommand`，其上下文现在是 `(WorkingDirectory, Environment, Git.Event is Loggable, Tactic[Name.Error], Tactic[Path.Error], Tactic[Io.Error], Tactic[Exec.Error])`。
++   提供进程应当继承的 `Environment`：在工具中是本次调用的环境（`environments.daemonClientEnvironment`，或来自 `Cli` 的 `Environment.provided`），要保持以前的行为则用 `environments.javaBaseEnvironment`。
++   (#2180)
+
+% 0 1 0 180f3ce4211ce4c80f4c87efbb23bc3f
+
+@ 0 44 0 1d2ce46a3d1d6c691781c4868f307e96
++ - `probably.Suite` 有了一个类型参数和第二个构造器：`abstract class Suite(suiteName: fulminate.Message)` 现在是 `abstract class Suite[topic <: Label]`，带有 `type Topic = topic` 和公有构造器 `Suite(title: Message)(using Suite.Derivation[topic])` 与 `Suite(id: topic, title: Message)`。
++   `object Tests extends Suite(m"Parser tests")` 原样编译，`topic` 被推断为 `probably.Derived`（新增，一个不透明的 `Label`）；`Suite("parser", m"Parser tests")` 推断出字面量类型 `"parser"`。
++   单独的类型 `Suite` 不再能编译；写 `Suite[?]`。
+
+% 0 1 0 12d340d71d1922d11e9b411041973392
+
+@ 0 23 0 09b1c0f303bd444e1fd2e7a9da61ff72
++ - 每个套件都有一个 id（`Testable#key: Optional[Text]`，新增；`Test.Id#key`，新增，是该 case class 的 final 字段，默认为 `Unset`）：传给 `Suite(id, title)` 的字符串，或 `Suite.derive(title.text)`——标题中的字母和数字转为小写，其他字符的每个连续段变为一个 `-`，首尾不留，为空时为 `suite`（`m"Honeycomb Tests"` 得到 `honeycomb-tests`）。
++   使用 beneficence 插件时，给定的 id 若不匹配 `[A-Za-z_][A-Za-z0-9_-]*`，就是编译错误。
++   可观察到的影响：套件及其中一切内容的 `TestEvent.Ref#path` 现在以套件的 id 开头，以前以其标题开头；套件的 `TestEvent.Ref#moniker` 是它的 id，以前是 `Unset`；等于某个套件 id 的选择项，或与之匹配的 glob，会接纳该套件中的一切内容，路径 glob 必须以 id 开头（`honeycomb-tests/**`），不过只匹配标题的 glob（`'Honeycomb Tests'`）仍然接纳该套件。
++   (#2169)
++ - `probably.Testable` 有一个抽象类型成员 `type Topic`，声明所接受的上下文值是一个 `Testable of topic`（`prepositional.of`），其 topic 是一个 `Label`：它所属 `Suite` 的字面量 id，对没有给定 id 的套件是 `probably.Derived`，或者是 `probably.Impromptu`（新增，一个不透明的 `Label`）。
++   `Suite#testable` 现在是 `given testable: Testable of topic`。
++   裸类型 `Testable` 的 `given` 或 `using` 参数不再满足 `test`、`suite` 或 sedentary 的声明，并以 "a test must be declared for a Suite …" 失败。
++   为某个套件声明测试的方法，必须接受 `(using Testable of "<that suite's id>")` 而不是 `(using Testable)`，为此要给该套件一个 id（`Suite("<id>", title)`）；由多个套件共享的方法，或为 id 是派生而来的套件声明测试的方法，接受一个类型参数 `[topic <: Label](using Testable of topic)`。
++   (#2169)
++ - 带有裸类型 `Testable` 的 `using` 参数的方法，在 `probably.Suite` 位于类路径上时用 beneficence 插件编译，现在是编译错误（"this Testable has no topic …"），无论它是否声明测试。
++   不使用该插件时，如果在声明其测试的地方有另一个带 topic 的 `Testable` 处于作用域中（通常是外围 `Suite` 的），这样的方法可以编译，其测试随后在那个位置——套件的根——声明，而不是像以前那样在调用该方法的地方声明。
++   每一个 `(using Testable)` 都必须审查。
++   (#2169)
++ - `probably.test`（两个重载）：未使用的类型参数 `report` 被 `topic <: Label` 取代，参数 `suite: Testable` 现在是 `suite: Testable of topic`。
++   `probably.suite`（两个重载）现在是 `suite[topic <: Label, report](name)(using suite: Testable of topic, runner: Runner[report], codepoint: Codepoint)(block: (Testable of topic) ?=> Unit)`：它在 `report` 之前新增类型参数 `topic` 和 `Codepoint` 参数，它的块接收一个 `Testable of topic`。
++   分组的 `TestEvent.Ref`（`SuiteStarted`、`SuiteEnded`）现在携带 `suite(…)` 调用的文件和行号，以前携带的是 Probably 自身源代码中的一个位置。
++   (#2169)
++ - `probably.Runner#suite(suite: Testable, block: Testable ?=> Unit): Unit` 现在是 `suite[topic](suite: Testable of topic, block: (Testable of topic) ?=> Unit): Unit`。
++   `Runner` 的实现必须修改签名以与之匹配。
++   (#2169)
++ - `probably.Testable` 的构造器现在是 `private[probably]`，它的第二个参数是 `parents: List[Testable]`（不是成员），以前是 `val parent: Optional[Testable]`；`Testable#parent: Optional[Testable]` 仍然保留，作为一个方法。
++   用 `Testable.of[topic](name: Message, parent: Optional[Testable] = Unset, moniker: Optional[Name[Probing]] = Unset, key: Optional[Text] = Unset)(using Codepoint): Testable of topic`（新增）构造它。
++   (#2169)
++ - 在上下文 `Testable` 属于某个套件的地方声明、但又不是该套件的测试之一的测试——例如在另一个测试的主体内声明、用来演练程序自己的 `Runner` 或 `Selection` 的夹具——仍然可以编译，但现在会被记录到 beneficence 插件写出的测试索引中。
++   把这样的声明包裹在 `probably.impromptu` 中（新增：`impromptu[result](using parent: Testable = Testable.detached)(block: (Testable of Impromptu) ?=> result): result`，也作为 `soundness.impromptu`），它让测试保持在层级中的同一位置，并把它排除在索引之外。
++   (#2169)
++ - `probably.Test.Id#id`，即用以识别测试或套件的六位十六进制数字（以及携带它的 `TestEvent.Ref#id`），计算方式变了，因此每一个 id 都会改变：它现在是 `h ^ name.text.s.hashCode` 的低 24 位，其中 `h` 是该测试所在各套件的 `name.text.s.hashCode` 之和，而 `Testable#hashCode` 是包括其自身名称在内的这个和。
++   以前它由 `Message#hashCode` 计算，后者取决于消息的结构，而不只是其文本。
++   存储下来的 id（在选择、脚本、以 id 为键的图表中）不再匹配；代号和名称不受影响。
++   (#2169)
+
+% 0 1 0 012115d2210015c8084b240aed3fed8f
+
+@ 0 8 0 04c7e5190b9aabfe1feea95959f9c4a5
++ - `savagery.Figure#xml: Xml`（在 `Rectangle`、`Outline`、`Ellipse`、`Group`、`Polyline` 和 `Lettering` 上）、`savagery.Stop#xml`、`savagery.Svg.Def#xml`（在 `LinearGradient` 上）和 `savagery.Svg#xml` 被移除，由 `Encodable in Xml` given 取代：`Figure.encodable: [figure <: Figure] => figure is Encodable in Xml`、`Stop.encodable: [color, stop <: Stop[color]] => stop is Encodable in Xml`、`Svg.Def.encodable: [definition <: Svg.Def] => definition is Encodable in Xml` 和 `Svg.encodable: Svg is Encodable in Xml`。
++   用 `figure.in[Xml]` 代替 `figure.xml`，其他的依此类推；`figure.xml.show` 变为 `figure.in[Xml].show`。
++   XML 不变。
++   (#2176)
+
+% 0 1 0 0297adaaf208f36b050fef6919e7a155
+
+@ 0 5 0 06940743fb98dc35065b95947a6d57ed
++ - `sedentary.Bench.Plan#apply`、`sedentary.Bench.Plan#over` 的每个重载、`sedentary.Stress#apply` 和 `sedentary.Profile#apply` 新增最后一个类型参数 `topic <: Label`，它们的参数 `suite: Testable` 现在是 `suite: Testable of topic`。
++   不传显式类型参数的调用不受影响，前提是有一个带 topic 的上下文 `Testable`（见 probably）。
++   (#2169)
+
+% 0 1 0 108425be319504bd1ad2ccfb2700814e
+
+@ 0 4 0 0f89324a1796020b08d412db2390e37e
++ - `stenography.Designator.fromUrl(text: Text): Designator` 和 `stenography.Designator#url: Text` 被移除，没有替代品：两者都未被使用，而且彼此并不互逆（`fromUrl` 把 `~` 替换为 `#`，却不做 URL 解码）。
++   `Designator(text)` 解析以 `#` 分隔的形式。
++   (#2176)
+
+% 0 1 0 0ed19456d6998e511992f280a95ea1f6
+
+@ 0 32 0 1698a7bdd93fc5a61d1f733d2d62c762
++ - `stratiform.layer`（`case class layer(name: Text) extends StaticAnnotation`，也导出为 `soundness.layer`）被移除。
++   它的替代品是 `stratiform.assign`（`final class assign(layer: Tel.Layer[?]) extends StaticAnnotation`；`soundness.assign` 是它的类型别名，把项 `soundness.assign` 留给 anamnesis），它通过单例对象而不是文本来指名一个层。
++   把字段上的 `@layer(t"foo")` 改写为 `@assign(foo)`，并在顶层或某个对象中声明一次 `object foo extends Tel.Layer("foo")`（名称相同）；共享同一层名的字段共享这一个对象。
++   派生出的 schema 不变。
++   `@assign` 的参数必须是对这样一个对象的引用，且该对象的名称是字符串字面量；其他任何东西现在都会在该注解处产生编译错误。
++   (#2165)
++ - 新增 `stratiform.Tel.Layer[name <: String & Singleton](val name: name)`，一个供层对象扩展的开放类，以及 `stratiform.Tel.Name[layer <: Tel.Layer[?]]`，从层的类型得出其名称的匹配类型。
++   新注解 `stratiform.retract`（`final class retract(layer: Tel.Layer[?]) extends StaticAnnotation`，也作为 `soundness.retract`），用于和类型的分支。
++   现有代码不需要它们。
++   (#2165)
++ - 层的组合（`Tels.Layers.compose`、`Tels.Layers.composeComponents`，以及接受声明的提供与读取）不再拒绝某个层对这样一个变体的 `exclude`：基础 `select` 声明了它，但更早的层已经排除了它；这时它是空操作。
++   以前这会抛出原因为 `ExcludeMissingVariant`（E211）的 `Tel.Error`。
++   对基础 `select` 从未声明过的变体的 `exclude` 仍然会抛出它。
++   (#2165)
++ - 值上的 `fulfil(acceptance, codecs)` 会把这样的提供层排除在组合之外：其 `select` 排除了某个变体关键字，而该值编码后的文档在任何地方用到了这个关键字；以前它提供每一个层（并且无法提供这样的值）。
++   因此提供出的 `Tel.Acceptance.Served#hashes` 可能省略这些层。
++   (#2165)
++ - `stratiform.Tels.Reconstructor.fromTel(tel: Tel): Tels raises Tel.Error` 被移除，由 given `Tel.telsDecodable: Tels is Tel.Decodable` 取代。
++   用 `tel.as[Tels]` 代替 `Tels.Reconstructor.fromTel(tel)`；它与以前一样抛出 `Tel.Error`。
++   `Tels.Reconstructor` 为 `equivalent` 而保留。
++   (#2176)
++ - `stratiform.Tels.SemanticReconstructor.fromElement(root: Tel.Element): Tels raises Tel.Error` 被移除，由 given `Tels.elementDecodable: Tels is Decodable in Tel.Element` 取代。
++   用 `element.as[Tels]` 代替 `Tels.SemanticReconstructor.fromElement(element)`；类型为子类型 `Tel.Element.Node` 的值必须加类型标注 `(node: Tel.Element).as[Tels]`，因为 `Decodable` 的形式是精确的。
++   (#2176)
+
+% 0 1 0 19751db48a45fac8054f045dab5ba311
+
+@ 0 5 0 132e19cc02d619301a9cd8376b5617db
++ - `tarantula.WebDriver.Local.Sessional` 的构造器和它旁边的 given `sessional` 在 `working: WorkingDirectory` 之后新增 `environment: ambience.Environment`。
++   驱动程序进程用该环境启动。
++   提供进程应当继承的 `Environment`：在工具中是本次调用的环境（`environments.daemonClientEnvironment`，或来自 `Cli` 的 `Environment.provided`），要保持以前的行为则用 `environments.javaBaseEnvironment`。
++   (#2180)
+
+% 0 1 0 15cfd48f715bc4b40f8730f40768e76f
+
+@ 0 7 0 02530b00bed80f871047336c86f37b4b
++ - `tasseomancy.Chart#svg(using style, ChartPalette, FontMetric, Arranger): Svg` 和 `tasseomancy.Chart.Drawing#svg: Svg` 被移除，由 given `Chart.encodable: [data, form, fit, style <: Chart.Style] => (style, ChartPalette, FontMetric, Arranger) => Chart[data, form, fit, style] is Encodable in Svg` 和 `Chart.Drawing.encodable: Drawing is Encodable in Svg` 取代。
++   用 `chart.in[Svg]` 代替 `chart.svg`（作用域中要有同样的上下文值），用 `drawing.in[Svg]` 代替 `drawing.svg`；`chart.svg.xml.show` 变为 `chart.in[Svg].in[Xml].show`。
++   输出不变。
++   (#2176)
+
+% 0 1 0 09d3188b2c45560007c7207681d04236
+
+@ 0 2 0 1de0e560a701a15e155460a24fb27000
++ - `telekinesis.Http2.SettingId.fromId(id: Int): Optional[SettingId]` 被移除；它未被使用。
++   改为对枚举的 `id` 字段进行匹配。
++   (#2176)
+
+% 0 1 0 01a924463d4d2ade199e4991ad39d095
+
+@ 0 14 0 0615fce5547e70ce06cff95ab41e4570
++ - 新组件 `urticose.dns`（在 `soundness-web` 捆绑包中）：带类型的 DNS 词汇（`Dns.Name`、`Dns.Question`、带有 `Rdata` 族的 `Dns.Record`、`Dns.Message`）、它的线上编解码器（`Encodable`/`Decodable in Data`）、`dns"…"` 插值器、`Dns.resolve`，以及扩展方法 `Hostname#dnsName` 和 `Ipv4 | Ipv6` 上的 `reverseName`；纯新增。
++   (#2178)
++ - `urticose.Ipv4` 和 `urticose.Ipv6` 新增基于其网络字节序八位组的 `Encodable in Data` 和 `Decodable in Data` given（`ip.in[Data]`、`data.as[Ipv4]`），以及 `Ipv4 | Ipv6` 上的扩展方法 `bytes: Data`。
++   除非数据恰好是四个或十六个字节，否则解码会抛出 `IpAddress.Error`，其原因为新增的 `Ipv4WrongNumberOfBytes(count)`（13）和 `Ipv6WrongNumberOfBytes(count)`（14）；对 `IpAddress.Error.Reason` 的穷尽匹配会多出两个分支。
++   通过 `java.net.InetAddress#getAddress`、对单个字节使用 `Ipv4(b0, b1, b2, b3)`，或手工打包的 `Ipv6(highBits, lowBits)` 长整数进行转换的代码，可以改用这些。
++   (#2178)
++ - `urticose.MacAddress.apply(byte0: Byte, …, byte5: Byte)` 不再把 `0x80` 及以上的字节符号扩展到更高的八位组中；以前，地址中含有这样一个字节的 `NetworkInterface#hardware` 会被错误地渲染和比较。
++   (#2178)
+
+% 0 1 0 0daabac2e02218c20d4f9d914c51325b
+
+@ 0 6 0 0557a2fdfd6c1749093779949ee036fe
++ - `vivisection.Debuggee.Sessional` 的构造器和 given `vivisection.Debuggee.sessional` 在 `working: WorkingDirectory` 之后新增 `environment: ambience.Environment`，`vivisection.Dap.listen` 在 `working` 之后新增 `environment: Environment`。
++   被调试程序用该环境启动。
++   提供进程应当继承的 `Environment`：在工具中是本次调用的环境（`environments.daemonClientEnvironment`，或来自 `Cli` 的 `Environment.provided`），要保持以前的行为则用 `environments.javaBaseEnvironment`。
++   (#2180)
+
+% 0 1 0 1e9899a0d30c19b70ffd7df14fc9c9a9
+
+@ 0 15 0 12b69d1e48e81988040c019b8ce67a9c
++ - 扩展方法 `xylophone.Attributes#toList: scala.collection.immutable.List[(Text, Text)]` 被移除。
++   `Attributes` 现在是 `Traversable by (Text, Text)`，按文档顺序，因此写 `attributes.to[List]`，它产生一个 `proscenium.List[(Text, Text)]`。
++   仍然需要标准库 `List` 的地方，写 `attributes.iterator.toList`。
++   (#2167)
++ - `xylophone.Node`、`xylophone.Element`、`xylophone.Comment`、`xylophone.Doctype`、`xylophone.Cdata`、`xylophone.ProcessingInstruction`、`xylophone.Header` 和 `xylophone.Fragment` 连同它们的伴生对象移入了 `Xml` 伴生对象：它们现在是 `xylophone.Xml.Node`、`xylophone.Xml.Element`、`xylophone.Xml.Comment`、`xylophone.Xml.Doctype`、`xylophone.Xml.Cdata`、`xylophone.Xml.ProcessingInstruction`、`xylophone.Xml.Header` 和 `xylophone.Xml.Fragment`。
++   裸名称不再能通过 `import xylophone.*` 解析；在类型、构造器调用和模式中写 `Xml.Element`、`Xml.Fragment` 等（`case Xml.Element(label, attributes, children)`）。
++   行为不变。
++   (#2167)
++ - `xylophone.TextNode` 重命名为 `xylophone.Xml.Text`；`TextNode` 被移除。
++   行为不变。
++   在导入了 `Xml.*` 的作用域内，裸名称 `Text` 现在指这个节点类型，而不是 `anticipation.Text`；这样的导入应当换成限定引用。
++   (#2167)

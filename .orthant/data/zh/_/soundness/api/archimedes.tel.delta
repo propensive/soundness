@@ -1,0 +1,1127 @@
+orthant 2 language
+
+% 0 1 0 0f04ec4b9ac2d4270a232409219e1f6b
+
+% 0 1 0 10dd84f1f8f5d1491aefaa9d9ba5db88
+
+% 0 1 0 0b5938ce7315323607e1922cbc4d93e2
+
+@ 0 1 0 0274ba51d352c2300f5c9d9635c75457
++ info   作为有类型值的数学标记：MathML 树、Ergo 简写，以及渲染为 XML、HTML 和文本
+
+% 0 1 0 0ca6d61ddd9511ea1cdae38f1414f6fe
+
+@ 0 6 0 1420dd02eec0454e07376eea1b2c9d7d
++     _Archimedes_ 把数学记号建模为由有类型的值组成的不可变树：[MathML](https://www.w3.org/TR/MathML-Core/) 的各种元素（行、分数、上下标、根式、表格）都是 `Mathml` 对象下的一个 case class，而根 `Math` 可以渲染为 XML（`in[Xml]`），嵌入 honeycomb HTML（`html`），并为终端绘制成等宽文本（`draw`）。
++     MathML 文本可以用 `read[Math]` 读回，往返过程没有损失：模型不解释的属性也会被保留。
+
+@ 0 7 0 178761acd590b3a71e00cde5db0538a3
++     由于手写 MathML 令人难以忍受，这个库提供了 **Ergo**，一种单行简写，每种结构角色对应一个字形（`↗` 上标、`↘` 下标、`/` 分数、`√` 根式、`⋱` 矩阵……），它用 `Ergo.parse` 解析为同样的树，用 `Ergo.serialize` 序列化回来。
++     `ergo"…"` 插值器在代码编译时检查字面量，并拼接进任何 `Encodable in Math` 的值：数字、文本、有理数、复数、向量、矩阵和带量纲的量都有编码器，通过 `value.math`（一个 `<math>` 根）或 `value.mathml`（单个节点）获得。
+
+% 2 1 0 04ab2a7e523686f3102a6fcc890aa664
+
+% 3 1 0 0ea25030dc5d784707460ad254620e36
+
+% 4 1 0 1d6545ac27fe0c9e04d274d7a330929d
+
+% 1 1 0 1a4a554aec0ac9ff064cedb706f3288a
+
+% 0 1 0 0a7dbbab05c7c6e110d82930e8e4606b
+
+% 0 1 0 194b5eab2d53211c1ff7e36f33411538
+
+% 0 1 0 18f615e26eaebd30077ccd28a03f3e87
+
+% 0 1 0 08197ae83355d8531cb86d3f5b55e6c9
+
+% 0 1 0 139ee0e534297c460199a563ed372cc7
+
+% 0 1 0 0ab548ed1a51104c0616a90cff6b42c4
+
+% 1 1 0 03496e0a4f8f01931732716c9fe9c0ef
+
+@ 0 6 0 0ea7597b192014e21708b6109de72d74
++     元素类型位于 `Mathml` 对象之内（`Mathml.Mi`、`Mathml.Mrow`……），而不是平铺在包中，这样 `Token`、`Layout` 和 `Ms` 之类的通用名称就不会与 `soundness` 命名空间中的其他模块冲突；在手写 MathML 的地方，`import Mathml.*` 会引入这些简短名称。
++     读取 MathML 需要一个 `XmlSchema`（`xmlSchemas.freeformXmlSchema` 接受任何元素），解析所抛出的 `Mathml.Error` 和 `Ergo.Error` 需要一个战术，例如 `strategies.throwUnsafely`。
+
+@ 0 5 0 1c5a98854fa5140407c92e741717b9e1
++     这个库只有一个源码集 `archimedes.core`，可编译到 JVM、Scala.js 和 Scala Native。
++     一切都导出到 `soundness` 总括包：`Math`、`Mathml`、`Mathml.Display`、`Ergo`、`Mathml.Cell`、`mathmlNamespace`，以及扩展方法 `ergo`、`math`、`mathml`、`cell` 和 `draw`。
++     把 `Math` 或 `Mathml` 节点嵌入 HTML 树的 `html` 扩展方法属于 honeycomb，通过 `Math.renderable` 和 `Mathml.renderable` 解析。
+
+% 0 1 0 076e0626e247ef600bd50879473cf7cd
+
+% 0 1 0 1958ddd510830cf11fb6e5f1f684b7b7
+
+% 0 1 0 02ca3e5da9d0baed0fac2a32ab320943
+
+% 0 1 0 0daeee4fd83c799014542ca91629ca0b
+
+@ 0 1 0 1563dab45565330509c18143ca0215bf
++ entry .Math   `<math>` 根元素：一个 MathML 节点列表，带有显示模式和属性
+
+% 1 1 0 1f8ce7f5cbe509a21e5d089f633fd0ac
+
+@ 0 5 0 00426e1cfbc5f8ab18da8e886f0f85c8
++       `Math` 是 MathML 文档的根：它的 `#contents` 是顶层节点，它的 `#display` 决定浏览器把它排成独立显示的块还是排在行文之中，它的 `#attributes` 是要写在 `<math>` 元素上的其他属性。
++       它可以用 `Math(nodes*)` 从节点构建，用 `ergo"…"` 或 `Ergo.parse` 从 Ergo 字面量构建，或用 `value.math` 从任何 `Encodable in Math` 的值构建。
+
+% 2 1 0 1e283f9c1f95abfe164137795562af9a
+
+% 3 1 0 13049e488ddba8740174ddcdb60a4bfb
+
+% 4 1 0 14b16d72efd8c92e03d16e471076d756
+
+% 1 1 0 056eff5473b907ef09cd6b9f7f307cf9
+
+% 2 1 0 020b83a3637be7ea13968d9460c502a2
+
+% 0 1 0 152b8c9f59b951240bb0883f32272625
+
+% 0 1 0 1a4b9153e9aff1501ef04196ae5025c6
+
+% 0 1 0 0f41082d6be5be981a684ad945996a8d
+
+% 0 1 0 03eb72b1e7039b9a191f94db226e6105
+
+% 0 1 0 19d75340033a2ac70eb01ecf7d4716bf
+
+% 1 1 0 0aa3073a524f48890d47274f7c9e4b44
+
+@ 0 7 0 157dd3826edc8ed01e1899a42c274748
++       `Math` 有四种渲染方式：`in[Xml]`（`.encodableInXml`）构建 xylophone 树，总是写出 `xmlns` 属性；`html`（`.renderable`，经由 honeycomb 的扩展方法）在任何允许 `<math>` 的地方把它嵌入为一个 `Html of "math"`；`draw` 和 `cell` 把它排成等宽文本；而 `Document[Math]` 作为带 XML 头部的 MathML 文本是 `Showable` 的（`.showable`）。
++       要得到 XML，请写 `in[Xml]`，而不是 `encode`：`Math` 也是 `Encodable in Math` 的（恒等编码，`.self`），因此 `encode` 会有歧义。
+
+@ 0 3 0 02a4fe0160b47fe90ff7202b406b8986
++       读取则相反：`text.read[Math]` 和 `data.load[Math]` 先用 xylophone 解析 XML，再用 `Mathml.Parser` 映射这棵树；根不是 `<math>` 或某个元素未知时，会抛出 `Mathml.Error`。
++       两者都需要作用域内有一个 `XmlSchema`。
+
+@ 0 2 0 0673db336b608f1e16673d8b99ba6d42
++       `Math` 是 `Documentary` 的，以 `Encoding` 作为它的 `#Metadata`，因此 `Document[Math]` 携带文件所声明的编码。
+
+% 0 1 0 1a5a8406f3ac323a1c88c3fc8f1aac04
+
+% 1 1 0 001888f035d515c00e06ac9a404d8c41
+
+% 0 1 0 1cf163a8f365d13e1dfcffc7ee78577b
+
+@ 0 5 0 04dbe3f12149e09e0d9983f2813240fc
++   entry .aggregable   从 MathML 文本读取 `Math`，即 `text.read[Math]`
++       通过 xylophone 自己的 `Aggregable` 把文本解析为 XML，然后用 `Mathml.Parser.decodeMath` 解码 `<math>` 根。
++       它需要作用域内有一个 `XmlSchema`，以及针对 `Parse.Error`、`Xml.Error` 和 `Mathml.Error` 的战术：前两个用于格式错误的 XML，最后一个用于根元素不是 `<math>` 或某个元素不是 MathML 的情形。
+
+% 2 1 0 142bfb09852904f61174582f6aa8fcd2
+
+% 3 1 0 13a12f46861417a61cb1c028f2549c00
+
+% 3 1 0 0a6f11bf06d5bcbd0288a88a61a658ca
+
+% 2 1 0 0c21695d3d504c87018dc43f3b45e730
+
+% 0 1 0 08c7e8abc871688912d492dcf5b1e392
+
+% 1 1 0 03bf31ebdd62b3571f44f3d1b0583473
+
+@ 0 25 0 018837f5079acaaa18a0eb2cd6eb5341
++   entry .loadable   从 MathML 文本加载一个 `Document[Math]`，带有它所声明的编码
++       与 `.aggregable` 相同，但经由 xylophone 的 `Loadable`，并保留 XML 头部：结果是一个 `Document[Math]`，其元数据是所声明的 `Encoding`（未声明时为 UTF-8）。
++       它需要一个 `XmlSchema` 和同样的三个战术。
++   entry .loadableData   从字节加载一个 `Document[Math]`，即 `data.load[Math]`
++       `.loadable` 的字节形式：XML 直接从 `Data` 解析，因此所声明的编码会得到遵守。
++       除了一个 `XmlSchema` 以及针对 `Parse.Error`、`Xml.Error` 和 `Mathml.Error` 的战术外，它还需要作用域内有一个 `Buffering`。
++       读取文件经过的就是这个实例：`path.load[Math]` 给出 `Document[Math]`，它的 `root` 就是那个 `Math`。
++   entry .showable   把 `Document[Math]` 序列化为带 XML 头部的 MathML 文本
++       只有 `Document[Math]` 是 `Showable` 的，单独的 `Math` 不是：渲染结果是一个完整的文档，即一个指明文档编码的 `<?xml version="1.0" …?>` 头部，后面跟着 `<math>` 元素。
++       若只要元素本身，请写 `math.in[Xml].show`。
++   entry .encodableInXml   作为 xylophone `Xml` 的 `<math>` 元素，即 `math.in[Xml]`
++       构建名为 `math` 的 `Xml.Element`，带有 `xmlns` 属性、在设置了 `#display` 时带有 `display` 属性，然后是 `#attributes`，其内容是每个内容节点自己的 `in[Xml]`。
++       它名为 `encodableInXml` 而不是 `encodable`，因为 `Math` 还通过 `.self` 是 `Encodable in Math` 的；`in[Xml]` 能无歧义地选中这一个。
++   entry .renderable   作为 honeycomb HTML 的 `Math`，即 `math.html`，用于允许 `<math>` 的地方
++       即 `Form = "math"` 的 `Renderable` given：honeycomb 的 `html` 扩展方法把 `Math` 渲染为 WHATWG 的 `<math>` 元素，属性与 `.encodableInXml` 写出的相同，并通过 `Mathml.renderable` 把每个节点渲染为外来内容。
++       结果是一个 `Html of "math"`，在 honeycomb 接受嵌入内容、短语内容或流内容的任何地方都可以使用。
++       `Mathml.Reader.read` 可以再把它从页面中提取出来。
+
+% 2 1 0 07be18809a1d071b1719579fdc9a595d
+
+% 3 1 0 1fea12d31d7b633611295609690e69f7
+
+% 4 1 0 0c021020ae4e7923105d5ebdc83286a0
+
+% 0 1 0 132a8863e7b64cc7146411c7efb6800c
+
+% 1 1 0 1d61dc00c30d5cd00a8da55d48f4affa
+
+@ 0 69 0 1527e273a30b80d11dc4e7ed8c8804f7
++   entry .inspectable   以带括号的前缀形式对节点树进行的调试渲染
++       `Math(○ ⟨mn t"2"⟩)`：先是显示模式（未设置时为 `○`，设置时为 `｢block｣`），然后是每个节点，依次给出它的元素名、属性，以及它的文本或它的子节点，全在一行上。
++       要从中看出解析或布局的 bug，读的就是这种形式；`show` 只用于 `Document[Math]`。
++   entry .int   作为 `<mn>` 数字的 `Int`
++       `42.math` 是 `<math><mn>42</mn></math>`，`42.mathml` 则是单独的 `<mn>`。
++       `Long`、`Short` 和 `Byte` 通过 `.long`、`.short` 和 `.byte` 以同样的方式编码。
++   entry .long   作为 `<mn>` 数字的 `Long`
++   entry .short   作为 `<mn>` 数字的 `Short`
++   entry .byte   作为 `<mn>` 数字的 `Byte`
++   entry .double   作为 `<mn>` 数字的 `Double`，采用它的 `toString` 形式
++       `3.14.mathml` 是 `<mn>3.14</mn>`；文本是 `Double` 自己的渲染形式，因此 `5.0` 仍然是 `5.0`。
++   entry .float   作为 `<mn>` 数字的 `Float`，采用它的 `toString` 形式
++   entry .bigInt   作为 `<mn>` 数字的 `BigInt`
++   entry .bigDecimal   作为 `<mn>` 数字的 `BigDecimal`
++   entry .text   作为 `<mtext>` 的 `Text`
++       `t"speed".mathml` 是 `<mtext>speed</mtext>`：排在公式中的字面文本，而不是标识符。
++       若要标识符，请直接构建 `Mathml.Mi`。
++   entry .identical   任何 `Mathml` 节点，作为仅包含该节点的 `<math>` 根
++       使手头已有的节点可以用在任何需要 `Encodable in Math` 的地方，尤其是作为 `ergo"…"` 的替换：`ergo"(x↗$node)"`。
++   entry .self   作为自身的 `Math`：恒等编码器
++       使 `Math` 可以被替换进另一个 `ergo"…"` 字面量，在那里 `Mathml.atom` 把它收缩为一个节点（它唯一的内容节点，或由多个节点组成的一个 `<mrow>`）。
++       由于这个实例，对 `Math` 调用 `encode` 会有歧义；要得到 XML，请用 `in[Xml]`。
++   entry .q64   作为 `<mfrac>` 的 `Q64` 有理数，为整数时则为 `<mn>`，符号被提到前面
++       `Q64(-3, 4).math` 是 `<mrow><mo>−</mo><mfrac><mn>3</mn><mn>4</mn></mfrac></mrow>`：符号写成无符号分数之前的一个减号运算符，整数值收缩为普通的 `<mn>`，分母为零时渲染为文本 `NaR`。
++       `.q32` 对 `Q32` 做同样的事。
++   entry .q32   作为 `<mfrac>` 的 `Q32` 有理数，为整数时则为 `<mn>`，符号被提到前面
++   entry .QuantityEncodable   `.quantity` 背后的类：针对一个 `Quantity[units]` 的编码器
++       它是公开的类，仅仅因为 inline given `.quantity` 会内联对它的引用；它把一个从 `Quantity[units]` 到 `Math` 的纯函数包装为一个 `Encodable in Math`。
++       不打算被直接构造。
++   entry .quantity   带量纲的 `Quantity`，表示为它的数值后跟它的单位
++       `(5*Metre/Second).mathml` 是数字 `<mn>5.0</mn>`，后跟 `<mi>m</mi>` 和 `<msup><mi>s</mi><mn>-1</mn></msup>`，由不可见乘号运算符连接：每个单位是一个标识符，幂次不为 1 时升到该幂次，按符号的字母顺序排列。
++       它是一个 inline given，因此针对每个具体的 `units` 类型分别解析。
++   entry .complex   作为 `re + im i` 的 `Complex` 数
++       `Complex(3, 4).mathml` 是 `<mrow><mn>3</mn><mo>+</mo><mn>4</mn><mi>i</mi></mrow>`；分量类型需要它自己的 `Encodable in Math`。
++   entry .vector   作为带括号的列的 mosquito `Vector`
++       每个元素是可伸缩圆括号内一个 `<mtable>` 的一行：`Vector(1, 2, 3).mathml` 是 `(` 加上一列 `<mtr><mtd><mn>…</mn></mtd></mtr>`。
++       元素类型需要它自己的 `Encodable in Math`。
++   entry .matrix   作为带括号的表格的 mosquito `Matrix`
++       矩阵的每一行是可伸缩方括号内由 `<mtd>` 单元格组成的一个 `<mtr>`：`Matrix[2, 2]((1, 2), (3, 4)).mathml`。
++       元素类型需要它自己的 `Encodable in Math`。
++   entry .interpolable   `ergo"…"` 插值器，在代码编译时检查
++       使 `ergo"…"` 成为 `Math` 的 `Interpolable` given。
++       它位于 `Math` 的伴生对象中，因此除了 `import soundness.*` 之外无需任何导入；为它命名的是 `StringContext` 上的 `ergo` 扩展方法。
++       格式错误的字面量会在解析停止的那个字符处导致编译失败，`$` 替换则必须是 `Encodable in Math` 的。
++   entry #contents   公式的顶层节点，按顺序排列
++   entry #display   `Display.Block`、`Display.Inline`，或 `Unset` 表示不写该属性
++       决定浏览器把公式排成独立显示的方程还是排在行文之中。
++       由 `Mathml.Parser.decodeMath` 从 `display` 属性读回，无法识别的值变为 `Inline`。
++   entry #attributes   写在 `<math>` 元素上的其他属性，作为名称–值对
++       `xmlns` 和 `display` 之外的任何属性，这两个属性以结构化的方式保存。
++       解析器把根上的其他每个属性都放在这里，因此往返时它们得以保留。
++   entry #attributePairs   `<math>` 元素写出时带的每个属性
++       先是 `xmlns`，然后是 `display`（若已设置），然后是 `#attributes`：这是 `in[Xml]` 和 `html` 都会写出的列表。
+
+% 0 1 0 10a9e1547edcaafb06180e06ea313e6e
+
+@ 0 1 0 06be896f2fa2e7b300d249de383edc84
++   entry #Metadata   `Encoding`：`Document[Math]` 所携带的、所声明的字符编码
+
+@ 0 1 0 15cececa0986d66807553c6c975267b6
++ entry .Mathml   每个 MathML 节点的基类型，也是所有元素类型的所在之处
+
+% 1 1 0 153d7d9ae6f00a0e129542f1a31073cf
+
+@ 0 7 0 06de739e0cc1da4018b12c221bf5cce3
++       表现型 MathML 的每个元素都是嵌套在 `Mathml` 对象中的一个不可变 case class（`Mathml.Mi`、`Mathml.Mn`、`Mathml.Mrow`、`Mathml.Mfrac`、`Mathml.Msup` 等），而 `Mathml` 是它们共同扩展的特质。
++       节点知道它的标签（`#label`）、它有序的 `#attributes` 属性集，以及它的字符数据（`#text`，用于 `<mi>` 这样的记号元素）或它的子节点 `#contents`（用于 `<mrow>` 这样的布局元素）。
++       属性被原样保留，因此即使模型没有为某个属性提供有类型的访问器，解析–序列化的往返也没有损失。
+
+@ 0 5 0 1165370e877411120ab4667f7161b7cd
++       各元素按 MathML 类别分组为密封特质 `Token`、`Layout`、`Script`、`Tabular`、`Elementary` 和 `Semantic`；没有任何东西根据这些特质分派，代码匹配的是具体的元素。
++       这些类型是嵌套的，而不是平铺导出的，这样 `Token`、`Layout` 和 `Ms` 之类的名称就不会与 `soundness` 命名空间中的其他模块冲突：`import Mathml.*` 会引入这些简短名称。
+
+% 2 1 0 074b117e05977d080e78924123ec557e
+
+% 3 1 0 030f3fb502648615075e216bc0b0ef07
+
+% 4 1 0 1e8f06eec79119291dfbad1123d8d246
+
+% 0 1 0 107fe0a0037ccefe1f324f108a128f5f
+
+% 0 1 0 1a2c9c98ae27b155182960a9d44c1184
+
+% 0 1 0 1b1444c503dbf24f16c7353532b2b2e1
+
+% 0 1 0 04064c22d5f6ca4303108d9eec65a29b
+
+% 0 1 0 03271d5cff09f4e51f0f1552762bb7f9
+
+% 1 1 0 037c504ae80cde2d13411378f6fe9be2
+
+@ 0 6 0 058d39426fdc1351083b04d181e4655b
++       节点可以渲染为两种文档模型：`in[Xml]`（`.encodable`）构建一棵 xylophone 树，honeycomb 的 `html` 扩展方法（`.renderable`）则构建一棵外来元素树，用于嵌入页面。
++       两者对每个子类型都是泛型的，因此 `Msup(…).in[Xml]` 无需拓宽类型即可工作。
++       `draw` 和 `cell` 把节点排成等宽文本。
++       统一的容器（`Mrow`、`Msqrt`、`Mtable`……）各自有一个来自 `Container` 的可变参数 `apply`；位置式的结构（`Mfrac`、`Msub`、`Mroot`……）则为它们的子节点命名。
+
+@ 0 3 0 1819b0ac647e456011c729eeba68b77e
++       `Mathml.Parser` 把 xylophone XML 解码为节点，`Mathml.Reader` 在 honeycomb HTML 中查找并解码一棵 `<math>` 子树，对于不是 MathML 的元素，两者都会抛出 `Mathml.Error`。
+
+% 1 1 0 0af2986071c0eb3f15d0cc79b13bcb4b
+
+% 1 1 0 0f64eb518a70b30915b6e62deeae7a55
+
+% 0 1 0 0ef72c07aaf7825605786cf2d92ace93
+
+@ 0 13 0 0fa3f5053f33ad4f020a2e25189ad3fe
++   entry .encodable   任何节点，作为 xylophone `Xml` 元素，即 `node.in[Xml]`
++       对每个 `node <: Mathml` 都是泛型的：一个带有节点的 `label`、它的属性，以及单个文本子节点或各子节点自己的 `in[Xml]` 的 `Xml.Element`。
++       `<math>` 根用的是 `Math.encodableInXml`。
++   entry .renderable   任何节点，作为 honeycomb 外来内容，即 `node.html`
++       即 `Form = "#foreign"` 的 `Renderable` given，对每个 `node <: Mathml` 都是泛型的：honeycomb 的 `html` 扩展方法把节点渲染为带有其标注和属性的外来元素，`Math.renderable` 正是这样在 `<math>` 内渲染公式的内容的。
++   entry .atom   把 `<math>` 根收缩为一个节点：它唯一的内容，或一个 `<mrow>`
++       当 `math.contents` 恰好是一个节点时，`Mathml.atom(math)` 就是它，否则是由各内容组成的一个 `Mrow`。
++       `mathml` 扩展方法和 `ergo"…"` 插值器在需要单个操作数的地方嵌入编码后的值时，用的就是它。
++   entry .Container   每个子节点为列表的元素所共用的可变参数构造器
+
+% 1 1 0 1abb1548eee742e80a90e30ff0e87508
+
+@ 0 7 0 154a2f17851e8110071fa13ea32651d6
++         伴生对象以 `object Mrow extends Container(new Mrow(_))` 的方式扩展的特质，它为伴生对象提供 `apply(children: Mathml*)`。
++         `Math` 也扩展了它，因此 `Math(nodes*)` 构建一个根。
++     entry #apply   用给定的子节点按顺序构建元素
++   entry .Token   内容为字符数据的叶元素：`Mi`、`Mn`、`Mo`、`Mtext`、`Ms`、`Mspace`、`Mglyph`
++       一个没有 `#contents` 的密封特质。
++       `Mspace` 和 `Mglyph` 也不带文本，它们完全由属性控制。
++   entry .Mi   `<mi>`：标识符，例如变量名或函数名
+
+% 1 1 0 1c88a78f124fd6d206c4d9ca29dc241a
+
+@ 0 6 0 1ccab13367e8182c1bb1b45ac01a531e
++         `Mi(t"x")`。
++         在 Ergo 中，一串连续的字母是一个标识符，因此 `sin` 是 `<mi>sin</mi>`，`x y` 是两个标识符。
++         单字母标识符按 MathML 自身的规则以斜体显示；`mathvariant="normal"` 属性（Ergo 的 `⦱` 指令）使它变为直立体。
++     entry #value   标识符的文本
++     entry #attributes   元素的属性，作为名称–值对
++   entry .Mn   `<mn>`：数值字面量
+
+% 1 1 0 18e17f14acb6e1c40daad811705ad04e
+
+@ 0 5 0 07932fc62586119003526d78c1087bd2
++         `Mn(t"2")`。
++         文本就是数字应当读作的样子；数字的 `Encodable in Math` 实例在这里写出它们的 `show` 或 `toString` 形式。
++     entry #value   数字的文本
++     entry #attributes   元素的属性，作为名称–值对
++   entry .Mo   `<mo>`：运算符、括号或分隔符
+
+% 1 1 0 174ba72887e2feea106131c9a5eca259
+
+@ 0 6 0 12726ca7266667d0171b09f82cf24ef7
++         `Mo(t"+")`。
++         括号、积分号以及大型运算符 `∑` 和 `∏` 都是运算符，`Cell` 绘制时会把它们伸展到操作数的高度；MathML 中可伸缩的括号是带有 `stretchy="true"` 的 `Mo`。
++     entry #value   运算符的文本
++     entry #attributes   元素的属性，作为名称–值对
++   entry .Mtext   `<mtext>`：排在公式中的字面文本
+
+% 1 1 0 07df8578191f1d7e07b4e1dce633af62
+
+@ 0 8 0 1c3bb68d7e855ac5024764f868d6dfe8
++         `Mtext(t"speed")`：是文字而不是数学。
++         `Text` 通过 `Math.text` 编码为它。
++         它没有 Ergo 形式，因此 `Ergo.serialize` 会拒绝它。
++     entry #value   文本
++     entry #attributes   元素的属性，作为名称–值对
++   entry .Ms   `<ms>`：字符串字面量，显示在引号中
++     entry #value   字符串的文本
++     entry #attributes   元素的属性，作为名称–值对
++   entry .Mspace   `<mspace>`：具有给定宽度、高度或深度的空白
+
+% 1 1 0 13f5d710709eab8f0910ca519f55f5f1
+
+@ 0 8 0 1adab729017b94121da9db68b3df0539
++         `Mspace(List(t"width" -> t"1em"))` 渲染为 `<mspace width="1em"/>`。
++         它既没有文本也没有子节点；`Cell` 把它绘制为一个空白列。
++     entry #attributes   元素的属性，作为名称–值对
++   entry .Mglyph   `<mglyph>`：来自图像的字形，由其属性指定
++     entry #attributes   元素的属性，作为名称–值对
++   entry .Layout   通用布局结构：`Mrow`、`Mfrac`、`Msqrt`、`Mroot`、`Mstyle`、`Merror`、`Mpadded`、`Mphantom`、`Menclose`、`Mfenced`
++       由有子节点、无文本的元素组成的密封特质。
++   entry .Mrow   `<mrow>`：横向排列、作为一个单元组合在一起的一行节点
+
+% 1 1 0 039de98f4e0df17b0f282eec4f64cf89
+
+@ 0 6 0 029462fdb7fe28d10265a0b3bf238d71
++         `Mrow(Mi(t"x"), Mo(t"+"), Mn(t"1"))`。
++         它是用于组合的元素：Ergo 的一个括号组就是一个 `Mrow`，`Mathml.atom` 也用它包裹多个节点。
++         `Cell` 绘制一行时，对齐各子节点的基线，并在二元运算符两侧留出间距。
++     entry #contents   该行的子节点，按顺序排列
++     entry #attributes   元素的属性，作为名称–值对
++   entry .Mfrac   `<mfrac>`：分数，分子在分母之上
+
+% 1 1 0 0b9011ea91fe91530c6db268e008c76b
+
+@ 0 6 0 026d71d38f77ee1b0f5aaca27db74da3
++         `Mfrac(Mn(t"1"), Mn(t"2"))`；即 Ergo 的 `a/b`。
++         `linethickness="0"`（Ergo 的 `═(0)`）去掉分数线，用于二项式系数。
++     entry #numerator   分数线上方的节点
++     entry #denominator   分数线下方的节点
++     entry #attributes   元素的属性，作为名称–值对
++   entry .Msqrt   `<msqrt>`：作用于其子节点的平方根
+
+% 1 1 0 0dd7919aa2eebc800721d559110f2c86
+
+@ 0 4 0 1aaa6fbce09b782103e48b02f8552ce7
++         `Msqrt(Mi(t"x"))`；即 Ergo 的 `√x`。
++         `Cell` 在被开方数上方绘制一条括线。
++     entry #contents   被开方数，作为节点列表
++     entry #attributes   元素的属性，作为名称–值对
++   entry .Mroot   `<mroot>`：n 次根，根指数绘制在根号上方
+
+% 1 1 0 0a214f398b4cc56c085107c36ea867a9
+
+@ 0 16 0 05a3c6c4d6fc17df1c921c30e97310af
++         `Mroot(Mi(t"x"), Mn(t"3"))` 是 `x` 的立方根：先是底数，然后是根指数，与 MathML 的顺序一致。
++         在 Ergo 中，紧接在 `√` 之前写一个根指数原子，就得到它：`3√x`。
++     entry #base   被开方数
++     entry #index   根的次数
++     entry #attributes   元素的属性，作为名称–值对
++   entry .Mstyle   `<mstyle>`：应用于其子节点的样式变化
++     entry #contents   子节点
++     entry #attributes   元素的属性，作为名称–值对
++   entry .Merror   `<merror>`：标记为有错的内容
++     entry #contents   子节点
++     entry #attributes   元素的属性，作为名称–值对
++   entry .Mpadded   `<mpadded>`：调整了大小或位置的子节点
++     entry #contents   子节点
++     entry #attributes   元素的属性，作为名称–值对
++   entry .Mphantom   `<mphantom>`：占据空间但不被绘制的子节点
+
+% 1 1 0 02804ff215ae33a808632480613f355f
+
+@ 0 4 0 004a6948fc53e4b8050272788fbfe73f
++         `Cell` 把它绘制为与子节点大小相同的空白块。
++     entry #contents   子节点
++     entry #attributes   元素的属性，作为名称–值对
++   entry .Menclose   `<menclose>`：被方框或删除线之类的记号包围的子节点
+
+% 1 1 0 11eab6da70824ce70bfbfe9741418706
+
+@ 0 4 0 0943f23dcc91b0200c36d091f59022fb
++         仅限 MathML 3：MathML Core 去掉了它，因此它没有 Ergo 指令。
++     entry #contents   子节点
++     entry #attributes   元素的属性，作为名称–值对
++   entry .Mfenced   `<mfenced>`：位于一对括号之间的子节点
+
+% 1 1 0 179a54e503154c461e9fadcfd6af7821
+
+@ 0 11 0 152c2d881ff990ab116972194d28ccb4
++         `Cell` 绘制它时，把圆括号伸展到内容的高度，这就是在文本输出中给高大表达式加括号的方式；在 MathML Core 中，等价的写法是由可伸缩的 `Mo` 括号组成的 `Mrow`，`Math.vector` 和 `Math.matrix` 编码器写出的正是它。
++     entry #contents   子节点
++     entry #attributes   元素的属性，作为名称–值对
++   entry .Script   上下标和极限结构：`Msub`、`Msup`、`Msubsup`、`Munder`、`Mover`、`Munderover`、`Mmultiscripts`、`Mprescripts`、`Mnone`
++       一个密封特质。
++       角标和居中的极限是位置式的；`Mmultiscripts` 是一个容器，其子节点交替排列底数、它的后置上下标、一个 `Mprescripts` 标记和它的前置上下标，并以 `Mnone` 作为空占位符。
++   entry .Msub   `<msub>`：带下标的底数
+
+% 1 1 0 0bf007927cab98681438d70793aa944d
+
+@ 0 7 0 00fbf0a281d5eb6613825375dd61ea8b
++         `Msub(Mi(t"x"), Mi(t"i"))`；即 Ergo 的 `x↘i`。
++         当每个字符都有对应的 Unicode 下标字形时，`Cell` 用这些字形把下标排在底数所在的行上（`xᵢ`），否则把它堆叠在下方。
++     entry #base   上下标所附着的节点
++     entry #subscript   下标，排在右下方
++     entry #attributes   元素的属性，作为名称–值对
++   entry .Msup   `<msup>`：带上标的底数
+
+% 1 1 0 12e964bfc91e76d519a47d46f7258399
+
+@ 0 6 0 19c3b3aae3c4e0c01cba78ad20bc85f3
++         `Msup(Mi(t"x"), Mn(t"2"))`；即 Ergo 的 `x↗2`。
++         当上标能用 Unicode 上标字形拼写时，`Cell` 把它绘制为 `x²`，否则沿对角线堆叠在上方。
++     entry #base   上下标所附着的节点
++     entry #superscript   上标，排在右上方
++     entry #attributes   元素的属性，作为名称–值对
++   entry .Msubsup   `<msubsup>`：同时带下标和上标的底数
+
+% 1 1 0 1cde90ee33829a121df2176b5f316bb1
+
+@ 0 6 0 1ed7bbf41d1cd10a0214bafd19ac172e
++         即 Ergo 的 `x↘i↗2`：带有一个 `↘` 和一个 `↗` 的底数会合并为这个元素。
++     entry #base   上下标所附着的节点
++     entry #subscript   下方的标
++     entry #superscript   上方的标
++     entry #attributes   元素的属性，作为名称–值对
++   entry .Munder   `<munder>`：带下置标或下限的底数
+
+% 1 1 0 07d84c6a20b63bf81a44743e4654f91d
+
+@ 0 6 0 02de0e798a35f81e1b7f6fd5a795accb
++         即 Ergo 的 `x↓n`。
++         当下置标是单个 `Mo` 时，Ergo 解析器把它标记为 `accentunder="true"`，把横线或箭头当作紧贴的重音符号而不是极限。
++     entry #base   上下标所附着的节点
++     entry #underscript   下置标，居中排在下方
++     entry #attributes   元素的属性，作为名称–值对
++   entry .Mover   `<mover>`：带上置标或上限的底数
+
+% 1 1 0 0ff7429ae50fc3b81f705b383f9bded6
+
+@ 0 6 0 09b01168364369ff1ab9f3e7633cfb03
++         即 Ergo 的 `x↑n`，或表示尖帽的 `x↑^`，由于上置标是一个单独的运算符，解析器把它标记为 `accent="true"`。
++     entry #base   上下标所附着的节点
++     entry #overscript   上置标，居中排在上方
++     entry #attributes   元素的属性，作为名称–值对
++   entry .Munderover   `<munderover>`：上下都带极限的底数
+
+% 1 1 0 1cacdb3fe3a713a60058e5d2cb429060
+
+@ 0 7 0 0886791511b1b2b1080385d842b48961
++         即 Ergo 的 `∑↓(i = 1)↑n`：大型运算符极限的自然形式。
++         `Cell` 把极限居中绘制在底数的上方和下方。
++     entry #base   上下标所附着的节点
++     entry #underscript   下限
++     entry #overscript   上限
++     entry #attributes   元素的属性，作为名称–值对
++   entry .Mmultiscripts   `<mmultiscripts>`：带任意数量前置和后置上下标的底数
+
+% 1 1 0 1c005134a5f428891171cf1712c47627
+
+@ 0 12 0 1633a7b36802d99112c92a0e3d14791c
++         子节点依次是底数、它之后的下标–上标对，然后是一个 `Mprescripts` 标记以及它之前的下标–上标对；`Mnone` 填充空位。
++     entry #contents   底数、上下标和标记，按 MathML 的顺序
++     entry #attributes   元素的属性，作为名称–值对
++   entry .Mprescripts   `<mprescripts/>`：`Mmultiscripts` 中的标记，其后跟着前置上下标
++     entry #attributes   元素的属性，作为名称–值对
++   entry .Mnone   `<mnone/>`：`Mmultiscripts` 中的一个空的上下标位置
++     entry #attributes   元素的属性，作为名称–值对
++   entry .Tabular   表格结构：`Mtable`、`Mtr`、`Mlabeledtr`、`Mtd`、`Maligngroup`、`Malignmark`
++       一个密封特质。
++       MathML Core 保留了表格元素，但没有保留它们在 MathML 3 中的任何属性（`columnalign`、`rowspan`、`frame`……），因此这些属性没有 Ergo 指令。
++   entry .Mtable   `<mtable>`：由行组成的表格或矩阵
+
+% 1 1 0 0e65580aa20621581aa2f3979ab19f94
+
+@ 0 46 0 1b6768d11926110c1b343520167b07d5
++         `Mtable(Mtr(Mtd(Mn(t"1")), Mtd(Mn(t"2"))))`。
++         Ergo 的引导符 `⋱`、`⋯` 和 `⋮` 分别构建矩阵、单行表格和单列表格；`Math.vector` 和 `Math.matrix` 编码器在可伸缩的括号内写出一个表格。
++     entry #contents   各行，每行是一个 `Mtr` 或 `Mlabeledtr`
++     entry #attributes   元素的属性，作为名称–值对
++   entry .Mtr   `<mtr>`：由单元格组成的表格行
++     entry #contents   各单元格，每个是一个 `Mtd`
++     entry #attributes   元素的属性，作为名称–值对
++   entry .Mlabeledtr   `<mlabeledtr>`：第一个子节点为其标注的表格行
++     entry #contents   标注，然后是各单元格
++     entry #attributes   元素的属性，作为名称–值对
++   entry .Mtd   `<mtd>`：表格行中的一个单元格
++     entry #contents   单元格的内容
++     entry #attributes   元素的属性，作为名称–值对
++   entry .Maligngroup   `<maligngroup/>`：单元格内的对齐组标记
++     entry #attributes   元素的属性，作为名称–值对
++   entry .Malignmark   `<malignmark/>`：单元格内的对齐点标记
++     entry #attributes   元素的属性，作为名称–值对
++   entry .Elementary   初等数学结构：`Mstack`、`Mlongdiv`、`Msgroup`、`Msrow`、`Mscarries`、`Mscarry`、`Msline`
++       由用于竖式运算和长除法的 MathML 3 元素组成的密封特质，MathML Core 去掉了这些元素；它们可以解析和序列化，但没有 Ergo 形式。
++   entry .Mstack   `<mstack>`：用于初等算术、按列对齐的若干行的堆叠
++     entry #contents   各行
++     entry #attributes   元素的属性，作为名称–值对
++   entry .Mlongdiv   `<mlongdiv>`：长除法布局
++     entry #contents   除数、商、被除数以及下方的各行
++     entry #attributes   元素的属性，作为名称–值对
++   entry .Msgroup   `<msgroup>`：堆叠中一起移动的一组行
++     entry #contents   各行
++     entry #attributes   元素的属性，作为名称–值对
++   entry .Msrow   `<msrow>`：堆叠中的一行
++     entry #contents   该行的数字和运算符
++     entry #attributes   元素的属性，作为名称–值对
++   entry .Mscarries   `<mscarries>`：位于下一行上方的一行进位
++     entry #contents   各进位，每个是一个 `Mscarry` 或一个普通节点
++     entry #attributes   元素的属性，作为名称–值对
++   entry .Mscarry   `<mscarry>`：`Mscarries` 中的一个进位
++     entry #contents   进位的内容
++     entry #attributes   元素的属性，作为名称–值对
++   entry .Msline   `<msline/>`：堆叠中的一条水平线
++     entry #attributes   元素的属性，作为名称–值对
++   entry .Semantic   `<maction>` 和语义桥接：`Maction`、`Semantics`、`Annotation`、`AnnotationXml`
++       一个密封特质。
++       `Semantics` 把一棵表现子树与若干注释配对：`Annotation` 携带字符数据，例如 TeX 字符串，`AnnotationXml` 则携带一棵嵌套的标记子树。
++   entry .Maction   `<maction>`：绑定到切换或高亮之类动作的子节点
+
+% 1 1 0 1f45b8433a913dce00c7cf4649c26d42
+
+@ 0 14 0 0c2e33d54c0196ae02733710bb15a8e9
++         `actiontype` 属性（Ergo 的 `⚙(type)`）指明动作；它是遗留特性，在 MathML Core 中没有定义。
++     entry #contents   子节点
++     entry #attributes   元素的属性，作为名称–值对
++   entry .Semantics   `<semantics>`：带有一个或多个注释的表现子树
++     entry #contents   表现节点，然后是它的各注释
++     entry #attributes   元素的属性，作为名称–值对
++   entry .Annotation   `<annotation>`：为公式作注释的字符数据，例如它的 TeX 源码
++     entry #value   注释的文本
++     entry #attributes   元素的属性，作为名称–值对
++   entry .AnnotationXml   `<annotation-xml>`：为公式作注释的标记子树
++     entry #contents   注释的节点
++     entry #attributes   元素的属性，作为名称–值对
++   entry .Error   当 XML 或 HTML 不包含 MathML 树时抛出
+
+% 1 1 0 025c67c71b69cc6307b86e49bb53f32f
+
+@ 0 5 0 01265477c429d7e0114a114121f1fb2f
++         错误 `↯/s.129.1`：_the MathML could not be parsed because reason_。
++         当根元素不是 `<math>`，或某个元素的标注不是 MathML 元素时，由 `Math.aggregable`、`Math.loadable`、`Math.loadableData`、`Mathml.Parser` 和 `Mathml.Reader` 抛出。
++         XML 本身的良构性由 xylophone 的 `Xml.Error` 和 `Parse.Error` 负责，它们在这个错误之前抛出。
+
+% 2 1 0 14fb17b3e713c43100daaa1d002476ef
+
+% 3 1 0 1ed0b6e8466498b910e9f7131b314209
+
+% 1 1 0 01e216ffbf7534fe1439bb82c911f4ee
+
+% 0 1 0 1fd97adbaecfd4f0071902df79baad04
+
+% 1 1 0 0f5e35f8cdef81061b3bfff584cc7739
+
+@ 0 11 0 03ca4f0cdf5ceaef0825ef39a8466d57
++         在 `strategies.throwUnsafely` 下，同样的读取会抛出异常，错误的 `#reason` 是 `Mathml.Error.Reason.NotMathml(t"svg")`。
++     entry .Reason   这棵树为何不是 MathML：`NotMathml(label)` 或 `UnknownElement(label)`
++         `NotMathml(label)`（原因 1，_the root element was `<label>` instead of `<math>`_）：文档的根或 HTML 页面中没有 `<math>` 元素；当片段或页面中根本没有它时，标注为 `<missing>`。
++         `UnknownElement(label)`（原因 2，_the element `<label>` is not a known MathML element_）：`<math>` 内的某个元素，其标签不被 `Mathml.Parser.decodeNode` 识别。
++     entry .communicable   把每个原因呈现为它的消息
++     entry #reason   发现的是哪种故障
++   entry .Parser   把 xylophone `Xml` 树解码为 `Math` 和 `Mathml` 节点
+
+% 1 1 0 1939402f6f3600351972e5d46b495aad
+
+@ 0 5 0 1a1dfa0ab40a152b1f6eafae8c1720e8
++         `read[Math]` 背后的解码器：它根据每个元素的标注分派到相应的 case class，把每个属性原样保存在节点的 `attributes` 属性集中，只有根上的 `xmlns` 和 `display` 例外，它们由 `Math` 以结构化的方式保存。
++         缺少子节点的位置式元素（`<mfrac>`、`<msup>`……）会在相应位置得到一个空的 `Mrow`。
+
+% 2 1 0 05ec3a109599b4ac1d72ab25ce9338dd
+
+% 3 1 0 12a5de5aee471a0118e8c866aa50b3ce
+
+% 1 1 0 10c75085845bdbdf08b47c1db265ea53
+
+% 1 1 0 0eff06a39f326980140a29dab5c67489
+
+% 0 1 0 00542ffad24aace01c15e8dae5594e88
+
+% 0 1 0 09f4f5ebcaa730e6058c08637b4c62b4
+
+% 1 1 0 0b52384181664cf10bf4ad3b90319c5d
+
+@ 0 16 0 0671d78ad8c72f1b1bc5d18c7b0448b1
++         每个进行解码的方法都需要一个 `Tactic[Mathml.Error]`。
++     entry .labelOf   `Xml` 值的标注；对于非元素，为 `<unknown>`
++     entry .findMath   XML 节点列表中的第一个 `<math>` 元素
++         没有时抛出带有 `NotMathml(<missing>)` 的 `Mathml.Error`。
++     entry .rootElement   XML 值的 `<math>` 元素：值本身，或片段中的第一个
++         当值是另一个名称的元素，或是不含 `<math>` 元素的片段时，抛出带有 `NotMathml(label)` 的 `Mathml.Error`。
++     entry .decodeMath   把 `<math>` 元素解码为 `Math`，读取 `display` 和其他属性
++         `display` 属性成为 `#display`（`Display.Block`、`Display.Inline`，任何其他值为 `Inline`；缺失时为 `Unset`）；`xmlns` 被丢弃，因为它总会被写回；其他每个属性都被保留。
++         子节点用 `.decodeNode` 解码。
++     entry .decodeNode   把一个元素解码为与其标注对应的 `Mathml` case class
++         对于不是 MathML 元素之一的标注，抛出带有 `UnknownElement(label)` 的 `Mathml.Error`。
++   entry .Reader   提取嵌入在 honeycomb HTML 树中的 MathML
+
+% 1 1 0 0f5511797deba7ce049ca0acb942ff89
+
+@ 0 4 0 13b387c9b1f3f82f026c68f06c0c01f7
++         honeycomb 把 `<math>` 解析为带有自己节点类型的外来元素，因此读取器以深度优先的方式遍历 HTML 树，找到第一棵 `<math>` 子树，把它转录为一个 xylophone `Xml.Element`，再用 `Mathml.Parser` 解码。
++         这是 `math.html` 的逆操作。
+
+% 2 1 0 019936af2aef47720ec6ff31424e9bcd
+
+% 3 1 0 05da1d627f67019715ed43806eadc285
+
+% 4 1 0 00c9e477f70e9da10e704461685bf670
+
+% 1 1 0 19c269351317ddb30a1c428ad3226bd9
+
+% 0 1 0 09e529b03572332f134ea16a4fc8c756
+
+% 0 1 0 10fb2cf1186e2c40155af454e7eff04e
+
+% 1 1 0 111cfc31d3522581000c134e75820fdd
+
+@ 0 11 0 0f95ca82018df94e0f0e2dfafbe224d2
++     entry .read   HTML 树中的第一个 `<math>`，解码为一个 `Math`
++         树中没有 `<math>` 元素时，抛出带有 `NotMathml(<missing>)` 的 `Mathml.Error`，其中有非 MathML 元素时抛出 `UnknownElement`；需要一个 `Tactic[Mathml.Error]`。
++     entry .findMath   HTML 树中的第一个 `<math>` 元素，采用 honeycomb 自己的元素类型，或为 `Unset`
++   entry #label   元素的标签名，例如 `mi` 或 `annotation-xml`
++   entry #attributes   元素的属性，作为名称–值对，按顺序排列
++       原样保留：模型没有为之提供访问器的属性，仍能完整往返。
++   entry #contents   子节点，按顺序排列；对于记号元素为空
++   entry #text   记号元素的字符数据；对于布局元素为 `Unset`
++       `Mspace` 和 `Mglyph` 是不带文本的记号，因此它们的也是 `Unset`。
+
+@ 0 1 0 15a426221504e732017882612388a096
++   entry .Display   `<math>` 根是独立显示的块，还是排在行文之中
+
+% 1 1 0 1ca0c025d03b511904dbe61939726ded
+
+@ 0 4 0 076eeb7c80e6baf01d8d7b3b6f7dd888
++         根 `<math>` 元素上 `display` 属性的值：`Display.Block` 表示独占一行、独立显示的方程，`Display.Inline` 表示排在段落之中的方程。
++         `Math` 把它保存为自己的 `display`，或以 `Unset` 表示不写该属性；Ergo 指令 `◻` 和 `▭` 用来设置它。
+
+% 2 1 0 1c6c7b09e2e3aee812827089f0f64b4f
+
+% 3 1 0 01051a5cd1907684025ba2bb4ca5473b
+
+% 4 1 0 0f935fc4bf18296b14814591351dff89
+
+% 0 1 0 155ea76cc6f91fb10bd35608da849111
+
+% 0 1 0 12e3a2d18340769219b5e72f0fc3ffa3
+
+% 1 1 0 195a27d8358fdcfb15a0f1a1415db3e9
+
+@ 0 5 0 1a18bbcb82dfb8f01e4c10c005a54cc4
++     entry .encodable   把显示模式呈现为属性的文本：`block` 或 `inline`
++     entry .unapply   在模式中把文本 `block` 或 `inline` 匹配为一个 `Display`
++         对一个 `Text` 写 `case Display(display) =>`；任何其他文本都不匹配，`Mathml.Parser.decodeMath` 正是借此对未知值回退到 `Inline` 的。
++   entry .Cell   带基线的等宽文本块：公式在终端上的渲染
+
+% 1 1 0 06b2e08fd67e993016a949865c536dc1
+
+@ 0 6 0 009fa720bb87dbe90c4fdd0a683f1902
++         `Cell` 是由字符单元组成的矩形，宽 `#width` 列、高 `#height` 行，并带有一个 `#baseline`，即排版时用来对齐的数学轴所在的行（从顶部数起）。
++         它的 `#lines` 是 `Writing`，因此一个组合重音符号或一个由多个码点组成的簇算作一列，并且每一行都恰好有 `width` 列。
++         `Cell.of` 对任何 `Mathml` 节点进行布局，`#render` 把块压平为以换行符分隔的 `Text`；`Mathml` 或 `Math` 上的扩展方法 `cell` 和 `draw` 是通常的入口。
+
+% 2 1 0 01723d81673c811501a2a1e1acb48bdf
+
+% 3 1 0 124d1d36026a1db512c7e1572f6be289
+
+% 4 1 0 10bb5cfa3489acf407344885b2097609
+
+% 0 1 0 0643dad035b29da400539c802adb1885
+
+% 0 1 0 0e6780b36044b206080bd33988b82a9a
+
+% 0 1 0 1798b580a0c753130c08b5e06dc75990
+
+% 0 1 0 0d423a0c4759841a07a2984692df6c71
+
+% 1 1 0 176ad58bebd8e0d31ef74676449f566a
+
+@ 0 12 0 1b49fcdb4faba2a31084a8d8dd77d4fb
++         布局规则如下：能用 Unicode 上标和下标字形拼写的上标或下标（数字、正负号、括号以及大部分拉丁字母，但没有上标 `q`）排在底数所在的行上，如 `x²` 或 `xᵢ`；其他任何东西（希腊字母、分数、嵌套的上下标）都沿对角线堆叠。
++         分数把它的各部分居中排在一条 `─` 线的上下；平方根绘制一条 `┌─` 括线，当被开方数高于一行时，还带有一根 `│` 竖线和一个 `╲` 底脚；n 次根把根指数放在根号上方一行。
++         在一行之中，二元运算符两侧留出间距，括号、积分号以及大型运算符 `∑` 和 `∏` 伸展到内容的高度：括号变成制表符拼成的若干部分，积分号变成一笔 `╭`–`│`–`╯`（重积分为两笔或三笔，环路积分还带一个 `○`），`∑` 和 `∏` 则变成按被加项大小绘制的线条图。
++         伴生对象的构建方法（`beside`、`fraction`、`radical`、`bracket`……）是 `of` 所组合的原语，也可以直接用来实现自己的布局。
+
+@ 0 2 0 04e62c42a18fba2a00bf208e283c2f85
++         在 `soundness` 总括包中，名称 `Cell` 指的是这个类型；probably 的表格单元格是 `Tally`。
+
+% 0 1 0 1621b37bb921f7fe11c46eafb0eef6fd
+
+% 0 1 0 1c7cf59e7dc36dcb0448a6776a5f503f
+
+@ 0 64 0 054c1580c160d2bc0db2cad59baa7126
++     entry .inspectable   调试渲染：尺寸、基线，以及作为文本字面量的每一行
++         `Cell(2×1@0 t"xy")`：宽乘高，`@` 后是基线所在的行，然后是加了引号的每一行，以便看到尾随的填充。
++         `#render` 显示块实际呈现的样子，而检视做不到这一点。
++     entry .empty   由一个空行组成、宽度为零列的单元
++     entry .line   由给定文本组成的单行单元，基线为 0
++         宽度是文本在宽字符度量下的字素宽度，因此一个 CJK 字符算作两列。
++     entry .blank   由空格组成的单元，具有给定的宽度、高度和基线
++     entry .beside   把各单元从左到右连接起来，并对齐它们的基线
++         这是 `<mrow>` 的主力：每个单元在上下补上空白行，使所有基线都落在同一行上，然后逐行拼接。
++         结果的基线是各输入中最大的那个。
++     entry .fraction   把分子叠在一条 `─` 线之上，分母在其下
++         两部分都在较宽者再加上两侧各一列边距的宽度内居中；基线就是那条线。
++     entry .superscript   把一个上下标单元沿对角线排在底数单元的右上方
++         这是堆叠形式，在 `Cell.of` 无法用 Unicode 字形拼写上下标时使用。
++         基线下移上标的高度。
++     entry .subscript   把一个上下标单元沿对角线排在底数单元的右下方
++     entry .subsup   把一个下标单元和一个上标单元上下排列在底数的右侧
++         两个上下标都填充到较宽者的宽度；保留底数的基线，并按上标的高度下移。
++     entry .overscript   把一个单元居中排在底数单元之上
++     entry .underscript   把一个单元居中排在底数单元之下
++     entry .underover   把一个单元居中排在底数单元之上，另一个居中排在其下
++         `Munderover` 就是这样绘制的：求和的上下限位于 `∑` 的上方和下方。
++     entry .radical   围绕一个单元绘制平方根号和括线
++         单行的被开方数得到 `√` 字形和一条 `┌─…` 上划线；较高的被开方数得到一个 `╲` 底脚和一根升到拐角的 `│` 竖线。
++     entry .root   绘制 n 次根：根指数位于根号上方一行，偏左
++         总是使用根号的高形式，以便根指数有一行可以放置。
++     entry .fence   用一个开字符和一个闭字符给单元加上括号，并伸展到它的高度
++         `fence('(', ')', inner)`：`Mfenced` 就是这样绘制的。
++     entry .bracket   伸展到某个高度的括号字符，作为单列的单元
++         高度为单行时给出字面的字符；更高时，`(`、`[` 和 `{` 变为它们由制表符组成的顶部、中部和底部部件（花括号把它的 `⎨` 放在基线所在的行），任何其他字符则变为一根 `│` 竖线。
++         `opening` 选择左侧或右侧的部件。
++     entry .integral   伸展到某个高度的积分号，其后带一列填充
++         `∫`、`∬` 和 `∭` 分别是一笔、两笔和三笔 `╭`–`│`–`╯`；`∮`、`∯` 和 `∰` 在第一笔的轴行上叠加一个 `○`。
++         高度为单行时给出普通的字形。
++     entry .bigOperator   作为给定高度的线条图的 `∑` 或 `∏`
++         求和号由 `▁` 和 `▔` 横线以及向顶点逐级收进的 `╲` 和 `╱` 斜线连接而成，它需要至少为四的偶数高度；求积号是架在两根 `│` 立柱上的一条 `┬──┬` 横梁，可以是任意高度。
++         基线位于垂直方向的中间。
++     entry .row   把节点列表并排布局，伸展括号、积分号和大型运算符
++         先测量不可伸缩的内容，再把每个可伸缩的运算符绘制到那个高度，然后用 `beside` 把一切连接起来。
++         单行的行保留每个运算符的普通字形。
++     entry .of   把任何 `Mathml` 节点布局为一个单元
++         递归的布局：每种元素映射到对应的构建方法，记号映射到 `line`（二元运算符两侧留出间距，不可见运算符被丢弃），没有特殊布局的元素则映射为由其子节点组成的一行。
++     entry #lines   块的各行，从上到下，每行恰好 `width` 列
++     entry #width   列数
++     entry #baseline   排版时用来对齐的轴所在的行，从顶部数起
++     entry #height   行数
++     entry #render   作为文本的块，各行用换行符连接
++         这是用来打印的形式：尾随空格被保留，因此每一行的宽度都相同。
++     entry #hpad   在每行的左右两侧填充空格，加宽这个块
++     entry #hcenter   在更多的列数内居中这个块；从不使它变窄
++     entry #framed   在上下添加空白行，以达到给定的上伸高度和下伸深度
++         `Cell.beside` 用它把各单元调整到共同的高度，再逐行连接。
+
+@ 0 1 0 0c9cf62d7df969e016bfaf1410d696e9
++ entry .Ergo   Ergo 简写：一种可解析为 MathML 并能序列化回来的单行记法
+
+% 1 1 0 0c3c2931b853302601a73a4ece94ca19
+
+@ 0 6 0 1def703c7d0cf5271fce73139f7b04a6
++       Ergo 是表现型 MathML 的一种紧凑的线性记法，每种结构角色对应一个字形，`.parse` 把它变成一个 `Math`，`.serialize` 再把它写回来，在 Ergo 有语法的那些元素上两者恰好互逆。
++       一个表达式由一对括号界定，它的**第一个字符**决定 `(`、`[`、`{` 或 `⟨` 中的哪一个在整个表达式中充当分组符号；其他每种括号都是字面的运算符。
++       一段分组内容就是一个 `<mrow>`。
+
+@ 0 3 0 1a2d803e6f24e88c16663f9f0c9c9193
++       记号：一串连续的字母是一个标识符（`sin` 是 `<mi>sin</mi>`；`x y` 是两个），一串内部带有 `.` 的连续数字是一个数，空格起分隔作用、渲染时什么也不产生，任何其他字符都是运算符。
++       结构性字形如下，结合最紧的在前：
+
+% 2 1 0 0c4f0d1d859218cf10d90762dfa7e797
+
+@ 0 17 0 062d5cdf377b81971b2001069b47a017
++       column  字形
++       column  角色
++       column  元素
++       column  示例
++       row  `√`  平方根  `<msqrt>`  `√x`
++       row  位于根指数之后的 `√`  n 次根  `<mroot>`  `3√x`，根指数之前没有空格
++       row  `↗`  上标  `<msup>`  `x↗2`
++       row  `↘`  下标  `<msub>`  `x↘i`
++       row  `↘` 和 `↗`  两者都作用于同一底数  `<msubsup>`  `x↘i↗2`
++       row  `↑`  上置标  `<mover>`
++       row  `↓`  下置标  `<munder>`
++       row  `↓` 和 `↑`  两者都作用于同一底数  `<munderover>`  `∑↓(i = 1)↑n`
++       row  `/`  分数，比上下标结合得松  `<mfrac>`  `a/b`
++       row  并置  行  `<mrow>`  `x+1`
++       row  `⋱`  矩阵，取自随后的分组  `<mtable>`  `⋱(((1)(2))((3)(4)))` 是 2×2
++       row  `⋯`  行向量  单行的 `<mtable>`
++       row  `⋮`  列向量  单列的 `<mtable>`
+
+% 1 1 0 1ea6efb2f222fe7804f89339bcfb637a
+
+@ 0 5 0 06e1725ac9f061100041c94573f1304f
++       缺少操作数的运算符字形会降级为字面的运算符，因此 `(↗)` 是 `<mo>↗</mo>`，而不是错误。
++       MathML Core 的每个表现属性都有一个**后缀指令**字形，它绑定到其左侧的原子或分组。
++       布尔或枚举属性的每个取值都有一个单独的字形，取值开放的属性（长度、颜色或整数）则在分组括号中接受它的值，按原样读取：
+
+% 2 1 0 1d1873bb7348dedd158108a1cb606f06
+
+@ 0 3 0 092c3f9b04cf8d2d11421d27c055557c
++       column  字形
++       column  属性
++       column  取值
+
+% 0 1 0 133a6aa74a214bb80bbaae67d71a2210
+
+@ 0 1 0 01474e8e4014997801d13350b6a43464
++       row  `⌄(…)`  `scriptlevel`  括号中的值
+
+% 0 1 0 1f5aff853083fe93071e09b81c784f34
+
+@ 0 3 0 1919a264a2b22a8f16dc6b89778435a0
++       row  `●(…)`  `mathcolor`  括号中的值
++       row  `▨(…)`  `mathbackground`  括号中的值
++       row  `⟑(…)`  `mathsize`  括号中的值
+
+% 0 1 0 0765928fadbb4fa805e4149af7c645c3
+
+% 0 1 0 003d16defd413c35122c025e30b6d850
+
+% 0 1 0 03ab8a4992f4105102559e94cf0a2afd
+
+% 0 1 0 189e7021d2fd7a0a1df585e387f2d8fa
+
+% 0 1 0 08bd3785094bb9be19bb53927c3e0b69
+
+% 0 1 0 1d2cd91ba08156b7117657f30784d59f
+
+% 0 1 0 0399f7ea0ead54b102bb3880fde8837d
+
+% 0 1 0 12c5fb3b226c8f6c0042de5137240f47
+
+% 0 1 0 10ddb73d6ea9518e1ecebb7d3084e5f0
+
+@ 0 9 0 0f9e3f7c2778ebae05964827e8d37e92
++       row  `⧔(…)`  `lspace`  括号中的值
++       row  `⧕(…)`  `rspace`  括号中的值
++       row  `⟰(…)`  `maxsize`  括号中的值
++       row  `⟱(…)`  `minsize`  括号中的值
++       row  `↔(…)`  `width`  括号中的值
++       row  `⍏(…)`  `height`  括号中的值
++       row  `⍖(…)`  `depth`  括号中的值
++       row  `↕(…)`  `voffset`  括号中的值
++       row  `═(…)`  `linethickness`  括号中的值
+
+% 0 1 0 050470488bb0560a155198cec4ec290c
+
+% 0 1 0 12743a88c60a51fc1e0f56b20c19a647
+
+@ 0 1 0 0e7720c34f956a0c0348e0f2bf134b91
++       row  `⚙(…)`  `actiontype`  括号中的值
+
+% 1 1 0 148a5f2be5870fec13fa1c5c5a65095a
+
+@ 0 2 0 174206294247872a1a53c362ee38ebf8
++       分组决定作用范围：`(x↗2)●(red)` 给整个幂着色，`x↗2●(red)` 只给 `2` 着色。
+
+% 0 1 0 14116fcaa006993f068c95fd1ec862a2
+
+% 1 1 0 08d9458eb73012351c93056f35e51984
+
+@ 0 1 0 1c3d264c19dcc62b0b6ebac1c97df630
++         label 一个标识符
+
+% 1 1 0 137e836ee3217f211a3f32d46619aa6d
+
+% 2 1 0 071bed0fb6f5e7861c97de6c01b810fa
+
+% 3 1 0 1ba254f9e8c7e1a20d27e97ae95c33db
+
+% 0 1 0 1a954feb1c1d2f430836dacdfe44d401
+
+% 1 1 0 1cb970d28232ceca0b7de156c116baea
+
+@ 0 1 0 0a2c6aaeec458436043c3db00e544da1
++         label 一个上标
+
+% 1 1 0 12a7cd1ab4ef91da0ca4702f6bc61395
+
+% 2 1 0 03efdbbb7021fb1604639c1491905352
+
+% 3 1 0 019edd7418f1c9e219fb716b4be6b61e
+
+% 0 1 0 1beee8ae3d8f261310a1e0126386a117
+
+% 1 1 0 09ebcd5db1921b9008a06eea77d209c2
+
+@ 0 1 0 0bddac9c333eafc915ba49746ea7a336
++         label 一个分数，比上下标结合得松
+
+% 1 1 0 160a5bcce18b07fa14ff44c9e6119430
+
+% 2 1 0 012c7d416c7498c10ce81f15b83149d7
+
+% 3 1 0 118dd348912bf2990084148b27aded9c
+
+% 0 1 0 1762f5b588300ec40568a109cf106759
+
+% 1 1 0 1f1bb994cf59d34e15533caec399df9a
+
+@ 0 1 0 0dee9681172c61a40b99509c611e7fbe
++         label 作用于这个分数的平方根
+
+% 1 1 0 1fa714384e924b0009d90acba4af5105
+
+% 2 1 0 150a5870ce8154f110b9844850599091
+
+% 3 1 0 14f2de9e441218bd0f55a8ecdbf0a576
+
+% 0 1 0 012cb8f646beaee701cdb846a5fee6aa
+
+% 1 1 0 018bb3ba61d3d33e057a5df105eb2a52
+
+@ 0 1 0 0ab58c9a17ddff701b7160d8762ad0f5
++         label 带上下限的求和
+
+% 1 1 0 1eed386aa0c911181b980dd59f101f6a
+
+% 2 1 0 12bd56f9692f9fb61acede4c1709570b
+
+% 3 1 0 10db8bbabdba3beb1bbe21e49f222353
+
+% 0 1 0 122ed355e4eb193c04bdbe9b01f4f7a3
+
+% 0 1 0 05324ab952d132031fa7821cd90c1137
+
+% 1 1 0 1a277342ea9dfdc5113023e785963c91
+
+@ 0 5 0 1a3a4e45bc99f1b509daf5e48417227a
++       解析需要一个 `Tactic[Ergo.Error]`；`ergo"…"` 插值器则在代码编译时解析字面量，并在解析停止的那个字符处报告格式错误的字面量。
++       序列化遇到 Ergo 子集之外的元素（`<mtext>`、`<mspace>`、`<mstyle>`、表格属性、初等数学元素）时，会以 `Ergo.Error` 拒绝它，而不是近似处理，并且会丢弃根自身的属性。
+
+% 0 1 0 0c8b27c506084d491ec67a1a7c048407
+
+% 1 1 0 0386de205fa60abb0a784acbfc3ed4b8
+
+@ 0 1 0 052f8cf97f2f4f5312e9ce5bb97bebf4
++   entry .parse   把 Ergo 文本解析为一个 `Math`
+
+% 1 1 0 015955a53079f291158c325245927364
+
+% 2 1 0 04beac83d30c46650d9b112b805219f8
+
+% 3 1 0 14722fffb714fc0b1d05aa5b853c93ba
+
+% 0 1 0 045d7bc9d1158b0b01dc62545b622390
+
+% 0 1 0 1fe0021ba33757b104aa7a20a0b0ba8d
+
+% 1 1 0 00a107b269ca7b631b4abc69641ca519
+
+@ 0 14 0 014f440b13eb4c6c0a54f62c875667ef
++       对于空输入、不以四种分组括号之一开头的输入、未闭合的分组、中途结束的输入，或后面没有跟着分组的引导符（`⋱`、`⋯`、`⋮`），抛出 `Ergo.Error`。
++       错误的 `offset` 是解析停止的那个字符。
++   entry .interpolate   解析插值字面量的各部分，并在每个空位拼接一个节点
++       `ergo"…"` 插值器在运行时的那一半：文本部分在每个替换处以一个占位符连接，每个占位符按顺序被解析为相应的、已经编码好的 `Mathml` 原子。
++       需要一个 `Tactic[Ergo.Error]`；插值器自身在编译时检查过字面量之后，调用的是 `.unsafeInterpolate`。
++   entry .unsafeInterpolate   不带战术的 `.interpolate`，用于已在编译时检查过的字面量
++       接受 `(using Unsafe)`：`ergo"…"` 宏生成的代码调用它，因为字面量的良构性在编译时已经确立。
++       解析未经检查的文本的代码，应当调用 `.parse` 或 `.interpolate`，并处理 `Ergo.Error`。
++   entry .serialize   把一个 `Math` 写回为 Ergo 文本，以 `(` 作为分组括号
+
+% 1 1 0 0d181b4636994dcd0cd033bd7bb8f251
+
+% 2 1 0 0f475d892d2128900958078f45f1f0c7
+
+% 3 1 0 043ae68b2c88e9d91875da9d0550e119
+
+% 0 1 0 1622b6732016785719f1e4d8d95298df
+
+% 0 1 0 16a3645ac0a5a48e0dc3ff5b12ed71ec
+
+% 1 1 0 162a31cf2753857403cbdc1694c035ca
+
+@ 0 8 0 16720d449b57935513b910f78c706c3b
++       无意义的空格被丢弃，只有在两个记号否则会合并（两个字母合并成一个标识符，两个数字合并成一个数）的地方才保留空格。
++       属性写成指令，在取值有单独字形的地方优先使用该字形；由单独运算符作上下标所隐含的重音属性被省略，因为解析会恢复它。
++       解析得到的表达式序列化后再解析，得到相等的树。
++       对于没有 Ergo 形式的元素，例如 `<mtext>`，抛出带有 `Unsupported(label)` 的 `Ergo.Error`；需要一个 `Tactic[Ergo.Error]`。
++   entry .Error   Ergo 文本无法解析，或树无法写成 Ergo 时抛出
+
+% 1 1 0 00d9a09a5ba921da1da429a4bc8dd7a8
+
+@ 0 5 0 15b989f35c86915a16abc4d99c37b5c1
++         错误 `↯/s.129.2`：_the ergo expression could not be parsed because reason_。
++         对于格式错误的文本，由 `Ergo.parse` 和 `Ergo.interpolate` 抛出；对于 Ergo 子集之外的元素，由 `Ergo.serialize` 抛出。
++         在 `ergo"…"` 插值器中，同样的故障是编译错误，定位在解析停止的那个字符处（对于未闭合的分组是最后一个字符，对于缺少的开括号是第一个字符）。
+
+% 2 1 0 0899827b650da0ff0328f1ff1427898e
+
+% 3 1 0 04368a33918c091117a20691cd937d2e
+
+% 0 1 0 0979ffdf99edf3580a4d4a0d84fd4f27
+
+% 1 1 0 18d34c13118a8e981fa898f0e39a1233
+
+@ 0 2 0 0508efcbbf05aafa06406713d5d66f38
++     entry .Reason   发现的是哪种故障
++         各分支如下，其中的 `char` 字段都是 `Char`：
+
+% 0 1 0 1682596b9e5a64c91ea7da6dc8713ea7
+
+@ 0 4 0 0f05ca2e342788f71a13a5a1ab147c4e
++         column  分支
++         column  代码
++         column  消息
++         column  说明
+
+% 0 1 0 1a07ec9fd04dcb9b178999df3a420698
+
+@ 0 1 0 1138282f6e981c43141e87f9fe0c2cf7
++         row  `BadOpener(char)`  2  _the expression must start with a bracket, not `char`_  第一个字符不是 `(`、`[`、`{` 或 `⟨`
+
+% 0 1 0 0699e79776cdb18d1675ab6675ca6c3e
+
+% 0 1 0 1c7f03cbb20e21d60ecb75a829085dcd
+
+@ 0 2 0 0a40cf17bdadd21212a9b50dda26fc0f
++         row  `MissingBody(char)`  5  _the `char` introducer must be followed by a group_  后面没有分组的 `⋱`、`⋯` 或 `⋮`
++         row  `Unsupported(label)`  6  _the `<label>` element has no ergo representation_  来自 `Ergo.serialize`
+
+% 1 1 0 09d3ef1672bf04e7134cab42536c06a4
+
+@ 0 3 0 13f90fce196e7aff08da3063f11a4303
++     entry .communicable   把每个原因呈现为它的消息
++     entry #reason   发现的是哪种故障
++     entry #offset   解析停止处的字符位置；来自序列化时为 `-1`
+
+@ 0 2 0 022dc7661792e1f40c94aa0b73453f8f
++ entry .mathmlNamespace   MathML 命名空间 URI，作为 `xmlns` 写在每个 `<math>` 根上
++     `http://www.w3.org/1998/Math/MathML`：`Math.attributePairs` 总是把它放在第一位。
+
+@ 0 5 0 1e1bee1ae749bd1f0ec75dd3db5c538a
++ entry .math   任何 `Encodable in Math` 的值，作为 `<math>` 根，即 `value.math`
++     每个具有 `Encodable in Math` 实例的类型（各种数字、`Text`、`Q64`/`Q32`、`Complex`、mosquito 的 `Vector` 和 `Matrix`、带量纲的 `Quantity`，以及任何 `Mathml` 节点或 `Math`）上的扩展方法，给出编码后的 `Math`。
++     这些实例位于 `Math` 的伴生对象中，因此无需导入。
+
+% 2 1 0 0d1e8840e7cd4a2c11b4585ca932540d
+
+% 3 1 0 01ed0b633eb3e96f15a7907a16eaee6f
+
+% 0 1 0 1a2b01cc7c521ceb00b83c4fbbfa9131
+
+% 0 1 0 04607a11b49e1719119857b324d15bed
+
+% 1 1 0 0d5bdba7b401e8490fe0cef3e6400178
+
+@ 0 3 0 1ca11595ab1ec5191b93c7e96df5e6ef
++ entry .mathml   任何 `Encodable in Math` 的值，作为单个 MathML 节点，即 `value.mathml`
++     与 `math` 相同，然后用 `Mathml.atom` 收缩为一个节点：唯一的内容节点，或由多个节点组成的一个 `<mrow>`。
++     用于从编码好的片段手工构建更大的树。
+
+% 2 1 0 1d724de473f954b41e0a734939cac173
+
+% 3 1 0 01d75e1bf29a2f971d4a8d0ca25fc81b
+
+% 4 1 0 1819e7da0015abd60ccddf0e62e481b8
+
+% 0 1 0 1e13ef5168574d291d63dc7945feb5d0
+
+% 0 1 0 0d2a78ba0769595d02e6412c38778884
+
+% 0 1 0 1c51399fe31432e41dd627b53704cb9b
+
+% 1 1 0 1f4d927d59531434081e9e66b68149ba
+
+@ 0 7 0 1132bf8017c7a84b11c3219c724d935c
++ entry .ergo   `ergo"…"` 插值器：在代码编译时解析的 Ergo 表达式
++     `ergo"(x↗2)"` 是一个在编译时解析的 `Math`，因此格式错误的字面量是一个定位在解析停止的那个字符处的编译错误：_the ergo expression could not be parsed because a group was not closed with )_。
++     `$` 替换可以是任何 `Encodable in Math` 的值（数字、文本、`Mathml` 节点、另一个 `Math`、向量），并作为单个原子拼接进来，因此指令或上下标作用于它的整体；不可编码的值是一个指明其类型的编译错误。
+
+% 2 1 0 1cc677d9c5c5b2971e76729101fa422a
+
+% 3 1 0 164c66f13acedaf11417fd13619166c9
+
+% 0 1 0 097504ab7fdaf3ef12a03ce43a0f5fbe
+
+% 0 1 0 006855c50bf792ac13704f4c2cf8f524
+
+% 0 1 0 0d67af57aec7ff331a667f189153a24a
+
+% 0 1 0 1d53c31ea5bd4f9d1eb76036ef5bf552
+
+% 0 1 0 1710031303e589e80ea72bb35ca66f05
+
+% 1 1 0 12f3f66c1572c2dd1281f4ac33e1bb47
+
+@ 0 2 0 1cfecfdc6caed9670b8794b1dcf5f8ee
++     这种记法在 `Ergo` 下描述；`Interpolable` given 是位于伴生对象中的 `Math.interpolable`，因此 `import soundness.*` 就足够了。
+
+@ 0 3 0 035a035901e05f3110d72a644ebbca3f
++ entry .cell   布局为一个 `Cell` 的 `Mathml` 节点或 `Math`，用于与其他块组合
++     即 `Mathml.Cell.of(node)`；对于 `Math`，则是把它的内容作为一行进行的布局。
++     `draw` 是以文本形式给出的同一个块。
+
+@ 0 1 0 17be4b6edd9514a91940721470581b58
++ entry .draw   作为供终端使用的等宽制表符文本的 `Mathml` 节点或 `Math`
+
+% 1 1 0 053f202f5fc43286009de909ba28db7e
+
+% 2 1 0 0b9a89f8e005deb606a1836beaf90f16
+
+% 1 1 0 0e3bcc542e4df8490371466e2b036867
+
+% 0 1 0 1694ccca866148630e43879510e1fc89
+
+% 0 1 0 1b824c51f9b12f92168b841f8fc4385d
+
+% 1 1 0 101f8f511c080aa3113e1d3c6a9d3d4c
+
+@ 0 2 0 08ab3ab7d35b9ece0eeead6074c56f18
++     若干行用换行符连接，每一行的宽度都相同；布局规则在 `Mathml.Cell` 中描述。
+
+@ 0 1 0 1098e68bfad657b31a4a60b77b6c523c
++ entry .internal   `ergo"…"` 插值器背后的宏实现
+
+% 0 1 0 1c18810b564d59e609a88422cf8dd919
+
+% 1 1 0 0f71597c1b0bc6cb112bae74ffdfb433
+
+@ 0 6 0 040885e5e02f3a5f10433b8721f7990f
++       不供直接使用：这个对象的存在是为了给宏一个稳定的所在之处。
++   entry .ergoInterpolator   `ergo"…"` 背后的宏：在编译时检查字面量，并拼接 `Ergo.unsafeInterpolate`
++       恢复字面量的各部分，通过每个替换的 `Encodable in Math` 把它变成一个 `Mathml` 原子（没有时为编译错误），用占位原子解析整体，以便在故障所在的位置报告它，然后生成在运行时把真实原子编织进去重新解析的代码。

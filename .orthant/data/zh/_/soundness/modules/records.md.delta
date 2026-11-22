@@ -1,0 +1,372 @@
+orthant 2 language
+
+@ 0 1 0 1d840f45fbb16f031609c87d13146ca1
++ ## 记录
+
+@ 0 1 0 02ed9263154c2802081b650b8e2f33e5
++ ### 概述
+
+@ 0 2 0 0b47deaceb5f5375094501120b62cb30
++ 有些数据的形状是在程序之外定义的：由数据库表、JSON Schema 或配置格式定义。
++ 程序仍应以静态类型读取其字段。
+
+@ 0 3 0 111b4b168ef19fe70fe4b225e7b74bec
++ `Record` 是一种值，其字段来自这样一个外部*规范*，而规范在代码编译时读取。
++ 因此 `record.name` 的类型检查结果为 `Text`，`record.nope` 无法编译，也无需手写任何类来镜像 schema。
+
+@ 0 4 0 0eec04775ed0dca908ae485e6a0f0d21
++ [JSON](json.md#typed-records-from-a-schema)、[XML](xml.md) 和 [TEL](tel.md) 的*提供器*都建立在此之上。
++ JSON Schema、XML Schema 或 TEL schema 文档都能产生有类型的记录。
++ 操作的响应 schema 也可以，通过 [OpenAPI](openapi.md) 客户端中的 `record()`。
++ 任何程序能在[编译时]读取的 schema 来源都可以做到同样的事。
+
+@ 0 1 0 16916f4af379805c10863649483879a9
++ ### 关于外部 schema
+
+@ 0 4 0 001b90fa898e50e41d1a04dcf678293b
++ 当数据的权威形状位于别处时，手写的 case class 只是一份副本，而副本会走样。
++ schema 增加了一个字段，类却没有，不一致就在[运行时]出现。
++ 通常的替代方案是按字符串动态读取字段。
++ 那就完全放弃了检查。
+
+@ 0 6 0 0af74a7015d4a5cb14fa18d6bc912bb1
++ `Record` 两者都避免了。
++ schema 在程序编译时读取一次。
++ 然后 Scala 的[结构类型](https://docs.scala-lang.org/scala3/book/types-structural.html)据此构建记录的确切接口，每个字段都具有 schema 声明的类型。
++ schema 不可能与代码脱节，因为代码中的类型*就是* schema 的类型。
++ 这就是[构造即安全](../../philosophy/safety-by-construction.md)，而且没有需要维护的类。
+
+@ 0 2 0 0cffae2607360ad60bcda2026686055f
++ 一切都来自 `soundness` 包。
++ 其他导入选择一种编码，以及一种处理错误的[策略](errors.md#choosing-a-strategy)：
+
+% 0 1 0 05f2ae76781bc53c0f28815590cdc90c
+
+% 0 1 0 1bca28db88d8e18d0fbcefeaacfc679c
+
+% 0 1 0 0d72380027637f36161a75b41303b8f1
+
+% 0 1 0 0db1a0ecc5cc04ab14e285e7be2d415a
+
+% 1 1 0 136db627b754cbf6014cc8648b37c4d8
+
+@ 0 1 0 1de3c5e81966ed9a0a9a478f1ff2f2b8
++ ### 使用记录
+
+@ 0 4 0 045e17f26ec883ab1ceef8a3bbefc591
++ 提供器对象持有一个 schema。
++ 这里的是一个由 JSON Schema 文档构建的 `Json.Provider`。
++ 在真实程序中，它要声明在单独的文件中，原因见[编译顺序](#compilation-order)。
++ 出于同样的原因，本页的示例只经过检查而不运行：
+
+% 2 1 0 1495e086766d02ac0e49c4cc565a1d96
+
+% 3 1 0 037cbf5a08061e54161d8eea8837b1fa
+
+% 4 1 0 1bf1a6d1e02507bb143060564250fc6d
+
+% 0 1 0 0a87af4d0ec5fbda119ab390fdcbe436
+
+% 0 1 0 10ba014d2254dcd3076d9a543f8c2249
+
+% 0 1 0 168ff146ffda150b0e476e586aafc1e1
+
+% 0 1 0 09f81909fffbe8de1292b168fb564187
+
+% 0 1 0 1362070d19456a6d1ff95300d33f9885
+
+% 0 1 0 1801801a4ba865a909d63b9099a9992b
+
+% 0 1 0 1bc5bcc4ed89e3c3023374c5cfcb26fa
+
+% 0 1 0 0fc9cff73f111a0c12cc06307ef02288
+
+% 0 1 0 0c77b11fd8ee05fc0bb832a353adbbc7
+
+% 0 1 0 149015473f8af5b818332c25647b5a7d
+
+% 0 1 0 1a255adce984755704338ad3cff63d03
+
+% 0 1 0 15b0a682f57e42d110c3ee2a34fe3242
+
+% 0 1 0 1d086cabb9160ecc000956b4641e580d
+
+% 0 1 0 0be86f8d69ffc11606058c9696122812
+
+% 0 1 0 198a6ee6c6d76ce702d2e920fb535def
+
+% 0 1 0 0fc0f10454a7b6240d1b534d7132a368
+
+% 0 1 0 13b304132bf680561a0826cc1dc574d1
+
+% 1 1 0 16359d219418402c0d5966083d89828b
+
+@ 0 4 0 0a6350e4e16f10791d0e97a3db039968
++ 提供器的 `record` 方法把原始数据变为有类型的记录。
++ 每个字段都具有 schema 赋予它的类型。
++ `name` 在 schema 中是字符串，因此它是 `Text`。
++ `weight` 是数字，因此它是 `Double`。
++ schema 不要求 `age`，因此它是 [`Optional[Int]`](optional-values.md)：
+
+% 2 1 0 112fa67ece34020f1a1a758111efd135
+
+% 3 1 0 00f8569c1c4f2f8d1b3af9136f4c5a1e
+
+% 4 1 0 0bc2fa5a9112f36e1f72bf4421b4c700
+
+% 0 1 0 108651c2c97f7f1d0ee01c648046e110
+
+% 0 1 0 1624c445b5cfbd1714b78624b2dece95
+
+% 0 1 0 05099aaa0b26d7820d459bffbf69c43d
+
+% 0 1 0 1654877f489d45260b574b5c5821e7f7
+
+% 1 1 0 092d2da64375bcb01a4984954e2e4d54
+
+@ 0 1 0 1cb8ac1eeedacbd51defa056f0cdf47e
++ schema 中没有名为 `nope` 的字段，因此 `record.nope` 无法编译。
+
+@ 0 3 0 0d7805b9e8231baf023e636ac2a1d6cd
++ 嵌套对象成为嵌套记录，数组成为列表。
++ 每次访问都对照规范进行检查。
++ 手写的类也能给出同样的保证，但这里根本没有类。
+
+@ 0 1 0 1297ee29ce312e180c580059c8012a89
++ ### 用元组代替记录
+
+@ 0 3 0 17b87d2b6620cc77109a5c013c523088
++ 同一个提供器可以通过 `tuple`（`record` 的孪生方法）产生[具名元组](https://docs.scala-lang.org/scala3/reference/other-new-features/named-tuples.html)而不是记录。
+
+@ 0 4 0 0efd3f1eba8e9d4c1280cd02c96a30a0
++ 对于上面的 schema，`Catalogue.tuple(input)` 的类型是 `(name: Text, age: Optional[Int], children: List[(weight: Double)])`。
++ 它为每个字段提供一个元素，按 schema 中的名称命名，按 schema 中的顺序排列。
++ 嵌套对象成为嵌套的具名元组，数组成为由它们构成的列表。
+
+@ 0 2 0 0a42c18029eebbb50ca44ce744c50d3b
++ 具名元组像记录一样按名称读取。
++ 它也是普通元组，因此可以按位置拆解，并能转换为其无名形式：
+
+% 2 1 0 014cf7d06a18e04407802a815ae4df97
+
+% 3 1 0 0fdfb4137ff3146a1ac374e488d30375
+
+% 4 1 0 1439dc20721d88771fce1539b5d99b5c
+
+% 0 1 0 1f6e4dc25c4c376c0626f81f48ac2e29
+
+% 0 1 0 19f05445560f6b0d13dab74dc7bc04e6
+
+% 0 1 0 0ca1c0cc2f3da06409d6932376f118f5
+
+% 0 1 0 02722cb3b490be451ca0580240fb25f8
+
+% 1 1 0 032553bf6fb3351f110fed15570d48d1
+
+@ 0 1 0 0ac4dc1592e56b6f111ca590978a820e
++ #### 及早与惰性
+
+@ 0 1 0 1e696f22220149510810c11e5983c33e
++ 两种形式的区别在于数据*何时*被读取。
+
+@ 0 3 0 1352b3a18fa6a8f4062beddb32a145b5
++ 记录是惰性的。
++ 它持有原始数据，每次访问都重新读取并转换其字段。
++ 格式错误的字段只有在被读取时才会被发现，读取两次的字段会被转换两次。
+
+@ 0 3 0 17830e587ee7be7d08b53c8597d57aa8
++ 元组是及早的。
++ 每个字段在构建元组时读取一次，元组持有转换后的值。
++ 格式错误的字段会使元组的构建失败，无论程序是否会读取它。
+
+@ 0 4 0 0274cc60b41412d70aea30266f495bc4
++ 这改变了字段的类型。
++ 读取任何字段都可能失败：必需的值可能缺失，值的种类可能错误，或者违反了 schema 的约束。
++ 它以规范自身的错误（例如 `Json.Provider.Error`）失败，通过读取它的代码的[战术]报告。
+
+@ 0 4 0 12647dc8cc3fc6ff101ea0a1dadcd658
++ 在记录中，字段的类型是 `Record.Field[Int, Json.Provider.Error]`。
++ 这是一个以战术为参数的上下文函数，在选择字段的每一处应用，因此每次访问都需要作用域中有处理函数。
++ 在元组中，失败只可能在构建期间发生。
++ 元素的类型就是 `Int`，处理函数必须位于构建元组之处的作用域中。
+
+@ 0 4 0 0ccdeb81c82052fb08c985a0b3632b6e
++ 由于每次失败都经过调用方的战术，读取方可以选择如何应对。
++ 单个字段可以包裹在 `attempt` 或 `recover` 中。
++ 整个记录可以用 `validate` 和 `track` 读取，为每个字段使用一个 `venture`，从而收集文档中的每个问题并一并报告。
++ [错误](errors.md)描述了这些内容。
+
+@ 0 1 0 154878b7202306cc0991d8a35db4942f
++ 总结如下：
+
+% 2 1 0 0a2574fa96d0527e1c294b140e771c53
+
+@ 0 8 0 0f3fd976e40135200742c8dc746a931a
++ column  方面
++ column  记录
++ column  元组
++ row  读取数据的时机  每次访问字段时  构建元组时一次
++ row  格式错误的字段使何者失败  访问它时  构建过程
++ row  schema 类型为 integer 的字段的类型  `Record.Field[Int, Json.Provider.Error]`  `Int`
++ row  `Tactic` 必须位于何处的作用域中  每个选择字段之处  构建元组之处
++ row  按位置解构  否  是
+
+% 1 1 0 0890aedd503880fc1ecf1e4ed13528da
+
+@ 0 1 0 1d1044c1c644821f051efb9aa4f52670
++ ### 定义规范
+
+@ 0 3 0 0bd933504291edf3031de0abec2320cb
++ 新的 schema 来源通过实现 `Specification` 接入。
++ 这样的实现就是一个*提供器*。
++ 来源可以是数据库的表定义、XML Schema 或某种专有格式。
+
+@ 0 3 0 05be6f171d94ee541d3e3e583564c7d0
++ 提供器以 `Member` 值的有序列表给出字段的名称和类型。
++ 元组的元素遵循这一顺序。
++ 它还提供针对底层数据的原语操作：
+
+% 2 1 0 067ef579623e5b5f1da8b1743822c627
+
+@ 0 12 0 07aee46ec79ab2ec180a62c6b2589448
++ column  钩子
++ column  默认
++ column  提供
++ row  `access`  无：必须实现  从值中取得的具名字段的值
++ row  `absent`  无：必须实现  取得的值是否代表缺失的字段
++ row  `repeated`  无：必须实现  多次出现的字段的每个值
++ row  `required`  原样返回值  在 `One` 下读取的字段的值；可重写为在缺失时失败
++ row  `entries`  失败  键控字段按名称的值
++ row  `kind`  失败  值的种类，联合据此选择其备选项
++ row  `elements`  失败  本身是序列的值的元素
++ row  `pairs`  失败  本身是字典的值的具名值
++ row  `unoffered`  失败  对于联合中没有任何备选项提供的种类的值所产生的失败
+
+% 1 1 0 0c4d4bac0c82dae001c2031378c6ef0d
+
+@ 0 4 0 097693ffac2e622f03d09fbdb911c4c8
++ 例如，重复字段的值就是 JSON 数组的元素。
++ 在重复字段的格式中，它们是带有该字段关键字的每个同级项。
++ 具有联合或字典的格式提供 `entries`、`kind`、`elements` 和 `pairs`。
++ 没有这些的格式则保留其默认实现。
+
+@ 0 3 0 10ec7fb16861e7240547d552e5a4c016
++ `Member` 是以下三者之一。
++ `Value` 指名 schema 声明的标量类型。
++ `Record` 持有更多成员。
++ `Union` 持有备选项，每个备选项以选择它的值的*种类*为键。
++ 每个成员都带有一个 `Multiplicity`：
+
+% 2 1 0 12d3d2591838a7c8060e99930ecb4fb6
+
+@ 0 8 0 0b8f7f45e8642f4808b29825da684b87
++ column  多重性
++ column  读作
++ column  通过
++ row  `One`  值本身  `access`，然后 `required`
++ row  `Optional`  一个 `Optional`，`absent` 时为 `Unset`  `access` 和 `absent`
++ row  `Many`  一个 `List`  `repeated`
++ row  `Keyed`  一个 `Map[Text, _]`  `entries`
++ row  `Series`  提供器自己的集合  `series`
+
+% 1 1 0 11ee20ecc155cca907ecce0332878653
+
+@ 0 3 0 1cd768d1dbd54a87179eed47e14380c2
++ 关于可选性或重复，提供器不再多说什么。
++ 宏自己应用多重性。
++ 联合的备选项可以带有自己的多重性，因此只有一个备选项的联合会把一种多重性嵌套在另一种之内。
+
+@ 0 3 0 1d41592a2a0146d01a70b98397cbac41
++ 提供器把其字段失败时的错误指名为它的 `Failure` 类型。
++ 可能失败的原语是 `access`、`repeated`、`required`、`entries`、`elements`、`pairs` 和 `unoffered`，每个都接受该错误的战术。
+
+@ 0 3 0 14c86b782bee841d103ff66d13abd57a
++ 一个[类型类]补全了整体图景。
++ schema 可以声明的每个标量类型名都有一个 `Intensional` 实例。
++ 它说明该名称成为哪个 Scala 类型，以及如何读取它的单个值。
++ 有三种方式构造实例：
+
+% 2 1 0 19e67c7afbdc077a1725b97f4a038f86
+
+@ 0 5 0 1fb663572e8024b4120bf6991064f336
++ column  构造器
++ column  来源
++ row  `Intensional(accessor)`  关于值的函数
++ row  `Intensional.parametric`  关于值和成员参数的函数，用于有界整数之类的类型
++ row  `Intensional.Reading`  关于值、其参数和一个 `Tactic` 的函数，用于可能失败的读取
+
+% 1 1 0 1dcbc75308d55a5c03efac495ee4ac66
+
+@ 0 4 0 14be4780ec4863b10789750828d9b1d4
++ 读取可能失败：值的种类可能错误，或超出其范围，或者是不符合其模式的字符串。
++ 这样的读取是一个 `Intensional.Fallible`，其 `transform` 接受其 `Error` 的战术。
++ 该 `Error` 必须是提供器的 `Failure` 或其子类型，使每个字段都以同一种方式失败。
++ 抛出其他任何错误的实例是编译错误。
+
+@ 0 3 0 194f71fa8cc7dd2d1467232435ceae45
++ 这些实例位于提供器的伴生对象中，因此无需导入即可找到。
++ 例如，基于 XML 的提供器会按标注取得子元素，在不存在这样的子元素时判定字段缺失，并遍历每个带有该标注的子元素以实现重复。
+
+@ 0 8 0 1c99d68021f7e6be0f4e30746f1b30dd
++ 有些来源并不在从中读取的值里。
++ 基于内存映射文件的记录只持有去哪里查找的信息，而文件本身会打开一段时间，然后关闭。
++ 这种来源的提供器指名一个 `Context`，并用 `Specification.recordWith` 生成记录，给出每条记录读取时所在的上下文的类型。
++ 这种记录的成员只有在除其战术外还[给定][given]了该类型的值之处才能读取，因此来源消失后记录便无法读取，而该类型可以说明记录来自若干来源中的哪一个。
++ 提供器的 `accessWith`、`repeatedWith` 和 `entriesWith` 会被给予该上下文，并替代 `access`、`repeated` 和 `entries`。
+
+@ 0 4 0 13ba4505815484a517b75d57c5da1b7c
++ `Series` 也是为这种提供器准备的。
++ 它读作提供器的 `Series` 类型，即提供器自己的一种集合，由 `series` 从读取单个元素的函数构造。
++ 该集合在被请求某个元素时，才在当时给定的上下文中读取它，因此一个包含十万条记录的字段，在查找其中一条之前没有任何开销。
+
+@ 0 4 0 0358996d140f37351c43a6458cba92dd
++ 每个规范对象都从 `Specification` 本身获得 `record` 和 `tuple`。
++ 除 schema 外，对象中无需声明任何东西。
++ 两个方法都是 `transparent inline`。
++ 它们在调用处展开，此时规范对象是已知的，因此宏可以按类型找到该对象并求值其 `fields`。
+
+@ 0 2 0 04b58d986e6bd4ab006ddd86147446fe
++ `record` 声明的返回类型是 `Record`。
++ 调用实际得到的是它的一个*结构细化*。
++ 对于一个有三个字段的 schema，它是这样的类型：
+
+% 2 1 0 1c2568f587c9170719fc9b1ad125d6c9
+
+% 3 1 0 1ed21e237cc24fd90e523a12648f71a6
+
+% 4 1 0 0c3816223885b26d1a0c50a562b38883
+
+% 0 1 0 17f2029924debc9c1c0d0353f75c9da4
+
+% 1 1 0 153542cc04765f8d1b04d96f03859948
+
+@ 0 1 0 04a28d1a5cd6e69701578fcf5297c03e
++ 只有透明方法才能让这个更精确的类型到达调用之处。
+
+@ 0 1 0 0b1a118ce0e154e600cde691e54a3410
++ ### 编译顺序
+
+@ 0 1 0 1d5f63fe9441d1ca0b48a50e4f874434
++ schema 对象必须与调用其 `record` 方法的代码位于*不同的文件*中。
+
+@ 0 5 0 1a53a2db9e2eca910df7607bfd39fb3c
++ 宏在调用代码编译时运行。
++ 它把 schema 对象当作运行时的值求值，即读取 JSON Schema 文档或查询数据库。
++ 因此该对象必须已经编译。
++ 只要宏与其使用处位于不同的文件且彼此之间没有循环，Scala 就保证这一顺序。
++ 如果它们位于同一个文件中，宏需要 schema 时它尚不可用。
+
+@ 0 2 0 19d654797f5c3ab313b3010bf3ac380f
++ 这也是这一模式成为 F# 意义上的类型提供器的原因。
++ 编译器查阅权威的 schema，程序据以检查的类型就由它构建。
+
+@ 0 1 0 0a15ebad305c934c1527dd3a42e83d7a
++ ### 相关
+
+@ 0 9 0 006b2353a026cc6d0aca7d6df2737831
++ - [JSON](json.md#typed-records-from-a-schema)、[XML](xml.md) 和 [TEL](tel.md) 分别描述了各自 schema 语言的提供器。
++ - [OpenAPI](openapi.md) 从 API 的响应 schema 构建记录。
++ - [错误](errors.md)描述了应对字段失败的 `attempt`、`recover`、`validate` 和 `track`。
++ - [可选值](optional-values.md)描述了 schema 不要求的字段的类型。
++ - [元编程](metaprogramming.md)描述了提供器所依赖的宏。
++ - [目录](catalogs.md)、[数据库](database.md)和[表格](tables.md)按名称处理记录的字段。

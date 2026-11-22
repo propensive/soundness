@@ -1,0 +1,47 @@
+orthant 2 language
+
+@ 0 1 0 0d6d6d025a4c26c218abe8bfc5ac466a
++ # 语法与格式
+
+@ 0 3 0 05d86f7334209ede177626cace9c4378
++ 本标准已迁移。
++ Soundness 遵循的语法和空白约定现在称为 **Consequent Style**，与检查它们的编译器插件一起在其自己的仓库中维护：
+
+@ 0 2 0 0715c40fcada2461199996ad2bb2c166
++ - [标准](https://github.com/propensive/consequent/blob/main/doc/consequent-style.md)
++ - [规则参考](https://github.com/propensive/consequent/tree/main/doc/rules)
+
+@ 0 7 0 0d1229575730595100548598dd909b37
++ 迁移过程中约定本身没有任何变化；文档经过了泛化，使它适用于任何采用它的项目，而不是专门针对 Soundness。
++ 项目确定两个参数——许可证头部的确切文本（以及由此决定的行数），以及可选的总括包再导出包的名称——其他所有约定原样适用。
++ 两者都作为选项提供给检查器；参见 [Consequent README](https://github.com/propensive/consequent#options)。
+
+@ 0 1 0 1e9bcf4f25048f74149e03fed04fcd99
++ ## 规则标识符
+
+@ 0 4 0 0ca40c7b8515a84e1f8b375c03e15400
++ 规则同时也重新编号了。
++ 本项目的文档和历史中以 `SN-nnn` 指称某条规则的地方，对应的 Consequent 规则的标识符形如 `<principle><number>`——字母指明该规则所源自的原则，后面是它在该原则中的编号：
+
+% 0 1 0 0a7c55b4c0ac40601a46d9fdcd155626
+
+@ 0 6 0 0645384643181aec081f2c5a748380df
++ column  原编号
++ column  现编号
++ row  `SN-799`  `F1` — 许可证头部块注释
++ row  `SN-230`  `F4` — 行长度
++ row  `SN-302`  `L1` — 顶层导入规则
++ row  `SN-742`  `L4` — 总括包再导出
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 4 0 0e3c7c7dfb4f85750ea21880445a76ea
++ 完整的对照表见[规则参考](https://github.com/propensive/consequent/blob/main/doc/rules/README.md#migrating-from-the-sn--identifiers)。
++ [`doc/errors/`](../errors/) 下每个已退役的 `SN-nnn` 页面也指明了其替代规则，因此旧的引用仍然可以解析。
+
+@ 0 1 0 1103950f2a90e826114007849099bb96
++ ## 检查器
+
+@ 0 3 0 1a3d97f69f2c8039198c2fbacf5b70b3
++ 执行本标准的插件原来是本仓库中的 `lib/decorum`。
++ 它现在作为 `dev.propensive:consequent_<scala-version>` 单独发布，并通过 `build.mill` 中的 `consequentToolchain` 应用。

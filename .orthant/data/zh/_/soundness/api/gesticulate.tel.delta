@@ -1,0 +1,706 @@
+orthant 2 language
+
+% 0 1 0 0f04ec4b9ac2d4270a232409219e1f6b
+
+% 0 1 0 1406e8f2331fe9a40c2fa9636b68b5be
+
+% 0 1 0 0b5938ce7315323607e1922cbc4d93e2
+
+@ 0 1 0 016cf6b6c39264c31d271592342a5310
++ info   以结构化值表示的媒体类型，在代码编译时对照 IANA 注册表检查，以及 multipart 正文
+
+% 0 1 0 0ca6d61ddd9511ea1cdae38f1414f6fe
+
+@ 0 7 0 03f0ab8a1ab8d433165e02771a8b21be
++     _Gesticulate_ 把[媒体类型](https://www.iana.org/assignments/media-types/)——`application/json`、`text/html; charset=UTF-8`、`image/svg+xml`——表示为 `MediaType`，带有带类型的组、子类型、后缀和参数，取代那种拼错之后浏览器会悄无声息地错误处理的字符串。
++     `media"…"` 插值器在代码编译时对照 IANA 注册表的副本检查字面量，因此 `media"application/jsom"` 是一个编译错误，并给出它很可能想写的已注册名称；运行时遇到的文本用 `as[MediaType]` 解析，它会抛出 `MediaType.Error`，指明哪里出了错。
+
+% 2 1 0 07fc8654ab47a1e213081056104353ab
+
+% 3 1 0 12b200420cc0b856008641cc2a09cd93
+
+% 0 1 0 0323f27fc4985e0804a43d7947f66e41
+
+% 0 1 0 06fcc986d427b3d81cc42cac5e94f7b5
+
+% 0 1 0 0fbeda00ccd03ac4062167047dc75d5c
+
+% 0 1 0 0c36d982f245d6dd0d73344c3e98e80c
+
+% 0 1 0 18e9f4912b4e4be70fa339ab35a3f63a
+
+% 0 1 0 1069d1faaa6f12c11476d62549fd7d66
+
+% 1 1 0 1f10d421aefdba830eb483c8671fbc3a
+
+@ 0 10 0 01be195b60b3a54909eb802e16084fd8
++     围绕这个类型还有另外三个部分。
++     `Media` 类型类为一个*类型*给出它的媒体类型——文本是 `text/plain`，任何带文件名的东西则通过 `Extensions` 根据扩展名猜测——HTTP 响应、所服务的文件或附件正是借此标注自己，而无需重新声明自己是什么；`ascribe` 则把任意字节来源与一个显式的媒体类型配对，成为 `Content`。
++     `Construable` 类型类把以单例字符串表示的媒体类型映射到 Scala 类型，该类型的正文按此类型读取和写出，因此 HTTP 客户端可以按 `Content-Type` 解释响应：每个映射都是 `construables` 选择包中的一个 given，按名称导入。
++     而 `Multipart` 把文件上传所用的 `multipart/form-data` 格式增量地解析为带类型的 `Multipart.Part`，每个部分的正文在读取时从输入中借出。
+
+@ 0 7 0 035078a763b17a9707a2630a6e518447
++     该库只有一个源集 `gesticulate.core`，可编译到 JVM、Scala.js 和 Scala Native；`media"…"` 检查所查阅的注册表在构建时被编译进库中，因此检查既不需要网络，也不需要类路径资源。
++     所有内容都导出到 `soundness` 总括包，`construables` 选择包则与总括包自己的同名包合并，后者汇集了每个格式库声明的映射——`jsonConstruable`、`xmlConstruable`、`pngConstruable`……——因此用户写下 `import soundness.*`，然后按名称导入想要的 construable。
+
+% 0 1 0 0c43e7b6340c3e5b03d8fabf0585e88f
+
+% 0 1 0 03923ab30704b3f813555f16b601c932
+
+% 0 1 0 12d585acc7082e240a753dbc80e2094a
+
+% 0 1 0 15c1b1c4b6e2ac240abc9557159c21b6
+
+@ 0 1 0 12423b63c28c962c1b8c70ef2eb11d27
++ entry .MediaType   作为值的媒体类型：它的组、子类型、后缀和参数
+
+% 1 1 0 1f12bd0bca7bc125168272b41508d810
+
+@ 0 7 0 088692b70aec8d970c04ae5640026624
++       `MediaType` 由 RFC 2046 所定义的四个部分组成，每个部分都带类型：`#group` 是十一个顶层类型之一（`Media.Group`），`#subtype` 是已注册的、厂商的、个人的或实验性的子类型（`Media.Subtype`），`#suffixes` 是 `+xml`、`+json`、`+zip` 这类结构化语法后缀（`Media.Suffix`），`#parameters` 是 `key=value` 对，其中最常见的是 `charset`。
++       它写作 `media"…"`，在代码编译时受到检查；也可以用 `as[MediaType]`（`.decodable` given）从文本解析，或用 `.unapply` 匹配。
+
+% 2 1 0 1b97e67c9b9b78bb0d38d549f255ac07
+
+% 3 1 0 19d7e2ac831d3e6204db1ec7f54d2c9a
+
+% 0 1 0 12a618ab3fc8ab800817fdfca2fcb19c
+
+% 0 1 0 1eca4141ed698fa718c2abfb7df0daa2
+
+% 0 1 0 157b1bd20847eaf911ce24388e640f16
+
+% 0 1 0 0b5f37d9147f71e2065bf9e79271b18f
+
+% 0 1 0 17aaf5654ba1f1821b2a5ac3505720e2
+
+% 0 1 0 00ae1a5c94075a5f0beeabe0f1f372b6
+
+% 0 1 0 0ada7746917d4cc21c148973f8f16334
+
+% 0 1 0 14cd6cb44698c4ae1c5921c925d36a88
+
+% 1 1 0 042e3d3abcb21212102e2209163fd366
+
+@ 0 5 0 090098d989a554cf0ff3523f4ca3e41c
++       媒体类型显示为它在线上的写法（`.showable`、`.encodable`），每个参数写作 `; key=value`；它检视为能创建它的源代码，即 `media"text/html; charset=UTF-8"`。
++       两个媒体类型在各部分都相等时才相等，因此带参数的 `Content-Type` 与它的 `media"…"` 字面量比较时不相等：当参数无关紧要时，请比较 `#base` 或 `#basic`。
+
+% 0 1 0 14af0427a1b401670ddc01e596f135a6
+
+% 1 1 0 0587a7c69a2996f70bc6c77562dbf689
+
+% 1 1 0 1d3ede4f92323ec1162768c4932ac424
+
+@ 0 23 0 1edabc3b06a3d4b611ece199cd3a6917
++   entry .inspectable   调试渲染为能创建它的字面量：`media"text/html"`
++   entry .showable   按媒体类型的写法渲染：`type/subtype+suffix; key=value`
++       组和子类型为小写，每个后缀带上它的 `+`，然后每个参数写作 `; key=value`。
++       `.encodable` 和 `inspectable` 渲染都建立在它之上，它也是 `Content-Type` 头部所携带的内容：带有 `charset` 或 `boundary` 参数的媒体类型在这里会保留该参数，而 `#basic` 会丢弃它。
++   entry .encodable   `MediaType is Encodable in Text`，按 `.showable` 的渲染方式
++   entry .decodable   `text.as[MediaType]`：把文本解析为媒体类型，抛出 `MediaType.Error`
++       这个 given 让任何文本都能通过 `Media.parse` 解码为 `MediaType`。
++       它需要作用域中有一个 `Tactic[MediaType.Error]`，并保留它，因此该实例的类型是 `(MediaType is Decodable in Text)^{tactic}`。
++       解析接受已注册、`vnd.`、`prs.`、`x-` 和 `x.` 形式的子类型、带连字符的后缀（`json-seq`），以及以 `;` 分隔并去除首尾空白的参数；它不查阅注册表：未注册的标准子类型可以解析，而 `media"…"` 字面量则无法编译。
++   entry .unapply   匹配可解析为媒体类型的文本，结果为 `Option`
++       `MediaType.unapply(t"text/plain")` 是 `Some(mediaType)`，对不是媒体类型的文本则是 `None`，因此 `case MediaType(mediaType) =>` 无需作用域中有战术即可匹配头部的值。
++   entry .interpolable   `media"…"` 插值器背后的 given
++       其 `interpolate` 是宏的 `Interpolable`：它在展开时对照注册表和解析器验证唯一的字面量部分，并拼接进解析后的值。
++       用户写的是 `media"…"`，而不是直接接触它。
++   entry .Error   当文本不是媒体类型时抛出
+
+% 1 1 0 1bab828ba2bb77780b7aa5045b24ed29
+
+@ 0 4 0 150d9ed154b37f000370c76e1b9caf78
++         错误 `↯/s.81.1`：_the value `value` is not a valid media type; `reason`_。
++         由 `Media.parse`（因而也由 `as[MediaType]`）通过 `Tactic[MediaType.Error]` 抛出，并由 `media"…"` 报告为编译错误。
++         `.Reason` 说明出了什么错，它的编号就是错误的子编号（353.1 到 353.5）。
+
+% 2 1 0 16439e438d19609b004ce0407e5fd2df
+
+% 3 1 0 0f27f37b751707e91b11cc0a4ad26859
+
+% 0 1 0 0043b54b07bc81c105559a4a6c10e9c6
+
+% 0 1 0 1d56e6b250e5b8320155d67afef17c0d
+
+% 0 1 0 009a1d329c3f0b2210fd7fe07224a81c
+
+% 1 1 0 136a3e18f2f9c2140586dd7813383fee
+
+@ 0 1 0 044d1fcaa8a325121cd144aa648d71a5
++     entry .Reason   文本不是媒体类型的原因
+
+% 1 1 0 10a0418ce77ded031f6b7869db8fccfa
+
+@ 0 1 0 0dbdc7f7e3e6f76806f5a795b7794872
++           每个原因都有一个 `number` 和一个 `message`：
+
+% 1 1 0 05f424c7a32c4c0b0b03863d383d30a5
+
+@ 2 4 0 0e01bf457d22e768016d5c9b67691157
++           column  分支
++           column  代码
++           column  消息
++           column  说明
+
+% 0 1 0 009fa38d6db444a70bf7d74e0086f2ef
+
+@ 0 1 0 08b9ba8109fe9bd71b332d7f7a46a878
++           row  `MissingParam`  2  _a terminal ';' suggests that a parameter is missing_  也用于没有 `=` 的参数
+
+% 0 1 0 1844ac90b7af02ae014233929a0a3c7c
+
+@ 0 2 0 05eb71d0b5a7da2c01edc0e1442d4e02
++           row  `InvalidChar(char)`  4  _the character '`char`' is not allowed_  空白、控制字符或 `tspecials` 之一
++           row  `InvalidSuffix(suffix)`  5  _the suffix '`suffix`' is not recognized_  不是 `Media.Suffix` 的分支之一
+
+% 1 1 0 1db788a82094d08b0b7fbcb608587857
+
+@ 0 29 0 0c69a120839860c90533167949f120f6
++       entry #number   原因的编号，`1` 到 `5`，即错误的子编号
++       entry #message   以句子表述的原因
++     entry #value   不是媒体类型的文本
++     entry #reason   它为何不是
++   entry #group   顶层类型：`Media.Group.Application`、`Text`、`Image`……
++       之所以叫 `group` 而不是 `type`，只是因为 `type` 是 Scala 关键字。
++   entry #subtype   子类型，为 `Media.Subtype.Standard`、`Vendor`、`Personal` 或 `X`
++       子类型属于四棵树中的哪一棵，是值的一部分，而不需要通过读取前缀来判断：`t"application/vnd.api+json".as[MediaType].subtype` 是 `Media.Subtype.Vendor(t"api")`。
++   entry #suffixes   结构化语法后缀，按顺序排列，为 `Media.Suffix`
++       对于 `image/svg+xml` 是 `List(Media.Suffix.Xml)`；对于大多数媒体类型是 `Nil`。
++       后缀承载着含义——`svg+xml` 是 XML——这就是它作为带类型的部分而不是子类型中的字符的原因。
++   entry #parameters   `key=value` 参数，按顺序排列，为文本对
++       `charset`、`boundary`、`version`……。
++       `#at` 按名称查找参数；带命名参数的 `apply` 会添加参数。
++   entry #basic   不带参数的媒体类型，作为文本：`application/json`
++       渲染出组、子类型和后缀；当 `Content-Type` 的 `charset` 或 `boundary` 不应参与比较时，就用它来匹配。
++   entry #base   不带参数的媒体类型，作为 `MediaType`
++       `contentType.base == media"multipart/form-data"` 是请求处理函数在读取 `boundary` 参数之前所做的比较。
++   entry #at   具名参数的值，或 `Unset`
++       `mediaType.at(t"charset")`；如果同名参数有多个，取第一个。
++   entry #applyDynamicNamed   `mediaType(charset = t"UTF-8")`：添加了参数的媒体类型
++       这是让参数能写成命名参数的 `Dynamic` 应用：`media"text/html"(charset = t"UTF-8")`。
++       每个实参的名称就是参数的键，其 `Text` 值就是参数的值，追加在已有的参数之后。
+
+@ 0 8 0 0d5105c822a2cb860adbde7767d29ab7
++ entry .media   `media"…"` 插值器：媒体类型字面量，在代码编译时对照注册表检查
++     `media"application/json"` 是一个 `MediaType`，在代码编译时受到检查：组必须是十一个顶层类型之一，子类型不得包含禁用字符，标准树中的子类型（不是 `vnd.`、`prs.`、`x-` 或 `x.`）必须在 IANA 的注册表中，否则该字面量就是编译错误，并指出最接近的已注册类型：_application/jsom is not a registered media type; did you mean application/json?_。
++     随后，后缀和参数完全按照 `as[MediaType]` 的方式解析，因此未知后缀或悬空的 `;` 同样是编译错误。
+
+% 2 1 0 1fdde50c54d10d9f145041b8f673c51d
+
+% 3 1 0 0fa31fc1c688e52f0bb1d2074c7c6a3f
+
+% 0 1 0 19154ff45a41c8fe0058629af4de32c9
+
+% 0 1 0 123d3b4707f3a7b318768754cdd8ce63
+
+% 0 1 0 1c7acd147b75285704378bddcda54627
+
+% 0 1 0 1f1c3e85febb4e470750e64edc02d10b
+
+% 0 1 0 12f585cd74261ae20420e6b1400958de
+
+% 1 1 0 01c95f9b10b0dc4b17ea5858e9c5b391
+
+@ 0 4 0 1b0b029d08618f35164c379a6b2d7e16
++     注册表是 IANA 已发布列表的副本，在构建时编译进库中，因此检查不需要网络。
++     该插值器不接受 `$` 替换，因为字面量在编译时检查；只在运行时才知道的媒体类型用 `as[MediaType]` 解析，它不查阅注册表。
+
+@ 0 1 0 1643ab85f0a0aef615f91b51b84b8ff7
++ entry .Media   类型自身的媒体类型，以及媒体类型的语法：组、子类型、后缀
+
+% 1 1 0 11030a5d6d5cc2071b31c9077aab59ba
+
+@ 0 6 0 1a36a61aeca313240fa7f9429182f1cf
++       作为**类型类**，`Media` 为一个类型给出它的媒体类型：`is Media` 的值有 `#mediaType`，HTTP 响应、所服务的文件或附件正是借此标注自己，而无需任何人重新声明它是什么。
++       `Text` 是 `text/plain`（`.text`）；任何 `Nominable` 的东西——文件、路径、具名资源——根据其名称的扩展名猜测（`.nominable`，通过 `Extensions.guess`）；各格式库则在其伴生对象中声明自己的实例（`Json is Media`、`Html is Media`……）。
+
+% 2 1 0 07e93e9d28a1c7af0ae5db3dbadf1470
+
+% 3 1 0 10cfad739cbb741c1dee4d50fea626d7
+
+% 0 1 0 0869e758209100b9120fcdceae0e9ebc
+
+% 0 1 0 0079e4ce11a799dd1dfec12b075e6e03
+
+% 0 1 0 174e3c3101c0d4bc1c8159d1a44d9896
+
+% 0 1 0 10d93b83352e5903172624f4f16577ca
+
+% 1 1 0 19e5a6366ec0fb9e0c6feb0bd92658e0
+
+@ 0 3 0 1ac9bb86b2f7995318062364861802d9
++       作为**对象**，`Media` 持有语法：构成 `MediaType` 的枚举 `.Group`、`.Subtype` 和 `.Suffix`，以及 `.parse`，即 `as[MediaType]`、`MediaType.unapply` 和 `media"…"` 背后的解析器。
+
+% 1 1 0 0550b489c40e2c7613f0eec9e19538ef
+
+% 1 1 0 104eddbe8c9501a70e66be74a7fd3133
+
+% 1 1 0 09a1f1306408623a02cbce70bd826ccb
+
+@ 0 9 0 101fae8a9db24d9a03f37ddfebb9c805
++   entry .text   `Text is Media`：`text/plain`
++       位于隐式作用域中，因此所服务或附加的纯文本无需导入就标注为 `text/plain`。
++   entry .nominable   任何 `Nominable` 的东西都是 `Media`，依据其名称的扩展名
++       这个 given 为具名的东西——文件、路径、资源——给出一个媒体类型，该类型通过 `Extensions.guess` 根据其名称中最后一个 `.` 之后的文本猜测：`report.pdf` 是 `application/pdf`，扩展名未知或没有扩展名的名称是 `application/octet-stream`。
++   entry .Group   顶层类型：恰好十一个之一
+
+% 1 1 0 07aad133e7dd42e00e29024355459ad5
+
+@ 0 9 0 13a56ce2f73f229f070e6cc60d903509
++         `Application`、`Audio`、`Image`、`Message`、`Multipart`、`Text`、`Video`、`Font`、`Example`、`Model` 和 `Haptics`——IANA 注册的顶层类型，其中 `Haptics` 最新（RFC 9695）。
++         `#name` 是写在媒体类型中的小写形式，组的显示和检视也都采用这种形式（`.showable`、`.inspectable`）。
++         组为其他任何值的文本解析失败，原因为 `MediaType.Error.Reason.InvalidGroup`。
++     entry .inspectable   调试渲染为小写的组：`application`
++     entry .showable   按媒体类型中的写法渲染组：`application`
++     entry #name   小写的组，按媒体类型中的写法
++   entry .Subtype   子类型，以及它属于四棵注册树中的哪一棵
+
+% 1 1 0 12317a128e6a361f1d4e30b21764ea02
+
+@ 0 9 0 17be3238b960d5090718a274a0619c5c
++         `Standard(value)` 是标准树中、在 IANA 注册的子类型（`json`、`html`）；`Vendor(value)` 是 `vnd.value`，厂商自己的子类型；`Personal(value)` 是 `prs.value`，个人自己的子类型；`X(value)` 是 `x-value`，旧的实验性前缀（`x.value` 解析为同样的值）。
++         树是值的一部分，因此对 `Media.Subtype.Vendor(_)` 进行匹配就能找到厂商类型，而无需检查前缀。
++         `#name` 渲染带前缀的子类型，解析器依次接受每种前缀。
++     entry .showable   按写法渲染子类型：`vnd.api`、`prs.thing`、`x-tar`
++     entry #name   带有其所在树前缀的子类型，按媒体类型中的写法
++   entry .Suffix   结构化语法后缀：`+xml`、`+json`、`+zip`……
+
+% 1 1 0 14eb247ec2af5ba71706e8da1979cf91
+
+@ 0 23 0 1b9b5b682a01a4cf06857e665f6b6b01
++         IANA 注册的后缀：`Xml`、`Json`、`Ber`、`Cbor`、`Der`、`FastInfoset`、`Wbxml`、`Zip`、`Tlv`、`JsonSeq`、`Sqlite3`、`Jwt`、`Gzip`、`CborSeq` 和 `Zstd`。
++         一个媒体类型可以按顺序带有多个后缀（`application/thing+xml+gzip`）。
++         `#name` 是写在媒体类型中的注册形式——`json-seq`、`fastinfoset`——解析器以不区分大小写的方式读回这种形式；不在此列表中的后缀解析失败，原因为 `MediaType.Error.Reason.InvalidSuffix`。
++     entry .showable   按媒体类型中的写法渲染后缀：`json-seq`，而不是 `JsonSeq`
++     entry #name   后缀的注册拼写，即写在 `+` 之后的形式
++   entry .unsafeParse   解析 `media"…"` 宏已经检查过的字面量
++       供插值器的展开结果使用，它在运行时重新解析已在编译时验证过的文本，因此以 `Unsafe` 令牌代替战术。
++       不供应用代码使用：请使用 `as[MediaType]` 或 `MediaType.unapply`。
++   entry .parse   把文本解析为媒体类型，针对出错之处抛出 `MediaType.Error`
++       `as[MediaType]`、`MediaType.unapply` 和 `media"…"` 背后的解析器。
++       它按 `;` 拆分出参数（去除空白），按 `/` 拆分出组，按 `+` 拆分出后缀；组必须是 `Media.Group`（不区分大小写），每个后缀必须是按其短横线命名形式给出的 `Media.Suffix`，每个参数必须是 `key=value`。
++       需要一个 `Tactic[MediaType.Error]`。
++       `MissingParam` 或 `NotOneSlash` 问题是*抛出*而不是中止，因此在宽容的战术下，解析会以最佳猜测继续进行（以 `text` 为组，丢弃该参数）；其他问题则会中止。
++   entry #mediaType   类型 `is Media` 的值的媒体类型
++       每个 `Media` 实例都提供的扩展方法：`t"hello".mediaType`、`path.mediaType`、`json.mediaType`。
+
+@ 0 5 0 1021315cc16045760c309a03d22ab4ea
++ entry .ascribe   `value.ascribe(mediaType)`：任意字节来源与显式媒体类型配对，成为 `Content`
++     `ascribe` 是任何 `is Streamable by Data over Credit` 的值——`Data`、文件、流——上的扩展方法，其字节被读取为 `Chain[Data]`，并与给定的媒体类型配对。
++     它用于没有内在媒体类型的字节，此时 `Media` 无从判断。
++     需要作用域中有一个 `Buffering`。
+
+% 2 1 0 1b9405ca3fd24f580c5c18203a54aa95
+
+% 3 1 0 1ffbf7b7800f1e5515abd9928924a008
+
+% 0 1 0 1ce543c070756ca7033d2356903af397
+
+% 0 1 0 0873fb5fe3bfa12605c890ab3df743b3
+
+% 0 1 0 0369951fbada24ee14af9fd262b71d5b
+
+% 0 1 0 0b75d3e0abd8cd3e1d477751ba736074
+
+% 0 1 0 1ea4ce02bf1aa96b03e654431edb0a97
+
+% 1 1 0 0b1423fd6eec3ca309e5ee639ad61fa1
+
+@ 0 1 0 0b312aceb4a37562051a3b1a508fe5a0
++ entry .Content   字节及其媒体类型
+
+% 1 1 0 091a0c227253e99b15193931b05b8526
+
+@ 0 3 0 0fa0e3a73871ed8117d64ba5e40684bd
++       `Content` 是一个字节 `#stream`，加上说明这些字节含义的 `#media` 类型：它是 `ascribe` 的产物，当字节本身不带媒体类型时，HTTP 响应或附件就由它构建。
++       `#named` 添加名称，构成 `Asset`。
+
+% 1 1 0 18fc272a10ab35b50c19fa3d080b4d8b
+
+% 0 1 0 1d377be3a7a086060cf94f08f104993c
+
+@ 0 3 0 104c05a7d5ab2e3502d3c3270c1baea9
++   entry #media   字节的媒体类型
++   entry #stream   字节，作为数据块的链
++   entry #named   带有名称的内容，作为 `Asset`
+
+@ 0 1 0 19980be4ebdf6dfd0a1ac5e5e414f275
++ entry .Asset   带有媒体类型的具名字节流：附件、所服务的文件
+
+% 1 1 0 090806bd880118be100c17dc963e8afe
+
+@ 0 4 0 061c268133308fbe12026b3fb4108a5f
++       `Asset` 是带有 `#name` 的 `Content`：电子邮件附件或 multipart 上传中的文件所需的三样东西。
++       `Asset(name, value)` 由任何 `is Media` 且 `is Streamable by Data over Credit` 的值创建资源，媒体类型取自该值自身的 `Media` 实例；`Content#named` 则由显式的内容创建资源。
+
+% 2 1 0 17b0a3825ed8f11d0141a461352e71e5
+
+% 3 1 0 006c11f061fd9b2b1c6ae16e45f40e65
+
+% 4 1 0 0f346c3b79d6616519bb9765c1f1ec12
+
+% 0 1 0 1a5a1f9132ae5ffc09ca48cff9797131
+
+% 0 1 0 18b76cacba3f240c0f5bb620f5c04822
+
+% 1 1 0 15e3d9ff8f81ea441cf9d1b60be3587d
+
+% 0 1 0 086c690055f25ae30634b177870f724d
+
+@ 0 7 0 1c1ef8dc001545eb1e18437424c34dfd
++   entry .apply   由名称和任何 `is Media` 且可作为字节流式读取的值创建资源
++       媒体类型来自该值的 `Media` 实例，字节来自它的 `Streamable`，被整体读入一条数据块的链。
++       对于自身没有 `Media` 的字节，请改用 `data.ascribe(mediaType).named(name)`。
++   entry #name   资源的名称，例如文件名
++   entry #media   资源的媒体类型
++   entry #stream   资源的字节，作为数据块的链
+
+@ 0 1 0 03c824654c43073011eebc4196ad46b5
++ entry .Extensions   文件扩展名的媒体类型，用于根据文件名猜测
+
+% 1 1 0 0ec08dfe0cb0b1d6173777f286927037
+
+@ 0 3 0 073096cceeb45ae909d3eea2357edf27
++       一张大约八十个常见扩展名的表——`png`、`json`、`pdf`、`docx`、`woff2`……——以及每个扩展名按惯例所代表的媒体类型，并提供用于查找的 `.guess`。
++       `Media.nominable` 正是用它根据文件名标注文件。
+
+% 2 1 0 007b5ac542f712e0104a9d6a4e3fb3c0
+
+% 3 1 0 179a132e9348557f02ead2c623480e6d
+
+% 0 1 0 18abd54c8d00a9661f04367caa9d8cf8
+
+% 0 1 0 03054f8e5a20f848136b0c0897ab2157
+
+% 1 1 0 1021a55944e6cc7f0362dd8e6bc223af
+
+% 1 1 0 1eb9dad2656bec890c072d7ddcc9666d
+
+@ 0 4 0 13d8680807fc2b460991d8b17a35d427
++   entry .guess   扩展名对应的媒体类型，未知扩展名则为 `application/octet-stream`
++       扩展名不带点号，且为小写：`t"svg"`，而不是 `t".SVG"`。
++   entry .mediaTypes   这张表本身，从扩展名到媒体类型
++       一个 `Map[Text, MediaType]`，供想要向其中添加内容或枚举它的程序使用。
+
+@ 0 1 0 1916ad3ece8a07371afddbde26aa9793
++ entry .Multipart   解析为各部分的 `multipart/form-data` 正文，每个部分在读取时从输入中借出
+
+% 1 1 0 101527417cd53c4f01acb99bc5a5b8b2
+
+@ 0 6 0 110616b01ceaaebf1bf0755b8d908a64
++       文件上传的格式：由边界行分隔的若干部分组成的正文，每个部分都有自己的头部——给出字段名和文件名的 `Content-Disposition`，也许还有 `Content-Type`——以及一个正文。
++       `Multipart.parse` 从任意字节来源增量地读取它，因此大型上传以流的方式进行而不是累积起来，并给出一个 `Multipart`，其 `#parts` 是一条惰性的 `Chain[Part]`；`#at` 按字段名查找部分。
+
+% 0 1 0 14116fcaa006993f068c95fd1ec862a2
+
+% 1 1 0 08d9458eb73012351c93056f35e51984
+
+@ 0 1 0 0d508a90503ccaf613425aad8b4244d9
++         label 正文以边界行开头
+
+% 1 1 0 0b925a6fa9c90be4102b63e53892102c
+
+% 0 1 0 1808f1bc7a8d73be1e8552eecae778a7
+
+% 0 1 0 193e2b393d0b80a41e2fa33788906d28
+
+% 0 1 0 0798179fd46066390d73f0f2d8a2bf3e
+
+% 1 1 0 1f9767d2bb5081bf108daa2ce62a5838
+
+% 1 1 0 0d81887a256b6c680463c153b0c2b834
+
+% 2 1 0 0f3a0eb028cbf99811d6ff6c3d12ae54
+
+@ 0 1 0 00011f3556a3b3a312893f0225e7ba67
++         label 部分由头部、一个空行和正文组成，其后是边界行
+
+% 1 1 0 04fc27cc0607a1241c260ed6457c24ba
+
+% 2 1 0 03e3c5941145fa730288ec88ef67192a
+
+% 3 1 0 004d390f9c7d520f1a79c5ee69e63d38
+
+% 4 1 0 03a36225953d953807d4f690727be626
+
+% 5 1 0 0dd1f10face6be7710b037064f821d86
+
+% 6 1 0 08f34a73dd41c20e1a5169cfeae5199b
+
+% 7 1 0 18e50d0ad38b45290f73e17dc53b7fb1
+
+% 1 1 0 0411ba88be2b7ca908fc10ca447b7f9d
+
+% 2 1 0 0da7d691b510203215aca9788eac9f31
+
+@ 0 1 0 1351f23246b7daf315c83372afe2d864
++         label 第二个部分，以及带有结尾 `--` 的结束边界
+
+% 1 1 0 0c1cb9b031fe6399162144ad49919957
+
+% 2 1 0 0e5b5a39b18213701f40ff0667737363
+
+% 3 1 0 021b78ce4ba6b1f30ab5faa229303257
+
+% 4 1 0 169e011585633c820e392ea1ff6c9d89
+
+% 5 1 0 03f263a14c165dbd16b07b31eb99054f
+
+% 6 1 0 13906cc01ee5502d0201c16bb00d3967
+
+% 7 1 0 0b3ed52031529a3b0c5008b355060f2d
+
+% 1 1 0 0534a362f16fce7e1017e316a83187c8
+
+% 0 1 0 15aa2e8146f90bfd1830b132c9afc592
+
+% 1 1 0 11ba7b156fe32f79011781172681d919
+
+% 0 1 0 07a4de1dcac38cd81b8b5706bce7272f
+
+% 0 1 0 1b3686d590b653e71a61324c20bcb191
+
+% 1 1 0 19b6f4b6213a3d390b5459a6ef525f2d
+
+@ 0 1 0 03ffcc2a5c20c74c1048d69371208699
++         label 解析之后，各部分都带有类型
+
+% 1 1 0 196e9675eb71dc441cc7683c0d7b5f2d
+
+% 0 1 0 1d2c845b6867685110f4888eaa078a82
+
+% 0 1 0 19e35886cc0f734e1a18af22c6574210
+
+% 0 1 0 01231ed5dc24861f1d62a31f3b934556
+
+% 0 1 0 04d3d3807a6f201c1d6104963e1d4a64
+
+% 0 1 0 05324ab952d132031fa7821cd90c1137
+
+% 1 1 0 1a277342ea9dfdc5113023e785963c91
+
+@ 0 8 0 0d4afcd4152271ba0a01a1808813d894
++       部分的正文在该部分是当前部分期间，从输入中零拷贝地**借出**：在转到下一个部分之前读取它（`part.read[Data]`，或用 `part.body()` 取得流），因为强制求值下一个部分会跳过这一部分剩余的内容，之后它读出来就是空的。
++       `Chain` 会进行记忆化，因此先 `parts.size` 再 `parts.head.let(_.read[Data])` 什么也读不到。
++       正文通过对分隔符的批量搜索找到，因此无论输入如何分块，一个 100 KB 的二进制正文都以几个大区域的形式到达；正文也可以分段读取，每次 `body()` 都从上次停下的地方继续。
+
+@ 0 3 0 1f56e81c979e59240fcc374340d292f1
++       格式错误的正文会抛出带有 `.Error.Reason` 的 `Multipart.Error`；scintillate 的 `Acceptable.multipart` 从请求的 `Content-Type` 中读取边界，并用它解析请求正文。
+
+% 0 1 0 1644772910d45b1818d5070d44f2ae59
+
+% 1 1 0 1fac569a3d303af406af34df671711e6
+
+@ 0 14 0 03e58311c4eac87e1117727a51adfcb4
++   entry .Disposition   部分应如何呈现：`Inline`、`Attachment` 或 `FormData`
++       部分的 `Content-Disposition` 头部中的记号。
++       表单上传的各部分是 `FormData`；`Inline` 和 `Attachment` 是消息各部分的处置方式。
++       其他记号会使解析失败，原因为 `Multipart.Error.Reason.BadDisposition`。
++   entry .parse   从任意字节来源解析 multipart 正文，在到达每个部分时借出它
++       `Multipart.parse(input)` 接受任何 `is Streamable by Data over Credit` 的值——`Chain[Data]`、请求正文、文件——并从其第一行（`--boundary`）读取边界，因此无需事先知道边界；第二个参数 `boundary` 是为从 `Content-Type` 头部得到边界的调用者而接受的，但不会被查阅。
++       它需要一个 `Tactic[Multipart.Error]`，结果会保留它（部分的正文通过它抛出被截断的读取），并在第一个格式错误的字节处抛出 `Multipart.Error`：对于缺失的边界或行尾，抛出 `Expected(char)`；对于无法读取的 `Content-Disposition`，抛出 `BadDisposition`。
++       头部按 ASCII 读取；没有 `Content-Disposition` 的部分是没有名称的 `FormData`。
+
+% 2 1 0 0adf770630bf152f1e7f689aac6adc0a
+
+% 3 1 0 0bea45737d9bd0210256af8dc0152ef7
+
+% 4 1 0 0826cb8d7cd114f9131a82d86181f019
+
+% 0 1 0 0116a331765d22681fde66f1f935428d
+
+% 0 1 0 150499dc135980c51db745684b6e2d0b
+
+% 1 1 0 1fbe8e2ef54b5e6d15796d4285c61925
+
+@ 0 1 0 06dd0be5a552094619f2b224ed917661
++   entry .Error   当 multipart 正文无法读取时抛出
+
+% 1 1 0 0ff2997c0d34cdb515116cb1847ab738
+
+@ 0 5 0 179d794822941be10855f8d1452dbccd
++         错误 `↯/s.81.2`：_multipart data could not be read because `reason`_。
++         由 `Multipart.parse` 在到达问题所在时通过 `Tactic[Multipart.Error]` 抛出；由于各部分是惰性读取的，这可能发生在强制求值后面某个部分时，而不是在调用时。
++         `.Reason` 的编号就是错误的子编号（937.1 到 937.6）。
++     entry .Reason   multipart 正文无法读取的原因
+
+% 1 1 0 0dbad9a64e1db7180c2a3d8de250b184
+
+% 1 1 0 183d5f11254e8518154a3b6c2f0be0bd
+
+@ 0 5 0 08667e1a12645e6217699f6c95bfaad6
++           column  分支
++           column  代码
++           column  消息
++           column  说明
++           row  `Expected(char)`  1  _the character '`char`' was expected_  缺少 `--` 的边界，缺少 `\r\n` 的头部行或边界行，缺少 `: ` 的头部
+
+% 0 1 0 11fc15d67a1950fd08f9e2bda0ea8647
+
+% 0 1 0 1a895bcc3be76cb81f2431de466fea1b
+
+@ 0 1 0 07e73a4935603b04152d611a9c615926
++           row  `MediaType`  4  _the media type is invalid_  由 scintillate 的 `Acceptable.multipart` 针对 `Content-Type` 不是带 `boundary` 的 `multipart/form-data` 的请求抛出
+
+% 0 1 0 0df41820c77b80610df5264f38f02b7e
+
+@ 0 1 0 193b928c2830ecd70383249def0b74aa
++           row  `Truncated`  6  _the body ended before its closing boundary_  `Acceptable.multipart` 针对被截断的请求正文抛出它
+
+% 1 1 0 0f21f812b59f04001baf9c7b9c9c95c0
+
+@ 0 11 0 16cd389063e166db077e5e1777917ecf
++       entry #number   原因的编号，`1` 到 `6`，即错误的子编号
++     entry .communicable   把每种原因渲染为其消息
++     entry #reason   正文无法读取的原因
++   entry #parts   各部分，按顺序，作为惰性链
++       每个部分在链被强制求值时解析，强制求值某个部分的后继会跳过并关闭该部分的正文。
++       该链会进行记忆化，因此可以遍历不止一次，但正文只有在其部分是最近被强制求值的那个时才能读取。
++   entry #at   带有某个字段名的部分，或 `Unset`
++       `upload.at(t"avatar")` 查找其 `Content-Disposition` 指明该字段的第一个部分。
++       查找它会强制求值它之前的每个部分，因而关闭它之前各部分的正文。
+
+@ 0 1 0 0b7e57735239ef9f021f85a8c3d9dd55
++   entry .Part   multipart 正文的一个部分：它的处置方式、头部、名称、文件名和借出的正文
+
+% 1 1 0 1f0c315d6a1183980347e93b6789c24e
+
+@ 0 6 0 14ab41f53eee19d912a8343d1fa332cb
++         `Part` 是 `Multipart.parse` 为正文的每一节产出的东西：来自其 `Content-Disposition` 头部的 `#disposition` 以及 `#name` 和 `#filename` 参数，按名称组织的全部 `#headers`，以及它的 `#body`，即从输入中借出的 `Spring[Data]`。
++         部分 `is Streamable by Data over Credit`（`.streamable`），因此它的正文用常用的动词读取——`part.read[Data]`，在作用域中有 `Charset` 时用 `part.read[Text]`，或用 `part.body()` 取得流本身。
+
+% 2 1 0 1017a456e792cf360d875ef9bbd0cc1e
+
+% 3 1 0 03178dcf4fd37764111a300e89d5e1b6
+
+% 0 1 0 1549dce1def0d2b3146a423ec9cc1b2e
+
+% 0 1 0 007d86684f8769fe09636d5f556d8a87
+
+% 0 1 0 1a6f5a1f7a5690220c481081ac7cba79
+
+% 0 1 0 093409fa6e38e01213a6d23546a15161
+
+% 0 1 0 1adda9edbe8570ca0d20cbdab56ca48a
+
+% 0 1 0 1db9f39ec60c9d900fad1c8b08e78df4
+
+% 0 1 0 00bd1acbb971814d03327bf04b8b8781
+
+% 0 1 0 14027876fc8d86a51fa2e0c4da157aab
+
+% 0 1 0 085729ca9d4c37d60b067e3712c93f45
+
+% 0 1 0 15a3ca28166db6b804dbc4fb515f82f2
+
+% 0 1 0 1ae135bbca7e864917b01336d757852f
+
+% 0 1 0 04c609138fd8efba1479048ebdd19703
+
+% 0 1 0 04c2fb4da3ba8e6704247fdbf0100f70
+
+% 0 1 0 1f9c78ed3ddfa32a09e88b5da676b83b
+
+% 1 1 0 0a77c55a1395b36900c4a31b725e83a0
+
+@ 0 4 0 09b6c5e57ec203aa1c946bd24ea30294
++         正文是零拷贝的：在下一个部分被强制求值之前，它都可以读取，此后其剩余内容被跳过，读出来就是空的。
++         每次 `body()` 都从上一次读取停下的地方继续，因此正文可以分两段取得，但不能读两次：稍后还需要正文的部分，必须先读入一个 `Data`。
+
+% 0 1 0 19b5ab3c13f6fc2d1d1e8d2adb38695e
+
+@ 0 14 0 0ca2c8ed92d572fd08506e0c5df83995
++     entry .streamable   `Part is Streamable by Data over Credit`：部分的正文，供 `read[Data]` 及其他流动词使用
++         位于隐式作用域中。
++         它需要一个 `Tactic[Truncation.Error]`，实例会保留它，用于输入在结束边界之前就结束的正文。
++     entry #disposition   `Inline`、`Attachment` 或 `FormData`；如果该部分没有 `Content-Disposition`，则为 `Unset`
++     entry #headers   该部分的每个头部，按书写时的名称
++         头部名称完全按照它们在正文中出现的样子匹配：是 `Content-Type`，而不是 `content-type`。
++     entry #name   来自 `Content-Disposition` 头部的字段名，或 `Unset`
++     entry #filename   来自 `Content-Disposition` 头部的文件名，或 `Unset`
++         表单的文件字段有它；文本字段没有。
++     entry #body   该部分的字节，从输入中借出：`body()` 就是流
++         一个 `Spring[Data]`：`body()` 给出从上一次读取停下之处开始的 `Stream[Data] over Credit`，需要一个 `Tactic[Truncation.Error]`。
++         下一个部分被强制求值后，它读出来就是空的。
+
+@ 0 1 0 1dc9c026048598e502831533550ba27b
++ entry .Construable   媒体类型被读取为和写出自的 Scala 类型，供 HTTP 客户端使用
+
+% 1 1 0 186fbc1b766c0e161890574544ddb48e
+
+@ 0 9 0 17749643447ceaf21fead70b6c928ee1
++       `("image/png" is Construable to (Raster in Png))` 表示 `image/png` 正文被读取为 `Raster in Png`，也从 `Raster in Png` 写出。
++       `Self` 是不带参数的媒体类型，以单例字符串类型表示，因此从规范（例如 OpenAPI 文档）中得知某个媒体类型的客户端，可以在代码编译时询问该把这种类型的响应解释为什么。
++       该特质本身不带任何操作：结果类型自己的 `Aggregable` 读取正文，它的 `Postable` 写出正文。
++       `Construable()` 以这两个类型为参数创建实例。
++       它的 `Result`，即该媒体类型的正文被读取为和写出自的 Scala 类型，继承自 `prepositional.Resultant`。
+
+@ 0 7 0 1d6450523c7870e706f8b5b312fb9da7
++       每个映射都是 `construables` 选择包中的一个 given，按名称导入，因此不经过有意的选择就不会解释任何东西：本库声明了 `plainTextConstruable` 和 `octetStreamConstruable`，每个格式库也声明自己的映射——jacinta 的 HTTP 模块中的 `jsonConstruable`，xylophone 的 `xmlConstruable` 和 `textXmlConstruable`，hallucination 的 `pngConstruable`，等等——它们全都合并进总括包的 `construables` 包中。
++       作用域中没有合适的映射时，按 `Content-Type` 读取响应的客户端会回退到原始正文。
+
+% 2 1 0 0b85f968427f21770d03995343194262
+
+% 3 1 0 0eb8249bd8734cd9159f66eda3d8dc91
+
+% 0 1 0 1a8ae180d330639b0d69b7587e00b58b
+
+% 0 1 0 0154c4ee596e6ac8093fb450d1ad5840
+
+% 1 1 0 0c4a02b566c9ebef02df7c72ad28cc7f
+
+% 0 1 0 14db365ec07defc208ea083764937212
+
+% 1 1 0 1f129a61c605659f042b32d890d808e9
+
+@ 0 1 0 168b412107a89f6c194981bfd50cac77
++   entry .Bound   媒体类型和结果作为类型参数固定下来的 `Construable`
+
+% 1 1 0 19f8b595dd8a3f191476523a58de6c52
+
+@ 0 8 0 0cd70441843b1cd8040f61966ac55552
++         `Construable.Bound[media, result]` 是 `Construable()` 所实例化的类：一个 `Self` 为 `media`、`Result` 为 `result` 的 `Construable`。
++     entry #Self   媒体类型，作为单例字符串
++     entry #Result   该媒体类型被解释为的 Scala 类型
++   entry .apply   `Construable[media, result]()`：从媒体类型字面量到某个类型的映射
++       以 `is … to …` 语法写作 given 的类型时，类型参数会被推断：`given csvConstruable: ("text/csv" is Construable to Sheet) = Construable()`。
++   entry #Self   不带参数的媒体类型，作为单例字符串类型
+
+@ 0 1 0 0a62746d23937f840ee044f8e43775e8
++ entry .construables   从媒体类型到 Scala 类型的映射，每个都是需按名称导入的 given
+
+% 1 1 0 0a993ef82afe78730c01b41972aa8012
+
+@ 0 4 0 0b414dced7b3c0a915264668a1513250
++       某种媒体类型的正文被解释为哪个类型，由作用域中的 `Construable` given 决定，而 `import soundness.*` 不会引入其中任何一个：每个都要按名称导入。
++       这个包存放两个不需要格式库的映射，总括包的 `construables` 包把它们与每个格式库自己的映射合并在一起。
+
+% 2 1 0 041f6e34f533f38614356abcb0412e1f
+
+% 3 1 0 061367d99b9ed3fe04189068ede208d6
+
+% 0 1 0 142b1a6763432687163e7af464eedc5c
+
+% 1 1 0 08f5bc81ab4757090ee09e272974a829
+
+@ 0 3 0 124298333698f1fc009e6482e61bf95f
++   entry .plainTextConstruable   `text/plain` 被解释为 `Text`
++       把正文读取为文本需要作用域中有 `Charset`，写出则需要 `Codepage`。
++   entry .octetStreamConstruable   `application/octet-stream` 被解释为 `Data`
+
+@ 0 1 0 0511845060c7585e1c981b7e6a33cfd9
++ entry .internal   `media"…"` 背后的宏及其注册表检查
+
+% 0 1 0 1c18810b564d59e609a88422cf8dd919
+
+% 1 1 0 0f71597c1b0bc6cb112bae74ffdfb433
+
+@ 0 10 0 1441c5176d05279214e9eb861c3a3a03
++       不供直接使用：该对象的存在是为了让宏有一个稳定的位置，并保持自包含，以便能在展开时运行。
++   entry .validateLiteral   检查媒体类型字面量的组、子类型字符和注册情况，结果为一条消息或 `Unset`
++       编译时检查：组必须是十一个之一，子类型的各段不得包含禁用字符，标准树中的子类型必须在注册表中，否则给出一条消息，按 Levenshtein 距离指出最接近的已注册类型。
++       后缀和参数留给解析器处理。
++   entry .mediaInterpolator   宏：验证唯一的字面量部分，并拼接进解析后的媒体类型
++       对于带替换的字面量、`validateLiteral` 给出的消息，或解析器给出的 `MediaType.Error`，它都会中止。

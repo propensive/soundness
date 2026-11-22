@@ -1,0 +1,290 @@
+orthant 2 language
+
+% 0 1 0 0f04ec4b9ac2d4270a232409219e1f6b
+
+% 0 1 0 1acedd231e89c7d705a5c65e1625afb7
+
+% 0 1 0 0b5938ce7315323607e1922cbc4d93e2
+
+@ 0 1 0 12cf4099ba8dd085122513165ab3907a
++ info   基于 TeX 模式文件、用 Liang 算法实现的断字：断字点、软连字符和音节
+
+% 0 1 0 0ca6d61ddd9511ea1cdae38f1414f6fe
+
+@ 0 7 0 1da156422b65704216f4e9ab4379ae9d
++     _Polysyllabic_ 用 TeX 所用的算法和模式文件，找出一个单词在行末可以从哪里断开。
++     单词在哪里断开无法从其拼写中直接看出，因此 Liang 算法依据一部由数千个小模式组成的词典为字母之间的每个间隙打分，这些模式源自真实的断字词典，凡是最高分为奇数的地方都允许断开。
++     语言是一个上下文中的 `Hyphenation`，`Text` 上的三个扩展方法使用它：`hyphenate` 在每个允许的断点插入连字符，`syllables` 把文本拆分为各个部分，`breakPoints` 给出原始位置。
+
+% 2 1 0 03723a808ebc72fc07ac196dbdb78556
+
+% 3 1 0 1d19a29c8c119fc01093e47c03ff0179
+
+% 4 1 0 059ecc8b12296a7a144c203de7d5647a
+
+% 0 1 0 13992425f04cc99d0fab42777b11e2eb
+
+% 0 1 0 0e28d4c979ae163c1962e1d5498c80d3
+
+% 0 1 0 19340d047010097a19c2cd4ca90e2b1a
+
+% 1 1 0 1b5c3da20bf8f8541d7e6a841860408e
+
+@ 0 7 0 0f53087ed56686db0586e044844dd34e
++     美式英语以 `hyphenations.englishHyphenation` 提供，解析自类路径上附带的 CTAN hyph-utf8 模式文件。
++     它是选择包中的一个 given，因此要按名称导入：`import hyphenations.*` 不会导入 given。
++     其他任何语言都可以用 `Hyphenation.fromTex` 从其 TeX 模式文件加载，任何一套规则都可以用 `Hyphenation#extending` 通过额外的模式或例外加以修正。
++     没有导入任何语言时，伴生对象的 `Hyphenation.fallback` 不进行任何断字，因此文本原样通过，而不会被程序并不具备的规则断开。
+
+@ 0 4 0 1c67b1b397824a5d160118c8d038beb7
++     每一段连续字母都独立断字；空格、标点和数字原样通过。
++     该库有一个源集 `polysyllabic.core`，适用于所有平台，所有内容都导出到 `soundness` 总括包，其中 `hyphenations` 包与总括包自己的同名包合并。
+
+% 0 1 0 137993f06410fb67033c0e5c5eeb0c17
+
+% 0 1 0 1d2517adc1a8137f127a5234448b34c0
+
+% 0 1 0 07972c3deecfa7ac1d4c1405c0309cb9
+
+@ 0 1 0 0a856f6f88e58a5b1ad2fe0202456ce3
++ entry .Hyphenation   一种语言的断字模式和例外，以及其最小片段长度
+
+% 1 1 0 069f9a029e36920d1716965eb42fc51f
+
+@ 0 5 0 0f832fdd444630bb10d62907cf1f38ac
++       `Hyphenation` 是该库中每个操作都会读取的上下文值：该语言用于打分的 `#patterns`、列出断点被直接规定的单词的 `#exceptions` 列表，以及断点前后至少必须保留的字符数 `#leftMin` 和 `#rightMin`。
++       它作为 given 选定，通常是按名称导入的 `hyphenations.englishHyphenation`，并且是不可变的：`#extending` 创建一个新的。
+
+% 2 1 0 16997e4b8fe3e59a070ed76f7a126cfe
+
+% 3 1 0 00802a4835e7ce95112db416ada78fa5
+
+% 4 1 0 1642c7534ec96c6b060dbafae507123a
+
+% 0 1 0 07c696d2e895de0a14efca041998754e
+
+% 0 1 0 037638fb1d31757c075f669236486d27
+
+% 1 1 0 08ce28f651919cc0013a40ff83d49667
+
+@ 0 6 0 006fcca133232503033cd5637adda8e1
++       新语言可以用 `Hyphenation(patterns, exceptions)` 从原始模式构建，或用 `.fromTex` 从完整的 TeX 模式文件读取。
++       模式采用 TeX 的记法：片段的字母，任何间隙中都可以有一个数字，因此 `hy3ph` 在 `y` 和 `p` 之间的间隙打 3 分，而 `.` 标记单词边界（`.ach4`、`ion5.`）。
++       例外是在断点处带有连字符的单词，例如 `as-so-ciate`。
++       只有 ASCII 字母 `a` 到 `z` 参与模式字典树；单词在查找前会被转换为小写。
+
+% 0 1 0 12d3e61bc99acf39146fdadb0e4a0f82
+
+% 0 1 0 1e6d556594631c45039e927e078c3948
+
+@ 0 15 0 171f6744d15bba500c94b410a20f7e71
++   entry .fallback   没有导入断字规则时位于隐式作用域中的断字规则：它不允许任何断点
++       伴生对象的 given，在词法作用域中没有其他 `Hyphenation` 时被找到。
++       它的词典为空，最小片段长度是 `Int` 所能表示的最大值，因此 `hyphenate` 原样返回文本，`syllables` 只在非字母处拆分，`breakPoints` 为空。
++       于是换行算法退化为在空格处断行。
++       导入的 given，例如 `hyphenations.englishHyphenation`，优先于它。
++   entry .alphabet   模式字典树的字母表：小写 ASCII 字母，后接边界符 `.`
++       一个 gossamer `Dictionary.Alphabet`，内容为 `abcdefghijklmnopqrstuvwxyz.`，按此顺序。
++       算法的内层循环直接为这个字母表计算槽位，因此每个 `Hyphenation` 都基于它构建；字母表之外的字符会重置字典树的遍历。
++   entry .apply   由 TeX 格式的模式和例外构建断字规则
++       接受 `patterns`（例如 `t"hy3ph"`）、可选的 `exceptions`（例如 `t"as-so-ciate"`），以及最小片段长度 `leftMin`（默认为 2）和 `rightMin`（默认为 3）。
++       模式被编译为 Aho–Corasick 字典树，因此每个单词只需一次向前扫描就能完成打分。
+
+% 2 1 0 0634226245bcbc6e1d99f04cbdc3331d
+
+% 3 1 0 05f60505f421d61f07b2b8ace8b5fc9a
+
+% 0 1 0 1a4eeb69da675b8a0e320c9fcbb32ac7
+
+% 0 1 0 097e12bad3508c2f0efc4807cba6415e
+
+% 0 1 0 0d85d2dd4191752a0aac57514f537e00
+
+% 1 1 0 08484f9e81af2d5c1d238a367b9cf041
+
+@ 0 6 0 1221e49371f9071114e3563227134ae7
++   entry .fromTex   从完整 TeX 断字模式文件的文本读取断字规则
++       读取 CTAN 的 hyph-utf8 所发布格式的文件：它去掉 `%` 注释，从 `\patterns{…}` 块中取得模式，从 `\hyphenation{…}` 块中取得例外，从 `\lefthyphenmin` 和 `\righthyphenmin` 中取得最小片段长度，文件未设置时它们默认为 2 和 3。
++       为 TeX 发布的所有语言都可以通过这种方式使用。
+
+% 2 1 0 1260cd9c9de744c30e03082a49ec9d3a
+
+% 3 1 0 0c61ac2aa2f3d1c108298dfbb082e6d8
+
+% 0 1 0 1b2fc40646840a3f068e0180d211f5ea
+
+% 0 1 0 12a618ab3fc8ab800817fdfca2fcb19c
+
+% 0 1 0 19a0ea94c9f2227808a72baf39f905b0
+
+% 1 1 0 01afd9d2e58dad1a1ccb1553305edf58
+
+@ 0 15 0 07323e3ebb9f3ec51d7ad3d143080b52
++   entry .breakPoints   在显式给定的最小片段长度下，一个单词可以断开的位置
++       算法本身，以函数形式提供。
++       `Hyphenation.breakPoints(word, hyphenation, leftMin, rightMin)` 返回一个不可变的 `Array[Int]`，其中是单词内的偏移量，按升序排列：偏移量 `p` 表示可以在第 `p` 个字母之前插入连字符。
++       在例外列表中精确匹配时，会跳过模式遍历。
++       一个重载接受 `String` 以及偏移量和长度，以便在切片上工作而无需分配子字符串。
++       大多数代码需要的是 `Text` 上的 `breakPoints` 扩展方法，它从 given 的 `Hyphenation` 读取最小长度。
++   entry .breakPointsInto   把一个单词的断点位置写入调用者提供的缓冲区，不分配任何内存
++       `.breakPoints` 的无分配形式，用于对许多单词断字的代码，`hyphenate` 扩展方法就是这样做的：它接受一个 `String` 切片和三个可变的暂存数组，`padded`（至少为单词长度加 2）、`scores`（长度加 3）和 `breaks`（长度），把偏移量写入 `breaks`，并返回写入的个数。
++       这些缓冲区可以在一段文本的所有单词之间重复使用。
++   entry .Error   无法从类路径加载断字资源时抛出
+
+% 0 1 0 0eb601d2d8703d0a0cbc3f0c257d69cf
+
+@ 0 17 0 0e78f82f6a8f56a41e67aadddd90ad19
++         _the hyphenation resource `resource` could not be loaded from the classpath_。
++         附带的 `hyphenations.englishHyphenation` 不会抛出它：缺少附带的模式文件属于打包错误，会改为 panic。
++     entry #resource   无法加载的资源在类路径上的路径
++   entry #patterns   打分模式，编译为以字母为键的 Aho–Corasick 字典树
++       一个 gossamer `Dictionary`，从每个模式的字母（以 `.` 表示单词边界）映射到其分数，每个间隙一个分数，包括第一个字母之前和最后一个字母之后的间隙。
++   entry #exceptions   断点被直接规定的单词，每个映射到其断点偏移量
++       例外优先于模式，因此被模式错误断开的单词可以得到修正，而不影响其他任何单词。
++   entry #leftMin   断点之前至少必须保留的字符数
++   entry #rightMin   断点之后至少必须保留的字符数
++   entry #extending   带有额外模式和例外、并可选择新最小长度的新断字规则
++       把 `patterns` 和 `exceptions` 叠加在这套断字规则自身的之上，并在给出 `leftMin` 或 `rightMin` 时替换它们。
++       模式合并时在每个间隙取较高的分数，因此新增的奇数分模式会恢复被标准偶数分模式禁止的断点；例外则直接规定一个单词的断点。
+
+% 2 1 0 1b62f3cc50e975a11b1d7407338f0d06
+
+% 3 1 0 14a747097c96406d0920d902b0ac7368
+
+% 4 1 0 121d0a1aa2c11ad011c01d80e81b77da
+
+% 0 1 0 1dc528685ea6d0e012c0583ef67392d7
+
+% 0 1 0 1c5c3737470eb7e11b853a4918356142
+
+% 1 1 0 16028378309946cd1ddd538784b3622a
+
+@ 0 1 0 0ef8312be51a95301209d979c50d911e
++ entry .hyphenate   在文本中每段连续字母的每个允许断点处插入连字符
+
+% 1 1 0 092a7cf722ee573a00a85bf7d1b13a8c
+
+@ 0 6 0 1ff7829fb65520290f9bbdb458a15739
++       `Text` 上的扩展方法，使用作用域内 given 的 `Hyphenation`。
++       连字符默认是 Unicode 软连字符 U+00AD，除非一行确实在那里断开，否则它不可见；传入一个可见字符即可显示断点。
++       `leftMin` 和 `rightMin` 覆盖断字规则自身的最小片段长度，因此断点永远不会孤立出一两个字母。
++       每段连续字母都独立断字，其他一切原样通过。
+
+% 0 1 0 14116fcaa006993f068c95fd1ec862a2
+
+% 1 1 0 08d9458eb73012351c93056f35e51984
+
+@ 0 1 0 16268dd5aae49ea10b54baea04a7d9b5
++         label 每个允许的断点
+
+% 1 1 0 12654915d74f3d250a2138aa57a11c74
+
+% 2 1 0 1be31981a91dd64517c51681418cac6a
+
+% 3 1 0 14d229424a202cfa138d67c2a003a593
+
+% 0 1 0 1665b2d7fc541cb519a91faa32293826
+
+% 1 1 0 05b8871d91d04a411623c30da2ee88fb
+
+@ 0 1 0 0ee6e8b8f169dc771ecd2f303b60c6d8
++         label 第一个断点前至少四个字符
+
+% 1 1 0 005dc1122d0ea00c1d21e5c2f43e9780
+
+% 2 1 0 091753953f3b2d8f02b7d85921c72220
+
+% 3 1 0 15ccecea0d958a6e16b5d5d67cd4648b
+
+% 0 1 0 125191af62511d8f0a499fff507a4889
+
+% 1 1 0 1512c9ea528ca721140c486586c88148
+
+@ 0 1 0 134a10410b89e5421a991f8f4b89ba1d
++         label 最后一个断点后至少六个字符
+
+% 1 1 0 1b148371d7a2069219bef38018138c7e
+
+% 2 1 0 009b96492a27859213b107e9c8ab086f
+
+% 3 1 0 0a13c100f583390c08d15e555c4238af
+
+% 0 1 0 0e972117d9d7ce5e0687dc5a1a4f8b41
+
+% 1 1 0 14707f1653bd26081e6c52ff2e7c0921
+
+@ 0 1 0 052be5c84b4c55c303ee9e5b62078681
++         label 在连续正文中逐词处理
+
+% 1 1 0 1bd7f4e57f8a0a22195fd76e926b99b8
+
+% 2 1 0 1298f8ae7a7e5aa51dec3cf65aa3e6d7
+
+% 3 1 0 14a8356633ff6bdb0b8b66bef5c11610
+
+% 0 1 0 1a4908707c1b3c030b4682e50652e465
+
+% 0 1 0 05324ab952d132031fa7821cd90c1137
+
+% 1 1 0 1a277342ea9dfdc5113023e785963c91
+
+@ 0 2 0 112d688775560a7100804852ae7ef208
++       暂存缓冲区由一次调用中的所有单词共享，只有遇到更长的单词时才会扩大，因此对长文本断字时，除结果之外几乎不分配内存。
+
+% 0 1 0 14a0a67bfad34f91157d7a7e3c8decdd
+
+% 0 1 0 00ae6f27e3fa253a0450dac366a481fc
+
+@ 0 4 0 199a034e7002f5070443794491a41726
++ entry .syllables   把文本拆分为音节，每段连续的非字母各自成为一个片段
++     `Text` 上的扩展方法，使用作用域内 given 的 `Hyphenation`，返回 `Sequence[Text]`。
++     每段连续字母在其断点处拆分，每段连续非字母是一个片段，因此把各片段连接起来就能准确还原原始文本。
+
+% 2 1 0 04884696ce53db8c1568e6d7f6e6f25f
+
+% 3 1 0 0782ea631fbc620e1c20ad1aa72be3c7
+
+% 4 1 0 0515ff661c3c5b0a1aa833922448138e
+
+% 0 1 0 13d262b70fa3f1811d96c9b3865a44f1
+
+% 1 1 0 0fe07311044af0d107cd6365aecb3d20
+
+@ 0 6 0 098d181082bc4e840bb60b3bc960474f
++ entry .breakPoints   在作用域内的断字规则下，一个单词可以断开的偏移量
++     `Text` 上的扩展方法，用于换行算法之类自行放置断点而不插入字符的代码。
++     返回一个不可变的 `Array[Int]`，其中偏移量按升序排列：偏移量 `p` 表示可以在第 `p - 1` 个和第 `p` 个字母之间放置连字符。
++     它把整段文本当作一个单词，使用 given 的 `Hyphenation` 自身的 `leftMin` 和 `rightMin`；对于连续的正文，请使用 `syllables` 或 `hyphenate`。
+
+% 2 1 0 032b05fb124b3d310e67d3ce01eea9e0
+
+% 3 1 0 0761755d7bade41f02d42462ebe5fce0
+
+% 4 1 0 0dd5653c3d509c900d6d109ad6ae1f47
+
+% 0 1 0 189ca7324de5f65d1b1feb2adba09e4e
+
+% 1 1 0 03035af83cee2edb1066057674f7051d
+
+@ 0 1 0 1444a2e1ffe13bc500f57881fa33c0ce
++ entry .hyphenations   附带的断字语言，每个都是要按名称导入的 given
+
+% 1 1 0 1629fae86b6f60190fd75896fb785205
+
+@ 0 3 0 0d534221c1d237750dbafe6d6493f19f
++       一个选择包：采用哪种语言的规则，由作用域内 given 的 `Hyphenation` 决定，并且要按名称导入其中一个，因为 `import hyphenations.*` 不会导入 given。
++       它与 `soundness` 总括包的 `hyphenations` 包合并。
+
+% 2 1 0 0f040206f73090f00257a612fca9a2ab
+
+% 3 1 0 09ed33ebc8ddc78c149a8c596300265b
+
+% 4 1 0 1dd50837050f28301f65fc87498adc20
+
+% 1 1 0 0d6ff2d3864c33ef17b1d3fe0f640cf6
+
+@ 0 6 0 18d7f3badfdfd25f06ab3365761d8f15
++   entry .englishHyphenation   美式英语，来自 CTAN hyph-utf8 模式和 TeX 的例外列表
++       在首次使用该 given 时，从 `polysyllabic/hyph-en-us.tex` 解析；该文件附带在类路径上，并按其文件头中 FSF 全许可许可证原样再分发。
++       它带有 TeX 随附的例外，因此 `associate` 断为 `as-so-ciate`，`table` 断为 `ta-ble`，而单靠模式做不到这一点。
++       如果类路径上缺少附带的文件，该 given 会 panic。

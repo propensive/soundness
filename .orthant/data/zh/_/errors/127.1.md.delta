@@ -1,0 +1,73 @@
+orthant 2 language
+
+% 0 1 0 1a819e12af1e10420b359c15aeb280f7
+
+@ 0 1 0 0c25ae29595f689518db5f24a068e197
++ 当 Tarantula 的 WebDriver 操作在浏览器内失败时抛出。
+
+@ 0 1 0 1d8ed6a2d2412a231ea0d46e12dff5b7
++ ## 原因
+
+@ 0 9 0 0d37071bdd0703c602de0d5b829af6dd
++ 远程 WebDriver 返回了错误响应：状态码为 4xx 或 5xx，其正文携带 W3C 错误对象 `{"value":{"error":…,"message":…,"stacktrace":…}}`。
++ 构造器接受一个 `reason: Reason`（从 `error` 字段解码，是 W3C WebDriver 错误代码之一）、作为 `detail` 的浏览器提供的 `message`、按换行拆分后作为 `browserStacktrace` 的 `stacktrace`，以及规范中可选的 `data` 对象，后者在 `unexpected alert open` 时携带提示框的文本。
++ 渲染出的消息为 `the WebDriver action failed because $reason: $detail`。
+
+@ 0 2 0 179cdf7f9c3633380ad07e33244dea7c
++ 解码是全函数：规范后来新增的代码或驱动程序特有的代码会成为 `Other(code)`，而不会丢失。
+
+@ 0 1 0 0982d44e8aec0bbd176df78e68656684
++ ## 变体
+
+@ 0 4 0 1ee1cc5e9a7963ba187c75ec16dcd4ee
++ 下列子代码是固定不变的。
++ `↯/s.127.1.1` 到 `↯/s.127.1.8` 保持其最初发布时的含义——包括位于 8 的 `Other`，这也是列表没有按字母顺序排列的原因——此后新增的代码从 9 开始依次追加。
+
+% 0 1 0 0a7c55b4c0ac40601a46d9fdcd155626
+
+@ 0 34 0 1caee15ccd2fa75f13deeac82d403af0
++ column  代码
++ column  变体
++ column  线上代码
++ column  含义
++ column  解决方法
++ row  `↯/s.127.1.1`  `NoSuchElement`  `no such element`  操作所针对的元素不在 DOM 中。  核实定位方式和目标；在对元素操作之前等待它出现。
++ row  `↯/s.127.1.2`  `StaleElement`  `stale element reference`  该元素此前已被定位，但之后已从 DOM 中移除或被替换。  在导航或 DOM 变动之后重新定位该元素，再重试。
++ row  `↯/s.127.1.3`  `NoSuchWindow`  `no such window`  操作所引用的窗口或标签页句柄不存在。  确认窗口句柄是当前有效的；在操作之前切换到一个有效的窗口。
++ row  `↯/s.127.1.4`  `JavascriptError`  `javascript error`  WebDriver 求值的脚本抛出了异常。  检查脚本以及所提供的 `detail`，找出底层的 JavaScript 异常。
++ row  `↯/s.127.1.5`  `ScriptTimeout`  `script timeout`  异步脚本没有在配置的超时时间内完成。  调高脚本超时时间，或修正脚本使其及时完成。
++ row  `↯/s.127.1.6`  `Timeout`  `timeout`  WebDriver 操作在完成之前超时。  调高相应的超时时间，或修正页面使所等待的条件能够满足。
++ row  `↯/s.127.1.7`  `UnknownCommand`  `unknown command`  WebDriver 不认识所发出的命令。  确认该 WebDriver 版本支持此操作；必要时升级驱动程序。
++ row  `↯/s.127.1.8`  `Other`  *（任何无法识别的代码）*  WebDriver 报告的错误代码无法映射到其他任何分支。原始代码保存在 `Other(code)` 参数中。  查阅 W3C WebDriver 规范或驱动程序自身的文档，了解所报告的代码。
++ row  `↯/s.127.1.9`  `ElementClickIntercepted`  `element click intercepted`  点击会被另一个元素接收——通常是遮罩层、模态框或固定的页头。  把目标滚动到视图中，取消遮挡它的元素，或通过 actions API 点击。
++ row  `↯/s.127.1.10`  `ElementNotInteractable`  `element not interactable`  元素在 DOM 中，但无法接受交互。  等到元素显示并启用；检查它的尺寸不为零，也没有 `pointer-events: none`。
++ row  `↯/s.127.1.11`  `InsecureCertificate`  `insecure certificate`  页面使用了不受信任的证书，导航因此被阻止。  在创建会话时请求 `acceptInsecureCerts` 能力。
++ row  `↯/s.127.1.12`  `InvalidArgument`  `invalid argument`  命令的某个参数不是规范所要求的类型，或不在其要求的范围内。  对照规范中该命令的说明检查参数。
++ row  `↯/s.127.1.13`  `InvalidCookieDomain`  `invalid cookie domain`  为当前文档以外的域设置了 cookie。  在设置 cookie 之前先导航到它所属的域。
++ row  `↯/s.127.1.14`  `InvalidElementState`  `invalid element state`  元素的状态不允许该命令——例如清空一个不可编辑的元素。  检查元素是否可编辑，或改用脚本执行。
++ row  `↯/s.127.1.15`  `InvalidSelector`  `invalid selector`  定位器对其定位方式无效。  检查 CSS 选择器或 XPath 表达式。
++ row  `↯/s.127.1.16`  `InvalidSessionId`  `invalid session id`  会话已不再活动：它已被删除，或浏览器已终止。  打开一个新的会话；不要在会话句柄所属的代码块之外保留它。
++ row  `↯/s.127.1.17`  `MoveTargetOutOfBounds`  `move target out of bounds`  指针操作所指向的坐标位于视口之外。  把目标滚动到视图中，或使用相对于元素的指针原点。
++ row  `↯/s.127.1.18`  `NoSuchAlert`  `no such alert`  在没有打开的用户提示框时发出了提示框命令。  在接受、取消或读取提示框之前，先检查是否有打开的提示框。
++ row  `↯/s.127.1.19`  `NoSuchCookie`  `no such cookie`  当前文档没有关联该名称的 cookie。  检查名称、文档的域以及 cookie 的路径。
++ row  `↯/s.127.1.20`  `NoSuchFrame`  `no such frame`  操作所引用的框架句柄或索引不存在。  检查框架索引或元素；先切换回顶层上下文。
++ row  `↯/s.127.1.21`  `NoSuchShadowRoot`  `no such shadow root`  该元素不承载 shadow root。  检查该元素承载的是开放的 shadow root；封闭的根无法访问。
++ row  `↯/s.127.1.22`  `DetachedShadowRoot`  `detached shadow root`  shadow root 已被定位，但其宿主之后已离开 DOM。  在 DOM 变动之后重新定位宿主元素及其 shadow root。
++ row  `↯/s.127.1.23`  `SessionNotCreated`  `session not created`  驱动程序无法启动会话，常见原因是浏览器与驱动程序版本不匹配，或缺少浏览器可执行文件。  检查驱动程序与已安装的浏览器是否匹配；检查所请求的能力。
++ row  `↯/s.127.1.24`  `UnableToSetCookie`  `unable to set cookie`  驱动程序无法设置该 cookie。  对照当前文档检查 cookie 的域、路径以及 `secure` 和 `sameSite` 属性。
++ row  `↯/s.127.1.25`  `UnableToCaptureScreen`  `unable to capture screen`  无法截取屏幕截图。  检查元素的渲染区域不为空，并且窗口没有最小化。
++ row  `↯/s.127.1.26`  `UnexpectedAlertOpen`  `unexpected alert open`  发出一个不需要提示框的命令时，有一个用户提示框处于打开状态。  接受或取消该提示框，或设置 `unhandledPromptBehavior` 能力。
++ row  `↯/s.127.1.27`  `UnknownError`  `unknown error`  驱动程序报告了一个它无法归类的失败。当驱动程序回复的正文根本不是 W3C 错误对象时也会抛出此错误——例如驱动程序崩溃，或中间插入了代理——此时 `detail` 是原始正文。  检查 `detail` 和 `browserStacktrace`；查看驱动程序自身的日志。
++ row  `↯/s.127.1.28`  `UnknownMethod`  `unknown method`  命令存在，但不支持所用的 HTTP 方法。  对照规范检查该命令的方法。
++ row  `↯/s.127.1.29`  `UnsupportedOperation`  `unsupported operation`  驱动程序没有实现该命令。  检查驱动程序的符合程度；有些命令（例如打印为 PDF）并非所有驱动程序都支持。
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 1 0 049e889922499161174f4ee0d4df31fc
++ **示例。** `[↯/s.127.1.1] the WebDriver action failed because the requested element was not found: no such element: Unable to locate element: {"method":"css selector","selector":"#absent"}`
+
+@ 0 1 0 004f241cb4a4ed0405cb108ee75b2611
++ ## 另请参阅
+
+@ 0 1 0 10d9373243515ac1068526c2569edd29
++ - 源码：`lib/tarantula/src/core/tarantula.WebDriver.scala`

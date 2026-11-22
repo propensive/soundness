@@ -1,0 +1,29 @@
+orthant 2 language
+
+% 10 1 0 0910609b9679525c13cff87a432f4ae2
+
+% 10 1 0 1cb9e1b064257f0f16b50789eafee86e
+
+% 10 1 0 109f42a57f87821b140bc3d53c7858ea
+
+@ 0 32 0 0b5c195f738b6d571cb44228d729119f
++         这是 `Web` 中每个工厂方法返回的类，使供给有一个稳定的类型：`Web.Provision[family](sources, coverage)` 是一个 `(Typeface of family) is Typesettable in Web`，其 `#sources` 是浏览器获取该字体族所用的 `Typesettable.Source`，其 `#coverage` 是声明它时使用的 `Font.Coverage`。
++         `FontFace.rules` 一次渲染一个来源。
++     entry #sources   浏览器获取字体族的地方：链接、导入、本地或通用
++     entry #coverage   声明该供给所提供的字重、倾斜、字宽和轴
++     entry #Self   所供给的字体族，`Typeface of family`
++     entry #Form   媒介，`Web`
++   entry .sansSerif   通用 `sans-serif` 字体族，在 Web 上无需声明即已供给
++       浏览器用它手头已有的字体排版每个通用字体族，因此该供给只有一个 `Generic` 来源和 `Font.Coverage.Unknown`，后者接纳每一个字样；它不渲染任何 at 规则，并渲染不带引号的 `font-family: sans-serif`。
++   entry .serif   通用 `serif` 字体族，无需声明即已供给
++   entry .monospace   通用 `monospace` 字体族，无需声明即已供给
++   entry .cursive   通用 `cursive` 字体族，无需声明即已供给
++   entry .fantasy   通用 `fantasy` 字体族，无需声明即已供给
++   entry .systemUi   通用 `system-ui` 字体族，无需声明即已供给
++   entry .linked   来自浏览器从某个 URL 获取的字体文件的供给
++       `Web.linked[family](url, coverage, format)` 接受任何 `Abstractable across Urls to Text` 的 URL 类型（来自 `url"…"` 的 `HttpUrl`，或文本）、该文件声明具有的 `Font.Coverage`——由于文件不在手边、无法读取，只接纳所声明的内容，因此声明为单一字重的字体会拒绝对另一字重的请求，而不是让浏览器合成它——以及一个可选的 `Typesettable.Source.Format`（`Ttf`、`Otf`、`Woff` 或 `Woff2`），用作 `format()` 提示。
++       `family` 类型参数通常从 given 声明的类型推断。
++       它渲染为一个 `@font-face`，其 `src` 为 `url("…") format("woff2")`。
++   entry .local   来自预期读者已安装的字体的供给
++       `Web.local[family](coverage)` 在 `src: local("Name")` 中指定字体族，字体族的名称就是 `family` 字面量。
++       没有任何东西保证读者拥有它，因此这是最弱的供给，其覆盖范围——除非给出，否则为接纳每个字样的 `Font.Coverage.Unknown`——只说明所声明的内容。

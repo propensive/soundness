@@ -1,0 +1,35 @@
+orthant 2 language
+
+@ 0 1 0 0658b673ccba045a15ce4b619cf4706c
++ # `↯/s.62.2` — 环境变量未定义
+
+@ 0 2 0 0e27100ec70a50170f4134620683fc14
++ 当程序所需的环境变量未在当前 `Environment` 中定义时抛出。
+
+@ 0 1 0 1d8ed6a2d2412a231ea0d46e12dff5b7
++ ## 原因
+
+@ 0 3 0 1590558cc6e6e1fa0156dbcd3f304c79
++ Ambience 通过 `Environment` 类型类查找环境变量。
++ 如果所指名的变量不存在，即 `System.getenv` 不返回任何值，就会抛出此错误。
+
+@ 0 1 0 1dde240f21b5409104721a1bcf5ec317
++ ## 示例消息
+
+% 1 1 0 1abf28c8819c4a100ba2af9cc74b39c0
+
+% 0 1 0 00e844a9ee6491b20e56a069f60839aa
+
+% 1 1 0 15e5024946dc9a9517fdc308a7eee7b5
+
+@ 0 1 0 0a3dc9137d3cf72f0228e7373e7a2cbf
++ ## 解决方法
+
+@ 0 2 0 0dfba71e9b58c75c153b5f6b3b44df4e
++ 在运行程序之前设置该环境变量，或者使用返回 `Optional` 的访问方法而不是严格的访问方法来提供默认值。
+
+@ 0 1 0 004f241cb4a4ed0405cb108ee75b2611
++ ## 另请参阅
+
+@ 0 1 0 07c043842a0778440f351038f505af2a
++ - 源代码：`lib/ambience/src/core/ambience.Environment.scala`

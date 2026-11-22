@@ -1,0 +1,54 @@
+orthant 2 language
+
+% 0 1 0 03b39a17f3fb9a0409fcda5d5b61298a
+
+@ 0 3 0 145ee454bd282db10fb8ef5b2ec42a32
++ 当 Language Server Protocol 操作失败时抛出，或由处理函数抛出，以 JSON-RPC 错误响应来答复请求。
++ 每个原因都带有标准的 JSON-RPC/LSP 线上代码，`Lsp.listen` 会将其放入错误响应的 `error.code` 成员中。
+
+@ 0 1 0 1d8ed6a2d2412a231ea0d46e12dff5b7
++ ## 原因
+
+@ 0 4 0 01362123253bc53314617c0e9eae6c37
++ Exegesis 实现了 LSP 线上协议。
++ 此错误涵盖格式错误的消息、服务器无法满足的请求，以及处理函数选择抛出的任何故障：抛出的 `LspError` 会取代处理函数的结果，对请求而言成为错误响应，否则成为 `window/logMessage` 通知。
+
+@ 0 1 0 0982d44e8aec0bbd176df78e68656684
++ ## 变体
+
+% 0 1 0 0a7c55b4c0ac40601a46d9fdcd155626
+
+@ 0 4 0 071dbd18e15a9f5b10fd3d592f1bc703
++ column  代码
++ column  原因
++ column  线上代码
++ column  消息
+
+% 0 1 0 09c51f069fd08f310c9ef8301e2bec58
+
+% 0 1 0 0502f21b65d619b81ddd0a1abe46b659
+
+% 0 1 0 1e2b3edf5f1dee891a614925cde4f4fa
+
+% 0 1 0 14c7451d016421a51fb01f3ba499ddb9
+
+% 0 1 0 1c106cc65cc5d9790e80aae5fb5e7e53
+
+% 0 1 0 11ef8ee6bef543240ed41d8039d49041
+
+% 0 1 0 111b3a20ccd636a21112d2c6935d1b0d
+
+% 0 1 0 1449dc8d64df26ca1cde9e0a910b817b
+
+% 0 1 0 0641aac9691363dc0fad88d61d8c754b
+
+% 0 1 0 04a55e9baca7418603d7596922ef73db
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 1 0 0a3dc9137d3cf72f0228e7373e7a2cbf
++ ## 解决方法
+
+@ 0 5 0 1e00c1aa9db7a5c611a9b35fc5b7868a
++ 原因区分了协议故障与格式正确但无法得到服务的请求。
++ 协议故障通常意味着客户端与服务器对协议版本或消息分帧的理解不一致；`RequestFailed` 之类由处理函数抛出的原因描述的是服务器自身的拒绝，其详细信息会在错误响应的消息中转发给客户端。

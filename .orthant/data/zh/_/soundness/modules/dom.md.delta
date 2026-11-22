@@ -1,0 +1,305 @@
+orthant 2 language
+
+@ 0 1 0 005d7fa09445bfe10f069ac9767876cb
++ ## 浏览器 DOM
+
+@ 0 1 0 02ed9263154c2802081b650b8e2f33e5
++ ### 概述
+
+@ 0 4 0 074b97cf54f2228d1017f87c3fd2a3c4
++ 网页是一棵由活动对象组成的树：文档、其中的元素，以及包围它们的窗口。
++ 浏览器用 [WebIDL](https://en.wikipedia.org/wiki/Web_IDL) 发布这些对象的接口，说明 `Document` 有哪些成员、`getElementById` 接受什么参数、返回什么。
+
+@ 0 4 0 09bb2b19f705827e1c0236a92471a633
++ 这些定义在[编译时]读取。
++ 针对页面的表达式，例如查找一个元素、让它获得焦点或滚动窗口，以 Scala 编写。
++ 它会依据浏览器自身的声明逐个成员地检查，并输出为 JavaScript 供页面运行。
+
+@ 0 5 0 17efadc0699315e31d41cdb47b0f25f8
++ 页面的全局对象 `document` 和 `window` 是 `Browser` *生态系统*中的外来值。
++ 导航它们就如同 DOM 的接口是 Scala 类型一样，每一步都给出另一个具有声明类型的外来值。
++ 得到的表达式可以序列化为 JavaScript 文本，也可以直接放进 [HTML](html.md) 元素的事件处理函数属性中，例如 `onclick`。
+
+@ 0 1 0 01adf852a6ee47a70481b1a5a8f72f5d
++ ### 关于在 Scala 中为浏览器编写脚本
+
+@ 0 5 0 14325381f9e11b1004f9e38a108dd2d7
++ 生成页面的 Scala 程序运行在 JVM 上，但它附加到页面上的行为运行在浏览器中。
++ 弥合这一差距的常见方式是字符串：`onclick="…"`，其中的 JavaScript 编译器从不会看到。
++ 拼错的方法、类型错误的参数、在非元素对象上的调用，都能通过编译，然后在别人的浏览器中失败，或悄无声息，或大张旗鼓。
+
+@ 0 3 0 080c8e6dab96e43801baaf1dce892686
++ 这里没有任何东西在 JVM 上运行 DOM。
++ 对 `document` 的导航构建的是一个*表达式*：一棵由引用、选择和应用组成的有类型的树。
++ 它本身什么也不执行。
++ 表达式被序列化为 JavaScript，交给页面。
+
+@ 0 4 0 05c1bb138f9d1ff30aab6cb5e579b291
++ 编译器检查的是构造过程。
++ 成员必须存在于外来类型上，参数必须是具有已知外来对应物的 Scala 值。
++ 这一机制就是[外部接口](foreign-interop.md)的通用机制，以浏览器为其生态系统，以 DOM 的 WebIDL 为其定义文件。
+
+@ 0 2 0 0912bef352deaa6311e67b789081c2f6
++ 一切都来自 `soundness` 包。
++ 第二个导入让示例可以打印结果：
+
+% 2 1 0 1ac8246fb79068c101a1474fc737cb6e
+
+% 0 1 0 1bca28db88d8e18d0fbcefeaacfc679c
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 1 1 0 02a8d4cb9fa86f7a19de906d90204517
+
+@ 0 1 0 12e4e53cf6e0a6e815e89a2efd82eafd
++ ### 页面的全局对象
+
+@ 0 5 0 108248b68baa6735045df86f6348bb80
++ `document` 和 `window` 的类型分别是 `Foreign of "Document" from Browser` 和 `Foreign of "Window" from Browser`。
++ 二者都是外来值，其*主题*是一个 WebIDL 接口的名称，其*来源*是 `Browser` 生态系统。
++ 它们各自代表同名的 JavaScript 全局对象，仅此而已：一个在页面运行时才解析的引用。
+
+% 2 1 0 0fecee226bfa72b8067130a78fc84780
+
+% 0 1 0 189bb719b9ed07de0b3a2290d41fac0b
+
+% 0 1 0 059572b12f787fe70c067e7f7bd09f38
+
+% 1 1 0 1d8ca1de5060d65c1fc5bc332dfdf845
+
+@ 0 2 0 0713f4fc34cde3e61b8e2fa4980d27ba
++ `Browser` 生态系统有自己的接口定义，因此从这两个值出发进行导航无需额外的导入。
+
+@ 0 1 0 11bfb84158a274d41257ac8f3f182b31
++ ### 导航 DOM
+
+@ 0 5 0 093d0757a91a1f551add1f0cbebaa886
++ 外来值的成员就是其 WebIDL 接口所声明的成员，选择其中之一会得到一个具有声明结果类型的外来值。
++ `Document` 声明了 `getElementById`，它返回 `HTMLElement`。
++ 因此结果可以继续导航到 `HTMLElement` 的成员，例如 `focus`、`click` 和 `blur`。
++ 继承关系被展平，因此 `HTMLElement` 也提供 `Element` 和 `Node` 声明的一切：
+
+% 2 1 0 092ec0c8e919d4a70d62734eaf40bf47
+
+% 0 1 0 11548e735f2931c70958ff45c93e124f
+
+% 0 1 0 194571ed9b4e548b0094724c99251f48
+
+% 0 1 0 1f0cc5383f98c252120d31767ef24956
+
+% 1 1 0 008d3320131677aa0a0e882bb2439fa8
+
+@ 0 3 0 109b4582561f0f561d5c846b51743b11
++ `querySelectorAll` 返回一个序列，序列用整数索引，得到其声明类型的元素。
++ `Window` 声明了一个 `document` 属性，因此同一个页面可以经由任一途径访问：
+
+% 2 1 0 0cc432b92e86d8ee0976f68b1287947f
+
+% 0 1 0 12af19e48d1f2f0417099fa428940385
+
+% 0 1 0 01e423a5f90f50150f930f16d0da3440
+
+% 1 1 0 16661b3cc5db2f0405125a1f51bd30cb
+
+@ 0 3 0 186e67708d38129812f54995d2da60f3
++ 接口未声明的成员是编译错误。
++ 这正是浏览器原本会以 `undefined is not a function` 报告的错误，如今在编写表达式的地方就被捕获：
+
+% 2 1 0 030766fb5497fb250918eac65e9dc760
+
+% 3 1 0 15c58706c8c08a6418e36f9bdfc7fc42
+
+% 4 1 0 0e33c72d16c47d8e16b5db2a9d5f1349
+
+% 5 1 0 1f1b5a920d5fec7d0da4d6d0f86f21e3
+
+% 0 1 0 0c0a58052422079b10fb8980a27b0d57
+
+% 1 1 0 081802b71e030752191e33cd18f4c631
+
+@ 0 1 0 0546aa46f8fb8fee10adcd7f30efaa58
++ 类型错误的参数也是如此：
+
+% 2 1 0 11863798d40b39440e3d7b67d02602d0
+
+% 3 1 0 1dc8d933b46e11190eb27bb2f8eed8f0
+
+% 4 1 0 0329856f89cf99b00d144f931f7254ee
+
+% 5 1 0 19519a08a6ab684e09c8316e2e6f13fc
+
+% 0 1 0 1ffe2fa8ebaa38740ae1ea4321d63818
+
+% 1 1 0 1d167dbe8b33cf2d09e562fd0e332683
+
+@ 0 1 0 08831c81a048652c18e78a48ce133b50
++ ### 跨越边界的值
+
+@ 0 2 0 06ac5e93440a33b40f63e369493113f1
++ 只有当一个 `Interoperable` 实例说明了 Scala 值对应哪种外来类型时，该值才能作为参数传递：
+
+% 2 1 0 0ec669421c7d2d8d1fdbb739ceb23903
+
+@ 0 2 0 1082ebf8cc39d7150eeb471297135337
++ column  Scala 类型
++ column  WebIDL 类型
+
+% 0 1 0 1126ec99012c6af807be25ecc0f32ed9
+
+% 0 1 0 07dc4de44152fbf01f6b04d80962e18f
+
+% 0 1 0 10e507d18880d15814c070f3660ac305
+
+% 0 1 0 18ce2f012a33b4c30382e700c19b586e
+
+% 0 1 0 02b0b30713d242bf0edc6f6d029f8702
+
+% 0 1 0 0d0c02386db5d5a20fa8b440e74f1590
+
+% 0 1 0 01dd63dd599abe5d132aabc320a3b4ec
+
+% 0 1 0 004a452c7b6294fd0345f8975c79e627
+
+% 0 1 0 0ed0fc42ec3b3f4106cb215dc9cdbf28
+
+% 0 1 0 1f3a0e5d4ba1a8b01ba7c30f3cb23f6a
+
+% 0 1 0 1bbcc59ea0d9367502c81f8eccd75374
+
+% 0 1 0 060bafbbcfa44864077a1a65f16a1f6b
+
+% 0 1 0 06ace1e01976b47f11de60fb9ec11a15
+
+% 0 1 0 097e521a2a6095d71db3a353e88bf847
+
+@ 0 1 0 0d634fa96910c27e0e3f3e4585ec6bd2
++ row  `Optional[T]`  `T?`，以 `Unset` 表示 `null`
+
+% 1 1 0 0495b2129035d5e01b41f0e3c782fda6
+
+@ 0 2 0 0b7737f7eb94111201697f9c2d127bdc
++ 数字是[有大小的](numbers.md#numeric-types)，因此声明为 `long` 的参数接受 `S32`，而不是无大小的 `Int`：
+
+% 2 1 0 153844ded7d683a7003ad4988942e09f
+
+% 0 1 0 1d89add1113ca3730afcf506b4740a1c
+
+% 0 1 0 11e352aaed20d95f024f4a119f3d52cd
+
+% 0 1 0 0992721f4226753f11b278ca1a7ecee9
+
+% 1 1 0 17ba4efbdda109a810ab936a6a5fe6c7
+
+@ 0 3 0 16655e9245f934461c26cf9ff8135684
++ 每个参数都依据其形参的声明类型，以外来类型系统自身的术语进行检查。
++ `scrollTo` 需要两个外来类型 `s32` 的值，而 `S32` 正是提供这种值的 Scala 值。
+
+@ 0 1 0 061543aab79d3b421ab9f676ffb1f2fb
++ ### 序列化为 JavaScript
+
+@ 0 2 0 0b64b1f9d664d0cb0b471dd3294e63ec
++ 外来值的 `expr` 是它的表达式，即一个 `Foreign.Expression`，这是一棵由以下节点组成的小树：
+
+% 2 1 0 16adbe11a3836520115f14e5bd0dc68e
+
+@ 0 8 0 110e475be4671e6319481ac066455902
++ column  节点
++ column  代表
++ column  渲染为
++ row  `Reference(name)`  全局对象  `document`
++ row  `Select(target, member, owner)`  值的成员  `target.member`
++ row  `Apply(target, arguments)`  调用  `target(arguments)`
++ row  `Index(target, index)`  索引访问  `target[index]`
++ row  `Literal(value)`  常量  `'text'`, `42`
+
+% 1 1 0 1746897799a706c1138e2dfa22ab9395
+
+@ 0 1 0 1335f65964cbc8a8000268c505a978a4
++ `Javascript.serialize` 将这棵树写成 JavaScript 源代码文本：
+
+% 2 1 0 04842bd69f461128149605c5ce9b0352
+
+% 3 1 0 10481ec2f312ec0b10a9b835734694b6
+
+% 4 1 0 1c00c0d3e42a1c3706c8ace1c4c7050e
+
+% 0 1 0 1aeff8b033bbde6317de96c1e415def5
+
+% 0 1 0 0fbcf02b250e51170fdfeefd369c4fe4
+
+% 0 1 0 13296006bb9760a3147e8e72dd1d4ff7
+
+% 1 1 0 0753306c92fda43a0f3b351ac46d9023
+
+@ 0 3 0 108f2ebb5de6a375172c3d6874816275
++ 字符串字面量用单引号书写，因此输出可以干净地嵌套在 HTML 属性的双引号中。
++ 文本中的反斜杠、引号或换行符会被转义：
+
+% 2 1 0 08566c130eb30cd1069318f82721aa1e
+
+% 3 1 0 1dbc507f5a751c9b1c0e4a48e2f96cd1
+
+% 4 1 0 04ed83142694d603031e8075b9ceacae
+
+% 0 1 0 0e9e133d6f34e209160a9c9219d17e7d
+
+% 1 1 0 116cd498faa0906b1f824fc1a8671de5
+
+@ 0 4 0 1e99741084085f1114ac73aa881477e1
++ 表达式本身是普通数据，可以检视，也可以对其进行匹配。
++ 上面第一个示例是一个 `Apply`，作用于名为 `document` 的 `Reference` 的一个 `Select`，带有单个 `Literal` 参数；针对生成脚本的[测试](testing.md)可以准确地对这一结构进行断言。
+
+@ 0 1 0 150605148ec3f18405e53c45403b02f1
++ ### HTML 属性中的脚本
+
+@ 0 4 0 171927562969e0b503a1412bdd26766a
++ HTML 元素的事件处理函数属性，例如 `onclick` 或 `onchange`，需要一个*脚本*。
++ 这是一种独特的属性类型，普通文本无法满足。
++ 外来的 DOM 表达式可以满足它，并在页面显示时序列化为 JavaScript：
+
+% 2 1 0 1f277e16b752848511c4a01f206895c9
+
+% 0 1 0 10a015fbb549ff8011f948ce95f0e5d2
+
+% 0 1 0 052609c9df6005f31476d42073da1093
+
+% 1 1 0 04e4d53ee1034b651a88645d9ae06439
+
+% 2 1 0 1525a46c87e9e0571e7d21b8e7c42b7a
+
+% 3 1 0 04c049ea837a3e4c17c50ffc346d11a6
+
+% 4 1 0 1025778e8f9b9a8b0fdea80a22512f3a
+
+% 0 1 0 078de6bd1092872f1a63ab7518f04b20
+
+% 1 1 0 18e3835743be51e51e547f787d676989
+
+@ 0 3 0 14f9c93d623d92df117425fd9305eea6
++ 在同一位置使用字符串会被拒绝，这正是这一区分的意义所在。
++ 到达页面的 JavaScript 是通过导航 DOM 自身的定义构造出来的，任何未经检查的文本都无法取而代之：
+
+% 2 1 0 0b21f50d36ac2f2c0110c50d00cad919
+
+% 3 1 0 1e3021151723d87d1ee55db30517c6ac
+
+% 4 1 0 0bf4de4ff38f5d1a0343f67c76f969c1
+
+% 5 1 0 14eb40d0eb14a03c116e143d85fb064f
+
+% 0 1 0 08f1a5c1d6f0fac9044110bbe0a13a29
+
+% 1 1 0 13a6df30577858c618a3147047bcff3c
+
+@ 0 3 0 1d4daf4891a70cf113732bc4777d6168
++ 只接受来自 `Browser` 生态系统的外来值。
++ 来自其他生态系统的外来表达式，例如 TypeScript 声明或 WebAssembly 接口，具有相同的形状，却无法在页面中运行。
++ 无论类型多么完善，它都不能作为事件处理函数。
+
+@ 0 1 0 0a15ebad305c934c1527dd3a42e83d7a
++ ### 相关
+
+@ 0 4 0 1a01601560f03d7b1517463f38bccfa3
++ - [HTML](html.md#attributes) 构建脚本所附加的元素。
++ - [外部接口](foreign-interop.md) 介绍适用于其他生态系统的通用机制。
++ - [Web 自动化](web-automation.md) 从页面外部驱动真实的浏览器。

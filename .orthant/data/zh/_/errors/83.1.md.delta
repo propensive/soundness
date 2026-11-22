@@ -1,0 +1,56 @@
+orthant 2 language
+
+% 0 1 0 0bd203cf7cc43f6c19224d6e1cab1fc1
+
+@ 0 1 0 154ba8dbdc449ebd006112aae701d3f0
++ 当 Caesura 无法解析一行分隔符分隔值时抛出。
+
+@ 0 1 0 1d8ed6a2d2412a231ea0d46e12dff5b7
++ ## 原因
+
+@ 0 3 0 189f2e7b158c6178157920cdb732076f
++ Caesura 按照 `DsvFormat` 解析 CSV/TSV/DSV。
++ 解析器在输入格式错误时抛出此错误。
++ 消息为 `could not parse row data because $reason`。
+
+@ 0 1 0 0982d44e8aec0bbd176df78e68656684
++ ## 变体
+
+% 0 1 0 1ec3bb3f254f39f30e05a5b9f11615c8
+
+@ 0 2 0 0a69381bd877710d1d06e963c0ef75ef
++ 引号字符出现在单元格开头之后，而解析器在那里并不期望出现引号。
+
+@ 0 1 0 0787cf5670e0cae91753b4fb435b0b26
++ **示例。** `[↯/s.83.1.1] could not parse row data because a quote was found after the start of a cell`
+
+@ 0 2 0 1bd3a61880db20b7087eb1abc6faccfb
++ **解决方法。** 要么按照格式的引用规则对引号进行转义，要么给整个字段加上引号。
+
+% 0 1 0 08c6ee09ab059447039233f5fb2dd7c0
+
+@ 0 1 0 165a8e12a24e068e0ac25c3061367797
++ 该行在解码器期望的位置上没有单元格。
+
+@ 0 1 0 1c37e9c868ba1e56195e78c5051ced93
++ **示例。** `[↯/s.83.1.2] could not decode the cell because the cell was absent`
+
+@ 0 1 0 13febc6ff8d84f9e0f71b41c6aec242f
++ **解决方法。** 检查该行的列数是否与目标类型的字段数相同，并记住嵌套的 case class 会跨越多列。末尾的 `Optional` 字段可以合法地缺失。
+
+% 0 1 0 0b4005fca7515b150d6abd3d74049861
+
+@ 0 1 0 0c28e06ef72bea0302260934367c47f2
++ 单元格的文本无法读取为字段所声明的类型。
+
+@ 0 1 0 07b42b33a6aceff11aa32139676e1e08
++ **示例。** `[↯/s.83.1.3] could not decode the cell because the value abc could not be parsed as Int`
+
+@ 0 1 0 0c652e8b84be51a412756d9d2f815a49
++ **解决方法。** 更正数据，或放宽字段的类型。在累积式策略下，文件中每个有问题的单元格会被一次性全部报告。
+
+@ 0 1 0 004f241cb4a4ed0405cb108ee75b2611
++ ## 另请参阅
+
+@ 0 1 0 0ec59bb94052fb7c156525ffbf2d126c
++ - 源代码：`lib/caesura/src/core/caesura.Dsv.scala`

@@ -1,0 +1,498 @@
+orthant 2 language
+
+@ 0 1 0 1d008cc0ff8693ed0229956a30cd6510
++ # 自 0.75.0 以来的变更
+
+@ 0 3 0 0972e5418f586730140d290f3edcf136
++ 本文件供 LLM 智能体读取，用于把使用 Soundness 库的代码从 0.75.0 升级到下一个版本。
++ 每个条目准确说明了发生的变化；格式见 `AGENTS.md`。
++ 条目按模块分组，在同一模块内，最近添加的条目排在最后。
+
+% 0 1 0 0709addc77995521151ea74263edf6fe
+
+@ 0 5 0 0bba235b021c8105174de52dd74a897a
++ - `caesura.dsvRedesignations.lowerDottedRedesignation` 现在用 `.` 连接字段名中转为小写的各个单词（`targetPerson` → `target.person`），`caesura.dsvRedesignations.lowerSlashedRedesignation` 则用 `/` 连接（`targetPerson` → `target/person`）；两者以前都像 `lowerWordsRedesignation` 一样用空格连接。
++   在这两个 given 之一下读取或写入的文件必须使用点分或斜线分隔的表头。
++   (#2439)
+
+% 2 1 0 03efc212dcfae9921d54f61e4e5ee244
+
+@ 0 3 0 0dcd5e96db7d4a380e356f59b0a40114
++ - `perihelion.Websocket.Error.Reason.Truncated` 现在呈现为 "the connection closed before the frame was complete"；它的 `Communicable` 实例以前没有对应的分支，因此描述这样的错误会抛出 `MatchError`。
++   (#2439)
+
+% 0 1 0 07cbf3671591ab0617673a498a92a7dd
+
+@ 0 5 0 0d49bf869256fcc016b255f7ee16ec87
++ - 移除了 `scala.collection.Iterable[element]` 接收者上的 `contingency.survive`（`extension [element](sequence: Iterable[element]) transparent inline def survive[result](using erased Void)[error <: Hazard](lambda): Iterable[result]`）。
++   适用的是剩下的、作用于任何 `self is murmuration.Traversable by element`（包括所有 stdlib `Iterable`）的 `contingency.survive`，它返回 `proscenium.List[result]` 而不是 `Iterable[result]`。
+
+% 1 1 0 1836eb8c2f8b66ca086bd5706ae6acc0
+
+% 0 1 0 0370a3eea40039ca144eb5e325204513
+
+@ 0 20 0 0349efedfffb7ef60d79c03c9818eadb
++ - `mercator.sequence` 从 `extension [monad[_], collection[element] <: Iterable[element], element](elems: collection[monad[element]])(using Monad[monad]) def sequence(using BuildFrom[scala.collection.immutable.List[element], element, collection[element]]): monad[collection[element]]` 改为 `extension [self](self: self)(using traversable: self is murmuration.Traversable) def sequence[monad[_], element, result](using traversable.Operand <:< monad[element], Monad[monad], self is murmuration.Reshapable by element to result): monad[result]`。
++   它现在适用于 `proscenium.List`、`Set`、`Sequence`、`Chain`、冻结的 `Array` 以及其他所有具有 `Reshapable` 实例的 `Traversable`，并重建相同的形状；它不再适用于 stdlib 集合（`scala.collection.immutable.List`、`Seq`、`Set`、…），因为它们没有 `Reshapable`，只有 `scala.collection.immutable.IndexedSeq` 例外：请先用 `proscenium.List.from(…)` 转换它们。
++   (#2442)
++ - `mercator.traverse` 以同样的方式改变：从 `extension [collection[element] <: Iterable[element], element](elems: collection[element]) def traverse[element2, monad[_]](lambda: element => monad[element2])(using Monad[monad], BuildFrom[scala.collection.immutable.List[element2], element2, collection[element2]]): monad[collection[element2]]` 改为 `extension [self](self: self)(using traversable: self is murmuration.Traversable) def traverse[element2, monad[_], result](lambda: traversable.Operand => monad[element2])(using Monad[monad], self is murmuration.Reshapable by element2 to result): monad[result]`。
++   接收者与 `sequence` 相同；除 `scala.collection.immutable.IndexedSeq` 之外的 stdlib 集合不再适用。
++   (#2442)
+
+% 0 1 0 096c9a5d6239be660ef05a2862eacc3c
+
+@ 0 4 0 197ce9a1874b2b681697f2fe00c0db7b
++ - `polysyllabic.Hyphenation#extending(patterns: Iterable[Text] = Iterable(), exceptions: Iterable[Text] = Iterable(), leftMin: Optional[Int] = Unset, rightMin: Optional[Int] = Unset)` 现在接受 `patterns: proscenium.List[Text] = List()` 和 `exceptions: proscenium.List[Text] = List()`。
++   行为没有变化。
++   (#2442)
+
+% 0 1 0 0c011b4728d05fac197d7cb43b472d78
+
+@ 0 16 0 1a30ab5b31ea97e80f0de11eb489f3a7
++ - `Iterable[Optional[value]]` 上的 `vacuous.compact`（`transparent inline def compact: Iterable[value]`）被 `extension [self](self: self)(using traversable: self is murmuration.Traversable) def compact[value, result](using traversable.Operand <:< Optional[value], self is murmuration.Reshapable by value to result): result` 取代。
++   它现在适用于 `proscenium.List`、`Set`、`Sequence`、`Chain`、冻结的 `Array` 以及其他具有 `Reshapable` 的 `Traversable`，返回相同的形状（`List[Optional[Text]]` → `List[Text]`），并且不再适用于除 `scala.collection.immutable.IndexedSeq` 之外的 stdlib 集合，包括可变参数的 `Seq`：请先用 `.to(proscenium.List)`（或 `proscenium.List.from(…)`）转换它们。
++   调用 `.stdlib.compact` 的代码应去掉 `.stdlib`。
++   `murmuration.Iterator[Optional[value]]^` 上的 `compact` 没有变化。
++   (#2442)
++ - `Iterable[Optional[value]]` 上的 `vacuous.entire`（`def entire: Optional[proscenium.List[value]]`）被 `extension [self](self: self)(using traversable: self is murmuration.Traversable) def entire[value, result](using traversable.Operand <:< Optional[value], self is murmuration.Reshapable by value to result): Optional[result]` 取代：结果具有接收者的形状，而不总是 `List`：`scala.collection.immutable.IndexedSeq` 接收者（例如 `(0 until n).map(…)`）现在产生 `Optional[IndexedSeq[value]]`，其他 stdlib 集合则不再适用。
++   (#2442)
+
+% 0 1 0 027a003138628fc617497a87b3252999
+
+@ 0 20 0 0be38e313c93d2570130da4dcd70f03d
++ - `digression.StackTrace.legend: Map[Text, Text]` 现在以裸字形（`λ`、`ⲛ`、`δ`、`⁅⁆`）为键，而不是以填充到两个字符的字形（`λₙ`、`ⲛ `、`δ `）为键；它派生自新增的 `digression.StackTrace.Marker.all`。
++   `ⲛ` 的描述为 "constructor"（以前是 "class initializer"）；`Σ` 照旧列出，`ζ` 不再产生，并新列出了 `Ξ`、`Λ`、`ι`、`ℓ`、`⇢`、`≔`、`∂`、`⊡` 和 `⊙`。
+
+% 1 1 0 12084ee3e255ff4d041ab9e1375d5ce9
+
+@ 0 3 0 1c2c3e544496e3c60c43161fbe1306ec
++ - `digression.StackTrace.rewrite(name: String, method: Boolean = false): Text` 对以下输入的输出有所改变：`$adapted` 把前面的 `λ` 标为 `Λ`（`lam$$anonfun$1$adapted` → `lam.Λ₁()`，以前是 `lam.λ₁.adapted()`）；`<clinit>` 和 `$init$` → `ι`（以前分别保持不变和变为 `.init.`）；`$lzyINIT`、`$lzy` 和 `$lzyHandle` → `ℓ`（以前是 `#ℓ`、`#lzy`、`#lzyHandle`）；`protected$`、`inline$` 和 `$accessor` → `⇢`；`$_setter_$` → `≔`；`$retainedBody` → `⊡`；`$outer` → `⊙`；`$$Lambda` → `#λ`/`.λ`；`$uXXXX` → 对应的字符；`$mc…$sp` 会消耗其中的标签，因此 `apply$mcII$sp` → `applyΣ(Int -> Int)()`（以前是 `applyΣ(Int -> Int)IIζ()`），并且元数大于一的特化方法的参数现在按顺序排列，结果在最后（`apply$mcJII$sp` → `applyΣ((Int, Int) -> Long)()`，`scala.runtime.java8.JFunction2$mcJII$sp` → `((Int, Int) => Long)` 同理）；裸的 `$sp` 不再是 `ζ`；`Play$$cue`（展开后的私有名称）→ 只带一个分隔符的 `Play.cue()`（以前是 `Play..cue()`），不过 `$$` 后接运算符编码时仍解码为该运算符；编译器已不再生成的 `initial$` 和 `$_avoid_name_clash_$` 不再被改写为 `ι` 和 `′`。
++   `$` 之后的数字、运算符、`$anonfun`、`$anon`、`<init>`、`super$`、`$extension`、`$direct`、`$default`、`$package` 以及模块类没有变化。
++   (#2442)
++ - 新增了 `digression.StackTrace.Marker`：`case class Marker(jvm: Text, glyph: Text, meaning: Text, kind: Optional[StackTrace.Frame.Kind] = Unset)`，以及 `Marker.all: List[Marker]` 和 `Marker.operators: List[(Text, Char)]`。
++   (#2442)
+
+% 0 1 0 17f94539b937dacb1c8f57fb7f04ec71
+
+@ 0 5 0 11d6821c3bca25030878f40fa3433112
++ - `hyperbole.StackResolver.hint(method: Text): Optional[StackTrace.Frame.Kind]` 现在读取 `digression.StackTrace.Marker.all`：包含 `$adapted` 的名称即使同时包含 `$anonfun` 也是 `Bridge`（以前是 `Lambda`）；`super$`、`protected$`、`inline$` 和 `$accessor` 给出 `Forwarder`，`$_setter_$` 和 `$retainedBody` 给出 `Synthetic`（以前是 `Unset`）；不带 `INIT` 的 `$lzy` 不再给出 `Initializer`。
++   (#2442)
+
+% 0 1 0 021b852f7dba238b06ccff9a0d2bb561
+
+@ 0 3 0 15ce7b91445b0ef61619bae723804316
++ - 新增了 `jacinta.JsonSchema.requiredLabels(labels: proscenium.Array[Optional[Text]]^{}): proscenium.List[Text]`：派生 schema 中各字段已存在的标注，由 `jacinta.JsonSchema.conjunction` 调用。
++   现有内容均无变化。
++   (#2442)
+
+% 0 1 0 0f922ec341ccae34075ef751ece930db
+
+@ 0 10 0 0cb0e5537109ab410225e90b67d51132
++ - 固定的编译器是 Proscala `1.1.4`（`3.10.0-pro-1.1.4`，以前是 `3.10.0-pro-1.0.7`）。
++   Soundness 发布的制品由它编译，因此针对它们编译的使用者固定同一个构建版本。
++   (#2443, #2489, #2505)
++ - `proscenium` 之上的每个 Soundness 模块都使用 Proscala 的 `-Zgatherable-varargs` 编译：在方法内部，重复参数（`parts: Text*`）是 `proscenium.List[Text]` 而不是 `scala.collection.immutable.Seq[Text]`。
++   签名没有变化，也没有调用处受到影响：调用者传递和拼接参数的方式与以前完全相同。
++   希望自己的代码也如此的使用者，在编译器选项中加入 `-Zgatherable-varargs` 和 `-experimental`，并把 `proscenium.listGatherable` 引入作用域（`-Yimports:java.lang,proscenium`，或 `import proscenium.listGatherable`）；不加这个标志，对他们而言什么都不会改变。
++   (#2443)
+
+% 0 1 0 13897a5b469c56bc058ae094048dac5d
+
+@ 0 3 0 17b4fdc9295d5b84119e0b5e224841a9
++ - 新增了 `proscenium.listGatherable`：`given listGatherable: [element] => (scala.Gatherable[element] { type Out = proscenium.List[element] })`，即 `-Zgatherable-varargs` 接收重复参数时所经由的实例。
++   (#2443)
+
+% 0 1 0 1115251217de079e0fce250e124d6a13
+
+@ 0 22 0 1c091a883bff545e17e9bb6b6c162d4b
++ - `adversaria.relabelling[self, format]: Map[Text, Text]` 和 `adversaria.variantRelabelling[self, format]: Map[Text, Text]` 现在是在调用方的派生展开时解析的宏，签名和结果相同：以字面量形式写出的 `@name` 参数（`@name(t"…")`、`@name("…")`）在生成的代码中是字符串常量，其他参数则在展开处重建并读取一次，而不是在每次运行派生实例时都这样做。
++   调用者无需改动。
++   (#2475)
++ - 新增了 `adversaria.annotatedFields[self, annotation <: StaticAnnotation]: Set[Text]`：`self` 中带有 `annotation` 的字段名称，以字面量 `Set` 的形式给出。
++   当只关心字段上是否*存在*某个注解时，用它代替 `fieldAnnotations[self, annotation].defines(label)`；`fieldAnnotations` 没有变化。
++   (#2475)
++ - 新增了 `adversaria.typeAnnotation[self, annotation <: StaticAnnotation]: Optional[annotation]`：类型 `self` 本身上的 `annotation`（最后声明的那个），或者 `Unset`。
++   用它代替先 `summonInline[self is Annotated by annotation]` 再 `.annotations.head` 的写法。
++   (#2475)
++ - 注解现在按原样拼接进展开结果；以前它们被逐个节点地重建，如果其树不是由标识符、选择、字面量、具名参数以及这些成分的嵌套应用构成的构造器应用，就会被悄无声息地省略。
++   因此，参数具有其他任何形式（lambda、代码块、类型标注、`if`、非常量的字符串插值）的注解，以前缺失的地方现在会出现：`Annotated#annotations`、`Annotated#fields`、`Annotated#subtypes`、`adversaria.relabelling`、`adversaria.variantRelabelling`、`adversaria.typeAnnotation`、`fieldAnnotations` 和 `subtypeAnnotations`。
++   依赖这类注解被跳过的代码现在必须自行过滤它。
++   与以前一样，编译器添加的 `scala.annotation.experimental` 永远不会由 `Annotated` 报告。
+
+% 0 1 0 118ac49b2dcdfddb1cea23db37ed1b46
+
+% 0 1 0 1e9899a0d30c19b70ffd7df14fc9c9a9
+
+@ 0 4 0 191467b4b4cbf83d124fc6d895720988
++ - `Xml.DecodableDerivation` 和 `Xml.EncodableDerivation` 通过 `adversaria.annotatedFields`、`adversaria.typeAnnotation` 和宏 `adversaria.relabelling` 读取类型的 `@attribute`、`@unqualified`、`@xmlns` 和 `@name[Xml]` 注解；线上的名称以及关于属性和命名空间的判定都没有变化。
++   (#2475)
+
+% 0 1 0 180f3ce4211ce4c80f4c87efbb23bc3f
+
+@ 0 35 0 07c487cdc1d14c800726684dc28bcfdd
++ - `soundness.Arithmetic` 和 `soundness.Geometric` 不再指向 probably 的 `Baseline.Mode` 分支，并且 `probably.Arithmetic`/`probably.Geometric` 被移除：请写 `Baseline.Mode.Arithmetic` 和 `Baseline.Mode.Geometric`。
++   `soundness.Arithmetic` 现在明确地指 hypotenuse 的 `Arithmetic`（其中包含 `Arithmetic.Error`）。
++ - 测试轴上的坐标 `Value` 更名为 `Axis.Value`：`Value.Discrete(label)` 变为 `Axis.Value.Discrete(label)`。
++ - 移除了 `probably.Autopsy`（trait，带有 `type Analyse <: Boolean`）、它的伴生对象 given `probably.Autopsy.contrastByDefault`，以及包 `probably.autopsies` 及其 given `contrastAutopsy` 和 `noAutopsy`（它们也以 `soundness.Autopsy` 和 `soundness.autopsies.{contrastAutopsy, noAutopsy}` 的形式导出）。
++   删除对它们的所有导入：断言不再在编译时解析 `Contrastable` 或 `Decomposable`。
++   失败的断言改为在运行时诊断：调用套件时使用选择项 `--diagnose=<presentations>`（以逗号分隔的 `inspect`、`show`、`contrast`、`dissect` 列表），并且安装了 `probably.Diagnostician`。
++ - 新组件 `probably-diagnosis`（仅限 JVM；依赖 `scala3-compiler` 和 `scala3-staging`），包含 `probably.Dissector`，它是一个 `probably.Diagnostician`。
++   测试的类路径必须包含它，失败才能得到诊断；它存在时，`probably.Streamer.stream` 会安装它。
++   没有它时，被诊断的失败会记录一个带有该值 `toString` 的 `TestEvent.DetailMessage`。
++ - `probably-core` 中新增：`probably.Diagnosis`（`Presentation`、`Request`、`Site`）、`probably.Diagnostician`（`install`、`apply`、`#diagnose`）、`probably.Runner#diagnosis`（抽象成员：自定义的 `Runner` 必须定义它）、`probably.Selection#diagnosis`（新增的最后一个构造器参数，默认值为 `Diagnosis.Request.none`）、`probably.Verdict.Detail.Dissection(source, rows, reproducible)`、`probably.TestEvent.DissectRow(depth, code, start, end, value, kind)`、`probably.TestEvent.DetailDissection(test, source, rows, reproducible)` 和 `probably.Streamer.diagnostic`。
++ - `TestEvent` 的线上 schema 新增了 `DetailDissection` 分支，因此 `probably.Streamer.fingerprint` 发生了变化：针对 0.75.0 构建的宿主会把针对本版本构建的套件报告为不兼容。
++   请针对本版本重新构建宿主。
++ - `probably.internal.assertion` 从 `[test, test2 <: test, report, result](runner, test, predicate, result, expectation, inc, inc2, decomposable, coordinates, discard, verified)` 改为 `[test, report, result](runner, test, predicate, result, inc, inc2, coordinates, discard, verified, owner, start, end, source, names, captures)`。
++   它只由 `assert`/`check` 宏和 `Spread` 调用；请重新编译。
+
+% 0 1 0 05ae2e565038e46506b8cc852c20137f
+
+@ 0 25 0 024abd4ea5eca7a20d4b284fade9ba0f
++ - ultimatum 的布局类型嵌套在新的 `object Tui` 中，不再单独导出：`Pane`、`Panes`、`Frame`、`Placement`、`Sizing`、`Limits`、`Arrangement` 和 `Occupancy` 变为 `Tui.Pane`、`Tui.Panes`、`Tui.Frame`、`Tui.Placement`、`Tui.Sizing`、`Tui.Limits`、`Tui.Arrangement` 和 `Tui.Occupancy`；请写限定名称，或者 `import ultimatum.Tui.{Pane, Sizing}`（只列出用到的名称）。
++   例如，`conduct(Occupancy.Inline)(…)` 变为 `conduct(Tui.Occupancy.Inline)(…)`，`val body: Pane = …` 变为 `val body: Tui.Pane = …`。
++ - `ultimatum.Rect` 更名为 `Tui.Region`，每个名为 `rect` 的成员都更名为 `region`：`Tui.Placement#region`、`Extent#region`、`FlowExtent#region` 和 `Form.Entry#region`。
++   `Rect(left, top, width, height)` 变为 `Tui.Region(left, top, width, height)`。
++ - 根面板嵌套在 `Tui` 中：行内模式的面板 `InlineRoot` 变为 `Tui.Block`，全屏模式的面板 `ScreenRoot` 变为 `Tui.Screen`。
++   行内渲染方针嵌套在块中：`InlineAnchoring`、`InlineGrowth` 和 `InlineShrink` 变为 `Tui.Block.Anchoring`、`Tui.Block.Growth` 和 `Tui.Block.Shrink`。
++   `inlineAnchoring`、`inlineGrowth` 和 `inlineShrink` 这几个 given 没有变化。
++ - `ultimatum.gauges` 组件并入 `ultimatum.core`，后者现在依赖 `aviation` 和 `quantitative`；依赖 `ultimatum.gauges` 的构建应改为依赖 `ultimatum.core`。
++ - 仪表类型嵌套在 `Tui` 中：`Bar`、`Dial`、`Meter`、`Spinner`、`Sparkline`、`Checklist`、`Stopwatch`、`Facet`、`Gradient`、`Inlay`、`Magnitude`、`CaptionLayout`、`Captioned`、`Reading`、`Reckoning`、`Standing`、`Step`、`Transfer`、`Tick`、`Fraction` 和 `Countdown` 变为 `Tui.Bar` 等等。
++   `gauge`、`gaugeLine`、`gaugeRows`、`whilst`、`Gaugeable`、`Gauging` 和 `GaugePalette` 没有变化。
++   使用其中多个类型的代码可以导入它们：`import ultimatum.Tui.{Fraction, Reading}`。
+
+% 0 1 0 05984bb5afb584fc059e170ac7d22325
+
+@ 0 9 0 1104322e8cbf70b61ca1a4fae48b4ed2
++ - `soundness.Commandline` 和 `soundness.Native` 不再指向 octogenarian 的 git 后端：这两个名称分别是 exoskeleton 解析后的命令行和 xenophile 的 C 接口。
++   像以前一样用 `gitBackends.commandlineGit` 或 `gitBackends.soundnessGit` 选择后端，或者写出类的限定名称：`octogenarian.Native(List(SmartHttp(), SshCommand()))`、`octogenarian.Commandline.Event`。
++ - 补丁和远程仓库类型嵌套在 `Git` 中：`Remote`、`Patch` 和 `Hunk` 变为 `Git.Remote`、`Git.Patch` 和 `Git.Hunk`；`Patch.parse(text)` 变为 `Git.Patch.parse(text)`。
++   `FileDiff`（diff 中属于单个文件的部分）更名为 `Git.Delta`（libgit2 的术语），它的 `ChangeKind` 变为 `Git.Delta.Status`，分支相同；字段 `changeKind` 变为 `status`。
+
+% 0 1 0 1fe0a5d6b3e78e9f191005621d380881
+
+@ 0 13 0 0189c62d1a56178d097818d6b4c4b71f
++ - containerd 的 protobuf 记录嵌套在 `object Containerd` 中，不再单独导出：`Container`、`Mount`、`Namespace`、`Runtime`、`Empty`、`AnyMessage`、`ContentDescriptor`、`ImageRecord`、`ProcessStatus`、`Timestamp`，以及每个服务的请求和响应（`ListContainersRequest`、`CreateTaskResponse`、`WaitResponse`、…）变为 `Containerd.Container`、`Containerd.Mount` 等等。
++   `embarcadero.Timestamp` 变为 `Containerd.Timestamp`。
++   请写限定名称，或者导入用到的成员，例如 `import embarcadero.Containerd.{Container, Mount}`。
++ - `DockerEvent` 更名为 `Containerd.Event`；`DockerEvent is Loggable` 的 given 变为 `Containerd.Event is Loggable`。
++   它的分支没有变化。
++ - OCI 文档类型嵌套在 `Oci` 中，不再单独导出：`Image`、`Index`、`Layer`、`Descriptor`、`History`、`RootFs`、`ContainerConfig`、`WasmConfig` 和 `WasmComponent` 变为 `Oci.Image`、`Oci.Index` 等等；`path.open[Image]()` 变为 `path.open[Oci.Image]()`，`Image.wasm(…)` 变为 `Oci.Image.wasm(…)`。
+
+% 0 1 0 1b963d061ec457af154e1006b71b17d4
+
+@ 0 4 0 079fae89ab1d567e02cf067d839dde8b
++ - `coaxial.DomainSocket` 更名为 `Uds`（UNIX 域套接字），`DomainSocket.Endpoint` 变为 `Uds.Endpoint`：`DomainSocket(% / "var" / "run" / "docker.sock")` 变为 `Uds(% / "var" / "run" / "docker.sock")`。
++   伴生对象中的 given `Bindable.domainSocket`、`Connectable.domainSocket` 和 `Serviceable.domainSocket` 更名为 `uds`。
+
+% 0 1 0 09d3188b2c45560007c7207681d04236
+
+@ 0 3 0 10de7fe8168a59cd05874105da4f7b3a
++ - `telekinesis.domainSocketFetchable` 和 `telekinesis.domainSocketHttpClient` 更名为 `udsFetchable` 和 `udsHttpClient`；请更新对它们的所有按名称导入（`import soundness.{udsFetchable, udsHttpClient}`）。
+
+% 0 1 0 0136e0d647519dc716274602a4340b64
+
+@ 0 6 0 1007b0c16c2848bf1740f7212e6e6c4e
++ - `rudiments.Bytes`，即由 `4.b`、`8.kib`、`data.bytes` 等构造的不透明字节计数，更名为 `Memory`：`Bytes(1024L)` 变为 `Memory(1024L)`，`Bytes` 类型标注变为 `Memory`。
++   它的操作没有变化。
++   以它命名的 given 更名为 `memory`：`hypotenuse.Commensurable.memory`（`Memory is Orderable`）、`spectacular.Showable.memory`、`spectacular.Inspectable.memory`，以及 jacinta 的 `Json.memory` 和 ypsiloid 的 `Yaml.memory` 解码器。
+
+% 0 1 0 0b62431f4ac242a0138ee9746bc81b2b
+
+@ 0 7 0 183f23cf12db672c14bc0b5f16f0e6e0
++ - `Information` 量纲、它的单位 `Bytes[power]`、`MetricUnit` `Byte` 以及 `B` 记号（`Designation.bytes`）现在属于 quantitative。
++   它们以前属于 ultimatum（`ultimatum.Information`、`ultimatum.Bytes`、`ultimatum.Byte`、`ultimatum.informationDesignation`），这些已被移除；使用 `soundness.*` 的代码无需改动，但应删除按名称的 `import soundness.informationDesignation`，因为该记号现在可以在 `Designation` 的伴生对象中找到。
++   本地重新声明的 `Information`、`Bytes` 和 `Byte` 可以删除，改用这些定义。
+
+% 0 1 0 10d5740d33bd672200a59ac24b495f6e
+
+@ 0 9 0 0d85b4313bf9727c0e7719c5b0adc09e
++ - 表示智能体所在位置的枚举 `Acp.Agent` 更名为 `Acp.Endpoint`：`Acp.connect(Acp.Agent(sh"…"))` 变为 `Acp.connect(Acp.Endpoint(sh"…"))`，`Acp.Agent.streams(input, output)` 变为 `Acp.Endpoint.streams(input, output)`，分支为 `Acp.Endpoint.Process` 和 `Acp.Endpoint.Streams`。
++ - `@rpc` 线上特质嵌套在 `Acp` 中，不再单独导出：`AcpAgent` 变为 `Acp.Agent`，`AcpAgentLifecycle` 和 `AcpAgentSession` 变为 `Acp.Agent.Lifecycle` 和 `Acp.Agent.Session`，`AcpClient` 变为 `Acp.Client`，`AcpClientSession`、`AcpClientFs` 和 `AcpClientTerminal` 变为 `Acp.Client.Session`、`Acp.Client.Fs` 和 `Acp.Client.Terminal`。
+
+% 0 1 0 09df00b428737c7f1cf98680616b6f7e
+
+@ 0 7 0 1ead9af88f461deb09e2189712015e55
++ - 分组密码的模式和填充方式嵌套在 `BlockCipher` 中，不再单独导出：`Cbc`、`Ecb`、`Ctr`、`Cfb`、`Ofb`、`Pkcs7`、`Iso10126` 和 `NoPadding` 变为 `BlockCipher.Cbc` 等等，类型类 `BlockCipherMode` 和 `BlockCipherPadding` 变为 `BlockCipher.Mode` 和 `BlockCipher.Padding`。
++   `Aes[256] over Cbc against Pkcs7` 变为 `Aes[256] over BlockCipher.Cbc against BlockCipher.Pkcs7`，或者导入这些成员：`import enigmatic.BlockCipher.{Cbc, Pkcs7}`。
++   `blockCipherModes` 和 `blockCipherPaddings` 中的 given 没有变化。
+
+% 0 1 0 1868a4f3222d8611045fe84bfb530658
+
+@ 0 10 0 0bc05cec8d5b159011d2ebf39faca110
++ - 编译相关的类型嵌套在 `Compiler` 中，不再单独导出：`CompileProcess`、`CompileResult`、`CompileEvent` 和 `CompileProgress` 变为 `Compiler.Process`、`Compiler.Result`、`Compiler.Event` 和 `Compiler.Progress`，`CompileEvents.relay` 变为 `Compiler.Event.relay`。
++   `given (CompileEvent is Loggable)` 变为 `given (Compiler.Event is Loggable)`。
++ - `Notice` 更名为 `Compiler.Notice`，`Universe`、`Tool` 和 `Triple` 嵌套在 `Toolchain` 中：`Scalac[3.8, Universe.Classfile]` 变为 `Scalac[3.8, Toolchain.Universe.Classfile]`，`extends Tool` 变为 `extends Toolchain.Tool`，`Triple.X64Linux` 变为 `Toolchain.Triple.X64Linux`。
++   或者导入这些成员：`import anthology.Toolchain.{Tool, Universe}`。
+
+% 0 1 0 1fbc3e2eb3ac8c1d08a287e2c3a4960b
+
+@ 0 5 0 11156a746e60a0390520ba8d17abc0b2
++ - 表格类型嵌套在 `Table` 中，不再单独导出：`TableCell`、`TableRow`、`TableSection`、`TableStyle` 和 `TableRelabelling` 变为 `Table.Cell`、`Table.Row`、`Table.Section`、`Table.Style` 和 `Table.Relabelling`。
++   `given TableRelabelling[Codebase]` 变为 `given Table.Relabelling[Codebase]`；`tableStyles` 中的 given 没有变化。
+
+% 0 1 0 15965c13323b4da117df6152721cd841
+
+@ 0 7 0 0c9c13ae65709be10973afb0dbd821e6
++ - 图的图块和样式嵌套在各自的图中，不再单独导出：`TreeTile`、`TreeStyle` 和 `TextualTreeStyle` 变为 `TreeDiagram.Tile`、`TreeDiagram.Style` 和 `TreeDiagram.TextualStyle`；`DagTile`、`DagStyle` 和 `TextualDagStyle` 变为 `DagDiagram.Tile`、`DagDiagram.Style` 和 `DagDiagram.TextualStyle`；`LaneDagStyle` 和 `TextualLaneDagStyle` 变为 `LaneDagDiagram.Style` 和 `LaneDagDiagram.TextualStyle`。
++   `treeStyles`、`dagStyles` 和 `laneDagStyles` 中的 given 没有变化。
+
+% 0 1 0 0dcece4e80bf175c0e1cc8af95d96f6e
+
+@ 0 5 0 189acdb0d87aa5d61113718356d9b54b
++ - `MissingFlagError` 和 `InvalidFlagError` 合并为 `Flag.Error(flag, reason)`，其 `reason` 为 `Flag.Error.Reason.Missing` 或 `Flag.Error.Reason.Invalid(detail)`（以前的 `InvalidFlagError#reason` 现在是 `detail`）。
++   `catch case error: MissingFlagError =>` 变为 `catch case error: Flag.Error =>`，如果需要区分，则检查 `error.reason`；`Tactic[MissingFlagError]` 或 `Tactic[InvalidFlagError]` 变为 `Tactic[Flag.Error]`。
+
+% 0 1 0 1fc810244c2cd3bf14cb7bb4f199169b
+
+@ 0 2 0 1ea63357770ee18f1ab316e338db9897
++ - `RegexBackend` 更名为 `Regex.Backend`：`RegexBackend[Re2]` 类型变为 `Regex.Backend[Re2]`。
++   `regexBackends` 中的 given 没有变化。
+
+% 0 1 0 1ff629affd81c87111d067a62bcc62a1
+
+@ 0 2 0 12501d8494e8d7511771c05bd42c532a
++ - `SharedProbate` 更名为 `Probate.Shared`：`using SharedProbate` 参数变为 `using Probate.Shared`。
++   它仍是同一个别名 `Probate^{caps.any.only[Durable]}`。
+
+% 0 1 0 0517ef2589655f410a0f4a460ea9ee15
+
+@ 0 1 0 0d5970a84e8c70d501083dcb63902c5c
++ - `rec"…"` 字面量的类型 `RecurrenceLiteral` 更名为 `Recurrence.Literal`。
+
+% 0 1 0 02c92e6303dfc9ad1a801cd1587ac61f
+
+@ 0 7 0 1edc8743f06f7e410e306571a3929051
++ - `SyntaxMatcher` 更名为 `Css.Syntax.Matcher`：`SyntaxMatcher.check(grammar, value)` 变为 `Css.Syntax.Matcher.check(grammar, value)`。
++ - 选择器语法嵌套在 `Selector` 中：`Compound`、`Simple`、`Combinator`、`AttributeTest`、`AttributeMatcher`、`Prefix` 和 `PseudoArgument` 变为 `Selector.Compound`、`Selector.Simple` 等等。
++ - `Css.Syntax.Matcher.check` 的结果 `Outcome` 更名为 `Css.Outcome`：`Outcome.Valid` 变为 `Css.Outcome.Valid`。
+
+% 2 1 0 12b30a3574eb14f9012dfe1722a13bdd
+
+@ 0 3 0 11a07c4a3683b84118f8fe91420acd01
++ - 包装 JDK 异常的 `Error` `UncheckedError` 更名为 `Error.Unchecked`；它仍然由 `Error(throwable)` 构造。
++   `case error: UncheckedError` 模式变为 `case error: Error.Unchecked`。
+
+% 0 1 0 07f33a1bf4fa2505029751dde4102879
+
+@ 0 3 0 19cd54aa3f38b29f1869db7f52153278
++ - `degustation.Universe` 现在以 `soundness.Universe` 的形式导出（anthology 的编译器 universe 是 `Toolchain.Universe`），`ClassSource` 和 `ClassInfo` 嵌套在其中：`ClassSource` 变为 `Universe.Source`，`ClassInfo` 变为 `Universe.ClassInfo`。
+
+% 2 1 0 1468f76113d9c8db0a7bd1e00a80db53
+
+@ 0 4 0 050d88d4028713e208125a12e458eb5e
++ - 编辑分类嵌套在 `Diff` 中，不再单独导出：`Change`、`Edit`、`Ins`、`Del`、`Par`、`Sub` 和 `Chunk` 变为 `Diff.Change`、`Diff.Edit`、`Diff.Ins`、`Diff.Del`、`Diff.Par`、`Diff.Sub` 和 `Diff.Chunk`。
++   对编辑进行匹配的代码可以导入它们：`import dissonance.Diff.{Del, Ins, Par}`。
+
+% 2 1 0 051ad4da5fa2641112250c89753a6d4a
+
+@ 0 1 0 0c504040537724981b1cf852542b8dc3
++ - 表示 multipart 正文中一个部分的 `Part` 更名为 `Multipart.Part`。
+
+% 2 1 0 1adb4a3e319cbaf21bd78fbd9a02fa76
+
+@ 0 1 0 187f2898ddb8e25305c711155c0c58cf
++ - WebSocket 帧掩码方针 `Masking` 更名为 `Websocket.Masking`。
+
+% 0 1 0 12a5154887295d701791e765afcca89e
+
+@ 0 1 0 16ee0affaa390164036fa6476f4daf8a
++ - 表示 OAuth 作用域的 `Scope` 更名为 `OAuth.Scope`。
+
+% 0 1 0 1cc5e70970ad42a51e424017e29c8c25
+
+@ 0 1 0 1a1242d4974dd9ff013c2b2ad4dc6f99
++ - 表示 PDF 链接目标的 `Destination` 更名为 `Pdf.Destination`。
+
+% 2 1 0 03943a5df63d4aba12d2bc574da32be9
+
+@ 0 2 0 0789baafeec7e9ab0e4eeaa438c34365
++ - §22.2 的编辑操作 `Mutation` 以及由它们组成的可组合日志 `Revision` 更名为 `Tel.Mutation` 和 `Tel.Revision`；`Mutation.Error` 变为 `Tel.Mutation.Error`。
+
+% 0 1 0 110b77734cfed03a118adecece7f9e5b
+
+@ 0 2 0 191d70bb98812bf31e23c9f609c83fe6
++ - 编译后的正则表达式程序 `Program` 及其字符范围 `Ranges` 更名为 `Motif.Program` 和 `Motif.Ranges`。
+
+% 0 1 0 15cfd48f715bc4b40f8730f40768e76f
+
+@ 0 1 0 114fc0dd850bc5dc14b3d792f2fbe8a3
++ - `Category` 和 `Estimate` 更名为 `Chart.Category` 和 `Chart.Estimate`。
+
+% 0 1 0 133c947ece881a290e103b473d617f2c
+
+@ 0 4 0 139bd765835c38a118b684776202071b
++ - 设备类型嵌套在 `Audio` 中：`Feed`、`Outlet`、`Device` 和 `Configuration` 变为 `Audio.Feed`、`Audio.Outlet`、`Audio.Device` 和 `Audio.Configuration`；`Feed.list` 变为 `Audio.Feed.list`，`Feed.Error` 和 `Outlet.Error` 变为 `Audio.Feed.Error` 和 `Audio.Outlet.Error`。
+
+% 0 1 0 07409a9b4226d59e0356189f39895ad5
+
+@ 0 1 0 1335736455a04d4c138f47919c1cabe7
++ - `Display` 和 `Cell` 更名为 `Mathml.Display` 和 `Mathml.Cell`。
+
+% 2 1 0 01dfd51c7bee78921c0d528f7c1c72c2
+
+@ 0 3 0 0e0068bcbfcf5b1709789d57fa1caacd
++ - 规范的字段描述 `Member` 和基数 `Multiplicity` 更名为 `Specification.Member` 和 `Specification.Multiplicity`；提供器的实现可以导入它们：`import polyvinyl.Specification.{Member, Multiplicity}`。
+
+% 0 1 0 0aebba901602cb461334bf128bd66cd1
+
+@ 0 2 0 013cdb609a4a9b1509eb8cab6a74723d
++ - 表示高亮源代码中一个词法单元的 `Token` 更名为 `SourceCode.Token`，`Role`（表示词法单元是绑定一个名称还是引用一个名称）更名为 `SourceCode.Token.Role`。
+
+% 0 1 0 0edeca1688ed1712094917bf1cb39981
+
+@ 0 2 0 0250b487e0e529be08268bbe303196a5
++ - `Discourse` 的两种类型 `Human` 和 `Agent` 更名为 `Discourse.Human` 和 `Discourse.Agent`。
+
+% 2 1 0 10ad56dc867b044b14494de584bf8968
+
+@ 0 6 0 0b65ae76d9abef6e082299d3e7812c98
++ - 单位方向 `Up`、`Down`、`Left` 和 `Right` 移入 `Delta`：`7*Up + 3*Right` 变为 `7*Delta.Up + 3*Delta.Right`。
++   裸写的 `Left` 和 `Right` 不再遮蔽 `Either` 的构造器。
++ - 可绘制的形状嵌套在 `Svg` 中：`Figure`、`Rectangle`、`Outline`、`Ellipse`、`Group`、`Polyline` 和 `Lettering` 变为 `Svg.Figure`、`Svg.Rectangle` 等等。
++   绘图代码可以导入它们：`import savagery.Svg.{Group, Rectangle}`。
+
+% 0 1 0 1eecc11d4eed23d30cc8cf10b4de468a
+
+@ 0 7 0 1d59f278a1d2258206d0b13c1c79f1d0
++ - 日志事件的严重级别 `Level` 更名为 `Log.Level`：`Logger(out, level = Level.Warn)` 变为 `Logger(out, level = Log.Level.Warn)`，`Loggable` 实现中的 `def log(level: Level, …)` 变为 `def log(level: Log.Level, …)`。
++ - 像素通道嵌套在现已导出的 `Channel` 中：`Red`、`Green`、`Blue`、`Alpha`、`Cyan`、`Magenta`、`Yellow`、`Key` 和 `Grey` 变为 `Channel.Red` 等等。
++   `type Rgb565 = (Red[5], Green[6], Blue[5])` 需要 `import Channel.{Blue, Green, Red}`，或者使用限定名称。
+
+% 2 1 0 09849afe61e467ab080fe28038f858f0
+
+@ 0 2 0 19d49af61af7a5b50c1a9a0f1e305a73
++ - perihelion 的 `Message`、`Channel` 和 `Reader`（以前未导出到 `soundness`）嵌套在 `Websocket` 中：`perihelion.Message` 变为 `perihelion.Websocket.Message`。
+
+% 0 1 0 1d90f9f17b0aa66b0d7b52e54244edf6
+
+@ 0 10 0 0c0145cc0639966909e5b9987bd7898c
++ - `galilei.FilesystemBackend` 新增了抽象成员 `def mapping(path: Path on Plane)(using Tactic[Io.Error]): FilesystemBackend.Mapping^`，它把文件以只读方式映射到内存中。
++   实现 `FilesystemBackend` 的类必须定义它；不支持内存映射的类把它定义为 `abort(Io.Error(path, Io.Error.Operation.Open, Io.Error.Reason.Unsupported))`。
++   (#2474)
++ - 对于超过 `Int.MaxValue` 字节的文件或大小，`path.open[galilei.Ram](…)` 和 `path.create[galilei.Ram](RamFlag.Size(n))` 不再抛出带有 `Reason.Unsupported` 的 `Io.Error`；无论文件多大都会被映射。
++   映射现在在代码块结束时释放，而不再在垃圾回收器回收它时释放，因此保留到代码块之外的 `ram.expanse` 在被读取时会以 `IllegalStateException` 失败，而以前它会继续工作。
++   (#2474)
+
+% 2 1 0 06d1e8068f027163150bda127fb55e00
+
+@ 0 16 0 1a4e4b2525e3b8cf0de25690c7f13764
++ - `stratiform.Tels.Field` 新增了第八个参数 `indexes: List[Tels.Index] = Nil`，`stratiform.Tels.Scalar` 新增了第四和第五个参数 `width: Optional[Int] = Unset` 和 `intern: Boolean = false`。
++   构造不受影响；按位置的模式需要加上新增的通配符：`case Tels.Field(_, _, keyword, _, _, _, _)` 变为 `case Tels.Field(_, _, keyword, _, _, _, _, _)`，`case Tels.Scalar(_, encoding, _)` 变为 `case Tels.Scalar(_, encoding, _, _, _)`。
++   `stratiform.Tels.ScalarDefinition` 同样在 `patterns` 之后新增了 `width` 和 `intern`。
++   (#2477)
++ - `stratiform.Tel.Pragma.Reference.tels` 现在是 `specification.tel/tels:2.1.0`（以前是 `tels:2.0.0`），`stratiform.SchemaResolver.telsSignature` 是该修订版本的签名。
++   先前的值是 `Tel.Pragma.Reference.telsEarlier` 和 `SchemaResolver.telsEarlierSignature`；固定了其中任何一个的文档仍会解析到内置 schema。
++   `Tels.Axiom.tels` 的值哈希随之改变；`Tels.Axiom.acceptance` 以及所有现有 schema 文档的签名则没有改变。
++   (#2477)
++ - `stratiform.Tel.Error.Reason` 新增了七个分支，编号从 225 到 231：`WidthNotDecimal`、`WidthConflict`、`WidthWithoutEncoding`、`IndexNotApplicable`、`IndexPathInvalid`、`IndexPathUnresolved` 和 `WidthWithIntern`。
++   对 `Reason` 的穷尽匹配需要包含它们。
++   (#2477)
+
+% 0 1 0 1c4ce86cb0fa16570db4798767364955
+
+@ 0 6 0 0b1eb35f24683e8217d6775e127fc93f
++ - `Expanse` 现在作为被跟踪的能力借出：`path.expanse { … }` 以及 `FilesystemBackend#expanse` 的 lambda 以前接受 `zephyrine.Expanse`，现在接受 `zephyrine.Expanse^`。
++   在启用捕获检查的模块中，接收该 expanse 的方法把参数声明为 `Expanse^`，持有它的值不能从代码块中返回。
++   实现 `FilesystemBackend` 的、经过捕获检查的类要相应地修改 `expanse` 的 `lambda` 参数的类型。
++   不启用捕获检查编译的代码不受影响。
++   (#2489)
+
+% 2 1 0 19692626886f6c8c06b82dac91c1a369
+
+@ 0 4 0 18c5353df08f9865004792eb21d9fca1
++ - 对于紧跟在另一个数据块之后、中间没有 `Par` 的数据块，`Diff#chunks`（因而还有 `Diff#serialize`）现在给出正确的右侧位置；以前它是根据左侧位置计算的，因此这种数据块的 `a`/`d`/`c` 命令可能指向错误的右侧行。
++   (#2401)
+
+% 0 1 0 174231ea3a507bbb0da3030ca3b5bc65
+
+@ 0 5 0 11baa2f67ec5e22416a3f36930042eae
++ - `lineSeparation.strictLinefeedsLineSeparation` 现在在裸 LF 处结束一行，并把 CR 保留为文本，与 `strictCarriageReturnLineSeparation` 恰好相反。
++   它以前使用的是那个方针的表，因此在 CR 处结束行并保留 LF。
++   为了旧行为而导入它的代码应改为导入 `lineSeparation.strictCarriageReturnLineSeparation`，两者唯一的区别是后者写出 CR。
++   (#2408)
+
+% 0 1 0 08aeb0597d80bda715e9265307be8d6a
+
+@ 0 3 0 1130fa22571bee111fd4e302f86fa44e
++ - `imperial.Base.Root` 的类型层面路径标注现在是 `"root"`（以前是拼错的 `"roto"`），与它所指的目录一致。
++   只有显式写出该布局的 `Topic` 类型的代码受到影响。
++   (#2411)
+
+% 2 1 0 0b4b34aa258c305b075f843829952a75
+
+@ 0 7 0 0ce0e56f50f9c0630b317e2880766459
++ - `alphabets.base32ExtendedHexUpperCase` 现在在解码时也接受小写的扩展十六进制数字，`alphabets.base32ExtendedHexLowerCase` 则也接受大写的，每个字母的值与其自身大小写下的同一字母相同。
++   它们以前容忍的却是另一种大小写的*标准* Base32 字母表，因此 `a` 被解码为 0 而不是 10，并且 `w`–`z`（或 `W`–`Z`）会被接受；这四个字母现在会抛出 `Serialization.Error`。
++   (#2434)
++ - `alphabets.base32Crockford` 现在把小写的 `l` 解码为 1，就像它已经对 `L`、`i` 和 `I` 所做的那样；以前它会抛出 `Serialization.Error`。
++   (#2434)
+
+% 2 1 0 0d0edfe5338da73d011c44515138d92e
+
+@ 0 6 0 0887b0d1be27872c12165d4fd1f3436a
++ - `alphabets.base64Uuencoding` 现在包含 uuencoding 的 64 个字符，从 `` ` ``（零）经过 `!` 到 `_`。
++   它以前只有 63 个，并且每个都低了一位，因此用它序列化整个值会抛出 `StringIndexOutOfBoundsException`，而流则以每个字符五位的方式编码；旧字母表写出的文本解码后得不到相同的字节。
++   (#2412)
++ - `alphabets.octalStandard` 在解码时不再接受 `=`；它以前被当作第九个数字读取，现在与其他任何外来字符一样抛出 `Serialization.Error`。
++   (#2412)
+
+% 2 1 0 17434c8dd612a71409986d30e6c866e1
+
+@ 0 5 0 0842a056948fdc1812e744144ff8696f
++ - `Suffix#name`、它的 `Showable` 以及显示或编码后的 `MediaType` 现在把 `Media.Suffix.FastInfoset` 写作 IANA 登记的拼写 `fastinfoset`（RFC 6839）；以前是 `fast-infoset`。
++   `MediaType.parse`（因而还有 `Text#as[MediaType]` 和 `media"…"`）现在接受 `+fastinfoset`，以前它会抛出带有 `InvalidSuffix` 的 `MediaType.Error`；带连字符的 `+fast-infoset` 仍可读取。
++   (#2437)
+
+% 2 1 0 19a008753f9fb92a09e72f5fd530051a
+
+@ 0 8 0 034d5979d3f944521a9222ce74692e0a
++ - `Svg.Outline` 的方向步骤现在按 SVG 的坐标轴（`y` 向下增长）朝其名称所指的方向移动：`lineUp(n)` 是 `Draw(Delta(0, -n))`，`lineDown(n)` 是 `Draw(Delta(0, n))`，`lineLeft(n)` 是 `Draw(Delta(-n, 0))`，`lineRight(n)` 是 `Draw(Delta(n, 0))`，`moveUp`/`moveDown`/`moveLeft`/`moveRight` 同理使用 `Move`。
++   它们以前被旋转了四分之一圈：`lineUp(n)` 绘制 `Delta(n, 0)`，`lineDown(n)` 绘制 `Delta(-n, 0)`，`lineLeft(n)` 绘制 `Delta(0, -n)`，`lineRight(n)` 绘制 `Delta(0, n)`。
++   要保持路径的现有形状，请把 `lineUp` 替换为 `lineRight`，`lineDown` 替换为 `lineLeft`，`lineLeft` 替换为 `lineUp`，`lineRight` 替换为 `lineDown`（`move…` 方法也照此替换）。
++   (#2449)
+
+% 0 1 0 14802db87637bb240c0e50c6611271aa
+
+@ 0 5 0 0afc6769ff59c0d1163d16ec7a5e55a2
++ - `Uuid.parse`、`Uuid.extract`、`Uuid` 提取器、从 `Text` 解码 `Uuid` 以及 `uuid"…"` 字面量现在只接受规范形式，即由 8、4、4、4 和 12 个十六进制数字组成的五组。
++   某一组较短的文本（例如 31 位数字的 UUID）以前会被当作该组用零填充来读取；现在会抛出 `Uuid.Error`（或者得到 `Unset`，对字面量则是编译错误）。
++   (#2462)
+
+% 2 1 0 0ca3f4393939622a1625460f46785c43
+
+@ 0 3 0 1ba3b77799c104da0be00e016d9c7049
++ - `polyvinyl.Specification.Multiplicity` 新增了一个分支 `Series`：作为该规范自身类型的集合来读取的成员。
++   要穷尽的 `Multiplicity` 匹配需要为它添加分支；现有的规范永远不会产生它。
++   (#2491)
+
+% 2 1 0 0d61d12e5d0aafca063e30861b67ff7d
+
+@ 0 19 0 1aabb9f3aaac450517e87d563621e9ac
++ - `fulminate.Error` 的主构造器从 `Error(val d: Int, val e: Int)(val message: Message, private val cause: Throwable | Null)(using val diagnostics: Diagnostics)` 改为 `Error(val module: Int, val number: Int, val variant: Int)(val message: Message, private val cause: Throwable | Null)(using val diagnostics: Diagnostics)`，辅助构造器从 `this(d: Int, e: Int)(message: Message)(using Diagnostics)` 改为 `this(module: Int, number: Int, variant: Int)(message: Message)(using Diagnostics)`。
++   `this(message: Message, cause: Throwable | Null = null)(using Diagnostics)` 没有变化。
++   成员 `d` 和 `e` 被移除；`e` 现在是 `variant`，`d` 则没有对应物：错误由 `module`（其所属库的编号）和 `number`（它在该库中的编号）标识。
++   写作 `extends Error(d, e)(…)` 的子类必须给出一个模块编号和模块内的编号，或者写作不带编号的 `extends Error(…)`。
+
+% 1 1 0 1c371227d7f82ba214a4863a960bd83e
+
+@ 0 5 0 1df48aac40b1aa460d3d995d497318c9
++ - 每个带编号错误的代码从 `SN-ddd` 或 `SN-ddd.e` 改为闪电代码 `↯/s.m.n` 或 `↯/s.m.n.e`，其中 `m` 是错误所属库的编号，`n` 是错误在该库中的编号；`e` 没有变化。
++   `doc/errors/sn.md` 给出了每个以前的 `SN-` 代码对应的新代码。
++   这改变了 `fulminate.Error#errorCode`（`t"SN-077.3"` → `t"↯/s.100.2.3"`）、`fulminate.Error#colourCode`、`fulminate.Error#labelled` 和 `fulminate.Error#getMessage`（`"[↯SN-077.3] …"` → `"[↯/s.100.2.3] …"`）的结果，以及 Soundness 宏报告的每个带编号编译错误的前缀。
++   连同前缀匹配错误消息的文本必须更新。
++   新成员 `fulminate.Error#bolt` 是一个 `fulminate.Bolt`，以值的形式给出该代码。
+
+% 1 1 0 06bc2ed431311da91bcf9dc91b75e5f8
+
+@ 2 0 0 06bc2ed431311da91bcf9dc91b75e5f8
++ - `fulminate.halt` 和 `fulminate.warn`：接受错误编号的重载从 `(d: Int, message: Message)`、`(d: Int, message: Message, position: Matchable)`、`(d: Int, reason: Clarification, message: Message)` 和 `(d: Int, reason: Clarification, message: Message, position: Matchable)` 改为同样的形式，只是 `d: Int` 换成了 `module: Int, number: Int`。
++   重载 `(message: Message, position: quotes.reflect.Position | Null = null)` 没有变化。
++   (#2493)
+
+% 2 1 0 0fde2b217fd9d5090c59bca4f8da3ec0
+
+@ 0 6 0 140e30e5b66647841720e914546bdd53
++ - 对于 TEL、BinTEL 或 RaTEL 规范编号的原因，`stratiform.Tel.Error`、`stratiform.Bintel.Error` 和 `stratiform.Ratel.Error` 的代码是携带该规范自身代码的复合闪电代码：`SN-605.107` → `↯/s.118.1/t.1.7`，`SN-609.5`（BinTEL）→ `↯/s.118.5/t.4.5`，`SN-615.12`（RaTEL）→ `↯/s.118.11/t.5.12`。
++   属于实现自身的原因与以前一样是一个变体：`SN-605.402` → `↯/s.118.1.402`。
++   这些原因自身的编号没有变化。
++   (#2493)

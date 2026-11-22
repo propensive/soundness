@@ -1,0 +1,2028 @@
+orthant 2 language
+
+% 0 1 0 0f04ec4b9ac2d4270a232409219e1f6b
+
+% 0 1 0 1f418631adc3fa321304fa486e32890a
+
+% 0 1 0 0b5938ce7315323607e1922cbc4d93e2
+
+@ 0 1 0 116504c699c7cdf81e6527e42ac1203d
++ info   网络的各种标识符——主机名、IP 地址、URL、电子邮件地址、端口、MAC 地址和 DNS 名称——作为带类型的值
+
+% 0 1 0 0ca6d61ddd9511ea1cdae38f1414f6fe
+
+@ 0 7 0 1220c0dd2e9cc1c317dafffe3f62e8d8
++     _Urticose_ 为网络的每种标识符赋予各自的类型，并在尽可能早的时刻对其进行校验：字面量在代码编译时通过插值器校验，文本则在解码的瞬间通过 `as[T]` 校验。
++     因此，`Hostname`、`Ipv4` 或 `Ipv6` 地址、`HttpUrl`、`EmailAddress`、`Port` 或 `MacAddress` 无论在何处持有，都已知是格式良好的，并且它们的各个部分也带有类型：URL 的主机是 `Hostname | Ipv4 | Ipv6`（即别名 `Host`），其端口是一个数字，而端口的类型记录了它的传输协议（`Port over Tcp`），对于字面量还记录了它的编号（`Port over Tcp of 25`）。
+
+% 2 1 0 0ab03ee58399ecda171abc34e33b39c2
+
+% 3 1 0 1e0aabc3413b847b0276c60d0f55c33c
+
+% 4 1 0 11676a519ac5a7bd04dd4c371fc179ca
+
+% 0 1 0 15125322f5497eff1079082c899bfe0e
+
+% 0 1 0 0d48e01a9943a6bd1d2913f4fed30813
+
+% 0 1 0 194a8b6ffbcef9a9011608c6e2271504
+
+% 0 1 0 15b1ba49a06ae8691fe04326f4460332
+
+% 0 1 0 1c42675ee2c8b45d0afc163bd3b0c79b
+
+% 0 1 0 01b56145648e15dd09dd2f08894ab3b0
+
+% 0 1 0 093679b08e5e3e5e1950e01078724eb9
+
+% 1 1 0 0fd76cd241661c7d17fddbfd81ed2707
+
+@ 0 5 0 161a3f75db2fea9e07e55d082918e719
++     无效的值在书写处就是编译错误（`ip"192.168.0.0.0.1"` 无法编译），不符合规则的文本则抛出一个带类型的错误，指明问题所在：`Hostname.Error`、`IpAddress.Error`、`EmailAddress.Error`、`Url.Error`、`MacAddress.Error`、`Port.Error` 或 `Dns.Error`，每个都带有一个 `Reason`，程序可以报告它，而不只是拒绝输入。
+
+@ 0 5 0 1cc8483c15b6610200fce1dd83f9ef96
++     网络**访问**是一种能力。
++     访问网络的方法接受一个 `Online`（或其超类型 `Internet`）作为上下文参数，程序通过按名称导入 `internetAccess.online` 来授予它，或用 `internet(true)` 限定其作用域，并用 `online` 检测它；`internetAccess.offline` 则拒绝授予，一旦请求该能力就抛出 `Internet.Error`。
+
+@ 0 1 0 02e881c0e2bfbd4a1c37c9b9fc5586eb
++     该库分为四个源码集：
+
+@ 0 12 0 00990f89c4e8be511da66bf04806e50f
++     - `urticose.core`——`Hostname`、`DnsLabel`、`Ipv4`、`Ipv6`、`Ipv4Subnet`、`Ipv6Subnet`、`MacAddress`、`EmailAddress`、带有 `Tcp`、`Udp` 和 `Quic` 的 `Port`、`Endpoint` 和 `on` 扩展方法、`NetworkInterface`、`Internet`/`Online` 和 `internetAccess` 包，以及 `ip"…"`、`subnet"…"`、`mac"…"`、`tcp"…"` 和 `udp"…"` 插值器。
++     - `urticose.url`——带有 `HttpUrl` 的 `Url`、`Scheme`、`Authority`、`Origin`、URL 路径所在的 `Www` 平面，以及 `url"…"`、`host"…"` 和 `email"…"` 插值器。
++     - `urticose.ansi`——given `teletypeables.urlTeletype`，它在终端中把 URL 渲染为带下划线和颜色的形式，并用 `UrlPalette` 提供颜色；单独分开是为了让解析 URL 时不会引入 ANSI 栈。
++     - `urticose.dns`——`Dns`：RFC 1035 中关于名称、查询、记录和消息的词汇、它们的线上编解码器、通过平台解析器进行的 `Dns.resolve`、`dns"…"` 插值器，以及 `dnsName` 和 `reverseName` 扩展方法。
+
+@ 0 6 0 1a7f1a9c1fc6dd44011d5efe92e00a63
++     所有内容都导出到 `soundness` 总括包，而各个选择包（`internetAccess`、`teletypeables`，以及把 urticose 的类型指定为 anticipation 网络域代表的 `emailAddressInterfaces`、`hostnameInterfaces`、`ipAddressInterfaces` 和 `urlInterfaces` 包）会与总括包自身的同名包合并，因此用户写下 `import soundness.*`，然后按名称导入某个 given：仅有 `import soundness.*` 不会从包中引入任何 given。
+
+% 0 1 0 148c71fca26a9b4f1c2d31d1a31f0e8e
+
+% 0 1 0 05c41d843477be191ff24189315fde53
+
+% 0 1 0 05c41d843477be1b1ff24189315fde55
+
+% 0 1 0 05f9d66e3e297b6611e47ad40641c494
+
+% 0 1 0 1c48f55aef7b5f5f1085e369ad7b19bd
+
+% 0 1 0 0293a070f9126adc157138b1dc4d75b4
+
+% 0 1 0 0f976edc08f6f4d016bdd678c4cd7f62
+
+% 0 1 0 1e22744ad5c3fc1e140c9c740e18b39c
+
+% 0 1 0 12f2b0e624e2ec9a0f85c901ef8e9d80
+
+@ 0 1 0 0b554cec81cf219a1f43cfec0a50e9ae
++ entry .Hostname   DNS 主机名：以点分隔的标签，每个标签都遵守标签的规则
+
+% 1 1 0 02d1937024dd1f19090bc283e7e80626
+
+@ 0 5 0 0d845d903bf1ce1303054ea9fa765d76
++       `Hostname` 是一串 `DnsLabel`，写作 `host"www.example.com"`（在代码编译时检查），或用 `as[Hostname]` 从文本解码，当文本违反规则时抛出 `Hostname.Error`：每个标签只能包含字母、数字和 `-`，不能以 `-` 开头，不能为空（因此不能有开头、结尾或连续的点），且不能超过 63 个字符，整个名称不能超过 253 个字符。
+
+% 2 1 0 0b2f069e38b1d890057658383f76cb0d
+
+% 3 1 0 1b2c0f524079cfdd09c7057d748ebdea
+
+% 4 1 0 01a3211c26f711621a5b58d6a6b839ca
+
+% 0 1 0 023a8a9a1fba855e1775e4c576b77950
+
+% 0 1 0 1191d8fb5c0eca371c092caa7f2f1a32
+
+% 0 1 0 0e97cc324587fc56137908d7f20ca80a
+
+% 0 1 0 044332cb4c5c46511acf3ffdbe639bcc
+
+% 1 1 0 17fa50bf8012087d025ad3914657f793
+
+@ 0 4 0 0ae0767731571fbf0d74165e574ecd50
++       主机名是一种 `Host`（与 `Ipv4` 和 `Ipv6` 并列），因此可以作为 `Authority` 的主机或 `EmailAddress` 的域名；它是 `Remotable` 的，因此 `host"example.com" on tcp"80"` 构成一个 `Endpoint`；在 `urticose.dns` 中，`dnsName` 将其转换为 `Dns.Name`，`Dns.resolve` 则查询它。
++       `Localhost` 是主机名 `localhost`。
+
+% 0 1 0 0c17a5a73d00793100852bdb0e70c4aa
+
+% 1 1 0 1daabedd519a17d319b503088f3d0b86
+
+% 0 1 0 191c558889d69bd7038679cecdb1be9b
+
+@ 0 8 0 04e204b0af177f3b07530e0c590f10b9
++   entry .showable   把主机名渲染为以点连接的各个标签
++   entry .inspectable   调试渲染，与显示形式相同
++       以点分隔的标签一眼就能认出是主机名，因此检视时无需修饰。
++   entry .decodable   从文本读取主机名，若无效则抛出 `Hostname.Error`
++       需要一个 `Tactic[Hostname.Error]`；该 given 会捕获它。
++   entry .encodable   把主机名编码为文本，与显示形式相同
++   entry .toExpr   把主机名提升为带引号的表达式，供构建主机名的宏使用
++   entry .Error   当文本不是有效主机名时抛出
+
+% 1 1 0 0714ae2414d6e0581c160c423936e759
+
+@ 0 4 0 1b09a6c498889db21215a63b9766c42c
++         错误 `↯/s.100.10`：_the hostname is not valid because `reason`_。
++         由 `as[Hostname]`（通过 `Hostname.decodable`）抛出，也由 `host"…"` 作为编译错误报告。
++         `#text` 是被解码的完整文本，`#reason` 说明它的问题所在。
++     entry .Reason   主机名被拒绝的原因
+
+% 1 1 0 07267db68bb492a017b09078300a0c7a
+
+@ 0 1 0 1c0d28225d048060046c1435a26e98fe
++           一个包含五个编号分支的枚举，每个分支都通过 `Reason.communicable` 提供一条消息：
+
+% 2 1 0 1eccaa884bfbf7d200090d1a13eb3345
+
+@ 3 4 0 099eadb46c13e2d51a1cff0e35ebf512
++           column  分支
++           column  代码
++           column  消息
++           column  说明
+
+% 0 1 0 08ddecea11973dc40fb172d4908a2751
+
+% 0 1 0 1cf036355abbd8ef19dc240bbd959fe5
+
+@ 0 2 0 08c7a5ec3bf894940c8e52efb00d725c
++           row  `InvalidChar(char)`  3  _the character `char` is not allowed in a hostname_  字母、数字、`-` 或 `.` 以外的任何字符
++           row  `EmptyDnsLabel(n)`  4  _a DNS label cannot be empty_  开头、结尾或连续的点；`n` 是它之前的标签数
+
+% 0 1 0 004525f14560fbfb0bf739b9e4e853bf
+
+% 1 1 0 1269cc32fea910be1cd19fef52b7022e
+
+@ 0 4 0 0788f480703849790154763f1dd390dd
++       entry .communicable   把每个原因渲染为一条消息
++     entry #text   被解码的文本
++     entry #reason   它被拒绝的原因
++   entry #dnsLabels   主机名的各个标签，从最左边开始依次排列
+
+@ 0 1 0 0260d9a662588b861dd23b95649936c1
++ entry .DnsLabel   主机名中位于两个点之间的一个标签
+
+% 1 1 0 08228439ee9abcec0cc0c8ef95dc6a88
+
+@ 0 5 0 0234e7a8a68a52841d4b4d42cf6e5d86
++       一个基于 `Text` 的不透明类型，用 `DnsLabel(text)` 构造，用其 `text` 扩展方法读回；构造时不做校验，因为 `Hostname.parse` 已经按标签的规则检查过它。
++       `Hostname` 是一串这样的标签，`Hostname#dnsLabels` 会把它们返回。
++       它以其文本作为 `Showable` 形式。
++       `text` 扩展方法声明在不透明类型的所在地 `urticose.internal.Opaques` 中。
+
+@ 0 2 0 149d93af236bea6208dcc1b534afe441
++       其伴生对象的成员声明在 `internal.Opaques.DnsLabel` 中，该类型从那里导出，并在那里有文档说明。
+
+@ 0 5 0 0cb62a217487edf5027bba8f04992424
++ entry .Host   主机名或 IP 地址：`Hostname | Ipv4 | Ipv6`
++     `Authority` 的主机部分以及 `Url#host` 的类型：主机可能是的三种东西。
++     `Host` 通过 `Ipv6.hostShowable` 成为 `Showable`，它像 URL 那样给 IPv6 地址加上方括号（`[::1]`）；通过 `Ipv6.hostDecodable` 从文本解码，它依次尝试 IPv6、IPv4 和主机名，都不匹配时抛出 `Hostname.Error`。
+
+% 2 1 0 1fd1199b13629da41b2c64faeec537b6
+
+% 3 1 0 1e7c6e3be7c2aa0900e9d3614bb5cd14
+
+% 4 1 0 07dffd1e2c7bce89186f2aedba7ac82e
+
+% 0 1 0 0f1f3bc8f1fe1b271a4df534379803b9
+
+% 0 1 0 1a82bb9746851ac60d44959b8dc174b7
+
+% 1 1 0 0f6b44ce2883492410adfdbb2ceace6a
+
+@ 0 1 0 0a500c320ba9a7e90eda1deb99f96892
++ entry .Localhost   主机名 `localhost`，作为一个值
+
+@ 0 5 0 032ffd7daf5eb7990ddbe50253108ab7
++ entry .host   `host"…"` 插值器：在代码编译时检查的主机名
++     `host"www.example.com"` 是一个 `Hostname`，而不是有效主机名的文本会导致编译错误，并带有 `Hostname.Error` 的消息（对于 `host"www..com"`，消息为 `[↯/s.100.10.4] the hostname is not valid because a DNS label cannot be empty`）。
++     该插值器不接受替换值。
++     声明于 `urticose.url`。
+
+@ 0 1 0 184a7af67c3bcdaf13d768d39009cff5
++ entry .Ipv4   IPv4 地址：四个八位组，作为基于 `Int` 的不透明类型
+
+% 1 1 0 1397a9c3c02cf37902dba68c482d42a3
+
+@ 0 5 0 100e7f6df11f0a78065e0f9b16476af4
++       `Ipv4` 写作 `ip"192.168.0.1"`（在代码编译时检查），可以用 `Ipv4(192, 168, 0, 1)` 从其八位组构建，也可以从打包的 `Int` 构建，或用 `as[Ipv4]` 从文本解码；除了恰好四个以点分隔、范围在 0–255 内的数字之外，任何文本都会抛出 `IpAddress.Error`。
++       它是基于打包的 32 位整数的不透明类型，因此持有一个 `Ipv4` 的开销不超过一个 `Int`。
+
+% 2 1 0 1cbbef0122b687890dd9f44ecc28bd37
+
+% 3 1 0 0aeb47f2e3b6e6320b57ff38a0de8f6c
+
+% 4 1 0 12b1d6074061752515ecee729acb6331
+
+% 0 1 0 154720bbb34704e61b5f3e5ff7a2b6f2
+
+% 0 1 0 10103c3424d94c5406da9bf9b2aa16cb
+
+% 0 1 0 0c6189011fa79806024869bf4b889583
+
+% 0 1 0 14603657d197814f0ecdbfa9740b2e14
+
+% 0 1 0 07ec4e73dfdaeefd05d66ba0a726ec53
+
+% 0 1 0 0b310b990232361c13536d58a891d327
+
+% 1 1 0 077e0614f49729b81bbf33e5a64e5838
+
+@ 0 6 0 055c9356051e0ea2093100e7fafed29f
++       扩展方法 `byte0`、`byte1`、`byte2` 和 `byte3` 读取各个八位组，`int` 读取打包的整数，`subnet(size)` 根据前缀长度构造 `Ipv4Subnet`（屏蔽主机位），`bytes` 则以网络字节序给出四个八位组构成的 `Data`；它们声明在不透明类型的所在地 `urticose.internal` 中。
++       地址也可以与 `Data` 相互编码（`in[Data]`、`data.as[Ipv4]`），就像解析器或 DNS `A` 记录承载它的方式那样。
++       `ip"…"` 插值器同时服务于两个地址族，并根据字面量确定结果类型。
+
+@ 0 2 0 16786b3223395cb409e5b835a15f5c23
++       其伴生对象的成员声明在 `internal.Opaques.Ipv4` 中，该类型从那里导出，并在那里有文档说明。
+
+% 1 1 0 08bc73b8c9888ccc071b986148dd75cb
+
+% 0 1 0 036fbcdd1fc3de900fe78555ee143dcf
+
+% 1 1 0 19269d2e30d83ace1ec71c28f51214ff
+
+% 0 1 0 0c935015a86a4548113d4ae9639bc016
+
+@ 0 1 0 1eb9cca84af2b23d1f2cc39eaf1d24f9
++ entry .Ipv6   IPv6 地址：八个 16 位分组，以两个 `Long` 存储
+
+% 1 1 0 0c4ef0aa4a2d6f551e7e9525f2d05e84
+
+@ 0 6 0 0cef7cad97c4ae9a15ec98297fc9f2b7
++       `Ipv6` 写作 `ip"2001:db8::1"`（在代码编译时检查），可以用 `Ipv6(0x2001, 0xdb8, 0, 0, 0, 0, 0, 1)` 从其八个分组构建，或用 `as[Ipv6]` 从文本解码；后者接受通常的表示法——最多八个以冒号分隔的分组，每组一到四个十六进制数字，大小写均可，且最多有一个 `::` 代表一串零分组——否则抛出 `IpAddress.Error`。
++       它是由 `#highBits` 和 `#lowBits` 组成的 case class，前四个分组和后四个分组各打包进一个 `Long`。
+
+% 2 1 0 0159cffc295d34af0477aec65246a794
+
+% 3 1 0 1fe8e13347dcc3b20bdf3e65d05e088e
+
+@ 0 1 0 1b01a1fb080d1d5f12672135473c66b1
++         label 完整写出的地址
+
+% 1 1 0 1ac6549c56f97d651369bb4a51029cff
+
+% 2 1 0 06e5d82ff5751e820a182ba6c519beda
+
+% 3 1 0 087d573bd6cc2ce01abc8447d1bcd9b7
+
+% 5 1 0 05bbbec1433e4e7f198a793a06edc44b
+
+% 1 1 0 0bbad1a2ee38dc87187a4bab5f1a4ab0
+
+@ 0 1 0 18fdb32cf0d7c1f80175d1907aa392b6
++         label 显示时去掉每个分组的前导零
+
+% 1 1 0 0f3226c50b94dc0b16a92d4a79b5f8be
+
+% 2 1 0 11a678d15537153313f39ead5a5e61fa
+
+% 3 1 0 179cf04842a809c60da40b7a68a1c75f
+
+% 5 1 0 0d6de5a7d967f63410fd9176989d4833
+
+% 6 1 0 0af45de1b267ee061f6c372cba6f78f9
+
+% 1 1 0 042974ad9aed2fc80259bda4ec618a39
+
+@ 0 1 0 1895a8728a3ebfc115613315f3516a54
++         label 最长的一串零分组变为 `::`
+
+% 1 1 0 039d14ac6394a01d0df41cea68ecad6b
+
+% 2 1 0 1de0acc509ad90280d2ed19241009f45
+
+% 3 1 0 01e693f727627c1208152e8e9fb05ad7
+
+% 5 1 0 17e085410a30485d15d0658dd0fa9c9a
+
+% 6 1 0 16edf6390d36c95d0c5736a4c4daf86d
+
+% 0 1 0 0cb352ab3933ff110a9d4706de0a1e09
+
+% 0 1 0 0a9042217fd85dc2113952c5b94d31a6
+
+% 1 1 0 0bbe74f26e32c77d0ddf0bee4d9231e1
+
+% 2 1 0 04bf44d6831aa65b05d39919865b7d3e
+
+@ 0 5 0 1c32e1ed09aeb8e016c32c358296787d
++       `subnet(size)` 扩展方法根据前缀长度构造 `Ipv6Subnet`，`bytes` 则以网络字节序给出十六个八位组；二者都声明在 `urticose.internal` 中。
++       地址可以与 `Data` 相互编码（`in[Data]`、`data.as[Ipv6]`），就像 DNS `AAAA` 记录承载它的方式那样。
++       伴生对象还持有 `Host` 联合类型的 given `hostShowable` 和 `hostDecodable`，因为联合类型没有自己的伴生对象。
+
+@ 0 2 0 0b65fa92247218be117e7da36a7f6a03
++       其字段和伴生对象的成员声明在 `internal.Ipv6` 中，它从那里导出，并在那里有文档说明。
+
+% 1 1 0 08bc73b8c9888cca071b986148dd75c9
+
+% 0 1 0 0f6557a52016eece0179d63a6b1cc554
+
+% 1 1 0 1fe006927a9e66eb18b47f3eea779bbf
+
+% 1 1 0 1bf5804795a83837040d6cc714c0e886
+
+@ 0 7 0 03c83972d509ae36168461f54b6acbde
++ entry .ip   `ip"…"` 插值器：在代码编译时检查的 IPv4 或 IPv6 地址
++     `ip"192.168.0.1"` 是 `Ipv4`，`ip"2001:db8::1"` 是 `Ipv6`：该插值器是透明的，因此结果具有字面量所属地址族给出的类型，根据文本是否包含点来选择。
++     无效地址会导致编译错误，并带有 `IpAddress.Error` 的消息，检查内容与运行时解码相同：对 IPv4，四个 0–255 的分组；对 IPv6，最多八个分组，最多一个 `::`，每组一到四个十六进制数字。
+
+% 2 1 0 1074895ce5ffe09101ab2ec92ec70360
+
+% 3 1 0 0bb410e2eda1360f1bbb2ff963626f26
+
+% 0 1 0 1780718de55be95913cb49126f135a90
+
+% 0 1 0 0bd465d539c8977d1fb78837f7a7a8d0
+
+% 0 1 0 086248c459b71086199f493ce7309e51
+
+% 1 1 0 0200e2b6e7797ad50011d281c79a60e7
+
+@ 0 1 0 17f0615dcfc7f31e0ec657bc1463e6d1
++     该插值器不接受替换值。
+
+@ 0 1 0 03b214476e1d3d530db6f08b5a66a89d
++ entry .IpAddress   `IpAddress.Error` 的所在地，针对无效的 IP 地址或子网抛出
+
+% 1 1 0 06a7c7ae95291683109da851ba103b21
+
+@ 0 3 0 00225afe6805eb931322755f1f4f274e
++       `IpAddress` 自身没有实例：它持有两个地址族和两种子网类型都会抛出的错误，因此解码其中任何一种的程序只需处理一个类型。
++   entry .Error   当文本或字节不是有效的 IPv4 或 IPv6 地址或子网时抛出
+
+% 1 1 0 04ff2270d76ef0140863c6e880a504aa
+
+@ 0 5 0 16d60a8b80600ff81911f75fe768d189
++         错误 `↯/s.100.2`：_the IP address is not valid because `reason`_。
++         由 `as[Ipv4]`、`as[Ipv6]`、`as[Ipv4Subnet]` 和 `as[Ipv6Subnet]` 抛出，由 `Data` 解码器抛出，也由 `ip"…"` 和 `subnet"…"` 作为编译错误报告；当 `EmailAddress.Error` 或 `Url.Error` 的地址部分有问题时，它还会被包装为其原因。
++     entry .Reason   地址或子网被拒绝的原因
+
+% 1 1 0 06c750aa8773125504d05b57176f0443
+
+@ 0 1 0 165ffb493d7b991b1fc492d79ba9344c
++           一个包含十四个编号分支的枚举，每个分支都通过 `Reason.communicable` 提供一条消息：
+
+% 2 1 0 04d9bef35f394dad0f67439b33491f7c
+
+@ 3 4 0 0ea022ecbb6cd26f08a398528328d9d6
++           column  分支
++           column  代码
++           column  消息
++           column  说明
+
+% 0 1 0 0b772e268b44790809be8c4cd65641fe
+
+% 0 1 0 0d3cdacdbfe4ee960d2283bd8b96a587
+
+% 0 1 0 1d4f7f12e1d7ee0319c13b68452c171f
+
+% 0 1 0 0990801b41e8752204630a76d50a3f90
+
+% 0 1 0 0553692c4541364d1a0c407d0cac27f4
+
+% 0 1 0 038386ecf19ac7af1e6af30bdd3c581a
+
+% 0 1 0 060427d7dafab695030d131f65e26e69
+
+% 0 1 0 1191a54a761b991c0f41dd364b245bc8
+
+% 0 1 0 1665e188fd142ca702eff30df0e9dfdb
+
+% 0 1 0 06576b746527411b1a909a896eabdf24
+
+% 0 1 0 0ba88aae8531088813260240f44dd740
+
+@ 0 1 0 05553ac2dfa5f71c05b4f14bcd11d222
++           row  `SubnetWrongFormat(count)`  12  _the subnet contains `count` slash-separated parts instead of 2_  不恰好含有一个 `/` 的文本
+
+% 0 1 0 18758d597096186d0a53f12a27a1b146
+
+% 0 1 0 0b5b8ce500bc24c90d42098bad46e022
+
+% 1 1 0 14618a3977d7842c1384305b4ed88b6e
+
+@ 2 2 0 03ffa28bc5e0eacc0b67c37547f7e292
++       entry .communicable   把每个原因渲染为一条消息
++     entry #reason   地址被拒绝的原因
+
+@ 0 1 0 1ce37710aa8b80360b213b5c42918401
++ entry .Ipv4Subnet   IPv4 网络：一个地址和一个前缀长度，如 `192.168.0.0/24`
+
+% 1 1 0 16c9b986f1ce640f06bec600eaab504e
+
+@ 0 4 0 13157cc95acb9c211cfc4b610810d6ed
++       通过对 `Ipv4` 调用 `address.subnet(size)` 构造，写作 `subnet"192.168.0.0/24"`，或用 `as[Ipv4Subnet]` 从文本解码。
++       前缀以下的主机位在构造时被屏蔽掉，因此随手写出的子网会被纠正，而不会被误解：`subnet"255.123.143.0/12"` 显示为 `255.112.0.0/12`。
+
+% 2 1 0 0d348b526c2d5287133cf50fd08bc2c9
+
+% 3 1 0 153da04db06593ad1c57ff0c9530128b
+
+% 4 1 0 0f7651e6c290fbfd1d06ed273f21f4a5
+
+% 0 1 0 08e9363568b4fff01e339b455343990e
+
+% 0 1 0 15d3598f31c7d146183d7cce30e71385
+
+% 0 1 0 19124db33bbd3803041795a95eff3145
+
+% 1 1 0 096bb1b0620245db1ad716b58f875768
+
+@ 0 2 0 0ad9a8236ecf23760bcb8bdfdb412c22
++       其字段和伴生对象的成员声明在 `internal.Ipv4Subnet` 中，它从那里导出，并在那里有文档说明。
+
+% 1 1 0 0f2887955e81b4f50536d6c276f47571
+
+% 1 1 0 0ef3b0a8bc435780160c5d427f96ecdf
+
+@ 0 1 0 0788d685e0f454f413b0b7d6bf2e87a4
++ entry .Ipv6Subnet   IPv6 网络：一个地址和一个前缀长度，如 `2001:db8::/32`
+
+% 1 1 0 0c62a393e276370710808e84ac62cd51
+
+@ 0 3 0 0d3058eed093b5021bd7e4b8d96ac1d0
++       通过对 `Ipv6` 调用 `address.subnet(size)` 构造，写作 `subnet"2001:db8::/32"`，或用 `as[Ipv6Subnet]` 从文本解码。
++       前缀以下的主机位在构造时被屏蔽掉。
+
+% 2 1 0 153c7db77f48228d0af531e6800a9bd5
+
+% 3 1 0 0e385378cb9f077a0c1e070c1f0ff311
+
+% 4 1 0 1addcb2ea40b3bec1e75436d609ae7ea
+
+% 0 1 0 155f1dba7a98c2a11ecb3b94e38b0af8
+
+% 0 1 0 0ddbd45a445a93761989f3efca47f9af
+
+% 1 1 0 1496e28c2b067aee18a39f739485b64e
+
+@ 0 2 0 03d2c12185a65a090cd4e68dd959b9e2
++       其字段和伴生对象的成员声明在 `internal.Ipv6Subnet` 中，它从那里导出，并在那里有文档说明。
+
+% 1 1 0 0f2887955e81b4f70536d6c276f47573
+
+% 1 1 0 170620ed0f81bb20066a52745833c5f2
+
+@ 0 6 0 14e0a00df4c4eea811beda726cb0cad4
++ entry .subnet   `subnet"…"` 插值器：在代码编译时检查的 IPv4 或 IPv6 子网
++     `subnet"192.168.0.0/24"` 是 `Ipv4Subnet`，`subnet"2001:db8::/32"` 是 `Ipv6Subnet`：该插值器是透明的，根据地址是否包含点来确定地址族。
++     前缀会对照该地址族的范围（0–32 或 0–128）进行检查，因此不可能的掩码是编译错误（`[↯/s.100.2.9] … the prefix length 40 is not in the range 0-32`），前缀以下的主机位则被屏蔽掉。
++     它不接受替换值。
+
+% 2 1 0 0fc8ae0210ebd80b18c8209b21f802f5
+
+% 3 1 0 1e38c8c3b2f8a71403c4de011fd0e5c9
+
+% 0 1 0 1e2d1b5eee8e0cd103a85c4f54113ba7
+
+% 0 1 0 0ff5aeae7a24d70f022522b13d7908ab
+
+% 1 1 0 1da92bce7a79671901735aa10ebacacb
+
+@ 0 1 0 119b5ba6f3f98f1b15083fa19256eb48
++ entry .MacAddress   48 位硬件地址，作为基于 `Long` 的不透明类型
+
+% 1 1 0 168f4259717f1927093088f669e95b84
+
+@ 0 5 0 0ebddc65e64af0ed17cfb21507671e13
++       `MacAddress` 写作 `mac"01-23-45-ab-cd-ef"`（在代码编译时检查），可以用 `MacAddress(1, 2, 3, 4, 5, 6)` 从六个字节构建，也可以从打包的 `Long` 构建，或用 `as[MacAddress]` 从文本解码；后者要求六个以短横线分隔、每组恰好两个十六进制数字的分组，否则抛出 `MacAddress.Error`。
++       `NetworkInterface` 以这种类型报告其硬件地址。
+
+% 2 1 0 0090bb2d89ac93db097bced85eb4ee58
+
+% 3 1 0 01ab155fb90978020c33535cbcf249ae
+
+% 4 1 0 0d9f77f16a17825d175e118d2074a05e
+
+% 0 1 0 18267b3475e997fa199eeb1058d81073
+
+% 0 1 0 10ef8df92103248818efedcac938ff70
+
+% 0 1 0 0c5139d98eab37820b16eedc88132e9f
+
+% 0 1 0 1c694421a6b60b2d1bb1944f53d16e9a
+
+% 1 1 0 1b1868f0aa1b2be907f95bbabcc82dda
+
+@ 0 3 0 0106ab0056a67cda06336eb73288c063
++       扩展方法 `byte0` 到 `byte5` 读取六个字节，`text` 渲染以短横线分隔的小写形式，`long` 给出打包后的值；它们声明在不透明类型的所在地 `urticose.internal.Opaques` 中。
+
+@ 0 2 0 1caa8b66dd34a12b0b1c791b3971581b
++       其伴生对象的成员声明在 `internal.Opaques.MacAddress` 中，该类型从那里导出，并在那里有文档说明。
+
+% 0 1 0 0a2aaa7288ade74a03365721109c5dc9
+
+% 0 1 0 1fcc8aa11639e287101407a09d8cf774
+
+@ 0 5 0 07a8b4c97b43e09c027ef7172a8a1b83
++ entry .mac   `mac"…"` 插值器：在代码编译时检查的 MAC 地址
++     `mac"01-23-45-ab-cd-ef"` 是一个 `MacAddress`；不是六对以短横线分隔的十六进制数字的文本会导致编译错误，并带有 `MacAddress.Error` 的消息（`[↯/s.100.7.2] the MAC address is not valid because group 5 should be two hex digits, but its length is 1`）。
++     它不接受替换值。
+
+@ 0 1 0 1a03cba8cc77c8431a508bfa55d1ea8c
++ entry .Port   端口号，其类型记录了它的传输协议，对于字面量还记录了它的编号
+
+% 1 1 0 06681d45e254bca50239967d647ea98d
+
+@ 0 5 0 0a53d98f558f645215f9e73ac562b41b
++       `Port` 是基于 `Int` 的不透明类型，由 `Port.Type` 的两个类型成员细化：`Transport` 指明协议，因此 `Port over Tcp` 和 `Port over Udp` 是不同的类型（`Tcp.Port` 和 `Udp.Port` 是它们的别名）；`Topic` 承载字面编号，因此 `tcp"smtp"` 是 `Port over Tcp of 25`。
++       因此，服务器的 `Protocolic` given 可以在类型层面绑定到特定端口。
+
+% 2 1 0 0c6f064e458e5fd80fba6ed2478293e2
+
+% 3 1 0 1415e32cb777aa660e1ec27047b9a108
+
+% 4 1 0 1a5bd1109e6ccaff01703d7f2276fc87
+
+% 0 1 0 01c66542172fc6a903d0a7f978e70cb3
+
+% 0 1 0 1d39205f2fcdcf7404bf1b845e7f5407
+
+% 0 1 0 13241ef96c92aff009a17337b3d6d058
+
+% 0 1 0 05f68ed9adbf24a70598dd04ff54768c
+
+% 0 1 0 0455913a8673c8661e755876f3787aa7
+
+% 0 1 0 12e3ad5acf245bee052634dedc90587d
+
+% 1 1 0 089220147d032e8e03b41c0a172e4f4e
+
+@ 0 7 0 1cfbe6f0f4ad54d9143d922faac80e2f
++       不带编号的 `Port[Tcp]()` 通过绑定并释放一个探测套接字，向操作系统请求一个临时端口，这正是测试服务器或动态绑定的服务所需要的；在此期间没有任何东西会保留该端口，因此在调用方自己绑定端口的场合，绑定端口 0 并读取实际得到的端口（`Service#port`）才是不存在竞争的替代做法。
++       `number` 和 `privileged` 扩展方法声明在不透明类型的所在地 `urticose.internal.Opaques` 中。
++       端口是 `Showable` 的，并编码为其编号；它检视为 `⌗25`，以免被误认为它擦除后的 `Int`。
+
+@ 0 2 0 05a7e86426c48203163faabc8337082d
++       其伴生对象的成员声明在 `internal.Opaques.Port` 中，该类型从那里导出，并在那里有文档说明。
+
+% 0 1 0 1af5e829cc2d1ea118291a56ce1a568e
+
+% 0 1 0 15ea9630ca71b54f0aab9d865998fc4c
+
+% 0 1 0 119e57f8e05ed9f805483a87cfe0a5ae
+
+% 0 1 0 0c9305ffdea370a617cabdb75b5f4b6b
+
+% 1 1 0 0610235b3b522896030a38c064f2391c
+
+@ 0 6 0 009354d3e340eefe068c2790d7e0e297
++ entry .tcp   `tcp"…"` 插值器：按编号或 IANA 服务名称指定、在代码编译时检查的 TCP 端口
++     `tcp"443"` 是 `Port over Tcp of 443`，`tcp"smtp"` 是 `Port over Tcp of 25`：名称会在库自带的 IANA 服务名称注册表中专门针对 TCP 传输进行查找，因此只在 UDP 上注册的服务或未知名称会导致编译错误（`[↯/s.100.11] abcdef is not a valid TCP port`），超出 1–65535 范围的编号也是如此（`[↯/s.100.5]`）。
++     它不接受替换值。
+
+% 2 1 0 028851b87af923fe1836b2a8ec62c491
+
+% 3 1 0 01cc181691ad257f0cb50b6ccea58bc2
+
+% 0 1 0 013d485072e3e3a101340c938db94623
+
+% 0 1 0 1e6c34de28060bec14bee712bd2c7a9c
+
+% 1 1 0 152cbbffa58c87ea01e5ab49db510231
+
+@ 0 4 0 03537b73ecd7e63d006dbac965d92f0c
++ entry .udp   `udp"…"` 插值器：按编号或 IANA 服务名称指定、在代码编译时检查的 UDP 端口
++     与 `tcp"…"` 相同，但针对 UDP 传输：`udp"53"` 和 `udp"domain"` 都是 `Port over Udp of 53`，而只在 TCP 上注册的名称无法编译（`[↯/s.100.11] docker is not a valid UDP port`）。
+
+% 2 1 0 17fa3294bff1a7801a5d793b89b65874
+
+% 3 1 0 1a43e8b0a17951810c527d11e770652c
+
+% 0 1 0 1fee05ff882ff2ef0296fb7b6b03bf37
+
+% 1 1 0 1f347a3d89f385150351a30c5d5faaba
+
+@ 0 1 0 0f57bf0c0c235a861e53cb5acbe43396
++ entry .Tcp   TCP 传输，作为端口和端点的幻影类型
+
+% 1 1 0 07d5634c687581da09f1ddb38882b200
+
+@ 0 3 0 0b79efe5fbf620531d3af277dda91990
++       `Tcp` 标记 `Port over Tcp`，`Tcp.Port` 是它的简写，`tcp"…"` 插值器构造的就是它。
++       其伴生对象的 `allocatable` given 让 `Port[Tcp]()` 通过在端口 0 上绑定 `ServerSocket` 来找到一个未使用的端口。
+
+% 1 1 0 05afc13a1179b1e007b9496ecb5084c1
+
+@ 0 4 0 0ba2d94070e316de093d907664f6d77a
++   entry .Port   别名 `urticose.Port over Tcp`
++   entry .allocatable   为 `Port[Tcp]()` 找到一个未使用的 TCP 端口
++       在端口 0 上绑定一个 `java.net.ServerSocket`，读取系统选择的端口，然后关闭它；该端口在那一刻是空闲的，但没有被保留。
+
+@ 0 1 0 16ce0b3defd9c4601e5098d8476ed3fd
++ entry .Udp   UDP 传输，作为端口和端点的幻影类型
+
+% 1 1 0 13fa2c81a6900a0c1e8137eaae21095c
+
+@ 0 3 0 12e5fa111afa27350e0f9bb16f9e1ab7
++       `Udp` 标记 `Port over Udp`，`Udp.Port` 是它的简写，`udp"…"` 插值器构造的就是它。
++       其伴生对象的 `allocatable` given 让 `Port[Udp]()` 通过在端口 0 上绑定 `DatagramSocket` 来找到一个未使用的端口。
+
+% 1 1 0 0ed0ecd883422ceb087153687ee1d62d
+
+@ 0 4 0 086460762631ae071ca3c5287be8d818
++   entry .Port   别名 `urticose.Port over Udp`
++   entry .allocatable   为 `Port[Udp]()` 找到一个未使用的 UDP 端口
++       在端口 0 上绑定一个 `java.net.DatagramSocket`，读取系统选择的端口，然后关闭它；该端口在那一刻是空闲的，但没有被保留。
+
+@ 0 4 0 0e85a9c4fd9b13e20c9c23ca709d8660
++ entry .Quic   QUIC 传输，作为端口的幻影类型
++     QUIC 运行在 UDP 之上，但 `Port over Quic` 与 `Port over Udp` 是不同的类型。
++     没有提供 `Allocatable` 实例，因此 QUIC 端口需要显式的编号 `Port[Quic](443)`，而 `Port[Quic]()` 无法编译。
+
+@ 0 1 0 169bbd3a8660632f09f02f59b7784567
++ entry .Allocatable   操作系统能够为其找到未使用端口的传输协议
+
+% 1 1 0 0c0836d6e588908803530c4802cc04ff
+
+@ 0 5 0 178040430ee1d8510e282da67c7e31a0
++       `Port[transport]()` 背后的类型类：`Tcp.allocatable` 和 `Udp.allocatable` 是它的实例，各自在端口 0 上绑定一个相应种类的探测套接字，然后释放它。
++       它以传输协议的幻影类型为键，因为传输协议在运行时被擦除，而探测套接字仍必须是正确的种类。
++   entry #unused   系统片刻之前报告为空闲的端口号
+
+@ 0 1 0 084c41206e56edcb1b6946ea6c9655bb
++ entry .Service   正在运行的服务器：如何停止它，以及它绑定的端口
+
+% 1 1 0 1d626b1c16ae8bef017c42039dfc67cf
+
+@ 0 6 0 131bb804325085800af80c33b989bb58
++       在通过回调停止服务器的平台上，`Protocolic` 服务器（以及 `serve`）返回的东西。
++       `#port` 是实际绑定的端口，当请求服务器使用端口 0 时，它就是系统选择的端口，因此请求端口 0 并读取 `port` 是在空闲端口上运行服务器的无竞争方式。
++   entry #cancel   停止服务器
++   entry #port   服务器绑定的端口
+
+@ 0 1 0 1bb9148da28b1a350729785b40ee7f69
++ entry .Protocolic   能够在端口上提供服务的协议：`serve` 背后的类型类
+
+% 1 1 0 1b482b895989f187097747a392af8660
+
+@ 0 7 0 1cd6f4d229f39e0f0cc1587c29782bf3
++       `protocol is Protocolic over port` 说明如何在传输协议相匹配的 `port` 上启动 `protocol` 的服务器：`scintillate` 提供 `Http is Protocolic over (Tcp.Port of 8080)` 及其同类实例，因此 `tcp"8080".serve[Http](handler)` 会启动一个 Web 服务器。
++       该类型类固定了一个 `Request` 类型（一种能力，因为请求是一个活动的连接）、一个 `Response` 类型和一个 `Server` 类型，其 `server` 方法接受一个处理函数，该处理函数以上下文方式接收每个请求，并可以返回捕获该请求的响应——流式正文理所当然地保留着它所应答的连接。
+
+% 1 1 0 077da9ed90d992bf01ecb634d987ee68
+
+% 1 1 0 07ae7f2521a14d6c022cf28b8b6013a5
+
+@ 0 4 0 06934dcbc9d485ef16b16740b515571c
++   entry #Request   处理函数接收的请求的类型，是一种能力
++   entry #Response   处理函数返回的响应的类型
++   entry #Server   正在运行的服务器的类型，例如 `Service`
++   entry #server   在端口上启动服务器，并为每个请求提供一个处理函数
+
+@ 0 6 0 062fee4ab9eaf4001ceee38b04a19002
++ entry .serve   `port.serve[Protocol](handler)`：在端口上启动某个协议的服务器
++     任何具有针对它的 `Protocolic over` 的端口类型上的扩展方法：`tcp"8080".serve[Http]: request ?=> …` 启动作用域中 `Http is Protocolic` given 所描述的服务器，对每个请求调用处理函数，并返回该协议的 `Server`（对于 scintillate 的服务器是 `Service`）。
++     该 given 自带其所需——`Tactic`、`Monitor`、日志——因此调用处的作用域中必须具备这些。
+
+% 0 1 0 15d6d2800841da9e1c6e709ce05d6a7d
+
+% 0 1 0 1a8ec18672c39e03185024ae675e9c25
+
+% 0 1 0 0472326144a49ce71767be845f62f575
+
+% 1 1 0 149c77db45ac644f1a74f205bbafc35a
+
+% 0 1 0 1fd1ddf7dfb5ad7a0e39279b9f8cd6df
+
+% 0 1 0 03f91ab3dc19c4f9112c539014548423
+
+% 0 1 0 0a521d99b45fc7d610917706d09c2d5c
+
+% 1 1 0 062360b94dd462cb18e2d0c3dddc770e
+
+% 0 1 0 1c1f3e45ded604af0bc729117e24f8f7
+
+% 0 1 0 1d5e1a4fa6f0818802d7be243df390a3
+
+% 0 1 0 144465424113a2fd0327fada211973c4
+
+% 0 1 0 1f0f52b4cf1ae7a8171c92112fe8b384
+
+% 0 1 0 126848a6f7ec053615c06d5aaf144740
+
+% 0 1 0 0d32a4a3749b6c3f11e46c42e6bd1fa5
+
+% 1 1 0 1c4297c18e007a6e08183e0ab165aabb
+
+@ 0 1 0 0c434a525ac6c3df1d2a21e8cb4b291f
++ entry .Endpoint   一个远程地址和一个端口：建立连接的位置
+
+% 1 1 0 089f08ea23442a9f151c4726a3a3285e
+
+@ 0 4 0 0f9ef9813a77187917df1f75b574650e
++       `Endpoint[port]` 把远程地址的文本——渲染后的主机名或 IP 地址——与任意类型的端口配对，用 `on` 扩展方法构造：`host"example.com" on tcp"80"`。
++       套接字库接受它来建立连接，而 `Endpoint[Udp.Port]` 是 `coaxial.dns` 发送 DNS 查询的目标。
+
+% 2 1 0 1a40c6b3c6ba567e187bffa3f7a5dda3
+
+% 3 1 0 00702d827ab936980af76f537f7ca022
+
+% 0 1 0 156ea0aff08afd7b169c6dc68d5bf1ba
+
+% 0 1 0 04f8ec880abadb2114fe51a46bdcc333
+
+% 0 1 0 1b2c549b922dd12810eeb2efa35d9c0d
+
+% 1 1 0 0d0eca40fc69e74d0c4e9d367b76b28d
+
+% 0 1 0 09143826c29ebac712ec771083d3f67c
+
+% 0 1 0 0234c678526576581205a595d961d3fd
+
+@ 0 6 0 1887c2be9d2f549a0752ab1be03563a8
++   entry .showable   把端点渲染为 `remote:port`，适用于 `Showable` 的端口类型
++   entry .inspectable   两个部分都经过检视的调试渲染：`Endpoint(t"example.com":⌗80)`
++       端口是被检视而不是被显示，这样就不需要端口类型的 `Showable`，并且端口保留其自身类型的标记。
++   entry #remote   远程地址，作为文本
++   entry #port   端口，类型与给定时相同
+
+@ 0 4 0 092ff32594a58cdf04d129fea5b42581
++ entry .on   `remote on port`：由任何 `Remotable` 的东西和一个端口构造 `Endpoint`
++     任何具有 `Remotable` 实例的值——`Hostname`、`Ipv4` 或 `Ipv6`——上的中缀扩展方法，把其渲染文本与任意类型的端口配对：`ip"127.0.0.1" on udp"53"` 是 `Endpoint[Port over Udp of 53]`。
+
+@ 0 1 0 1e97a6156b9229560f989ac83b8e269c
++ entry .Remotable   可以作为 `Endpoint` 远程地址的东西
+
+% 1 1 0 1746445a2ddfaa1a011b772a48a2e901
+
+@ 0 7 0 1e1fd7256a3b69aa0264990a15fe3139
++       把值渲染为远程地址文本的类型类；`Hostname`、`Ipv4` 和 `Ipv6` 在这个伴生对象中具有实例，任何其他类型都可以添加一个实例，以便与 `on` 一起使用。
++   entry .ipv4   作为远程地址的 IPv4 地址，采用点分四段形式
++   entry .ipv6   作为远程地址的 IPv6 地址，采用其最短形式（不带方括号）
++   entry .hostname   作为远程地址的主机名，采用以点分隔的标签形式
++   entry #remote   远程地址的文本
+
+@ 0 1 0 116d8e116eedfd11192de623d331ba29
++ entry .EmailAddress   电子邮件地址：本地部分、域名，以及可选的显示名称
+
+% 1 1 0 0cf6c199f793fe8f187f213bc49b4767
+
+@ 0 7 0 04bd653b76d9004a0a771b0ccb9fe418
++       `EmailAddress` 写作 `email"test@example.com"`（在代码编译时检查），或用 `as[EmailAddress]` 从文本解码，当文本违反规则时抛出 `EmailAddress.Error`：本地部分最多 64 个字符，可以不加引号（字母、数字、符号 `` !#$%&'*+-/=?^_`{|}~ `` 和句点，但不能有开头、结尾或连续的句点），也可以加引号（`"john..doe"@example.org`，支持 `\"` 和 `\\` 转义）；域名是 `Hostname` 或带方括号的 IP 地址，即 `[192.168.0.1]` 或 `[IPv6:2001:db8::1]`。
+
+% 2 1 0 0c1db1e28ad4a2911121888f017ba883
+
+% 3 1 0 1f6c06d0a5068bd0076cbf05f2b9ada5
+
+% 4 1 0 1578bd3752ef68b300d22d6a06db98d4
+
+% 0 1 0 14043b2db7dc47f21fbe03070b6da809
+
+% 0 1 0 0af4bb79f9bca6b50bff19852cd8cff9
+
+% 0 1 0 0d4bdc60bc3bda1806d911344ef53f71
+
+% 0 1 0 09a25f4cb59380131319902e4d502ee4
+
+% 1 1 0 0984fe1a7c0802c61ef5e647a662d5e6
+
+@ 0 4 0 07c935ab6196571c1f0d0e52948f622f
++       解码得到的地址没有显示名称；`EmailAddress(t"Hamlet", localPart, domain)` 会给出一个显示名称，`#text` 把它渲染为 `Hamlet <local@domain>`。
++       `emailAddressInterfaces` 包把这个类型指定为 anticipation 的 `EmailAddresses` 域的代表，供接受任意电子邮件地址类型的库使用。
+
+% 0 1 0 0f43a595939e59e5186e8350e4357b3d
+
+% 0 1 0 08bd667e652766281c933b266c160223
+
+% 1 1 0 1cda35cb832606441ed75aafb5c6cab6
+
+@ 0 8 0 1797a605ead6e53109b1b5ff485e92f3
++   entry .decodable   从文本读取地址，若无效则抛出 `EmailAddress.Error`
++       需要一个 `Tactic[EmailAddress.Error]`；该 given 会捕获它。
++       有问题的域名报告为 `InvalidDomain`，包装所发现的 `Hostname.Error` 或 `IpAddress.Error`。
++   entry .encodable   把地址编码为其文本，有显示名称时一并包含
++   entry .showable   把地址渲染为其文本
++   entry .inspectable   调试渲染，与显示形式相同
++   entry .parse   从文本读取地址，与 `.decodable` 相同
++   entry .Error   当文本不是有效电子邮件地址时抛出
+
+% 1 1 0 0b4c25ad2beafb51043ec3d470b7326d
+
+@ 0 3 0 077eb270b71c4f73042e745fe9a9be9f
++         错误 `↯/s.100.4`：_the email address is not valid because `reason`_。
++         由 `as[EmailAddress]` 抛出，也由 `email"…"` 作为编译错误报告。
++     entry .Reason   电子邮件地址被拒绝的原因
+
+% 1 1 0 09536a0e61702a540c8b929d451de7d7
+
+@ 0 1 0 0d8936029d9651de1d0a5be10bf7c86b
++           一个包含十二个编号分支的枚举，每个分支都通过 `Reason.communicable` 提供一条消息：
+
+% 2 1 0 038377ec8d2f124b1dbaa6ab825f0d68
+
+@ 3 4 0 1c295d85b20a9e3712d71b43e945d530
++           column  分支
++           column  代码
++           column  消息
++           column  说明
+
+% 0 1 0 0a98a41c4ce6096f01c0199df0c9da1e
+
+@ 0 1 0 01e433bf56568ccf19c703a5fb61be7a
++           row  `InvalidDomain(error)`  2  _the domain is not a valid IP address: …_ 或 _the domain is not a valid hostname: …_  包装域名的 `IpAddress.Error` 或 `Hostname.Error`，其消息跟在冒号之后
+
+% 0 1 0 05d3ce4d27df5e2b1aa711e066d5ee60
+
+@ 0 4 0 0d3252e2831d2e091ce66416f17d9070
++           row  `TerminalPeriod`  4  _the local part ends in a period, which is not allowed_  出现在不带引号的本地部分中
++           row  `SuccessivePeriods`  5  _the local part contains two adjacent periods_  出现在不带引号的本地部分中
++           row  `InitialPeriod`  6  _the local part starts with a period, which is not allowed_  出现在不带引号的本地部分中
++           row  `UnescapedQuote`  7  _the local part contains a quote character which is not escaped_  出现在带引号的本地部分中
+
+% 0 1 0 06e327c02d44a6d00a6f2ffba7c52fdc
+
+% 0 1 0 18fd5bbf9b63ca85041f065cee01768d
+
+% 0 1 0 19ce1c88197a7fbe184b09c303997042
+
+% 0 1 0 0dc4832fe1e68a1b0bcf564ea78d2096
+
+% 0 1 0 145744f16c0c68190ea088d7545fb7b0
+
+% 1 1 0 0a5c74ac0ec139ae190055517f562e9a
+
+@ 0 8 0 0e700fed420d6c7607c849978c6099c5
++       entry .communicable   把每个原因渲染为一条消息
++     entry #reason   地址被拒绝的原因
++   entry #displayName   显示名称，或 `Unset`
++   entry #localPart   `@` 之前的部分，带引号或不带引号
++   entry #domain   `@` 之后的部分：主机名或 IP 地址
++   entry #text   作为文本的地址：`local@domain`，有显示名称时为 `name <local@domain>`
++       带引号的本地部分会连同引号一起渲染，IPv6 域名则带方括号，与地址书写时的形式一致。
+
+@ 0 5 0 104611e78039b6ca000ccd0a4dd3f64a
++ entry .email   `email"…"` 插值器：在代码编译时检查的电子邮件地址
++     `email"test@example.com"` 是一个 `EmailAddress`，其检查与 `as[EmailAddress]` 相同，检查失败时产生带有 `EmailAddress.Error` 消息的编译错误。
++     带引号的本地部分需要三引号字面量：`email""""test user"@example.com"""`。
++     它不接受替换值。
++     声明于 `urticose.url`。
+
+@ 0 5 0 01a46fec6134342703f4549bc6ac9d5e
++ entry .LocalPart   电子邮件地址中 `@` 之前的部分：带引号或不带引号
++     一个包含两个分支的枚举，每个分支都持有其 `text`：`Unquoted(text)` 是普通形式，`Quoted(text)` 是带引号的本地部分中引号之间的文本（`"john..doe"`），它可以包含不带引号的部分所不允许的字符。
++     `EmailAddress#text` 在渲染时会恢复引号。
+
+@ 0 1 0 1b1fc49461c9188e0a81f052909bc9f0
++ entry .NetworkInterface   机器的一个网络接口，连同其地址
+
+% 1 1 0 1a271a843e0b98be1802f5a0e897d54d
+
+@ 0 5 0 1be03920e986964811b1e30b8fc6d2e1
++       `java.net.NetworkInterface` 作为值的快照：它的名称和显示名称、索引、硬件（MAC）地址、绑定到它的 `InterfaceAddress`、MTU，以及它是否已启用、是否为环回接口、点对点接口、支持多播或虚拟接口。
++       伴生对象负责枚举和查找接口；如果平台无法枚举或检查接口，每次调用都会抛出 `NetworkInterface.Error`。
+
+% 2 1 0 196f87d8f0f8c04e001d97d20d4b3215
+
+% 3 1 0 0ee39dfcb239c64b0b866a87ef82497c
+
+% 4 1 0 0ae24295884c456e1688aef3cda2c7e1
+
+% 0 1 0 1c52e7b4fd2f352b1de45685987d99b5
+
+% 0 1 0 1df1a2ab201475c21b70a8537b9c4dc7
+
+% 0 1 0 05cb229c54c0b2501c2c21d87c00e052
+
+% 1 1 0 059f079f8ea7e64a0e837eed02d41f91
+
+% 0 1 0 1a41a5c76ff61d320df3c39074588601
+
+% 0 1 0 104a7d0b4aecc50f12135065d904fb11
+
+@ 0 6 0 0446edfa5ab6e29a046700f6a566cb5b
++   entry .showable   把接口渲染为其名称
++   entry .all   平台报告的每个接口，按平台的顺序排列
++   entry .byName   具有 `eth0` 之类名称的接口，或 `Unset`
++   entry .byIndex   具有某个平台索引的接口，或 `Unset`
++   entry .byAddress   某个 IP 地址所绑定的接口，或 `Unset`
++   entry .Error   当平台无法枚举或检查其接口时抛出
+
+% 1 1 0 138f1db285df4b881402f3d54f982167
+
+@ 0 3 0 1db7a6e96562155001b1a67cb94c4708
++         错误 `↯/s.100.6`：_the network interface could not be read because `reason`_，包装套接字错误的消息。
++     entry .Reason   无法读取接口的原因
+
+% 1 1 0 1c1d1cdd003c4cb4188b4b4107710206
+
+@ 0 17 0 03e1f73dc9a004790d496cbe9341303f
++           无法获取接口列表时为 `Enumeration(message)`，无法读取某个接口的详细信息时为 `Inspection(name, message)`。
++       entry .communicable   把每个原因渲染为一条消息
++     entry #reason   无法读取接口的原因
++   entry #name   接口的名称，例如 `eth0` 或 `lo0`
++   entry #displayName   平台为该接口提供的描述性名称
++   entry #index   平台为该接口分配的索引
++   entry #hardware   MAC 地址，对于没有 MAC 地址的接口为 `Unset`
++   entry #addresses   绑定到该接口的地址，每个都带有其前缀和广播地址
++   entry #mtu   最大传输单元，以字节为单位
++   entry #up   接口是否已启用并在运行
++   entry #loopback   接口是否为环回接口
++   entry #pointToPoint   接口是否为点对点链路
++   entry #multicast   接口是否支持多播
++   entry #virtual   接口是否为虚拟（子）接口
++   entry #ipv4   绑定到该接口的 IPv4 地址
++   entry #ipv6   绑定到该接口的 IPv6 地址
+
+@ 0 1 0 0333ec08429ddc4c08308a7e84321881
++ entry .InterfaceAddress   绑定到网络接口的地址，连同其前缀长度和广播地址
+
+% 1 1 0 13cc3e11f56d5b7410df499ce6247b26
+
+@ 0 5 0 119f80642c4278ae1f98fe538cb1112a
++       `NetworkInterface` 的 `addresses` 之一：地址本身（IPv4 或 IPv6）、其子网前缀的长度，以及对于 IPv4 的广播地址。
++   entry #address   地址，IPv4 或 IPv6
++   entry #prefix   子网前缀长度，以位为单位
++   entry #broadcast   广播地址，对于 IPv6 地址为 `Unset`
+
+@ 0 1 0 1e01da636ae603af18be90a80767c9b0
++ entry .Internet   网络访问的证据，作为一种能力，它可能表明网络不可用
+
+% 1 1 0 1dde47d93e8aa1cb06ac7c21fe6dc0d2
+
+@ 0 7 0 0a8e8bd478e543e51e429438cf128883
++       `Internet` 持有一个事实 `#online`，并且是一种能力：依赖连通性的方法以上下文方式接受一个 `Internet`，从而使其影响范围体现在签名以及其返回值的捕获集中。
++       `Online` 是断言网络*可用*的子类型，通常是访问网络的方法所要求的；可能处于离线状态的 `Internet` 可以通过 `#require`（若不可用则抛出 `Internet.Error`）或 `#appropriate`（若不可用则产生 `Unset`）转换为 `Online`。
++       `internet(online)` 在作用域中有 `Internet` 的情况下运行一个代码块，`online` 则从作用域中的 `Internet` 读取该事实。
+
+% 2 1 0 075a23e51a76ec4808d735454e7f3522
+
+% 3 1 0 11765b3094df837016efd59ba5c0bf0e
+
+% 4 1 0 00dc87b40c6e220b1e2fe72a1096ecf5
+
+% 0 1 0 1b74f09a239842df0bd2cf23d3bac185
+
+% 0 1 0 07d3876f0b8de93805e1c70cf8f22a42
+
+% 0 1 0 0b155bd7fbc494b109968f9e7e4d68de
+
+% 0 1 0 1cc1e4249ecf7efc0c0e5ce5491250a3
+
+% 1 1 0 0857ff39090053f906e9bdff7fcdff3b
+
+@ 0 2 0 0b5f1235380ecc6908f21984f013e50a
++       该能力不受作用域限制且持久：它不携带状态，因此可以被存储，并同时在每个任务中使用，这也是 `internetAccess.online` 可以是 given 的原因。
+
+% 0 1 0 0a0ff4b06a52d95d1bd16031fdd175e9
+
+% 0 1 0 1ef0edcfd58a8b460026ca18d21ae078
+
+% 0 1 0 0e8327949d4c137c0db90f4036f585e9
+
+@ 0 1 0 01f4b56189bec38d1884b2c3663b0e80
++   entry .Error   当需要网络访问而网络不可用时抛出
+
+% 1 1 0 1d361ee4d90d5eb80170b78ee29e50a5
+
+@ 0 7 0 042e0df7cc1ef1491af5dd15d13f9008
++         错误 `↯/s.100.9`：_an Internet connection is not available_。
++         由离线 `Internet` 上的 `Internet#require` 抛出，也由 `internetAccess.offline` 在召唤 `Online` 时立即抛出。
++   entry #online   网络是否可用
++   entry #require   运行需要 `Online` 的代码块，若离线则抛出 `Internet.Error`
++       需要一个 `Tactic[Internet.Error]`。
++   entry #appropriate   运行需要 `Online` 的代码块，若离线则产生 `Unset`
+
+@ 0 6 0 123842f8f9c02a3815a63402f456cf96
++ entry .Online   断言网络可用的能力
++     `Online` 是 `online` 为 `true` 的 `Internet`：访问网络的方法所接受的上下文参数（`(using Online)`），这样一来，未经授予就无法访问网络。
++     它可以通过 `import internetAccess.online`、`Internet#require` 或 `Internet#appropriate` 授予，也可以通过伴生对象 `Online` 授予，该伴生对象本身就是一个可显式传递的实例。
+
+% 2 1 0 031520116ddc41fa0299078fb6bdf140
+
+% 3 1 0 1e7edf8a85457e4c01b3d47b2ab48553
+
+% 0 1 0 11638efeb008c55609d015e26792ca37
+
+% 0 1 0 1ea562b633bdf8221e198d2771dc7029
+
+% 0 1 0 1709d120de5eb56803b08094b7b0c1d3
+
+% 1 1 0 1e0f20b11ee9509d121b4840474e204e
+
+@ 0 5 0 1d0c6ac2712f14ab0c75b64ca5a2ff14
++ entry .internet   `internet(online)(block)`：在作用域中有 `Internet` 的情况下运行代码块
++     `internet(true)` 向代码块授予一个在线的 `Internet`，`internet(false)` 则授予一个离线的 `Internet`，代码块中的代码随后可以调用 `online`，或调用 `Internet#require` 和 `Internet#appropriate` 来获得 `Online`。
++     不应访问网络的测试会在 `internet(false)` 下运行其代码。
+
+@ 0 3 0 0cf2d7b91751f3b310d7808585d8efd0
++ entry .online   作用域中的 `Internet` 是否表明网络可用
++     从上下文中的 `Internet` 读取 `Internet#online`；作用域中需要有一个 `Internet`，例如 `internet(…)` 所提供的。
+
+@ 0 1 0 1dcebfeae8e82c4513e6100daa511c23
++ entry .internetAccess   网络访问的两种方针，每种都是需要按名称导入的 given
+
+% 1 1 0 090712c91e348bae182f4a4fb5107f49
+
+@ 0 3 0 09828200ded475701452373cb9776ab8
++       代码能否访问网络取决于作用域中是否有 `Online`，而这一选择刻意从不隐式进行：`import soundness.*` 不会引入其中任何一个，程序需按名称导入其中之一。
+
+% 2 1 0 04d004e0902f279c118f6d67493b8605
+
+% 3 1 0 086a29f014306e1f1086c56e41516453
+
+% 0 1 0 1884f26bf28188a80dd0c391c47df8c6
+
+% 1 1 0 0d89d1606c94ba231e737fda57594f4d
+
+@ 0 9 0 17a844fc723fe88f1bdba285c4dcc140
++       `online` 在导入它的任何位置授予该能力；`offline` 则使每次使用该能力的尝试都抛出 `Internet.Error`，程序（或测试）正是以此证明某条代码路径不会访问网络。
++   entry .online   授予 `Online`：网络可用
++       一个 inline given，因此每次召唤都会生成一个新的 `Online`，而不是共享一个静态字段。
++   entry .offline   拒绝 `Online`：召唤它会抛出 `Internet.Error`
++       需要一个 `Tactic[Internet.Error]`，它在请求 `Online` 的那一刻、尝试任何网络调用之前就会被抛出。
+
+@ 0 1 0 09ccb02845e4b14607a8718d7fe2a786
++ entry .Url   URL：一个 scheme、一个可选的 authority、一个位置，以及可选的查询和片段
+
+% 1 1 0 117c12110a8afb7b0b5eb5625ab4a265
+
+@ 0 8 0 16609b3782b78b1f1bb3afbc0138d7b0
++       `Url[scheme]` 写作 `url"https://example.com/path"`（在代码编译时检查），或用 `as[HttpUrl]` 或 `as[Url[Label]]` 从文本解码，当文本不是 URL 时抛出 `Url.Error`。
++       它的类型参数是作为字面量类型的 scheme：`HttpUrl` 是 `Url["https" | "http"]`，`url"ftp://…"` 是 `Url["ftp"]`，因此接受 `HttpUrl` 的函数不能被传入 `mailto:` URL。
++       各个部分都带有类型：`#scheme` 是 `Scheme`，`#authority` 是 `Authority`（用户信息、`Host` 和端口），`#location` 是路径文本，`#query` 和 `#fragment` 是 `Optional[Text]`，当 URL 没有 `?` 或 `#` 时缺省。
+
+% 2 1 0 17303a0b1a31acd7069e74629b67c163
+
+% 3 1 0 1eef51d2e476878d11a00ca7edde6b3a
+
+@ 0 1 0 13c8c92566d4517e064a9b659758dbc0
++         label 由各个部分构建的 URL
+
+% 1 1 0 119d8c9aee91537c0d146321b359aa17
+
+% 2 1 0 0f89452b45634c4e16ada5ed55d400c8
+
+% 3 1 0 09ef67d2c50da3561431efeeaf967cff
+
+% 5 1 0 0d3a54cfcc1a4b6e15a86c2bb418bc16
+
+% 0 1 0 12da7bcf8728b2820b8487a93054e40c
+
+% 0 1 0 0c029ee5dbf78e001e778351c8c8b258
+
+% 1 1 0 0ea7213b960c7e6908c8bd726204f4a7
+
+@ 0 1 0 1f08e1449b02a63315c9f734dc41c799
++         label 带有查询和片段
+
+% 1 1 0 15830c1aa81696860d3838c0977359fd
+
+% 2 1 0 1aa7c79b5bd9ee66090f64bf4b7323cf
+
+% 3 1 0 045d966a34da3ae517e1406abe6440d9
+
+% 5 1 0 0089faf840b71ae517ae8443025717ec
+
+% 0 1 0 18e88f9523806e6a1ff26f34208df35d
+
+% 0 1 0 10c79dd5eabe82530ac5806664e053db
+
+% 1 1 0 0c5cdc78420805271bb9a057fb8ffd3c
+
+@ 0 1 0 13aeff8ba3a6152900acd10907c05291
++         label 以字面量写出并读回的同一个 URL
+
+% 1 1 0 19f9d40441af89590544a0c5c3a40cc9
+
+% 2 1 0 1c875af11968887b040a6884c67319e9
+
+% 3 1 0 1073d2fafde1f1ba070febc25c7663d7
+
+% 0 1 0 10da65b51b91f7f91d49b17760fffe1b
+
+% 0 1 0 0e6e3a6f809eddf215b93d0d95af34df
+
+% 0 1 0 1d4a1fccee04771e0054c720c6bbde1a
+
+% 0 1 0 154a24af8eb393ee04045dcb084943af
+
+% 0 1 0 0b8e1682c3fcaccb142a506f119eeef0
+
+% 1 1 0 158240196cf0715b0a4db908b76385d5
+
+% 2 1 0 1e1dcc5beca90adf1ae3275c074ce330
+
+@ 0 8 0 1c21b33aef05060e06aab4e94f82bc05
++       URL 是 `Www` 平面的一个 `Root`，`Path on Www` 以 Web 的 `/` 分隔符和百分号编码从它派生而来。
++       authority 的读取是严格的：错误的主机名或 IPv6 地址是带有 `BadHostname` 或 `BadIpv6` 原因的 `Url.Error`，端口必须是 0–65535 范围内的数字。
++       scheme 之后没有 `//` 的 URL（`mailto:`、`urn:`、`tel:`）没有 authority，其余全部内容都是位置。
++       只有 `HttpUrl` 是 `Abstractable across Urls`，其他库正是以此把它当作“任意 URL 类型”接受；`urlInterfaces.soundnessUrl` 把它指定为该域的代表。
+
+% 0 1 0 03414de803b00cec02b8b2fcad1282bf
+
+% 0 1 0 080ad9772d8dec2e03304c3b8b859928
+
+% 0 1 0 08295236594eecbb0cd92a795fa831be
+
+% 0 1 0 079feb990919859b13864ebd78739663
+
+% 0 1 0 0c2d7d437e3526d30ca06500440ee999
+
+% 0 1 0 140a054fa6ce78b71462d0f3ab0def5c
+
+@ 0 17 0 179f882e8b91f9820ec3df3a164ad561
++   entry .abstractable   作为 anticipation 的 `Urls` 域文本的 `HttpUrl`
++   entry .showable   把 URL 渲染为 `scheme:`，然后是 `//authority`、位置、`?query` 和 `#fragment`
++   entry .encodable   把 URL 编码为其文本
++   entry .inspectable   调试渲染，即规范的 URL 文本
++       `Url` 是普通类而不是 case class，因此如果没有这个实例，它会按其 `toString` 检视；URL 文本显示了该类型所承载的每个部分。
++   entry .decodable   从文本读取 `Url[scheme]`，若不是 URL 则抛出 `Url.Error`
++       需要一个 `Tactic[Url.Error]`；该 given 会捕获它。
++       scheme 是第一个 `:` 之前的所有内容（若没有 `:`，则抛出 `Expected(Colon)`）；若其后跟着 `//`，则 authority 一直延伸到下一个 `/`、`?` 或 `#`，并被解码为 `Authority`；然后在第一个 `?` 及其后的第一个 `#` 处拆分出位置、查询和片段。
++       scheme 类型参数不会对照文本进行检查：`t"ftp://x".as[HttpUrl]` 会成功，因此对任意 scheme 的文本请使用 `Url[Label]`，并在需要时检查 `scheme`。
++   entry .instantiable   为 anticipation 的 `Urls` 域从文本构造 `HttpUrl`
++       即 `Instantiable across Urls from Text` given，需要一个 `Tactic[Url.Error]`；`urlInterfaces.soundnessUrl` 是按名称提供的同一个实例。
++   entry .Error   当文本不是有效 URL 时抛出
+
+% 1 1 0 02587b38bdecea1508cc9a85b8b1f3b8
+
+@ 0 10 0 0f9bc4e9c6a697ba151bb29f370c2ea3
++         错误 `↯/s.100.8`：_the URL `text` is not valid: `reason` at `offset`_。
++         由 `as[HttpUrl]`、`as[Authority]` 抛出，也由 `url"…"` 作为编译错误报告。
++         `#offset` 是在文本中发现问题的位置。
++     entry .communicable   把每个原因渲染为一条消息
++     entry .Reason   URL 被拒绝的原因
++         `Expected(expectation)` 表示某个字符或部分不在应有的位置；`BadHostname(hostname, reason)` 包装错误主机的 `Hostname.Error.Reason`；`BadIpv6(reason)` 包装错误的带方括号地址的 `IpAddress.Error.Reason`。
++     entry .Expectation   解析器失败时所期待的内容
+
+% 1 1 0 0bec5dc8784e92591fba536ed4c6c162
+
+@ 0 8 0 04e2a6310779c2ee10b1adfb85292849
++           `Colon`（没有 scheme 分隔符）、`More`（文本过早结束，例如 `[` 之后没有 `]`）、`LowerCaseLetter`、`PortRange`（端口号超出 0–65535）和 `Number`（端口不是数字）。
++       entry .communicable   把每个期待项渲染为一个短语
++     entry #text   被解码的文本
++     entry #offset   在文本中发现问题的位置
++     entry #reason   它被拒绝的原因
++   entry .Fragment   替换进 `url"…"` 插值器的值，以及它的拼接方式
+
+% 1 1 0 1ae91f23a8fa2d581b7fc6f0e2fd5269
+
+@ 0 6 0 0d9a232844e62d221775fa2f876e6485
++         `url"…"` 插值器的 `Insertion` 类型：字面量中的每个 `$value` 都由一个 `Substitution` given 转换为 `Fragment`，库提供了三个这样的 given。
++         `Integral(value)` 是 `Int`，只能跟在 `:` 之后，并成为端口；`Textual(value)` 是文本，在拼接处会进行 URL 编码；`RawTextual(value)` 是按原样拼接、不经编码的文本（所提供的替换都不会产生它）。
+
+% 2 1 0 072331ab06928f81106761776aee2a3c
+
+% 3 1 0 104781e6d07f5f751d3c5fdeca95d4bd
+
+% 0 1 0 0f5489f225ee6a910d9c30162836aa89
+
+% 0 1 0 1b1a9b566a4bdfdc0279869ffb5508c8
+
+% 0 1 0 00547552ceb7a5340f87d6c41e888621
+
+% 1 1 0 121648d63cdb08cd0525274357630cfa
+
+@ 0 16 0 0a7efbb3a9ca97c6089bf6b8e39552f5
++     entry .apply   把文本包装为 `Textual` 片段，或把 `Int` 包装为 `Integral` 片段
++     entry .text   把 `Text` 替换进 URL，经过编码
++     entry .int   把 `Int` 作为端口号替换进 URL，位于 `:` 之后
++     entry .encodable   把任何 `Encodable in Text` 的值替换进 URL，经过编码
++   entry #origin   scheme 和 authority 合在一起，作为 `Origin`
++   entry #location   路径部分，作为文本；有 authority 时以 `/` 开头
++   entry #query   `?` 之后的文本，或 `Unset`
++   entry #fragment   `#` 之后的文本，或 `Unset`
++   entry #Plane   URL 路径所在的平面：`Www`
++   entry #Topic   路径的根主题，`Zero`
++   entry #scheme   scheme，其类型为 URL 的 scheme 参数
++   entry #authority   authority——用户信息、主机和端口——对于没有 `//` 的 URL 为 `Unset`
++   entry #requestTarget   位置和查询合在一起，就像 HTTP 请求行承载它们的方式那样
++   entry #host   authority 的主机，或 `Unset`
++   entry #path   作为 `Path on Www` 的位置，每个段都经过百分号解码
++       解码不会失败：Web 路径的根是开头的 `/`，无论它是否存在。
+
+@ 0 5 0 1ca3646c6c98070e0642bcf9f7a8f627
++ entry .HttpUrl   `Url["https" | "http"]`：方案为两种 Web 方案之一的 URL
++     这是 Web 客户端接受的类型，也是 `url"https://…"` 和 `url"http://…"` 产生的类型。
++     只有它拥有 `Url.abstractable` 和 `Url.instantiable`，因此其他库通过 anticipation 的 `Urls` 领域所说的“URL”就是这个 URL 类型。
++     用 `as[HttpUrl]` 解码文本时，不会对照该类型检查方案。
+
+@ 0 8 0 0f3141028b8ed1ab1699e9bbb4afc0bb
++ entry .url   `url"…"` 插值器：在代码编译时检查的 URL，带有类型化的替换
++     `url"https://example.com/path"` 是一个 `Url["https"]`（因而是一个 `HttpUrl`），字面量在代码编译时解析，所以格式错误的字面量是编译错误。
++     每个 `$value` 由一个 `Substitution[Url.Fragment, …]` given 拼接进来：`:` 之后的 `Int` 成为端口，`Text` 或任何 `Encodable in Text` 的值会被 URL 编码（`t"Hello world!"` 变为 `Hello+world%21`）。
++     字面量在编译时用占位值检查，在运行时再用真实值解析一次；若运行时的值使 URL 无效，则抛出异常，因为已检查过的字面量无法作为带类型的错误报告。
+
+% 2 1 0 0b26e67463f3996b154405b32ac424b4
+
+% 3 1 0 070177833b4f2f7a15bbd820c4924967
+
+% 0 1 0 0c801c29ebe176f519a87c4f9bdd66a1
+
+% 0 1 0 1c629801f2d8b1a3137e55bf36cafced
+
+% 0 1 0 19498f80b2ca21bb178b5c5d9b470243
+
+% 1 1 0 0cfe71f951ca3881054f017f38f6be4f
+
+@ 0 2 0 18f1d52460a9f5b6033e83807427d1bf
++     结果类型以字面量类型携带方案，方案从第一个 `:` 之前的文本读出。
++     声明于 `urticose.url`。
+
+@ 0 1 0 02b415cbef46ef18028df36db8b109e0
++ entry .Scheme   URL 方案，形如 `Scheme[scheme](name)`，其名称同时也是一个字面量类型
+
+% 1 1 0 1ec8f19be953e6b50b1f8bc025b73ea0
+
+@ 0 8 0 1b677b99c6e8acb00e30c5bc1c96fe16
++       `Scheme.Http` 和 `Scheme.Https` 是两种 Web 方案；`Scheme(t"ftp")` 可构造任何其他方案。
++       类型参数是以字面量类型表示的方案名称，`Url` 和 `HttpUrl` 正是借此携带方案。
++   entry .showable   把方案渲染为其名称
++   entry .inspectable   带结尾冒号的调试渲染 `https:`，与它在 URL 中的样子一致
++   entry .Http   `http` 方案，一个 `Scheme["http"]`
++   entry .Https   `https` 方案，一个 `Scheme["https"]`
++   entry #name   方案的名称，为文本
+
+@ 0 1 0 09703afc2389d97c00192f22f55f6423
++ entry .Authority   URL 的授权部分：可选的用户信息、主机和可选的端口
+
+% 1 1 0 0e9b0689b480fbbb1810674b9ae6fc05
+
+@ 0 5 0 16549925efa9996d0cfdd11cf0472b47
++       URL 中位于 `//` 与路径之间的部分，用 `Authority(host, userInfo, port)` 构造，或用 `as[Authority]` 从文本解码，后者会抛出 `Hostname.Error`、`IpAddress.Error` 或 `Url.Error`：`@` 之前的一切是用户信息，主机是主机名、IPv4 地址或带方括号的 IPv6 地址，`:` 之后的端口必须是 0–65535 之间的数字。
+
+% 2 1 0 003c6a88ef67ba141f081fe8f862d48e
+
+% 3 1 0 15f71fa9e91909180c80fc1225d00c8b
+
+% 4 1 0 1d49ce85fc3f3a4907cda77cf0d36fa6
+
+% 0 1 0 15c896d8fd1510980585a6c6bbf97f2a
+
+% 0 1 0 151c9b6174530d72170f6b0d8e5d3f30
+
+% 0 1 0 09ad1119ee2d02dc1a90dafa75da9da8
+
+% 0 1 0 0f153e2d516387c31d44ca0551bf4376
+
+% 1 1 0 13279cf576a8ed5e04f8d7f1f17adb40
+
+% 1 1 0 0b886395949a442011f11c6717f0f2f6
+
+% 1 1 0 1b9d49fa497d66da171cb72ed3d0199e
+
+@ 0 9 0 0a8d47934d119bf61b2887492c9138e8
++   entry .showable   把授权部分渲染为 `userInfo@host:port`，每个部分仅在存在时出现
++   entry .inspectable   以 `//` 开头的调试渲染：`//user@example.com:8080`
++       这个前缀表明该值是 URL 的哪一部分，并避免它被误认为单纯的主机名。
++   entry .decodable   从文本读取授权部分，抛出 `Hostname.Error`、`IpAddress.Error` 或 `Url.Error`
++       三者各需一个 `Tactic`；该 given 会捕获它们。
++   entry #host   主机：`Hostname`、`Ipv4` 或 `Ipv6`
++   entry #userInfo   `@` 之前的文本，或 `Unset`
++   entry #port   端口号，或 `Unset`
+
+@ 0 1 0 04414d1796787ac006ef5931296d0694
++ entry .Origin   URL 的方案与授权部分的组合，即 Web 浏览器所说的“源”
+
+% 1 1 0 131a86e1ada98a801583b5c4b6e9c435
+
+@ 0 4 0 00232d9a616a2f4b01676efd6586eb02
++       `Origin(scheme, authority)` 是 `Url` 的第一个参数：方案以其字面量名称为类型，授权部分对没有 `//` 的 URL 为 `Unset`。
++   entry #scheme   方案
++   entry #authority   授权部分，或 `Unset`
+
+@ 0 1 0 04d4bc3d1c3a6f3f0f8bafd6f5885d67
++ entry .Www   URL 路径的平面：以 `/` 分隔、百分号编码、以 `/` 为根
+
+% 1 1 0 13ad00d4401ae39c1b8cc015fef3738f
+
+@ 0 6 0 1f2e738dc38c74ef0dcaee5daf5368bd
++       一个密封特质，用作 `Path on Www` 的平面类型；`Url#path` 返回这种路径，`url / "segment"` 对其进行扩展。
++       它的伴生对象持有 Web 的 `Filesystem`——名为 `World Wide Web`，分隔符为 `/`，以 `.` 和 `..` 作为自身段和父段，以百分号编码作为转义方式——以及根相关的 given：根是 `%`，编码为 `/`，并且解码它不会失败，因为无论 Web 路径开头的 `/` 是否存在，它都被读作根。
+
+% 1 1 0 0ba392ed80a52b5305354064a24d5ff0
+
+@ 0 8 0 079679c7cf1981751fd43596b3bdb01a
++   entry .submissible   让 `%` 成为 Web 路径所由之下降的根
++   entry .admissible   允许把一个 `Text` 段追加到 Web 路径
++   entry .admissible2   允许把一个 `String` 字面量段追加到 Web 路径
++   entry .radical   把 Web 根 `%` 编码为 `/`
++   entry .eradicable   从文本读取 Web 根：若有开头的 `/` 则读取它，否则什么也不读
++       它是纯的，因此 `Path on Www` 无需战术即可解码。
++   entry .filesystem   作为 `Filesystem` 的 Web：以 `/` 分隔，带有 `.` 和 `..`，采用百分号编码
++       它不是单一根的文件系统：Web 上的路径可以是相对路径。
+
+@ 0 4 0 193c2b783ae58e7b107494b589a0f380
++ entry .UrlPalette   带样式的 URL 所需的颜色：sRGB 中带有 `link` 颜色的 `Palette`
++     `escapade` 的 `Palette` 的一个细化 `Palette { type Form = Srgb; def link: Color in Srgb }`，`teletypeables.urlTeletype` 以上下文方式接受它来为 URL 着色。
++     声明于 `urticose.ansi`。
+
+% 2 1 0 1c6f0b993d6338091bc8082baefaeb42
+
+% 3 1 0 12b34008d72bc5b31ba1ebda2dad033e
+
+% 0 1 0 069597896e96e4de1bdf0bcebdaf9ca8
+
+% 0 1 0 045552636ab390d117494ddfc8a2cba6
+
+% 0 1 0 0a6456c0b2fcca4b02f1660cd5dd6ab5
+
+% 0 1 0 00d17034d10f3ded0d511e6670714786
+
+% 0 1 0 196cdaa3180a0126098eddeda309ccea
+
+% 1 1 0 09c3b8860d669de918dfcc140f25bdc3
+
+@ 0 1 0 19c0e2cd0921b7930aa6a8d25676e979
++ entry .teletypeables   URL 的终端渲染，一个需按名称导入的 given
+
+% 1 1 0 13649770d0bcc4cd1461cab0ddec77d6
+
+@ 0 4 0 05b9d6529c44c948021910373a5149a2
++       `Teletypeable` 规定一个值在 `e"…"` 电传字符串中如何渲染；这个包持有 urticose 唯一的实例，用于 URL。
++       它需按名称导入，因为 `import soundness.*` 不会从包中引入任何 given；它会与总括包中其他每个库的 `teletypeables` 包合并。
+
+% 2 1 0 14a2688a3fe66f7705dce678aecc95f5
+
+% 3 1 0 1eb86a40f2182d131bd29c02a7a81e70
+
+% 0 1 0 155c937194faaeb1036d7e780e4d5d55
+
+% 1 1 0 1a681ad1a890b4640ec3a3b4dabbbaca
+
+@ 0 6 0 0ca3e48eb852307716b41b40bc7b0d26
++       没有这个导入时，URL 在 `e"…"` 字符串中仍会渲染，经由 escapade 为任何 `Showable` 类型提供的回退，但不带样式：遗漏导入只会悄无声息地降级，而不会编译失败。
++       声明于 `urticose.ansi`。
++   entry .urlTeletype   把 `Url` 渲染为带下划线、使用调色板 `link` 颜色的形式
++       需要作用域中有一个 `UrlPalette` given 来提供颜色。
++       渲染的纯文本就是 URL 的显示形式。
+
+@ 0 1 0 0225ac91f200eb19108d75a4bc071413
++ entry .Dns   RFC 1035 的 DNS 词汇：名称、记录类型、查询、记录、消息及其传输形式
+
+% 1 1 0 10258dd6bf255832096c0ff758db8424
+
+@ 0 8 0 1e5cb244f3a5cffe029facab4f8d6d41
++       `Dns` 是带类型的 DNS 的所在，位于 `urticose.dns` 源集中。
++       `Dns.Name` 是一串标签，标签可以包含任何 UTF-8 字符——包括点和空格，DNS-SD 服务实例（`Hamlet's Printer._ipp._tcp.local`）依赖于此——写作 `dns"…"` 或从表示形式解析，比较时对 ASCII 大小写进行折叠，与 DNS 比较名称的方式一致。
++       `Dns.Question` 询问某个名称上某种 `Dns.Type` 的记录；`Dns.Record` 持有名称、TTL 和带类型的数据，数据是基于 urticose 自身地址类型的 `Dns.Rdata` 分支之一（`A(ipv4)`、`Aaaa(ipv6)`、`Ptr`、`Srv`、`Txt` 等），或携带其字节的 `Unknown`；`Dns.Message` 携带查询和记录，以及它的 `Dns.Flags`。
+
+% 2 1 0 1163b6cc620f99c20242fa0432ee9d92
+
+% 3 1 0 0140b848f5350fa205f1a1710377ac03
+
+% 4 1 0 00698d4ad6919c47153ca3ff9fbc45ea
+
+% 0 1 0 0ee01d5e348d9e761ac3e68e46edeb58
+
+% 0 1 0 044549e1d0ba61d308ef591b7ef07610
+
+% 0 1 0 10e6eab39c1b889f01a9667be7cd2664
+
+% 0 1 0 04e2447db936cd2a1575d0bf1e4c40fe
+
+% 0 1 0 0e158407a53e3b020358dd298c791d5b
+
+% 1 1 0 0e1f995d38e9377d1e9f9138cee07180
+
+@ 0 8 0 16a034e06cc098250a53fc14df669ec9
++       消息用 `in[Data]` 和 `as[Dns.Message]` 编码为 `Data` 或从中解码：写入时会压缩所有者名称和常见类型内部的名称，并且是全函数，因为长度限制从构造时起就由 `Name` 和 `Rdata.Txt` 保证；读取是严格的，只向后跟随压缩指针，遇到任何格式错误都抛出 `Dns.Error`。
++       mDNS（RFC 6762）增加了两个位，它们表现为默认值为 `false` 的普通字段：查询的 `unicast` 和记录的 `flush`。
++       与名称服务器交换消息是 `coaxial.dns` 的工作；`Dns.resolve` 使用平台的解析器。
+
+% 0 1 0 1503b3ef14475d6200d19a6974d27214
+
+% 1 1 0 0abe6f01c23add201a4ba70f7f5a34a8
+
+% 1 1 0 02da05ddeb63d75a1d78adccdd5aa014
+
+% 1 1 0 0fe78053b4ec69370ce8d476d6c96c69
+
+@ 0 1 0 0e77b55cd593ac6802f62f65911086ed
++   entry .Name   DNS 名称：可包含任何 UTF-8 字符的标签，比较时折叠 ASCII 大小写
+
+% 1 1 0 195c36fded3742b61e1358ac5845c38f
+
+@ 0 7 0 0d3728297d4c400d03f40d0e8d9d91a1
++         `Name` 可以用 `Dns.Name(t"_fury", t"_tcp", t"local")` 构造（标签按原样接受，因此标签可以包含点），也可以用 `dns"_fury._tcp.local"`（表示形式，在代码编译时检查）构造，或从 `Hostname` 构造，或用 `as[Dns.Name]` 解析表示形式得到；表示形式中 `\.` 和 `\\` 转义点或反斜杠，`\DDD` 是十进制字符码，结尾的点可以容忍。
++         各项限制——每个标签 63 个八位组，整个名称 255 个——在构造和组合时检查，违反时抛出 `Dns.Error`，因此对名称编码不会失败。
+
+% 2 1 0 1315a02dd72375f3163dff7e5eb511dd
+
+% 3 1 0 0c3a5f1bd68598651b547fe7a8dfeba5
+
+% 4 1 0 0bf0eaa370fbfd980f8bc87d9ea08c4e
+
+% 0 1 0 1247459a81d4098917fa3a05c47b9cd3
+
+% 0 1 0 08888966fbc035f9122e62ea8ab27fb4
+
+% 0 1 0 1aeb5037e2a6703117492d7fd04856fa
+
+% 0 1 0 0cc81b9d096683821eda5ac36d4576b5
+
+% 0 1 0 032f29185a69de5d1e4a8d2bc8be852d
+
+% 0 1 0 0de6ff0c4de199900b2793e26c0ba8ca
+
+% 1 1 0 1f0f328af24a6b38170fc810fb8c815c
+
+@ 0 1 0 0b121afab5fa45661d076a30ea3a8012
++         `hashCode` 与 `equals` 一样折叠大小写，因此名称可以作为 `Map` 的键。
+
+% 0 1 0 0ab9f646506f67be18bb88453eb41dd5
+
+% 0 1 0 1bca87e08283c64609955c0e6e40068e
+
+% 0 1 0 06ebfae6847df8880d99d69b40aa0931
+
+@ 0 26 0 1fa39a45eca7ef9617cea4550f641ed6
++     entry .Root   根名称，不含标签，显示为 `.`
++     entry .local   名称 `local`，即 mDNS 域
++     entry .apply   由按原样接受的标签构造名称，或由 `Hostname` 构造
++         `Dns.Name(labels*)` 遇到空标签（`EmptyLabel`）、超过 63 个八位组的标签（`LongLabel`）或超过 255 个八位组的名称（`LongName`）时抛出 `Dns.Error`；`Dns.Name(hostname)` 不会失败，因为主机名的标签已经满足这些限制。
++     entry .toExpr   把名称提升为引用表达式，供构造名称的宏使用
++     entry .fold   把标签中的 ASCII 字母折叠为小写，与 DNS 比较标签的方式一致
++         只有 ASCII 字母会折叠（RFC 4343）；其他所有字符都按原样比较。
++         DNS-SD 对 TXT 键也采用这种比较方式。
++     entry .parse   从表示形式读取名称，抛出 `Dns.Error`
++         `.` 或空文本是根；否则是以点分隔的标签，带有转义 `\.`、`\\` 和 `\DDD`；格式错误的转义是 `BadEscape`，并且各项限制同样适用。
++     entry .showable   以表示形式渲染名称，对标签中的点和反斜杠重新转义
++         根渲染为 `.`；其他名称不带结尾的点。
++     entry .inspectable   调试渲染，与显示形式相同
++     entry .encodable   把名称编码为其表示形式
++     entry .decodable   从表示形式读取名称，抛出 `Dns.Error`
++         需要一个 `Tactic[Dns.Error]`；该 given 会捕获它。
++     entry #labels   各标签，最左边的在前，保留书写时的大小写
++     entry #+   `name + suffix`：两者的标签，若结果超过 255 个八位组则抛出 `Dns.Error`
++     entry #prefix   在前面多加一个标签的名称，过长时抛出 `Dns.Error`
++     entry #parent   去掉第一个标签后的名称，对根则为 `Unset`
++     entry #endsWith   一个名称是否以另一个名称的标签结尾，比较时折叠大小写
++     entry #octets   线上的未压缩长度：每个标签加上其长度字节，再加上终止符
++   entry .Type   按编号表示的记录类型，常见类型以值的形式提供
+
+% 1 1 0 1b81465c1213d55a17d3f5b3930c2632
+
+@ 0 19 0 01e10a52a5b59c4215b641377d16a80e
++         `Dns.Type(number)` 可包装任何编号；`A`、`Ns`、`Cname`、`Soa`、`Ptr`、`Mx`、`Txt`、`Aaaa`、`Srv`、`Opt`、`Nsec` 和 `Any` 是可识别的类型。
++         类型显示为其助记符，未知编号则显示为 `TYPE99`（RFC 3597）。
++     entry .A   类型 1：IPv4 地址
++     entry .Ns   类型 2：名称服务器
++     entry .Cname   类型 5：规范名称
++     entry .Soa   类型 6：授权起始
++     entry .Ptr   类型 12：指针
++     entry .Mx   类型 15：邮件交换
++     entry .Txt   类型 16：文本字符串
++     entry .Aaaa   类型 28：IPv6 地址
++     entry .Srv   类型 33：服务位置
++     entry .Opt   类型 41：EDNS(0) 伪记录
++     entry .Nsec   类型 47：下一个安全记录，按 mDNS 的用法
++     entry .Any   类型 255：任意类型，用于查询中
++     entry .showable   把类型渲染为其助记符，未知编号则为 `TYPE1234`
++     entry .inspectable   调试渲染，与显示形式相同
++     entry #number   类型在线上的编号
++   entry .NetClass   记录的类：`Internet`、`Any` 或任意编号
+
+% 1 1 0 15dad3d2aea1ef651495dfb74c7fab7d
+
+@ 0 9 0 18fe1647efc80236139469a49126ecb5
++         不含最高位的类字段；在线上，最高位是一个 mDNS 标志，而不是类的一部分——但 `OPT` 记录除外，它的类字段是发送方的 UDP 载荷大小（`Record#udpPayload`）。
++         显示为 `IN`、`ANY` 或 `CLASS123`。
++     entry .Internet   类 1，`IN`
++     entry .Any   类 255，用于查询中
++     entry .showable   把类渲染为 `IN`、`ANY` 或 `CLASS123`
++     entry .inspectable   调试渲染，与显示形式相同
++     entry #number   类在线上的编号
++   entry .Opcode   消息的操作：`Query`、`Notify`、`Update` 或任意编号
+
+% 1 1 0 0a4fcddccc43c8e006d7a8775e92c75b
+
+@ 0 7 0 05b5b38de45e73880ddbf571b32536e7
++         `Flags` 的一部分；除非另行设置，查询的操作码为 `Query`，响应则沿用其查询的操作码。
++     entry .Query   操作码 0，标准查询
++     entry .Notify   操作码 4
++     entry .Update   操作码 5
++     entry #number   操作码在线上的编号
++   entry .Rcode   响应码：`NoError`、`NxDomain`、`ServFail` 等，或任意编号
+
+% 1 1 0 1f1f7445940a3d3a1f7181e2c562149c
+
+@ 0 12 0 16e09c044f7d588b19dd98bb4101ed4c
++         响应标志的低四位；`OPT` 记录的 `extendedRcode` 携带高位。
++         显示为 `NOERROR`、`NXDOMAIN` 等，未知编号则显示为 `RCODE12`。
++     entry .NoError   代码 0
++     entry .FormErr   代码 1：无法解释该查询
++     entry .ServFail   代码 2：服务器失败
++     entry .NxDomain   代码 3：该名称不存在
++     entry .NotImp   代码 4：不支持该操作
++     entry .Refused   代码 5：服务器拒绝
++     entry .showable   把代码渲染为其助记符，未知编号则为 `RCODE12`
++     entry #number   代码在线上的编号
++   entry .Question   消息中的查询：名称、类型和类
+
+% 1 1 0 0809af055f76188f13824e998743f432
+
+@ 0 10 0 1ac93573bb6aba790e82746a27b1d110
++         `Dns.Question(name, rtype, netClass = NetClass.Internet, unicast = false)`。
++         `unicast` 字段是 mDNS 的“QU”位（RFC 6762 §5.4），在查询方接受单播响应时设置；它在线上写作类的最高位，对普通 DNS 为关闭状态。
++     entry .showable   把查询渲染为 `name class type`
++     entry #name   所询问的名称
++     entry #rtype   所询问的记录类型
++     entry #netClass   类，除非另行设置，否则为 `Internet`
++     entry #unicast   是否接受单播响应（mDNS）
++   entry .Rdata   记录的带类型数据：每种可识别类型一个分支，或 `Unknown`
+
+% 1 1 0 18a8b64c189d8a320154f3f429b5089e
+
+@ 0 4 0 13132bb7d0bbfbd019a2fdb161d7b098
++         一个基于 urticose 自身地址和名称的密封族。
++         `Srv` 的端口是裸数字，因为传输协议是所有者名称（`_tcp`/`_udp`）的约定，数据本身看不到它。
++         携带八位组的分支（`Txt`、`Opt`、`Unknown`）按结构比较其字节，因为 `Data` 本身按引用比较。
+
+% 2 1 0 1683b694af8a47ba0e6a84c53a9a354c
+
+% 3 1 0 027845c1fa6bbd3d0a490802d901e7b2
+
+% 4 1 0 1b4f5826af1cb5ac14c88bd6e5362a53
+
+% 0 1 0 01d11738ed462d02196bd179c98df2e1
+
+% 0 1 0 026c265fe11d155f05c32ee8a3bb39b9
+
+% 0 1 0 0b8de30e56c56c9f07fde01a39c47cf6
+
+% 0 1 0 0c9210cce20af8d903ae8eeb0b065de7
+
+% 0 1 0 1b3d27965032281f14266c6d29605931
+
+% 0 1 0 1db3cadd532048d01d29b7f6f715f77e
+
+% 0 1 0 0b1412d8531b251b0e032cdd362539fc
+
+% 1 1 0 08b98e0f13fcd7a61087bb2a2019b183
+
+@ 0 27 0 1bb97968d82574bb123d8e7b7ff4fec8
++     entry .A   IPv4 地址
++       entry #address   该地址
++     entry .Aaaa   IPv6 地址
++       entry #address   该地址
++     entry .Ptr   指向另一个名称的指针，用作反向查找或 DNS-SD 服务实例
++       entry #target   所指向的名称
++     entry .Cname   别名的规范名称
++       entry #target   规范名称
++     entry .Ns   该区域的名称服务器
++       entry #target   名称服务器的名称
++     entry .Mx   邮件交换，带有其优先值
++       entry #preference   优先值；越低越先尝试
++       entry #exchange   邮件服务器的名称
++     entry .Srv   服务位置：优先级、权重、端口和目标主机
++       entry #priority   优先级；越低越先尝试
++       entry #weight   在优先级相同的条目之间进行选择的权重
++       entry #port   端口，为裸数字
++       entry #target   提供该服务的主机
++     entry .Soa   授权起始：主服务器、负责人邮箱和区域的各项时间
++       entry #mname   主名称服务器的名称
++       entry #rname   负责人的邮箱，以名称表示
++       entry #serial   区域的序列号
++       entry #refresh   刷新间隔，以秒计
++       entry #retry   重试间隔，以秒计
++       entry #expire   过期间隔，以秒计
++       entry #minimum   最小 TTL，以秒计
++     entry .Txt   每个至多 255 个八位组的字符串，DNS-SD 将其读作 `key=value` 对
+
+% 1 1 0 111bc0e97cf95e2f0a1a8c401006c212
+
+@ 0 8 0 09ad3907e95d53b81668fc8bfefbdb27
++           用 `Dns.Rdata.Txt(t"a=1", t"b")` 由文本（以 UTF-8 编码）构造，或由 `Data` 列表构造；两者在字符串超过 255 个八位组时都抛出 `Dns.Error`（`LongString`），因此编码不会失败。
++           空列表编码为一个空字符串。
++           按结构比较其字节。
++       entry .apply   由文本或 `Data` 列表构造 `Txt`，字符串超过 255 个八位组时抛出 `Dns.Error`
++       entry #strings   各字符串，以八位组表示
++       entry #texts   按 UTF-8 解码后的各字符串
++     entry .Opt   `OPT` 记录的 EDNS(0) 选项，形如 `(code, data)` 对
+
+% 1 1 0 083f526457090c58083a7b86ca24f2c9
+
+@ 0 4 0 0c6f2786ac427bea06bca5524b4ad224
++           对 `OPT` 记录而言，记录的其他字段会被重新解释：参见 `Record.opt`。
++           按结构比较其字节。
++       entry #options   各选项，每个都是一个代码及其数据
++     entry .Unknown   本词汇不解释的记录类型，以其线上八位组携带
+
+% 1 1 0 1732576784631f94196161a30f74c17d
+
+@ 0 6 0 0d6af85e4c8343350f816c792bd963a6
++           可往返任何类型（RFC 3597）。
++           按结构比较其字节。
++       entry #rtype   记录类型
++       entry #data   数据，与在线上时一致
++     entry .showable   按区域文件的方式渲染数据：地址、名称、`pref name`、带引号的字符串等
++     entry #rtype   这段数据所属的记录类型
++   entry .Record   资源记录：名称、TTL、带类型的数据、类和 mDNS 刷新位
+
+% 1 1 0 0f76351054c8fcb413e85ba8dae877f4
+
+@ 0 6 0 1730da4d62e88b7b1cb054b1690f4afe
++         `Dns.Record(name, ttl, rdata, netClass = NetClass.Internet, flush = false)`。
++         记录的类型就是其数据的类型。
++         `flush` 字段是 mDNS 的缓存刷新位（RFC 6762 §10.2）：发送方针对该名称和类型的记录集会取代接收方缓存中的任何内容。
++         它在线上写作类的最高位，对普通 DNS 为关闭状态。
++         从线上读到的最高位被置位的 TTL 被视为零（RFC 2181 §8）。
+
+% 2 1 0 1562a83d2fdd042c1a92e2c6b4a3f432
+
+% 3 1 0 042654dd5a42c5e80f26068a6f6987e0
+
+% 4 1 0 0ca79f2e8ceea4ce0fdbbbccdaea735a
+
+% 0 1 0 0fa30e7d552fe83d09ffc4a24376f4e9
+
+% 0 1 0 005b1be5cb97606218328466ecf28a49
+
+% 0 1 0 1f2b7855a59d27381cad18768348c175
+
+% 1 1 0 007e681f8f31a42517905a4ccbcfde7e
+
+@ 0 20 0 1bc086567bc67a11050e62dd2419025a
++     entry .opt   EDNS(0) `OPT` 伪记录，带有发送方的 UDP 载荷大小和 DO 位
++         `Dns.Record.opt(udpPayload = 1232, dnssecOk = false, options = Nil)`：记录的名称是根，其类字段携带载荷大小，其 TTL 字段携带扩展 RCODE、版本和 DO 位，可由 `#udpPayload`、`#extendedRcode` 和 `#dnssecOk` 读回。
++     entry .showable   把记录渲染为 `name ttl class type data`，置位时附加 ` (flush)`
++     entry #name   所有者名称
++     entry #ttl   生存时间，以秒计
++     entry #rdata   带类型的数据
++     entry #netClass   类，除非另行设置，否则为 `Internet`
++     entry #flush   接收方是否应为该名称和类型刷新其缓存（mDNS）
++     entry #rtype   记录类型，取自数据
++     entry #key   记录在缓存中的标识：其名称、类型和数据，不含 TTL 和刷新位
++     entry #rdataBytes   未压缩传输形式的数据
++         当两台主机同时探测同一名称时，RFC 6762 §8.2.1 按字典序比较的正是它，以打破平局。
++     entry #udpPayload   对 `OPT` 记录为发送方的 UDP 载荷大小；否则为 `Unset`
++     entry #extendedRcode   对 `OPT` 记录为响应码的高位；否则为 `Unset`
++     entry #dnssecOk   对 `OPT` 记录为 DO 位；否则为 `Unset`
++   entry .Flags   消息的头部位：响应或查询、操作码、四个标志和响应码
+
+% 1 1 0 1a5c2ebcdcbf8d5a1e2c49d9863161f4
+
+@ 0 13 0 10e9af292827652c16550f55b5f06849
++         `Dns.Flags()` 是一个普通查询：所有标志关闭，操作码为 `Query`，响应码为 `NoError`。
++         `Message.query` 设置 `recursionDesired`，`Message.response` 设置 `response`，并沿用查询的操作码和递归请求。
++     entry #response   消息是否为响应（QR）
++     entry #opcode   操作
++     entry #authoritative   响应方对该名称是否具有权威（AA）
++     entry #truncated   消息是否为适应其传输方式而被截断（TC）
++     entry #recursionDesired   查询方是否请求递归（RD）
++     entry #recursionAvailable   响应方是否提供递归（RA）
++     entry #authentic   数据是否经过认证（AD）
++     entry #checkingDisabled   查询方是否禁用了 DNSSEC 检查（CD）
++     entry #rcode   响应码
++   entry .Message   DNS 消息：ID、标志，以及查询、应答、权威和附加各节
+
+% 1 1 0 08c1d103351a4061050007f82e7f2773
+
+@ 0 5 0 0c2dbd9364ea32c51ac7618dfd9cdea4
++         可直接构造，或用 `Message.query` 和 `Message.response` 构造；用 `in[Data]` 编码为 `Data`，用 `as[Dns.Message]` 解码，后者在消息格式错误时抛出 `Dns.Error`。
++         编码是全函数，因为消息可能违反的各项限制从构造时起就由 `Name` 和 `Rdata.Txt` 保证；超过 65535 个条目的节按模 65536 写入，因为任何 DNS 传输方式本来也无法承载它。
+
+% 2 1 0 103b00ca96f95f4500bb2888e3975a45
+
+% 3 1 0 1f240de2d30d35aa179541c2d0d7999a
+
+% 4 1 0 028536fa7968604b1d9bb924d3aac002
+
+% 0 1 0 175fb005e7c61ed1092c6e946eeabdfc
+
+% 0 1 0 149eff091198fd5a05edc32a3915a98f
+
+% 0 1 0 1f6699c0da421d761b440630afa2e197
+
+% 1 1 0 02eeeba54d3508b600e0a8425a690572
+
+@ 0 25 0 07f7407435f2e6bf0e97fae6e7b5e74d
++     entry .query   查询消息：ID、各查询，以及默认请求递归（除非另行说明）
++     entry .response   对查询的回复：相同的 ID 和查询，附带应答和响应码
++         `Dns.Message.response(query, answers, authoritative = false, rcode = Rcode.NoError, authority = Nil, additional = Nil)` 沿用查询的操作码和递归请求。
++     entry .encodable   以 RFC 1035 传输形式写出消息，并压缩名称
++         所有者名称以及 RFC 1035 §4.1.4 常见类型内部的名称用向后指针压缩；`SRV`、`TXT`、`OPT` 和未知类型内部的名称不压缩（RFC 2782、RFC 3597）。
++     entry .decodable   从传输形式读取消息，格式错误时抛出 `Dns.Error`
++         需要一个 `Tactic[Dns.Error]`。
++         压缩指针只向后跟随（否则为 `BadPointer`）；提前截断的消息是 `Truncated`，长度错误的记录数据是 `BadRdata`，最后一条记录之后的字节是 `Trailing`。
++         压缩的 `SRV` 目标会被接受，因为 mDNS 发送方会发出这种形式。
++     entry .showable   把消息渲染为 `query|response id rcode [questions] [answers]`
++     entry #id   消息 ID，响应会沿用它
++     entry #flags   头部标志
++     entry #questions   查询节
++     entry #answers   应答节
++     entry #authority   权威节
++     entry #additional   附加节
++   entry .resolve   通过平台解析器得到名称或主机名的地址
++       `Dns.resolve(name)` 或 `Dns.resolve(hostname)` 向平台（通过 `InetAddress.getAllByName`）请求该名称的每个地址，并以 `Ipv4 | Ipv6` 列表返回；名称无法解析时抛出带有 `Unresolved` 的 `Dns.Error`。
++       它通过平台的解析器访问网络，不接受 `Online`。
+
+% 2 1 0 03fdfea5d8d63ea80a6f5e408d3ea527
+
+% 0 1 0 0ff09fd85a6fbb540f3b2a2530c17d7e
+
+% 1 1 0 10f090fe19e7ee750458b0e6da583f6b
+
+% 1 1 0 05e58c57513ff4fb1664b4fb5914cddd
+
+% 2 1 0 04ea60e84068f7921bdf4ecb54884444
+
+% 0 1 0 17e094dfdcf82f56180a6688d3e9a10a
+
+% 0 1 0 00c236fccb5e1a101c1bfeb3ea4b2fe6
+
+% 1 1 0 08e624ca0d3ef78b05ff0649089879b3
+
+@ 0 1 0 1b260b80088280d9197ff76402d364bd
++   entry .Error   在 DNS 名称或消息无效，或名称无法解析时抛出
+
+% 1 1 0 084733c051d8401f080961bffe0fa80f
+
+@ 0 4 0 0b934ae56683247b05f710a97d39f78b
++         错误 `↯/s.100.1`：_the DNS message is not valid because `reason`_。
++         由名称的构造和解析、`Rdata.Txt`、从 `Data` 解码消息以及 `Dns.resolve` 抛出，并由 `dns"…"` 作为编译错误抛出。
++     entry .Reason   名称、消息或查找失败的原因
+
+% 1 1 0 14b3fd27112093170f29e9a915e9eeda
+
+@ 0 1 0 0bb17f1e2932d49b0c8edd51e062bee8
++           每个原因都通过 `Reason.communicable` 带有一条消息：
+
+% 2 1 0 101ae17950042db20f5b075753c7534a
+
+@ 0 17 0 0e5c3d28405a3ef50a459809261dfdda
++           column  分支
++           column  代码
++           column  消息
++           column  说明
++           row  `Truncated(offset)`  1  _the message ends at offset `offset`, inside a field_  格式错误的消息
++           row  `BadPointer(offset)`  2  _the name pointer at offset `offset` points forward_  格式错误的消息
++           row  `BadLabel(offset, kind)`  3  _the label at offset `offset` has unsupported type `kind`_  格式错误的消息
++           row  `LongLabel(label)`  4  _the label `label` is longer than 63 octets_  错误的名称
++           row  `LongName(name)`  5  _the name `name` is longer than 255 octets_  错误的名称
++           row  `EmptyLabel(text)`  6  _the name `text` contains an empty label_  错误的名称
++           row  `BadEscape(text)`  7  _the name `text` contains a malformed escape sequence_  错误的名称
++           row  `BadRdata(rtype, offset)`  8  _the `rtype` record data at offset `offset` is malformed_  格式错误的消息
++           row  `LongString(length)`  9  _a character-string of `length` octets exceeds 255_  TXT 字符串
++           row  `Trailing(offset)`  10  _the message has trailing bytes from offset `offset`_  格式错误的消息
++           row  `Unresolved(name)`  11  _the name `name` could not be resolved_  来自 `Dns.resolve`
++           row  `Timeout`  12  _no response arrived before the timeout_  由 `coaxial.dns` 等传输层抛出
++           row  `Mismatch(id)`  13  _the response with ID `id` does not answer the query_  由传输层针对 ID 错误的响应抛出
+
+% 1 1 0 147569e0f8cabdc20ecd7927e142f958
+
+@ 0 2 0 1a805f6e5b6c5b610dd07c0621633141
++       entry .communicable   把每个原因渲染为一条消息
++     entry #reason   失败的原因
+
+@ 0 5 0 076c22b4c81e63e70f23d3fe7932e896
++ entry .dns   `dns"…"` 插值器：表示形式的 DNS 名称，在代码编译时检查
++     `dns"_fury._tcp.local"` 是一个 `Dns.Name`，按 `Dns.Name.parse` 的方式解析——带有 `\.`、`\\` 和 `\DDD` 转义以及可选的结尾点——违反限制的名称是一个编译错误，携带 `Dns.Error` 的消息。
++     它不接受替换。
++     声明于 `urticose.dns`。
+
+% 2 1 0 11cc73c3be6303b90bb6a25a9680e2c7
+
+% 3 1 0 0ef745c407160a090c252c4d47e203a5
+
+% 0 1 0 0683171193bbc92618098c8d54c8cb76
+
+% 0 1 0 0dd7c140342040f8007a90f8b1807fc7
+
+% 1 1 0 19ad9d0e9ce9a97515c8b9d94246070f
+
+@ 0 4 0 07cfcd2972ac5e781add22ffbd93db82
++ entry .dnsName   作为 `Dns.Name` 的 `Hostname`，逐个标签对应
++     `Hostname` 上的扩展方法，位于 `urticose.dns`：`host"example.com".dnsName` 就是 `dns"example.com"`。
++     它不会失败，因为主机名的标签已经满足 DNS 的限制。
+
+@ 0 4 0 0ced32729e7a45a81466d5294539c9a9
++ entry .reverseName   地址的反向映射 `PTR` 记录的所有者名称
++     `Ipv4 | Ipv6` 上的扩展方法，位于 `urticose.dns`：IPv4 地址的八位组在 `in-addr.arpa` 之下倒序排列（RFC 1035 §3.5），IPv6 地址的 32 个半字节在 `ip6.arpa` 之下倒序排列（RFC 3596 §2.5）。
+
+% 2 1 0 18702b8e52df3618168eae4fac78e5eb
+
+% 3 1 0 087557458d6605d5054d400af56bea95
+
+% 0 1 0 079ae74708c275ba0de43c5a051c56e1
+
+% 0 1 0 12ccbfcef5310ee614ecdc0fa71e0b49
+
+% 1 1 0 0450d5722f50c807006b0bbdd2fa0ea2
+
+@ 0 1 0 1cc76623e463e30516bee9143eff3c64
++ entry .internal   不透明类型的所在，以及核心插值器背后的宏实现
+
+% 1 1 0 1a42ac50b5b377ae16b4ea3116aaba65
+
+% 2 1 0 0e3ad6ea5e83208115ecdb3d7165823d
+
+@ 0 7 0 1e38ba6f372a1dcd0abe20c18540f2d7
++       不供直接使用：这个对象之所以存在，是为了让不透明类型 `Ipv4`、`MacAddress`、`DnsLabel` 和 `Port`（位于 `Opaques` 中）、case class `Ipv6`、`Ipv4Subnet` 和 `Ipv6Subnet` 及其扩展方法有一个稳定的所在，在那里不透明类型的表示是可见的，同时也让宏有一个所在。
++       这些类型被导出到 `urticose` 包，它们的页面就在那里；在此声明的扩展方法通过其前缀的隐式作用域在这些类型上解析。
++   entry .Opaques   不透明类型 `Ipv4`、`MacAddress`、`DnsLabel` 和 `Port`，及其扩展方法
+
+% 1 1 0 19980b02783fadc7149cdcd1a2cd9048
+
+% 2 1 0 11d74cb157dd73d406f56c6d28d17862
+
+@ 0 3 0 0a9e1026120f072419ae97e20ff07742
++         每个类型在 `urticose` 包下的页面有完整的说明。
++         这些类型上的扩展方法在此声明，紧挨着它们的不透明定义。
++     entry .Ipv4   基于 `Int` 的 IPv4 地址；参见 `urticose.Ipv4`
+
+% 1 1 0 07fd6f90997ca3f5127001531b2761a1
+
+@ 0 20 0 0d8d35e5e21bab640ffdd3cda64d4789
++           不透明类型 `Ipv4` 的伴生对象，与它一起导出到 `urticose` 包。
++       entry .underlying   为泛型机制声明该不透明类型的表示 `Int`
++       entry .showable   以点分四段形式渲染地址，`192.168.0.1`
++       entry .inspectable   调试渲染，采用点分四段形式
++           点分四段记法让人一眼就能认出 IPv4 地址；没有这个实例，地址会被检视为它擦除后的 `Int`。
++       entry .encodable   把地址编码为其点分四段文本
++       entry .decodable   从点分四段文本读取地址，抛出 `IpAddress.Error`
++           需要一个 `Tactic[IpAddress.Error]`；该 given 会捕获它。
++           要求恰好有四个以点分隔的组（`Ipv4WrongNumberOfGroups`），每组是一个数字（`Ipv4ByteNotNumeric`），范围在 0–255 之间（`Ipv4ByteOutOfRange`）。
++       entry .dataEncodable   把地址编码为按网络字节序排列的四个八位组
++       entry .dataDecodable   从四个八位组读取地址，否则抛出 `IpAddress.Error`
++           对任何长度不为 4 的 `Data` 为 `Ipv4WrongNumberOfBytes`。
++       entry .Localhost   环回地址 `127.0.0.1`
++       entry .apply   由四个八位组或其打包的 `Int` 构造地址
++           `Ipv4(192, 168, 0, 1)` 打包四个八位组（每个都掩码到低八位）；`Ipv4(int)` 重新解释一个打包的整数，即 `Ipv4#int` 产生的值。
++       entry .parse   从点分四段文本读取地址，与 `.decodable` 相同
++     entry .MacAddress   基于 `Long` 的 MAC 地址；参见 `urticose.MacAddress`
+
+% 1 1 0 146bce51f4d2deec17eb14bed8c1e623
+
+@ 0 14 0 0efef39a8272da84186cc791767c2df9
++           不透明类型 `MacAddress` 的伴生对象，与它一起导出到 `urticose` 包。
++       entry .underlying   为泛型机制声明该不透明类型的表示 `Long`
++       entry .showable   把地址渲染为用 `-` 连接的六对小写十六进制数
++       entry .inspectable   调试渲染，采用相同的短横线形式
++       entry .encodable   把地址编码为其短横线文本
++       entry .decoder   从短横线文本读取地址，抛出 `MacAddress.Error`
++           需要一个 `Tactic[MacAddress.Error]`；该 given 会捕获它。
++           这个 given 名为 `decoder`，而该库的其他文本解码器名为 `decodable`。
++       entry .apply   由六个字节或其打包的 `Long` 构造地址
++           `MacAddress(b0, b1, b2, b3, b4, b5)` 打包六个字节，每个都经过掩码，使 0x80 及以上的字节不会进行符号扩展；`MacAddress(long)` 重新解释一个打包的值。
++       entry .parse   从短横线文本读取地址，与 `.decoder` 相同
++       entry .Error   在文本不是有效的 MAC 地址时抛出
+
+% 1 1 0 08961d9dd75ad0c91d5ddd50c457d629
+
+@ 0 3 0 008c610f881cbd0f14e1bc5ec88d67bd
++             错误 `↯/s.100.7`：_the MAC address is not valid because `reason`_。
++             由 `as[MacAddress]` 抛出，并由 `mac"…"` 作为编译错误抛出。
++         entry .Reason   MAC 地址被拒绝的原因
+
+% 0 1 0 1ade9f18ff80d576106ab46722e690f6
+
+@ 0 6 0 0d63fcb1884c998f0c12907a09898b36
++               以短横线分隔的组不是六个时为 `WrongGroupCount(count)`，某组不是两个字符时为 `WrongGroupLength(group, length)`（组从 0 开始编号），某组不是十六进制时为 `NotHex(group, content)`。
++           entry .communicable   把每个原因渲染为一条消息
++         entry #reason   地址被拒绝的原因
++     entry .DnsLabel   基于 `Text` 的主机名标签；参见 `urticose.DnsLabel`
+
+% 1 1 0 01ef36afdd4bd58c09cd5359be9d9a82
+
+@ 0 5 0 1db5a5b8b7dae74c1caf762d55b7261d
++           不透明类型 `DnsLabel` 的伴生对象，与它一起导出到 `urticose` 包。
++       entry .showable   把标签渲染为其文本
++       entry .apply   把文本包装为标签，不做检查
++     entry .Port   基于 `Int & Port.Type` 的端口；参见 `urticose.Port`
+
+% 1 1 0 179ba6623bdf7fb704cac98ab4e30757
+
+@ 0 25 0 0141228795f8b68b131cda412bdd7c7d
++           不透明类型 `Port` 的伴生对象，与它一起导出到 `urticose` 包。
++       entry .underlying   为泛型机制声明该不透明类型的表示 `Int`
++       entry .showable   把端口渲染为其编号
++       entry .encodable   把端口编码为其编号的文本
++       entry .inspectable   调试渲染 `⌗8080`，适用于任何细化的端口
++           它对 `Port` 的每个子类型参数化，因为端口经常被细化不止一次（`Port over Tcp of 25`），而类型类的 `Self` 是不变的。
++       entry .showableOver   把经传输协议细化的 `Port over transport` 渲染为其编号
++           之所以需要它与 `.showable` 并存，是因为 `Self` 是不变的：裸实例不涵盖 `Port over Tcp`。
++           进一步细化的端口，如 `Port over Tcp of 25`，两者都不涵盖，显示时会回退到它的 `toString`；`number.show` 才是可靠的形式。
++       entry .decodable   从端口编号的文本读取端口，抛出 `Number.Error` 或 `Port.Error`
++           对不是数字的文本需要一个 `Tactic[Number.Error]`，对超出 1–65535 的数字需要一个 `Tactic[Port.Error]`。
++           结果是未细化的 `Port`。
++       entry .unsafe   把数字强制转换为 `Port over transport`，不检查范围
++           供已经检查过数字的插值器宏使用；`.apply` 是带检查的形式。
++       entry .apply   `Port[Tcp](8080)` 为经检查的端口号；`Port[Tcp]()` 为系统报告未被使用的端口
++           `Port[transport](number)` 在数字不在 1–65535 之间时抛出 `Port.Error`；传输协议可以显式给出，也可以从期望类型推断（`val p: Udp.Port = Port(53)`）。
++           `Port[transport]()` 需要一个 `transport is Allocatable`——`Tcp.allocatable` 或 `Udp.allocatable`；`Quic` 目前还没有——它绑定并随即释放一个该类型的探测套接字来找到一个临时端口，因此结果片刻之前是空闲的，但并未被保留。
++       entry .Error   在端口号超出 1–65535 时抛出
+
+% 1 1 0 02fb0a4a6a813b001142a88a542fdf95
+
+@ 0 4 0 1eda7a6bea0b07611c9c98a82a2fe4a4
++             错误 `↯/s.100.3`：_the port is not in the valid range_。
++             由 `Port[transport](number)` 和从文本解码端口时抛出；插值器 `tcp"…"` 和 `udp"…"` 则把超出范围的数字报告为编译错误。
++       entry .Type   `Port` 的结构上界：细化它的类型成员
+
+% 1 1 0 13e805f1c0b3f4ed1df0098068306395
+
+@ 0 18 0 12e02c1d4f569de014cf6634d752d97b
++             一个带有两个类型成员的密封特质，`Port over Tcp of 25` 通过 `prepositional` 的 `over` 和 `of` 细化来设置它们。
++         entry #Transport   协议：`Tcp`、`Udp`、`Quic` 等
++         entry #Topic   字面量端口号，用于编号在编译时已知的端口
++     entry .number   `Port` 的编号
++     entry .privileged   `Port` 是否小于 1024
++     entry .byte0   `MacAddress` 的第一个字节，或 `Ipv4` 的第一个八位组
++     entry .byte1   `MacAddress` 的第二个字节，或 `Ipv4` 的第二个八位组
++     entry .byte2   `MacAddress` 的第三个字节，或 `Ipv4` 的第三个八位组
++     entry .byte3   `MacAddress` 的第四个字节，或 `Ipv4` 的第四个八位组
++     entry .byte4   `MacAddress` 的第五个字节
++     entry .byte5   `MacAddress` 的第六个字节
++     entry .text   `DnsLabel` 的文本，或以六对短横线分隔的十六进制数表示的 `MacAddress`
++     entry .long   以打包的 `Long` 表示的 `MacAddress`
++     entry .subnet   `ipv4.subnet(size)`：给定前缀长度的 `Ipv4Subnet`，主机位被掩码
++     entry .int   以打包的 `Int` 表示的 `Ipv4`
++   entry .subnetPrefix   从文本读取子网前缀并检查其范围，供子网解析器使用
++   entry .Ipv4Subnet   IPv4 子网；参见 `urticose.Ipv4Subnet`
+
+% 1 1 0 0925a2e3c4b469be0fbc72f2da5345ae
+
+@ 0 12 0 16b46de20ed5e2e40834c82aa1ae8bd9
++         case class `Ipv4Subnet` 及其伴生对象，导出到 `urticose` 包。
++     entry .showable   把子网渲染为 `address/prefix`
++     entry .inspectable   调试渲染，与显示形式相同
++     entry .encodable   把子网编码为 `address/prefix` 文本
++     entry .decodable   从 `address/prefix` 文本读取子网，抛出 `IpAddress.Error`
++         需要一个 `Tactic[IpAddress.Error]`：不是恰好一个 `/` 时为 `SubnetWrongFormat`，还有 `SubnetPrefixNotNumeric`、超过 32 时的 `Ipv4SubnetPrefixOutOfRange`，以及地址自身的各种原因。
++     entry .parse   从文本读取子网，与 `.decodable` 相同
++     entry #ipv4   网络地址，其主机位被掩码为零
++     entry #size   前缀长度，0–32
++   entry .Ipv6   IPv6 地址；参见 `urticose.Ipv6`
+
+% 1 1 0 02c90a0d635026a0193e8e5fda8d0d43
+
+@ 0 33 0 0f09d5513814adad191e1b5d8a0e9f42
++         case class `Ipv6` 及其伴生对象，导出到 `urticose` 包。
++     entry .Localhost   环回地址 `::1`
++     entry .dataEncodable   把地址编码为按网络字节序排列的十六个八位组
++         高八个八位组是 `#highBits`，即 `Ipv6.apply` 打包前四个组的方式。
++     entry .dataDecodable   从十六个八位组读取地址，否则抛出 `IpAddress.Error`
++         对任何长度不为 16 的 `Data` 为 `Ipv6WrongNumberOfBytes`。
++     entry .hostShowable   渲染 `Host`：主机名或 IPv4 地址按原样渲染，IPv6 地址加方括号
++         联合类型 `Hostname | Ipv4 | Ipv6` 的 `Showable`，放在这里是因为联合类型没有伴生对象。
++         IPv6 地址渲染为 `[2001:db8::1]`，即 URL 授权部分中的形式。
++     entry .hostDecodable   从文本读取 `Host`：先试 IPv6 地址，再试 IPv4，最后试主机名
++         依次尝试每一种，文本都不符合时抛出 `Hostname.Error`；需要一个 `Tactic[Hostname.Error]`。
++     entry .decodable   从以冒号分隔的十六进制文本读取地址，抛出 `IpAddress.Error`
++         需要一个 `Tactic[IpAddress.Error]`。
++         各种原因：完整地址不是八个组时为 `Ipv6WrongNumberOfGroups`，带 `::` 的地址超过七个组时为 `Ipv6TooManyNonzeroGroups`，还有 `Ipv6MultipleDoubleColons`，组超过四位数字时为 `Ipv6GroupWrongLength`，以及 `Ipv6GroupNotHex`。
++     entry .toExpr   把地址提升为引用表达式，供构造地址的宏使用
++     entry .showable   以最短形式渲染地址，最长的零组序列用 `::` 表示
++         每组是不带前导零的小写十六进制；两个或更多零组构成的最长序列折叠为 `::`，因此 `::1`、`8::` 和 `::` 分别是环回地址、只设置了第一组的地址，以及未指定地址。
++     entry .inspectable   调试渲染，采用相同的最短形式
++     entry .apply   由八个 16 位组构造地址
++         `Ipv6(g0, g1, g2, g3, g4, g5, g6, g7)`，每组掩码到 16 位；case class 构造器 `Ipv6(highBits, lowBits)` 接受打包后的两半。
++     entry .parseGroup   读取一个由一到四位十六进制数字组成的组，抛出 `IpAddress.Error`
++     entry .pack   把一串 16 位组打包为一个 `Long`，高位组在前
++     entry .parse   从文本读取地址，与 `.decodable` 相同
++     entry #highBits   打包为一个 `Long` 的前四个组
++     entry #lowBits   打包为一个 `Long` 的后四个组
++   entry .Ipv6Subnet   IPv6 子网；参见 `urticose.Ipv6Subnet`
+
+% 1 1 0 1553303141c2fd4419c9ad37c94d6ba3
+
+@ 0 21 0 0dfd271d67f43d8c1f9eb21e00789c0f
++         case class `Ipv6Subnet` 及其伴生对象，导出到 `urticose` 包。
++     entry .showable   把子网渲染为 `address/prefix`，地址采用最短形式
++     entry .inspectable   调试渲染，与显示形式相同
++     entry .encodable   把子网编码为 `address/prefix` 文本
++     entry .decodable   从 `address/prefix` 文本读取子网，抛出 `IpAddress.Error`
++         需要一个 `Tactic[IpAddress.Error]`：`SubnetWrongFormat`、`SubnetPrefixNotNumeric`、超过 128 时的 `Ipv6SubnetPrefixOutOfRange`，以及地址自身的各种原因。
++     entry .parse   从文本读取子网，与 `.decodable` 相同
++     entry #ipv6   网络地址，其主机位被掩码为零
++     entry #size   前缀长度，0–128
++   entry .bytes   `Ipv4 | Ipv6` 按网络字节序排列的八位组，四个或十六个，作为 `Data`
++       对联合类型的单个扩展方法，因为 given 不能以联合类型为目标；因此它对两种地址中的任一种以及类似 `Host` 的联合类型都能解析。
++   entry .subnet   `ipv6.subnet(size)`：给定前缀长度的 `Ipv6Subnet`；也是 `subnet"…"` 背后的宏
++   entry .emailAddress   `email"…"` 背后的宏
++   entry .hostname   `host"…"` 背后的宏
++   entry .portService   `tcp"…"` 和 `udp"…"` 背后的宏：把数字或 IANA 服务名映射为端口
++       在作为类路径资源捆绑的服务名称表中查找名称（若缺少该资源，则从 IANA 获取），针对所请求的传输协议。
++   entry .ip   `ip"…"` 背后的宏
++   entry .mac   `mac"…"` 背后的宏
+
+@ 0 1 0 148ef2de2d89e65103136147b2e4677e
++ entry .protointernal   `url"…"` 插值器背后的宏和运行时
+
+% 1 1 0 1026d432f08f517f06f0bf0d76655702
+
+% 2 1 0 1818919b01b074c303100fc505a3328a
+
+@ 0 8 0 053688a3bd60810519607f8c6327ebd2
++       不供直接使用。
++       `refined` 是宏：它在编译时用占位替换检查字面量，并拼接一段使用真实值的运行时解析，其类型为字面量所指明的方案。
++       `Runtime` 是被拼接代码调用的插值器状态机，`UrlInterpolatorError` 是替换值使 URL 无效时它抛出的异常。
++   entry .UrlInterpolatorError   在运行时替换使 URL 无效时抛出
++     entry #detail   消息
++   entry .Runtime   插值器的状态机：解析、替换、插入和完成
+
+% 1 1 0 1f942c3d1a78851902b56b31d7ee9cbf
+
+% 2 1 0 0dbe27a02fc88e34030e533a09571be6
+
+@ 0 8 0 1dbb1349f01f1c3400214bc21ba1c3b2
++         不供直接使用：`url"…"` 的拼接代码调用的方法。
++     entry .initial   空状态
++     entry .parse   追加一个字面量部分
++     entry .skip   代替没有已知占位值的替换
++     entry .substitute   在编译时以占位值代替替换
++     entry .insert   拼接一个 `Url.Fragment`：冒号之后的端口，或经编码或原样的文本
++     entry .complete   把累积的文本解析为 `Url[Label]`
++   entry .refined   `url"…"` 背后的宏

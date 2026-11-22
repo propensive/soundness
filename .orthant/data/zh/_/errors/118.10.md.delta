@@ -1,0 +1,48 @@
+orthant 2 language
+
+% 0 1 0 06446e9a39f62e3507ccb9ffef598286
+
+@ 0 1 0 1b38fbff9b18d78e1b0a261b128e2cf8
++ 当 TEL 文档不符合 `Tel.Provider` 读取它时所依据的 schema 时抛出。
+
+@ 0 1 0 1d8ed6a2d2412a231ea0d46e12dff5b7
++ ## 原因
+
+@ 0 4 0 0e145a3d5d510b671effa85ec11846c3
++ Stratiform 的 `Tel.Provider` 在读取记录的字段时通过其 schema 读取文档，并通过读取该字段的代码的 `Tactic` 报告每处不匹配，以便进行验证的读取方能够收集全部不匹配。
++ 消息为 `the TEL did not conform to its schema because $reason`。
+
+@ 0 1 0 0982d44e8aec0bbd176df78e68656684
++ ## 变体
+
+% 0 1 0 1414bac3b0e5ccc61cf4ab26c45b1161
+
+@ 0 1 0 1c8091b1eb0a18cb130521b74f2ef2fb
++ 文档中缺少 schema 所要求的字段。
+
+@ 0 1 0 183419b440a5b75f0ef7f8124ae4f7c4
++ **示例。** `[↯/s.118.10.1] the TEL did not conform to its schema because the field first-name is required`
+
+@ 0 1 0 003370cb5fc2dedb1dded204d9c65e45
++ **解决方法。** 添加该字段，或在 schema 中将其设为可选。
+
+% 0 1 0 14428d06f4f508ef03f56b63f7ea2902
+
+@ 0 1 0 0441e219ebeee7af1c58c5446274c489
++ 由 `Sigil` 验证器读取的字段包含一个多于一个字符的原子。
+
+@ 0 1 0 134b87d0a09020b114fdba18b08f1cdc
++ **示例。** `[↯/s.118.10.2] the TEL did not conform to its schema because the value ab is not a single character`
+
+@ 0 1 0 070fffe127b5331d02a17136303bb986
++ **解决方法。** 为该字段提供单个字符。
+
+@ 0 1 0 004f241cb4a4ed0405cb108ee75b2611
++ ## 另请参阅
+
+% 0 1 0 1f718dc1c824c1411f5f8454e02273b2
+
+% 0 1 0 179ff6b5b3b621a911c0d3101a18c746
+
+@ 0 1 0 007e19a11ea4dc8d028056994263800f
++ - 源代码：`lib/stratiform/src/core/stratiform.Tel4.scala`

@@ -1,0 +1,41 @@
+orthant 2 language
+
+@ 0 39 0 136f115cd774eb38038f6c08e069f0ca
++       这里的每种货币的模数都是 100，包括日元和韩元等实际上没有辅币单位的货币。
++       不在这里的货币用 `Currency()` 声明。
++   entry .Usd   美元，`USD`，以符号 `$` 显示
++   entry .Eur   欧元，`EUR`，以符号 `€` 显示
++   entry .Jpy   日元，`JPY`，以符号 `¥` 显示
++   entry .Gbp   英镑，`GBP`，以符号 `£` 显示
++   entry .Cny   人民币，`CNY`，以符号 `¥` 显示
++   entry .Aud   澳大利亚元，`AUD`，以符号 `A$` 显示
++   entry .Cad   加拿大元，`CAD`，以符号 `C$` 显示
++   entry .Chf   瑞士法郎，`CHF`，以符号 `CHF` 显示
++   entry .Hkd   港元，`HKD`，以符号 `HK$` 显示
++   entry .Sgd   新加坡元，`SGD`，以符号 `S$` 显示
++   entry .Sek   瑞典克朗，`SEK`，以符号 `kr` 显示
++   entry .Krw   韩元，`KRW`，以符号 `₩` 显示
++   entry .Nok   挪威克朗，`NOK`，以符号 `kr` 显示
++   entry .Nzd   新西兰元，`NZD`，以符号 `NZ$` 显示
++   entry .Inr   印度卢比，`INR`，以符号 `₹` 显示
++   entry .Mxn   墨西哥比索，`MXN`，以符号 `$` 显示
++   entry .Twd   新台币，`TWD`，以符号 `NT$` 显示
++   entry .Zar   南非兰特，`ZAR`，以符号 `R` 显示
++   entry .Brl   巴西雷亚尔，`BRL`，以符号 `R$` 显示
++   entry .Dkk   丹麦克朗，`DKK`，以符号 `kr` 显示
++   entry .Pln   波兰兹罗提，`PLN`，以符号 `zł` 显示
++   entry .Thb   泰铢，`THB`，以符号 `฿` 显示
++   entry .Ils   以色列新谢克尔，`ILS`，以符号 `₪` 显示
++   entry .Idr   印度尼西亚盾，`IDR`，以符号 `Rp` 显示
++   entry .Czk   捷克克朗，`CZK`，以符号 `Kč` 显示
++   entry .Aed   阿联酋迪拉姆，`AED`，以符号 `AED` 显示
++   entry .Try   土耳其里拉，`TRY`，以符号 `₺` 显示
++   entry .Huf   匈牙利福林，`HUF`，以符号 `Ft` 显示
++   entry .Clp   智利比索，`CLP`，以符号 `$` 显示
++   entry .Sar   沙特里亚尔，`SAR`，以符号 `SR` 显示
++   entry .Php   菲律宾比索，`PHP`，以符号 `₱` 显示
++   entry .Myr   马来西亚林吉特，`MYR`，以符号 `RM` 显示
++   entry .Cop   哥伦比亚比索，`COP`，以符号 `$` 显示
++   entry .Rub   俄罗斯卢布，`RUB`，以符号 `₽` 显示
++   entry .Ron   罗马尼亚列伊，`RON`，以符号 `lei` 显示
++   entry .Pen   秘鲁索尔，`PEN`，以符号 `S/` 显示

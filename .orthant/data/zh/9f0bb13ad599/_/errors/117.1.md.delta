@@ -1,0 +1,5 @@
+orthant 2 language
+
+@ 0 2 0 1500708d61bde950192c8469de2a6217
++ row  `↯/s.117.1.7`  `Misconfigured`  签发方缺少该操作所需的某样东西，例如授权端点或重定向 URI。  `[↯/s.117.1.7] OAuth failed because the issuer is not configured for this: the flow needs a redirect URI`  为 `Issuer` 提供消息中指出的端点或 URI。
++ row  `↯/s.117.1.8`  `Identity`  OpenID Connect ID 令牌缺失、未通过验证，或者不是提供方为此客户端和此请求签发的。  `[↯/s.117.1.8] OAuth failed because the ID token was not acceptable: it does not answer this client's request`  不要把该用户视为已识别。检查传给 `Oidc.identify` 的签发方、客户端标识符和 nonce 是否就是授权请求所用的那些，以及密钥是否是提供方当前的密钥。
