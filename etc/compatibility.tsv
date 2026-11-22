@@ -106,7 +106,7 @@ mercator	yes	yes	yes	js
 metamorphose	yes	yes	yes	js		
 monotonous	yes	yes	yes	js		
 mosquito	yes	yes	yes	js		
-murmuration	yes	yes	yes	js		
+murmuration	yes	yes	yes	js	JVM-only: staged	
 nomenclature	yes	yes	yes	js		
 obligatory	yes	yes	yes	js	JVM-only: json, grpc	`json` is over `jacinta.schema` (`telekinesis.jvm`); `grpc` is over `telekinesis.http2`
 octogenarian	yes	no	yes	no	backends: core-jvm+core-native	no Scala.js filesystem backend; on Scala Native commits are stamped in UTC (no `java.time`), and `cli`/`ssh` need `guillotine`
