@@ -1,0 +1,1457 @@
+tel 1.0 propensive.dev/bolt
+
+# Bolt codes of Soundness: `subdivision 118` / `error 1` is ↯/s.118.1, or, by the names of each,
+# ↯/soundness.stratiform.tel. A subdivision is a module, numbered so that each comes after those
+# it depended on when it was numbered; a new module takes the next number. An error whose `symbol`
+# is a class is that `fulminate.Error`, named for the type it belongs to; one without a name is
+# reported by a macro, with `halt`. Each has a page beside this record, `<m>.<n>.md`, which
+# describes its variants.
+#
+# This is the record of the letter `s` which the index of bolt codes, `projects.tel` in
+# propensive/bolt, names; its schema is `bolt.tel` there. A code, once assigned, is permanent: a
+# number is never reused, and one which is withdrawn stays, marked `retired`.
+
+project s soundness
+
+  subdivision 1 beneficence
+
+  subdivision 2 proscenium
+
+  subdivision 3 gigantism
+
+  subdivision 4 larceny
+
+  subdivision 5 prepositional
+
+  subdivision 6 aperture
+
+  subdivision 7 murmuration
+
+  subdivision 8 contextual
+
+  subdivision 9 prescience
+
+  subdivision 10 sedentary
+    error 1 bench
+      symbol Bench.Error
+      source lib/sedentary/src/core/sedentary.Bench.scala
+
+  subdivision 11 symbolism
+
+  subdivision 12 anticipation
+
+  subdivision 13 corpuscular
+
+  subdivision 14 diuretic
+
+  subdivision 15 fulminate
+    error 1 unchecked
+      summary `Error.Unchecked`
+      source lib/fulminate/src/core/fulminate.Error.scala
+    error 2 text-escapes
+      symbol TextEscapes.Error
+      source lib/fulminate/src/core/fulminate.TextEscapes.scala
+
+  subdivision 16 cardinality
+    error 1
+      summary  Lower bound must be a `Double` singleton literal
+      source lib/cardinality/src/core/cardinality.internal.scala
+    error 2
+      summary  Upper bound must be a `Double` singleton literal
+      source lib/cardinality/src/core/cardinality.internal.scala
+    error 3
+      summary  Value exceeds its upper bound
+      source lib/cardinality/src/core/cardinality.internal.scala
+    error 4
+      summary  Value below its lower bound
+      source lib/cardinality/src/core/cardinality.internal.scala
+
+  subdivision 17 mercator
+    error 1
+      summary  Type has no `flatMap` method
+      source lib/mercator/src/core/mercator.internal.scala
+    error 2
+      summary  Type has multiple `map` methods
+      source lib/mercator/src/core/mercator.internal.scala
+    error 3
+      summary  Type has multiple `flatMap` methods
+      source lib/mercator/src/core/mercator.internal.scala
+    error 4
+      summary  Companion has no candidate `apply` methods
+      source lib/mercator/src/core/mercator.internal.scala
+    error 5
+      summary  Missing `Functor` for monad derivation
+      source lib/mercator/src/core/mercator.internal.scala
+    error 6
+      summary  Companion has multiple candidate `apply` methods
+      source lib/mercator/src/core/mercator.internal.scala
+    error 7
+      summary  Type has no `map` method
+      source lib/mercator/src/core/mercator.internal.scala
+    error 8
+      summary  Missing `Identity` for functor derivation
+      source lib/mercator/src/core/mercator.internal.scala
+
+  subdivision 18 typonym
+
+  subdivision 19 umbrageous
+
+  subdivision 20 vacuous
+    error 1
+      summary  Value is not `Optional` (`mandatable`)
+      source lib/vacuous/src/core/vacuous.internal.scala
+    error 2
+      summary  Type cannot be proven distinct from a union
+      source lib/vacuous/src/core/vacuous.internal.scala
+    error 3
+      summary  Type is not `Optional`
+      source lib/vacuous/src/core/vacuous.internal.scala
+    error 4 optional
+      symbol Optional.Error
+      source lib/vacuous/src/core/vacuous.Optional.scala
+    error 5
+      summary  Type is abstract
+      source lib/vacuous/src/core/vacuous.internal.scala
+
+  subdivision 21 denominative
+
+  subdivision 22 concordance
+
+  subdivision 23 rudiments
+    error 1
+      summary  `probe` macro reports a type
+      source lib/rudiments/src/core/rudiments.internal.scala
+
+  subdivision 24 contingency
+    error 1
+      summary  `recover` argument must be match cases
+      source lib/contingency/src/core/contingency.internal.scala
+    error 2
+      summary  Unexpected AST node
+      source lib/contingency/src/core/contingency.internal.scala
+    error 3 validation
+      source lib/contingency/src/core/contingency.Validation.scala
+    error 4
+      summary  `accrue` argument must be match cases
+      source lib/contingency/src/core/contingency.internal.scala
+    error 5 errors
+      source lib/contingency/src/core/contingency.Errors.scala
+    error 6
+      summary  Pattern with repetition not exhaustive
+      source lib/contingency/src/core/contingency.internal.scala
+    error 7
+      summary  Unrecognised pattern type
+      source lib/contingency/src/core/contingency.internal.scala
+    error 8
+      summary  Bad pattern
+      source lib/contingency/src/core/contingency.internal.scala
+    error 9
+      summary  Pattern not exhaustive
+      source lib/contingency/src/core/contingency.internal.scala
+    error 10
+      summary  Pattern is not a distinct `Error` type
+      source lib/contingency/src/core/contingency.internal.scala
+    error 11
+      summary  No handler available for the error type
+      source lib/contingency/src/core/contingency.internal.scala
+    error 12
+      summary  `mitigate` argument must be a partial function
+      source lib/contingency/src/core/contingency.internal.scala
+    error 13
+      summary  Wildcard in pattern type extraction
+      source lib/contingency/src/core/contingency.internal.scala
+    error 14
+      summary  Unrecognised `Unapply`
+      source lib/contingency/src/core/contingency.internal.scala
+    error 15
+      source lib/contingency/src/core/contingency.internal.scala
+    error 16 expectation
+      symbol Expectation.Error
+      source lib/contingency/src/core/contingency.Expectation.scala
+    error 17 disturbance
+      source lib/contingency/src/core/contingency.Disturbance.scala
+
+  subdivision 25 distillate
+    error 1 number
+      symbol Number.Error
+      source lib/distillate/src/core/distillate.Number.scala
+    error 2 truth
+      symbol Truth.Error
+      source lib/distillate/src/core/distillate.Truth.scala
+    error 3 enumerable
+      symbol Enumerable.Error
+      source lib/distillate/src/core/distillate.Enumerable.scala
+
+  subdivision 26 anamnesis
+    error 1 database
+      symbol Database.Error
+      source lib/anamnesis/src/core/anamnesis.Database.scala
+
+  subdivision 27 hypotenuse
+    error 1
+      summary  `S16` value below `Short.MinValue`
+      source lib/hypotenuse/src/core/hypotenuse.protointernal.scala
+    error 2
+      summary  Binary literal contains non-binary character
+      source lib/hypotenuse/src/core/hypotenuse.protointernal.scala
+    error 3
+      summary  Hexadecimal literal has an odd number of digits
+      source lib/hypotenuse/src/core/hypotenuse.protointernal.scala
+    error 4
+      summary  Hex literal contains non-hex character
+      source lib/hypotenuse/src/core/hypotenuse.protointernal.scala
+    error 5
+      summary  Binary literal must be 8, 16, 32, or 64 bits
+      source lib/hypotenuse/src/core/hypotenuse.protointernal.scala
+    error 6
+      summary  `S8` value below `Byte.MinValue`
+      source lib/hypotenuse/src/core/hypotenuse.protointernal.scala
+    error 7
+      summary  `S16` value above `Short.MaxValue`
+      source lib/hypotenuse/src/core/hypotenuse.protointernal.scala
+    error 8
+      summary  `U8` value below 0
+      source lib/hypotenuse/src/core/hypotenuse.protointernal.scala
+    error 9
+      summary  `U8` value above 255
+      source lib/hypotenuse/src/core/hypotenuse.protointernal.scala
+    error 10 decimal
+      symbol Decimal.Error
+      source lib/hypotenuse/src/core/hypotenuse.Decimal.scala
+    error 11 rational
+      symbol Rational.Error
+      source lib/hypotenuse/src/core/hypotenuse.Rational.scala
+    error 12
+      summary  `U16` value below 0
+      source lib/hypotenuse/src/core/hypotenuse.protointernal.scala
+    error 13
+      summary  `S8` value above `Byte.MaxValue`
+      source lib/hypotenuse/src/core/hypotenuse.protointernal.scala
+    error 14
+      summary  `U16` value above 65535
+      source lib/hypotenuse/src/core/hypotenuse.protointernal.scala
+    error 15 arithmetic
+      symbol Arithmetic.Error
+      source lib/hypotenuse/src/core/hypotenuse.Arithmetic.scala
+    error 16
+      summary  Bound expression must use a comparison operator
+      source lib/hypotenuse/src/core/hypotenuse.protointernal.scala
+
+  subdivision 28 metamorphose
+    error 1 permutation
+      symbol Permutation.Error
+      source lib/metamorphose/src/core/metamorphose.Permutation.scala
+
+  subdivision 29 panopticon
+
+  subdivision 30 adversaria
+
+  subdivision 31 gnossienne
+    error 1 reference
+      symbol Reference.Error
+      source lib/gnossienne/src/core/gnossienne.Reference.scala
+
+  subdivision 32 polyvinyl
+
+  subdivision 33 praxinoscope
+    error 1 motif
+      symbol Motif.Error
+      source lib/praxinoscope/src/core/praxinoscope.Motif.scala
+      variant 1 unclosed-group
+      variant 2 not-in-group
+      variant 3 unexpected-char
+      variant 4 bad-repetition
+      variant 5 incomplete-repetition
+      variant 6 empty-char-class
+      variant 7 unclosed-class
+      variant 8 unclosed-escape
+      variant 9 invalid-escape
+      variant 10 inverted-range
+      variant 11 backreference
+      variant 12 lookaround
+      variant 13 possessive-quantifier
+      variant 14 atomic-group
+      variant 15 unsupported-group
+      variant 16 flag
+      variant 17 repetition-too-large
+      variant 18 budget-exceeded
+      variant 19 unverifiable
+      variant 20 invalid-posix-class
+      variant 21 unknown-unicode-class
+
+  subdivision 34 kaleidoscope
+    error 1 regex
+      symbol Regex.Error
+      source lib/kaleidoscope/src/core/kaleidoscope.Regex.scala
+      variant 1 unclosed-group
+      variant 2 expected-group
+      variant 3 bad-repetition
+      variant 4 uncapturable
+      variant 5 unexpected-char
+      variant 6 not-in-group
+      variant 7 incomplete-repetition
+      variant 8 invalid-pattern
+      variant 9 unclosed-escape
+      variant 10 empty-char-class
+      variant 11 zero-maximum
+
+  subdivision 35 hieroglyph
+    error 1 codepage
+      symbol Codepage.Error
+      source lib/hieroglyph/src/core/hieroglyph.Codepage.scala
+    error 2
+      summary  Encoding not available
+      source lib/hieroglyph/src/core/hieroglyph.internal.scala
+    error 3
+      summary  Unicode character does not exist
+      source lib/hieroglyph/src/core/hieroglyph.internal.scala
+
+  subdivision 36 stenography
+
+  subdivision 37 vexillology
+
+  subdivision 38 vicarious
+
+  subdivision 39 wisteria
+
+  subdivision 40 polaris
+
+  subdivision 41 spectacular
+
+  subdivision 42 gossamer
+    error 1 range
+      symbol Range.Error
+      source lib/gossamer/src/core/gossamer.Range.scala
+    error 2
+      summary  Invalid ASCII character literal
+      source lib/gossamer/src/core/gossamer.internal.scala
+
+  subdivision 43 charisma
+
+  subdivision 44 clavichord
+
+  subdivision 45 cosmopolite
+
+  subdivision 46 geodesy
+    error 1 geolocation
+      symbol Geolocation.Error
+      source lib/geodesy/src/core/geodesy.Geolocation.scala
+      variant 1 missing-equals
+      variant 2 multiple-equals
+      variant 3 bad-scheme
+      variant 4 expected-semicolon
+      variant 5 unexpected-suffix
+      variant 6 expected-coordinates
+      variant 7 bad-uncertainty
+
+  subdivision 47 inimitable
+    error 1 uuid
+      symbol Uuid.Error
+      source lib/inimitable/src/core/inimitable.Uuid.scala
+
+  subdivision 48 iridescence
+
+  subdivision 49 mosquito
+
+  subdivision 50 plutocrat
+    error 1 isin
+      symbol Isin.Error
+      source lib/plutocrat/src/core/plutocrat.internal.scala
+
+  subdivision 51 polysyllabic
+
+  subdivision 52 prophesy
+
+  subdivision 53 quantitative
+
+  subdivision 54 abacist
+    error 1
+      summary  Quanta does not include this unit
+      source lib/abacist/src/core/abacist.internal.scala
+
+  subdivision 55 baroque
+
+  subdivision 56 tessellate
+
+  subdivision 57 escritoire
+
+  subdivision 58 virility
+
+  subdivision 59 xenophile
+    error 1 typescript
+      symbol Typescript.Error
+      source lib/xenophile/src/typescript/xenophile.Typescript.scala
+    error 2 web-idl
+      symbol WebIdl.Error
+      source lib/xenophile/src/webidl/xenophile.WebIdl.scala
+    error 3 wit
+      symbol Wit.Error
+      source lib/xenophile/src/wit/xenophile.Wit.scala
+    error 4 c-header
+      symbol CHeader.Error
+      source lib/xenophile/src/cffi/xenophile.CHeader.scala
+
+  subdivision 60 zephyrine
+    error 1 truncation
+      symbol Truncation.Error
+      source lib/zephyrine/src/core/zephyrine.Truncation.scala
+    error 2 parse
+      symbol Parse.Error
+      source lib/zephyrine/src/core/zephyrine.Parse.scala
+    error 3 structural
+      symbol Structural.Error
+      source lib/zephyrine/src/layout/zephyrine.Structural.scala
+
+  subdivision 61 monotonous
+    error 1 serialization
+      symbol Serialization.Error
+      source lib/monotonous/src/core/monotonous.Serialization.scala
+
+  subdivision 62 ambience
+    error 1 property
+      symbol Property.Error
+      summary  System property not defined
+      source lib/ambience/src/core/ambience.Property.scala
+    error 2 environment
+      symbol Environment.Error
+      summary  Environment variable not defined
+      source lib/ambience/src/core/ambience.Environment.scala
+    error 3 working-directory
+      symbol WorkingDirectory.Error
+      summary  No working directory
+      source lib/ambience/src/core/ambience.WorkingDirectory.scala
+
+  subdivision 63 digression
+    error 1 fqcn
+      symbol Fqcn.Error
+      source lib/digression/src/core/digression.Fqcn.scala
+
+  subdivision 64 escapade
+
+  subdivision 65 galilei
+    error 1
+      summary  Path is not valid on any platform
+      source lib/galilei/src/core/galilei.internal.scala
+
+  subdivision 66 gastronomy
+    error 1 multihash
+      symbol Multihash.Error
+      source lib/gastronomy/src/multihash/gastronomy.Multihash.scala
+
+  subdivision 67 hellenism
+    error 1 classpath
+      symbol Classpath.Error
+      source lib/hellenism/src/core/hellenism.Classpath.scala
+
+  subdivision 68 nomenclature
+    error 1 name
+      symbol Name.Error
+      source lib/nomenclature/src/core/nomenclature.internal.scala
+    error 2 moniker
+      symbol Moniker.Error
+      source lib/nomenclature/src/lexicon/nomenclature.Moniker.scala
+      variant 1 unreadable
+      variant 2 out-of-range
+      variant 3 malformed
+      variant 4 unknown-word
+    error 3
+      summary  Missing `Nominative` instance
+      source lib/nomenclature/src/core/nomenclature.protointernal.scala
+    error 4
+      summary  Bad type in `parse`
+      source lib/nomenclature/src/core/nomenclature.protointernal.scala
+    error 5
+      summary  Constraint inaccessible
+      source lib/nomenclature/src/core/nomenclature.protointernal.scala
+    error 6
+      summary  Companion object has wrong type
+      source lib/nomenclature/src/core/nomenclature.protointernal.scala
+    error 7
+      summary  Name fails rule validation at compile time
+      source lib/nomenclature/src/core/nomenclature.protointernal.scala
+    error 8
+      summary  Name is not valid in any namespace in scope
+      source lib/nomenclature/src/core/nomenclature.protointernal.scala
+
+  subdivision 69 parasite
+    error 1 tenacity
+      symbol Tenacity.Error
+      source lib/parasite/src/core/parasite.Tenacity.scala
+
+  subdivision 70 serpentine
+    error 1 path
+      symbol Path.Error
+      source lib/serpentine/src/core/serpentine.Path.scala
+
+  subdivision 71 turbulence
+
+  subdivision 72 acyclicity
+    error 1 dag
+      symbol Dag.Error
+      source lib/acyclicity/src/core/acyclicity.Dag.scala
+      variant 1 node-missing
+      variant 2 cyclic
+
+  subdivision 73 aviation
+    error 1
+      summary  Time literal: hour value above 12
+      source lib/aviation/src/core/aviation.internal.scala
+    error 2
+      summary  Time literal: minute value above 59
+      source lib/aviation/src/core/aviation.internal.scala
+    error 3 moment
+      symbol Moment.Error
+      source lib/aviation/src/core/aviation.Moment.scala
+    error 4 timespan
+      symbol Timespan.Error
+      source lib/aviation/src/core/aviation.Timespan.scala
+    error 5 duration
+      symbol Duration.Error
+      source lib/aviation/src/core/aviation.protointernal.scala
+    error 6 tzdb
+      symbol Tzdb.Error
+      source lib/aviation/src/core/aviation.Tzdb.scala
+      variant 1 could-not-parse-time
+      variant 2 unexpected-rule
+      variant 3 unexpected-link
+      variant 4 unexpected-zone-info
+      variant 5 unparsable-date
+      variant 6 bad-zone-info
+      variant 7 bad-name
+      variant 8 no-tzdb-file
+    error 7
+      summary  Time literal: minutes must be two digits
+      source lib/aviation/src/core/aviation.internal.scala
+    error 8
+      summary  Time literal must be a `Double`
+      source lib/aviation/src/core/aviation.internal.scala
+    error 9 timestamp
+      symbol Timestamp.Error
+      source lib/aviation/src/core/aviation.timestampInternal.scala
+    error 10 timezone
+      symbol Timezone.Error
+      source lib/aviation/src/core/aviation.Timezone.scala
+    error 11
+      summary  Time literal: negative value
+      source lib/aviation/src/core/aviation.internal.scala
+
+  subdivision 74 camouflage
+
+  subdivision 75 capricious
+
+  subdivision 76 cartouche
+
+  subdivision 77 dendrology
+
+  subdivision 78 dissonance
+    error 1 diff
+      symbol Diff.Error
+      source lib/dissonance/src/core/dissonance.Diff.scala
+    error 2 redraft
+      symbol Redraft.Error
+      source lib/dissonance/src/core/dissonance.Redraft.scala
+      variant 1 no-match
+      variant 2 ambiguous
+      variant 3 unanchored
+
+  subdivision 79 chiaroscuro
+
+  subdivision 80 frontier
+
+  subdivision 81 gesticulate
+    error 1 media-type
+      symbol MediaType.Error
+      source lib/gesticulate/src/core/gesticulate.MediaType.scala
+    error 2 multipart
+      symbol Multipart.Error
+      source lib/gesticulate/src/core/gesticulate.Multipart.scala
+
+  subdivision 82 cacophony
+    error 1 outlet
+      symbol Outlet.Error
+      source lib/cacophony/src/core/cacophony.Audio.scala
+      variant 1 unavailable
+      variant 2 unsupported-configuration
+      variant 3 closed
+    error 2 feed
+      symbol Feed.Error
+      source lib/cacophony/src/core/cacophony.Audio.scala
+
+  subdivision 83 caesura
+    error 1 dsv
+      symbol Dsv.Error
+      source lib/caesura/src/core/caesura.Dsv.scala
+
+  subdivision 84 guillotine
+    error 1 exec
+      symbol Exec.Error
+      source lib/guillotine/src/core/guillotine.Exec.scala
+    error 2 pid
+      symbol Pid.Error
+      source lib/guillotine/src/core/guillotine.Pid.scala
+
+  subdivision 85 honeycomb
+
+  subdivision 86 imperial
+
+  subdivision 87 legerdemain
+    error 1
+      summary  Query parameter type mismatch
+      source lib/legerdemain/src/query/legerdemain.internal.scala
+    error 2 query
+      symbol Query.Error
+      source lib/legerdemain/src/query/legerdemain.Query.scala
+    error 3
+      summary  No `Encodable in Query` instance
+      source lib/legerdemain/src/query/legerdemain.internal.scala
+    error 4
+      summary  Missing `Parametric` value
+      source lib/legerdemain/src/query/legerdemain.internal.scala
+
+  subdivision 88 mandible
+    error 1
+      summary  Unsupported lambda
+      source lib/mandible/src/core/mandible.internal.scala
+    error 2 classfile
+      symbol Classfile.Error
+      summary `ClassfileError`
+      source lib/mandible/src/core/mandible.Classfile.scala
+    error 3 bytecode
+      symbol Bytecode.Error
+      summary `ClassfileError`
+      source lib/mandible/src/core/mandible.Bytecode.scala
+      variant 1 classfile-missing
+      variant 2 classfile-unreadable
+
+  subdivision 89 phoenicia
+    error 1 font
+      symbol Font.Error
+      source lib/phoenicia/src/core/phoenicia.Font.scala
+      variant 1 missing-table
+      variant 2 unknown-format
+      variant 3 magic-number
+      variant 4 missing-encoding
+      variant 5 uncovered-weight
+      variant 6 uncovered-slant
+      variant 7 uncovered-stretch
+      variant 8 unknown-axis
+      variant 9 axis-out-of-range
+      variant 10 missing-feature
+
+  subdivision 90 cataclysm
+    error 1 css
+      symbol Css.Error
+      source lib/cataclysm/src/core/cataclysm.Css.scala
+      variant 1 unterminated-comment
+      variant 2 unterminated-string
+      variant 3 unexpected-end
+      variant 4 unexpected-char
+      variant 5 empty-selector
+      variant 6 unknown-property
+      variant 7 bad-value
+      variant 8 unsupported-value
+      variant 9 invalid-name
+
+  subdivision 91 graffiti
+
+  subdivision 92 pneumatic
+
+  subdivision 93 bitumen
+    error 1 tar
+      symbol Tar.Error
+      source lib/bitumen/src/core/bitumen.Tar.scala
+      variant 1 name-too-long
+      variant 2 bad-magic
+      variant 3 bad-checksum
+      variant 4 unknown-type-flag
+      variant 5 truncated-stream
+      variant 6 bad-octal
+      variant 7 bad-pax-record
+      variant 8 bad-name
+      variant 9 bad-sparse-map
+      variant 10 device-creation-unsupported
+      variant 11 write-unsupported
+      variant 12 already-exists
+      variant 13 cannot-write
+    error 2 ar
+      symbol Ar.Error
+      source lib/bitumen/src/core/bitumen.Ar.scala
+      variant 1 bad-magic
+      variant 2 bad-terminator
+      variant 3 bad-decimal
+      variant 4 bad-octal
+      variant 5 truncated-stream
+      variant 6 bad-long-name-ref
+      variant 7 unsupported-name-format
+      variant 8 write-unsupported
+      variant 9 unrepresentable
+
+  subdivision 94 hallucination
+
+  subdivision 95 profanity
+    error 1 question
+      symbol Question.Error
+      source lib/profanity/src/core/profanity.Question.scala
+    error 2 terminal
+      symbol Terminal.Error
+      source lib/profanity/src/core/profanity.Terminal.scala
+
+  subdivision 96 querencia
+
+  subdivision 97 revolution
+    error 1 semver
+      symbol Semver.Error
+      source lib/revolution/src/semver/revolution.Semver.scala
+
+  subdivision 98 surveillance
+    error 1 watch
+      symbol Watch.Error
+      source lib/surveillance/src/core/surveillance.Watch.scala
+
+  subdivision 99 ulysses
+
+  subdivision 100 urticose
+    error 1 dns
+      symbol Dns.Error
+      source lib/urticose/src/dns/urticose.Dns.scala
+      variant 1 truncated
+      variant 2 bad-pointer
+      variant 3 bad-label
+      variant 4 long-label
+      variant 5 long-name
+      variant 6 empty-label
+      variant 7 bad-escape
+      variant 8 bad-rdata
+      variant 9 long-string
+      variant 10 trailing
+      variant 11 unresolved
+      variant 12 timeout
+      variant 13 mismatch
+    error 2 ip-address
+      symbol IpAddress.Error
+      source lib/urticose/src/core/urticose.IpAddress.scala
+      variant 1 ipv4-byte-out-of-range
+      variant 2 ipv4-byte-not-numeric
+      variant 3 ipv4-wrong-number-of-groups
+      variant 4 ipv6-group-wrong-length
+      variant 5 ipv6-group-not-hex
+      variant 6 ipv6-too-many-nonzero-groups
+      variant 7 ipv6-wrong-number-of-groups
+      variant 8 ipv6-multiple-double-colons
+      variant 9 ipv4-subnet-prefix-out-of-range
+      variant 10 ipv6-subnet-prefix-out-of-range
+      variant 11 subnet-prefix-not-numeric
+      variant 12 subnet-wrong-format
+      variant 13 ipv4-wrong-number-of-bytes
+      variant 14 ipv6-wrong-number-of-bytes
+    error 3 port
+      symbol Port.Error
+      source lib/urticose/src/core/urticose.internal.scala
+    error 4 email-address
+      symbol EmailAddress.Error
+      source lib/urticose/src/core/urticose.EmailAddress.scala
+      variant 1 empty
+      variant 2 invalid-domain
+      variant 3 long-local-part
+      variant 4 terminal-period
+      variant 5 successive-periods
+      variant 6 initial-period
+      variant 7 unescaped-quote
+      variant 8 unclosed-quote
+      variant 9 missing-domain
+      variant 10 missing-at-symbol
+      variant 11 unclosed-ip-address
+      variant 12 invalid-char
+    error 5
+      summary  Port number out of range
+      source lib/urticose/src/core/urticose.internal.scala
+    error 6 network-interface
+      symbol NetworkInterface.Error
+      source lib/urticose/src/core/urticose.NetworkInterface.scala
+      variant 1 enumeration
+      variant 2 inspection
+    error 7 mac-address
+      symbol MacAddress.Error
+      source lib/urticose/src/core/urticose.internal.scala
+    error 8 url
+      symbol Url.Error
+      source lib/urticose/src/url/urticose.Url.scala
+    error 9 internet
+      symbol Internet.Error
+      source lib/urticose/src/core/urticose.Internet.scala
+    error 10 hostname
+      symbol Hostname.Error
+      source lib/urticose/src/core/urticose.Hostname.scala
+    error 11
+      summary  Not a valid port
+      source lib/urticose/src/core/urticose.internal.scala
+
+  subdivision 101 coaxial
+    error 1 bind
+      symbol Bind.Error
+      source lib/coaxial/src/core/coaxial.Bind.scala
+    error 2 socket
+      symbol Socket.Error
+      source lib/coaxial/src/core/coaxial.Socket.scala
+
+  subdivision 102 syndesis
+    error 1 discovery
+      symbol Discovery.Error
+      source lib/syndesis/src/core/syndesis.Discovery.scala
+      variant 1 conflict
+      variant 2 timeout
+      variant 3 invalid-name
+      variant 4 invalid-txt
+      variant 5 invalid-service
+      variant 6 unavailable
+    error 2 mdns
+      symbol Mdns.Error
+      source lib/syndesis/src/core/syndesis.Mdns.scala
+
+  subdivision 103 telekinesis
+    error 1 response
+      symbol Response.Error
+      summary `Http.Response.Error`
+      source lib/telekinesis/src/core/telekinesis.Http.scala
+    error 2 request
+      symbol Request.Error
+      summary `Http.Request.Error`
+      source lib/telekinesis/src/core/telekinesis.Http.scala
+      variant 1 expectation
+      variant 2 version
+      variant 3 host
+      variant 4 uri-too-long
+      variant 5 headers-too-large
+    error 3 http
+      symbol Http.Error
+      source lib/telekinesis/src/core/telekinesis.Http.scala
+    error 4 auth
+      symbol Auth.Error
+      source lib/telekinesis/src/core/telekinesis.Auth.scala
+    error 5 connect
+      symbol Connect.Error
+      source lib/telekinesis/src/core/telekinesis.Connect.scala
+
+  subdivision 104 breviloquence
+    error 1 cbor
+      symbol Cbor.Error
+      source lib/breviloquence/src/core/breviloquence.Cbor.scala
+      variant 1 truncated
+      variant 2 reserved
+      variant 3 bad-simple-value
+      variant 4 invalid-utf8
+      variant 5 overflow
+      variant 6 unexpected-break
+      variant 7 trailing
+      variant 8 out-of-range
+      variant 9 not-type
+      variant 10 non-string-key
+      variant 11 absent
+
+  subdivision 105 enigmatic
+    error 1 pem
+      symbol Pem.Error
+      source lib/enigmatic/src/asn1/enigmatic.Pem.scala
+    error 2 crypto
+      symbol Crypto.Error
+      source lib/enigmatic/src/core/enigmatic.Crypto.scala
+    error 3 keystore
+      symbol Keystore.Error
+      source lib/enigmatic/src/core-jvm/enigmatic.Keystore.scala
+      variant 1 unreadable
+      variant 2 write-unsupported
+    error 4 asn1
+      symbol Asn1.Error
+      source lib/enigmatic/src/asn1/enigmatic.Asn1.scala
+      variant 1 truncated
+      variant 2 indefinite-length
+      variant 3 non-minimal-length
+      variant 4 non-minimal-tag
+      variant 5 non-minimal-integer
+      variant 6 empty-integer
+      variant 7 overflow
+      variant 8 trailing
+      variant 9 invalid-utf8
+      variant 10 reserved-tag
+      variant 11 bad-oid
+      variant 12 oid-arc-overflow
+      variant 13 unsorted-set
+      variant 14 bad-time
+      variant 15 bad-boolean
+      variant 16 bad-length
+      variant 17 bad-unused-bits
+      variant 18 not-primitive
+      variant 19 not-constructed
+    error 5 certificate
+      symbol Certificate.Error
+      source lib/enigmatic/src/x509/enigmatic.Certificate.scala
+    error 6 cose
+      symbol Cose.Error
+      source lib/enigmatic/src/cose/enigmatic.Cose.scala
+      variant 1 malformed-structure
+      variant 2 unknown-tag
+      variant 3 unsupported-algorithm
+      variant 4 algorithm-mismatch
+      variant 5 variant-mismatch
+      variant 6 verification-failed
+      variant 7 cbor-parse-error
+      variant 8 detached-payload-required
+    error 7 private-key
+      symbol PrivateKey.Error
+      source lib/enigmatic/src/core/enigmatic.PrivateKey.scala
+    error 8 public-key
+      symbol PublicKey.Error
+      source lib/enigmatic/src/core/enigmatic.PublicKey.scala
+    error 9 certificate-path
+      symbol Certificate.Path.Error
+      source lib/enigmatic/src/x509/enigmatic.Certificate.scala
+      variant 1 empty
+      variant 2 malformed
+      variant 3 expired
+      variant 4 bad-signature
+      variant 5 unlinked
+      variant 6 not-authority
+      variant 7 untrusted
+
+  subdivision 106 jacinta
+    error 1 json
+      symbol Json.Error
+      source lib/jacinta/src/core/jacinta.Json.scala
+    error 2 json-pointer
+      symbol JsonPointer.Error
+      source lib/jacinta/src/core/jacinta.JsonPointer.scala
+    error 3 provider
+      symbol Provider.Error
+      summary `Json.Provider.Error`
+      source lib/jacinta/src/core/jacinta.Json4.scala
+      variant 1 json-type
+      variant 2 missing-value
+      variant 3 int-out-of-range
+      variant 4 pattern-mismatch
+      variant 5 number-out-of-range
+      variant 6 length-out-of-range
+      variant 7 not-permitted
+      variant 8 unexpected-kind
+      variant 9 unparsable
+
+  subdivision 107 caduceus
+    error 1 courier
+      symbol Courier.Error
+      source lib/caduceus/src/core/caduceus.Courier.scala
+
+  subdivision 108 eucalyptus
+
+  subdivision 109 exoskeleton
+    error 1 pane
+      symbol Pane.Error
+      summary `Tmux.Error`
+      source lib/exoskeleton/src/rig/exoskeleton.Pane.scala
+    error 2 enclave
+      symbol Enclave.Error
+      source lib/exoskeleton/src/rig/exoskeleton.Enclave.scala
+    error 3 install
+      symbol Install.Error
+      source lib/exoskeleton/src/core/exoskeleton.Install.scala
+
+  subdivision 110 facsimile
+    error 1 pdf
+      symbol Pdf.Error
+      source lib/facsimile/src/core/facsimile.Pdf.scala
+      variant 1 not-pdf
+      variant 2 truncated
+      variant 3 missing-startxref
+      variant 4 malformed-xref
+      variant 5 unparseable
+      variant 6 missing-object
+      variant 7 circular-reference
+      variant 8 missing-entry
+      variant 9 type-mismatch
+      variant 10 unknown-filter
+      variant 11 corrupt-stream
+      variant 12 malformed-operator
+      variant 13 unsupported-encryption
+      variant 14 bad-password
+      variant 15 circular-page-tree
+      variant 16 io
+      variant 17 write-unsupported
+
+  subdivision 111 locomotion
+    error 1 protobuf
+      symbol Protobuf.Error
+      source lib/locomotion/src/core/locomotion.Protobuf.scala
+      variant 1 truncated
+      variant 2 malformed-varint
+      variant 3 unexpected-wire-type
+      variant 4 overflow
+      variant 5 missing-field
+
+  subdivision 112 obligatory
+    error 1
+      summary  RPC method must have one parameter list
+      source lib/obligatory/src/json/obligatory.internal.scala
+    error 2 framing
+      symbol Framing.Error
+      source lib/obligatory/src/core/obligatory.Framing.scala
+    error 3
+      summary  Missing `Probate` instance
+      source lib/obligatory/src/json/obligatory.internal.scala
+    error 4
+      summary  Missing `Monitor` instance
+      source lib/obligatory/src/json/obligatory.internal.scala
+    error 5 sse
+      symbol Sse.Error
+      source lib/obligatory/src/json/obligatory.Sse.scala
+    error 6
+      summary  Missing `Online` instance
+      source lib/obligatory/src/json/obligatory.internal.scala
+    error 7 json-rpc
+      symbol JsonRpc.Error
+      source lib/obligatory/src/json/obligatory.JsonRpc.scala
+    error 8 rpc
+      symbol Rpc.Error
+      source lib/obligatory/src/core/obligatory.Rpc.scala
+
+  subdivision 113 embarcadero
+    error 1 oci
+      symbol Oci.Error
+      source lib/embarcadero/src/oci/embarcadero.Oci.scala
+      variant 1 missing-layout
+      variant 2 unsupported-layout
+      variant 3 missing-index
+      variant 4 missing-blob
+      variant 5 digest-mismatch
+      variant 6 invalid-blob
+      variant 7 unsupported-digest
+      variant 8 no-manifest
+      variant 9 write-unsupported
+
+  subdivision 114 exegesis
+    error 1 lsp
+      symbol Lsp.Error
+      summary `LspError`
+      source lib/exegesis/src/core/exegesis.Lsp.scala
+      variant 1 parse
+      variant 2 invalid-request
+      variant 3 method-not-found
+      variant 4 invalid-params
+      variant 5 internal
+      variant 6 server-not-initialized
+      variant 7 request-cancelled
+      variant 8 content-modified
+      variant 9 server-cancelled
+      variant 10 request-failed
+
+  subdivision 115 perihelion
+    error 1 websocket
+      symbol Websocket.Error
+      source lib/perihelion/src/core/perihelion.Websocket.scala
+      variant 1 unmasked
+      variant 2 bad-opcode
+      variant 3 bad-control
+      variant 4 bad-fragmentation
+      variant 5 too-large
+      variant 6 invalid-text
+      variant 7 reserved-bits
+      variant 8 bad-close
+      variant 9 masked
+      variant 10 handshake
+
+  subdivision 116 scintillate
+    error 1 httpd
+      symbol Httpd.Error
+      source lib/scintillate/src/server/scintillate.Httpd.scala
+
+  subdivision 117 orthodoxy
+    error 1 oauth
+      symbol OAuth.Error
+      source lib/orthodoxy/src/core/orthodoxy.OAuth.scala
+      variant 1 connection
+      variant 2 invalid-json-response
+      variant 3 unexpected-http-status
+      variant 4 insufficient-privileges
+      variant 5 unauthorized
+      variant 6 other
+
+  subdivision 118 stratiform
+    error 1 tel
+      symbol Tel.Error
+      source lib/stratiform/src/core/stratiform.Tel.scala
+      variant 401 absent
+      variant 402 not-scalar
+    error 2 mutation
+      symbol Mutation.Error
+      source lib/stratiform/src/core/stratiform.TelMutation.scala
+      variant 1 pointer-not-found
+      variant 2 atom-index-out-of-range
+      variant 3 remark-absent
+      variant 4 flag-already-set
+      variant 5 flag-not-set
+    error 3 base256
+      symbol Base256.Error
+      source lib/stratiform/src/base256/stratiform.Base256.scala
+      variant 1 not-in-alphabet
+    error 4 varint
+      symbol Varint.Error
+      source lib/stratiform/src/core/stratiform.Varint.scala
+      variant 1 truncated
+      variant 2 overflow
+      variant 3 overlong
+    error 5 bintel
+      symbol Bintel.Error
+      source lib/stratiform/src/core/stratiform.Bintel.scala
+      variant 17 nesting-limit-exceeded
+    error 6 telp
+      symbol Telp.Error
+      source lib/stratiform/src/core/stratiform.Telp.scala
+      variant 1 syntax
+      variant 2 unknown-keyword
+      variant 3 non-struct-descent
+      variant 4 absent-member
+      variant 5 index-out-of-range
+      variant 6 type-not-keyed
+      variant 7 key-not-found
+    error 7 resolution
+      symbol Resolution.Error
+      summary `Tels.Resolution.Error`
+      source lib/stratiform/src/core/stratiform.Tels.scala
+      variant 1 unknown-layer
+      variant 2 component-count
+      variant 3 base-mismatch
+      variant 4 layer-mismatch
+      variant 5 reference-disagrees
+      variant 6 unresolved
+      variant 7 not-schema
+      variant 8 unverified
+    error 8 acceptance
+      symbol Acceptance.Error
+      source lib/stratiform/src/core/stratiform.Tel.scala
+    error 9 renderer
+      symbol Renderer.Error
+      source lib/stratiform/src/core/stratiform.Tels.scala
+    error 10 provider
+      symbol Provider.Error
+      summary `Tel.Provider.Error`
+      source lib/stratiform/src/core/stratiform.Tel4.scala
+    error 11 ratel
+      symbol Ratel.Error
+      source lib/stratiform/src/core/stratiform.Ratel.scala
+
+  subdivision 119 probably
+
+  subdivision 120 austronesian
+    error 1 pojo
+      symbol Pojo.Error
+      source lib/austronesian/src/core/austronesian.internal.scala
+
+  subdivision 121 superlunary
+    error 1 rig
+      symbol Rig.Error
+      source lib/superlunary/src/core/superlunary.Rig.scala
+
+  subdivision 122 susurration
+    error 1 wire
+      symbol Wire.Error
+      source lib/susurration/src/core/susurration.Wire.scala
+    error 2 ssh
+      symbol Ssh.Error
+      source lib/susurration/src/core/susurration.Ssh.scala
+
+  subdivision 123 octogenarian
+    error 1 git
+      symbol Git.Error
+      source lib/octogenarian/src/core/octogenarian.Git.scala
+      variant 1 cannot-execute-git
+      variant 2 no-repository
+      variant 3 no-worktree
+      variant 4 moved
+      variant 5 no-such-ref
+      variant 6 no-such-object
+      variant 7 ref-exists
+      variant 8 unmerged
+      variant 9 conflict
+      variant 10 nothing-to-commit
+      variant 11 detached
+      variant 12 dirty
+      variant 13 not-fast-forward
+      variant 14 outside-worktree
+      variant 15 untracked
+      variant 16 no-operation-in-progress
+      variant 17 operation-in-progress
+      variant 18 no-such-remote
+      variant 19 remote-exists
+      variant 20 unauthorized
+      variant 21 unreachable
+      variant 22 remote-rejected
+      variant 23 lease-failed
+      variant 24 note-not-found
+      variant 25 no-such-config
+      variant 26 invalid-config
+      variant 27 bad-signature
+      variant 28 signing-failed
+      variant 29 unsupported
+      variant 30 unexpected
+      variant 31 note-exists
+      variant 32 no-such-worktree
+      variant 33 no-such-stash
+      variant 34 locked
+    error 2 ref-error
+      summary `Git.RefError`
+      source lib/octogenarian/src/core/octogenarian.Git.scala
+      variant 1 leading-or-trailing-dot
+      variant 2 reserved-suffix
+      variant 3 reserved-sequence
+      variant 4 double-dot
+      variant 5 empty-segment
+      variant 6 invalid-character
+      variant 7 bad-hash
+      variant 8 bad-refspec
+
+  subdivision 124 synesthesia
+    error 1 mcp
+      symbol Mcp.Error
+      source lib/synesthesia/src/core/synesthesia.Mcp.scala
+
+  subdivision 125 espionage
+    error 1 acp
+      symbol Acp.Error
+      source lib/espionage/src/core/espionage.Acp.scala
+
+  subdivision 126 sibylline
+    error 1 llm
+      symbol Llm.Error
+      source lib/sibylline/src/core/sibylline.Llm.scala
+
+  subdivision 127 tarantula
+    error 1 web-driver
+      symbol WebDriver.Error
+      source lib/tarantula/src/core/tarantula.WebDriver.scala
+      variant 1 no-such-element
+      variant 2 stale-element
+      variant 3 no-such-window
+      variant 4 javascript-error
+      variant 5 script-timeout
+      variant 6 timeout
+      variant 7 unknown-command
+      variant 8 other
+      variant 9 element-click-intercepted
+      variant 10 element-not-interactable
+      variant 11 insecure-certificate
+      variant 12 invalid-argument
+      variant 13 invalid-cookie-domain
+      variant 14 invalid-element-state
+      variant 15 invalid-selector
+      variant 16 invalid-session-id
+      variant 17 move-target-out-of-bounds
+      variant 18 no-such-alert
+      variant 19 no-such-cookie
+      variant 20 no-such-frame
+      variant 21 no-such-shadow-root
+      variant 22 detached-shadow-root
+      variant 23 session-not-created
+      variant 24 unable-to-set-cookie
+      variant 25 unable-to-capture-screen
+      variant 26 unexpected-alert-open
+      variant 27 unknown-error
+      variant 28 unknown-method
+      variant 29 unsupported-operation
+
+  subdivision 128 xylophone
+    error 1 xml
+      symbol Xml.Error
+      source lib/xylophone/src/core/xylophone.Xml.scala
+      variant 1 malformed
+      variant 6 unknown-variant
+    error 2 xpath
+      symbol XPath.Error
+      source lib/xylophone/src/core/xylophone.XPath.scala
+    error 3 xsd
+      symbol Xsd.Error
+      source lib/xylophone/src/core/xylophone.Xsd.scala
+      variant 1 not-schema
+      variant 2 unexpected
+      variant 3 missing-attribute
+      variant 4 bad-occurs
+      variant 5 unknown-prefix
+      variant 6 bad-facet
+      variant 7 duplicate
+    error 4 provider
+      symbol Provider.Error
+      summary `Xml.Provider.Error`
+      source lib/xylophone/src/core/xylophone.Xml4.scala
+      variant 1 out-of-range
+      variant 2 length-out-of-range
+      variant 3 pattern-mismatch
+      variant 4 not-permitted
+      variant 5 too-many-digits
+      variant 6 absent
+      variant 7 malformed
+
+  subdivision 129 archimedes
+    error 1 mathml
+      symbol Mathml.Error
+      source lib/archimedes/src/core/archimedes.Mathml.scala
+      variant 1 not-mathml
+      variant 2 unknown-element
+    error 2 ergo
+      symbol Ergo.Error
+      source lib/archimedes/src/core/archimedes.Ergo.scala
+      variant 1 empty
+      variant 2 bad-opener
+      variant 3 unclosed
+      variant 4 unexpected-end
+      variant 5 missing-body
+      variant 6 unsupported
+
+  subdivision 130 savagery
+    error 1 svg
+      symbol Svg.Error
+      source lib/savagery/src/core/savagery.Svg.scala
+      variant 1 not-an-svg
+      variant 2 malformed-path-data
+      variant 3 malformed-color
+
+  subdivision 131 tasseomancy
+
+  subdivision 132 yossarian
+    error 1 pty
+      symbol Pty.Error
+      source lib/yossarian/src/core/yossarian.Pty.scala
+      variant 1 bad-sgr-parameters
+      variant 2 bad-csi-parameter
+      variant 3 noninteger-sgr-parameter
+      variant 4 bad-color
+      variant 5 bad-osc-parameter
+      variant 6 bad-csi-command
+      variant 7 bad-csi-escape
+      variant 8 bad-fe-escape
+
+  subdivision 133 ultimatum
+
+  subdivision 134 ypsiloid
+    error 1 yaml
+      symbol Yaml.Error
+      source lib/ypsiloid/src/core/ypsiloid.Yaml.scala
+      variant 1 not-type
+      variant 2 absent
+    error 2 yaml-path
+      symbol YamlPath.Error
+      source lib/ypsiloid/src/core/ypsiloid.YamlPath.scala
+      variant 2 expected-hash
+      variant 3 expected-slash
+      variant 4 bad-escape
+
+  subdivision 135 apoplexy
+    error 1 open-api
+      symbol OpenApi.Error
+      source lib/apoplexy/src/core/apoplexy.OpenApi.scala
+      variant 1 malformed
+      variant 2 unsupported-version
+      variant 3 unresolvable-ref
+      variant 4 unsupported-ref
+      variant 5 bad-parameter-location
+    error 2 api
+      symbol Api.Error
+      source lib/apoplexy/src/core/apoplexy.Api.scala
+      variant 1 status
+      variant 2 malformed
+
+  subdivision 136 zeppelin
+    error 1 zip
+      symbol Zip.Error
+      source lib/zeppelin/src/core/zeppelin.Zip.scala
+      variant 1 duplicate-entry
+      variant 2 not-found
+      variant 3 invalid-name
+      variant 4 unsupported-method
+      variant 5 missing-eocd
+      variant 6 truncated-archive
+      variant 7 bad-signature
+      variant 8 zip64-error
+      variant 9 write-unsupported
+      variant 10 already-exists
+      variant 11 cannot-write
+
+  subdivision 137 anthology
+    error 1 link
+      symbol Link.Error
+      source lib/anthology/src/core/anthology.Link.scala
+    error 2 toolchain
+      symbol Toolchain.Error
+      source lib/anthology/src/core/anthology.Toolchain.scala
+    error 3 compiler
+      symbol Compiler.Error
+      source lib/anthology/src/core/anthology.Compiler.scala
+
+  subdivision 138 burdock
+
+  subdivision 139 degustation
+    error 1 inspection
+      symbol Inspection.Error
+      source lib/degustation/src/core/degustation.Inspection.scala
+
+  subdivision 140 ethereal
+    error 1 upgrade
+      symbol Upgrade.Error
+      source lib/ethereal/src/core/ethereal.Upgrade.scala
+      variant 1 cannot-read-source
+      variant 2 cannot-write-pending
+      variant 3 cannot-resolve-name
+
+  subdivision 141 harlequin
+
+  subdivision 142 punctuation
+
+  subdivision 143 delicious
+
+  subdivision 144 hyperbole
+
+  subdivision 145 vivisection
+    error 1 debugger
+      symbol Debugger.Error
+      summary `DebuggerError`
+      source lib/vivisection/src/core/vivisection.Debugger.scala
+
+  subdivision 146 abscission
+    error 1 shrink
+      symbol Shrink.Error
+      summary  A classpath cannot be shrunk to the closed world its entry points reach
+      source lib/abscission/src/core/abscission.Shrink.scala
+      variant 1 unsound
+      variant 2 failed
+
+  subdivision 147 sigillate
+    error 1 jose
+      symbol Jose.Error
+      source lib/sigillate/src/core/sigillate.Jose.scala
+      variant 1 malformed
+      variant 2 unsupported
+      variant 3 mismatch
+      variant 4 bad-signature
+      variant 5 undecryptable
+      variant 6 critical
+      variant 7 secured
+      variant 8 bad-key
+      variant 9 expired
+      variant 10 premature
+      variant 11 issuer
+      variant 12 audience
+      variant 13 claim
+      variant 14 unavailable
+
+  subdivision 148 chatelaine
+    error 1 webauthn
+      symbol WebAuthn.Error
+      source lib/chatelaine/src/core/chatelaine.WebAuthn.scala
+      variant 1 malformed
+      variant 2 ceremony
+      variant 3 challenge
+      variant 4 origin
+      variant 5 relying-party
+      variant 6 absent
+      variant 7 unverified
+      variant 8 algorithm
+      variant 9 attestation
+      variant 10 format
+      variant 11 credential
+      variant 12 signature
+      variant 13 counter

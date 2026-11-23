@@ -3,11 +3,19 @@ orthant 2 release
 @ 0 1 0 1446d5e237e58e781b5b136e361b66ec
 +     `doc/work/errors/25.1.md`; its distinct causes are the cases of a `Reason` enum extending
 
+@ 0 1 0 1962db1a01d1400a03e10fff135f8249
++       number of the library the error is in, as `bolt.tel` in `doc/work/errors` records it;
+
 @ 0 1 0 0b8ed88ada99093513cbb53c3112daf1
 +       documented at `doc/work/errors/<module>.<number>.md` with its cause and the usual remedies,
 
 @ 0 1 0 19ad5eaef3cbbbd20b820d4928b781b0
 +       The house style for the message is `doc/work/standards/messages.md`: lowercase, no trailing
+
+@ 0 2 0 1e42b06c995d9a4f0576039facd8d8f9
++       The record of what each of Soundness's codes means is `bolt.tel` in `doc/work/errors`,
++       which the index of codes in the [bolt](https://github.com/propensive/bolt) repository
++       names.
 
 @ 0 1 0 02edaaeae12f74cb148e8582e38cd76e
 +     The house style for what a message says is `doc/work/standards/messages.md`.
