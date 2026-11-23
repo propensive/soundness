@@ -759,7 +759,16 @@ object Jdwp:
 
       // A single writer drains outgoing packets so writes never interleave.
       val writer: Task[Unit] = async:
-        connection.outgoing.chain.each: packet => duplex.send(Stream(packet))
+        @scala.annotation.tailrec
+        def drain(packets: Chain[Data]): Unit = packets match
+          case packet #:: rest =>
+            duplex.send(Stream(packet))
+            drain(rest)
+
+          case _ =>
+            ()
+
+        drain(connection.outgoing.chain)
 
       // The reader owns the read side: it is minted and consumed here, which also keeps the caller
       // thread off the channel's first (blocking) refill before the writer has started.
