@@ -235,35 +235,98 @@ private[octogenarian] object Revwalk:
     recur(List(peel(objects, from)))
     seen
 
+  // The commits which two commits both reach, and which no other such commit reaches: the walk
+  // takes commits newest first from both at once, marking each with which of the two reach it.
+  // A commit which both reach is common, and what is beneath it is stale, being beneath a
+  // common commit; the walk ends when everything still to be taken is stale, so it reads
+  // little more than the history which the two do not share, however long the rest is, and it
+  // is right whatever the commits' dates are. With `only`, it ends as soon as it is known
+  // whether `right` reaches `left`, and gives `left` alone if it does.
+  private def common(objects: Path on Local, left: Git.Hash, right: Git.Hash, only: Boolean)
+    ( using Tactic[Git.Error], Tactic[Io.Error] )
+  :   List[Git.Hash] =
+
+    val fromLeft = 1
+    val fromRight = 2
+    val stale = 4
+    val commits = java.util.HashMap[Git.Hash, Commit]()
+    val marks = java.util.HashMap[Git.Hash, Int]()
+    val queued = java.util.HashSet[Git.Hash]()
+
+    // Newest committer date first.
+    val comparator: java.util.Comparator[(Long, Git.Hash)] =
+      (left, right) => java.lang.Long.compare(right.nn(0), left.nn(0))
+
+    val queue = java.util.PriorityQueue[(Long, Git.Hash)](comparator)
+
+    // How many of the commits in the queue are not stale.
+    var fresh = 0
+
+    def read(hash: Git.Hash): Commit =
+      Optional(commits.get(hash)).or:
+        val found = commit(objects, hash)
+        commits.put(hash, found)
+        found
+
+    def marked(hash: Git.Hash): Int = Optional(marks.get(hash)).or(0)
+
+    // A commit whose marks change is taken again, so that its parents have them too.
+    def mark(hash: Git.Hash, bits: Int): Unit =
+      val former = marked(hash)
+      val next = former | bits
+
+      if next != former then
+        marks.put(hash, next)
+
+        if queued.contains(hash) then
+          if (former & stale) == 0 && (next & stale) != 0 then fresh -= 1
+        else
+          queued.add(hash)
+          queue.add((read(hash).committer.timestamp.seconds, hash))
+          if (next & stale) == 0 then fresh += 1
+
+    def settled: Optional[Boolean] =
+      if !only then Unset
+      else if (marked(left) & fromRight) != 0 then true
+      else if (marked(right) & fromLeft) != 0 then false
+      else Unset
+
+    @scala.annotation.tailrec
+    def recur(found: List[Git.Hash]): List[Git.Hash] =
+      if settled.present || fresh == 0 then found else
+        val (_, hash) = queue.poll().nn
+        queued.remove(hash)
+        val own = marked(hash)
+        if (own & stale) == 0 then fresh -= 1
+        val both = (own & (fromLeft | fromRight | stale)) == (fromLeft | fromRight)
+        read(hash).parents.each(mark(_, if both then own | stale else own))
+        recur(if both && !found.exists(_ == hash) then hash :: found else found)
+
+    mark(left, fromLeft)
+    mark(right, fromRight)
+    val found = recur(Nil)
+
+    if !only then found.filter { hash => (marked(hash) & stale) == 0 }
+    else if settled.or(false) then List(left)
+    else Nil
+
   def isAncestor(objects: Path on Local, ancestor: Git.Hash, descendant: Git.Hash)
     ( using Tactic[Git.Error], Tactic[Io.Error] )
   :   Boolean =
 
-    ancestors(objects, descendant).contains(peel(objects, ancestor))
+    val upper = peel(objects, ancestor)
+    val lower = peel(objects, descendant)
+    upper == lower || common(objects, upper, lower, true) != Nil
 
   // The best common ancestor: a common ancestor which is not an ancestor of another.
   def mergeBase(objects: Path on Local, left: Git.Hash, right: Git.Hash)
     ( using Tactic[Git.Error], Tactic[Io.Error] )
   :   Optional[Git.Hash] =
 
-    val leftAncestors = ancestors(objects, left)
-    val seen = java.util.HashSet[Git.Hash]()
-
-    def candidates(pending: List[Git.Hash], found: List[Git.Hash]): List[Git.Hash] = pending match
-      case hash :: rest =>
-        if seen.contains(hash) then candidates(rest, found)
-        else
-          seen.add(hash)
-
-          if leftAncestors.contains(hash) then candidates(rest, hash :: found)
-          else candidates(commit(objects, hash).parents + rest, found)
-
-      case _ => found
-
-    val found = candidates(List(peel(objects, right)), Nil)
+    val found = common(objects, peel(objects, left), peel(objects, right), false)
 
     def dominated(candidate: Git.Hash): Boolean =
-      found.exists: other => other != candidate && ancestors(objects, other).contains(candidate)
+      found.exists: other => other != candidate && isAncestor(objects, candidate, other)
 
     def age(hash: Git.Hash): Long = -commit(objects, hash).committer.timestamp.seconds
 
