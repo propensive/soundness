@@ -8,7 +8,18 @@ orthant 2 language
 +     (`↯/s.25.1.1`), e ciascuno reso tramite il proprio `Communicable`. Un errore completo,
 +     costruito passo per passo (900 sta per il numero del modulo in cui si trova l'errore):
 
-@ 0 11 0 00754b8c838935451e83a02692b7a2af
+!       An error is identified by three numbers, which make its bolt code. `module` is the
+!       number of the library the error is in, as the `bolt` registry's `s.tel` records it;
+!       `number` is the error's own within that library, the next free one when the error type
+!       is written, and never reused (a retired number stays in the registry, marked so); and
+!       `variant` is the number of the error's reason — the `number` of its `Reason` case, an
+!       enum extending `Clarification` — or 0 when the error has no reasons. The error is
+!       documented at `doc/work/errors/<module>.<number>.md` with its cause and the usual remedies,
+!       so that `↯/s.25.1` in a user's report can be looked up rather than guessed at. An error
+!       written `Error(message)` has `module = 0`: no code, and `getMessage` prefixes its
+!       component instead. The code renders in the `[↯/s.25.1.2]` prefix of `#labelled`, of
+!       `getMessage` and of a compile-time `halt`.
+@ 0 11 0 0e41f31d6f83c96a1346426cff928766
 +       Un errore è identificato da tre numeri, che ne formano il codice bolt. `module` è il
 +       numero della libreria in cui si trova l'errore, come lo registra l'`s.tel` del registro
 +       `bolt`; `number` è il numero proprio dell'errore all'interno di quella libreria, il primo

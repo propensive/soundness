@@ -4,7 +4,18 @@ orthant 2 language
 +     错误类型有一个 bolt 代码——`Error(25, 1, 0)`，即第二十五个模块的第一个错误，为 `↯/s.25.1`——它在各个版本之间保持稳定，从不复用，并在 `doc/work/errors/25.1.md` 中有文档；它的各个不同原因是扩展 `Clarification` 的 `Reason` 枚举的分支，每个分支在该错误内编号（`↯/s.25.1.1`），并各自通过自己的 `Communicable` 呈现。
 +     下面是一个逐步完善的完整错误（900 代表该错误所在模块的编号）：
 
-@ 0 11 0 00754b8c838935451e83a02692b7a2af
+!       An error is identified by three numbers, which make its bolt code. `module` is the
+!       number of the library the error is in, as the `bolt` registry's `s.tel` records it;
+!       `number` is the error's own within that library, the next free one when the error type
+!       is written, and never reused (a retired number stays in the registry, marked so); and
+!       `variant` is the number of the error's reason — the `number` of its `Reason` case, an
+!       enum extending `Clarification` — or 0 when the error has no reasons. The error is
+!       documented at `doc/work/errors/<module>.<number>.md` with its cause and the usual remedies,
+!       so that `↯/s.25.1` in a user's report can be looked up rather than guessed at. An error
+!       written `Error(message)` has `module = 0`: no code, and `getMessage` prefixes its
+!       component instead. The code renders in the `[↯/s.25.1.2]` prefix of `#labelled`, of
+!       `getMessage` and of a compile-time `halt`.
+@ 0 11 0 0e41f31d6f83c96a1346426cff928766
 +       错误由三个数字标识，它们构成其 bolt 代码。
 +       `module` 是错误所在库的编号，记录在 `bolt` 注册表的 `s.tel` 中；`number` 是该错误在库内自己的编号，即编写该错误类型时下一个空闲的编号，且从不复用（已退役的编号留在注册表中，并加以标记）；`variant` 是错误原因的编号——即其 `Reason` 分支（一个扩展 `Clarification` 的枚举）的 `number`——若该错误没有原因则为 0。
 +       错误在 `doc/work/errors/<module>.<number>.md` 中有文档，说明其起因和常见的补救办法，因此用户报告中的 `↯/s.25.1` 可以被查到，而不必猜测。
