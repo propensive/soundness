@@ -32,4 +32,4 @@
                                                                                                   */
 package soundness
 
-export vexillology.Flags
+export vexillology.{Bitset, Flags}

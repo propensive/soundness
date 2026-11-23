@@ -2434,7 +2434,7 @@ object hellenism extends Library:
   object core extends Component(anticipation.url, serpentine.core, turbulence.core,
     nomenclature.core, gossamer.core):
     override def sources = Task.Sources(moduleDir, moduleDir / os.up / "core-jvm")
-    override def nativeSources = Task.Sources(moduleDir)
+    override def nativeSources = Task.Sources(moduleDir, moduleDir / os.up / "core-native")
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
   // Galilei/filesystem-backed classpath (`LocalClasspath`, the `Filesystem`/`Substantiable` givens).
@@ -3701,7 +3701,7 @@ object vacuous extends Library:
   object test extends Tests(core)
 
 object vexillology extends Library:
-  object core extends Component(distillate.core, hypotenuse.core):
+  object core extends Component(distillate.core, hypotenuse.core, murmuration.core):
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
   object test extends Tests(core):

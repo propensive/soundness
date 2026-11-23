@@ -88,11 +88,45 @@ object Stdio:
   // and parasite carries the diversion of the thread that spawns a task to whichever thread
   // runs it, so a diversion follows the hierarchy of structured concurrency, not the accident
   // of which thread a task lands on: a host may divert around several guests at once and their
-  // output never crosses. Scala's own `println` is thread-local already (`Console.withOut`);
+  // output never crosses. Scala's own `println` is thread-local already (`Console.withOut`),
+  // and `divert` binds it for the block as well;
   // this covers Java prints and anything else that writes to the `System` streams. Nothing
   // reaches a diversion through `stdios.fileDescriptorStdio`, which names the process's own
   // descriptors directly.
   private val diversions: InheritableThreadLocal[Stdio | Null] = InheritableThreadLocal()
+
+  // One of a process's two output streams, `Out` or `Err`: each names its stream of a `Stdio`,
+  // and can be diverted, for the length of a block, to the other's.
+  trait Channel:
+    private[turbulence] def stream(stdio: Stdio): ji.PrintStream
+
+    // Sends what `block` writes to this stream to `target`'s instead, on this thread and the
+    // threads it starts, so that `Err.divert(Out)` gives the two streams interleaved in one, in
+    // the order they were written. It composes with a capture around it, whose `out` is then
+    // that one text: `Stdio.capture(Err.divert(Out)(block))`.
+    def divert[result](target: Channel)(block: => result): result =
+      val current: Stdio = Stdio.current()
+
+      val out: ji.PrintStream =
+        if this eq Out then target.stream(current) else current.out
+
+      val err: ji.PrintStream =
+        if this eq Err then target.stream(current) else current.err
+
+      Stdio.divert(Stdio(out, err, current.in, current.termcap))(block)
+
+  // What this thread's `System` writes reach now: the stdio it is diverted to, or the streams
+  // which were in place when the dispatchers were installed.
+  private def current(): Stdio =
+    install()
+
+    diversions.get match
+      case stdio: Stdio => stdio
+      case null         => original.get.nn
+
+  // Set under `install`'s lock, before any diversion is set.
+  private val original: java.util.concurrent.atomic.AtomicReference[Stdio | Null] =
+    java.util.concurrent.atomic.AtomicReference(null)
 
   private class Dispatcher(select: Stdio -> ji.PrintStream, original: ji.PrintStream)
   extends ji.OutputStream:
@@ -114,13 +148,30 @@ object Stdio:
   // `System.out` — a host's own capture, say, which restores what it found when it is done —
   // would otherwise leave every later diversion writing to a dispatcher no longer attached.
   private def install(): Unit = synchronized:
-    System.out match
-      case _: Dispatching => ()
-      case out            => System.setOut(Dispatching(Dispatcher(_.out, out.nn)))
+    val out0: ji.PrintStream = System.out.nn
+    val err0: ji.PrintStream = System.err.nn
 
-    System.err match
+    out0 match
       case _: Dispatching => ()
-      case err            => System.setErr(Dispatching(Dispatcher(_.err, err.nn)))
+      case out            => System.setOut(Dispatching(Dispatcher(_.out, out)))
+
+    err0 match
+      case _: Dispatching => ()
+      case err            => System.setErr(Dispatching(Dispatcher(_.err, err)))
+
+    // The undiverted streams, for `Channel#divert`: those the dispatchers fall back to. A
+    // stream which was already a dispatcher keeps the original recorded when it was installed.
+    val base: Stdio | Null = original.get
+
+    val out1: ji.PrintStream = out0 match
+      case _: Dispatching => if base == null then out0 else base.out
+      case out            => out
+
+    val err1: ji.PrintStream = err0 match
+      case _: Dispatching => if base == null then err0 else base.err
+      case err            => err
+
+    original.set(Stdio(out1, err1, System.in, termcapDefinitions.basicTermcap))
 
   // The stdio this thread's `System` writes are diverted to, if any: what a task carries to
   // the thread it runs on.
@@ -131,7 +182,10 @@ object Stdio:
     val previous: Stdio | Null = diversions.get
     diversions.set(stdio)
 
-    try block finally
+    // Scala's `Console` is bound for the block too, so that its `println` goes where the
+    // `System` streams' writes do: it holds streams of its own, read from `System` when it was
+    // first loaded, which the dispatchers do not reach if that was before they were installed.
+    try scala.Console.withOut(stdio.out)(scala.Console.withErr(stdio.err)(block)) finally
       // A guest's streams need not auto-flush; what it printed last must not stay buffered.
       stdio.out.flush()
       stdio.err.flush()

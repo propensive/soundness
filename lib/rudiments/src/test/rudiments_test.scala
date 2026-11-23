@@ -399,6 +399,253 @@ object Tests extends Suite("core", m"Rudiments Tests"):
         xs + ys
       . assert(_ == Set(1, 2, 3))
 
+    suite(m"Multiset algebra on ordered collections"):
+      test(m"except removes one occurrence for each in the operand"):
+        val after: List[Int] = List(1, 2, 2, 3, 2)
+        val before: List[Int] = List(2, 3)
+        after.except(before)
+      . assert(_ == List(1, 2, 2))
+
+      test(m"except keeps the order of the left operand"):
+        val words: List[Text] = List(t"d", t"a", t"c", t"b")
+        val gone: List[Text] = List(t"a")
+        words.except(gone)
+      . assert(_ == List(t"d", t"c", t"b"))
+
+      test(m"except counts what is new between two runs"):
+        val before: List[Text] = List(t"warn", t"warn", t"note")
+        val after: List[Text] = List(t"warn", t"warn", t"warn", t"note", t"halt")
+        after.except(before)
+      . assert(_ == List(t"warn", t"halt"))
+
+      test(m"intersect keeps an element as often as it occurs in both"):
+        val left: List[Int] = List(1, 2, 2, 2, 3)
+        val right: List[Int] = List(2, 2, 4)
+        left.intersect(right)
+      . assert(_ == List(2, 2))
+
+      test(m"except on a Sequence is a multiset difference"):
+        val left: Sequence[Int] = Sequence(1, 1, 2)
+        val right: Sequence[Int] = Sequence(1)
+        left.except(right)
+      . assert(_ == Sequence(1, 2))
+
+      test(m"intersect on a Sequence is a multiset intersection"):
+        val left: Sequence[Int] = Sequence(1, 1, 2)
+        val right: Sequence[Int] = Sequence(1, 1, 1)
+        left.intersect(right)
+      . assert(_ == Sequence(1, 1))
+
+      test(m"except on a Chain is a multiset difference"):
+        val left: Chain[Int] = Chain(1, 1, 2)
+        val right: Chain[Int] = Chain(1)
+        left.except(right).to[List]
+      . assert(_ == List(1, 2))
+
+      test(m"except on literal lists resolves"):
+        List(1, 2, 2).except(List(2))
+      . assert(_ == List(1, 2))
+
+    suite(m"Searching sorted elements"):
+      case class Player(name: Text, age: Int)
+
+      val players: List[Player] =
+        List(Player(t"Viola", 19), Player(t"Orsino", 31), Player(t"Feste", 44), Player(t"Maria", 28),
+            Player(t"Olivia", 24))
+
+      val cast = Sorting(players)(_.name)
+
+      test(m"a Sorting holds its elements in the order of their keys"):
+        cast.elements.to[List].map(_.name)
+      . assert(_ == List(t"Feste", t"Maria", t"Olivia", t"Orsino", t"Viola"))
+
+      test(m"locate finds the position of a key"):
+        cast.locate(t"Olivia")
+      . assert(_ == 2.z)
+
+      test(m"locate gives Unset for a key which is not there"):
+        cast.locate(t"Malvolio")
+      . assert(_.absent)
+
+      test(m"find gives the element with a key"):
+        cast.find(t"Feste").let(_.age)
+      . assert(_ == 44)
+
+      test(m"defines says whether a key is there"):
+        (cast.defines(t"Viola"), cast.defines(t"Sebastian"))
+      . assert(_ == (true, false))
+
+      test(m"lowerBound is where a missing key would be inserted"):
+        cast.lowerBound(t"N")
+      . assert(_ == 2.z)
+
+      test(m"lowerBound of a key past every element is after the last"):
+        cast.lowerBound(t"Z")
+      . assert(_ == 5.z)
+
+      test(m"lowerBound of a key before every element is the first position"):
+        cast.lowerBound(t"A")
+      . assert(_ == 0.z)
+
+      test(m"lowerBound and upperBound span the elements with equal keys"):
+        val ages = Sorting(List(3, 1, 2, 2, 5, 2))
+        (ages.lowerBound(2), ages.upperBound(2))
+      . assert(_ == (1.z, 4.z))
+
+      test(m"locate finds the first of several equal keys"):
+        val ages: Sorting[Int, Int] = Sorting(List(3, 1, 2, 2, 5, 2))
+        ages.locate(2)
+      . assert(_ == 1.z)
+
+      test(m"a Sorting can be sorted by a key which is not unique"):
+        val byAge = Sorting(players)(_.age/10)
+        (byAge.lowerBound(2), byAge.upperBound(2))
+      . assert(_ == (1.z, 3.z))
+
+      test(m"an empty Sorting locates nothing"):
+        val none: Sorting[Int, Int] = Sorting(List[Int]())
+        (none.locate(1), none.lowerBound(1), none.size)
+      . assert(_ == (Unset, 0.z, 0))
+
+      test(m"a Sorting is traversed in order"):
+        var names: List[Text] = Nil
+        cast.each { player => names = player.name :: names }
+        names.reverse
+      . assert(_ == List(t"Feste", t"Maria", t"Olivia", t"Orsino", t"Viola"))
+
+      test(m"a Sorting has a size"):
+        cast.size
+      . assert(_ == 5)
+
+      test(m"every element of a large Sorting is located"):
+        val numbers: Sorting[Int, Int] = Sorting((0 until 1000).map(_*3).to(List))
+        (0 until 1000).all { index => numbers.locate(index*3) == index.z }
+      . assert(_ == true)
+
+    suite(m"Maps with keys kept by a chosen equality"):
+      case class Role(name: Text)
+
+      val first: Role = Role(t"Viola")
+      val second: Role = Role(t"Viola")
+
+      test(m"a map's keys are the same when they are equal, unless another policy is chosen"):
+        val map: Map[Role, Int] = Map.build[Role, Int]: map =>
+          map(first) = 1
+          map(second) = 2
+
+        (map.size, map.at(first))
+      . assert(_ == (1, 2))
+
+      test(m"with identity equality, equal keys in different places stay distinct"):
+        import equalities.identityEquality
+
+        val map: Map[Role, Int] = Map.build[Role, Int]: map =>
+          map(first) = 1
+          map(second) = 2
+
+        (map.size, map.at(first), map.at(second))
+      . assert(_ == (2, 1, 2))
+
+      test(m"an identity map does not find an equal key which is another object"):
+        import equalities.identityEquality
+        val map: Map[Role, Int] = Map.build[Role, Int] { map => map(first) = 1 }
+        (map.at(first), map.at(Role(t"Viola")), map.defines(second))
+      . assert(_ == (1, Unset, false))
+
+      test(m"an identity map keeps its policy when a key is added"):
+        val map: Map[Role, Int] =
+          import equalities.identityEquality
+          Map.build[Role, Int] { map => map(first) = 1 }
+
+        val more: Map[Role, Int] = map.define(second, 2)
+        (more.size, more.at(first), more.at(second))
+      . assert(_ == (2, 1, 2))
+
+      test(m"an identity map keeps its policy when a key is removed"):
+        val map: Map[Role, Int] =
+          import equalities.identityEquality
+
+          Map.build[Role, Int]: map =>
+            map(first) = 1
+            map(second) = 2
+
+        val fewer: Map[Role, Int] = map.omit(second)
+        (fewer.size, fewer.at(first), fewer.at(second))
+      . assert(_ == (1, 1, Unset))
+
+      test(m"an identity map keeps its policy when its values are mapped"):
+        val map: Map[Role, Int] =
+          import equalities.identityEquality
+
+          Map.build[Role, Int]: map =>
+            map(first) = 1
+            map(second) = 2
+
+        val tens: Map[Role, Int] = map.map(_*10)
+        (tens.size, tens.at(first), tens.at(second))
+      . assert(_ == (2, 10, 20))
+
+      test(m"an identity map keeps its policy when another is added to it"):
+        val map: Map[Role, Int] =
+          import equalities.identityEquality
+          Map.build[Role, Int] { map => map(first) = 1 }
+
+        val sum: Map[Role, Int] = map + Map(second -> 2)
+        (sum.size, sum.at(first), sum.at(second))
+      . assert(_ == (2, 1, 2))
+
+      test(m"an identity map is traversed over every key"):
+        import equalities.identityEquality
+
+        val map: Map[Role, Int] = Map.build[Role, Int]: map =>
+          map(first) = 1
+          map(second) = 2
+
+        var total: Int = 0
+        map.each { (role, number) => total += number }
+        total
+      . assert(_ == 3)
+
+      test(m"writing a key twice to an identity map keeps one entry"):
+        import equalities.identityEquality
+
+        val map: Map[Role, Int] = Map.build[Role, Int]: map =>
+          map(first) = 1
+          map(first) = 5
+
+        (map.size, map.at(first))
+      . assert(_ == (1, 5))
+
+      test(m"a builder for an identity map answers by identity while it is filled"):
+        import equalities.identityEquality
+        var seen: (Boolean, Boolean, Int) = (false, false, 0)
+
+        Map.build[Role, Int]: map =>
+          map(first) = 1
+          seen = (map.defines(first), map.defines(second), map.size)
+
+        seen
+      . assert(_ == (true, false, 1))
+
+      test(m"keys can be kept by an equality written for them"):
+        given Text is Equatable = Equatable(_.lower == _.lower)
+        given Text is Hashable = Hashable(_.lower.s.hashCode)
+
+        val map: Map[Text, Int] = Map.build[Text, Int]: map =>
+          map(t"Viola") = 1
+          map(t"VIOLA") = 2
+          map(t"Feste") = 3
+
+        (map.size, map.at(t"viola"), map.at(t"FESTE"), map.at(t"Maria"))
+      . assert(_ == (2, 2, 3, Unset))
+
+      test(m"a map of many identity keys finds each of them"):
+        import equalities.identityEquality
+        val roles: List[Role] = (0 until 500).map { index => Role(t"Viola") }.to(List)
+        val map: Map[Role, Int] = Map.build[Role, Int] { map => roles.each { role => map(role) = 1 } }
+        (map.size, roles.all(map.defines(_)))
+      . assert(_ == (500, true))
+
     suite(m"Keyed tests"):
       test(m"Map keys are a Set"):
         val m: Map[Text, Int] = Map(t"a" -> 1, t"b" -> 2)

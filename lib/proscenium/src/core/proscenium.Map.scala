@@ -90,8 +90,25 @@ object Map extends scala.caps.Pure:
   // once it is a `Map`. Five entries or more are a flat hash table (see `Hashtable`), which
   // builds and reads several times faster than the persistent tree, and grows one only if the
   // map is later updated; fewer are the standard library's compact small maps.
-  def build[key, value](lambda: Builder[key, value]^ => Unit): Map[key, value] =
-    val builder: Builder[key, value]^ = new Builder[key, value]()
+  //
+  // The keys are kept by the `Hashable` and `Equatable` in scope where the map is built: for
+  // any type, unless another is chosen, the universal `##` and `==`, which give the table
+  // described above. With any other policy — `equalities.identityEquality`, say, for keys told
+  // apart by reference — the map is one which carries the policy with it (`KeyedMap`), and
+  // keeps it when a key is added or removed, when it is concatenated, and when its values are
+  // mapped. An operation which makes a map of *other* keys builds it afresh, by the policy in
+  // scope there.
+  def build[key, value](lambda: Builder[key, value]^ => Unit)
+    ( using hashable: key is Hashable, equatable: key is Equatable )
+  :   Map[key, value] =
+
+    val universal: Boolean =
+      (hashable eq Hashable.Universal) && (equatable eq Equatable.Universal)
+
+    val builder: Builder[key, value]^ =
+      if universal then new Builder[key, value]()
+      else new Builder[key, value](KeyedMap.empty[key, value](hashable, equatable))
+
     lambda(builder)
     of(builder.result())
 
@@ -99,21 +116,37 @@ object Map extends scala.caps.Pure:
   // only one there is belongs to the block `build` runs. Up to `Hashtable.Compact` entries are
   // kept packed at the front of `slots` and scanned; `hashes` stays empty until one more
   // arrives, when the table is allocated and they are spread into it.
-  final class Builder[key, value] private[proscenium] () extends scala.caps.Mutable:
+  //
+  // A builder for keys kept by another policy than the universal one holds a `KeyedMap`
+  // instead, `keyed`, and none of the table: every operation asks first which it is.
+  final class Builder[key, value] private[proscenium] (keyed0: KeyedMap[key, value] | Null)
+  extends scala.caps.Mutable:
+    private[proscenium] def this() = this(null)
+
+    private var keyed: KeyedMap[key, value] | Null = keyed0
     private var slots: scala.Array[Any]^ = new scala.Array[Any](Hashtable.Compact << 1)
     private var hashes: scala.Array[Int]^ = new scala.Array[Int](0)
     private var shift: Int = Hashtable.Shift
     private var count: Int = 0
 
-    def size: Int = count
+    def size: Int =
+      val keyed0 = keyed
+      if keyed0 != null then keyed0.size else count
 
     def defines(key: key): Boolean =
-      val marked = Hashtable.marked(key)
+      val keyed0 = keyed
 
-      if hashes.length == 0 then Hashtable.scan(slots, count, marked) >= 0
-      else Hashtable.find(slots, hashes, shift, marked) >= 0
+      if keyed0 != null then keyed0.contains(key) else
+        val marked = Hashtable.marked(key)
+
+        if hashes.length == 0 then Hashtable.scan(slots, count, marked) >= 0
+        else Hashtable.find(slots, hashes, shift, marked) >= 0
 
     update def update(key: key, value: value): Unit =
+      val keyed0 = keyed
+      if keyed0 != null then keyed = keyed0.updated(key, value) else fill(key, value)
+
+    private update def fill(key: key, value: value): Unit =
       val marked = Hashtable.marked(key)
 
       if hashes.length > 0 then insert(marked, value) else
@@ -169,7 +202,10 @@ object Map extends scala.caps.Pure:
       shift -= 1
 
     private[proscenium] def result(): sci.Map[key, value] =
-      if hashes.length == 0 then Hashtable.compact[key, value](slots, count) else
+      val keyed0 = keyed
+
+      if keyed0 != null then keyed0
+      else if hashes.length == 0 then Hashtable.compact[key, value](slots, count) else
         // The block that held the only exclusive reference has returned, so the table's
         // writers are gone, and its arrays can be handed over frozen and uncopied.
         // [transfer] freeze: the builder's block has returned, retiring every writer
@@ -273,21 +309,29 @@ object Map extends scala.caps.Pure:
   def keys[key, value](map: Map[key, value]): Set[key] = Set.of(map.keySet)
   def values[key, value](map: Map[key, value]): List[value] = List.of(map.values.toList)
 
+  // A left operand whose keys are kept by a policy of their own takes the right's entries
+  // by that policy, and the result keeps it.
   def concat[key, value](left: Map[key, value], right: Map[key, value]): Map[key, value] =
-    left ++ right
+    if left.isInstanceOf[KeyedMap[?, ?]]
+    then of(left.asInstanceOf[KeyedMap[key, value]].joined(right))
+    else left ++ right
 
   // `map` transforms the *values*, keys structural — the shape `Mappable` gives a `Map`.
   // Filled in place: the result is a new map made all at once, of the same size as its source.
+  // A map whose keys are kept by a policy of their own keeps it.
   def map[key, value, value2](map: Map[key, value], lambda: value => value2): Map[key, value2] =
-    val builder: Builder[key, value2]^ = new Builder[key, value2]()
-    val iterator = map.iterator
+    if map.isInstanceOf[KeyedMap[?, ?]]
+    then of(map.asInstanceOf[KeyedMap[key, value]].transformed(lambda))
+    else
+      val builder: Builder[key, value2]^ = new Builder[key, value2]()
+      val iterator = map.iterator
 
-    // Terminated by the source's own state.
-    while iterator.hasNext do
-      val pair = iterator.next()
-      builder(pair._1) = lambda(pair._2)
+      // Terminated by the source's own state.
+      while iterator.hasNext do
+        val pair = iterator.next()
+        builder(pair._1) = lambda(pair._2)
 
-    of(builder.result())
+      of(builder.result())
 
   def iterator[key, value](map: Map[key, value]): Iterator[(key, value)] = map.iterator
 

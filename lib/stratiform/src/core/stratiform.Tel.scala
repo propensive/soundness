@@ -2760,7 +2760,8 @@ object Tel extends Tel2, TelMutation, TelRevision:
       lineEndings:          LineEndings,
       margin:               Int,
       children:             Array[Block]^{},
-      continuation:         Optional[Int] = Unset )
+      continuation:         Optional[Int] = Unset,
+      terminated:           Boolean       = false )
   extends Subtree
 
   case class Block
@@ -3627,6 +3628,9 @@ object Tel extends Tel2, TelMutation, TelRevision:
       val children = document.children
       children.iterate: index => block(children(index), 0)
 
+      // The final line ending which a source atom took as its own separator (§14).
+      if document.terminated then line()
+
     private def block(block: Tel.Block, indent: Int): Unit =
       val pad = Serializer.spaces(indent*2)
       val comments = block.comments
@@ -4136,6 +4140,11 @@ object Tel extends Tel2, TelMutation, TelRevision:
     // just consumed is the final byte of the document; consumed exactly once
     // by the first consumeTrailingBlanksFor that reaches EOF.
     var documentEndsWithLf: Boolean = false
+
+    // Set when a source atom's last line was ended by the document's final line ending. That
+    // line ending is the atom's own separator (§14), so no block claims it as a trailing blank
+    // line; it is recorded on the `Document` so that writing the document reproduces it.
+    var sourceTerminated: Boolean = false
 
     // ── Position tracking (set by `Parser.parseTracked`) ──────────────────────
     // When `tracking` is on, the parser appends one `Tel.positionStride`-int
@@ -4708,6 +4717,7 @@ object Tel extends Tel2, TelMutation, TelRevision:
       prevContentLeadingSpaces = -1
       hasConsumedNonBlankLine = false
       documentEndsWithLf = false
+      sourceTerminated = false
       ancestors.clear()
       sb.setLength(0)
       // Fresh arena: previous parse's Inlines hold the old array via their
@@ -4750,6 +4760,7 @@ object Tel extends Tel2, TelMutation, TelRevision:
       prevContentLeadingSpaces = -1
       hasConsumedNonBlankLine = false
       documentEndsWithLf = false
+      sourceTerminated = false
       ancestors.clear()
       sb.setLength(0)
       atomArena0    = (new scala.Array[Byte](256)).asInstanceOf[AnyRef]
@@ -4808,7 +4819,7 @@ object Tel extends Tel2, TelMutation, TelRevision:
       // head is parked on; at EOF there is none.
       val continuation: Optional[Int] = if head.separator then head.startLine + 1 else Unset
 
-      Tel.Document(directive, pragma, lineEndings, margin, children, continuation)
+      Tel.Document(directive, pragma, lineEndings, margin, children, continuation, sourceTerminated)
 
     // Skip the remainder of the head's line (scanning past any refills) and
     // park the head on the next line. Only used by parseOneDocument's
@@ -5764,6 +5775,32 @@ object Tel extends Tel2, TelMutation, TelRevision:
 
     // ── Trailing blanks ──────────────────────────────────────────────────────
 
+    // Rewind to the first of a run of blank lines which has been scanned past: the cursor to
+    // `mark`, and the head to the `snapshot` of that first blank line (its leading spaces,
+    // indent levels, blankness, end-of-input and start line).
+    private update def rewindToBlank
+      ( mark:     Cursor.Mark,
+        snapshot: (Int, Int, Boolean, Boolean, Int),
+        boundary: Boolean,
+        line:     Int )
+    :   Unit =
+
+      syncTo()
+      cursor.cue(mark)
+      syncFrom()
+      head.leadingSpaces = snapshot._1
+      head.indentLevels  = snapshot._2
+      head.blank         = snapshot._3
+      head.eof           = snapshot._4
+      head.startLine     = snapshot._5
+      prevLineWasBoundary = boundary
+      lineNo = line
+      var i = 0
+
+      while i < snapshot._1 && more && peek == SP do
+        advance()
+        i += 1
+
     // Consume blank lines that "belong" to the current block at `indent`. A
     // blank line belongs if the next non-blank line (if any) matches `indent`
     // or EOF.
@@ -5797,25 +5834,16 @@ object Tel extends Tel2, TelMutation, TelRevision:
           val keep =
             head.eof || head.indentLevels == indent
 
-          if keep then count
+          if keep then
+            // A run of blank lines which reaches the end of a document that ended with a line
+            // ending also claims the final, virtual line, as the EOF case above does.
+            if head.eof && documentEndsWithLf then
+              documentEndsWithLf = false
+              count + 1
+            else
+              count
           else
-            // Rewind to the first blank.
-            syncTo()
-            cursor.cue(mk)
-            syncFrom()
-            head.leadingSpaces = firstBlankSnapshot._1
-            head.indentLevels  = firstBlankSnapshot._2
-            head.blank         = firstBlankSnapshot._3
-            head.eof           = firstBlankSnapshot._4
-            head.startLine     = firstBlankSnapshot._5
-            prevLineWasBoundary = savedBoundary
-            lineNo = savedLineNo
-            var i = 0
-
-            while i < firstBlankSnapshot._1 && more && peek == SP do
-              advance()
-              i += 1
-
+            rewindToBlank(mk, firstBlankSnapshot, savedBoundary, savedLineNo)
             0
 
     // Claim a run of blank lines that precedes further content belonging to the
@@ -6204,13 +6232,22 @@ object Tel extends Tel2, TelMutation, TelRevision:
         if head.eof then
           // The final LF (if any) terminated this atom's last content line; it
           // is the line separator, not a trailing blank, so it is neither
-          // captured here nor left for the enclosing block to claim (§14).
+          // captured here nor left for the enclosing block to claim (§14). The document
+          // records that it was there.
+          if documentEndsWithLf then sourceTerminated = true
           documentEndsWithLf = false
           done = true
         else if head.blank then
           // Scan across blanks to see if more source follows; the blanks'
           // fate depends on what ends the run (§14).
           done = inHold:
+            val mk = beginMark()
+
+            val firstBlankSnapshot = (head.leadingSpaces, head.indentLevels, head.blank,
+                                      head.eof, head.startLine)
+
+            val savedBoundary = prevLineWasBoundary
+            val savedLineNo = lineNo
             var blanks = 0
 
             while !head.eof && head.blank do
@@ -6224,13 +6261,10 @@ object Tel extends Tel2, TelMutation, TelRevision:
               pendingBlanks += blanks
               false
             else
-              // Trailing blanks: §14 discards them — they are not part of
-              // the atom, and they are consumed rather than being left for
-              // the enclosing block machinery, so a dedented sibling after
-              // them continues the same block. The head already points at
-              // the terminating dedent line (or EOF, whose blank lines'
-              // final LF is likewise discarded).
-              if head.eof then documentEndsWithLf = false
+              // Trailing blanks are not part of the atom (§14). They are left for the
+              // enclosing block machinery, which records them as the end of a block, as it
+              // does the blank lines after any other line: rewind to the first of them.
+              rewindToBlank(mk, firstBlankSnapshot, savedBoundary, savedLineNo)
               true
         else if head.leadingSpaces >= sourceIndent then
           // Read content: skip the first sourceIndent spaces — but wait, the
@@ -8237,6 +8271,26 @@ extends scala.Dynamic, Documentary, Topical, Original:
   def childCompounds: Array[Tel.Compound]^{} =
     subtree.children.bind(_.compounds)
 
+  // The node's blocks: its child compounds as they are laid out, each block with its comments,
+  // its tabulation and the blank lines which follow it. `childCompounds` is the same compounds
+  // without the layout.
+  def blocks: Array[Tel.Block]^{} = subtree.children
+
+  // This value with `lambda` applied to every compound beneath it, depth-first: a compound is
+  // given to `lambda` once its own children have been transformed. Everything which is not a
+  // compound is kept as it was: the directive, pragma, line endings and margin of a document,
+  // and every block's comments, tabulation and blank lines.
+  def transform(lambda: Tel.Compound => Tel.Compound): Tel =
+    def blocks(blocks: Array[Tel.Block]^{}): Array[Tel.Block]^{} =
+      Tel.mapChildCompounds(blocks, compound)
+
+    def compound(compound: Tel.Compound): Tel.Compound =
+      lambda(compound.copy(children = blocks(compound.children)))
+
+    subtree match
+      case document: Tel.Document => Tel.make(document.copy(children = blocks(document.children)))
+      case root: Tel.Compound     => Tel.make(root.copy(children = blocks(root.children)))
+
   // First child compound whose keyword matches `target`, if any.
   def field(target: Text): Optional[Tel] =
     val matched = childCompounds.seek(_.keyword == target)
@@ -8248,9 +8302,10 @@ extends scala.Dynamic, Documentary, Topical, Original:
   def fields(target: Text): Array[Tel]^{} =
     childCompounds.filter(_.keyword == target).remap(Tel(_))
 
-  // Document accessor for downstream operations (printing, mutation). Only
-  // meaningful when this Tel wraps a Document.
-  private[stratiform] def document: Optional[Tel.Document] = subtree match
+  // The parsed document this value wraps: its interpreter directive, pragma, line endings,
+  // margin and blocks, exactly as they were read. `Unset` for a compound reached by
+  // navigation, or a value which was encoded and not read.
+  def document: Optional[Tel.Document] = subtree match
     case d: Tel.Document => d
     case _               => Unset
 

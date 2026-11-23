@@ -200,6 +200,15 @@ object List extends scala.caps.Pure:
   def prepend[element](list: List[element], value: element): List[element] & Populated =
     populated(list.::(value))
   def concat[element](left: List[element], right: List[element]): List[element] = left ++ right
+
+  // Multiset intersection and difference, in the left operand's order: an element of `right`
+  // accounts for at most one equal element of `left`.
+  def intersect[element](left: List[element], right: List[element]): List[element] =
+    left.intersect(right)
+
+  def except[element](left: List[element], right: List[element]): List[element] =
+    left.diff(right)
+
   def invert[element](list: List[element]): List[element] = list.reverse
 
   def map[element, element2](list: List[element], lambda: element => element2): List[element2] =

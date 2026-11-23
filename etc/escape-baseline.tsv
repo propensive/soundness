@@ -403,6 +403,7 @@ lib/parasite/src/bench/parasite.Benchmarks.scala	0	0	0	0	1	0	0	0	1	0	0	0	0	0	0	0
 lib/parasite/src/core/parasite.Async.scala	0	0	0	0	0	0	0	1	0	0	0	0	0	0	0	0	0
 lib/parasite/src/core/parasite.Daemon.scala	2	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0
 lib/parasite/src/core/parasite.Fault.scala	1	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0
+lib/parasite/src/core/parasite.Lane.scala	1	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0
 lib/parasite/src/core/parasite.Monitor.scala	2	0	1	0	0	0	0	0	0	2	0	0	0	0	0	0	0
 lib/parasite/src/core/parasite.PoolingSupervisor.scala	1	0	6	0	0	0	0	0	0	0	0	0	0	0	0	0	0
 lib/parasite/src/core/parasite.Task.scala	8	0	0	0	0	0	0	0	0	1	0	0	0	0	0	0	0
@@ -457,6 +458,7 @@ lib/proscenium/src/core/proscenium.Chain.scala	0	0	0	0	0	0	0	0	0	0	3	0	0	0	1	0	0
 lib/proscenium/src/core/proscenium.Hashtable.scala	0	0	1	0	0	0	0	0	0	0	0	0	0	0	1	0	0
 lib/proscenium/src/core/proscenium.Ledger.scala	0	0	0	0	0	0	0	0	0	0	0	0	0	0	1	0	0
 lib/proscenium/src/core/proscenium.List.scala	0	0	0	0	0	0	0	0	0	0	3	0	0	0	1	0	0
+lib/proscenium/src/core/proscenium.KeyedMap.scala	0	0	0	0	0	0	0	0	0	0	0	0	0	0	1	0	0
 lib/proscenium/src/core/proscenium.Map.scala	4	0	0	0	0	0	0	0	0	0	0	0	0	0	1	0	0
 lib/proscenium/src/core/proscenium.PerfectHash.scala	2	0	0	0	0	0	0	0	0	0	0	0	0	0	1	0	0
 lib/proscenium/src/core/proscenium.PerfectMap.scala	2	0	1	0	0	0	0	0	0	0	0	0	0	0	1	0	0
@@ -481,7 +483,7 @@ lib/rudiments/src/core/rudiments.Defaulting.scala	0	0	0	0	0	0	0	2	0	0	0	0	0	0	0	
 lib/rudiments/src/core/rudiments.Dynamical.scala	0	0	0	0	0	0	0	1	0	0	0	0	0	0	0	0	0
 lib/rudiments/src/core/rudiments.Loop.scala	0	0	1	0	0	0	0	0	0	0	0	0	0	0	0	0	0
 lib/rudiments/src/core/rudiments.atomicMacros.scala	0	0	0	0	0	0	0	0	2	0	0	0	0	0	1	0	0
-lib/rudiments/src/core/rudiments.sorting.scala	0	0	0	0	0	0	0	0	3	1	0	0	0	0	0	0	0
+lib/rudiments/src/core/rudiments.Sorting.scala	0	0	0	0	0	0	0	0	3	1	0	0	0	0	0	0	0
 lib/rudiments/src/core/rudiments_core.scala	1	0	0	1	0	1	0	2	0	0	4	0	0	0	1	0	0
 lib/rudiments/src/core/soundness_rudiments_core.scala	0	0	0	0	0	0	0	1	0	0	0	0	0	0	0	0	0
 lib/rudiments/src/test/rudiments_test.scala	0	0	0	0	0	0	0	0	0	0	1	0	0	0	0	0	0
