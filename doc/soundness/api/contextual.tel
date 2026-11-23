@@ -1,0 +1,338 @@
+tel 1.0
+
+base contextual
+import soundness
+
+info   the machinery of checked string interpolators: literals parsed as the code compiles, holes typed by typeclass
+detail
+    _Contextual_ is the one piece of machinery behind every checked literal in Soundness — `url"…"`,
+    `sh"…"`, `json"…"`, `t"…"`, `media"…"` — and the way to define new ones. An interpolator
+    defined with it validates its literal parts as the code compiles, reports a fault at the
+    exact character which caused it, and accepts substitutions only of the types it declares,
+    each checked for the hole it fills. No hand-written macro is needed for the plumbing:
+    capturing the literal parts and their positions in the source file is done once, by the
+    `interpolation` macro, and an interpolator's author writes typeclass instances.
+
+    Three pieces make an interpolator: a prefix method on `StringContext` which calls
+    `interpolation[Target](context)` and returns its `Interpolation`; an `Interpolable` instance
+    for the target type, which builds the value from the parts and the substituted values; and
+    `Insertion` or `Substitution` instances, which say which types may fill a hole and how
+    each enters. An `Extrapolable` instance makes the same literal usable as a pattern.
+
+    ```scala
+    import soundness.*
+    import scala.compiletime
+
+    case class Slug(text: Text)
+
+    object Slug:
+      given interpolable: Slug is Interpolable:
+        transparent inline def interpolate[parts <: Tuple, origins <: Tuple]
+          ( inline insertions: Any* )
+        :   Slug =
+          Slug(compiletime.constValueTuple[parts].toList.reverse.mkString.tt)
+
+    extension (inline context: StringContext)
+      transparent inline def slug: Interpolation = interpolation[Slug](context)
+
+    slug"hello"   // Slug(t"hello")
+    ```
+
+    The literal's parts reach `Interpolable#interpolate` as the type parameter `parts`, a tuple
+    of string-literal types, and their source positions as `origins`, so a macro behind the
+    instance can parse them and `halt` at `Interpolation.sourcePosition`. Because the prefix
+    method is `transparent inline`, an interpolator may return a type more precise than its
+    target: a path on a particular platform, a name proved valid, a document typed by its
+    schema. The convention throughout Soundness is to pair every interpolator with a runtime
+    parser running the same code (`url"…"` beside `as[Url]`), so a literal and dynamic text
+    cannot drift apart.
+
+    The library has a single source set, `contextual.core`, compiling for every platform, and
+    everything is exported to the `soundness` umbrella. It has no choice package: its givens
+    live in companions and resolve through implicit scope.
+
+refer contextual.Interpolation
+refer contextual.interpolation
+refer contextual.Interpolable
+refer contextual.Extrapolable
+refer contextual.Insertion
+refer contextual.Substitution
+
+entry .interpolation   the macro behind every interpolator's prefix method: captures a literal's parts and positions
+    `interpolation[Target](context)` takes the `StringContext` of an interpolated literal, which
+    must be a literal known to the compiler, and returns an `Interpolation` whose `Topic` is
+    `Target` and whose `Transport` and `Origins` type members encode the literal's parts and
+    their source positions. A prefix method is written as a `transparent inline` extension on an
+    `inline` `StringContext`, so that the literal survives to the macro:
+
+    ```scala
+    import soundness.*
+
+    extension (inline context: StringContext)
+      transparent inline def media: Interpolation = interpolation[MediaType](context)
+    ```
+
+    `media"text/plain"` then calls `Interpolation#apply`, which hands the encoded parts to the
+    `MediaType is Interpolable` instance; `case media"text/plain" =>` calls
+    `Interpolation#unapply`, which hands them to the `MediaType is Extrapolable` instance.
+
+entry .Interpolation   one interpolated literal, with its target, its parts and their positions as types
+  detail
+      An `Interpolation` is what a prefix method returns: a pure value carrying, as type members,
+      the interpolator's target (`#Topic`), the literal parts (`#Transport`) and their source
+      positions (`#Origins`). Calling it (`#apply`) constructs a value of the target type; using
+      it as a pattern (`#unapply`) deconstructs one. Values are made only by the `interpolation`
+      macro.
+
+      Both type tuples are built innermost-first, so they hold the parts **in reverse**: for
+      `slug"a${x}b${y}c"`, `constValueTuple[parts].toList` is `List("c", "b", "a")`. Every part
+      is present, including empty ones, so a literal with `n` holes always has `n + 1` parts:
+      `slug"$x"` has two empty parts.
+
+      The companion holds the helpers an interpolator's own macro uses to turn the type-level
+      parts and origins back into values and to report a fault at the right character.
+
+      ```scala fuel
+      typecheck
+      ##
+      import soundness.*
+      import scala.quoted.*
+
+      def check[parts <: Tuple: Type, origins <: Tuple: Type](using Quotes): Expr[Unit] =
+        val parts: List[String] = Interpolation.decodeParts[parts]
+        val origins: List[(Int, Int)] = Interpolation.decodeOrigins[origins]
+
+        if parts.exists(_.contains("!"))
+        then halt(m"`!` is not allowed", Interpolation.sourcePosition(parts, origins, 0, 0))
+        else '{()}
+      ```
+  refer contextual.interpolation
+  refer contextual.Interpolable
+  entry .apply   the macro implementation of `interpolation`: builds the `Interpolation` for a literal
+      Not called directly: `interpolation[topic](context)` splices it. It reads the parts of the
+      `StringContext`, finds each part's start and end in the source file, and encodes both as
+      tuple types on a new `Interpolation`.
+  entry .decodeParts   the literal parts a `Transport` type encodes, in source order, inside a macro
+      `Interpolation.decodeParts[parts]` needs a `Quotes` and a `Type[parts]`, and reverses the
+      type-level tuple back into source order. A tuple element which is not a string-literal
+      type aborts the expansion.
+  entry .decodeOrigins   the source `(start, end)` of each literal part an `Origins` type encodes, inside a macro
+      `Interpolation.decodeOrigins[origins]` returns the pairs in source order; an element it
+      cannot read decodes as `(0, 0)`, the marker for an unknown origin.
+  entry .literalOrigins   the source `(start, end)` of each string literal in a `StringContext` tree
+      Walks the `StringContext.apply(…)` tree through `Inlined`, `Typed`, `Block` and `Apply`
+      wrappers, collecting every string literal's position. If the number found differs from the
+      expected count, every part is `(0, 0)`, so that errors land on the whole expression rather
+      than at a wrong character.
+  entry .sourcePosition   the source-file position of a parser offset into a literal's assembled text
+      `Interpolation.sourcePosition(parts, origins, substitutionWidth, offset, length)` takes the
+      offset an interpolator's parser reports into the "assembled" input — the parts joined with
+      `substitutionWidth` characters standing in for each hole — and returns the `Position` in the
+      source file of the character at fault, at least one character long, for `halt` to report
+      against. Escapes which are longer in the source than in the value (`$$` and `\uHHHH`) are
+      compensated for. An offset which falls in a hole, or in a part whose origin is unknown,
+      gives the position of the whole expression.
+  entry .buildMapping   maps each character index of a literal part's value to its index in the source text
+      `Interpolation.buildMapping(source, value)` accounts for `$$` (two source characters for
+      one `$`) and `\uHHHH` (six for one); an index below zero maps to `0` and one beyond the end
+      to the last position.
+
+      ```scala
+      import soundness.*
+
+      val mapping = Interpolation.buildMapping("a$$b", "a$b")
+      List(0, 1, 2, 3).map(mapping)   // List(0, 1, 3, 4)
+      ```
+  entry #Topic   the interpolator's target type, the type an `Interpolable` instance is sought for
+  entry #Transport   the literal parts, as a tuple of string-literal types in reverse source order
+  entry #Origins   each literal part's source `(start, end)`, as a tuple of integer-literal pairs in reverse order
+  entry #apply   constructs the target value from the literal and its substituted values
+      Called by an interpolated literal such as `slug"hello $name"`, with the substituted values
+      as `insertions`. It needs a `Topic is Interpolable` in scope (normally in the target's
+      companion) and returns whatever that instance's `interpolate` returns; being `transparent
+      inline`, it keeps the precise type.
+  entry #unapply   deconstructs a value against the literal, when the literal is used as a pattern
+      Called by a pattern such as `case slug"hello" =>`. It needs a `Topic is Extrapolable` in
+      scope, and returns the instance's `Extrapolation`.
+
+entry .Interpolable   a typeclass building a value of its type from an interpolated literal's parts and holes
+  detail
+      `T is Interpolable` is what `Interpolation#apply` looks for. Its one method, `#interpolate`,
+      is `inline`, and receives the literal's parts and origins as the type parameters `parts`
+      and `origins` and the substituted values as `insertions`. A simple instance reads the parts
+      with `compiletime.constValueTuple`; a checking one splices a macro which decodes them with
+      `Interpolation.decodeParts`, parses them, and halts at `Interpolation.sourcePosition` on a
+      fault, so a malformed literal never compiles.
+
+      ```scala fuel
+      frame
+        label A target type
+        code
+            import soundness.*
+
+            case class Slug(text: Text)
+      frame
+        label An `Interpolable` instance in its companion: the parts arrive reversed
+        code
+            import soundness.*
+            import scala.compiletime
+
+            case class Slug(text: Text)
+
+            object Slug:
+              given interpolable: Slug is Interpolable:
+                transparent inline def interpolate[parts <: Tuple, origins <: Tuple]
+                  ( inline insertions: Any* )
+                :   Slug =
+                  Slug(compiletime.constValueTuple[parts].toList.reverse.mkString.tt)
+      frame
+        label A prefix method, and the interpolator is ready
+        code
+            import soundness.*
+            import scala.compiletime
+
+            case class Slug(text: Text)
+
+            object Slug:
+              given interpolable: Slug is Interpolable:
+                transparent inline def interpolate[parts <: Tuple, origins <: Tuple]
+                  ( inline insertions: Any* )
+                :   Slug =
+                  Slug(compiletime.constValueTuple[parts].toList.reverse.mkString.tt)
+
+            extension (inline context: StringContext)
+              transparent inline def slug: Interpolation = interpolation[Slug](context)
+
+            slug"hello"   // Slug(t"hello")
+      ##
+      ```
+
+      A production interpolator puts the parsing in a macro, so the same parser serves the
+      literal at compile time and dynamic text at runtime:
+
+      ```scala fuel
+      typecheck
+      ##
+      inline given interpolable: MediaType is Interpolable:
+        transparent inline def interpolate[parts <: Tuple, origins <: Tuple](inline insertions: Any*)
+        :   MediaType =
+          ${internal.mediaInterpolator[parts]('insertions)}
+      ```
+  refer contextual.Interpolation
+  refer contextual.Insertion
+  entry #Self   the interpolator's target type
+  entry #interpolate   builds the target value from the literal's parts (type-level, reversed) and its substituted values
+      `parts` is a tuple of string-literal types holding the literal's parts in reverse source
+      order, `origins` their source positions likewise, and `insertions` the substituted values,
+      in source order. Being `inline`, with `insertions` passed `inline`, a macro behind it sees
+      each substituted expression and its type, and may resolve an `Insertion` or `Substitution`
+      for each.
+
+entry .Extrapolable   a typeclass matching a value of its type against an interpolated literal, as a pattern
+  detail
+      `T is Extrapolable` is what `Interpolation#unapply` looks for, so an interpolated literal
+      can be a `case` pattern; it is how `json"…"` and `html"…"` patterns work. One prefix method
+      serves both construction and matching.
+
+      ```scala
+      import soundness.*
+      import scala.compiletime
+
+      case class Slug(text: Text)
+
+      object Slug:
+        given extrapolable: Slug is Extrapolable:
+          transparent inline def extrapolate[parts <: Tuple, origins <: Tuple](scrutinee: Slug)
+          :   Extrapolation[Slug] =
+            scrutinee.text == compiletime.constValueTuple[parts].toList.reverse.mkString.tt
+
+      extension (inline context: StringContext)
+        transparent inline def slug: Interpolation = interpolation[Slug](context)
+
+      Slug(t"hello") match
+        case slug"hello" => t"matched"
+        case _           => t"unmatched"
+      ```
+  refer contextual.Extrapolation
+  refer contextual.Interpolable
+  entry #Self   the type a pattern deconstructs
+  entry #extrapolate   matches a scrutinee against the literal's parts, giving an `Extrapolation`
+      Receives the parts and origins as type parameters, exactly as `Interpolable#interpolate`
+      does, and the value being matched. It returns a `Boolean` for a pattern with no holes, and
+      an `Option` of the bound value (or of a tuple of them) for one with holes.
+
+entry .Extrapolation   what an `Extrapolable` match returns: a `Boolean`, or an `Option` of the bound values
+    `Extrapolation[result]` is `Boolean | Option[Tuple | result]`, the three shapes Scala's
+    pattern matching accepts from an `unapply`: a `Boolean` for a pattern which binds nothing, an
+    `Option[result]` for one hole, and an `Option` of a tuple for several.
+
+entry .Insertion   a typeclass: how a substituted value of one type enters an interpolator's input type
+  detail
+      `Insertion[input, value]` turns a `value` substituted into a hole into the interpolator's
+      own `input` type, so the interpolator, not `toString`, decides how foreign values enter.
+      A type with no instance cannot be substituted at all, which is how an interpolator forbids
+      what it cannot make safe; a new type becomes substitutable with one instance, without
+      touching the interpolator.
+
+      ```scala fuel
+      typecheck
+      ##
+      given Insertion[Sh.Parameters, Text] = value => Sh.Parameters(value)
+      given Insertion[Sh.Parameters, List[Text]] = values => Sh.Parameters(values*)
+      ```
+
+      `value` is contravariant, so an instance for a supertype serves its subtypes. A
+      `Substitution` is an insertion which also tells the parser what the hole stands for.
+  refer contextual.Substitution
+  refer contextual.Embeddable
+  entry .embeddable   a `Substitution` for any `Embeddable` type, labelled `"x"`, in implicit scope
+      For a `value` which is `Embeddable`, this gives `Substitution[value.Operand, value, "x"]`,
+      embedding through `Embeddable#embed`, so an interpolator which asks for substitutions finds
+      one for every embeddable type without an instance of its own.
+  entry #embed   converts a substituted value into the interpolator's input type
+
+entry .Substitution   an `Insertion` which also gives the parser a label standing in for the hole
+    `Substitution[input, value, label]` behaves at runtime exactly as `Insertion[input, value]`
+    does. At compile time the singleton `Label` tells the interpolator's parser what the hole
+    contained, so the parser can proceed as though a representative token of the substituted
+    type were written there — `"0"` for a number, `""""` for a string — and check the *shape*
+    of a literal with holes rather than give up at the first one. Where different holes accept
+    different things (a URL's port takes a number, its path text), the label is what
+    distinguishes them.
+
+    ```scala
+    import soundness.*
+
+    enum SqlInput:
+      case IntInput(value: Int)
+      case StrInput(value: Text)
+
+    given Substitution[SqlInput, Int, "0"] = SqlInput.IntInput(_)
+    given Substitution[SqlInput, Text, "\"\""] = SqlInput.StrInput(_)
+    ```
+
+entry .Embeddable   a typeclass embedding a value as the `Operand` of an interpolator whose target is `Form`
+  detail
+      `T is Embeddable by Operand in Form` says that a `T` may be substituted into an
+      interpolator targeting `Form`, entering as an `Operand`. It is the typeclass-style form of
+      `Insertion`: one instance in the substituted type's companion, and `Insertion.embeddable`
+      derives the corresponding `Substitution` from it.
+
+      ```scala
+      import soundness.*
+
+      case class Slug(text: Text)
+      case class Tag(name: Text)
+
+      object Tag:
+        given embeddable: Tag is Embeddable by Text in Slug = _.name
+
+      Tag.embeddable.embed(Tag(t"widget"))   // t"widget"
+      summon[Substitution[Text, Tag, "x"]].embed(Tag(t"widget"))   // t"widget"
+      ```
+  refer contextual.Insertion
+  entry #embed   converts a value into the interpolator's operand type
+  entry #contramap   an embedding for another type, through a function into this one
+      `embeddable.contramap[Int](count => Tag(count.show))` is an `Int is Embeddable by Text in
+      Slug`, which embeds an `Int` by first making a `Tag` of it. The result captures both this
+      instance and the function.

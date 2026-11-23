@@ -1,6 +1,6 @@
 orthant 2 language
 
-@ 0 9 0 11b8761d2079527915eedfb9394c62f1
+@ 0 9 0 1bd7a6beb6e17d6e0b0e8c51346922a0
 + Depurar una aplicación en ejecución debería resultar nativo, no prestado: puntos de interrupción,
 + ejecución paso a paso e inspección mediante un servidor del Debug Adapter Protocol, con los valores
 + inspeccionados representados como sus tipos de Soundness; la misma disciplina sin codificaciones
@@ -10,4 +10,4 @@ orthant 2 language
 + su suite lleva a un programa depurado en vivo por un punto de interrupción, un paso `next` y una
 + inspección en la ejecución ordinaria, con cada variable local representada mediante su instancia de
 + `Inspectable` y una instantánea de objeto mostrada por su nombre simple y su identidad en lugar de
-+ por un nombre de clase de la JVM. El tema es `doc/work/soundness/modules/debugging.md`.
++ por un nombre de clase de la JVM. El tema es `doc/soundness/modules/debugging.md`.

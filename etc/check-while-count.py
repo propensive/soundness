@@ -112,13 +112,13 @@ for path in unlisted:
 
 if risen or unlisted:
   print('', file=sys.stderr)
-  print('Drain the loop, or — if it is a shape `doc/work/standards/loops.md` sanctions —', file=sys.stderr)
+  print('Drain the loop, or — if it is a shape `doc/standards/loops.md` sanctions —', file=sys.stderr)
   print(f'raise its row in {BASELINE} and say which shape in the PR description.', file=sys.stderr)
 
 if unproven:
   print('', file=sys.stderr)
   print('Name the construction that puts the index in range, on the call site or the', file=sys.stderr)
-  print('line above it: the comment is the proof. See `doc/work/standards/loops.md`.', file=sys.stderr)
+  print('line above it: the comment is the proof. See `doc/standards/loops.md`.', file=sys.stderr)
 
 if risen or unlisted or unproven: raise SystemExit(1)
 

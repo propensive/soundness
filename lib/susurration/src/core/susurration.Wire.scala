@@ -160,7 +160,8 @@ object Wire:
       buffer.write(Array.unsafeJvm(data))
 
     // Unprefixed bytes: a fixed-size field, or a message already encoded.
-    update def bytes(data: Data): Unit = buffer.write(Array.unsafeJvm(data))
+    update def bytes(data: Array[Byte]^{caps.any.rd}): Unit =
+      buffer.write(Array.unsafeJvm(data))
 
     update def text(text: Text): Unit =
       // [java-boundary] fresh array returned by the JDK, retained by nobody else

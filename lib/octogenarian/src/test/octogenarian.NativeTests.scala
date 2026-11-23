@@ -263,6 +263,35 @@ object NativeTests extends Suite("git-native", m"Octogenarian native backend"):
         dir.open[Git.Worktree]() { worktree ?=> (worktree.mergeBase(feature, main) == base, worktree.isAncestor(base, main), worktree.isAncestor(feature, main)) }
       .assert(_ == ((true, true, false)))
 
+      test(m"ancestry and merge-base agree with git across merges and branches"):
+        val dir = gitRepo()
+        val base = gitCommit(dir, t"a", t"a\n", t"base")
+        sh"git -C $dir checkout -q -b feature".exec[Exit]()
+        val feature = gitCommit(dir, t"b", t"b\n", t"feature")
+        sh"git -C $dir checkout -q main".exec[Exit]()
+        val main = gitCommit(dir, t"c", t"c\n", t"main")
+        sh"git -C $dir merge -q --no-edit feature".exec[Exit]()
+        val merged = Git.Hash.unsafe(gitOut(dir, t"rev-parse", t"HEAD"))
+        val later = gitCommit(dir, t"d", t"d\n", t"later")
+        sh"git -C $dir checkout -q feature".exec[Exit]()
+        val apart = gitCommit(dir, t"e", t"e\n", t"apart")
+        sh"git -C $dir checkout -q --orphan other".exec[Exit]()
+        val alone = gitCommit(dir, t"f", t"f\n", t"alone")
+        val commits = List(base, feature, main, merged, later, apart, alone)
+
+        val wrong = dir.open[Git.Worktree](): worktree ?=>
+          commits.flatMap: upper =>
+            commits.filter: lower =>
+              val reached = gitOut(dir, t"rev-list", lower.text).cut(t"\n").exists(_ == upper.text)
+              val shared = safely(gitOut(dir, t"merge-base", upper.text, lower.text)).or(t"")
+              val found = worktree.mergeBase(upper, lower).let(_.text).or(t"")
+              worktree.isAncestor(upper, lower) != reached || found != shared
+
+            . map(upper.text -> _.text)
+
+        wrong
+      .assert(_ == Nil)
+
     suite(m"Writing refs"):
 
       test(m"a natively created branch is seen by git"):

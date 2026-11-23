@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Check the names the tutorials' ```scala examples use against the source of `main`.
 
-The examples under doc/work/soundness/modules/ are prose (read from out/doc, the copy of the Orthant
+The examples under doc/soundness/modules/ are prose (read from out/doc, the copy of the Orthant
 store's English which `make docs` exports), so nothing compiles them against the tree they live
 in. This script does the mechanical part: every `import family.member` in a fence must
 name a member declared somewhere under lib/, every capitalised name must be declared in lib/

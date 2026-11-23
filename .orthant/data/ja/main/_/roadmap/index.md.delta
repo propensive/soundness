@@ -1,6 +1,6 @@
 orthant 2 language
 
-@ 0 17 0 00e5f700f5864e911ea5f726341922cd
+@ 0 17 0 0ec7a54fa0928f921723afad3dc6834b
 + column  基準
 + column  項目
 + row  `proscenium.compat` が空である  `core-2`
@@ -9,7 +9,7 @@ orthant 2 language
 + row  プラットフォームのマニフェストが CI で強制され、その除外には理由が付き、Android APK が CI でビルドされ署名される  `plat-1`, `plat-2`, `plat-3`
 + row  `etc/api-reduction-candidates.md` がもはや存在しない  `api-5`
 + row  すべてのエラー型にボルトコードとドキュメントのページがあり、CI で検査される  `doc-1`
-+ row  公開されるすべてのモジュールが `doc/work/soundness/modules/` のトピックで扱われている  `doc-4`
++ row  公開されるすべてのモジュールが `doc/soundness/modules/` のトピックで扱われている  `doc-4`
 + row  すべてのコンポーネントについて API ドキュメントが生成され公開されている  `doc-5`
 + row  `fury build` が Soundness 自身をビルドし、Mill のビルドと証明上等しい  `tool-4`
 + row  fume が完全なテストスイートを実行し、無効にされたスイートがない  `tool-2`
@@ -18,10 +18,3 @@ orthant 2 language
 + row  すべてのリリースが証明された LIRA ファイルとして公開される  `dist-7`
 + row  JOSE、TOML、WebAuthn が出荷されている  `brd-1`, `brd-2`, `brd-3`
 + row  エージェントが `doc/` のドキュメントだけに従い、エコシステムのツールだけを使って、新しいプロジェクトを何もない状態から、テストされ配備された JVM と JavaScript の Web アプリケーションに仕上げる。このウォークスルーは CI で実行され記録される  `doc-8`
-
-@ 0 10 0 0dd4e95027ea72261a6dd2c1c524be09
-+ - 項目の識別子は安定したアンカーである。作業を散文で説明するのではなく、識別子（`core-3`、`dist-2`）を引用すること。
-+ - 進捗の主張はすべて、項目の `Done when:` コマンドを実行して検証すること。コマンドの出力よりも散文や記憶を信頼してはならない。
-+   ベースラインに頼る前に測り直し、ずれを報告すること。
-+ - 現在の状態については [`status.tel`](status.tel) を読むこと。それが記述する作業と同じコミットで更新すること。
-+ - ロードマップの項目が公開 API を変えるときは、`doc/work/standards/migration.md` で `dist-2` が定義する移行指示の規約に従うこと。「API は自由に変わる」と「コードは動き続ける」を両立させるのはその規約である。

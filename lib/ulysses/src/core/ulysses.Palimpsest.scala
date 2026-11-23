@@ -51,7 +51,7 @@ object Palimpsest:
   def apply(hashes: Sequence[Data])(using cadence: Cadence): Palimpsest =
     if hashes.nil then panic(m"palimpsest requires at least one hash")
 
-    if !hashes.all { (hash: Data) => hash.length == cadence.hashSize }
+    if !hashes.all(_.length == cadence.hashSize)
     then panic(m"all hashes must have length ${cadence.hashSize}")
 
     val n        = hashes.size

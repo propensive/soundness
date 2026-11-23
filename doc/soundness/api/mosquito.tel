@@ -1,0 +1,478 @@
+tel 1.0
+
+base mosquito
+import soundness
+
+info   vectors and matrices with their dimensions in their types, generic over any element with arithmetic
+detail
+    _Mosquito_ is linear algebra whose shapes are checked as the code compiles. A
+    `Vector[element, size]` is a fixed number of components, a `Matrix[element, rows,
+    columns]` a grid, and both carry their dimensions as type arguments: two vectors of
+    different sizes cannot be added, a matrix product is defined only where the inner
+    dimensions agree, and `determinant`, `inverse` and `trace` exist only on a square matrix —
+    each a compile error rather than a runtime shape check. The element type is generic over
+    anything with the arithmetic an operation needs, resolved through symbolism's typeclasses,
+    so a vector of `Int`s, of `Double`s, of exact rationals or of typed quantities all work,
+    and a dot product of lengths is an area because the units multiplied too.
+
+    ```scala
+    import soundness.*
+    import scala.language.experimental.into
+
+    val v = Vector(1, 2, 3)                              // Vector[Int, 3]
+    val w: Vector[Int, 2] = Vector(1, 3, 4)              // does not compile
+    v + Vector(3, 4, 5)                                  // Vector(4, 6, 8)
+    v*2                                                  // Vector(2, 4, 6)
+    v.dot(Vector(4, 3, 7))                               // 31
+    v.cross(Vector(4, 3, 7))                             // Vector(5, 5, -5)
+
+    val m1 = Matrix[2, 3]((1, 2, 3), (4, 5, 6))
+    val m2 = Matrix[3, 2]((7, 8), (9, 10), (11, 12))
+    m1*m2                                                // Matrix[2, 2]((58, 64), (139, 154))
+    m1*Vector(7, 8, 9)                                   // Vector(50, 122)
+    m1*m1                                                // does not compile
+
+    Vector(5*Inch, 2*Inch, Inch).dot(Vector(2*Inch, 3*Inch, 6*Inch))   // 22 in²
+    ```
+
+    None of it boxes. A `Vector[Double, n]` stores a `double[]` (so does a vector of
+    quantities, which are opaquely `Double`), the arithmetic instances and the accessors are
+    `inline` and resolve the element's own operation at the expansion site, and a sum of two
+    `Vector[Double, 3]`s compiles to a loop of `daload`, `dadd` and `dastore`. The price is
+    that the shapes are literal types: a `Vector[Int, 3]` is built from a tuple of three, a
+    `Matrix[2, 3]` from two rows of three, and a size which is only known at runtime is
+    `Vector.take` from a list, giving an `Optional` vector of the size named by the argument's
+    singleton type.
+
+    Three types, all in `mosquito.core` for the JVM, Scala.js and Scala Native:
+
+    - `Vector` — construction, element access, `map`, `norm`, `unitary`, `dot`, `cross` (in
+      three and seven dimensions), and the arithmetic `+`, `-`, unary `-`, `*` and `/` by a
+      scalar or element-wise by a vector of the same size.
+    - `Matrix` — construction row by row, `identity`, `zero`, element, row and column
+      access, `transpose`, `submatrix`, the arithmetic `+`, `-`, unary `-`, `*` and `/` by a
+      scalar, the matrix and matrix-vector products, and for a square matrix `determinant`,
+      `trace`, `minor`, `cofactor`, `adjugate`, `inverse`, `solve`, `rank`,
+      `frobeniusNorm` and (for `Double` elements) `eigenvalues`.
+    - `Affine` — a 2D affine transformation as a 3×3 matrix, in SVG and PDF's six-number
+      order, with `transform` and `andThen`.
+
+    Everything is exported to the `soundness` umbrella. Arithmetic between a plain number and
+    a vector or matrix relies on the compiler's `into` conversions, so `import
+    scala.language.experimental.into` goes alongside `import soundness.*`; showing a vector or
+    matrix as a bracketed grid needs a `Text is Measurable` given (`import
+    textMetrics.uniformMetric`); and `Affine`'s `transform` and `andThen` must be imported by
+    name, `import mosquito.Affine.{andThen, transform}`, because under `import soundness.*`
+    the same-named generic extensions from other libraries outrank them.
+
+refer mosquito.Vector
+refer mosquito.Matrix
+refer mosquito.Affine
+
+entry .Vector   a fixed number of components, the size in the type: `Vector[Int, 3]`
+  detail
+      `Vector` is the class `mosquito.internal.Vector`, exported here: a hybrid of a `Tuple`,
+      whose size is known statically, and a collection, whose elements share a type. It is
+      built from a tuple, whose length becomes the size and whose common element type the
+      element — `Vector(1, 2, 3)` is a `Vector[Int, 3]`, `Vector(1.0*Metre, 2.0*Metre)` a
+      `Vector[Quantity[Metres[1]], 2]`, and a one-component vector is `Vector(Mono(42))` — and
+      its components are stored in an `Array[element]^{}`, `#data`, of the element's own
+      class, so a vector of `Double`s or of quantities is a `double[]`.
+
+      ```scala
+      import soundness.*
+      import scala.language.experimental.into
+      import textMetrics.uniformMetric
+
+      val v = Vector(3.0, 4.0)
+      v(0)                          // 3.0
+      v.norm                        // 5.0
+      v.unitary                     // Vector(0.6, 0.8)
+      v.map(_*2)                    // Vector(6.0, 8.0)
+      v + Vector(1.0, 1.0)          // Vector(4.0, 5.0)
+      v*Vector(2.0, 0.5)            // Vector(6.0, 2.0), element-wise
+      v/2.0                         // Vector(1.5, 2.0)
+      -v                            // Vector(-3.0, -4.0)
+      v.dot(Vector(1.0, 1.0))       // 7.0
+      v.list                        // List(3.0, 4.0)
+      v.show                        // a column between tall brackets
+      v.inspect                     // t"⟨3.0 ∣ 4.0⟩"
+      ```
+
+      The arithmetic is by typeclass instance, each `inline` and keyed on the size, so a
+      mismatch does not compile: `+` and `-` between two vectors of one size (`.addable`,
+      `.subtractable`), unary `-` (`.negatable`), `*` and `/` by a scalar
+      (`.scalarMultiplicable`, `.scalarDivisible`) or element-wise by another vector of the
+      same size (`.vectorMultiplicable`, `.vectorDivisible`). The scalar product of two
+      vectors is `dot`, not `*`; a scalar goes on the right (`v*2`, not `2*v`); and the
+      elements decide the result, so adding a vector of feet to a vector of metres gives
+      metres, and the element-wise product of two vectors of metres is a vector of square
+      metres. The operations which are not instances — `element`, `apply`, `list`, `iarray`,
+      `size`, `norm`, `map`, `unitary`, `dot` and `cross` — are extension methods declared
+      in `mosquito.internal`, available with `import soundness.*`, and each has its page
+      there.
+
+      Two vectors are equal when their components are, whatever their declared element
+      types; `hashCode` agrees. `toString` is `Vector(1, 2, 3)`.
+
+      The companion's constructors and instances, and the class's `data`, are declared on
+      `mosquito.internal.Vector`, where each has its page.
+  refer mosquito.Matrix
+  refer mosquito.internal
+  refer mosquito.slide
+
+entry .Matrix   a grid with its row and column counts in its type: `Matrix[Int, 2, 3]`
+  detail
+      A `Matrix[element, rows, columns]` is `#rows` by `#columns` elements stored row-major in
+      `#elements`, an `Array[element]^{}`. It is written with its shape as type arguments and
+      its rows as tuples, `Matrix[2, 3]((1, 2, 3), (4, 5, 6))`, the element type inferred
+      from them; `Matrix.identity[Double, 3]` and `Matrix.zero[Double, 2, 3]` are the
+      constant matrices. A product is defined only where the shapes agree, and the result's
+      shape is computed in the type:
+
+      ```scala fuel
+      frame
+        label A 2×3 matrix, row by row
+        code
+            val m1 = Matrix[2, 3]((1, 2, 3), (4, 5, 6))   // Matrix[Int, 2, 3]
+      frame
+        label A 3×2 matrix
+        code
+            val m1 = Matrix[2, 3]((1, 2, 3), (4, 5, 6))
+            val m2 = Matrix[3, 2]((7, 8), (9, 10), (11, 12))   // Matrix[Int, 3, 2]
+      frame
+        label Their product: the inner dimensions agree, so the result is 2×2
+        code
+            val m1 = Matrix[2, 3]((1, 2, 3), (4, 5, 6))
+            val m2 = Matrix[3, 2]((7, 8), (9, 10), (11, 12))
+            m1*m2   // Matrix[2, 2]((58, 64), (139, 154))
+      frame
+        label In the other order, 3×3
+        code
+            val m1 = Matrix[2, 3]((1, 2, 3), (4, 5, 6))
+            val m2 = Matrix[3, 2]((7, 8), (9, 10), (11, 12))
+            m2*m1   // Matrix[3, 3]((39, 54, 69), (49, 68, 87), (59, 82, 105))
+      frame
+        label A matrix times a vector of the right length
+        code
+            val m1 = Matrix[2, 3]((1, 2, 3), (4, 5, 6))
+            m1*Vector(7, 8, 9)   // Vector(50, 122)
+      frame
+        label And a shape mismatch does not compile
+        code
+            val m1 = Matrix[2, 3]((1, 2, 3), (4, 5, 6))
+            m1*m1   // does not compile: a 2×3 matrix cannot multiply a 2×3 matrix
+      ##
+      ```
+
+      The arithmetic is by inline typeclass instance: `+` and `-` between matrices of one
+      shape (`.addable`, `.subtractable`), unary `-` (`.negatable`), `*` and `/` by a scalar
+      (`.scalarMultiplicable`, `.scalarDivisible`), the matrix product (`.matrixMultiplicable`)
+      and the matrix-vector product (`.vectorMultiplicable`). `*` between two matrices is
+      always the matrix product, never element-wise. A square matrix additionally has
+      `determinant`, `trace`, `minor`, `cofactor`, `adjugate`, `inverse` and `solve` as
+      extensions on `Matrix[element, n, n]`, and a square matrix of `Double`s has
+      `eigensystem`, `eigenvalues` and `eigenvectors`. Every operation resolves the element's
+      arithmetic, so a matrix of quantities adds, and a matrix of `Q32` rationals multiplies
+      exactly.
+
+      ```scala
+      import soundness.*
+      import scala.language.experimental.into
+      import textMetrics.uniformMetric
+
+      val m = Matrix[3, 3]((2, -3, 1), (2, 0, -1), (1, 4, 5))
+      m(1, 2)                  // -1
+      m.row(0)                 // Vector(2, -3, 1)
+      m.column(2)              // Vector(1, -1, 5)
+      m.transpose              // Matrix[Int, 3, 3]
+      m.determinant            // 49
+      m.trace                  // 7
+      m.adjugate               // the transpose of the cofactor matrix
+      m.submatrix(0, 0)        // Matrix[2, 2]((0, -1), (4, 5))
+      -m                       // every element negated
+      m*10                     // every element multiplied
+      m.show                   // a grid between tall brackets
+      m.inspect                // t"⌈2 ∣ -3 ∣ 1 ⫽ 2 ∣ 0 ∣ -1 ⫽ 1 ∣ 4 ∣ 5⌋"
+
+      Matrix[2, 2]((1.0, 2.0), (3.0, 4.0)).inverse   // Matrix[2, 2]((-2.0, 1.0), (1.5, -0.5))
+      Matrix[2, 2]((1.0, 2.0), (2.0, 4.0)).inverse   // Unset: singular
+      ```
+
+      Two matrices are equal when their elements are, whatever their declared element
+      types. `toString` is the flat element list, `[1, 2, 3, 4, 5, 6]`.
+  refer mosquito.Vector
+  refer mosquito.Affine
+  entry .apply   `Matrix[2, 3]((1, 2, 3), (4, 5, 6))`: a matrix from its rows, the shape as type arguments
+      Transparent inline: the row and column counts are given as type arguments and checked
+      against the tuple of row tuples — the number of rows must be `Rows`, every row must
+      have `Columns` elements, and every element must have one type, which becomes the
+      element type. A matrix of one row is written with `Tuple1`, `Matrix[1, 2](Tuple1((4,
+      6)))`. A `ClassTag` for the element is found at the call site.
+  entry .identity   `Matrix.identity[Double, 3]`: the identity matrix of a size
+      Ones on the diagonal and zeros elsewhere, through the element's `Unital` and `Zeroic`
+      instances; the size is a type argument with a `ValueOf`. Inline, so the stores are
+      typed array writes.
+  entry .zero   `Matrix.zero[Double, 2, 3]`: the zero matrix of a shape
+      Every element the `Zeroic` zero; the shape is two type arguments with `ValueOf`s.
+  entry .addable   `m + n` between two matrices of one shape: the elements added pairwise
+      An inline instance needing `a is Addable by b to result` for the element types and a
+      `ClassTag[result]`; two `Matrix[Double, 2, 2]`s add in a loop of `dadd`s, and two
+      matrices of quantities add through the unit-checked sum. Different shapes do not
+      compile.
+  entry .subtractable   `m - n` between two matrices of one shape: the elements subtracted pairwise
+  entry .negatable   `-m`: every element negated
+      `-Matrix[2, 2]((1, -2), (3, 4))` is `Matrix[2, 2]((-1, 2), (-3, -4))`, and equals
+      `m*(-1)`.
+  entry .scalarMultiplicable   `m*scalar`: every element multiplied by the scalar
+      `Matrix[2, 3]((1, 2, 3), (4, 5, 6))*10` is `Matrix[2, 3]((10, 20, 30), (40, 50, 60))`.
+      The scalar is on the right only. A `Matrix` operand reaches `.matrixMultiplicable`
+      instead, and a `Vector` operand `.vectorMultiplicable`.
+  entry .scalarDivisible   `m/scalar`: every element divided by the scalar
+      `Matrix[2, 3]((1, 2, 3), (4, 5, 6))/2` is `Matrix[2, 3]((0, 1, 1), (2, 2, 3))`: the
+      elements divide as their type does.
+  entry .matrixMultiplicable   `m*n`: the matrix product, defined only where the inner dimensions agree
+      A `Matrix[a, rows, columns]` times a `Matrix[b, columns, rightColumns]` is a
+      `Matrix[result, rows, rightColumns]`, needing `a is Multiplicable by b to result` and
+      `result is Addable by result to result`; the column counts must be `ValueOf`s. A
+      product whose inner dimensions differ does not compile. Never element-wise.
+  entry .vectorMultiplicable   `m*v`: a matrix times a column vector of length `columns`, a vector of length `rows`
+      `Matrix[2, 3]((1, 2, 3), (4, 5, 6))*Vector(7, 8, 9)` is `Vector(50, 122)`, and
+      `Matrix.identity[Int, 3]*v` is `v`. A vector of the wrong length does not compile.
+  entry .inspectable   the debug rendering, on one line: `⌈1 ∣ 2 ⫽ 3 ∣ 4⌋`
+      Rows separated by `⫽` and elements within a row by `∣`, between corner brackets which
+      stand in for the tall ones `show` uses; available for any matrix whose element is
+      `Inspectable`.
+  entry .showable   renders a matrix as a grid between tall brackets, columns right-aligned
+      Each row is a line, `⎡ 1 2 ⎤` at the top, `⎣ 3 4 ⎦` at the bottom, `⎪ … ⎪` between; it
+      needs the element to be `Showable` and a `Text is Measurable` in scope (`import
+      textMetrics.uniformMetric`) to measure the column widths.
+  entry .determinant   the determinant of a square matrix, by Laplace expansion
+      An extension on `Matrix[element, n, n]`, needing the element's `Multiplicable`,
+      `Addable` and `Subtractable` at its own type: `Matrix[3, 3]((2, -3, 1), (2, 0, -1), (1,
+      4, 5)).determinant` is 49. Calling it on a non-square matrix does not compile. The
+      expansion is exponential in `n`, suited to the small matrices whose shapes are written
+      in types.
+  entry .trace   the sum of the diagonal of a square matrix
+      Inline, with the addition resolved at the call site:
+      `Matrix.identity[Int, 4].trace` is 4.
+  entry .minor   `m.minor(row, column)`: the determinant of the matrix with that row and column removed
+  entry .cofactor   `m.cofactor(row, column)`: the minor, with its sign flipped where the row and column indices sum to an odd number
+      Needs the element's `Zeroic` for the negation.
+  entry .adjugate   the transpose of the cofactor matrix, defined over any ring
+      `Matrix[2, 2]((1, 2), (3, 4)).adjugate` is `Matrix[2, 2]((4, -2), (-3, 1))`, and
+      `m*m.adjugate` is the determinant times the identity. It needs no division, so an
+      integer matrix has an adjugate where it has no inverse.
+  entry .inverse   the inverse of a square matrix, or `Unset` if it is singular
+      The adjugate divided by the determinant, needing the element's `Divisible` as well as
+      its ring operations: `Matrix[2, 2]((1.0, 2.0), (3.0, 4.0)).inverse` is `Matrix[2,
+      2]((-2.0, 1.0), (1.5, -0.5))`, and a matrix whose determinant is the element's zero
+      gives `Unset`. Non-square does not compile.
+
+      ```scala
+      import soundness.*
+
+      val m = Matrix[2, 2]((4.0, 7.0), (2.0, 6.0))
+      m.inverse.let(m*_)   // the identity, to rounding
+      ```
+  entry .solve   `m.solve(b)`: the `x` with `m*x == b`, by Gaussian elimination, or `Unset` if singular
+      An extension on a square `Matrix[element, n, n]` taking a `Vector[element, n]`, with
+      partial pivoting (a zero pivot swaps rows), needing the element's `Zeroic`,
+      `Subtractable`, `Multiplicable` and `Divisible`: `Matrix[2, 2]((2.0, 1.0), (1.0,
+      3.0)).solve(Vector(3.0, 4.0))` is `Vector(1.0, 1.0)`.
+  entry .eigensystem   the eigenvalues and eigenvectors of a symmetric `Double` matrix, or `Unset`
+      An extension on `Matrix[Double, n, n]`, by Jacobi rotation, which converges only for a
+      symmetric matrix: the result is `Unset` for a matrix which is not symmetric (to a
+      tolerance of 10⁻¹²) or which fails to converge, and otherwise a pair of the eigenvalues
+      as a `Vector[Double, n]` and the eigenvectors as the columns of a `Matrix[Double, n,
+      n]`, each a unit vector.
+  entry .eigenvalues   the eigenvalues of a symmetric `Double` matrix, or `Unset`
+      `Matrix[2, 2]((2.0, 1.0), (1.0, 2.0)).eigenvalues` holds 1.0 and 3.0; the first half of
+      `eigensystem`.
+  entry .eigenvectors   the eigenvectors of a symmetric `Double` matrix as columns, or `Unset`
+      The second half of `eigensystem`.
+  entry #rows   the number of rows, as a value
+  entry #columns   the number of columns, as a value
+  entry #elements   the elements, row-major, as a frozen `Array[element]^{}`
+  entry #apply   `m(row, column)`: one element, zero-based
+      Inline, so a read from a `Matrix[Double, m, n]` is a `daload`. On an `Affine`, which is
+      also a matrix, an application to two numbers is this accessor, which is why its
+      point-transformation is named `transform`.
+  entry #row   `m.row(i)`: a row as a `Vector[element, columns]`
+      Inline; copies with typed array access where a `ClassTag` for the element is at the call
+      site, and reflectively otherwise, so it never asks the caller for one.
+  entry #column   `m.column(j)`: a column as a `Vector[element, rows]`
+  entry #transpose   the transpose, a `Matrix[element, columns, rows]`
+      Needs a `ClassTag` for the element; `m.transpose.transpose == m`.
+  entry #submatrix   `m.submatrix(row, column)`: the matrix with that row and column removed, one smaller in each dimension
+      Typed `Matrix[element, rows - 1, columns - 1]`; `Matrix[2, 3](…).submatrix(0, 1)` is a
+      `Matrix[Int, 1, 2]`.
+  entry #frobeniusNorm   the square root of the sum of the squares of the elements
+      Inline, needing the element's `Multiplicable`, `Addable` and `Rootable[2]`:
+      `Matrix[2, 2]((3.0, 0.0), (0.0, 4.0)).frobeniusNorm` is 5.0.
+  entry #rank   the rank, by Gaussian elimination
+      The number of linearly independent rows, needing the element's `Zeroic`,
+      `Subtractable`, `Multiplicable` and `Divisible`; defined for any shape:
+      `Matrix[2, 2]((1.0, 2.0), (2.0, 4.0)).rank` is 1.
+
+entry .Affine   a 2D affine transformation: a 3×3 matrix built from SVG and PDF's six numbers
+  detail
+      `Affine[element]` is an opaque subtype of `Matrix[element, 3, 3]` holding the
+      homogeneous matrix of a two-dimensional affine transformation, built from the six live
+      entries in the order SVG's `matrix(a, b, c, d, e, f)` and PDF's `a b c d e f cm` share:
+
+          | a c e |
+          | b d f |
+          | 0 0 1 |
+
+      acting on column vectors. `transform` applies it to a point and `andThen` composes two,
+      in six multiplications and twelve respectively rather than the general matrix product's
+      twenty-seven, with the element arithmetic inlined. Composition order is the one place
+      the SVG and PDF conventions diverge, so it is a named operation rather than `*`.
+
+      ```scala
+      import soundness.*
+      import mosquito.Affine.{andThen, transform}
+
+      val scale = Affine[Double](2.0, 0.0, 0.0, 3.0, 0.0, 0.0)
+      val shift = Affine[Double](1.0, 0.0, 0.0, 1.0, 5.0, 7.0)
+      scale.andThen(shift).transform(1.0, 1.0)         // (7.0, 10.0)
+      scale.andThen(Affine.identity[Double]) == scale   // true
+      ```
+
+      `transform` and `andThen` must be imported by name under `import soundness.*`: the
+      umbrella's generic `transform` (savagery's) and `andThen` (on functions) are lexically
+      in scope there, and a lexical extension outranks the companion's and reports its own
+      failure rather than falling through. Being a `Matrix`, an `Affine` also has every matrix
+      operation, including `apply(row, column)`, which is why the point-transformation is not
+      `apply`.
+  refer mosquito.Matrix
+  entry .apply   `Affine[Double](a, b, c, d, e, f)`: a transformation from its six entries
+      Needs the element's `Zeroic` and `Unital` for the fixed bottom row and a `ClassTag`.
+      Not inline, unlike the `Matrix` constructors, so that its result is seen as an `Affine`
+      at the call site.
+  entry .identity   `Affine.identity[Double]`: the identity transformation
+  entry .a   the first entry: the x scale
+  entry .b   the second entry: the y skew
+  entry .c   the third entry: the x skew
+  entry .d   the fourth entry: the y scale
+  entry .e   the fifth entry: the x translation
+  entry .f   the sixth entry: the y translation
+  entry .transform   `affine.transform(x, y)`: the point `(a·x + c·y + e, b·x + d·y + f)`
+      Inline, needing the element's `Multiplicable` and `Addable` at its own type; an
+      `Affine[Double]` transforms a point in six `dmul`s and four `dadd`s. Imported by name:
+      `import mosquito.Affine.transform`.
+  entry .andThen   `first.andThen(next)`: the transformation applying `first` and then `next`
+      The column-vector product `next*first`, which is PDF's row-vector `first*next`,
+      specialised to the six live entries. Needs the element's `Multiplicable`, `Addable`,
+      `Zeroic`, `Unital` and a `ClassTag`. Imported by name: `import mosquito.Affine.andThen`.
+
+entry .slide   `list.slide(n)`: the sliding windows of a list as a lazy `Chain` of `Vector`s of size `n`
+    An extension on `List[element]` (needing a `ClassTag`): `List(1, 2, 3, 4).slide(2)` is
+    the chain `Vector(1, 2)`, `Vector(2, 3)`, `Vector(3, 4)`, each a
+    `Vector[element, n.type]` typed by the argument, built with `Vector.take` and stopping
+    when fewer than `n` elements remain.
+
+entry .internal   the home of the `Vector` class, its extension methods and the inline element arithmetic
+  hidden
+  detail
+      Not for direct use: the object exists so that `Vector`'s inline instances can resolve
+      the element's own operation at their expansion site. `Vector` is exported from here to
+      the `mosquito` package, and its page there has the full account; its constructors and
+      instances are documented on this `Vector` entry. The extension methods
+      on a vector declared here — `element`, `apply`, `list`, `iarray`, `size`, `norm`,
+      `map`, `unitary`, `dot` and the two `cross` products — are available with
+      `import soundness.*`.
+  entry .Vector   the vector class and companion; see `mosquito.Vector`
+    entry .apply   `Vector(1, 2, 3)`: a vector from a tuple, its size and element type inferred
+        A transparent inline constructor over any tuple: the size is the tuple's, and the
+        element type is the type of its components, which must all be the same — `Vector(1,
+        2.0)` is a compile error, _Cannot prove that Int | Double =:= Int_, rather than a vector
+        of `AnyVal`. A one-component vector is `Vector(Mono(42))`, since `Vector(42)` would take
+        42 itself as the tuple. The storage is an array of the element's class, found through a
+        `ClassTag` at the call site, so a `Vector(2.0, 4.0)` reads and computes with no boxing.
+
+        ```scala
+        import soundness.*
+
+        val vector: Vector[Int, 3] = Vector(1, 3, 4)
+        val mono: Vector[Int, 1] = Vector(Mono(42))
+        val wrong: Vector[Int, 2] = Vector(1, 3, 4)   // does not compile
+        ```
+    entry .take   `Vector.take(list, n)`: the first `n` elements of a list as a vector, or `Unset` if there are fewer
+        The constructor for a size known only at runtime: the result is a
+        `Vector[element, n.type]`, typed by the argument's singleton type, and `Unset` when the
+        list is too short. `Vector.take(Nil, 0)` is the empty vector. It needs a `ClassTag` for
+        the element.
+
+        ```scala
+        import soundness.*
+
+        Vector.take(List(1, 2, 3), 3)   // Vector(1, 2, 3)
+        Vector.take(List(1, 2), 3)      // Unset
+        ```
+    entry .addable   `v + w` between two vectors of one size: the elements added pairwise
+        An inline instance which needs `value is Addable by value2 to result` for the two
+        element types and a `ClassTag[result]`; the result is a `Vector[result, size]`. The
+        element addition is resolved at the expansion site, so two `Vector[Double, n]`s add in
+        a loop of `dadd`s, and two vectors of quantities add through quantitative's unit-checked
+        sum: `Vector(1.0*Foot, 1.0*Foot) + Vector(3.0*Metre, 4.0*Metre)` is in metres.
+        Different sizes do not compile.
+    entry .subtractable   `v - w` between two vectors of one size: the elements subtracted pairwise
+        As `.addable`, needing `value is Subtractable by value2 to result`.
+    entry .negatable   `-v`: every element negated
+        Needs `value is Negatable to result`; `-Vector(1, -2, 3)` is `Vector(-1, 2, -3)`.
+    entry .scalarMultiplicable   `v*scalar`: every element multiplied by the scalar
+        Needs `value is Multiplicable by scalar to result`: `Vector(1, 2, 3)*2` is `Vector(2, 4,
+        6)`, and `Vector(1.0*Metre, 2.0*Metre)*2.0` a vector of metres. The scalar is on the
+        right only; `2*v` is not defined. A `Vector` operand reaches `.vectorMultiplicable`
+        instead, since no element multiplies by a vector.
+    entry .scalarDivisible   `v/scalar`: every element divided by the scalar
+        Needs `value is Divisible by scalar to result`: `Vector(2.0, 4.0)/2.0` is `Vector(1.0,
+        2.0)`, and `Vector(7, 8, 9)/2` is `Vector(3, 4, 4)`, integer division as the elements
+        divide.
+    entry .vectorMultiplicable   `v*w` between two vectors of one size: the elements multiplied pairwise
+        The Hadamard product, needing `value is Multiplicable by value2 to result`:
+        `Vector(1, 2, 3)*Vector(4, 5, 6)` is `Vector(4, 10, 18)`, and two vectors of metres
+        multiply to a vector of square metres. The scalar product is `dot`. Different sizes do
+        not compile.
+    entry .vectorDivisible   `v/w` between two vectors of one size: the elements divided pairwise
+        `Vector(8, 9)/Vector(2, 3)` is `Vector(4, 3)`.
+    entry .inspectable   the debug rendering, on one line: `⟨1 ∣ 2 ∣ 3⟩`
+        Available for any vector whose element is `Inspectable`; the `∣` separator is the one
+        `Matrix` uses between elements of a row.
+    entry .showable   renders a vector as a column between tall brackets
+        `Vector(1, 3, 6).show` is three lines, `⎛ 1 ⎞`, `⎜ 3 ⎟`, `⎝ 6 ⎠`, with the elements
+        right-aligned to the widest; a two-vector has no middle line, and a one-vector is
+        `( 42 )`. It needs the element to be `Showable`, the size as a `ValueOf`, and a `Text is
+        Measurable` in scope (`import textMetrics.uniformMetric`) to measure the elements'
+        widths.
+    entry #data   the components, as a frozen `Array[element]^{}` of the element's own class
+  entry .element   `v.element(i)`: one component, zero-based
+      Inline, so a read from a `Vector[Double, n]` is a `daload`; no bounds proof is
+      required, and an index out of range throws.
+  entry .apply   `v(i)`: one component, zero-based; the same as `element`
+  entry .list   the components as a `List[element]`
+  entry .iarray   the components as the frozen `Array[element]^{}` they are stored in
+  entry .size   the number of components, as a value, from the size in the type
+  entry .norm   the Euclidean length: the square root of the sum of the squares of the components
+      Inline, needing the element's `Multiplicable`, `Addable` and `Rootable[2]` back to the
+      element: `Vector(3.0, 4.0).norm` is 5.0, and a vector of metres has a norm in metres.
+  entry .map   `v.map(f)`: a vector of the same size with `f` applied to each component
+      The function is inline, applied in the loop body rather than through a `Function1`, so
+      a primitive element is not boxed on the way through; it may change the element type
+      (`Vector(1, 2, 3).map(_.toString)`), given a `ClassTag` for the result.
+      `Vector(1.0*Metre, 2.0*Metre).map(_*Metre)` is a vector of square metres.
+  entry .unitary   the unit vector in the same direction, a `Vector[Double, size]`
+      Each component divided by the `norm`: `Vector(3.0, 4.0).unitary` is `Vector(0.6, 0.8)`.
+  entry .dot   `v.dot(w)`: the scalar product of two vectors of one size
+      The sum of the pairwise products, in the type the element's `Multiplicable` gives:
+      `Vector(1, 2, 3).dot(Vector(4, 3, 7))` is 31, and `Vector(5*Inch, 2*Inch,
+      Inch).dot(Vector(2*Inch, 3*Inch, 6*Inch))` is 22 square inches. Inline, with the
+      element arithmetic resolved at the call site. Different sizes do not compile.
+  entry .cross   `v.cross(w)`: the vector product, in three or seven dimensions
+      Two overloads, on `Vector[left, 3]` and `Vector[left, 7]` — the only dimensions in
+      which a vector product exists — each needing the element's `Multiplicable`, `Addable`
+      and `Subtractable`: `Vector(1, 2, 3).cross(Vector(4, 3, 7))` is `Vector(5, 5, -5)`,
+      anti-commutative and orthogonal to both operands. The seven-dimensional product follows
+      the Fano plane's index triples. Any other size does not compile.

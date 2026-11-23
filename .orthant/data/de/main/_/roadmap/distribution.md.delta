@@ -1,21 +1,21 @@
 orthant 2 language
 
-@ 0 5 0 00347af4a10aaba916a72e149b1c8348
-+ Der Schlussstein-Punkt: `doc/work/migration.md` definiert das von Agenten ausführbare Format für
+@ 0 5 0 027aa8507cfead550859e240b33d26f4
++ Der Schlussstein-Punkt: `etc/migration.md` definiert das von Agenten ausführbare Format für
 + Migrationsanweisungen — was sich geändert hat, wie betroffener Code zu erkennen ist, die genaue
 + Umschreibung und wie sie zu überprüfen ist —, und die CI erzwingt, dass als inkompatibel
 + gekennzeichnete Pull Requests Anweisungen in diesem Format tragen. Mehrere Spuren enden hier: Durch
 + diesen Punkt fließt `api-6`, und ihn stellt `tool-5` Agenten bereit.
 
-@ 0 8 0 1fe93c35d555a65e0825091d1355b30e
-+ Erledigt, wenn: `doc/work/migration.md` die Konvention definiert, das Release sich weigert, ohne
-+ `doc/work/migration/<version>.md` zu laufen, und eine CI-Prüfung jeden Pull Request scheitern lässt, der
+@ 0 8 0 1fc13f6d9faff5a7091ff85728b72d87
++ Erledigt, wenn: `etc/migration.md` die Konvention definiert, das Release sich weigert, ohne
++ `etc/migration/<version>.md` zu laufen, und eine CI-Prüfung jeden Pull Request scheitern lässt, der
 + `lib/**/src` ändert, ohne die unveröffentlichten Migrationshinweise anzufassen. Die ersten beiden
 + gelten: Die Konvention ist geschrieben, `0.65.0.md` und folgende existieren, und die Direktive
 + `migration` in `etc/release` verweigert ein Tag, solange die Hinweise der Version fehlen oder die
 + einer anderen Version unveröffentlicht sind. Was bleibt, ist die Prüfung der Pull Requests:
 + `main.yml` überprüft die Bestätigung und sonst nichts. Die Konvention beruht nicht auf Labels: Jede
-+ wesentliche Änderung hält sich selbst in `doc/work/migration/<version>.md` des nächsten Releases fest,
++ wesentliche Änderung hält sich selbst in `etc/migration/<version>.md` des nächsten Releases fest,
 + das von Anfang an nach diesem Release benannt ist.
 
-% 0 1 0 1737f7af088689a90b003adb8b963063
+% 0 1 0 0b0af992e6bfac6c10ea3d9a4cadef9e

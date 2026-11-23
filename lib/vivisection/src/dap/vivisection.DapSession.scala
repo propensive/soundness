@@ -209,17 +209,22 @@ private[vivisection] class DapSession(emit: Json => Unit)
     debug.console.let: console =>
       val adapter = self
 
+      @scala.annotation.tailrec
+      def relay(output: Chain[Data], category: Text): Unit = output match
+        case data #:: rest =>
+          adapter.send(t"output", Dap.OutputBody(data.utf8, category).in[Json])
+          relay(rest, category)
+
+        case _ =>
+          ()
+
       val out: () -> Unit =
         // [closure-capture] stdout relay thunk over adapter and console
-        caps.unsafe.unsafeAssumePure: () =>
-          console.stdout.each: data =>
-            adapter.send(t"output", Dap.OutputBody(data.utf8, t"stdout").in[Json])
+        caps.unsafe.unsafeAssumePure(() => relay(console.stdout, t"stdout"))
 
       val err: () -> Unit =
         // [closure-capture] stderr relay thunk over adapter and console
-        caps.unsafe.unsafeAssumePure: () =>
-          console.stderr.each: data =>
-            adapter.send(t"output", Dap.OutputBody(data.utf8, t"stderr").in[Json])
+        caps.unsafe.unsafeAssumePure(() => relay(console.stderr, t"stderr"))
 
       val exit: () -> Unit =
         // [closure-capture] exit relay thunk over adapter and console

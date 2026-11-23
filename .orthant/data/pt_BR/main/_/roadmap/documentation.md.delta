@@ -1,7 +1,7 @@
 orthant 2 language
 
-@ 0 9 0 18fec6f0745a2e3303c6d7ede277ff88
-+ Hoje a prosa existe em três sistemas paralelos: os guias por tópico em `doc/work/soundness/modules/` — a
+@ 0 9 0 15839a99031f9243069c375a4424b29d
++ Hoje a prosa existe em três sistemas paralelos: os guias por tópico em `doc/soundness/modules/` — a
 + direção a seguir, e onde acontece a escrita substancial —, os modelos legados por módulo em
 + `lib/*/doc/`, herdados da época em que cada módulo era seu próprio repositório, e uma cópia
 + separada do material de filosofia em `web/res/content/`. Três sistemas significam divergência, e
@@ -11,34 +11,21 @@ orthant 2 language
 + termina com o teste de facilidade de aprendizado mais forte que existe: um agente, tendo apenas a
 + documentação, constrói e implanta uma aplicação funcional.
 
-@ 0 3 0 0159d8134df7ee6d11f763fb21913385
-+ `doc/work/standards/messages.md` era um esboço declarado, apesar de a convenção de mensagens ser
-+ estrutural em todos os módulos. O padrão agora está escrito: registro, estrutura, vocabulário, o
-+ que uma mensagem não deve conter, composição por meio de `Communicable`, e eventos de log.
-
-% 0 1 0 0d058f6728c5dcb01b3e933f5d633bc3
-
-@ 0 5 0 013b0edf65e4af1e17f85f3aa7922f99
+@ 0 5 0 185fd7a7a41b5e581955d9a60cdb9168
 + Concluído: #1791 (2026-08-14)
 + A linha de base era de 92 arquivos de texto padrão de readme por módulo, e 98 diretórios
 + `lib/*/doc/` (medido em 2026-08-01). O texto padrão era anterior ao monorepo; o que em
-+ `lib/*/doc/` valia a pena manter foi para tópicos em `doc/work/soundness/modules/`, e o resto foi apagado em vez
++ `lib/*/doc/` valia a pena manter foi para tópicos em `doc/soundness/modules/`, e o resto foi apagado em vez
 + de ser deixado para induzir ao erro. Não resta nenhum diretório `lib/*/doc/`, e a frase do texto
 + padrão não casa com nada.
 
-@ 0 2 0 0f2e79aa2fb742540e781b793bb298a3
+@ 0 2 0 1a857c20717058da1437188bb4029799
 + Concluído: #2306 (2026-10-21)
-+ A linha de base era de 99 tópicos em `doc/work/soundness/modules/` e 1 de 144 bibliotecas sem cobertura (medido em 2026-09-25; 91 tópicos e 35 sem cobertura em 2026-08-01); 101 tópicos cobrem 145 de 145 em 2026-10-21
++ A linha de base era de 99 tópicos em `doc/soundness/modules/` e 1 de 144 bibliotecas sem cobertura (medido em 2026-09-25; 91 tópicos e 35 sem cobertura em 2026-08-01); 101 tópicos cobrem 145 de 145 em 2026-10-21
 
-@ 0 5 0 1a3d346f8d8345721a5f85b3f99b3f85
-+ Todo módulo publicado é coberto por pelo menos um tópico de `doc/work/soundness/modules/`, e um script de
+@ 0 5 0 0f601dfc26f27e1b08d1cb0e14f34fa1
++ Todo módulo publicado é coberto por pelo menos um tópico de `doc/soundness/modules/`, e um script de
 + cobertura mapeia módulos para tópicos para que os órfãos fiquem visíveis:
 + `etc/check-doc-coverage.py`, executado por `make build`, sai com status diferente de zero diante
 + de um órfão. O último, burdock, é coberto por `packaging.md`; a entrada `COVERED_BY` que nomeava
 + esse tópico para o ziggurat (uma biblioteca que o #1973 removeu) agora nomeia o burdock.
-
-@ 0 3 0 0864272c52cb10310fe2fbb6e33b102e
-+ A prosa em `web/res/content/` duplica à mão o material de filosofia: dez páginas, alteradas pela
-+ última vez no #801, cada uma uma cópia mais antiga e mais curta de uma página de
-+ `doc/work/philosophy/`. O site é renderizado a partir de `doc/` — uma única fonte, sem cópias
-+ paralelas.

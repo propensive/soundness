@@ -1,6 +1,6 @@
 orthant 2 language
 
-@ 0 9 0 11b8761d2079527915eedfb9394c62f1
+@ 0 9 0 1bd7a6beb6e17d6e0b0e8c51346922a0
 + Depurar uma aplicação em execução deveria parecer nativo, e não hospedado: breakpoints, passos e
 + inspeção por meio de um servidor do Debug Adapter Protocol, com os valores inspecionados
 + renderizados como seus tipos Soundness — a mesma disciplina sem codificações Java que `core-5`
@@ -10,4 +10,4 @@ orthant 2 language
 + processo depurado ativo por um breakpoint, um passo `next` e uma inspeção na execução comum, com
 + cada variável local renderizada por meio de sua instância de `Inspectable` e um retrato de objeto
 + mostrado por seu nome simples e sua identidade, e não por um nome de classe JVM. O tópico é
-+ `doc/work/soundness/modules/debugging.md`.
++ `doc/soundness/modules/debugging.md`.

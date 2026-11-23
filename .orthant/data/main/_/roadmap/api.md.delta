@@ -9,9 +9,6 @@ orthant 2 release
 @ 0 1 0 1e7ed4c04f595edc046969e7d633312b
 + `etc/api-nesting-proposal.md` and closed with it.)
 
-@ 0 1 0 0ff4d326aa79e704190066b17207157f
-+ The naming standards in `doc/work/standards/naming.md` and `doc/work/standards/given-naming.md` gain a
-
 @ 0 1 0 00e326d1bb046aa11262e578534b4047
 +     test -f etc/api-reduction-candidates.md || echo absent    # absent
 

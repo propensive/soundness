@@ -54,7 +54,7 @@ object settings:
   // below like the tools, and resolved from its GitHub release by crux, which also forces every
   // `org.scala-lang` artifact to it: the flare plugin names the release it was built with, and
   // the fork stays TASTy-compatible across its patch releases.
-  val scalaVersion = "3.10.0-pro-1.1.4"
+  val scalaVersion = "3.10.0-pro-1.2.0"
 
   // The compiler *stream* — the major Scala version, without the patch level — which is what
   // decides the shape of the compiler-internal APIs a handful of modules wrap. Everything else
@@ -328,7 +328,7 @@ object flareToolchain extends CruxDeps:
   // `↯/c.9.1.1` — a method gated by `Unsafe` must say so in its name — is `strict`, because a
   // gate nobody can see from the call site is a boundary that is not really there, and that is a
   // soundness claim rather than a style one. `↯/c.9.1.2` — an `unsafe`-named method must take the
-  // token — stays advisory; `doc/work/standards/naming.md` lists the definitions that break it.
+  // token — stays advisory; `doc/standards/naming.md` lists the definitions that break it.
   def options: Seq[String] =
     Seq(s"-P:flare:header=${mill.api.BuildCtx.workspaceRoot / "etc" / "header.txt"}",
         "-P:flare:columns=100",
@@ -1825,7 +1825,8 @@ object delicious extends Library:
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
 
-  object test extends Tests(core, `scala`, ansi, anthology.`scala`, eucalyptus.core):
+  object test extends Tests(core, `scala`, ansi, anthology.`scala`, eucalyptus.core,
+      frontier.core):
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions())
 
@@ -2149,7 +2150,7 @@ object facsimile extends Library:
       settings.sep(super.scalacOptions())
 
 object frontier extends Library:
-  object core extends Component(dendrology.tree, escapade.core, beneficence.core):
+  object core extends Component(delicious.core, dendrology.tree, escapade.core, beneficence.core):
     def compileMvnDeps = Seq(mvn"org.scala-lang:scala3-compiler_3:${scalaVersion()}")
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))

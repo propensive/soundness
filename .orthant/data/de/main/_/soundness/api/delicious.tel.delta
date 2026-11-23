@@ -1,0 +1,40 @@
+orthant 2 language
+
+@ 0 1 0 1a26dee1d32c457f154f39a6cd8b8097
++   entry #trees   jeder `Markup.Tree` in der Meldung, gleich wie tief er verschachtelt ist
+
+@ 0 2 0 06d9964a216b63ce0ea8450093d7ce20
++       row  `Tree(omitted, children)`  der Baum, der eine gescheiterte kontextuelle Auflösung erklärt; `omitted` zählt die Knoten, die der Länge wegen ausgelassen wurden
++       row  `Node(role, name, note, repeated, children)`  ein Knoten eines solchen Baums: seine `Role`, der `name` dessen, was gesucht, gefunden oder vorgeschlagen wurde, eine `note` dazu, und ob sein Teilbaum weiter oben schon gezeigt wurde und hier ausgelassen ist
+
+@ 0 3 0 19bd5f1a17ead8801f0d056cc9832871
++       Die Kinder eines `Tree` oder eines `Node` sind seine `Node`-Kinder, durchsetzt mit den
++       `Textual`-Knoten – Zeilenumbrüchen und Rahmenzeichen –, die denselben Baum als reinen Text
++       zeichnen; `#nodes` liefert allein die `Node`s.
+
+@ 0 21 0 097f0e9e07a724d7170810e6bafc0c7c
++   entry .marked   ob ein Text einen der Marker enthält, die `parse` liest
++       Ein Zeichen im privaten Nutzungsbereich von `U+E000` bis `U+E003`.
++   entry .parse   parst ausgezeichneten Text in eine Liste von Knoten, wie es der eigene Parser des Compilers täte
++       Folgt genau `DiagnosticMarkup.parse` des Compilers: Ein Marker beginnt mit einem Startzeichen,
++       seiner Art, einem Attributtrenner, `key=value`-Attributen (prozentkodiert, wo ein Wert ein
++       reserviertes Zeichen enthält, und hier dekodiert) und einem Texttrenner und endet mit einem
++       Endzeichen. Alles, was keinen vollständigen Marker bildet, wird verworfen und der umgebende
++       Inhalt als Text behalten — ein verirrtes Start- oder Endzeichen verschwindet, ein
++       abgeschnittener Kopf wird als einfacher Text gelesen —, und die Kinder eines nie geschlossenen
++       Markers werden in seinen Elternknoten eingespleißt, sodass sich auch eine abgeschnittene
++       Meldung parsen lässt. Die Art bestimmt den Knoten: `type`, `sym`, `name`, `code` und `tree`
++       haben eigene Fälle, ebenso ein `node`, dessen `role` eine von `.Role` ist, und jede andere Art
++       ist `Spanned`.
++   entry .plain   der Text ohne jeden Marker, nur mit dem sichtbaren Inhalt
++       Text ohne Marker wird unverändert zurückgegeben, ohne Parsen.
++   entry .wrap   umschließt einen Text mit einem Marker einer Art, mit Attributen, wie es der Compiler selbst tut
++       Für ein Makro, dessen Meldung ihre Struktur behalten soll: Unter `-Zsemantic-diagnostics`
++       erreicht der Marker `.parse` unversehrt, und jeder andere Leser sieht nur den Text darin.
++   entry .Role   die Rolle, die ein `Node` in einem Baum spielt: `Resolving`, `Candidate`, `Requires`, `Propose`, `Prohibits` oder `Found`
++     entry #glyph   das Symbol, mit dem die Rolle gezeichnet wird
++     entry #word   der Name der Rolle in Kleinbuchstaben, wie ihn das Attribut `role` eines Markers trägt
++   entry #plain   der sichtbare Text dieses Knotens: sein eigener Text oder der seiner Kinder, aneinandergefügt
+
+@ 0 1 0 0040f586709e95720edf25cba05cb8b5
++   entry #nodes   die `Node`-Kinder eines `Tree` oder eines `Node`, ohne den Text, der sie zeichnet

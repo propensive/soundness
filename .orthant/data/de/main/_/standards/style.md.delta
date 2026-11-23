@@ -1,7 +1,7 @@
 orthant 2 language
 
-@ 0 4 0 1c1902d2afe7b9801eeac822185723d5
-+ Die Dokumente in `doc/work/soundness/modules/` sind Tutorials, von denen jedes ein Feature von Soundness
+@ 0 4 0 08ceaae5c57e43db1316cf8896802202
++ Die Dokumente in `doc/soundness/modules/` sind Tutorials, von denen jedes ein Feature von Soundness
 + vorstellt — eine Fähigkeit, die sich über mehrere interne Module erstrecken kann —, und zwar
 + einem Leser, der ihm zum ersten Mal begegnet. Dieser Leitfaden legt fest, wie sie geschrieben
 + werden: an wen sie sich richten, welche Stimme sie verwenden und welchen Konventionen sie folgen.
@@ -21,23 +21,9 @@ orthant 2 language
 +   ` ```scala fuel `, und die Präambel endet an einer Zeile, die `##` enthält. Ihre Direktiven
 +   stehen unten.
 
-@ 0 9 0 01c4ec9013f5cd181a943251159092c2
-+ - ein Konzept, das ein anderes Tutorial lehrt, bei seiner ersten Verwendung in jedem Abschnitt,
-+   mit dem Anker des Abschnitts, wo das Ziel ein Abschnitt einer langen Seite ist:
-+   `[strategy](errors.md#choosing-a-strategy)`;
-+ - eine Kombination zweier Features, von beiden Seiten aus. Wo eine Instanz den Typ eines Moduls
-+   mit der Typklasse eines anderen verbindet — ein Datum, das in JSON kodiert wird, eine Größe, die
-+   in einer Tabelle angezeigt wird, ein Pfad, der ein Kommandozeilenparameter ist —, gibt jedes
-+   Tutorial der Kombination einen kurzen Abschnitt oder einen Satz, mit einem Beispiel, und
-+   verlinkt auf das andere;
-+ - eine Designidee, auf ihren Essay in `doc/work/philosophy/`, einmal, dort, wo das Design erklärt
-+   wird;
-+ - eine API-Entität, indem man sie in Inline-Code mit ihrem Sigel nennt (`` `#Json` `` für einen
-+   Typ, `` `.fetch` `` für einen Term), das Fuel auflöst und verlinkt.
-
-@ 0 4 0 1b87f88d1cf8a39e1b25121794ec7fd4
+@ 0 4 0 1315c709ae1d99bc05662163048cc767
 + Ein Wort mit einer präzisen Bedeutung in Soundness — *Taktik*, *Strategie*, *Capability*,
-+ *Auswahlpaket* — wird in `doc/work/soundness/glossary.tel` definiert und in Klammern geschrieben, wo ein
++ *Auswahlpaket* — wird in `doc/soundness/glossary.tel` definiert und in Klammern geschrieben, wo ein
 + Leser es womöglich noch nicht kennt: `[tactic]`, oder `[strategies][strategy]` für eine
 + flektierte Form. Fuel zeigt die Definition, wenn auf den Begriff gezeigt wird, und verlinkt ihn
 + auf die in seinem Eintrag genannte Seite.

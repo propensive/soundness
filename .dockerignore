@@ -39,9 +39,11 @@ etc/headers
 etc/oldbranches
 
 # Docs / samples / images (top-level and per-module). The documentation is the Orthant store in
-# .orthant, whose working tree is doc/work; the files beside it in etc are the documentation's too.
+# .orthant and its live tree, doc; the files beside it in etc are the documentation's too.
 doc
 .orthant
+etc/migration
+etc/migration.md
 etc/fixtures
 etc/compatibility.tsv
 sample

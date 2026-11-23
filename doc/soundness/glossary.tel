@@ -1,0 +1,618 @@
+tel 1.0
+
+# The words Soundness's documentation uses with a precise meaning. A term in brackets in prose —
+# `[tactic]`, or `[tactics][tactic]` for an inflected form — shows its definition when pointed
+# at, and leads to the page named by its `link`. doc/standards/style.md says when to add one.
+
+define accruing
+  link  /doc/soundness/modules/errors.md#accumulating-failures
+  definition
+      Describes a [strategy], such as `validate`, which records each error and lets the work
+      continue, then gathers every recorded error into one, instead of stopping at the first.
+
+define armored
+  link  /doc/soundness/modules/cryptography.md#pem
+  definition
+      Describes binary data, such as a key, a certificate or a signature, written as ASCII text,
+      in Base64 between `-----BEGIN …-----` and `-----END …-----` lines, as PEM does, so that it
+      can be copied as text.
+
+define boxing
+  definition
+      Wrapping a primitive value, such as an `Int` or a `Double`, in an object on the heap, so
+      that it can be used where an object is expected, at the cost of an allocation. An unboxed
+      value is stored as the primitive itself.
+
+define brand
+  definition
+      A marker in a value's type which records where the value came from, or a fact about it, as
+      in `Ratel.Row of brand`, so that a row can be read only through the reader which it came
+      from.
+
+define capability
+  link  /doc/philosophy/capture-checking.md
+  definition
+      A value which must be in scope for an operation to be allowed, such as `Online` for a
+      network request. A method that needs one says so in its signature, so what a method may
+      do is visible in its type.
+
+define  capture checking
+  link  /doc/philosophy/capture-checking.md
+  definition
+      An experimental check of the Scala 3 compiler which tracks the [capabilities][capability]
+      each value captures, so that one lent to a scope cannot escape it, for example by being
+      stored or returned.
+
+define carrier
+  link  /doc/soundness/modules/openapi.md#media-types-and-their-carriers
+  definition
+      Something which carries what another thing describes: the Scala type which holds a body of
+      a given media type, such as `Json` for `application/json`; or a thread which runs, in
+      turn, the tasks handed to it, as in a pool.
+
+define  choice package
+  link  /doc/philosophy/declarative-context.md
+  keyword  policy import
+  definition
+      A package of alternative [givens][given] for one decision, such as `strategies`,
+      `alphabets` or `httpBackends`. Importing one member by name makes that choice for
+      everything in scope.
+
+define chunk
+  definition
+      One of the pieces in which a stream delivers its data, such as a block of bytes. Code
+      which reads a stream must allow for a boundary, such as the end of a line, falling between
+      two chunks.
+
+define cipher
+  link  /doc/soundness/modules/cryptography.md
+  definition
+      An algorithm which encrypts and decrypts data with a key, such as AES or RSA. The type of
+      a key names its cipher, so a key cannot be used with another.
+
+define classloader
+  link  /doc/soundness/modules/classpath.md#choosing-a-classloader
+  definition
+      The JVM object which finds and loads compiled classes and resources, from a classpath or
+      elsewhere. Resources and services are looked up through the `Classloader` in scope.
+
+define  clock tick
+  definition
+      One step of a clock which drives repeated work, such as a frame of an animation or an event
+      reporting progress. It is a different thing from a [tick] on the axis of a chart.
+
+define  command-line flag
+  link  /doc/soundness/modules/cli.md#flags
+  definition
+      A named argument to a command-line program, written with a leading `--`, such as
+      `--verbose` or `--log-level`, which may take a value.
+
+define compiletime
+  definition
+      While the program is being compiled. A check made at compiletime rejects wrong code
+      before it can run; a compiletime error is reported by the compiler.
+
+define  contextual value
+  link  /doc/philosophy/declarative-context.md
+  keyword implicit
+  definition
+      A value the compiler finds in scope and passes to a method without it being written as
+      an argument. One is declared with `given` and requested with `using`.
+
+define  cooked mode
+  link  /doc/soundness/modules/daemons.md#asking-for-a-cooked-terminal
+  definition
+      The ordinary mode of a terminal, in which input is delivered a line at a time, with echo
+      and with line editing, such as Backspace, handled by the terminal driver. Its opposite,
+      raw mode, delivers each keypress as it is typed.
+
+define daemon
+  link  /doc/soundness/modules/daemons.md
+  definition
+      A program which keeps running in the background and serves each invocation of a command,
+      received from a small launcher, so that the command starts at once. In concurrency, a
+      `daemon` is a task which is started and left to run until its scope ends.
+
+define demangle
+  link  /doc/soundness/modules/stack-traces.md#demangling
+  definition
+      To turn a name as the JVM sees it, encoded by the Scala compiler, such as `Foo$` or
+      `$anonfun$1`, back into the name which was written in the source.
+
+define derivation
+  link  /doc/soundness/modules/derivation.md
+  definition
+      Having the compiler construct a [typeclass] instance for a case class or enumeration
+      from the instances for its fields or cases, instead of writing it by hand.
+
+define digest
+  link  /doc/soundness/modules/hashing.md
+  definition
+      The fixed-length value which a hash algorithm, such as SHA-256, computes from any data or
+      any value. Its type names the algorithm, and equal inputs always give equal digests.
+
+define  direct style
+  link  /doc/philosophy/direct-style.md
+  definition
+      Code written as ordinary statements and expressions whose values are used directly,
+      without wrapping results in a monad such as `Either`, `Try` or `Future`.
+
+define endpoint
+  definition
+      The address at which a service is reached, and which a client connects to, such as a host
+      and a port, a URL, or a command to start.
+
+define enumeration
+  definition
+      A type declared with `enum` whose cases are a fixed list of values, known to the
+      compiler, each with an ordinal giving its position in the declaration.
+
+define evidence
+  definition
+      A [contextual value] whose presence proves something which the compiler cannot otherwise
+      know, such as that one type is a subtype of another, or that a tool is available, and
+      which a method demands before it can be called.
+
+define face
+  link  /doc/soundness/modules/fonts.md#typefaces-and-faces
+  definition
+      One style of a [typeface], a `Face`, chosen by its weight, slant and features, such as
+      Inter in bold italic.
+
+define fan-out
+  definition
+      Distributing work or data from one source to many recipients, such as a batch of small
+      tasks spread across threads, or one stream delivered to several consumers.
+
+define fingerprint
+  definition
+      A short value computed from some content, such as a schema or a key, which identifies it:
+      comparing fingerprints confirms that two parties hold the same content without comparing
+      the content itself.
+
+define fire-and-forget
+  definition
+      Describes work which is started without waiting for it to finish or for any response, such
+      as a notification in RPC, a datagram, or a task spawned with `daemon`.
+
+define flag
+  link  /doc/soundness/modules/flags.md
+  definition
+      A named yes-or-no setting, often stored as one bit of an integer, as in the flags field of
+      a binary header. A set of flags is typed by an [enumeration], so a flag from another set
+      is rejected.
+
+define focus
+  link  /doc/soundness/modules/errors.md#saying-where-a-failure-was
+  definition
+      The position within a structure which code is currently working on, such as a JSON
+      pointer, maintained by `track` as a traversal descends. An error recorded under `validate`
+      is paired with the focus where it was raised.
+
+define forwarder
+  definition
+      A method which does nothing but call another definition with the same arguments, such as
+      one the compiler generates for an `export` clause, so that a member can be reached from
+      somewhere else.
+
+define frame
+  definition
+      One self-contained unit of a sequence: a message carved from a stream by [framing], a
+      BinTEL document which travels on its own, or one image of an animation. An entry of a call
+      stack is a [stack frame].
+
+define framing
+  link  /doc/soundness/modules/rpc.md#framing
+  definition
+      Carving a continuous stream of bytes or text into separate messages, by a length prefix, a
+      `Content-Length` header or a line ending, so that each message can be read whole.
+
+define frozen
+  definition
+      Made [immutable] once it has been built: a structure which is filled in by mutation and
+      then frozen, such as a Bloom filter or a `Topology`, can be shared and queried, but no
+      longer changed.
+
+define getter
+  link  /doc/soundness/modules/optics.md#lenses-as-values
+  definition
+      A function or method which reads one part of a value, such as a field. Paired with a
+      [setter], it makes a lens.
+
+define given
+  link  /doc/philosophy/declarative-context.md
+  definition
+      A definition marked `given`, which makes a [contextual value] available to any code
+      that has it in scope.
+
+define grant
+  link  /doc/soundness/modules/filesystem.md#reading-and-writing
+  definition
+      One of the kinds of access a [handle] is opened with, such as `Read`, `Write` or
+      `Exclusive`. Grants are carried in the handle's type, so an operation which was not
+      granted does not compile.
+
+define  grapheme cluster
+  link  /doc/soundness/modules/characters.md#grapheme-clusters
+  definition
+      A sequence of one or more Unicode characters which a reader perceives as a single
+      character, such as a letter with combining accents, or an emoji built from several code
+      points.
+
+define handle
+  link  /doc/soundness/modules/filesystem.md#the-opening-pattern-generally
+  definition
+      A value which gives access to an open resource, such as a file, a canvas or a repository,
+      for the duration of a scope. Its type says which operations it was opened for, and the
+      resource is closed when the scope ends.
+
+define handler
+  definition
+      A function supplied to be run when something arrives or happens, such as a request
+      reaching a server or a message from a peer. It decides what is done with it and, for a
+      request, what response is returned.
+
+define harness
+  definition
+      The code which runs other code under controlled conditions and observes it, such as the
+      `Harness` which runs a test and records what it captures, or a benchmark harness.
+
+define  honest signature
+  link  /doc/philosophy/honest-signatures.md
+  definition
+      A method signature that states everything the method needs and every way it can fail,
+      so that nothing about calling it is left to documentation.
+
+define immutable
+  link  /doc/philosophy/immutability.md
+  definition
+      Never changing after construction. An operation that appears to alter an immutable
+      value returns a new value and leaves the original as it was.
+
+define  impossible state
+  link  /doc/philosophy/impossible-states.md
+  definition
+      A value that would be meaningless or invalid, and which the types are designed to make
+      unrepresentable, so that no code needs to check for it.
+
+define interning
+  link  /doc/soundness/modules/database.md#interning
+  definition
+      Storing each distinct value only once, so that storing or creating an equal value again
+      gives the same instance or reference, and equal values can be compared by identity.
+
+define interpolator
+  link  /doc/soundness/modules/interpolation.md
+  definition
+      A prefix on a string literal, such as `t"…"`, `url"…"` or `media"…"`, which checks the
+      literal's content at [compiletime] and gives a value of a precise type.
+
+define keypress
+  link  /doc/soundness/modules/terminal.md#keyboard-input
+  definition
+      One key, or combination of keys, pressed at a terminal, which is received as a `Keypress`
+      value, such as a character, Enter or an arrow key.
+
+define label
+  link  /doc/soundness/modules/label-placement.md
+  definition
+      A piece of text placed beside the thing it names, such as a point on a chart or a town on
+      a map; more generally, the short name a value is shown by, such as the label of a PEM
+      block.
+
+define layout
+  definition
+      The arrangement of parts in space or in memory: how a table, a terminal interface or a
+      chart places its parts, or how the bits of a pixel are allocated among its channels.
+
+define lenient
+  link  /doc/soundness/modules/decoding.md#policies-for-optional-fields
+  definition
+      Describes a decoding policy which reads a missing or malformed optional value as `Unset`
+      and reports nothing, instead of raising an error as a strict policy does.
+
+define lift
+  definition
+      To carry a value into a richer setting which represents it, such as a value into a
+      container, a constant into a quoted expression for a macro, or a fact about a value into
+      its type.
+
+define listener
+  definition
+      A value or task which waits for events or connections and acts on each as it arrives, such
+      as the `Lsp.Listener` which receives what a language server sends unbidden, or a server
+      waiting for connections on a socket.
+
+define logger
+  link  /doc/soundness/modules/logging.md
+  definition
+      The [contextual value] which receives the typed events that a method logs, and writes them
+      somewhere, such as a terminal, a file or the system log. With no logger in scope, logging
+      is silent and costs nothing.
+
+define  media type
+  link  /doc/soundness/modules/media-types.md
+  definition
+      The standard name for the format of some data, such as `text/html` or `application/json`,
+      which accompanies it in an HTTP header or an email, so that the receiver knows how to read
+      it.
+
+define one-shot
+  definition
+      Usable, or done, only once: a one-shot iterator can be traversed only once, and a one-shot
+      operation, such as `gzip` on `Data`, processes a whole value in one call rather than
+      incrementally.
+
+define  opaque type
+  definition
+      A type that is represented at runtime by another type, such as a `Long`, but which the
+      compiler treats as distinct from it, so only the operations defined for it are allowed.
+
+define optional
+  link  /doc/soundness/modules/optional-values.md
+  definition
+      Typed `Optional[T]`: either a value of type `T`, or `Unset`. A present value is not
+      wrapped, so it costs nothing more than the value itself.
+
+define padding
+  definition
+      Characters or bytes added to a value to bring it to a required length: the spaces which
+      fill text out to the width of a column, or the bytes which a block cipher appends to fill
+      its last block.
+
+define pane
+  link  /doc/soundness/modules/terminal.md#layout
+  definition
+      A rectangular region of a terminal interface which shows one piece of content. Panes are
+      nested into a tree, which is solved against the size of the terminal.
+
+define park
+  definition
+      To suspend a thread or [strand], without consuming processor time, until another unparks
+      it, as a writer does when its reader falls behind.
+
+define  pattern match
+  definition
+      Testing a value, in a `match` expression or a pattern elsewhere, against the shape of each
+      case in turn, and extracting parts of the first one which fits.
+
+define payload
+  definition
+      The data which a message or request carries, as distinct from the envelope around it, such
+      as its method name, its identifier or its headers.
+
+define permit
+  link  /doc/soundness/modules/cryptography.md#weak-algorithms
+  definition
+      A [contextual value] which must be imported before a weak or deprecated algorithm, such as
+      SHA-1, can be used, so that a codebase's acceptance of it is one import, which can be
+      searched for.
+
+define probate
+  link  /doc/soundness/modules/concurrency.md#cancellation-in-both-directions
+  definition
+      The [contextual value] which decides what happens to a child task that is still running
+      when the body of its parent completes: whether it is canceled, waited for, or treated as
+      an error.
+
+define provision
+  link  /doc/soundness/modules/fonts.md#providing-a-typeface
+  definition
+      A [given] instance of `Typesettable` for a [typeface] in a medium, which says how that
+      medium obtains the font and which faces it can then set. A font of the typeface exists
+      only where its provision is in scope.
+
+define raises
+  link  /doc/soundness/modules/errors.md#declaring-that-code-can-fail
+  definition
+      The infix type in a return type, as in `Text raises ParseError`, which declares that a
+      method can fail with that error. It requires a [tactic] for the error from the caller.
+
+define reason
+  link  /doc/soundness/modules/errors.md#defining-an-error
+  definition
+      The part of an error which says why it happened, usually a case of an [enumeration], such
+      as `Json.Error.Reason.Absent`, so that code can tell one cause from another without
+      reading a message.
+
+define receiver
+  definition
+      The value on which a method is called, such as `x` in `x.f(y)`; also, in a protocol, the
+      party which receives a message.
+
+define remote
+  link  /doc/soundness/modules/git.md#remotes-configuration-notes-and-the-reflog
+  definition
+      Another copy of a Git repository, named in the local one, such as `origin`, which commits
+      are fetched from and pushed to.
+
+define runner
+  definition
+      A program or value which runs code supplied by another, such as a test runner which runs
+      the tests of a suite, or the launcher which runs as the client of a daemon.
+
+define runtime
+  definition
+      While the program is running. A runtime error is one that the compiler could not rule
+      out, and which is reported through a [tactic] when it happens.
+
+define scratch
+  link  /doc/soundness/modules/filesystem.md#creating-as-a-scope
+  definition
+      Describes a file or directory which is created for the duration of a scope, and removed
+      when the scope ends, whether it succeeds or fails, as for a throwaway index or a test
+      fixture.
+
+define scrutinee
+  definition
+      The value being examined by a `match` expression or an extractor, which the pattern of
+      each case is tested against.
+
+define seam
+  link  /doc/philosophy/decoupling.md
+  definition
+      The narrow point where one part of a system meets another which can be replaced, such as
+      the few primitive operations through which a library reaches the platform beneath it. A
+      different platform is supported by implementing the seam alone.
+
+define session
+  definition
+      A scope which opens a resource, such as a connection, lends it to the code inside the
+      scope, and closes it when the scope ends.
+
+define setter
+  link  /doc/soundness/modules/optics.md#lenses-as-values
+  definition
+      A function or method which replaces one part of a value, such as a field. For an
+      [immutable] value it returns a new value with that part replaced. Paired with a [getter],
+      it makes a lens.
+
+define  singleton type
+  definition
+      The type of exactly one value, such as the type of a particular [enumeration] case. A
+      parameter of singleton type must be given a value the compiler can identify, not one
+      computed at [runtime].
+
+define sink
+  link  /doc/soundness/modules/streams.md#writing-to-a-sink
+  definition
+      A destination which a stream of data is written to, such as a file, a socket or the input
+      of a process; the counterpart of a source. A log sink is where a logger writes its events.
+
+define span
+  definition
+      A contiguous stretch of something, given by where it starts and where it ends: a fragment
+      of inline code in Markdown, a cell extending over several columns, or a range of a
+      sequence.
+
+define  stack frame
+  link  /doc/soundness/modules/stack-traces.md#resolving-frames-to-their-source
+  definition
+      One entry of a [stack trace]: a method which was executing, with its class, and the file
+      and line it had reached.
+
+define  stack trace
+  link  /doc/soundness/modules/stack-traces.md
+  definition
+      The list of method calls which were in progress at one moment, innermost first, as
+      recorded when an exception or error is created. Each entry is a [stack frame].
+
+define staging
+  link  /doc/soundness/modules/staging.md
+  definition
+      Running a program in stages, where code quoted as `'{…}` in one stage is compiled and run
+      in a later one. Soundness generalizes it, so that quoted code can run in another
+      environment, such as a fresh JVM, and return its result.
+
+define strand
+  link  /doc/soundness/modules/concurrency.md#suspension-as-an-effect
+  definition
+      The unit of execution beneath a task: an abstraction of a thread with the four operations
+      which suspension needs, which are interrupt, join, park and unpark. A supervisor supplies
+      strands, so a scheduler which is not built on threads can be plugged in.
+
+define strategy
+  link  /doc/soundness/modules/errors.md#choosing-a-strategy
+  keyword  error handling
+  definition
+      A choice, in scope, of what happens when an operation fails: `throwUnsafely` throws an
+      exception, `safely` gives `Unset`, `capture` returns the error. A strategy supplies the
+      [tactic] a fallible method asks for.
+
+define summon
+  definition
+      To ask the compiler for the [contextual value] of a type which is in scope, by writing
+      `summon[T]`, instead of receiving it as a parameter.
+
+define swatch
+  definition
+      A small sample of a color, such as the square beside the name of a series in the legend of
+      a chart.
+
+define tactic
+  link  /doc/soundness/modules/errors.md#declaring-that-code-can-fail
+  definition
+      A [contextual value] of type `Tactic[E]` which a method needs in order to report an
+      error of type `E`. Whoever provides the tactic decides how the failure is handled.
+
+define tag
+  definition
+      A short marker attached to a value to say what kind of value it is or what it is called,
+      such as the name of an HTML element, the type of a YAML node or of an ASN.1 value, or the
+      name given to a Git commit.
+
+define  tagged union
+  definition
+      A type whose values are each one of several cases, with a [tag] saying which case it is,
+      such as a sealed trait or an enumeration, or a JSON object with a field naming its case.
+
+define  text wrapping
+  definition
+      Breaking text into lines which fit a given width, at spaces or at permitted hyphenation
+      points, as when text is set in a terminal or a table.
+
+define tick
+  link  /doc/soundness/modules/charts.md#style
+  definition
+      A short mark on the axis of a chart at a regular value, usually with a label which gives
+      that value.
+
+define timeline
+  link  /doc/soundness/modules/time.md
+  definition
+      A physical scale of time, such as Unix time or TAI, on which an instant is placed. The
+      type of an instant names its timeline, as in `Instant over Unix`.
+
+define timespan
+  link  /doc/soundness/modules/time.md#durations-and-timespans
+  definition
+      A quantity of calendar time, in years, months, weeks, days, hours and minutes, whose
+      length in seconds depends on when it is applied. A `Duration`, by contrast, is a fixed
+      number of seconds.
+
+define tokenizer
+  definition
+      The first stage of parsing, which splits source text into tokens, such as keywords,
+      identifiers, literals and punctuation, before their structure is analyzed.
+
+define toolchain
+  link  /doc/soundness/modules/compiler.md
+  definition
+      The set of tools which together turn source code into something which can run, such as a
+      compiler, a linker and a packager, with the versions and settings they are run with.
+
+define trailer
+  definition
+      Data which comes after the main content of a message or file, rather than before it, such
+      as the HTTP trailers sent after the body of a response, or the structure at the end of a
+      ZIP archive or a PDF file.
+
+define typeclass
+  link  /doc/soundness/modules/derivation.md#products-sums-and-typeclasses
+  definition
+      A trait describing an ability a type may have, such as being shown, encoded or
+      compared, with an instance for each type that has it. An instance is found as a
+      [contextual value], so a type gains an ability without being modified. `Color is
+      Showable` is the instance making `Color` showable.
+
+define typeface
+  link  /doc/soundness/modules/fonts.md#typefaces-and-faces
+  definition
+      A font family, such as Inter, named by a `Typeface`, independently of any weight, slant or
+      file. A [face] chooses one style from it.
+
+define variant
+  definition
+      One of several alternative forms of the same thing, such as the URL-safe alphabet of
+      Base64, a dialect of delimited text, or one alternative of a TEL select.
+
+define viewport
+  definition
+      The rectangle in which something is shown, such as the visible area of a browser window,
+      which CSS units like `Vw` are fractions of, or the area an SVG image is drawn in.
+
+define  wire form
+  definition
+      The form a value takes when it is sent between programs, in a protocol or a serialized
+      format, as distinct from its form in Scala: the name a field is sent under, the code an
+      error is sent as, or the bytes of its encoding.

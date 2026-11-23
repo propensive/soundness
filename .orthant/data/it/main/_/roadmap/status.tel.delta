@@ -1,17 +1,5 @@
 orthant 2 language
 
-@ 0 3 0 148a30337b22668a138439c53376660b
-+ # Indice leggibile da una macchina delle voci della roadmap. Un record `item` per ogni voce dei
-+ # nove file dei filoni in doc/work/roadmap/. Questo file è l'unica fonte dello stato:
-+ # i file in prosa non dichiarano mai che qualcosa è completato; rimandano qui.
-
-@ 0 2 0 1150a678e12de40b1108079fd587f3ad
-+   baseline  1669 cicli while, 993 readUnchecked, 514 charAt nel core di lib (2026-10-21, dopo che #2274 ha reso l'Array congelato l'unico array immutabile; 1606, 476, 507 il 2026-09-25)
-+   criterion  nessuna collezione espone un apply indicizzato parziale (issue #1666); ogni while rimasto ha una forma ammessa da doc/work/standards/loops.md, con un commento che ne indica l'invariante
-
-@ 0 1 0 00b880a91082413204e9196c41d2f096
-+   criterion  doc/work/standards/capabilities.md esiste, definisce ogni tag che il censimento riconosce, e le sezioni di ricetta di rep/DECISIONS.md vi rimandano
-
 @ 0 2 0 0dc0dcbd00f7c47016ed4ce89be1e923
 +   baseline  104 righe su 145 si compilano per JavaScript, 108 per Native, 34 esclusioni JavaScript con i motivi; etc/check-compatibility.py rigenera e controlla il file in make build (2026-10-21; 101 su 144 il 2026-09-25; 94 su 132 il 2026-08-01)
 +   criterion  la CI rigenera etc/compatibility.tsv, fallisce in caso di divergenza, e a nessuna esclusione manca il motivo
@@ -34,28 +22,26 @@ orthant 2 language
 +   baseline  0 nomi esportati da due librerie; 19 righe R8 ad alta confidenza su 22 completate; Tag/Renderable ancora @unexported (2026-11-12, più tardi; 6 nomi, 2 omonimi @unexported, ~110 candidati R8 lo stesso giorno, prima)
 +   criterion  nessun nome è esportato da più di una libreria, nessun @unexported aggira un conflitto, e ogni riga delle tabelle R8 in etc/api-nesting-proposal.md è applicata o esaminata e mantenuta
 
-% 0 1 0 131794d631e522870773aff16ae8aac7
-
-@ 0 2 0 07a6b381d30a92cb023b924906e9d974
-+   baseline  101 argomenti in doc/work/soundness/modules/; 145 librerie su 145 coperte (2026-10-21; 1 su 144 non coperta il 2026-09-25; 91 argomenti e 35 non coperte il 2026-08-01)
+@ 0 2 0 0f3d1198b0e978311a11bfe6394f1f89
++   baseline  101 argomenti in doc/soundness/modules/; 145 librerie su 145 coperte (2026-10-21; 1 su 144 non coperta il 2026-09-25; 91 argomenti e 35 non coperte il 2026-08-01)
 +   criterion  python3 etc/check-doc-coverage.py segnala ogni libreria come coperta ed esce con 0
 
-@ 0 2 0 1154d170629482bb139ba48e21c12602
-+   baseline  la suite DAP scriptata si ferma ai breakpoint, avanza e ispeziona i valori attraverso le loro istanze di Inspectable; argomento doc/work/soundness/modules/debugging.md (2026-10-21; oggetti ispezionati come nomi di classi JVM e nessun argomento il 2026-09-25)
+@ 0 2 0 05558c8a0afe616c19ef03f4c9b525c6
++   baseline  la suite DAP scriptata si ferma ai breakpoint, avanza e ispeziona i valori attraverso le loro istanze di Inspectable; argomento doc/soundness/modules/debugging.md (2026-10-21; oggetti ispezionati come nomi di classi JVM e nessun argomento il 2026-09-25)
 +   criterion  una sessione DAP scriptata (breakpoint, passo, ispezione con valori resi da Soundness) passa contro un'applicazione in esecuzione in CI
 
-@ 0 2 0 07448ba163d12a581789fe21f1724c6c
-+   baseline  doc/work/migration.md e 0.65.0.md–0.73.0.md esistono; la direttiva di migrazione in etc/release subordina la release; nessun controllo sulle pull request (2026-10-21; note fino a 0.68.0 il 2026-09-25)
-+   criterion  doc/work/migration.md esiste; la release (la direttiva di migrazione in etc/release) rifiuta di creare il tag senza doc/work/migration/<version>.md; un controllo CI fa fallire ogni pull request che cambia lib/**/src senza toccare il doc/work/migration/<version>.md non rilasciato
+@ 0 2 0 1ecc3855de818f6814bc9b756c382eb7
++   baseline  etc/migration.md e 0.65.0.md–0.73.0.md esistono; la direttiva di migrazione in etc/release subordina la release; nessun controllo sulle pull request (2026-10-21; note fino a 0.68.0 il 2026-09-25)
++   criterion  etc/migration.md esiste; la release (la direttiva di migrazione in etc/release) rifiuta di creare il tag senza etc/migration/<version>.md; un controllo CI fa fallire ogni pull request che cambia lib/**/src senza toccare il etc/migration/<version>.md non rilasciato
 
-@ 0 2 0 196b66a1e2f12f001fec8234a42c1ee3
+@ 0 2 0 174e5970ec87b6671ec8b4594cff11a1
 +   baseline  lib/reliquary (7387 righe) più anthology.lira, degustation.lira, mandible.lira, xenophile.lira e i loro test (2026-09-25)
-+   criterion  lib/reliquary è assente, non resta alcuna directory lib/*/src/lira, e build.mill, etc/ e doc/work/soundness/modules non menzionano reliquary
++   criterion  lib/reliquary è assente, non resta alcuna directory lib/*/src/lira, e build.mill, etc/ e doc/soundness/modules non menzionano reliquary
 
-@ 0 3 0 1022043b4940d100089e5ec885e64e12
+@ 0 3 0 1ab90a58f440346102cbf922b597507a
 +   status done
 +   done  #2530 (2026-11-20)
-+   baseline  lib/sigillate: Jws, Jwe, Jwk e Jwt, con i componenti `http` e `server`; 95 test, che prendono i loro vettori da RFC 7515 §A.1–A.7, RFC 7516 §A.1–A.5, RFC 7517, RFC 7638 e RFC 8037; `↯/s.147.1`; doc/work/soundness/modules/jose.md (2026-11-20)
++   baseline  lib/sigillate: Jws, Jwe, Jwk e Jwt, con i componenti `http` e `server`; 95 test, che prendono i loro vettori da RFC 7515 §A.1–A.7, RFC 7516 §A.1–A.5, RFC 7517, RFC 7638 e RFC 8037; `↯/s.147.1`; doc/soundness/modules/jose.md (2026-11-20)
 
-@ 0 1 0 0b21a7d8349a92fd16fa9db438708eef
-+   baseline  lib/chatelaine: WebAuthn.registration/register e authentication/authenticate, attestazione `none` e `packed`, con un componente `server`; le cerimonie di registrazione e di autenticazione dei vettori di test della specifica W3C (§16.2–16.11) passano, come passano le cerimonie scriptate contro un autenticatore software nei sorgenti dei test; non è stato pilotato l'autenticatore virtuale di alcun browser; `↯/s.148.1`; doc/work/soundness/modules/webauthn.md (2026-11-20)
+@ 0 1 0 04b2a086c09d9a4a0bf490e3f6a25ee5
++   baseline  lib/chatelaine: WebAuthn.registration/register e authentication/authenticate, attestazione `none` e `packed`, con un componente `server`; le cerimonie di registrazione e di autenticazione dei vettori di test della specifica W3C (§16.2–16.11) passano, come passano le cerimonie scriptate contro un autenticatore software nei sorgenti dei test; non è stato pilotato l'autenticatore virtuale di alcun browser; `↯/s.148.1`; doc/soundness/modules/webauthn.md (2026-11-20)

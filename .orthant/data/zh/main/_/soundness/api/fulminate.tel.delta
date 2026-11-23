@@ -1,6 +1,12 @@
 orthant 2 language
 
-@ 0 6 0 180f15359b93ca3d06aed49479fd5a4b
+!     An error type has a bolt code — `Error(25, 1, 0)`, the first error of the twenty-fifth
+!     module, is `↯/s.25.1` — which is stable across releases, never reused, and documented at
+!     `doc/work/errors/25.1.md`; its distinct causes are the cases of a `Reason` enum extending
+!     `Clarification`, each numbered within the error (`↯/s.25.1.1`), and each rendered through
+!     its own `Communicable`. A full error, grown step by step (900 stands for the number of
+!     the module the error is in):
+@ 0 6 0 0ae7822513db22b804469eb30be867c2
 +     错误类型有一个 bolt 代码——`Error(25, 1, 0)`，即第二十五个模块的第一个错误，为 `↯/s.25.1`——它在各个版本之间保持稳定，从不复用，并在 `doc/work/errors/25.1.md` 中有文档；它的各个不同原因是扩展 `Clarification` 的 `Reason` 枚举的分支，每个分支在该错误内编号（`↯/s.25.1.1`），并各自通过自己的 `Communicable` 呈现。
 +     下面是一个逐步完善的完整错误（900 代表该错误所在模块的编号）：
 
@@ -15,28 +21,53 @@ orthant 2 language
 !       written `Error(message)` has `module = 0`: no code, and `getMessage` prefixes its
 !       component instead. The code renders in the `[↯/s.25.1.2]` prefix of `#labelled`, of
 !       `getMessage` and of a compile-time `halt`.
-@ 0 11 0 0e41f31d6f83c96a1346426cff928766
+@ 0 11 0 1f902bd79280361b10ba58acbbd8d7cb
 +       错误由三个数字标识，它们构成其 bolt 代码。
 +       `module` 是错误所在库的编号，记录在 `bolt` 注册表的 `s.tel` 中；`number` 是该错误在库内自己的编号，即编写该错误类型时下一个空闲的编号，且从不复用（已退役的编号留在注册表中，并加以标记）；`variant` 是错误原因的编号——即其 `Reason` 分支（一个扩展 `Clarification` 的枚举）的 `number`——若该错误没有原因则为 0。
 +       错误在 `doc/work/errors/<module>.<number>.md` 中有文档，说明其起因和常见的补救办法，因此用户报告中的 `↯/s.25.1` 可以被查到，而不必猜测。
 +       以 `Error(message)` 编写的错误的 `module = 0`：没有代码，`getMessage` 改为以其组件作为前缀。
 +       该代码呈现在 `#labelled`、`getMessage` 以及编译时 `halt` 的 `[↯/s.25.1.2]` 前缀中。
 
-@ 0 4 0 09841ddff78e3e0f1470142376faa577
+!       The house style for the message is `doc/work/standards/messages.md`: lowercase, no trailing
+!       period, present tense, the specific resource at fault interpolated as a typed value,
+!       and never *invalid* or *bad* as the whole predicate. Errors are meant to be matched on:
+!       a handler deconstructs the case class and its `Reason`, never its text.
+@ 0 4 0 0b6f654c48ede4541a940cb6f02515e6
 +       消息的内部风格规范是 `doc/work/standards/messages.md`：小写，末尾不加句号，使用现在时，将出错的具体资源作为带类型的值插入，并且从不以 *invalid* 或 *bad* 作为整个谓语。
 +       错误是用来被匹配的：处理函数解构该 case class 及其 `Reason`，从不解构其文本。
 
-@ 0 1 0 1b00085c23cb817210b7e86018390e25
+!     The house style for what a message says is `doc/work/standards/messages.md`.
+@ 0 1 0 02edaaeae12f74cb148e8582e38cd76e
 +     关于消息内容的内部风格规范是 `doc/work/standards/messages.md`。
 
-@ 0 8 0 0a1b5cee94d0e9b919081a6989fc0ce7
+! entry .Clarification   the trait a `Reason` enum extends: a number for each distinct cause of an error
+!     `trait Clarification { def number: Int }`. An error's distinct causes are the cases of a
+!     `Reason` enum extending `Clarification`, each with a number unique within the error, so
+!     that `Error(25, 1, reason.number)` renders as `↯/s.25.1.1`, `↯/s.25.1.2`… and each has a
+!     sub-section of the error's page in `doc/work/errors`. A `Reason` carries data of its own where
+!     the diagnosis needs it (`Ipv4ByteOutOfRange(byte: Int)`), and gives its own
+!     `Communicable` instance phrasing each case, which the error's message interpolates. A
+!     `halt` or `warn` given a `Clarification` puts its number in the diagnostic's prefix.
+@ 0 8 0 063f0d9811f50917072f41f93b8399e8
 + entry .Clarification   `Reason` 枚举所扩展的特质：为错误的每个不同原因提供一个编号
 +     `trait Clarification { def number: Int }`。
 +     错误的各个不同原因是扩展 `Clarification` 的 `Reason` 枚举的分支，每个都有一个在该错误内唯一的编号，因此 `Error(25, 1, reason.number)` 呈现为 `↯/s.25.1.1`、`↯/s.25.1.2`……，并且每个原因在 `doc/work/errors` 中该错误的页面里都有一个小节。
 +     在诊断需要时，`Reason` 携带自己的数据（`Ipv4ByteOutOfRange(byte: Int)`），并提供自己的 `Communicable` 实例为每个分支措辞，错误的消息会插入它。
 +     接收 `Clarification` 的 `halt` 或 `warn` 会将其编号放入诊断信息的前缀中。
 
-@ 0 12 0 1dbf1624ea54f120159469e4d76409eb
+! entry .halt   reports a compile error from a macro and aborts the expansion
+!     For macro implementations, with `Quotes` in scope. `halt(message)` reports the
+!     `Message`'s text (coloured, through `Message#colorText`, when the compiler's `-color`
+!     setting is on) with `report.errorAndAbort`; `halt(message, position)` attaches a
+!     position. The numbered overloads prefix the diagnostic with the error's code as
+!     `[↯/s.25.1] ` — `halt(module, number, message)`, `halt(module, number, message,
+!     position)` — or with its reason's number as `[↯/s.25.1.2] `: `halt(module, number,
+!     reason, message)` and `halt(module, number, reason, message, position)`, where `reason`
+!     is a `Clarification`. The position parameter of the numbered
+!     forms is `Matchable`, and a value which is not a `quotes.reflect.Position` (or `null`)
+!     reports without one. Every macro-raised code has a page in `doc/work/errors`, like a runtime
+!     error's.
+@ 0 12 0 16cb5647bd90c4100dc733b2079a83bf
 + entry .halt   从宏中报告编译错误并中止展开
 +     用于宏实现，作用域中需有 `Quotes`。
 +     `halt(message)` 通过 `report.errorAndAbort` 报告该 `Message` 的文本（当编译器的 `-color` 设置开启时，通过 `Message#colorText` 着色）；`halt(message, position)` 附加一个位置。

@@ -72,7 +72,7 @@ model haiku
   limit      16384
   mode       batches
 
-# The coercion-helper census (doc/work/standards/plumbing.md): small definitions that only re-wrap a
+# The coercion-helper census (doc/standards/plumbing.md): small definitions that only re-wrap a
 # value, judged by the model against the rubric there. `flare assess plumbing` records the
 # verdicts under refs/notes/flare-assess/plumbing; nothing here fails.
 rule plumbing

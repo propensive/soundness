@@ -115,7 +115,7 @@ object Launcher:
         deadline: Optional[Long] = Unset )
 
     case SignalAck(accept: Boolean)
-    case Mode(canonical: Boolean, echo: Boolean = false)
+    case Mode(canonical: Boolean, echo: Boolean = false, interrupts: Boolean = false)
     case Closed(stream: Text)
     case ExitStatus(code: Int)
     case Verify
@@ -125,12 +125,54 @@ object Launcher:
     case Exited(code: Int)
 
   // Parsed once; a malformed schema text is a programming error, not a runtime condition.
-  lazy val schema: Tels = unsafely(Tels.Validation.validate(schemaText.read[Tel].as[Tels]))
+  private lazy val declared: Tels =
+    unsafely(Tels.Validation.validate(schemaText.read[Tel].as[Tels]))
 
-  // The §8 palimpsest signature of the schema, carried by every document on the wire and
-  // compared byte-for-byte on receipt.
-  lazy val signature: Data =
-    unsafely(SchemaSignature.fromDocument(schemaText.read[Tel], Tels.Axiom.tels))
+  // The hashes of the schema's components (BinTEL §8.1): its base, and each layer in order.
+  private lazy val hashes: (Data, List[Data]) =
+    unsafely(SchemaSignature.componentHashes(schemaText.read[Tel], Tels.Axiom.tels))
+
+  // What a document is written under: the schema's base with some of its layers, and the §8
+  // palimpsest signature of that, which every such document carries and which is compared
+  // byte for byte on receipt. A launcher chooses the composition, from the acceptance this
+  // daemon publishes, and the daemon answers under the one it was written to under (xek's
+  // `spec/layout.md`, *Negotiating the composition*).
+  case class Composition(schema: Tels, signature: Data, interrupts: Boolean)
+
+  // The base alone: what a launcher that holds no layer, or predates them, writes under.
+  lazy val base: Composition =
+    Composition
+      ( unsafely(Tels.Layers.compose(declared, Nil)),
+        unsafely(SchemaSignature.encode(List(hashes(0)))),
+        false )
+
+  // The base with the `interrupts` layer, under which the launcher leaves the keys that
+  // generate signals with the terminal until it is asked for them (`Session.reading`).
+  lazy val layered: Composition =
+    Composition
+      ( unsafely(Tels.Layers.compose(declared)),
+        unsafely(SchemaSignature.encode(hashes(0) :: hashes(1))),
+        true )
+
+  // The base's schema and signature: the composition every launcher can write under.
+  def schema: Tels = base.schema
+  def signature: Data = base.signature
+
+  // What this daemon reads, for a launcher to consult before it connects: a BinTEL §8.4
+  // acceptance in its bare form, with one alternative. Its requirement is the base alone, and
+  // it names each layer held by the first four bytes of the layer's hash: one root child, the
+  // `accept` member, with its 33-byte `schema` and a `component` for each layer.
+  lazy val acceptance: Data =
+    val out = ji.ByteArrayOutputStream(64)
+    var layers = 0
+    hashes(1).each { _ => layers += 1 }
+    out.write(1); out.write(0); out.write(1 + layers)
+    out.write(0); out.write(base.signature.length); out.write(Array.unsafeJvm(base.signature))
+
+    hashes(1).each: hash =>
+      out.write(3); out.write(4); out.write(Array.unsafeJvm(hash), 0, 4)
+
+    Array.unsafeFrozen(out.toByteArray.nn)
 
   // The variant indices of `Message` in the document root's keyword order — a single
   // `SelectRef`, so its variants occupy indices 0 to 14 in declaration order.
@@ -145,22 +187,29 @@ object Launcher:
   // bytes themselves, framed as any scalar is; in the element tree, a BASE-256 text.
   private val bytes: Tels.Scalar = Tels.Scalar(Array.empty, t"base-256")
 
-  private def record(name: Text): Tels.Struct =
-    val definition = schema.records.seek(_.name == name).or(panic(m"the schema declares $name"))
+  private def record(name: Text)(using composition: Composition): Tels.Struct =
+    val definition =
+      composition.schema.records.seek(_.name == name).or(panic(m"the schema declares $name"))
+
     Tels.Struct(definition.members, definition.validators)
 
   private def value(index: Int, text: Text): Tel.Element = Tel.Element.Value(index, scalar, text)
   private def raw(index: Int, text: Text): Tel.Element = Tel.Element.Value(index, bytes, text)
   private def flag(index: Int): Tel.Element = Tel.Element.Node(index, Tels.Flag, Array.empty)
 
-  private def node(variant: Int, name: Text, children: Array[Tel.Element]^{}): Tel.Element =
-    Tel.Element.Node
-      ( Unset, schema.document, Array(Tel.Element.Node(variant, record(name), children)) )
+  private def node(variant: Int, name: Text, children: Array[Tel.Element]^{})
+    ( using composition: Composition )
+  :   Tel.Element =
 
-  private def stream(variant: Int, name: Text, stream: Text): Tel.Element =
+    Tel.Element.Node
+      ( Unset,
+        composition.schema.document,
+        Array(Tel.Element.Node(variant, record(name), children)) )
+
+  private def stream(variant: Int, name: Text, stream: Text)(using Composition): Tel.Element =
     node(variant, name, Array(value(0, stream)))
 
-  private def element(message: Message): Tel.Element = message match
+  private def element(message: Message)(using Composition): Tel.Element = message match
     case Message.Init(pid, uid, username, script, pwd, stdinTty, stdoutTty, stderrTty,
                       arguments, environment, invokedAs, umask, columns, rows, inputCodepage,
                       outputCodepage, descriptors, raws) =>
@@ -237,10 +286,12 @@ object Launcher:
     case Message.Verdict(fresh) =>
       node(Variant.verdict, t"Verdict", if fresh then Array(flag(0)) else Array.empty)
 
-    case Message.Mode(canonical, echo) =>
+    // `interrupts` is the layer's member, which only a layered composition can carry.
+    case Message.Mode(canonical, echo, interrupts) =>
       val children = scala.collection.mutable.ArrayBuffer.empty[Tel.Element]
       if canonical then children += flag(0)
       if echo then children += flag(1)
+      if interrupts && summon[Composition].interrupts then children += flag(2)
       node(Variant.mode, t"Mode", Array.from(children))
 
     case Message.Exited(code) => node(Variant.exited, t"Exited", Array(value(0, code.show)))
@@ -260,13 +311,19 @@ object Launcher:
   // document is framed by hand: its bytes go straight into the frame, with no BASE-256 text
   // in between, since every chunk of every stream passes this way.
   // Library-built elements against the library's own schema: a frame cannot fail to encode.
-  def encode(message: Message): Data = unsafely:
+  def encode(message: Message): Data = encode(message, base)
+
+  def encode(message: Message, composition: Composition): Data = unsafely:
+    given Composition = composition
+
     message match
-      case Message.Data(stream, chunk) => Bintel.frame(dataBody(stream, chunk), signature)
+      case Message.Data(stream, chunk) =>
+        Bintel.frame(dataBody(stream, chunk), composition.signature)
 
       case other =>
         Bintel.frame
-          ( Bintel.encode(element(other), schema, Tel.Codec.Bindings.builtins), signature )
+          ( Bintel.encode(element(other), composition.schema, Tel.Codec.Bindings.builtins),
+            composition.signature )
 
   // The body of a `data` document: the root's one child, the `data` variant, its two fields.
   private def dataBody(stream: Text, chunk: Data): Data =
@@ -302,9 +359,18 @@ object Launcher:
   // The message a framed document carries, or `Unset` if the document is malformed, carries
   // another schema's signature, or does not fit the enum. A `data` document is read by hand,
   // as it is written.
-  def decode(data: Data): Optional[Message] = safely:
-    val document = Bintel.decodeDocument(data, schema, Tel.Codec.Bindings.builtins)
-    if !sameBytes(document.signature, signature) then abort(Launcher.Mismatch())
+  def decode(data: Data): Optional[Message] = decode(data, base)
+
+  // The message of a session's first document, and the composition it was written under,
+  // which is the one the rest of the session is read and written under: the richest first.
+  def recognize(data: Data): Optional[(Message, Composition)] =
+    decode(data, layered).let((_, layered)).or(decode(data, base).let((_, base)))
+
+  def decode(data: Data, composition: Composition): Optional[Message] = safely:
+    val document =
+      Bintel.decodeDocument(data, composition.schema, Tel.Codec.Bindings.builtins)
+
+    if !sameBytes(document.signature, composition.signature) then abort(Launcher.Mismatch())
 
     document.root match
       case Tel.Element.Node(_, _, Array(Tel.Element.Node(index, _, children))) =>
@@ -360,7 +426,7 @@ object Launcher:
           case Variant.credit     => Message.Credit(text(0), long(1))
           case Variant.open       => Message.Open(text(0))
           case Variant.signalAck  => Message.SignalAck(flag(0))
-          case Variant.mode       => Message.Mode(flag(0), flag(1))
+          case Variant.mode       => Message.Mode(flag(0), flag(1), flag(2))
           case Variant.run        => Message.Run(text(0), texts(1), optional(2))
           case Variant.exited     => Message.Exited(int(0))
           case Variant.closed     => Message.Closed(text(0))

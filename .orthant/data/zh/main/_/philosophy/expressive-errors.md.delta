@@ -1,5 +1,9 @@
 orthant 2 language
 
-@ 0 4 0 037cfceaa03558c210fcc809b1438d8d
+! The numbers are the error's identity. An error type has a bolt code — the number
+! of its module and its own within the module — and each reason a number within it, and every code has a page in `doc/work/errors` explaining
+! the cause and the usual remedies — so `↯/s.100.2` in a user's report can be looked up rather
+! than guessed at.
+@ 0 4 0 049745cb252b8efc0c6cd6881bcc6507
 + 编号是错误的身份。
 + 错误类型有一个 bolt 代码——即其模块的编号加上它在模块内的编号——每个原因在其中又有一个编号，每个代码在 `doc/work/errors` 中都有一个页面，解释原因和常用的补救方法——因此用户报告中的 `↯/s.100.2` 可以查阅，而不必猜测。

@@ -2123,10 +2123,12 @@ object Tel extends Tel2, TelMutation, TelRevision:
 
     given encodable: Acceptance is anticipation.Encodable in Text = _.encode
 
-    private def sameBytes(left: Data, right: Data): Boolean =
+    private def sameBytes(left: Array[Byte]^{caps.any.rd}, right: Array[Byte]^{caps.any.rd})
+    :   Boolean =
+
       java.util.Arrays.equals(Array.unsafeJvm(left), Array.unsafeJvm(right))
 
-    private def includes(hashes: List[Data], hash: Data): Boolean =
+    private def includes(hashes: List[Data], hash: Array[Byte]^{caps.any.rd}): Boolean =
       hashes.exists(sameBytes(_, hash))
 
     // What a writer produced for an alternative (§8.4, writer obligations): the alternative
@@ -2164,7 +2166,8 @@ object Tel extends Tel2, TelMutation, TelRevision:
 
       val source: Tels = held.compose(composition)
 
-      def isLayer(hash: Data): Boolean = held.layers.exists: layer => sameBytes(layer.hash, hash)
+      def isLayer(hash: Array[Byte]^{caps.any.rd}): Boolean =
+        held.layers.exists: layer => sameBytes(layer.hash, hash)
 
       def serveOne(alternative: Alternative): Optional[Served] =
         safely(SchemaSignature.decode(alternative.schema.data, held.candidates)).let: required =>
@@ -2176,11 +2179,11 @@ object Tel extends Tel2, TelMutation, TelRevision:
                     case single :: Nil => List(single.hash)
                     case _             => Nil
 
-                def external(hash: Data): Boolean =
+                def external(hash: Array[Byte]^{caps.any.rd}): Boolean =
                   includes(required, hash) || includes(named, hash) ||
                     (alternative.anyPublished && isLayer(hash))
 
-                def permitted(hash: Data): Boolean =
+                def permitted(hash: Array[Byte]^{caps.any.rd}): Boolean =
                   external(hash) || (alternative.selfContained && isLayer(hash))
 
                 var chosen: List[Data] = required

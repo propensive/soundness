@@ -1,6 +1,6 @@
 orthant 2 language
 
-@ 0 17 0 00e5f700f5864e911ea5f726341922cd
+@ 0 17 0 0ec7a54fa0928f921723afad3dc6834b
 + column  Kriterium
 + column  Punkte
 + row  `proscenium.compat` ist leer  `core-2`
@@ -9,7 +9,7 @@ orthant 2 language
 + row  Das Plattformmanifest wird in der CI durchgesetzt, seine Ausschlüsse tragen Begründungen, und ein Android-APK wird in der CI gebaut und signiert  `plat-1`, `plat-2`, `plat-3`
 + row  `etc/api-reduction-candidates.md` existiert nicht mehr  `api-5`
 + row  Jeder Fehlertyp hat einen Bolt-Code und eine Dokumentationsseite, in der CI geprüft  `doc-1`
-+ row  Jedes veröffentlichte Modul ist durch ein Thema in `doc/work/soundness/modules/` abgedeckt  `doc-4`
++ row  Jedes veröffentlichte Modul ist durch ein Thema in `doc/soundness/modules/` abgedeckt  `doc-4`
 + row  API-Dokumentation wird für jede Komponente erzeugt und veröffentlicht  `doc-5`
 + row  `fury build` baut Soundness selbst, attestierungsgleich mit dem Mill-Build  `tool-4`
 + row  fume führt die vollständige Testsuite aus, und keine Suite ist deaktiviert  `tool-2`
@@ -18,15 +18,3 @@ orthant 2 language
 + row  Jedes Release wird als attestierte LIRA-Dateien veröffentlicht  `dist-7`
 + row  JOSE, TOML und WebAuthn sind ausgeliefert  `brd-1`, `brd-2`, `brd-3`
 + row  Ein Agent, der nur der Dokumentation in `doc/` folgt, bringt ein neues Projekt von nichts zu einer getesteten, bereitgestellten Webanwendung für JVM und JavaScript, nur mit Werkzeugen des Ökosystems, und diese Schritt-für-Schritt-Anleitung wird in der CI ausgeführt und aufgezeichnet  `doc-8`
-
-@ 0 10 0 0dd4e95027ea72261a6dd2c1c524be09
-+ - Bezeichner von Punkten sind stabile Anker; zitieren Sie sie (`core-3`, `dist-2`), statt Arbeit
-+   in Prosa zu beschreiben.
-+ - Überprüfen Sie jede Behauptung über Fortschritt, indem Sie den `Done when:`-Befehl des Punkts
-+   ausführen; vertrauen Sie nie Prosa oder Erinnerung mehr als der Ausgabe des Befehls. Messen Sie
-+   Ausgangswerte neu, bevor Sie sich auf sie verlassen, und melden Sie Abweichungen.
-+ - Lesen Sie [`status.tel`](status.tel) für den aktuellen Status; aktualisieren Sie die Datei im
-+   selben Commit wie die Arbeit, die sie beschreibt.
-+ - Wenn ein Punkt der Roadmap eine öffentliche API ändert, folgen Sie der Konvention für
-+   Migrationsanweisungen, die `dist-2` in `doc/work/standards/migration.md` festlegt – diese Konvention
-+   macht „APIs ändern sich frei“ und „Code funktioniert weiter“ miteinander vereinbar.

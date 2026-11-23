@@ -53,54 +53,61 @@ attestation.
 
 ## The documentation is an Orthant store
 
-The documentation — the tutorials and API overlays of `doc/work/soundness/`, their French
-translation, and the philosophy, standards, migration, roadmap and errors sections — is held in
-the [Orthant](https://github.com/propensive/orthant) store in `.orthant/`, not as files in git.
-`doc/work/` is the store's working tree, which git ignores, and which is empty until a point is
-checked out. `doc/readme.md`, beside it, is an ordinary file in git. The store has a
-`language` axis (`en`, with `fr` beneath it) and a `release` axis that follows the release tags
-(from 0.76.0), whose last value, `main`, holds what is not yet released.
+The documentation — the tutorials and API overlays of `doc/soundness/`, their translations,
+and the philosophy, standards, roadmap and errors sections — is held in the
+[Orthant](https://github.com/propensive/orthant) store in `.orthant/`. The store has a
+`language` axis (`en`, with `fr` and the other translations beneath it) and a `release` axis
+that follows the release tags (from 0.76.0), whose last value, `main`, holds what is not yet
+released.
 
-- To read or change a document, check a point out (`orthant checkout en main`, or `orthant
-  checkout fr main --indirect` to translate), edit it in `doc/work/`, and `orthant checkin`. Name the
-  release: without `main`, it is the one last checked out, or the oldest. A PR that changes the
-  documentation changes files under `.orthant/data/`.
-- Fuel compiles only what is checked in, never the working tree: the loop is edit, `orthant
-  checkin`, `fuel compile`.
+`doc/` is the store's **live tree**: the English at `main`, as ordinary files in git, which are
+edited where they are. Orthant never writes to them. Every other point — a translation, or the
+English of a release — is in the store alone, and is edited through `orthant edit`, or in the
+store's working tree, `.orthant/work/tree/`, which git ignores.
+
+- To change the English for the next release, edit the file in `doc/`, then run `orthant tag`.
+  It stores `doc/` in the store at `main`, and says which translations it has left with lines
+  to translate or passages to check. Commit `doc/` and `.orthant/` together: a PR that changes
+  the documentation changes both.
+- `orthant status` shows what in `doc/` is not yet stored, and what storing it would leave to
+  do; `orthant tag --dry-run` names the points whose content would change, and stores nothing.
 - The scripts in `etc/` and the Makefile targets that read the documentation read `out/doc`, the
   English at `main` that `make docs` exports from the store (`build`, `doccheck` and `plumbing`
-  run it first).
-- `orthant status` shows what is not checked in; `orthant todo fr main` shows what has yet to be
-  translated, and the translations of text that has since changed.
+  run it first). `make docs` fails while `doc/` differs from the store, so an edit that was
+  not stored with `orthant tag` is caught there.
+- `orthant todo fr main` shows what has yet to be translated, and the translations of text that
+  has since changed.
+- Do not run `orthant tag <name>`: a release here is a git tag, which `orthant sync` takes up.
 
-An edit checked in at a point is seen at every point below it (later releases, and the
+An edit stored at a point is seen at every point below it (later releases, and the
 translations and dialects of its language) which has not changed the same lines. Each kind of
-change is a choice of where to store the edit and how far it reaches; `doc/readme.md` has a
-worked recipe for each:
+change is a choice of where to store the edit and how far it reaches; `.orthant/readme.md` has
+a worked recipe for each:
 
 | The change                                         | How                                                          |
 |----------------------------------------------------|--------------------------------------------------------------|
-| New or changed text for the next release           | `orthant checkout en main`, edit, `orthant checkin`          |
-| A removed or renamed document                      | `orthant checkin --remove`                                   |
-| A correction to text that was already released     | at `en main`, `orthant checkin --origin release`             |
-| The same, at a release you name                    | `orthant checkin --since 0.76.0`                             |
+| New or changed text for the next release           | edit it in `doc/`, then `orthant tag`                        |
+| A removed or renamed document                      | delete or move it in `doc/`, then `orthant tag --remove`     |
+| A correction to text that was already released     | `orthant edit <path> en 0.76.0`, then `orthant export doc en main` |
 | A correction to one release, and no later one      | `orthant checkout en 0.76.0`, `orthant checkin --only release` |
-| Translating, or revising a stale translation       | `orthant todo fr --checkout`, edit the sigils, `orthant checkin` |
-| An English edit which leaves the translation right | check in, then `orthant confirm <path>` in the `fr` checkout |
+| Translating, or revising a stale translation       | `orthant edit <path> fr`, or `orthant todo fr --checkout` and `orthant checkin` |
+| An English edit which leaves the translation right | `orthant tag`, then `orthant confirm <path>` in the `fr` checkout |
 | A new language                                     | `orthant axis value language de en`, `orthant todo de --checkout` |
 | A dialect                                          | `orthant axis value language en/US en`, `orthant checkout en/US main` |
-| After a pull or rebase that changed `.orthant/`    | `orthant update`                                             |
+| After a pull or rebase that changed `.orthant/`    | `orthant update`, if a point is checked out                  |
 
-Run `orthant checkin --dry-run` first when the reach of an edit is in doubt: it names the points
-whose content would change, and stores nothing.
+A correction stored at a release reaches `main` in the store, but not the files in `doc/`:
+`orthant tag` first, so that `doc/` has nothing unstored, make the correction, and then
+`orthant export doc en main` writes the corrected English over `doc/`. Without that, the next
+`orthant tag` would store the uncorrected text again.
 
 ## Record every material change in the next release's migration notes
 
 Downstream code is upgraded across Soundness releases by an LLM agent that reads one file per
-release, `doc/work/migration/<version>.md`, and applies what it describes. `doc/work/migration.md`
+release, `etc/migration/<version>.md`, and applies what it describes. `etc/migration.md`
 explains the scheme. Since the 0.64.0 release, every PR contributes to the next file: the
-unreleased `doc/work/migration/<version>.md`, named from the start after the release it will be part
-of, which is the one file in `doc/work/migration/` whose version has no tag.
+unreleased `etc/migration/<version>.md`, named from the start after the release it will be part
+of, which is the one file in `etc/migration/` whose version has no tag.
 
 ### When an entry is required
 
@@ -155,14 +162,15 @@ A representative entry:
 
 ### Rules
 
-1. Write only to the unreleased `doc/work/migration/<version>.md` (check `en` out at `main`, edit,
-   and `orthant checkin`). Never edit a released one
+1. Write only to the unreleased `etc/migration/<version>.md`. The notes are ordinary files in
+   git, outside the documentation and its Orthant store: they are written for an agent to
+   apply, and are not translated. Never edit a released one
    except to correct an error in it. If every file there has been released, create the next,
    for the next minor version (`0.71.0.md` after 0.70.0), headed `# Changes since <previous>`.
 2. Add the entry in the same PR as the change, in the same commit as the change or a later one.
    `.orthant/` is outside the CI input set, so adding or amending an entry does not
    invalidate the PR's attestation.
-3. A release needs no preparatory PR: tagging `X.Y.Z` releases `doc/work/migration/X.Y.Z.md` as it
+3. A release needs no preparatory PR: tagging `X.Y.Z` releases `etc/migration/X.Y.Z.md` as it
    stands. The release refuses to run if `X.Y.Z.md` is missing or another version's notes are
    unreleased, so to release under a different version than the file names (1.0.0 rather than
    0.71.0, say), rename it with `git mv` in any PR and merge that before tagging.
@@ -216,7 +224,7 @@ git tag -s X.Y.Z && git push --tags
 
 There is no version to bump: `publishVersion` is driven from the tag through
 `SOUNDNESS_RELEASE_VERSION`, and nothing must merge first: the migration notes are already
-named `doc/work/migration/<version>.md` (above), so any green commit on `main` can be tagged with the
+named `etc/migration/<version>.md` (above), so any green commit on `main` can be tagged with the
 version its notes name. The tag fires
 `.github/workflows/release.yml`, which runs the shared `release.sh` in propensive/.github.
 Never publish by hand, and never create a release or upload an asset with `gh`.
@@ -240,5 +248,5 @@ What this repository needs beyond the common path — the two-step JVM-then-Scal
 it configures the release, not the build. The release notes are generated: the **Changes**
 section is built from the body of every pull request merged since the previous tag, which is
 what `pull_request_template.md` asks each PR for, and a **Migration** section links
-`doc/work/migration/<version>.md`. A hand-written overview can be added as `doc/notes/<version>.md`,
+`etc/migration/<version>.md`. A hand-written overview can be added as `doc/notes/<version>.md`,
 which is optional and ungated.

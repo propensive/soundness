@@ -1,0 +1,28 @@
+orthant 2 language
+
+@ 0 10 0 1b05c2c20b8cc8d10c46a37a3628e3a6
++   entry .Composition   la base del esquema con algunas de sus capas, y la firma que llevan los documentos escritos bajo ella
++       Un lanzador elige la composición, a partir de la `.acceptance` que publica el demonio, y el
++       demonio responde bajo aquella con la que se le escribió. `interrupts` dice si incluye la capa
++       `interrupts`.
++   entry .base   la composición de la base del esquema sola, bajo la que cualquier lanzador puede escribir
++   entry .layered   la composición de la base con la capa `interrupts`
++   entry .acceptance   lo que lee el demonio, para que un lanzador lo consulte antes de conectarse: la base, y cada capa que tiene
++   entry .recognize   el mensaje del primer documento de una sesión, con la composición bajo la que se escribió
++       Se prueba primero la composición más rica, y el resto de la sesión se lee y se escribe bajo la
++       que se encuentre.
+
+@ 0 13 0 1b941d28e5fa9e3c11cf3d8ac7dde519
++           `canonical` pide el modo cocinado, con eco si también está activo `echo`; el modo
++           canónico sin eco es como se lee una contraseña; ninguno de los dos indicadores es el
++           modo crudo. El lanzador no responde nada, y deja como está un terminal que no le
++           pertenece. `Resident#cooked` y `Resident#concealed` lo envían.
++
++           `interrupts` solo se transmite bajo la capa `interrupts` del esquema. En modo crudo deja
++           que Ctrl-C, Ctrl-\ y Ctrl-Z sigan generando señales, de modo que una invocación que no
++           esté leyendo su teclado pueda interrumpirse desde él; las teclas pasan a ser bytes en
++           stdin cuando la invocación lee stdin por primera vez en modo crudo, y no se devuelven.
++       entry #canonical   modo cocinado, o crudo cuando es falso
++       entry #echo   si el terminal hace eco de lo que se teclea
++       entry #interrupts   si, en modo crudo, las teclas que generan señales se dejan al terminal
++     entry .Closed   el flujo nombrado ha perdido a su lector

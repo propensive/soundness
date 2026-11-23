@@ -1,22 +1,13 @@
 orthant 2 release
 
 @ 0 1 0 13b12195cd70a8f40c1173c0efe17993
-+ The prose exists in three parallel systems today: the topic guides in `doc/work/soundness/modules/` — the
-
-@ 0 1 0 186fb3b4eb0778050efc4665580d436a
-+ `doc/work/standards/messages.md` was a self-declared stub, despite the message convention being
-
-@ 0 1 0 0dba55afda5b5758005ab4659f4df53c
-+     grep -c 'Stub' doc/work/standards/messages.md    # 0
++ The prose exists in three parallel systems today: the topic guides in `doc/soundness/modules/` — the
 
 @ 0 1 0 1f7ba3335b1dbe9107b50978f4d08e9f
-+ worth keeping moved into `doc/work/soundness/modules/` topics, and the rest was deleted rather than left to
++ worth keeping moved into `doc/soundness/modules/` topics, and the rest was deleted rather than left to
 
 @ 0 1 0 189704bc0fd764f104fa540f7138e8b1
-+ Baseline was 99 topics in `doc/work/soundness/modules/` and 1 of 144 libraries uncovered (measured 2026-09-25; 91 topics and 35 uncovered on 2026-08-01); 101 topics cover 145 of 145 on 2026-10-21
++ Baseline was 99 topics in `doc/soundness/modules/` and 1 of 144 libraries uncovered (measured 2026-09-25; 91 topics and 35 uncovered on 2026-08-01); 101 topics cover 145 of 145 on 2026-10-21
 
 @ 0 1 0 1fc6aeda7efd9026120fe82f0ca68cdc
-+ Every published module is covered by at least one `doc/work/soundness/modules/` topic, and a coverage script
-
-@ 0 1 0 1bf4d08b8df9d1351f04bc5531c09edb
-+ touched in #801, each an older and shorter copy of a `doc/work/philosophy/` page. The website
++ Every published module is covered by at least one `doc/soundness/modules/` topic, and a coverage script

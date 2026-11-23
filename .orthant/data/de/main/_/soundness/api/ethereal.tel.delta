@@ -1,0 +1,29 @@
+orthant 2 language
+
+@ 0 10 0 1b05c2c20b8cc8d10c46a37a3628e3a6
++   entry .Composition   die Basis des Schemas mit einigen seiner Schichten, und die Signatur, die darunter geschriebene Dokumente tragen
++       Ein Launcher wählt die Komposition, anhand der `.acceptance`, die der Daemon veröffentlicht,
++       und der Daemon antwortet unter derjenigen, unter der ihm geschrieben wurde. `interrupts` sagt,
++       ob sie die Schicht `interrupts` enthält.
++   entry .base   die Komposition allein aus der Basis des Schemas, unter der jeder Launcher schreiben kann
++   entry .layered   die Komposition aus der Basis und der Schicht `interrupts`
++   entry .acceptance   was der Daemon liest, für einen Launcher zum Nachschlagen, bevor er sich verbindet: die Basis und jede Schicht, die er kennt
++   entry .recognize   die Nachricht des ersten Dokuments einer Sitzung, mit der Komposition, unter der es geschrieben wurde
++       Die reichste Komposition wird zuerst versucht, und der Rest der Sitzung wird unter der
++       gefundenen gelesen und geschrieben.
+
+@ 0 13 0 1b941d28e5fa9e3c11cf3d8ac7dde519
++           `canonical` verlangt den kanonischen Modus, mit Echo, wenn auch `echo` gesetzt ist;
++           kanonisch ohne Echo ist die Art, ein Passwort zu lesen; keines der Flags ist der
++           Raw-Modus. Der Launcher antwortet nichts und lässt ein Terminal, das ihm nicht gehört,
++           wie es ist. `Resident#cooked` und `Resident#concealed` senden es.
++
++           `interrupts` wird nur unter der Schicht `interrupts` des Schemas übertragen. Im Raw-Modus
++           lässt es Ctrl-C, Ctrl-\ und Ctrl-Z weiterhin Signale erzeugen, sodass ein Aufruf, der
++           seine Tastatur nicht liest, von dort aus dennoch unterbrochen werden kann; die Tasten
++           werden zu Bytes auf stdin, sobald der Aufruf stdin zum ersten Mal im Raw-Modus liest, und
++           werden nicht zurückgegeben.
++       entry #canonical   kanonischer Modus, oder Raw-Modus, wenn falsch
++       entry #echo   ob das Terminal das Getippte als Echo ausgibt
++       entry #interrupts   ob im Raw-Modus die Tasten, die Signale erzeugen, beim Terminal bleiben
++     entry .Closed   der benannte Stream hat seinen Leser verloren

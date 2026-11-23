@@ -191,9 +191,9 @@ lib/escritoire/src/core/escritoire_core.scala	0	0	0	0	0	0	0	0	0	0	2	0	2	0	1	0	0
 lib/espionage/src/core/espionage.Acp.scala	6	0	7	0	0	0	0	0	0	0	0	0	0	0	0	0	0
 lib/espionage/src/demo/espionage_demo.scala	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	1
 lib/espionage/src/test/espionage_test.scala	0	4	0	0	0	0	0	0	2	0	0	0	0	0	1	0	0
-lib/ethereal/src/core/ethereal.Launcher.scala	0	0	0	0	1	2	0	0	0	0	0	0	0	0	0	0	0
-lib/ethereal/src/core/ethereal.Session.scala	3	0	6	0	3	3	0	0	0	0	0	0	0	0	1	0	0
-lib/ethereal/src/core/ethereal_core.scala	3	8	0	0	1	2	0	0	1	0	1	0	0	0	1	0	1
+lib/ethereal/src/core/ethereal.Launcher.scala	0	0	0	0	2	4	0	0	0	0	0	0	0	0	0	0	0
+lib/ethereal/src/core/ethereal.Session.scala	4	0	8	0	3	3	0	0	0	0	0	0	0	0	1	0	0
+lib/ethereal/src/core/ethereal_core.scala	3	8	0	0	0	1	0	0	1	0	1	0	0	0	1	0	1
 lib/ethereal/src/test/ethereal_test.scala	0	0	0	0	0	0	0	0	0	0	3	0	2	0	0	0	0
 lib/eucalyptus/src/core/eucalyptus.Logger.scala	2	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0
 lib/eucalyptus/src/syslog/eucalyptus.Syslog.scala	0	0	0	0	0	0	0	0	2	2	0	0	0	0	0	0	0
@@ -456,9 +456,9 @@ lib/prophesy/src/core/prophesy.Elaboration.scala	0	0	0	0	0	0	0	0	0	0	0	0	0	0	2	0
 lib/proscenium/src/core/proscenium.Array.scala	3	0	0	0	0	0	0	0	0	3	3	0	0	0	0	0	0
 lib/proscenium/src/core/proscenium.Chain.scala	0	0	0	0	0	0	0	0	0	0	3	0	0	0	1	0	0
 lib/proscenium/src/core/proscenium.Hashtable.scala	0	0	1	0	0	0	0	0	0	0	0	0	0	0	1	0	0
+lib/proscenium/src/core/proscenium.KeyedMap.scala	0	0	0	0	0	0	0	0	0	0	0	0	0	0	1	0	0
 lib/proscenium/src/core/proscenium.Ledger.scala	0	0	0	0	0	0	0	0	0	0	0	0	0	0	1	0	0
 lib/proscenium/src/core/proscenium.List.scala	0	0	0	0	0	0	0	0	0	0	3	0	0	0	1	0	0
-lib/proscenium/src/core/proscenium.KeyedMap.scala	0	0	0	0	0	0	0	0	0	0	0	0	0	0	1	0	0
 lib/proscenium/src/core/proscenium.Map.scala	4	0	0	0	0	0	0	0	0	0	0	0	0	0	1	0	0
 lib/proscenium/src/core/proscenium.PerfectHash.scala	2	0	0	0	0	0	0	0	0	0	0	0	0	0	1	0	0
 lib/proscenium/src/core/proscenium.PerfectMap.scala	2	0	1	0	0	0	0	0	0	0	0	0	0	0	1	0	0
@@ -482,8 +482,8 @@ lib/rudiments/src/core/rudiments.Atomic.scala	0	0	0	0	0	0	0	0	2	0	0	0	0	0	0	0	0
 lib/rudiments/src/core/rudiments.Defaulting.scala	0	0	0	0	0	0	0	2	0	0	0	0	0	0	0	0	0
 lib/rudiments/src/core/rudiments.Dynamical.scala	0	0	0	0	0	0	0	1	0	0	0	0	0	0	0	0	0
 lib/rudiments/src/core/rudiments.Loop.scala	0	0	1	0	0	0	0	0	0	0	0	0	0	0	0	0	0
-lib/rudiments/src/core/rudiments.atomicMacros.scala	0	0	0	0	0	0	0	0	2	0	0	0	0	0	1	0	0
 lib/rudiments/src/core/rudiments.Sorting.scala	0	0	0	0	0	0	0	0	3	1	0	0	0	0	0	0	0
+lib/rudiments/src/core/rudiments.atomicMacros.scala	0	0	0	0	0	0	0	0	2	0	0	0	0	0	1	0	0
 lib/rudiments/src/core/rudiments_core.scala	1	0	0	1	0	1	0	2	0	0	4	0	0	0	1	0	0
 lib/rudiments/src/core/soundness_rudiments_core.scala	0	0	0	0	0	0	0	1	0	0	0	0	0	0	0	0	0
 lib/rudiments/src/test/rudiments_test.scala	0	0	0	0	0	0	0	0	0	0	1	0	0	0	0	0	0

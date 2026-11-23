@@ -1,0 +1,56 @@
+tel 1.0
+
+base chatelaine
+import soundness
+
+info   WebAuthn for relying parties: registration and authentication ceremonies for passkeys and security keys
+detail
+    _Chatelaine_ implements the relying party's side of
+    [Web Authentication](https://www.w3.org/TR/webauthn-2/): passwordless sign-in with a key
+    pair an authenticator makes for one site and never lets out. Everything is a member of
+    `WebAuthn`.
+
+    Each of the two ceremonies is one call to make the options a page gives the browser, and
+    one to check the answer the page sends back:
+
+    ```scala fuel
+    typecheck
+    ##
+    import soundness.*
+    import codepages.utf8Codepage
+    import errorDiagnostics.stackTracesDiagnostics
+    import providers.javaBaseProvider
+    import strategies.throwUnsafely
+
+    val globe = WebAuthn.RelyingParty(t"globe.example", t"The Globe", List(t"https://globe.example"))
+    val burbage = WebAuthn.User(t"account-1567".in[Data], t"burbage", t"Richard Burbage")
+    val challenge = WebAuthn.Challenge()
+    val options: Json = WebAuthn.registration(globe, burbage, challenge)
+
+    def enrol(answer: Json): WebAuthn.Credential = WebAuthn.register(answer, challenge, globe)
+    ```
+
+    `WebAuthn.register` and `WebAuthn.authenticate` make every check the standard requires
+    of a relying party (§7.1 and §7.2), and raise `WebAuthn.Error` for an answer that fails
+    one. The `none` and `packed` attestation formats are understood.
+
+    The library has two source sets:
+
+    - `chatelaine.core` — `WebAuthn`: the options, the checking of answers, and the
+      `WebAuthn.Credential` a relying party stores.
+    - `chatelaine.server` — `Ceremonies`, which keeps each session's challenge between
+      the two requests of a ceremony.
+
+    Both are exported to the `soundness` umbrella. There are no choice packages of its own;
+    the ceremonies need a `Crypto` provider (`providers.javaBaseProvider`), and registration
+    a `Clock`.
+
+refer chatelaine.WebAuthn
+refer chatelaine.WebAuthn.Error
+
+entry .WebAuthn   the relying party's side of Web Authentication: options, and the checking of answers
+  detail
+      `WebAuthn.registration` and `WebAuthn.authentication` make a ceremony's options as
+      JSON; `WebAuthn.register` and `WebAuthn.authenticate` check its answer, the first
+      giving a `WebAuthn.Credential` to store and the second that credential with its
+      signature counter advanced.

@@ -1,0 +1,132 @@
+# The Standard-Library Drain
+
+Soundness promises that code cannot fail surprisingly at runtime. The Java and Scala standard
+libraries make no such promise: their collections throw on empty heads and missing keys, their
+I/O throws unchecked, their types equivocate about null. Every place a Soundness module reaches
+past its own abstractions into the standard library is a place where that partiality leaks back
+in — and a single leak undermines the claim everywhere, because a user cannot tell a sealed
+surface from a porous one.
+
+The answer is already in place: proscenium is the opaque boundary. Its collections wrap the
+standard library's data structures behind total APIs, its `Array` makes mutation
+separation-checked, and the `-Yimports:java.lang,proscenium` prelude makes the curated surface
+ambient while leaving everything else deliberately out of reach. What remains is the drain: the
+migration shims in `proscenium.compat` existed precisely so that call sites could compile
+unchanged on day one, and every one of them was an independently deletable forwarder. The
+drain loop was deprecate → fix call sites → delete; the compat file is now gone. This track is complete when the standard library
+is invisible — in signatures, in stack traces, in rendered values — everywhere but inside
+proscenium itself.
+
+The track's items, with their horizons and hard dependencies; [`status.tel`](status.tel) records where each one stands:
+
+```tabular
+column  Item
+column  Title
+column  Horizon
+column  Needs
+row  core-1  sorted and ordered collections have Soundness equivalents  near
+row  core-2  `proscenium.compat` is empty  near → mid  core-1
+row  core-3  no direct `scala.collection` imports  near → mid  core-1
+row  core-4  indexed access is total by construction  mid
+row  core-5  nothing Java-shaped at debug time  mid → long
+row  core-6  the totality audit  long
+```
+
+## core-1: sorted and ordered collections have Soundness equivalents
+
+Horizon: near
+Baseline: 31 files (measured 2026-10-21; 32 on 2026-09-25; 16 on 2026-08-01)
+
+Files using `TreeMap`, `TreeSet`, `TrieMap`, `SortedMap` or `SortedSet` have no opaque type to
+drain to; the equivalents must exist before the drain can take them. The count doubled in
+seven weeks because new modules — vivisection, praxinoscope, mandible, sedentary — were written
+against the stdlib sorted types for want of an alternative, which is the case for the
+equivalents existing first.
+
+Done when:
+
+    git grep -lE 'TreeMap|TreeSet|TrieMap|SortedMap|SortedSet' -- lib | grep -v '^lib/proscenium/' | wc -l    # 0
+
+## core-2: `proscenium.compat` is empty
+
+Done: #1848 (2026-08-24)
+Baseline was 475 importing files and a 551-line compat file (measured 2026-08-01). The file
+and its ratchet (`etc/check-compat-ratchet.py`, `etc/compat-baseline.txt`) are deleted; the
+compiler is now the guard. The final sites carried their proofs through the type system
+(branded literals, `prim`/`unique`, branded scans) or, at the two places a proof cannot
+follow the program — quote boundaries and index arithmetic — through `attested` and
+`readUnchecked` with construction comments.
+
+## core-3: no direct `scala.collection` imports
+
+Horizon: near → mid
+Needs: core-1
+Baseline: 239 files, of which 115 import `scala.collection.mutable` (measured 2026-10-21; 228 and 106 on 2026-09-25; 219 and 170 on 2026-08-01)
+
+Importing `scala.collection` bypasses the prelude's curation entirely. The mutable imports are
+the larger share, and their replacement is not immutability but *safe* mutability:
+separation-checked structures in the style of `proscenium.Array`.
+
+Gauge: the `collectionImport` column of `etc/check-escape-count.py` (run by `make build`)
+ratchets the import lines per file, core and test sources alike, so a drained file cannot
+regrow one; `--totals` prints the count. The `xs.stdlib` bridge, the other way of reaching the
+stdlib API from a native collection, is ratcheted and read by shape (`--stdlib`) by the same
+script (`safety-7`).
+
+Done when:
+
+    git grep -l 'import scala.collection' -- lib | grep -v '^lib/proscenium/' | wc -l    # 0
+
+## core-4: indexed access is total by construction
+
+Horizon: mid
+Baseline: 1669 `while` loops, 993 `readUnchecked` and 514 `.charAt(` in `lib/*/src/core`
+(comment- and string-stripped, measured 2026-10-21; 1606, 476 and 507 on 2026-09-25). The
+`readUnchecked` count doubled when #2274 removed the stdlib `IArray` and every frozen-array
+read went through the one accessor; it is a different population from the September figure,
+not a regression of the same one
+
+The `var i = 0; while i < length` pattern is maximally efficient and maximally unsafe: the
+index is just an `Int`, unconstrained by the collection it indexes. The design in
+[#1666](https://github.com/propensive/soundness/issues/1666) makes indexing total by
+construction: an index typed `Ordinal in collection.type` can only exist in range, so the
+`inline` `apply` taking it is total at zero cost, while an unqualified `Ordinal` reaches only
+the fallback `apply` returning `Optional`. Iteration then flows through inline combinators
+that supply dependently-typed ordinals, compiling to the same bytecode as the loops they
+replace.
+
+Done when: no collection in `lib/` exposes a partial indexed `apply`, and every `while` that
+remains is one of the three shapes [`doc/standards/loops.md`](../standards/loops.md) sanctions,
+carrying the comment that names its invariant. A literal zero is not the goal: index arithmetic
+derived from the data, and the combinators' own internals, stay as loops.
+
+The drain is bounded by which receivers can carry a brand, not by how many loops there are. A
+loop over a mutable `scala.Array`, a varargs `Seq` or a capability-carrying
+`IndexedSeq` has no confined form at all, so the reachable corpus is smaller than the count
+suggests. Interim gauge, ratcheted per file by `make build`:
+
+    python3 etc/check-while-count.py --totals
+
+## core-5: nothing Java-shaped at debug time
+
+Horizon: mid → long
+
+A stack trace, a rendered value or a reported type name never exposes a Java encoding:
+digression renders traces in Soundness terms, and displayed values are the opaque types, not
+their underlying representations. This is what makes debugging feel native rather than hosted.
+digression already demangles names and, since #2063, renders each frame's location as one
+contiguous, colon-aligned column; what is missing is the suite that asserts the absence of
+encodings rather than the presence of particular renderings.
+
+Done when: a test suite asserts the rendering of representative stack traces, values and type
+names contains no Java encodings, and runs in the ordinary suite.
+
+## core-6: the totality audit
+
+Horizon: long
+
+The claim "no partial APIs" becomes checked rather than asserted: an automated audit — in the
+style of larceny, or at the bytecode level — verifies that no exported operation throws an
+undeclared exception or returns null.
+
+Done when: the audit runs in CI and reports zero violations.

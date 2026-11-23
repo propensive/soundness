@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Evaluate every ```scala example in the tutorials under doc/work/soundness/modules/ through the flame
+"""Evaluate every ```scala example in the tutorials under doc/soundness/modules/ through the flame
 REPL, and report each fence as ran, rejected, or thrown. The tutorials are read from out/doc, the
 copy of the Orthant store's English which `make docs` exports.
 
@@ -8,7 +8,7 @@ API when started with `flame serve`: `POST /api/sessions` creates a named sessio
 `POST /api/sessions/<name>/eval` with `{"code": "..."}` evaluates a whole submission in it,
 answering `{"status": "ran"|"error", "value", "tpe", "output", "name", "diagnostics"}`. Each
 tutorial runs in a fresh session, so its samples follow on from one another exactly as
-doc/work/standards/style.md promises they do, and nothing leaks between tutorials.
+doc/standards/style.md promises they do, and nothing leaks between tutorials.
 
 flame is built against the latest Soundness *release*, while the tutorials document `main`, so
 a rejection can be honest drift rather than a stale example: a diagnostic that names an
@@ -85,7 +85,7 @@ def unreleased_notes():
     """The text of the unreleased migration notes: the newest migration/<version>.md, unless
     its version is already tagged, when nothing has changed since the release."""
     versions = [tuple(map(int, os.path.basename(path)[:-3].split('.')))
-                for path in glob.glob('out/doc/migration/*.md')
+                for path in glob.glob('etc/migration/*.md')
                 if re.fullmatch(r'\d+\.\d+\.\d+\.md', os.path.basename(path))]
     if not versions:
         return ''
@@ -94,7 +94,7 @@ def unreleased_notes():
                             capture_output=True).returncode == 0
     if tagged:
         return ''
-    with open(f'out/doc/migration/{version}.md', encoding='utf-8') as file:
+    with open(f'etc/migration/{version}.md', encoding='utf-8') as file:
         return file.read()
 
 def release_names():
@@ -493,7 +493,7 @@ def main():
     sys.stdout.reconfigure(line_buffering=True)
     global FULL, OLDER
     parser = argparse.ArgumentParser(description=__doc__.split('\n')[0])
-    parser.add_argument('docs', nargs='*', help='tutorial names (json) or paths; default: all of doc/work/soundness/modules')
+    parser.add_argument('docs', nargs='*', help='tutorial names (json) or paths; default: all of doc/soundness/modules')
     parser.add_argument('--port', type=int, default=8765)
     parser.add_argument('--release', help='the Soundness release flame is built against (default: the most-populated version in ~/.ivy2/local)')
     parser.add_argument('--values', action='store_true', help='print each fence\'s printed output, value and type')

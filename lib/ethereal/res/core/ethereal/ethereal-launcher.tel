@@ -207,3 +207,7 @@ record Exited
   description
       The status the command the daemon asked to run ended with.
   field code String required
+
+layer interrupts
+  record Mode
+    field interrupts Flag optional

@@ -1,0 +1,30 @@
+orthant 2 language
+
+@ 0 1 0 1a26dee1d32c457f154f39a6cd8b8097
++   entry #trees   消息中的每一个 `Markup.Tree`，无论嵌套在何处
+
+@ 0 2 0 06d9964a216b63ce0ea8450093d7ce20
++       row  `Tree(omitted, children)`  解释一次失败的上下文解析的树；`omitted` 统计因长度而被省略的节点数
++       row  `Node(role, name, note, repeated, children)`  这种树的一个节点：它的 `Role`、被查找、找到或提议之物的 `name`、关于它的 `note`，以及其子树是否已在前面显示过而在此省略
+
+@ 0 3 0 19bd5f1a17ead8801f0d056cc9832871
++       `Tree` 或 `Node` 的子节点是它的子 `Node`，其间穿插着把同一棵树绘制成纯文本的 `Textual`（换行和制表符）；`#nodes` 只给出这些 `Node`。
+
+@ 0 21 0 097f0e9e07a724d7170810e6bafc0c7c
++   entry .marked   文本是否包含 `parse` 所读取的任何标记
++       即私用区范围 `U+E000` 到 `U+E003` 中的一个字符。
++   entry .parse   将带标注的文本解析为节点列表，与编译器自己的解析器一致
++       完全遵循编译器的 `DiagnosticMarkup.parse`：标记以一个起始字符、其种类、一个属性分隔符、若干 `key=value` 属性（值中含有保留字符时经过百分号编码，在此解码）和一个文本分隔符开始，以一个结束字符结束。
++       任何未构成完整标记的内容都会被丢弃，周围的内容作为文本保留——孤立的起始或结束字符会消失，被截断的头部会被读作纯文本——而从未闭合的标记的子节点会被拼接到其父节点中，因此被截断的消息仍能解析。
++       种类决定节点：`type`、`sym`、`name`、`code` 和 `tree` 各有自己的分支，`role` 属于 `.Role` 之一的 `node` 也是如此，任何其他种类都是 `Spanned`。
++   entry .plain   去除了所有标记、只保留可见内容的文本
++       没有标记的文本按原样返回，不进行解析。
++   entry .wrap   像编译器自己的写入器那样，把文本包进某种标记中，并带上属性
++       供希望其消息保留结构的宏使用：在 `-Zsemantic-diagnostics` 下，标记会原样到达 `.parse`，而其他任何读者只看到其中的文本。
++   entry .Role   `Node` 在树中扮演的角色：`Resolving`、`Candidate`、`Requires`、`Propose`、`Prohibits` 或 `Found`
++     entry #glyph   绘制该角色所用的符号
++     entry #word   角色的小写名称，与标记的 `role` 属性中的写法一致
++   entry #plain   此节点的可见文本：它自己的文本，或其子节点文本的连接
+
+@ 0 1 0 0040f586709e95720edf25cba05cb8b5
++   entry #nodes   `Tree` 或 `Node` 的子 `Node`，不含绘制它们的文本

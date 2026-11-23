@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Ratchet on example data that is not drawn from Shakespeare (doc/work/standards/examples.md).
+"""Ratchet on example data that is not drawn from Shakespeare (doc/standards/examples.md).
 
 Counts, per file, three kinds of example vocabulary the standard retires: arbitrary or real
 people (and other fiction and brands), company structure, and metasyntactic placeholders. A
@@ -35,7 +35,7 @@ SETS = [
   'out/doc/philosophy/*.md',
   'out/doc/standards/*.md',
   'out/doc/roadmap/*.md',
-  'out/doc/migration/*.md',
+  'etc/migration/*.md',
   'out/doc/*.md',
   'etc/api-*.md',
   # Hand-written resources; every other `res` file is vendored or captured.
@@ -76,8 +76,8 @@ GENUINE = [
 
 # Released migration notes are frozen (AGENTS.md); only the unreleased one is checked.
 def released(path):
-  if not path.startswith('out/doc/migration/'): return False
-  notes = sorted(glob.glob('out/doc/migration/*.md'), key=lambda p: [int(n) for n in re.findall(r'\d+', p)])
+  if not path.startswith('etc/migration/'): return False
+  notes = sorted(glob.glob('etc/migration/*.md'), key=lambda p: [int(n) for n in re.findall(r'\d+', p)])
   return path != notes[-1]
 
 PEOPLE = (r'(?:\b|(?<=\\[nt]))(?:Alice|Bob|Carol|Dave|Mallory|Ada|Lovelace|Turing|Hopper|Curie|John|Jane|Doe|Smith|Jack|Jill'
@@ -186,7 +186,7 @@ for path, row in sorted(current.items()):
     elif row[name] < limit: slack += limit - row[name]
 
 if failures:
-  print('Example data outside the Shakespearean vocabulary (doc/work/standards/examples.md):')
+  print('Example data outside the Shakespearean vocabulary (doc/standards/examples.md):')
   for failure in failures: print('  '+failure)
   print('See them with `python3 etc/check-example-data.py --list <path>`.')
   sys.exit(1)

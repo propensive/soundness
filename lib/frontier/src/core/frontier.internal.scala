@@ -621,7 +621,15 @@ object internal:
     // rendered tree becomes the authoritative message if the overall search
     // fails.
     def emit(missing: Missing): Expr[target] =
-      report.errorAndAbort(Diagnostic.render(buildDiagnostic(missing)).s)
+      report.errorAndAbort(message(buildDiagnostic(missing), t"contextual value not found"))
+
+    // Under `-Zsemantic-diagnostics` the compiler's messages carry markup which says what
+    // each part of them is, and whoever compiles is going to parse it; so the tree is written
+    // in that markup too, and arrives as a tree. Otherwise it is drawn for a terminal.
+    def message(tree: Diagnostic, headline: Text): String =
+      if config.Proscala.enabled(config.Proscala.SemanticDiagnostics)
+      then Diagnostic.markup(tree, headline).s
+      else Diagnostic.render(tree, headline).s
 
     // `NotGiven[X]` is resolved by inverting every candidate's result
     // (`negateIfNot` in `Implicits.rank`): a failing candidate becomes
@@ -654,7 +662,7 @@ object internal:
             val found = Diagnostic.Found(name, Unset, proscenium.Nil)
             val tree = Diagnostic.Resolving(name, Unset, proscenium.List(found))
             val headline = t"contextual value resolves without the catch-all"
-            report.errorAndAbort(Diagnostic.render(tree, headline).s)
+            report.errorAndAbort(message(tree, headline))
 
           case m: Missing =>
             emit(m)
