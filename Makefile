@@ -143,7 +143,7 @@ push:
 
 # Releases are cut by tagging, not by make. There is no version to bump — `publishVersion` comes
 # from the tag — and nothing to merge first, since the notes accumulate in
-# doc/migration/<version>.md (in the Orthant store) from the start: `git tag -s X.Y.Z && git push --tags`. The tag
+# etc/migration/<version>.md from the start: `git tag -s X.Y.Z && git push --tags`. The tag
 # fires .github/workflows/release.yml, which runs the shared release.sh in propensive/.github: it
 # gates on a signed tag, on CI already being green on that commit (which verifies the attestation
 # note), on the migration notes for that version, on groupCheck, and on every pin being a release;

@@ -35,7 +35,7 @@ SETS = [
   'out/doc/philosophy/*.md',
   'out/doc/standards/*.md',
   'out/doc/roadmap/*.md',
-  'out/doc/migration/*.md',
+  'etc/migration/*.md',
   'out/doc/*.md',
   'etc/api-*.md',
   # Hand-written resources; every other `res` file is vendored or captured.
@@ -76,8 +76,8 @@ GENUINE = [
 
 # Released migration notes are frozen (AGENTS.md); only the unreleased one is checked.
 def released(path):
-  if not path.startswith('out/doc/migration/'): return False
-  notes = sorted(glob.glob('out/doc/migration/*.md'), key=lambda p: [int(n) for n in re.findall(r'\d+', p)])
+  if not path.startswith('etc/migration/'): return False
+  notes = sorted(glob.glob('etc/migration/*.md'), key=lambda p: [int(n) for n in re.findall(r'\d+', p)])
   return path != notes[-1]
 
 PEOPLE = (r'(?:\b|(?<=\\[nt]))(?:Alice|Bob|Carol|Dave|Mallory|Ada|Lovelace|Turing|Hopper|Curie|John|Jane|Doe|Smith|Jack|Jill'

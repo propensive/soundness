@@ -6,8 +6,8 @@ release onwards every release ships a machine-oriented record of what changed.
 
 ## How it works
 
-- The changes since the last release accumulate in `doc/migration/<version>.md`, named from
-  the start after the release they will be part of (for example `doc/migration/0.71.0.md`
+- The changes since the last release accumulate in `etc/migration/<version>.md`, named from
+  the start after the release they will be part of (for example `etc/migration/0.71.0.md`
   after Soundness 0.70.0). Every PR that makes a material change to the public API or
   observable behaviour adds an entry to it; the first such change after a release creates it.
 - Tagging the release publishes the file as it stands, so no change has to merge first. The
@@ -20,7 +20,7 @@ release onwards every release ships a machine-oriented record of what changed.
 ## Upgrading downstream code
 
 To upgrade a project from version `A` to version `B`, instruct an LLM agent to read every file
-`doc/migration/<v>.md` with `A < v <= B`, in ascending version order, and to apply the changes
+`etc/migration/<v>.md` with `A < v <= B`, in ascending version order, and to apply the changes
 each one describes to the project's code. For example, moving from 0.64.0 to 0.67.0 means
 reading `0.65.0.md`, `0.66.0.md` and `0.67.0.md`, in that order.
 

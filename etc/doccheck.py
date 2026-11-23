@@ -85,7 +85,7 @@ def unreleased_notes():
     """The text of the unreleased migration notes: the newest migration/<version>.md, unless
     its version is already tagged, when nothing has changed since the release."""
     versions = [tuple(map(int, os.path.basename(path)[:-3].split('.')))
-                for path in glob.glob('out/doc/migration/*.md')
+                for path in glob.glob('etc/migration/*.md')
                 if re.fullmatch(r'\d+\.\d+\.\d+\.md', os.path.basename(path))]
     if not versions:
         return ''
@@ -94,7 +94,7 @@ def unreleased_notes():
                             capture_output=True).returncode == 0
     if tagged:
         return ''
-    with open(f'out/doc/migration/{version}.md', encoding='utf-8') as file:
+    with open(f'etc/migration/{version}.md', encoding='utf-8') as file:
         return file.read()
 
 def release_names():

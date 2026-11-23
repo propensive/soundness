@@ -30,6 +30,10 @@ orthant 2 language
 +   baseline  la suite DAP guionizada se detiene, avanza paso a paso e inspecciona valores mediante sus instancias de Inspectable; tema doc/soundness/modules/debugging.md (2026-10-21; objetos inspeccionados como nombres de clase de la JVM y sin tema el 2026-09-25)
 +   criterion  una sesión DAP guionizada (punto de interrupción, paso, inspección con valores representados por Soundness) pasa contra una aplicación en ejecución en la CI
 
+@ 0 2 0 1ecc3855de818f6814bc9b756c382eb7
++   baseline  existen etc/migration.md y 0.65.0.md–0.73.0.md; la directiva de migración de etc/release protege la publicación; ninguna comprobación en las pull requests (2026-10-21; notas hasta 0.68.0 el 2026-09-25)
++   criterion  etc/migration.md existe; la publicación (la directiva de migración de etc/release) se niega a etiquetar sin etc/migration/<version>.md; una comprobación de la CI hace fallar toda pull request que cambie lib/**/src sin tocar el etc/migration/<version>.md no publicado
+
 @ 0 2 0 174e5970ec87b6671ec8b4594cff11a1
 +   baseline  lib/reliquary (7387 líneas) más anthology.lira, degustation.lira, mandible.lira, xenophile.lira y sus pruebas (2026-09-25)
 +   criterion  lib/reliquary no existe, no queda ningún directorio lib/*/src/lira, y build.mill, etc/ y doc/soundness/modules no mencionan reliquary

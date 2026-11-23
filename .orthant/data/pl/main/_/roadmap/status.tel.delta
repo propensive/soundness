@@ -30,6 +30,10 @@ orthant 2 language
 +   baseline  skryptowy zestaw testów DAP zatrzymuje się w punktach przerwania, wykonuje kroki i inspekcjonuje wartości przez ich instancje Inspectable; temat doc/soundness/modules/debugging.md (2026-10-21; obiekty inspekcjonowane jako nazwy klas JVM i brak tematu dnia 2026-09-25)
 +   criterion  skryptowa sesja DAP (punkt przerwania, krok, inspekcja z wartościami przedstawionymi przez Soundness) przechodzi w CI względem działającej aplikacji
 
+@ 0 2 0 1ecc3855de818f6814bc9b756c382eb7
++   baseline  istnieją etc/migration.md i 0.65.0.md–0.73.0.md; dyrektywa migracji w etc/release jest bramką wydania; brak sprawdzenia pull requestów (2026-10-21; noty do 0.68.0 dnia 2026-09-25)
++   criterion  etc/migration.md istnieje; wydanie (dyrektywa migracji w etc/release) odmawia utworzenia tagu bez etc/migration/<version>.md; sprawdzenie CI odrzuca każdy pull request, który zmienia lib/**/src, nie dotykając niewydanego etc/migration/<version>.md
+
 @ 0 2 0 174e5970ec87b6671ec8b4594cff11a1
 +   baseline  lib/reliquary (7387 wierszy) oraz anthology.lira, degustation.lira, mandible.lira, xenophile.lira i ich testy (2026-09-25)
 +   criterion  lib/reliquary nie istnieje, nie pozostaje żaden katalog lib/*/src/lira, a build.mill, etc/ i doc/soundness/modules nie wspominają o reliquary

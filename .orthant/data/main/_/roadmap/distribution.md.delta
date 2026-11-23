@@ -1,4 +1,14 @@
 orthant 2 release
 
+@ 0 1 0 0997f08e991e1c041daa547ec08133d6
++ The keystone item: `etc/migration.md` defines the agent-executable
+
+@ 0 2 0 1660f037842bb39900f122d5407b493a
++ Done when: `etc/migration.md` defines the convention, the release refuses to run without
++ `etc/migration/<version>.md`, and a CI check fails any pull request that changes `lib/**/src`
+
+@ 0 1 0 05c232f1d42a3ce413833a503e776805
++ `etc/migration/<version>.md`, named after that release from the start.
+
 @ 0 1 0 1aa70d1cbe9b6170158adeb862d93e5c
 +     git grep -c reliquary -- build.mill etc doc/soundness/modules | wc -l   # 0

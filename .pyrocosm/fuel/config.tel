@@ -18,8 +18,6 @@ section philosophy doc/philosophy
 
 section standards doc/standards
 
-section migration doc/migration
-
 section roadmap doc/roadmap
 
 section errors doc/errors

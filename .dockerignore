@@ -42,6 +42,8 @@ etc/oldbranches
 # .orthant and its live tree, doc; the files beside it in etc are the documentation's too.
 doc
 .orthant
+etc/migration
+etc/migration.md
 etc/fixtures
 etc/compatibility.tsv
 sample

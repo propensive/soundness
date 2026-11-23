@@ -1,3 +1,21 @@
 orthant 2 language
 
+@ 0 5 0 027aa8507cfead550859e240b33d26f4
++ Pozycja zwornikowa: `etc/migration.md` definiuje format instrukcji migracji wykonywalnych przez
++ agenta – co się zmieniło, jak wykryć kod, którego to dotyczy, dokładne przepisanie i jak je
++ zweryfikować – a CI egzekwuje, by pull requesty oznaczone jako niekompatybilne niosły
++ instrukcje w tym formacie. Kilka nurtów kończy się tutaj: to przez tę konwencję przepływa
++ `api-6` i to ją `tool-5` udostępnia agentom.
+
+@ 0 8 0 1fc13f6d9faff5a7091ff85728b72d87
++ Ukończone, gdy: `etc/migration.md` definiuje konwencję, wydanie odmawia uruchomienia bez
++ `etc/migration/<version>.md`, a sprawdzenie CI odrzuca każdy pull request, który zmienia
++ `lib/**/src`, nie dotykając niewydanych notatek migracyjnych. Dwa pierwsze warunki są
++ spełnione: konwencja jest spisana, istnieją pliki od `0.65.0.md` wzwyż, a dyrektywa
++ `migration` w `etc/release` odmawia utworzenia tagu, gdy brakuje notatek danej wersji albo
++ notatki innej wersji są niewydane. Pozostaje sprawdzenie pull requestów: `main.yml` weryfikuje
++ poświadczenie i nic więcej. Konwencja nie opiera się na etykietach: każda istotna zmiana
++ zapisuje się w `etc/migration/<version>.md` następnego wydania, nazwanym od tego wydania od
++ samego początku.
+
 % 0 1 0 0b0af992e6bfac6c10ea3d9a4cadef9e

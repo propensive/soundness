@@ -24,6 +24,10 @@ orthant 2 release
 @ 0 1 0 014bf2f87532bb3613c7f0231ff02e1d
 +   baseline  the scripted DAP suite breaks, steps and inspects values through their Inspectable instances; topic doc/soundness/modules/debugging.md (2026-10-21; objects inspected as JVM class names and no topic on 2026-09-25)
 
+@ 0 2 0 1b63a81c02b33b310f12ecafbe40db74
++   baseline  etc/migration.md and 0.65.0.md–0.73.0.md exist; the migration directive in etc/release gates the release; no pull-request check (2026-10-21; notes to 0.68.0 on 2026-09-25)
++   criterion  etc/migration.md exists; the release (the migration directive in etc/release) refuses to tag without etc/migration/<version>.md; a CI check fails any pull request that changes lib/**/src without touching the unreleased etc/migration/<version>.md
+
 @ 0 1 0 0fa0e513a6ce0ca416f786984e64873b
 +   criterion  lib/reliquary is absent, no lib/*/src/lira directory remains, and build.mill, etc/ and doc/soundness/modules do not mention reliquary
 

@@ -22,10 +22,11 @@ probes     beneficence.plugin larceny.plugin rudiments.core rudiments.core.js ru
 
 # The migration notes accumulate in <version>.md, named after the next release from the first
 # change after the last; the release refuses to run while that file is missing, or while another
-# version's notes are unreleased. They are read from `doc`, the live tree of the Orthant store,
-# which has the English at the unreleased `main` point as files in git: the notes of every
-# release are there, and the release tells the released ones by their tags.
-migration  doc/migration
+# version's notes are unreleased. They are ordinary files in git, and not part of the
+# documentation, which is the Orthant store's: they are written for an agent to apply, and are
+# not translated. The notes of every release are there, and the release tells the released
+# ones by their tags.
+migration  etc/migration
 
 # The trust boundary is the signed attestation note on refs/notes/ci-attestation, not the runner.
 verify     ./mill groupCheck.validate

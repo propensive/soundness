@@ -60,20 +60,20 @@ changelog is built rather than kept; nothing yet *refuses* a release for an empt
 
 Horizon: near
 
-The keystone item: `doc/migration.md` defines the agent-executable
+The keystone item: `etc/migration.md` defines the agent-executable
 migration-instruction format — what changed, how to detect affected code, the exact rewrite,
 and how to verify it — and CI enforces that breaking-labelled pull requests carry instructions
 in that format. Several tracks terminate here: it is what `api-6` flows through and what
 `tool-5` serves to agents.
 
-Done when: `doc/migration.md` defines the convention, the release refuses to run without
-`doc/migration/<version>.md`, and a CI check fails any pull request that changes `lib/**/src`
+Done when: `etc/migration.md` defines the convention, the release refuses to run without
+`etc/migration/<version>.md`, and a CI check fails any pull request that changes `lib/**/src`
 without touching the unreleased migration notes. The first two hold: the convention is
 written, `0.65.0.md` onwards exist, and the `migration` directive in `etc/release` refuses a tag
 while the version's notes are missing or another version's are unreleased. The pull-request
 check is what remains: `main.yml` verifies the attestation and nothing else. The convention is
 not label-based: every material change records itself in the next release's
-`doc/migration/<version>.md`, named after that release from the start.
+`etc/migration/<version>.md`, named after that release from the start.
 
 ## dist-3: LIRA exists
 

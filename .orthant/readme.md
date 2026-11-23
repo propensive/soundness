@@ -55,7 +55,7 @@ storing anything. Run the dry run first whenever the reach of an edit is in doub
 
 ## Changing what is not yet released
 
-This is the usual case: a new tutorial section, an entry in the migration notes, a reworded
+This is the usual case: a new tutorial section, an entry in the roadmap, a reworded
 paragraph.
 
 ```
@@ -131,9 +131,6 @@ orthant checkin --only release               # en and fr at 0.76.0; not 0.77.0, 
 
 The French at that release goes stale where it translates the lines changed, as after any
 English edit. The points of later releases are not touched.
-
-A released `migration/<version>.md` follows the same rule as any released document, and is
-edited only to correct an error in it. New entries go in the unreleased file, in `doc/`.
 
 ## Translating
 

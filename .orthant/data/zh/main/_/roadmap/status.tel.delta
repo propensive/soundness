@@ -30,6 +30,10 @@ orthant 2 language
 +   baseline  脚本化的 DAP 套件设置断点、单步执行，并通过值的 Inspectable 实例检视它们；主题 doc/soundness/modules/debugging.md（2026-10-21；2026-09-25 时对象被检视为 JVM 类名，且没有主题）
 +   criterion  脚本化的 DAP 会话（断点、单步执行、以 Soundness 渲染的值进行检视）在 CI 中针对一个运行中的应用程序通过
 
+@ 0 2 0 1ecc3855de818f6814bc9b756c382eb7
++   baseline  etc/migration.md 和 0.65.0.md–0.73.0.md 存在；etc/release 中的 migration 指令对发布进行门控；没有拉取请求检查（2026-10-21；2026-09-25 时注记截至 0.68.0）
++   criterion  etc/migration.md 存在；发布流程（etc/release 中的 migration 指令）在没有 etc/migration/<version>.md 时拒绝打标签；CI 检查使任何改动 lib/**/src 却未触及未发布的 etc/migration/<version>.md 的拉取请求失败
+
 @ 0 2 0 174e5970ec87b6671ec8b4594cff11a1
 +   baseline  lib/reliquary（7387 行）以及 anthology.lira、degustation.lira、mandible.lira、xenophile.lira 及其测试（2026-09-25）
 +   criterion  lib/reliquary 不存在，不再有 lib/*/src/lira 目录，且 build.mill、etc/ 和 doc/soundness/modules 都不提及 reliquary
