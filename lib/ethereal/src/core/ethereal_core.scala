@@ -269,10 +269,15 @@ def cli[bus <: Matchable](using executive: Executive)
     // Every connection opens with one BinTEL document of the launcher schema
     // (`Launcher.schemaText`); the bytes that follow it belong to the message.
     val document: Optional[Data] = if peerRefused then Unset else Launcher.readDocument(in)
-    val message: Optional[Launcher.Message] = document.let(Launcher.decode(_))
+    val recognized: Optional[(Launcher.Message, Launcher.Composition)] =
+      document.let(Launcher.recognize(_))
+
+    val message: Optional[Launcher.Message] = recognized.let(_(0))
+    // What the launcher wrote under, and so what it is answered under.
+    val composition: Launcher.Composition = recognized.let(_(1)).or(Launcher.base)
 
     def reply(message: Launcher.Message): Unit =
-      safely(rawOut.write(Array.unsafeJvm(Launcher.encode(message))))
+      safely(rawOut.write(Array.unsafeJvm(Launcher.encode(message, composition))))
       safely(rawOut.flush())
 
     (message: @unchecked) match
@@ -365,7 +370,13 @@ def cli[bus <: Matchable](using executive: Executive)
         val dispatch0: Signal -> SignalResponse = caps.unsafe.unsafeAssumePure(dispatch)
         // [closure-capture] logging lambda laundered to pure function
         val log0: DaemonLogEvent -> Unit = caps.unsafe.unsafeAssumePure: event => Log.info(event)
-        val session: Session = Session(connection, in, descriptors, dispatch0, log0)
+        // A launcher which holds the `interrupts` layer has left a terminal's interrupt key
+        // with the terminal, to be asked for.
+        val guarded: Boolean = stdinTty && composition.interrupts
+
+        val session: Session =
+          Session(connection, in, descriptors, dispatch0, log0, composition, guarded)
+
         columns.let: columns => rows.let { rows => session.windowSize() = (columns, rows) }
         session.start()
 
@@ -426,8 +437,7 @@ def cli[bus <: Matchable](using executive: Executive)
         // Only the launcher can change the client's terminal mode, so the request travels back
         // over the session; a launcher whose stdin is not a terminal it owns ignores it, and
         // the command runs with the raw mode it would have had anyway.
-        def setMode(mode: Tty): Unit =
-          session.send(Launcher.Message.Mode(mode.canonical, mode.echo))
+        def setMode(mode: Tty): Unit = session.mode(mode)
 
         def deliver(sourcePid: Pid, message: bus): Unit =
           clients.each: (pid, client) => if sourcePid != pid then client.receive(message)
@@ -542,14 +552,10 @@ def cli[bus <: Matchable](using executive: Executive)
       safely(socketFile.wipe())
 
       // What this daemon reads, for the launcher to consult before it connects (xek's
-      // `spec/layout.md`, *Negotiating the composition*): a BinTEL §8.4 acceptance in its bare
-      // form, with one alternative, the base schema alone — one root child, the `accept`
-      // member with one child, its 33-byte `schema`. Written before the socket exists, so a
-      // launcher that has found the socket may rely on it.
+      // `spec/layout.md`, *Negotiating the composition*): `Launcher.acceptance`. Written before
+      // the socket exists, so a launcher that has found the socket may rely on it.
       safely:
-        val acceptance: Data =
-          Array.unsafeFrozen
-            ( scala.Array[Byte](1, 0, 1, 0, 33) ++ Array.unsafeJvm(Launcher.signature) )
+        val acceptance: Data = Launcher.acceptance
 
         acceptanceFile.open[File](Write, OpenFlag.Create, OpenFlag.Truncate)
           ( file.write(Chain(acceptance)) )

@@ -256,6 +256,23 @@ object Tests extends Suite("daemon", m"Ethereal Tests"):
 
                     Exit.Ok
 
+                // One byte of stdin, read in the launcher's raw mode: the keyboard, when stdin
+                // is a terminal.
+                case Argument("key") :: Nil =>
+                  execute:
+                    val byte: Int = summon[Stdio].in.read()
+                    Out.print(t"key=${byte.show}") yet Exit.Ok
+
+                // A cooked line, and then a long time doing nothing with the keyboard.
+                case Argument("cooked-then-sleep") :: Nil =>
+                  execute:
+                    resident.cooked:
+                      val reader = ji.BufferedReader(ji.InputStreamReader(summon[Stdio].in))
+                      val line: Text = reader.readLine().nn.tt
+                      Out.println(t"[$line]")
+
+                    snooze(30*Second) yet Exit.Ok
+
                 // The bytes of the argument after `raw`, where its text could not carry them.
                 case Argument("raw") :: _ =>
                   execute(Out.print(Readers.rawArgument(1)) yet Exit.Ok)
@@ -939,6 +956,64 @@ object Tests extends Suite("daemon", m"Ethereal Tests"):
 
             . check(_ == false)
 
+          suite(m"The interrupt key"):
+            // On a real terminal, as above. A launcher which holds the `interrupts` layer puts
+            // the terminal into a guarded raw mode, in which Ctrl-C is still a signal, and the
+            // daemon asks for the key only when the application reads its keyboard. So an
+            // invocation that is not reading it can always be interrupted, and one that is
+            // still gets Ctrl-C as the byte it typed.
+            val command: Text = summon[Enclave.Tool].command
+
+            def awaitScreen(predicate: Text => Boolean)(using Pane): Boolean =
+              Pane.waitFor(predicate, 10000L)
+
+            test(m"Ctrl-C interrupts an invocation that is not reading its keyboard"):
+              sh"$tool echo probe".exec[Unit]()
+
+              Shell.Bash.pane():
+                Pane.enter(t"$command sleep 30")
+                Pane.enter('\r')
+                snooze(1*Second)
+                Pane.enter(t"C-c")
+                snooze(1*Second)
+                // Typed to the shell, if the launcher has gone; to the invocation, if not.
+                Pane.enter(t"echo status-$$?")
+                Pane.enter('\r')
+                awaitScreen(_.contains(t"status-130"))
+
+            . check(_ == true)
+
+            test(m"Ctrl-C is a byte to an invocation that is reading its keyboard"):
+              sh"$tool echo probe".exec[Unit]()
+
+              Shell.Bash.pane():
+                Pane.enter(t"$command key")
+                Pane.enter('\r')
+                snooze(1*Second)
+                Pane.enter(t"C-c")
+                awaitScreen(_.contains(t"key=3"))
+
+            . check(_ == true)
+
+            test(m"a cooked block leaves the key with the terminal afterwards"):
+              sh"$tool echo probe".exec[Unit]()
+
+              Shell.Bash.pane():
+                Pane.enter(t"$command cooked-then-sleep")
+                Pane.enter('\r')
+                snooze(0.5*Second)
+                Pane.enter(t"plover")
+                Pane.enter('\r')
+                val read = awaitScreen(_.contains(t"[plover]"))
+                snooze(0.5*Second)
+                Pane.enter(t"C-c")
+                snooze(1*Second)
+                Pane.enter(t"echo status-$$?")
+                Pane.enter('\r')
+                (read, awaitScreen(_.contains(t"status-130")))
+
+            . check(_ == (true, true))
+
           suite(m"Process renaming"):
             // The JVM is still named `java`; the killable process is its parent
             // wrapper, which the runner re-invoked under the client name.
@@ -1346,6 +1421,40 @@ object Tests extends Suite("daemon", m"Ethereal Tests"):
         test(m"the schema signature is pinned"):
           hex(Launcher.signature)
         . check(_ == signatureHex)
+
+        // The `interrupts` layer, whose hash `bintel.rs` pins as it does the base's: a
+        // composition with it has a signature four bytes longer, and its documents may carry
+        // the layer's flag on `mode`.
+        val layeredHex =
+          t"55d18c24d8b76fbaa5dfa4689d91aa374183ed26234424b5e29dbdb8db80268bd18bc94860"
+
+        test(m"the signature of the base with the interrupts layer is pinned"):
+          hex(Launcher.layered.signature)
+        . check(_ == layeredHex)
+
+        test(m"the acceptance names the interrupts layer by four bytes of its hash"):
+          hex(Launcher.acceptance)
+        . check(_ == t"0100020021${signatureHex}0304a33fb435")
+
+        test(m"a mode document under the layer carries the interrupts flag"):
+          hex(Launcher.encode(Launcher.Message.Mode(false, false, true), Launcher.layered))
+        . check(_ == t"b2c4b5bb2a25${layeredHex}01070102")
+
+        test(m"a mode document under the base never carries the interrupts flag"):
+          hex(Launcher.encode(Launcher.Message.Mode(false, false, true)))
+        . check(_ == t"b2c4b5bb2521${signatureHex}010700")
+
+        val guardedMode = Launcher.Message.Mode(true, false, true)
+
+        test(m"a document is recognized under the composition it was written under"):
+          val message = guardedMode
+
+          ( Launcher.recognize(Launcher.encode(message, Launcher.layered)).let(_(1).interrupts),
+            Launcher.recognize(Launcher.encode(Launcher.Message.Verify)).let(_(1).interrupts),
+            Launcher.decode(Launcher.encode(message, Launcher.layered)).absent,
+            Launcher.decode(Launcher.encode(message, Launcher.layered), Launcher.layered) )
+
+        . check(_ == (true, false, true, guardedMode))
 
         test(m"an exit status frames as the pinned bytes"):
           hex(Launcher.encode(Launcher.Message.ExitStatus(42)))
