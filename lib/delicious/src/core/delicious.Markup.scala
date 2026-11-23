@@ -69,6 +69,43 @@ object Markup:
 
       builder.toString.tt
 
+  private def reserved(char: Char): Boolean =
+    char == '%' || (char >= Start && char <= TextSep) || char < ' '
+
+  private def encode(text: Text): Text =
+    if !text.s.exists(reserved) then text else
+      val builder = new StringBuilder
+
+      text.s.foreach: char =>
+        if reserved(char) then builder.append(String.format("%%%04x", Integer.valueOf(char.toInt)))
+        else builder.append(char)
+
+      builder.toString.tt
+
+  /** Wrap `body` in a marker of the given kind, as the compiler's
+   *  `DiagnosticMarkup.wrap` does. `body` may itself contain balanced markers.
+   *  A macro uses this to write a message whose structure survives the compiler:
+   *  under `-Zsemantic-diagnostics` the markers reach `parse` intact, and every
+   *  other consumer sees them stripped, leaving `body`'s visible text. */
+  def wrap(kind: Text, attributes: List[(Text, Text)], body: Text): Text =
+    val pairs = attributes.map { (key, value) => t"$key=${encode(value)}" }
+    val header = pairs.join(AttrSep.toString.tt)
+    t"$Start$kind$AttrsSep$header$TextSep$body$End"
+
+  /** The part a node plays in the tree which explains a failed contextual resolution. */
+  enum Role(val glyph: Text):
+    case Resolving extends Role(t"■")
+    case Candidate extends Role(t"▪")
+    case Requires  extends Role(t"✗")
+    case Propose   extends Role(t"▸")
+    case Prohibits extends Role(t"⊘")
+    case Found     extends Role(t"✓")
+
+    def word: Text = toString.tt.lower
+
+  object Role:
+    def apply(word: Text): Optional[Role] = values.find(_.word == word).getOrElse(Unset)
+
   private def typed(kind: Text, attrs: List[(Text, Text)], children: List[Markup]): Markup =
     def attr(name: Text): Optional[Text] =
       attrs.seek(_(0) == name).let(_(1))
@@ -90,6 +127,17 @@ object Markup:
       case "sym"  => Symbolic(attr(t"name").or(t""), attr(t"full").or(t""), rendition, children)
       case "name" => Named(attr(t"isType").let(_ == t"true").or(false), rendition, children)
       case "code" => Code(rendition, children)
+
+      case "tree" =>
+        val omitted: Int = attr(t"omitted").lay(0): count =>
+          try count.s.toInt catch case _: NumberFormatException => 0
+
+        Tree(omitted, children)
+
+      case "node" =>
+        attr(t"role").let(Role(_)).lay(Spanned(kind, rendition, children)): role =>
+          Node(role, attr(t"name").or(t""), attr(t"note"), attr(t"repeated") == t"true", children)
+
       case _      => Spanned(kind, rendition, children)
 
   /** Parse a marked-up string into a tree, following the compiler's
@@ -199,6 +247,28 @@ enum Markup:
   case Code(rendition: Rendition, children: List[Markup])
   case Spanned(kind: Text, rendition: Rendition, children: List[Markup])
 
+  // A tree, as the explanation of a failed contextual resolution is. Its children are its
+  // root `Node`s interleaved with `Textual`s: the line breaks and box-drawing which draw the
+  // same tree for a reader of plain text, and which a structured consumer ignores, taking
+  // `nodes` instead. `omitted` counts the nodes left out because the tree was too long.
+  case Tree(omitted: Int, children: List[Markup])
+
+  // One node of a `Tree`: `name` is what was sought, found or proposed, `note` a remark on
+  // it, and `repeated` says its subtree was shown earlier in the tree and is left out here.
+  // Its children are the text of its own line, then its child `Node`s, interleaved as in `Tree`.
+  case Node
+    ( role:     Markup.Role,
+      name:     Text,
+      note:     Optional[Text],
+      repeated: Boolean,
+      children: List[Markup] )
+
+  /** The child nodes of a `Tree` or a `Node`, without the text that draws them. */
+  def nodes: List[Markup.Node] = this match
+    case Tree(_, children)          => children.sweep { case node: Node => node }
+    case Node(_, _, _, _, children) => children.sweep { case node: Node => node }
+    case _                          => Nil
+
   def plain: Text = this match
     case Textual(text)               => text
     case Typed(_, _, _, children)    => children.map(_.plain).join
@@ -206,3 +276,5 @@ enum Markup:
     case Named(_, _, children)       => children.map(_.plain).join
     case Code(_, children)           => children.map(_.plain).join
     case Spanned(_, _, children)     => children.map(_.plain).join
+    case Tree(_, children)           => children.map(_.plain).join
+    case Node(_, _, _, _, children)  => children.map(_.plain).join

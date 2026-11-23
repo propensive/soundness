@@ -104,6 +104,47 @@ object Tests extends Suite("givens", m"Frontier Tests"):
         (text.split("Inner").nn.length - 1, text.split("as above").nn.length - 1)
       . assert(_ == (1, 1))
 
+      def unstyled(text: Text): Text = text.s.replaceAll("\u001B\\[[;\\d]*m", "").nn.tt
+
+      val quarrel: Diagnostic =
+        val shared = Diagnostic.Requires(t"Shared", Unset, List(found(t"Inner")))
+        val first = Diagnostic.Candidate(t"first", Unset, List(shared))
+        val second = Diagnostic.Candidate(t"second", t"a remark", List(shared))
+        val absent = Diagnostic.Prohibits(t"Absent", t"absent", Nil)
+        Diagnostic.Resolving(t"Root", Unset, List(first, second, absent))
+
+      test(m"the markup, stripped of its markers, is the terminal's text without its colours"):
+        delicious.Markup.plain(Diagnostic.markup(quarrel))
+      . assert(_ == unstyled(Diagnostic.render(quarrel)))
+
+      test(m"markup stripped is the terminal's text when the tree is cut short"):
+        val leaves = List.tabulate(150)(index => found(t"Leaf$index"))
+        val tree = Diagnostic.Resolving(t"Root", Unset, leaves)
+        delicious.Markup.plain(Diagnostic.markup(tree)) == unstyled(Diagnostic.render(tree))
+      . assert(_ == true)
+
+      test(m"markup stripped is the terminal's text when the root has no children"):
+        val tree = Diagnostic.Resolving(t"Root", Unset, Nil)
+        (delicious.Markup.plain(Diagnostic.markup(tree)), unstyled(Diagnostic.render(tree)))
+      . assert { (markup, text) => markup == text }
+
+      test(m"the markup parses to the tree, with a repeated subtree marked as one"):
+        def outline(node: delicious.Markup.Node): Text =
+          val remark = node.note.lay(t"") { note => t"($note)" }
+          val repeat = if node.repeated then t"*" else t""
+          val inner = if node.nodes.nil then t"" else node.nodes.map(outline).join(t"[", t" ", t"]")
+          t"${node.role.word}:${node.name}$remark$repeat$inner"
+
+        delicious.SemanticMessage.parse(Diagnostic.markup(quarrel)).trees.bind(_.nodes).map(outline)
+      . assert(_ == List(t"resolving:Root[candidate:first[requires:Shared[found:Inner]] candidate:second(a remark)[requires:Shared*] prohibits:Absent(absent)]"))
+
+      test(m"markup of a tree cut short says how much was left out"):
+        val leaves = List.tabulate(150)(index => found(t"Leaf$index"))
+        val markup = Diagnostic.markup(Diagnostic.Resolving(t"Root", Unset, leaves))
+        delicious.SemanticMessage.parse(markup).trees.map: tree =>
+          (tree.omitted, tree.nodes.bind(_.nodes).fuse(0)(state + 1))
+      . assert(_ == List((50, 100)))
+
     test(m"every[X] returns empty Every when no givens in scope"):
       NoPlugs.explicit
     . assert(_ == 0)

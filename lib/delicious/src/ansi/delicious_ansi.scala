@@ -71,5 +71,32 @@ extension (message: SemanticMessage)
       case Markup.Symbolic(_, _, _, children) => recur(children)
       case Markup.Named(_, _, children)       => recur(children)
       case Markup.Spanned(_, _, children)     => recur(children)
+      case Markup.Tree(_, children)           => recur(children)
+
+      // A node's own line is rewritten from what the node says, in the colours Frontier
+      // gives it when it writes for a terminal itself; the lines which draw its children
+      // are kept as they are, and the children themselves rendered in turn.
+      case Markup.Node(role, name, note, repeated, children) =>
+        val (mark, accent) = role match
+          case Markup.Role.Resolving => (Chroma(0x870000), Chroma(0xff8700))
+          case Markup.Role.Candidate => (Chroma(0xff8700), Chroma(0xffff5f))
+          case Markup.Role.Requires  => (Chroma(0x870000), Chroma(0x87d787))
+          case Markup.Role.Propose   => (Chroma(0x5fafff), Chroma(0x87d7ff))
+          case Markup.Role.Prohibits => (Chroma(0xff8700), Chroma(0x87d787))
+          case Markup.Role.Found     => (Chroma(0x00af00), Chroma(0x87ff5f))
+
+        val remarks: Optional[Text] =
+          if !repeated then note else note.lay(t"as above") { text => t"$text, as above" }
+
+        val remark = remarks.lay(e""): text => e" ${Fg(Chroma(0x767676))}(($Italic($text)))"
+
+        val line =
+          e" ${Fg(mark)}($Bold(${role.glyph})) ${role.word} ${Fg(accent)}($Italic($name))$remark"
+
+        val beneath: List[Markup] = children match
+          case Markup.Textual(_) :: rest => rest
+          case all                       => all
+
+        e"$line${recur(beneath)}"
 
     recur(message.markup)

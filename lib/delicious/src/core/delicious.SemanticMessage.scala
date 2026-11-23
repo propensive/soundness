@@ -53,5 +53,21 @@ case class SemanticMessage(markup: List[Markup]):
       case Markup.Named(_, _, children)         => recur(children)
       case Markup.Code(_, children)             => recur(children)
       case Markup.Spanned(_, _, children)       => recur(children)
+      case Markup.Tree(_, children)             => recur(children)
+      case Markup.Node(_, _, _, _, children)    => recur(children)
+
+    recur(markup)
+
+  /** The trees in the message, wherever they are nested. */
+  def trees: List[Markup.Tree] =
+    def recur(nodes: List[Markup]): List[Markup.Tree] = nodes.bind:
+      case tree: Markup.Tree                  => List(tree)
+      case Markup.Textual(_)                  => Nil
+      case Markup.Typed(_, _, _, children)    => recur(children)
+      case Markup.Symbolic(_, _, _, children) => recur(children)
+      case Markup.Named(_, _, children)       => recur(children)
+      case Markup.Code(_, children)           => recur(children)
+      case Markup.Spanned(_, _, children)     => recur(children)
+      case Markup.Node(_, _, _, _, children)  => recur(children)
 
     recur(markup)
