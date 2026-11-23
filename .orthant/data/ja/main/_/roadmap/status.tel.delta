@@ -1,17 +1,5 @@
 orthant 2 language
 
-@ 0 3 0 148a30337b22668a138439c53376660b
-+ # ロードマップの項目の機械可読な索引。doc/work/roadmap/ にある九つのトラックファイルにわたり、
-+ # 項目ごとに一つの `item` レコードを持つ。このファイルが状態の唯一の情報源である。
-+ # 散文のファイルは完了を主張せず、ここにリンクする。
-
-@ 0 2 0 1150a678e12de40b1108079fd587f3ad
-+   baseline  lib のコアに while ループが 1669、readUnchecked が 993、charAt が 514（2026-10-21、#2274 で凍結済みの Array が唯一の不変配列になった後。2026-09-25 には 1606、476、507）
-+   criterion  部分的なインデックス付きの apply を公開するコレクションがない（issue #1666）。残るすべての while は doc/work/standards/loops.md が認める形であり、その不変条件を名指すコメントを持つ
-
-@ 0 1 0 00b880a91082413204e9196c41d2f096
-+   criterion  doc/work/standards/capabilities.md が存在し、集計が認識するすべてのタグを定義し、rep/DECISIONS.md の手順の節がそこにリンクする
-
 @ 0 2 0 0dc0dcbd00f7c47016ed4ce89be1e923
 +   baseline  145 行のうち 104 行が JavaScript 向けに、108 行が Native 向けにビルドされ、JavaScript の除外が理由付きで 34。etc/check-compatibility.py が make build でファイルを再生成して検査する（2026-10-21。2026-09-25 には 144 行中 101 行、2026-08-01 には 132 行中 94 行）
 +   criterion  CI が etc/compatibility.tsv を再生成し、食い違いがあれば失敗し、理由を欠く除外がない
@@ -34,28 +22,22 @@ orthant 2 language
 +   baseline  二つのライブラリがエクスポートする名前が 0。信頼度の高い R8 の行 22 個のうち 19 個が完了。Tag/Renderable はまだ @unexported（2026-11-12 の後の時点。同じ日の早い時点では、名前 6 個、@unexported の同音異義語 2 個、R8 の候補が約 110）
 +   criterion  どの名前も二つ以上のライブラリにエクスポートされず、衝突を避ける @unexported がなく、etc/api-nesting-proposal.md の R8 の表のすべての行が適用されたか、検討のうえ維持された
 
-% 0 1 0 131794d631e522870773aff16ae8aac7
-
-@ 0 2 0 07a6b381d30a92cb023b924906e9d974
-+   baseline  doc/work/soundness/modules/ にトピックが 101 個。145 個のライブラリのうち 145 個が網羅されている（2026-10-21。2026-09-25 には 144 個中 1 個が未網羅、2026-08-01 にはトピック 91 個で 35 個が未網羅）
+@ 0 2 0 0f3d1198b0e978311a11bfe6394f1f89
++   baseline  doc/soundness/modules/ にトピックが 101 個。145 個のライブラリのうち 145 個が網羅されている（2026-10-21。2026-09-25 には 144 個中 1 個が未網羅、2026-08-01 にはトピック 91 個で 35 個が未網羅）
 +   criterion  python3 etc/check-doc-coverage.py がすべてのライブラリを網羅済みと報告し、0 で終了する
 
-@ 0 2 0 1154d170629482bb139ba48e21c12602
-+   baseline  スクリプト化した DAP のスイートが、ブレークポイントで止め、ステップ実行し、値をその Inspectable インスタンスを通じて調べる。トピックは doc/work/soundness/modules/debugging.md（2026-10-21。2026-09-25 にはオブジェクトが JVM のクラス名として表示され、トピックもなし）
+@ 0 2 0 05558c8a0afe616c19ef03f4c9b525c6
++   baseline  スクリプト化した DAP のスイートが、ブレークポイントで止め、ステップ実行し、値をその Inspectable インスタンスを通じて調べる。トピックは doc/soundness/modules/debugging.md（2026-10-21。2026-09-25 にはオブジェクトが JVM のクラス名として表示され、トピックもなし）
 +   criterion  スクリプト化した DAP のセッション（ブレークポイント、ステップ実行、Soundness で描画した値の検査）が、実行中のアプリケーションに対して CI で通る
 
-@ 0 2 0 07448ba163d12a581789fe21f1724c6c
-+   baseline  doc/work/migration.md と 0.65.0.md–0.73.0.md が存在する。etc/release の migration 指令がリリースの関門となる。プルリクエストの検査はない（2026-10-21。2026-09-25 には 0.68.0 までの注記）
-+   criterion  doc/work/migration.md が存在する。リリース（etc/release の migration 指令）が doc/work/migration/<version>.md なしにはタグ付けを拒む。lib/**/src を変えながら未リリースの doc/work/migration/<version>.md に触れないプルリクエストを、CI の検査が失敗させる
-
-@ 0 2 0 196b66a1e2f12f001fec8234a42c1ee3
+@ 0 2 0 174e5970ec87b6671ec8b4594cff11a1
 +   baseline  lib/reliquary（7387 行）と、anthology.lira、degustation.lira、mandible.lira、xenophile.lira およびそれらのテスト（2026-09-25）
-+   criterion  lib/reliquary が存在せず、lib/*/src/lira ディレクトリが一つも残らず、build.mill、etc/、doc/work/soundness/modules が reliquary に言及しない
++   criterion  lib/reliquary が存在せず、lib/*/src/lira ディレクトリが一つも残らず、build.mill、etc/、doc/soundness/modules が reliquary に言及しない
 
-@ 0 3 0 1022043b4940d100089e5ec885e64e12
+@ 0 3 0 1ab90a58f440346102cbf922b597507a
 +   status done
 +   done  #2530 (2026-11-20)
-+   baseline  lib/sigillate：Jws、Jwe、Jwk、Jwt。`http` と `server` のコンポーネントを持つ。テストは 95 個で、そのベクターは RFC 7515 §A.1–A.7、RFC 7516 §A.1–A.5、RFC 7517、RFC 7638、RFC 8037 から取っている。`↯/s.147.1`。doc/work/soundness/modules/jose.md（2026-11-20）
++   baseline  lib/sigillate：Jws、Jwe、Jwk、Jwt。`http` と `server` のコンポーネントを持つ。テストは 95 個で、そのベクターは RFC 7515 §A.1–A.7、RFC 7516 §A.1–A.5、RFC 7517、RFC 7638、RFC 8037 から取っている。`↯/s.147.1`。doc/soundness/modules/jose.md（2026-11-20）
 
-@ 0 1 0 0b21a7d8349a92fd16fa9db438708eef
-+   baseline  lib/chatelaine：WebAuthn.registration/register と authentication/authenticate、`none` と `packed` のアテステーション。`server` のコンポーネントを持つ。W3C 仕様のテストベクター（§16.2–16.11）の登録と認証のセレモニーに通り、テストソースにあるソフトウェアの認証器に対するスクリプト化したセレモニーにも通る。ブラウザーの仮想認証器はまだ動かしていない。`↯/s.148.1`。doc/work/soundness/modules/webauthn.md（2026-11-20）
+@ 0 1 0 04b2a086c09d9a4a0bf490e3f6a25ee5
++   baseline  lib/chatelaine：WebAuthn.registration/register と authentication/authenticate、`none` と `packed` のアテステーション。`server` のコンポーネントを持つ。W3C 仕様のテストベクター（§16.2–16.11）の登録と認証のセレモニーに通り、テストソースにあるソフトウェアの認証器に対するスクリプト化したセレモニーにも通る。ブラウザーの仮想認証器はまだ動かしていない。`↯/s.148.1`。doc/soundness/modules/webauthn.md（2026-11-20）

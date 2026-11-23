@@ -1,17 +1,5 @@
 orthant 2 language
 
-@ 0 3 0 148a30337b22668a138439c53376660b
-+ # Maszynowo czytelny indeks pozycji planu rozwoju. Jeden rekord `item` na każdą pozycję we
-+ # wszystkich dziewięciu plikach nurtów w doc/work/roadmap/. Ten plik jest jedynym źródłem statusu:
-+ # pliki prozą nigdy nie deklarują ukończenia; odsyłają tutaj.
-
-@ 0 2 0 1150a678e12de40b1108079fd587f3ad
-+   baseline  1669 pętli while, 993 readUnchecked, 514 charAt w rdzeniu lib (2026-10-21, po tym, jak #2274 uczynił zamrożoną Array jedyną niemutowalną tablicą; 1606, 476, 507 dnia 2026-09-25)
-+   criterion  żadna kolekcja nie udostępnia częściowego indeksowanego apply (issue #1666); każdy pozostały while ma kształt dopuszczony przez doc/work/standards/loops.md, z komentarzem nazywającym jego niezmiennik
-
-@ 0 1 0 00b880a91082413204e9196c41d2f096
-+   criterion  doc/work/standards/capabilities.md istnieje, definiuje każdy tag rozpoznawany przez spis, a sekcje z przepisami w rep/DECISIONS.md do niego odsyłają
-
 @ 0 2 0 0dc0dcbd00f7c47016ed4ce89be1e923
 +   baseline  104 ze 145 wierszy buduje się dla JavaScriptu, 108 dla Native, 34 wykluczenia JavaScriptu z przyczynami; etc/check-compatibility.py regeneruje i sprawdza plik w make build (2026-10-21; 101 ze 144 dnia 2026-09-25; 94 ze 132 dnia 2026-08-01)
 +   criterion  CI regeneruje etc/compatibility.tsv, kończy się błędem przy rozbieżności i żadne wykluczenie nie jest pozbawione przyczyny
@@ -34,28 +22,22 @@ orthant 2 language
 +   baseline  0 nazw eksportowanych przez dwie biblioteki; wykonano 19 z 22 wierszy R8 o wysokiej pewności; Tag/Renderable nadal @unexported (2026-11-12, później; 6 nazw, 2 homonimy @unexported, ~110 kandydatów R8 wcześniej tego samego dnia)
 +   criterion  żadna nazwa nie jest eksportowana przez więcej niż jedną bibliotekę, żadne @unexported nie omija kolizji, a każdy wiersz tabel R8 w etc/api-nesting-proposal.md jest zastosowany lub po przeglądzie zachowany
 
-% 0 1 0 131794d631e522870773aff16ae8aac7
-
-@ 0 2 0 07a6b381d30a92cb023b924906e9d974
-+   baseline  101 tematów w doc/work/soundness/modules/; pokryto 145 ze 145 bibliotek (2026-10-21; 1 ze 144 niepokryta dnia 2026-09-25; 91 tematów i 35 niepokrytych dnia 2026-08-01)
+@ 0 2 0 0f3d1198b0e978311a11bfe6394f1f89
++   baseline  101 tematów w doc/soundness/modules/; pokryto 145 ze 145 bibliotek (2026-10-21; 1 ze 144 niepokryta dnia 2026-09-25; 91 tematów i 35 niepokrytych dnia 2026-08-01)
 +   criterion  python3 etc/check-doc-coverage.py zgłasza każdą bibliotekę jako pokrytą i kończy się kodem 0
 
-@ 0 2 0 1154d170629482bb139ba48e21c12602
-+   baseline  skryptowy zestaw testów DAP zatrzymuje się w punktach przerwania, wykonuje kroki i inspekcjonuje wartości przez ich instancje Inspectable; temat doc/work/soundness/modules/debugging.md (2026-10-21; obiekty inspekcjonowane jako nazwy klas JVM i brak tematu dnia 2026-09-25)
+@ 0 2 0 05558c8a0afe616c19ef03f4c9b525c6
++   baseline  skryptowy zestaw testów DAP zatrzymuje się w punktach przerwania, wykonuje kroki i inspekcjonuje wartości przez ich instancje Inspectable; temat doc/soundness/modules/debugging.md (2026-10-21; obiekty inspekcjonowane jako nazwy klas JVM i brak tematu dnia 2026-09-25)
 +   criterion  skryptowa sesja DAP (punkt przerwania, krok, inspekcja z wartościami przedstawionymi przez Soundness) przechodzi w CI względem działającej aplikacji
 
-@ 0 2 0 07448ba163d12a581789fe21f1724c6c
-+   baseline  istnieją doc/work/migration.md i 0.65.0.md–0.73.0.md; dyrektywa migracji w etc/release jest bramką wydania; brak sprawdzenia pull requestów (2026-10-21; noty do 0.68.0 dnia 2026-09-25)
-+   criterion  doc/work/migration.md istnieje; wydanie (dyrektywa migracji w etc/release) odmawia utworzenia tagu bez doc/work/migration/<version>.md; sprawdzenie CI odrzuca każdy pull request, który zmienia lib/**/src, nie dotykając niewydanego doc/work/migration/<version>.md
-
-@ 0 2 0 196b66a1e2f12f001fec8234a42c1ee3
+@ 0 2 0 174e5970ec87b6671ec8b4594cff11a1
 +   baseline  lib/reliquary (7387 wierszy) oraz anthology.lira, degustation.lira, mandible.lira, xenophile.lira i ich testy (2026-09-25)
-+   criterion  lib/reliquary nie istnieje, nie pozostaje żaden katalog lib/*/src/lira, a build.mill, etc/ i doc/work/soundness/modules nie wspominają o reliquary
++   criterion  lib/reliquary nie istnieje, nie pozostaje żaden katalog lib/*/src/lira, a build.mill, etc/ i doc/soundness/modules nie wspominają o reliquary
 
-@ 0 3 0 1022043b4940d100089e5ec885e64e12
+@ 0 3 0 1ab90a58f440346102cbf922b597507a
 +   status done
 +   done  #2530 (2026-11-20)
-+   baseline  lib/sigillate: Jws, Jwe, Jwk i Jwt, z komponentami `http` i `server`; 95 testów, biorących wektory z RFC 7515 §A.1–A.7, RFC 7516 §A.1–A.5, RFC 7517, RFC 7638 i RFC 8037; `↯/s.147.1`; doc/work/soundness/modules/jose.md (2026-11-20)
++   baseline  lib/sigillate: Jws, Jwe, Jwk i Jwt, z komponentami `http` i `server`; 95 testów, biorących wektory z RFC 7515 §A.1–A.7, RFC 7516 §A.1–A.5, RFC 7517, RFC 7638 i RFC 8037; `↯/s.147.1`; doc/soundness/modules/jose.md (2026-11-20)
 
-@ 0 1 0 0b21a7d8349a92fd16fa9db438708eef
-+   baseline  lib/chatelaine: WebAuthn.registration/register oraz authentication/authenticate, atestacja `none` i `packed`, z komponentem `server`; ceremonie rejestracji i uwierzytelniania z wektorów testowych specyfikacji W3C (§16.2–16.11) przechodzą, podobnie jak skryptowe ceremonie względem programowego uwierzytelniacza w źródłach testów; nie sterowano żadnym wirtualnym uwierzytelniaczem przeglądarki; `↯/s.148.1`; doc/work/soundness/modules/webauthn.md (2026-11-20)
+@ 0 1 0 04b2a086c09d9a4a0bf490e3f6a25ee5
++   baseline  lib/chatelaine: WebAuthn.registration/register oraz authentication/authenticate, atestacja `none` i `packed`, z komponentem `server`; ceremonie rejestracji i uwierzytelniania z wektorów testowych specyfikacji W3C (§16.2–16.11) przechodzą, podobnie jak skryptowe ceremonie względem programowego uwierzytelniacza w źródłach testów; nie sterowano żadnym wirtualnym uwierzytelniaczem przeglądarki; `↯/s.148.1`; doc/soundness/modules/webauthn.md (2026-11-20)

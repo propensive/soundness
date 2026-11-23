@@ -1,0 +1,134 @@
+# API Coherence
+
+Predictability is a safety property. A developer — or an agent — who has learned one corner of
+Soundness should be able to guess the next corner correctly: similar operations share one API,
+variation is expressed in parameters rather than in names, and names are honest. If two
+declarations share a name, they are the same thing; if they differ in name, they differ in
+meaning. An exported surface that violates these rules taxes every user on every lookup, and it
+taxes agents hardest, because agents generalise aggressively from patterns.
+
+The surface has already been measured: `etc/api-reduction-candidates.md` inventories every
+identifier the `soundness` package exports, and classifies the reduction candidates:
+
+```tabular
+column  Category
+column  Candidates
+column  Item
+row  C1  multi-word names that should nest inside the types that prefix them  api-1
+row  C2  non-established abbreviations  api-3
+row  C3  typeclass-backing entities that need not be exported at all  api-3
+row  C4  the homonym and synonym tables, where one name means two things or two names mean one  api-2
+```
+
+That inventory is scaffolding, not documentation: this track applies it category by category,
+and ends by deleting it. The file's absence is the completion signal.
+
+The track's items, with their horizons and hard dependencies; [`status.tel`](status.tel) records where each one stands:
+
+```tabular
+column  Item
+column  Title
+column  Horizon
+column  Needs
+row  api-1  multi-word names nest  near
+row  api-2  homonyms and synonyms resolve  near
+row  api-3  the backing entities demote  mid
+row  api-4  naming conformance is checked  mid
+row  api-5  the inventory is deleted  long  api-1, api-2, api-3, api-7
+row  api-6  surface changes flow through the migration convention  long  dist-2
+row  api-7  over-generic top-level names nest  mid
+```
+
+## api-1: multi-word names nest
+
+Horizon: near
+Baseline: 4 renamed names still defined at top level (`BlockCipherMode`, `BlockCipherPadding`, `SyntaxMatcher`, `TlsAcceptance`); 61 prefix families with 210 names, plus 216 singletons, still listed (measured 2026-09-25)
+
+The C1 candidates — multi-word names whose prefix already names a same-module type — move
+inside that type: `Play.Scene`, not `PlayScene`. Each move ships with migration instructions once
+`dist-2` establishes the convention.
+
+Done when: the rename table in `etc/api-nesting-proposal.md` (which superseded the C1
+section) is fully applied, and the inventory's "Remaining names by prefix family" section
+lists no name outside "Reviewed items which should not be moved".
+
+## api-2: homonyms and synonyms resolve
+
+Horizon: near
+Baseline: 12 homonym pairs and 1 synonym family (`*Parser`) listed; `etc/check-given-uniqueness.py` checks given names only, not same-name-same-thing (measured 2026-09-25)
+
+Every C4-homonym pair either unifies into one declaration or one side renames; every C4-synonym
+family collapses onto a single term for the role. Same name, same thing; different name,
+different thing.
+
+Done when: the C4-homonym and C4-synonym sections of the inventory are empty, and a
+same-name-same-thing check runs in the ordinary build (extending `make check-givens`).
+
+## api-3: the backing entities demote
+
+Horizon: mid
+Baseline: 3 C2 abbreviations listed (`AddOp`, `CellRef`, `Err`) (measured 2026-09-25)
+
+The C3 candidates — typeclass-backing entities and nested derivation objects that exist to be
+summoned, not named — are demoted, inlined or de-exported, and the C2 abbreviations are spelled
+out or established.
+
+Done when: the C2 section of the inventory is empty. (C3 and C3b were superseded by
+`etc/api-nesting-proposal.md` and closed with it.)
+
+## api-4: naming conformance is checked
+
+Horizon: mid
+
+The naming standards in `doc/standards/naming.md` and `doc/standards/given-naming.md` gain a
+conformance sweep, so that drift back into incoherence is caught mechanically rather than in
+review. `etc/check-given-uniqueness.py`, run by `make build`, covers the given-naming half;
+nothing checks `naming.md`, though flare's `S1.1` rule enforces its one `unsafe…` clause.
+
+Done when: a checked-in sweep script reports zero deviations from the naming standards, and
+runs in the ordinary build.
+
+## api-5: the inventory is deleted
+
+Horizon: long
+Needs: api-1, api-2, api-3, api-7
+
+When every category is drained, the scaffolding comes down.
+
+Done when:
+
+    test -f etc/api-reduction-candidates.md || echo absent    # absent
+
+## api-6: surface changes flow through the migration convention
+
+Horizon: long
+Needs: dist-2
+
+From here on, coherence is maintained rather than restored: any change to the exported surface
+ships with agent-executable migration instructions, per the convention `dist-2` defines. There
+is no fear of improving an API, because migration is cheap.
+
+Done when: the `dist-2` CI check has been enforced on every surface-changing pull request for
+ten consecutive releases.
+
+## api-7: over-generic top-level names nest
+
+Horizon: mid
+Baseline: 6 names exported into the umbrella by two libraries each (`Namespace`, `Commandline`, `Pane`, `Arithmetic`, `Native`, `Bytes`); 2 homonyms hidden by `@unexported` (`Tag`, `Renderable`); about 110 single-word candidates in rule R8's tables (measured 2026-11-12)
+
+api-1 nests a name whose prefix repeats its context. This item covers the case with no prefix
+to strip: a single word whose bare spelling claims a general concept when it names one
+library's notion. ultimatum's layout tree is not *the* `Frame`. Each candidate is judged
+case by case against rule R8 in `etc/api-nesting-proposal.md`. Convenience keeps a name
+top-level only when it is the library's principal type, or a concept that really is general.
+
+Progress (2026-11-12): no name is exported by more than one library; of the R8 high-confidence
+table, nineteen rows are done, three deferred for a ruling (ultimatum's gauges, honeycomb's
+attribute-value enums, savagery's `Figure` taxonomy), and xylophone's `Tag`/`Renderable` are
+blocked by `object Xml extends Tag.Container`.
+
+Done when: no name is exported into `package soundness` by more than one library, no
+`@unexported` exists only to dodge a clash, and every row of the R8 tables in
+`etc/api-nesting-proposal.md` has been either applied or moved to its "Reviewed and kept
+top-level" list.
+

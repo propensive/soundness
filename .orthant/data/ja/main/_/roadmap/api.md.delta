@@ -9,7 +9,11 @@ orthant 2 language
 @ 0 2 0 13bb210f1e21a6561a82bf562dce0f6a
 + 完了条件：一覧の C2 の節が空になること。（C3 と C3b は `etc/api-nesting-proposal.md` に取って代わられ、それとともに閉じられた。）
 
-@ 0 4 0 07f55ed7fa1d73e7092eee115a72ffa6
+! The naming standards in `doc/work/standards/naming.md` and `doc/work/standards/given-naming.md` gain a
+! conformance sweep, so that drift back into incoherence is caught mechanically rather than in
+! review. `etc/check-given-uniqueness.py`, run by `make build`, covers the given-naming half;
+! nothing checks `naming.md`, though flare's `S1.1` rule enforces its one `unsafe…` clause.
+@ 0 4 0 001b1ad304ac4b1c09953853f44561b4
 + `doc/work/standards/naming.md` と `doc/work/standards/given-naming.md` の命名規約に、適合性を一掃して調べる仕組みが加わる。そうすれば、一貫性のなさへの逆戻りは、レビューではなく機械的に捕まえられる。
 + `make build` が実行する `etc/check-given-uniqueness.py` は、given の命名の半分を扱う。`naming.md` を検査するものはないが、flare の `S1.1` 規則がその一つの `unsafe…` の条項を強制している。
 

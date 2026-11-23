@@ -1,6 +1,6 @@
 orthant 2 language
 
-@ 0 17 0 00e5f700f5864e911ea5f726341922cd
+@ 0 17 0 0ec7a54fa0928f921723afad3dc6834b
 + column  Criterio
 + column  Voci
 + row  `proscenium.compat` è vuoto  `core-2`
@@ -9,7 +9,7 @@ orthant 2 language
 + row  Il manifesto delle piattaforme è applicato nella CI, le sue esclusioni portano un motivo, e un APK Android viene costruito e firmato nella CI  `plat-1`, `plat-2`, `plat-3`
 + row  `etc/api-reduction-candidates.md` non esiste più  `api-5`
 + row  Ogni tipo di errore ha un codice bolt e una pagina di documentazione, verificati nella CI  `doc-1`
-+ row  Ogni modulo pubblicato è coperto da un argomento in `doc/work/soundness/modules/`  `doc-4`
++ row  Ogni modulo pubblicato è coperto da un argomento in `doc/soundness/modules/`  `doc-4`
 + row  La documentazione delle API è generata e pubblicata per ogni componente  `doc-5`
 + row  `fury build` costruisce Soundness stesso, con attestazione identica a quella della build Mill  `tool-4`
 + row  fume esegue l'intera suite di test, e nessuna suite è disabilitata  `tool-2`
@@ -18,15 +18,3 @@ orthant 2 language
 + row  Ogni release è pubblicata come file LIRA attestati  `dist-7`
 + row  JOSE, TOML e WebAuthn sono distribuiti  `brd-1`, `brd-2`, `brd-3`
 + row  Un agente, seguendo solo la documentazione in `doc/`, porta un nuovo progetto dal nulla a un'applicazione web JVM e JavaScript testata e distribuita usando solo strumenti dell'ecosistema, e questa guida passo passo viene eseguita e registrata nella CI  `doc-8`
-
-@ 0 10 0 0dd4e95027ea72261a6dd2c1c524be09
-+ - Gli identificatori delle voci sono ancore stabili; si citano (`core-3`, `dist-2`) invece di
-+   descrivere il lavoro in prosa.
-+ - Ogni dichiarazione di progresso si verifica eseguendo il comando `Done when:` della voce; non ci
-+   si fida mai della prosa o della memoria più che dell'output del comando. Le linee di base si
-+   rimisurano prima di farci affidamento, e lo scostamento si segnala.
-+ - Per lo stato attuale si legge [`status.tel`](status.tel); lo si aggiorna nello stesso commit del
-+   lavoro che descrive.
-+ - Quando una voce della roadmap cambia un'API pubblica, si segue la convenzione delle istruzioni di
-+   migrazione definita da `dist-2` in `doc/work/standards/migration.md`: è quella convenzione a rendere
-+   compatibili «le API cambiano liberamente» e «il codice continua a funzionare».

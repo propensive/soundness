@@ -1,6 +1,12 @@
 orthant 2 language
 
-@ 0 6 0 180f15359b93ca3d06aed49479fd5a4b
+!     An error type has a bolt code — `Error(25, 1, 0)`, the first error of the twenty-fifth
+!     module, is `↯/s.25.1` — which is stable across releases, never reused, and documented at
+!     `doc/work/errors/25.1.md`; its distinct causes are the cases of a `Reason` enum extending
+!     `Clarification`, each numbered within the error (`↯/s.25.1.1`), and each rendered through
+!     its own `Communicable`. A full error, grown step by step (900 stands for the number of
+!     the module the error is in):
+@ 0 6 0 0ae7822513db22b804469eb30be867c2
 +     Un tipo di errore ha un codice bolt — `Error(25, 1, 0)`, il primo errore del
 +     venticinquesimo modulo, è `↯/s.25.1` — che è stabile tra le release, non viene mai
 +     riutilizzato ed è documentato in `doc/work/errors/25.1.md`; le sue cause distinte sono i casi di
@@ -19,7 +25,7 @@ orthant 2 language
 !       written `Error(message)` has `module = 0`: no code, and `getMessage` prefixes its
 !       component instead. The code renders in the `[↯/s.25.1.2]` prefix of `#labelled`, of
 !       `getMessage` and of a compile-time `halt`.
-@ 0 11 0 0e41f31d6f83c96a1346426cff928766
+@ 0 11 0 1f902bd79280361b10ba58acbbd8d7cb
 +       Un errore è identificato da tre numeri, che ne formano il codice bolt. `module` è il
 +       numero della libreria in cui si trova l'errore, come lo registra l'`s.tel` del registro
 +       `bolt`; `number` è il numero proprio dell'errore all'interno di quella libreria, il primo
@@ -33,16 +39,29 @@ orthant 2 language
 +       prefisso `[↯/s.25.1.2]` di `#labelled`, di `getMessage` e di un `halt` a tempo di
 +       compilazione.
 
-@ 0 4 0 09841ddff78e3e0f1470142376faa577
+!       The house style for the message is `doc/work/standards/messages.md`: lowercase, no trailing
+!       period, present tense, the specific resource at fault interpolated as a typed value,
+!       and never *invalid* or *bad* as the whole predicate. Errors are meant to be matched on:
+!       a handler deconstructs the case class and its `Reason`, never its text.
+@ 0 4 0 0b6f654c48ede4541a940cb6f02515e6
 +       Lo stile della casa per il messaggio è `doc/work/standards/messages.md`: minuscolo, senza punto
 +       finale, al presente, con la specifica risorsa in difetto interpolata come valore
 +       tipizzato, e mai *invalid* o *bad* come intero predicato. Gli errori sono fatti per essere
 +       sottoposti a match: un handler scompone la case class e il suo `Reason`, mai il suo testo.
 
-@ 0 1 0 1b00085c23cb817210b7e86018390e25
+!     The house style for what a message says is `doc/work/standards/messages.md`.
+@ 0 1 0 02edaaeae12f74cb148e8582e38cd76e
 +     Lo stile della casa per ciò che dice un messaggio è `doc/work/standards/messages.md`.
 
-@ 0 8 0 0a1b5cee94d0e9b919081a6989fc0ce7
+! entry .Clarification   the trait a `Reason` enum extends: a number for each distinct cause of an error
+!     `trait Clarification { def number: Int }`. An error's distinct causes are the cases of a
+!     `Reason` enum extending `Clarification`, each with a number unique within the error, so
+!     that `Error(25, 1, reason.number)` renders as `↯/s.25.1.1`, `↯/s.25.1.2`… and each has a
+!     sub-section of the error's page in `doc/work/errors`. A `Reason` carries data of its own where
+!     the diagnosis needs it (`Ipv4ByteOutOfRange(byte: Int)`), and gives its own
+!     `Communicable` instance phrasing each case, which the error's message interpolates. A
+!     `halt` or `warn` given a `Clarification` puts its number in the diagnostic's prefix.
+@ 0 8 0 063f0d9811f50917072f41f93b8399e8
 + entry .Clarification   il trait che estende un enum `Reason`: un numero per ogni causa distinta di un errore
 +     `trait Clarification { def number: Int }`. Le cause distinte di un errore sono i casi di un
 +     enum `Reason` che estende `Clarification`, ciascuno con un numero unico all'interno
@@ -53,7 +72,13 @@ orthant 2 language
 +     messaggio dell'errore interpola. Un `halt` o un `warn` a cui è data una `Clarification`
 +     mette il suo numero nel prefisso della diagnostica.
 
-@ 0 6 0 0c68a17808bb31e102ebadd1ad9bad35
+!     position)` — or with its reason's number as `[↯/s.25.1.2] `: `halt(module, number,
+!     reason, message)` and `halt(module, number, reason, message, position)`, where `reason`
+!     is a `Clarification`. The position parameter of the numbered
+!     forms is `Matchable`, and a value which is not a `quotes.reflect.Position` (or `null`)
+!     reports without one. Every macro-raised code has a page in `doc/work/errors`, like a runtime
+!     error's.
+@ 0 6 0 0574e19adbf704d11b1e779eddd22708
 +     position)` — o il numero del suo motivo come `[↯/s.25.1.2] `: `halt(module, number,
 +     reason, message)` e `halt(module, number, reason, message, position)`, dove `reason` è una
 +     `Clarification`. Il parametro di posizione delle forme numerate è `Matchable`, e un valore

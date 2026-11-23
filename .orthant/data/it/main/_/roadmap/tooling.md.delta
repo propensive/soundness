@@ -1,6 +1,6 @@
 orthant 2 language
 
-@ 0 9 0 11b8761d2079527915eedfb9394c62f1
+@ 0 9 0 1bd7a6beb6e17d6e0b0e8c51346922a0
 + Il debug di un'applicazione in esecuzione dovrebbe sembrare nativo, non ospitato: breakpoint,
 + avanzamento passo passo e ispezione tramite un server Debug Adapter Protocol, con i valori
 + ispezionati resi come i loro tipi Soundness — la stessa disciplina senza codifiche Java che
@@ -10,4 +10,4 @@ orthant 2 language
 + suite pilota un processo sottoposto a debug attraverso un breakpoint, un passo `next` e
 + un'ispezione nell'esecuzione ordinaria, con ogni variabile locale resa tramite la sua istanza
 + `Inspectable` e un'istantanea di oggetto mostrata con il suo nome semplice e la sua identità
-+ anziché con un nome di classe JVM. Il topic è `doc/work/soundness/modules/debugging.md`.
++ anziché con un nome di classe JVM. Il topic è `doc/soundness/modules/debugging.md`.

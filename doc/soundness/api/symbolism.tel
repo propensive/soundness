@@ -1,0 +1,735 @@
+tel 1.0
+
+base symbolism
+import soundness
+
+info   arithmetic operators as typeclasses, each naming its operand and result types, and total comparison
+detail
+    _Symbolism_ defines the arithmetic operators `+`, `-`, `*`, `/` and prefix `-`, the roots
+    `sqrt` and `cbrt`, and the identities `zero` and `one`, not as methods of any type but as
+    extensions resolved through typeclasses. Each binary typeclass names its left operand
+    (`Self`), its right operand (`Operand`) and its result (`Result`), so arithmetic can mean
+    something for types whose operands and results differ: a length times a length is an area,
+    an instant plus a duration is an instant, and a quantity divided by another has a type
+    neither operand could have anticipated.
+
+    ```scala
+    import soundness.*
+
+    case class Money(pence: Long)
+
+    object Money:
+      given addable: Money is Addable by Money to Money =
+        Addable((left, right) => Money(left.pence + right.pence))
+
+      given multiplicable: Money is Multiplicable by Int to Money =
+        Multiplicable((money, count) => Money(money.pence*count))
+
+    Money(250) + Money(199)   // Money(449)
+    Money(250)*3              // Money(750)
+    ```
+
+    Reading an instance's type aloud gives the whole of it: `Money is Addable by Money to Money`
+    — a `Money` _is addable by_ a `Money` _to_ a `Money`. The typeclasses are `Addable`,
+    `Subtractable`, `Multiplicable`, `Divisible`, `Negatable` and `Rootable` for the operations;
+    `Zeroic` and `Unital` for the additive and multiplicative identities; `Concatenable`, which
+    makes every concatenable type `Addable`, so collections and text join with `+`; `Quotient`
+    for taking a fraction apart with the `/:` extractor; and `Comparable`, a total three-way
+    comparison returning a `Comparison`, through which collections sort and find extrema.
+
+    The instances for the primitive numeric types are singleton objects with `inline` methods,
+    so `a + b` on two `Double`s compiles to the single machine instruction, with no instance
+    allocated and nothing boxed. The `AddOp`, `SubOp`, `MulOp` and `DivOp` typeclasses are an
+    older opt-in route to the same inlining, which the operators still consult first.
+
+    Symbolism is the machinery beneath quantitative's dimensional arithmetic, mosquito's vectors
+    and matrices, hypotenuse's fixed-width numbers and aviation's instants and durations. It has
+    one source set, `symbolism.core`, which compiles for every platform, and everything is
+    exported to the `soundness` umbrella. Every instance lives in the companion of its subject
+    type or of its typeclass, so none needs an import.
+
+refer symbolism.Addable
+refer symbolism.Multiplicable
+refer symbolism.Comparable
+refer symbolism.+
+
+entry .+   adds two values through the `Addable` instance for their types
+    `left + right` is an extension on any type, needing a `left is Addable by right` in scope;
+    its type is the instance's `Result`. It first looks, while the call is inlined, for an
+    `AddOp` for the two types, and otherwise calls the `Addable` instance's `add`. Because the
+    right operand is a type parameter, a bare literal on the right does not take the left
+    operand's type: an integer literal added to a `U64` is written `count + (1: U64)`.
+
+    ```scala
+    import soundness.*
+
+    1 + 2          // 3
+    1 + 2.5        // 3.5, through `Addable.int2`
+    List(1, 2) + List(3)
+    ```
+
+    Adding values for which there is no instance is a compile error, not a fallback to
+    `toString` concatenation.
+
+entry .-   subtracts one value from another through the `Subtractable` instance for their types
+    `left - right` is an extension on any type, needing a `left is Subtractable by right` in
+    scope, and returns the instance's `Result`. As for `+`, a `SubOp` is preferred when one
+    exists.
+
+    ```scala
+    import soundness.*
+
+    10L - 3L   // 7L
+    ```
+
+entry .*   multiplies two values through the `Multiplicable` instance for their types
+    `left*right` is an extension on any type, needing a `left is Multiplicable by right` in
+    scope, and returns the instance's `Result`, which is how a length times a length can be an
+    area while a length times a number is a length. A `MulOp` is preferred when one exists.
+    Any type which is `Concatenable` with itself and `Zeroic` multiplies by an `Int` as
+    repetition, so `t"ab"*3` is `t"ababab"`.
+
+    ```scala
+    import soundness.*
+
+    6*7          // 42
+    t"ab"*3      // t"ababab"
+    ```
+
+entry ./   divides one value by another through the `Divisible` instance for their types
+    `left/right` is an extension on any type, needing a `left is Divisible by right` in scope,
+    and returns the instance's `Result`. Integer division truncates, as the primitive operator
+    does, and an `Int` divided by a `Double` is a `Double`. A `DivOp` is preferred when one
+    exists.
+
+    ```scala
+    import soundness.*
+
+    7/2      // 3
+    7/2.0    // 3.5
+    ```
+
+entry .unary_-   negates a value through the `Negatable` instance for its type, as prefix `-`
+    `-value` is an extension on any type, needing a `value is Negatable` in scope, and returns
+    the instance's `Result`. A `Byte` or `Short` negates back to its own type, wrapping as the
+    primitive types do.
+
+    ```scala
+    import soundness.*
+
+    case class Offset(x: Int)
+
+    object Offset:
+      given negatable: Offset is Negatable to Offset = Negatable(offset => Offset(-offset.x))
+
+    -Offset(3)   // Offset(-3)
+    ```
+
+entry .sqrt   the square root of a value, through its `Rootable[2]` instance
+    An extension on any type with a `Rootable[2]`, returning the instance's `Result`. On a
+    `Double` or `Float` it inlines to `Math.sqrt`, with nothing allocated. There is no instance
+    for `Int`, since its square root is not generally an `Int`: `16.sqrt` is a compile error.
+
+    ```scala
+    import soundness.*
+
+    16.0.sqrt    // 4.0
+    16.0f.sqrt   // 4.0f
+    16.sqrt      // does not compile
+    ```
+
+entry .cbrt   the cube root of a value, through its `Rootable[3]` instance
+    An extension on any type with a `Rootable[3]`, returning the instance's `Result`; on a
+    `Double` or `Float` it inlines to `Math.cbrt`.
+
+    ```scala
+    import soundness.*
+
+    27.0.cbrt   // 3.0
+    ```
+
+entry .zero   the additive identity of a type, as `zero[Int]`
+    `zero[T]` needs a `T is Zeroic` in scope. It is where a sum or a repeated concatenation
+    starts, and where a generic algorithm needs a starting value.
+
+    ```scala
+    import soundness.*
+
+    zero[Int]      // 0
+    zero[Double]   // 0.0
+    zero[String]   // ""
+    ```
+
+entry ./:   the extractor which takes a fraction apart, `numerator /: denominator`, through `Quotient`
+  detail
+      A pattern which matches any value with a `Quotient` instance, binding its numerator and
+      its denominator; a value the instance cannot decompose does not match.
+
+      ```scala
+      import soundness.*
+
+      case class Fraction(numerator: Int, denominator: Int)
+
+      object Fraction:
+        given quotient: Fraction is Quotient:
+          type Topic = Int
+          type Transport = Int
+
+          def decompose(fraction: Fraction): Option[(Int, Int)] =
+            if fraction.denominator == 0 then None
+            else Some((fraction.numerator, fraction.denominator))
+
+      Fraction(3, 4) match
+        case numerator /: denominator => numerator + denominator
+        case _                        => 0
+      ```
+  entry .unapply   decomposes a value into its numerator and denominator, if its `Quotient` can
+
+entry .Addable   a typeclass for `+`: a `Self` is addable by an `Operand` to a `Result`
+  detail
+      The typeclass behind the `+` extension. Its three type members say everything: the
+      instance `Money is Addable by Money to Money` adds two `Money`s to make a `Money`, while
+      `Instant is Addable by Duration to Instant` adds a duration to an instant. The result is a
+      member of the instance rather than a parameter of the operator, so one `+` serves every
+      combination.
+
+      ```scala
+      import soundness.*
+
+      case class Vector2(x: Int, y: Int)
+
+      object Vector2:
+        given addable: Vector2 is Addable by Vector2 to Vector2 =
+          Addable((left, right) => Vector2(left.x + right.x, left.y + right.y))
+
+      Vector2(1, 2) + Vector2(3, 4)   // Vector2(4, 6)
+      ```
+
+      A type acquires its arithmetic one instance at a time, and each operator is available as
+      soon as its instance is:
+
+      ```scala fuel
+      frame
+        label A plain case class has no arithmetic
+        code
+            case class Vector2(x: Int, y: Int)
+
+            Vector2(1, 2) + Vector2(3, 4)   // does not compile
+      frame
+        label An `Addable` instance gives it `+`
+        code
+            case class Vector2(x: Int, y: Int)
+
+            object Vector2:
+              given addable: Vector2 is Addable by Vector2 to Vector2 =
+                Addable((left, right) => Vector2(left.x + right.x, left.y + right.y))
+
+            Vector2(1, 2) + Vector2(3, 4)   // Vector2(4, 6)
+      frame
+        label A `Multiplicable` instance, with a different operand type, gives it `*`
+        code
+            case class Vector2(x: Int, y: Int)
+
+            object Vector2:
+              given addable: Vector2 is Addable by Vector2 to Vector2 =
+                Addable((left, right) => Vector2(left.x + right.x, left.y + right.y))
+
+              given multiplicable: Vector2 is Multiplicable by Int to Vector2 =
+                Multiplicable((vector, scale) => Vector2(vector.x*scale, vector.y*scale))
+
+            (Vector2(1, 2) + Vector2(3, 4))*2   // Vector2(8, 12)
+      ##
+      ```
+
+      Instances belong in the companion of the subject type, where they are found with no
+      import. The primitive instances (`Int`, `Long`, `Double`, `Float`, `Short`, `Byte`, and
+      `Int` with `Double` either way round) are the singleton objects in the companion, whose
+      `inline def add` makes `a + b` one instruction. A `Short` or a `Byte` adds back to its own
+      type, wrapping on overflow. Every `Concatenable` type is `Addable` through
+      `.concatenable`.
+  refer symbolism.+
+  refer symbolism.Concatenable
+  refer symbolism.AddOp
+  entry .apply   an `Addable` instance from a function of the two operands
+      `Addable((left, right) => …)` makes an `augend is Addable by addend to result`, with the
+      three types inferred from the expected type, as a given's declared type provides them.
+  entry .DoubleAddition   the `Double + Double` instance, inlined to one instruction
+  entry .FloatAddition   the `Float + Float` instance, inlined to one instruction
+  entry .LongAddition   the `Long + Long` instance, inlined to one instruction
+  entry .IntAddition   the `Int + Int` instance, inlined to one instruction
+  entry .IntDoubleAddition   the `Int + Double` instance, whose result is a `Double`
+  entry .DoubleIntAddition   the `Double + Int` instance, whose result is a `Double`
+  entry .ShortAddition   the `Short + Short` instance, wrapping back to a `Short`
+  entry .ByteAddition   the `Byte + Byte` instance, wrapping back to a `Byte`
+  entry .double   the given for `Double + Double`, typed as `DoubleAddition` so it inlines
+      Declared at the object's singleton type, which is what lets the inliner resolve `add` to
+      the object's `inline def`; a given typed as the trait would dispatch through it instead.
+  entry .float   the given for `Float + Float`, typed as `FloatAddition` so it inlines
+  entry .long   the given for `Long + Long`, typed as `LongAddition` so it inlines
+  entry .int   the given for `Int + Int`, typed as `IntAddition` so it inlines
+  entry .int2   the given for `Int + Double`, typed as `IntDoubleAddition` so it inlines
+  entry .int3   the given for `Double + Int`, typed as `DoubleIntAddition` so it inlines
+  entry .short   the given for `Short + Short`, typed as `ShortAddition` so it inlines
+  entry .byte   the given for `Byte + Byte`, typed as `ByteAddition` so it inlines
+  entry .concatenable   makes every `Concatenable` type `Addable`, so `+` joins lists, sets, maps and text
+      For any `left is Concatenable by right`, an `Addable` with the same operand and result,
+      which calls `concat`. This is how `List(1) + List(2)`, `set + other` and `text + more`
+      work through the one `+`.
+  entry #Augend   the left operand's type: an alias of `Self`
+  entry #Addend   the right operand's type: an alias of `Operand`
+  entry #add   adds an addend to an augend, giving the instance's `Result`
+
+entry .Subtractable   a typeclass for `-`: a `Self` is subtractable by an `Operand` to a `Result`
+  detail
+      The typeclass behind the binary `-` extension, whose result type is a member of the
+      instance: `Instant is Subtractable by Instant to Duration`, for example, while an instant
+      minus a duration is an instant.
+
+      ```scala
+      import soundness.*
+
+      case class Vector2(x: Int, y: Int)
+
+      object Vector2:
+        given subtractable: Vector2 is Subtractable by Vector2 to Vector2 =
+          Subtractable((left, right) => Vector2(left.x - right.x, left.y - right.y))
+
+      Vector2(5, 5) - Vector2(1, 2)   // Vector2(4, 3)
+      ```
+
+      The primitive instances are singleton objects with `inline def subtract`; a `Short` or a
+      `Byte` subtracts back to its own type.
+  refer symbolism.-
+  entry .apply   a `Subtractable` instance from a function of the two operands
+  entry .DoubleSubtraction   the `Double - Double` instance, inlined to one instruction
+  entry .FloatSubtraction   the `Float - Float` instance, inlined to one instruction
+  entry .LongSubtraction   the `Long - Long` instance, inlined to one instruction
+  entry .IntSubtraction   the `Int - Int` instance, inlined to one instruction
+  entry .ShortSubtraction   the `Short - Short` instance, wrapping back to a `Short`
+  entry .ByteSubtraction   the `Byte - Byte` instance, wrapping back to a `Byte`
+  entry .double   the given for `Double - Double`, typed as `DoubleSubtraction` so it inlines
+  entry .float   the given for `Float - Float`, typed as `FloatSubtraction` so it inlines
+  entry .long   the given for `Long - Long`, typed as `LongSubtraction` so it inlines
+  entry .int   the given for `Int - Int`, typed as `IntSubtraction` so it inlines
+  entry .short   the given for `Short - Short`, typed as `ShortSubtraction` so it inlines
+  entry .byte   the given for `Byte - Byte`, typed as `ByteSubtraction` so it inlines
+  entry #Minuend   the left operand's type: an alias of `Self`
+  entry #Subtrahend   the right operand's type: an alias of `Operand`
+  entry #subtract   subtracts a subtrahend from a minuend, giving the instance's `Result`
+
+entry .Multiplicable   a typeclass for `*`: a `Self` is multiplicable by an `Operand` to a `Result`
+  detail
+      The typeclass behind the `*` extension. The operand and result may differ from the left
+      operand: a vector multiplied by an `Int` is a vector, and in quantitative a length
+      multiplied by a length is an area.
+
+      ```scala
+      import soundness.*
+
+      case class Vector2(x: Int, y: Int)
+
+      object Vector2:
+        given multiplicable: Vector2 is Multiplicable by Int to Vector2 =
+          Multiplicable((vector, scale) => Vector2(vector.x*scale, vector.y*scale))
+
+      Vector2(1, 2)*3   // Vector2(3, 6)
+      ```
+
+      The primitive instances are singleton objects with `inline def multiply`. Any type which
+      is `Concatenable` with itself and `Zeroic` multiplies by an `Int` as repetition, through
+      `.concatenable`.
+  refer symbolism.*
+  entry .apply   a `Multiplicable` instance from a function of the two operands
+  entry .DoubleMultiplication   the `Double*Double` instance, inlined to one instruction
+  entry .LongMultiplication   the `Long*Long` instance, inlined to one instruction
+  entry .IntMultiplication   the `Int*Int` instance, inlined to one instruction
+  entry .FloatMultiplication   the `Float*Float` instance, inlined to one instruction
+  entry .ShortMultiplication   the `Short*Short` instance, wrapping back to a `Short`
+  entry .ByteMultiplication   the `Byte*Byte` instance, wrapping back to a `Byte`
+  entry .double   the given for `Double*Double`, typed as `DoubleMultiplication` so it inlines
+  entry .long   the given for `Long*Long`, typed as `LongMultiplication` so it inlines
+  entry .int   the given for `Int*Int`, typed as `IntMultiplication` so it inlines
+  entry .float   the given for `Float*Float`, typed as `FloatMultiplication` so it inlines
+  entry .short   the given for `Short*Short`, typed as `ShortMultiplication` so it inlines
+  entry .byte   the given for `Byte*Byte`, typed as `ByteMultiplication` so it inlines
+  entry .concatenable   repetition: a self-concatenable, `Zeroic` value times an `Int`
+      For any type which is `Concatenable` by itself to itself and `Zeroic`, `value*n` is `n`
+      copies of the value concatenated, starting from `zero`, so a count of zero (or less)
+      gives the zero value.
+
+      ```scala
+      import soundness.*
+
+      t"ab"*3   // t"ababab"
+      t"ab"*0   // t""
+      ```
+  entry #Multiplicand   the left operand's type: an alias of `Self`
+  entry #Multiplier   the right operand's type: an alias of `Operand`
+  entry #multiply   multiplies a multiplicand by a multiplier, giving the instance's `Result`
+
+entry .Divisible   a typeclass for `/`: a `Self` is divisible by an `Operand` to a `Result`
+  detail
+      The typeclass behind the `/` extension, whose result type is a member of the instance:
+      in quantitative, a distance divided by a time is a velocity.
+
+      ```scala
+      import soundness.*
+
+      case class Vector2(x: Int, y: Int)
+
+      object Vector2:
+        given divisible: Vector2 is Divisible by Int to Vector2 =
+          Divisible((vector, divisor) => Vector2(vector.x/divisor, vector.y/divisor))
+
+      Vector2(6, 9)/3   // Vector2(2, 3)
+      ```
+
+      The primitive instances are singleton objects with `inline def divide`. Each integral
+      type divides by itself to itself, truncating, and by a `Double` to a `Double`; a `Double`
+      or `Float` divides by an `Int`, and a `Float` by a `Double` to a `Double`.
+  refer symbolism./
+  entry .apply   a `Divisible` instance from a function of the two operands
+  entry .DoubleDivision   the `Double/Double` instance, inlined to one instruction
+  entry .DoubleIntDivision   the `Double/Int` instance, whose result is a `Double`
+  entry .FloatDivision   the `Float/Float` instance, inlined to one instruction
+  entry .FloatIntDivision   the `Float/Int` instance, whose result is a `Float`
+  entry .FloatDoubleDivision   the `Float/Double` instance, whose result is a `Double`
+  entry .LongDivision   the `Long/Long` instance, truncating
+  entry .LongDoubleDivision   the `Long/Double` instance, whose result is a `Double`
+  entry .IntDivision   the `Int/Int` instance, truncating
+  entry .IntDoubleDivision   the `Int/Double` instance, whose result is a `Double`
+  entry .ShortDivision   the `Short/Short` instance, truncating back to a `Short`
+  entry .ShortDoubleDivision   the `Short/Double` instance, whose result is a `Double`
+  entry .ByteDivision   the `Byte/Byte` instance, truncating back to a `Byte`
+  entry .ByteDoubleDivision   the `Byte/Double` instance, whose result is a `Double`
+  entry .double   the given for `Double/Double`, typed as `DoubleDivision` so it inlines
+  entry .double2   the given for `Double/Int`, typed as `DoubleIntDivision` so it inlines
+  entry .float   the given for `Float/Float`, typed as `FloatDivision` so it inlines
+  entry .float2   the given for `Float/Int`, typed as `FloatIntDivision` so it inlines
+  entry .float3   the given for `Float/Double`, typed as `FloatDoubleDivision` so it inlines
+  entry .long   the given for `Long/Long`, typed as `LongDivision` so it inlines
+  entry .long2   the given for `Long/Double`, typed as `LongDoubleDivision` so it inlines
+  entry .int   the given for `Int/Int`, typed as `IntDivision` so it inlines
+  entry .int2   the given for `Int/Double`, typed as `IntDoubleDivision` so it inlines
+  entry .short   the given for `Short/Short`, typed as `ShortDivision` so it inlines
+  entry .short2   the given for `Short/Double`, typed as `ShortDoubleDivision` so it inlines
+  entry .byte   the given for `Byte/Byte`, typed as `ByteDivision` so it inlines
+  entry .byte2   the given for `Byte/Double`, typed as `ByteDoubleDivision` so it inlines
+  entry #Dividend   the left operand's type: an alias of `Self`
+  entry #Divisor   the right operand's type: an alias of `Operand`
+  entry #divide   divides a dividend by a divisor, giving the instance's `Result`
+
+entry .Negatable   a typeclass for prefix `-`: a `Self` negates to a `Result`
+  detail
+      The typeclass behind the `unary_-` extension. The result is a member of the instance,
+      so a type may negate to another, as an unsigned number might to a signed one.
+
+      ```scala
+      import soundness.*
+
+      case class Vector2(x: Int, y: Int)
+
+      object Vector2:
+        given negatable: Vector2 is Negatable to Vector2 =
+          Negatable(vector => Vector2(-vector.x, -vector.y))
+
+      -Vector2(1, -2)   // Vector2(-1, 2)
+      ```
+
+      The primitive instances are singleton objects with `inline def negate`, so `-a` on a
+      `Double` is one instruction; a `Short` or a `Byte` negates back to its own type. Generic
+      code which negates through an instance should bind it in a `summonFrom` pattern rather
+      than call `summonInline[…].negate`, which types the instance as the trait and boxes
+      through the erased method even for a primitive.
+  refer symbolism.unary_-
+  entry .apply   a `Negatable` instance from a function of the operand
+  entry .DoubleNegation   the `-Double` instance, inlined to one instruction
+  entry .FloatNegation   the `-Float` instance, inlined to one instruction
+  entry .LongNegation   the `-Long` instance, inlined to one instruction
+  entry .IntNegation   the `-Int` instance, inlined to one instruction
+  entry .ShortNegation   the `-Short` instance, wrapping back to a `Short`
+  entry .ByteNegation   the `-Byte` instance, wrapping back to a `Byte`
+  entry .double   the given for `-Double`, typed as `DoubleNegation` so it inlines
+  entry .float   the given for `-Float`, typed as `FloatNegation` so it inlines
+  entry .long   the given for `-Long`, typed as `LongNegation` so it inlines
+  entry .int   the given for `-Int`, typed as `IntNegation` so it inlines
+  entry .short   the given for `-Short`, typed as `ShortNegation` so it inlines
+  entry .byte   the given for `-Byte`, typed as `ByteNegation` so it inlines
+  entry #negate   negates a value, giving the instance's `Result`
+
+entry .Rootable   a typeclass for the root of a literal degree: `Rootable[2]` is behind `sqrt`, `Rootable[3]` behind `cbrt`
+  detail
+      `Rootable[degree]` takes the root of the degree its type parameter names, a literal
+      `Int`: `Rootable[2]` is behind `sqrt` and `Rootable[3]` behind `cbrt`. A root of any other
+      degree may be given, and summoned or used directly.
+
+      ```scala
+      import soundness.*
+
+      given fourth: Double is Rootable[4] to Double = Rootable(_.sqrt.sqrt)
+
+      summon[Double is Rootable[4]].root(16.0)   // 2.0
+      ```
+
+      The instances for `Double` and `Float` are singleton objects whose `inline def root`
+      calls `Math.sqrt` or `Math.cbrt` directly. There are none for the integral types.
+  refer symbolism.sqrt
+  refer symbolism.cbrt
+  entry .apply   a `Rootable` instance of a literal degree from a function of the operand
+  entry .DoubleSquareRoot   the square root of a `Double`, inlined to `Math.sqrt`
+  entry .DoubleCubeRoot   the cube root of a `Double`, inlined to `Math.cbrt`
+  entry .FloatSquareRoot   the square root of a `Float`, through `Math.sqrt`
+  entry .FloatCubeRoot   the cube root of a `Float`, through `Math.cbrt`
+  entry .sqrt   the given for a `Double`'s square root, typed as `DoubleSquareRoot` so it inlines
+  entry .cbrt   the given for a `Double`'s cube root, typed as `DoubleCubeRoot` so it inlines
+  entry .sqrtFloat   the given for a `Float`'s square root, typed as `FloatSquareRoot` so it inlines
+  entry .cbrtFloat   the given for a `Float`'s cube root, typed as `FloatCubeRoot` so it inlines
+  entry #root   the root of a value, giving the instance's `Result`
+
+entry .Zeroic   a typeclass for a type's additive identity, as `zero[T]`
+  detail
+      A `Zeroic` instance supplies the value which adding changes nothing: `0` for the numeric
+      types, the empty `String`, and whatever a user-defined type calls zero. Generic sums and
+      repetitions start from it, and `Multiplicable.concatenable` needs it to repeat a
+      concatenable value.
+
+      ```scala
+      import soundness.*
+
+      case class Vector2(x: Int, y: Int)
+
+      object Vector2:
+        given zeroic: Vector2 is Zeroic:
+          def zero: Vector2 = Vector2(0, 0)
+
+      zero[Vector2]   // Vector2(0, 0)
+      ```
+  refer symbolism.zero
+  refer symbolism.Unital
+  entry .long   zero as a `Long`, inlined
+  entry .int   zero as an `Int`, inlined
+  entry .short   zero as a `Short`, inlined
+  entry .byte   zero as a `Byte`, inlined
+  entry .double   zero as a `Double`, inlined
+  entry .float   zero as a `Float`, inlined
+  entry .string   the empty `String`, inlined
+  entry #zero   the type's additive identity
+
+entry .Unital   a typeclass for a type's multiplicative identity, its `one`
+  detail
+      A `Unital` instance supplies the value which multiplying by changes nothing, `1` for the
+      numeric types. An instance implements the protected `makeOne`, and callers read `#one`.
+
+      ```scala
+      import soundness.*
+
+      case class Scale(factor: Double)
+
+      object Scale:
+        given unital: Scale is Unital:
+          protected def makeOne(): Scale = Scale(1.0)
+
+      summon[Scale is Unital].one   // Scale(1.0)
+      summon[Int is Unital].one     // 1
+      ```
+  refer symbolism.Zeroic
+  entry .long   one as a `Long`
+  entry .int   one as an `Int`
+  entry .short   one as a `Short`
+  entry .byte   one as a `Byte`
+  entry .double   one as a `Double`
+  entry .float   one as a `Float`
+  entry #one   the type's multiplicative identity
+
+entry .Concatenable   a typeclass for joining two values, which also gives them `+`
+  detail
+      A `Self is Concatenable by Operand to Result` joins two values end to end. Every
+      concatenable type is `Addable` through `Addable.concatenable`, so the instances are what
+      make `+` join collections, and what retire the standard library's `++` and `:::`
+      spellings; a type concatenable with itself which is also `Zeroic` multiplies by an `Int`
+      as repetition.
+
+      ```scala
+      import soundness.*
+
+      List(1, 2) + List(3)              // List(1, 2, 3)
+      Set(1, 2) + Set(2, 3)             // Set(1, 2, 3)
+      Map(1 -> t"a") + Map(1 -> t"b")   // Map(1 -> t"b"): the right operand wins
+      ```
+
+      The collections' instances live in this companion, since the collections are defined
+      below symbolism and their own companions cannot host them.
+  refer symbolism.Addable
+  entry .list   joins two `List`s, branded non-empty or not, to a plain `List`
+      Both operands may be any subtype of `List[element]`, so a branded non-empty list matches
+      on either side; the result is a plain `List[element]`, so no brand leaks into it.
+  entry .sequence   joins two `Sequence`s to a plain `Sequence`
+  entry .chain   joins two `Chain`s lazily, forcing neither
+  entry .set   the union of two `Set`s
+  entry .map   joins two `Map`s, the right operand's values winning for a shared key
+      Right-biased, as the standard library's `concat` is, and as for `Set`, where union is
+      concatenation.
+  entry .ledger   joins two `Ledger`s, the right operand winning for a shared key
+  entry .frozenArray   joins two frozen arrays into a new frozen array
+      Needs a `ClassTag` for the element type. The result is a fresh allocation of the combined
+      length, frozen once both operands are copied into it.
+  entry #concat   joins the operand onto the end of the value, giving the instance's `Result`
+
+entry .Quotient   a typeclass for values which are fractions: a numerator over a denominator
+  detail
+      A `Quotient` instance decomposes a value into its `Topic` (the numerator) and its
+      `Transport` (the denominator), which is what the `/:` extractor matches on. The
+      decomposition is optional, so a value which is not a proper fraction, such as one with a
+      zero denominator, need not match.
+
+      ```scala
+      import soundness.*
+
+      case class Ratio(over: Long, under: Long)
+
+      object Ratio:
+        given quotient: Ratio is Quotient:
+          type Topic = Long
+          type Transport = Long
+          def decompose(ratio: Ratio): Option[(Long, Long)] = Some((ratio.over, ratio.under))
+
+      Ratio(16, 9) match
+        case width /: height => width*height
+      ```
+  refer symbolism./:
+  entry #Numerator   the numerator's type: an alias of `Topic`
+  entry #Denominator   the denominator's type: an alias of `Transport`
+  entry #decompose   the value's numerator and denominator, if it has them
+
+entry .Comparable   a total three-way comparison of two values of a type, giving a `Comparison`
+  detail
+      A `Comparable` instance compares two values of its type, returning `Comparison.Less`,
+      `Same` or `More`. It is how collections sort (`sorted`, `order`), find extrema and bound
+      ranges, through an element type which is abstract to them, and it dispatches at runtime,
+      unlike hypotenuse's `Commensurable`, which is resolved statically at each `<` or `>`.
+
+      ```scala
+      import soundness.*
+
+      case class Version(major: Int, minor: Int)
+
+      object Version:
+        given comparable: Version is Comparable =
+          summon[(Int, Int) is Comparable].on[Version](version => (version.major, version.minor))
+
+      Version.comparable.max(Version(1, 9), Version(1, 10))   // Version(1, 10)
+      Comparable.int.compare(2, 3)                            // Comparison.Less
+      ```
+
+      The primitive instances compare through `java.lang`'s box methods, so `Double` and
+      `Float` have the JDK's *total* order — `NaN` after every other value, and `-0.0` before
+      `0.0` — rather than the partial order of the `<` operator. Lists compare
+      lexicographically, a proper prefix first, and pairs on their first element, then their
+      second.
+
+      Any type with a standard library `Ordering` in scope is `Comparable` through a
+      low-priority bridge (`Comparable2#ordering`), so third-party types sort without
+      ceremony; a native instance always outranks it. The other way, `#ordering` makes an
+      `Ordering` for the few standard library APIs which insist on one.
+  refer symbolism.Comparable2
+  entry .apply   a `Comparable` instance from a function returning a `Comparison`
+      ```scala
+      import soundness.*
+
+      case class Card(rank: Int)
+
+      given Card is Comparable =
+        Comparable((left, right) => Comparison(java.lang.Integer.compare(left.rank, right.rank)))
+      ```
+  entry .less   a `Comparable` instance from a strict less-than predicate, as `Ordering.fromLessThan`
+      For comparisons naturally written as `<`. The predicate is applied a second time, with
+      the operands swapped, for values which are not less in the first order: the price of
+      recovering a three-way result from a `Boolean` one.
+
+      ```scala
+      import soundness.*
+
+      case class Card(rank: Int)
+
+      given Card is Comparable = Comparable.less(_.rank < _.rank)
+      ```
+  entry .int   compares `Int`s numerically
+  entry .long   compares `Long`s numerically
+  entry .double   compares `Double`s in the JDK's total order: `NaN` last, and `-0.0` before `0.0`
+  entry .float   compares `Float`s in the JDK's total order: `NaN` last, and `-0.0` before `0.0`
+  entry .char   compares `Char`s by their UTF-16 code units
+  entry .byte   compares `Byte`s numerically, as signed values
+  entry .short   compares `Short`s numerically
+  entry .boolean   compares `Boolean`s, with `false` before `true`
+  entry .list   compares `List`s lexicographically, a proper prefix first
+      Needs a `Comparable` for the element type. The first position at which the elements
+      differ decides; if one list runs out first, it precedes the other.
+  entry .pair   compares pairs on their first element, then on their second
+      Needs a `Comparable` for each element type.
+  entry #compare   compares two values, giving `Comparison.Less`, `Same` or `More`
+  entry #less   whether the left value precedes the right
+  entry #atMost   whether the left value precedes or equals the right
+  entry #greater   whether the left value follows the right
+  entry #atLeast   whether the left value follows or equals the right
+  entry #same   whether the two values compare as equal
+  entry #min   the lesser of two values, or the left one if they compare the same
+  entry #max   the greater of two values, or the left one if they compare the same
+  entry #ordering   a standard library `Ordering` which agrees with this comparison
+      For the seams where a standard library API insists on an `Ordering`, such as the key
+      order of a `TreeMap`. It is a method rather than a given, since a given would form a
+      cycle with the `Ordering` bridge, `Comparable2#ordering`.
+  entry #on   compares another type by projecting it onto this one, as `Ordering.by`
+      ```scala
+      import soundness.*
+
+      case class Person(name: Text, age: Int)
+
+      given Person is Comparable = Comparable.int.on[Person](_.age)
+      ```
+
+entry .Comparable2   the low-priority half of `Comparable`'s companion: the bridge from `Ordering`
+  hidden
+  detail
+      Not for direct use: `object Comparable` extends it, so that its given is found in
+      `Comparable`'s implicit scope but is always outranked by a native instance.
+  entry #ordering   makes any type with a standard library `Ordering` in scope `Comparable`
+      ```scala
+      import soundness.*
+
+      case class Card(rank: Int)
+
+      given scala.math.Ordering[Card] = scala.math.Ordering.by(_.rank)
+
+      summon[Card is Comparable].compare(Card(2), Card(9))   // Comparison.Less
+      ```
+
+entry .AddOp   an inline-friendly counterpart of `Addable`, which `+` consults first
+  detail
+      A typeclass whose `op` is an `inline def`, so that an instance given at its concrete type
+      (by a `transparent inline given`) has its body inlined into `+` with no dispatch. The
+      `+` extension looks for one, while it is being inlined, before falling back to the
+      `Addable` instance; quantitative uses this route.
+
+      An `Addable` instance which is a singleton object with an `inline def add`, given at the
+      object's own singleton type, inlines just as well, which is how the primitive instances
+      work and the simpler pattern for new ones.
+  refer symbolism.Addable
+  entry #op   adds the right operand to the left, inlined at the call site
+
+entry .SubOp   an inline-friendly counterpart of `Subtractable`, which `-` consults first
+  detail
+      As `AddOp`, for subtraction: an instance given at its concrete type has its `inline def
+      op` inlined into `-`, ahead of the `Subtractable` instance.
+  entry #op   subtracts the right operand from the left, inlined at the call site
+
+entry .MulOp   an inline-friendly counterpart of `Multiplicable`, which `*` consults first
+  detail
+      As `AddOp`, for multiplication: an instance given at its concrete type has its `inline def
+      op` inlined into `*`, ahead of the `Multiplicable` instance.
+  entry #op   multiplies the left operand by the right, inlined at the call site
+
+entry .DivOp   an inline-friendly counterpart of `Divisible`, which `/` consults first
+  detail
+      As `AddOp`, for division: an instance given at its concrete type has its `inline def op`
+      inlined into `/`, ahead of the `Divisible` instance.
+  entry #op   divides the left operand by the right, inlined at the call site

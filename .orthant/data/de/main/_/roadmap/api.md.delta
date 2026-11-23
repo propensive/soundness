@@ -14,7 +14,11 @@ orthant 2 language
 + Erledigt, wenn: Der Abschnitt C2 des Inventars ist leer. (C3 und C3b wurden durch
 + `etc/api-nesting-proposal.md` abgelöst und mit ihm geschlossen.)
 
-@ 0 4 0 07f55ed7fa1d73e7092eee115a72ffa6
+! The naming standards in `doc/work/standards/naming.md` and `doc/work/standards/given-naming.md` gain a
+! conformance sweep, so that drift back into incoherence is caught mechanically rather than in
+! review. `etc/check-given-uniqueness.py`, run by `make build`, covers the given-naming half;
+! nothing checks `naming.md`, though flare's `S1.1` rule enforces its one `unsafe…` clause.
+@ 0 4 0 001b1ad304ac4b1c09953853f44561b4
 + Die Benennungsstandards in `doc/work/standards/naming.md` und `doc/work/standards/given-naming.md` erhalten
 + eine Konformitätsprüfung, sodass ein Zurückdriften in die Inkohärenz maschinell statt im Review
 + erkannt wird. `etc/check-given-uniqueness.py`, ausgeführt von `make build`, deckt die Hälfte zur

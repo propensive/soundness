@@ -1,0 +1,202 @@
+tel 1.0
+
+base larceny
+import soundness
+
+info   a compiler plugin which captures the compile errors and warnings of a block as values, for testing
+detail
+    _Larceny_ makes the failure to compile testable. Code wrapped in `demilitarize` is compiled
+    separately, and the errors and warnings that fall inside it are delivered to the program as
+    a `List[CompileError]` instead of failing the build. A test can then assert that an invalid
+    literal, a wrong-currency addition or an undeclared relation genuinely does not compile:
+    where invariants live in types, the impossibility is the feature, and this is how it is
+    tested.
+
+    ```scala fuel
+    typecheck
+    ##
+    import soundness.*
+
+    test(m"a type error is captured as an error"):
+      demilitarize:
+        val int: Int = "not an int"
+      . map(_.reason)
+    . assert(_ == List(CompileError.Reason.TypeMismatch))
+    ```
+
+    The library is a compiler plugin, and `demilitarize` does nothing without it: the plugin
+    must be enabled for every compilation whose sources use it, by passing its jar to the
+    compiler as `-Xplugin:<path to the larceny plugin jar>` (the jar's `plugin.properties`
+    names `larceny.LarcenyPlugin`). The plugin is published as a standalone artifact rather
+    than in a Soundness bundle, because a `-Xplugin` jar must declare exactly one plugin; it
+    must also be on the compile classpath, since `demilitarize` and `CompileError` are ordinary
+    symbols. Soundness's own test modules add both.
+
+    The plugin runs after parsing and before typing. For each compilation unit containing a
+    `demilitarize` block, it compiles the same source again in a sub-compilation, on the same
+    classpath and with the same language settings, prelude (`-Yimports`, `-Yno-predef`),
+    `-Ycc-new`, `-Z` features, `-preview`, warning flags (`-deprecation`, `-feature`,
+    `-unchecked`, `-Wall`, `-Wunused`, `-Wconf`) and other plugins, but without itself. The
+    diagnostics whose point falls inside each block are captured and replaced, in the main
+    compilation, by code constructing the corresponding `CompileError` values; typing then sees
+    only those constructions, so the build succeeds as long as nothing outside a
+    `demilitarize` block is wrong. `-Werror` is deliberately not propagated, so warnings are
+    captured as warnings.
+
+    An error in an early phase stops later phases running. So that one failing block cannot
+    hide the diagnostics of another, the plugin replaces each block containing an error with
+    `{}` and recompiles, as many times as needed, which is why a file with many
+    `demilitarize` blocks compiles more slowly than its size suggests. Within one block, an
+    error suppresses that block's late-phase warnings (deprecation among them), which are
+    never reached.
+
+    Inside a `demilitarize` block, calls through inline extension sugar may dealias opaque
+    collections in proxy types and report a spurious mismatch between `scala.collection` and
+    `proscenium` types; call the underlying method directly in such a block.
+
+    The library is the single JVM-only source set `larceny.plugin`, which depends on the Scala
+    compiler and nothing of Soundness's. `CompileError` and `demilitarize` are exported to the
+    `soundness` umbrella.
+
+refer larceny.demilitarize
+refer larceny.CompileError
+refer larceny.LarcenyPlugin
+
+entry .demilitarize   compiles a block separately and returns its compile errors and warnings as values
+    `demilitarize(code)` is rewritten by the larceny plugin, before typing, into the
+    `List[CompileError]` of every diagnostic whose point lies inside `code`, in the order the
+    compiler reported them. Code which compiles cleanly gives an empty list. The block itself
+    is never typed in the main compilation, so it may contain anything that parses.
+
+    ```scala fuel
+    typecheck
+    ##
+    import soundness.*
+
+    @deprecated("superseded by `current`", "0.1.0")
+    def obsolete(): Int = 42
+
+    test(m"warnings can be filtered out, leaving the errors"):
+      demilitarize:
+        obsolete()
+        val int: Int = "not an int"
+      . filter(_.error).map(_.reason)
+    . assert(_ == List(CompileError.Reason.TypeMismatch))
+    ```
+
+    Without the plugin enabled the call is an ordinary method, and returns an empty list:
+    every assertion of a failure would then fail, rather than silently pass. A block with an
+    error reports none of its own late-phase warnings, since compilation of the block stops
+    at the error.
+
+entry .procrastinate   defers compiling a block of source to run time, through the `Subcompiler`
+    The plugin rewrites `procrastinate(code)` into a call on `Subcompiler` carrying the
+    block's source text and the classpath, so that the code is compiled when the program runs
+    rather than when it is built. Without the plugin it returns its argument.
+
+entry .CompileError   one diagnostic captured by `demilitarize`: its reason, message, position and severity
+  detail
+      A case class describing a single compiler error, warning or informational message from
+      within a `demilitarize` block. `#reason` is the compiler's own message identifier, as a
+      `CompileError.Reason`, which is the most robust thing to assert on; `#message` is its
+      full text; `#focus` is the source text the diagnostic spans; and `#importance` says
+      whether it is an error, a warning or information.
+
+      ```scala fuel
+      typecheck
+      ##
+      import soundness.*
+
+      @deprecated("superseded by `current`", "0.1.0")
+      def obsolete(): Int = 42
+
+      test(m"a deprecation warning names the deprecated method"):
+        demilitarize:
+          obsolete()
+        . map(_.message)
+      . assert(_.exists(_.contains("obsolete")))
+      ```
+
+      Positions are taken from the user's source even for a diagnostic raised inside an
+      inline or macro expansion: the plugin takes the narrowest position in the compilation
+      unit which lies within the call site, so `#focus` is, for example, the bad splice in an
+      interpolator rather than the whole literal.
+  refer larceny.demilitarize
+  refer larceny.CompileError.Reason
+  entry .apply   a `CompileError` from a reason ordinal, message, focus, start, offset and severity level
+      The form the plugin generates. An ordinal newer than `CompileError.Reason` knows becomes
+      `NoExplanation`, and a level outside the known range an `Error`, so that a diagnostic
+      from a newer compiler is still captured rather than silently dropped.
+  entry .Importance   the severity of a captured diagnostic: `Info`, `Warning` or `Error`
+    detail
+        An enum whose cases mirror the Scala compiler's diagnostic levels and are named as
+        `anthology.Importance`'s are. It is restated here because the plugin depends on
+        nothing of Soundness's.
+    entry .apply   the importance for a compiler diagnostic level, treating an unknown level as `Error`
+  entry .Reason   the compiler's identifier for the kind of a diagnostic, such as `TypeMismatch`
+    detail
+        An enum with one case for each of the Scala 3 compiler's `ErrorMessageID`s, in the
+        same order, so that a captured diagnostic can be matched by kind rather than by the
+        wording of its message: `TypeMismatch`, `NotAMember`, `MissingImplicitArgument`,
+        `AmbiguousOverload`, `PatternMatchExhaustivity`, `MatchCaseUnreachable`, and so on.
+        `NoExplanation` is the reason of a diagnostic with no specific identifier, which
+        includes every error a macro raises with `halt` and every `compiletime.error`. The
+        cases marked _old_ in the source are retired identifiers kept for their position.
+
+        ```scala fuel
+        typecheck
+        ##
+        import soundness.*
+
+        test(m"a missing member is reported by its reason"):
+          demilitarize:
+            t"text".noSuchMember
+          . map(_.reason)
+        . assert(_ == List(CompileError.Reason.NotAMember))
+        ```
+  entry .Id   an extractor matching a `CompileError` by its `CompileError.Reason`
+      `case CompileError.Id(reason) =>` binds the error's reason; it always matches. It was
+      formerly the separate type `CompileErrorId`.
+  entry #reason   the compiler's identifier for the kind of diagnostic, as a `CompileError.Reason`
+  entry #message   the full text of the diagnostic, as the compiler wrote it
+  entry #focus   the source text spanned by the diagnostic's position
+  entry #start   the offset in the source file at which the diagnostic's span starts
+  entry #offset   the distance of the diagnostic's point from the start of its span
+  entry #importance   whether the diagnostic is an error, a warning or information
+  entry #point   the offset in the source file of the diagnostic's point: `#start` plus `#offset`
+  entry #warning   whether the diagnostic is a warning
+  entry #error   whether the diagnostic is an error
+
+entry .LarcenyPlugin   the compiler plugin class, named in larceny's `plugin.properties`
+  detail
+      The `StandardPlugin` the compiler instantiates when larceny's jar is passed with
+      `-Xplugin:`. It installs a single phase, `LarcenyTransformer`, and is not used directly.
+  refer larceny.LarcenyTransformer
+  entry #name   the plugin's name, `larceny`
+
+entry .LarcenyTransformer   the plugin phase which finds `demilitarize` blocks and substitutes their errors
+  hidden
+  detail
+      Not for direct use. A phase named `errorcap`, running after `parser` and before
+      `typer`, which collects the regions of every `demilitarize` block in a unit, runs the
+      `Subcompiler` over the unit's source, and rewrites each block into the construction of
+      its captured `CompileError`s.
+  entry .isLarceny   whether a `-Xplugin` path (jar or directory) is the larceny plugin itself
+      Read from the path's `plugin.properties`; it is how the plugin keeps itself out of its
+      own sub-compilations, which would otherwise recurse.
+  entry #phaseName   the phase's name, `errorcap`
+
+entry .Subcompiler   the sub-compilation that compiles a source and collects its diagnostics
+  hidden
+  detail
+      Not for direct use. `.compile` compiles a source with a fresh compiler, collecting
+      every diagnostic as a `CompileError`; given regions, it blanks each one containing an
+      error and recompiles until no new errors appear, so that one block's error cannot hide
+      another's diagnostics.
+  entry .compile   compiles a source and returns its diagnostics as `CompileError`s
+  entry .CustomReporter   the compiler reporter which records diagnostics as `CompileError`s
+    detail
+        Places each diagnostic at the narrowest position in the compilation unit's own source
+        which lies within the user's call site.
+    entry #errors   the diagnostics recorded so far
+    entry #doReport   records one diagnostic as a `CompileError`

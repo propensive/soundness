@@ -1,5 +1,5 @@
 format 2
-tree doc/work
+tree .orthant/work/tree
 axis
   name language
   kind language
@@ -60,3 +60,4 @@ axis
     parent 9f0bb13ad599
     branch true
   pattern 0.*
+live doc

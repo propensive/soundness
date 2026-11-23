@@ -10,7 +10,11 @@ orthant 2 language
 + 完成条件：清单的 C2 一节为空。
 + （C3 和 C3b 已被 `etc/api-nesting-proposal.md` 取代，并随之关闭。）
 
-@ 0 4 0 07f55ed7fa1d73e7092eee115a72ffa6
+! The naming standards in `doc/work/standards/naming.md` and `doc/work/standards/given-naming.md` gain a
+! conformance sweep, so that drift back into incoherence is caught mechanically rather than in
+! review. `etc/check-given-uniqueness.py`, run by `make build`, covers the given-naming half;
+! nothing checks `naming.md`, though flare's `S1.1` rule enforces its one `unsafe…` clause.
+@ 0 4 0 001b1ad304ac4b1c09953853f44561b4
 + `doc/work/standards/naming.md` 和 `doc/work/standards/given-naming.md` 中的命名标准获得一项一致性检查，使得退回不一致的偏移被机械地发现，而不是在评审中发现。
 + 由 `make build` 运行的 `etc/check-given-uniqueness.py` 覆盖了 given 命名这一半；没有任何东西检查 `naming.md`，不过 flare 的 `S1.1` 规则强制执行了其中关于 `unsafe…` 的那一条。
 

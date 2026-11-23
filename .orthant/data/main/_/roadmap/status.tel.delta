@@ -1,14 +1,5 @@
 orthant 2 release
 
-@ 0 1 0 13c747233bcca61316477e6488ebef15
-+ # nine track files in doc/work/roadmap/. This file is the single source of status:
-
-@ 0 1 0 13c03f6f5dc7ceca10eb9a1371fd6570
-+   criterion  no collection exposes a partial indexed apply (issue #1666); every remaining while is a shape doc/work/standards/loops.md sanctions, with a comment naming its invariant
-
-@ 0 1 0 068c2b0765b3d8d301638f6f35edbfb5
-+   criterion  doc/work/standards/capabilities.md exists, defines every tag the census recognises, and rep/DECISIONS.md's recipe sections link to it
-
 @ 0 1 0 0ac84549b1736f350456b8a52b1f5ccd
 +   criterion  CI regenerates etc/compatibility.tsv, fails on divergence, and no exclusion lacks a reason
 
@@ -27,24 +18,17 @@ orthant 2 release
 @ 0 1 0 1be93617d0eaa37800a01d8c17e815de
 +   criterion  no name is exported by more than one library, no @unexported dodges a clash, and every row of the R8 tables in etc/api-nesting-proposal.md is applied or reviewed-kept
 
-@ 0 1 0 0688084a5d42d70f1814bfa9185bbf02
-+   criterion  grep -c 'Stub' doc/work/standards/messages.md == 0
-
 @ 0 1 0 05b28bf6e92ceb9c1197a2ca4fa1a843
-+   baseline  101 topics in doc/work/soundness/modules/; 145 of 145 libraries covered (2026-10-21; 1 of 144 uncovered on 2026-09-25; 91 topics and 35 uncovered on 2026-08-01)
++   baseline  101 topics in doc/soundness/modules/; 145 of 145 libraries covered (2026-10-21; 1 of 144 uncovered on 2026-09-25; 91 topics and 35 uncovered on 2026-08-01)
 
 @ 0 1 0 014bf2f87532bb3613c7f0231ff02e1d
-+   baseline  the scripted DAP suite breaks, steps and inspects values through their Inspectable instances; topic doc/work/soundness/modules/debugging.md (2026-10-21; objects inspected as JVM class names and no topic on 2026-09-25)
-
-@ 0 2 0 1b63a81c02b33b310f12ecafbe40db74
-+   baseline  doc/work/migration.md and 0.65.0.md–0.73.0.md exist; the migration directive in etc/release gates the release; no pull-request check (2026-10-21; notes to 0.68.0 on 2026-09-25)
-+   criterion  doc/work/migration.md exists; the release (the migration directive in etc/release) refuses to tag without doc/work/migration/<version>.md; a CI check fails any pull request that changes lib/**/src without touching the unreleased doc/work/migration/<version>.md
++   baseline  the scripted DAP suite breaks, steps and inspects values through their Inspectable instances; topic doc/soundness/modules/debugging.md (2026-10-21; objects inspected as JVM class names and no topic on 2026-09-25)
 
 @ 0 1 0 0fa0e513a6ce0ca416f786984e64873b
-+   criterion  lib/reliquary is absent, no lib/*/src/lira directory remains, and build.mill, etc/ and doc/work/soundness/modules do not mention reliquary
++   criterion  lib/reliquary is absent, no lib/*/src/lira directory remains, and build.mill, etc/ and doc/soundness/modules do not mention reliquary
 
 @ 0 1 0 03b1836ad208abeb17ad1303ec829386
-+   baseline  lib/sigillate: Jws, Jwe, Jwk and Jwt, with `http` and `server` components; 95 tests, taking their vectors from RFC 7515 §A.1–A.7, RFC 7516 §A.1–A.5, RFC 7517, RFC 7638 and RFC 8037; `↯/s.147.1`; doc/work/soundness/modules/jose.md (2026-11-20)
++   baseline  lib/sigillate: Jws, Jwe, Jwk and Jwt, with `http` and `server` components; 95 tests, taking their vectors from RFC 7515 §A.1–A.7, RFC 7516 §A.1–A.5, RFC 7517, RFC 7638 and RFC 8037; `↯/s.147.1`; doc/soundness/modules/jose.md (2026-11-20)
 
 @ 0 1 0 049ddac88d5f34260c7a028bfdb08cf5
-+   baseline  lib/chatelaine: WebAuthn.registration/register and authentication/authenticate, `none` and `packed` attestation, with a `server` component; the registration and authentication ceremonies of the W3C specification's test vectors (§16.2–16.11) pass, as do scripted ceremonies against a software authenticator in the test sources; no browser's virtual authenticator has been driven; `↯/s.148.1`; doc/work/soundness/modules/webauthn.md (2026-11-20)
++   baseline  lib/chatelaine: WebAuthn.registration/register and authentication/authenticate, `none` and `packed` attestation, with a `server` component; the registration and authentication ceremonies of the W3C specification's test vectors (§16.2–16.11) pass, as do scripted ceremonies against a software authenticator in the test sources; no browser's virtual authenticator has been driven; `↯/s.148.1`; doc/soundness/modules/webauthn.md (2026-11-20)

@@ -21,7 +21,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
   nothing fails on a count.
 - The rule `S1.1` **is** strict: a method taking `(using Unsafe)` must be named `unsafe…`, or
   the build fails. `S1.2` (an `unsafe…` name must take the token) is advisory; eight definitions
-  break it and are listed in `doc/work/standards/naming.md` with the follow-up that gates them.
+  break it and are listed in `doc/standards/naming.md` with the follow-up that gates them.
   Read them from the census as `unsafe-ungated`, not from the build log: a `S1.2` **warning**
   is silently dropped when the compiler has already reported something at an enclosing
   position in that file, which is why the count exists.
@@ -55,31 +55,34 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Documentation
 
-- The documentation is an Orthant store in `.orthant/` (`language`: `en` → `fr`; `release`:
-  0.76.0 → 0.77.0 → `main`), not files in git. `doc/work/` is its git-ignored working tree, empty
-  until a point is checked out, and its paths are
+- The documentation is an Orthant store in `.orthant/` (`language`: `en` → `fr` and others;
+  `release`: 0.76.0 → 0.77.0 → `main`). `doc/` is its live tree: the English at `main`, as
+  ordinary files in git, with the paths
   `soundness/{modules,api,glossary.tel,section.tel}`, `philosophy/`, `standards/`,
-  `migration/`, `roadmap/`, `errors/`. Edit a document with `orthant checkout en main`, edit,
-  `orthant checkin`. Fuel compiles only what is checked in. The `etc/` scripts read `out/doc`,
-  which `make docs` exports (`orthant export out/doc en main`); `make build`, `doccheck` and
-  `plumbing` run it first. `doc/readme.md` and `AGENTS.md` have the details.
+  `migration/`, `roadmap/`, `errors/`. Edit a document there, then run `orthant tag`, which
+  stores `doc/` in the store and marks the translations it leaves stale; commit `doc/` and
+  `.orthant/` together. Translations and released text are edited with `orthant edit` or
+  `orthant checkout`. The `etc/` scripts read `out/doc`, which `make docs` exports
+  (`orthant export out/doc en main`) and which fails while `doc/` has edits that are not
+  tagged; `make build`, `doccheck` and `plumbing` run it first. `.orthant/readme.md` and
+  `AGENTS.md` have the details.
 
 ## Tutorial examples
 
-- Every ` ```scala ` fence in `doc/work/soundness/modules/*.md` is checked by `make doccheck` (or `make doccheck
+- Every ` ```scala ` fence in `doc/soundness/modules/*.md` is checked by `make doccheck` (or `make doccheck
   DOC=<tutorial>`), which evaluates the fences in order through the flame REPL's JSON API
   (`etc/doccheck.py`; needs the `flame` binary and the release's jars resolvable, which pinning it in a consumer's `etc/refs` does, through crux) and
   checks the names they use against the source (`etc/doccheck-names.py`). Run it after changing a
   tutorial or an API a tutorial documents. flame is built against the latest *release*, so a
-  failure that names something renamed since (listed in the unreleased `doc/work/migration/<version>.md`) is reported
+  failure that names something renamed since (listed in the unreleased `doc/migration/<version>.md`) is reported
   as TOLERATED, not STALE. The conventions the checker relies on — the `// does not compile`
   marker, `<!-- doccheck: skip -->` before a fence that cannot run in a REPL, the
   `<!-- doccheck: language … -->` request, and `etc/fixtures/<tutorial>.scala` preambles — are
-  in `doc/work/standards/style.md`. From a shell without `flame` on the path, set
+  in `doc/standards/style.md`. From a shell without `flame` on the path, set
   `FLAME=/path/to/flame`; a full run takes a couple of hours (hung fences cost two minutes
   each), so run it in the background and read the summary from stderr. `HTTP 500` means flame
   itself crashed on the fence.
-- Loops and indexing are governed by `doc/work/standards/loops.md`: which shapes drain to which
+- Loops and indexing are governed by `doc/standards/loops.md`: which shapes drain to which
   combinator, which receivers can carry a confined index at all, and the three shapes where a
   `while` may stay. `python3 etc/check-while-count.py` (run by `make build`) ratchets `while`,
   `readUnchecked` and `.charAt(` per file against `etc/while-baseline.tsv`, and rejects an
@@ -104,12 +107,12 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - Strong emphasis on compile-time type safety and immutability
 - Example data comes from Shakespeare: no arbitrary or real people, no company structure
   (`ceo`, `Employee`, `Org`), no `foo`/`bar`/`baz`. Choose an example for the feature it must
-  show, not for its likeness to the one it replaces. `doc/work/standards/examples.md` has the palette
+  show, not for its likeness to the one it replaces. `doc/standards/examples.md` has the palette
   of shapes and the names by length; `python3 etc/check-example-data.py` (run by `make build`)
   ratchets the retired vocabulary per file against `etc/example-data-baseline.tsv`.
 - No coercion helpers: a small private or local `def` (or a `given Conversion`) that only
   re-wraps a value into the type the next line wants is a missing abstraction, not a fix; use the
-  typeclass or bridge, or add one. `doc/work/standards/plumbing.md` has the rubric and the replacement
+  typeclass or bridge, or add one. `doc/standards/plumbing.md` has the rubric and the replacement
   table; `make plumbing` (`flare assess plumbing`) has a model score the candidates and records
   the verdicts in git notes under `refs/notes/flare-assess/plumbing`, keyed by each definition's
   locus and digest rather than by line.
@@ -142,7 +145,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
   choice-package pattern override defaults.
 - How an importable given is *named* (family as role, choice-then-role, uniqueness with the
   package removed, provenance words such as `javaBase…`/`wasi…`/`scalaNative…`/`soundness…`)
-  is `doc/work/standards/given-naming.md`.
+  is `doc/standards/given-naming.md`.
 
 ## Workflow
 
@@ -169,7 +172,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - Open as **ready for review** (not draft). Enable auto-merge so the PR merges as soon as the `Build` check passes.
 - Immediately before opening the PR, make sure the branch is based upon the current `origin/main`, and rebase if necessary.
 - When several PRs are in flight, stack them: base each new PR branch on the previous open PR's branch and merge bottom-up, so each is attested once. `AGENTS.md` explains why and the rules.
-- Every PR that changes what a consumer of a Soundness library could observe (renames, moves, signatures, removals, behaviour) adds an entry to the next release's `doc/work/migration/<version>.md` (the one whose version has no tag yet; create it, for the next minor version, if every file there is released), written for an LLM to apply. `AGENTS.md` specifies the format; `doc/work/migration.md` explains the scheme.
+- Every PR that changes what a consumer of a Soundness library could observe (renames, moves, signatures, removals, behaviour) adds an entry to the next release's `doc/migration/<version>.md` (the one whose version has no tag yet; create it, for the next minor version, if every file there is released), written for an LLM to apply. `AGENTS.md` specifies the format; `doc/migration.md` explains the scheme.
 - Title is a clear one-line description of the work.
 - Body follows the PR template (shared by every propensive repository from `propensive/.github`'s `pull_request_template.md`): a single summary paragraph, a blank line, then Markdown release notes for users (with code examples if useful).
 - Whenever a new commit is added to a PR, re-read the PR description and update it if it no longer accurately describes the full set of commits. Each new commit also requires a fresh `make attest && make push` before the `Build` check can pass.

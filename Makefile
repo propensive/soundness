@@ -74,16 +74,20 @@ check-scratch:
 unsafety:
 	flare metrics --dry-run
 
-# The documentation is held in the Orthant store in .orthant (doc/readme.md), so nothing in the
-# checkout is a file of it: the scripts which read it read the English at `main`, exported to
-# out/doc. It is the store as committed, not the working tree in doc/work, which may have another
-# point checked out or edits not yet checked in.
+# The documentation is held in the Orthant store in .orthant (.orthant/readme.md). The English
+# which is not yet released is written in doc, the store's live tree, and `orthant tag` stores
+# it. The scripts which read the documentation read the English at `main` as the store has it,
+# exported to out/doc, so that they and the translations are checked against one text; an edit
+# in doc which `orthant tag` has not stored is refused here, before anything reads a stale copy.
 docs:
 	rm -rf out/doc
 	$(ORTHANT) export out/doc en main
+	@diff -rq out/doc doc >/dev/null || { \
+	  echo "docs: doc/ differs from the Orthant store; store it with \`orthant tag\` (\`orthant status\` lists the edits)" >&2; \
+	  exit 1; }
 
 # The coercion-helper census: small defs that only re-wrap a value, found from the parse tree and
-# judged by a model against doc/work/standards/plumbing.md (read from out/doc), recorded in git notes under
+# judged by a model against doc/standards/plumbing.md (read from out/doc), recorded in git notes under
 # refs/notes/flare-assess/plumbing (rule `plumbing` in .pyrocosm/flare/config.tel). Needs the
 # `anthropic` credential in Pyrocosm's cascade; nothing here fails.
 plumbing: docs
@@ -111,7 +115,7 @@ ci:
 wasm-e2e:
 	./etc/ci/wasm-e2e.sh
 
-# Evaluate every tutorial example in doc/work/soundness/modules/ through the flame REPL (`make doccheck`, or
+# Evaluate every tutorial example in doc/soundness/modules/ through the flame REPL (`make doccheck`, or
 # `make doccheck DOC=json` for one tutorial), and check the names the examples use against the
 # source. See etc/doccheck.py for what it needs and how it reads the results.
 doccheck: docs
@@ -139,7 +143,7 @@ push:
 
 # Releases are cut by tagging, not by make. There is no version to bump — `publishVersion` comes
 # from the tag — and nothing to merge first, since the notes accumulate in
-# doc/work/migration/<version>.md (in the Orthant store) from the start: `git tag -s X.Y.Z && git push --tags`. The tag
+# doc/migration/<version>.md (in the Orthant store) from the start: `git tag -s X.Y.Z && git push --tags`. The tag
 # fires .github/workflows/release.yml, which runs the shared release.sh in propensive/.github: it
 # gates on a signed tag, on CI already being green on that commit (which verifies the attestation
 # note), on the migration notes for that version, on groupCheck, and on every pin being a release;

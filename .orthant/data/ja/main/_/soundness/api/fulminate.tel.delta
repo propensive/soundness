@@ -1,6 +1,12 @@
 orthant 2 language
 
-@ 0 6 0 180f15359b93ca3d06aed49479fd5a4b
+!     An error type has a bolt code — `Error(25, 1, 0)`, the first error of the twenty-fifth
+!     module, is `↯/s.25.1` — which is stable across releases, never reused, and documented at
+!     `doc/work/errors/25.1.md`; its distinct causes are the cases of a `Reason` enum extending
+!     `Clarification`, each numbered within the error (`↯/s.25.1.1`), and each rendered through
+!     its own `Communicable`. A full error, grown step by step (900 stands for the number of
+!     the module the error is in):
+@ 0 6 0 0ae7822513db22b804469eb30be867c2
 +     エラー型にはボルトコードがある。
 +     `Error(25, 1, 0)`、つまり 25 番目のモジュールの最初のエラーは `↯/s.25.1` であり、このコードはリリースをまたいで安定し、再利用されることはなく、`doc/work/errors/25.1.md` に文書化される。
 +     エラーの個々の原因は `Clarification` を継承する `Reason` 列挙型のケースであり、それぞれエラーの中で番号が付けられ（`↯/s.25.1.1`）、それぞれ自身の `Communicable` を通して描画される。
@@ -17,7 +23,7 @@ orthant 2 language
 !       written `Error(message)` has `module = 0`: no code, and `getMessage` prefixes its
 !       component instead. The code renders in the `[↯/s.25.1.2]` prefix of `#labelled`, of
 !       `getMessage` and of a compile-time `halt`.
-@ 0 11 0 0e41f31d6f83c96a1346426cff928766
+@ 0 11 0 1f902bd79280361b10ba58acbbd8d7cb
 +       エラーは三つの番号で識別され、それがボルトコードになる。
 +       `module` はエラーがあるライブラリの番号で、`bolt` レジストリの `s.tel` が記録しているものである。
 +       `number` はそのライブラリの中でのエラー自身の番号で、エラー型を書いたときに次に空いているものが使われ、決して再利用されない（廃止された番号はそうと印を付けてレジストリに残る）。
@@ -26,21 +32,46 @@ orthant 2 language
 +       `Error(message)` と書かれたエラーは `module = 0` であり、コードを持たず、`getMessage` は代わりにそのコンポーネントを接頭辞とする。
 +       コードは `#labelled`、`getMessage`、コンパイル時の `halt` の接頭辞 `[↯/s.25.1.2]` に描画される。
 
-@ 0 4 0 09841ddff78e3e0f1470142376faa577
+!       The house style for the message is `doc/work/standards/messages.md`: lowercase, no trailing
+!       period, present tense, the specific resource at fault interpolated as a typed value,
+!       and never *invalid* or *bad* as the whole predicate. Errors are meant to be matched on:
+!       a handler deconstructs the case class and its `Reason`, never its text.
+@ 0 4 0 0b6f654c48ede4541a940cb6f02515e6
 +       メッセージの書き方の流儀は `doc/work/standards/messages.md` にある。小文字で書き、末尾にピリオドを付けず、現在時制で書き、問題のある特定のリソースを型付きの値として埋め込み、述部全体を *invalid* や *bad* にすることは決してない。
 +       エラーはマッチされることを意図している。ハンドラはケースクラスとその `Reason` を分解するのであって、テキストを分解するのではない。
 
-@ 0 1 0 1b00085c23cb817210b7e86018390e25
+!     The house style for what a message says is `doc/work/standards/messages.md`.
+@ 0 1 0 02edaaeae12f74cb148e8582e38cd76e
 +     メッセージが何を述べるかの流儀は `doc/work/standards/messages.md` にある。
 
-@ 0 8 0 0a1b5cee94d0e9b919081a6989fc0ce7
+! entry .Clarification   the trait a `Reason` enum extends: a number for each distinct cause of an error
+!     `trait Clarification { def number: Int }`. An error's distinct causes are the cases of a
+!     `Reason` enum extending `Clarification`, each with a number unique within the error, so
+!     that `Error(25, 1, reason.number)` renders as `↯/s.25.1.1`, `↯/s.25.1.2`… and each has a
+!     sub-section of the error's page in `doc/work/errors`. A `Reason` carries data of its own where
+!     the diagnosis needs it (`Ipv4ByteOutOfRange(byte: Int)`), and gives its own
+!     `Communicable` instance phrasing each case, which the error's message interpolates. A
+!     `halt` or `warn` given a `Clarification` puts its number in the diagnostic's prefix.
+@ 0 8 0 063f0d9811f50917072f41f93b8399e8
 + entry .Clarification   `Reason` 列挙型が継承するトレイト：エラーの個々の原因に対する番号
 +     `trait Clarification { def number: Int }`。
 +     エラーの個々の原因は `Clarification` を継承する `Reason` 列挙型のケースであり、それぞれエラーの中で一意な番号を持つ。そのため `Error(25, 1, reason.number)` は `↯/s.25.1.1`、`↯/s.25.1.2`… と描画され、それぞれが `doc/work/errors` にあるエラーのページの小節を持つ。
 +     `Reason` は診断に必要なところでは独自のデータを持ち（`Ipv4ByteOutOfRange(byte: Int)`）、各ケースを言い表す独自の `Communicable` インスタンスを与え、エラーのメッセージがそれを埋め込む。
 +     `Clarification` を渡された `halt` や `warn` は、その番号を診断の接頭辞に入れる。
 
-@ 0 12 0 1dbf1624ea54f120159469e4d76409eb
+! entry .halt   reports a compile error from a macro and aborts the expansion
+!     For macro implementations, with `Quotes` in scope. `halt(message)` reports the
+!     `Message`'s text (coloured, through `Message#colorText`, when the compiler's `-color`
+!     setting is on) with `report.errorAndAbort`; `halt(message, position)` attaches a
+!     position. The numbered overloads prefix the diagnostic with the error's code as
+!     `[↯/s.25.1] ` — `halt(module, number, message)`, `halt(module, number, message,
+!     position)` — or with its reason's number as `[↯/s.25.1.2] `: `halt(module, number,
+!     reason, message)` and `halt(module, number, reason, message, position)`, where `reason`
+!     is a `Clarification`. The position parameter of the numbered
+!     forms is `Matchable`, and a value which is not a `quotes.reflect.Position` (or `null`)
+!     reports without one. Every macro-raised code has a page in `doc/work/errors`, like a runtime
+!     error's.
+@ 0 12 0 16cb5647bd90c4100dc733b2079a83bf
 + entry .halt   マクロからコンパイルエラーを報告し、展開を中止する
 +     マクロの実装用で、`Quotes` がスコープにあるときに使う。
 +     `halt(message)` は `Message` のテキストを（コンパイラの `-color` 設定が有効なときは `Message#colorText` を通して色付きで）`report.errorAndAbort` で報告し、`halt(message, position)` は位置を添える。

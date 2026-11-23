@@ -1,0 +1,215 @@
+tel 1.0
+
+base diuretic
+import soundness
+
+info   Java's standard types for paths, URLs, instants and durations, as representations of Soundness's concepts
+detail
+    _Diuretic_ lets the JVM's own types stand in for the concepts Soundness abstracts over.
+    anticipation names each concept as a domain — `Paths`, `Urls`, `Instants`, `Durations` —
+    and an API which produces or accepts a path, a URL or an instant asks only for a type
+    which is `Instantiable` from, or `Abstractable` to, that domain's generic form: text for a
+    path or a URL, a `Long` of epoch milliseconds for an instant, and a `Long` of nanoseconds
+    for a duration. Diuretic supplies those instances for `java.io.File`,
+    `java.nio.file.Path`, `java.net.URL`, `java.time.Instant`, `java.util.Date` and a bare
+    `Long`, so a program which meets both worlds hands values across without converting them
+    by hand.
+
+    Each instance is an object — `JavaIoFile`, `JavaNioPath`, `JavaNetUrl`,
+    `JavaTimeInstant`, `JavaUtilDate`, `JavaLongInstant`, `JavaLongDuration` — which is both
+    `Abstractable` (`.genericize`, a Java value to its generic form) and `Instantiable`
+    (`.apply`, the generic form to a Java value). None is in implicit scope, since the Java
+    types have no companions Soundness can add to: each is offered as a given in one of
+    anticipation's choice packages, `instantInterfaces`, `durationInterfaces`,
+    `pathInterfaces` and `urlInterfaces`, and imported by name, because `import
+    instantInterfaces.*` does not import givens.
+
+    ```scala
+    import soundness.*
+    import pathInterfaces.javaNioPath
+    import instantInterfaces.javaTimeInstant
+
+    def home[path: Instantiable across Paths from Text]: path = path(t"/home/work")
+    val path: java.nio.file.Path = home[java.nio.file.Path]
+
+    JavaTimeInstant(0L)                                 // java.time.Instant.EPOCH
+    JavaNioPath.genericize(java.nio.file.Paths.get("/tmp//x").nn)   // t"/tmp/x"
+    ```
+
+    The two `Long` instances are deliberately asymmetric, matching their domains: a
+    `JavaLongInstant` counts milliseconds since the epoch, and a `JavaLongDuration`
+    nanoseconds.
+
+    The library has one source set, `diuretic.core`, which needs the JVM's `java.io`,
+    `java.nio.file`, `java.net` and `java.time` packages. Its seven objects are exported to the
+    `soundness` umbrella, and the givens it contributes to the anticipation choice packages
+    are mirrored there, so `import soundness.*` then an import by name is all a user writes.
+    The givens themselves are declared in package `anticipation`, and documented with it.
+
+refer anticipation.pathInterfaces
+refer anticipation.instantInterfaces
+refer anticipation.durationInterfaces
+refer anticipation.urlInterfaces
+refer anticipation.Abstractable
+refer anticipation.Instantiable
+
+entry .JavaIoFile   `java.io.File` as a path: abstracted to its absolute text, instantiated from text
+  detail
+      An object which is `java.io.File is Abstractable across Paths to Text` and
+      `java.io.File is Instantiable across Paths from Text`. It is offered as the given
+      `pathInterfaces.javaIoFile`, imported by name, so that any path-producing API can return
+      a `File`.
+
+      ```scala
+      import soundness.*
+      import pathInterfaces.javaIoFile
+
+      val file: java.io.File = JavaIoFile(t"/tmp/example")
+      JavaIoFile.genericize(file)   // t"/tmp/example"
+      ```
+
+      Abstraction always gives the absolute path, so a relative `File` is resolved against the
+      JVM's working directory. `java.io.File` is also a `Representative of Paths` through
+      `javaIoFileRepresentative`.
+  refer anticipation.pathInterfaces
+  refer diuretic.javaIoFileRepresentative
+  entry .apply        a `java.io.File` for the path text, as `new File(path)`
+  entry .genericize   the file's absolute path, as text
+      `getAbsolutePath`: a relative file is resolved against the working directory, and no
+      symbolic links are followed.
+
+entry .JavaNioPath   `java.nio.file.Path` as a path: abstracted to its absolute text, instantiated from text
+  detail
+      An object which is `java.nio.file.Path is Abstractable across Paths to Text` and
+      `java.nio.file.Path is Instantiable across Paths from Text`. It is offered as the given
+      `pathInterfaces.javaNioPath`, imported by name.
+
+      ```scala
+      import soundness.*
+      import pathInterfaces.javaNioPath
+
+      def home[path: Instantiable across Paths from Text]: path = path(t"/home/work")
+      val path: java.nio.file.Path = home[java.nio.file.Path]
+      JavaNioPath.genericize(path)   // t"/home/work"
+      ```
+
+      Instantiation is `Paths.get`, which normalises redundant separators, so `/tmp//example`
+      abstracts back as `/tmp/example`. Abstraction always gives the absolute path. A
+      `java.nio.file.Path` is also a `Representative of Paths` through
+      `javaNioPathRepresentative`.
+  refer anticipation.pathInterfaces
+  refer diuretic.javaNioPathRepresentative
+  entry .apply        a `java.nio.file.Path` for the path text, by `Paths.get`
+  entry .genericize   the path's absolute form, as text
+      `toAbsolutePath`: a relative path is resolved against the working directory; the path is
+      not normalised beyond what `Paths.get` did, and no symbolic links are followed.
+
+entry .JavaNetUrl   `java.net.URL` as a URL: abstracted to its text, instantiated from text
+  detail
+      An object which is `java.net.URL is Abstractable across Urls to Text` and
+      `java.net.URL is Instantiable across Urls from Text`, offered as the given
+      `urlInterfaces.javaNetUrl`, imported by name.
+
+      ```scala
+      import soundness.*
+      import urlInterfaces.javaNetUrl
+
+      val url: java.net.URL = JavaNetUrl(t"http://localhost:8080/api?q=text")
+      JavaNetUrl.genericize(url)   // t"http://localhost:8080/api?q=text"
+      ```
+
+      Ports, paths and query strings round-trip unchanged.
+  refer anticipation.urlInterfaces
+  entry .apply        a `java.net.URL` parsed from text, through `java.net.URI`
+      `URI(text).toURL()`, the non-deprecated route: malformed text throws
+      `URISyntaxException` or `MalformedURLException` as the Java API does, rather than
+      raising a Soundness error, so text from outside the program should be validated first,
+      for instance as an `HttpUrl`.
+  entry .genericize   the URL's text, as `toString` gives it
+
+entry .JavaTimeInstant   `java.time.Instant` as an instant: to and from a `Long` of epoch milliseconds
+  detail
+      An object which is `java.time.Instant is Abstractable across Instants to Long` and
+      `java.time.Instant is Instantiable across Instants from Long`, offered as the given
+      `instantInterfaces.javaTimeInstant`, imported by name, so that a time read from a file
+      or a clock can arrive as a `java.time.Instant`.
+
+      ```scala
+      import soundness.*
+      import instantInterfaces.javaTimeInstant
+
+      val instant: java.time.Instant = JavaTimeInstant(1000000000000L)
+      JavaTimeInstant.genericize(instant)   // 1000000000000L
+      ```
+
+      The generic form has millisecond precision, so a `java.time.Instant`'s sub-millisecond
+      part is truncated by `.genericize`. Instants before the epoch are negative.
+  refer anticipation.instantInterfaces
+  refer anticipation.Instants
+  entry .apply        a `java.time.Instant` from milliseconds since the epoch, by `Instant.ofEpochMilli`
+  entry .genericize   an instant's milliseconds since the epoch, by `toEpochMilli`
+      Truncates any sub-millisecond part; throws `ArithmeticException`, as `toEpochMilli` does,
+      for an instant too far from the epoch to fit in a `Long` of milliseconds.
+
+entry .JavaUtilDate   `java.util.Date` as an instant: to and from a `Long` of epoch milliseconds
+  detail
+      An object which is `java.util.Date is Abstractable across Instants to Long` and
+      `java.util.Date is Instantiable across Instants from Long`, offered as the given
+      `instantInterfaces.javaUtilDate`, imported by name, for the legacy Java APIs which still
+      take a `Date`.
+
+      ```scala
+      import soundness.*
+      import instantInterfaces.javaUtilDate
+
+      JavaUtilDate.genericize(JavaUtilDate(-42L))   // -42L
+      ```
+  refer anticipation.instantInterfaces
+  entry .apply        a `java.util.Date` from milliseconds since the epoch
+  entry .genericize   a date's milliseconds since the epoch, by `getTime`
+
+entry .JavaLongInstant   a bare `Long` as an instant, counting milliseconds since the epoch
+    An object which is `Long is Abstractable across Instants to Long` and `Long is
+    Instantiable across Instants from Long`, both the identity, offered as the given
+    `instantInterfaces.javaLongInstant`, imported by name. It is what lets an instant be
+    taken or given as the raw `System.currentTimeMillis` form. Note the asymmetry with
+    `JavaLongDuration`, whose `Long` counts nanoseconds. Its members `apply` and `genericize`
+    both return their argument unchanged.
+
+    ```scala
+    import soundness.*
+    import instantInterfaces.javaLongInstant
+
+    JavaLongInstant(99L) == JavaLongInstant.genericize(99L)
+    ```
+
+entry .JavaLongDuration   a bare `Long` as a duration, counting nanoseconds
+    An object which is `Long is Abstractable … to Long` and `Long is Instantiable … from
+    Long`, both the identity, offered as the given `durationInterfaces.javaLongDuration`,
+    imported by name, so that a timeout or a sleep can be given as a raw `System.nanoTime`
+    difference. The `Long` is a count of **nanoseconds**, the generic representation of
+    `Durations` — not milliseconds, as for `JavaLongInstant`. Its members `apply` and
+    `genericize` both return their argument unchanged.
+
+    ```scala
+    import soundness.*
+    import durationInterfaces.javaLongDuration
+
+    JavaLongDuration.genericize(1_000_000_000L)   // one second, in nanoseconds
+    ```
+
+    A bare `Long` has no unit, so where a duration in milliseconds or seconds is wanted, the
+    per-unit givens in anticipation's `abstractables` package are the alternative; only one
+    `Long` duration instance may be in scope at a time.
+
+entry .javaIoFileRepresentative   evidence that `java.io.File` is a `Representative of Paths`
+    An erased given, so a method bounded `[path: Representative of Paths]` may be asked for a
+    `java.io.File`. It is a top-level given in package `diuretic`, outside any companion
+    (`java.io.File` has none Soundness can add to), so it must be imported by name:
+    `import diuretic.javaIoFileRepresentative`.
+
+entry .javaNioPathRepresentative   evidence that `java.nio.file.Path` is a `Representative of Paths`
+    An erased given, so a method bounded `[path: Representative of Paths]` may be asked for a
+    `java.nio.file.Path`. It is a top-level given in package `diuretic`, outside any companion,
+    so it must be imported by name: `import diuretic.javaNioPathRepresentative`. Being
+    erased, it can be summoned only in an erased position, such as a context bound.

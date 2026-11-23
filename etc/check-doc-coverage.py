@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Map every library under lib/ to the tutorials in doc/work/soundness/modules/ that cover it, and fail if
+"""Map every library under lib/ to the tutorials in doc/soundness/modules/ that cover it, and fail if
 any library is covered by none (roadmap item doc-4). The tutorials are read from out/doc, the copy
 of the Orthant store's English which `make docs` exports.
 
@@ -92,7 +92,7 @@ def main():
 
     uncovered = [l for l in libraries if not coverage[l] and l not in INTERNAL]
     for library in uncovered:
-        print(f'uncovered: lib/{library} — no tutorial in doc/work/soundness/modules mentions a name only it exports')
+        print(f'uncovered: lib/{library} — no tutorial in doc/soundness/modules mentions a name only it exports')
     missing = {doc for docs_ in COVERED_BY.values() for doc in docs_ if doc not in docs}
     for doc in sorted(missing):
         print(f'COVERED_BY names a tutorial that does not exist yet: {doc}')

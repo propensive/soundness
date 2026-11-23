@@ -1,7 +1,7 @@
 orthant 2 language
 
-@ 0 4 0 1c1902d2afe7b9801eeac822185723d5
-+ I documenti in `doc/work/soundness/modules/` sono tutorial, ciascuno dei quali presenta una funzionalità di
+@ 0 4 0 08ceaae5c57e43db1316cf8896802202
++ I documenti in `doc/soundness/modules/` sono tutorial, ciascuno dei quali presenta una funzionalità di
 + Soundness — una capacità che può estendersi su diversi moduli interni — a un lettore che la
 + incontra per la prima volta. Questa guida stabilisce come scriverli: a chi si rivolgono, la voce
 + che usano e le convenzioni che seguono.
@@ -20,21 +20,9 @@ orthant 2 language
 +   ` ```scala fuel `, e il preambolo finisce a una riga che contiene `##`. Le sue direttive sono
 +   qui sotto.
 
-@ 0 9 0 01c4ec9013f5cd181a943251159092c2
-+ - un concetto che un altro tutorial insegna, al suo primo uso in ogni sezione, con l'ancora della
-+   sezione dove il bersaglio è una sezione di una pagina lunga:
-+   `[strategy](errors.md#choosing-a-strategy)`;
-+ - una combinazione di due funzionalità, da entrambe le pagine. Dove un'istanza unisce il tipo di un
-+   modulo alla typeclass di un altro — una data codificata in JSON, una grandezza mostrata in una
-+   tabella, un percorso che è un parametro da riga di comando — ciascun tutorial dà alla
-+   combinazione una breve sezione o una frase, con un esempio, e collega l'altro;
-+ - un'idea di design, al suo saggio in `doc/work/philosophy/`, una volta, dove il design viene spiegato;
-+ - un'entità dell'API, nominandola in codice in linea con il suo sigillo (`` `#Json` `` per un
-+   tipo, `` `.fetch` `` per un termine), che fuel risolve e collega.
-
-@ 0 4 0 1b87f88d1cf8a39e1b25121794ec7fd4
+@ 0 4 0 1315c709ae1d99bc05662163048cc767
 + Una parola con un significato preciso in Soundness — *tattica*, *strategia*, *capability*,
-+ *package di scelta* — è definita in `doc/work/soundness/glossary.tel`, e scritta tra parentesi quadre dove un
++ *package di scelta* — è definita in `doc/soundness/glossary.tel`, e scritta tra parentesi quadre dove un
 + lettore potrebbe non conoscerla ancora: `[tactic]`, o `[strategies][strategy]` per una forma
 + flessa. Fuel mostra la definizione quando si punta il termine, e lo collega alla pagina indicata
 + nella sua voce.

@@ -1,7 +1,7 @@
 orthant 2 language
 
-@ 0 9 0 18fec6f0745a2e3303c6d7ede277ff88
-+ Hoy la prosa existe en tres sistemas paralelos: las guías temáticas de `doc/work/soundness/modules/` —la
+@ 0 9 0 15839a99031f9243069c375a4424b29d
++ Hoy la prosa existe en tres sistemas paralelos: las guías temáticas de `doc/soundness/modules/` —la
 + dirección hacia la que se avanza, y donde se escribe lo sustancial—, las plantillas heredadas por
 + módulo de `lib/*/doc/`, de cuando cada módulo era su propio repositorio, y una copia aparte del
 + material de filosofía bajo `web/res/content/`. Tres sistemas significan divergencia, y la
@@ -11,35 +11,21 @@ orthant 2 language
 + derivado de la API de LIRA. Termina con la prueba de facilidad de aprendizaje más exigente que
 + existe: un agente, con solo la documentación, compila y despliega una aplicación que funciona.
 
-@ 0 3 0 0159d8134df7ee6d11f763fb21913385
-+ `doc/work/standards/messages.md` era, según se declaraba a sí mismo, un esbozo, a pesar de que la
-+ convención de los mensajes es fundamental en todos los módulos. La norma ya está escrita:
-+ registro, estructura, vocabulario, lo que un mensaje no debe contener, la composición mediante
-+ `Communicable` y los eventos de registro.
-
-% 0 1 0 0d058f6728c5dcb01b3e933f5d633bc3
-
-@ 0 5 0 013b0edf65e4af1e17f85f3aa7922f99
+@ 0 5 0 185fd7a7a41b5e581955d9a60cdb9168
 + Hecho: #1791 (2026-08-14)
 + La línea base era de 92 ficheros de texto repetitivo de readme por módulo, y 98 directorios
 + `lib/*/doc/` (medido el 2026-08-01). El texto repetitivo era anterior al monorrepositorio; lo que
-+ merecía conservarse de `lib/*/doc/` pasó a temas de `doc/work/soundness/modules/`, y el resto se eliminó en lugar
++ merecía conservarse de `lib/*/doc/` pasó a temas de `doc/soundness/modules/`, y el resto se eliminó en lugar
 + de dejarlo ahí induciendo a error. No queda ningún directorio `lib/*/doc/`, y la frase repetitiva
 + no coincide con nada.
 
-@ 0 2 0 0f2e79aa2fb742540e781b793bb298a3
+@ 0 2 0 1a857c20717058da1437188bb4029799
 + Hecho: #2306 (2026-10-21)
-+ La línea base era de 99 temas en `doc/work/soundness/modules/` y 1 de 144 bibliotecas sin cubrir (medido el 2026-09-25; 91 temas y 35 sin cubrir el 2026-08-01); 101 temas cubren 145 de 145 el 2026-10-21
++ La línea base era de 99 temas en `doc/soundness/modules/` y 1 de 144 bibliotecas sin cubrir (medido el 2026-09-25; 91 temas y 35 sin cubrir el 2026-08-01); 101 temas cubren 145 de 145 el 2026-10-21
 
-@ 0 5 0 1a3d346f8d8345721a5f85b3f99b3f85
-+ Cada módulo publicado está cubierto por al menos un tema de `doc/work/soundness/modules/`, y un script de
+@ 0 5 0 0f601dfc26f27e1b08d1cb0e14f34fa1
++ Cada módulo publicado está cubierto por al menos un tema de `doc/soundness/modules/`, y un script de
 + cobertura asigna módulos a temas para que los huérfanos sean visibles: `etc/check-doc-coverage.py`,
 + que ejecuta `make build`, termina con un estado distinto de cero ante un huérfano. El último,
 + burdock, está cubierto por `packaging.md`; la entrada de `COVERED_BY` que asignaba ese tema a
 + ziggurat (una biblioteca que eliminó #1973) ahora nombra a burdock.
-
-@ 0 3 0 0864272c52cb10310fe2fbb6e33b102e
-+ La prosa bajo `web/res/content/` duplica a mano material de filosofía: diez páginas, tocadas por
-+ última vez en #801, cada una una copia más antigua y más corta de una página de
-+ `doc/work/philosophy/`. El sitio web se genera a partir de `doc/`: una sola fuente, sin copias
-+ paralelas.

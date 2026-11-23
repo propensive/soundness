@@ -1,6 +1,6 @@
 orthant 2 language
 
-@ 0 17 0 00e5f700f5864e911ea5f726341922cd
+@ 0 17 0 0ec7a54fa0928f921723afad3dc6834b
 + column  判据
 + column  条目
 + row  `proscenium.compat` 为空  `core-2`
@@ -9,7 +9,7 @@ orthant 2 language
 + row  平台清单在 CI 中强制执行，其排除项都附有理由，并且在 CI 中构建并签名一个 Android APK  `plat-1`、`plat-2`、`plat-3`
 + row  `etc/api-reduction-candidates.md` 不再存在  `api-5`
 + row  每个错误类型都有 bolt 代码和文档页面，并在 CI 中检查  `doc-1`
-+ row  每个已发布的模块都由一个 `doc/work/soundness/modules/` 主题覆盖  `doc-4`
++ row  每个已发布的模块都由一个 `doc/soundness/modules/` 主题覆盖  `doc-4`
 + row  为每个组件生成并发布 API 文档  `doc-5`
 + row  `fury build` 能构建 Soundness 自身，其证明与 Mill 构建相等  `tool-4`
 + row  fume 运行完整的测试套件，且没有套件被禁用  `tool-2`
@@ -18,9 +18,3 @@ orthant 2 language
 + row  每个版本都以经过证明的 LIRA 文件发布  `dist-7`
 + row  JOSE、TOML 和 WebAuthn 已交付  `brd-1`、`brd-2`、`brd-3`
 + row  一个智能体仅按照 `doc/` 中的文档，只使用生态系统内的工具，把一个新项目从零做成经过测试、已部署的 JVM 加 JavaScript Web 应用，并且这一演练在 CI 中执行并记录  `doc-8`
-
-@ 0 10 0 0dd4e95027ea72261a6dd2c1c524be09
-+ - 条目标识符是稳定的锚点；引用它们（`core-3`、`dist-2`），而不是用正文描述工作。
-+ - 通过运行条目的 `Done when:` 命令来核实任何关于进展的说法；永远不要相信正文或记忆胜过命令的输出。依赖基线之前先重新测量，并报告漂移。
-+ - 阅读 [`status.tel`](status.tel) 了解当前状态；在描述它的工作的同一个提交中更新它。
-+ - 当路线图条目改变公共 API 时，遵循 `dist-2` 在 `doc/work/standards/migration.md` 中定义的迁移说明约定，正是这一约定使“API 自由变化”和“代码继续工作”得以兼容。

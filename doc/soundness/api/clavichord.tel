@@ -1,0 +1,97 @@
+tel 1.0
+
+base clavichord
+import soundness
+
+info   a keypress as a value: a character, a named key, or either held with modifiers
+detail
+    _Clavichord_ is the vocabulary of keys shared by everything in Soundness that reads or
+    produces a keypress. Terminals and browsers agree on what a keypress *is* and disagree
+    only on how it is encoded, so the model lives here, apart from either: profanity decodes
+    a terminal's escape sequences into `Keypress` values, and tarantula renders them as the
+    key actions the WebDriver protocol defines, without either knowing about the other.
+
+    A `Keypress` is an ordinary character, a function key, one of the named editing keys, an
+    otherwise unnamed escape sequence, or one of those wrapped in the modifiers held with it.
+    A modifier accepts only what can meaningfully be modified, so the type rules out
+    keypresses no keyboard can produce.
+
+    ```scala
+    import soundness.*
+
+    def describe(keypress: Keypress): Text = keypress match
+      case Keypress.CharKey(char)              => t"typed $char"
+      case Keypress.Ctrl('C')                  => t"interrupt"
+      case Keypress.Shift(Keypress.Enter)      => t"new line"
+      case Keypress.Up | Keypress.Down         => t"history"
+      case other                               => other.show
+
+    Keypress.Ctrl(Keypress.Alt(Keypress.Left)).show   // t"[⌃]+[⌥]+[←]"
+    ```
+
+    The library has a single source set, `clavichord.core`, for every platform, and
+    everything is exported to the `soundness` umbrella.
+
+refer clavichord.Keypress
+
+entry .Keypress   a key as pressed: a character, a named or function key, or one held with modifiers
+  detail
+      An enum whose cases are:
+
+      - the named editing keys, `Tab`, `Enter`, `Backspace`, `Delete`, `Escape`, `Insert`,
+        `Home`, `End`, `PageUp`, `PageDown`, `Left`, `Right`, `Up` and `Down`, each also a
+        `Keypress.Editing`;
+      - `CharKey(char)`, an ordinary character, with any shift already applied (a shifted
+        `a` is `CharKey('A')`);
+      - `FunctionKey(number)`, `F1` to `F12` and beyond;
+      - `EscapeSeq(id, content*)`, an escape sequence with no other name, by its final
+        identifying character and its parameters;
+      - and the modifiers, which nest outwards in a fixed order: `Shift` of an editing or
+        function key; `Alt` of those or a `Shift`; `Ctrl` of those, an `Alt`, or one of the
+        characters a control code can carry (`'A'` to `'Z'`, `'['`, `'\\'`, `']'`, `'^'`,
+        `'_'` and `'@'`); and `Meta` of any of the other modifiers or keys.
+
+      The modifiers' parameter types follow that order, so `Shift(CharKey('a'))` and
+      `Alt(Ctrl('C'))` do not compile: `Ctrl(Alt(Left))` is the one way to write that
+      combination, and a match need consider only one.
+
+      ```scala
+      import soundness.*
+
+      Keypress.Ctrl('C')
+      Keypress.Shift(Keypress.Enter)
+      Keypress.Meta(Keypress.Ctrl(Keypress.Alt(Keypress.Shift(Keypress.Home))))
+      Keypress.Shift(Keypress.CharKey('a'))   // does not compile
+      ```
+
+      A keypress shows (`.showable`) with a Unicode symbol in square brackets for each key
+      and modifier, joined to what it modifies with `+`.
+  refer clavichord.Keypress.EditKey
+  entry .Editing   the marker trait of the fourteen named editing keys
+      `Tab`, `Home`, `End`, `PageUp`, `PageDown`, `Insert`, `Delete`, `Enter`, `Backspace`,
+      `Escape`, `Left`, `Right`, `Up` and `Down` each extend it. It is a nominal marker
+      rather than a union of the cases' singleton types so that it still admits them when
+      they are reached through the umbrella's export forwarders, as `soundness.Keypress.Enter`.
+  entry .EditKey   any one of the named editing keys: `Keypress & Keypress.Editing`
+      The type of a key which `Shift`, `Alt`, `Ctrl` and `Meta` may wrap besides function
+      keys, and the type to use for a method which handles only editing keys.
+
+      ```scala
+      import soundness.*
+
+      val key: Keypress.EditKey = Keypress.PageDown
+      ```
+  entry .showable   shows a keypress with a bracketed Unicode symbol per key and modifier
+      Shift is `[⇧]`, Alt `[⌥]`, Ctrl `[⌃]` and Meta `[⌘]`, each joined to what it
+      modifies with `+`. The editing keys are `[⇥]`, `[↵]`, `[⌫]`, `[⌦]`, `[⎋]`, `[⎀]`, the
+      arrows `[↑]` `[↓]` `[←]` `[→]`, `[↖]` for Home, `[↘]` for End, and `[⇞]` `[⇟]` for the
+      page keys. A character is bracketed as itself, except a space, `[␣]`; a function key is
+      `[F5]`; and an escape sequence is `[⎋R]`, showing its identifier but not its content.
+
+      ```scala
+      import soundness.*
+
+      Keypress.Shift(Keypress.Enter).show   // t"[⇧]+[↵]"
+      Keypress.Ctrl('C').show               // t"[⌃]+[C]"
+      Keypress.FunctionKey(12).show         // t"[F12]"
+      ```

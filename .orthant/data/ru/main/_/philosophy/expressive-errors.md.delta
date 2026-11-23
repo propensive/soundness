@@ -1,6 +1,10 @@
 orthant 2 language
 
-@ 0 4 0 037cfceaa03558c210fcc809b1438d8d
+! The numbers are the error's identity. An error type has a bolt code — the number
+! of its module and its own within the module — and each reason a number within it, and every code has a page in `doc/work/errors` explaining
+! the cause and the usual remedies — so `↯/s.100.2` in a user's report can be looked up rather
+! than guessed at.
+@ 0 4 0 049745cb252b8efc0c6cd6881bcc6507
 + Номера — это идентичность ошибки. У типа ошибки есть bolt-код — номер его модуля и его
 + собственный номер внутри модуля, — а у каждой причины есть номер внутри него, и для каждого кода
 + есть страница в `doc/work/errors`, объясняющая причину и обычные способы исправления, — поэтому

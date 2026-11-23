@@ -1,6 +1,16 @@
 orthant 2 language
 
-@ 0 10 0 07718803880c96c903ec955211037dd5
+! - The changes since the last release accumulate in `doc/work/migration/<version>.md`, named from
+!   the start after the release they will be part of (for example `doc/work/migration/0.71.0.md`
+!   after Soundness 0.70.0). Every PR that makes a material change to the public API or
+!   observable behaviour adds an entry to it; the first such change after a release creates it.
+! - Tagging the release publishes the file as it stands, so no change has to merge first. The
+!   release refuses to run while `<version>.md` is missing, or while another version's notes are
+!   unreleased, so the notes cannot be skipped or stranded under the wrong version. Released
+!   files are not edited afterwards except to correct mistakes.
+! - The result is one file per release, each describing exactly the changes between the
+!   previous release and that one.
+@ 0 10 0 123e54cfefdf9eb70c7d4664c17d0389
 + - 自上一版本以来的变更累积在 `doc/work/migration/<version>.md` 中，该文件从一开始就以它所属的版本命名（例如 Soundness 0.70.0 之后为 `doc/work/migration/0.71.0.md`）。
 + 每个对公共 API 或可观察行为做出实质性变更的 PR 都会向其中添加一条条目；版本发布后的第一个此类变更会创建该文件。
 + - 为版本打标签时，会按文件当时的状态发布它，因此不必先合并任何变更。
@@ -8,6 +18,10 @@ orthant 2 language
 + 已发布的文件此后不再编辑，除非是为了更正错误。
 + - 结果是每个版本一个文件，每个文件恰好描述上一版本与该版本之间的变更。
 
-@ 0 4 0 05ef0321cd1f045d1da39699bdbda558
+! To upgrade a project from version `A` to version `B`, instruct an LLM agent to read every file
+! `doc/work/migration/<v>.md` with `A < v <= B`, in ascending version order, and to apply the changes
+! each one describes to the project's code. For example, moving from 0.64.0 to 0.67.0 means
+! reading `0.65.0.md`, `0.66.0.md` and `0.67.0.md`, in that order.
+@ 0 4 0 04a2df78b26c41021c795f8e36ba71bc
 + 要把项目从版本 `A` 升级到版本 `B`，请指示 LLM 智能体按版本升序读取每个满足 `A < v <= B` 的文件 `doc/work/migration/<v>.md`，并将每个文件所描述的变更应用到项目代码中。
 + 例如，从 0.64.0 迁移到 0.67.0 意味着依次读取 `0.65.0.md`、`0.66.0.md` 和 `0.67.0.md`。

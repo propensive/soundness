@@ -1,21 +1,3 @@
 orthant 2 language
 
-@ 0 5 0 00347af4a10aaba916a72e149b1c8348
-+ La voce chiave di volta: `doc/work/migration.md` definisce il formato delle istruzioni di migrazione
-+ eseguibili da un agente, cioè che cosa è cambiato, come individuare il codice interessato, la
-+ riscrittura esatta e come verificarla, e la CI impone che le pull request etichettate come
-+ incompatibili portino istruzioni in quel formato. Diversi filoni terminano qui: è ciò attraverso
-+ cui passa `api-6` e ciò che `tool-5` serve agli agenti.
-
-@ 0 8 0 1fe93c35d555a65e0825091d1355b30e
-+ Fatto quando: `doc/work/migration.md` definisce la convenzione, la release si rifiuta di partire senza
-+ `doc/work/migration/<version>.md`, e un controllo della CI fa fallire qualsiasi pull request che
-+ modifica `lib/**/src` senza toccare le note di migrazione non rilasciate. Le prime due condizioni
-+ valgono: la convenzione è scritta, esistono i file da `0.65.0.md` in poi, e la direttiva
-+ `migration` in `etc/release` rifiuta un tag finché mancano le note della versione o quelle di
-+ un'altra versione non sono rilasciate. Resta il controllo sulle pull request: `main.yml` verifica
-+ l'attestazione e nient'altro. La convenzione non si basa sulle etichette: ogni cambiamento
-+ sostanziale si registra nel `doc/work/migration/<version>.md` della release successiva, chiamato fin
-+ dall'inizio come quella release.
-
-% 0 1 0 1737f7af088689a90b003adb8b963063
+% 0 1 0 0b0af992e6bfac6c10ea3d9a4cadef9e

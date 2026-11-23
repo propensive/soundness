@@ -1,5 +1,9 @@
 orthant 2 language
 
-@ 0 4 0 12b07e19a23cc3a90e9f3a30d1922b9f
+! Done when: no collection in `lib/` exposes a partial indexed `apply`, and every `while` that
+! remains is one of the three shapes [`doc/work/standards/loops.md`](../standards/loops.md) sanctions,
+! carrying the comment that names its invariant. A literal zero is not the goal: index arithmetic
+! derived from the data, and the combinators' own internals, stay as loops.
+@ 0 4 0 0a264f4f923151dd1f90f9971723cda7
 + 完了条件：`lib/` のどのコレクションも部分的なインデックス付きの `apply` を公開せず、残るすべての `while` が [`doc/work/standards/loops.md`](../standards/loops.md) が認める三つの形のいずれかであり、その不変条件を名指すコメントを持つこと。
 + 文字どおりのゼロは目標ではない。データから導かれるインデックスの算術と、コンビネーター自身の内部は、ループのまま残る。

@@ -1,0 +1,128 @@
+# Immutability
+
+Soundness values are immutable: once constructed, a value never changes, and any
+operation that would alter it instead returns a new value. This removes whole
+categories of bug — aliasing surprises, data races, and changes felt at a distance —
+and makes a value safe to share freely across threads and scopes without defensive
+copying. An immutable value is also easier to reason about, because its meaning is
+fixed at the moment it is created and cannot be invalidated by code running somewhere
+else.
+
+## Updating without mutating
+
+The objection to immutability is always the same: changing one field deep inside a
+structure means rebuilding every layer above it. That is true, and it is a problem of
+syntax rather than of semantics — so Soundness solves it with syntax. A
+[lens](/doc/soundness/modules/optics.md) takes the update written as an ordinary path assignment and
+does the rebuilding:
+
+```scala fuel
+parse
+##
+case class Person(name: Text, age: Int)
+case class Troupe(name: Text, players: List[Person])
+case class Play(title: Text, troupe: Troupe)
+
+play.lens(_.troupe.name = t"The Mechanicals")
+```
+
+The result is a new `Play`; the original is untouched and any other reference to it
+still sees what it saw. Several updates apply together, and ones sharing a prefix
+rebuild the shared structure once rather than once each:
+
+```scala fuel
+parse
+##
+play.lens
+  ( _.troupe.players = Nil,
+    _.troupe.name = t"The Mechanicals" )
+```
+
+The same syntax reaches through collections with `Each` and `Filter`, so "give every
+player an age of thirty" is one expression rather than a rebuild written by hand.
+
+## Sharing without copying
+
+An immutable value needs no defensive copy, because there is nothing to defend against.
+A `Data` handed to three threads is read by three threads; a parsed document held in a
+cache cannot be altered by whoever fetched it; a configuration passed to a subsystem
+cannot come back changed.
+
+That is what makes structural sharing safe. A lens rebuilds only the spine it descends,
+and every branch it did not touch is *the same object* in the old value and the new one.
+Immutability is therefore what makes the rebuilding cheap: without it, sharing a
+sub-structure between two values would be a bug.
+
+## Where mutation survives, and why
+
+Immutability is a property of values, not a prohibition on the machine. Four places in
+Soundness are deliberately mutable:
+
+```tabular
+column  Place
+column  Mutates
+column  Kept safe by
+row  a builder  a buffer it exclusively owns  nothing observing the intermediate states
+row  the streaming kernel  a window into a buffer  capture and separation checking
+row  a `Canvas`  pixels, in place  the `open` block's scope and the `Write` grant
+row  an atomic cell  one shared machine word  indivisible operations
+```
+
+The first three are confined.
+
+A **builder** mutates a buffer it exclusively owns and yields an immutable value at the
+end. Nothing observes the intermediate states, so nothing depends on them.
+
+The **streaming kernel** exposes a mutable window into a buffer, which is precisely what
+makes it zero-copy. That window belongs to exactly one consumer, and the compiler
+enforces it: a `Stream` is an exclusive capability, so aliasing one, or letting one
+escape the scope that owns its source, does not compile. Mutation is permitted here
+because [capture and separation checking](capture-checking.md) prove that nobody else
+can see it.
+
+A **`Canvas`**, obtained by opening a [raster](/doc/soundness/modules/images.md) for writing, mutates
+pixels in place — because generating a large image one pixel-function call at a time is
+the wrong shape for a drawing algorithm. The mutation is scoped to the `open` block and
+gated on the `Write` grant, and `snapshot` takes an independent copy for anything that
+must outlive it.
+
+The pattern is the same in all three: mutation is a local implementation technique with
+a proof of confinement, never a property of a value that others can see.
+
+An **atomic cell** is the exception, and it is worth naming as one rather than hiding.
+An `Atomic[Int]` or `Atomic.Ref[State]` is deliberately *not* confined: its whole purpose
+is that two threads see one location, so no aliasing analysis can help and none is
+attempted. What replaces confinement is a different guarantee. The location is a single
+machine word, and every operation on it is indivisible, so there is no intermediate state
+for another thread to observe. The type does not promise that the mutation is invisible;
+it promises that it cannot be caught half-done.
+
+That is why the operations are named for which value they hand back. `count.ere(_ + 1)`
+yields the value it displaced and `count.since(_ + 1)` the value it installed, so a caller
+can tell whether it, and not somebody else, made the transition — the question that only
+arises once mutation is shared, and the one a `var` cannot answer:
+
+```scala fuel
+parse
+##
+if !closed.ere(true) then shutdown()    // true only for the call that closed it
+```
+
+Shared cells are a low-level tool, and the collection uses them where concurrency is the
+subject: supervising tasks, accumulating errors across a scope, and the hand-off rings
+beneath the streaming kernel. They are not how a value is modelled.
+
+## What it costs
+
+Rebuilding is not free. A lens update allocates one object per level it descends, so a
+tight loop updating a deep structure allocates more than in-place mutation would. Where
+that matters — and it matters far less often than intuition suggests, since the
+allocations are young and short-lived — the answer is a builder or a scoped mutable
+region, not making the value itself mutable.
+
+The trade is deliberate: pay a little allocation to eliminate a class of bug that is
+otherwise found only in production, on a Tuesday, under load.
+
+See [impossible states](impossible-states.md) for the related discipline on what a value
+may be, and [capture checking](capture-checking.md) for how the confined mutations are
+proved safe.

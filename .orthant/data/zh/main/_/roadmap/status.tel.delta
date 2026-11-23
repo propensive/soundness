@@ -1,16 +1,5 @@
 orthant 2 language
 
-@ 0 3 0 148a30337b22668a138439c53376660b
-+ # 路线图条目的机器可读索引。doc/work/roadmap/ 中九个轨道文件里的每个条目各有一条 `item` 记录。
-+ # 本文件是状态的唯一来源：散文文件从不宣称完成，而是链接到这里。
-
-@ 0 2 0 1150a678e12de40b1108079fd587f3ad
-+   baseline  lib 核心中有 1669 个 while 循环、993 个 readUnchecked、514 个 charAt（2026-10-21，#2274 使冻结的 Array 成为唯一的不可变数组之后；2026-09-25 为 1606、476、507）
-+   criterion  没有集合公开部分的索引 apply（issue #1666）；剩下的每个 while 都是 doc/work/standards/loops.md 认可的形状，并带有一条注明其不变式的注释
-
-@ 0 1 0 00b880a91082413204e9196c41d2f096
-+   criterion  doc/work/standards/capabilities.md 存在，定义了普查识别的每个标签，且 rep/DECISIONS.md 的配方各节链接到它
-
 @ 0 2 0 0dc0dcbd00f7c47016ed4ce89be1e923
 +   baseline  145 行中有 104 行可为 JavaScript 构建，108 行可为 Native 构建，34 个 JavaScript 排除项附有原因；etc/check-compatibility.py 在 make build 中重新生成并检查该文件（2026-10-21；2026-09-25 为 144 行中的 101 行；2026-08-01 为 132 行中的 94 行）
 +   criterion  CI 重新生成 etc/compatibility.tsv，在出现分歧时失败，且没有排除项缺少原因
@@ -33,28 +22,22 @@ orthant 2 language
 +   baseline  0 个名称由两个库导出；22 个高置信度 R8 行中已完成 19 个；Tag/Renderable 仍为 @unexported（2026-11-12 稍后；同一天早些时候为 6 个名称、2 个 @unexported 同名异义、约 110 个 R8 候选）
 +   criterion  没有名称由多于一个库导出，没有 @unexported 用于回避冲突，且 etc/api-nesting-proposal.md 中 R8 表的每一行都已应用或经审查保留
 
-% 0 1 0 131794d631e522870773aff16ae8aac7
-
-@ 0 2 0 07a6b381d30a92cb023b924906e9d974
-+   baseline  doc/work/soundness/modules/ 中有 101 个主题；145 个库中 145 个已覆盖（2026-10-21；2026-09-25 为 144 个中 1 个未覆盖；2026-08-01 为 91 个主题、35 个未覆盖）
+@ 0 2 0 0f3d1198b0e978311a11bfe6394f1f89
++   baseline  doc/soundness/modules/ 中有 101 个主题；145 个库中 145 个已覆盖（2026-10-21；2026-09-25 为 144 个中 1 个未覆盖；2026-08-01 为 91 个主题、35 个未覆盖）
 +   criterion  python3 etc/check-doc-coverage.py 报告每个库都已覆盖，并以 0 退出
 
-@ 0 2 0 1154d170629482bb139ba48e21c12602
-+   baseline  脚本化的 DAP 套件设置断点、单步执行，并通过值的 Inspectable 实例检视它们；主题 doc/work/soundness/modules/debugging.md（2026-10-21；2026-09-25 时对象被检视为 JVM 类名，且没有主题）
+@ 0 2 0 05558c8a0afe616c19ef03f4c9b525c6
++   baseline  脚本化的 DAP 套件设置断点、单步执行，并通过值的 Inspectable 实例检视它们；主题 doc/soundness/modules/debugging.md（2026-10-21；2026-09-25 时对象被检视为 JVM 类名，且没有主题）
 +   criterion  脚本化的 DAP 会话（断点、单步执行、以 Soundness 渲染的值进行检视）在 CI 中针对一个运行中的应用程序通过
 
-@ 0 2 0 07448ba163d12a581789fe21f1724c6c
-+   baseline  doc/work/migration.md 和 0.65.0.md–0.73.0.md 存在；etc/release 中的 migration 指令对发布进行门控；没有拉取请求检查（2026-10-21；2026-09-25 时注记截至 0.68.0）
-+   criterion  doc/work/migration.md 存在；发布流程（etc/release 中的 migration 指令）在没有 doc/work/migration/<version>.md 时拒绝打标签；CI 检查使任何改动 lib/**/src 却未触及未发布的 doc/work/migration/<version>.md 的拉取请求失败
-
-@ 0 2 0 196b66a1e2f12f001fec8234a42c1ee3
+@ 0 2 0 174e5970ec87b6671ec8b4594cff11a1
 +   baseline  lib/reliquary（7387 行）以及 anthology.lira、degustation.lira、mandible.lira、xenophile.lira 及其测试（2026-09-25）
-+   criterion  lib/reliquary 不存在，不再有 lib/*/src/lira 目录，且 build.mill、etc/ 和 doc/work/soundness/modules 都不提及 reliquary
++   criterion  lib/reliquary 不存在，不再有 lib/*/src/lira 目录，且 build.mill、etc/ 和 doc/soundness/modules 都不提及 reliquary
 
-@ 0 3 0 1022043b4940d100089e5ec885e64e12
+@ 0 3 0 1ab90a58f440346102cbf922b597507a
 +   status done
 +   done  #2530 (2026-11-20)
-+   baseline  lib/sigillate：Jws、Jwe、Jwk 和 Jwt，带 `http` 和 `server` 组件；95 个测试，其向量取自 RFC 7515 §A.1–A.7、RFC 7516 §A.1–A.5、RFC 7517、RFC 7638 和 RFC 8037；`↯/s.147.1`；doc/work/soundness/modules/jose.md（2026-11-20）
++   baseline  lib/sigillate：Jws、Jwe、Jwk 和 Jwt，带 `http` 和 `server` 组件；95 个测试，其向量取自 RFC 7515 §A.1–A.7、RFC 7516 §A.1–A.5、RFC 7517、RFC 7638 和 RFC 8037；`↯/s.147.1`；doc/soundness/modules/jose.md（2026-11-20）
 
-@ 0 1 0 0b21a7d8349a92fd16fa9db438708eef
-+   baseline  lib/chatelaine：WebAuthn.registration/register 和 authentication/authenticate，`none` 和 `packed` 认证声明，带一个 `server` 组件；W3C 规范测试向量中的注册与认证仪式（§16.2–16.11）都能通过，针对测试源码中软件认证器的脚本化仪式也能通过；尚未驱动过任何浏览器的虚拟认证器；`↯/s.148.1`；doc/work/soundness/modules/webauthn.md（2026-11-20）
+@ 0 1 0 04b2a086c09d9a4a0bf490e3f6a25ee5
++   baseline  lib/chatelaine：WebAuthn.registration/register 和 authentication/authenticate，`none` 和 `packed` 认证声明，带一个 `server` 组件；W3C 规范测试向量中的注册与认证仪式（§16.2–16.11）都能通过，针对测试源码中软件认证器的脚本化仪式也能通过；尚未驱动过任何浏览器的虚拟认证器；`↯/s.148.1`；doc/soundness/modules/webauthn.md（2026-11-20）

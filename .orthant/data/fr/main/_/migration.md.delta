@@ -1,6 +1,16 @@
 orthant 2 language
 
-@ 0 10 0 07718803880c96c903ec955211037dd5
+! - The changes since the last release accumulate in `doc/work/migration/<version>.md`, named from
+!   the start after the release they will be part of (for example `doc/work/migration/0.71.0.md`
+!   after Soundness 0.70.0). Every PR that makes a material change to the public API or
+!   observable behaviour adds an entry to it; the first such change after a release creates it.
+! - Tagging the release publishes the file as it stands, so no change has to merge first. The
+!   release refuses to run while `<version>.md` is missing, or while another version's notes are
+!   unreleased, so the notes cannot be skipped or stranded under the wrong version. Released
+!   files are not edited afterwards except to correct mistakes.
+! - The result is one file per release, each describing exactly the changes between the
+!   previous release and that one.
+@ 0 10 0 123e54cfefdf9eb70c7d4664c17d0389
 + - Les changements depuis la dernière version s'accumulent dans `doc/work/migration/<version>.md`,
 +   nommé dès le départ d'après la version dont ils feront partie (par exemple
 +   `doc/work/migration/0.71.0.md` après Soundness 0.70.0). Chaque PR qui apporte un changement notable
@@ -14,7 +24,11 @@ orthant 2 language
 + - Le résultat est un fichier par version, chacun décrivant exactement les changements entre la
 +   version précédente et celle-ci.
 
-@ 0 4 0 05ef0321cd1f045d1da39699bdbda558
+! To upgrade a project from version `A` to version `B`, instruct an LLM agent to read every file
+! `doc/work/migration/<v>.md` with `A < v <= B`, in ascending version order, and to apply the changes
+! each one describes to the project's code. For example, moving from 0.64.0 to 0.67.0 means
+! reading `0.65.0.md`, `0.66.0.md` and `0.67.0.md`, in that order.
+@ 0 4 0 04a2df78b26c41021c795f8e36ba71bc
 + Pour mettre à niveau un projet de la version `A` vers la version `B`, demandez à un agent LLM
 + de lire chaque fichier `doc/work/migration/<v>.md` tel que `A < v <= B`, par ordre croissant de
 + version, et d'appliquer au code du projet les changements que chacun décrit. Par exemple,

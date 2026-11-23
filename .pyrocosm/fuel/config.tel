@@ -2,27 +2,27 @@ tel 1.0
 
 # The documentation fuel compiles and serves (`fuel compile`, then `fuel serve` at
 # http://localhost:8060/), one section each. Every document is read from the Orthant store in
-# `.orthant` (doc/readme.md), whose working tree is `doc/work`, and never from the working tree: an edit
-# is compiled once it is checked in (`orthant checkin`). The store's `language` axis has the
+# `.orthant` (.orthant/readme.md), whose live tree is `doc`, where the English is written: an
+# edit is in the store once `orthant tag` has stored it. The store's `language` axis has the
 # English, `en`, and the French beneath it, `fr`; with no `at`, the `release` axis is read at its
 # last value, `main`, what is not yet released. The section `soundness` is the tutorials in
 # `modules`, the API overlays in `api`, the glossary, and the section's title in `section.tel`.
 store .
 
-section soundness doc/work/soundness
+section soundness doc/soundness
   metadata section.tel
   overlay api
   glossary glossary.tel
 
-section philosophy doc/work/philosophy
+section philosophy doc/philosophy
 
-section standards doc/work/standards
+section standards doc/standards
 
-section migration doc/work/migration
+section migration doc/migration
 
-section roadmap doc/work/roadmap
+section roadmap doc/roadmap
 
-section errors doc/work/errors
+section errors doc/errors
 
 # The classpath the fences are compiled against: the test assembly (`./mill test.assembly`,
 # which `make test` builds), carrying every JVM component and the fork's standard library.
@@ -84,7 +84,7 @@ scalac-option -Yimports:java.lang,proscenium,soundness
 session
 fixtures etc/fixtures
 
-# The API documentation is one overlay per package beneath doc/work/soundness/api (the `overlay` of the
+# The API documentation is one overlay per package beneath doc/soundness/api (the `overlay` of the
 # section `soundness`), merged onto the model fuel reads from the classpath above (every
 # library is in the test assembly); `imports` is the package a document's or an overlay's
 # references resolve through. No `source` directories: Soundness's
@@ -93,5 +93,5 @@ fixtures etc/fixtures
 imports soundness
 
 # The words the documents use with a precise meaning, which a term in brackets in prose shows
-# the definition of when pointed at (doc/work/standards/style.md, "Glossary"), are
-# doc/work/soundness/glossary.tel: the `glossary` of the section `soundness`, translated with it.
+# the definition of when pointed at (doc/standards/style.md, "Glossary"), are
+# doc/soundness/glossary.tel: the `glossary` of the section `soundness`, translated with it.
