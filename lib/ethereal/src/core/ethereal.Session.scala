@@ -96,7 +96,9 @@ object Session:
 // whatever reads the invocation's stdin, or a descriptor opened to read. Bounded by the
 // credit this side has granted, which is only ever as much as it has consumed; `credit` says
 // so to the launcher, in halves of the window rather than per chunk, to halve the chatter.
-class SessionInput(stream: Text, credit: Long -> Unit) extends ji.InputStream:
+// `reading` is called as each read begins, before it waits for anything.
+class SessionInput(stream: Text, credit: Long -> Unit, reading: () -> Unit = () => ())
+extends ji.InputStream:
   private val chunks: ju.ArrayDeque[Data] = ju.ArrayDeque()
   // [synchronized] offset var in InputStream subclass, not Stateful
   @caps.unsafe.untrackedCaptures private var offset: Int = 0
@@ -119,7 +121,11 @@ class SessionInput(stream: Text, credit: Long -> Unit) extends ji.InputStream:
     val one: scala.Array[Byte] = new scala.Array[Byte](1)
     if read(one, 0, 1) < 0 then -1 else one(0) & 0xff
 
-  override def read(buffer: scala.Array[Byte] | Null, start: Int, length: Int): Int = synchronized:
+  override def read(buffer: scala.Array[Byte] | Null, start: Int, length: Int): Int =
+    reading()
+    take(buffer, start, length)
+
+  private def take(buffer: scala.Array[Byte] | Null, start: Int, length: Int): Int = synchronized:
     if length == 0 then 0 else
       while chunks.isEmpty && !ended do wait()
 
@@ -200,14 +206,48 @@ extends ji.OutputStream:
 // writer is the only caller of `write`. A stream's producer waits for credit before it queues
 // a chunk, outside any lock, so a stream the client is slow to drain stalls only its own
 // producer: `mytool | less`, paused, still receives a signal.
+//
+// `composition` is what the launcher wrote `init` under, and so what everything else on the
+// session is read and written under. `guarded` says that the client's stdin is a terminal whose
+// keys the launcher has left generating signals, until it is asked for them: see `reading`.
 class Session
   ( connection:  Connection,
     in:          ji.InputStream,
     descriptors: List[Launcher.Descriptor],
     dispatch:    Signal -> SignalResponse,
-    log:         DaemonLogEvent -> Unit ):
+    log:         DaemonLogEvent -> Unit,
+    composition: Launcher.Composition = Launcher.base,
+    guarded:     Boolean              = false ):
 
   import Launcher.Message
+
+  private def encode(message: Message): Data = Launcher.encode(message, composition)
+
+  // ── The client's terminal ────────────────────────────────────────────────────────────────
+
+  // The launcher puts a terminal into raw mode, but under the `interrupts` layer a guarded
+  // one: Ctrl-C, Ctrl-\ and Ctrl-Z still generate signals, so that an invocation which is not
+  // reading its keyboard — one that has not started, or is busy with something else — can be
+  // interrupted from it. The keys become the application's, bytes on its stdin, when it first
+  // reads stdin in raw mode: a read under `cooked` or `concealed` leaves them be, since the
+  // terminal's own line editing has them then. Once taken they are not given back.
+  private val keyboard: Object = Object()
+  // [synchronized] the terminal's mode, in non-Stateful Session
+  @caps.unsafe.untrackedCaptures private var tty: Tty = Tty.Raw
+  // [synchronized] whether the keys are still the terminal's, in non-Stateful Session
+  @caps.unsafe.untrackedCaptures private var keysLeft: Boolean = guarded
+
+  // Asks the launcher for a terminal mode. Raw mode is guarded for as long as the keys have
+  // not been taken, which a launcher that never guarded them is not told.
+  def mode(mode: Tty): Unit = keyboard.synchronized:
+    tty = mode
+    send(Message.Mode(mode.canonical, mode.echo, mode == Tty.Raw && keysLeft))
+
+  // The application is reading its stdin: in raw mode, the keys are now its own.
+  private def reading(): Unit = if guarded then keyboard.synchronized:
+    if keysLeft && tty == Tty.Raw then
+      keysLeft = false
+      send(Message.Mode(false, false, false))
 
   private val out: ji.OutputStream = connection.writer
 
@@ -221,7 +261,7 @@ class Session
   // [synchronized] dead flag in non-Stateful Session
   @caps.unsafe.untrackedCaptures private var dead: Boolean = false
 
-  def send(message: Message): Unit = enqueue(Launcher.encode(message), priority = true)
+  def send(message: Message): Unit = enqueue(encode(message), priority = true)
 
   private def enqueue(frame: Data, priority: Boolean): Unit = outbox.synchronized:
     if !dead && !closing then
@@ -232,7 +272,7 @@ class Session
   // the connection closes once it has been written.
   def finish(code: Int): Unit = outbox.synchronized:
     if !dead && !closing then
-      data.addLast(Launcher.encode(Message.ExitStatus(code)))
+      data.addLast(encode(Message.ExitStatus(code)))
       closing = true
       outbox.notifyAll()
 
@@ -306,7 +346,11 @@ class Session
     val credit: Long -> Unit =
       caps.unsafe.unsafeAssumePure: count => send(Message.Credit(stream, count))
 
-    val stream0 = SessionInput(stream, credit)
+    // [field-purity] reading callback over session stored in stream's field
+    val reading0: () -> Unit =
+      if stream == t"stdin" then caps.unsafe.unsafeAssumePure(() => reading()) else () => ()
+
+    val stream0 = SessionInput(stream, credit, reading0)
     inputs(stream) = stream0
     stream0
 
@@ -317,7 +361,7 @@ class Session
     val emit: Data -> Unit =
       // [field-purity] emit callback over session stored in stream's field
       caps.unsafe.unsafeAssumePure: chunk =>
-        enqueue(Launcher.encode(Message.Data(stream, chunk)), priority = false)
+        enqueue(encode(Message.Data(stream, chunk)), priority = false)
 
     val stream0 = SessionOutput(stream, allowance0, emit)
     outputs(stream) = stream0
@@ -378,7 +422,7 @@ class Session
     // The connection's close — by the writer after `exit-status`, or by the launcher — ends
     // the read, however the stream reports it.
     def next(): Optional[Launcher.Message] =
-      try Launcher.readDocument(in).let(Launcher.decode(_))
+      try Launcher.readDocument(in).let(Launcher.decode(_, composition))
       catch case _: ji.IOException => Unset
 
     while running do
