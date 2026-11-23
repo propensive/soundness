@@ -102,6 +102,7 @@ entry .SemanticMessage   a compiler message parsed into its markup tree
   entry #types   every `Markup.Typed` node in the message, outermost first, nested ones included
       Found through `Named`, `Symbolic`, `Code` and `Spanned` nodes alike, and a `Typed`
       node's own `Typed` children follow it.
+  entry #trees   every `Markup.Tree` in the message, wherever it is nested
 
 entry .Markup   one node of a semantic diagnostic: text, a type, a symbol, a name, code, or a span
   detail
@@ -118,10 +119,16 @@ entry .Markup   one node of a semantic diagnostic: text, a type, a symbol, a nam
       row  `Named(isType, rendition, children)`  a name, with whether it is a type name
       row  `Code(rendition, children)`  a code sample, which `teletype` syntax-highlights
       row  `Spanned(kind, rendition, children)`  a marker of a `kind` this library does not know, kept with its children
+      row  `Tree(omitted, children)`  the tree which explains a failed contextual resolution; `omitted` counts the nodes left out for length
+      row  `Node(role, name, note, repeated, children)`  one node of such a tree: its `Role`, the `name` of what was sought, found or proposed, a `note` on it, and whether its subtree was shown earlier and is left out
       ```
 
       Every node but `Textual` has a `Rendition`, the form the compiler presented it in, and
       `children`, the nodes inside it; `#plain` on any node is its visible text.
+
+      The children of a `Tree` or a `Node` are its child `Node`s, interleaved with the
+      `Textual` line breaks and box-drawing which draw the same tree as plain text; `#nodes`
+      gives the `Node`s alone.
 
       ```scala
       import soundness.*
@@ -145,11 +152,18 @@ entry .Markup   one node of a semantic diagnostic: text, a type, a symbol, a nam
       dropped and the surrounding content kept as text — a stray start or end character
       vanishes, a truncated header reads as plain text — and the children of a marker never
       closed are spliced into its parent, so a message cut short still parses. The kind
-      decides the node: `type`, `sym`, `name` and `code` have their own cases, and any
-      other kind is `Spanned`.
+      decides the node: `type`, `sym`, `name`, `code` and `tree` have their own cases, as has
+      a `node` whose `role` is one of `.Role`'s, and any other kind is `Spanned`.
   entry .plain   the text with every marker removed, keeping only the visible content
       Text with no markers is returned as it is, without parsing.
+  entry .wrap   wraps text in a marker of a kind, with attributes, as the compiler's own writer does
+      For a macro whose message should keep its structure: under `-Zsemantic-diagnostics` the
+      marker reaches `.parse` intact, and every other reader sees only the text inside it.
+  entry .Role   the part a `Node` plays in a tree: `Resolving`, `Candidate`, `Requires`, `Propose`, `Prohibits` or `Found`
+    entry #glyph   the symbol the role is drawn with
+    entry #word   the role's name in lower case, as the `role` attribute of a marker has it
   entry #plain   this node's visible text: its own text, or its children's joined
+  entry #nodes   the child `Node`s of a `Tree` or a `Node`, without the text which draws them
 
 entry .Placeholder   what stood in for a part of a type the compiler could not pickle
   detail

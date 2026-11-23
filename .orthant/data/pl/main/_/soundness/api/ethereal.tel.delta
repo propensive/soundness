@@ -1,0 +1,28 @@
+orthant 2 language
+
+@ 0 10 0 1b05c2c20b8cc8d10c46a37a3628e3a6
++   entry .Composition   baza schematu z niektórymi jego warstwami oraz sygnatura, którą niosą dokumenty zapisane pod nią
++       Launcher wybiera kompozycję na podstawie `.acceptance`, którą publikuje demon, a demon
++       odpowiada pod tą, pod którą do niego napisano. `interrupts` mówi, czy zawiera ona warstwę
++       `interrupts`.
++   entry .base   kompozycja samej bazy schematu, pod którą może pisać każdy launcher
++   entry .layered   kompozycja bazy z warstwą `interrupts`
++   entry .acceptance   to, co czyta demon, do sprawdzenia przez launcher przed połączeniem: baza i każda warstwa, którą ma
++   entry .recognize   wiadomość pierwszego dokumentu sesji wraz z kompozycją, pod którą go zapisano
++       Najpierw próbowana jest najbogatsza kompozycja, a reszta sesji jest czytana i zapisywana pod
++       tą, którą znaleziono.
+
+@ 0 13 0 1b941d28e5fa9e3c11cf3d8ac7dde519
++           `canonical` prosi o tryb kanoniczny, z echem, jeśli ustawione jest też `echo`; tryb
++           kanoniczny bez echa to sposób odczytu hasła; brak obu flag to tryb surowy. Launcher
++           nic nie odpowiada i pozostawia bez zmian terminal, którego nie posiada. Wysyłają go
++           `Resident#cooked` i `Resident#concealed`.
++
++           `interrupts` jest przesyłane tylko pod warstwą `interrupts` schematu. W trybie surowym
++           pozostawia Ctrl-C, Ctrl-\ i Ctrl-Z jako klawisze generujące sygnały, tak aby wywołanie,
++           które nie czyta klawiatury, nadal dało się z niej przerwać; klawisze stają się bajtami na
++           stdin, gdy wywołanie po raz pierwszy czyta stdin w trybie surowym, i nie są oddawane.
++       entry #canonical   tryb kanoniczny albo surowy, gdy false
++       entry #echo   czy terminal wyświetla echo tego, co jest wpisywane
++       entry #interrupts   czy w trybie surowym klawisze generujące sygnały pozostają przy terminalu
++     entry .Closed   nazwany strumień stracił czytającego

@@ -1,0 +1,8 @@
+orthant 2 language
+
+@ 0 5 0 1395deb66a5d3fe90a70b538ce536ea1
++   entry .markup   przedstawia drzewo diagnostyczne jako znaczniki semantyczne: tekst, który pisze `.render`, bez kolorów, z oznaczoną strukturą
++       Znacznik `tree` otacza drzewo, a znacznik `node` — wiersz każdego węzła i wiersze jego dzieci,
++       tak jak odczytuje je `delicious.Markup`. Po usunięciu znaczników jest to ten sam tekst, więc
++       odbiorca zwykłego tekstu niczego nie traci. Makro wyjaśniające pisze to, gdy kompilator działa
++       z `-Zsemantic-diagnostics`.

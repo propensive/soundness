@@ -142,6 +142,11 @@ entry .Diagnostic   a pre-rendered tree describing a failed implicit search, and
 
       frontier.Diagnostic.render(frontier.Diagnostic.Resolving(t"Root", Unset, List(first)))
       ```
+  entry .markup   renders a diagnostic tree as semantic markup: the text `.render` writes, without its colours, with its structure marked
+      A `tree` marker goes around the tree, and a `node` marker around each node's line and
+      its children's, as `delicious.Markup` reads them. Stripped of the markers it is the same
+      text, so a reader of plain text loses nothing. The explaining macro writes this when
+      the compiler runs with `-Zsemantic-diagnostics`.
   entry .treeStyle   the box-drawing style a diagnostic tree is drawn in
   entry .expandable   makes a `Diagnostic` expandable into its children, for drawing as a tree
   entry #name   the rendered name of the node's type or given

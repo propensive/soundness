@@ -1,0 +1,12 @@
+orthant 2 language
+
+@ 0 5 0 1395deb66a5d3fe90a70b538ce536ea1
++   entry .markup
++     info
++         rend un arbre de diagnostic sous forme de balisage sémantique : le texte qu'écrit `.render`,
++         sans ses couleurs, avec sa structure balisée
++     detail
++         Un marqueur `tree` entoure l'arbre, et un marqueur `node` la ligne de chaque nœud et celles
++         de ses enfants, tels que `delicious.Markup` les lit. Débarrassé des marqueurs, c'est le même
++         texte, si bien qu'un lecteur de texte simple n'y perd rien. La macro d'explication l'écrit
++         lorsque le compilateur s'exécute avec `-Zsemantic-diagnostics`.

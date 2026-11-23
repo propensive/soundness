@@ -1,0 +1,40 @@
+orthant 2 language
+
+@ 0 10 0 1b05c2c20b8cc8d10c46a37a3628e3a6
++   entry .Composition
++     info
++         la base du schéma avec certaines de ses couches, et la signature que portent les documents
++         écrits sous elle
++     detail
++         Un lanceur choisit la composition, d'après l'`.acceptance` que publie le démon, et le démon
++         répond sous celle sous laquelle on lui a écrit. `interrupts` indique si elle comprend la
++         couche `interrupts`.
++   entry .base
++     info
++         la composition de la seule base du schéma, sous laquelle tout lanceur peut écrire
++   entry .layered
++     info
++         la composition de la base avec la couche `interrupts`
++   entry .acceptance
++     info
++         ce que lit le démon, qu'un lanceur consulte avant de se connecter : la base, et chaque
++         couche qu'il détient
++   entry .recognize
++     info
++         le message du premier document d'une session, avec la composition sous laquelle il a été
++         écrit
++     detail
++         La composition la plus riche est essayée en premier, et le reste de la session est lu et
++         écrit sous celle qui a été trouvée.
+
+@ 0 4 0 02dd17362e3c6a7c0ceebdece010d12e
++           `interrupts` n'est transmis que sous la couche `interrupts` du schéma. En mode brut, il
++           laisse Ctrl-C, Ctrl-\ et Ctrl-Z engendrer des signaux, de sorte qu'une invocation qui ne
++           lit pas son clavier puisse tout de même être interrompue depuis celui-ci ; les touches
++           deviennent des octets sur stdin lorsque l'invocation lit stdin pour la première fois en
++           mode brut, et ne sont pas rendues.
+
+@ 0 1 0 04127018d7147c150fc6b1becd6a361f
++       entry #interrupts
++         info
++             si, en mode brut, les touches qui engendrent des signaux sont laissées au terminal

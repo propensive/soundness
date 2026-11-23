@@ -541,6 +541,16 @@ entry .Launcher   the launcher-to-daemon protocol: the `ethereal-launcher` TEL s
 
       Launcher.decode(Launcher.encode(Launcher.Message.Mode(true, true)))   // Launcher.Message.Mode(true, true)
       ```
+  entry .Composition   the schema's base with some of its layers, and the signature which documents written under it carry
+      A launcher chooses the composition, from the `.acceptance` the daemon publishes, and
+      the daemon answers under the one it was written to under. `interrupts` says whether it
+      has the `interrupts` layer.
+  entry .base   the composition of the schema's base alone, which every launcher can write under
+  entry .layered   the composition of the base with the `interrupts` layer
+  entry .acceptance   what the daemon reads, for a launcher to consult before it connects: the base, and each layer it holds
+  entry .recognize   the message of a session's first document, with the composition it was written under
+      The richest composition is tried first, and the rest of the session is read and written
+      under the one found.
   entry .readDocument   reads exactly one framed document from a `java.io.InputStream`
       Reads the four-byte magic, the length varint and then the declared number of bytes,
       leaving whatever follows unread, and gives the whole frame for `.decode`. `Unset` at
@@ -671,8 +681,14 @@ entry .Launcher   the launcher-to-daemon protocol: the `ethereal-launcher` TEL s
           without echo is how a password is read; neither flag is raw mode. The launcher
           answers nothing, and leaves a terminal it does not own as it is.
           `Resident#cooked` and `Resident#concealed` send it.
+
+          `interrupts` is carried only under the schema's `interrupts` layer. In raw mode it
+          leaves Ctrl-C, Ctrl-\ and Ctrl-Z generating signals, so that an invocation which is
+          not reading its keyboard can still be interrupted from it; the keys become bytes on
+          stdin when the invocation first reads stdin in raw mode, and are not given back.
       entry #canonical   cooked mode, or raw when false
       entry #echo   whether the terminal echoes what is typed
+      entry #interrupts   whether, in raw mode, the keys which generate signals are left with the terminal
     entry .Closed   the named stream has lost its reader
       detail
           From the launcher: the client's stdout or stderr, or a descriptor opened to write,
