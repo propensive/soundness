@@ -40,3 +40,9 @@ orthant 2 language
 
 @ 0 1 0 10aaf54c52c3fe0b0d316f1cd65e1109
 +     entry .Matcher   プロパティの値をその文法に照らして検査する：正しい、不正、未対応のいずれか
+
+@ 0 5 0 1faf72e6fe088cd01a48ddf10a68931c
++   entry #check   値を、プロパティの文法に照らして、または `Css.Syntax` に直接照らして検査する
++       二つのオーバーロードがある。
++       `check(property: PropertyDef, value)` はプロパティのパースされた文法を使い、`check(grammar: Css.Syntax, value)` は任意の文法を使う。
++       どちらも `Tactic[Css.Error]` を必要とし、エラーが発生するのは値のテキストをトークン化できない場合（閉じられていない文字列）だけである。

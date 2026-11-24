@@ -27,6 +27,7 @@ import strategies.throwUnsafely
 import internetAccess.online
 import httpBackends.javaNetHttp
 import logging.silentLogging
+import errorDiagnostics.stackTracesDiagnostics
 ```
 
 The samples on this page contact an authorization server, so they are compiled but not run.

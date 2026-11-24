@@ -82,7 +82,7 @@ difference between coloring `xs` as an identifier, and knowing that it is a `Lis
 ```scala fuel
 typecheck
 ##
-given scalac: Scalac[3.8, Universe.Classfile] = Scalac[3.8](Nil)
+given scalac: Scalac[3.8, Toolchain.Universe.Classfile] = Scalac[3.8](Nil)
 given classpath: LocalClasspath = LocalClasspath()
 import highlighting.typecheckedScala
 

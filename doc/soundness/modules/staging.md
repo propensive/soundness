@@ -171,7 +171,7 @@ object Jvm extends Rig:
 
   def stage(out: Path on Local): LocalClasspath = classpath(out)
 
-  val scalac: Scalac[3.6, Universe.Classfile] = Scalac[3.6](List(scalacOptions.experimental))
+  val scalac: Scalac[3.6, Toolchain.Universe.Classfile] = Scalac[3.6](List(scalacOptions.experimental))
 
   protected def invoke[output](stage: Stage[output, Form, Target]): output =
     stage.remote: input =>

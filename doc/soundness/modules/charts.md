@@ -179,11 +179,11 @@ arguments, and any component is an override:
 ```scala
 given Chart.Standard = new Chart.Standard(width = 800.0, ordinateTitle = t"units sold"):
   override def bar(corner: Point, width: Double, height: Double, color: Color in Srgb, series: Int)
-  :   List[Figure] =
-    List(Rectangle(corner, width.toFloat, height.toFloat, style = Css.Style(fill = color.to[Srgb])))
+  :   List[Svg.Figure] =
+    List(Svg.Rectangle(corner, width.toFloat, height.toFloat, style = Css.Style(fill = color.to[Srgb])))
 
-  override def arrowhead(tip: Point, axis: Chart.Axis, color: Color in Srgb): List[Figure] =
-    List(Polyline(List(tip, Point(tip.x - 6, tip.y - 3), Point(tip.x - 6, tip.y + 3)), closed = true))
+  override def arrowhead(tip: Point, axis: Chart.Axis, color: Color in Srgb): List[Svg.Figure] =
+    List(Svg.Polyline(List(tip, Point(tip.x - 6, tip.y - 3), Point(tip.x - 6, tip.y + 3)), closed = true))
 ```
 
 The hooks cover the details on which a chart is usually judged:

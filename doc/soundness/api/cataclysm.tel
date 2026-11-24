@@ -469,16 +469,22 @@ entry .Css   a stylesheet: a list of rules, declarations and at-rules, read, wri
       refer cataclysm.PropertyDef
       refer cataclysm.Css.Outcome
       refer cataclysm.ValueToken
-      entry .check   a value against a property's grammar, or against a `Css.Syntax` directly
-          Two overloads: `check(property: PropertyDef, value)` uses the property's parsed
-          grammar, and `check(grammar: Css.Syntax, value)` any grammar. Both need a
-          `Tactic[Css.Error]`, raised only when the value's text cannot be tokenized (an
-          unterminated string).
 
   entry .Outcome   the result of checking a value against a grammar: `Valid`, `Invalid` or `Unsupported`
       An enum returned by `Css.Syntax.Matcher.check`. `Valid` and `Invalid` are a definite
       verdict; `Unsupported(types)` names the value-definition types the matcher could not
       verify against, which `read[Css]` reports as `Css.Error.Reason.UnsupportedValue`.
+
+entry .SyntaxMatching   the trait holding `Css.Syntax.Matcher.check`
+  detail
+      `object Matcher extends SyntaxMatching`, so `check` is reached through it, as
+      `Css.Syntax.Matcher.check`.
+
+  entry #check   a value against a property's grammar, or against a `Css.Syntax` directly
+      Two overloads: `check(property: PropertyDef, value)` uses the property's parsed
+      grammar, and `check(grammar: Css.Syntax, value)` any grammar. Both need a
+      `Tactic[Css.Error]`, raised only when the value's text cannot be tokenized (an
+      unterminated string).
 
 entry .css   the `css"…"` interpolator: a stylesheet or inline style, checked as the code compiles
     `css"a { color: red }"` is a `Css`, and `css"color: red; width: 4px"` — bare

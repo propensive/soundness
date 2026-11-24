@@ -15,6 +15,10 @@ orthant 2 language
 + row  `Boxes()`  `Samples`, o una loro collezione  un box per insieme  continua  `Boxes.Style`
 + row  `Annulus()`  un `Dag` di nodi `Weighted` e `Progressive`  nessuna  nessuna  `Annulus.Style`
 
+% 0 2 0 0786ede6c764c67c0c1afd493faded0a
+
+% 0 2 0 0d86e7d41d97de780db30039af9756ab
+
 @ 0 19 0 09c98980d3198e611edeab97ea79998d
 + column  Disegna
 + column  Definito in

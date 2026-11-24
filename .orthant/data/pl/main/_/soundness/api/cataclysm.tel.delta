@@ -43,3 +43,10 @@ orthant 2 language
 
 @ 0 1 0 10aaf54c52c3fe0b0d316f1cd65e1109
 +     entry .Matcher   sprawdza wartość właściwości względem jej gramatyki: poprawna, niepoprawna lub nieobsługiwana
+
+@ 0 5 0 1faf72e6fe088cd01a48ddf10a68931c
++   entry #check   wartość względem gramatyki właściwości lub bezpośrednio względem `Css.Syntax`
++       Dwa przeciążenia: `check(property: PropertyDef, value)` używa sparsowanej gramatyki
++       właściwości, a `check(grammar: Css.Syntax, value)` – dowolnej gramatyki. Oba wymagają
++       `Tactic[Css.Error]`, zgłaszanej tylko wtedy, gdy tekstu wartości nie da się podzielić
++       na tokeny (niezakończony napis).

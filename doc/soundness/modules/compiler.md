@@ -286,7 +286,7 @@ and no others, and `Shrunk.Jar` is an executable JAR of one:
 
 ```scala
 supervise:
-  Toolchain(shrinkEdges(scalac)).produce
+  Toolchain(shrinkEdges(compiler)).produce
     ( Deliverable.Emission(outputPath, classpath),
       Toolchain.Universe.Classfile,
       Shrunk.Jar,
@@ -414,10 +414,10 @@ the build host's own:
 
 ```scala
 def binary(emission: Deliverable, destination: Path on Local): Path on Local = supervise:
-  Toolchain(nativeEdges(Triple.Arm64MacOs, Triple.X64Linux)).produce
+  Toolchain(nativeEdges(Toolchain.Triple.Arm64MacOs, Toolchain.Triple.X64Linux)).produce
     ( emission,
       Toolchain.Universe.Nir,
-      Artifact.Binary(Triple.X64Linux),
+      Artifact.Binary(Toolchain.Triple.X64Linux),
       destination,
       List(nativeOptions.mode.releaseFast, nativeOptions.gc.commix),
       List(EntryPoint(fqcn"com.example.Main")) )

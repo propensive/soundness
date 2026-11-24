@@ -1,4 +1,14 @@
 orthant 2 release
 
+@ 0 2 0 1dc31766cd3b99d20e021ef441ff3f4e
++ Out.println(layering.rank.at(2).inspect)
++ Out.println(layering.rank.at(8).inspect)
+
+@ 0 1 0 0ab684e4846871040dffb0ad9d81c4c7
++ Out.println(deep.layered.rank.at(5).inspect)
+
+@ 0 1 0 16114ff5063bbe4e12467bda28b8bbb0
++   Out.println(deep.layered.rank.at(5).inspect)
+
 @ 0 1 0 0950d3be096cfb421cad52ab927ba856
 + - [Charts](charts.md) draws a graph as an annulus, and [compiler](compiler.md) builds a toolchain as one.

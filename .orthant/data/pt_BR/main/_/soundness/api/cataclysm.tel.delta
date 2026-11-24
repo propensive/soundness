@@ -44,3 +44,10 @@ orthant 2 language
 
 @ 0 1 0 10aaf54c52c3fe0b0d316f1cd65e1109
 +     entry .Matcher   verifica um valor de propriedade contra a sua gramática: válido, inválido ou não suportado
+
+@ 0 5 0 1faf72e6fe088cd01a48ddf10a68931c
++   entry #check   um valor contra a gramática de uma propriedade, ou diretamente contra uma `Css.Syntax`
++       Duas sobrecargas: `check(property: PropertyDef, value)` usa a gramática analisada da
++       propriedade, e `check(grammar: Css.Syntax, value)`, qualquer gramática. Ambas
++       precisam de uma `Tactic[Css.Error]`, lançado apenas quando o texto do valor não pode
++       ser tokenizado (uma string não terminada).

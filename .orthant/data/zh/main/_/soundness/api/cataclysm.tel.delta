@@ -37,3 +37,8 @@ orthant 2 language
 
 @ 0 1 0 10aaf54c52c3fe0b0d316f1cd65e1109
 +     entry .Matcher   根据语法检查属性值：有效、无效或不支持
+
+@ 0 5 0 1faf72e6fe088cd01a48ddf10a68931c
++   entry #check   根据属性的语法检查值，或直接根据 `Css.Syntax` 检查
++       两个重载：`check(property: PropertyDef, value)` 使用属性的已解析语法，`check(grammar: Css.Syntax, value)` 使用任意语法。
++       两者都需要一个 `Tactic[Css.Error]`，只有当值的文本无法进行词法分析（未终止的字符串）时才会抛出。
