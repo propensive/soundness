@@ -70,31 +70,60 @@ object List extends scala.caps.Pure:
   def apply[element](e1: element, e2: element, e3: element): List[element] & Populated =
     populated(sci.List(e1, e2, e3))
 
-  def apply[element](e1: element, e2: element, e3: element, e4: element): List[element] & Populated =
+  def apply[element](e1: element, e2: element, e3: element, e4: element)
+  :   List[element] & Populated =
+
     populated(sci.List(e1, e2, e3, e4))
 
-  def apply[element](e1: element, e2: element, e3: element, e4: element, e5: element): List[element] & Populated =
+  def apply[element](e1: element, e2: element, e3: element, e4: element, e5: element)
+  :   List[element] & Populated =
+
     populated(sci.List(e1, e2, e3, e4, e5))
 
-  def apply[element](e1: element, e2: element, e3: element, e4: element, e5: element, e6: element): List[element] & Populated =
+  def apply[element](e1: element, e2: element, e3: element, e4: element, e5: element, e6: element)
+  :   List[element] & Populated =
+
     populated(sci.List(e1, e2, e3, e4, e5, e6))
 
-  def apply[element](e1: element, e2: element, e3: element, e4: element, e5: element, e6: element, e7: element): List[element] & Populated =
+  def apply[element]
+    ( e1: element, e2: element, e3: element, e4: element, e5: element, e6: element, e7: element )
+  :   List[element] & Populated =
+
     populated(sci.List(e1, e2, e3, e4, e5, e6, e7))
 
-  def apply[element](e1: element, e2: element, e3: element, e4: element, e5: element, e6: element, e7: element, e8: element): List[element] & Populated =
+  def apply[element]
+    ( e1: element, e2: element, e3: element, e4: element, e5: element, e6: element, e7: element,
+      e8: element )
+  :   List[element] & Populated =
+
     populated(sci.List(e1, e2, e3, e4, e5, e6, e7, e8))
 
-  def apply[element](e1: element, e2: element, e3: element, e4: element, e5: element, e6: element, e7: element, e8: element, e9: element): List[element] & Populated =
+  def apply[element]
+    ( e1: element, e2: element, e3: element, e4: element, e5: element, e6: element, e7: element,
+      e8: element, e9: element )
+  :   List[element] & Populated =
+
     populated(sci.List(e1, e2, e3, e4, e5, e6, e7, e8, e9))
 
-  def apply[element](e1: element, e2: element, e3: element, e4: element, e5: element, e6: element, e7: element, e8: element, e9: element, e10: element): List[element] & Populated =
+  def apply[element]
+    ( e1: element, e2: element, e3: element, e4: element, e5: element, e6: element, e7: element,
+      e8: element, e9: element, e10: element )
+  :   List[element] & Populated =
+
     populated(sci.List(e1, e2, e3, e4, e5, e6, e7, e8, e9, e10))
 
-  def apply[element](e1: element, e2: element, e3: element, e4: element, e5: element, e6: element, e7: element, e8: element, e9: element, e10: element, e11: element): List[element] & Populated =
+  def apply[element]
+    ( e1: element, e2: element, e3: element, e4: element, e5: element, e6: element, e7: element,
+      e8: element, e9: element, e10: element, e11: element )
+  :   List[element] & Populated =
+
     populated(sci.List(e1, e2, e3, e4, e5, e6, e7, e8, e9, e10, e11))
 
-  def apply[element](e1: element, e2: element, e3: element, e4: element, e5: element, e6: element, e7: element, e8: element, e9: element, e10: element, e11: element, e12: element): List[element] & Populated =
+  def apply[element]
+    ( e1: element, e2: element, e3: element, e4: element, e5: element, e6: element, e7: element,
+      e8: element, e9: element, e10: element, e11: element, e12: element )
+  :   List[element] & Populated =
+
     populated(sci.List(e1, e2, e3, e4, e5, e6, e7, e8, e9, e10, e11, e12))
 
   // The branded cast behind the fixed-arity constructors: a plain method (not an inlined
@@ -129,7 +158,8 @@ object List extends scala.caps.Pure:
   // `.to[List]` support: the stdlib's `Iterable.to` takes a `Factory`, and passing the
   // companion object adapts through this conversion — on `List.type` only, so it cannot
   // expose members of `List` values.
-  given factory: [element] => Conversion[List.type, scala.collection.Factory[element, List[element]]] =
+  given factory: [element]
+  =>  Conversion[List.type, scala.collection.Factory[element, List[element]]] =
     _ =>
       new scala.collection.Factory[element, List[element]]:
         def fromSpecific(elements: IterableOnce[element]^): List[element] =
@@ -165,6 +195,7 @@ object List extends scala.caps.Pure:
   =>  scala.quoted.FromExpr[List[element]]:
     def unapply(expr: scala.quoted.Expr[List[element]])(using scala.quoted.Quotes)
     :   Option[List[element]] =
+
       expr match
         // Backticked type references: a lower-case type name in a quoted pattern would bind a
         // fresh type variable rather than refer to `element`.
@@ -188,8 +219,10 @@ object List extends scala.caps.Pure:
   def last[element](list: List[element]): element = list.last
   def lead[element](list: List[element]): List[element] = list.init
   def at[element](list: List[element], index: Int): element = list(index)
+
   def define[element](list: List[element], index: Int, value: element): List[element] =
     list.updated(index, value)
+
   def has[element](list: List[element], value: element): Boolean = list.contains(value)
   def drop[element](list: List[element], count: Int): List[element] = list.drop(count)
   // Appending or prepending an element makes the list non-empty, so both brand their result:
@@ -199,6 +232,7 @@ object List extends scala.caps.Pure:
 
   def prepend[element](list: List[element], value: element): List[element] & Populated =
     populated(list.::(value))
+
   def concat[element](left: List[element], right: List[element]): List[element] = left ++ right
 
   // Multiset intersection and difference, in the left operand's order: an element of `right`
@@ -213,8 +247,10 @@ object List extends scala.caps.Pure:
 
   def map[element, element2](list: List[element], lambda: element => element2): List[element2] =
     list.map(lambda)
+
   def slice[element](list: List[element], from: Int, until: Int): List[element] =
     list.slice(from, until)
+
   def iterator[element](list: List[element]): Iterator[element] = list.iterator
 
 // The type a repeated parameter is received as, under proscala's `-Zgatherable-varargs`: the
@@ -241,7 +277,7 @@ val Nil: List[Nothing] = List.of(sci.Nil)
 // (3.9.0-RC5-p14, `givenprefix`).
   // Subtype-parametric so branded lists (`List[T] & Populated`) splat too.
   given listIsSpreadable: [element, list <: List[element]]
-  =>  (Spreadable[list] { type Out = sci.List[element] }) =
+  =>  ( Spreadable[list] { type Out = sci.List[element] } ) =
     new Spreadable[list]:
       type Out = sci.List[element]
       def spread(value: list): sci.List[element] = value

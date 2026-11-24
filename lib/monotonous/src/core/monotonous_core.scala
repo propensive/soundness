@@ -34,7 +34,6 @@ package monotonous
 
 import anticipation.*
 import contingency.*
-import gossamer.*
 import prepositional.*
 import symbolism.`+`
 import zephyrine.*

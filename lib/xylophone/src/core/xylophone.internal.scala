@@ -1114,7 +1114,8 @@ object internal:
 
                 . or(halt(m"unexpected type"))
 
-    '{$tag.node(Attributes.from(proscenium.List.from(${Expr.ofList(attributes)}).compact.to[Map]))}.asExprOf[result]
+    '{$tag.node(Attributes.from(proscenium.List.from(${Expr.ofList(attributes)}).compact.to[Map]))}
+    . asExprOf[result]
 
   // The frozen `Array[String]^{}` itself: pure under `-Zfrozen-pure`, which classifies an
   // opaque alias over a frozen array as deriving from no capability class.
@@ -1780,14 +1781,14 @@ object internal:
 
     def summonField(index: Int): Expr[Xml.Field | Null] =
       if kinds(index) != InstanceK then '{null}
-      else fieldTypes(index).asType match
+      else fieldTypes(index).asType.absolve match
         case '[fieldType] =>
           Expr.summon[fieldType is Xml.Field].getOrElse:
             report.errorAndAbort
               ( s"xylophone: no Xml.Field instance for field ${fieldNames(index)}: " +
                 fieldTypes(index).show )
 
-    def declaredDefault(index: Int): Expr[Any] = fieldTypes(index).asType match
+    def declaredDefault(index: Int): Expr[Any] = fieldTypes(index).asType.absolve match
       case '[fieldType] =>
         '{wisteria.internal.default[value, fieldType](${Expr(index)}): Any}
 
@@ -1797,7 +1798,7 @@ object internal:
       else if fieldType =:= TypeRepr.of[Double] then Literal(DoubleConstant(0.0))
       else if fieldType =:= TypeRepr.of[Float] then Literal(FloatConstant(0.0f))
       else if fieldType =:= TypeRepr.of[Boolean] then Literal(BooleanConstant(false))
-      else fieldType.asType match
+      else fieldType.asType.absolve match
         case '[fieldType] => '{null.asInstanceOf[fieldType]}.asTerm
 
     def construct(arguments: List[Term]): Term =
@@ -1882,7 +1883,7 @@ object internal:
       val attributes = Ref(attributesSymbol).asExprOf[Attributes]
 
       val attributeSteps: List[Term] = List.range(0, arity).flatMap: index =>
-        if !attrFlags(index) then None else fieldTypes(index).asType match
+        if !attrFlags(index) then None else fieldTypes(index).asType.absolve match
           case '[fieldType] =>
             val keyText: Expr[Text] = '{$keys.readUnchecked(${Expr(index)}).tt}
 
@@ -1950,7 +1951,7 @@ object internal:
                       Assign(Ref(seens(index)), Literal(BooleanConstant(true))) ),
                   unit ) )
 
-        val rhs: Term = fieldTypes(index).asType match
+        val rhs: Term = fieldTypes(index).asType.absolve match
           case '[fieldType] =>
             kinds(index) match
               case IntK =>
@@ -2069,8 +2070,9 @@ object internal:
 
       // With enough child fields, a perfect hash of their packed names in place of the chain.
       def dispatch: Term =
-        val entries = scala.collection.Iterator.range(0, arity).filter(!attrFlags(_)).flatMap: index =>
-          packedNames(index).iterator.map { case (low, highWord) => (index, low, highWord) }
+        val entries =
+          scala.collection.Iterator.range(0, arity).filter(!attrFlags(_)).flatMap: index =>
+            packedNames(index).iterator.map { case (low, highWord) => (index, low, highWord) }
 
         val hashed = PerfectHash.dispatch(entries, wordRef, highRef, Expr(-1))
         if hashed == null then chain(0) else hashed.asTerm
@@ -2105,7 +2107,7 @@ object internal:
       // occurrences build the empty collection; a repeatable field never
       // consults the declared default), exactly as the derived engine does.
       val absents: List[Term] = List.range(0, arity).map: index =>
-        fieldTypes(index).asType match
+        fieldTypes(index).asType.absolve match
           case '[fieldType] =>
             val keyText: Expr[Text] = '{$keys.readUnchecked(${Expr(index)}).tt}
 
@@ -2193,7 +2195,7 @@ object internal:
     :   Expr[value] =
 
       val arguments: List[Term] = List.range(0, arity).map: index =>
-        fieldTypes(index).asType match
+        fieldTypes(index).asType.absolve match
           case '[fieldType] =>
             val keyText: Expr[Text] = '{$keys.readUnchecked(${Expr(index)}).tt}
 

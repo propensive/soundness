@@ -37,35 +37,6 @@ import java.util.concurrent.atomic as juca
 
 import anticipation.*
 
-// A terrain which can be changed where it lies: worked ground. It is what a format which is
-// kept and altered in place is altered through, as a `Terrain` is what one is read through --
-// a file mapped for writing by the one process which owns it, or bytes on the heap -- and,
-// like a terrain, it is a capability which belongs to a scope.
-//
-// Every store, like every load, is at an offset: a holding hands out no address into its
-// memory, because `expand` may move it. A view taken with `slice` reads through the holding it
-// came from, so it stays good across an expansion, and sees whatever is stored afterwards.
-trait Holding extends Terrain:
-  def set8(offset: Long, value: Int): Unit
-  def set16(offset: Long, value: Int): Unit
-  def set32(offset: Long, value: Long): Unit
-  def set64(offset: Long, value: Long): Unit
-
-  // Stores the bytes of `data` from `offset`.
-  def write(offset: Long, data: Data): Unit
-
-  // Stores `length` zero bytes from `offset`.
-  def zero(offset: Long, length: Long): Unit
-
-  // Copies `length` bytes from `from` to `to`, which may overlap.
-  def move(from: Long, to: Long, length: Long): Unit
-
-  // Makes the holding at least `size` bytes, the new ones zero; it never shrinks.
-  def expand(size: Long): Unit
-
-  // Makes what has been stored durable, where there is anything for it to be durable in.
-  def flush(): Unit
-
 object Holding:
   // A holding on the heap, of `size` zero bytes: for building, or altering, an image which is
   // not, or not yet, a file.
@@ -78,7 +49,8 @@ object Holding:
     holding
 
   // A view of part of a holding, which reads through it.
-  private[zephyrine] final class Window(holding: Holding^, start: Long, extent: Long) extends Terrain:
+  private[zephyrine] final class Window(holding: Holding^, start: Long, extent: Long)
+  extends Terrain:
     def size: Long = extent
 
     private inline def at(offset: Long, width: Long): Long =
@@ -93,7 +65,9 @@ object Holding:
     def u64(offset: Long): Long = holding.u64(at(offset, 8L))
     def i32(offset: Long): Int = holding.i32(at(offset, 4L))
     def read(offset: Long, length: Int): Data = holding.read(at(offset, length.toLong), length)
-    def slice(offset: Long, length: Long): Terrain^{this} = Window(holding, at(offset, length), length)
+
+    def slice(offset: Long, length: Long): Terrain^{this} =
+      Window(holding, at(offset, length), length)
 
     def same(offset: Long, data: Data): Boolean =
       offset >= 0L && offset <= extent - data.length && holding.same(start + offset, data)
@@ -114,7 +88,9 @@ object Holding:
 
     // The bytes, and how many of them are the holding: each in a cell, since `expand` replaces
     // the one and advances the other.
-    private val held: juca.AtomicReference[jn.ByteBuffer] = juca.AtomicReference(allocate(initial))
+    private val held: juca.AtomicReference[jn.ByteBuffer] =
+      juca.AtomicReference(allocate(initial))
+
     private val reached: juca.AtomicLong = juca.AtomicLong(initial)
 
     private def buffer: jn.ByteBuffer = held.get.nn
@@ -138,11 +114,11 @@ object Holding:
 
     def read(offset: Long, length: Int): Data =
       val base = at(offset, length.toLong)
-      Array.tabulate[Byte](length) { index => buffer.get(base + index) }
+      Array.tabulate[Byte](length): index => buffer.get(base + index)
 
     def same(offset: Long, data: Data): Boolean =
-      offset >= 0L && offset <= extent - data.length
-      && compare(offset, data.length.toLong, data) == 0
+      offset >= 0L && offset <= extent - data.length &&
+        compare(offset, data.length.toLong, data) == 0
 
     def compare(offset: Long, length: Long, data: Data): Int =
       val base = at(offset, length)
@@ -211,3 +187,32 @@ object Holding:
       reached.set(size)
 
     def flush(): Unit = ()
+
+// A terrain which can be changed where it lies: worked ground. It is what a format which is
+// kept and altered in place is altered through, as a `Terrain` is what one is read through --
+// a file mapped for writing by the one process which owns it, or bytes on the heap -- and,
+// like a terrain, it is a capability which belongs to a scope.
+//
+// Every store, like every load, is at an offset: a holding hands out no address into its
+// memory, because `expand` may move it. A view taken with `slice` reads through the holding it
+// came from, so it stays good across an expansion, and sees whatever is stored afterwards.
+trait Holding extends Terrain:
+  def set8(offset: Long, value: Int): Unit
+  def set16(offset: Long, value: Int): Unit
+  def set32(offset: Long, value: Long): Unit
+  def set64(offset: Long, value: Long): Unit
+
+  // Stores the bytes of `data` from `offset`.
+  def write(offset: Long, data: Data): Unit
+
+  // Stores `length` zero bytes from `offset`.
+  def zero(offset: Long, length: Long): Unit
+
+  // Copies `length` bytes from `from` to `to`, which may overlap.
+  def move(from: Long, to: Long, length: Long): Unit
+
+  // Makes the holding at least `size` bytes, the new ones zero; it never shrinks.
+  def expand(size: Long): Unit
+
+  // Makes what has been stored durable, where there is anything for it to be durable in.
+  def flush(): Unit

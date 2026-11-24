@@ -165,6 +165,7 @@ object Grpc:
       val body: Spring[Data] = new Spring[Data]:
         def apply()(using Tactic[Truncation.Error]): (Stream[Data] over Credit)^ =
           Stream(Framing.encode(message))
+
       Http.Request(Http.Post, 2.0, host, method.path, headers, body)
 
     // gRPC requires HTTP status 200; anything else is a transport-level failure.
@@ -230,9 +231,9 @@ object Grpc:
       expectOk(response)
       val messages = stream.body.stream.records.frames[Framing]
 
-      val first: Optional[Data] = messages.next() match
-        case Iterator.Exhausted => Unset
-        case message: Data      => message
+      val first: Optional[Data] = messages.next().absolve match
+        case Iterator.Exhausted       => Unset
+        case message: Data @unchecked => message
 
       // Verify the trailing status before demanding a body, so a Trailers-Only error
       // response surfaces its real status rather than "no message".
@@ -259,12 +260,12 @@ object Grpc:
       expectOk(response)
       val messages = stream.body.stream.records.frames[Framing]
 
-      def recur(): Chain[response] = messages.next() match
+      def recur(): Chain[response] = messages.next().absolve match
         case Iterator.Exhausted =>
           expectStatus(stream)
           Chain()
 
-        case message: Data =>
+        case message: Data @unchecked =>
           // Successive pulls from the same single-owner message iterator.
           // [by-name-capture] the lazy tail captures the single-owner message iterator
           scala.caps.unsafe.unsafeAssumeSeparate

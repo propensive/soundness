@@ -35,6 +35,17 @@ package zephyrine
 import contingency.*
 import prepositional.*
 
+object Spring:
+  // `Spring(expression)`: a spring which evaluates `expression` anew at each `apply()`. Inline,
+  // so that the expression becomes the body of a method, which may mint a fresh stream where
+  // a function value may not.
+  transparent inline def apply[medium]
+    ( inline stream: Tactic[Truncation.Error] ?=> (Stream[medium] over Credit)^ )
+  :   Spring[medium]^ =
+
+    new Spring[medium]:
+      def apply()(using Tactic[Truncation.Error]): (Stream[medium] over Credit)^ = stream
+
 // A re-materializable source of streams: each `apply()` mints a fresh,
 // exclusive pull endpoint over the same content. This is a named trait rather
 // than the function type `() => (Stream[medium] over Credit)^` because
@@ -46,14 +57,3 @@ import prepositional.*
 // `Spring(….stream)`, which the companion expands to the anonymous class.
 trait Spring[medium]:
   def apply()(using Tactic[Truncation.Error]): (Stream[medium] over Credit)^
-
-object Spring:
-  // `Spring(expression)`: a spring which evaluates `expression` anew at each `apply()`. Inline,
-  // so that the expression becomes the body of a method, which may mint a fresh stream where
-  // a function value may not.
-  transparent inline def apply[medium]
-    ( inline stream: Tactic[Truncation.Error] ?=> (Stream[medium] over Credit)^ )
-  :   Spring[medium]^ =
-
-    new Spring[medium]:
-      def apply()(using Tactic[Truncation.Error]): (Stream[medium] over Credit)^ = stream

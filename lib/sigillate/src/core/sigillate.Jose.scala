@@ -32,12 +32,9 @@
                                                                                                   */
 package sigillate
 
-import scala.reflect.Selectable.reflectiveSelectable
-
 import adversaria.*
 import anticipation.*
 import contingency.*
-import corpuscular.*
 import distillate.*
 import enigmatic.*
 import fulminate.*
@@ -79,11 +76,13 @@ object Jose:
     given communicable: Reason is Communicable =
       case Reason.Malformed(detail)        => m"it was malformed: $detail"
       case Reason.Unsupported(name)        => m"the algorithm $name is not supported"
+
       case Reason.Mismatch(expected, found) =>
         m"the key is for the algorithm $expected but the header names $found"
 
       case Reason.BadSignature             => m"the signature did not verify"
       case Reason.Undecryptable            => m"it could not be decrypted with the key"
+
       case Reason.Critical(name) =>
         m"the critical header parameter $name is not understood"
 
@@ -258,6 +257,7 @@ object Jose:
 
     private def plain[cipher <: Cipher](name: Text, cipher: cipher & gastronomy.Signing)
     :   cipher is Algorithm =
+
       Algorithm(name, cipher)(_.bytes, enigmatic.Signature[cipher](_))
 
     // HMAC over SHA-2: `HS256`, `HS384` and `HS512`.

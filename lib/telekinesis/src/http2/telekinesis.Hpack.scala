@@ -64,7 +64,7 @@ object Hpack:
     var rest: List[Entry] = headers
     var continue: Boolean = true
 
-    while continue do rest match
+    while continue do rest.absolve match
       case Nil =>
         continue = false
 

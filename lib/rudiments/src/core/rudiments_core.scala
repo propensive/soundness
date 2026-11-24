@@ -677,7 +677,7 @@ extension [element](sequence: List[element])
         done:    List[List[element]] )
     :   List[List[element]] =
 
-      todo match
+      todo.absolve match
         case Nil => (run.reverse :: done).reverse
 
         case head :: tail =>
@@ -686,7 +686,7 @@ extension [element](sequence: List[element])
           if current == focus then recur(current, tail, head :: run, done)
           else recur(focus, tail, List(head), run.reverse :: done)
 
-    sequence match
+    sequence.absolve match
       case Nil          => Nil
       case head :: tail => recur(lambda(head), tail, List(head), Nil)
 

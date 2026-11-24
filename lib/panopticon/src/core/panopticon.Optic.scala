@@ -68,7 +68,7 @@ object Optic:
   =>  Prim.type is Optic from List[element] onto element =
 
     Optic[Prim.type, List[element], element]: (origin, lambda) =>
-      origin match
+      origin.absolve match
         case head :: tail => lambda(head) :: tail
         case Nil          => Nil
 

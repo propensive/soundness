@@ -32,14 +32,12 @@
                                                                                                   */
 package hypotenuse
 
-import scala.caps
 import scala.math
 import scala.util.FromDigits
 
 import anticipation.*
 import contingency.*
 import fulminate.*
-import rudiments.*
 import symbolism.*
 import vacuous.*
 
@@ -497,6 +495,7 @@ object decimalInternal:
         // The count of digits before the decimal point decides all but same-width cases,
         // avoiding alignment across pathological scale differences.
         val leftIntegral = digitLength(leftMagnitude, leftMagnitude.length) - left.readUnchecked(1)
+
         val rightIntegral =
           digitLength(rightMagnitude, rightMagnitude.length) - right.readUnchecked(1)
 

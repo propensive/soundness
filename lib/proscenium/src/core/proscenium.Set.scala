@@ -65,7 +65,8 @@ object Set extends scala.caps.Pure:
 
   // `.to[Set]` support (see `List`): the conversion is on `Set.type` only, so it cannot
   // expose members of `Set` values.
-  given factory: [element] => Conversion[Set.type, scala.collection.Factory[element, Set[element]]] =
+  given factory: [element]
+  =>  Conversion[Set.type, scala.collection.Factory[element, Set[element]]] =
     _ =>
       new scala.collection.Factory[element, Set[element]]:
         def fromSpecific(elements: IterableOnce[element]^): Set[element] =
@@ -88,6 +89,7 @@ object Set extends scala.caps.Pure:
   =>  scala.quoted.FromExpr[Set[element]]:
     def unapply(expr: scala.quoted.Expr[Set[element]])(using scala.quoted.Quotes)
     :   Option[Set[element]] =
+
       expr match
         case '{Set.from($elements: sci.List[`element`])} =>
           scala.quoted.FromExpr.ListFromExpr[element].unapply(elements).map(Set.from(_))

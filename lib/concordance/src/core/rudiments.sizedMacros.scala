@@ -56,6 +56,7 @@ object sizedMacros:
 
     val length: Int = TypeRepr.of[length].dealias match
       case ConstantType(IntConstant(length)) => length
+
       case other =>
         report.errorAndAbort(s"the array's proven length ${other.show} is not a literal")
 
@@ -105,7 +106,7 @@ object sizedMacros:
     // A plain `match`, not `lay`: a quote inside an inline by-name argument crashes the quote
     // pickler (`Inlines.inlineCallTrace`). The quotes read the JVM array through casts rather
     // than `readUnchecked`/`n0`/`at`, which are inline and would meet the same assertion.
-    literal(ordinal.asTerm, Map()) match
+    literal(ordinal.asTerm, Map()).absolve match
       case Unset =>
         ' {
             val jvm = $array.asInstanceOf[scala.Array[element]]

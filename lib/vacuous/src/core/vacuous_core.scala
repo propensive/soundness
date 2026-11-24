@@ -73,8 +73,8 @@ extension [self](self: self)(using traversable: self is Traversable)
     val elements: Iterator[traversable.Operand]^ = traversable.traverse(self)
 
     reshapable.reshape:
-      elements.map(operand(_)).filter(!_.absent).map:
-        _.or(panic(m"the absent elements were filtered out"))
+      elements.map(operand(_)).filter(!_.absent).map
+        ( _.or(panic(m"the absent elements were filtered out")) )
 
   // All-or-nothing: the whole collection if every element is present, or `Unset` if any is
   // absent. One presence sweep, recorded by the result's type.

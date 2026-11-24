@@ -157,15 +157,13 @@ object StackTrace:
   // one description of the encoding: `rewrite` reads it, `legend` is derived from it, and
   // hyperbole's `StackResolver.hint` classifies a frame by it. `kind` is what a method name
   // carrying the marker is known to be, for the markers which settle that.
-  case class Marker(jvm: Text, glyph: Text, meaning: Text, kind: Optional[Frame.Kind] = Unset)
-
   object Marker:
     val adapted: Marker = Marker("$adapted".tt, "Λ".tt, "adapted lambda".tt, Frame.Kind.Bridge)
     val lambda: Marker = Marker("$anonfun".tt, "λ".tt, "lambda".tt, Frame.Kind.Lambda)
     val anonymous: Marker = Marker("$anon".tt, "α".tt, "anonymous class".tt)
+
     val constructor: Marker =
       Marker("<init>".tt, "ⲛ".tt, "constructor".tt, Frame.Kind.Constructor)
-
 
     val staticInitializer: Marker =
       Marker("<clinit>".tt, "ι".tt, "initializer".tt, Frame.Kind.Initializer)
@@ -191,6 +189,7 @@ object StackTrace:
       Marker("$accessor".tt, "⇢".tt, "accessor".tt, Frame.Kind.Forwarder)
 
     val setter: Marker = Marker("$_setter_$".tt, "≔".tt, "trait setter".tt, Frame.Kind.Synthetic)
+
     val extension: Marker =
       Marker("$extension".tt, "⊢".tt, "extension method".tt, Frame.Kind.Extension)
 
@@ -232,6 +231,8 @@ object StackTrace:
           ("$plus".tt, '+'), ("$minus".tt, '-'), ("$colon".tt, ':'), ("$bslash".tt, '\\'),
           ("$qmark".tt, '?'), ("$at".tt, '@') )
 
+  case class Marker(jvm: Text, glyph: Text, meaning: Text, kind: Optional[Frame.Kind] = Unset)
+
   // Each glyph `rewrite` produces, with what it means; a number following a glyph is the
   // compiler's own numbering, in subscript, and `⁅…⁆` brackets a package file's name.
   val legend: Map[Text, Text] = Map.build[Text, Text]: legend =>
@@ -267,8 +268,8 @@ object StackTrace:
       val startable = index == 0 || !Character.isLetterOrDigit(char(index - 1))
 
       Marker.all.seek: marker =>
-        marker != Marker.module && at(index, marker.jvm)
-        && (startable || marker.jvm.s.startsWith("$") || marker.jvm.s.startsWith("<"))
+        marker != Marker.module && at(index, marker.jvm) &&
+          (startable || marker.jvm.s.startsWith("$") || marker.jvm.s.startsWith("<"))
 
     // The signature a specialized name encodes: `$mcII$sp` is a method whose type arguments,
     // in the order the compiler sorts them, are `Int` and `Int`. For the function classes
@@ -293,6 +294,7 @@ object StackTrace:
     def unicode(index: Int): Optional[Char] =
       if name.length < index + 6 || char(index + 1) != 'u' then Unset else
         val hex = name.substring(index + 2, index + 6).nn
+
         if hex.forall { char => Character.digit(char, 16) >= 0 }
         then Integer.parseInt(hex, 16).toChar
         else Unset
@@ -302,7 +304,8 @@ object StackTrace:
       if index < name.length && char(index).isDigit then
         buffer.append(subscript(char(index)))
         digits(index + 1)
-      else index
+      else
+        index
 
     def glyph(marker: Marker): Unit = marker match
       case Marker.adapted =>

@@ -136,7 +136,7 @@ private[facsimile] object Xref:
     // Expand object streams: each `/Type /ObjStm` object's members become compressed entries,
     // unless a direct copy of that member was already recovered (a later direct object wins).
     val entries = Map.build[Int, Entry]: entries =>
-      direct.each { (number, entry) => entries(number) = entry }
+      direct.each: (number, entry) => entries(number) = entry
 
       direct.each: (container, entry) =>
         entry match
@@ -146,8 +146,7 @@ private[facsimile] object Xref:
                 case body @ Cos.Body(dictionary, _)
                 if dictionary(t"Type").let(_.name) == t"ObjStm" =>
                   objStmMembers(source, body).each: number =>
-                    if !direct.defines(number)
-                    then entries(number) = Entry.Compressed(container, 0)
+                    if !direct.defines(number) then entries(number) = Entry.Compressed(container, 0)
 
                 case _ =>
                   ()
@@ -296,8 +295,11 @@ private[facsimile] object Xref:
       def subsections(lexer: CosLexer^): Map[Text, Cos] = lexer.next() match
         case CosToken.Integral(first) =>
           val count = lexer.next() match
-            case CosToken.Integral(count) => count.toInt
-            case _                        => abort(Pdf.Error(Pdf.Error.Reason.MalformedXref(offset)))
+            case CosToken.Integral(count) =>
+              count.toInt
+
+            case _ =>
+              abort(Pdf.Error(Pdf.Error.Reason.MalformedXref(offset)))
 
           for index <- 0 until count do
             val entry = (lexer.next(), lexer.next(), lexer.next()) match
@@ -372,6 +374,7 @@ private[facsimile] object Xref:
                 case _                  => abort(Pdf.Error(Pdf.Error.Reason.MalformedXref(offset)))
 
         val rowLength = widths.total
+
         val entries = Map.build[Int, Entry]: entries =>
           var position = 0
 

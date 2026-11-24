@@ -147,7 +147,7 @@ object Extractable:
     text =>
       import Selectable.reflectiveSelectable
 
-      mirror match
+      mirror.absolve match
         case mirror: { def valueOf(name: String): enumeration } @unchecked =>
           try mirror.valueOf((text: Text).s) catch case error: Exception => Unset
 
@@ -157,7 +157,7 @@ object Extractable:
     ordinal =>
       import Selectable.reflectiveSelectable
 
-      mirror match
+      mirror.absolve match
         case mirror: { def fromOrdinal(ordinal: Int): enumeration } @unchecked =>
           try mirror.fromOrdinal(ordinal) catch case error: Exception => Unset
 

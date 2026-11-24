@@ -116,16 +116,13 @@ object Oci:
     import gesticulate.*
     import gossamer.*
     import hieroglyph.*, codepages.utf8Codepage
-    import hypotenuse.*
     import jacinta.*
     import murmuration.has
     import pneumatic.*
     import prepositional.*
     import rudiments.map
     import rudiments.{each, head}
-    import serpentine.*
     import spectacular.*
-    import symbolism.*
     import turbulence.*
     import vacuous.*
     import wisteria.*
@@ -414,30 +411,18 @@ object Oci:
       manifestDescriptor: Descriptor,
       index:              Index,
       indexBytes:         Data ):
-    import scala.caps
     import anticipation.*
-    import aperture.*
     import bitumen.*
-    import contingency.*
     import distillate.*
-    import fulminate.*
-    import gesticulate.*
     import gossamer.*
     import hieroglyph.*, codepages.utf8Codepage
     import hypotenuse.*
-    import jacinta.*
-    import murmuration.has
-    import pneumatic.*
     import prepositional.*
     import rudiments.map
-    import rudiments.{each, head}
     import serpentine.*
     import spectacular.*
     import symbolism.*
-    import turbulence.*
     import vacuous.*
-    import wisteria.*
-    import zephyrine.*
 
 
     // The config blob narrowed to whichever form it takes; each is `Unset` for an image of
@@ -512,11 +497,6 @@ object Oci:
 
   class Layer private (raw0: => Data, blob0: => Data, mediaType: MediaType):
     import anticipation.*
-    import bitumen.*
-    import gesticulate.*
-    import pneumatic.*
-    import turbulence.*
-    import zephyrine.*
 
     lazy val raw:        Data       = raw0
     lazy val blob:       Data       = blob0

@@ -316,14 +316,13 @@ object Certificate:
     def fail(reason: Path.Error.Reason): Nothing = abort(Path.Error(reason))
 
     def issued(certificate: Certificate, authority: Certificate): Boolean =
-      certificate.issuerName.lay(false): issuer =>
-        authority.subjectName.lay(false)(same(issuer, _))
+      certificate.issuerName.lay(false): issuer => authority.subjectName.lay(false)(same(issuer, _))
 
     def recur(certificate: Certificate, rest: List[Certificate]): Unit =
       if certificate.fields.nil then fail(Path.Error.Reason.Malformed)
       if !certificate.current then fail(Path.Error.Reason.Expired)
 
-      if !anchors.exists(anchor => same(anchor.asn1, certificate.asn1)) then rest match
+      if !anchors.exists { anchor => same(anchor.asn1, certificate.asn1) } then rest match
         case authority :: more =>
           if !issued(certificate, authority) then fail(Path.Error.Reason.Unlinked)
           if !authority.authority then fail(Path.Error.Reason.NotAuthority)
@@ -437,11 +436,11 @@ case class Certificate(asn1: Asn1):
     // capture set the result cannot carry.
     def find(entries: List[Asn1]): Optional[Data] = entries match
       case Asn1.Sequence(List(Asn1.ObjectId(arcs), Asn1.OctetString(value))) :: _
-          if arcs == identifier =>
+        if arcs == identifier =>
         value
 
       case Asn1.Sequence(List(Asn1.ObjectId(arcs), Asn1.Boolean(_), Asn1.OctetString(value))) :: _
-          if arcs == identifier =>
+        if arcs == identifier =>
         value
 
       case _ :: rest =>
@@ -466,10 +465,10 @@ case class Certificate(asn1: Asn1):
   def signedBy(issuer: Certificate)(using crypto: Certificate.Verification): Boolean =
     asn1 match
       case Asn1.Sequence
-            ( List
-                ( tbs,
-                  Asn1.Sequence(Asn1.ObjectId(algorithm) :: _),
-                  Asn1.BitString(signature, 0) ) ) =>
+        ( List
+            ( tbs,
+              Asn1.Sequence(Asn1.ObjectId(algorithm) :: _),
+              Asn1.BitString(signature, 0) ) ) =>
 
         val scheme: Optional[Crypto.SignatureScheme] =
           if algorithm == Certificate.RsaSha256 then crypto.rsaSignature(t"SHA256")

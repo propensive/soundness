@@ -113,8 +113,7 @@ private[stratiform] object RatelWriter:
     def roomy(count: Long): Long = if slack <= 1.0 then count else Math.ceil(count*slack).toLong
 
     schema.scalars.each: scalar =>
-      scalar.encoding.let: name =>
-        if codecs(name).absent then fail(Reason.CodecUnresolved)
+      scalar.encoding.let: name => if codecs(name).absent then fail(Reason.CodecUnresolved)
 
     val (signature, schemaBody, valueHash) =
       mitigate:
@@ -129,10 +128,10 @@ private[stratiform] object RatelWriter:
             Blake3.hashOf(Bintel.encode(root, schema, codecs), 32) )
 
     val rows: java.util.ArrayList[java.util.ArrayList[Data]] = java.util.ArrayList()
-    layout.tables.each(table => rows.add(java.util.ArrayList()))
+    layout.tables.each: table => rows.add(java.util.ArrayList())
 
     val entries: java.util.ArrayList[java.util.ArrayList[Sortable]] = java.util.ArrayList()
-    layout.indexes.each(index => entries.add(java.util.ArrayList()))
+    layout.indexes.each: index => entries.add(java.util.ArrayList())
 
     // The indexes at each site, by table and slot.
     val sites: java.util.HashMap[Long, List[(RatelLayout.Index, Int)]] = java.util.HashMap()
@@ -210,7 +209,7 @@ private[stratiform] object RatelWriter:
 
     // The value which an index component names within a child, if the child has it.
     def find(children: Array[Tel.Element]^{}, keywords: List[Int]): Optional[Text] =
-      keywords match
+      keywords.absolve match
         case Nil => Unset
 
         case keyword :: rest => children.seek(index(_) == keyword).let:
@@ -282,6 +281,7 @@ private[stratiform] object RatelWriter:
             index(element) >= slot.keywordIndex && index(element) < slot.keywordIndex + span
 
           val site = table.toLong << 32 | slot.number
+
           val indexes: List[(RatelLayout.Index, Int)] =
             if sites.containsKey(site) then sites.get(site) else Nil
 
@@ -312,7 +312,7 @@ private[stratiform] object RatelWriter:
               mark(slot)
 
             case Kind.Packed(scalar, width) =>
-              val values = mine.map(element => bytes(scalar, text(element)))
+              val values = mine.map: element => bytes(scalar, text(element))
 
               indexes.each: (index, number) =>
                 mine.zip(List.range(0, mine.size)).each: (element, position) =>
@@ -321,7 +321,9 @@ private[stratiform] object RatelWriter:
                     RatelBytes.component(out, bytes(scalar, text(element)), true)
                     RatelBytes.u32be(out, position)
 
-              val body = Array.collect[Byte](width*values.size + 8)(out => values.each(out.append(_)))
+              val body = Array.collect[Byte](width*values.size + 8): out =>
+                values.each(out.append(_))
+
               buffer.putInt(slot.offset, grow(values.size, width, body).toInt)
 
             case Kind.Refs(scalar, intern) =>
@@ -332,7 +334,7 @@ private[stratiform] object RatelWriter:
                     RatelBytes.component(out, bytes(scalar, text(element)), false)
                     RatelBytes.u32be(out, position)
 
-              val refs = mine.map(element => value(scalar, text(element)))
+              val refs = mine.map: element => value(scalar, text(element))
 
               val body = Array.collect[Byte](4*refs.size + 8): out =>
                 refs.each(RatelBytes.u32(out, _))
@@ -405,7 +407,9 @@ private[stratiform] object RatelWriter:
 
         if bytes.length <= pageSize/8 then
           buffer.putShort(at + head, bytes.length.toShort)
-          List.range(0, bytes.length).each { index => buffer.put(at + head + 2 + index, bytes.u8(index).toByte) }
+
+          List.range(0, bytes.length).each: index =>
+            buffer.put(at + head + 2 + index, bytes.u8(index).toByte)
         else
           buffer.putShort(at + head, 0xffff.toShort)
           buffer.putInt(at + head + 4, vary(bytes).toInt)
@@ -426,24 +430,27 @@ private[stratiform] object RatelWriter:
 
       @scala.annotation.tailrec
       def recur(items: List[(Long, Data)], current: Optional[Loading], room: Int): Unit =
-        items match
+        items.absolve match
           case Nil =>
             current.let(groups.add(_))
 
           case (child, bytes) :: rest =>
             val size = cell(head, bytes) + 2
 
-            current.lay(recur(items, Loading(bytes, RatelBytes.none, Nil), pageSize - 16)): loading =>
-              if first && loading.leftmost == RatelBytes.none then
-                recur(rest, loading.copy(leftmost = child), room)
-              else if size <= room then
-                recur(rest, loading.copy(cells = (child, bytes) :: loading.cells), room - size)
-              else
-                groups.add(loading)
-                recur(items, Unset, 0)
+            current.lay(recur(items, Loading(bytes, RatelBytes.none, Nil), pageSize - 16)):
+              loading =>
+                if first && loading.leftmost == RatelBytes.none then
+                  recur(rest, loading.copy(leftmost = child), room)
+                else if size <= room then
+                  recur(rest, loading.copy(cells = (child, bytes) :: loading.cells), room - size)
+                else
+                  groups.add(loading)
+                  recur(items, Unset, 0)
 
       recur(items, Unset, 0)
-      List.range(0, groups.size).map(groups.get(_)).map { loading => loading.copy(cells = loading.cells.reverse) }
+
+      List.range(0, groups.size).map(groups.get(_)).map: loading =>
+        loading.copy(cells = loading.cells.reverse)
 
     // §9.7: an index, loaded from its entries in sorted order. The leaves are filled first,
     // then each level of branches over the level below, with the first entry beneath each
@@ -460,7 +467,8 @@ private[stratiform] object RatelWriter:
         @scala.annotation.tailrec
         def raise(level: List[(Long, Data)], height: Int): Loaded =
           if level.size == 1 then
-            Loaded(List.range(0, pages.size).map(pages.get(_)), pages.size - 1L, height, sorted.size)
+            Loaded
+              ( List.range(0, pages.size).map(pages.get(_)), pages.size - 1L, height, sorted.size )
           else
             val branches = pack(level, 4, true)
 
@@ -470,7 +478,10 @@ private[stratiform] object RatelWriter:
 
             raise(above, height + 1)
 
-        raise(leaves.zip(List.range(0, leaves.size)).map((leaf, number) => (number.toLong, leaf.first)), 1)
+        raise
+          ( leaves.zip(List.range(0, leaves.size))
+            . map { (leaf, number) => (number.toLong, leaf.first) },
+            1 )
 
     val trees: List[Loaded] = List.range(0, entries.size).map: number =>
       val sorted = entries.get(number)
@@ -499,11 +510,12 @@ private[stratiform] object RatelWriter:
     val tablesAt: Long = variableAt + variableRoom
 
     // Where each table's rows lie, and how many it has room for; then likewise each index.
-    val (rowsEnd, placedTables) = tables.zip(counts).fuse((tablesAt + 32L*tables.size, List[(Long, Long)]())):
-      val (table, count) = next
-      val (at, placed) = state
-      val room = roomy(count)
-      (at + room*table.rowSize, (at, room) :: placed)
+    val (rowsEnd, placedTables) =
+      tables.zip(counts).fuse((tablesAt + 32L*tables.size, List[(Long, Long)]())):
+        val (table, count) = next
+        val (at, placed) = state
+        val room = roomy(count)
+        (at + room*table.rowSize, (at, room) :: placed)
 
     val indexesAt: Long = rowsEnd
 
@@ -520,7 +532,7 @@ private[stratiform] object RatelWriter:
     val body = Array.collect[Byte]((digestsAt - RatelBytes.header).toInt): out =>
       def region(items: java.util.ArrayList[Data], room: Long): Unit =
         val before = out.mark
-        List.range(0, items.size).each { number => out.append(items.get(number): Data) }
+        List.range(0, items.size).each: number => out.append(items.get(number): Data)
         RatelBytes.zeros(out, (room - (out.mark - before)).toInt)
 
       out.append(schemaSection)
@@ -538,7 +550,9 @@ private[stratiform] object RatelWriter:
 
       tables.zip(List.range(0, tables.size)).zip(placedTables.reverse).each:
         case ((table, number), (at, room)) =>
-          List.range(0, rows.get(number).size).each { row => out.append(rows.get(number).get(row): Data) }
+          List.range(0, rows.get(number).size).each: row =>
+            out.append(rows.get(number).get(row): Data)
+
           RatelBytes.zeros(out, ((room - rows.get(number).size)*table.rowSize).toInt)
 
       trees.zip(placedTrees.reverse).each:
@@ -581,7 +595,12 @@ private[stratiform] object RatelWriter:
       entry(variableAt, variableSize, variableRoom)
       entry(tablesAt, 32L*tables.size, 32L*tables.size)
       entry(indexesAt, 32L*trees.size, 32L*trees.size)
-      entry(digestsAt, if digesting then RatelBytes.digests else 0, if digesting then RatelBytes.digests else 0)
+
+      entry
+        ( digestsAt,
+          if digesting then RatelBytes.digests else 0,
+          if digesting then RatelBytes.digests else 0 )
+
       RatelBytes.u64(out, 0L)
       if sealing then out.append(valueHash) else RatelBytes.zeros(out, 32)
 

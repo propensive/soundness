@@ -52,7 +52,7 @@ extension [value](value: value)
     def recur(value: value, lambdas: List[(Optic from value onto value) ->{C} value ->{C} value])
     :   value =
 
-      lambdas match
+      lambdas.absolve match
         case Nil            => value
         case lambda :: tail => recur(lambda(Optic.identity)(value), tail)
 

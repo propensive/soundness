@@ -185,11 +185,11 @@ object Ansi extends Ansi2:
       stack = Frame.Escape(bracket, off) :: stack
       addInsertion(plain.length, t"\e"+on)
 
-    def popFrame(): Unit = stack match
+    def popFrame(): Unit = stack.absolve match
       case (_: Frame.Style) :: tail =>
         stack = tail
 
-        styleStack match
+        styleStack.absolve match
           case style :: styleTail =>
             currentStyle = style
             styleStack = styleTail
@@ -277,7 +277,7 @@ object Ansi extends Ansi2:
               closures(state, text)
 
     private def closures(state: State, text: Text): State =
-      try state.stack match
+      try state.stack.absolve match
         case Nil =>
           state.appendChars(TextEscapes.escape(text))
           state

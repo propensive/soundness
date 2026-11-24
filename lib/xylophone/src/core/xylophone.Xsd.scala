@@ -323,7 +323,7 @@ object Xsd:
 
       val min = attribute(element, "minOccurs").lay(1)(count(_))
 
-      val max: Optional[Int] = attribute(element, "maxOccurs") match
+      val max: Optional[Int] = attribute(element, "maxOccurs").absolve match
         case Unset       => 1
         case value: Text => if value.s == "unbounded" then Unset else count(value)
 

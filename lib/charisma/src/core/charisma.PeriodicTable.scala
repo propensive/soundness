@@ -33,7 +33,6 @@
 package charisma
 
 import anticipation.*
-import contingency.*
 import denominative.*
 import gossamer.*
 import rudiments.*
@@ -183,7 +182,9 @@ object PeriodicTable:
   def element(number: Int): Chemical.Element =
     def recur(name: Text, symbol: Text, digits: Int): Chemical.Element =
       if digits == 0
-      then Chemical.Element(number, symbol.capitalize, name.capitalize.sub(t"ii", t"i").sub(t"nnn", t"nn"))
+      then
+        Chemical.Element
+          ( number, symbol.capitalize, name.capitalize.sub(t"ii", t"i").sub(t"nnn", t"nn") )
       else
         val prefix = prefixes.readUnchecked(digits%10)
         recur(prefix+name, t"${prefix.s.charAt(0)}$symbol", digits/10)

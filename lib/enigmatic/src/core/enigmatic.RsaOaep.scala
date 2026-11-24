@@ -37,9 +37,7 @@ import scala.reflect.Selectable.reflectiveSelectable
 import anticipation.*
 import corpuscular.*
 import gastronomy.*
-import gossamer.*
 import prepositional.*
-import vacuous.*
 
 // RSAES-OAEP (RFC 8017 §7.1): RSA encryption with Optimal Asymmetric Encryption Padding, in
 // place of the PKCS#1 v1.5 padding `Rsa` encrypts with, which is open to Bleichenbacher's

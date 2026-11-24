@@ -35,8 +35,6 @@ package vicarious
 import scala.language.dynamics
 
 import beneficence.*
-import fulminate.*
-import vacuous.*
 
 object Catalog:
   extension [key, value: ClassTag](catalog: Catalog[key, value])

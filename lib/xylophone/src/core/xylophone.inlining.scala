@@ -248,7 +248,7 @@ object inlining:
     if !isMap && (tpe <:< TypeRepr.of[Iterable[Any]] || aliasCollectionUnderlying(tpe).isDefined)
     then tpe match
       case AppliedType(_, arguments) =>
-        arguments.last.asType match
+        arguments.last.asType.absolve match
           case '[element] =>
             resolve[element](cache).map: instance =>
               Inlinable.IterableInlinable[element]
@@ -273,7 +273,7 @@ object inlining:
   private def sumFor[field: Type](cache: Cache)(using Quotes): Option[Inlinable] =
     sumVariants(quotes.reflect.TypeRepr.of[field].dealias).flatMap: variants =>
       val resolvable = variants.forall: (_, variantType) =>
-        variantType.asType match
+        variantType.asType.absolve match
           case '[variantType] => resolve[variantType](cache).isDefined
 
       if !resolvable then None
@@ -353,7 +353,7 @@ object inlining:
 
     TypeRepr.of[collection].dealias match
       case AppliedType(_, arguments) =>
-        (arguments.last.asType, factoryType.asType) match
+        (arguments.last.asType, factoryType.asType).absolve match
           case ('[element], '[stdlib]) =>
             val instance = element0.asInstanceOf[Inlinable { type Self = element }]
 
@@ -379,7 +379,7 @@ object inlining:
 
     TypeRepr.of[collection].dealias match
       case AppliedType(_, arguments) =>
-        (arguments.last.asType, factoryType.asType) match
+        (arguments.last.asType, factoryType.asType).absolve match
           case ('[element], '[stdlib]) =>
             '{ infer[scala.collection.Factory[element, stdlib]].newBuilder.result()
               . asInstanceOf[collection] }
@@ -456,7 +456,7 @@ object inlining:
           Plan.Leaf(leaf)
 
         case None =>
-          fieldType.asType match
+          fieldType.asType.absolve match
             case '[fieldType] =>
               resolve[fieldType](cache) match
                 case Some(iterable: Inlinable.IterableInlinable[?]) =>
@@ -532,7 +532,7 @@ object inlining:
       else if fieldType =:= TypeRepr.of[Double] then Literal(DoubleConstant(0.0))
       else if fieldType =:= TypeRepr.of[Float] then Literal(FloatConstant(0.0f))
       else if fieldType =:= TypeRepr.of[Boolean] then Literal(BooleanConstant(false))
-      else fieldType.asType match
+      else fieldType.asType.absolve match
         case '[fieldType] => '{null.asInstanceOf[fieldType]}.asTerm
 
     val slotDefs = List.range(0, arity).map: index =>
@@ -553,11 +553,11 @@ object inlining:
     val gathers: List[Option[GatherState]] = List.range(0, arity).map: index =>
       plans(index) match
         case Plan.Gather(element0) =>
-          fieldTypes(index).asType match
+          fieldTypes(index).asType.absolve match
             case '[fieldType] =>
               fieldTypes(index) match
                 case AppliedType(_, arguments) =>
-                  arguments.last.asType match
+                  arguments.last.asType.absolve match
                     case '[element] =>
                       val instance = element0.asInstanceOf[Inlinable { type Self = element }]
 
@@ -615,7 +615,7 @@ object inlining:
     val seams: List[Option[SeamState]] = List.range(0, arity).map: index =>
       plans(index) match
         case Plan.Seam =>
-          fieldTypes(index).asType match
+          fieldTypes(index).asType.absolve match
             case '[fieldType] =>
               val instanceSymbol =
                 Symbol.newVal
@@ -656,7 +656,7 @@ object inlining:
     val nesteds: List[Option[(Symbol, Statement)]] = List.range(0, arity).map: index =>
       plans(index) match
         case Plan.Nested(instance0) =>
-          fieldTypes(index).asType match
+          fieldTypes(index).asType.absolve match
             case '[fieldType] =>
               val instance = instance0.asInstanceOf[Inlinable { type Self = fieldType }]
 
@@ -684,7 +684,7 @@ object inlining:
               unit ) )
 
     val arms: List[CaseDef] = List.range(0, arity).map: index =>
-      val rhs: Term = fieldTypes(index).asType match
+      val rhs: Term = fieldTypes(index).asType.absolve match
         case '[fieldType] =>
           plans(index) match
             case Plan.Leaf(instance0) =>
@@ -712,7 +712,7 @@ object inlining:
 
               fieldTypes(index) match
                 case AppliedType(_, arguments) =>
-                  arguments.last.asType match
+                  arguments.last.asType.absolve match
                     case '[element] =>
                       val builderRef =
                         Ref(gather.builder).asExprOf[scm.Builder[element, fieldType]]
@@ -840,7 +840,7 @@ object inlining:
     // declared default), exactly as the derived engine does. ──
 
     val absents: List[Term] = List.range(0, arity).map: index =>
-      fieldTypes(index).asType match
+      fieldTypes(index).asType.absolve match
         case '[fieldType] =>
           def resolveAbsent(onAbsent: Expr[fieldType]): Term =
             Assign
@@ -873,7 +873,7 @@ object inlining:
 
               fieldTypes(index) match
                 case AppliedType(_, arguments) =>
-                  arguments.last.asType match
+                  arguments.last.asType.absolve match
                     case '[element] =>
                       val builderRef =
                         Ref(gather.builder).asExprOf[scm.Builder[element, fieldType]]
@@ -949,7 +949,7 @@ object inlining:
 
     def build(): Expr[product] =
       val arguments: List[Term] = List.range(0, arity).map: index =>
-        fieldTypes(index).asType match
+        fieldTypes(index).asType.absolve match
           case '[fieldType] =>
             val keyText: Expr[Text] = '{${Expr(fieldNames(index))}.tt}
 
@@ -1065,7 +1065,7 @@ object inlining:
 
     def dispatch(index: Int, wire: Expr[String], tactic: Expr[Tactic[Xml.Error]]): Expr[sum] =
       if index == arity then fallback(wire, tactic)
-      else variants(index)(1).asType match
+      else variants(index)(1).asType.absolve match
         case '[type variantType <: sum; variantType] =>
           val instance = resolve[variantType](cache).getOrElse:
             report.errorAndAbort

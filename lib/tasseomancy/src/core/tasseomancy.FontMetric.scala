@@ -52,7 +52,7 @@ object FontMetric:
     safely(font.width(text)).or(tasseomancy.fontMetrics.averageFontMetric.width(text))
 
   // The metric of a font's first embedded file, if its provision has one, else the average.
-  def of(font: Font): FontMetric = embedded(font.provision.sources) match
+  def of(font: Font): FontMetric = embedded(font.provision.sources).absolve match
     case Unset      => tasseomancy.fontMetrics.averageFontMetric
     case sfnt: Sfnt => of(sfnt)
 

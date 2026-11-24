@@ -110,7 +110,7 @@ trait Yaml2:
     ( using value is Decodable in Text, Tactic[Yaml.Error] )
   :   value =
 
-    yaml.root.asMatchable match
+    (yaml.root: Any).asMatchable match
       case s: String => s.tt.as[value]
 
       case _ =>
@@ -280,7 +280,7 @@ trait Yaml2:
         while i < n && found == null do
           val entryKey = arr.readUnchecked(i).asInstanceOf[Yaml.Ast]
 
-          entryKey.asMatchable match
+          (entryKey: Any).asMatchable match
             case s: String if s == target =>
               found = arr.readUnchecked(i + 1).asInstanceOf[Yaml.Ast]
 
@@ -1016,29 +1016,29 @@ object Yaml extends Yaml1, Dynamic:
     // `Option`, which is fine for non-hot-path code (tests, decoders).
 
     object Bool:
-      def unapply(ast: Yaml.Ast): Option[Boolean] = ast match
+      def unapply(ast: Yaml.Ast): Option[Boolean] = (ast: Any).asMatchable match
         case b: Boolean => Some(b)
         case _          => None
 
     object Integer:
-      def unapply(ast: Yaml.Ast): Option[Long] = ast match
+      def unapply(ast: Yaml.Ast): Option[Long] = (ast: Any).asMatchable match
         case n: Long => Some(n)
         case _       => None
 
     object Decimal:
-      def unapply(ast: Yaml.Ast): Option[Double] = ast match
+      def unapply(ast: Yaml.Ast): Option[Double] = (ast: Any).asMatchable match
         case d: Double => Some(d)
         case _         => None
 
     // Pattern extractor for high-precision BCD numbers. Matches a number
     // value that overflowed `Long`/`Double` precision during parsing.
     object BcdValue:
-      def unapply(ast: Yaml.Ast): Option[Bcd] = ast match
+      def unapply(ast: Yaml.Ast): Option[Bcd] = (ast: Any).asMatchable match
         case b: scala.Array[Double] @unchecked => Some(Bcd.adopt(b))
         case _                                 => None
 
     object Str:
-      def unapply(ast: Yaml.Ast): Option[Text] = ast match
+      def unapply(ast: Yaml.Ast): Option[Text] = (ast: Any).asMatchable match
         case s: String => Some(s.tt)
         case _         => None
 
@@ -1463,47 +1463,47 @@ object Yaml extends Yaml1, Dynamic:
 
   given int: (tactic: Tactic[Yaml.Error])
   =>  ( (Int is Decodable in Yaml)^{tactic} ) = yaml =>
-    yaml.root.asMatchable match
+    (yaml.root: Any).asMatchable match
       case n: Long   => n.toInt
       case d: Double => d.toInt
       case _         => primitiveFault(yaml, Yaml.Primitive.Integer, 0)
 
   given long: (tactic: Tactic[Yaml.Error])
   =>  ( (Long is Decodable in Yaml)^{tactic} ) = yaml =>
-    yaml.root.asMatchable match
+    (yaml.root: Any).asMatchable match
       case n: Long   => n
       case d: Double => d.toLong
       case _         => primitiveFault(yaml, Yaml.Primitive.Integer, 0L)
 
   given double: (tactic: Tactic[Yaml.Error])
   =>  ( (Double is Decodable in Yaml)^{tactic} ) = yaml =>
-    yaml.root.asMatchable match
+    (yaml.root: Any).asMatchable match
       case d: Double => d
       case n: Long   => n.toDouble
       case _         => primitiveFault(yaml, Yaml.Primitive.Decimal, 0.0)
 
   given float: (tactic: Tactic[Yaml.Error])
   =>  ( (Float is Decodable in Yaml)^{tactic} ) = yaml =>
-    yaml.root.asMatchable match
+    (yaml.root: Any).asMatchable match
       case d: Double => d.toFloat
       case n: Long   => n.toFloat
       case _         => primitiveFault(yaml, Yaml.Primitive.Decimal, 0.0f)
 
   given boolean: (tactic: Tactic[Yaml.Error])
   =>  ( (Boolean is Decodable in Yaml)^{tactic} ) = yaml =>
-    yaml.root.asMatchable match
+    (yaml.root: Any).asMatchable match
       case b: Boolean => b
       case _          => primitiveFault(yaml, Yaml.Primitive.Bool, false)
 
   given text: (tactic: Tactic[Yaml.Error])
   =>  ( (Text is Decodable in Yaml)^{tactic} ) = yaml =>
-    yaml.root.asMatchable match
+    (yaml.root: Any).asMatchable match
       case s: String => s.tt
       case _         => primitiveFault(yaml, Yaml.Primitive.Str, t"")
 
   given string: (tactic: Tactic[Yaml.Error])
   =>  ( (String is Decodable in Yaml)^{tactic} ) = yaml =>
-    yaml.root.asMatchable match
+    (yaml.root: Any).asMatchable match
       case s: String => s
       case _         => primitiveFault(yaml, Yaml.Primitive.Str, "")
 
@@ -1594,7 +1594,7 @@ object Yaml extends Yaml1, Dynamic:
 
               val keyText: Text =
                 if rawKey.isNull then t"null"
-                else rawKey.asMatchable match
+                else (rawKey: Any).asMatchable match
                   case s: String                    => s.tt
                   case k: (Long | Double | Boolean) => k.toString.tt
 
@@ -1942,7 +1942,7 @@ object Yaml extends Yaml1, Dynamic:
 
   def primitive(ast: Yaml.Ast): Yaml.Primitive =
     if ast.isNull then Yaml.Primitive.Null
-    else ast.asMatchable match
+    else (ast: Any).asMatchable match
       case _: Boolean                         => Yaml.Primitive.Bool
       case _: Long                            => Yaml.Primitive.Integer
       case _: Double                          => Yaml.Primitive.Decimal
@@ -6080,31 +6080,31 @@ object Yaml extends Yaml1, Dynamic:
       if node.isAbsent then raise(Yaml.Error(Reason.Absent)) yet sentinel
       else raise(Yaml.Error(Reason.NotType(Yaml.primitive(node), expected))) yet sentinel
 
-    def int(node: Yaml.Ast): Int = node.asMatchable match
+    def int(node: Yaml.Ast): Int = (node: Any).asMatchable match
       case n: Long   => n.toInt
       case d: Double => d.toInt
       case _         => fault(node, Yaml.Primitive.Integer, 0)
 
-    def long(node: Yaml.Ast): Long = node.asMatchable match
+    def long(node: Yaml.Ast): Long = (node: Any).asMatchable match
       case n: Long   => n
       case d: Double => d.toLong
       case _         => fault(node, Yaml.Primitive.Integer, 0L)
 
-    def double(node: Yaml.Ast): Double = node.asMatchable match
+    def double(node: Yaml.Ast): Double = (node: Any).asMatchable match
       case d: Double => d
       case n: Long   => n.toDouble
       case _         => fault(node, Yaml.Primitive.Decimal, 0.0)
 
-    def float(node: Yaml.Ast): Float = node.asMatchable match
+    def float(node: Yaml.Ast): Float = (node: Any).asMatchable match
       case d: Double => d.toFloat
       case n: Long   => n.toFloat
       case _         => fault(node, Yaml.Primitive.Decimal, 0.0f)
 
-    def boolean(node: Yaml.Ast): Boolean = node.asMatchable match
+    def boolean(node: Yaml.Ast): Boolean = (node: Any).asMatchable match
       case b: Boolean => b
       case _          => fault(node, Yaml.Primitive.Bool, false)
 
-    def string(node: Yaml.Ast): String = node.asMatchable match
+    def string(node: Yaml.Ast): String = (node: Any).asMatchable match
       case s: String => s
       case _         => fault(node, Yaml.Primitive.Str, "")
 
@@ -6114,35 +6114,6 @@ object Yaml extends Yaml1, Dynamic:
     // Registers a value of the wrong shape (a scalar where a sequence or mapping was due) and
     // continues.
     def shape(node: Yaml.Ast, expected: Yaml.Primitive): Unit = fault(node, expected, ())
-
-  // A value read straight off the tree. `Parsable` is the opt-in surface; `Field` resolves
-  // for every type, and is what a derived parser reads each field through.
-  trait Field extends distillate.Parsable:
-    type Transport = Yaml
-    type Reader = Yaml.Reader
-
-    def parse(reader: Yaml.Reader^): Self = parse(reader, Yaml.Ast(Unset))
-
-    // Reads the value from `node`, which is the absent sentinel for a key the mapping lacks.
-    def parse(reader: Yaml.Reader^, node: Yaml.Ast): Self
-
-  trait Parsable extends Field
-
-  trait Field2:
-    // The bridge from the tree world: any `Decodable in Yaml` reads the node as a `Yaml`.
-    given decodable: [value] => (decodable: (value is Decodable in Yaml)^)
-    =>  ( (value is Yaml.Field)^{decodable} ) =
-
-      new Field:
-        type Self = value
-        def parse(reader: Yaml.Reader^, node: Yaml.Ast): value = decodable.decoded(new Yaml(node))
-
-  trait Field1 extends Field2:
-    // A product reads itself field by field, derived where it is needed.
-    inline given product: [value <: Product] => (reflection: ProductReflection[value])
-    =>  ( value is Yaml.Field ) =
-
-      Yaml.FieldDerivation.derived[value]
 
   object Field extends Field1:
     // Rim call points for derived code: the derivation's lambda holds the reader as a neutral
@@ -6275,7 +6246,7 @@ object Yaml extends Yaml1, Dynamic:
 
                 val key: Text =
                   if rawKey.isNull then t"null"
-                  else rawKey.asMatchable match
+                  else (rawKey: Any).asMatchable match
                     case s: String                    => s.tt
                     case k: (Long | Double | Boolean) => k.toString.tt
 
@@ -6289,6 +6260,58 @@ object Yaml extends Yaml1, Dynamic:
           else
             reader.shape(node, Yaml.Primitive.Mapping)
             Map.empty
+
+  // A value read straight off the tree. `Parsable` is the opt-in surface; `Field` resolves
+  // for every type, and is what a derived parser reads each field through.
+  trait Field extends distillate.Parsable:
+    type Transport = Yaml
+    type Reader = Yaml.Reader
+
+    def parse(reader: Yaml.Reader^): Self = parse(reader, Yaml.Ast(Unset))
+
+    // Reads the value from `node`, which is the absent sentinel for a key the mapping lacks.
+    def parse(reader: Yaml.Reader^, node: Yaml.Ast): Self
+
+  object Parsable extends Parsable2:
+    inline def derived[value <: Product: ProductReflection]: value is Yaml.Parsable =
+      fromField(FieldDerivation.derived[value])
+
+    // Not inline: a read of `Play in Yaml` infers `value` as the refinement `Play { type Form =
+    // Yaml }`, and an anonymous class expanded with that type substituted does not override
+    // `parse` under capture checking; here `value` stays abstract.
+    def fromField[value](field: (value is Yaml.Field)^): (value is Yaml.Parsable)^{field} =
+      new Parsable:
+        type Self = value
+        def parse(reader: Yaml.Reader^, node: Yaml.Ast): value = field.parse(reader, node)
+
+    // The bridge from the tree world, whole: the node decoded as a `Yaml`.
+    def fromDecodable[value](decodable: (value is Decodable in Yaml)^)
+    :   (value is Yaml.Parsable)^{decodable} =
+
+      new Parsable:
+        type Self = value
+        def parse(reader: Yaml.Reader^, node: Yaml.Ast): value = decodable.decoded(new Yaml(node))
+
+    given declared: [value] => (direct: Yaml.Direct[value]) => value is Yaml.Parsable =
+      direct.parsable
+
+  trait Parsable extends Field
+
+  trait Field2:
+    // The bridge from the tree world: any `Decodable in Yaml` reads the node as a `Yaml`.
+    given decodable: [value] => (decodable: (value is Decodable in Yaml)^)
+    =>  ( (value is Yaml.Field)^{decodable} ) =
+
+      new Field:
+        type Self = value
+        def parse(reader: Yaml.Reader^, node: Yaml.Ast): value = decodable.decoded(new Yaml(node))
+
+  trait Field1 extends Field2:
+    // A product reads itself field by field, derived where it is needed.
+    inline given product: [value <: Product] => (reflection: ProductReflection[value])
+    =>  ( value is Yaml.Field ) =
+
+      Yaml.FieldDerivation.derived[value]
 
   object FieldDerivation extends ProductDerivable[Yaml.Field]:
     // As `DecodableDerivation`'s `gate` and `ArrayProduct`, which stay private to it: a
@@ -6407,29 +6430,6 @@ object Yaml extends Yaml1, Dynamic:
 
       Yaml.Printable.derived[value]
 
-  object Parsable extends Parsable2:
-    inline def derived[value <: Product: ProductReflection]: value is Yaml.Parsable =
-      fromField(FieldDerivation.derived[value])
-
-    // Not inline: a read of `Play in Yaml` infers `value` as the refinement `Play { type Form =
-    // Yaml }`, and an anonymous class expanded with that type substituted does not override
-    // `parse` under capture checking; here `value` stays abstract.
-    def fromField[value](field: (value is Yaml.Field)^): (value is Yaml.Parsable)^{field} =
-      new Parsable:
-        type Self = value
-        def parse(reader: Yaml.Reader^, node: Yaml.Ast): value = field.parse(reader, node)
-
-    // The bridge from the tree world, whole: the node decoded as a `Yaml`.
-    def fromDecodable[value](decodable: (value is Decodable in Yaml)^)
-    :   (value is Yaml.Parsable)^{decodable} =
-
-      new Parsable:
-        type Self = value
-        def parse(reader: Yaml.Reader^, node: Yaml.Ast): value = decodable.decoded(new Yaml(node))
-
-    given declared: [value] => (direct: Yaml.Direct[value]) => value is Yaml.Parsable =
-      direct.parsable
-
   // The `derives` carrier for a direct codec: `case class Play(…) derives Yaml.Direct` derives
   // `Play`'s parser and printer once, into its companion, where they serve every read and
   // write — with or without `import codecs.direct`, which would otherwise derive them at each
@@ -6544,34 +6544,6 @@ object Yaml extends Yaml1, Dynamic:
         close(outer)
         if builder.length >= limit then flush()
 
-  // A value written straight to text. `Printable` is the opt-in surface; `Writable` resolves
-  // for every type, and is what a derived printer writes each field through.
-  trait Writable extends Typeclass:
-    // Whether the value is left out of a mapping altogether: an `Unset` or `None` field, as
-    // the tree encoder omits an absent encoding.
-    def absent(value: Self): Boolean = false
-
-    // Writes the value as the one due after a `key:` or `-` marker, or as the document.
-    def write(value: Self, out: Yaml.Out^): Unit
-
-  trait Printable extends Writable
-
-  trait Writable2:
-    // The bridge from the tree world: any `Encodable in Yaml` writes its tree.
-    given encodable: [value] => (encodable: (value is Encodable in Yaml)^)
-    =>  ( (value is Yaml.Writable)^{encodable} ) =
-
-      new Writable:
-        type Self = value
-        override def absent(value: value): Boolean = encodable.encode(value).root.isAbsent
-        def write(value: value, out: Yaml.Out^): Unit = out.tree(encodable.encode(value).root)
-
-  trait Writable1 extends Writable2:
-    inline given product: [value <: Product] => (reflection: ProductReflection[value])
-    =>  ( value is Yaml.Writable ) =
-
-      Yaml.WritableDerivation.derived[value]
-
   object Writable extends Writable1:
     // Rim call points for derived code, as `Field`'s.
     def writeField[value](writable: value is Yaml.Writable, value: value, carrier: AnyRef): Unit =
@@ -6660,36 +6632,15 @@ object Yaml extends Yaml1, Dynamic:
 
             out.close(outer)
 
-  object WritableDerivation extends ProductDerivable[Yaml.Writable]:
-    // The derived write lambda takes the writer as a neutral `AnyRef` carrier, as
-    // `FieldDerivation`'s parser takes the reader.
-    class WritableProductPrinter[derivation]
-      ( absent0: derivation => Boolean, lambda: (derivation, AnyRef) => Unit )
-    extends Writable:
-      type Self = derivation
-      override def absent(value: derivation): Boolean = absent0(value)
+  // A value written straight to text. `Printable` is the opt-in surface; `Writable` resolves
+  // for every type, and is what a derived printer writes each field through.
+  trait Writable extends Typeclass:
+    // Whether the value is left out of a mapping altogether: an `Unset` or `None` field, as
+    // the tree encoder omits an absent encoding.
+    def absent(value: Self): Boolean = false
 
-      def write(value: derivation, out: Yaml.Out^): Unit =
-        if absent0(value) then out.empty(mapping = true)
-        else
-          val outer = out.open()
-          lambda(value, out.asInstanceOf[AnyRef])
-          out.close(outer)
-
-    inline def conjunction[derivation <: Product: ProductReflection]
-    :   (derivation is Yaml.Writable)^ =
-
-      val renames: Map[Text, Text] = relabelling[derivation, Yaml]
-
-      // A product with every field absent writes as the empty mapping its tree would be.
-      WritableProductPrinter[derivation](
-        value => fields(value) { [field] => field => contextual.absent(field) }.all(identity(_)),
-        (value, carrier) =>
-          fields(value): [field] =>
-            field =>
-              if !contextual.absent(field) then
-                Yaml.Writable.keyOf(carrier, renames(label).or(label).s)
-                Yaml.Writable.writeField(contextual, field, carrier))
+    // Writes the value as the one due after a `key:` or `-` marker, or as the document.
+    def write(value: Self, out: Yaml.Out^): Unit
 
   object Printable extends Printable2:
     inline def derived[value <: Product: ProductReflection]: value is Yaml.Printable =
@@ -6731,6 +6682,55 @@ object Yaml extends Yaml1, Dynamic:
       val out = Yaml.Out(java.lang.StringBuilder(), buffering.capacity(Substrate.Chars), deliver)
       printable.write(value, out)
       out.flush()
+
+  trait Printable extends Writable
+
+  trait Writable2:
+    // The bridge from the tree world: any `Encodable in Yaml` writes its tree.
+    given encodable: [value] => (encodable: (value is Encodable in Yaml)^)
+    =>  ( (value is Yaml.Writable)^{encodable} ) =
+
+      new Writable:
+        type Self = value
+        override def absent(value: value): Boolean = encodable.encode(value).root.isAbsent
+        def write(value: value, out: Yaml.Out^): Unit = out.tree(encodable.encode(value).root)
+
+  trait Writable1 extends Writable2:
+    inline given product: [value <: Product] => (reflection: ProductReflection[value])
+    =>  ( value is Yaml.Writable ) =
+
+      Yaml.WritableDerivation.derived[value]
+
+  object WritableDerivation extends ProductDerivable[Yaml.Writable]:
+    // The derived write lambda takes the writer as a neutral `AnyRef` carrier, as
+    // `FieldDerivation`'s parser takes the reader.
+    class WritableProductPrinter[derivation]
+      ( absent0: derivation => Boolean, lambda: (derivation, AnyRef) => Unit )
+    extends Writable:
+      type Self = derivation
+      override def absent(value: derivation): Boolean = absent0(value)
+
+      def write(value: derivation, out: Yaml.Out^): Unit =
+        if absent0(value) then out.empty(mapping = true)
+        else
+          val outer = out.open()
+          lambda(value, out.asInstanceOf[AnyRef])
+          out.close(outer)
+
+    inline def conjunction[derivation <: Product: ProductReflection]
+    :   (derivation is Yaml.Writable)^ =
+
+      val renames: Map[Text, Text] = relabelling[derivation, Yaml]
+
+      // A product with every field absent writes as the empty mapping its tree would be.
+      WritableProductPrinter[derivation](
+        value => fields(value) { [field] => field => contextual.absent(field) }.all(identity(_)),
+        (value, carrier) =>
+          fields(value): [field] =>
+            field =>
+              if !contextual.absent(field) then
+                Yaml.Writable.keyOf(carrier, renames(label).or(label).s)
+                Yaml.Writable.writeField(contextual, field, carrier))
 
   // `import codecs.derived`: the tree codecs, even for a type with a direct instance in
   // scope. Each outranks its direct counterpart in `Yaml1`, and applies only where that would.

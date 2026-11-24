@@ -38,7 +38,6 @@ import java.nio.charset as jnc
 
 import anticipation.*
 import beneficence.*
-import contingency.*
 import denominative.*
 import prepositional.*
 import rudiments.reverse

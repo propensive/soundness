@@ -82,7 +82,9 @@ trait Conformant2 extends Conformant3:
   // The body as a carrier read from text. The bytes are decoded to `Text` (through the
   // `Charset`) before the carrier's parser sees them.
   given carrierText: [carrier]
-  =>  ( aggregable: carrier is Aggregable by Text, decoder: Charset, truncation: Tactic[Truncation.Error] )
+  =>  ( aggregable: carrier is Aggregable by Text,
+        decoder:    Charset,
+        truncation: Tactic[Truncation.Error] )
   =>  (carrier is Conformant) over carrier =
     response =>
       val data: Data = response.body.stream.memoize

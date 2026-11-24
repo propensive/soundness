@@ -119,8 +119,8 @@ object Scribe:
 
       if char < 0x80 then utf8Length(string, index + 1, total + 1)
       else if char < 0x800 then utf8Length(string, index + 1, total + 2)
-      else if Character.isHighSurrogate(char) && index + 1 < string.length
-        && Character.isLowSurrogate(string.charAt(index + 1))
+      else if Character.isHighSurrogate(char) && index + 1 < string.length &&
+        Character.isLowSurrogate(string.charAt(index + 1))
       then utf8Length(string, index + 2, total + 4)
       else if Character.isSurrogate(char) then utf8Length(string, index + 1, total + 1)
       else utf8Length(string, index + 1, total + 3)
@@ -138,7 +138,8 @@ object Scribe:
       if char < 0x80 then
         target(from) = char.toByte
         utf8Into(target, from + 1, string, index + 1)
-      else utf8IntoGeneral(target, from, string, index)
+      else
+        utf8IntoGeneral(target, from, string, index)
 
   @scala.annotation.tailrec
   private def utf8IntoGeneral(target: scala.Array[Byte]^, from: Int, string: String, index: Int)
@@ -154,8 +155,8 @@ object Scribe:
         target(from) = (0xc0 | (char >> 6)).toByte
         target(from + 1) = (0x80 | (char & 0x3f)).toByte
         utf8IntoGeneral(target, from + 2, string, index + 1)
-      else if Character.isHighSurrogate(char) && index + 1 < string.length
-        && Character.isLowSurrogate(string.charAt(index + 1))
+      else if Character.isHighSurrogate(char) && index + 1 < string.length &&
+        Character.isLowSurrogate(string.charAt(index + 1))
       then
         val codepoint = Character.toCodePoint(char, string.charAt(index + 1))
         target(from) = (0xf0 | (codepoint >> 18)).toByte
@@ -260,8 +261,7 @@ object Scribe:
       val ordinal: Ordinal = at
       val core = scribe.asInstanceOf[Core]
 
-      if core.growable
-      then Scribe.reserve[element](core, ordinal.n0 + source.length - core.mark)
+      if core.growable then Scribe.reserve[element](core, ordinal.n0 + source.length - core.mark)
 
       val target: scala.Array[element]^ = core.buffer.asInstanceOf[scala.Array[element]^]
       val count = source.length.min(target.length - ordinal.n0)
@@ -285,7 +285,9 @@ extension (scribe: Scribe[Byte])
       val count = Scribe.varintLength(value)
       if core.growable then Scribe.reserve[Byte](core, count)
       val target = core.buffer.asInstanceOf[scala.Array[Byte]^]
-      if core.mark + count <= target.length then core.mark = Scribe.varintInto(target, core.mark, value)
+
+      if core.mark + count <= target.length
+      then core.mark = Scribe.varintInto(target, core.mark, value)
 
   // The UTF-8 encoding of `string`, encoded straight into the buffer: no intermediate array.
   inline def appendUtf8(string: String): Unit =
@@ -293,7 +295,9 @@ extension (scribe: Scribe[Byte])
     val count = Scribe.utf8Length(string)
     if core.growable then Scribe.reserve[Byte](core, count)
     val target = core.buffer.asInstanceOf[scala.Array[Byte]^]
-    if core.mark + count <= target.length then core.mark = Scribe.utf8Into(target, core.mark, string, 0)
+
+    if core.mark + count <= target.length
+    then core.mark = Scribe.utf8Into(target, core.mark, string, 0)
 
 extension (companion: Array.type)
   // Allocate, lend, freeze — with no size given, so the scribe grows as it is written and the

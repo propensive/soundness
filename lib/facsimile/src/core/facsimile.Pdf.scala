@@ -394,7 +394,7 @@ object Pdf:
           def recur(elements: List[Cos]): Unit = elements match
             case Cos.Integral(start) :: Cos.Sequence(widths) :: rest =>
               widths.each: width =>
-                pdf.resolved(width).double.let { value => entries(start.toInt + ordinal.n0) = value }
+                pdf.resolved(width).double.let: value => entries(start.toInt + ordinal.n0) = value
 
               recur(rest)
 
@@ -489,8 +489,7 @@ object Pdf:
           value.let: text => entries(key) = Cos.Chars(Cos.encodeText(text))
 
         def date(key: Text, value: Optional[Timing]): Unit =
-          value.let: timing =>
-            entries(key) = Cos.Chars(Cos.encodeText(formatDate(timing)))
+          value.let: timing => entries(key) = Cos.Chars(Cos.encodeText(formatDate(timing)))
 
         string(t"Title", info.title)
         string(t"Author", info.author)
@@ -1044,7 +1043,6 @@ class Pdf private[facsimile]
     val version: Pdf.Version )
 extends caps.ExclusiveCapability:
   import Pdf.Destination
-
 
   private val cache: scala.collection.mutable.HashMap[Int, Cos] =
     scala.collection.mutable.HashMap()

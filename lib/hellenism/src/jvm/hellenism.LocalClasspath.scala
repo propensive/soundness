@@ -48,8 +48,6 @@ import spectacular.*
 import symbolism.*
 import vacuous.*
 
-import filesystemBackends.javaBaseFilesystem
-
 object LocalClasspath:
   given encodable: System => LocalClasspath is Encodable in Text = _()
 
@@ -112,7 +110,7 @@ object LocalClasspath:
         path.cut(System.properties.path.separator().show).filter(_ != t"")
 
     // Each once, in the order first named.
-    def once(paths: List[Text], seen: Set[Text]): List[Text] = paths match
+    def once(paths: List[Text], seen: Set[Text]): List[Text] = paths.absolve match
       case Nil          => Nil
       case head :: tail => if seen.has(head) then once(tail, seen) else head :: once(tail, seen + Set(head))
 

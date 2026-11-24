@@ -474,7 +474,7 @@ case class Pty(buffer: Screen[Style], state: Pty.State, output: Relay[Text]):
     def fg(chroma: Chroma): Style = DefaultForeground(Foreground(style) = chroma) = false
     def bg(chroma: Chroma): Style = DefaultBackground(Background(style) = chroma) = false
 
-    def sgr(params: List[Int]): Unit = params match
+    def sgr(params: List[Int]): Unit = params.absolve match
       case Nil                            => ()
       case 38 :: 5 :: n :: tail           => style = fg(color8(n)); sgr(tail)
       case 38 :: 2 :: r :: g :: b :: tail => style = fg(Chroma(r, g, b)); sgr(tail)

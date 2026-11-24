@@ -34,7 +34,6 @@ package octogenarian
 
 import anticipation.*
 import contingency.*
-import distillate.*
 import galilei.*
 import gastronomy.*
 import gossamer.*

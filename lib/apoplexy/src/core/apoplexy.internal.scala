@@ -57,9 +57,9 @@ import turbulence.*
 import urticose.*
 import vacuous.*
 
+import polyvinyl.Specification.{Member, Multiplicity}
 import rudiments.sortingAlgorithms.timsort
 import zephyrine.Parse
-import polyvinyl.Specification.{Member, Multiplicity}
 
 object Apoplexy:
   // --- compile-time spec access -------------------------------------------
@@ -259,7 +259,7 @@ object Apoplexy:
     val definition = doc.components.let(_.securitySchemes(scheme)).or:
       halt(m"apoplexy: $verb $key requires the security scheme $scheme, which the spec does not define")
 
-    credentialFor(scheme) match
+    credentialFor(scheme).absolve match
       case Unset => Unset
 
       case (credential: Expr[Any] @unchecked, result: TypeRepr @unchecked) =>
@@ -329,13 +329,13 @@ object Apoplexy:
         val scopes: List[Text] = requirement(scheme).or(Nil)
         val found: Optional[Presentation] = presentation(doc, verb, key, scheme, scopes)
 
-        found match
+        found.absolve match
           case Unset => Unset
 
           case found: Presentation @unchecked =>
             val more: Optional[Presentations] = satisfy(doc, verb, key, requirement, rest)
 
-            more match
+            more.absolve match
               case Unset                          => Unset
               case more: Presentations @unchecked => scala.collection.immutable.::(found, more)
 
@@ -356,7 +356,7 @@ object Apoplexy:
 
         val found: Optional[Presentations] = satisfy(doc, verb, key, requirement, schemes)
 
-        found match
+        found.absolve match
           case Unset                           => firstSatisfied(doc, verb, key, rest)
           case found: Presentations @unchecked => found
 
@@ -378,7 +378,7 @@ object Apoplexy:
     else
       val found: Optional[Presentations] = firstSatisfied(doc, verb, key, alternatives)
 
-      found match
+      found.absolve match
         case Unset                           => unsatisfied(doc, verb, key, List.from(alternatives))
         case found: Presentations @unchecked => found
 
@@ -532,8 +532,7 @@ object Apoplexy:
   private def mediaTypeExpr(using Quotes)(media: Text): Optional[Expr[MediaType]] =
     // Parsed here first, so the generated parse cannot fail; a gated helper rather than a
     // spliced `unsafely`, whose context function a quote cannot match under capture checking.
-    safely(Media.parse(media)).let: _ =>
-      '{Media.unsafeParse(${Expr(media.s)}.tt)(using Unsafe)}
+    safely(Media.parse(media)).let: _ => '{Media.unsafeParse(${Expr(media.s)}.tt)(using Unsafe)}
 
   // How a declared error response is raised: by the class of its status, a range class for
   // `4XX`-style keys (and for a numbered status telekinesis does not name), or `OtherError` for
@@ -592,10 +591,10 @@ object Apoplexy:
       val content: Map[Text, OpenApi.MediaTypeObject] = response.content
       val media: Optional[Text] = chosenMedia(content)
 
-      media match
+      media.absolve match
         case Unset       => Payload.Empty
 
-        case media: Text => construable(media) match
+        case media: Text => construable(media).absolve match
           case Unset => Payload.Carrier(t"text/plain")
 
           case repr: quotes.reflect.TypeRepr @unchecked =>
@@ -814,7 +813,7 @@ object Apoplexy:
     // The `accept` header names the response media type the client construes
     val accept: Optional[Text] = responseContent(doc, operation).let(chosenMedia(_))
 
-    val acceptExpr: Expr[Optional[MediaType]] = accept.let(mediaTypeExpr(_)) match
+    val acceptExpr: Expr[Optional[MediaType]] = accept.let(mediaTypeExpr(_)).absolve match
       case Unset                             => '{Unset}
       case media: Expr[MediaType] @unchecked => '{Optional($media)}
 
@@ -990,7 +989,7 @@ object Apoplexy:
     val serverExpr = Expr(server.s)
 
     // A plain match: a quote inside an inline argument (`lay`'s lambda) crashes the pickler
-    val baseExpr: Expr[HttpUrl] = base match
+    val baseExpr: Expr[HttpUrl] = base.absolve match
       case Unset =>
         if server == t"" then halt(m"apoplexy: the spec declares no server; pass a `base` URL")
 
@@ -1372,10 +1371,11 @@ object Apoplexy:
     val violation: Expr[Nothing] =
       ' {
           $violationTactic.abort
-            ( Api.Violation($status0, Api.dataOf($response)(using $truncation))(using $diagnostics) )
+            ( Api.Violation($status0, Api.dataOf($response)(using $truncation))
+                ( using $diagnostics ) )
         }
 
-    val undeclared: Expr[Nothing] = declared.seek(_.key == t"default") match
+    val undeclared: Expr[Nothing] = declared.seek(_.key == t"default").absolve match
       case Unset            => violation
       case failure: Failure => raise(failure)
 

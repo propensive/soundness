@@ -77,7 +77,7 @@ object ForeignLibrary:
   // Loads the first of `paths` that resolves as a symbol lookup bound to `arena`,
   // pairing it with the function signatures parsed from `header`.
   def apply(header: Text, paths: List[Text])(using arena: Arena): ForeignLibrary =
-    def attempt(remaining: List[Text]): SymbolLookup = remaining match
+    def attempt(remaining: List[Text]): SymbolLookup = remaining.absolve match
       case path :: rest =>
         try SymbolLookup.libraryLookup(path.s, arena).nn catch case _: Throwable => attempt(rest)
 
@@ -125,7 +125,7 @@ object ForeignLibrary:
     java.util.concurrent.ConcurrentHashMap()
 
   def register(paths: Text*): Unit =
-    def attempt(remaining: List[Text]): SymbolLookup = remaining match
+    def attempt(remaining: List[Text]): SymbolLookup = remaining.absolve match
       case path :: rest =>
         try SymbolLookup.libraryLookup(path.s, Arena.global().nn).nn
         catch case _: Throwable => attempt(rest)
@@ -139,7 +139,7 @@ object ForeignLibrary:
     handles.computeIfAbsent(symbol, _ => bind(symbol, descriptor)).nn
 
   private def bind(symbol: Text, descriptor: FunctionDescriptor): MethodHandle =
-    def search(lookups: List[SymbolLookup]): MemorySegment = lookups match
+    def search(lookups: List[SymbolLookup]): MemorySegment = lookups.absolve match
       case lookup :: rest =>
         val found = lookup.find(symbol.s).nn
         if found.isPresent then found.get.nn else search(rest)

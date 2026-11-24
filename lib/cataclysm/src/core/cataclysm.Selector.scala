@@ -188,4 +188,3 @@ case class Selector
     head: Selector.Compound,
     rest: List[(Selector.Combinator, Selector.Compound)] )
 derives CanEqual
-

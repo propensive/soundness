@@ -71,7 +71,7 @@ object Kalman:
   private case class Step
     ( estimate: Vector, covariance: Matrix, predicted: Vector, predictedCovariance: Matrix )
 
-  def smooth(values: List[Double], ratio: Double): List[Double] = values match
+  def smooth(values: List[Double], ratio: Double): List[Double] = values.absolve match
     case Nil => Nil
 
     case first :: rest =>

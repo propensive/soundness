@@ -54,16 +54,16 @@ import vacuous.*
 import zephyrine.*
 
 object Zipfile:
-  // A local entry's place in the archive, as the chunks it serializes to: the header, the stored
-  // payload (opened only when `flatMap` reaches it) and the data descriptor, if any.
-  private[zeppelin] class Local
-    ( val entry: Zip.Entry, val header: Data, val descriptor: Optional[Data] )
-
   private[zeppelin] object Local:
     given traversable: Local is Traversable by Data = local =>
       Iterator(local.header)
       . concat(local.entry.storedBytes().chunks)
       . concat(local.descriptor.lay(Iterator.empty)(Iterator(_)))
+
+  // A local entry's place in the archive, as the chunks it serializes to: the header, the stored
+  // payload (opened only when `flatMap` reaches it) and the data descriptor, if any.
+  private[zeppelin] class Local
+    ( val entry: Zip.Entry, val header: Data, val descriptor: Optional[Data] )
 
   private val u32Max: Long = 0xffffffffL
   private val u16Max: Int  = 0xffff

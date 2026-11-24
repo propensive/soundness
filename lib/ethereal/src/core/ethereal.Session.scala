@@ -48,14 +48,12 @@ import distillate.*
 import fulminate.*
 import galilei.*
 import gossamer.*
-import prepositional.*
 import profanity.*
 import quantitative.*
 import rudiments.*
 import spectacular.*
 import symbolism.*
 import vacuous.*
-import zephyrine.*
 
 import errorDiagnostics.emptyDiagnostics
 import galilei.Io.Error.Reason

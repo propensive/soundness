@@ -40,8 +40,8 @@ import contingency.*
 import distillate.*
 import enigmatic.*
 import fulminate.*
-import gossamer.*
 import gastronomy.*
+import gossamer.*
 import prepositional.*
 import rudiments.*
 import turbulence.*
@@ -105,7 +105,7 @@ object Cose:
   private[enigmatic] def algorithm(protectedHeader: Data): Optional[Long] =
     if protectedHeader.length == 0 then Unset else
       safely(Cbor.Ast.parse(protectedHeader)).let: header =>
-        labelled(header, 1L).let(value => safely(value.long))
+        labelled(header, 1L).let: value => safely(value.long)
 
   private[enigmatic] def readByteString(ast: Cbor.Ast)(using Tactic[Cose.Error]): Data =
     if ast.isByteString then ast.asInstanceOf[Data]
@@ -499,7 +499,8 @@ object Cose:
 
           Spki.rsa(number(-1L), number(-2L))
 
-        else abort(Cose.Error(Cose.Error.Reason.UnsupportedAlgorithm(algorithm)))
+        else
+          abort(Cose.Error(Cose.Error.Reason.UnsupportedAlgorithm(algorithm)))
 
       Cose.Key(algorithm, publicKey)
 
@@ -514,12 +515,14 @@ object Cose:
     // A public key as a COSE_Key, for the algorithm its cipher stands for.
     def apply[cipher <: Cipher](key: PublicKey[cipher])(using algorithm: cipher is Cose.Algorithm)
     :   Cose.Key =
+
       Cose.Key(algorithm.algId, key.bytes)
 
   case class Key(algorithm: Long, publicKey: Data):
     // The key as a key of a named cipher, which its type and size must agree with.
     def key[cipher <: Cipher: KeyAlgorithm](using Tactic[PublicKey.Error], Diagnostics)
     :   PublicKey[cipher] =
+
       PublicKey.adopt[cipher](publicKey)
 
     // Whether `signature` is this key's signature of `message`, under the algorithm the key
@@ -585,7 +588,8 @@ object Cose:
                   ( List(Key.Type, Key.Algorithm, -1L, -2L),
                     List[Any](Key.RsaType, algorithm, n, e) )
 
-            else Unset
+            else
+              Unset
 
         case _ =>
           Unset

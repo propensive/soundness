@@ -37,7 +37,7 @@ import gossamer.*
 import rudiments.*
 
 object SemanticMessage:
-  /** Does the text contain semantic-diagnostic markers? */
+  // Does the text contain semantic-diagnostic markers?
   def marked(text: Text): Boolean = Markup.marked(text)
 
   def parse(text: Text): SemanticMessage = SemanticMessage(Markup.parse(text))
@@ -58,7 +58,7 @@ case class SemanticMessage(markup: List[Markup]):
 
     recur(markup)
 
-  /** The trees in the message, wherever they are nested. */
+  // The trees in the message, wherever they are nested.
   def trees: List[Markup.Tree] =
     def recur(nodes: List[Markup]): List[Markup.Tree] = nodes.bind:
       case tree: Markup.Tree                  => List(tree)

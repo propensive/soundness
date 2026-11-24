@@ -200,16 +200,14 @@ object Audio:
 
       val sampleRate = rate.value.toFloat
       val format = jss.AudioFormat.Encoding.PCM_SIGNED
+
       jss.AudioFormat
         ( format, sampleRate, bits, cl.channels, cl.channels*(bits/8), sampleRate, false )
 
   object Feed:
     import javax.sound.sampled as jss
     import anticipation.*
-    import contingency.*
     import fulminate.*
-    import prepositional.*
-    import quantitative.*
 
     def list: List[Feed] =
 
@@ -244,9 +242,7 @@ object Audio:
 
   case class Feed(private[cacophony] val mixerInfo: jss.Mixer.Info) extends Device:
     import javax.sound.sampled as jss
-    import anticipation.*
     import contingency.*
-    import fulminate.*
     import prepositional.*
     import quantitative.*
 
@@ -308,11 +304,8 @@ object Audio:
 
   object Outlet:
     import javax.sound.sampled as jss
-    import scala.math
     import anticipation.*
-    import contingency.*
     import fulminate.*
-    import rudiments.*
 
     def list: List[Outlet] =
 
@@ -348,9 +341,7 @@ object Audio:
   case class Outlet(private[cacophony] val mixerInfo: jss.Mixer.Info) extends Device:
     import javax.sound.sampled as jss
     import scala.math
-    import anticipation.*
     import contingency.*
-    import fulminate.*
     import rudiments.*
 
     protected def lineClass: Class[? <: jss.DataLine] = classOf[jss.SourceDataLine]

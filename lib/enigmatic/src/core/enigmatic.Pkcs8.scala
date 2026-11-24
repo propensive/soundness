@@ -141,16 +141,16 @@ object Pkcs8:
     case Asn1.Sequence(_ :: _ :: Asn1.OctetString(octets) :: _) =>
       safely(Der(octets).as[Asn1]) match
         case Asn1.Sequence
-              ( List
-                  ( Asn1.Integer(_),
-                    Asn1.Integer(modulus),
-                    Asn1.Integer(publicExponent),
-                    Asn1.Integer(privateExponent),
-                    Asn1.Integer(prime1),
-                    Asn1.Integer(prime2),
-                    Asn1.Integer(exponent1),
-                    Asn1.Integer(exponent2),
-                    Asn1.Integer(coefficient) ) ) =>
+          ( List
+              ( Asn1.Integer(_),
+                Asn1.Integer(modulus),
+                Asn1.Integer(publicExponent),
+                Asn1.Integer(privateExponent),
+                Asn1.Integer(prime1),
+                Asn1.Integer(prime2),
+                Asn1.Integer(exponent1),
+                Asn1.Integer(exponent2),
+                Asn1.Integer(coefficient) ) ) =>
           Rsa
             ( modulus,
               publicExponent,
@@ -188,7 +188,7 @@ object Pkcs8:
     case Asn1.Sequence(_ :: _ :: Asn1.OctetString(octets) :: _) =>
       safely(Der(octets).as[Asn1]) match
         case Asn1.Sequence(Asn1.Integer(_) :: Asn1.OctetString(scalar) :: _) => scalar
-        case _                                                              => Unset
+        case _                                                               => Unset
 
     case _ =>
       Unset
@@ -249,7 +249,7 @@ object Spki:
   def rsa(data: Data): Optional[(BigInt, BigInt)] = safely(Der(data).as[Asn1]) match
     case Asn1.Sequence(List(_, Asn1.BitString(bits, 0))) => safely(Der(bits).as[Asn1]) match
       case Asn1.Sequence(List(Asn1.Integer(modulus), Asn1.Integer(exponent))) => (modulus, exponent)
-      case _                                                                 => Unset
+      case _                                                                  => Unset
 
     case _ =>
       Unset

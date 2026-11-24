@@ -236,17 +236,18 @@ object SourceCode:
     // or backquoted identifier) highlights as one consistent unit rather than having
     // its last character mis-coloured.
     @annotation.tailrec
-    def coalesce(sequence: List[Token], done: List[Token] = Nil): List[Token] = sequence match
-      case Nil => done.reverse
+    def coalesce(sequence: List[Token], done: List[Token] = Nil): List[Token] =
+      sequence.absolve match
+        case Nil => done.reverse
 
-      case head :: tail if head.accent == Accent.Error && quoted(head.text) =>
-        val (spill, rest) = tail.span(_.accent != Accent.Unparsed)
+        case head :: tail if head.accent == Accent.Error && quoted(head.text) =>
+          val (spill, rest) = tail.span(_.accent != Accent.Unparsed)
 
-        if spill.nil then coalesce(tail, head :: done)
-        else coalesce(rest, head.copy(text = t"${head.text}${spill.map(_.text).join}") :: done)
+          if spill.nil then coalesce(tail, head :: done)
+          else coalesce(rest, head.copy(text = t"${head.text}${spill.map(_.text).join}") :: done)
 
-      case head :: tail =>
-        coalesce(tail, head :: done)
+        case head :: tail =>
+          coalesce(tail, head :: done)
 
     val tokens: List[Token] = coalesce(soften(stream()).to[List])
 
@@ -489,8 +490,9 @@ object SourceCode:
       then Unset
       else if owner.isEffectiveRoot then plain(symbol)
       else if owner.isPackageObject then
-        recur(owner.owner).let { prefix => t"$prefix.${plain(symbol)}" }
-      else if !owner.isClass then Unset
+        recur(owner.owner).let: prefix => t"$prefix.${plain(symbol)}"
+      else if !owner.isClass then
+        Unset
       else
         recur(owner).let: prefix =>
           val separator: Text =
@@ -746,7 +748,6 @@ object SourceCode:
     import anticipation.*
     import denominative.*
     import gossamer.*
-    import rudiments.*
     import spectacular.*
     import stenography.*
     import vacuous.*
@@ -804,10 +805,7 @@ object SourceCode:
     import denominative.*
     import gossamer.*
     import rudiments.*
-    import spectacular.*
-    import stenography.*
     import vacuous.*
-
 
     def length: Int = text.length
 
@@ -823,7 +821,6 @@ case class SourceCode
     diagnostics: List[Diagnostic] = Nil,
     completions: Optional[Completions] = Unset ):
   import SourceCode.Token
-
 
   def lastLine: Int = offset + lines.length - 1
   def apply(line: Int): List[Token] = lines.readUnchecked(line - offset)

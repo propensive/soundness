@@ -85,7 +85,7 @@ private[stratiform] object StandardCodecs:
 
   // The low `width` bytes of a word, most significant first.
   private def bigEndian(word: Long, width: Int): Data =
-    Array.tabulate[Byte](width)(index => (word >>> 8*(width - 1 - index)).toByte)
+    Array.tabulate[Byte](width): index => (word >>> 8*(width - 1 - index)).toByte
 
   private def digit(char: Char): Boolean = char >= '0' && char <= '9'
 

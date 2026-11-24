@@ -33,7 +33,6 @@
 package stratiform
 
 import anticipation.*
-import contingency.*
 import gossamer.*
 import polyvinyl.Specification.{Member, Multiplicity}
 import rudiments.*
@@ -51,7 +50,7 @@ private[stratiform] object RatelShape:
 
   // The members of the document's root.
   def apply(layout: Layout): List[(Text, Member)] =
-    layout.table(0).lay(Nil) { table => fields(layout, table.entries, List(0)) }
+    layout.table(0).lay(Nil): table => fields(layout, table.entries, List(0))
 
   // The members of a struct, unless it is one which is already being described: a struct which
   // contains itself is read as its cell, since a type cannot go on for ever.
@@ -71,6 +70,7 @@ private[stratiform] object RatelShape:
 
       case Entry.Stored(slot) =>
         val arity = if slot.required then Multiplicity.One else Multiplicity.Optional
+
         def value(scalar: Tels.Scalar, multiplicity: Multiplicity): Member =
           Member.Value(label(scalar), Nil, multiplicity)
 

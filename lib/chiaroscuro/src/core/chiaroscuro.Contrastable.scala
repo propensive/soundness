@@ -38,7 +38,6 @@ import scala.reflect.*
 import anticipation.*
 import denominative.*
 import denominative.dysasymptotics.linearSize
-import dissonance.*
 import gossamer.*
 import hypotenuse.*
 import prepositional.*

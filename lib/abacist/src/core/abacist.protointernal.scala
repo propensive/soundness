@@ -35,7 +35,6 @@ package abacist
 import scala.compiletime.*
 
 import anticipation.*
-import denominative.*
 import gossamer.*
 import prepositional.*
 import quantitative.*

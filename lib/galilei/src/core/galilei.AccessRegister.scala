@@ -102,7 +102,7 @@ object AccessRegister:
     synchronized:
       val real2 = normalize(real)
 
-      def remove(list: List[Registration]): List[Registration] = list match
+      def remove(list: List[Registration]): List[Registration] = list.absolve match
         case Nil                                                       => Nil
         case head :: tail if head == Registration(real2, atoms, range) => tail
         case head :: tail                                              => head :: remove(tail)

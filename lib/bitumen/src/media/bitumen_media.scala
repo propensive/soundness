@@ -32,10 +32,8 @@
                                                                                                   */
 package bitumen
 
-import anticipation.*
 import gesticulate.*
 import prepositional.*
-import zephyrine.*
 
 package detectables:
   // The `ustar` magic in the first header block, at offset 257. An archive in the format which

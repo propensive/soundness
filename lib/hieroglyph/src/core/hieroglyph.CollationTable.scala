@@ -518,6 +518,7 @@ class CollationTable private[hieroglyph]
       val elements =
         ( contractionOffsetsView.readUnchecked(index) until
             contractionOffsetsView.readUnchecked(index + 1) )
+
         . map(contractionElementsView.readUnchecked(_)).to(sci.Vector)
 
       entries(key) = elements

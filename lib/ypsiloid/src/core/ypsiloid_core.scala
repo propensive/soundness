@@ -145,7 +145,7 @@ private[ypsiloid] object YamlEmitter:
 
   // A scalar (or an empty collection), with no surrounding newlines.
   private[ypsiloid] def scalar(builder: java.lang.StringBuilder, ast: Yaml.Ast): Unit =
-    ast.asMatchable match
+    (ast: Any).asMatchable match
       case bcd: scala.Array[Double] @unchecked => builder.append(Bcd.adopt(bcd).text)
       case n: Long                             => builder.append(n)
 

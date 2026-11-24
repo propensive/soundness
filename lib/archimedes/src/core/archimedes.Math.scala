@@ -35,6 +35,7 @@ package archimedes
 import scala.math
 
 import anticipation.*
+import archimedes.Mathml.Display
 import baroque.*
 import contextual.*
 import contingency.*
@@ -54,7 +55,6 @@ import vacuous.*
 import xylophone.*
 import Mathml.*
 import zephyrine.Parse
-import archimedes.Mathml.Display
 
 // The root `<math>` element and Archimedes' integration points.
 //
@@ -217,7 +217,7 @@ object Math extends Mathml.Container(new Math(_)):
 
     product(Mn(value.toString.tt) :: unitNodes)
 
-  private def product(nodes: List[Mathml]): Mathml = nodes match
+  private def product(nodes: List[Mathml]): Mathml = nodes.absolve match
     case one :: Nil   => one
 
     case head :: tail =>

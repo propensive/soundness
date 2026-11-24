@@ -58,7 +58,7 @@ object AesCbcHmac:
   private val Block: Int = 16
 
   private def be64(value: Long): Data =
-    Array.tabulate[Byte](8)(index => (value >>> (56 - 8*index)).toByte)
+    Array.tabulate[Byte](8): index => (value >>> (56 - 8*index)).toByte
 
 class AesCbcHmac[bits <: 256 | 384 | 512: ValueOf]
   ( aes: Crypto.SymmetricCipher, mac: Crypto.Mac, random: Crypto.Random )

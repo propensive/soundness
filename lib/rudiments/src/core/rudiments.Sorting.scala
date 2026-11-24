@@ -91,10 +91,12 @@ extension [self, element](self: self)(using traversable: self is Traversable by 
   // -- a `Text`, an `Ordinal`, a date -- selects.
   def maximize[key](lambda: element => key)(using comparable: key is Comparable)
   :   Optional[element] =
+
     sortingInternal.extremum(traversable.traverse(self), lambda, comparable, true)
 
   def minimize[key](lambda: element => key)(using comparable: key is Comparable)
   :   Optional[element] =
+
     sortingInternal.extremum(traversable.traverse(self), lambda, comparable, false)
 
   // How many elements are coming, when that is known and the caller has accepted the cost of
@@ -245,9 +247,10 @@ object sortingInternal:
       var exhausted = false
 
       while index < size && !exhausted do
-        elements.next() match
+        elements.next().absolve match
           case Iterator.Exhausted => exhausted = true
-          case element: AnyRef    =>
+
+          case element: AnyRef =>
             array(index) = element
             index += 1
 
@@ -331,8 +334,8 @@ final class Sorting[element, key] private
   def locate(key: key): Optional[Ordinal] =
     val index: Int = bound(key, false, 0, Sequence.size(elements))
 
-    if index < Sequence.size(elements)
-       && comparable.compare(project(Sequence.at(elements, index)), key).same
+    if index < Sequence.size(elements) &&
+      comparable.compare(project(Sequence.at(elements, index)), key).same
     then index.z
     else Unset
 

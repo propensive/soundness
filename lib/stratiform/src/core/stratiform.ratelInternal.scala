@@ -106,7 +106,6 @@ object ratelInternal:
   def descend[record: Type](path: Expr[Ratel.Path[record]], name: Expr[String])(using Quotes)
   :   Expr[Ratel.Path[Any]] =
 
-    import quotes.reflect.*
     val keyword = name.valueOrAbort
 
     member[record](keyword).asType.absolve match

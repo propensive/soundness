@@ -164,7 +164,7 @@ extends Cli:
       val allFlags = (flag.name :: flag.aliases)
 
       if longOnly then
-        allFlags.sweep { case text: Text => text }.match
+        allFlags.sweep { case text: Text => text }.absolve.match
           case main :: aliases =>
             List
               ( Suggestion

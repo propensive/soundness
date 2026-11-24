@@ -181,7 +181,7 @@ case class Permutation(factoradic: Factoradic):
     var index = 0
     var sequence: List[Int] = expansion
 
-    while sequence match
+    while sequence.absolve match
       case head :: tail => array(head) = index
         index += 1
         sequence = tail

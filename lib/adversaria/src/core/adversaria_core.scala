@@ -38,7 +38,6 @@ import anticipation.*
 import denominative.*
 import prepositional.*
 import rudiments.*
-import symbolism.*
 import vacuous.*
 
 extension [entity](entity: entity)

@@ -133,7 +133,7 @@ case class Truetype(data: Data) extends Sfnt:
   def glyphClosure(glyphIds: Set[Int]): Set[Int] raises Font.Error =
     val table = glyf
 
-    def expand(pending: List[Int], seen: Set[Int]): Set[Int] = pending match
+    def expand(pending: List[Int], seen: Set[Int]): Set[Int] = pending.absolve match
       case Nil =>
         seen
 

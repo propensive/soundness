@@ -218,7 +218,7 @@ object stagedInternal:
               ( r2.TypeRepr.of[Inlinable], "Self",
                 r2.TypeBounds(rebuild(shape), rebuild(shape)) )
 
-          target.asType match
+          target.asType.absolve match
             case '[target] => '{scala.compiletime.summonInline[target]}
 
         val duration = (System.nanoTime - started)/1000000L
@@ -351,7 +351,7 @@ object stagedInternal:
     if !isMap && (tpe <:< TypeRepr.of[Iterable[Any]] || aliasCollectionUnderlying(tpe).isDefined)
     then tpe match
       case AppliedType(_, arguments) =>
-        arguments.last.asType match
+        arguments.last.asType.absolve match
           case '[element] =>
             resolve[element](cache).map: instance =>
               Inlinable.IterableInlinable[element]
@@ -373,7 +373,7 @@ object stagedInternal:
   private def sumFor[field: Type](cache: Cache)(using Quotes): Option[Inlinable] =
     sumVariants(quotes.reflect.TypeRepr.of[field].dealias).flatMap: variants =>
       val resolvable = variants.forall: (_, variantType) =>
-        variantType.asType match
+        variantType.asType.absolve match
           case '[variantType] => resolve[variantType](cache).isDefined
 
       if resolvable then Some(Inlinable.SumInlinable[field]()) else None
@@ -464,7 +464,7 @@ object stagedInternal:
 
     TypeRepr.of[collection].dealias match
       case AppliedType(_, arguments) =>
-        (arguments.last.asType, factoryType.asType) match
+        (arguments.last.asType, factoryType.asType).absolve match
           case ('[element], '[stdlib]) =>
             val instance = element0.asInstanceOf[Inlinable { type Self = element }]
 
@@ -566,7 +566,7 @@ object stagedInternal:
           Plan.Leaf(leaf)
 
         case None =>
-          fieldType.asType match
+          fieldType.asType.absolve match
             case '[fieldType] =>
               resolve[fieldType](cache) match
                 case Some(iterable: Inlinable.IterableInlinable[?]) =>
@@ -597,7 +597,7 @@ object stagedInternal:
       else if fieldType =:= TypeRepr.of[Long] then Literal(LongConstant(0L))
       else if fieldType =:= TypeRepr.of[Double] then Literal(DoubleConstant(0.0))
       else if fieldType =:= TypeRepr.of[Boolean] then Literal(BooleanConstant(false))
-      else fieldType.asType match
+      else fieldType.asType.absolve match
         case '[fieldType] => '{null.asInstanceOf[fieldType]}.asTerm
 
     val slotDefs = List.range(0, arity).map: index =>
@@ -618,11 +618,11 @@ object stagedInternal:
     val gathers: List[Option[GatherState]] = List.range(0, arity).map: index =>
       plans(index) match
         case Plan.Gather(element0) =>
-          fieldTypes(index).asType match
+          fieldTypes(index).asType.absolve match
             case '[fieldType] =>
               fieldTypes(index) match
                 case AppliedType(_, arguments) =>
-                  arguments.last.asType match
+                  arguments.last.asType.absolve match
                     case '[element] =>
                       val instance = element0.asInstanceOf[Inlinable { type Self = element }]
 
@@ -680,7 +680,7 @@ object stagedInternal:
     val seams: List[Option[SeamState]] = List.range(0, arity).map: index =>
       plans(index) match
         case Plan.Seam =>
-          fieldTypes(index).asType match
+          fieldTypes(index).asType.absolve match
             case '[fieldType] =>
               val instanceSymbol =
                 Symbol.newVal
@@ -721,7 +721,7 @@ object stagedInternal:
     val nesteds: List[Option[(Symbol, Statement)]] = List.range(0, arity).map: index =>
       plans(index) match
         case Plan.Nested(instance0) =>
-          fieldTypes(index).asType match
+          fieldTypes(index).asType.absolve match
             case '[fieldType] =>
               val instance = instance0.asInstanceOf[Inlinable { type Self = fieldType }]
 
@@ -749,7 +749,7 @@ object stagedInternal:
               unit ) )
 
     val arms: List[CaseDef] = List.range(0, arity).map: index =>
-      val rhs: Term = fieldTypes(index).asType match
+      val rhs: Term = fieldTypes(index).asType.absolve match
         case '[fieldType] =>
           plans(index) match
             case Plan.Leaf(instance0) =>
@@ -777,7 +777,7 @@ object stagedInternal:
 
               fieldTypes(index) match
                 case AppliedType(_, arguments) =>
-                  arguments.last.asType match
+                  arguments.last.asType.absolve match
                     case '[element] =>
                       val builderRef =
                         Ref(gather.builder).asExprOf[scm.Builder[element, fieldType]]
@@ -871,7 +871,7 @@ object stagedInternal:
     // With enough fields, a perfect hash of their packed keywords in place of the chain.
     val packedDispatch: Term =
       val entries = scala.collection.Iterator.range(0, arity).flatMap: index =>
-        packedKeywords(index).iterator.map { packed => (index, packed) }
+        packedKeywords(index).iterator.map: packed => (index, packed)
 
       val hashed = PerfectHash.dispatch(entries, wordRef, Expr(-1))
       if hashed == null then packedChain(0) else hashed.asTerm
@@ -898,7 +898,7 @@ object stagedInternal:
     // declared default), exactly as the derived engine does. ──
 
     val absents: List[Term] = List.range(0, arity).map: index =>
-      fieldTypes(index).asType match
+      fieldTypes(index).asType.absolve match
         case '[fieldType] =>
           def resolveAbsent(onAbsent: Expr[fieldType]): Term =
             Assign
@@ -931,7 +931,7 @@ object stagedInternal:
 
               fieldTypes(index) match
                 case AppliedType(_, arguments) =>
-                  arguments.last.asType match
+                  arguments.last.asType.absolve match
                     case '[element] =>
                       val builderRef =
                         Ref(gather.builder).asExprOf[scm.Builder[element, fieldType]]
@@ -1028,7 +1028,7 @@ object stagedInternal:
               abort(wisteria.Variant.Error[sum]($reader.keywordText))
           }
       else
-        variants(index)(1).asType match
+        variants(index)(1).asType.absolve match
           case '[type variantType <: sum; variantType] =>
             val instance = resolve[variantType](cache).getOrElse:
               report.errorAndAbort

@@ -36,7 +36,6 @@ import scala.caps
 import scala.language.dynamics
 
 import anticipation.*
-import fulminate.*
 import gossamer.*
 import panopticon.*
 import prepositional.*

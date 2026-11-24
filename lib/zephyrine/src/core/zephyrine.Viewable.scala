@@ -34,6 +34,19 @@ package zephyrine
 
 import prepositional.*
 
+object Viewable:
+  // A terrain is lent as it is: whoever holds it has already mapped it.
+  given terrain: [captures^, terrain <: Terrain^{captures}] => terrain is Viewable:
+    def view[result](value: terrain)(lambda: Terrain^ => result): result = lambda(value)
+
+    // A terrain which is a holding is lent as one.
+    override def hold[result](value: terrain)(lambda: Holding^ => result)(otherwise: => result)
+    :   result =
+
+      value match
+        case holding: Holding => lambda(holding)
+        case _                => otherwise
+
 // A value whose bytes can be lent as a `Terrain` for the length of a block: a file, which is
 // mapped into memory for it and unmapped after; an image which is already on the heap; or a
 // terrain which is already in hand. A format which is read in place is opened from any of them
@@ -47,16 +60,3 @@ trait Viewable extends Typeclass:
   // and for them, as for anything which does not say otherwise, the answer is `otherwise`.
   def hold[result](value: Self)(lambda: Holding^ => result)(otherwise: => result): result =
     otherwise
-
-object Viewable:
-  // A terrain is lent as it is: whoever holds it has already mapped it.
-  given terrain: [captures^, terrain <: Terrain^{captures}] => terrain is Viewable:
-    def view[result](value: terrain)(lambda: Terrain^ => result): result = lambda(value)
-
-    // A terrain which is a holding is lent as one.
-    override def hold[result](value: terrain)(lambda: Holding^ => result)(otherwise: => result)
-    :   result =
-
-      value match
-        case holding: Holding => lambda(holding)
-        case _            => otherwise

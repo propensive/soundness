@@ -51,20 +51,6 @@ import zephyrine.*
 
 import RatelLayout.{Component, Entry, Kind, Layout, Payload, Slot}
 
-// A RaTEL image: the random-access encoding of one TEL document together with its schema
-// (RaTEL §4), as the bytes of a file. It is written whole, and published by renaming it over
-// its predecessor; it is read in place, through `Ratel.open`, from a view of the file which
-// any number of processes may map.
-case class Ratel(data: Data):
-  // The type whose value the image is of, if that is known: `Ratel of Cast` is an image
-  // written under the schema derived from `Cast`, which is what a value's `ratel` gives. An
-  // owner which claims a name as `Ratel of Cast` publishes nothing else under it, and an
-  // observer which opens it as `Ratel of Cast` reads nothing else from it.
-  type Topic
-
-  // A view of the image where it lies on the heap, for reading it without a file.
-  def terrain: Terrain = Terrain(data)
-
 object Ratel:
   // An image of a value of the type `topic`, under the schema derived from it.
   private[stratiform] def of[topic](data: Data): Ratel of topic =
@@ -260,7 +246,9 @@ object Ratel:
     try block(using editor) finally editor.end()
 
   // The reader as the editor it is, if the image was opened for changing.
-  private[stratiform] def editing(reader: Reader^)(using Tactic[Ratel.Error]): RatelEditor^{reader} =
+  private[stratiform] def editing(reader: Reader^)(using Tactic[Ratel.Error])
+  :   RatelEditor^{reader} =
+
     reader match
       case editor: RatelEditor => editor
       case _                   => fail(Error.Reason.Unwritable)
@@ -358,7 +346,8 @@ object Ratel:
     // The ranges of the file which are spoken for, the header first: no two may overlap.
     val occupied: java.util.ArrayList[Extent] = java.util.ArrayList()
     occupied.add(Extent(0L, RatelBytes.header))
-    spans.each { span => if span.capacity > 0 then occupied.add(Extent(span.offset, span.capacity)) }
+
+    spans.each: span => if span.capacity > 0 then occupied.add(Extent(span.offset, span.capacity))
 
     def disjoint(): Unit =
       occupied.sort(Extent.ordering)
@@ -439,7 +428,10 @@ object Ratel:
         val within = offset%8 == 0 && offset >= 0 && offset <= committed
         val fits = capacity*table.rowSize <= committed - offset
         if !described || !counted || !freed || !within || !fits then fail(Reason.BadTableDirectory)
-        if sealing && (capacity != count || freeHead != RatelBytes.none) then fail(Reason.InvalidState)
+
+        if sealing && (capacity != count || freeHead != RatelBytes.none)
+        then fail(Reason.InvalidState)
+
         if capacity > 0 then occupied.add(Extent(offset, capacity*table.rowSize))
 
         if number == 0 then
@@ -462,7 +454,9 @@ object Ratel:
       val shift = view.u8(entry + 29)
       val height = view.u8(entry + 30)
 
-      val described = view.u8(entry + 28) == 0 && view.u8(entry + 31) == 0 && shift >= 9 && shift <= 16
+      val described =
+        view.u8(entry + 28) == 0 && view.u8(entry + 31) == 0 && shift >= 9 && shift <= 16
+
       val counted = pages <= capacity && pages != RatelBytes.none
       val rooted = root == RatelBytes.none || root < pages
       val freed = freeHead == RatelBytes.none || freeHead < pages
@@ -470,10 +464,13 @@ object Ratel:
       val within = offset%8 == 0 && offset >= 0 && offset <= committed
       val fits = (capacity << shift) <= committed - offset
 
-      if !described || !counted || !rooted || !freed || !levelled || height > pages || !within || !fits
+      if !described || !counted || !rooted || !freed || !levelled || height > pages ||
+        !within || !fits
       then fail(Reason.BadIndex)
 
-      if sealing && (capacity != pages || freeHead != RatelBytes.none) then fail(Reason.InvalidState)
+      if sealing && (capacity != pages || freeHead != RatelBytes.none)
+      then fail(Reason.InvalidState)
+
       if capacity > 0 then occupied.add(Extent(offset, capacity << shift))
       Tree(offset, pages, root, freeHead, count, shift, height)
 
@@ -483,26 +480,36 @@ object Ratel:
     // spare, and its extents lie end to end from the header to the committed length.
     if sealing then
       if header.u64(160) != 0L then fail(Reason.InvalidState)
-      spans.each { span => if span.capacity != (span.length + 7)/8*8 then fail(Reason.InvalidState) }
+
+      spans.each: span => if span.capacity != (span.length + 7)/8*8 then fail(Reason.InvalidState)
 
       @scala.annotation.tailrec
       def tiled(number: Int): Unit = if number < occupied.size then
-        if occupied.get(number).offset != occupied.get(number - 1).end then fail(Reason.InvalidState)
+        if occupied.get(number).offset != occupied.get(number - 1).end
+        then fail(Reason.InvalidState)
+
         tiled(number + 1)
 
       tiled(1)
       if occupied.get(occupied.size - 1).end != committed then fail(Reason.InvalidState)
 
     schema.scalars.each: scalar =>
-      scalar.encoding.let: name =>
-        if codecs(name).absent then fail(Reason.CodecUnresolved)
+      scalar.encoding.let: name => if codecs(name).absent then fail(Reason.CodecUnresolved)
 
     val hash: Optional[Digest in Blake3] =
       if hashed then Digest[Blake3](header.segment(168.z till 200.z)) else Unset
 
     Opening
-      ( schema, declared, signature, hash, layout, codecs, if sealing then State.Sealed else State.Unsealed,
-        digested, spans.map(span => Extent(span.offset, span.length)).to[Array], tables.to[Array],
+      ( schema,
+        declared,
+        signature,
+        hash,
+        layout,
+        codecs,
+        if sealing then State.Sealed else State.Unsealed,
+        digested,
+        spans.map { span => Extent(span.offset, span.length) }.to[Array],
+        tables.to[Array],
         indexes.to[Array] )
 
   private[stratiform] def error(reason: Error.Reason): Error =
@@ -518,15 +525,15 @@ object Ratel:
   enum State:
     case Sealed, Unsealed
 
-  // A range of a file: a section, or a table's rows. For a table, `length` counts its rows;
-  // for a region, it is the part of it which holds items.
-  private[stratiform] case class Extent(offset: Long, length: Long):
-    def end: Long = offset + length
-
   private[stratiform] object Extent:
     val ordering: java.util.Comparator[Extent] = new java.util.Comparator[Extent]:
       def compare(left: Extent | Null, right: Extent | Null): Int =
         java.lang.Long.compare(left.nn.offset, right.nn.offset)
+
+  // A range of a file: a section, or a table's rows. For a table, `length` counts its rows;
+  // for a region, it is the part of it which holds items.
+  private[stratiform] case class Extent(offset: Long, length: Long):
+    def end: Long = offset + length
 
   // A section as the header's directory describes it.
   private[stratiform] case class Span(offset: Long, length: Long, capacity: Long):
@@ -691,7 +698,9 @@ object Ratel:
     // it which is garbage, and with `slack` times the room it needs in everything which can
     // grow. Rows are numbered anew, so a record index of this image is not one of that.
     def repack(slack: Double = 2.0)(using Tactic[Ratel.Error], Tactic[Tel.Error]): Ratel =
-      Ratel(RatelWriter.write(materialise(), opening.declared, codecs, false, false, slack.max(1.0)))
+      Ratel
+        ( RatelWriter.write
+            ( materialise(), opening.declared, codecs, false, false, slack.max(1.0) ) )
 
     // §8: the semantic model which the image encodes, from which it may be written again as
     // text or as BinTEL. Every row is visited once, and at most once.
@@ -844,7 +853,10 @@ object Ratel:
     // Where a cell of a page begins, within the page: a multiple of four, in the cell area.
     private def pointer(page: Page, number: Int)(using Tactic[Ratel.Error]): Long =
       val pointer = view.u16(page.offset + 16 + 2*number).toLong
-      if pointer%4 != 0 || pointer < page.start || pointer > page.size - 4 then fail(Reason.BadIndex)
+
+      if pointer%4 != 0 || pointer < page.start || pointer > page.size - 4
+      then fail(Reason.BadIndex)
+
       pointer
 
     // The child which a cell of a branch leads to.
@@ -886,6 +898,7 @@ object Ratel:
           val middle = (low + high)/2
           val extent = entry(page, middle)
           val order = view.compare(extent.offset, extent.length, probe)
+
           if order < 0 || inclusive && order == 0 then bound(page, middle + 1, high, inclusive)
           else bound(page, low, middle, inclusive)
 
@@ -912,8 +925,10 @@ object Ratel:
 
           if extent.length < probe.length || !view.same(extent.offset, probe) then found.reverse
           else walk(leaf, cell + 1, visited, view.read(extent.end - 4, 4).u32be(0) :: found)
-        else if leaf.link == RatelBytes.none then found.reverse
-        else if visited >= tree.pages then fail(Reason.BadTree)
+        else if leaf.link == RatelBytes.none then
+          found.reverse
+        else if visited >= tree.pages then
+          fail(Reason.BadTree)
         else
           val next = page(index, leaf.link)
           if next.kind != 1 then fail(Reason.BadTree)
@@ -930,8 +945,7 @@ object Ratel:
 
       val plain: Tel.Codec.Encoded = Tel.Codec.Encoded.Bytes(RatelBytes.utf8(text))
 
-      scalar.encoding.lay(plain): name =>
-        codecs(name).or(fail(Reason.CodecUnresolved)).encode(text)
+      scalar.encoding.lay(plain): name => codecs(name).or(fail(Reason.CodecUnresolved)).encode(text)
 
     // Appends a component of an index key, as it is found by following its path from a
     // child's row.
@@ -940,7 +954,7 @@ object Ratel:
       ( using Tactic[Ratel.Error] )
     :   Unit =
 
-      def follow(address: Long, hops: List[Slot]): Unit = hops match
+      def follow(address: Long, hops: List[Slot]): Unit = hops.absolve match
         case Nil =>
           if !present(address, component.last) then RatelBytes.absent(out)
           else RatelBytes.component(out, load(address, component.last), component.width.present)
@@ -1020,7 +1034,7 @@ object Ratel:
         else -1
 
       @scala.annotation.tailrec
-      def recur(index: Int, widths: List[Optional[Int]]): Boolean = widths match
+      def recur(index: Int, widths: List[Optional[Int]]): Boolean = widths.absolve match
         case Nil => index == end
 
         case width :: rest =>
@@ -1137,9 +1151,9 @@ object Ratel:
         List.range(0, page.count).each: cell =>
           val entry = stored(this.entry(page, cell))
           if entry.length < 8 || !parses(entry, widths) then fail(Reason.BadIndex)
-          previous.let { before => if RatelBytes.order(before, entry) >= 0 then fail(Reason.BadTree) }
-          low.let { bound => if RatelBytes.order(entry, bound) < 0 then fail(Reason.BadTree) }
-          high.let { bound => if RatelBytes.order(entry, bound) >= 0 then fail(Reason.BadTree) }
+          previous.let: before => if RatelBytes.order(before, entry) >= 0 then fail(Reason.BadTree)
+          low.let: bound => if RatelBytes.order(entry, bound) < 0 then fail(Reason.BadTree)
+          high.let: bound => if RatelBytes.order(entry, bound) >= 0 then fail(Reason.BadTree)
           val host = entry.u32be(0)
           val child = entry.u32be(entry.length - 4)
           if !live(host) || !among(host, child) then fail(Reason.IndexDisagrees)
@@ -1162,7 +1176,7 @@ object Ratel:
         else
           if page.kind != 2 then fail(Reason.BadTree)
           val separators: java.util.ArrayList[Data] = java.util.ArrayList()
-          List.range(0, page.count).each { cell => separators.add(stored(entry(page, cell))) }
+          List.range(0, page.count).each: cell => separators.add(stored(entry(page, cell)))
 
           def separator(cell: Int): Optional[Data] =
             if cell < page.count then separators.get(cell) else high
@@ -1173,7 +1187,7 @@ object Ratel:
             if cell > 0 then separator(cell - 1).let: before =>
               if RatelBytes.order(before, bound) >= 0 then fail(Reason.BadTree)
 
-            low.let { least => if RatelBytes.order(bound, least) < 0 then fail(Reason.BadTree) }
+            low.let: least => if RatelBytes.order(bound, least) < 0 then fail(Reason.BadTree)
 
           descend(page.link, level + 1, low, separator(0))
 
@@ -1184,7 +1198,9 @@ object Ratel:
 
       // The leaves are chained in the order they were reached, and the last ends the chain.
       List.range(0, leaves.size).each: position =>
-        val next = if position + 1 < leaves.size then leaves.get(position + 1).number else RatelBytes.none
+        val next =
+          if position + 1 < leaves.size then leaves.get(position + 1).number else RatelBytes.none
+
         if leaves.get(position).link != next then fail(Reason.BadTree)
 
       if total != tree.count then fail(Reason.BadTree)
@@ -1545,7 +1561,9 @@ object Ratel:
       val children: List[Tel.Element] = values.map(Tel.Element.Value(0, plain, _))
       val under = reader.schema.copy(document = alone)
       val model = Tel.Element.Node(Unset, alone, children.to[Array])
-      Tel.Type.assign(Bintel.present(model, under), under, Tel.Validator.Registry.builtins, reader.bindings)
+
+      Tel.Type.assign
+        ( Bintel.present(model, under), under, Tel.Validator.Registry.builtins, reader.bindings )
 
     // `update-value`: gives a scalar member a value.
     def set(keyword: Text, value: Text)
@@ -1794,7 +1812,7 @@ object Ratel:
 
       val (index, number) = primary
 
-      lookup(index, number, key) match
+      lookup(index, number, key).absolve match
         case first :: rest => child(first)
         case Nil           => Unset
 
@@ -1857,7 +1875,7 @@ object Ratel:
       val reader: Reader^{access} = access
 
       rows.find(key)(using Provider.bound(reader, rows), tactic)
-      . let { row => read(Cell.Struct(row), access, tactic) }
+      . let: row => read(Cell.Struct(row), access, tactic)
 
     // By position, not with `rows.each`: a lambda which reads would hold the reader while
     // `each` was given it too.
@@ -1876,7 +1894,7 @@ object Ratel:
       val reader: Reader^{access} = access
 
       rows.sorted(using Provider.bound(reader, rows), tactic)
-      . map { row => read(Cell.Struct(row), access, tactic) }
+      . map: row => read(Cell.Struct(row), access, tactic)
 
     // The records for which a scalar has a value, by a secondary index. The scalar is named as
     // a lens names what it updates, by a path from a record which ends in an assignment:
@@ -1892,8 +1910,7 @@ object Ratel:
       val sought = query(Path(Nil))
 
       rows.where(sought.path, sought.value)(using Provider.bound(reader, rows), tactic)
-
-      . map { row => read(Cell.Struct(row), access, tactic) }
+      . map: row => read(Cell.Struct(row), access, tactic)
 
   // A path from a record of a `Ratel.Provider` to one of its members, written as a selection
   // of each member on the way, and ended by the assignment of the value which is sought.
@@ -1906,11 +1923,11 @@ object Ratel:
       ${stratiform.ratelInternal.query[record, value]('this, 'name, 'value)}
 
   // The scalar at a path, and the value it is to have, as text.
-  final class Query private[stratiform](val path: Telp, val value: Text)
-
   object Query:
     // `keywords` are the path's, from its end to the record.
     def apply(keywords: List[Text], value: Text): Query = new Query(Telp(keywords.reverse), value)
+
+  final class Query private[stratiform](val path: Telp, val value: Text)
 
   object Provider:
     // A record is read through a reader which has its brand, as the type of each of its
@@ -2171,3 +2188,17 @@ object Ratel:
     override def bolt: Bolt =
       if reason.number > 30 then super.bolt
       else Bolt(Bolt.Soundness, module, number).carrying(Bolt('t', 5, reason.number))
+
+// A RaTEL image: the random-access encoding of one TEL document together with its schema
+// (RaTEL §4), as the bytes of a file. It is written whole, and published by renaming it over
+// its predecessor; it is read in place, through `Ratel.open`, from a view of the file which
+// any number of processes may map.
+case class Ratel(data: Data):
+  // The type whose value the image is of, if that is known: `Ratel of Cast` is an image
+  // written under the schema derived from `Cast`, which is what a value's `ratel` gives. An
+  // owner which claims a name as `Ratel of Cast` publishes nothing else under it, and an
+  // observer which opens it as `Ratel of Cast` reads nothing else from it.
+  type Topic
+
+  // A view of the image where it lies on the heap, for reading it without a file.
+  def terrain: Terrain = Terrain(data)

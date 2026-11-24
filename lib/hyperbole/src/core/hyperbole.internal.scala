@@ -57,7 +57,7 @@ object internal:
         val nodes2 = nodes.map(serialize(_))
         // A concrete-scrutinee match, not an Optional combinator: an inline lambda whose
         // arms are quote literals crashes pickleQuotes (the aviation.internal caveat).
-        val param2 = param match
+        val param2 = param.absolve match
           case Unset       => '{Unset}
           case param: Text => Expr(param)
 

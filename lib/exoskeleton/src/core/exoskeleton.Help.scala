@@ -165,7 +165,7 @@ case class Help
     def recur(node: Help, path: List[Text], command: Text, inherited: List[Help.Param])
     :   Optional[Help] =
 
-      path match
+      path.absolve match
         case Nil =>
           // Ancestors first and nearest-root wins on a name collision; built in reverse with
           // `::` and reversed once, since deduplication needs a fold anyway.

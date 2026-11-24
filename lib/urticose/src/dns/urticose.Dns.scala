@@ -80,7 +80,7 @@ object Dns:
     def apply(hostname: Hostname): Name = new Name(List.from(hostname.dnsLabels.map(_.text)))
 
     private[urticose] def checked(labels: List[Text]): Name raises Dns.Error =
-      def check(labels: List[Text]): Unit = labels match
+      def check(labels: List[Text]): Unit = labels.absolve match
         case Nil => ()
 
         case label :: tail =>
@@ -189,15 +189,15 @@ object Dns:
     def + (suffix: Name): Name raises Dns.Error = Name.checked(List.concat(labels, suffix.labels))
     def prefix(label: Text): Name raises Dns.Error = Name.checked(label :: labels)
 
-    def parent: Optional[Name] = labels match
+    def parent: Optional[Name] = labels.absolve match
       case Nil       => Unset
       case _ :: tail => Name.unchecked(tail)
 
     def endsWith(suffix: Name): Boolean =
-      def recur(name: List[Text], suffix: List[Text]): Boolean = suffix match
+      def recur(name: List[Text], suffix: List[Text]): Boolean = suffix.absolve match
         case Nil => true
 
-        case head :: tail => name match
+        case head :: tail => name.absolve match
           case head2 :: tail2 => head == head2 && recur(tail2, tail)
           case Nil            => false
 
@@ -799,7 +799,7 @@ object Dns:
 
       update def rdata(rdata: Rdata)(using out: Producer.Bytes^): Unit =
 
-        def strings(list: List[Data]): Unit = list match
+        def strings(list: List[Data]): Unit = list.absolve match
           case Nil => ()
 
           case string :: tail =>
@@ -807,7 +807,7 @@ object Dns:
             data(string)
             strings(tail)
 
-        def options(list: List[(Int, Data)]): Unit = list match
+        def options(list: List[(Int, Data)]): Unit = list.absolve match
           case Nil => ()
 
           case (code, payload) :: tail =>
@@ -862,11 +862,11 @@ object Dns:
             (if flags.checkingDisabled then 0x0010 else 0) |
             (flags.rcode.number & 0xf)
 
-        def questions(list: List[Question]): Unit = list match
+        def questions(list: List[Question]): Unit = list.absolve match
           case Nil          => ()
           case head :: tail => question(head).also(questions(tail))
 
-        def records(list: List[Record]): Unit = list match
+        def records(list: List[Record]): Unit = list.absolve match
           case Nil          => ()
           case head :: tail => record(head).also(records(tail))
 

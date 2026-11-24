@@ -307,12 +307,13 @@ package executives:
             val focus1 =
               if shell == Shell.Bash && rest.last == t"=" then focus0 + 1 else focus0
 
-            def read(todo: List[Text], flag: Boolean, done: List[Text]): List[Text] = todo match
-              case Nil                                 => done.reverse
-              case t"=" :: tail if shell == Shell.Bash => read(tail, false, done)
+            def read(todo: List[Text], flag: Boolean, done: List[Text]): List[Text] =
+              todo.absolve match
+                case Nil                                 => done.reverse
+                case t"=" :: tail if shell == Shell.Bash => read(tail, false, done)
 
-              case head :: tail =>
-                read(tail, head.starts(t"--"), head :: done)
+                case head :: tail =>
+                  read(tail, head.starts(t"--"), head :: done)
 
             val rest2 = read(rest, false, Nil)
 

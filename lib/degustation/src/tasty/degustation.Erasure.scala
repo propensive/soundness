@@ -93,46 +93,48 @@ class Erasure(universe: Universe):
   // The erased signature of a definition: for a method, its clauses' parameters and its result;
   // for anything else — a value, a parameterless method — the signature the compiler gives a
   // non-method, `()`.
-  def signature(tree: Tree, scope: Optional[Scope], owner: Optional[Universe.ClassInfo]): Text = tree match
-    case Tree.DefDef(_, name, clauses, returns, _, _) =>
-      def typeClause(clause: List[Tree]): Boolean = clause.head match
-        case Tree.TypeParam(_, _, _, _) => true
-        case _                          => false
+  def signature(tree: Tree, scope: Optional[Scope], owner: Optional[Universe.ClassInfo]): Text =
+    tree match
+      case Tree.DefDef(_, name, clauses, returns, _, _) =>
+        def typeClause(clause: List[Tree]): Boolean = clause.head match
+          case Tree.TypeParam(_, _, _, _) => true
+          case _                          => false
 
-      // An erased parameter — by modifier, or by having an `erased class` as its type — has no
-      // place in the signature.
-      val parts = clauses.stdlib.flatMap: clause =>
-        if typeClause(clause) then scala.List(clause.size.toString.tt)
-        else clause.stdlib.collect:
-          case Tree.Param(_, _, tpt, modifiers)
-            if !modifiers.has(Flag.Erased) && !erasedParam(Universe.typeOf(tpt), scope) =>
-            sigName(Universe.typeOf(tpt), scope)
+        // An erased parameter — by modifier, or by having an `erased class` as its type — has no
+        // place in the signature.
+        val parts = clauses.stdlib.flatMap: clause =>
+          if typeClause(clause) then scala.List(clause.size.toString.tt)
+          else clause.stdlib.collect:
+            case Tree.Param(_, _, tpt, modifiers)
+              if !modifiers.has(Flag.Erased) && !erasedParam(Universe.typeOf(tpt), scope) =>
+              sigName(Universe.typeOf(tpt), scope)
 
-      // A method with no clause at all has an expression type, whose signature names no result;
-      // one with type parameters only is a polymorphic type over its result, which does.
-      val result =
-        if clauses.nil then t""
-        else if name.text == t"<init>" then
-          // A constructor's result is its class applied to its own type parameters, which erases
-          // as the class does — to its underlying type for a value class, to `Object` for `Array`.
-          owner.lay(t"scala.Unit"): info =>
-            // A class read from TASTy is referred to by its address; `classRef` spells a binary
-            // name.
-            val reference =
-              if info.address >= 0 then Type.TypeRefDirect(info.address)
-              else Universe.classRef(info.fullName)
+        // A method with no clause at all has an expression type, whose signature names no result;
+        // one with type parameters only is a polymorphic type over its result, which does.
+        val result =
+          if clauses.nil then t""
+          else if name.text == t"<init>" then
+            // A constructor's result is its class applied to its own type parameters, which
+            // erases as the class does — to its underlying type for a value class, to `Object` for
+            // `Array`.
+            owner.lay(t"scala.Unit"): info =>
+              // A class read from TASTy is referred to by its address; `classRef` spells a binary
+              // name.
+              val reference =
+                if info.address >= 0 then Type.TypeRefDirect(info.address)
+                else Universe.classRef(info.fullName)
 
-            val self =
-              if info.typeParamAddresses.nil then reference
-              else Type.Applied(reference, info.typeParamAddresses.map(Type.TypeRefDirect(_)))
+              val self =
+                if info.typeParamAddresses.nil then reference
+                else Type.Applied(reference, info.typeParamAddresses.map(Type.TypeRefDirect(_)))
 
-            render(erase(self, info.scope, vc = true))
-        else
-          resultSigName(Universe.typeOf(returns), scope)
+              render(erase(self, info.scope, vc = true))
+          else
+            resultSigName(Universe.typeOf(returns), scope)
 
-      t"(${parts.to(List).join(t",")})$result"
+        t"(${parts.to(List).join(t",")})$result"
 
-    case _ => t"()"
+      case _ => t"()"
 
   // The signature of a pickled methodic type — a refinement's method, say — spelled as a
   // declaration's would be.
@@ -179,7 +181,7 @@ class Erasure(universe: Universe):
   def resultSigName(tpe: Type, scope: Optional[Scope]): Text =
     universe.classOf(tpe, scope) match
       case info: Universe.ClassInfo if info.fullName == t"scala.Unit" => t"scala.Unit"
-      case _                                                 => sigName(tpe, scope)
+      case _                                                          => sigName(tpe, scope)
 
   def render(erased: Erased): Text = erased match
     case Erased.Ref(name)      => name
@@ -430,13 +432,13 @@ class Erasure(universe: Universe):
       case Type.Applied(constructor, List(_, tail)) =>
         universe.classOf(constructor, scope) match
           case info: Universe.ClassInfo if info.fullName == t"scala.*:" => arity(tail, count + 1)
-          case _                                               => -1
+          case _                                                        => -1
 
       case other =>
         universe.classOf(other, scope) match
           case info: Universe.ClassInfo if info.fullName == t"scala.EmptyTuple$$" => count
           case info: Universe.ClassInfo if info.fullName == t"scala.EmptyTuple"   => count
-          case _                                                         => -1
+          case _                                                                  => -1
 
     arity(tpe, 0) match
       case -1                   => t"scala.Product"

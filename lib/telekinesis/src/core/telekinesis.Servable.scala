@@ -114,6 +114,7 @@ object Servable:
     case streamable: (`media` is Streamable by Data over Credit) =>
       value =>
         val headers = List(Http.Header(t"content-type", media.mediaType(value).show))
+
         val spring: Spring[Data]^ = new Spring[Data]:
           def apply()(using Tactic[Truncation.Error]): (Stream[Data] over Credit)^ =
             streamable.stream(value)

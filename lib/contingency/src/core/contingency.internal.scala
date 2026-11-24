@@ -432,7 +432,9 @@ object internal:
 
       case _ =>
         halt
-          ( 24, 12, m"argument to `handle` should be a partial function implemented as match cases" )
+          ( 24,
+            12,
+            m"argument to `handle` should be a partial function implemented as match cases" )
 
     applyTactics[context, result](body, emits)
 

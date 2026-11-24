@@ -54,7 +54,9 @@ class Orchestrate[value: Encodable in Query, result](initial: Optional[value] = 
 extends caps.ExclusiveCapability:
   def otherwise(validate: (query: Query) ?=> Validation)(using Formulation, value is Formulaic)
     ( using decodable: Tactic[Hazard] ?=> value is Decodable in Query )
-    ( using request: Http.Request, tactic: Tactic[Query.Error], truncation: Tactic[Truncation.Error] )
+    ( using request:    Http.Request,
+            tactic:     Tactic[Query.Error],
+            truncation: Tactic[Truncation.Error] )
   :   result =
 
     request.method match

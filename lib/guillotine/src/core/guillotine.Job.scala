@@ -35,7 +35,6 @@ package guillotine
 import java.io as ji
 import java.util.concurrent as juc
 
-import scala.caps
 import scala.language.experimental.pureFunctions
 
 import anticipation.*

@@ -241,7 +241,7 @@ object internal:
               // `quotedFrontend`), where a failing implicit search asserts, while
               // an embedded `summonInline` resolves during the inner compiler's
               // own inlining phase — an ordinary search context.
-              target.asType match
+              target.asType.absolve match
                 case '[target] => '{scala.compiletime.summonInline[target]}
 
             // The snippet's classes are now ordinary files in `outputDir`; a new
@@ -315,7 +315,7 @@ object internal:
     val fieldTypes: List[TypeRepr] = fields.map: field => tpe.memberType(field).dealias
 
     def readField(index: Int, parts: Expr[scala.Array[String]]): Term =
-      fieldTypes(index).asType match
+      fieldTypes(index).asType.absolve match
         case '[fieldType] =>
           val fieldExpr: Expr[String] = '{$parts(${Expr(index)})}
 

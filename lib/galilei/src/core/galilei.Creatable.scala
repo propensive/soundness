@@ -60,7 +60,7 @@ object Creation:
   inline def policy[filesystem]: Optional[CreateParents on filesystem] =
     scala.compiletime.summonFrom:
       case policy: (CreateParents on `filesystem`) => policy
-      case _                                                  => Unset
+      case _                                       => Unset
 
   // Walk up from the parent, creating missing ancestors: selected by the `Parents` flag, or
   // left to the `CreateParents` policy, if one was in scope.

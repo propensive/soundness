@@ -70,7 +70,7 @@ class Regime(name: Text, segments: List[Regime.Segment]) extends RomanCalendar(n
   // The regime's Julian day number for a field date, or `Unset` if it falls in a gap between two
   // calendars (e.g. 1582-10-10 under the Papal cutover) or is otherwise an invalid date.
   private def locate(year: Year, month: Month, day: Day): Optional[Date] =
-    def recur(remaining: List[(Segment, Int)]): Optional[Date] = remaining match
+    def recur(remaining: List[(Segment, Int)]): Optional[Date] = remaining.absolve match
       case (segment, upper) :: tail =>
         val candidate: Optional[Date] = safely(segment.calendar.jdn(year, month, day))
 

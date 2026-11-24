@@ -33,7 +33,6 @@
 package telekinesis
 
 import java.io as ji
-import java.net as jn
 import java.util.concurrent as juc
 
 import anticipation.*

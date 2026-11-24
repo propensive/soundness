@@ -39,7 +39,6 @@ import scala.compiletime.*
 
 import adversaria.*
 import anticipation.*
-import aperture.*
 import contextual.*
 import contingency.*
 import denominative.*
@@ -347,7 +346,7 @@ trait Tel2 extends Tel3:
 
         // The head pattern both distinguishes the no-atom case and names the atom
         // the compound is built around.
-        positional match
+        positional.absolve match
           case Nil =>
             match0.lay(fallback.or(ctx.absent()))(ctx.decoded(_))
 
@@ -487,7 +486,7 @@ trait Tel2 extends Tel3:
         variantLabels.map: label => Tel.camelToKebab(label.s) -> label
         . to[Map]
 
-      Tel.Decodable(() => Morphology.Any):
+      Tel.Decodable({ () => Morphology.Any }):
         telVal =>
           provide[Foci[Tel.Focus]]:
             provide[Tactic[Tel.Error]]:
@@ -579,7 +578,8 @@ trait Tel2 extends Tel3:
                   // may be: `true` is the bare keyword, `false` is elided.
                   val encoded = contextual.encode(fieldValue)
 
-                  if encoded.primaryAtom == t"true" then members += Tel.Mutation.Member.Flag(keyword)
+                  if encoded.primaryAtom == t"true"
+                  then members += Tel.Mutation.Member.Flag(keyword)
                   else members += Tel.Mutation.Member.Break
 
                 case Tel.Nature.Scalar =>
@@ -614,7 +614,8 @@ trait Tel2 extends Tel3:
         // records keep theirs.
         override def canonicalized(value: derivation^{}): Tel =
           val compound =
-            Tel.Mutation.construct(t"", (Tel.Mutation.Member.Break :: membersOf(value)).to(List), '#')
+            Tel.Mutation.construct
+              ( t"", (Tel.Mutation.Member.Break :: membersOf(value)).to(List), '#' )
 
           Tel.make(Tel.Document(Unset, Unset, Tel.LineEndings.Lf, 0, compound.children))
 
@@ -710,7 +711,7 @@ trait Tel2 extends Tel3:
   // taking the tactic as a parameter fails separation checking at a call site whose tactic is
   // an untracked `using` parameter.
   inline given telsDecodable: ((Tels is Tel.Decodable)^) =
-    Tel.Decodable(() => Morphology.Any): tel =>
+    Tel.Decodable({ () => Morphology.Any }): tel =>
       provide[Tactic[Tel.Error]](Tels.Reconstructor.reconstruct(tel))
 
   given textEncodable: Text is Tel.Encodable =
@@ -838,7 +839,7 @@ trait Tel2 extends Tel3:
 
   given mapEncodable: [key: Tel.Encodable, value: Tel.Encodable]
   =>  Map[key, value] is Tel.Encodable =
-    Tel.Encodable(() => Morphology.Dict(key.shape(), value.shape())): map =>
+    Tel.Encodable({ () => Morphology.Dict(key.shape(), value.shape()) }): map =>
       val entryList: List[Tel.Compound] = map.remap: (k, v) =>
         val keyChild   = reKey(key.encoded(k), t"key")
         val valueChild = reKey(value.encoded(v), t"value")
@@ -855,7 +856,7 @@ trait Tel2 extends Tel3:
     // tying, and a thunk over a plain value captures neither of them.
     val shape: Morphology = Morphology.Dict(keyCodec.shape(), valueCodec.shape())
 
-    Tel.Decodable(() => shape): telVal =>
+    Tel.Decodable({ () => shape }): telVal =>
       Map.build[key, value]: accumulator =>
         for entry <- telVal.fields(t"entries") do
           // A missing `key`/`value` child routes through `absent()` rather

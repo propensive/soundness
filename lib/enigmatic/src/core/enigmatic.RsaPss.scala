@@ -35,8 +35,6 @@ package enigmatic
 import scala.reflect.Selectable.reflectiveSelectable
 
 import anticipation.*
-import gossamer.*
-import vacuous.*
 
 import gastronomy.Signing
 

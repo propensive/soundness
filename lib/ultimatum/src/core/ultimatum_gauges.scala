@@ -40,8 +40,8 @@ import parasite.*
 import symbolism.*
 import turbulence.*
 import vacuous.*
-import ultimatum.Tui.{Pane, Sizing}
 import ultimatum.Tui.{Inlay, Reading, Tick}
+import ultimatum.Tui.{Pane, Sizing}
 
 // The status types, whose opaque declarations live in `internal` so that their abstraction does not
 // leak; see the note there.

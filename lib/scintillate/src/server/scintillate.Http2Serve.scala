@@ -159,7 +159,7 @@ object Http2Serve:
       // The socket's streams as a duplex, read on the connection's own reader daemon; EOF ends
       // the read side, so no truncation tactic is retained. The socket is closed by the accept
       // daemon, not the duplex.
-      val connection = Http2.ServerConnection(streamsDuplex(in, out)(() => ()))
+      val connection = Http2.ServerConnection(streamsDuplex(in, out) { () => () })
       connection.start()
       connection
 

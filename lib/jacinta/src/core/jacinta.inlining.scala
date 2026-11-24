@@ -480,7 +480,7 @@ object inlining:
         else if fieldType =:= TypeRepr.of[Double] then Literal(DoubleConstant(0.0))
         else if fieldType =:= TypeRepr.of[Float] then Literal(FloatConstant(0.0f))
         else if fieldType =:= TypeRepr.of[Boolean] then Literal(BooleanConstant(false))
-        else fieldType.asType match
+        else fieldType.asType.absolve match
           case '[fieldType] => '{null.asInstanceOf[fieldType]}.asTerm
 
       val slotDefs = List.range(0, arity).map: index =>
@@ -509,7 +509,7 @@ object inlining:
 
       // The absent expression per field, through the ladder.
       def fieldAbsent(index: Int): Expr[Any] =
-        fieldTypes(index).asType match
+        fieldTypes(index).asType.absolve match
           case '[fieldType] =>
             if builtinDirect(fieldTypes(index)).isDefined then
               '{Json.Parsable.missing[fieldType]()(using $tactic)}
@@ -543,7 +543,7 @@ object inlining:
             MethodType(Nil)(_ => Nil, _ => fieldTypes(index)) )
 
       val readDefDefs: List[Statement] = List.range(0, arity).flatMap: index =>
-        fieldTypes(index).asType match
+        fieldTypes(index).asType.absolve match
           case '[fieldType] =>
             def rawParse(): Expr[fieldType] =
               builtinDirect(fieldTypes(index)) match
@@ -698,7 +698,7 @@ object inlining:
               While(Ref(run), step('{$parser.directKeyWordNext()})) )
 
       val absents: List[Term] = List.range(0, arity).map: index =>
-        fieldTypes(index).asType match
+        fieldTypes(index).asType.absolve match
           case '[fieldType] =>
             val keyText: Expr[Text] = '{${Expr(fieldNames(index))}.tt}
 

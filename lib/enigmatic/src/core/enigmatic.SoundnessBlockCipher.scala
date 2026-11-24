@@ -38,7 +38,6 @@ import anticipation.*
 import gossamer.*
 import rudiments.*
 import vacuous.*
-import enigmatic.BlockCipher.{Cbc, Cfb, Ctr, Ecb, Iso10126, Ofb, Pkcs7}
 
 // A failure raised by the pure-Scala provider: the counterpart of the `javax.crypto` exceptions
 // the JDK provider throws, carrying the `Crypto.Error.Reason` directly so that the
@@ -125,8 +124,9 @@ private[enigmatic] object SoundnessBlockCipher:
     ( result: Array[Byte]^, parts: List[Data], offset: Int )
   :   Unit =
 
-    parts match
+    parts.absolve match
       case Nil          => ()
+
       case part :: tail =>
         result.place(part, 0, offset, part.length)
         concatenate(result, tail, offset + part.length)

@@ -108,7 +108,7 @@ object Content:
       theme:    Optional[Text]       = Unset )
 
   object Contents:
-    given encodable: Contents is Json.Encodable = Json.Encodable(() => Morphology.Any):
+    given encodable: Contents is Json.Encodable = Json.Encodable({ () => Morphology.Any }):
       _.contents match
         case text: TextResourceContents => text.in[Json]
         case blob: BlobResourceContents => blob.in[Json]
@@ -134,7 +134,7 @@ object Content:
       lastModified: Optional[Text]       = Unset )
 
   object Role:
-    given encodable: Role is Json.Encodable = Json.Encodable(() => Morphology.Str):
+    given encodable: Role is Json.Encodable = Json.Encodable({ () => Morphology.Str }):
       case Role.User      => t"user".in[Json]
       case Role.Assistant => t"assistant".in[Json]
 
@@ -153,7 +153,7 @@ object Content:
 
     private val typeTag = Json.discriminatedUnion[ContentBlock](t"type")
 
-    given encodable: ContentBlock is Json.Encodable = Json.Encodable(() => Morphology.Any):
+    given encodable: ContentBlock is Json.Encodable = Json.Encodable({ () => Morphology.Any }):
       case content: TextContent      => typeTag.rewrite(t"text",          content.in[Json])
       case content: ImageContent     => typeTag.rewrite(t"image",         content.in[Json])
       case content: AudioContent     => typeTag.rewrite(t"audio",         content.in[Json])
@@ -162,7 +162,7 @@ object Content:
 
     given decodable: Tactic[Json.Error] => ContentBlock is Json.Decodable =
       Json.Decodable(Morphology.Any): json =>
-        json.`type`.as[Text] match
+        json.`type`.as[Text].s match
           case "text"          => json.as[TextContent]
           case "image"         => json.as[ImageContent]
           case "audio"         => json.as[AudioContent]

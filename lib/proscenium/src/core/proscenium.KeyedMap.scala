@@ -89,7 +89,7 @@ extends sci.AbstractMap[key, value]:
     new KeyedMap[key, value2](hashable, equatable, entries.updated(slot0, (key0, value)))
 
   def joined[value2 >: value](that: sci.Map[key, value2]): KeyedMap[key, value2] =
-    that.foldLeft[KeyedMap[key, value2]](this) { (map, entry) => map.updated(entry._1, entry._2) }
+    that.foldLeft[KeyedMap[key, value2]](this): (map, entry) => map.updated(entry._1, entry._2)
 
   def transformed[value2](lambda: value => value2): KeyedMap[key, value2] =
     new KeyedMap[key, value2]

@@ -112,8 +112,8 @@ object Crypto:
   // they differ: the comparison a MAC, a tag or any other secret-derived value must be checked
   // with, since an early exit tells a forger how much of a guess was right.
   def constantTimeEquals(left: Data, right: Data): Boolean =
-    left.length == right.length
-    && Gcm.constantTimeEquals(Array.unsafeJvm(left), 0, Array.unsafeJvm(right), 0, left.length)
+    left.length == right.length &&
+      Gcm.constantTimeEquals(Array.unsafeJvm(left), 0, Array.unsafeJvm(right), 0, left.length)
 
   // The JDK provider supplies cryptography whenever it has been selected with
   // `import providers.javaBaseProvider`. The marker lives in gastronomy, so the

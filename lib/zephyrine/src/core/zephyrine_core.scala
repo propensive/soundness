@@ -144,7 +144,7 @@ extension [in, transport](consume stream: (Stream[in] over transport)^)
   // of a pipeline.
   def pump(consume intake: (Intake[in] over transport)^): Unit =
     def loop(): Unit =
-      stream.refill(intake.demand) match
+      stream.refill(intake.demand).absolve match
         case Unset =>
           intake.finish()
 
@@ -172,7 +172,7 @@ extension [medium, transport, target <: (Intake[medium] over transport)](consume
   def ingest(consume stream: (Stream[medium] over transport)^): target^ =
 
     def loop(): Unit =
-      stream.refill(intake.demand) match
+      stream.refill(intake.demand).absolve match
         case Unset =>
           intake.finish()
 

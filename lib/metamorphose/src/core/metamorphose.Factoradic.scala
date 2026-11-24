@@ -55,10 +55,10 @@ object Factoradic:
   // checks, and what an inversion table is by construction.
   private[metamorphose] def unchecked(sequence: List[Int]): Factoradic =
     def recur(sequence: List[Int], bases: List[BigInt], result: BigInt): BigInt =
-      sequence match
+      sequence.absolve match
         case Nil => result
 
-        case head :: tail => bases match
+        case head :: tail => bases.absolve match
           case factor :: factors => recur(tail, factors, result + factor*head)
           case Nil               => result
 
@@ -68,7 +68,7 @@ case class Factoradic(number: BigInt):
   def expand: List[Int] =
     @tailrec
     def recur(current: BigInt, sequence: List[BigInt], result: List[Int]): List[Int] =
-      sequence match
+      sequence.absolve match
         case Nil => result.reverse
 
         case head :: tail =>

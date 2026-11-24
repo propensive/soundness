@@ -136,9 +136,6 @@ object Bytecode:
         case _: jlca.StackMapFrameInfo.UninitializedVerificationTypeInfo =>
           L(t"uninit")
 
-        case other =>
-          L(t"unknown")
-
   enum Frame:
     case Z, B, C, S, I, J, F, D
     case L(name: Text)
@@ -493,7 +490,7 @@ object Bytecode:
               panic(m"unrecognized opcode $opcode")
 
     given Opcode is Teletypeable = opcode =>
-      opcode.show.cut(t" ") match
+      opcode.show.cut(t" ").absolve match
         case Nil               => panic(m"opcode should never be empty")
         case List(keyword)     => e"${Fg(opcode.highlight)}(${opcode.show})"
         case keyword :: params => e"${Fg(opcode.highlight)}($keyword) $Italic(${params.join(t" ")})"

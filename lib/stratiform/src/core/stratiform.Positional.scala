@@ -75,7 +75,7 @@ private[stratiform] object Positional:
         Tel.Mutation.Member.Child(child.copy(keyword = keyword))
     else
       val texts = scala.collection.mutable.ListBuffer.empty[Text]
-      children.each { child => texts += child.atoms.at(Prim).lay("".tt)(text(_)) }
+      children.each: child => texts += child.atoms.at(Prim).lay("".tt)(text(_))
       Tel.Mutation.Member.Value(keyword, texts.to(List))
 
   // The compounds of a collection's document, each under the keyword of the field which holds
@@ -98,7 +98,7 @@ private[stratiform] object Positional:
 
     if children.length == 0 then scala.collection.immutable.List(Tel.Mutation.Member.Break) else
       val members = scala.collection.mutable.ListBuffer.empty[Tel.Mutation.Member]
-      children.each { child => members += Tel.Mutation.Member.Child(child.copy(keyword = keyword)) }
+      children.each: child => members += Tel.Mutation.Member.Child(child.copy(keyword = keyword))
       members.toList
 
   def text(atom: Tel.Atom): Text = atom match

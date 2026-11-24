@@ -34,6 +34,51 @@ package zephyrine
 
 import anticipation.*
 
+object Terrain:
+  // A view of bytes which are already on the heap, for reading a format designed for mapped
+  // memory out of `Data` -- a message, a fixture, an image not yet written to a file. It
+  // captures nothing, since `Data` is immutable and owned by nobody.
+  def apply(data: Data): Terrain = Heap(data, 0, data.length)
+
+  private final class Heap(data: Data, start: Int, extent: Int) extends Terrain:
+    def size: Long = extent.toLong
+
+    private inline def at(offset: Long, width: Long): Int =
+      if offset < 0L || width < 0L || offset > extent - width
+      then throw IndexOutOfBoundsException(s"$width bytes at $offset of $extent")
+
+      start + offset.toInt
+
+    def u8(offset: Long): Int = data.u8(at(offset, 1L))
+    def u16(offset: Long): Int = data.u16(at(offset, 2L))
+    def u32(offset: Long): Long = data.u32(at(offset, 4L))
+    def u64(offset: Long): Long = data.u64(at(offset, 8L))
+    def i32(offset: Long): Int = data.i32(at(offset, 4L))
+
+    def slice(offset: Long, length: Long): Terrain^{this} =
+      Heap(data, at(offset, length), length.toInt)
+
+    def read(offset: Long, length: Int): Data =
+      val base = at(offset, length.toLong)
+      Array.tabulate[Byte](length): index => data.u8(base + index).toByte
+
+    def same(offset: Long, data2: Data): Boolean =
+      offset >= 0L && offset <= extent - data2.length &&
+        compare(offset, data2.length.toLong, data2) == 0
+
+    def compare(offset: Long, length: Long, data2: Data): Int =
+      val base = at(offset, length)
+      val common = length.toInt.min(data2.length)
+
+      @scala.annotation.tailrec
+      def recur(index: Int): Int =
+        if index == common then java.lang.Long.compare(length, data2.length.toLong) else
+          val left = data.u8(base + index)
+          val right = data2.u8(index)
+          if left == right then recur(index + 1) else left - right
+
+      recur(0)
+
 // An `Expanse` whose bytes are in memory -- those of a memory-mapped file, above all -- so that
 // values are *loaded* from it in place, where an expanse can only `read` a copy onto the heap.
 // Formats designed for random access (an index, a table of fixed-width rows) are parsed
@@ -78,48 +123,3 @@ trait Terrain extends Expanse:
   // a prefix of. This is the comparison a binary search over sorted keys makes at each step,
   // without copying a key onto the heap.
   def compare(offset: Long, length: Long, data: Data): Int
-
-object Terrain:
-  // A view of bytes which are already on the heap, for reading a format designed for mapped
-  // memory out of `Data` -- a message, a fixture, an image not yet written to a file. It
-  // captures nothing, since `Data` is immutable and owned by nobody.
-  def apply(data: Data): Terrain = Heap(data, 0, data.length)
-
-  private final class Heap(data: Data, start: Int, extent: Int) extends Terrain:
-    def size: Long = extent.toLong
-
-    private inline def at(offset: Long, width: Long): Int =
-      if offset < 0L || width < 0L || offset > extent - width
-      then throw IndexOutOfBoundsException(s"$width bytes at $offset of $extent")
-
-      start + offset.toInt
-
-    def u8(offset: Long): Int = data.u8(at(offset, 1L))
-    def u16(offset: Long): Int = data.u16(at(offset, 2L))
-    def u32(offset: Long): Long = data.u32(at(offset, 4L))
-    def u64(offset: Long): Long = data.u64(at(offset, 8L))
-    def i32(offset: Long): Int = data.i32(at(offset, 4L))
-
-    def slice(offset: Long, length: Long): Terrain^{this} =
-      Heap(data, at(offset, length), length.toInt)
-
-    def read(offset: Long, length: Int): Data =
-      val base = at(offset, length.toLong)
-      Array.tabulate[Byte](length) { index => data.u8(base + index).toByte }
-
-    def same(offset: Long, data2: Data): Boolean =
-      offset >= 0L && offset <= extent - data2.length
-      && compare(offset, data2.length.toLong, data2) == 0
-
-    def compare(offset: Long, length: Long, data2: Data): Int =
-      val base = at(offset, length)
-      val common = length.toInt.min(data2.length)
-
-      @scala.annotation.tailrec
-      def recur(index: Int): Int =
-        if index == common then java.lang.Long.compare(length, data2.length.toLong) else
-          val left = data.u8(base + index)
-          val right = data2.u8(index)
-          if left == right then recur(index + 1) else left - right
-
-      recur(0)

@@ -183,7 +183,7 @@ object Redraft:
     // alignment, the matcher is under-anchored.
     @tailrec
     def alignRight(todo: List[Matcher], limit: Int, acc: List[Int]): Optional[List[Int]] =
-      todo match
+      todo.absolve match
         case Nil => acc
 
         case matcher :: rest =>
@@ -204,14 +204,14 @@ object Redraft:
     val edits: List[Diff.Edit[Text] & Retained] = diff.retentions
 
     val original: Sequence[Text] = edits.bind: edit =>
-      edit match
+      edit.absolve match
         case Diff.Par(_, _, _) | Diff.Del(_, _) => List(edit.kept)
-        case Diff.Ins(_, _)                => List[Text]()
+        case Diff.Ins(_, _)                     => List[Text]()
 
     . to[Sequence]
 
     val full: List[Directive] = edits.bind: edit =>
-      edit match
+      edit.absolve match
         case Diff.Par(_, _, _)  => List(Directive.Keep(edit.kept))
         case Diff.Del(_, _)     => List(Directive.Mark(edit.kept, insert = false))
         case Diff.Ins(_, value) => List(Directive.Mark(value, insert = true))
@@ -316,7 +316,7 @@ case class Redraft(directives: Redraft.Directive*):
 
     val (edits, anomalies) = Redraft.analyze(directives.to(List), original, compare)
 
-    anomalies match
+    anomalies.absolve match
       case anomaly :: _ => abort(Redraft.Error(anomaly.line, anomaly.text, anomaly.reason))
       case Nil          => Diff(edits*).retained
 

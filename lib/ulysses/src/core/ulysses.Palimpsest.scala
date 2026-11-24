@@ -149,10 +149,10 @@ case class Palimpsest(data: Data, length: Int):
                 var found: Optional[List[Data]] = Unset
                 var searching = true
 
-                while found.absent && remaining > 0 && searching do candidates.next() match
+                while found.absent && remaining > 0 && searching do candidates.next().absolve match
                   case Iterator.Exhausted => searching = false
 
-                  case hash: Data =>
+                  case hash: Data @unchecked =>
                     remaining -= 1
                     xor_(body, hash, o)
                     val sub = recur(body, item + 1, hash :: matched)

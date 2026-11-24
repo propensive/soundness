@@ -33,7 +33,6 @@
 package legerdemain
 
 import anticipation.*
-import fulminate.*
 import honeycomb.*
 import prepositional.*
 import vacuous.*

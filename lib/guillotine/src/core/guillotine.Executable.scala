@@ -99,7 +99,6 @@ sealed trait Executable:
   // exit status speak for it.
   protected def failing: Command
 
-
   // Inline, so the context-function sugar never becomes a checked result type (which would
   // hide the `computable` parameter); the body is checked at each expansion site instead.
   inline def apply()
@@ -294,11 +293,13 @@ case class Command(arguments: Text*) extends Executable:
     ( using working: WorkingDirectory, environment: Environment )
     ( using Tactic[Exec.Error], (Exec.Event is Loggable)^ )
   :   Pid =
+
     detached(Command.detached(Command.builder(arguments.to(List)), abstractable.genericize(log)))
 
   def detach()(using working: WorkingDirectory, environment: Environment)
     ( using Tactic[Exec.Error], (Exec.Event is Loggable)^ )
   :   Pid =
+
     detached(Command.detached(Command.builder(arguments.to(List)), Unset))
 
   private def detached(processBuilder: ProcessBuilder)
@@ -364,11 +365,13 @@ case class Pipeline(commands: Command*) extends Executable:
     ( using working: WorkingDirectory, environment: Environment )
     ( using Tactic[Exec.Error], (Exec.Event is Loggable)^ )
   :   Pid =
+
     detached(abstractable.genericize(log))
 
   def detach()(using working: WorkingDirectory, environment: Environment)
     ( using Tactic[Exec.Error], (Exec.Event is Loggable)^ )
   :   Pid =
+
     detached(Unset)
 
   private def detached(log: Optional[Text])

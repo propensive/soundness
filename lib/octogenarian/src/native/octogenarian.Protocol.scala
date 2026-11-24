@@ -79,35 +79,32 @@ private[octogenarian] class Protocol(channel: Channel^) extends Peer:
 
     val cached: List[(Text, Git.Hash, Optional[Text], Optional[Git.Hash])] | Null = listed.get
 
-    cached match
-      case list: List[(Text, Git.Hash, Optional[Text], Optional[Git.Hash])] @unchecked => list
+    if cached != null then cached else
+      ensureV2()
 
-      case _ =>
-        ensureV2()
+      val request =
+        Pktline.concatenate
+          ( List
+              ( List(Pktline.line(t"command=ls-refs\n"), Pktline.line(t"$agent\n")),
+                List(Pktline.delim),
+                List(Pktline.line(t"peel\n"), Pktline.line(t"symrefs\n"), Pktline.flush) ) )
 
-        val request =
-          Pktline.concatenate
-            ( List
-                ( List(Pktline.line(t"command=ls-refs\n"), Pktline.line(t"$agent\n")),
-                  List(Pktline.delim),
-                  List(Pktline.line(t"peel\n"), Pktline.line(t"symrefs\n"), Pktline.flush) ) )
+      val reader = channel.exchange(uploadPack, request)
 
-        val reader = channel.exchange(uploadPack, request)
+      def parse(line: Pktline.Packet.Line): (Text, Git.Hash, Optional[Text], Optional[Git.Hash]) =
+        val fields = line.text.trim.cut(t" ")
+        val hash = Git.Hash.unsafe(Refstore.nth(fields, 0).or(Git.Hash.zero.text))
+        val name = Refstore.nth(fields, 1).or(t"")
+        val symref = fields.filter(_.starts(t"symref-target:")).head.let(_.skip(14))
 
-        def parse(line: Pktline.Packet.Line): (Text, Git.Hash, Optional[Text], Optional[Git.Hash]) =
-          val fields = line.text.trim.cut(t" ")
-          val hash = Git.Hash.unsafe(Refstore.nth(fields, 0).or(Git.Hash.zero.text))
-          val name = Refstore.nth(fields, 1).or(t"")
-          val symref = fields.filter(_.starts(t"symref-target:")).head.let(_.skip(14))
+        val peeled =
+          fields.filter(_.starts(t"peeled:")).head.let(_.skip(7)).let(Git.Hash.unsafe(_))
 
-          val peeled =
-            fields.filter(_.starts(t"peeled:")).head.let(_.skip(7)).let(Git.Hash.unsafe(_))
+        (name, hash, symref, peeled)
 
-          (name, hash, symref, peeled)
-
-        val result = reader.section().map(parse(_))
-        listed.set(result)
-        result
+      val result = reader.section().map(parse(_))
+      listed.set(result)
+      result
 
   private def peeledEntry
     ( name: Text, peeled: Git.Hash )

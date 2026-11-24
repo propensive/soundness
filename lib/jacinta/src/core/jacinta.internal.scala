@@ -1158,14 +1158,14 @@ object internal:
 
     def summonField(field: Field): Expr[Json.Field | Null] =
       if field.kind != InstanceK then '{null}
-      else field.fieldType.asType match
+      else field.fieldType.asType.absolve match
         case '[fieldType] =>
           Expr.summon[fieldType is Json.Field].getOrElse:
             report.errorAndAbort
               ( s"jacinta: no Json.Field instance for field ${field.name}: " +
                 field.fieldType.show )
 
-    def declaredDefault(field: Field): Expr[Any] = field.fieldType.asType match
+    def declaredDefault(field: Field): Expr[Any] = field.fieldType.asType.absolve match
       case '[fieldType] =>
         '{wisteria.internal.default[value, fieldType](${Expr(field.index)}): Any}
 
@@ -1175,7 +1175,7 @@ object internal:
       else if fieldType =:= TypeRepr.of[Double] then Literal(DoubleConstant(0.0))
       else if fieldType =:= TypeRepr.of[Float] then Literal(FloatConstant(0.0f))
       else if fieldType =:= TypeRepr.of[Boolean] then Literal(BooleanConstant(false))
-      else fieldType.asType match
+      else fieldType.asType.absolve match
         case '[fieldType] => '{null.asInstanceOf[fieldType]}.asTerm
 
     def body
@@ -1220,7 +1220,7 @@ object internal:
       val arms = locals.map: local =>
         val index = local.field.index
 
-        val read: Term = local.field.fieldType.asType match
+        val read: Term = local.field.fieldType.asType.absolve match
           case '[fieldType] =>
             val raw: Expr[fieldType] = local.field.kind match
               case IntK     => '{$reader.long().toInt}.asExprOf[fieldType]
@@ -1273,7 +1273,7 @@ object internal:
           val wordRef = Ref(word).asExprOf[Long]
           val highRef = Ref(high).asExprOf[Long]
 
-          def chain(remaining: List[Field]): Term = remaining match
+          def chain(remaining: List[Field]): Term = remaining.absolve match
             case Nil => '{Json.KeyTable.Unknown}.asTerm
 
             case field :: rest => field.packed match
@@ -1289,12 +1289,12 @@ object internal:
           // found here and spliced as arithmetic on the key's two words: the slot it computes
           // selects one field, and one comparison confirms that the key is that field's name.
           def literals(remaining: List[Field]): scala.collection.immutable.List[(Int, Long, Long)] =
-            remaining match
+            remaining.absolve match
               case Nil => scala.collection.immutable.Nil
 
               case field :: rest => field.packed match
                 case None                   => literals(rest)
-                case Some((low, highWord)) => (field.index, low, highWord) :: literals(rest)
+                case Some((low, highWord))  => (field.index, low, highWord) :: literals(rest)
 
           val hashed: Expr[Int] | Null =
             PerfectHash.dispatch(literals(fields), wordRef, highRef, '{Json.KeyTable.Unknown})
@@ -1342,7 +1342,7 @@ object internal:
       val absents: List[Term] = locals.map: local =>
         val index = local.field.index
 
-        local.field.fieldType.asType match
+        local.field.fieldType.asType.absolve match
           case '[fieldType] =>
             val onAbsent: Expr[fieldType] = local.field.kind match
               case InstanceK =>
@@ -1482,7 +1482,7 @@ object internal:
     val arity = children.length
 
     def summonVariant(index: Int): Expr[Json.Field] =
-      variantTypes(index).asType match
+      variantTypes(index).asType.absolve match
         case '[variantType] =>
           Expr.summon[variantType is Json.Field].getOrElse:
             report.errorAndAbort
@@ -1515,7 +1515,7 @@ object internal:
               abort(Variant.Error[value]($wire))
           }
       else
-        variantTypes(index).asType match
+        variantTypes(index).asType.absolve match
           case '[type variantType <: value; variantType] =>
             ' {
                 if $wireVariants.readUnchecked(${Expr(index)}) == $wireString then

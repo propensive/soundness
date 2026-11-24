@@ -32,10 +32,8 @@
                                                                                                   */
 package facsimile
 
-import anticipation.*
 import gesticulate.*
 import prepositional.*
-import zephyrine.*
 
 package detectables:
   // The `%PDF-` which opens the header line.

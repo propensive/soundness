@@ -61,7 +61,8 @@ object internal:
     val renamed = symbol.declaredMethods.exists(_.name == "toString")
 
     val cases: scala.collection.immutable.List[(Int, String)] =
-      if renamed then scala.collection.immutable.Nil else symbol.children.map(_.name).zipWithIndex.map(_.swap)
+      if renamed then scala.collection.immutable.Nil
+      else symbol.children.map(_.name).zipWithIndex.map(_.swap)
 
     ' {
         new Enumerable:

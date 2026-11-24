@@ -87,8 +87,7 @@ object Jwt:
       case Json.Error(_) => Jose.Error(Jose.Error.Reason.Claim(name))
 
     . protect:
-        json(name).as[Optional[Double]].let: seconds =>
-          Instant.of[Unix]((seconds*1000.0).toLong)
+        json(name).as[Optional[Double]].let: seconds => Instant.of[Unix]((seconds*1000.0).toLong)
 
   // `aud` is an array of strings or, for a single audience, one string (RFC 7519 §4.1.3).
   private def audience(json: Json)(using Tactic[Jose.Error], Diagnostics): List[Text] =
@@ -115,14 +114,11 @@ object Jwt:
       case List(single) => json2.updateDynamic("aud")(single)
       case several      => json2.updateDynamic("aud")(several)
 
-    val json4 = claims.expiry.lay(json3): instant =>
-      json3.updateDynamic("exp")(seconds(instant))
+    val json4 = claims.expiry.lay(json3): instant => json3.updateDynamic("exp")(seconds(instant))
 
-    val json5 = claims.notBefore.lay(json4): instant =>
-      json4.updateDynamic("nbf")(seconds(instant))
+    val json5 = claims.notBefore.lay(json4): instant => json4.updateDynamic("nbf")(seconds(instant))
 
-    val json6 = claims.issuedAt.lay(json5): instant =>
-      json5.updateDynamic("iat")(seconds(instant))
+    val json6 = claims.issuedAt.lay(json5): instant => json5.updateDynamic("iat")(seconds(instant))
 
     new Jwt(claims, claims.id.lay(json6)(json6.updateDynamic("jti")(_)))
 
@@ -175,6 +171,7 @@ case class Jwt(claims: Jwt.Claims, json: Json):
   def sign[cipher <: Cipher](key: PrivateKey[cipher]^, header: Jose.Header = Jose.Header())
     ( using algorithm: cipher is Jose.Algorithm, erased weakness: Permit[Weakness[cipher]] )
   :   Jws =
+
     Jws(payload, key, header.copy(mediaType = header.mediaType.or(t"JWT")))
 
   // Checks the claims a recipient must (RFC 7519 §7.2): that the token has not expired and

@@ -325,7 +325,6 @@ object Matrix:
 
       new Vector[result, rows](arr)
 
-
   // The constructors are inline so that the element writes are typed array stores at a call
   // site with a concrete element: inside an ordinary generic method they are boxing
   // `ScalaRunTime.array_update`s.
