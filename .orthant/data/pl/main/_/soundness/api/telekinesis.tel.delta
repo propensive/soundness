@@ -123,4 +123,4 @@ orthant 2 language
 +   entry .xFrameOptions   `xFrameOptions`: tekst
 
 @ 0 1 0 0eb656afaa6563550a3ac566f6e16164
-+ entry .FlowWindow   okno wysyłania sterowania przepływem HTTP/2: budżet bajtów przyznany przez drugą stronę, pobierany porcjami i uzupełniany przez `WINDOW_UPDATE`
++ entry .FlowWindow   okno wysyłania sterowania przepływem HTTP/2: budżet bajtów przyznany przez drugą stronę, pobierany porcjami, uzupełniany przez `WINDOW_UPDATE`

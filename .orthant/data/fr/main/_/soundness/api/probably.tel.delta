@@ -1,6 +1,6 @@
 orthant 2 language
 
 @ 0 1 0 121365b0005725f90fae8ad030b9c910
-+   entry #diagnose
++   entry .diagnose
 +     info
 +         les détails d'un échec, tirés du diagnostic mis en cache du site

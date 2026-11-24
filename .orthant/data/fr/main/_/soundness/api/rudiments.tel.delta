@@ -52,7 +52,7 @@ orthant 2 language
 +     plateforme le fournit.
 
 @ 0 1 0 0535eecbae15bc3f109040c2d5863b35
-+ entry .sorting
++ entry .sortingInternal
 +   info
 +       la plomberie entre une collection et le tableau que trie un algorithme de tri
 
