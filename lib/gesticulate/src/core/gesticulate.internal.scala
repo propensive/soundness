@@ -100,7 +100,7 @@ object internal:
     val badChar: Optional[Char] = segments.fuse(Unset: Optional[Char]):
       state.or(next.chars.seek { c => c.isWhitespace || c.isControl || specials.has(c) })
 
-    badChar match
+    badChar.absolve match
       case char: Char =>
         m"$char is not a valid character in a media-type subtype"
 

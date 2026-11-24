@@ -145,7 +145,7 @@ class Classfile private (model: jlc.ClassModel):
             count: Int )
         :   List[Bytecode.Instruction] =
 
-          todo match
+          todo.absolve match
             case Nil => done.reverse
 
             case next :: todo =>

@@ -261,7 +261,7 @@ trait SyntaxMatching:
       def loop(depth: Int, acc: List[ValueToken], rest: List[ValueToken])
       :   (List[ValueToken], Optional[List[ValueToken]]) =
 
-        rest match
+        rest.absolve match
           case Nil =>
             (acc.reverse, Unset)
 

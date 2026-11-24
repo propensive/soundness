@@ -201,7 +201,8 @@ object internal:
       case other =>
         val symbol = other.typeSymbol
         val product = symbol.flags.is(Flags.Case) && !symbol.flags.is(Flags.Module)
-        symbol.isClassDef && (product || symbol.flags.is(Flags.Sealed) || symbol.flags.is(Flags.Enum))
+        symbol.isClassDef &&
+          (product || symbol.flags.is(Flags.Sealed) || symbol.flags.is(Flags.Enum))
 
     val symbol = classOf(TypeRepr.of[product])
     val parameters = symbol.primaryConstructor.paramSymss.flatten.filter(_.isTerm)
@@ -238,7 +239,8 @@ object internal:
       val scalars = all(TypeRepr.of[encoding]) ::: all(TypeRepr.of[width]) ::: interns
 
       scalars.headOption.foreach: annotation =>
-        if structural(parameter.info) then halt
+        if structural(parameter.info)
+        then halt
           ( m"""the field ${parameter.name} is not a scalar, so it has no encoding, width or
                 interning to declare""",
             annotation.pos )
@@ -247,10 +249,11 @@ object internal:
       then halt(m"a scalar declares both a `width` and `intern` (↯/t.2.31)", interns.head.pos)
 
       if widths.nonEmpty && encodings.isEmpty then
-        val encoded = parameter.info.asType match
+        val encoded = parameter.info.asType.absolve match
           case '[fieldType] => Expr.summon[fieldType is Tel.Encoded[?]].isDefined
 
-        if !encoded then halt
+        if !encoded
+        then halt
           ( m"a scalar declares a `width` but no `encoding` (↯/t.2.27)",
             all(TypeRepr.of[width]).head.pos )
 
@@ -262,7 +265,7 @@ object internal:
           '{proscenium.List(${Varargs(index.map { path => '{${Expr(path)}.tt} })}*)}
 
         val encoding: Expr[Optional[Text]] =
-          encodings.headOption.fold('{Unset})(name => '{${Expr(name)}.tt})
+          encodings.headOption.fold('{Unset}): name => '{${Expr(name)}.tt}
 
         val width: Expr[Optional[Int]] = widths.headOption.fold('{Unset})(Expr(_))
 
@@ -943,14 +946,14 @@ object internal:
 
     def summonField(field: Field): Expr[Tel.Field | Null] =
       if field.kind != InstanceK then '{null}
-      else field.fieldType.asType match
+      else field.fieldType.asType.absolve match
         case '[fieldType] =>
           Expr.summon[fieldType is Tel.Field].getOrElse:
             report.errorAndAbort
               ( s"stratiform: no Tel.Field instance for field ${field.name}: " +
                 field.fieldType.show )
 
-    def declaredDefault(field: Field): Expr[Any] = field.fieldType.asType match
+    def declaredDefault(field: Field): Expr[Any] = field.fieldType.asType.absolve match
       case '[fieldType] =>
         '{wisteria.internal.default[value, fieldType](${Expr(field.index)}): Any}
 
@@ -958,7 +961,7 @@ object internal:
       if fieldType =:= TypeRepr.of[Int] then Literal(IntConstant(0))
       else if fieldType =:= TypeRepr.of[Long] then Literal(LongConstant(0L))
       else if fieldType =:= TypeRepr.of[Boolean] then Literal(BooleanConstant(false))
-      else fieldType.asType match
+      else fieldType.asType.absolve match
         case '[fieldType] => '{null.asInstanceOf[fieldType]}.asTerm
 
     def body
@@ -1041,7 +1044,7 @@ object internal:
                       Assign(Ref(local.seen), Literal(BooleanConstant(true))) ),
                   unit ) )
 
-        val rhs: Term = local.field.fieldType.asType match
+        val rhs: Term = local.field.fieldType.asType.absolve match
           case '[fieldType] =>
             local.field.kind match
               case IntK =>
@@ -1087,7 +1090,7 @@ object internal:
                   ' {
                       Tel.Parsable.focusing($foci, $reader, $keyText):
                         $reader.atom()
-                        . lay { $reader.fault(Tel.Error.Reason.Absent); "" } { atom => atom.s }
+                        . lay { $reader.fault(Tel.Error.Reason.Absent); "" } (_.s)
                     }
 
                   . asTerm
@@ -1168,7 +1171,7 @@ object internal:
                     Assign(Ref(local.atomFilled), Literal(BooleanConstant(true))) ),
                 unit )
 
-          val deliver: Term = local.field.fieldType.asType match
+          val deliver: Term = local.field.fieldType.asType.absolve match
             case '[fieldType] =>
               local.field.kind match
                 case IntK =>
@@ -1333,7 +1336,7 @@ object internal:
       val absents: List[Term] = locals.map: local =>
         val index = local.field.index
 
-        local.field.fieldType.asType match
+        local.field.fieldType.asType.absolve match
           case '[fieldType] =>
             val keyText: Expr[Text] = '{$keys.readUnchecked(${Expr(index)}).tt}
 

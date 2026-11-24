@@ -39,7 +39,6 @@ import scala.quoted.*
 
 import anticipation.*
 import chiaroscuro.*
-import prepositional.*
 import rudiments.*
 import spectacular.*
 import vacuous.*
@@ -141,7 +140,7 @@ object Dissector extends Diagnostician:
   private def makeCompiler(): staging.Compiler =
     staging.Compiler.make(getClass.getClassLoader.nn)
       ( using staging.Compiler.Settings.make
-                (None, "-Yretain-trees" :: DissectorOptions.options) )
+                ( None, "-Yretain-trees" :: DissectorOptions.options ) )
 
   private var compiler: staging.Compiler | Null = null
 
@@ -219,10 +218,11 @@ object Dissector extends Diagnostician:
                 scala.List:
                   TestEvent.DissectRow
                     ( 0, code(node), node.start, node.end, recorder.values.get(-1).nn, "thrown".tt )
-              else scala.Nil
+              else
+                scala.Nil
 
             // A subexpression which renders as it is written — a literal — says nothing.
-            case text: Text =>
+            case text: Text @unchecked =>
               if text == code(node) && node.id != root then scala.Nil else
                 scala.List:
                   TestEvent.DissectRow
@@ -237,8 +237,8 @@ object Dissector extends Diagnostician:
         then scala.List(Verdict.Detail.Dissection(site.source, List.from(rows), reproducible))
         else if !comparison.isEmpty then scala.Nil
         else recorder.values.get(compiled.subject) match
-          case null       => scala.Nil
-          case text: Text => scala.List(Verdict.Detail.Message(text))
+          case null                  => scala.Nil
+          case text: Text @unchecked => scala.List(Verdict.Detail.Message(text))
 
       List.from(comparison ++ dissection)
 
@@ -262,7 +262,7 @@ object Dissector extends Diagnostician:
   :   Compiled =
 
     given staging.Compiler = compiler match
-      case null                       => makeCompiler().tap { made => compiler = made }
+      case null                       => makeCompiler().tap: made => compiler = made
       case compiler: staging.Compiler => compiler
 
     var nodes: scala.List[Node] = scala.Nil
@@ -403,14 +403,15 @@ object Dissector extends Diagnostician:
       // for `List[element]` is not one for `List[element] { type Occupied = true }`, the type
       // of a list literal, since `Self` is invariant.
       def plain(tpe: TypeRepr): TypeRepr = tpe.widen.dealias match
-        case Refinement(parent, _, _)    => plain(parent)
+        case Refinement(parent, _, _)     => plain(parent)
         case AnnotatedType(underlying, _) => plain(underlying)
         case other                        => other
 
       // A reference to an object is not a value worth showing.
       def recordable(term: Term): Boolean =
         !methodic(term.tpe) && !(term.tpe.widen =:= TypeRepr.of[Unit]) &&
-          !vague(term.tpe.widen) && !term.tpe.widen.typeSymbol.flags.is(Flags.Module) && !term.symbol.flags.is(Flags.Module) &&
+          !vague(term.tpe.widen) && !term.tpe.widen.typeSymbol.flags.is(Flags.Module) &&
+          !term.symbol.flags.is(Flags.Module) &&
           !term.symbol.flags.is(Flags.Package)
 
       var counter: Int = 0
@@ -429,14 +430,14 @@ object Dissector extends Diagnostician:
       ' {
           (value: Any, captures: scala.Array[Any], recorder: Recorder) =>
             $ {
-                def record(id: Int, term: Term): Term = plain(term.tpe).asType match
+                def record(id: Int, term: Term): Term = plain(term.tpe).asType.absolve match
                   case '[t] =>
                     val expr = term.asExprOf[t]
 
                     if shown then '{Dissector.show[t](recorder, ${Expr(id)}, $expr)}.asTerm
                     else '{Dissector.inspect[t](recorder, ${Expr(id)}, $expr)}.asTerm
 
-                def live(term: Term): Term = term.tpe.widen.asType match
+                def live(term: Term): Term = term.tpe.widen.asType.absolve match
                   case '[t] => '{value.asInstanceOf[t]}.asTerm
 
                 def captured(term: Term): Term =
@@ -444,7 +445,7 @@ object Dissector extends Diagnostician:
                   if !locals.contains(name) then locals = locals :+ name
                   val index: Expr[Int] = Expr(locals.indexOf(name))
 
-                  term.tpe.widen.asType match
+                  term.tpe.widen.asType.absolve match
                     case '[t] => '{captures($index).asInstanceOf[t]}.asTerm
 
                 def accessible(symbol: Symbol): Boolean =
@@ -473,8 +474,7 @@ object Dissector extends Diagnostician:
                         else
                           arguments.zip(byName.padTo(arguments.length, false)).map:
                             (argument, lazily) =>
-                              if lazily then argument
-                              else instrument.transformTerm(argument)(owner)
+                              if lazily then argument else instrument.transformTerm(argument)(owner)
 
                       Apply(function2, arguments2)
 
@@ -544,56 +544,60 @@ object Dissector extends Diagnostician:
                     subject = id
                     val identity: Term = Ref(parameterSymbol)
                     Block(scala.List(record(id, live(identity))), Literal(BooleanConstant(false)))
-                  else unwrap(body2) match
-                    // An equality is evaluated one side at a time, so that the two sides can be
-                    // contrasted, as values of the type of whichever side is the wider.
-                    case equality@Apply(select@Select(left, "=="), scala.List(right))
-                      if contrasted =>
+                  else
+                    unwrap(body2) match
+                      // An equality is evaluated one side at a time, so that the two sides can be
+                      // contrasted, as values of the type of whichever side is the wider.
+                      case equality@Apply(select@Select(left, "=="), scala.List(right))
+                        if contrasted =>
 
-                      val id = fresh(-1, equality)
-                      val instrument = Instrument(id)
-                      val left2 = instrument.transformTerm(left)(Symbol.spliceOwner)
-                      val right2 = instrument.transformTerm(right)(Symbol.spliceOwner)
-                      val reversed: Boolean = right.symbol == parameterSymbol
-                      val leftType = plain(left.tpe)
-                      val rightType = plain(right.tpe)
+                        val id = fresh(-1, equality)
+                        val instrument = Instrument(id)
+                        val left2 = instrument.transformTerm(left)(Symbol.spliceOwner)
+                        val right2 = instrument.transformTerm(right)(Symbol.spliceOwner)
+                        val reversed: Boolean = right.symbol == parameterSymbol
+                        val leftType = plain(left.tpe)
+                        val rightType = plain(right.tpe)
 
-                      (leftType.asType, rightType.asType) match
-                        case ('[l], '[r]) =>
-                          val result: Expr[Boolean] =
-                            ' {
-                                val leftValue: l = ${left2.asExprOf[l]}
-                                val rightValue: r = ${right2.asExprOf[r]}
+                        (leftType.asType, rightType.asType).absolve match
+                          case ('[l], '[r]) =>
+                            val result: Expr[Boolean] =
+                              ' {
+                                  val leftValue: l = ${left2.asExprOf[l]}
+                                  val rightValue: r = ${right2.asExprOf[r]}
 
-                                $ {
-                                    // The side which is not the predicate's parameter is the
-                                    // expected one; the comparison is made at the wider type.
-                                    def sides[t: Type](left: Expr[t], right: Expr[t]): Expr[Unit] =
-                                      if reversed
-                                      then '{Dissector.contrast[t](recorder, $left, $right)}
-                                      else '{Dissector.contrast[t](recorder, $right, $left)}
+                                  $ {
+                                      // The side which is not the predicate's parameter is the
+                                      // expected one; the comparison is made at the wider type.
+                                      def sides[t: Type](left: Expr[t], right: Expr[t])
+                                      :   Expr[Unit] =
 
-                                    val contrast: Expr[Unit] =
-                                      if rightType <:< leftType
-                                      then sides[l]('leftValue, '{rightValue.asInstanceOf[l]})
-                                      else if leftType <:< rightType
-                                      then sides[r]('{leftValue.asInstanceOf[r]}, 'rightValue)
-                                      else '{()}
+                                        if reversed
+                                        then '{Dissector.contrast[t](recorder, $left, $right)}
+                                        else '{Dissector.contrast[t](recorder, $right, $left)}
 
-                                    val test: Expr[Boolean] =
-                                      Apply
-                                        ( Select('leftValue.asTerm, select.symbol),
-                                          scala.List('rightValue.asTerm) )
-                                      . asExprOf[Boolean]
+                                      val contrast: Expr[Unit] =
+                                        if rightType <:< leftType
+                                        then sides[l]('leftValue, '{rightValue.asInstanceOf[l]})
+                                        else if leftType <:< rightType
+                                        then sides[r]('{leftValue.asInstanceOf[r]}, 'rightValue)
+                                        else '{()}
 
-                                    '{$contrast; $test}
-                                  }
-                              }
+                                      val test: Expr[Boolean] =
+                                        Apply
+                                          ( Select('leftValue.asTerm, select.symbol),
+                                            scala.List('rightValue.asTerm) )
 
-                          record(id, result.asTerm)
+                                        . asExprOf[Boolean]
 
-                    case other =>
-                      Instrument(-1).transformTerm(other)(Symbol.spliceOwner)
+                                      '{$contrast; $test}
+                                    }
+                                }
+
+                            record(id, result.asTerm)
+
+                      case other =>
+                        Instrument(-1).transformTerm(other)(Symbol.spliceOwner)
 
                 Block(scope(Symbol.spliceOwner), instrumented).asExprOf[Boolean]
               }

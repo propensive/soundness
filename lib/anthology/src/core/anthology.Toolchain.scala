@@ -111,8 +111,6 @@ object Toolchain:
     def edit(format: Artifact, settings: Any): Any
 
   object Triple:
-    import anticipation.*
-    import gossamer.*
     import vacuous.*
 
     // The build host's target, read from the JVM's `os.name` and `os.arch` properties, or

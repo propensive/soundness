@@ -128,12 +128,27 @@ object settings:
     "-Wconf:origin=.*queryParameters.arbitraryQueryParameter:s",
     "-Wconf:origin=.*CssClass.nominative:s",
     "-Wconf:origin=.*Async.nominative:s",
+    // `import scala.compiletime` is reported unused when its only uses (`compiletime.summonFrom`,
+    // `compiletime.erasedValue`) are in `inline` bodies, yet removing it breaks compilation.
+    "-Wconf:origin=scala.compiletime:s",
     // `frames` is deliberately `inline` so the anonymous `Iterator` expands (with the by-name
     // `frame` thunk and the caller's `Cursor` operand-type refinement) at each call site.
     "-Wconf:src=.*obligatory.Framable.*&msg=anonymous class:s",
+    // Likewise, these build an instance at each expansion on purpose: the derivations (jacinta,
+    // stratiform, exoskeleton) need the call site's types, and the rest close over an `inline`
+    // parameter (a stream, a handler, a rewriting lambda) that must be inlined into the body.
+    "-Wconf:src=.*(exegesis.rewrite|zephyrine.Spring|ambience.variables|telekinesis.Servable|telekinesis_wasi|jacinta.Json|stratiform.Tel2|exoskeleton.Interpretable)\\.scala&msg=anonymous class:s",
     // `whereas` applies a deliberately-partial `PartialFunction` as a total function; the unmatched
     // exceptions are routed to the trailing `.recover`, so the match is intentionally non-exhaustive.
     "-Wconf:src=.*synesthesia.McpServer.*&msg=match may not be exhaustive:s",
+    // A file named `<package>.<Type>.scala` (the convention every library follows) that has
+    // top-level definitions gets a wrapper object `<package>.<Type>$package`, whose dotted name
+    // the compiler encodes on the classpath and warns about once per file. The names are only
+    // ever referenced by the compiler itself, so the warning is noise under this convention.
+    "-Wconf:msg=will be encoded on the classpath:s",
+    // Generated sources (such as cataclysm's table of CSS property grammars) are data, not code
+    // anyone reads, so the flare style rules (whose messages all carry `↯`) do not apply there.
+    "-Wconf:src=.*generatedSources\\.dest.*&msg=↯:s",
     // "-Wsafe-init",
     "-Xmax-inlines", "32",
     // Record source paths in TASTy relative to the repository (`lib/<library>/src/…`), not as the

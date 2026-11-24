@@ -82,17 +82,20 @@ object Markup:
 
       builder.toString.tt
 
-  /** Wrap `body` in a marker of the given kind, as the compiler's
-   *  `DiagnosticMarkup.wrap` does. `body` may itself contain balanced markers.
-   *  A macro uses this to write a message whose structure survives the compiler:
-   *  under `-Zsemantic-diagnostics` the markers reach `parse` intact, and every
-   *  other consumer sees them stripped, leaving `body`'s visible text. */
+  // Wrap `body` in a marker of the given kind, as the compiler's
+  // `DiagnosticMarkup.wrap` does. `body` may itself contain balanced markers.
+  // A macro uses this to write a message whose structure survives the compiler:
+  // under `-Zsemantic-diagnostics` the markers reach `parse` intact, and every
+  // other consumer sees them stripped, leaving `body`'s visible text.
   def wrap(kind: Text, attributes: List[(Text, Text)], body: Text): Text =
-    val pairs = attributes.map { (key, value) => t"$key=${encode(value)}" }
+    val pairs = attributes.map: (key, value) => t"$key=${encode(value)}"
     val header = pairs.join(AttrSep.toString.tt)
     t"$Start$kind$AttrsSep$header$TextSep$body$End"
 
-  /** The part a node plays in the tree which explains a failed contextual resolution. */
+  object Role:
+    def apply(word: Text): Optional[Role] = values.find(_.word == word).getOrElse(Unset)
+
+  // The part a node plays in the tree which explains a failed contextual resolution.
   enum Role(val glyph: Text):
     case Resolving extends Role(t"■")
     case Candidate extends Role(t"▪")
@@ -102,9 +105,6 @@ object Markup:
     case Found     extends Role(t"✓")
 
     def word: Text = toString.tt.lower
-
-  object Role:
-    def apply(word: Text): Optional[Role] = values.find(_.word == word).getOrElse(Unset)
 
   private def typed(kind: Text, attrs: List[(Text, Text)], children: List[Markup]): Markup =
     def attr(name: Text): Optional[Text] =
@@ -140,10 +140,10 @@ object Markup:
 
       case _      => Spanned(kind, rendition, children)
 
-  /** Parse a marked-up string into a tree, following the compiler's
-   *  `DiagnosticMarkup.parse` semantics exactly: anything that does not form a
-   *  complete marker is dropped and the surrounding content treated as plain
-   *  text; the children of an unterminated marker are spliced into its parent. */
+  // Parse a marked-up string into a tree, following the compiler's
+  // `DiagnosticMarkup.parse` semantics exactly: anything that does not form a
+  // complete marker is dropped and the surrounding content treated as plain
+  // text; the children of an unterminated marker are spliced into its parent.
   def parse(text: Text): List[Markup] =
     val input: String = text.s
 
@@ -173,7 +173,7 @@ object Markup:
         if !headerOk then index += 1 else
           stack.stdlib.head.flush()
 
-          val attrs = input.substring(kindEnd + 1, attrsEnd).nn match
+          val attrs = input.substring(kindEnd + 1, attrsEnd).nn.absolve match
             case ""         => Nil
 
             case attributes =>
@@ -229,7 +229,7 @@ object Markup:
     root.flush()
     root.children.to(List)
 
-  /** The string with all markers removed, keeping only the visible text. */
+  // The string with all markers removed, keeping only the visible text.
   def plain(text: Text): Text =
     if !marked(text) then text else parse(text).map(_.plain).join
 
@@ -263,7 +263,7 @@ enum Markup:
       repeated: Boolean,
       children: List[Markup] )
 
-  /** The child nodes of a `Tree` or a `Node`, without the text that draws them. */
+  // The child nodes of a `Tree` or a `Node`, without the text that draws them.
   def nodes: List[Markup.Node] = this match
     case Tree(_, children)          => children.sweep { case node: Node => node }
     case Node(_, _, _, _, children) => children.sweep { case node: Node => node }

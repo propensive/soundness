@@ -362,7 +362,7 @@ object Tui:
     // freely collected and traversed; the installed callback genuinely captures the running form's
     // event loop, reconciled in `bindWake`. Atomic so that a mutating task sees the callback the
     // form bound.
-    private val onChange: Atomic.Ref[() -> Unit] = Atomic.Ref { () => () }
+    private val onChange: Atomic.Ref[() -> Unit] = Atomic.Ref: () => ()
 
     // Install the running form's repaint trigger. The callback captures the form's event loop,
     // which outlives this assignment, so it escapes into the long-lived container — a growing
@@ -408,14 +408,8 @@ object Tui:
     def remove(reference: Pane): Unit = alter(_.filter(_ ne reference))
 
   object Block:
-    import anticipation.*
-    import denominative.*
-    import escapade.*
-    import gossamer.*
     import profanity.*
-    import symbolism.*
     import turbulence.*
-    import vacuous.*
 
     object Anchoring:
       given default: Anchoring = TopAfterResize
@@ -491,7 +485,6 @@ object Tui:
     import denominative.*
     import escapade.*
     import gossamer.*
-    import profanity.*
     import symbolism.*
     import turbulence.*
     import vacuous.*
@@ -932,13 +925,8 @@ object Tui:
       if anchoring == Block.Anchoring.Fullscreen && started then Out.print(t"\e[?1049l")
 
   object Screen:
-    import anticipation.*
-    import denominative.*
-    import escapade.*
-    import gossamer.*
     import profanity.*
     import turbulence.*
-    import vacuous.*
 
     // Build a fullscreen root covering the whole terminal, reading its size live (so a
     // resize is reflected the next time the layout is solved) and writing through its
@@ -965,7 +953,6 @@ object Tui:
     import denominative.*
     import escapade.*
     import gossamer.*
-    import profanity.*
     import turbulence.*
     import vacuous.*
 
@@ -1866,7 +1853,7 @@ object Tui:
 
     // A no-op until the cell is bound into a running form. Atomic too, so that a task updating the
     // cell sees the callback the form bound, rather than a stale no-op that never wakes the form.
-    private val onChange: Atomic.Ref[() -> Unit] = Atomic.Ref { () => () }
+    private val onChange: Atomic.Ref[() -> Unit] = Atomic.Ref: () => ()
 
     // Install the running form's repaint trigger. As in `Panes.bindWake`, the callback genuinely
     // captures the form's event loop and escapes into this longer-lived cell — a growing capture

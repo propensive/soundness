@@ -41,7 +41,7 @@ import denominative.*
 import hieroglyph.*
 import prepositional.*
 import rudiments.*
-import zephyrine.{stream as _, *}
+import zephyrine.*
 
 object Writable:
   // Drain a byte stream into an `OutputStream`, window by window, straight

@@ -36,7 +36,6 @@ import scala.caps
 import scala.collection.mutable as scm
 
 import anticipation.*
-import contingency.*
 import denominative.*
 import prepositional.*
 import zephyrine.*

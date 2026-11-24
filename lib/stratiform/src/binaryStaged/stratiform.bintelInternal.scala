@@ -199,7 +199,7 @@ object bintelInternal:
               ( r2.TypeRepr.of[BintelInlinable], "Self",
                 r2.TypeBounds(rebuild(shape), rebuild(shape)) )
 
-          target.asType match
+          target.asType.absolve match
             case '[target] => '{scala.compiletime.summonInline[target]}
 
         val duration = (System.nanoTime - started)/1000000L
@@ -397,7 +397,7 @@ object bintelInternal:
     // is read through its type's `Decodable in Text`, as a custom scalar is, or not at all.
     val annotated: Option[String] = fieldEncoding[product](fieldName)
 
-    def encoded(leaf: TypeRepr): Any = leaf.asType match
+    def encoded(leaf: TypeRepr): Any = leaf.asType.absolve match
       case '[leafType] =>
         textDecoder[leafType].getOrElse(reject("an encoded scalar of a type with no decoder"))
 
@@ -418,7 +418,7 @@ object bintelInternal:
           case None =>
             if inner <:< TypeRepr.of[Iterable[Any]] then reject("an optional collection")
 
-            inner.asType match
+            inner.asType.absolve match
               case '[innerType] =>
                 resolve[innerType](cache) match
                   case Some(instance)
@@ -449,7 +449,7 @@ object bintelInternal:
                     Plan.Gather(Elem.Scalar(kind), elementType)
 
               case None =>
-                elementType.asType match
+                elementType.asType.absolve match
                   case '[element] =>
                     resolve[element](cache) match
                       case Some(instance)
@@ -471,7 +471,7 @@ object bintelInternal:
         else if sumVariants(tpe).isDefined then
           reject("a sum (nested sums derive to an unresolvable schema Reference)")
         else
-          tpe.asType match
+          tpe.asType.absolve match
             case '[field] =>
               resolve[field](cache) match
                 case Some(instance)
@@ -606,7 +606,7 @@ object bintelInternal:
         else if fieldType =:= TypeRepr.of[Long] then Literal(LongConstant(0L))
         else if fieldType =:= TypeRepr.of[Double] then Literal(DoubleConstant(0.0))
         else if fieldType =:= TypeRepr.of[Boolean] then Literal(BooleanConstant(false))
-        else fieldType.asType match
+        else fieldType.asType.absolve match
           case '[fieldType] => '{null.asInstanceOf[fieldType]}.asTerm
 
       val slotDefs = List.range(0, arity).map: index =>
@@ -619,7 +619,7 @@ object bintelInternal:
 
       // One scalar-payload read per builtin kind, with the text format's
       // fault semantics.
-      def leafRead(kind: Int): Expr[Any] = kind match
+      def leafRead(kind: Int): Expr[Any] = kind.absolve match
         case KInt =>
           ' {
               val atom = Text($parser.directScalar()(using $btactic))
@@ -663,7 +663,7 @@ object bintelInternal:
         case KText   => '{Text($parser.directScalar()(using $btactic))}
         case KString => '{$parser.directScalar()(using $btactic)}
 
-      def leafSentinel(kind: Int): Expr[Any] = kind match
+      def leafSentinel(kind: Int): Expr[Any] = kind.absolve match
         case KInt     => Expr(0)
         case KLong    => Expr(0L)
         case KBoolean => Expr(false)
@@ -706,7 +706,7 @@ object bintelInternal:
           case Plan.Gather(_, elementType0) =>
             val elementType = elementType0.asInstanceOf[TypeRepr]
 
-            (elementType.asType, fieldTypes(index).asType) match
+            (elementType.asType, fieldTypes(index).asType).absolve match
               case ('[element], '[fieldType]) =>
                 // Opaque alias fields have no direct `Factory`, so summon one at
                 // the underlying stdlib type and cast the builder (a no-op at
@@ -745,17 +745,17 @@ object bintelInternal:
 
         val rhs: Term = plans(index) match
           case Plan.Leaf(kind) =>
-            fieldTypes(index).asType match
+            fieldTypes(index).asType.absolve match
               case '[fieldType] =>
                 focusedOver[fieldType](leafRead(kind).asExprOf[fieldType]).asTerm
 
           case Plan.OptionalLeaf(kind) =>
-            fieldTypes(index).asType match
+            fieldTypes(index).asType.absolve match
               case '[fieldType] =>
                 focusedOver[fieldType](leafRead(kind).asExprOf[fieldType]).asTerm
 
           case Plan.Nested(instance) =>
-            fieldTypes(index).asType match
+            fieldTypes(index).asType.absolve match
               case '[fieldType] =>
                 val raw =
                   instance.asInstanceOf[BintelInlinable { type Self = fieldType }]
@@ -764,7 +764,7 @@ object bintelInternal:
                 focusedOver[fieldType](raw).asTerm
 
           case Plan.OptionalNested(instance, innerType0) =>
-            (innerType0.asInstanceOf[TypeRepr].asType, fieldTypes(index).asType) match
+            (innerType0.asInstanceOf[TypeRepr].asType, fieldTypes(index).asType).absolve match
               case ('[innerType], '[fieldType]) =>
                 val raw =
                   instance.asInstanceOf[BintelInlinable { type Self = innerType }]
@@ -773,7 +773,7 @@ object bintelInternal:
                 focusedOver[fieldType]('{$raw.asInstanceOf[fieldType]}).asTerm
 
           case Plan.SeamText(decoder, encoding) =>
-            fieldTypes(index).asType match
+            fieldTypes(index).asType.absolve match
               case '[fieldType] =>
                 focusedOver[fieldType]
                   ('{${seamRead(decoder, encoding)}.asInstanceOf[fieldType]}).asTerm
@@ -781,7 +781,7 @@ object bintelInternal:
           case Plan.Gather(element, elementType0) =>
             val elementType = elementType0.asInstanceOf[TypeRepr]
 
-            (elementType.asType, fieldTypes(index).asType) match
+            (elementType.asType, fieldTypes(index).asType).absolve match
               case ('[element], '[fieldType]) =>
                 val builder =
                   Ref(builders(index)).asExprOf[scm.Builder[element, fieldType]]
@@ -862,7 +862,7 @@ object bintelInternal:
       val absents: List[Term] = List.range(0, arity).map: index =>
         val keyword: Expr[Text] = '{${Expr(keywords(index))}.tt}
 
-        fieldTypes(index).asType match
+        fieldTypes(index).asType.absolve match
           case '[fieldType] =>
             val absentExpr: Expr[fieldType] = plans(index) match
               case Plan.Leaf(kind) =>
@@ -955,7 +955,7 @@ object bintelInternal:
     val arity = variants.length
 
     def variantInstance(index: Int): (Type[?], BintelInlinable) =
-      variants(index)(1).asType match
+      variants(index)(1).asType.absolve match
         case '[type variantType <: sum; variantType] =>
           val instance = resolve[variantType](cache).getOrElse:
             report.errorAndAbort
@@ -967,7 +967,7 @@ object bintelInternal:
       if index == arity then
         '{abort(Bintel.Error(Bintel.Error.Reason.BadKeywordIndex))(using $btactic)}
       else
-        variants(index)(1).asType match
+        variants(index)(1).asType.absolve match
           case '[type variantType <: sum; variantType] =>
             val instance = resolve[variantType](cache).getOrElse:
               report.errorAndAbort
@@ -987,7 +987,7 @@ object bintelInternal:
       if index == arity then
         '{abort(Bintel.Error(Bintel.Error.Reason.BadKeywordIndex))(using $btactic)}
       else
-        variants(index)(1).asType match
+        variants(index)(1).asType.absolve match
           case '[type variantType <: sum; variantType] =>
             val instance = resolve[variantType](cache).getOrElse:
               report.errorAndAbort

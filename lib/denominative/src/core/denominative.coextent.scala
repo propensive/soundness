@@ -32,7 +32,6 @@
                                                                                                   */
 package denominative
 
-import prepositional.*
 import vacuous.*
 
 // Evidence that two countable values have the same size, so an index proven against one is

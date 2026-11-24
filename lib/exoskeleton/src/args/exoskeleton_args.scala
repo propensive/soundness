@@ -156,7 +156,7 @@ package interpreters:
 
         commandline.copy(parameters = parameters2, focus = focus2)
 
-      todo match
+      todo.absolve match
         case head :: tail =>
           if head.value == t"--" then push().copy(postpositional = tail)
           else if head.value.starts(t"-") then recur(tail, Nil, head, push())

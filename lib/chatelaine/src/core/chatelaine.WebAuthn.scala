@@ -32,14 +32,11 @@
                                                                                                   */
 package chatelaine
 
-import scala.reflect.Selectable.reflectiveSelectable
-
 import adversaria.*
 import anticipation.*
 import aviation.*
 import breviloquence.*
 import contingency.*
-import corpuscular.*
 import denominative.*
 import distillate.*
 import enigmatic.*
@@ -51,7 +48,6 @@ import jacinta.*
 import monotonous.*
 import prepositional.*
 import rudiments.*
-import spectacular.*
 import turbulence.*
 import vacuous.*
 import zephyrine.*
@@ -233,9 +229,10 @@ object WebAuthn:
         Account(encode(user.id), user.name, user.displayName),
         encode(challenge.bytes),
         algorithms.map(Parameter(t"public-key", _)),
-        existing.map(id => Descriptor(t"public-key", encode(id))),
+        existing.map { id => Descriptor(t"public-key", encode(id)) },
         Selection(WebAuthn.verification(verification)),
         attestation )
+
     . in[Json]
 
   // The options for authenticating, to be given to `navigator.credentials.get`. `permitted`
@@ -251,8 +248,9 @@ object WebAuthn:
     Request
       ( encode(challenge.bytes),
         relyingParty.id,
-        permitted.map(id => Descriptor(t"public-key", encode(id))),
+        permitted.map { id => Descriptor(t"public-key", encode(id)) },
         WebAuthn.verification(verification) )
+
     . in[Json]
 
   private def sha256(data: Data)(using Hash in Sha2[256]): Data = data.digest[Sha2[256]].data
@@ -318,10 +316,14 @@ object WebAuthn:
           if argument < 0L || argument > array.length then -1
           else if major == 2 || major == 3 then
             if next + argument > array.length then -1 else next + argument.toInt
-          else if major == 4 then items(next, argument)
-          else if major == 5 then items(next, argument*2L)
-          else if major == 6 then end(next)
-          else next
+          else if major == 4 then
+            items(next, argument)
+          else if major == 5 then
+            items(next, argument*2L)
+          else if major == 6 then
+            end(next)
+          else
+            next
 
     end(offset).puncture(-1).lay(-1)(_ - offset)
 
@@ -511,8 +513,8 @@ object WebAuthn:
       member(attestation, t"attStmt").or(malformed(t"the attestation has no statement"))
 
     val authenticatorData: Data = cbor(t"the attestation object"):
-      member(attestation, t"authData").lay(malformed(t"there is no authenticator data")):
-        _.byteString
+      member(attestation, t"authData")
+      . lay(malformed(t"there is no authenticator data"))(_.byteString)
 
     val data = authenticator(authenticatorData)
     vet(data, relyingParty, verification)
@@ -544,8 +546,10 @@ object WebAuthn:
       if format == t"none" then
         if statement.isMap && statement.entries == 0 then Attestation.Unattested
         else abort(WebAuthn.Error(Error.Reason.Attestation(t"a statement with the format none")))
-      else if format == t"packed" then packed(statement, signed, key, aaguid, anchors)
-      else abort(WebAuthn.Error(Error.Reason.Format(format)))
+      else if format == t"packed" then
+        packed(statement, signed, key, aaguid, anchors)
+      else
+        abort(WebAuthn.Error(Error.Reason.Format(format)))
 
     Credential(id, key, data.counter, aaguid, established)
 

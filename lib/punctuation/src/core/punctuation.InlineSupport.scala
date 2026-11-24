@@ -243,7 +243,7 @@ private[punctuation] object InlineSupport:
     while i < n && (s.charAt(i) == ' ' || s.charAt(i) == '\t') do i += 1
     if i >= n then return Unset
 
-    val destMatch = parseLinkDestination(s, i, n) match
+    val destMatch = parseLinkDestination(s, i, n).absolve match
       case dest: DestMatch => dest
       case Unset           => return Unset
 
@@ -624,7 +624,7 @@ private[punctuation] object InlineSupport:
     i = skipLinkWhitespace(s, i, end)
     if i >= end then return Unset
 
-    val destMatch = parseLinkDestination(s, i, end) match
+    val destMatch = parseLinkDestination(s, i, end).absolve match
       case dest: DestMatch => dest
       case Unset           => return Unset
 

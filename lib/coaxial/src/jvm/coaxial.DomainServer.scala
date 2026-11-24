@@ -37,10 +37,8 @@ import java.nio.channels as jnc
 import java.nio.file as jnf
 
 import anticipation.*
-import beneficence.*
 import contingency.*
 import parasite.*
-import prepositional.*
 import rudiments.*
 import vacuous.*
 

@@ -324,7 +324,7 @@ object WasmInvoke extends Materializer:
               else scala.asType.absolve match
                 case '[scala] => deriveResult[scala]
 
-          optionPayload(witType) match
+          optionPayload(witType).absolve match
             case Unset => opaque()
 
             case payloadWit: Foreign.Type =>

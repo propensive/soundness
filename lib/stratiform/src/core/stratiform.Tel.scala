@@ -929,7 +929,7 @@ object Tel extends Tel2, TelMutation, TelRevision:
           // allocated per iteration.
           var scanning = true
 
-          while scanning do reader.keyword(indent) match
+          while scanning do reader.keyword(indent).absolve match
             case Unset => scanning = false
 
             case keyword: Text =>
@@ -1227,8 +1227,7 @@ object Tel extends Tel2, TelMutation, TelRevision:
               then abort(Tel.Error(Reason.ReferenceKindMismatch))
               else abort(Tel.Error(Reason.UnresolvedReference))
 
-            . apply: scalarDef =>
-              scalarDef.scalar
+            . apply: scalarDef => scalarDef.scalar
 
           . apply: record => Tels.Struct(record.members, record.validators)
 
@@ -1433,8 +1432,8 @@ object Tel extends Tel2, TelMutation, TelRevision:
               case s: Tels.SelectRef =>
                 val selectDef = selectDefinitionOf(s, schema)
 
-                selectDef.variants.indexed.seek(_(0).keyword == atomText) match
-                  case (_, variantOffset: Ordinal) =>
+                selectDef.variants.indexed.seek(_(0).keyword == atomText).absolve match
+                  case (_, variantOffset: Ordinal @unchecked) =>
                     results += Tel.Element.Node(flatPos + variantOffset.n0, Tels.Flag, Array.empty)
 
                     if s.repeatable != Tels.Polarity.Loose then
@@ -6359,12 +6358,13 @@ object Tel extends Tel2, TelMutation, TelRevision:
         // The unclosed literal is reported at its opening delimiter, which is the
         // text a caller must fix (by matching it on a closing line).
         if !more
-        then done = recoverAt
-          ( Reason.UnclosedLiteral,
-            openingLine,
-            literalIndent + 1,
-            delimiter.length )
-          ( true )
+        then done =
+          recoverAt
+            ( Reason.UnclosedLiteral,
+              openingLine,
+              literalIndent + 1,
+              delimiter.length )
+            ( true )
         // Read a line. Inside the literal payload, line endings are not
         // subject to the document's LF/CRLF mode (per §15 the payload is
         // verbatim, with CRLF normalised to LF). One hold per payload line so

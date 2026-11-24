@@ -34,14 +34,13 @@ package soundness
 
 export
   quantitative
-  . { Amount, AmountOfSubstance, Amperes, Atto, Bytes, Candelas, Celsius, Centi, Current, Deci, Deka,
-      Designation, Dimension, Distance, Distributive, Exa, Exbi, Fahrenheit, Femto, Gibi, Giga,
-      Heat, Hecto, Information, Kelvins, Kibi, Kilo, Kilograms, Luminosity, Mass, Measure, Mebi, Mega, Metres,
-      MetricPrefix, MetricUnit, Micro, Milli, Moles, Nano, NoPrefix, Normalizable, Pebi, Peta, Pico,
-      Prefixes, Principal, Quantifiable, Quantity, Quecto, Quetta, Radix, Rankine, Ratio,
-      Redesignation,
-      Ronna, Ronto, Seconds, Tebi, Temperature, TemperatureScale, Tera, Time, Units, Yobi, Yocto,
-      Yotta, Zebi, Zepto, Zetta }
+  . { Amount, AmountOfSubstance, Amperes, Atto, Bytes, Candelas, Celsius, Centi, Current, Deci,
+      Deka, Designation, Dimension, Distance, Distributive, Exa, Exbi, Fahrenheit, Femto, Gibi,
+      Giga, Heat, Hecto, Information, Kelvins, Kibi, Kilo, Kilograms, Luminosity, Mass, Measure,
+      Mebi, Mega, Metres, MetricPrefix, MetricUnit, Micro, Milli, Moles, Nano, NoPrefix,
+      Normalizable, Pebi, Peta, Pico, Prefixes, Principal, Quantifiable, Quantity, Quecto, Quetta,
+      Radix, Rankine, Ratio, Redesignation, Ronna, Ronto, Seconds, Tebi, Temperature,
+      TemperatureScale, Tera, Time, Units, Yobi, Yocto, Yotta, Zebi, Zepto, Zetta }
 
 package temperatureScales:
   export quantitative.temperatureScales.{celsiusScale, fahrenheitScale, kelvinScale, rankineScale}

@@ -56,7 +56,8 @@ object Ledger:
 
   // `.to(Ledger)` support (see `List`): the conversion is on `Ledger.type` only, so it cannot
   // expose members of `Ledger` values.
-  given factory: [key, value] => Conversion[Ledger.type, scala.collection.Factory[(key, value), Ledger[key, value]]] =
+  given factory: [key, value]
+  =>  Conversion[Ledger.type, scala.collection.Factory[(key, value), Ledger[key, value]]] =
     _ =>
       new scala.collection.Factory[(key, value), Ledger[key, value]]:
         def fromSpecific(elements: IterableOnce[(key, value)]^): Ledger[key, value] =
@@ -71,17 +72,19 @@ object Ledger:
   // Lifting and unlifting for macros; see `List`'s companion for the full rationale
   // (public `from` splice, backticked pattern types, unlift limited to produced shapes).
   given toExpr: [key: {scala.quoted.Type, scala.quoted.ToExpr},
-                 value: {scala.quoted.Type, scala.quoted.ToExpr}]
+                  value: {scala.quoted.Type, scala.quoted.ToExpr}]
   =>  scala.quoted.ToExpr[Ledger[key, value]]:
     def apply(ledger: Ledger[key, value])(using scala.quoted.Quotes)
     :   scala.quoted.Expr[Ledger[key, value]] =
+
       '{Ledger.from(${scala.quoted.Expr.ofList(ledger.toList.map(scala.quoted.Expr(_)))})}
 
   given fromExpr: [key: {scala.quoted.Type, scala.quoted.FromExpr},
-                   value: {scala.quoted.Type, scala.quoted.FromExpr}]
+                    value: {scala.quoted.Type, scala.quoted.FromExpr}]
   =>  scala.quoted.FromExpr[Ledger[key, value]]:
     def unapply(expr: scala.quoted.Expr[Ledger[key, value]])(using scala.quoted.Quotes)
     :   Option[Ledger[key, value]] =
+
       expr match
         case '{Ledger.from($pairs: sci.List[(`key`, `value`)])} =>
           scala.quoted.FromExpr.ListFromExpr[(key, value)].unapply(pairs).map(Ledger.from(_))
@@ -94,11 +97,13 @@ object Ledger:
   def nil[key, value](ledger: Ledger[key, value]): Boolean = ledger.isEmpty
   def defines[key, value](ledger: Ledger[key, value], index: key): Boolean = ledger.contains(index)
   def at[key, value](ledger: Ledger[key, value], index: key): value = ledger(index)
+
   def read[key, value](ledger: Ledger[key, value], index: key): value | Null =
     ledger.getOrElse[value | Null](index, null)
 
   def define[key, value](ledger: Ledger[key, value], index: key, value0: value)
   :   Ledger[key, value] =
+
     ledger.updated(index, value0)
 
   def omit[key, value](ledger: Ledger[key, value], index: key): Ledger[key, value] =
@@ -109,12 +114,14 @@ object Ledger:
 
   def concat[key, value](left: Ledger[key, value], right: Ledger[key, value])
   :   Ledger[key, value] =
+
     left ++ right
 
   // `map` transforms the *values*, preserving entry order, so it builds through
   // `VectorMap.from` rather than a view's unordered `toMap`.
   def map[key, value, value2](ledger: Ledger[key, value], lambda: value => value2)
   :   Ledger[key, value2] =
+
     sci.VectorMap.from(ledger.iterator.map { (key, value0) => key -> lambda(value0) })
 
   def iterator[key, value](ledger: Ledger[key, value]): Iterator[(key, value)] = ledger.iterator

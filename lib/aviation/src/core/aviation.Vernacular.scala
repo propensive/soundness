@@ -289,7 +289,7 @@ trait Vernacular:
   protected final def dayPhrase(entry: (Optional[Int], Text)): Text =
     entry(0).lay(entry(1)): ordinal => t"${position(ordinal)} ${entry(1)}"
 
-  final def relativeTimespan(span: Timespan): Text = Vernacular.components(span) match
+  final def relativeTimespan(span: Timespan): Text = Vernacular.components(span).absolve match
     case Nil => justNow
 
     case parts@(head :: _) =>

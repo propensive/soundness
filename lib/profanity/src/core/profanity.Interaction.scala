@@ -136,7 +136,7 @@ trait Interaction[answer, question]:
 
     render(oldState, state)
 
-    events.next() match
+    events.next().absolve match
       case Iterator.Exhausted                             => Unset
       case Keypress.Ctrl('C' | 'D')                       => Unset
       case Keypress.Escape                                => Unset

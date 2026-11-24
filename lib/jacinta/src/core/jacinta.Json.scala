@@ -131,7 +131,7 @@ trait Json2 extends Json3:
     // depends on deferral), and its thunk may not capture the evidence.
     val shape: () -> Morphology =
       // [by-name-capture] deferred shape thunk may not capture evidence
-      caps.unsafe.unsafeAssumePure { () => Morphology.Opt(encodable.shape()) }
+      caps.unsafe.unsafeAssumePure: () => Morphology.Opt(encodable.shape())
 
     Json.Encodable(shape): value =>
       value.let(_.asInstanceOf[inner]).let(encodable.encode(_)).or(Json.ast(Json.Ast(Unset)))
@@ -159,7 +159,7 @@ trait Json2 extends Json3:
     caps.unsafe.unsafeAssumePure:
       val shape: () -> Morphology =
         // [by-name-capture] shape thunk over by-name decodable
-        caps.unsafe.unsafeAssumePure { () => Morphology.Opt(decodable.shape()) }
+        caps.unsafe.unsafeAssumePure: () => Morphology.Opt(decodable.shape())
 
       Json.Decodable(shape()): json =>
         // Missing keys arrive here as `Unset`; a present `null` arrives as the `JsonNull`
@@ -319,7 +319,7 @@ trait Json2 extends Json3:
 
   inline given encodable: [value] => value is Json.Encodable = summonFrom:
     case given (`value` is anticipation.Encodable in Text) =>
-      Json.Encodable(() => Morphology.Str): value => Json.ast(Json.Ast(value.encode.s))
+      Json.Encodable({ () => Morphology.Str }): value => Json.ast(Json.Ast(value.encode.s))
 
     case given Reflection[`value`] =>
       EncodableDerivation.derived
@@ -686,7 +686,7 @@ trait Json2 extends Json3:
       // back the same way by the decoder. A per-derivation constant, resolved once here.
       val variantNames: Map[Text, Text] = variantRelabelling[derivation, Json]
 
-      Json.Encodable(() => Morphology.Any):
+      Json.Encodable({ () => Morphology.Any }):
         value =>
           val discriminable = infer[derivation is Discriminable in Json]
 
@@ -877,7 +877,7 @@ object Json extends Json1, Dynamic:
 
       // Same shape-thunk laundering as `Encodable.apply`; see the comment there.
       // [by-name-capture] by-name shape0 laundered to pure thunk
-      val shape1: () -> Morphology = caps.unsafe.unsafeAssumePure { () => shape0 }
+      val shape1: () -> Morphology = caps.unsafe.unsafeAssumePure: () => shape0
 
       new Json.Decodable:
         type Self = value
@@ -1024,7 +1024,7 @@ object Json extends Json1, Dynamic:
 
       // Same shape-thunk laundering as `Encodable.apply`; see the comment there.
       // [by-name-capture] by-name shape0 laundered to pure thunk
-      val shape1: () -> Morphology = caps.unsafe.unsafeAssumePure { () => shape0 }
+      val shape1: () -> Morphology = caps.unsafe.unsafeAssumePure: () => shape0
 
       new Json.Parsable:
         type Self = value
@@ -2952,7 +2952,7 @@ object Json extends Json1, Dynamic:
     caps.unsafe.unsafeAssumePure:
       val shape: () -> Morphology =
         // [by-name-capture] shape thunk over by-name decodable
-        caps.unsafe.unsafeAssumePure { () => Morphology.Opt(decodable.shape()) }
+        caps.unsafe.unsafeAssumePure: () => Morphology.Opt(decodable.shape())
 
       // The same three policies as `optional`, yielding `None`: an absent key or a wire `null`
       // is `None` unless strict; a rejected value is `None` only under lenient faults.
@@ -2973,38 +2973,38 @@ object Json extends Json1, Dynamic:
     // depends on deferral), and its thunk may not capture the evidence.
     val shape: () -> Morphology =
       // [by-name-capture] deferred shape thunk may not capture evidence
-      caps.unsafe.unsafeAssumePure { () => Morphology.Opt(encodable.shape()) }
+      caps.unsafe.unsafeAssumePure: () => Morphology.Opt(encodable.shape())
 
     Json.Encodable(shape):
       case None        => Json.ast(Json.Ast(Unset))
       case Some(value) => encodable.encode(value)
 
   given integralEncodable: [integral: Integral] => integral is Json.Encodable =
-    Json.Encodable(() => Morphology.Whole): int => Json.ast(Json.Ast(integral.toLong(int)))
+    Json.Encodable({ () => Morphology.Whole }): int => Json.ast(Json.Ast(integral.toLong(int)))
 
   given textEncodableInJson: Text is Json.Encodable =
-    Json.Encodable(() => Morphology.Str): text => Json.ast(Json.Ast(text.s))
+    Json.Encodable({ () => Morphology.Str }): text => Json.ast(Json.Ast(text.s))
 
   given stringEncodable: String is Json.Encodable =
-    Json.Encodable(() => Morphology.Str): string => Json.ast(Json.Ast(string))
+    Json.Encodable({ () => Morphology.Str }): string => Json.ast(Json.Ast(string))
 
   given doubleEncodable: Double is Json.Encodable =
-    Json.Encodable(() => Morphology.Real): double => Json.ast(Json.Ast(double))
+    Json.Encodable({ () => Morphology.Real }): double => Json.ast(Json.Ast(double))
 
   given intEncodable: Int is Json.Encodable =
-    Json.Encodable(() => Morphology.Whole): int => Json.ast(Json.Ast(int.toLong))
+    Json.Encodable({ () => Morphology.Whole }): int => Json.ast(Json.Ast(int.toLong))
 
   given unitEncodable: Unit is Json.Encodable =
-    Json.Encodable(() => Morphology.Empty): unit => Json.ast(Json.Ast(JsonNull))
+    Json.Encodable({ () => Morphology.Empty }): unit => Json.ast(Json.Ast(JsonNull))
 
   given ordinalEncodable: Ordinal is Json.Encodable =
-    Json.Encodable(() => Morphology.Whole): ordinal => Json.ast(Json.Ast(ordinal.n0.toLong))
+    Json.Encodable({ () => Morphology.Whole }): ordinal => Json.ast(Json.Ast(ordinal.n0.toLong))
 
   given longEncodable: Long is Json.Encodable =
-    Json.Encodable(() => Morphology.Whole): long => Json.ast(Json.Ast(long))
+    Json.Encodable({ () => Morphology.Whole }): long => Json.ast(Json.Ast(long))
 
   given booleanEncodable: Boolean is Json.Encodable =
-    Json.Encodable(() => Morphology.Bool): boolean => Json.ast(Json.Ast(boolean))
+    Json.Encodable({ () => Morphology.Bool }): boolean => Json.ast(Json.Ast(boolean))
 
   given jsonEncodable: Json is Json.Encodable = Json.Encodable{ () => Morphology.Any }(identity(_))
 
@@ -3034,7 +3034,7 @@ object Json extends Json1, Dynamic:
       // depends on deferral), and its thunk may not capture the evidence.
       val shape: () -> Morphology =
         // [by-name-capture] shape thunk over by-name encodable
-        caps.unsafe.unsafeAssumePure { () => Morphology.Arr(encodable.shape()) }
+        caps.unsafe.unsafeAssumePure: () => Morphology.Arr(encodable.shape())
 
       Json.Encodable(shape): values =>
         val builder = scala.collection.immutable.List.newBuilder[Json.Ast]
@@ -3059,7 +3059,7 @@ object Json extends Json1, Dynamic:
     caps.unsafe.unsafeAssumePure:
       val shape: () -> Morphology =
         // [by-name-capture] shape thunk over by-name decodable
-        caps.unsafe.unsafeAssumePure { () => Morphology.Arr(decodable.shape()) }
+        caps.unsafe.unsafeAssumePure: () => Morphology.Arr(decodable.shape())
 
       Json.Decodable(shape()): value =>
         val builder = factory.newBuilder
@@ -3119,7 +3119,7 @@ object Json extends Json1, Dynamic:
     caps.unsafe.unsafeAssumePure:
       val shape: () -> Morphology =
         // [by-name-capture] shape thunk over by-name decodable
-        caps.unsafe.unsafeAssumePure { () => Morphology.Dict(Morphology.Str, decodable.shape()) }
+        caps.unsafe.unsafeAssumePure: () => Morphology.Dict(Morphology.Str, decodable.shape())
 
       Json.Decodable(shape()): value =>
         val root = value.root
@@ -3140,7 +3140,7 @@ object Json extends Json1, Dynamic:
     // depends on deferral), and its thunk may not capture the evidence.
     val shape: () -> Morphology =
       // [by-name-capture] deferred shape thunk may not capture evidence
-      caps.unsafe.unsafeAssumePure { () => Morphology.Dict(Morphology.Str, encodable.shape()) }
+      caps.unsafe.unsafeAssumePure: () => Morphology.Dict(Morphology.Str, encodable.shape())
 
     Json.Encodable(shape): map =>
       val keys: List[key] = map.keys.to[List]

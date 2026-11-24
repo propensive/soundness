@@ -44,6 +44,7 @@ import vacuous.*
 private[facsimile] object ObjectStream:
   def apply(data: Data, first: Int, count: Int)(using Tactic[Pdf.Error]): ObjectStream =
     val lexer: CosLexer^ = CosLexer(Scan(data))
+
     val offsets = Map.build[Int, Int]: offsets =>
       for _ <- 0 until count do (lexer.next(), lexer.next()) match
         case (CosToken.Integral(number), CosToken.Integral(offset)) =>

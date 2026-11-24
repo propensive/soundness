@@ -552,7 +552,6 @@ object Mathml:
     import spectacular.*
     import symbolism.*
     import vacuous.*
-    import Mathml.*
 
     private val Bar: Char = '─'
     private val Radical: Char = '√'
@@ -572,6 +571,7 @@ object Mathml:
     private def min(left: Int, right: Int): Int = if left < right then left else right
 
     private def spaces(count: Int): Writing = Writing(Text.fill(max(count, 0))(_ => ' '))
+
     private def repeat(char: Char, count: Int): Writing =
       Writing(Text.fill(max(count, 0))(_ => char))
 
@@ -756,6 +756,7 @@ object Mathml:
 
     def overscript(base: Cell, over: Cell): Cell =
       val width = max(base.width, over.width)
+
       Cell
         ( over.hcenter(width).lines + base.hcenter(width).lines,
           width,
@@ -976,14 +977,10 @@ object Mathml:
   case class Cell(lines: Sequence[Writing], width: Int, baseline: Int):
     import anticipation.*
     import gossamer.*
-    import hieroglyph.Measurable
-    import hieroglyph.textMetrics.wideCharacterWidthMetric
     import denominative.*
     import rudiments.*
     import spectacular.*
     import symbolism.*
-    import vacuous.*
-    import Mathml.*
 
     def height: Int = lines.size
     def render: Text = lines.map(_.text).join(t"\n")
@@ -1011,8 +1008,8 @@ object Mathml:
       val blank = Cell.spaces(width)
 
       Cell
-        ( Iterator.fill(above)(blank).to[Sequence] + lines
-          + Iterator.fill(below)(blank).to[Sequence],
+        ( Iterator.fill(above)(blank).to[Sequence] + lines +
+          Iterator.fill(below)(blank).to[Sequence],
           width,
           ascent )
 

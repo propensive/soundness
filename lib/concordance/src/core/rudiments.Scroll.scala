@@ -105,6 +105,7 @@ object Scroll:
 
     inline def append(value: element): Unit =
       val core = scroll.asInstanceOf[Core]
+
       if core.length == core.buffer.asInstanceOf[scala.Array[element]].length
       then Scroll.reserve[element](core, 1)
 
@@ -145,6 +146,7 @@ object Scroll:
     inline def freeze: Array[element]^{} =
       val core = scroll.asInstanceOf[Core]
       val source = core.buffer.asInstanceOf[scala.Array[element]]
+
       val exact: scala.Array[element]^ =
         java.lang.reflect.Array.newInstance(source.getClass.getComponentType.nn, core.length)
         . asInstanceOf[scala.Array[element]^]

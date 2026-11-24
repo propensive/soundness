@@ -36,7 +36,6 @@ import java.security as js
 import java.util as ju
 
 import scala.language.experimental.genericNumberLiterals
-import scala.math
 import scala.util as su
 
 import anticipation.*

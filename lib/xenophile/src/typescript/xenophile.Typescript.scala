@@ -402,7 +402,7 @@ object Typescript:
           index += 2
           while index + 1 < text.length &&
             !(text.charAt(index) == '*' && text.charAt(index + 1) == '/') do index += 1
-            index = (index + 2).min(text.length)
+          index = (index + 2).min(text.length)
         else if char == '`' then
           abort(Typescript.Error(Reason.Unsupported(t"a template literal type")))
         else if char == '"' || char == '\'' then

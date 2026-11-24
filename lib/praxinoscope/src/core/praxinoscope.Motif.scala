@@ -581,11 +581,9 @@ object Motif:
     ( m"the regular expression could not be compiled because $reason at $index" )
 
   object Program:
-    import anticipation.*
     import contingency.*
     import rudiments.*
     import Motif.Error.Reason.*
-    import Motif.Node
 
     // A ceiling on compiled size: bounded repetitions compile by expansion, so nested `{n,m}`
     // forms can grow geometrically. RE2 imposes a similar program-size limit.
@@ -710,10 +708,7 @@ object Motif:
   // slots `2n` and `2n + 1`; slots `0` and `1` are the whole match.
   case class Program(ops: Array[Program.Op], slots: Int, captures: Int):
     import anticipation.*
-    import contingency.*
     import rudiments.*
-    import Motif.Error.Reason.*
-    import Motif.Node
 
     def entry: Int = 0
 
@@ -949,8 +944,6 @@ object Motif:
   // constructor is private because it admits unnormalized bounds; every public constructor and
   // operation preserves the invariant.
   case class Ranges private(spans: List[Int]):
-    import rudiments.*
-    import vacuous.*
 
     def vacant: Boolean = spans == Ranges.empty.spans
 

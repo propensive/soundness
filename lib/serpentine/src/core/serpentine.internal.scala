@@ -171,7 +171,7 @@ object internal:
     import quotes.reflect.*
 
     elements.foldLeft(TypeRepr.of[EmptyTuple]): (tuple, string) =>
-      (ConstantType(StringConstant(string)).asType, tuple.asType) match
+      (ConstantType(StringConstant(string)).asType, tuple.asType).absolve match
         case ('[element], '[type tuple <: Tuple; tuple]) => TypeRepr.of[element *: tuple]
 
 

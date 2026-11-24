@@ -638,7 +638,6 @@ def cli[bus <: Matchable](using executive: Executive)
                         case Delete(_, file)  => file
                         case Modify(_, file)  => file
                         case NewFile(_, file) => file
-                        case other            => t""
 
                       // A metadata-only change to the launcher (`touch`) leaves its
                       // content intact; verify it before treating the event as fatal

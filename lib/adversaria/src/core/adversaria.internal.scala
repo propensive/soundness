@@ -36,7 +36,6 @@ import scala.collection.immutable.{List, Nil}
 import scala.quoted.*
 
 import anticipation.*
-import fulminate.*
 import gigantism.*
 import panopticon.*
 import prepositional.*
@@ -169,7 +168,7 @@ object internal:
         case Some(annotation: Term) =>
           val literal: Optional[Expr[Text]] = annotation match
             case Apply(_, List(argument)) =>
-              literalText(argument).let(string => '{${Expr(string)}.tt})
+              literalText(argument).let: string => '{${Expr(string)}.tt}
 
             case _ =>
               Unset

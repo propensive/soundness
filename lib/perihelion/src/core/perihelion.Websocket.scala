@@ -361,10 +361,7 @@ object Websocket:
         prefix + unmasked
 
   trait Masking:
-    import java.security.SecureRandom
     import anticipation.*
-    import rudiments.*
-    import symbolism.*
 
     // Mask a complete, self-generated (and therefore well-formed and unmasked) frame, or
     // return it unchanged for the server. `inbound` reports whether frames read from the

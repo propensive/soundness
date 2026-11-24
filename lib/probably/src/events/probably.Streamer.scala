@@ -91,8 +91,8 @@ object Streamer:
         t"{${rendered.join(t";")}}"
 
       case Tels.Scalar(_, encoding, _, _, _) => t"scalar(${encoding.or(t"")})"
-      case Tels.Flag                   => t"flag"
-      case Tels.Reference(name)        => t"ref($name)"
+      case Tels.Flag                         => t"flag"
+      case Tels.Reference(name)              => t"ref($name)"
 
     def renderMember(member: Tels.Member): Text = member match
       case Tels.Field(required, repeatable, keyword, fieldType, _, _, _, _) =>

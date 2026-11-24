@@ -67,7 +67,9 @@ object internal:
     def labels(repr: TypeRepr): List[String] = repr.dealias match
       case OrType(left, right)                => labels(left) ++ labels(right)
       case ConstantType(StringConstant(text)) => List(text)
-      case other => halt(m"the class names should be string literals, not ${other.show}")
+
+      case other =>
+        halt(m"the class names should be string literals, not ${other.show}")
 
     val limit: TypeRepr = Expr.summon[CssClass is Nominative].absolve match
       case Some('{type limit; $nominative: (Nominative { type Limit = limit })}) =>

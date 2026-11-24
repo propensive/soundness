@@ -32,7 +32,6 @@
                                                                                                   */
 package savagery
 
-
 import scala.collection.immutable.VectorMap
 import scala.collection.mutable.ListBuffer
 
@@ -670,7 +669,7 @@ object Svg:
     import scala.collection.mutable.Builder
 
     import anticipation.*
-    import cataclysm.{Css, Web, style}
+    import cataclysm.{Css, Web}
     import denominative.*
     import geodesy.*
     import gossamer.*
@@ -792,17 +791,9 @@ object Svg:
       case _            => Nil
 
   sealed trait Figure:
-    import anticipation.*
-    import cataclysm.{Css, Web, style}
-    import denominative.*
-    import geodesy.*
-    import gossamer.*
+    import cataclysm.Web
     import phoenicia.Font
     import prepositional.*
-    import rudiments.*
-    import spectacular.*
-    import symbolism.*
-    import vacuous.*
     import xylophone.*
 
     // The figure's SVG element; public API reaches it as `figure.in[Xml]`, through the
@@ -819,18 +810,10 @@ object Svg:
       id:         Optional[Svg.Id]    = Unset )
   extends Figure:
     import anticipation.*
-    import cataclysm.{Css, Web, style}
-    import denominative.*
-    import geodesy.*
     import gossamer.*
-    import phoenicia.Font
-    import prepositional.*
-    import rudiments.*
     import spectacular.*
-    import symbolism.*
     import vacuous.*
     import xylophone.*
-
 
     private[savagery] def markup: Xml =
       val attrs = VectorMap.newBuilder[Text, Text]
@@ -849,18 +832,10 @@ object Svg:
       transforms: List[Transform]     = Nil )
   extends Figure:
     import anticipation.*
-    import cataclysm.{Css, Web, style}
-    import denominative.*
-    import geodesy.*
     import gossamer.*
-    import phoenicia.Font
-    import prepositional.*
     import rudiments.*
-    import spectacular.*
-    import symbolism.*
     import vacuous.*
     import xylophone.*
-
 
     import Stroke.*
 
@@ -884,8 +859,10 @@ object Svg:
       copy(ops = CubicTo(ctrl1, ctrl2, point) :: ops)
 
     def curve(ctrl2: Delta, vector: Delta): Outline = copy(ops = Cubic(Unset, ctrl2, vector) :: ops)
+
     def curveTo(ctrl2: Point, point: Point): Outline =
       copy(ops = CubicTo(Unset, ctrl2, point) :: ops)
+
     def quadCurve(ctrl1: Delta, vector: Delta): Outline =
       copy(ops = Quadratic(ctrl1, vector) :: ops)
 
@@ -914,18 +891,11 @@ object Svg:
       id:         Optional[Svg.Id]    = Unset )
   extends Figure:
     import anticipation.*
-    import cataclysm.{Css, Web, style}
-    import denominative.*
     import geodesy.*
     import gossamer.*
-    import phoenicia.Font
-    import prepositional.*
-    import rudiments.*
     import spectacular.*
-    import symbolism.*
     import vacuous.*
     import xylophone.*
-
 
     def circle: Boolean = xRadius == yRadius
 
@@ -953,18 +923,13 @@ object Svg:
       transforms: List[Transform]     = Nil )
   extends Figure:
     import anticipation.*
-    import cataclysm.{Css, Web, style}
-    import denominative.*
-    import geodesy.*
+    import cataclysm.Web
     import gossamer.*
     import phoenicia.Font
     import prepositional.*
     import rudiments.*
-    import spectacular.*
-    import symbolism.*
     import vacuous.*
     import xylophone.*
-
 
     override def fonts: List[Font in Web] = Figure.fonts(figures)
 
@@ -984,18 +949,10 @@ object Svg:
       transforms: List[Transform]     = Nil )
   extends Figure:
     import anticipation.*
-    import cataclysm.{Css, Web, style}
-    import denominative.*
-    import geodesy.*
     import gossamer.*
-    import phoenicia.Font
-    import prepositional.*
     import rudiments.*
-    import spectacular.*
-    import symbolism.*
     import vacuous.*
     import xylophone.*
-
 
     private[savagery] def markup: Xml =
       val attrs = VectorMap.newBuilder[Text, Text]
@@ -1008,17 +965,8 @@ object Svg:
 
   object Lettering:
     import anticipation.*
-    import cataclysm.{Css, Web, style}
-    import denominative.*
-    import geodesy.*
     import gossamer.*
-    import phoenicia.Font
-    import prepositional.*
-    import rudiments.*
-    import spectacular.*
-    import symbolism.*
     import vacuous.*
-    import xylophone.*
 
     // Where the text sits relative to its position: `text-anchor`.
     enum Anchor:
@@ -1056,17 +1004,13 @@ object Svg:
   extends Figure:
     import anticipation.*
     import cataclysm.{Css, Web, style}
-    import denominative.*
-    import geodesy.*
     import gossamer.*
     import phoenicia.Font
     import prepositional.*
-    import rudiments.*
     import spectacular.*
     import symbolism.*
     import vacuous.*
     import xylophone.*
-
 
     override def fonts: List[Font in Web] = font.lay(Nil)(List(_))
 
@@ -1097,7 +1041,6 @@ case class Svg
     viewBox:    Optional[Svg.ViewBox] = Unset )
 extends Documentary:
   import Svg.Figure
-
 
   type Self = Svg
   type Metadata = Encoding

@@ -232,7 +232,7 @@ object Markdown:
       def merge(block: Boolean, nodes: List[Layout], done: List[Html of Flow], tight: Boolean)
       :   List[Html of Flow] =
 
-        nodes match
+        nodes.absolve match
           case Nil =>
             if block then ((Html.Text("\n"): Html of Flow) :: done).reverse else done.reverse
 
@@ -323,7 +323,7 @@ object Markdown:
       def recur(todo: List[Layout], current: List[Layout], done: List[Markdown of Layout])
       :   List[Markdown of Layout] =
 
-        todo match
+        todo.absolve match
           case Nil =>
             if current.nil then done.reverse
             else recur(Nil, Nil, Markdown(Nil, current.reverse*) :: done)

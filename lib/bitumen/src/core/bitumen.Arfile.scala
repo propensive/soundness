@@ -47,12 +47,12 @@ import vacuous.*
 import zephyrine.*
 
 object Arfile:
+  private[bitumen] object Member:
+    given traversable: Member is Traversable by Data = member => member.entry.serialize
+
   // A member's place in the archive, as the blocks it serializes to: the description `flatMap`
   // opens one at a time, so each member's payload stream is opened only when it is reached.
   private[bitumen] class Member(val entry: Ar.Entry)
-
-  private[bitumen] object Member:
-    given traversable: Member is Traversable by Data = member => member.entry.serialize
 
   given streamable: Arfile is Streamable by Data over Credit = arfile => Stream(arfile.blocks)
 

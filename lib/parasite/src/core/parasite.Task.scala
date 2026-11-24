@@ -127,7 +127,9 @@ object Task:
       caps.unsafe.unsafeAssumePure(async(tasks.map(_.join())))
 
   // The native collections are not `Iterable`: a `Traversable`-receiver twin materialises them.
-  extension [self, result](tasks: self)(using traversable: self is murmuration.Traversable by Task[result])
+  extension [self, result](tasks: self)
+    ( using traversable: self is murmuration.Traversable by Task[result] )
+
     def race()(using monitor: Monitor^, probate: Probate.Shared)
     :   (Tactic[Async.Error]^) ?->{monitor, probate} result =
 

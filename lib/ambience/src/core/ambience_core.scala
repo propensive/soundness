@@ -86,7 +86,7 @@ package temporaryDirectories:
 
   // The first of `TMPDIR`, `TMP` and `TEMP` in the given environment.
   given environmentTemporaryDirectory: (environment: Environment) => TemporaryDirectory = () =>
-    def first(names: List[Text]): Text = names match
+    def first(names: List[Text]): Text = names.absolve match
       case name :: more => environment.variable(name).or(first(more))
       case Nil          => panic(m"none of `TMPDIR`, `TMP` or `TEMP` environment variables is set")
 

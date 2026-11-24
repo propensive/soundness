@@ -51,7 +51,7 @@ def evolve[element: ClassTag]
   def recur(iteration: Ordinal, todo: List[List[element]], evolution: Evolution[element])
   :   Evolution[element] =
 
-    todo match
+    todo.absolve match
       case Nil | _ :: Nil => evolution
 
       case left :: right :: more =>
@@ -81,12 +81,12 @@ def evolve[element: ClassTag]
 
             updates + done
 
-          edits match
-            case Nil => atoms match
+          edits.absolve match
+            case Nil => atoms.absolve match
               case Nil           => finish().reverse
               case atom :: atoms => merge(atoms, Nil, done, atom :: skips, inserts)
 
-            case edit :: edits => atoms match
+            case edit :: edits => atoms.absolve match
               case Nil => edit match
                 case Diff.Ins(_, value) =>
                   merge(Nil, edits, Atom(value, Set(iteration)) :: finish())
@@ -97,7 +97,11 @@ def evolve[element: ClassTag]
               case atom :: atoms =>
                 if !atom.has(iteration - 1)
                 then merge
-                  ( atoms, edit :: (edits: List[Diff.Change[element]]), done, atom :: skips, inserts )
+                  ( atoms,
+                    edit :: (edits: List[Diff.Change[element]]),
+                    done,
+                    atom :: skips,
+                    inserts )
                 else edit match
                   case Diff.Ins(_, value) =>
                     val atom2 = Atom(value, Set(iteration))
@@ -120,7 +124,7 @@ def evolve[element: ClassTag]
             Evolution(merge(evolution.sequence, changes)) )
 
 
-  versions match
+  versions.absolve match
     case Nil          => Evolution(Nil)
     case first :: _   => recur(Sec, versions, Evolution(first.map(Atom(_, Set(Prim)))))
 

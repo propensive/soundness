@@ -497,8 +497,7 @@ object Dsv extends Dsv1:
           // position.
           def fieldRow(label: Text, count: Int): Dsv =
             row.columns.lay(Dsv(row.data.skip(count))): columns =>
-              columns(label).lay(Dsv(Array[Text]())): i =>
-                Dsv(row.data.skip(i))
+              columns(label).lay(Dsv(Array[Text]())): i => Dsv(row.data.skip(i))
 
           // A SINGLE field traversal serving both modes, branching on `foci.active` per
           // field. One traversal is load-bearing: every wisteria traversal re-summons each

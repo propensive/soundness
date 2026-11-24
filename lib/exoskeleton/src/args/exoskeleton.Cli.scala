@@ -137,7 +137,7 @@ extends Console, caps.ExclusiveCapability, WorkingDirectory.Provider, Environmen
   def dispatchSignal(signal: Signal): SignalResponse =
     def loop(handlers: List[PartialFunction[Signal, SignalResponse]]): SignalResponse =
 
-      handlers match
+      handlers.absolve match
         case Nil =>
           SignalResponse.Reject
 

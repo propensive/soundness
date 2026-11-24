@@ -100,7 +100,8 @@ object Handle:
 
   extension (handle: (Handle & Granting[Grant.Write])^)
     def write[source](source: source)
-      ( using streamable: (source is Streamable by Data over Credit)^, tactic: Emit[Truncation.Error] )
+      ( using streamable: (source is Streamable by Data over Credit)^,
+              tactic:     Emit[Truncation.Error] )
     :   Unit =
 
       streamable.stream(source)

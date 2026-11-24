@@ -192,7 +192,7 @@ object Mcp:
   case class TaskAugmented(task: Optional[TaskMetadata] = Unset)
 
   object TextInt:
-    given encodable: TextInt is Json.Encodable = Json.Encodable(() => Morphology.Any):
+    given encodable: TextInt is Json.Encodable = Json.Encodable({ () => Morphology.Any }):
       _.id.absolve match
         case text: Text => text.in[Json]
         case int: Int   => int.in[Json]
@@ -329,7 +329,7 @@ object Mcp:
     ( values: List[Text] = Nil, total: Optional[Int] = Unset, hasMore: Optional[Boolean] = Unset )
 
   object TaskSupport:
-    given encodable: TaskSupport is Json.Encodable = Json.Encodable(() => Morphology.Str):
+    given encodable: TaskSupport is Json.Encodable = Json.Encodable({ () => Morphology.Str }):
       case TaskSupport.Forbidden => t"forbidden".in[Json]
       case TaskSupport.Optional  => t"optional".in[Json]
       case TaskSupport.Required  => t"required".in[Json]
@@ -368,7 +368,7 @@ object Mcp:
   case class LoggingMessage(level: LoggingLevel, logger: Optional[Text] = Unset, data: Json)
 
   object TaskStatus:
-    given encodable: TaskStatus is Json.Encodable = Json.Encodable(() => Morphology.Str):
+    given encodable: TaskStatus is Json.Encodable = Json.Encodable({ () => Morphology.Str }):
       case TaskStatus.Working       => t"working".in[Json]
       case TaskStatus.InputRequired => t"input_required".in[Json]
       case TaskStatus.Completed     => t"completed".in[Json]
@@ -409,13 +409,13 @@ object Mcp:
 
     private val typeTag = Json.discriminatedUnion[Reference](t"type")
 
-    given encodable: Reference is Json.Encodable = Json.Encodable(() => Morphology.Any):
+    given encodable: Reference is Json.Encodable = Json.Encodable({ () => Morphology.Any }):
       case ref: PromptReference           => typeTag.rewrite(t"ref/prompt", ref.in[Json])
       case ref: ResourceTemplateReference => typeTag.rewrite(t"ref/resource", ref.in[Json])
 
     given decodable: Tactic[Json.Error] => Reference is Json.Decodable =
       Json.Decodable(Morphology.Any): json =>
-        json.`type`.as[Text] match
+        json.`type`.as[Text].s match
           case "ref/prompt"   => json.as[PromptReference]
           case "ref/resource" => json.as[ResourceTemplateReference]
           case _              => abort(Json.Error(Json.Error.Reason.OutOfRange))
@@ -459,7 +459,7 @@ object Mcp:
   case class ToolChoice(mode: Optional[Mode] = Unset)
 
   object Mode:
-    given encodable: Mode is Json.Encodable = Json.Encodable(() => Morphology.Str):
+    given encodable: Mode is Json.Encodable = Json.Encodable({ () => Morphology.Str }):
       case Mode.Auto     => t"auto".in[Json]
       case Mode.Required => t"required".in[Json]
       case Mode.None     => t"none".in[Json]
@@ -493,7 +493,7 @@ object Mcp:
     private val typeTag = Json.discriminatedUnion[SamplingMessageContentBlock](t"type")
 
     given encodable: SamplingMessageContentBlock is Json.Encodable =
-      Json.Encodable(() => Morphology.Any):
+      Json.Encodable({ () => Morphology.Any }):
         case content: TextContent       => typeTag.rewrite(t"text",        content.in[Json])
         case content: ImageContent      => typeTag.rewrite(t"image",       content.in[Json])
         case content: AudioContent      => typeTag.rewrite(t"audio",       content.in[Json])
@@ -502,7 +502,7 @@ object Mcp:
 
     given decodable: Tactic[Json.Error] => SamplingMessageContentBlock is Json.Decodable =
       Json.Decodable(Morphology.Any): json =>
-        json.`type`.as[Text] match
+        json.`type`.as[Text].s match
           case "text"        => json.as[TextContent]
           case "image"       => json.as[ImageContent]
           case "audio"       => json.as[AudioContent]
@@ -544,7 +544,7 @@ object Mcp:
   case class CreateTaskResult(task: Task)
 
   object ElicitAction:
-    given encodable: ElicitAction is Json.Encodable = Json.Encodable(() => Morphology.Str):
+    given encodable: ElicitAction is Json.Encodable = Json.Encodable({ () => Morphology.Str }):
       case ElicitAction.Accept  => t"accept".in[Json]
       case ElicitAction.Decline => t"decline".in[Json]
       case ElicitAction.Cancel  => t"cancel".in[Json]
@@ -994,7 +994,9 @@ object Mcp:
       case MissingParameter extends Reason(3)
 
     given communicable: Reason is Communicable =
-      case Reason.UnknownMethod    => m"the method name does not match any registered tool or prompt"
+      case Reason.UnknownMethod =>
+        m"the method name does not match any registered tool or prompt"
+
       case Reason.UnknownResource  => m"the URI does not match any registered resource"
       case Reason.MissingParameter => m"a required parameter was not present in the input"
 

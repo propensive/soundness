@@ -201,7 +201,7 @@ private[stratiform] object RatelLayout:
 
     // `intern` has no meaning for a value of fixed width (↯/t.5.11).
     def fixed(scalar: Tels.Scalar): Optional[Int] =
-      width(scalar).let { width => if scalar.intern || width < 1 then unlayoutable else width }
+      width(scalar).let: width => if scalar.intern || width < 1 then unlayoutable else width
 
     def variants(reference: Text, base: Int): List[Variant] =
       val select = schema.selects.seek(_.name == reference).or(unlayoutable)
@@ -246,7 +246,7 @@ private[stratiform] object RatelLayout:
 
         if depth > 256 then unlayoutable
 
-        members match
+        members.absolve match
           case Nil => Nil
 
           case (field: Tels.Field) :: rest =>
@@ -366,7 +366,7 @@ private[stratiform] object RatelLayout:
     def component(entries: List[Entry], path: List[Text], keywords: List[Int], hops: List[Slot])
     :   Component =
 
-      path match
+      path.absolve match
         case Nil => unlayoutable
 
         case name :: rest =>
@@ -406,7 +406,6 @@ private[stratiform] object RatelLayout:
 
               val primary: List[Index] = key(child).lay(Nil): key =>
                 List(Index(number, slot, true, Nil, List(key)))
-
 
               val secondary = slot.indexes.map: index =>
                 val components = index.paths.map: path =>

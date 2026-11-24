@@ -32,8 +32,6 @@
                                                                                                   */
 package hellenism
 
-import scala.caps
-
 import anticipation.*
 import contingency.*
 import fulminate.*
@@ -109,6 +107,7 @@ object Classpath extends Root(t""):
 
     case class Url(url: Text) extends Classpath.Entry:
       def path: Optional[Text] = Unset
+
       def apply[instantiable: Instantiable across Urls from Text](): instantiable =
         instantiable(url)
 

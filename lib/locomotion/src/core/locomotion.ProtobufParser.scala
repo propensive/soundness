@@ -295,6 +295,7 @@ object ProtobufParser:
       val tagStart = pos
       val tag = varint().toInt
       val code = tag & 0x7
+
       ( tag >>> 3,
         WireType.fromId(code).lest(Protobuf.Error(Reason.UnexpectedWireType(code, tagStart))) )
 

@@ -43,7 +43,7 @@ import turbulence.*
 import zephyrine.*
 
 object Stderr:
-  given computable: Stderr is Computable = Computable((process, _) => Stderr(process.errorText()))
+  given computable: Stderr is Computable = Computable: (process, _) => Stderr(process.errorText())
 
 case class Stderr(text: Text)
 
@@ -75,9 +75,9 @@ object Computable:
     given Tactic[Truncation.Error] = tactic
     job.lines().records.to[List]
 
-  given text: Text is Computable = Computable((process, _) => process.text())
+  given text: Text is Computable = Computable: (process, _) => process.text()
 
-  given string: String is Computable = Computable((process, _) => process.text().s)
+  given string: String is Computable = Computable: (process, _) => process.text().s
 
   given data: Buffering => (Data is Computable) =
     // The whole of standard output as one block of bytes; the streaming byte
@@ -105,4 +105,4 @@ trait Computable extends Typeclass:
   def compute(process: Subprocess^)(using Tactic[Truncation.Error]): Self
 
   def map[self2](lambda: Self => self2): (self2 is Computable)^{this, lambda} =
-    Computable((process, tactic) => lambda(compute(process)(using tactic)))
+    Computable: (process, tactic) => lambda(compute(process)(using tactic))

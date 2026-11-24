@@ -243,11 +243,11 @@ def dirtyCells
 // needs and presented at the cursor; any other canvas fills its own height.
 def paint(root: Board^, pane: Pane): Unit =
   val height = root match
-    case _: Tui.Block => pane.frame.measure(Arrangement.Stack).min
+    case _: Tui.Block  => pane.frame.measure(Arrangement.Stack).min
     case _             => root.height
 
   root match
-    case inline: Tui.Block => inline.reframe(root.width, height)
+    case inline: Tui.Block  => inline.reframe(root.width, height)
     case screen: Tui.Screen => screen.reframe()
     case _                  => ()
 
@@ -259,7 +259,7 @@ def paint(root: Board^, pane: Pane): Unit =
   val cells = pane.leaves.zip(placement.cells).iterator
   var running = true
 
-  while running do cells.next() match
+  while running do cells.next().absolve match
     case Iterator.Exhausted => running = false
 
     case (leaf: Pane, region: Region) =>

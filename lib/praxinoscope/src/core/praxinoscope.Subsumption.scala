@@ -39,8 +39,8 @@ import rudiments.*
 
 import Motif.Error.Reason.*
 import Motif.Node
-import rudiments.sortingAlgorithms.timsort
 import praxinoscope.Motif.{Program, Ranges}
+import rudiments.sortingAlgorithms.timsort
 
 object Subsumption:
   // Containment of regular languages is decidable but worst-case exponential in the size of the

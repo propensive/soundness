@@ -42,7 +42,6 @@ import ambience.*
 import anticipation.*
 import contingency.*
 import prepositional.*
-import pathInterfaces.pathOnLocal
 import systems.javaBaseSystem
 
 package embeddings:

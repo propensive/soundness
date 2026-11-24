@@ -79,7 +79,7 @@ object internal:
     def concatenate(insertions: List[Expr[Text]], parts: List[String], done: Expr[String])
     :   Expr[String] =
 
-      insertions match
+      insertions.absolve match
         case Nil => done
 
         case insertion :: insertions2 => parts.absolve match
@@ -384,7 +384,10 @@ object internal:
                           (uri, rhs)
 
                     val initial =
-                      '{provide[Tactic[Mcp.Error]](abort(Mcp.Error(Mcp.Error.Reason.UnknownResource)))}
+                      ' {
+                          provide[Tactic[Mcp.Error]]
+                            ( abort(Mcp.Error(Mcp.Error.Reason.UnknownResource)) )
+                        }
 
                     cases.foldLeft(initial):
                       case (acc, (pattern, rhs)) => '{if uri == $pattern then $rhs else $acc}

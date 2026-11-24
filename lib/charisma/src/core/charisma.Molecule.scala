@@ -48,7 +48,7 @@ object Molecule:
   def apply(): Molecule = Molecule(Map(), 0)
 
   given showable: Molecule is Showable = molecule =>
-    val orderedElements = molecule.elements.at(PeriodicTable.C) match
+    val orderedElements = molecule.elements.at(PeriodicTable.C).absolve match
       case Unset =>
         molecule.elements.to[List].order(_(0).symbol)
 

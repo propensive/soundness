@@ -746,7 +746,7 @@ object Lsp:
 
   object DiagnosticSeverity:
     given encodable: DiagnosticSeverity is Json.Encodable =
-      Json.Encodable(() => Morphology.Whole): severity => (severity.ordinal + 1).in[Json]
+      Json.Encodable({ () => Morphology.Whole }): severity => (severity.ordinal + 1).in[Json]
 
     // Captures the caller's tactic, which a malformed wire integer raises through.
     given decodable: (tactic: Tactic[Json.Error])
@@ -759,7 +759,7 @@ object Lsp:
 
   object MessageType:
     given encodable: MessageType is Json.Encodable =
-      Json.Encodable(() => Morphology.Whole): level => (level.ordinal + 1).in[Json]
+      Json.Encodable({ () => Morphology.Whole }): level => (level.ordinal + 1).in[Json]
 
     // Captures the caller's tactic, which malformed input raises through.
     given decodable: (tactic: Tactic[Json.Error])
@@ -785,7 +785,7 @@ object Lsp:
 
   object CompletionItemKind:
     given encodable: CompletionItemKind is Json.Encodable =
-      Json.Encodable(() => Morphology.Whole): kind => (kind.ordinal + 1).in[Json]
+      Json.Encodable({ () => Morphology.Whole }): kind => (kind.ordinal + 1).in[Json]
 
     // Captures the caller's tactic, which malformed input raises through.
     given decodable: (tactic: Tactic[Json.Error])
@@ -800,7 +800,7 @@ object Lsp:
 
   object SymbolKind:
     given encodable: SymbolKind is Json.Encodable =
-      Json.Encodable(() => Morphology.Whole): kind => (kind.ordinal + 1).in[Json]
+      Json.Encodable({ () => Morphology.Whole }): kind => (kind.ordinal + 1).in[Json]
 
     // Captures the caller's tactic, which malformed input raises through.
     given decodable: (tactic: Tactic[Json.Error])
@@ -815,7 +815,7 @@ object Lsp:
 
   object DocumentHighlightKind:
     given encodable: DocumentHighlightKind is Json.Encodable =
-      Json.Encodable(() => Morphology.Whole): kind => (kind.ordinal + 1).in[Json]
+      Json.Encodable({ () => Morphology.Whole }): kind => (kind.ordinal + 1).in[Json]
 
     // Captures the caller's tactic, which malformed input raises through.
     given decodable: (tactic: Tactic[Json.Error])
@@ -828,7 +828,7 @@ object Lsp:
 
   object TextDocumentSaveReason:
     given encodable: TextDocumentSaveReason is Json.Encodable =
-      Json.Encodable(() => Morphology.Whole): reason => (reason.ordinal + 1).in[Json]
+      Json.Encodable({ () => Morphology.Whole }): reason => (reason.ordinal + 1).in[Json]
 
     // Captures the caller's tactic, which malformed input raises through.
     given decodable: (tactic: Tactic[Json.Error])
@@ -841,7 +841,7 @@ object Lsp:
 
   object SymbolTag:
     given encodable: SymbolTag is Json.Encodable =
-      Json.Encodable(() => Morphology.Whole): tag => (tag.ordinal + 1).in[Json]
+      Json.Encodable({ () => Morphology.Whole }): tag => (tag.ordinal + 1).in[Json]
 
     // Captures the caller's tactic, which malformed input raises through.
     given decodable: (tactic: Tactic[Json.Error])
@@ -854,7 +854,7 @@ object Lsp:
 
   object InlayHintKind:
     given encodable: InlayHintKind is Json.Encodable =
-      Json.Encodable(() => Morphology.Whole): kind => (kind.ordinal + 1).in[Json]
+      Json.Encodable({ () => Morphology.Whole }): kind => (kind.ordinal + 1).in[Json]
 
     // Captures the caller's tactic, which malformed input raises through.
     given decodable: (tactic: Tactic[Json.Error])
@@ -867,7 +867,7 @@ object Lsp:
 
   object FileChangeType:
     given encodable: FileChangeType is Json.Encodable =
-      Json.Encodable(() => Morphology.Whole): kind => (kind.ordinal + 1).in[Json]
+      Json.Encodable({ () => Morphology.Whole }): kind => (kind.ordinal + 1).in[Json]
 
     // Captures the caller's tactic, which malformed input raises through.
     given decodable: (tactic: Tactic[Json.Error])
@@ -2618,7 +2618,7 @@ object Lsp:
     // A rewriter read back out of the erased rim, restored by a single annotated cast.
     private def rule(slot: scala.Option[AnyRef]): Optional[Lsp.Proxy.Rewriter] =
       slot.getOrElse(null) match
-        case null         => Unset
+        case null          => Unset
         case value: AnyRef => value.asInstanceOf[Lsp.Proxy.Rewriter]
 
     private def outbound(hook: AnyRef | Null): Optional[(Text, Json) -> Transit] =

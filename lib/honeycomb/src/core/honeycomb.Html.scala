@@ -644,7 +644,7 @@ object Html extends Tag.Container
         first:  Boolean )
     :   Optional[Position] =
 
-      steps match
+      steps.absolve match
         case Nil =>
           Position
             ( data.readUnchecked(offset + 1).z,

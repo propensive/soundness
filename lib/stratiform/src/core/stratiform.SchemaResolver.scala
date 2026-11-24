@@ -240,7 +240,7 @@ object SchemaResolver:
     if result.absent && !bare then delegate match
       case delegate: Tels.Resolution.Delegate =>
         claimed match
-          case signature: Data =>
+          case signature: Data @unchecked =>
             delegate.bySignature(signature, pragma.reference).let: body =>
               val resolved = accept(body.data.read[Tel], Step.Lira)
               stores.head.let(_.cache(resolved.signature, body.data))

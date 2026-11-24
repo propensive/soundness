@@ -450,15 +450,15 @@ object WebDriver:
   // before it was silently swallowed.
   case class Element(elementId: Text)
 
-  // The open shadow root hosted by an element: a separate handle because the protocol addresses it
-  // separately, and because only `element`/`elements` are valid against one.
-  case class ShadowRoot(shadowId: Text)
-
   object ShadowRoot:
     extension (root: ShadowRoot)
       @targetName("at")
       infix def \ [focus: Focusable](value: focus)(using session: Session^): List[Element] =
         session.elements(root, value)
+
+  // The open shadow root hosted by an element: a separate handle because the protocol addresses it
+  // separately, and because only `element`/`elements` are valid against one.
+  case class ShadowRoot(shadowId: Text)
 
   object Session:
     // The bounding box of an element, or of a window, in CSS pixels.

@@ -109,6 +109,7 @@ object Cursor:
       while index < length - 1 do
         table(bytes.readUnchecked(index) & 0xff) =
           (length - 1 - index).min(Char.MaxValue.toInt).toChar
+
         index += 1
 
       Array.freeze(table)
@@ -468,6 +469,7 @@ object Cursor:
                 stream.refill(Credit(window)).lay(-1): count =>
                   lentStorage0 =
                     stream.unsafeStorage(using Unsafe).asInstanceOf[addressable0.Storage]
+
                   lentStart0 = stream.start
                   lent = count
                   count

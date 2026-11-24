@@ -38,11 +38,10 @@ import denominative.*
 import escapade.*
 import escritoire.*, columnAttenuation.ignoreAttenuation
 import gossamer.*
-import hypotenuse.{maximum, minimum}
+import hypotenuse.minimum
 import hieroglyph.*, textMetrics.uniformMetric
 import iridescence.*
 import rudiments.*
-import spectacular.*
 import vacuous.*
 
 import digression.StackTrace

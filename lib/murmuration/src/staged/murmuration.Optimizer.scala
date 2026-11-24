@@ -81,7 +81,10 @@ object Optimizer:
       val key: Any = iterator.next()
       val found = PerfectMap.kind(key)
       if position == 0 then kinds = found
-      if found == null || found != kinds then uniform = false else words(position) = PerfectMap.word(key)
+
+      if found == null || found != kinds then uniform = false
+      else words(position) = PerfectMap.word(key)
+
       position += 1
 
     val keyed = kinds

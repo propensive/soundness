@@ -33,7 +33,6 @@
 package pneumatic
 
 import anticipation.*
-import contingency.*
 import denominative.*
 import prepositional.*
 import zephyrine.*

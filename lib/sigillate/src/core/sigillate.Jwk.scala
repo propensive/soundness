@@ -208,12 +208,14 @@ object Jwk:
   def apply[cipher <: Cipher](key: PrivateKey[cipher]^, reveal: Divulgence.type)
     ( using form: cipher is Form, cipher: cipher )
   :   Jwk =
+
     form.divulged(key.pem(reveal).data, key.public.bytes).or:
       panic(m"the key is not a key of its own cipher")
 
   // A symmetric key as an `oct` JWK.
   def apply[cipher <: Cipher & Symmetric](key: SymmetricKey[cipher]^, reveal: Divulgence.type)
   :   Jwk =
+
     Jwk(t"oct", k = Jose.encode(key.data(reveal)))
 
 // The members are named as the RFCs name them where the name is a word (`x`, `y`, `d`, `k`) and

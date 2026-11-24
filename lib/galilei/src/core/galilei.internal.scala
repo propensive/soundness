@@ -61,7 +61,7 @@ object internal:
     // builds it: `p"/verona/capulet/juliet"` is a `Path of ("juliet", "capulet", "verona")`.
     def topic(descent: scala.Seq[Text]): TypeRepr =
       descent.foldRight(TypeRepr.of[EmptyTuple]): (element, tail) =>
-        (ConstantType(StringConstant(element.s)).asType, tail.asType) match
+        (ConstantType(StringConstant(element.s)).asType, tail.asType).absolve match
           case ('[element], '[type tail <: Tuple; tail]) => TypeRepr.of[element *: tail]
 
     safely(name.tt.as[Path on Posix]).let: path =>

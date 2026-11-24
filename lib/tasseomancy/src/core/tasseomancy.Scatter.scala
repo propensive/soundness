@@ -37,7 +37,6 @@ import cartouche.*
 import murmuration.Traversable
 import prepositional.*
 import rudiments.*
-import savagery.*
 import symbolism.*
 import vacuous.*
 import savagery.Svg.{Figure, Group}

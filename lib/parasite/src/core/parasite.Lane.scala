@@ -40,7 +40,6 @@ import scala.caps
 import scala.language.experimental.pureFunctions
 
 import anticipation.*
-import contingency.*
 import digression.*
 import rudiments.Memory
 import vacuous.*
@@ -118,7 +117,7 @@ final class Lane private (name: Text, stack: Optional[Memory]):
 
       outcome match
         case Lane.Outcome.Value(value)       => value
-        case Lane.Outcome.Thrown(throwable) => throw throwable
+        case Lane.Outcome.Thrown(throwable)  => throw throwable
 
   // Ends the lane's thread once the blocks already submitted have run. A block submitted
   // after this is never run, and its task never completes.

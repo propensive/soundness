@@ -34,7 +34,6 @@ package mosquito
 
 import gossamer.*
 import prepositional.*
-import rudiments.*
 import symbolism.*
 
 object Affine:

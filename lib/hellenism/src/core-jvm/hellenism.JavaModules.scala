@@ -38,7 +38,6 @@ import java.nio.file as jnf
 
 import anticipation.*
 import gossamer.*
-import vacuous.*
 
 // What the running Java runtime is made of: its modules, the packages each exports to every
 // other module, and the classes in a package. The modules and their exports are read from the

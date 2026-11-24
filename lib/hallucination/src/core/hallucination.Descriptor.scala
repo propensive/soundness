@@ -74,12 +74,13 @@ case class Descriptor(entries: List[Descriptor.Entry]):
 
   // The shift and depth of the labelled channel, if the layout has it.
   def locate(label: Text): Optional[(Int, Int)] =
-    def recur(entries: List[Descriptor.Entry], shift: Int): Optional[(Int, Int)] = entries match
-      case Nil => Unset
+    def recur(entries: List[Descriptor.Entry], shift: Int): Optional[(Int, Int)] =
+      entries.absolve match
+        case Nil => Unset
 
-      case entry :: tail =>
-        val shift2 = shift - entry.depth
-        if entry.label == label then (shift2, entry.depth) else recur(tail, shift2)
+        case entry :: tail =>
+          val shift2 = shift - entry.depth
+          if entry.label == label then (shift2, entry.depth) else recur(tail, shift2)
 
     recur(entries, totalBits)
 
@@ -98,7 +99,8 @@ case class Descriptor(entries: List[Descriptor.Entry]):
   private lazy val cmykPositions: Optional[((Int, Int), (Int, Int), (Int, Int), (Int, Int))] =
     locate("cyan".tt).let: cyan =>
       locate("magenta".tt).let: magenta =>
-        locate("yellow".tt).let: yellow => locate("key".tt).let { key => (cyan, magenta, yellow, key) }
+        locate("yellow".tt).let: yellow =>
+          locate("key".tt).let { key => (cyan, magenta, yellow, key) }
 
   private lazy val alphaPosition: Optional[(Int, Int)] = locate("alpha".tt)
   private lazy val greyPosition: Optional[(Int, Int)] = locate("grey".tt)

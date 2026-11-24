@@ -32,10 +32,10 @@
                                                                                                   */
 package escritoire
 
+import scala.compiletime
+
 // As `Scaffold`: the frozen-Array `map` shim stays because `Reshapable` widens the element
 // type and the nested frozen result rejects it. Capture checking, not draining.
-
-import scala.compiletime
 
 import anticipation.*
 import rudiments.at
@@ -63,7 +63,7 @@ object Tabulable extends ProductDerivation[[row] =>> row is Tabulable[Text]]:
   inline def conjunction[derivation <: Product: ProductReflection]: derivation is Tabulable[Text] =
     val labels: Map[Text, Text] = compiletime.summonFrom:
       case labels: Table.Relabelling[derivation] => labels.relabelling()
-      case _                                    => Map()
+      case _                                     => Map()
 
     joinColumns[derivation]:
       contexts[derivation]():

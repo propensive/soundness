@@ -328,7 +328,6 @@ abstract class Worker(frame: Codepoint, parent: Monitor^, probate: Probate.Share
     parent match
       case root: Root         => ((root.supervisor.name: Text).s+"://"+ref).tt
       case submonitor: Worker => ((submonitor.stack: Text).s+"//"+ref).tt
-      case _                  => ref.tt
 
   def relent(): Unit =
     relents += 1
@@ -461,7 +460,7 @@ abstract class Worker(frame: Codepoint, parent: Monitor^, probate: Probate.Share
           case Cancelled                    => abort(Async.Error(Reason.Cancelled))
           case _                            => abort(Async.Error(Reason.Incomplete))
 
-  private lazy val strand: Strand = parent.supervisor.fork(() => stack):
+  private lazy val strand: Strand = parent.supervisor.fork({ () => stack }):
     val started: Boolean = state.since:
       case Initializing => Active(jl.System.currentTimeMillis)
       case other        => other

@@ -293,7 +293,7 @@ object Http2:
           var rest: List[Setting] = settings
           var continue: Boolean = true
 
-          while continue do rest match
+          while continue do rest.absolve match
             case Nil =>
               continue = false
 

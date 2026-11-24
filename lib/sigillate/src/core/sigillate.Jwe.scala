@@ -32,12 +32,9 @@
                                                                                                   */
 package sigillate
 
-import scala.reflect.Selectable.reflectiveSelectable
-
 import adversaria.*
 import anticipation.*
 import contingency.*
-import corpuscular.*
 import denominative.*
 import distillate.*
 import enigmatic.*
@@ -48,8 +45,6 @@ import jacinta.*
 import prepositional.*
 import rudiments.*
 import vacuous.*
-
-import formatting.compactJsonFormatting
 
 // JSON Web Encryption (RFC 7516): content encrypted under a fresh content-encryption key,
 // with that key conveyed to the recipient by one of several key-management algorithms.
@@ -75,7 +70,7 @@ object Jwe:
     abort(Jose.Error(Jose.Error.Reason.Unsupported(name)))
 
   private def be32(value: Int): Data =
-    Array.tabulate[Byte](4)(index => (value >>> (24 - 8*index)).toByte)
+    Array.tabulate[Byte](4): index => (value >>> (24 - 8*index)).toByte
 
   private def prefixed(data: Data): Data = Array.concat(be32(data.length), data)
 
@@ -129,6 +124,7 @@ object Jwe:
       new Encrypting[Rsa[bits]](t"RSA1_5", cipher):
         protected def decrypt(key: PrivateKey[Rsa[bits]]^, wrapped: Data, size: Int)
         :   Optional[Data] =
+
           safely(key.uncloak(wrapped.decrypt[Data, Rsa[bits]])).or(crypto.random.bytes(size))
 
     // RSAES-OAEP: `RSA-OAEP` with SHA-1, `RSA-OAEP-256` with SHA-256.
@@ -137,6 +133,7 @@ object Jwe:
       new Encrypting[RsaOaep[bits, Sha1]](t"RSA-OAEP", cipher):
         protected def decrypt(key: PrivateKey[RsaOaep[bits, Sha1]]^, wrapped: Data, size: Int)
         :   Optional[Data] =
+
           safely(key.uncloak(wrapped.decrypt[Data, RsaOaep[bits, Sha1]]))
 
     given rsaOaep256: [bits <: 2048 | 3072 | 4096: ValueOf]
@@ -146,6 +143,7 @@ object Jwe:
         protected def decrypt
           ( key: PrivateKey[RsaOaep[bits, Sha2[256]]]^, wrapped: Data, size: Int )
         :   Optional[Data] =
+
           safely(key.uncloak(wrapped.decrypt[Data, RsaOaep[bits, Sha2[256]]]))
 
     // ECDH-ES (RFC 7518 §4.6): an ephemeral key pair is generated for each message, its public
@@ -701,6 +699,7 @@ object Jwe:
         Jose.encode(first.ciphertext),
         Jose.encode(first.tag),
         first.associated )
+
     . in[Json]
 
   // Reads either JSON serialization — flattened, for one recipient, or general, for
@@ -769,6 +768,7 @@ case class Jwe
         Jose.encode(ciphertext),
         Jose.encode(tag),
         associated )
+
     . in[Json]
 
   // Decrypts the object: `jwe.decrypt[AesGcm[256]](key)`. The type argument is the content
@@ -779,7 +779,7 @@ case class Jwe
   // The additional authenticated data: the protected header as it was sent and, in the JSON
   // serializations, the `aad` member after a period (RFC 7516 §5.1 step 14).
   private def authenticated: Data =
-    Jose.ascii(associated.lay(protection.or(t""))(aad => t"${protection.or(t"")}.$aad"))
+    Jose.ascii(associated.lay(protection.or(t"")){ aad => t"${protection.or(t"")}.$aad" })
 
   private[sigillate] def vet
     ( parameters: Jose.Header, family: List[Text], encryption: Jose.Encryption )

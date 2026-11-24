@@ -37,6 +37,78 @@ import scala.caps
 import anticipation.*
 import rudiments.*
 
+@unexported
+object ProtobufPrinter:
+  // `length` bytes of `source` from `offset`, copied out as a frozen array of their own.
+  private[locomotion] def copied(source: scala.Array[Byte], offset: Int, length: Int): Data =
+    val bytes = Array.allocate[Byte](length)
+    System.arraycopy(source, offset, bytes.raw, 0, length)
+    Array.freeze(bytes)
+
+  // A printer of exactly `size` bytes, whose `data()` is that array, uncopied.
+  def exact(size: Int): ProtobufPrinter^ =
+    new ProtobufPrinter(new scala.Array[Byte](size), false, null)
+
+  // A printer of bytes of unknown length, from a buffer of `hint` bytes.
+  def growing(hint: Int): ProtobufPrinter^ =
+    new ProtobufPrinter(new scala.Array[Byte](hint.max(16)), true, null)
+
+  // A printer that hands each block of `size` bytes to `deliver` as it fills; `flush()` hands on
+  // the last, partial one.
+  def blocks(size: Int, consume deliver: Data => Unit): ProtobufPrinter^ =
+    new ProtobufPrinter(new scala.Array[Byte](size.max(16)), false, deliver)
+
+  // Reasserts the capability of a printer that travelled as a neutral carrier, for the
+  // generated printers spliced into user modules; inline for the reason `ProtobufParser.of` is.
+  inline def of(carrier: AnyRef): ProtobufPrinter^ = carrier.asInstanceOf[ProtobufPrinter^]
+
+  // The LEB128 length of `value`, read as an unsigned 64-bit quantity: 1 to 10 bytes.
+  def varintSize(value: Long): Int = Scribe.varintLength(value)
+
+  // The length of `string`'s UTF-8 encoding, without encoding it.
+  def utf8Length(string: String): Int = Scribe.utf8Length(string)
+
+  // The length of a field's tag: one byte up to field number 15, as a varint thereafter.
+  def tagSize(number: Int): Int = varintSize(number.toLong << 3)
+
+  // The number of bytes `field(number, value)` writes, which it must mirror exactly: a scribe
+  // of fixed size drops whatever is written past its end.
+  def fieldSize(number: Int, value: Protobuf): Int = value match
+    case Protobuf.Absent           => 0
+    case Protobuf.Repeated(values) => values.fold(0)(_ + fieldSize(number, _))
+
+    case Protobuf.Wire(wireType, bytes) =>
+      val tag = varintSize((number.toLong << 3) | wireType.id)
+
+      if wireType == WireType.Len then tag + varintSize(bytes.length) + bytes.length
+      else tag + bytes.length
+
+  // A scalar's wire bytes, written straight into an array of exactly their length.
+  def varintData(value: Long): Data =
+    val size = varintSize(value)
+    val buffer = Array.allocate[Byte](size)
+    var rest = value
+    var index = 0
+
+    repeat(size - 1):
+      buffer(index) = ((rest & 0x7f) | 0x80).toByte
+      rest = rest >>> 7
+      index += 1
+
+    buffer(index) = rest.toByte
+    Array.freeze(buffer)
+
+  // The low `width` bytes of `value`, little-endian.
+  def fixedData(value: Long, width: Int): Data =
+    val buffer = Array.allocate[Byte](width)
+    var index = 0
+
+    repeat(width):
+      buffer(index) = (value >>> (index*8)).toByte
+      index += 1
+
+    Array.freeze(buffer)
+
 // Writes Protocol Buffers wire bytes. Varints are LEB128; fixed32/fixed64 are little-endian; a
 // field is its tag varint followed by the value (length-prefixed for the length-delimited wire
 // type). A message's encoded children are already in hand, so its size is known before it is
@@ -185,75 +257,3 @@ extends caps.ExclusiveCapability, caps.Stateful:
       tag(number, wireType)
       if wireType == WireType.Len then varint(bytes.length)
       raw(bytes)
-
-@unexported
-object ProtobufPrinter:
-  // `length` bytes of `source` from `offset`, copied out as a frozen array of their own.
-  private[locomotion] def copied(source: scala.Array[Byte], offset: Int, length: Int): Data =
-    val bytes = Array.allocate[Byte](length)
-    System.arraycopy(source, offset, bytes.raw, 0, length)
-    Array.freeze(bytes)
-
-  // A printer of exactly `size` bytes, whose `data()` is that array, uncopied.
-  def exact(size: Int): ProtobufPrinter^ =
-    new ProtobufPrinter(new scala.Array[Byte](size), false, null)
-
-  // A printer of bytes of unknown length, from a buffer of `hint` bytes.
-  def growing(hint: Int): ProtobufPrinter^ =
-    new ProtobufPrinter(new scala.Array[Byte](hint.max(16)), true, null)
-
-  // A printer that hands each block of `size` bytes to `deliver` as it fills; `flush()` hands on
-  // the last, partial one.
-  def blocks(size: Int, consume deliver: Data => Unit): ProtobufPrinter^ =
-    new ProtobufPrinter(new scala.Array[Byte](size.max(16)), false, deliver)
-
-  // Reasserts the capability of a printer that travelled as a neutral carrier, for the
-  // generated printers spliced into user modules; inline for the reason `ProtobufParser.of` is.
-  inline def of(carrier: AnyRef): ProtobufPrinter^ = carrier.asInstanceOf[ProtobufPrinter^]
-
-  // The LEB128 length of `value`, read as an unsigned 64-bit quantity: 1 to 10 bytes.
-  def varintSize(value: Long): Int = Scribe.varintLength(value)
-
-  // The length of `string`'s UTF-8 encoding, without encoding it.
-  def utf8Length(string: String): Int = Scribe.utf8Length(string)
-
-  // The length of a field's tag: one byte up to field number 15, as a varint thereafter.
-  def tagSize(number: Int): Int = varintSize(number.toLong << 3)
-
-  // The number of bytes `field(number, value)` writes, which it must mirror exactly: a scribe
-  // of fixed size drops whatever is written past its end.
-  def fieldSize(number: Int, value: Protobuf): Int = value match
-    case Protobuf.Absent           => 0
-    case Protobuf.Repeated(values) => values.fold(0)(_ + fieldSize(number, _))
-
-    case Protobuf.Wire(wireType, bytes) =>
-      val tag = varintSize((number.toLong << 3) | wireType.id)
-
-      if wireType == WireType.Len then tag + varintSize(bytes.length) + bytes.length
-      else tag + bytes.length
-
-  // A scalar's wire bytes, written straight into an array of exactly their length.
-  def varintData(value: Long): Data =
-    val size = varintSize(value)
-    val buffer = Array.allocate[Byte](size)
-    var rest = value
-    var index = 0
-
-    repeat(size - 1):
-      buffer(index) = ((rest & 0x7f) | 0x80).toByte
-      rest = rest >>> 7
-      index += 1
-
-    buffer(index) = rest.toByte
-    Array.freeze(buffer)
-
-  // The low `width` bytes of `value`, little-endian.
-  def fixedData(value: Long, width: Int): Data =
-    val buffer = Array.allocate[Byte](width)
-    var index = 0
-
-    repeat(width):
-      buffer(index) = (value >>> (index*8)).toByte
-      index += 1
-
-    Array.freeze(buffer)

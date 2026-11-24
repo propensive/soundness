@@ -95,6 +95,7 @@ object internal:
   private[mosquito] inline def productAt[a, b, r]
     ( lefts: Array[a]^{}, rights: Array[b]^{}, i: Int, j: Int )
   :   r =
+
     times[a, b, r](lefts.readUnchecked(i), rights.readUnchecked(j))
 
   // One component of the seven-dimensional cross product: p1 - n1 + p2 - n2 + p3 - n3 over
@@ -159,7 +160,7 @@ object internal:
       var rest = list
 
       while i < size do
-        rest match
+        rest.absolve match
           case Nil =>
             return Unset
 

@@ -702,8 +702,8 @@ trait TelMutation:
 
         b += 1
 
-      if oldIndex < 0 || oldIndex >= positions.length || newIndex < 0
-        || newIndex >= positions.length
+      if oldIndex < 0 || oldIndex >= positions.length || newIndex < 0 ||
+        newIndex >= positions.length
       then abort(Mutation.Error(Reason.PointerNotFound))
 
       if oldIndex == newIndex then blocks
@@ -842,7 +842,8 @@ trait TelMutation:
 
         val anchor = placement match
           case Placement.Before => pruned.indexWhere: (idx, _) => otherBlocks.contains(idx)
-          case Placement.After  =>
+
+          case Placement.After =>
             pruned.lastIndexWhere { (idx, _) => otherBlocks.contains(idx) } + 1
 
         val out = scala.collection.mutable.ArrayBuffer.empty[Tel.Block]
@@ -1157,9 +1158,11 @@ trait TelMutation:
           case PointerNotFound       => m"the pointer does not resolve to a compound"
           case AtomIndexOutOfRange   => m"the atom index is out of range for the target compound"
           case FlagAlreadySet        => m"the flag is already set on the target compound"
-          case TabulationOverflow    =>
+
+          case TabulationOverflow =>
             m"the tabulation has insufficient column capacity for the row"
-          case WriteUnsupported      => m"the source of the document does not support writing"
+
+          case WriteUnsupported => m"the source of the document does not support writing"
 
       enum Reason(val number: Int) extends Clarification:
         case PointerNotFound     extends Reason(1)

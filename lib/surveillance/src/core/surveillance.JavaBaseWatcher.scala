@@ -175,7 +175,7 @@ object JavaBaseWatcher extends Watcher uses parasite.threads:
             watches.remove(pathWatch.key)
 
         if watches.nil then serviceMutex:
-          serviceValue match
+          serviceValue.absolve match
             case Unset                => ()
 
             case service: WatchService =>

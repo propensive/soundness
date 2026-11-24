@@ -314,7 +314,7 @@ private[facsimile] object PdfWriter:
 
   // Consecutive runs of ascending numbers, each as (first, members).
   private def subsections(numbers: List[Int]): List[(Int, List[Int])] =
-    numbers match
+    numbers.absolve match
       case Nil =>
         Nil
 

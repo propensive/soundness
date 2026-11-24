@@ -34,7 +34,6 @@ package enigmatic
 
 import java.io as ji
 import java.security as js
-import java.util as ju
 
 import scala.caps
 

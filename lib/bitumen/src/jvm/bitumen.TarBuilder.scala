@@ -83,7 +83,7 @@ object TarBuilder:
       val compression = flags.reap { case flag: Tar.Flag => flag }
       val createFlags = flags.sweep { case flag: CreateFlag => flag }
 
-      compression match
+      compression.absolve match
         case tarFlag: Tar.Flag =>
           // A compressed target cannot be backpatched through the compressor:
           // entries accumulate and serialize at scope close, as before.
@@ -204,7 +204,7 @@ extends caps.ExclusiveCapability:
     insert(Tar.Entry.File
       ( name, UnixMode(), UnixUser(0), UnixGroup(0), 0.bits.u32,
         Archive.Body.deferred { () =>
-          iterator.next() match
+          iterator.next().absolve match
             case Iterator.Exhausted => Unset
             case chunk: Data        => chunk } ))
 

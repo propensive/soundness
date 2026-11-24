@@ -39,6 +39,6 @@ import vacuous.*
 export mosquito.internal.Vector
 
 extension [element: ClassTag](list: List[element])
-  def slide(size: Int): Chain[Vector[element, size.type]] = list match
+  def slide(size: Int): Chain[Vector[element, size.type]] = list.absolve match
     case Nil          => Chain()
     case head :: tail => Vector.take(list, size).lay(Chain())(_ #:: tail.slide(size))

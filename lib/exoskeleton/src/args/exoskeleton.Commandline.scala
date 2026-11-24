@@ -55,7 +55,7 @@ case class Commandline
     val occurrences: List[(Argument, List[Argument])] =
       parameters.to[List].filter { (key, _) => flag.matches(key) }.order(_(0).position)
 
-    val result: Optional[List[Argument]] = occurrences match
+    val result: Optional[List[Argument]] = occurrences.absolve match
       case Nil                  => Unset
       case _ if flag.repeatable => occurrences.bind(_(1))
       case (_, operands) :: _   => operands

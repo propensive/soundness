@@ -32,9 +32,9 @@
                                                                                                   */
 package coaxial
 
+import java.io as ji
 import java.net as jn
 import java.util as ju
-import java.io as ji
 import javax.net.ssl as jns
 
 import scala.caps

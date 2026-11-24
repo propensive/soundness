@@ -46,8 +46,6 @@ import prepositional.*
 import rudiments.*
 import vacuous.*
 
-import formatting.compactJsonFormatting
-
 // A JSON Web Signature (RFC 7515): content with a signature or MAC over it and over the header
 // that says how it was made. `Jws(payload, key)` signs; `jws.verify(key)` checks the signature
 // and gives the payload, and is the only way to get it — a `Jws` that has merely been read
@@ -123,6 +121,7 @@ object Jws:
       ( content,
         signatures.map: jws =>
           Signatory(jws.protection, jws.unprotected, Jose.encode(jws.signature)) )
+
     . in[Json]
 
   // Reads either JSON serialization — flattened, with one signature, or general, with

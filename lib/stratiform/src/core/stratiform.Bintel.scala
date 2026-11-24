@@ -836,8 +836,7 @@ object Bintel:
   private def resolveType(t: Tels.Type, schema: Tels): Tels.Type = t match
     case Tels.Reference(name) =>
       schema.records.seek(_.name == name).lay:
-        schema.scalars.seek(_.name == name).lay(t): sc =>
-          sc.scalar
+        schema.scalars.seek(_.name == name).lay(t): sc => sc.scalar
 
       . apply: rec => Tels.Struct(rec.members, rec.validators)
 

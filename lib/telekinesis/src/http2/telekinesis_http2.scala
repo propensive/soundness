@@ -32,10 +32,6 @@
                                                                                                   */
 package telekinesis
 
-import java.io as ji
-import java.net as jn
-import javax.net.ssl as jns
-
 import scala.caps
 
 import anticipation.*
@@ -144,7 +140,7 @@ private[telekinesis] def secureConnect(host: Host, port: Int)
   ( using Tactic[Connect.Error] )
 :   Duplex =
 
-  import Connect.Error.Reason.*, Ssl.Reason.*
+  import Connect.Error.Reason.*
 
   val alpn: Tls = Tls(tls.context, tls.verify, List(t"h2", t"http/1.1"), tls.versions)
 

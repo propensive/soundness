@@ -104,8 +104,7 @@ private[hallucination] object PngCodec:
               case _ => false
 
             val supported =
-              legal && data.u8(position + 18) == 0 && data.u8(position + 19) == 0 &&
-                interlace <= 1
+              legal && data.u8(position + 18) == 0 && data.u8(position + 19) == 0 && interlace <= 1
 
             if !supported then abort(Raster.Error(Png(), Reason.UnsupportedVariant))
 

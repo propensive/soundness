@@ -99,6 +99,12 @@ object Tels extends Tels2:
       indexes:     List[Index] = Nil )
   extends Member
 
+  object Index:
+    // §20.3 field merge: `base`, followed by each of `layer` not already present.
+    def merge(base: List[Index], layer: List[Index]): List[Index] =
+      layer.fuse(base):
+        if state.exists(_.same(next)) then state else state + List(next)
+
   // One secondary index over a repeatable field (§20, *Layout annotations*): an ordered tuple
   // of static TELPs, each kept as it was written, since whether it is a TELP at all is a
   // question for validation (E229). A storage-layout annotation for RaTEL: it constrains no
@@ -110,12 +116,6 @@ object Tels extends Tels2:
     def same(that: Index): Boolean =
       def identity(path: Text): Telp | Text = safely(Telp.parse(path)).or(path)
       paths.map(identity) == that.paths.map(identity)
-
-  object Index:
-    // §20.3 field merge: `base`, followed by each of `layer` not already present.
-    def merge(base: List[Index], layer: List[Index]): List[Index] =
-      layer.fuse(base):
-        if state.exists(_.same(next)) then state else state + List(next)
 
   case class SelectRef
     ( required:   Polarity,
@@ -847,8 +847,7 @@ object Tels extends Tels2:
           // §20.3: `width` merges as `encoding` does -- set once, restated only as itself
           // (E226) -- and `intern` as `key` does, by monotone OR.
           val mergedWidth = out(existing).width.lay(newDef.width): base =>
-            newDef.width.let: layer =>
-              if layer != base then abort(Tel.Error(Reason.WidthConflict))
+            newDef.width.let: layer => if layer != base then abort(Tel.Error(Reason.WidthConflict))
 
             base
 
@@ -1135,8 +1134,7 @@ object Tels extends Tels2:
       case struct: Struct => struct
 
       case Reference(name) =>
-        schema.records.seek(_.name == name).let: record =>
-          Struct(record.members, record.validators)
+        schema.records.seek(_.name == name).let: record => Struct(record.members, record.validators)
 
       case _ => Unset
 
@@ -1146,11 +1144,12 @@ object Tels extends Tels2:
     private def resolveIndexPath(components: List[Text], struct: Struct, schema: Tels)
     :   Unit raises Tel.Error =
 
-      components match
+      components.absolve match
         case component :: rest =>
           val field: Field =
             struct.members.sweep { case field: Field if field.keyword == component => field }
-            . to[List] match
+            . to[List]
+            . absolve match
               case field :: _ => field
               case Nil        => abort(Tel.Error(Reason.IndexPathUnresolved))
 
@@ -1469,7 +1468,7 @@ object Tels extends Tels2:
     private[Tels] def widthOf(text: Text): Int raises Tel.Error =
       val digits = text.s
       val canonical = digits.length > 0 && digits.length <= 9 && !digits.startsWith("0") &&
-        digits.forall { char => char >= '0' && char <= '9' }
+        digits.forall: char => char >= '0' && char <= '9'
 
       if canonical then Integer.parseInt(digits) else abort(Tel.Error(Reason.WidthNotDecimal))
 
@@ -1780,8 +1779,7 @@ object Tels extends Tels2:
 
       // A width which is not a canonical decimal cannot have come from a schema which was
       // constructed (E225), so one found here is simply not carried.
-      val width: Optional[Int] = textAt(ch, 5).let: text =>
-        safely(Reconstructor.widthOf(text))
+      val width: Optional[Int] = textAt(ch, 5).let: text => safely(Reconstructor.widthOf(text))
 
       ScalarDefinition
         ( textAt(ch, 0).or(t""), textsAt(ch, 1), textAt(ch, 4), textAt(ch, 3),
@@ -2597,8 +2595,7 @@ object Tels extends Tels2:
 
       val builtin: Optional[Type] = if builtinName then Scalar(Array.empty) else Unset
 
-      schema.scalars.seek(_.name == name).lay(builtin): definition =>
-        definition.scalar
+      schema.scalars.seek(_.name == name).lay(builtin): definition => definition.scalar
 
 case class Tels
   ( name:     Text,

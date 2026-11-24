@@ -36,17 +36,15 @@ import java.util.concurrent.atomic as juca
 
 import scala.caps
 
+import Io.Error.{Operation, Reason}
 import anticipation.*
 import contingency.*
 import fulminate.*
-import gossamer.*
 import prepositional.*
-import rudiments.*
 import serpentine.*
 import turbulence.*
 import vacuous.*
 import zephyrine.{Surveyable, Terrain}
-import Io.Error.{Operation, Reason}
 
 // Sharing a file between processes through the page cache (issue #2472): one process *owns* a
 // name and publishes successive versions of a file under it; any number of others map whichever
@@ -75,33 +73,6 @@ trait Owner[record] extends caps.ExclusiveCapability:
   // Replaces the published file with the encoding of `value`, atomically, and answers the new
   // version's edition. Readers which have mapped an earlier version are undisturbed.
   def publish(value: record)(using (record is Encodable in Data)^, Tactic[Io.Error]): Edition
-
-// A reader's hold on a published name, for the scope of `path.observe`: the current version,
-// mapped into memory, and the means to move on to a newer one. It takes no lock, and may be
-// shared between threads.
-trait Observer[record] extends caps.SharedCapability:
-  // The edition of the version which is mapped.
-  def edition: Edition
-
-  // Lends a view of the mapped version for the length of `lambda`. A `refresh` meanwhile, on
-  // this or another thread, does not disturb it: the version stays mapped until the last such
-  // scope over it has ended.
-  def map[result](lambda: Terrain^ => result): result
-
-  // Maps the version the name now leads to, if it is not the one already mapped, and answers
-  // whether it did.
-  def refresh()(using Tactic[Io.Error]): Boolean
-
-  // Opens the mapped version as `record`, for reading in place, for the length of `block`:
-  // the type which was given to `observe` is the form it is read in, and no other is. As with
-  // `map`, a `refresh` meanwhile does not disturb the block, which goes on reading the version
-  // it began with.
-  def open[result](using surveyable: (record is Surveyable)^)
-    ( flags: surveyable.Operand* )
-    ( block: (surveyable.Result^) ?=> result )
-  :   result =
-
-    map { view => surveyable.survey(view, flags)(block) }
 
 object Observer:
   // One mapped version, counted: `readers` is the number of `map` scopes now over it, and it is
@@ -227,3 +198,30 @@ object Observer:
         throw throwable
 
       editionOf(path, backend)
+
+// A reader's hold on a published name, for the scope of `path.observe`: the current version,
+// mapped into memory, and the means to move on to a newer one. It takes no lock, and may be
+// shared between threads.
+trait Observer[record] extends caps.SharedCapability:
+  // The edition of the version which is mapped.
+  def edition: Edition
+
+  // Lends a view of the mapped version for the length of `lambda`. A `refresh` meanwhile, on
+  // this or another thread, does not disturb it: the version stays mapped until the last such
+  // scope over it has ended.
+  def map[result](lambda: Terrain^ => result): result
+
+  // Maps the version the name now leads to, if it is not the one already mapped, and answers
+  // whether it did.
+  def refresh()(using Tactic[Io.Error]): Boolean
+
+  // Opens the mapped version as `record`, for reading in place, for the length of `block`:
+  // the type which was given to `observe` is the form it is read in, and no other is. As with
+  // `map`, a `refresh` meanwhile does not disturb the block, which goes on reading the version
+  // it began with.
+  def open[result](using surveyable: (record is Surveyable)^)
+    ( flags: surveyable.Operand* )
+    ( block: (surveyable.Result^) ?=> result )
+  :   result =
+
+    map: view => surveyable.survey(view, flags)(block)

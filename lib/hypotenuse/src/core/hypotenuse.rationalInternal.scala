@@ -41,8 +41,6 @@ import scala.util.FromDigits
 
 import anticipation.*
 import contingency.*
-import prepositional.*
-import rudiments.*
 import symbolism.*
 import vacuous.*
 
@@ -899,7 +897,8 @@ object rationalInternal:
       type Operand = self
       type Result = self
 
-      inline def divide(dividend: self, divisor: self): self = refine[self](product(dividend, divisor, true))
+      inline def divide(dividend: self, divisor: self): self =
+        refine[self](product(dividend, divisor, true))
 
     inline given negatable: [self <: Q64] => self is Negatable:
       type Result = self
@@ -1229,7 +1228,8 @@ object rationalInternal:
       type Operand = self
       type Result = self
 
-      inline def divide(dividend: self, divisor: self): self = refine[self](product(dividend, divisor, true))
+      inline def divide(dividend: self, divisor: self): self =
+        refine[self](product(dividend, divisor, true))
 
     inline given negatable: [self <: Q32] => self is Negatable:
       type Result = self

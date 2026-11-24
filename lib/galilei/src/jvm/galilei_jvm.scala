@@ -40,7 +40,7 @@ import java.nio.file.attribute as jnfa
 import anticipation.*
 import contingency.*
 import gossamer.*
-import murmuration.{has, filter, map, foreach}
+import murmuration.{has, filter, foreach, sweep}
 import prepositional.*
 import serpentine.*
 import symbolism.*
@@ -113,15 +113,15 @@ package filesystemBackends:
           // cannot be told apart from a file.
           def unixInt(name: String): Optional[Int] =
             try jnf.Files.getAttribute(javaPath(path), name, options*).nn.absolve match
-              case value: Int => value
-              case _          => Unset
+              case value: java.lang.Integer => value.intValue
+              case _                        => Unset
             catch case _: Exception => Unset
 
           def unixLong(name: String): Optional[Long] =
             try jnf.Files.getAttribute(javaPath(path), name, options*).nn.absolve match
-              case value: Long => value
-              case value: Int  => value.toLong
-              case _           => Unset
+              case value: java.lang.Long    => value.longValue
+              case value: java.lang.Integer => value.longValue
+              case _                        => Unset
             catch case _: Exception => Unset
 
           val mode: Optional[Int] = unixInt("unix:mode")
@@ -401,7 +401,8 @@ package filesystemBackends:
 
                 try
                   val mapMode = jnc.FileChannel.MapMode.READ_WRITE.nn
-                  new SegmentHolding(channel, held, arena, channel.map(mapMode, 0L, channel.size, arena).nn)
+                  val mapping = channel.map(mapMode, 0L, channel.size, arena).nn
+                  new SegmentHolding(channel, held, arena, mapping)
                 catch case throwable: Throwable =>
                   arena.close()
                   throw throwable
@@ -545,10 +546,8 @@ package filesystemBackends:
           (flags.has(OpenFlag.Create) || flags.has(OpenFlag.Exclusive)) &&
             !jnf.Files.exists(javaPath(path), jnf.LinkOption.NOFOLLOW_LINKS)
 
-        val options: List[jnf.OpenOption] = flags.filter: flag =>
-          flag != OpenFlag.Lock && flag != OpenFlag.LockShared && flag != OpenFlag.Await
-
-        . map:
+        // `Lock`, `LockShared` and `Await` have no `OpenOption`, so they are swept away.
+        val options: List[jnf.OpenOption] = flags.sweep[jnf.OpenOption, List[jnf.OpenOption]]:
           case OpenFlag.Read      => jnf.StandardOpenOption.READ
           case OpenFlag.Write     => jnf.StandardOpenOption.WRITE
           case OpenFlag.Append    => jnf.StandardOpenOption.APPEND

@@ -62,31 +62,60 @@ object Sequence extends scala.caps.Pure:
   def apply[element](e1: element, e2: element, e3: element): Sequence[element] & Populated =
     populated(sci.Vector(e1, e2, e3))
 
-  def apply[element](e1: element, e2: element, e3: element, e4: element): Sequence[element] & Populated =
+  def apply[element](e1: element, e2: element, e3: element, e4: element)
+  :   Sequence[element] & Populated =
+
     populated(sci.Vector(e1, e2, e3, e4))
 
-  def apply[element](e1: element, e2: element, e3: element, e4: element, e5: element): Sequence[element] & Populated =
+  def apply[element](e1: element, e2: element, e3: element, e4: element, e5: element)
+  :   Sequence[element] & Populated =
+
     populated(sci.Vector(e1, e2, e3, e4, e5))
 
-  def apply[element](e1: element, e2: element, e3: element, e4: element, e5: element, e6: element): Sequence[element] & Populated =
+  def apply[element](e1: element, e2: element, e3: element, e4: element, e5: element, e6: element)
+  :   Sequence[element] & Populated =
+
     populated(sci.Vector(e1, e2, e3, e4, e5, e6))
 
-  def apply[element](e1: element, e2: element, e3: element, e4: element, e5: element, e6: element, e7: element): Sequence[element] & Populated =
+  def apply[element]
+    ( e1: element, e2: element, e3: element, e4: element, e5: element, e6: element, e7: element )
+  :   Sequence[element] & Populated =
+
     populated(sci.Vector(e1, e2, e3, e4, e5, e6, e7))
 
-  def apply[element](e1: element, e2: element, e3: element, e4: element, e5: element, e6: element, e7: element, e8: element): Sequence[element] & Populated =
+  def apply[element]
+    ( e1: element, e2: element, e3: element, e4: element, e5: element, e6: element, e7: element,
+      e8: element )
+  :   Sequence[element] & Populated =
+
     populated(sci.Vector(e1, e2, e3, e4, e5, e6, e7, e8))
 
-  def apply[element](e1: element, e2: element, e3: element, e4: element, e5: element, e6: element, e7: element, e8: element, e9: element): Sequence[element] & Populated =
+  def apply[element]
+    ( e1: element, e2: element, e3: element, e4: element, e5: element, e6: element, e7: element,
+      e8: element, e9: element )
+  :   Sequence[element] & Populated =
+
     populated(sci.Vector(e1, e2, e3, e4, e5, e6, e7, e8, e9))
 
-  def apply[element](e1: element, e2: element, e3: element, e4: element, e5: element, e6: element, e7: element, e8: element, e9: element, e10: element): Sequence[element] & Populated =
+  def apply[element]
+    ( e1: element, e2: element, e3: element, e4: element, e5: element, e6: element, e7: element,
+      e8: element, e9: element, e10: element )
+  :   Sequence[element] & Populated =
+
     populated(sci.Vector(e1, e2, e3, e4, e5, e6, e7, e8, e9, e10))
 
-  def apply[element](e1: element, e2: element, e3: element, e4: element, e5: element, e6: element, e7: element, e8: element, e9: element, e10: element, e11: element): Sequence[element] & Populated =
+  def apply[element]
+    ( e1: element, e2: element, e3: element, e4: element, e5: element, e6: element, e7: element,
+      e8: element, e9: element, e10: element, e11: element )
+  :   Sequence[element] & Populated =
+
     populated(sci.Vector(e1, e2, e3, e4, e5, e6, e7, e8, e9, e10, e11))
 
-  def apply[element](e1: element, e2: element, e3: element, e4: element, e5: element, e6: element, e7: element, e8: element, e9: element, e10: element, e11: element, e12: element): Sequence[element] & Populated =
+  def apply[element]
+    ( e1: element, e2: element, e3: element, e4: element, e5: element, e6: element, e7: element,
+      e8: element, e9: element, e10: element, e11: element, e12: element )
+  :   Sequence[element] & Populated =
+
     populated(sci.Vector(e1, e2, e3, e4, e5, e6, e7, e8, e9, e10, e11, e12))
 
   // See `List.populated`.
@@ -103,7 +132,8 @@ object Sequence extends scala.caps.Pure:
   given populatedEquality: [left, right] => CanEqual[Sequence[left] & Populated, Sequence[right]] =
     CanEqual.derived
 
-  given populatedEqualityReversed: [left, right] => CanEqual[Sequence[left], Sequence[right] & Populated] =
+  given populatedEqualityReversed: [left, right]
+  =>  CanEqual[Sequence[left], Sequence[right] & Populated] =
     CanEqual.derived
 
   def from[element](elements: IterableOnce[element]^): Sequence[element] =
@@ -127,12 +157,14 @@ object Sequence extends scala.caps.Pure:
   =>  scala.quoted.ToExpr[Sequence[element]]:
     def apply(sequence: Sequence[element])(using scala.quoted.Quotes)
     :   scala.quoted.Expr[Sequence[element]] =
+
       '{Sequence.from(${scala.quoted.Expr.ofList(sequence.toList.map(scala.quoted.Expr(_)))})}
 
   given fromExpr: [element: {scala.quoted.Type, scala.quoted.FromExpr}]
   =>  scala.quoted.FromExpr[Sequence[element]]:
     def unapply(expr: scala.quoted.Expr[Sequence[element]])(using scala.quoted.Quotes)
     :   Option[Sequence[element]] =
+
       expr match
         case '{Sequence.from($elements: sci.List[`element`])} =>
           scala.quoted.FromExpr.ListFromExpr[element].unapply(elements).map(Sequence.from(_))
@@ -151,6 +183,7 @@ object Sequence extends scala.caps.Pure:
 
   def define[element](sequence: Sequence[element], index: Int, value: element)
   :   Sequence[element] =
+
     sequence.updated(index, value)
 
   def has[element](sequence: Sequence[element], value: element): Boolean =
@@ -180,6 +213,7 @@ object Sequence extends scala.caps.Pure:
 
   def map[element, element2](sequence: Sequence[element], lambda: element => element2)
   :   Sequence[element2] =
+
     sequence.map(lambda)
 
   def slice[element](sequence: Sequence[element], from: Int, until: Int): Sequence[element] =
@@ -189,7 +223,7 @@ object Sequence extends scala.caps.Pure:
 
   // Subtype-parametric so branded sequences splat too.
   given sequenceIsSpreadable: [element, sequence <: Sequence[element]]
-  =>  (Spreadable[sequence] { type Out = sci.Vector[element] }) =
+  =>  ( Spreadable[sequence] { type Out = sci.Vector[element] } ) =
     new Spreadable[sequence]:
       type Out = sci.Vector[element]
       def spread(value: sequence): sci.Vector[element] = value

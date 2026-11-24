@@ -106,7 +106,7 @@ object Sse:
           val n = ordinal.n0
           val value = line.skip(if line(n.z + 1) == ' ' then n + 2 else n + 1)
 
-          line.keep(n) match
+          line.keep(n).s match
             case "event" => event = value
             case "data"  => data ::= value
             case "id"    => id = value

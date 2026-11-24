@@ -99,4 +99,3 @@ object Channel:
   trait Grey[bits <: Int] extends Channel["grey", bits]
 
 trait Channel[label <: String & Singleton, bits <: Int]
-

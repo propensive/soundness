@@ -64,7 +64,8 @@ object Chain extends scala.caps.Pure:
   given populatedEquality: [left, right] => CanEqual[Chain[left] & Populated, Chain[right]] =
     CanEqual.derived
 
-  given populatedEqualityReversed: [left, right] => CanEqual[Chain[left], Chain[right] & Populated] =
+  given populatedEqualityReversed: [left, right]
+  =>  CanEqual[Chain[left], Chain[right] & Populated] =
     CanEqual.derived
 
   def from[element](elements: IterableOnce[element]^): Chain[element] =
@@ -80,6 +81,7 @@ object Chain extends scala.caps.Pure:
 
   def unfold[state, element](init: state)(lambda: state => Option[(element, state)])
   :   Chain[element] =
+
     of(sci.LazyList.unfold(init)(lambda))
 
   def range[element: Integral](start: element, end: element): Chain[element] =
@@ -100,7 +102,7 @@ object Chain extends scala.caps.Pure:
   // `.to[Chain]` support (see `List`): the conversion is on `Chain.type` only, so it cannot
   // expose members of `Chain` values.
   given factory: [element]
-        => Conversion[Chain.type, scala.collection.Factory[element, Chain[element]]] =
+  =>  Conversion[Chain.type, scala.collection.Factory[element, Chain[element]]] =
     _ =>
       new scala.collection.Factory[element, Chain[element]]:
         def fromSpecific(elements: IterableOnce[element]^): Chain[element] =
@@ -120,6 +122,7 @@ object Chain extends scala.caps.Pure:
   =>  scala.quoted.ToExpr[Chain[element]]:
     def apply(chain: Chain[element])(using scala.quoted.Quotes)
     :   scala.quoted.Expr[Chain[element]] =
+
       '{Chain.from(${scala.quoted.Expr.ofList(chain.toList.map(scala.quoted.Expr(_)))})}
 
   // The primitive operations, for the typeclass instances defined in the libraries above;
@@ -162,7 +165,8 @@ object Chain extends scala.caps.Pure:
 // order, so the receiver is the HEAD; it rides on a given (a top-level name would clash with the
 // extractor object). The head is by-value (call sites hoist it), but the TAIL is by-name so the
 // stream stays lazy — `head #:: recur()` must not evaluate `recur()`.
-  given chainIsSpreadable: [element] => (Spreadable[Chain[element]] { type Out = sci.LazyList[element] }) =
+  given chainIsSpreadable: [element]
+  =>  ( Spreadable[Chain[element]] { type Out = sci.LazyList[element] } ) =
     new Spreadable[Chain[element]]:
       type Out = sci.LazyList[element]
       def spread(value: Chain[element]): sci.LazyList[element] = value
@@ -190,12 +194,14 @@ given lazyCons: Object with
 // alias matches too.
 given chainSegments: Object with
   extension [element, chain <: Chain[element]](chain: chain)
-    def keep(count: Int): Chain[element] = Chain.of(chain.asInstanceOf[sci.LazyList[element]].take(count))
+    def keep(count: Int): Chain[element] =
+      Chain.of(chain.asInstanceOf[sci.LazyList[element]].take(count))
 
     def keep(predicate: element => Boolean): Chain[element] =
       Chain.of(chain.asInstanceOf[sci.LazyList[element]].takeWhile(predicate))
 
-    def skip(count: Int): Chain[element] = Chain.of(chain.asInstanceOf[sci.LazyList[element]].drop(count))
+    def skip(count: Int): Chain[element] =
+      Chain.of(chain.asInstanceOf[sci.LazyList[element]].drop(count))
 
     def skip(predicate: element => Boolean): Chain[element] =
       Chain.of(chain.asInstanceOf[sci.LazyList[element]].dropWhile(predicate))

@@ -126,8 +126,8 @@ object internal:
           val site = s"the $noun `$label` of ${code(owner)}"
 
           report.errorAndAbort
-            ( s"wisteria: $site needs a $instance instance for $subject, but none could be found "
-              +s"or derived: $reason" )
+            ( s"wisteria: $site needs a $instance instance for $subject, but none could be found " +
+              s"or derived: $reason" )
 
         case _ =>
           ()
@@ -470,7 +470,7 @@ object internal:
     // here, once, rather than requiring a seal at every derivation site.
     result.absolve match
       case success: ImplicitSearchSuccess =>
-        success.tree.asExpr match
+        success.tree.asExpr.absolve match
           case '{$found: any} => '{$found.asInstanceOf[typeclass[elem]]}
 
       case failure: ImplicitSearchFailure => report.errorAndAbort(failure.explanation)

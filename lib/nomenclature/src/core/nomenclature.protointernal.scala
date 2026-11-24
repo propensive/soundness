@@ -224,6 +224,7 @@ object protointernal:
   def companion[companion: Typeable](using Quotes)(symbol: quotes.reflect.Symbol): companion =
     Class.forName(s"${symbol.companionModule.fullName}$$").nn.getField("MODULE$").nn.get(null) match
       case module: `companion` => module
+
       case _ =>
         halt(68, 6, m"The companion object did not have the expected type.")
 

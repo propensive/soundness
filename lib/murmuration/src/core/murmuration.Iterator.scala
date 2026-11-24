@@ -32,14 +32,143 @@
                                                                                                   */
 package murmuration
 
+import scala.annotation.unchecked.uncheckedVariance
 import scala.caps, caps.{Stateful, unsafe}
 import scala.collection.immutable as sci
 import scala.collection.mutable as scm
-import scala.annotation.unchecked.uncheckedVariance
 import scala.compiletime.uninitialized
 import scala.language.experimental.pureFunctions
 
 import prepositional.*
+
+object Iterator:
+  // The sentinel for "no more elements". Spelt as vacuous spells `Unset` (which this module,
+  // below vacuous, cannot name): `<: caps.Pure` rather than `<: Null`, so a union with it is
+  // pure whenever the other side is, and `.nn` does not strip it; backed by `null`, so it costs
+  // nothing.
+  opaque type Exhausted <: Matchable & caps.Pure = Null & caps.Pure
+  val Exhausted: Exhausted = null.asInstanceOf[Exhausted]
+
+  given exhaustedEquality: [value] => CanEqual[value, Exhausted] = CanEqual.derived
+  given equalityExhausted: [value] => CanEqual[Exhausted, value] = CanEqual.derived
+
+  // The linear token over a present element: the iterator reference itself, so a pull allocates
+  // nothing, and opaque so it cannot be forged. Bounded by `Stateful` so that a `match` can test
+  // for it against the sentinel.
+  opaque type Cursor[+element] <: Stateful = Iterator[element]^
+  type Pull[+element] = Exhausted | Cursor[element]^
+
+  object Cursor:
+    def apply[element](consume iterator: Iterator[element]^): Cursor[element]^ = iterator
+
+    extension [element](cursor: Cursor[element]^)
+      def value: element = (cursor: Iterator[element]^).current
+
+    extension [element](consume cursor: Cursor[element]^)
+      def pull: Pull[element] =
+        val iterator: Iterator[element]^ = cursor
+        if iterator.advance() then Cursor(iterator) else Exhausted
+
+  // The elements of a JVM array that no writer reaches while the iterator runs: the
+  // `Traversable` instances of the frozen array come here. `apply` boxes a primitive element
+  // through `ScalaRunTime`, as the stdlib's array iterator does.
+  def array[element](array: scala.Array[element]^{caps.any.rd})
+  :   Iterator[element]^{array, caps.any} =
+
+    new Iterator[element]:
+      private var index: Int = -1
+      protected[murmuration] update def advance(): Boolean = { index += 1; index < array.length }
+      protected[murmuration] def current: element = array(index)
+
+  def empty[element]: Iterator[element]^ = new Iterator[element]:
+    protected[murmuration] update def advance(): Boolean = false
+    protected[murmuration] def current: element = throw new NoSuchElementException()
+
+  def apply[element](elements: element*): Iterator[element]^ = from(List.iterator(elements))
+
+  def range(start: Int, end: Int): Iterator[Int]^ = new Iterator[Int]:
+    private var upcoming: Int = start
+    private var head: Int = 0
+
+    protected[murmuration] update def advance(): Boolean =
+      upcoming < end && { head = upcoming; upcoming += 1; true }
+
+    protected[murmuration] def current: Int = head
+
+  def range(start: Int, end: Int, step: Int): Iterator[Int]^ = new Iterator[Int]:
+    private var upcoming: Int = start
+    private var head: Int = 0
+
+    protected[murmuration] update def advance(): Boolean =
+      (if step > 0 then upcoming < end else upcoming > end) &&
+        { head = upcoming; upcoming += step; true }
+
+    protected[murmuration] def current: Int = head
+
+  def fill[element](limit: Int)(element: => element)
+  :   Iterator[element]^{element, caps.any} =
+
+    new Iterator[element]:
+      private var remaining: Int = limit
+      private var head: element = uninitialized
+
+      protected[murmuration] update def advance(): Boolean =
+        remaining > 0 && { remaining -= 1; head = element; true }
+
+      protected[murmuration] def current: element = head
+
+  def tabulate[element](count: Int)(lambda: Int => element): Iterator[element]^{lambda, caps.any} =
+    range(0, count).map(lambda)
+
+  def continually[element](element: => element)
+  :   Iterator[element]^{element, caps.any} =
+
+    new Iterator[element]:
+      private var head: element = uninitialized
+      protected[murmuration] update def advance(): Boolean = { head = element; true }
+      protected[murmuration] def current: element = head
+
+  def iterate[element](initial: element)(lambda: element => element)
+  :   Iterator[element]^{lambda, caps.any} =
+
+    new Iterator[element]:
+      private var started: Boolean = false
+      private var head: element = initial
+
+      protected[murmuration] update def advance(): Boolean =
+        if started then head = lambda(head) else started = true
+        true
+
+      protected[murmuration] def current: element = head
+
+  // The boundaries from the standard library and Java: a one-shot source whose remaining
+  // elements this iterator takes over.
+  def from[element](consume iterator: scala.collection.Iterator[element]^): Iterator[element]^ =
+    new Iterator[element]:
+      private var head: element = uninitialized
+
+      protected[murmuration] update def advance(): Boolean =
+        iterator.hasNext && { head = iterator.next(); true }
+
+      protected[murmuration] def current: element = head
+
+  def from[element](iterator: java.util.Iterator[element]): Iterator[element]^ =
+    new Iterator[element]:
+      private var head: element = uninitialized
+
+      protected[murmuration] update def advance(): Boolean =
+        iterator.hasNext && { head = iterator.next().nn; true }
+
+      protected[murmuration] def current: element = head
+
+  def from[element](enumeration: java.util.Enumeration[element]): Iterator[element]^ =
+    new Iterator[element]:
+      private var head: element = uninitialized
+
+      protected[murmuration] update def advance(): Boolean =
+        enumeration.hasMoreElements && { head = enumeration.nextElement().nn; true }
+
+      protected[murmuration] def current: element = head
 
 // A one-shot, stateful source of elements: the collection layer's internal currency
 // (`Traversable` produces one, the transforming operations consume it) and the honest type of
@@ -80,7 +209,8 @@ trait Iterator[+element] extends Stateful:
     if advance() then Iterator.Cursor(this) else Iterator.Exhausted
 
   // The stateful-consumer surface: the next element, or the sentinel once exhausted.
-  update def next(): element | Iterator.Exhausted = if advance() then current else Iterator.Exhausted
+  update def next(): element | Iterator.Exhausted =
+    if advance() then current else Iterator.Exhausted
 
   update def each(lambda: element => Unit): Unit = while advance() do lambda(current)
 
@@ -142,6 +272,7 @@ trait Iterator[+element] extends Stateful:
     ( using reshapable: result[element @uncheckedVariance] is Reshapable
                           by (element @uncheckedVariance) to result[element @uncheckedVariance] )
   :   result[element @uncheckedVariance] =
+
     reshapable.reshape(this)
 
   // The number of elements remaining, by draining them.
@@ -238,7 +369,8 @@ trait Iterator[+element] extends Stateful:
               head = exclusive.current
               result = true
               searching = false
-            else current0 = null
+            else
+              current0 = null
 
         result
 
@@ -275,8 +407,10 @@ trait Iterator[+element] extends Stateful:
 
     new Iterator[element]:
       private var remaining: Int = limit
+
       protected[murmuration] update def advance(): Boolean =
         remaining > 0 && { remaining -= 1; source.advance() }
+
       protected[murmuration] def current: element = source.current
 
   consume def skip(limit: Int): Iterator[element]^ =
@@ -301,7 +435,8 @@ trait Iterator[+element] extends Stateful:
       private var finished: Boolean = false
 
       protected[murmuration] update def advance(): Boolean =
-        !finished && source.advance() && (if predicate(source.current) then true else { finished = true; false })
+        !finished && source.advance() &&
+          (if predicate(source.current) then true else { finished = true; false })
 
       protected[murmuration] def current: element = source.current
 
@@ -342,7 +477,8 @@ trait Iterator[+element] extends Stateful:
         if !started then
           started = true
           true
-        else source.advance() && { head = lambda(head, source.current); true }
+        else
+          source.advance() && { head = lambda(head, source.current); true }
 
       protected[murmuration] def current: state = head
 
@@ -353,7 +489,7 @@ trait Iterator[+element] extends Stateful:
   // The first occurrence of each key, in first-occurrence order.
   consume def deduplicate[key](lambda: element => key): Iterator[element]^{lambda, caps.any} =
     val seen = scm.HashSet[key]()
-    filter { element => seen.add(lambda(element)) }
+    filter: element => seen.add(lambda(element))
 
   consume def distinct: Iterator[element]^ = deduplicate(identity(_))
 
@@ -415,120 +551,3 @@ trait Iterator[+element] extends Stateful:
           val head = source.current
           advanced = source.advance()
           head
-
-object Iterator:
-  // The sentinel for "no more elements". Spelt as vacuous spells `Unset` (which this module,
-  // below vacuous, cannot name): `<: caps.Pure` rather than `<: Null`, so a union with it is
-  // pure whenever the other side is, and `.nn` does not strip it; backed by `null`, so it costs
-  // nothing.
-  opaque type Exhausted <: Matchable & caps.Pure = Null & caps.Pure
-  val Exhausted: Exhausted = null.asInstanceOf[Exhausted]
-
-  given exhaustedEquality: [value] => CanEqual[value, Exhausted] = CanEqual.derived
-  given equalityExhausted: [value] => CanEqual[Exhausted, value] = CanEqual.derived
-
-  // The linear token over a present element: the iterator reference itself, so a pull allocates
-  // nothing, and opaque so it cannot be forged. Bounded by `Stateful` so that a `match` can test
-  // for it against the sentinel.
-  opaque type Cursor[+element] <: Stateful = Iterator[element]^
-  type Pull[+element] = Exhausted | Cursor[element]^
-
-  object Cursor:
-    def apply[element](consume iterator: Iterator[element]^): Cursor[element]^ = iterator
-
-    extension [element](cursor: Cursor[element]^)
-      def value: element = (cursor: Iterator[element]^).current
-
-    extension [element](consume cursor: Cursor[element]^)
-      def pull: Pull[element] =
-        val iterator: Iterator[element]^ = cursor
-        if iterator.advance() then Cursor(iterator) else Exhausted
-
-  // The elements of a JVM array that no writer reaches while the iterator runs: the
-  // `Traversable` instances of the frozen array come here. `apply` boxes a primitive element
-  // through `ScalaRunTime`, as the stdlib's array iterator does.
-  def array[element](array: scala.Array[element]^{caps.any.rd}): Iterator[element]^{array, caps.any} = new Iterator[element]:
-    private var index: Int = -1
-    protected[murmuration] update def advance(): Boolean = { index += 1; index < array.length }
-    protected[murmuration] def current: element = array(index)
-
-  def empty[element]: Iterator[element]^ = new Iterator[element]:
-    protected[murmuration] update def advance(): Boolean = false
-    protected[murmuration] def current: element = throw new NoSuchElementException()
-
-  def apply[element](elements: element*): Iterator[element]^ = from(List.iterator(elements))
-
-  def range(start: Int, end: Int): Iterator[Int]^ = new Iterator[Int]:
-    private var upcoming: Int = start
-    private var head: Int = 0
-
-    protected[murmuration] update def advance(): Boolean =
-      upcoming < end && { head = upcoming; upcoming += 1; true }
-
-    protected[murmuration] def current: Int = head
-
-  def range(start: Int, end: Int, step: Int): Iterator[Int]^ = new Iterator[Int]:
-    private var upcoming: Int = start
-    private var head: Int = 0
-
-    protected[murmuration] update def advance(): Boolean =
-      (if step > 0 then upcoming < end else upcoming > end) && { head = upcoming; upcoming += step; true }
-
-    protected[murmuration] def current: Int = head
-
-  def fill[element](limit: Int)(element: => element): Iterator[element]^{element, caps.any} = new Iterator[element]:
-    private var remaining: Int = limit
-    private var head: element = uninitialized
-
-    protected[murmuration] update def advance(): Boolean =
-      remaining > 0 && { remaining -= 1; head = element; true }
-
-    protected[murmuration] def current: element = head
-
-  def tabulate[element](count: Int)(lambda: Int => element): Iterator[element]^{lambda, caps.any} =
-    range(0, count).map(lambda)
-
-  def continually[element](element: => element): Iterator[element]^{element, caps.any} = new Iterator[element]:
-    private var head: element = uninitialized
-    protected[murmuration] update def advance(): Boolean = { head = element; true }
-    protected[murmuration] def current: element = head
-
-  def iterate[element](initial: element)(lambda: element => element): Iterator[element]^{lambda, caps.any} =
-    new Iterator[element]:
-      private var started: Boolean = false
-      private var head: element = initial
-
-      protected[murmuration] update def advance(): Boolean =
-        if started then head = lambda(head) else started = true
-        true
-
-      protected[murmuration] def current: element = head
-
-  // The boundaries from the standard library and Java: a one-shot source whose remaining
-  // elements this iterator takes over.
-  def from[element](consume iterator: scala.collection.Iterator[element]^): Iterator[element]^ =
-    new Iterator[element]:
-      private var head: element = uninitialized
-
-      protected[murmuration] update def advance(): Boolean =
-        iterator.hasNext && { head = iterator.next(); true }
-
-      protected[murmuration] def current: element = head
-
-  def from[element](iterator: java.util.Iterator[element]): Iterator[element]^ =
-    new Iterator[element]:
-      private var head: element = uninitialized
-
-      protected[murmuration] update def advance(): Boolean =
-        iterator.hasNext && { head = iterator.next().nn; true }
-
-      protected[murmuration] def current: element = head
-
-  def from[element](enumeration: java.util.Enumeration[element]): Iterator[element]^ =
-    new Iterator[element]:
-      private var head: element = uninitialized
-
-      protected[murmuration] update def advance(): Boolean =
-        enumeration.hasMoreElements && { head = enumeration.nextElement().nn; true }
-
-      protected[murmuration] def current: element = head

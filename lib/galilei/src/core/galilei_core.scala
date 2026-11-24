@@ -34,6 +34,7 @@ package galilei
 
 import java.nio.file as jnf
 
+import Io.Error.{Operation, Reason}
 import anticipation.*
 import contingency.*
 import denominative.*
@@ -50,8 +51,6 @@ import turbulence.*
 import turbulence.{Aggregable, Streamable}
 import vacuous.*
 import zephyrine.Credit
-
-import Io.Error.{Operation, Reason}
 
 final val C: Drive = Drive('C')
 final val D: Drive = Drive('D')
@@ -616,7 +615,7 @@ extension [plane: Filesystem, transport <: Attributed](path: Path on plane over 
     backend.attribute(path, name).absolve match
       case Unset => Unset
 
-      case data: Data =>
+      case data: Data @unchecked =>
         summon[content is Aggregable by Data].accept(zephyrine.Stream(Iterator(data)))
 
   def attribute(name: Text, value: Data)(using backend: FilesystemBackend on plane)

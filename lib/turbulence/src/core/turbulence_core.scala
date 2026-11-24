@@ -258,7 +258,7 @@ extension (body: HttpStreams.Body)
                 ended = true
                 Unset
 
-              case data: Data =>
+              case data: Data @unchecked =>
                 chunk = data
                 start0 = 0
                 limit0 = data.length

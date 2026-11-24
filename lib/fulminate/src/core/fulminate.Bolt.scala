@@ -71,7 +71,8 @@ object Bolt:
       if index == start || index - start > 9 then
         valid = false
         0
-      else string.substring(start, index).nn.toInt
+      else
+        string.substring(start, index).nn.toInt
 
     def more: Boolean = valid && index < string.length && string.charAt(index) == '.'
 
@@ -100,13 +101,15 @@ object Bolt:
               if more then
                 index += 1
                 digits()
-              else 0
+              else
+                0
 
             val site =
               if more then
                 index += 1
                 digits()
-              else 0
+              else
+                0
 
             if more then valid = false
             Bolt(letter, subdivision, error, variant, site, group())
@@ -179,8 +182,8 @@ case class Bolt
         val next = bolt.cause
         val rest = if next == null then "" else colored(next)
 
-        s"$gray/$orange${bolt.project}$gray.$cyan${bolt.subdivision}$gray.$cyan${bolt.error}"
-        + third + fourth + rest
+        s"$gray/$orange${bolt.project}$gray.$cyan${bolt.subdivision}$gray.$cyan${bolt.error}" +
+          third + fourth + rest
 
       s"$gray[$orange↯${colored(this)}$gray]$reset".tt
 

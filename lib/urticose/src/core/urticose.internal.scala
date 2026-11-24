@@ -183,7 +183,7 @@ object internal:
         if count != 6 then raise(MacAddress.Error(WrongGroupCount(count)))
 
         @tailrec
-        def recur(todo: List[Text], index: Int = 0, acc: Long = 0L): Long = todo match
+        def recur(todo: List[Text], index: Int = 0, acc: Long = 0L): Long = todo.absolve match
           case Nil => acc
 
           case head :: tail =>
@@ -201,7 +201,7 @@ object internal:
       :   MacAddress =
 
         // Masked: a `Byte` of 0x80 or above would otherwise sign-extend into the accumulator.
-        def recur(todo: List[Byte], done: Long): Long = todo match
+        def recur(todo: List[Byte], done: Long): Long = todo.absolve match
           case head :: tail => recur(tail, (done << 8) + (head & 0xff))
           case Nil          => done
 
@@ -401,7 +401,7 @@ object internal:
 
       Integer.parseInt(text.s, 16)
 
-    def pack(groups: List[Int], accumulator: Long = 0L): Long = groups match
+    def pack(groups: List[Int], accumulator: Long = 0L): Long = groups.absolve match
       case Nil          => accumulator
       case head :: tail => pack(tail, (accumulator << 16) + (head & 65535))
 

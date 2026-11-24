@@ -105,7 +105,7 @@ case class KeywordPattern
   private def lookup(context: List[Lexeme], enclosing: Keywords): Keywords =
     val current = result.or(enclosing)
 
-    context match
+    context.absolve match
       case Nil => current
 
       case lexeme :: more =>
