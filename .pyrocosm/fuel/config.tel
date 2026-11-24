@@ -46,10 +46,12 @@ classpath out/caduceus/resend/jar.dest/out.jar
 classpath out/orthodoxy/server/jar.dest/out.jar
 
 # The options Soundness's own code compiles with (settings.scalaOptions in build.mill, less
-# the warnings and capture checking a tutorial need not satisfy, and less -Zdiagnostic-givens,
-# which renders every given in scope for each failed search and makes a failing fragment slow), with the proscenium predef
-# and the umbrella imported, so a fence can start at its first definition.
+# the warnings and capture checking a tutorial need not satisfy), with the proscenium predef
+# and the umbrella imported, so a fence can start at its first definition. -Zdiagnostic-givens
+# is among them because a derivation needs it: without it, a typeclass which extends
+# `Derivation` cannot be derived in a fence (`contextual value resolves without the catch-all`).
 scalac-option -Zalias-captures
+scalac-option -Zdiagnostic-givens
 scalac-option -Zgiven-prefixes
 scalac-option -Zopaque-mutability
 scalac-option -Zpure-iarrays
