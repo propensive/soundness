@@ -1,0 +1,14 @@
+orthant 2 language
+
+@ 0 1 0 18a73cbf36db49000b31a7ff44697573
++ info   das Test-Framework: Suiten von Tests als Werte, Zusicherungen mit strukturellen Kontrasten und ein typisierter Ereignis-Stream für den Host
+
+@ 0 1 0 121365b0005725f90fae8ad030b9c910
++   entry .diagnose   die Details eines Fehlschlags, aus der zwischengespeicherten Diagnose der Stelle
+
+@ 0 5 0 1767be29e4aa398c1ef7e61d4a0c20b6
++ entry .Min   `Baseline.Compare.Min`, auf Paketebene exportiert
++ entry .Mean   `Baseline.Compare.Mean`, auf Paketebene exportiert
++ entry .Max   `Baseline.Compare.Max`, auf Paketebene exportiert
++ entry .Cadential   `Baseline.Metric.Cadential`, auf Paketebene exportiert
++ entry .Temporal   `Baseline.Metric.Temporal`, auf Paketebene exportiert

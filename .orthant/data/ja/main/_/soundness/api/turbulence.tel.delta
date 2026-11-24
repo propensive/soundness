@@ -1,0 +1,16 @@
+orthant 2 language
+
+@ 0 4 0 0337e43960347e361518e70d51a96f82
++ entry .drop   `Chain[Data]` の先頭から指定したバイト数を取り除く
++     `chain.drop(bytes)` はチャンク数ではなく `Memory` の数を取る。数の範囲内に収まるチャンクは丸ごと飛ばされ、境界にまたがるチャンクは切られるので、結果は同じバイト列を境界で区切り直したものになる。
++     遅延的である。
+
+@ 0 4 0 14db9adb7100739f11e814f080bd5536
++ entry .take   `Chain[Data]` の先頭から指定したバイト数を残す
++     `chain.take(bytes)` は `Memory` の数を取る。数の範囲内のチャンクは丸ごと残され、境界にまたがるチャンクは切られるので、結果はちょうど `bytes` バイトを持つ（チェーンがそれより短ければそれ未満）。
++     遅延的である。
+
+@ 0 6 0 1f830319e961b31b164c552f3e9b1c1d
++       `Truncation.Error(total)` はエラー `↯/s.60.1`、_the stream was cut prematurely after `total`_ である。ここで `total` は切れる前に配送された `Memory` である。
++       `Spring` のプルと JDK のソースに対する `Streamable` の given は、`Tactic` を通じてこれで中断する。JDK の出力先に対する `Writable` と `Sink` の given は、`Emit` を通じてこれを `raise` する。書き手は切断を報告するだけで、決して中断しないからである。
++       この型は zephyrine の `Stream` と `Spring` の隣にある。このエクスポートにより、これを名指すモジュールでは `import turbulence.*` で十分になる。

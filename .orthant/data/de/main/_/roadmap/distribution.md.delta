@@ -1,5 +1,8 @@
 orthant 2 language
 
+@ 0 3 0 064a0d693208d94d0be9e9c787015ee8
++ Die Punkte der Spur, mit ihren Horizonten und harten Abhängigkeiten; [`status.tel`](https://github.com/propensive/soundness/blob/main/doc/roadmap/status.tel) hält fest, wo jeder steht:
+
 @ 0 5 0 027aa8507cfead550859e240b33d26f4
 + Der Schlussstein-Punkt: `etc/migration.md` definiert das von Agenten ausführbare Format für
 + Migrationsanweisungen — was sich geändert hat, wie betroffener Code zu erkennen ist, die genaue

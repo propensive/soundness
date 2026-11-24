@@ -1,5 +1,8 @@
 orthant 2 language
 
+@ 0 3 0 064a0d693208d94d0be9e9c787015ee8
++ このトラックの項目と、その時期およびハードな依存を示す。各項目の状況は [`status.tel`](https://github.com/propensive/soundness/blob/main/doc/roadmap/status.tel) に記録されている。
+
 @ 0 9 0 1bd7a6beb6e17d6e0b0e8c51346922a0
 + 実行中のアプリケーションのデバッグは、間借りしたものではなくネイティブに感じられるべきである。Debug Adapter Protocol のサーバーを通じたブレークポイント、ステップ実行、検査があり、検査した値はその Soundness の型として描画される。これは `core-5` がトレースに適用するのと同じ、Java のエンコーディングを見せない規律を、生きた状態に適用したものである。
 + vivisection がそのサーバーである。`vivisection.DapServer` はリクエストの集合（launch、attach、ブレークポイント、スレッド、スタックトレース、スコープ、変数、evaluate、ステップ実行）を扱い、そのスイートの `DapClient` は通常の実行で、ライブのデバッグ対象をブレークポイント、`next` のステップ、検査へと動かす。各ローカル変数はその `Inspectable` インスタンスを通じて描画され、オブジェクトのスナップショットは JVM のクラス名ではなく、単純名と同一性によって示される。

@@ -5,6 +5,9 @@ orthant 2 language
 + идентификатор, который экспортирует пакет `soundness`, и классифицирует кандидатов на
 + сокращение:
 
+@ 0 3 0 064a0d693208d94d0be9e9c787015ee8
++ Пункты направления с их горизонтами и жёсткими зависимостями; [`status.tel`](https://github.com/propensive/soundness/blob/main/doc/roadmap/status.tel) фиксирует, на каком этапе находится каждый:
+
 @ 0 3 0 17e26bb135f0896e0d3cd0368f332847
 + Готово, когда: таблица переименований в `etc/api-nesting-proposal.md` (которая заменила
 + раздел C1) применена полностью, а раздел перечня «Remaining names by prefix family» не
@@ -13,17 +16,6 @@ orthant 2 language
 @ 0 2 0 13bb210f1e21a6561a82bf562dce0f6a
 + Готово, когда: раздел C2 в перечне пуст. (C3 и C3b были заменены
 + `etc/api-nesting-proposal.md` и закрыты вместе с ним.)
-
-! The naming standards in `doc/work/standards/naming.md` and `doc/work/standards/given-naming.md` gain a
-! conformance sweep, so that drift back into incoherence is caught mechanically rather than in
-! review. `etc/check-given-uniqueness.py`, run by `make build`, covers the given-naming half;
-! nothing checks `naming.md`, though flare's `S1.1` rule enforces its one `unsafe…` clause.
-@ 0 4 0 001b1ad304ac4b1c09953853f44561b4
-+ Стандарты именования в `doc/work/standards/naming.md` и `doc/work/standards/given-naming.md` получают
-+ проверку соответствия, чтобы дрейф обратно к несогласованности обнаруживался механически, а не
-+ при ревью. `etc/check-given-uniqueness.py`, запускаемый `make build`, покрывает половину,
-+ относящуюся к именованию given-экземпляров; `naming.md` не проверяет ничто, хотя правило
-+ `S1.1` из flare обеспечивает его единственный пункт об `unsafe…`.
 
 % 0 1 0 1d3fa0088fed0fe510c1edd92a8d31f0
 

@@ -1,5 +1,9 @@
 orthant 2 language
 
+@ 0 3 0 064a0d693208d94d0be9e9c787015ee8
++ Die Punkte der Spur, mit ihren Horizonten und harten Abhängigkeiten; [`status.tel`](https://github.com/propensive/soundness/blob/main/doc/roadmap/status.tel)
++ hält fest, wo jeder steht:
+
 @ 0 6 0 1c04979355be49381f1bb8e3f8ecc451
 + `etc/compatibility.tsv` hält die Matrix fest, und `etc/check-compatibility.py` (ausgeführt von `make
 + build`) erzeugt ihre Plattformspalten aus `build.mill` neu — aus den Flags `scalaJs`/

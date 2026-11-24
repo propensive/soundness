@@ -1,5 +1,8 @@
 orthant 2 language
 
+@ 0 3 0 064a0d693208d94d0be9e9c787015ee8
++ 本路线的条目，及其时间范围和硬依赖；[`status.tel`](https://github.com/propensive/soundness/blob/main/doc/roadmap/status.tel) 记录了每一项的进展：
+
 @ 0 9 0 1bd7a6beb6e17d6e0b0e8c51346922a0
 + 调试运行中的应用程序应当有原生的感觉，而不是寄居的感觉：通过 Debug Adapter Protocol 服务器进行断点、单步执行和检视，检视的值以其 Soundness 类型呈现——这与 `core-5` 应用于跟踪信息的“不出现 Java 编码”规程相同，只是应用于实时状态。
 + vivisection 就是这个服务器：`vivisection.DapServer` 处理整套请求（launch、attach、断点、线程、堆栈跟踪、作用域、变量、求值、单步执行），其套件的 `DapClient` 在普通运行中驱动一个实时的被调试程序经过一个断点、一次 `next` 单步和检视，每个局部变量都通过其 `Inspectable` 实例呈现，对象快照以其简单名称和标识显示，而不是 JVM 类名。

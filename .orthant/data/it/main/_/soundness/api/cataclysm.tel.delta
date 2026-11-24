@@ -1,0 +1,44 @@
+orthant 2 language
+
+@ 0 38 0 15177b5972e74eeb18897d1f690c0e42
++     entry .pixels   una quantità `Pixels` come `<length>`: `4px`
++     entry .ems   una quantità `Ems` (di quantitative) come `<length>`: `2em`
++     entry .rems   una quantità `Rems` come `<length>`: `2rem`
++     entry .exs   una quantità `Exs` come `<length>`: `1ex`
++     entry .chs   una quantità `Chs` come `<length>`: `40ch`
++     entry .vws   una quantità `ViewportWidths` come `<length>`: `100vw`
++     entry .vhs   una quantità `ViewportHeights` come `<length>`: `100vh`
++     entry .vmins   una quantità `ViewportMins` come `<length>`: `50vmin`
++     entry .vmaxes   una quantità `ViewportMaxes` come `<length>`: `50vmax`
++     entry .metres   qualunque lunghezza fisica (una quantità `Metres`) come `<length>`, in `mm`
++         Una quantità `Distance` — scritta come `3.0*Cm`, `10.0*Mm`, `1.0*Metre` o qualunque
++         lunghezza di quantitative — si rende in millimetri, poiché il CSS legge allo stesso modo
++         `cm`, `mm` e `m`: `3.0*Cm` è `30mm`. Pollici, punti e pica mantengono le proprie unità.
++     entry .inches   una quantità `Inches` come `<length>`: `1in`
++     entry .points   una quantità `Points` come `<length>`: `12pt`
++     entry .picas   una quantità `Picas` come `<length>`: `1pc`
++     entry .percents   una quantità `Percents` come `<percentage>`: `50%`
++     entry .chromatic   qualunque colore con un'istanza di `Chromatic` come `<color>`, reso in esadecimale
++         Copre il `Chroma` di anticipation e ogni forma di colore di iridescence (`Srgb`, `Hsl`,
++         `Cielab`, …, e il letterale `rgb"#3344ff"`) tramite la loro istanza `Color.chromatic`,
++         ciascuno reso come tripletta esadecimale a sei cifre dai suoi canali rosso, verde e blu,
++         limitati a 0–255. L'istanza si cerca per qualunque supertipo del colore, quindi una
++         classe di colore che riceve il suo `Chromatic` dalla sua forma viene trovata quando
++         `Css.Style(…)` chiede il tipo esatto del valore.
++     entry .seconds   qualunque tempo (una quantità `Seconds`) come `<time>`, in `ms`
++         `200.0*Ms` è `200ms`; `1.5*S` è `1500ms`.
++     entry .degrees   una quantità `Degrees` come `<angle>`: `90deg`
++     entry .radians   una quantità `Radians` come `<angle>`: `1rad`
++     entry .turns   una quantità `Turns` come `<angle>`: `0.5turn`
++     entry .flexes   una quantità `Flexes` come `<flex>`: `2fr`
++     entry .integer   un `Int` come `<integer>`
++     entry .decimal   un `Double` come `<number>`, senza un `.0` ridondante
++     entry .keyword   un `Css.Keyword` nella sua grafia CSS, valido per ogni proprietà
++         Il topic è `"*"`, che la verifica della proprietà accetta per qualunque proprietà nota.
++     entry .colorKeyword   un `Css.ColorKeyword` come `transparent` o `currentcolor`
++     entry #value   rende un valore nativo come testo CSS
++   entry #rules   i nodi del foglio di stile, in ordine
++   entry .Syntax   la grammatica dei valori di una proprietà, nella sintassi di definizione dei valori CSS, come albero
+
+@ 0 1 0 10aaf54c52c3fe0b0d316f1cd65e1109
++     entry .Matcher   verifica il valore di una proprietà rispetto alla sua grammatica: valido, non valido o non supportato

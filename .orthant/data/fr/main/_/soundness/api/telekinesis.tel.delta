@@ -1,0 +1,24 @@
+orthant 2 language
+
+@ 0 5 0 18c57759944dedcb14d4ead83183d38d
++       detail
++           Un sélecteur dynamique : `request.headers.accept`, `request.headers.cookie`,
++           `request.headers.contentLength` sont chacun la `List` des valeurs de ce champ,
++           décodées dans le type que déclare la `Directive` de ce nom (un `MediaType`, une
++           `List[Cookie.Value]`, un `Memory`), via son `Decodable in Text`. Le nom en camelCase
++           est transformé en nom de champ en kebab-case.
+
+@ 0 8 0 12da8d5833b64c650c30c432207fa1b8
++       Le compagnon déclare une directive pour chaque en-tête standard : les directives typées
++       sont `accept` (un `MediaType`, ou une `List[MediaType]`), `authorization` (`Auth`),
++       `contentType` (`MediaType`), `contentLength` (`Memory`), `contentEncoding` (un `Encoding`),
++       `cookie` (`List[Cookie.Value]`), `host` (`Host`), `maxForwards` (`Int`), `origin` (tout
++       type d'URL), `range` (un `Interval`, rendu sous la forme `bytes=start-end`) et
++       `transferEncoding` (`TransferEncoding`) ; tous les autres en-têtes standard prennent du
++       `Text`. Un en-tête que le compagnon ne nomme pas nécessite un given local,
++       `given ("xRequestId" is Directive of Text) = identity(_)`, pour être passé par son nom.
+
+@ 0 1 0 010be7f4f31f02c006350a3d16a5979c
++   entry .contentLength
++     info
++         `contentLength` : une quantité `Memory`, rendue sous forme de nombre

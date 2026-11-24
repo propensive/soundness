@@ -1,0 +1,7 @@
+orthant 2 language
+
+@ 0 1 0 10af5daf3e4956ea1b1f0b49eba57519
++ entry .Signer   ein Identitätsnachweis: ein geladener privater Schlüssel oder einer, den ein `ssh-agent` hält, der die Authentifizierungsanforderung signiert
+
+@ 0 1 0 0a5217ce2c706a0001be12a30b311374
++ entry .Identity   wie die Schlüssel einer Chiffre einen Benutzer einem SSH-Server gegenüber ausweisen: der Name des Algorithmus und die Wire-Form der Signatur

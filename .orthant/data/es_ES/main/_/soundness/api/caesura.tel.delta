@@ -1,0 +1,23 @@
+orthant 2 language
+
+@ 0 16 0 049a46177a45dd0d1080474b8da42a2c
++           `MisplacedQuote` (subcódigo 1) es un fallo de análisis: un carácter de comillas
++           encontrado después del comienzo de una celda sin entrecomillar. `Absent` (2) es un
++           fallo de decodificación de una celda que la fila no tiene.
++           `Unparseable(value, expected)` (3) es un fallo de decodificación de una celda cuyo
++           texto, `value`, no pudo leerse como el tipo que nombra `expected`.
++       entry #number   el subcódigo del motivo, que sigue al número de error 364
++     entry .apply   crea un error de la fase de decodificación a partir de un formato y un motivo, sin posición
++         La posición se rellena con valores provisionales (`Prim`, `Prim`, `0`), ya que la
++         posición de un decodificador la lleva el `CellRef` en el que tiene puesto el foco.
++     entry #format   el `Dsv.Format` con que se leyeron los datos
++     entry #reason   el `Dsv.Error.Reason` del fallo
++     entry #row   la fila, contada desde 1, de un fallo de análisis; `Prim` para un fallo de decodificación
++     entry #column   la columna, contada desde 1, de un fallo de análisis; `Prim` para un fallo de decodificación
++     entry #offset   el desplazamiento en caracteres (unidades UTF-16) de un fallo de análisis en el texto decodificado; `0` para un fallo de decodificación
++         No se dispone de un desplazamiento en bytes: el analizador lee texto que ya se ha
++         decodificado a partir de bytes.
++   entry .Format   las convenciones de un formato delimitado: fila de cabecera, delimitador, caracteres de comillas y de escape
+
+@ 0 1 0 18510e87faae352a102428eab697a273
++ entry .Dsv2   los givens de menor prioridad del compañero de `Dsv`: la alternativa de texto, las escrituras de un registro y la lectura por filas

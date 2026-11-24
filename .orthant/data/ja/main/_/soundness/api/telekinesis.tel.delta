@@ -1,0 +1,111 @@
+orthant 2 language
+
+@ 0 33 0 0609521b7376318b01d45525685eae0a
++       entry .communicable   各理由をメッセージとして描画する
++       entry #reason   `Http.Request.Error.Reason`
++     entry #method   メソッド
++     entry #version   プロトコルバージョン
++     entry #host   `Host` ヘッダーから得た、リクエストの宛先のホスト
++     entry #target   書かれたとおりのリクエストターゲット。パスと、あればクエリ
++     entry #textHeaders   すべてのヘッダーフィールド、順序どおり、`Http.Header` として
++     entry #body   `Spring[Data]` としての本文。呼ぶと新しいストリームが得られる
++         `request.body()` はストリームを作る（`Tactic[Truncation.Error]` が必要である）。
++         パースされたリクエストでは入力の残りを貸し出すので、一度だけ読むか `memoize` する。
++     entry #request   ハンドラのコンテキスト関数のレシーバのための、リクエストそのもの
++     entry #path   `%` を根とする `Path on Www` としてのターゲットのパス
++         URL のパス型である `Path on Www under %.type` としてデコードされた `location` であり、セグメントを `/` のパターンでマッチできる。
++     entry #on   オリジンを与えたときのリクエストの完全な URL：`request.on(origin)`
++         `Origin["http"]` か `Origin["https"]` に対する `Url[scheme](origin, target)` であり、クライアントが `Http.Event.Send` に記録するものである。
++     entry #query   URL とフォームエンコードされた本文を合わせたクエリパラメーター
++         ターゲットの `?…` の部分の `Query` に、`Content-Type` がそうだと言うときに `application/x-www-form-urlencoded` としてデコードした本文を加えたもの。
++         本文を読むには `Tactic[Truncation.Error]` が必要である。
++         `Parameter` はその一つのフィールドを読む。
++     entry #location   クエリを除いたターゲット：`/path?q=1` からの `/path`
++     entry #headers   名前によるヘッダーへの型付きのアクセス：`request.headers.contentType`
++         動的なセレクターである。
++         `request.headers.accept`、`request.headers.cookie`、`request.headers.contentLength` は、それぞれそのフィールドの値の `List` であり、その名前の `Directive` が宣言する型（`MediaType`、`List[Cookie.Value]`、`Memory`）に、その `Decodable in Text` を通してデコードされる。
++         camelCase の名前はケバブケースのフィールド名に変換される。
++     entry #contentType   `MediaType` としての `Content-Type` ヘッダー、または `Unset`
++     entry #textCookies   名前から値への `Map` としてのリクエストのクッキー
++         `Cookie` ヘッダーからパースされる。
++         `Cookie#apply()` はそのうちの一つをその型にデコードして読む。
++   entry .Backend   一つのリクエストを送り、そのレスポンスを返すトランスポート
+
+@ 0 8 0 12da8d5833b64c650c30c432207fa1b8
++       コンパニオンは標準ヘッダーごとにディレクティブを宣言している。型付きのものは、`accept`（`MediaType` または `List[MediaType]`）、`authorization`（`Auth`）、`contentType`（`MediaType`）、`contentLength`（`Memory`）、`contentEncoding`（`Encoding`）、`cookie`（`List[Cookie.Value]`）、`host`（`Host`）、`maxForwards`（`Int`）、`origin`（任意の URL の型）、`range`（`Interval`。`bytes=start-end` として描画される）、`transferEncoding`（`TransferEncoding`）である。その他の標準ヘッダーはすべて `Text` を取る。
++       コンパニオンが名前を挙げていないヘッダーを名前で渡すには、ローカルの given `given ("xRequestId" is Directive of Text) = identity(_)` が必要である。
+
+@ 0 73 0 0941d85f02c0a1920e8c79ddc68dce7c
++   entry #Self   リテラル型としてのヘッダーの名前：`"contentType"`
++   entry #encode   ヘッダーの型の値を、フィールドのテキストとして描画する
++   entry #key   `Self` から得た、テキストとしてのヘッダーの名前
++   entry .contentEncoding   `contentEncoding`：`Encoding`。その名前で描画される
++   entry .accept   `accept`：`MediaType`
++   entry .accept2   `accept`：`List[MediaType]`。カンマで連結される
++   entry .authorization   `authorization`：`Auth`
++   entry .cacheControl   `cacheControl`：テキスト
++   entry .connection   `connection`：テキスト
++   entry .contentMd5   `contentMd5`：テキスト
++   entry .contentType   `contentType`：`MediaType`。パラメーターなしで描画される
++   entry .contentLength   `contentLength`：`Memory` の量。数値として描画される
++   entry .cookie   `cookie`：`List[Cookie.Value]`。`; ` で連結される
++   entry .date   `date`：テキスト
++   entry .expect   `expect`：テキスト
++   entry .forwarded   `forwarded`：テキスト
++   entry .from   `from`：テキスト
++   entry .host   `host`：`Host`
++   entry .http2Settings   `http2Settings`：テキスト
++   entry .ifMatch   `ifMatch`：テキスト
++   entry .ifModifiedSince   `ifModifiedSince`：テキスト
++   entry .ifNoneMatch   `ifNoneMatch`：テキスト
++   entry .ifRange   `ifRange`：テキスト
++   entry .ifUnmodifiedSince   `ifUnmodifiedSince`：テキスト
++   entry .maxForwards   `maxForwards`：`Int`
++   entry .origin   `origin`：`Abstractable across Urls to Text` である任意の URL の型
++   entry .pragma   `pragma`：テキスト
++   entry .prefer   `prefer`：テキスト
++   entry .proxyAuthorization   `proxyAuthorization`：テキスト
++   entry .range   `range`：序数の `Interval`。`bytes=start-end` として描画される
++   entry .referer   `referer`：テキスト
++   entry .te   `te`：テキスト
++   entry .trailer   `trailer`：テキスト
++   entry .transferEncoding   `transferEncoding`：`TransferEncoding`
++   entry .userAgent   `userAgent`：テキスト
++   entry .upgrade   `upgrade`：テキスト
++   entry .via   `via`：テキスト
++   entry .warning   `warning`：テキスト
++   entry .acceptCharset   `acceptCharset`：テキスト
++   entry .accessControlAllowOrigin   `accessControlAllowOrigin`：テキスト
++   entry .accessControlAllowCredentials   `accessControlAllowCredentials`：テキスト
++   entry .accessControlExposeHeaders   `accessControlExposeHeaders`：テキスト
++   entry .accessControlMaxAge   `accessControlMaxAge`：テキスト
++   entry .accessControlAllowMethods   `accessControlAllowMethods`：テキスト
++   entry .accessControlAllowHeaders   `accessControlAllowHeaders`：テキスト
++   entry .acceptPatch   `acceptPatch`：テキスト
++   entry .acceptRanges   `acceptRanges`：テキスト
++   entry .age   `age`：テキスト
++   entry .allow   `allow`：テキスト
++   entry .altSvc   `altSvc`：テキスト
++   entry .contentDisposition   `contentDisposition`：テキスト
++   entry .contentLanguage   `contentLanguage`：テキスト
++   entry .contentLocation   `contentLocation`：テキスト
++   entry .contentRange   `contentRange`：テキスト
++   entry .deltaBase   `deltaBase`：テキスト
++   entry .eTag   `eTag`：テキスト
++   entry .expires   `expires`：テキスト
++   entry .im   `im`：テキスト
++   entry .lastModified   `lastModified`：テキスト
++   entry .link   `link`：テキスト
++   entry .location   `location`：テキスト
++   entry .p3p   `p3p`：テキスト
++   entry .preferenceApplied   `preferenceApplied`：テキスト
++   entry .proxyAuthenticate   `proxyAuthenticate`：テキスト
++   entry .publicKeyPins   `publicKeyPins`：テキスト
++   entry .retryAfter   `retryAfter`：テキスト
++   entry .server   `server`：テキスト
++   entry .setCookie   `setCookie`：テキスト
++   entry .strictTransportSecurity   `strictTransportSecurity`：テキスト
++   entry .tk   `tk`：テキスト
++   entry .vary   `vary`：テキスト
++   entry .wwwAuthenticate   `wwwAuthenticate`：テキスト
++   entry .xFrameOptions   `xFrameOptions`：テキスト

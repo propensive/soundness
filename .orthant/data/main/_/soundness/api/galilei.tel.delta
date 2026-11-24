@@ -1,0 +1,4 @@
+orthant 2 release
+
+@ 0 1 0 10c837968e82ef72147acf1c3092bc08
++ entry .filesize   `path.filesize()`: the size of a file, or of everything beneath a directory, in `Memory`

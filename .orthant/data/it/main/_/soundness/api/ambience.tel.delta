@@ -1,0 +1,7 @@
+orthant 2 language
+
+@ 0 1 0 0325dc246f6294d401080ab1c59d6889
++ info   l'ambiente circostante di un programma — variabili d'ambiente, proprietà di sistema, directory, piattaforma — come valori tipizzati
+
+@ 0 1 0 128dbafcc9b281c01b24da0cc2438165
++ entry .workingDirectories   le directory di lavoro da importare per nome: quella della JVM, del `System`, del client di un demone, di un componente Wasm

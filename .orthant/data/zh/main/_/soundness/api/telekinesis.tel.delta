@@ -1,0 +1,107 @@
+orthant 2 language
+
+@ 0 33 0 0609521b7376318b01d45525685eae0a
++       entry .communicable   将每个原因渲染为消息
++       entry #reason   `Http.Request.Error.Reason`
++     entry #method   方法
++     entry #version   协议版本
++     entry #host   请求所发往的主机，来自其 `Host` 头部
++     entry #target   书写形式的请求目标：路径，以及查询（如果有）
++     entry #textHeaders   所有头部字段，按顺序，作为 `Http.Header`
++     entry #body   作为 `Spring[Data]` 的正文：调用它以获得新的流
++         `request.body()` 铸造一个流（需要一个 `Tactic[Truncation.Error]`）；对于解析得到的请求，它借出输入的剩余部分，因此只读取一次，或者将其 `memoize`。
++     entry #request   请求本身，供处理函数的上下文函数接收者使用
++     entry #path   目标的路径，作为以 `%` 为根的 `Path on Www`
++         将 `location` 解码为 `Path on Www under %.type`，即 URL 路径类型，因此各段可以用 `/` 模式匹配。
++     entry #on   给定一个源时请求的完整 URL：`request.on(origin)`
++         对于 `Origin["http"]` 或 `Origin["https"]` 为 `Url[scheme](origin, target)`；客户端在 `Http.Event.Send` 中记录的就是它。
++     entry #query   查询参数，来自 URL 和表单编码的正文
++         目标的 `?…` 部分组成的 `Query`，再加上当 `Content-Type` 表明正文是 `application/x-www-form-urlencoded` 时按此解码的正文。
++         读取正文需要一个 `Tactic[Truncation.Error]`；`Parameter` 读取其中的一个字段。
++     entry #location   不含查询的目标：从 `/path?q=1` 得到 `/path`
++     entry #headers   按名称对头部进行有类型的访问：`request.headers.contentType`
++         一个动态选择器：`request.headers.accept`、`request.headers.cookie`、`request.headers.contentLength` 各自是该字段值的 `List`，通过同名 `Directive` 的 `Decodable in Text` 解码为它所声明的类型（`MediaType`、`List[Cookie.Value]`、`Memory`）。
++         camelCase 名称会被转换为 kebab-case 的字段名。
++     entry #contentType   作为 `MediaType` 的 `Content-Type` 头部，或 `Unset`
++     entry #textCookies   请求的 cookie，作为从名称到值的 `Map`
++         从 `Cookie` 头部解析；`Cookie#apply()` 读取其中一个并解码为其类型。
++   entry .Backend   发送一个请求并返回其响应的传输层
+
+@ 0 8 0 12da8d5833b64c650c30c432207fa1b8
++       伴生对象为每个标准头部声明一个指令：有类型的包括 `accept`（一个 `MediaType` 或 `List[MediaType]`）、`authorization`（`Auth`）、`contentType`（`MediaType`）、`contentLength`（`Memory`）、`contentEncoding`（一个 `Encoding`）、`cookie`（`List[Cookie.Value]`）、`host`（`Host`）、`maxForwards`（`Int`）、`origin`（任何 URL 类型）、`range`（一个 `Interval`，渲染为 `bytes=start-end`）和 `transferEncoding`（`TransferEncoding`）；其他每个标准头部都接收 `Text`。
++       伴生对象未列出的头部需要一个局部 given，即 `given ("xRequestId" is Directive of Text) = identity(_)`，才能按名称传入。
+
+@ 0 73 0 0941d85f02c0a1920e8c79ddc68dce7c
++   entry #Self   头部的名称，以字面量类型表示：`"contentType"`
++   entry #encode   把头部类型的值渲染为字段的文本
++   entry #key   由 `Self` 得到的头部名称文本
++   entry .contentEncoding   `contentEncoding`：一个 `Encoding`，按其名称渲染
++   entry .accept   `accept`：一个 `MediaType`
++   entry .accept2   `accept`：一个 `List[MediaType]`，以逗号连接
++   entry .authorization   `authorization`：一个 `Auth`
++   entry .cacheControl   `cacheControl`：文本
++   entry .connection   `connection`：文本
++   entry .contentMd5   `contentMd5`：文本
++   entry .contentType   `contentType`：一个 `MediaType`，渲染时不带其参数
++   entry .contentLength   `contentLength`：一个 `Memory` 数量，渲染为数字
++   entry .cookie   `cookie`：一个 `List[Cookie.Value]`，以 `; ` 连接
++   entry .date   `date`：文本
++   entry .expect   `expect`：文本
++   entry .forwarded   `forwarded`：文本
++   entry .from   `from`：文本
++   entry .host   `host`：一个 `Host`
++   entry .http2Settings   `http2Settings`：文本
++   entry .ifMatch   `ifMatch`：文本
++   entry .ifModifiedSince   `ifModifiedSince`：文本
++   entry .ifNoneMatch   `ifNoneMatch`：文本
++   entry .ifRange   `ifRange`：文本
++   entry .ifUnmodifiedSince   `ifUnmodifiedSince`：文本
++   entry .maxForwards   `maxForwards`：一个 `Int`
++   entry .origin   `origin`：任何 `Abstractable across Urls to Text` 的 URL 类型
++   entry .pragma   `pragma`：文本
++   entry .prefer   `prefer`：文本
++   entry .proxyAuthorization   `proxyAuthorization`：文本
++   entry .range   `range`：一个序数的 `Interval`，渲染为 `bytes=start-end`
++   entry .referer   `referer`：文本
++   entry .te   `te`：文本
++   entry .trailer   `trailer`：文本
++   entry .transferEncoding   `transferEncoding`：一个 `TransferEncoding`
++   entry .userAgent   `userAgent`：文本
++   entry .upgrade   `upgrade`：文本
++   entry .via   `via`：文本
++   entry .warning   `warning`：文本
++   entry .acceptCharset   `acceptCharset`：文本
++   entry .accessControlAllowOrigin   `accessControlAllowOrigin`：文本
++   entry .accessControlAllowCredentials   `accessControlAllowCredentials`：文本
++   entry .accessControlExposeHeaders   `accessControlExposeHeaders`：文本
++   entry .accessControlMaxAge   `accessControlMaxAge`：文本
++   entry .accessControlAllowMethods   `accessControlAllowMethods`：文本
++   entry .accessControlAllowHeaders   `accessControlAllowHeaders`：文本
++   entry .acceptPatch   `acceptPatch`：文本
++   entry .acceptRanges   `acceptRanges`：文本
++   entry .age   `age`：文本
++   entry .allow   `allow`：文本
++   entry .altSvc   `altSvc`：文本
++   entry .contentDisposition   `contentDisposition`：文本
++   entry .contentLanguage   `contentLanguage`：文本
++   entry .contentLocation   `contentLocation`：文本
++   entry .contentRange   `contentRange`：文本
++   entry .deltaBase   `deltaBase`：文本
++   entry .eTag   `eTag`：文本
++   entry .expires   `expires`：文本
++   entry .im   `im`：文本
++   entry .lastModified   `lastModified`：文本
++   entry .link   `link`：文本
++   entry .location   `location`：文本
++   entry .p3p   `p3p`：文本
++   entry .preferenceApplied   `preferenceApplied`：文本
++   entry .proxyAuthenticate   `proxyAuthenticate`：文本
++   entry .publicKeyPins   `publicKeyPins`：文本
++   entry .retryAfter   `retryAfter`：文本
++   entry .server   `server`：文本
++   entry .setCookie   `setCookie`：文本
++   entry .strictTransportSecurity   `strictTransportSecurity`：文本
++   entry .tk   `tk`：文本
++   entry .vary   `vary`：文本
++   entry .wwwAuthenticate   `wwwAuthenticate`：文本
++   entry .xFrameOptions   `xFrameOptions`：文本

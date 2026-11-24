@@ -1,0 +1,9 @@
+orthant 2 language
+
+@ 0 6 0 1904848723f57d291021f5f64fe09543
++ entry .filesize   `path.filesize()`: rozmiar pliku albo wszystkiego pod katalogiem, w `Memory`
++     Rozszerzenie dla dowolnej `Path on <plane: Filesystem>`, wymagające `Explorable`
++     płaszczyzny i backendu, zgłaszające `Io.Error`. Rozmiar pliku to jego własny rozmiar;
++     rozmiar katalogu to jego własny rozmiar plus rozmiary wszystkich jego potomków,
++     przechodzonych bez podążania za dowiązaniami symbolicznymi. Nazwane `filesize`, a nie
++     `size`, by nie konkurować z `size` kolekcji w module zbiorczym `soundness`.

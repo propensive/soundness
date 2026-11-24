@@ -1,0 +1,122 @@
+orthant 2 language
+
+@ 0 33 0 0609521b7376318b01d45525685eae0a
++       entry .communicable   отображает каждую причину как сообщение
++       entry #reason   `Http.Request.Error.Reason`
++     entry #method   метод
++     entry #version   версия протокола
++     entry #host   хост, которому адресован запрос, из его заголовка `Host`
++     entry #target   цель запроса в том виде, в каком записана: путь и строка запроса, если есть
++     entry #textHeaders   все поля заголовка, по порядку, как `Http.Header`
++     entry #body   тело как `Spring[Data]`: вызовите его, чтобы получить свежий поток данных
++         `request.body()` создаёт поток данных (нужен `Tactic[Truncation.Error]`); для
++         разобранного запроса он одалживает оставшуюся часть входных данных, поэтому читайте
++         его один раз или примените `memoize`.
++     entry #request   сам запрос, для получателя контекстной функции обработчика
++     entry #path   путь цели как `Path on Www` с корнем в `%`
++         `location`, декодированный как `Path on Www under %.type` — тип пути URL, так что
++         сегменты можно сопоставлять с образцами `/`.
++     entry #on   полный URL запроса при заданном источнике: `request.on(origin)`
++         `Url[scheme](origin, target)` для `Origin["http"]` или `Origin["https"]`; то, что
++         клиент журналирует в `Http.Event.Send`.
++     entry #query   параметры запроса из URL и из тела, закодированного как форма, вместе
++         `Query` части цели `?…` плюс тело, декодированное как
++         `application/x-www-form-urlencoded`, когда `Content-Type` говорит, что оно таково.
++         Для чтения тела нужен `Tactic[Truncation.Error]`; `Parameter` читает одно его поле.
++     entry #location   цель без строки запроса: `/path` из `/path?q=1`
++     entry #headers   типизированный доступ к заголовкам по имени: `request.headers.contentType`
++         Динамический селектор: `request.headers.accept`, `request.headers.cookie`,
++         `request.headers.contentLength` — каждый из них `List` значений этого поля,
++         декодированных в тип, который объявляет `Directive` с этим именем (`MediaType`,
++         `List[Cookie.Value]`, `Memory`), через его `Decodable in Text`. Имя в camelCase
++         превращается в имя поля в kebab-case.
++     entry #contentType   заголовок `Content-Type` как `MediaType` или `Unset`
++     entry #textCookies   cookie запроса как `Map` от имени к значению
++         Разбираются из заголовка `Cookie`; `Cookie#apply()` читает одну из них,
++         декодированную в её тип.
++   entry .Backend   транспорт, который отправляет один запрос и возвращает его ответ
+
+@ 0 8 0 12da8d5833b64c650c30c432207fa1b8
++       Объект-компаньон объявляет директиву для каждого стандартного заголовка: типизированные —
++       это `accept` (`MediaType` или `List[MediaType]`), `authorization` (`Auth`),
++       `contentType` (`MediaType`), `contentLength` (`Memory`), `contentEncoding`
++       (`Encoding`), `cookie` (`List[Cookie.Value]`), `host` (`Host`), `maxForwards` (`Int`),
++       `origin` (любой тип URL), `range` (`Interval`, отображаемый как `bytes=start-end`) и
++       `transferEncoding` (`TransferEncoding`); все остальные стандартные заголовки
++       принимают `Text`. Заголовку, которого нет в компаньоне, для передачи по имени нужен
++       локальный given, `given ("xRequestId" is Directive of Text) = identity(_)`.
+
+@ 0 73 0 0941d85f02c0a1920e8c79ddc68dce7c
++   entry #Self   имя заголовка в виде литерального типа: `"contentType"`
++   entry #encode   отображает значение типа заголовка как текст поля
++   entry #key   имя заголовка в виде текста, из `Self`
++   entry .contentEncoding   `contentEncoding`: `Encoding`, отображаемый по имени
++   entry .accept   `accept`: `MediaType`
++   entry .accept2   `accept`: `List[MediaType]`, через запятую
++   entry .authorization   `authorization`: `Auth`
++   entry .cacheControl   `cacheControl`: текст
++   entry .connection   `connection`: текст
++   entry .contentMd5   `contentMd5`: текст
++   entry .contentType   `contentType`: `MediaType`, отображаемый без параметров
++   entry .contentLength   `contentLength`: величина `Memory`, отображаемая как число
++   entry .cookie   `cookie`: `List[Cookie.Value]`, через `; `
++   entry .date   `date`: текст
++   entry .expect   `expect`: текст
++   entry .forwarded   `forwarded`: текст
++   entry .from   `from`: текст
++   entry .host   `host`: `Host`
++   entry .http2Settings   `http2Settings`: текст
++   entry .ifMatch   `ifMatch`: текст
++   entry .ifModifiedSince   `ifModifiedSince`: текст
++   entry .ifNoneMatch   `ifNoneMatch`: текст
++   entry .ifRange   `ifRange`: текст
++   entry .ifUnmodifiedSince   `ifUnmodifiedSince`: текст
++   entry .maxForwards   `maxForwards`: `Int`
++   entry .origin   `origin`: любой тип URL, `Abstractable across Urls to Text`
++   entry .pragma   `pragma`: текст
++   entry .prefer   `prefer`: текст
++   entry .proxyAuthorization   `proxyAuthorization`: текст
++   entry .range   `range`: `Interval` порядковых номеров, отображаемый как `bytes=start-end`
++   entry .referer   `referer`: текст
++   entry .te   `te`: текст
++   entry .trailer   `trailer`: текст
++   entry .transferEncoding   `transferEncoding`: `TransferEncoding`
++   entry .userAgent   `userAgent`: текст
++   entry .upgrade   `upgrade`: текст
++   entry .via   `via`: текст
++   entry .warning   `warning`: текст
++   entry .acceptCharset   `acceptCharset`: текст
++   entry .accessControlAllowOrigin   `accessControlAllowOrigin`: текст
++   entry .accessControlAllowCredentials   `accessControlAllowCredentials`: текст
++   entry .accessControlExposeHeaders   `accessControlExposeHeaders`: текст
++   entry .accessControlMaxAge   `accessControlMaxAge`: текст
++   entry .accessControlAllowMethods   `accessControlAllowMethods`: текст
++   entry .accessControlAllowHeaders   `accessControlAllowHeaders`: текст
++   entry .acceptPatch   `acceptPatch`: текст
++   entry .acceptRanges   `acceptRanges`: текст
++   entry .age   `age`: текст
++   entry .allow   `allow`: текст
++   entry .altSvc   `altSvc`: текст
++   entry .contentDisposition   `contentDisposition`: текст
++   entry .contentLanguage   `contentLanguage`: текст
++   entry .contentLocation   `contentLocation`: текст
++   entry .contentRange   `contentRange`: текст
++   entry .deltaBase   `deltaBase`: текст
++   entry .eTag   `eTag`: текст
++   entry .expires   `expires`: текст
++   entry .im   `im`: текст
++   entry .lastModified   `lastModified`: текст
++   entry .link   `link`: текст
++   entry .location   `location`: текст
++   entry .p3p   `p3p`: текст
++   entry .preferenceApplied   `preferenceApplied`: текст
++   entry .proxyAuthenticate   `proxyAuthenticate`: текст
++   entry .publicKeyPins   `publicKeyPins`: текст
++   entry .retryAfter   `retryAfter`: текст
++   entry .server   `server`: текст
++   entry .setCookie   `setCookie`: текст
++   entry .strictTransportSecurity   `strictTransportSecurity`: текст
++   entry .tk   `tk`: текст
++   entry .vary   `vary`: текст
++   entry .wwwAuthenticate   `wwwAuthenticate`: текст
++   entry .xFrameOptions   `xFrameOptions`: текст

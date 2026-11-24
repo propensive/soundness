@@ -1,0 +1,11 @@
+orthant 2 language
+
+@ 0 1 0 121365b0005725f90fae8ad030b9c910
++   entry .diagnose   i dettagli di un fallimento, dalla diagnosi in cache del sito
+
+@ 0 5 0 1767be29e4aa398c1ef7e61d4a0c20b6
++ entry .Min   `Baseline.Compare.Min`, esportato a livello di package
++ entry .Mean   `Baseline.Compare.Mean`, esportato a livello di package
++ entry .Max   `Baseline.Compare.Max`, esportato a livello di package
++ entry .Cadential   `Baseline.Metric.Cadential`, esportato a livello di package
++ entry .Temporal   `Baseline.Metric.Temporal`, esportato a livello di package

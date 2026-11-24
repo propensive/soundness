@@ -22,7 +22,9 @@ interim channel until LIRA is live. Each released jar embeds its POM and ivy.xml
 components by version with no repository configuration. The gate requires attested LIRA
 publishing to be live.
 
-The track's items, with their horizons and hard dependencies; [`status.tel`](status.tel) records where each one stands:
+The track's items, with their horizons and hard dependencies;
+[`status.tel`](https://github.com/propensive/soundness/blob/main/doc/roadmap/status.tel)
+records where each one stands:
 
 ```tabular
 column  Item

@@ -1,0 +1,4 @@
+orthant 2 language
+
+@ 0 1 0 187fc9bf63ce93ac1b358c8fbe9d3a2e
++ info   Protocol Buffers a partir de tipos Scala: campos numerados de case classes como mensagens proto3, com codecs derivados, diretos e em fluxo

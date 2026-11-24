@@ -1,0 +1,121 @@
+orthant 2 language
+
+@ 0 33 0 0609521b7376318b01d45525685eae0a
++       entry .communicable   stellt jeden Grund als Meldung dar
++       entry #reason   der `Http.Request.Error.Reason`
++     entry #method   die Methode
++     entry #version   die Protokollversion
++     entry #host   der Host, an den der Request gerichtet ist, aus seinem `Host`-Header
++     entry #target   das Request-Ziel, wie geschrieben: Pfad und gegebenenfalls Query
++     entry #textHeaders   jedes Header-Feld, in Reihenfolge, als `Http.Header`s
++     entry #body   der Body als `Spring[Data]`: aufrufen für einen frischen Stream
++         `request.body()` erzeugt einen Stream (und braucht eine `Tactic[Truncation.Error]`); für
++         einen geparsten Request verleiht er den Rest der Eingabe; lesen Sie ihn also einmal,
++         oder memoisieren Sie ihn mit `memoize`.
++     entry #request   der Request selbst, für den Empfänger der Kontextfunktion eines Handlers
++     entry #path   der Pfad des Ziels als `Path on Www`, verwurzelt in `%`
++         `location`, dekodiert als `Path on Www under %.type`, der URL-Pfadtyp, sodass Segmente
++         mit `/`-Patterns abgeglichen werden können.
++     entry #on   die vollständige URL des Requests, zu einem Origin: `request.on(origin)`
++         `Url[scheme](origin, target)` für ein `Origin["http"]` oder `Origin["https"]`; was der
++         Client in `Http.Event.Send` protokolliert.
++     entry #query   die Query-Parameter, aus der URL und einem formularkodierten Body zusammen
++         Eine `Query` des `?…`-Teils des Ziels, dazu der Body, dekodiert als
++         `application/x-www-form-urlencoded`, wenn der `Content-Type` sagt, dass er einer ist.
++         Das Lesen des Bodys braucht eine `Tactic[Truncation.Error]`; ein `Parameter` liest ein
++         Feld daraus.
++     entry #location   das Ziel ohne seine Query: `/path` aus `/path?q=1`
++     entry #headers   typisierter Zugriff auf Header per Name: `request.headers.contentType`
++         Ein dynamischer Selektor: `request.headers.accept`, `request.headers.cookie`,
++         `request.headers.contentLength` sind jeweils die `List` der Werte dieses Felds, dekodiert
++         zu dem Typ, den die `Directive` dieses Namens deklariert (ein `MediaType`, eine
++         `List[Cookie.Value]`, ein `Memory`), über ihr `Decodable in Text`. Der Name in Camel Case
++         wird in den Feldnamen in Kebab Case umgewandelt.
++     entry #contentType   der `Content-Type`-Header als `MediaType` oder `Unset`
++     entry #textCookies   die Cookies des Requests als `Map` von Name zu Wert
++         Aus dem `Cookie`-Header geparst; `Cookie#apply()` liest einen davon, dekodiert zu seinem
++         Typ.
++   entry .Backend   der Transport, der einen Request sendet und seine Response zurückgibt
+
+@ 0 3 0 1e400bdf625c2dd00a2861bd04a11c3a
++       Das Begleitobjekt deklariert für jeden Standard-Header eine Direktive: die typisierten
++       sind `accept` (ein `MediaType` oder eine `List[MediaType]`), `authorization` (`Auth`),
++       `contentType` (`MediaType`), `contentLength` (`Memory`), `contentEncoding` (ein
+
+@ 0 73 0 0941d85f02c0a1920e8c79ddc68dce7c
++   entry #Self   der Name des Headers als Literaltyp: `"contentType"`
++   entry #encode   stellt einen Wert des Header-Typs als Text des Felds dar
++   entry #key   der Name des Headers als Text, aus `Self`
++   entry .contentEncoding   `contentEncoding`: ein `Encoding`, dargestellt durch seinen Namen
++   entry .accept   `accept`: ein `MediaType`
++   entry .accept2   `accept`: eine `List[MediaType]`, mit Kommas verbunden
++   entry .authorization   `authorization`: ein `Auth`
++   entry .cacheControl   `cacheControl`: Text
++   entry .connection   `connection`: Text
++   entry .contentMd5   `contentMd5`: Text
++   entry .contentType   `contentType`: ein `MediaType`, ohne seine Parameter dargestellt
++   entry .contentLength   `contentLength`: eine `Memory`-Größe, als Zahl dargestellt
++   entry .cookie   `cookie`: eine `List[Cookie.Value]`, mit `; ` verbunden
++   entry .date   `date`: Text
++   entry .expect   `expect`: Text
++   entry .forwarded   `forwarded`: Text
++   entry .from   `from`: Text
++   entry .host   `host`: ein `Host`
++   entry .http2Settings   `http2Settings`: Text
++   entry .ifMatch   `ifMatch`: Text
++   entry .ifModifiedSince   `ifModifiedSince`: Text
++   entry .ifNoneMatch   `ifNoneMatch`: Text
++   entry .ifRange   `ifRange`: Text
++   entry .ifUnmodifiedSince   `ifUnmodifiedSince`: Text
++   entry .maxForwards   `maxForwards`: ein `Int`
++   entry .origin   `origin`: ein beliebiger URL-Typ, der `Abstractable across Urls to Text` ist
++   entry .pragma   `pragma`: Text
++   entry .prefer   `prefer`: Text
++   entry .proxyAuthorization   `proxyAuthorization`: Text
++   entry .range   `range`: ein `Interval` von Ordinalzahlen, dargestellt als `bytes=start-end`
++   entry .referer   `referer`: Text
++   entry .te   `te`: Text
++   entry .trailer   `trailer`: Text
++   entry .transferEncoding   `transferEncoding`: ein `TransferEncoding`
++   entry .userAgent   `userAgent`: Text
++   entry .upgrade   `upgrade`: Text
++   entry .via   `via`: Text
++   entry .warning   `warning`: Text
++   entry .acceptCharset   `acceptCharset`: Text
++   entry .accessControlAllowOrigin   `accessControlAllowOrigin`: Text
++   entry .accessControlAllowCredentials   `accessControlAllowCredentials`: Text
++   entry .accessControlExposeHeaders   `accessControlExposeHeaders`: Text
++   entry .accessControlMaxAge   `accessControlMaxAge`: Text
++   entry .accessControlAllowMethods   `accessControlAllowMethods`: Text
++   entry .accessControlAllowHeaders   `accessControlAllowHeaders`: Text
++   entry .acceptPatch   `acceptPatch`: Text
++   entry .acceptRanges   `acceptRanges`: Text
++   entry .age   `age`: Text
++   entry .allow   `allow`: Text
++   entry .altSvc   `altSvc`: Text
++   entry .contentDisposition   `contentDisposition`: Text
++   entry .contentLanguage   `contentLanguage`: Text
++   entry .contentLocation   `contentLocation`: Text
++   entry .contentRange   `contentRange`: Text
++   entry .deltaBase   `deltaBase`: Text
++   entry .eTag   `eTag`: Text
++   entry .expires   `expires`: Text
++   entry .im   `im`: Text
++   entry .lastModified   `lastModified`: Text
++   entry .link   `link`: Text
++   entry .location   `location`: Text
++   entry .p3p   `p3p`: Text
++   entry .preferenceApplied   `preferenceApplied`: Text
++   entry .proxyAuthenticate   `proxyAuthenticate`: Text
++   entry .publicKeyPins   `publicKeyPins`: Text
++   entry .retryAfter   `retryAfter`: Text
++   entry .server   `server`: Text
++   entry .setCookie   `setCookie`: Text
++   entry .strictTransportSecurity   `strictTransportSecurity`: Text
++   entry .tk   `tk`: Text
++   entry .vary   `vary`: Text
++   entry .wwwAuthenticate   `wwwAuthenticate`: Text
++   entry .xFrameOptions   `xFrameOptions`: Text
+
+@ 0 1 0 0eb656afaa6563550a3ac566f6e16164
++ entry .FlowWindow   ein HTTP/2-Sendefenster der Flusskontrolle: ein Byte-Budget, das die Gegenseite gewährt, in Teilen bezogen, durch `WINDOW_UPDATE` nachgefüllt

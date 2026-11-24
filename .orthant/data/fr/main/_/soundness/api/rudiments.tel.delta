@@ -1,0 +1,140 @@
+orthant 2 language
+
+@ 0 33 0 17f26642629aeb55160659fc6f449b6e
++     - **Combinateurs du quotidien** sur toute valeur : `pipe`, `tap`, `also`, `when`, `give`,
++       `twin`, `yet`, `upon`, et les accesseurs contextuels `state`, `next`, `prior` et `ordinal`
++       que les opérations de pliage et d'itération fournissent à leurs lambdas.
++     - **Opérations sur les collections**, écrites une seule fois sur les classes de types
++       `Traversable`, `Countable`, `Applicable`, `Segmentable` et leurs semblables, de sorte que
++       `head`, `last`, `tail`, `keep`, `skip`, `snip`, `before`, `after`, `sort`, `order`,
++       `fuse`, `each`, `indexed`, `seek`, `where`, `total`, `mean` et les autres signifient la
++       même chose sur une `List`, une `Sequence`, un `Set`, une `Map`, un `Array` gelé, un `Text`
++       et tout autre type doté d'une instance. Les classes de types elles-mêmes vivent dans
++       `murmuration` (`Traversable`, `Reshapable`, `Mappable`, `Convertible`, …) et
++       `denominative` (`Countable`, `Applicable`, `Definable`, …) et sont réexportées ici, si bien
++       que `import rudiments.*` présente une surface unique.
++     - **Preuves dans les types.** Une opération qui n'est sûre que sur certaines entrées n'est
++       pas rendue partielle : on lui donne un type qui exige la preuve. `head`, `last`, `lead`,
++       `tail` et `reduce` sont totales sur un receveur typé `& Populated` (un littéral non vide,
++       ou le résultat de `occupied`) et renvoient un `Optional` sinon ; un ordinal que `confine`,
++       `pick`, `iterate` ou un `Surveyor` a vérifié par rapport à une collection est typé
++       `Ordinal in xs.type`, et `xs(i)` avec un tel indice lit l'élément nu, là où tout autre
++       indice lit un `Optional` ; un tableau gelé dont la longueur est un littéral est typé
++       `& Sized[n]`, et un ordinal littéral au-delà de `n` ne compile pas. Le coût de la `size`
++       d'une liste chaînée ou d'un accès par position est de même une preuve — un import de
++       `dysasymptotics.linearSize` ou `linearAccess` — plutôt qu'un parcours silencieux.
++     - **Constructeurs et scanners** pour les boucles critiques des analyseurs et des codecs :
++       `Array.scribe` et `Array.collect` prêtent un `Scribe` (une poignée d'écriture dont chaque
++       indice est prouvé dans les bornes), `survey` prête un `Surveyor` (un curseur d'avancement
++       dont les segments reviennent sous forme d'intervalles marqués), `lattice` adresse un plan à
++       deux dimensions, `pairs`/`triples`/`quads` parcourent une collection par groupes, et
++       `Scroll` est un tableau extensible non boxé.
++     - **Primitives de concurrence** : des cellules `Atomic` au-dessus des atomiques du JDK, lues
++       par `cell()`, écrites par `cell() = v`, et modifiées par `ere` et `since`, qui compilent un
++       lambda littéral tel que `_ + 1` vers l'intrinsèque du JDK ; `Mutex` ; des valeurs `Scoped`
++       liées à un thread ; et `Loop`, une itération interruptible pour une tâche de fond.
++     - **Petites valeurs** : `Exit` et `Termination` (ce que renvoie une commande), `Memory` (un
++       nombre d'octets avec des littéraux `kib`/`mib`/`gib`), `Digit`, et les utilitaires de
++       compilation `typeName`, `reflectClass`, `probe` et `!!`.
+
+@ 0 11 0 0882f0d01b38ba4e1865d4ab8163d7df
++     Le package est déclaré par deux bibliothèques, et cette séparation tient au graphe de build
++     plutôt qu'à l'espace de noms. `rudiments.core` contient les combinateurs, les opérations sur
++     les collections, `Atomic`, `Mutex`, `Scoped`, `Loop`, `Exit`, `Memory` et les opérations de
++     tri, et dépend de `murmuration`, `denominative`, `vacuous`, `symbolism` et `anticipation`.
++     La bibliothèque `concordance`, qui repose directement sur `denominative` pour que les
++     bibliothèques situées sous rudiments puissent indexer de façon sûre, déclare le vocabulaire
++     de l'indexation confinée — `apply`, `at`, `defines`, `confine`, `pick`, `unsafeAttested`,
++     `sized` — ainsi que `Populated`, `Segmentable`, `Appendable`, `Prependable`, `Bijection`,
++     `Scribe`, `Scroll`, `Surveyor`, `Lattice` et les combinateurs de regroupement, tous dans
++     `package rudiments` ; chaque entrée concernée le précise. Les deux compilent pour la JVM,
++     Scala.js et Scala Native, `Atomic` reposant sur `java.util.concurrent.atomic` partout où la
++     plateforme le fournit.
+
+@ 0 1 0 0535eecbae15bc3f109040c2d5863b35
++ entry .sorting
++   info
++       la plomberie entre une collection et le tableau que trie un algorithme de tri
+
+@ 0 8 0 0fe745b8661e80b91c1557df95ff27c9
++ entry .Memory
++   info
++       un nombre d'octets, sous forme de quantité : `4.kib`, `data.bytes`
++   detail
++       `Memory` est le type opaque `rudiments.internal.Memory`, un `Long` opaque, exporté ici.
++       L'arithmétique et la comparaison le traitent comme une quantité : deux `Memory`
++       s'additionnent et se soustraient, un `Memory` se multiplie et se divise par un `Int`, et un
++       `Memory` divisé par un autre donne un rapport `Double`, le tout au moyen de givens de son
++       objet compagnon, si bien qu'aucun import n'est nécessaire. Construit avec `Memory(long)` ou
++       les extensions littérales `b`, `kib`, `mib`, `gib` et `tib` sur un `Int` ou un `Long`
++       (unités binaires : `1.kib` vaut 1024 octets), et à partir d'un `Data` avec `bytes` ; relu
++       avec `long`, et affiché sous la forme `1024 bytes`.
+
+@ 0 1 0 1c92fec48a6f4dfb1aedc4b146972e49
++       val limit: Memory = 4.mib
+
+@ 0 6 0 034747922a70407e085116d3a6a620bf
++ entry .b
++   info
++       `n.b` : un `Memory` de `n` octets, sur un `Int` ou un `Long`
++ entry .kib
++   info
++       `n.kib` : un `Memory` de `n` kibioctets (×1024)
++ entry .mib
++   info
++       `n.mib` : un `Memory` de `n` mébioctets (×1024²)
++ entry .gib
++   info
++       `n.gib` : un `Memory` de `n` gibioctets (×1024³)
++ entry .tib
++   info
++       `n.tib` : un `Memory` de `n` tébioctets (×1024⁴)
++ entry .bytes
++   info
++       `data.bytes` : la longueur d'un `Data` sous forme de `Memory`
+
+@ 0 1 0 06bebad57dba00c11c86019577047782
++ entry .internal
++   info
++       le foyer de `Memory`, `Digit`, de l'extracteur `&` et des macros derrière `probe`, `typeName`
++       et `reflectClass`
+
+@ 0 4 0 1dea54883f9873e91006f669f1c4716d
++   detail
++       Pas destiné à un usage direct : `Memory`, `Digit` et `&` sont exportés d'ici vers le package
++       `rudiments`, où se trouvent leurs pages ; `probe`, `name` et `reflectClass` sont les
++       implémentations des macros.
+
+@ 0 1 0 13524382c0ee32d713411f3199005d4e
++   entry .Memory
++     info
++         le nombre d'octets opaque, un `Long` traité comme une quantité ; voir `rudiments.Memory`
+
+@ 0 5 0 0de7a5c8d03a98da0295b1b9ed8ba340
++     detail
++         Le type opaque `Memory = Long`, avec son constructeur, ses givens d'arithmétique et de
++         comparaison et ses accesseurs. Sa page sous le package `rudiments` en donne la description
++         complète ; chaque given ici est dans la portée implicite d'un `Memory`.
++     entry .apply
++       info
++           `Memory(long)` : un nombre d'octets à partir d'un `Long`
+
+@ 0 6 0 14deaa6c86f1dc541119d1ee9268e5ad
++     entry .addable
++       info
++           `Memory + Memory`
++     entry .subtractable
++       info
++           `Memory - Memory`
++     entry .multiplicable
++       info
++           `Memory * Int`
++     entry .multiplicable2
++       info
++           `Int * Memory`
++     entry .divisible
++       info
++           `Memory / Int`
++     entry .divisible2
++       info
++           `Memory / Memory`, sous forme de rapport `Double`

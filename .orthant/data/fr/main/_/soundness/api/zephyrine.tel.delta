@@ -1,0 +1,4 @@
+orthant 2 language
+
+@ 0 1 0 07161a9b0652a0aa1a17db213819117e
++ entry .Structural   la classe de types d'un type à disposition en octets fixe : un enregistrement d'entiers dimensionnés, lu par `unpack` et écrit par `pack`

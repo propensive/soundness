@@ -1,0 +1,120 @@
+orthant 2 language
+
+@ 0 33 0 0609521b7376318b01d45525685eae0a
++       entry .communicable   renderiza cada motivo como uma mensagem
++       entry #reason   o `Http.Request.Error.Reason`
++     entry #method   o método
++     entry #version   a versão do protocolo
++     entry #host   o host a que a requisição se destina, a partir do seu cabeçalho `Host`
++     entry #target   o alvo da requisição tal como escrito: caminho e, se houver, consulta
++     entry #textHeaders   todos os campos de cabeçalho, em ordem, como `Http.Header`s
++     entry #body   o corpo como um `Spring[Data]`: chame-o para obter um stream novo
++         `request.body()` cria um stream (precisando de uma `Tactic[Truncation.Error]`); para
++         uma requisição analisada, ele empresta o restante da entrada, então leia-o uma vez ou
++         aplique `memoize` a ele.
++     entry #request   a própria requisição, para o receptor da função de contexto de um handler
++     entry #path   o caminho do alvo como um `Path on Www`, enraizado em `%`
++         `location` decodificado como um `Path on Www under %.type`, o tipo de caminho de URL,
++         para que os segmentos possam ser casados com padrões `/`.
++     entry #on   a URL completa da requisição, dada uma origem: `request.on(origin)`
++         `Url[scheme](origin, target)` para um `Origin["http"]` ou `Origin["https"]`; o que o
++         cliente registra em `Http.Event.Send`.
++     entry #query   os parâmetros de consulta, da URL e de um corpo codificado como formulário, juntos
++         Um `Query` da parte `?…` do alvo, mais o corpo decodificado como
++         `application/x-www-form-urlencoded` quando o `Content-Type` diz que é um. Ler o corpo
++         precisa de uma `Tactic[Truncation.Error]`; um `Parameter` lê um campo dele.
++     entry #location   o alvo sem a sua consulta: `/path` a partir de `/path?q=1`
++     entry #headers   acesso tipado aos cabeçalhos pelo nome: `request.headers.contentType`
++         Um seletor dinâmico: `request.headers.accept`, `request.headers.cookie` e
++         `request.headers.contentLength` são cada um a `List` dos valores daquele campo,
++         decodificados para o tipo que o `Directive` daquele nome declara (um `MediaType`, uma
++         `List[Cookie.Value]`, um `Memory`), por meio do seu `Decodable in Text`. O nome em
++         camelCase é transformado no nome do campo em kebab-case.
++     entry #contentType   o cabeçalho `Content-Type` como um `MediaType`, ou `Unset`
++     entry #textCookies   os cookies da requisição como um `Map` de nome para valor
++         Analisados a partir do cabeçalho `Cookie`; `Cookie#apply()` lê um deles decodificado
++         para o seu tipo.
++   entry .Backend   o transporte que envia uma requisição e devolve a sua resposta
+
+@ 0 3 0 1e400bdf625c2dd00a2861bd04a11c3a
++       O objeto companheiro declara uma diretiva para cada cabeçalho padrão: os tipados são
++       `accept` (um `MediaType`, ou uma `List[MediaType]`), `authorization` (`Auth`),
++       `contentType` (`MediaType`), `contentLength` (`Memory`), `contentEncoding` (um
+
+@ 0 73 0 0941d85f02c0a1920e8c79ddc68dce7c
++   entry #Self   o nome do cabeçalho, como tipo literal: `"contentType"`
++   entry #encode   renderiza um valor do tipo do cabeçalho como o texto do campo
++   entry #key   o nome do cabeçalho como texto, a partir de `Self`
++   entry .contentEncoding   `contentEncoding`: um `Encoding`, renderizado pelo seu nome
++   entry .accept   `accept`: um `MediaType`
++   entry .accept2   `accept`: uma `List[MediaType]`, unida por vírgulas
++   entry .authorization   `authorization`: um `Auth`
++   entry .cacheControl   `cacheControl`: texto
++   entry .connection   `connection`: texto
++   entry .contentMd5   `contentMd5`: texto
++   entry .contentType   `contentType`: um `MediaType`, renderizado sem seus parâmetros
++   entry .contentLength   `contentLength`: uma quantidade `Memory`, renderizada como número
++   entry .cookie   `cookie`: uma `List[Cookie.Value]`, unida por `; `
++   entry .date   `date`: texto
++   entry .expect   `expect`: texto
++   entry .forwarded   `forwarded`: texto
++   entry .from   `from`: texto
++   entry .host   `host`: um `Host`
++   entry .http2Settings   `http2Settings`: texto
++   entry .ifMatch   `ifMatch`: texto
++   entry .ifModifiedSince   `ifModifiedSince`: texto
++   entry .ifNoneMatch   `ifNoneMatch`: texto
++   entry .ifRange   `ifRange`: texto
++   entry .ifUnmodifiedSince   `ifUnmodifiedSince`: texto
++   entry .maxForwards   `maxForwards`: um `Int`
++   entry .origin   `origin`: qualquer tipo de URL `Abstractable across Urls to Text`
++   entry .pragma   `pragma`: texto
++   entry .prefer   `prefer`: texto
++   entry .proxyAuthorization   `proxyAuthorization`: texto
++   entry .range   `range`: um `Interval` de ordinais, renderizado como `bytes=start-end`
++   entry .referer   `referer`: texto
++   entry .te   `te`: texto
++   entry .trailer   `trailer`: texto
++   entry .transferEncoding   `transferEncoding`: um `TransferEncoding`
++   entry .userAgent   `userAgent`: texto
++   entry .upgrade   `upgrade`: texto
++   entry .via   `via`: texto
++   entry .warning   `warning`: texto
++   entry .acceptCharset   `acceptCharset`: texto
++   entry .accessControlAllowOrigin   `accessControlAllowOrigin`: texto
++   entry .accessControlAllowCredentials   `accessControlAllowCredentials`: texto
++   entry .accessControlExposeHeaders   `accessControlExposeHeaders`: texto
++   entry .accessControlMaxAge   `accessControlMaxAge`: texto
++   entry .accessControlAllowMethods   `accessControlAllowMethods`: texto
++   entry .accessControlAllowHeaders   `accessControlAllowHeaders`: texto
++   entry .acceptPatch   `acceptPatch`: texto
++   entry .acceptRanges   `acceptRanges`: texto
++   entry .age   `age`: texto
++   entry .allow   `allow`: texto
++   entry .altSvc   `altSvc`: texto
++   entry .contentDisposition   `contentDisposition`: texto
++   entry .contentLanguage   `contentLanguage`: texto
++   entry .contentLocation   `contentLocation`: texto
++   entry .contentRange   `contentRange`: texto
++   entry .deltaBase   `deltaBase`: texto
++   entry .eTag   `eTag`: texto
++   entry .expires   `expires`: texto
++   entry .im   `im`: texto
++   entry .lastModified   `lastModified`: texto
++   entry .link   `link`: texto
++   entry .location   `location`: texto
++   entry .p3p   `p3p`: texto
++   entry .preferenceApplied   `preferenceApplied`: texto
++   entry .proxyAuthenticate   `proxyAuthenticate`: texto
++   entry .publicKeyPins   `publicKeyPins`: texto
++   entry .retryAfter   `retryAfter`: texto
++   entry .server   `server`: texto
++   entry .setCookie   `setCookie`: texto
++   entry .strictTransportSecurity   `strictTransportSecurity`: texto
++   entry .tk   `tk`: texto
++   entry .vary   `vary`: texto
++   entry .wwwAuthenticate   `wwwAuthenticate`: texto
++   entry .xFrameOptions   `xFrameOptions`: texto
+
+@ 0 1 0 0eb656afaa6563550a3ac566f6e16164
++ entry .FlowWindow   uma janela de envio do controle de fluxo do HTTP/2: um orçamento de bytes que o par concede, adquirido em chunks e reposto por `WINDOW_UPDATE`

@@ -4,6 +4,10 @@ orthant 2 language
 + La superficie ya se ha medido: `etc/api-reduction-candidates.md` inventaría cada identificador que
 + exporta el paquete `soundness` y clasifica los candidatos a reducción:
 
+@ 0 3 0 064a0d693208d94d0be9e9c787015ee8
++ Los elementos de la línea de trabajo, con sus horizontes y sus dependencias estrictas;
++ [`status.tel`](https://github.com/propensive/soundness/blob/main/doc/roadmap/status.tel) registra en qué punto está cada uno:
+
 @ 0 3 0 17e26bb135f0896e0d3cd0368f332847
 + Terminado cuando: la tabla de renombrados de `etc/api-nesting-proposal.md` (que sustituyó a la
 + sección C1) está aplicada por completo, y la sección «Remaining names by prefix family» del
@@ -12,17 +16,6 @@ orthant 2 language
 @ 0 2 0 13bb210f1e21a6561a82bf562dce0f6a
 + Terminado cuando: la sección C2 del inventario está vacía. (C3 y C3b quedaron sustituidas por
 + `etc/api-nesting-proposal.md` y se cerraron con ella.)
-
-! The naming standards in `doc/work/standards/naming.md` and `doc/work/standards/given-naming.md` gain a
-! conformance sweep, so that drift back into incoherence is caught mechanically rather than in
-! review. `etc/check-given-uniqueness.py`, run by `make build`, covers the given-naming half;
-! nothing checks `naming.md`, though flare's `S1.1` rule enforces its one `unsafe…` clause.
-@ 0 4 0 001b1ad304ac4b1c09953853f44561b4
-+ Las normas de nombres de `doc/work/standards/naming.md` y `doc/work/standards/given-naming.md` obtienen un
-+ barrido de conformidad, de modo que una deriva de vuelta a la incoherencia se detecte de forma
-+ mecánica y no en la revisión. `etc/check-given-uniqueness.py`, que ejecuta `make build`, cubre la
-+ mitad de los nombres de givens; nada comprueba `naming.md`, aunque la regla `S1.1` de flare hace
-+ cumplir su única cláusula sobre `unsafe…`.
 
 % 0 1 0 1d3fa0088fed0fe510c1edd92a8d31f0
 

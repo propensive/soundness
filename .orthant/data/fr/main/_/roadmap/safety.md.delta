@@ -1,50 +1,5 @@
 orthant 2 language
 
-! The flare plugin (pinned in `etc/tools`, configured by `.pyrocosm/flare/config.tel`, enabled
-! on every checked component by the `-P:flare:` options in `flareToolchain`) provides the
-! census: every rule in the configuration counted over the sources — the declared escapes
-! (`unsafely`, the `caps.unsafe` family, every `unsafe`-prefixed name, every method gated by the
-! token), the compiler-trust bypasses (`asInstanceOf`, `.nn`, `@unchecked`, `???`, catch-all
-! clauses), the partial reads, and the imperative constructs the streaming kernel is meant to
-! confine. `make unsafety` runs `flare metrics --dry-run` and prints it; `flare metrics` records
-! it in git notes, commit by commit, so the trend lives in git rather than in a roadmap
-! paragraph. One rule already gates: `S1.1`, a method taking `(using Unsafe)` must be named
-! `unsafe…`, fails the build; its converse `S1.2` is advisory, with the eight definitions that
-! break it listed in `doc/work/standards/naming.md`.
-@ 0 11 0 07de880aa2dddb620f8a7456ab7bcd76
-+ Le plugin flare (épinglé dans `etc/tools`, configuré par `.pyrocosm/flare/config.tel`, activé sur
-+ chaque composant vérifié par les options `-P:flare:` de `flareToolchain`) fournit le recensement :
-+ chaque règle de la configuration comptée sur les sources — les échappements déclarés (`unsafely`,
-+ la famille `caps.unsafe`, chaque nom préfixé par `unsafe`, chaque méthode protégée par le jeton),
-+ les contournements de la confiance du compilateur (`asInstanceOf`, `.nn`, `@unchecked`, `???`, les
-+ clauses attrape-tout), les lectures partielles, et les constructions impératives que le noyau de
-+ flux est censé confiner. `make unsafety` exécute `flare metrics --dry-run` et l'affiche ;
-+ `flare metrics` le consigne dans les notes git, commit par commit, de sorte que la tendance vit dans
-+ git plutôt que dans un paragraphe de feuille de route. Une règle bloque déjà : `S1.1`, une méthode
-+ qui reçoit `(using Unsafe)` doit être nommée `unsafe…`, fait échouer le build ; sa réciproque
-+ `S1.2` est indicative, et les huit définitions qui l'enfreignent sont listées dans
-+ `doc/work/standards/naming.md`.
-
-! The recipes that make capture and separation checking workable — when a type is Exclusive,
-! Shared, Unscoped, Mutable or Pure and the lattice traps between them; the honest-given playbook
-! (`(tactic: Tactic[E]) => ((X is TC)^{tactic})`, explicit capturing evidence instead of context
-! bounds); where a fresh result may and may not be minted; the `consume` and loan seams; what a
-! test may and may not do — exist only as entries in `rep/DECISIONS.md`, a 2400-line log. They
-! belong in `doc/work/standards/capabilities.md`, with the tag vocabulary `safety-2` relies on and the
-! one sanctioned hatch form for each tag, and a pointer from `doc/work/philosophy/capture-checking.md`.
-@ 0 7 0 1481653866e4d46319be8221b09cb1ef
-+ Les recettes qui rendent praticables le contrôle des captures et le contrôle de séparation —
-+ quand un type est Exclusive, Shared, Unscoped, Mutable ou Pure, et les pièges du treillis entre
-+ eux ; le manuel des givens honnêtes (`(tactic: Tactic[E]) => ((X is TC)^{tactic})`, une preuve
-+ capturante explicite au lieu de bornes de contexte) ; où un résultat frais peut ou non être créé ;
-+ les jonctions `consume` et de prêt ; ce qu'un test peut ou non faire — n'existent que sous forme
-+ d'entrées dans `rep/DECISIONS.md`, un journal de 2400 lignes. Elles ont leur place dans
-+ `doc/work/standards/capabilities.md`, avec le vocabulaire d'étiquettes sur lequel s'appuie `safety-2` et
-+ l'unique forme d'échappatoire autorisée pour chaque étiquette, ainsi qu'un renvoi depuis
-+ `doc/work/philosophy/capture-checking.md`.
-
-! Done when: `doc/work/standards/capabilities.md` exists, defines every tag the census recognises, and
-! `rep/DECISIONS.md`'s recipe sections link to it rather than restating.
-@ 0 2 0 09f18ea7d845b7fc1860f65ace511957
-+ Terminé lorsque : `doc/work/standards/capabilities.md` existe, définit chaque étiquette que reconnaît le
-+ recensement, et les sections de recettes de `rep/DECISIONS.md` y renvoient au lieu de les répéter.
+@ 0 3 0 064a0d693208d94d0be9e9c787015ee8
++ Les éléments du chantier, avec leurs horizons et leurs dépendances fortes ;
++ [`status.tel`](https://github.com/propensive/soundness/blob/main/doc/roadmap/status.tel) indique où en est chacun :

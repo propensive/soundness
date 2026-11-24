@@ -397,7 +397,7 @@ entry .Http   the HTTP model: methods, statuses, headers, bodies, requests, resp
         A dynamic selector: `request.headers.accept`, `request.headers.cookie`,
         `request.headers.contentLength` are each the `List` of that field's values, decoded
         to the type the `Directive` of that name declares (a `MediaType`, a
-        `List[Cookie.Value]`, a `Bytes`), through its `Decodable in Text`. The camelCase name
+        `List[Cookie.Value]`, a `Memory`), through its `Decodable in Text`. The camelCase name
         is turned into the kebab-case field name.
     entry #contentType   the `Content-Type` header as a `MediaType`, or `Unset`
     entry #textCookies   the request's cookies as a name-to-value `Map`
@@ -1004,7 +1004,7 @@ entry .Directive   how a header's value type is checked and encoded, by the head
 
       The companion declares a directive for each standard header: the typed ones are
       `accept` (a `MediaType`, or a `List[MediaType]`), `authorization` (`Auth`),
-      `contentType` (`MediaType`), `contentLength` (`Bytes`), `contentEncoding` (an
+      `contentType` (`MediaType`), `contentLength` (`Memory`), `contentEncoding` (an
       `Encoding`), `cookie` (`List[Cookie.Value]`), `host` (`Host`), `maxForwards` (`Int`),
       `origin` (any URL type), `range` (an `Interval`, rendered as `bytes=start-end`) and
       `transferEncoding` (`TransferEncoding`); every other standard header takes `Text`. A
@@ -1023,7 +1023,7 @@ entry .Directive   how a header's value type is checked and encoded, by the head
   entry .connection   `connection`: text
   entry .contentMd5   `contentMd5`: text
   entry .contentType   `contentType`: a `MediaType`, rendered without its parameters
-  entry .contentLength   `contentLength`: a `Bytes` quantity, rendered as a number
+  entry .contentLength   `contentLength`: a `Memory` quantity, rendered as a number
   entry .cookie   `cookie`: a `List[Cookie.Value]`, joined with `; `
   entry .date   `date`: text
   entry .expect   `expect`: text

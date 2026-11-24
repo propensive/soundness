@@ -1,12 +1,4 @@
 orthant 2 language
 
-! Done when: no collection in `lib/` exposes a partial indexed `apply`, and every `while` that
-! remains is one of the three shapes [`doc/work/standards/loops.md`](../standards/loops.md) sanctions,
-! carrying the comment that names its invariant. A literal zero is not the goal: index arithmetic
-! derived from the data, and the combinators' own internals, stay as loops.
-@ 0 4 0 0a264f4f923151dd1f90f9971723cda7
-+ Erledigt, wenn: keine Collection in `lib/` ein partielles indiziertes `apply` anbietet und jedes
-+ verbleibende `while` eine der drei Formen ist, die
-+ [`doc/work/standards/loops.md`](../standards/loops.md) zulässt, mit dem Kommentar, der seine Invariante
-+ nennt. Eine buchstäbliche Null ist nicht das Ziel: Indexarithmetik, die aus den Daten abgeleitet
-+ ist, und die Interna der Kombinatoren selbst bleiben Schleifen.
+@ 0 3 0 064a0d693208d94d0be9e9c787015ee8
++ Die Punkte der Spur, mit ihren Horizonten und harten Abhängigkeiten; [`status.tel`](https://github.com/propensive/soundness/blob/main/doc/roadmap/status.tel) verzeichnet, wo jeder steht:

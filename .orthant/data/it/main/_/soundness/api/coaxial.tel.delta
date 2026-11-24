@@ -1,0 +1,21 @@
+orthant 2 language
+
+@ 0 16 0 16e15c85ccf14a4e00013adc48012292
++         Ciò che `subscribe` presta al suo blocco come valore di contesto, e ciò a cui un handler
++         può accedere per inviare al di fuori della forma di richiesta/risposta: un annuncio
++         all'ingresso, un saluto all'uscita, una risposta a qualcosa di visto anziché ricevuto.
++     entry #send   `send(data)` all'intero gruppo; `send(data, destination, port)` a un singolo membro
++         Entrambi sollevano `Socket.Error(Transmit)` in caso di fallimento.
++   entry .subscribable   qualsiasi `Multicast` (o un tipo raffinato dalla sua porta letterale) `is Subscribable`, su `Socket.Backend` e `Every[Socket.Option.Udp]`
++       Si unisce attraverso `Socket.Backend#joinMulticast` sulle interfacce scelte da
++       `.interfaces`.
++   entry .bindable   `Multicast is Bindable`, derivato dal `Subscribable`: `listen` su un gruppo
++       Per un membro che si limita a rispondere: l'handler è `Packet => Multicast.Reply`, e il
++       prestito di `listen` è un `Socket.Service` senza invii. `subscribe` è il prestito che li
++       ha.
++   entry .interfaces   le interfacce su cui un'iscrizione si unisce: quella con un indirizzo MAC, o tutte quelle adatte
++       Con `Unset`, ogni interfaccia attiva e capace di multicast diversa dal loopback, che su Linux
++       non può trasportare multicast (i datagrammi di un programma gli tornano invece attraverso
++       `Socket.Option.MulticastLoop`); con un `MacAddress`, l'interfaccia che lo possiede.
++   entry #group   l'indirizzo IPv4 o IPv6 del gruppo
++   entry #port   la porta UDP del gruppo

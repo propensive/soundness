@@ -1,0 +1,27 @@
+orthant 2 language
+
+@ 0 1 0 1b5511e5022573b81aeeced09d8818b1
++ info   flujos de bytes y de texto: un único `read`, `writeTo` y `source` sobre toda fuente y sumidero, con líneas, E/S estándar y bombeo asíncrono
+
+@ 0 4 0 0337e43960347e361518e70d51a96f82
++ entry .drop   descarta un número de bytes del principio de una `Chain[Data]`
++     `chain.drop(bytes)` recibe una cantidad en `Memory` y no un número de fragmentos: se
++     saltan los fragmentos enteros que caben en la cantidad y se corta el fragmento que queda
++     a caballo del límite, de modo que el resultado son los mismos bytes, refragmentados en el
++     límite. Perezoso.
+
+@ 0 4 0 14db9adb7100739f11e814f080bd5536
++ entry .take   conserva un número de bytes del principio de una `Chain[Data]`
++     `chain.take(bytes)` recibe una cantidad en `Memory`: los fragmentos que caben en la
++     cantidad se conservan enteros y se corta el que queda a caballo del límite, de modo que
++     el resultado contiene exactamente `bytes` bytes (o menos si la cadena es más corta).
++     Perezoso.
+
+@ 0 6 0 1f830319e961b31b164c552f3e9b1c1d
++       `Truncation.Error(total)` es el error `↯/s.60.1`, _the stream was cut prematurely after
++       `total`_, donde `total` son los `Memory` entregados antes del corte. La extracción de un
++       `Spring` y los givens `Streamable` para fuentes del JDK abortan con él mediante una
++       `Tactic`; los givens `Writable` y `Sink` para destinos del JDK lo lanzan con `raise`
++       mediante un `Emit`, ya que un escritor solo informa de un corte y nunca aborta. El tipo
++       vive en zephyrine, junto a `Stream` y `Spring`; esta exportación hace que `import
++       turbulence.*` siga bastando a los módulos que lo nombran.

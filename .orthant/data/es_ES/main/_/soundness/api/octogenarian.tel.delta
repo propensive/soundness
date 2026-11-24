@@ -1,0 +1,15 @@
+orthant 2 language
+
+@ 0 1 0 0e148f9a93d2cee21167af7773698fbe
++ info   Git como operaciones tipadas sobre un repositorio abierto para un ámbito, con un backend que ejecuta `git` u otro que no lo necesita
+
+@ 0 9 0 038b61a0afd788f81bbce3cef7a2f7e5
++           Lo que lista `worktrees()` sobre un descriptor de repositorio, envuelto en `Stale`; la
++           lectura que reciben `removeWorktree`, `lockWorktree`, `unlockWorktree` y `moveWorktree`.
++       entry #path   la raíz del árbol de trabajo
++       entry #head   el commit extraído, si lo hay
++       entry #branch   la rama extraída, si HEAD está enganchado
++       entry #bare   si la entrada es el propio repositorio desnudo
++       entry #locked   el motivo del bloqueo, si el árbol de trabajo está bloqueado
++       entry #prunable   por qué podría podarse el árbol de trabajo, si pudiera
++     entry .Handle   un descriptor de árbol de trabajo prestado: las operaciones del índice y de los ficheros de trabajo, además de todas las del repositorio

@@ -409,6 +409,7 @@ entry .Css   a stylesheet: a list of rules, declarations and at-rules, read, wri
         The topic is `"*"`, which the property check accepts for any known property.
     entry .colorKeyword   a `Css.ColorKeyword` as `transparent` or `currentcolor`
     entry #value   renders a native value as CSS text
+  entry #rules   the stylesheet's nodes, in order
   entry .Syntax   a property's value grammar, in CSS value-definition syntax, as a tree
     detail
         The parsed form of a value-definition-syntax string such as `<line-width> ||
@@ -437,7 +438,6 @@ entry .Css   a stylesheet: a list of rules, declarations and at-rules, read, wri
         stenography's `Syntax` in the umbrella.
     refer cataclysm.Css.Syntax.Matcher
     refer cataclysm.PropertyDef
-  entry #rules   the stylesheet's nodes, in order
     entry .Matcher   checks a property value against its grammar: valid, invalid or unsupported
       detail
           `Css.Syntax.Matcher.check(property, value)` tokenizes the value (`ValueToken`) and

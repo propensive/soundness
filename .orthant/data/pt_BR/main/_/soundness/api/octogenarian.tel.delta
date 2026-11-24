@@ -1,0 +1,96 @@
+orthant 2 language
+
+@ 0 1 0 0e148f9a93d2cee21167af7773698fbe
++ info   Git como operações tipadas sobre um repositório aberto para um escopo, com um backend que executa o `git` ou um que o dispensa por completo
+
+@ 0 90 0 1c1deda6ac9e0d1705eaeb4e1aee2bfe
++           `Unconditional` sobrescreve o que quer que a ref contenha; `Absent` exige que a ref não
++           exista (é assim que um branch ou uma tag é criado); `Exactly(hash)` exige que ela
++           contenha esse hash. `.apply` eleva um `Optional[Git.Hash]` — o valor de uma leitura
++           `Stale` — a `Absent` ou `Exactly`, que é como todo compare-and-swap é escrito. É um
++           enum, e não um `Optional[Optional[Git.Hash]]`, que colapsaria.
++       entry .apply   `Absent` para `Unset`, caso contrário `Exactly(hash)`
++       entry #expected   o hash exigido, ou `Unset`
++     entry .Target   o conteúdo de uma ref: `Direct(hash)` ou `Symbolic(ref)`
++     entry .StatusLine   uma linha de status com os seus caminhos como texto, antes de serem tipados para o plano de um handle
++       entry #index   o estado do índice em relação ao HEAD, se mudou
++       entry #worktree   o estado do arquivo de trabalho em relação ao índice, se mudou
++       entry #path   o caminho, relativo à árvore de trabalho
++       entry #origin   de onde veio um caminho renomeado ou copiado
++     entry .NoteEdit   uma edição em uma árvore de notas: `Add`, `Append`, `Remove` ou `Copy`
++         O que `#editNotes` aplica: `Add(target, body, force)`, `Append(target, body)`,
++         `Remove(target, ignoreMissing)` ou `Copy(source, target, force)`.
++     entry .WorktreeEntry   um worktree vinculado tal como um backend o lista; `Git.Worktree.Entry` é a forma do handle
++       entry #path   a raiz do worktree
++       entry #head   o commit com checkout feito, se houver
++       entry #branch   o branch com checkout feito, se anexado
++       entry #bare   se a entrada é o próprio repositório bare
++       entry #locked   o motivo do bloqueio, se o worktree estiver bloqueado
++       entry #prunable   por que o worktree poderia ser podado, se puder
++     entry #locate   onde está o repositório que contém um caminho, ou `Unset` se não houver nenhum
++     entry #init   cria um repositório em um caminho, com um branch inicial, bare ou não
++     entry #clone   clona uma origem (um caminho ou uma URL) para um caminho, relatando por meio de uma atividade
++     entry #head   onde está o HEAD em um diretório git
++     entry #readRef   o conteúdo de uma ref, direto ou simbólico, ou `Unset` se ela não existir
++     entry #listRefs   todas as refs sob um prefixo, com o seu hash
++     entry #peel   o commit que um objeto de tag nomeia em última instância
++     entry #updateRef   move ou apaga uma ref, condicionado a uma `Expectation`, com uma mensagem de reflog
++         O compare-and-swap no qual toda operação que move uma ref se apoia: lança `Moved` quando
++         a ref não contém o esperado, e `Locked` quando outro processo detém o seu lock.
++     entry #updateSymbolicRef   aponta uma ref simbólica, como `HEAD`, para outra ref
++     entry #resolve   o hash que uma expressão de revisão nomeia, ou `Unset`
++     entry #revList   os commits alcançáveis a partir de uma revisão, do mais novo ao mais antigo, opcionalmente delimitados, limitados ou filtrados por caminho
++     entry #reflog   o reflog de uma ref, ou do `HEAD`
++     entry #mergeBase   o melhor ancestral comum de dois commits, se houver
++     entry #isAncestor   se um commit é alcançável a partir de outro
++     entry #readObject   o tipo e o conteúdo bruto de um objeto, ou `Unset`
++     entry #readObjects   os hashes, tipos e conteúdos de vários objetos de uma vez
++     entry #writeObject   armazena conteúdo bruto como um objeto de um tipo, retornando o seu hash
++     entry #diffTree   as diferenças de arquivos entre duas trees
++     entry #status   o estado do índice e dos arquivos de trabalho, como linhas de status
++     entry #add   prepara caminhos para commit, ou tudo, com `all`
++     entry #remove   remove caminhos do índice e, a menos que `cached`, da árvore de trabalho
++     entry #move   renomeia um caminho no índice e na árvore de trabalho
++     entry #restore   restaura caminhos no índice ou na árvore de trabalho a partir de uma origem
++     entry #clean   apaga arquivos não rastreados, retornando os caminhos removidos
++     entry #writeTree   escreve o índice como um objeto tree, retornando o seu hash
++     entry #readTree   alinha o índice (e, para `Hard`, os arquivos de trabalho) com o HEAD, conforme diz um `ResetMode`
++     entry #diffWorktree   os arquivos de trabalho ou o índice comparados com o HEAD ou com uma revisão
++     entry #tracked   todos os caminhos que o índice rastreia
++     entry #conflicts   todos os caminhos em conflito
++     entry #checkout   faz checkout de uma revisão, destacando o HEAD
++     entry #switch   muda para um branch, criando-o antes, se for pedido
++     entry #merge   faz merge de uma revisão no HEAD sob uma política de fast-forward
++     entry #cherryPick   aplica commits sobre o HEAD
++     entry #revert   aplica o inverso de commits sobre o HEAD
++     entry #rebase   faz rebase do HEAD sobre uma revisão, com opções
++     entry #sequence   continua, pula, aborta ou abandona a operação em andamento
++     entry #operation   a operação em andamento, se houver
++     entry #stash   guarda o estado não comitado como uma entrada do stash, retornando o seu commit, ou `Unset` se não havia nada
++     entry #stashes   as entradas do stash, da mais nova para a mais antiga
++     entry #applyStash   aplica uma entrada do stash, restaurando também o índice, se for pedido, e a descarta, se for pedido
++     entry #dropStash   apaga uma entrada do stash
++     entry #readNote   a nota sobre um alvo em uma ref de notas, se houver
++     entry #listNotes   todas as notas em uma ref de notas, como pares de blob de nota e alvo
++     entry #editNotes   cria um novo commit de notas a partir de um commit base e de uma edição, sem nenhuma ref
++         O handle então move a ref de notas para ele por compare-and-swap, que é o que impede que
++         dois escritores sobrescrevam as notas um do outro.
++     entry #configRead   todas as chaves e valores de uma origem de configuração
++     entry #configWrite   define uma chave, ou acrescenta um valor a ela
++     entry #configUnset   remove o valor de uma chave, ou todos eles
++     entry #remoteRefs   todas as refs que um remoto anuncia, com o seu hash
++     entry #fetch   busca refspecs de um remoto, retornando as refs atualizadas
++     entry #push   envia refspecs a um remoto sob uma política de força, retornando o resultado de cada ref
++     entry #worktrees   todos os worktrees vinculados
++     entry #addWorktree   adiciona um worktree vinculado em um caminho, com checkout feito em uma revisão
++     entry #removeWorktree   remove um worktree vinculado
++     entry #lockWorktree   bloqueia um worktree vinculado, com um motivo
++     entry #unlockWorktree   desbloqueia um worktree vinculado
++     entry #moveWorktree   move um worktree vinculado para outro caminho
++     entry #pruneWorktrees   remove os registros de worktrees cujos diretórios sumiram, retornando os seus caminhos
++   entry .OpenFlag   flags que uma abertura pode receber: `Await`
++       `Await` espera que um handle exclusivo conflitante nesta JVM se feche, em vez de falhar
++       de imediato. Passado como `path.open[Git.Repo](Exclusive & Write, Git.OpenFlag.Await)`.
++       A exclusividade é arbitrada apenas entre handles desta JVM, por meio do mesmo registro que
++       os handles de diretório do galilei usam; nunca se espera por outro processo.
++   entry .Repo   a forma em que um caminho se abre como repositório: o seu banco de objetos e as suas refs, emprestando um `Handle`

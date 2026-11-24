@@ -33,7 +33,7 @@ row  `SN-742`  `L4` — umbrella re-exports
 
 The full table is in the
 [rule reference](https://github.com/propensive/consequent/blob/main/doc/rules/README.md#migrating-from-the-sn--identifiers).
-Each retired `SN-nnn` page under [`doc/errors/`](../errors/) also names its
+Each retired `SN-nnn` page under [`doc/errors/`](../errors/sn.md) also names its
 replacement, so an older reference still resolves.
 
 ## The checker

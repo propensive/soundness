@@ -1,0 +1,15 @@
+orthant 2 language
+
+@ 0 6 0 09ddb6fad09838ff1f191f21007b7f55
++ entry .LaneDagStyles   the trait holding `LaneDagDiagram.Style` and `LaneDagDiagram.TextualStyle`
++   detail
++       `object LaneDagDiagram extends LaneDagStyles`, so the two types declared here are reached
++       through the companion, as `LaneDagDiagram.Style` and `LaneDagDiagram.TextualStyle`.
++
++   entry #Style   渲染 `LaneDagDiagram` 或 `LayeredDagDiagram` 一行的类型类
+
+@ 0 4 0 1431e71108c5911a11f879f4a8ce3024
++     entry #serialize   将一行的瓦片、按列排列的字形、各列宽度和一个可选标注渲染为一行
++     entry #width   字形的显示宽度，用于确定其所在列的大小
++
++   entry #TextualStyle   用十四段文本为任何 `Textual` 行类型构建的 `LaneDagDiagram.Style`

@@ -1,0 +1,10 @@
+orthant 2 language
+
+@ 0 1 0 1782437c7239863a0216a55b5ba6a864
++ info   fremde Typsysteme, beim Kompilieren gelesen: typisierte Navigation von C, WIT, TypeScript, WebIDL und Kotlin und die erzeugten Aufrufe
+
+@ 0 1 0 0e5497d4b3a6ac14030b59fd3c6816f3
++ entry .Wasm   die einheitliche Form eines Werts beim Überqueren einer WIT-Grenze, mit den Codecs und den Handle-, Case-, Varianten- und Fehlertypen
+
+@ 0 1 0 112f2b50cdb52af413d4eb8bce3cd6b9
++ entry .Wit   das WIT-Ökosystem: Interfaces von WebAssembly-Komponenten, beim Kompilieren des Codes gelesen, und auf WIT-Typen abgebildete Scala-Typen

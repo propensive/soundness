@@ -1,0 +1,34 @@
+orthant 2 language
+
+@ 0 6 0 1904848723f57d291021f5f64fe09543
++ entry .filesize   `path.filesize()`: el tamaño de un fichero, o de todo lo que hay bajo un directorio, en `Memory`
++     Una extensión sobre cualquier `Path on <plane: Filesystem>`, que necesita el `Explorable`
++     del plano y un backend, y que lanza `Io.Error`. El tamaño de un fichero es el suyo propio;
++     el de un directorio es el suyo más los tamaños de todos sus descendientes, recorridos sin
++     seguir los enlaces simbólicos. Se llama `filesize` y no `size` para que no compita con el
++     `size` de las colecciones en el paraguas `soundness`.
+
+@ 0 14 0 027a7a261cdb2d831f8a03e4799853ff
++         Una capacidad exclusiva. Las operaciones condicionadas por las concesiones son las
++         extensiones `.apply`, `.update` y `.grow`; `#readFrom`, `#writeTo` y `#growTo` son sus
++         formas operativas sin condición.
++     entry #size   el tamaño proyectado en bytes
++     entry #readFrom   lee `length` bytes en un desplazamiento
++     entry #writeTo   escribe datos en un desplazamiento, dentro del tamaño actual
++     entry #growTo   amplía el fichero y lo vuelve a proyectar con un tamaño mayor; un tamaño menor no hace nada
++         El nuevo tamaño debe caber en un `Int`.
++     entry #flush   fuerza que los cambios de la proyección pasen al fichero
++     entry #expanse   una vista posicional compartida, para consumidores escritos contra el `Expanse` de zephyrine
++   entry .apply   `ram(offset, length)`: una lectura posicional, en un descriptor que concede `Read`
++   entry .update   `ram(offset) = data`: una escritura posicional, en un descriptor que concede `Write`
++   entry .grow   `ram.grow(size)`: amplía la proyección para poder direccionar escrituras más allá del antiguo final, en un descriptor que concede `Write`
++   entry .RamOpenable   la instancia de `Openable` tras `path.open[Ram](mode)`
+
+@ 0 4 0 00e9fb594f49f696182f1a9cda4f790c
++ entry .observe   `path.observe[record] { observer => … }`: la versión de un nombre publicada ahora, proyectada, con los medios para pasar a una más nueva
++     No se toma ningún bloqueo, así que un observador nunca retrasa al propietario, ni el
++     propietario a un observador. Todo lo proyectado deja de estarlo cuando termina el bloque.
++     Un nombre bajo el que no se ha publicado nada lanza `Io.Error`.
+
+@ 0 1 0 17f48f2f57de485414f06b97d1cabc9a
++ entry .Observer   el agarre de un lector sobre un nombre publicado, en el bloque de `observe`: la versión actual, proyectada, y los medios para pasar a otra

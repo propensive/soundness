@@ -1,0 +1,45 @@
+orthant 2 language
+
+@ 0 38 0 15177b5972e74eeb18897d1f690c0e42
++     entry .pixels   eine `Pixels`-Größe als `<length>`: `4px`
++     entry .ems   eine `Ems`-Größe (aus quantitative) als `<length>`: `2em`
++     entry .rems   eine `Rems`-Größe als `<length>`: `2rem`
++     entry .exs   eine `Exs`-Größe als `<length>`: `1ex`
++     entry .chs   eine `Chs`-Größe als `<length>`: `40ch`
++     entry .vws   eine `ViewportWidths`-Größe als `<length>`: `100vw`
++     entry .vhs   eine `ViewportHeights`-Größe als `<length>`: `100vh`
++     entry .vmins   eine `ViewportMins`-Größe als `<length>`: `50vmin`
++     entry .vmaxes   eine `ViewportMaxes`-Größe als `<length>`: `50vmax`
++     entry .metres   jede physische Länge (eine `Metres`-Größe) als `<length>`, in `mm`
++         Eine `Distance`-Größe — geschrieben als `3.0*Cm`, `10.0*Mm`, `1.0*Metre` oder als
++         beliebige Länge aus quantitative — wird in Millimetern dargestellt, da CSS `cm`, `mm` und
++         `m` gleichermaßen liest: `3.0*Cm` ist `30mm`. Zoll, Punkte und Picas behalten ihre
++         eigenen Einheiten.
++     entry .inches   eine `Inches`-Größe als `<length>`: `1in`
++     entry .points   eine `Points`-Größe als `<length>`: `12pt`
++     entry .picas   eine `Picas`-Größe als `<length>`: `1pc`
++     entry .percents   eine `Percents`-Größe als `<percentage>`: `50%`
++     entry .chromatic   jede Farbe mit einer `Chromatic`-Instanz als `<color>`, hexadezimal dargestellt
++         Deckt `Chroma` aus anticipation und jede Farbform aus iridescence ab (`Srgb`, `Hsl`,
++         `Cielab`, … und das Literal `rgb"#3344ff"`), über ihre `Color.chromatic`-Instanz, jede als
++         sechsstelliges Hex-Triplett aus ihren Rot-, Grün- und Blaukanälen dargestellt, auf 0–255
++         begrenzt. Die Instanz wird für jeden Obertyp der Farbe gesucht, sodass eine Farbklasse,
++         die ihr `Chromatic` von ihrer Form erhält, gefunden wird, wenn `Css.Style(…)` nach dem
++         exakten Typ des Werts fragt.
++     entry .seconds   jede Zeit (eine `Seconds`-Größe) als `<time>`, in `ms`
++         `200.0*Ms` ist `200ms`; `1.5*S` ist `1500ms`.
++     entry .degrees   eine `Degrees`-Größe als `<angle>`: `90deg`
++     entry .radians   eine `Radians`-Größe als `<angle>`: `1rad`
++     entry .turns   eine `Turns`-Größe als `<angle>`: `0.5turn`
++     entry .flexes   eine `Flexes`-Größe als `<flex>`: `2fr`
++     entry .integer   ein `Int` als `<integer>`
++     entry .decimal   ein `Double` als `<number>`, ohne überflüssiges `.0`
++     entry .keyword   ein `Css.Keyword` in seiner CSS-Schreibweise, gültig für jede Eigenschaft
++         Das Topic ist `"*"`, das die Eigenschaftsprüfung für jede bekannte Eigenschaft akzeptiert.
++     entry .colorKeyword   ein `Css.ColorKeyword` als `transparent` oder `currentcolor`
++     entry #value   stellt einen nativen Wert als CSS-Text dar
++   entry #rules   die Knoten des Stylesheets, der Reihe nach
++   entry .Syntax   die Wertgrammatik einer Eigenschaft, in CSS-Wertdefinitionssyntax, als Baum
+
+@ 0 1 0 10aaf54c52c3fe0b0d316f1cd65e1109
++     entry .Matcher   prüft einen Eigenschaftswert gegen seine Grammatik: gültig, ungültig oder nicht unterstützt

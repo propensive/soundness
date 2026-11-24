@@ -1,0 +1,22 @@
+orthant 2 language
+
+@ 0 4 0 0337e43960347e361518e70d51a96f82
++ entry .drop   scarta un numero di byte dall'inizio di una `Chain[Data]`
++     `chain.drop(bytes)` riceve un conteggio `Memory` anziché un numero di chunk: i chunk interi
++     compresi nel conteggio vengono saltati e il chunk a cavallo del confine viene tagliato,
++     quindi il risultato sono gli stessi byte, suddivisi di nuovo in chunk al confine. Pigro.
+
+@ 0 4 0 14db9adb7100739f11e814f080bd5536
++ entry .take   tiene un numero di byte dall'inizio di una `Chain[Data]`
++     `chain.take(bytes)` riceve un conteggio `Memory`: i chunk compresi nel conteggio vengono
++     tenuti interi e quello a cavallo del confine viene tagliato, quindi il risultato contiene
++     esattamente `bytes` byte (o meno, se la catena è più corta). Pigro.
+
+@ 0 6 0 1f830319e961b31b164c552f3e9b1c1d
++       `Truncation.Error(total)` è l'errore `↯/s.60.1`, _the stream was cut prematurely after
++       `total`_, dove `total` sono i `Memory` consegnati prima dell'interruzione. Il pull di uno
++       `Spring` e i given `Streamable` per le sorgenti JDK interrompono con esso tramite una
++       `Tactic`; i given `Writable` e `Sink` per le destinazioni JDK lo sollevano con `raise`
++       tramite un `Emit`, poiché uno scrittore si limita a riportare un'interruzione e non
++       interrompe mai. Il tipo vive in zephyrine, accanto a `Stream` e `Spring`; questo export fa
++       sì che `import turbulence.*` basti ai moduli che lo nominano.

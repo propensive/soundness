@@ -23,7 +23,9 @@ row  C4  the homonym and synonym tables, where one name means two things or two 
 That inventory is scaffolding, not documentation: this track applies it category by category,
 and ends by deleting it. The file's absence is the completion signal.
 
-The track's items, with their horizons and hard dependencies; [`status.tel`](status.tel) records where each one stands:
+The track's items, with their horizons and hard dependencies;
+[`status.tel`](https://github.com/propensive/soundness/blob/main/doc/roadmap/status.tel)
+records where each one stands:
 
 ```tabular
 column  Item

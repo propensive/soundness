@@ -843,12 +843,12 @@ entry .strict   forces a lazy chain to its end and returns it
     now fully memoized, so that whatever side effects its production had have happened.
 
 entry .drop   drops a number of bytes from the front of a `Chain[Data]`
-    `chain.drop(bytes)` takes a `Bytes` count rather than a chunk count: whole chunks within
+    `chain.drop(bytes)` takes a `Memory` count rather than a chunk count: whole chunks within
     the count are skipped and the chunk which straddles the boundary is cut, so the result is
     the same bytes re-chunked at the boundary. Lazy.
 
 entry .take   keeps a number of bytes from the front of a `Chain[Data]`
-    `chain.take(bytes)` takes a `Bytes` count: chunks within the count are kept whole and
+    `chain.take(bytes)` takes a `Memory` count: chunks within the count are kept whole and
     the one which straddles the boundary is cut, so the result holds exactly `bytes` bytes
     (or fewer if the chain is shorter). Lazy.
 
@@ -956,7 +956,7 @@ entry .StreamOutputStream   a `java.io.OutputStream` whose writes become a lazy 
 entry .Truncation   `zephyrine.Truncation`, re-exported: the error a stream raises when it is cut short
   detail
       `Truncation.Error(total)` is error `↯/s.60.1`, _the stream was cut prematurely after `total`_,
-      where `total` is the `Bytes` delivered before the cut. A `Spring`'s pull and the
+      where `total` is the `Memory` delivered before the cut. A `Spring`'s pull and the
       `Streamable` givens for JDK sources abort with it through a `Tactic`; the `Writable` and
       `Sink` givens for JDK targets `raise` it through an `Emit`, since a writer only reports a
       cut and never aborts. The type lives in zephyrine, beside `Stream` and `Spring`; this

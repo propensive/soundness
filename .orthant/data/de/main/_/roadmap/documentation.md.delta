@@ -12,6 +12,9 @@ orthant 2 language
 + angewiesen sind. Sie endet mit dem stärksten Test der Erlernbarkeit, den es gibt: Ein Agent,
 + dem nur die Dokumentation vorliegt, baut eine funktionierende Anwendung und stellt sie bereit.
 
+@ 0 3 0 064a0d693208d94d0be9e9c787015ee8
++ Die Punkte der Spur, mit ihren Horizonten und harten Abhängigkeiten; [`status.tel`](https://github.com/propensive/soundness/blob/main/doc/roadmap/status.tel) hält fest, wo jeder steht:
+
 @ 0 5 0 185fd7a7a41b5e581955d9a60cdb9168
 + Erledigt: #1791 (2026-08-14)
 + Der Ausgangswert waren 92 Dateien mit modulweisem Readme-Boilerplate und 98 Verzeichnisse

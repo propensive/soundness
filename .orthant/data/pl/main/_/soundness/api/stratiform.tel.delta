@@ -1,0 +1,106 @@
+orthant 2 language
+
+% 0 4 0 06bfb3df7c62ba2607ff2e46b4a75db1
+
+@ 0 1 0 1509c0b4edc0521e140773335e9e6a24
++   entry #Revision   składalny dziennik edycji, stosowany do dokumentu po jednej operacji
+
+@ 0 1 0 011854171f69420718747641930de1a5
++   entry #Mutation   prymitywne operacje edycji z §22.2 zachowujące prezentację oraz ich interpreter
+
+@ 0 5 0 03a6563a211c058e091aac26e9fa266a
++         Każda `.Op` to lokalne przepisanie adresowane przez `Tel.Pointer`: otaczające atomy,
++         komentarze, puste wiersze i niepowiązane dzieci z założenia pozostają nietknięte, dzięki
++         czemu program może zmienić jedną wartość w pliku napisanym przez człowieka i zapisać go
++         z powrotem w nienaruszonym stanie. `Mutation(tel, op)` stosuje jedną operację,
++         a `Mutation(tel, ops)` listę po kolei, zwracając nowy `Tel`; `Revision` to składalny DSL
++         nad tymi samymi operacjami.
+
+@ 0 7 0 0bdbe28195ed1d45177a037d87ad30fd
++         Krok wskaźnika to słowo kluczowe plus indeks wystąpienia, rozstrzygany względem
++         dokumentu, do którego stosuje się operację, więc wskaźnik zachowuje sens po
++         niepowiązanych edycjach; ale wskaźnika indeksowanego wystąpieniem nie wolno używać
++         ponownie w operacjach, które przenoszą, dodają lub usuwają związki o tym samym słowie
++         kluczowym. Warunki wstępne zależne od schematu – że usunięta składowa nie była wymagana,
++         że ustawiana flaga jest zadeklarowana, że zamiennik jest poprawnie typowany – są poza
++         zakresem, jak w implementacji referencyjnej: sprawdza je warstwa świadoma schematu,
++         zanim przekaże działanie tym prymitywom.
+
+@ 0 20 0 0dcd6706d124251810739b23466f1845
++     entry .Placement   po której stronie drugiej grupy `ReorderGroups` umieszcza grupę: `Before` lub `After`
++     entry .Member   bezschematowy opis jednej składowej struktury, dla `.construct`
++         `Value(keyword, occurrences)` to składowa skalarna z jej obecnymi wystąpieniami (jedno
++         dla pojedynczej składowej, kilka dla powtarzalnej, żadne dla nieobecnej składowej, która
++         kończy ciąg w wierszu); `Flag(keyword)` to składowa flagi; `Child(compound)` – gotowe
++         dziecko; a `Break` – nieobecna składowa, która nic nie wnosi, ale kończy ciąg w wierszu,
++         tak jak robi to nieobecna składowa skalarna, ponieważ faza atomów nigdy nie pomija
++         pozycji skalarnej.
++     entry .Op   jedna prymitywna operacja, adresowana przez `Tel.Pointer`
++         Operacje adresowane celem, których wskaźnik wskazuje zmieniany związek:
++         `UpdateAtom(pointer, atomIndex, text)` przepisuje jeden atom, zachowując jego postać,
++         dopóki nowa wartość jest dla niej bezpieczna, a w przeciwnym razie eskalując w wierszu →
++         źródłowy → literalny, nigdy z powrotem; `Delete(pointer)` usuwa związek, a opróżniony
++         blok wraz z jego komentarzami; `Replace(pointer, compound)` podstawia związek,
++         zachowując uwagę oryginału; `AttachRemark(pointer, text)` i `RemoveRemark(pointer)`
++         ustawiają i czyszczą uwagę; `SetFlag(pointer, keyword)` dodaje flagę w wierszu, gdy
++         związek nie ma dzieci ani atomu źródłowego czy literalnego, a w przeciwnym razie jako
++         dziecko, i zawodzi z `FlagAlreadySet`, jeśli jest obecna; `UnsetFlag(pointer, keyword)`
++         usuwa flagę w wierszu lub flagę będącą gołym dzieckiem, działając jak identyczność, gdy
++         jej nie ma; `InsertBefore(pointer, compound)` i `InsertAfter(pointer, compound)`
++         umieszczają element siostrzany obok celu, w nowym bloku, gdy blok celu jest
++         tabelaryczny, aby nowy związek nie został odczytany jako wiersz.
+
+@ 0 23 0 14ccf0ecaffdade716db7a4078f0c302
++         Operacje adresowane rodzicem, których wskaźnik wskazuje kontener (`Tel.Pointer.Empty`
++         dla korzenia): `Insert(pointer, compound)` dopisuje w naturalnej pozycji składowej – po
++         ostatnim związku o tym samym słowie kluczowym lub w świeżym bloku końcowym;
++         `InsertIntoBlock(parentPointer, blockIndex, compound)` dopisuje wiersz do bloku, ponownie
++         dopełniony zgodnie z jego tabelaryzacją, zawodząc z `TabulationOverflow`, gdy wartość
++         kolumny się nie mieści; `ReorderWithinGroup(parentPointer, keyword, oldIndex, newIndex)`
++         przenosi jedno wystąpienie w obrębie grupy jego słowa kluczowego;
++         `ReorderGroups(parentPointer, keyword, otherKeyword, placement)` przenosi całą grupę
++         składowej przed inną lub za nią, przenosząc całe bloki tam, gdzie bloki grup są
++         rozłączne; a `ResizeTabulation(parentPointer, blockIndex, plannedRows)` przelicza
++         przesunięcia znaczników tabelaryzacji tak, by zmieściły jej wiersze i wszelkie
++         planowane, ponownie dopełniając każdy wiersz. Geometria kolumn jest mierzona w punktach
++         kodowych.
++     entry .apply   stosuje do dokumentu jedną operację lub listę po kolei
++         `Mutation(tel, op)` i `Mutation(tel, ops)`, każda zgłaszająca `Mutation.Error`. Własny
++         sigil dokumentu (z jego pragmy, domyślnie `#`) zasila test bezpieczeństwa w wierszu, więc
++         zaktualizowana wartość, która przy ponownym parsowaniu zostałaby odczytana jako uwaga
++         przy niestandardowym sigilu, eskaluje swoją postać.
++     entry .construct   świeży związek z postacią każdego atomu wybraną według reguł bezpieczeństwa z §22.3
++         `construct(keyword, atoms*)` tworzy jeden atom na każdą niepustą wartość – w wierszu,
++         jeśli wartość nie ma podziału wiersza, spacji na początku, na końcu ani podwójnej i nie
++         zaczyna się od sigila i spacji; w przeciwnym razie atom źródłowy, jeśli nie ma pustego
++         wiersza, wiersza kończącego się białym znakiem ani spacji na początku; w przeciwnym razie
++         atom literalny pod najkrótszym ogranicznikiem `---`, który nie koliduje z żadnym
++         wierszem. Pusta wartość nie daje atomu, ponieważ spacja na początku byłaby spacją na
++         końcu wiersza słowa kluczowego.
+
+@ 0 7 0 080b2f8885154bc50ebe4864d826f18c
++         `construct(keyword, members)` i `construct(keyword, members, sigil)` wykonują
++         kanoniczny algorytm prezentacji nad listą `Member`: początkowe, jednokrotnie
++         występujące, bezpieczne w wierszu skalary i flagi stają się atomami w wierszu;
++         powtarzalny skalar trafia w całości do wiersza, gdy każde wystąpienie jest bezpieczne
++         w wierszu, a w przeciwnym razie każde wystąpienie staje się dzieckiem; a każda pozostała
++         składowa jest dzieckiem w jednym bloku bez komentarzy, tabelaryzacji i pustych wierszy.
++         Atomy w wierszu są poprzedzone miękką spacją aż do pierwszej wartości zawierającej
++         spację, a od niej twardą spacją, więc konstrukcja przy ponownym parsowaniu daje te same
++         atomy.
+
+@ 0 1 0 1210220dfccc22b104fd4553a4bc7331
++     entry .Error   zgłaszany, gdy wskaźnik się nie rozstrzyga lub niezmiennik operacji nie jest spełniony
+
+@ 0 11 0 01151dd09e78d6ca18e924e372da3734
++           Błąd `↯/s.118.2`: _the mutation failed because …_. `PointerNotFound` to wskaźnik,
++           indeks bloku lub grupa, które nie rozstrzygają się do związku, w tym zmiana kolejności,
++           której grupy są przeplecione lub której indeksy są poza zakresem, oraz
++           `ResizeTabulation` na bloku bez tabelaryzacji; `AtomIndexOutOfRange` – `UpdateAtom`
++           poza atomami celu; `FlagAlreadySet` – `SetFlag` flagi, którą cel już ma;
++           `TabulationOverflow` – `InsertIntoBlock`, którego wartość kolumny przekracza pojemność
++           kolumny; a `WriteUnsupported` jest zgłaszany przez `open[Tel]` z `Write`, gdy źródła
++           dokumentu nie da się zapisać z powrotem.
++       entry .Reason   pięć przyczyn, każda z numerem
++         entry .communicable   przedstawia każdą przyczynę jako komunikat
++       entry #reason   dlaczego mutacja się nie powiodła

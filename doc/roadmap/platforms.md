@@ -23,7 +23,9 @@ Parity means closing each of those qualifications, and the instrument for doing 
 checked-in data, where every "no" carries a reason, and CI fails when reality regresses from
 the manifest. When the only reasons left are inherent ones, the parity statement holds.
 
-The track's items, with their horizons and hard dependencies; [`status.tel`](status.tel) records where each one stands:
+The track's items, with their horizons and hard dependencies;
+[`status.tel`](https://github.com/propensive/soundness/blob/main/doc/roadmap/status.tel)
+records where each one stands:
 
 ```tabular
 column  Item

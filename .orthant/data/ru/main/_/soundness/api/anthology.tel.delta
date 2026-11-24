@@ -1,0 +1,4 @@
+orthant 2 language
+
+@ 0 1 0 0c5523d30a7fc3671ba9d1752c8af003
++ info   компиляторы и компоновщики как значения: Scala, Java и Kotlin внутри процесса, с выводом для JVM, JavaScript, Wasm, нативного кода и Android

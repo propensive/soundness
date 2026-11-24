@@ -1,5 +1,8 @@
 orthant 2 language
 
+@ 0 3 0 064a0d693208d94d0be9e9c787015ee8
++ Les éléments du chantier, avec leurs horizons et leurs dépendances fortes ; [`status.tel`](https://github.com/propensive/soundness/blob/main/doc/roadmap/status.tel) indique où en est chacun :
+
 @ 0 5 0 027aa8507cfead550859e240b33d26f4
 + L'élément clé de voûte : `etc/migration.md` définit le format des instructions de migration
 + exécutables par un agent — ce qui a changé, comment détecter le code concerné, la réécriture exacte

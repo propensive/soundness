@@ -1,0 +1,10 @@
+orthant 2 release
+
+@ 0 1 0 14c6012a6e0daf0707fce853300455ea
++     `chain.drop(bytes)` takes a `Memory` count rather than a chunk count: whole chunks within
+
+@ 0 1 0 1f3472b0b3c033681d7ffe9f440d77ff
++     `chain.take(bytes)` takes a `Memory` count: chunks within the count are kept whole and
+
+@ 0 1 0 189aa2facbfb06d81989849042777f92
++       where `total` is the `Memory` delivered before the cut. A `Spring`'s pull and the

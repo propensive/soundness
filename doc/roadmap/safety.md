@@ -53,7 +53,9 @@ row  `unsafeErasedValue` for erased evidence  50  mechanical, if `compiletime.er
 row  staging, quotes and macros (the quote wall)  ~27  compiler-side
 ```
 
-The track's items, with their horizons and hard dependencies; [`status.tel`](status.tel) records where each one stands:
+The track's items, with their horizons and hard dependencies;
+[`status.tel`](https://github.com/propensive/soundness/blob/main/doc/roadmap/status.tel)
+records where each one stands:
 
 ```tabular
 column  Item
