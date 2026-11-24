@@ -144,6 +144,7 @@ object JsonRpc:
 
         faults.remove(pending.id) match
           case null             => JsonRpc.Error(JsonRpc.Error.Reason.Abandoned)
+
           case failure: Failure =>
             JsonRpc.Error(JsonRpc.Error.Reason.Failed, failure.code, failure.message)
 

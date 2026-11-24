@@ -32,8 +32,6 @@
                                                                                                   */
 package stenography
 
-import scala.annotation
-
 private def sciList[element](elements: element*): scala.collection.immutable.List[element] =
   scala.collection.immutable.List(elements*)
 
@@ -155,6 +153,7 @@ object Syntax:
           case name@(Only | Except) => annotation.tpe.absolve match
             case AppliedType(_, scala.List(classifier)) =>
               val restriction = if name == Only then ".only[" else ".except["
+
               val restricted: List[Syntax] =
                 List(Primitive(restriction), apply(classifier), Primitive("]"))
 
@@ -777,18 +776,18 @@ enum Syntax:
       other
 
   def text(using imports: Imports): Text = this match
-    case Simple(designator)      => designator.text
-    case Symbolic(text)          => text
-    case Primitive(text)         => text
-    case Selection(left, right)  => s"${left.text}.${right}"
+    case Simple(designator)                      => designator.text
+    case Symbolic(text)                          => text
+    case Primitive(text)                         => text
+    case Selection(left, right)                  => s"${left.text}.${right}"
     case Prefix("->", base) if !imports.pureFuns => s"=> ${base.text}".tt
-    case Prefix(prefix, base)    => s"$prefix ${base.text}".tt
-    case Suffix(base, suffix)    => s"${base.text}$suffix".tt
-    case Sequence('(', elements) => s"(${joined(elements.map(_.text), ", ")})".tt
-    case Sequence('[', elements) => s"[${joined(elements.map(_.text), ", ")}]".tt
-    case Sequence('{', elements) => s"{${joined(elements.map(_.text), ", ")}}".tt
-    case Value(designator)       => s"${designator.text}.type".tt
-    case Compound(syntaxes)      => joined(syntaxes.map(_.text)).tt
+    case Prefix(prefix, base)                    => s"$prefix ${base.text}".tt
+    case Suffix(base, suffix)                    => s"${base.text}$suffix".tt
+    case Sequence('(', elements)                 => s"(${joined(elements.map(_.text), ", ")})".tt
+    case Sequence('[', elements)                 => s"[${joined(elements.map(_.text), ", ")}]".tt
+    case Sequence('{', elements)                 => s"{${joined(elements.map(_.text), ", ")}}".tt
+    case Value(designator)                       => s"${designator.text}.type".tt
+    case Compound(syntaxes)                      => joined(syntaxes.map(_.text)).tt
 
     // A refinement or an infix type under a projection needs parentheses: `Play { type Q = Int }#R`
     // would project from `Int`.
@@ -846,8 +845,11 @@ enum Syntax:
 
           if aliasable(name, syntax) then Infix(left, imports.aliases(name.s), syntax)
           else left match
-            case Structural(base, types, terms) => Structural(base, types.define(name, syntax), terms)
-            case other                          => Structural(other, Ledger(name -> syntax), Ledger())
+            case Structural(base, types, terms) =>
+              Structural(base, types.define(name, syntax), terms)
+
+            case other =>
+              Structural(other, Ledger(name -> syntax), Ledger())
 
         val written2 =
           if defs.nil then written else written match

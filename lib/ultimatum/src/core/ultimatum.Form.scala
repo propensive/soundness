@@ -214,7 +214,7 @@ extends scala.caps.ExclusiveCapability, scala.caps.Stateful:
       case Occupancy.Inline     => frame.measure(Arrangement.Stack).min
 
     root match
-      case inline: Tui.Block => inline.reframe(root.width, height)
+      case inline: Tui.Block  => inline.reframe(root.width, height)
       case screen: Tui.Screen => screen.reframe()
       case _                  => ()
 
@@ -387,7 +387,7 @@ extends scala.caps.ExclusiveCapability, scala.caps.Stateful:
     requestRefresh(Set())
     var running = true
 
-    while running do events.next() match
+    while running do events.next().absolve match
       case Iterator.Exhausted => running = false
 
       case Keypress.Tab =>
@@ -473,5 +473,5 @@ extends scala.caps.ExclusiveCapability, scala.caps.Stateful:
               else requestRefresh(changed)
 
     root match
-      case inline: Tui.Block => inline.finish()
+      case inline: Tui.Block  => inline.finish()
       case _                  => ()

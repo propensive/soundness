@@ -1,0 +1,7 @@
+orthant 2 language
+
+@ 0 6 0 1904848723f57d291021f5f64fe09543
++ entry .filesize   `path.filesize()`：文件的大小，或目录之下所有内容的大小，以 `Memory` 表示
++     作用于任何 `Path on <plane: Filesystem>` 的扩展方法，需要该平面的 `Explorable` 和一个后端，并会抛出 `Io.Error`。
++     文件的大小就是它自己的大小；目录的大小是它自己的大小加上其所有后代的大小，遍历时不跟随符号链接。
++     之所以命名为 `filesize` 而不是 `size`，是为了不在 `soundness` 总括包中与集合的 `size` 冲突。

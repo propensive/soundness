@@ -39,7 +39,6 @@ import contingency.*
 import gossamer.*
 import hieroglyph.*
 import hypotenuse.*
-import iridescence.*
 import rudiments.*
 import spectacular.*
 import vacuous.*
@@ -71,7 +70,7 @@ private[facsimile] object ContentWriter:
     def name(text: Text): Unit = builder.addAll(CosWriter.write(Cos.Name(text)))
     def matrix(m: Pdf.Matrix): Text = nums(m.a, m.b, m.c, m.d, m.e, m.f)
 
-    operator match
+    operator.absolve match
       case Save                     => out(t"q\n")
       case Restore                  => out(t"Q\n")
       case Concat(m)                => out(t"${matrix(m)} cm\n")

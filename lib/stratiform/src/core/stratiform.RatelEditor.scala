@@ -32,9 +32,9 @@
                                                                                                   */
 package stratiform
 
-import scala.language.unsafeNulls
-
 import java.util.concurrent.atomic as juca
+
+import scala.language.unsafeNulls
 
 import anticipation.*
 import contingency.*
@@ -107,8 +107,9 @@ extends Ratel.Reader(opening):
     val entry = indexEntry(index)
 
     Tree
-      ( holding.u64(entry), holding.u32(entry + 8), holding.u32(entry + 16), holding.u32(entry + 20),
-        holding.u32(entry + 24), holding.u8(entry + 29), holding.u8(entry + 30) )
+      ( holding.u64(entry), holding.u32(entry + 8), holding.u32(entry + 16),
+        holding.u32(entry + 20), holding.u32(entry + 24), holding.u8(entry + 29),
+        holding.u8(entry + 30) )
 
   override def state: Ratel.State = Ratel.State.Unsealed
   override private[stratiform] def digested: Boolean = false
@@ -248,8 +249,7 @@ extends Ratel.Reader(opening):
         case Tel.Codec.Encoded.Bytes(data)      => data
         case Tel.Codec.Encoded.Invalid(message) => invalid(Tel.Error.Reason.EncodingRejected)
 
-    RatelLayout.width(scalar).let: width =>
-      if bytes.length != width then fail(Reason.WidthMismatch)
+    RatelLayout.width(scalar).let: width => if bytes.length != width then fail(Reason.WidthMismatch)
 
     bytes
 
@@ -277,7 +277,9 @@ extends Ratel.Reader(opening):
     val count = if ref == none then 0L else holding.u32(region + ref + 4)
 
     if count == capacity then
-      val body: Data = if count == 0L then Array.empty[Byte] else copy(region + ref + 8, (count*unit).toInt)
+      val body: Data =
+        if count == 0L then Array.empty[Byte] else copy(region + ref + 8, (count*unit).toInt)
+
       val moved = append(2, RatelBytes.growable((2L*capacity).max(1L), count, unit, body))
       if ref != none then garbage(listSize(ref, unit))
       holding.set32(at(table, row, slot), moved)
@@ -356,10 +358,10 @@ extends Ratel.Reader(opening):
         if needed && slot.required && mine.nil then fail(Reason.Unencodable)
 
         slot.kind match
-          case Kind.Inline(scalar, _)    => mine.head.let { element => encode(scalar, text(element)) }
-          case Kind.Ref(scalar, _)       => mine.head.let { element => encode(scalar, text(element)) }
-          case Kind.Packed(scalar, _)    => mine.each { element => encode(scalar, text(element)) }
-          case Kind.Refs(scalar, _)      => mine.each { element => encode(scalar, text(element)) }
+          case Kind.Inline(scalar, _)    => mine.head.let: element => encode(scalar, text(element))
+          case Kind.Ref(scalar, _)       => mine.head.let: element => encode(scalar, text(element))
+          case Kind.Packed(scalar, _)    => mine.each: element => encode(scalar, text(element))
+          case Kind.Refs(scalar, _)      => mine.each: element => encode(scalar, text(element))
           case Kind.Record(table, _)     => mine.head.let(within(table, _))
           case Kind.Children(table, _)   => mine.each(within(table, _))
           case Kind.Select(variants)     => mine.head.let(choice(variants, _))
@@ -380,7 +382,9 @@ extends Ratel.Reader(opening):
     ( using Tactic[Tel.Error], Tactic[Ratel.Error] )
   :   Unit =
 
-    def choice(variants: List[RatelLayout.Variant], element: Tel.Element, slot: Slot): (Long, Long) =
+    def choice(variants: List[RatelLayout.Variant], element: Tel.Element, slot: Slot)
+    :   (Long, Long) =
+
       val variant = variants.seek(_.keywordIndex == index(element)).or(fail(Reason.Unencodable))
 
       val payload: Long = variant.payload match
@@ -415,14 +419,17 @@ extends Ratel.Reader(opening):
             mark(table, row, slot, true)
 
           case Kind.Packed(scalar, width) =>
-            val values = mine.map { element => encode(scalar, text(element)) }
-            val body = Array.collect[Byte](width*values.size + 8)(out => values.each(out.append(_)))
+            val values = mine.map: element => encode(scalar, text(element))
+            val body = Array.collect[Byte](width*values.size + 8): out => values.each(out.append(_))
             val ref = grow(values.size, width, body)
             holding.set32(at(table, row, slot), ref)
 
           case Kind.Refs(scalar, _) =>
-            val refs = mine.map { element => store(scalar, text(element)) }
-            val body = Array.collect[Byte](4*refs.size + 8) { out => refs.each(RatelBytes.u32(out, _)) }
+            val refs = mine.map: element => store(scalar, text(element))
+
+            val body = Array.collect[Byte](4*refs.size + 8): out =>
+              refs.each(RatelBytes.u32(out, _))
+
             val ref = grow(refs.size, 4, body)
             holding.set32(at(table, row, slot), ref)
 
@@ -432,8 +439,11 @@ extends Ratel.Reader(opening):
             mark(table, row, slot, true)
 
           case Kind.Children(inner, _) =>
-            val numbers = mine.map { element => emit(inner, node(element), row, slot.link) }
-            val body = Array.collect[Byte](4*numbers.size + 8) { out => numbers.each(RatelBytes.u32(out, _)) }
+            val numbers = mine.map: element => emit(inner, node(element), row, slot.link)
+
+            val body = Array.collect[Byte](4*numbers.size + 8): out =>
+              numbers.each(RatelBytes.u32(out, _))
+
             val ref = grow(numbers.size, 4, body)
             holding.set32(at(table, row, slot), ref)
 
@@ -459,7 +469,7 @@ extends Ratel.Reader(opening):
   :   List[Long] =
 
     val found = list(word(at(table, row, slot)), unit)
-    List.range(0, found.length.toInt).map { position => found.offset + unit*position }
+    List.range(0, found.length.toInt).map: position => found.offset + unit*position
 
   // The entries which the indexes at a site have for one child of one host.
   private def entriesOf(table: Int, host: Long, slot: Slot, child: Long)(using Tactic[Ratel.Error])
@@ -552,7 +562,7 @@ extends Ratel.Reader(opening):
             then chosen(variants, word(at(table, row, slot)), word(at(table, row, slot) + 4))
 
           case Kind.SelectList(variants) =>
-            listed(table, row, slot, 8L).each { pair => chosen(variants, word(pair), word(pair + 4)) }
+            listed(table, row, slot, 8L).each: pair => chosen(variants, word(pair), word(pair + 4))
 
           case _ =>
             ()
@@ -588,7 +598,7 @@ extends Ratel.Reader(opening):
             if ref != none then garbage(listSize(ref, width))
 
           case Kind.Refs(_, intern) =>
-            listed(table, row, slot, 4L).each { element => abandon(intern, word(element)) }
+            listed(table, row, slot, 4L).each: element => abandon(intern, word(element))
             if ref != none then garbage(listSize(ref, 4))
 
           case Kind.Record(inner, _) =>
@@ -602,7 +612,7 @@ extends Ratel.Reader(opening):
             if held then chosen(variants, ref, word(at(table, row, slot) + 4))
 
           case Kind.SelectList(variants) =>
-            listed(table, row, slot, 8L).each { pair => chosen(variants, word(pair), word(pair + 4)) }
+            listed(table, row, slot, 8L).each: pair => chosen(variants, word(pair), word(pair + 4))
             if ref != none then garbage(listSize(ref, 8))
 
           case _ =>
@@ -610,6 +620,7 @@ extends Ratel.Reader(opening):
 
 
   private def pageSize(index: Int)(using Tactic[Ratel.Error]): Long = tree(index).pageSize
+
   private def pageAt(index: Int, number: Long)(using Tactic[Ratel.Error]): Long =
     holding.u64(indexEntry(index)) + number*pageSize(index)
 
@@ -631,7 +642,8 @@ extends Ratel.Reader(opening):
       if length == 0xffff then
         val ref = holding.u32(pointer + head + 4)
         Cell(child, bytes(false, ref), ref)
-      else Cell(child, copy(pointer + head + 2, length), none)
+      else
+        Cell(child, copy(pointer + head + 2, length), none)
 
   private def cellSize(kind: Int, cell: Cell): Int =
     val head = if kind == 2 then 4 else 0
@@ -640,7 +652,7 @@ extends Ratel.Reader(opening):
   // The bytes which some cells take in a page, each with the pointer to it.
   private def weight(kind: Int, all: List[Cell]): Int =
     @scala.annotation.tailrec
-    def recur(rest: List[Cell], sum: Int): Int = rest match
+    def recur(rest: List[Cell], sum: Int): Int = rest.absolve match
       case Nil          => sum
       case cell :: more => recur(more, sum + 2 + cellSize(kind, cell))
 
@@ -662,7 +674,7 @@ extends Ratel.Reader(opening):
     holding.zero(start, size)
 
     @scala.annotation.tailrec
-    def recur(rest: List[Cell], position: Int, end: Long): Long = rest match
+    def recur(rest: List[Cell], position: Int, end: Long): Long = rest.absolve match
       case Nil => end
 
       case cell :: more =>
@@ -732,9 +744,11 @@ extends Ratel.Reader(opening):
     val total = weight(kind, all)
 
     @scala.annotation.tailrec
-    def recur(rest: List[Cell], count: Int, sum: Int): Int = rest match
-      case Nil          => count
-      case cell :: more => if sum*2 >= total then count else recur(more, count + 1, sum + 2 + cellSize(kind, cell))
+    def recur(rest: List[Cell], count: Int, sum: Int): Int = rest.absolve match
+      case Nil => count
+
+      case cell :: more =>
+        if sum*2 >= total then count else recur(more, count + 1, sum + 2 + cellSize(kind, cell))
 
     recur(all, 0, 0).max(1).min(all.size - 1)
 
@@ -752,7 +766,10 @@ extends Ratel.Reader(opening):
       val (path, leaf) = route(index, entry)
       val before = cells(index, leaf)
       val position = before.filter { cell => RatelBytes.order(cell.key, entry) < 0 }.size
-      val all: List[Cell] = before.keep(position) + List(cell(index, none, entry)) + before.skip(position)
+
+      val all: List[Cell] =
+        before.keep(position) + List(cell(index, none, entry)) + before.skip(position)
+
       val link = holding.u32(pageAt(index, leaf) + 8)
 
       if fits(index, 1, all) then lay(index, leaf, 1, link, all) else
@@ -769,7 +786,7 @@ extends Ratel.Reader(opening):
   private def raise(index: Int, path: List[(Long, Int)], added: Cell)(using Tactic[Ratel.Error])
   :   Unit =
 
-    path match
+    path.absolve match
       case Nil =>
         val directory = indexEntry(index)
         val root = holding.u32(directory + 16)
@@ -796,9 +813,13 @@ extends Ratel.Reader(opening):
     if holding.u32(indexEntry(index) + 16) == none then fail(Reason.IndexDisagrees)
     val (path, leaf) = route(index, entry)
     val before = cells(index, leaf)
-    val found = before.seek { cell => RatelBytes.order(cell.key, entry) == 0 }.or(fail(Reason.IndexDisagrees))
+
+    val found =
+      before.seek { cell => RatelBytes.order(cell.key, entry) == 0 }.or:
+        fail(Reason.IndexDisagrees)
+
     if found.ref != none then garbage(valueSize(false, found.ref))
-    val all = before.filter { cell => RatelBytes.order(cell.key, entry) != 0 }
+    val all = before.filter: cell => RatelBytes.order(cell.key, entry) != 0
     lay(index, leaf, 1, holding.u32(pageAt(index, leaf) + 8), all)
     holding.set32(indexEntry(index) + 24, holding.u32(indexEntry(index) + 24) - 1)
 
@@ -806,24 +827,33 @@ extends Ratel.Reader(opening):
   // following the links of row headers up through members which are single records, to the
   // first which is a collection. It is the row whose index entries a change to the record
   // may alter (§10.3).
-  private[stratiform] def anchor(table: Int, row: Long)(using Tactic[Ratel.Error]): Optional[Anchor] =
+  private[stratiform] def anchor(table: Int, row: Long)(using Tactic[Ratel.Error])
+  :   Optional[Anchor] =
+
     val start = address(table, row)
     val link = holding.u16(start + 4)
 
     if link == RatelBytes.unlinked then Unset else
       arrangement.link(link).let: found =>
         found.slot.kind match
-          case Kind.Children(inner, _) => Anchor(found.table, holding.u32(start), found.slot, inner, row)
-          case Kind.Record(_, _)       => anchor(found.table, holding.u32(start))
-          case _                       => Unset
+          case Kind.Children(inner, _) =>
+            Anchor(found.table, holding.u32(start), found.slot, inner, row)
+
+          case Kind.Record(_, _) => anchor(found.table, holding.u32(start))
+          case _                 => Unset
 
   // Makes a change to a record, keeping the indexes in step: the entries of the row it is
   // anchored to are worked out before and after, and those which differ are replaced.
   private def reindexing(table: Int, row: Long)(action: => Unit)(using Tactic[Ratel.Error]): Unit =
     val anchored = anchor(table, row)
-    val before = anchored.lay(Nil) { found => entriesOf(found.table, found.host, found.slot, found.child) }
+
+    val before = anchored.lay(Nil): found =>
+      entriesOf(found.table, found.host, found.slot, found.child)
+
     action
-    val after = anchored.lay(Nil) { found => entriesOf(found.table, found.host, found.slot, found.child) }
+
+    val after = anchored.lay(Nil): found =>
+      entriesOf(found.table, found.host, found.slot, found.child)
 
     before.zip(after).each: (old, fresh) =>
       if RatelBytes.order(old.entry, fresh.entry) != 0 then
@@ -842,11 +872,12 @@ extends Ratel.Reader(opening):
             RatelBytes.u32be(out, host)
             RatelBytes.component(out, encode(component.scalar, text), component.width.present)
 
-          if search(number, probe).exists(_ != self) then invalid(Tel.Error.Reason.DuplicateKeyValue)
+          if search(number, probe).exists(_ != self)
+          then invalid(Tel.Error.Reason.DuplicateKeyValue)
 
   // The value which a path of keyword indices leads to within a record's model.
   private def find(children: Array[Tel.Element]^{}, keywords: List[Int]): Optional[Text] =
-    keywords match
+    keywords.absolve match
       case Nil => Unset
 
       case keyword :: rest => children.seek(index(_) == keyword).let:
@@ -863,17 +894,19 @@ extends Ratel.Reader(opening):
   // The key which a record's model gives it, if its type has one.
   private def keyOf(table: Int, slot: Slot, children: Array[Tel.Element]^{}): Optional[Text] =
     indexesAt(table, slot).seek(_(0).primary).let: (index, number) =>
-      index.components.head.let { component => find(children, component.keywords) }
+      index.components.head.let: component => find(children, component.keywords)
 
   // Writes a record into a collection at a position, and enters it, and whatever is within
   // it, in the indexes.
-  private def put(table: Int, host: Long, slot: Slot, inner: Int, position: Long, children: Array[Tel.Element]^{})
+  private def put
+    ( table: Int, host: Long, slot: Slot, inner: Int, position: Long,
+      children: Array[Tel.Element]^{} )
     ( using Tactic[Tel.Error], Tactic[Ratel.Error] )
   :   Long =
 
     val child = emit(inner, children, host, slot.link)
     splice(table, host, slot, 4, position, little(child))
-    entriesOf(table, host, slot, child).each { posting => enter(posting.index, posting.entry) }
+    entriesOf(table, host, slot, child).each: posting => enter(posting.index, posting.entry)
     reindex(inner, child, plan(inner).entries, true)
     child
 
@@ -884,7 +917,7 @@ extends Ratel.Reader(opening):
   :   Unit =
 
     reindex(inner, row, plan(inner).entries, false)
-    entriesOf(table, host, slot, row).each { posting => leave(posting.index, posting.entry) }
+    entriesOf(table, host, slot, row).each: posting => leave(posting.index, posting.entry)
     discard(inner, row, plan(inner).entries)
     freeRow(inner, row)
     excise(table, host, slot, 4, place)
@@ -915,8 +948,10 @@ extends Ratel.Reader(opening):
     val found = arrangement.link(holding.u16(start + 4)).or(fail(Reason.Inapplicable(t"")))
 
     found.slot.kind match
-      case Kind.Children(inner, _) => Anchor(found.table, holding.u32(start), found.slot, inner, row)
-      case _                       => fail(Reason.Inapplicable(found.slot.keyword))
+      case Kind.Children(inner, _) =>
+        Anchor(found.table, holding.u32(start), found.slot, inner, row)
+
+      case _ => fail(Reason.Inapplicable(found.slot.keyword))
 
   // §10.3, `delete`: a record is taken out of the collection it belongs to, with every record
   // within it.
@@ -961,8 +996,10 @@ extends Ratel.Reader(opening):
     if from != to then change:
       val base = section(2).offset + word(at(table, host, slot)) + 8
       val moved = word(base + 4*from)
+
       if from < to then holding.move(base + 4*(from + 1), base + 4*from, 4*(to - from))
       else holding.move(base + 4*to, base + 4*(to + 1), 4*(from - to))
+
       holding.set32(base + 4*to, moved)
 
   // §10.3, `update-value`: a scalar member of a record is given a value, or, if it may be
@@ -985,8 +1022,8 @@ extends Ratel.Reader(opening):
     anchor(table, row).let: found =>
       if found.child == row && found.inner == table then
         indexesAt(found.table, found.slot).seek(_(0).primary).let: (index, number) =>
-          val keyed = index.components.head.let { component =>
-            component.hops.nil && component.last.number == slot.number }
+          val keyed = index.components.head.let: component =>
+            component.hops.nil && component.last.number == slot.number
 
           if keyed.or(false) then unique(found.table, found.host, found.slot, value, row)
 
@@ -1024,30 +1061,30 @@ extends Ratel.Reader(opening):
     val stored: List[Data] = values.map(encode(scalar, _))
 
     change:
-      arrayEntries(table, row, slot).each { posting => leave(posting.index, posting.entry) }
+      arrayEntries(table, row, slot).each: posting => leave(posting.index, posting.entry)
       val old = word(at(table, row, slot))
 
       slot.kind match
         case Kind.Packed(_, width) =>
           if old != none then garbage(listSize(old, width))
-          val body = Array.collect[Byte](width*stored.size + 8)(out => stored.each(out.append(_)))
+          val body = Array.collect[Byte](width*stored.size + 8): out => stored.each(out.append(_))
           val ref = grow(stored.size, width, body)
           holding.set32(at(table, row, slot), ref)
 
         case Kind.Refs(_, intern) =>
-          listed(table, row, slot, 4L).each { element => abandon(intern, word(element)) }
+          listed(table, row, slot, 4L).each: element => abandon(intern, word(element))
           if old != none then garbage(listSize(old, 4))
 
           val refs = stored.map: bytes =>
             append(if intern then 1 else 2, RatelBytes.item(bytes.length, bytes))
 
-          val body = Array.collect[Byte](4*refs.size + 8) { out => refs.each(RatelBytes.u32(out, _)) }
+          val body = Array.collect[Byte](4*refs.size + 8): out => refs.each(RatelBytes.u32(out, _))
           val ref = grow(refs.size, 4, body)
           holding.set32(at(table, row, slot), ref)
 
         case _ => ()
 
-      arrayEntries(table, row, slot).each { posting => enter(posting.index, posting.entry) }
+      arrayEntries(table, row, slot).each: posting => enter(posting.index, posting.entry)
 
   // §10.3, `set-flag` and `unset-flag`: a flag which may be absent is made present or absent,
   // and one which may be repeated is counted up or down.

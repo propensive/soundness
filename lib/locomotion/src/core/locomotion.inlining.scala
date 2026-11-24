@@ -338,7 +338,7 @@ object inlining:
       // map's builder, taken directly, measured faster for a map of any size a message
       // carries. The result is a `Map`.
       case Some(AppliedType(constructor, List(key, value))) if constructor.typeSymbol == mapSym =>
-        (key.asType, value.asType) match
+        (key.asType, value.asType).absolve match
           case ('[k], '[v]) =>
             ' {
                 scala.collection.immutable.HashMap.newBuilder[k, v]
@@ -346,7 +346,7 @@ object inlining:
               }
 
       case Some(underlying) =>
-        underlying.asType match
+        underlying.asType.absolve match
           case '[stdlib] =>
             ' {
                 infer[scala.collection.Factory[element, stdlib]].newBuilder
@@ -378,7 +378,7 @@ object inlining:
             val innerIterable =
               inner <:< TypeRepr.of[Iterable[Any]] || aliasCollectionUnderlying(inner).isDefined
 
-            if innerIterable then Plan.Seam else inner.asType match
+            if innerIterable then Plan.Seam else inner.asType.absolve match
               case '[innerType] =>
                 resolve[innerType](cache) match
                   case Some(instance)
@@ -408,7 +408,7 @@ object inlining:
             case Some(kind)                   => Some(Elem.Chunk(kind))
 
             case None if message =>
-              entryType.asType match
+              entryType.asType.absolve match
                 case '[entry] =>
                   resolve[entry](cache) match
                     case Some(instance)
@@ -447,7 +447,7 @@ object inlining:
                 Plan.Gather(Elem.Chunk(kind), elementType)
 
               case None =>
-                elementType.asType match
+                elementType.asType.absolve match
                   case '[element] =>
                     resolve[element](cache) match
                       case Some(instance)
@@ -471,7 +471,7 @@ object inlining:
 
           case _ =>
             Plan.Seam
-        else tpe.asType match
+        else tpe.asType.absolve match
           case '[field] =>
             resolve[field](cache) match
               case Some(instance: Inlinable.IterableInlinable[?]) => Plan.Seam
@@ -497,7 +497,7 @@ object inlining:
   private def sumFor[field: Type](cache: Cache)(using Quotes): Option[Inlinable] =
     sumVariants(quotes.reflect.TypeRepr.of[field].dealias).flatMap: variants =>
       val resolvable = variants.forall: (_, variantType) =>
-        variantType.asType match
+        variantType.asType.absolve match
           case '[variantType] => resolve[variantType](cache).isDefined
 
       if resolvable then Some(Inlinable.SumInlinable[field]()) else None
@@ -649,7 +649,7 @@ object inlining:
         else if fieldType =:= TypeRepr.of[Double] then Literal(DoubleConstant(0.0))
         else if fieldType =:= TypeRepr.of[Float] then Literal(FloatConstant(0.0f))
         else if fieldType =:= TypeRepr.of[Boolean] then Literal(BooleanConstant(false))
-        else fieldType.asType match
+        else fieldType.asType.absolve match
           case '[fieldType] => '{null.asInstanceOf[fieldType]}.asTerm
 
       val slotDefs = List.range(0, arity).map: index =>
@@ -662,7 +662,7 @@ object inlining:
 
       // The proto3 zero value of a builtin scalar — what an absent field
       // decodes to on the AST path (`decoded(Protobuf.Absent)`).
-      def zeroValue(kind: Int): Expr[Any] = kind match
+      def zeroValue(kind: Int): Expr[Any] = kind.absolve match
         case KInt     => Expr(0)
         case KLong    => Expr(0L)
         case KBoolean => Expr(false)
@@ -673,7 +673,7 @@ object inlining:
 
       // One scalar field read, dispatching on the tag's wire code — the
       // parser handles the natural fast path and payload-window fallback.
-      def scalarRead(kind: Int, code: Expr[Int]): Expr[Any] = kind match
+      def scalarRead(kind: Int, code: Expr[Int]): Expr[Any] = kind.absolve match
         case KInt     => '{$parser.directLong($code)(using $tactic).toInt}
         case KLong    => '{$parser.directLong($code)(using $tactic)}
         case KBoolean => '{$parser.directLong($code)(using $tactic) != 0L}
@@ -683,12 +683,16 @@ object inlining:
         case KData    => '{$parser.directData($code)(using $tactic)}
 
       // One packed element read, in place within the packed run's window.
-      def packedRead(kind: Int): Expr[Any] = kind match
+      def packedRead(kind: Int): Expr[Any] = kind.absolve match
         case KInt     => '{$parser.directVarint()(using $tactic).toInt}
         case KLong    => '{$parser.directVarint()(using $tactic)}
         case KBoolean => '{$parser.directVarint()(using $tactic) != 0L}
-        case KDouble  => '{java.lang.Double.longBitsToDouble($parser.directFixed64()(using $tactic))}
-        case KFloat   => '{java.lang.Float.intBitsToFloat($parser.directFixed32()(using $tactic))}
+
+        case KDouble =>
+          '{java.lang.Double.longBitsToDouble($parser.directFixed64()(using $tactic))}
+
+        case KFloat =>
+          '{java.lang.Float.intBitsToFloat($parser.directFixed32()(using $tactic))}
 
       // Per-field gathering state: a typed builder for `Gather` fields, a
       // wire-value buffer for `Seam` fields.
@@ -710,8 +714,9 @@ object inlining:
             val builderType =
               TypeRepr.of[scm.Builder].appliedTo(List(elementType, fieldTypes(index)))
 
-            index -> Symbol.newVal
-              ( owner, "builder"+index, builderType, Flags.EmptyFlags, Symbol.noSymbol )
+            index ->
+              Symbol.newVal
+                ( owner, "builder"+index, builderType, Flags.EmptyFlags, Symbol.noSymbol )
 
         . toMap
 
@@ -730,7 +735,7 @@ object inlining:
 
       val builderDefs: List[Statement] = List.range(0, arity).flatMap: index =>
         gatheredType(index).map: elementType =>
-          (elementType.asType, fieldTypes(index).asType) match
+          (elementType.asType, fieldTypes(index).asType).absolve match
             case ('[element], '[fieldType]) =>
               ValDef(builders(index), Some(newBuilder[element, fieldType].asTerm))
 
@@ -779,7 +784,7 @@ object inlining:
                 scalarRead(kind, code)
 
               case Plan.Nested(instance) =>
-                fieldTypes(index).asType match
+                fieldTypes(index).asType.absolve match
                   case '[fieldType] =>
                     ' {
                         val saved = $parser.directEnterField($code)(using $tactic)
@@ -793,7 +798,7 @@ object inlining:
                       }
 
               case Plan.NestedRuntime(parsable) =>
-                fieldTypes(index).asType match
+                fieldTypes(index).asType.absolve match
                   case '[fieldType] =>
                     val instance = parsable.asInstanceOf[Expr[Any]]
 
@@ -809,7 +814,7 @@ object inlining:
                       }
 
               case Plan.OptionalNested(instance, innerType0) =>
-                innerType0.asInstanceOf[TypeRepr].asType match
+                innerType0.asInstanceOf[TypeRepr].asType.absolve match
                   case '[innerType] =>
                     ' {
                         val saved = $parser.directEnterField($code)(using $tactic)
@@ -825,7 +830,7 @@ object inlining:
               case Plan.Gather(element, elementType0) =>
                 val elementType = elementType0.asInstanceOf[TypeRepr]
 
-                (elementType.asType, fieldTypes(index).asType) match
+                (elementType.asType, fieldTypes(index).asType).absolve match
                   case ('[element], '[fieldType]) =>
                     val builder =
                       Ref(builders(index)).asExprOf[scm.Builder[element, fieldType]]
@@ -840,19 +845,34 @@ object inlining:
                         def append(item: Expr[element]): Expr[Unit] =
                           if isArrayType(fieldTypes(index)) then kind match
                             case KInt =>
-                              '{$builder.asInstanceOf[scm.ArrayBuilder.ofInt].addOne(${item.asExprOf[Int]})}
+                              ' {
+                                  $builder.asInstanceOf[scm.ArrayBuilder.ofInt]
+                                  . addOne(${item.asExprOf[Int]})
+                                }
 
                             case KLong =>
-                              '{$builder.asInstanceOf[scm.ArrayBuilder.ofLong].addOne(${item.asExprOf[Long]})}
+                              ' {
+                                  $builder.asInstanceOf[scm.ArrayBuilder.ofLong]
+                                  . addOne(${item.asExprOf[Long]})
+                                }
 
                             case KBoolean =>
-                              '{$builder.asInstanceOf[scm.ArrayBuilder.ofBoolean].addOne(${item.asExprOf[Boolean]})}
+                              ' {
+                                  $builder.asInstanceOf[scm.ArrayBuilder.ofBoolean]
+                                  . addOne(${item.asExprOf[Boolean]})
+                                }
 
                             case KDouble =>
-                              '{$builder.asInstanceOf[scm.ArrayBuilder.ofDouble].addOne(${item.asExprOf[Double]})}
+                              ' {
+                                  $builder.asInstanceOf[scm.ArrayBuilder.ofDouble]
+                                  . addOne(${item.asExprOf[Double]})
+                                }
 
                             case _ =>
-                              '{$builder.asInstanceOf[scm.ArrayBuilder.ofFloat].addOne(${item.asExprOf[Float]})}
+                              ' {
+                                  $builder.asInstanceOf[scm.ArrayBuilder.ofFloat]
+                                  . addOne(${item.asExprOf[Float]})
+                                }
                           else '{$builder += $item}
 
                         ' {
@@ -913,7 +933,7 @@ object inlining:
                     case Elem.Chunk(kind)  => scalarRead(kind, code)
 
                     case Elem.Nested(instance0, _) =>
-                      tpe.asType match
+                      tpe.asType.absolve match
                         case '[entry] =>
                           val instance = instance0.asInstanceOf[Inlinable { type Self = entry }]
 
@@ -932,14 +952,14 @@ object inlining:
                   case Elem.Chunk(kind)  => zeroValue(kind)
 
                   case Elem.Nested(instance0, _) =>
-                    tpe.asType match
+                    tpe.asType.absolve match
                       case '[entry] =>
                         instance0.asInstanceOf[Inlinable { type Self = entry }].absent(tactic)
 
                   case _ =>
                     report.errorAndAbort("locomotion: an unreadable map entry")
 
-                (keyType.asType, valueType.asType, fieldTypes(index).asType) match
+                (keyType.asType, valueType.asType, fieldTypes(index).asType).absolve match
                   case ('[keyT], '[valueT], '[fieldType]) =>
                     val builder =
                       Ref(builders(index)).asExprOf[scm.Builder[(keyT, valueT), fieldType]]
@@ -956,8 +976,13 @@ object inlining:
                           val entryCode = tag & 7
 
                           (tag >>> 3) match
-                            case 1 => entryKey = ${entryRead(key, keyType, 'entryCode).asExprOf[keyT]}
-                            case 2 => entryValue = ${entryRead(value, valueType, 'entryCode).asExprOf[valueT]}
+                            case 1 =>
+                              entryKey = ${entryRead(key, keyType, 'entryCode).asExprOf[keyT]}
+
+                            case 2 =>
+                              entryValue =
+                                ${entryRead(value, valueType, 'entryCode).asExprOf[valueT]}
+
                             case _ => $parser.directSkipField(entryCode)(using $tactic)
 
                         $parser.directLeaveField(saved)(using $tactic)
@@ -978,9 +1003,9 @@ object inlining:
             | Plan.OptionalNested(_, _) =>
             Block
               ( Assign(Ref(slots(index)), Apply(Ref(readDefs(index)), List(code.asTerm))) ::
-                  (if needsSeen(index)
-                   then List(Assign(Ref(seens(index)), Literal(BooleanConstant(true))))
-                   else Nil),
+                (if needsSeen(index)
+                 then List(Assign(Ref(seens(index)), Literal(BooleanConstant(true))))
+                 else Nil),
                 unit )
 
           case Plan.Gather(_, _) | Plan.MapGather(_, _, _, _) =>
@@ -1041,10 +1066,10 @@ object inlining:
               case Plan.Leaf(_) | Plan.Nested(_) | Plan.NestedRuntime(_) | Plan.OptionalLeaf(_)
                 | Plan.OptionalNested(_, _) =>
                 Block
-                  ( Assign(Ref(slots(index)), Apply(Ref(readDefs(index)), List(literal.asTerm)))
-                      :: (if needsSeen(index)
-                          then List(Assign(Ref(seens(index)), Literal(BooleanConstant(true))))
-                          else Nil),
+                  ( Assign(Ref(slots(index)), Apply(Ref(readDefs(index)), List(literal.asTerm))) ::
+                    (if needsSeen(index)
+                     then List(Assign(Ref(seens(index)), Literal(BooleanConstant(true))))
+                     else Nil),
                     unit )
 
               case _ =>
@@ -1068,7 +1093,7 @@ object inlining:
       // under capture checking (its `Optionality` loses the capture set), and the ADT path
       // decodes an absent packed field as empty regardless.
       def defaultOr(index: Int, absent: Expr[Any]): Expr[Any] =
-        fieldTypes(index).asType match
+        fieldTypes(index).asType.absolve match
           case '[fieldType] =>
             if isFrozenArray(fieldTypes(index)) then absent.asExprOf[fieldType] else
               ' {
@@ -1087,14 +1112,14 @@ object inlining:
             '{vacuous.Unset}
 
           case Plan.Nested(instance) =>
-            fieldTypes(index).asType match
+            fieldTypes(index).asType.absolve match
               case '[fieldType] =>
                 instance.asInstanceOf[Inlinable { type Self = fieldType }].absent(tactic)
 
           // An absent runtime-parsed message reads as an empty message —
           // `decoded(Absent)`'s all-fields-absent record.
           case Plan.NestedRuntime(parsable) =>
-            fieldTypes(index).asType match
+            fieldTypes(index).asType.absolve match
               case '[fieldType] =>
                 val instance = parsable.asInstanceOf[Expr[Any]]
 
@@ -1110,13 +1135,13 @@ object inlining:
                   }
 
           case Plan.Gather(_, _) | Plan.MapGather(_, _, _, _) =>
-            fieldTypes(index).asType match
+            fieldTypes(index).asType.absolve match
               case '[fieldType] =>
                 '{ ${Ref(builders(index)).asExpr}
                     . asInstanceOf[scm.Builder[?, fieldType]].result() }
 
           case Plan.Seam =>
-            fieldTypes(index).asType match
+            fieldTypes(index).asType.absolve match
               case '[fieldType] =>
                 seamDecode[fieldType]('{Protobuf.Absent})
 
@@ -1141,7 +1166,7 @@ object inlining:
                 unit )
 
           case Plan.Gather(_, _) | Plan.MapGather(_, _, _, _) =>
-            fieldTypes(index).asType match
+            fieldTypes(index).asType.absolve match
               case '[fieldType] =>
                 val collected =
                   '{ ${Ref(builders(index)).asExpr}
@@ -1152,10 +1177,12 @@ object inlining:
                     ' {
                         if $seen then $collected
                         else ${defaultOr(index, collected).asExprOf[fieldType]}
-                      }.asTerm )
+                      }
+
+                    . asTerm )
 
           case Plan.Seam =>
-            fieldTypes(index).asType match
+            fieldTypes(index).asType.absolve match
               case '[fieldType] =>
                 val buffer = Ref(buffers(index)).asExprOf[scm.ListBuffer[Protobuf]]
 
@@ -1167,10 +1194,15 @@ object inlining:
                   ( Ref(slots(index)),
                     ' {
                         if $seen then
-                          ${seamDecode[fieldType]('{Protobuf.Repeated(($buffer.toList).to(proscenium.List))})}
+                          $ {
+                              seamDecode[fieldType]
+                                ( '{Protobuf.Repeated(($buffer.toList).to(proscenium.List))} )
+                            }
                         else
                           $absent
-                      }.asTerm )
+                      }
+
+                    . asTerm )
 
       // A frozen array slot reads back without its capture set, so it is reasserted at the
       // one place it leaves the parser: the record's constructor.
@@ -1178,7 +1210,7 @@ object inlining:
         Apply
           ( Select(New(Inferred(tpe)), ctor),
             List.range(0, arity).map: index =>
-              if isFrozenArray(fieldTypes(index)) then fieldTypes(index).asType match
+              if isFrozenArray(fieldTypes(index)) then fieldTypes(index).asType.absolve match
                 case '[fieldType] => '{${Ref(slots(index)).asExpr}.asInstanceOf[fieldType]}.asTerm
               else Ref(slots(index)) )
 
@@ -1220,10 +1252,10 @@ object inlining:
     val plans: List[Plan] = fieldTypes.map(planFor(_, cache))
 
     val values: List[Term] = List.range(0, arity).map: index =>
-      fieldTypes(index).asType match
+      fieldTypes(index).asType.absolve match
         case '[fieldType] =>
-          val absent: Expr[Any] = plans(index) match
-            case Plan.Leaf(kind) => kind match
+          val absent: Expr[Any] = plans(index).absolve match
+            case Plan.Leaf(kind) => kind.absolve match
               case KInt     => Expr(0)
               case KLong    => Expr(0L)
               case KBoolean => Expr(false)
@@ -1241,12 +1273,12 @@ object inlining:
             case Plan.Gather(_, elementType0) =>
               val elementType = elementType0.asInstanceOf[TypeRepr]
 
-              elementType.asType match
+              elementType.asType.absolve match
                 case '[element] => '{${newBuilder[element, fieldType]}.result()}
 
             case Plan.MapGather(_, keyType0, _, valueType0) =>
               ( keyType0.asInstanceOf[TypeRepr].asType,
-                valueType0.asInstanceOf[TypeRepr].asType ) match
+                valueType0.asInstanceOf[TypeRepr].asType ).absolve match
                 case ('[keyT], '[valueT]) => '{${newBuilder[(keyT, valueT), fieldType]}.result()}
 
             case Plan.Seam =>
@@ -1257,7 +1289,9 @@ object inlining:
 
               if !declared.absent then declared.asInstanceOf[fieldType]
               else ${absent.asExprOf[fieldType]}
-            }.asTerm
+            }
+
+          . asTerm
 
     Apply(Select(New(Inferred(tpe)), ctor), values).asExprOf[product]
 
@@ -1299,7 +1333,7 @@ object inlining:
       if index == arity then
         '{abort(Protobuf.Error(Protobuf.Error.Reason.MissingField(0)))(using $tactic)}
       else
-        variants(index)(1).asType match
+        variants(index)(1).asType.absolve match
           case '[type variantType <: sum; variantType] =>
             val instance = resolve[variantType](cache).getOrElse:
               report.errorAndAbort
@@ -1410,7 +1444,7 @@ object inlining:
   private def scalarSize(kind: Int, value: Expr[Any], sizes: Expr[AnyRef])(using Quotes)
   :   Expr[Int] =
 
-    kind match
+    kind.absolve match
       case KInt     => '{ProtobufPrinter.varintSize(${value.asExprOf[Int]}.toLong)}
       case KLong    => '{ProtobufPrinter.varintSize(${value.asExprOf[Long]})}
       case KBoolean => Expr(1)
@@ -1435,7 +1469,7 @@ object inlining:
     ( using Quotes )
   :   Expr[Unit] =
 
-    kind match
+    kind.absolve match
       case KInt  => '{ProtobufPrinter.of($printer).varint(${value.asExprOf[Int]}.toLong)}
       case KLong => '{ProtobufPrinter.of($printer).varint(${value.asExprOf[Long]})}
 
@@ -1608,7 +1642,7 @@ object inlining:
         val tag = ProtobufPrinter.tagSize(number)
         val field = Select(value.asTerm, fields(index)).asExpr
 
-        fieldTypes(index).asType match
+        fieldTypes(index).asType.absolve match
           case '[fieldType] =>
             val typed = field.asExprOf[fieldType]
 
@@ -1637,7 +1671,7 @@ object inlining:
                 '{${Expr(tag)} + ${scalarSize(kind, typed, sizes)}}
 
               case Plan.OptionalLeaf(kind) =>
-                optionalInner(fieldTypes(index)).get.asType match
+                optionalInner(fieldTypes(index)).get.asType.absolve match
                   case '[inner] =>
                     ' {
                         if ${typed.asExprOf[Optional[inner]]}.absent then 0
@@ -1656,7 +1690,7 @@ object inlining:
                 nominal
 
               case Plan.OptionalNested(instance, innerType0) if instance.prints =>
-                innerType0.asInstanceOf[TypeRepr].asType match
+                innerType0.asInstanceOf[TypeRepr].asType.absolve match
                   case '[inner] =>
                     val present: Expr[inner] = '{$typed.asInstanceOf[inner]}
 
@@ -1670,7 +1704,7 @@ object inlining:
                     '{if ${typed.asExprOf[Optional[inner]]}.absent then 0 else $framed}
 
               case Plan.Gather(element, elementType0) =>
-                elementType0.asInstanceOf[TypeRepr].asType match
+                elementType0.asInstanceOf[TypeRepr].asType.absolve match
                   case '[element] =>
                     val iterable = '{$typed.asInstanceOf[Iterable[element]]}
 
@@ -1735,21 +1769,32 @@ object inlining:
 
                   elem match
                     case Elem.Scalar(kind) =>
-                      Some('{${Expr(ProtobufPrinter.tagSize(number))} + ${scalarSize(kind, item, sizes)}})
+                      Some
+                        ( ' {
+                              ${Expr(ProtobufPrinter.tagSize(number))} +
+                                ${scalarSize(kind, item, sizes)}
+                            } )
 
                     case Elem.Chunk(kind) =>
-                      Some('{${Expr(ProtobufPrinter.tagSize(number))} + ${scalarSize(kind, item, sizes)}})
+                      Some
+                        ( ' {
+                              ${Expr(ProtobufPrinter.tagSize(number))} +
+                                ${scalarSize(kind, item, sizes)}
+                            } )
 
                     case Elem.Nested(instance0, _) if instance0.prints =>
-                      tpe.asType match
+                      tpe.asType.absolve match
                         case '[entry] =>
                           val instance = instance0.asInstanceOf[Inlinable { type Self = entry }]
-                          Some(framedSize(number, instance.measure(item.asExprOf[entry], sizes), sizes))
+
+                          Some
+                            ( framedSize
+                                ( number, instance.measure(item.asExprOf[entry], sizes), sizes ) )
 
                     case _ =>
                       None
 
-                (keyType.asType, valueType.asType) match
+                (keyType.asType, valueType.asType).absolve match
                   case ('[keyT], '[valueT]) =>
                     val entries = '{$typed.asInstanceOf[Iterable[(keyT, valueT)]]}
 
@@ -1794,7 +1839,7 @@ object inlining:
         val number = numbers(index)
         val field = Select(value.asTerm, fields(index)).asExpr
 
-        fieldTypes(index).asType match
+        fieldTypes(index).asType.absolve match
           case '[fieldType] =>
             val typed = field.asExprOf[fieldType]
 
@@ -1828,7 +1873,7 @@ object inlining:
                 tagged(kind, typed)
 
               case Plan.OptionalLeaf(kind) =>
-                optionalInner(fieldTypes(index)).get.asType match
+                optionalInner(fieldTypes(index)).get.asType.absolve match
                   case '[inner] =>
                     ' {
                         if !${typed.asExprOf[Optional[inner]]}.absent
@@ -1846,7 +1891,7 @@ object inlining:
                 nominal
 
               case Plan.OptionalNested(instance, innerType0) if instance.prints =>
-                innerType0.asInstanceOf[TypeRepr].asType match
+                innerType0.asInstanceOf[TypeRepr].asType.absolve match
                   case '[inner] =>
                     val present: Expr[inner] = '{$typed.asInstanceOf[inner]}
 
@@ -1860,7 +1905,7 @@ object inlining:
                     '{if !${typed.asExprOf[Optional[inner]]}.absent then $framed}
 
               case Plan.Gather(element, elementType0) =>
-                elementType0.asInstanceOf[TypeRepr].asType match
+                elementType0.asInstanceOf[TypeRepr].asType.absolve match
                   case '[element] =>
                     val iterable = '{$typed.asInstanceOf[Iterable[element]]}
 
@@ -1904,7 +1949,7 @@ object inlining:
                                 ( number,
                                   ' {
                                       Protobuf.Printable.writeField[element]
-                                        ($printable.asInstanceOf[AnyRef], $item, $printer, $sizes)
+                                        ( $printable.asInstanceOf[AnyRef], $item, $printer, $sizes )
                                     },
                                   printer, sizes )
 
@@ -1936,7 +1981,7 @@ object inlining:
                             } )
 
                     case Elem.Nested(instance0, _) if instance0.prints =>
-                      tpe.asType match
+                      tpe.asType.absolve match
                         case '[entry] =>
                           val instance = instance0.asInstanceOf[Inlinable { type Self = entry }]
 
@@ -1948,7 +1993,7 @@ object inlining:
                     case _ =>
                       None
 
-                (keyType.asType, valueType.asType) match
+                (keyType.asType, valueType.asType).absolve match
                   case ('[keyT], '[valueT]) =>
                     val entries = '{$typed.asInstanceOf[Iterable[(keyT, valueT)]]}
 
@@ -2008,7 +2053,7 @@ object inlining:
             "sealed type whose variants are all case classes)" )
 
       def dispatch(index: Int): Expr[result] =
-        variants(index)(1).asType match
+        variants(index)(1).asType.absolve match
           case '[type variantType <: sum; variantType] =>
             val instance = resolve[variantType](cache).getOrElse:
               report.errorAndAbort(s"locomotion: no Inlinable for variant ${variants(index)(0)}")

@@ -32,10 +32,8 @@
                                                                                                   */
 package pneumatic
 
-import anticipation.*
 import gesticulate.*
 import prepositional.*
-import zephyrine.*
 
 package detectables:
   // The two identification bytes of a gzip member.

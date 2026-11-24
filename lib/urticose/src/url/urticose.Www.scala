@@ -33,7 +33,6 @@
 package urticose
 
 import anticipation.*
-import contingency.*
 import gossamer.*
 import prepositional.*
 import serpentine.*

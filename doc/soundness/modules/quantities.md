@@ -670,7 +670,7 @@ are then stated as constraints: that a velocity times a time, and an acceleratio
 time squared, can each be formed, and that the two results can be added.
 
 ```scala fuel
-run
+parse
 ##
 transparent inline def motion
     [ velocity     <: Measure,

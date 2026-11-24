@@ -67,7 +67,7 @@ object Spread:
   private def run[value, result, report]
     ( id:           Test.Id,
       axis:         Axis[value],
-      action:       (Harness => (value ~> result))^,
+      action:       Harness => (value ~> result),
       predicate:    (value, result) => Boolean )
     ( using runner:    Runner[report],
             inclusion: Inclusion[report, Verdict],
@@ -147,7 +147,7 @@ object Spread2:
     ( id:           Test.Id,
       first:        Axis[left],
       second:       Axis[right],
-      action:       (Harness => (((left, right)) ~> result))^,
+      action:       Harness => (((left, right)) ~> result),
       predicate:    (left, right, result) => Boolean )
     ( using runner:    Runner[report],
             inclusion: Inclusion[report, Verdict],

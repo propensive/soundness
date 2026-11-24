@@ -32,7 +32,6 @@
                                                                                                   */
 package aviation
 
-import contingency.*
 import symbolism.*
 
 // A `Monthstamp` is a month-precise `Timestamp` — the first instant of a (Gregorian) month, tagged

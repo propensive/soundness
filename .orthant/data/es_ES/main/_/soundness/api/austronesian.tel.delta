@@ -1,0 +1,4 @@
+orthant 2 language
+
+@ 0 1 0 0777a2b74520db161c5f6349cba9564f
++ info   cualquier valor de Scala como un `Pojo` neutral respecto al cargador de clases, hecho de envoltorios del JDK, cadenas y arrays, y de vuelta

@@ -1,0 +1,5 @@
+orthant 2 language
+
+@ 0 2 0 0c14be402bf0d6ff0e983e9244df94f3
++ entry .cycle   ein Zyklus in einem beliebigen `Nodal`-Graphen, falls er einen hat: Knoten, die je auf den nächsten zeigen und dort enden, wo sie begannen
++     `Unset` für einen azyklischen Graphen. Total auf jedem Graphen, durch eine Tiefensuche.

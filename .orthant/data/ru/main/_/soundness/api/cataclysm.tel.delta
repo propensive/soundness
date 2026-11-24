@@ -1,0 +1,51 @@
+orthant 2 language
+
+@ 0 38 0 15177b5972e74eeb18897d1f690c0e42
++     entry .pixels   величина `Pixels` как `<length>`: `4px`
++     entry .ems   величина `Ems` (из quantitative) как `<length>`: `2em`
++     entry .rems   величина `Rems` как `<length>`: `2rem`
++     entry .exs   величина `Exs` как `<length>`: `1ex`
++     entry .chs   величина `Chs` как `<length>`: `40ch`
++     entry .vws   величина `ViewportWidths` как `<length>`: `100vw`
++     entry .vhs   величина `ViewportHeights` как `<length>`: `100vh`
++     entry .vmins   величина `ViewportMins` как `<length>`: `50vmin`
++     entry .vmaxes   величина `ViewportMaxes` как `<length>`: `50vmax`
++     entry .metres   любая физическая длина (величина `Metres`) как `<length>`, в `mm`
++         Величина `Distance` — записанная как `3.0*Cm`, `10.0*Mm`, `1.0*Metre` или любая длина
++         из quantitative — отображается в миллиметрах, поскольку CSS одинаково читает `cm`,
++         `mm` и `m`: `3.0*Cm` — это `30mm`. Дюймы, пункты и пики сохраняют собственные единицы.
++     entry .inches   величина `Inches` как `<length>`: `1in`
++     entry .points   величина `Points` как `<length>`: `12pt`
++     entry .picas   величина `Picas` как `<length>`: `1pc`
++     entry .percents   величина `Percents` как `<percentage>`: `50%`
++     entry .chromatic   любой цвет с экземпляром `Chromatic` как `<color>`, отображаемый в шестнадцатеричном виде
++         Покрывает `Chroma` из anticipation и все формы цвета iridescence (`Srgb`, `Hsl`,
++         `Cielab`, … и литерал `rgb"#3344ff"`) через их экземпляр `Color.chromatic`; каждый
++         отображается как шестизначная шестнадцатеричная тройка из красного, зелёного и синего
++         каналов, ограниченных диапазоном 0–255. Экземпляр ищется для любого супертипа цвета,
++         поэтому класс цвета, получающий свой `Chromatic` от своей формы, находится, когда
++         `Css.Style(…)` запрашивает точный тип значения.
++     entry .seconds   любое время (величина `Seconds`) как `<time>`, в `ms`
++         `200.0*Ms` — это `200ms`; `1.5*S` — это `1500ms`.
++     entry .degrees   величина `Degrees` как `<angle>`: `90deg`
++     entry .radians   величина `Radians` как `<angle>`: `1rad`
++     entry .turns   величина `Turns` как `<angle>`: `0.5turn`
++     entry .flexes   величина `Flexes` как `<flex>`: `2fr`
++     entry .integer   `Int` как `<integer>`
++     entry .decimal   `Double` как `<number>`, без избыточного `.0`
++     entry .keyword   `Css.Keyword` в его написании CSS, допустимый для любого свойства
++         Тема — `"*"`, которую проверка свойства принимает для любого известного свойства.
++     entry .colorKeyword   `Css.ColorKeyword` как `transparent` или `currentcolor`
++     entry #value   отображает нативное значение как текст CSS
++   entry #rules   узлы таблицы стилей по порядку
++   entry .Syntax   грамматика значений свойства в синтаксисе определения значений CSS, в виде дерева
+
+@ 0 1 0 10aaf54c52c3fe0b0d316f1cd65e1109
++     entry .Matcher   проверяет значение свойства по его грамматике: корректно, некорректно или не поддерживается
+
+@ 0 5 0 1faf72e6fe088cd01a48ddf10a68931c
++   entry #check   значение по грамматике свойства или напрямую по `Css.Syntax`
++       Две перегрузки: `check(property: PropertyDef, value)` использует разобранную
++       грамматику свойства, а `check(grammar: Css.Syntax, value)` — любую грамматику. Обеим
++       нужна `Tactic[Css.Error]`, порождаемая, только когда текст значения нельзя разбить на
++       токены (незакрытая строка).

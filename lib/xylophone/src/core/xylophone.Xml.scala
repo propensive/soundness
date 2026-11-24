@@ -1170,7 +1170,8 @@ object Xml extends Tag.Container
         encoded match
           case Fragment(nodes*) => nodes.each: node => children += wrap(wireName, node, scope)
           case other            => children += wrap(wireName, other, scope)
-      else children += wrap(wireName, encoded, scope)
+      else
+        children += wrap(wireName, encoded, scope)
 
     inline def conjunction[derivation <: Product: ProductReflection]
     :   derivation is Encodable in Xml =
@@ -1757,7 +1758,7 @@ object Xml extends Tag.Container
 
           var scanning: Boolean = true
 
-          while scanning do reader.nextChild() match
+          while scanning do reader.nextChild().absolve match
             case Unset => scanning = false
 
             case label: BaseText =>
@@ -2957,7 +2958,7 @@ object Xml extends Tag.Container
         first:    Boolean )
     :   Optional[Position] =
 
-      segments match
+      segments.absolve match
         case Nil =>
           Position
             ( data.readUnchecked(offset + 1).z,
@@ -4942,7 +4943,7 @@ object Xml extends Tag.Container
       directText() match
         case null       => Unset
 
-        case text: BaseText =>
+        case text: BaseText @unchecked =>
           try Optional(jl.Long.parseLong(text.s)) catch case _: NumberFormatException => Unset
 
     private[xylophone] update def directTextLong()(using Tactic[Parse.Error]): Optional[Long] =
@@ -4996,7 +4997,7 @@ object Xml extends Tag.Container
       directText() match
         case null       => Unset
 
-        case text: BaseText =>
+        case text: BaseText @unchecked =>
           try Optional(jl.Double.parseDouble(text.s))
           catch case _: NumberFormatException => Unset
 
@@ -5052,7 +5053,7 @@ object Xml extends Tag.Container
       directText() match
         case null       => Unset
 
-        case text: BaseText => text.s match
+        case text: BaseText @unchecked => text.s match
           case "true"  => Optional(true)
           case "false" => Optional(false)
           case _       => Unset

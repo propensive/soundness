@@ -1,0 +1,90 @@
+orthant 2 language
+
+@ 0 84 0 13c587ce9936193f083c75c9c24ae996
++         `Cursor[element]^` es la propia referencia al iterador, opaca para que no pueda
++         falsificarse y acotada por `Stateful` para que un `match` pueda distinguirla de
++         `.Exhausted` (`case cursor: Iterator.Cursor[Int]`; en el patrón, póngase entre comillas
++         invertidas un parámetro de tipo de la clase). `.value` lee el elemento y `.pull` consume el
++         cursor para avanzar, devolviendo el siguiente `.Pull`. La comprobación de separación
++         rechaza un cursor usado después de haberse extraído.
++     entry .apply   envuelve un iterador consumido como cursor; lo que devuelve `Iterator#pull` cuando tiene éxito
++     entry .value   el elemento bajo el cursor, leído sin avanzar
++     entry .pull   consume el cursor y avanza: el siguiente cursor, o `Exhausted`
++   entry .Pull   `Exhausted | Cursor[element]^`: lo que devuelve `pull`
++   entry .array   un iterador sobre un array de la JVM al que no llega ningún escritor mientras se ejecuta
++       `Iterator.array(array)` sobre un `scala.Array[e]^{caps.any.rd}`, que usan las instancias de
++       `Traversable` del array congelado. Un elemento primitivo se somete a boxing igual que lo hace
++       el iterador de arrays de la biblioteca estándar.
++   entry .empty   un iterador sin elementos
++   entry .apply   `Iterator(a, b, c)`: un iterador sobre los elementos dados
++   entry .range   `Iterator.range(start, end)` o `(start, end, step)`: los enteros desde `start` hasta `end`, sin incluirlo
++       Con un `step` negativo, el rango cuenta hacia atrás: `Iterator.range(10, 0, -3)` produce
++       `10, 7, 4, 1`.
++   entry .fill   `Iterator.fill(n)(element)`: `element` evaluado de nuevo `n` veces
++   entry .tabulate   `Iterator.tabulate(n)(lambda)`: de `lambda(0)` a `lambda(n - 1)`
++   entry .continually   `Iterator.continually(element)`: `element` evaluado de nuevo sin fin
++   entry .iterate   `Iterator.iterate(initial)(lambda)`: `initial`, y después `lambda` aplicada una y otra vez
++   entry .from   envuelve un `Iterator` de la biblioteca estándar, un `java.util.Iterator` o una `java.util.Enumeration`
++       La frontera de entrada desde la biblioteca estándar y Java: este iterador se apropia de los
++       elementos restantes de la fuente de un solo uso. La sobrecarga de la biblioteca estándar
++       consume su argumento.
++   entry #pull   consume el iterador: un `Cursor` sobre su primer elemento, o `Exhausted`
++       El estilo de movimiento. Es un `consume def`, así que el iterador desaparece tras la llamada
++       y solo queda el cursor (si lo hay); `cursor.value` lee y `cursor.pull` avanza.
++   entry #next   avanza y devuelve el siguiente elemento, o `Exhausted` una vez agotada la fuente
++       Para un consumidor con estado que guarda el iterador en un campo, donde no puede vivir un
++       token lineal. No hay `next` sin `hasNext` porque son la misma llamada: compárese con
++       `case Iterator.Exhausted => … case value: Int => …`. Tras el agotamiento, cada llamada
++       vuelve a devolver `Exhausted`. Un tipo de elemento opaco como `Text` no puede comprobarse
++       por tipo en el `match`; úsese ahí `#option` o `#seek`.
++   entry #each   visita cada elemento restante, vaciando el iterador
++   entry #fold   acumula un estado sobre los elementos restantes, vaciando el iterador
++   entry #exists   si algún elemento restante satisface el predicado, deteniéndose ahí
++       Se detiene en la primera coincidencia, así que los elementos posteriores permanecen.
++   entry #all   si todos los elementos restantes satisfacen el predicado, deteniéndose en el primero que no lo hace
++   entry #count   cuántos elementos restantes satisfacen el predicado, vaciando el iterador
++   entry #seek   el primer elemento que satisface un predicado, entregado a una continuación; el resto queda sin consumir
++       `iterator.seek(predicate)(absent)(present)`: dos continuaciones en lugar de un resultado
++       `Optional`, de modo que el elemento llega al llamador con su propio tipo, sin comprobación y
++       sin conversión forzada (este módulo no puede nombrar `Optional`; el `find` de rudiments es
++       `seek(p)(Unset)(identity(_))`). Los elementos posteriores a la coincidencia permanecen:
++       `Iterator(1, 2, 3, 4).seek(_ > 1)(-1)(identity(_))` es `2`, y deja `3, 4`.
++   entry #option   el siguiente elemento como un `Option` de la biblioteca estándar, para sus formas perezosas, que extraen a través de un cierre
++   entry #chain   los elementos restantes como una `Chain` perezosa, extraídos celda a celda a medida que se fuerza
++       La única forma que permite a un iterador sobrevivir a su dueño: la cadena memoiza lo que ha
++       extraído, y nada registra el iterador del que extrae, puesto que una `Chain` es pura.
++   entry #to   `iterator.to[List]`, `to[Set]`, …: vacía el iterador en una colección de la forma dada
++       Mediante `Reshapable`, con la forma nombrada como constructor de tipos. Es un miembro en
++       lugar del `to` genérico porque un iterador no es `Traversable` (un recorrido toma prestado,
++       cosa que uno exclusivo no puede permitir), y es un miembro en lugar de una extensión en el
++       objeto compañero porque el `to` genérico de rudiments, de ámbito léxico, tendría prioridad
++       sobre una extensión.
++   entry #size   cuántos elementos quedan, vaciándolos
++   entry #map   cada elemento restante a través de la lambda, de forma perezosa; consume el receptor
++   entry #filter   los elementos restantes que satisfacen el predicado, de forma perezosa; consume el receptor
++   entry #sweep   filtra y transforma en una sola pasada mediante una función parcial, de forma perezosa
++   entry #flatMap   cada elemento a una *colección*, cuyos elementos se producen por turno
++       La lambda devuelve cualquier cosa `Traversable` —una `List`, un `Set`, un `Text`—, nunca un
++       iterador, puesto que una lambda no puede devolver una capacidad recién acuñada a través de un
++       tipo función; el recorrido interior se abre aquí a medida que avanza el resultado.
++       `Iterator(1, 2, 3).flatMap(n => List.fill(n)(n)).to[List]` es `List(1, 2, 2, 3, 3, 3)`.
++   entry #zip   los elementos de este iterador emparejados con los de otro, deteniéndose en el más corto; consume ambos
++   entry #indexed   cada elemento emparejado con su posición desde cero, como un `Int`
++       Un `Int`, no un `Ordinal`, porque denominative está por encima de este módulo; el `indexed`
++       de rudiments sobre una colección convierte a ordinales.
++   entry #keep   los primeros `n` elementos, o la racha inicial más larga que satisface un predicado; de forma perezosa
++       `keep(3)` es el `take` de la biblioteca estándar, y `keep(_ < 7)` su `takeWhile`.
++   entry #skip   todo lo que sigue a los primeros `n` elementos, o a la racha inicial que satisface un predicado
++       `skip(2)` es el `drop` de la biblioteca estándar, y `skip(_ < 2)` su `dropWhile`.
++   entry #trace   cada estado intermedio de un plegado, empezando por el inicial; el `scanLeft` de la biblioteca estándar
++   entry #excerpt   los elementos desde la posición `from` (incluida) hasta `until` (excluida)
++   entry #deduplicate   la primera aparición de cada clave, en el orden de primera aparición
++   entry #distinct   la primera aparición de cada elemento, en el orden de primera aparición
++   entry #batched   lotes consecutivos de como mucho `n` elementos, cada uno una `List`; el último puede ser más corto
++   entry #concat   los elementos de este iterador, y después los de otro; consume ambos
++       El `++` de la biblioteca estándar.
++   entry #stdlib   un `scala.collection.Iterator` que vacía este; la frontera hacia la biblioteca estándar y Java
++       Consume este iterador: la vista de la biblioteca estándar es su dueña desde ese momento. La
++       vista tiene tipo puro, como todo iterador de la biblioteca estándar, así que puede pasarse a
++       factorías de `IterableOnce` y a API del JDK. Es un puente marcado, como todo `.stdlib`;
++       prefiérase una forma nativa (`#to`, `#each`, `#chain`) dondequiera que exista.

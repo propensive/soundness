@@ -58,7 +58,7 @@ package logFormats:
   given ansiTimestampedLogFormat: (palette: LogPalette) => Message is Inscribable in Teletype =
     (event, level, timestamp) =>
       try
-        event.teletype.cut(t"\n").bind(_.slices(76)) match
+        event.teletype.cut(t"\n").bind(_.slices(76)).absolve match
           case Nil => e""
 
           case head :: tail =>

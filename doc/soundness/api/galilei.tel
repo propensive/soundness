@@ -1123,7 +1123,7 @@ entry .expanse   `path.expanse(lambda)`: positional reads of a file within a sco
       (expanse.size, expanse.read(4L, 6).utf8)
     ```
 
-entry .filesize   `path.filesize()`: the size of a file, or of everything beneath a directory, in `Bytes`
+entry .filesize   `path.filesize()`: the size of a file, or of everything beneath a directory, in `Memory`
     An extension on any `Path on <plane: Filesystem>`, needing the plane's `Explorable` and a
     backend, and raising `Io.Error`. A file's size is its own; a directory's is its own
     plus the sizes of all its descendants, walked without following symlinks. Named

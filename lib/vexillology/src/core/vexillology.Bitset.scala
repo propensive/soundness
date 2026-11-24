@@ -54,8 +54,7 @@ object Bitset:
   val empty: Bitset = new Bitset(ju.BitSet())
 
   def apply(ordinals: Ordinal*): Bitset =
-    build: builder =>
-      List.iterator(ordinals).foreach(builder.add(_))
+    build: builder => List.iterator(ordinals).foreach(builder.add(_))
 
   // Makes a `Bitset` by filling it in a block:
   //

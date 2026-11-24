@@ -1,5 +1,8 @@
 orthant 2 language
 
+@ 0 3 0 064a0d693208d94d0be9e9c787015ee8
++ 这条路线的各项，以及它们的时间范围和硬依赖；[`status.tel`](https://github.com/propensive/soundness/blob/main/doc/roadmap/status.tel) 记录了每一项的进展：
+
 @ 0 5 0 027aa8507cfead550859e240b33d26f4
 + 这是关键条目：`etc/migration.md` 定义了智能体可执行的迁移说明格式——改变了什么、如何检测受影响的代码、确切的重写方式，以及如何验证它——并且 CI 强制要求带有破坏性标签的拉取请求以该格式附带说明。
 + 有几条路线在这里汇合：`api-6` 经由它流转，`tool-5` 把它提供给智能体。

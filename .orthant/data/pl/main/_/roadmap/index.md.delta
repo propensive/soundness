@@ -1,5 +1,66 @@
 orthant 2 language
 
+@ 0 34 0 05679073b2e8fc4d0775ad6ce595259e
++ - **Bezpieczeństwo.** Trudno lub wręcz nie da się napisać kodu Soundness, który w czasie
++   wykonania zawodzi w zaskakujący sposób. Każde API jest totalne albo
++   [deklaruje błędy, które zgłasza](../philosophy/error-handling.md). Mutowalność jest dozwolona
++   tylko tam, gdzie sprawdzanie separacji dowodzi, że jest bezpieczna; sprawdzanie
++   przechwytywania egzekwuje to, co obiecują sygnatury. Częściowość gdziekolwiek – także w
++   bibliotekach standardowych Javy i Scali pod nami – podkopuje wszystko, więc częściowe API się
++   zastępuje, a nie toleruje.
++ - **Spójność.** API są przewidywalne, jasne i uogólnione. Podobne rzeczy mają jedno wspólne
++   API; zmienność jest parametrem, a nie nazwą. Jeśli dwie rzeczy mają tę samą nazwę, są tą
++   samą rzeczą; jeśli mają różne nazwy, nie są.
++ - **Wszystko w zestawie.** Jedna platforma dla aplikacji wiersza poleceń, aplikacji webowych
++   (serwer i front-end), testowania, pracy naukowej i narzędzi programistycznych – zbudowana na
++   otwartych standardach, a nie na własnościowych wynalazkach, i na tyle
++   modularna, że nieużywane elementy nic nie kosztują.
++ - **Parytet platform docelowych.** JVM, Android, JavaScript i WASM/WASI są pełnoprawnymi
++   platformami docelowymi, dla których kompiluje się nie trudniej niż dla JVM.
++ - **Świat, który wydaje się natywny.** Tworzenie, debugowanie i uruchamianie kodu Soundness
++   nigdy nie przypomina obsługi zaawansowanego systemu wewnątrz środowiska, które nie zostało do
++   tego zaprojektowane. Javowe kodowania wartości nigdy nie są widoczne.
++ - **Przyswajalny, udokumentowany, wyspecyfikowany.** Każde API jest udokumentowane; każdy
++   komunikat o błędzie jest pouczający i ma udokumentowaną stronę; każdy nowy pomysł ma
++   specyfikację. Dokumentację pisze się tak, by zarówno ludzie, jak i agenci AI mogli na jej
++   podstawie niezawodnie działać.
++ - **Stabilność przez migrację.** API zmieniają się zawsze, gdy istnieje lepszy lub
++   bezpieczniejszy projekt. Stabilność nie bierze się z zamrażania API, lecz z taniej migracji:
++   każda zmiana niekompatybilna jest dostarczana z instrukcjami na tyle precyzyjnymi, że może je
++   wykonać agent.
++ - **Zaufany toolchain.** Kompilowanie, testowanie, debugowanie, eksplorowanie i dystrybucja
++   kodu Soundness odbywają się za pomocą jego własnych narzędzi – `fury`, `fume`, `flame`,
++   `fluence`, serwera LSP `exegesis`, debugera `vivisection` i serwera MCP `synesthesia` – z
++   wydaniami, które są poświadczone, przewidywalne i weryfikowalne, oraz bibliotekami
++   dystrybuowanymi jako pliki LIRA, które gwarantują bezpieczne składanie. TEL jest językiem
++   konfiguracji wszędzie tam, gdzie potrzebna jest konfiguracja. Narzędzia, które nie są
++   modułami tego repozytorium – fury, fume, flame, fluence – są rozwijane we własnych
++   repozytoriach; ten plan śledzi tylko to, co Soundness musi im zapewnić. Soundness jest
++   kompilowany kompilatorem Proscala, który można modyfikować zawsze, gdy wymaga tego
++   bezpieczeństwo, z jednym ograniczeniem: opublikowane artefakty pozostają czytelne dla
++   głównego kompilatora Scali.
+
+@ 0 19 0 126e198d4e09544111f5d9bc21c23212
++ - **Identyfikatory pozycji są trwałe.** Mają prefiks nurtu, są kolejne i nigdy nie są używane
++   ponownie – ta sama dyscyplina co w przypadku kodów bolt. Ukończona pozycja zachowuje swój
++   nagłówek i zyskuje wiersz `Done:` wskazujący zamykający commit lub pull request. Jedynym
++   wyjątkiem jest pozycja, której kryterium *jest* usunięcie artefaktu.
++ - **Każde kryterium jest poleceniem lub obserwowalnym faktem.** Blok `Done when:` zawiera
++   wykonywalne polecenie z oczekiwanym wynikiem w końcowym komentarzu albo stwierdza fakt
++   dotyczący istnienia pliku, jego pustości lub stanu kontroli CI. Nic innego nie jest
++   dopuszczalne. „W większości ukończone” i „w znacznej mierze zrobione” nie są kryteriami;
++   jeśli czegoś nie da się policzyć, wyszukać grepem ani zaobserwować, nie ma tu dla tego
++   miejsca.
++ - **Wartości bazowe mają daty.** Liczby dryfują w miarę postępu prac; agent ponownie mierzący
++   wartość bazową powinien spodziewać się dryfu i go zgłosić, a nie po cichu ufać nieaktualnej
++   liczbie.
++ - **Horyzonty nie są datami.** *Bliski* to bieżący zbiór roboczy; *średni* to to, co
++   odblokowuje horyzont bliski; *daleki* zbliża się do stanu końcowego nurtu. Postęp mierzy się
++   kryteriami, nigdy kalendarzem.
++ - **Stan znajduje się w [`status.tel`](https://github.com/propensive/soundness/blob/main/doc/roadmap/status.tel).** Pliki prozą mówią, co i dlaczego;
++   `status.tel` – jeden rekord na pozycję, czytelny maszynowo, zapisany w TEL – mówi, na jakim
++   etapie jest każda pozycja. Proza nigdy nie ogłasza ukończenia; odsyła.
+
 @ 0 17 0 0ec7a54fa0928f921723afad3dc6834b
 + column  Kryterium
 + column  Pozycje
@@ -18,3 +79,15 @@ orthant 2 language
 + row  Każde wydanie jest publikowane jako poświadczone pliki LIRA  `dist-7`
 + row  JOSE, TOML i WebAuthn są dostarczone  `brd-1`, `brd-2`, `brd-3`
 + row  Agent, kierując się wyłącznie dokumentacją w `doc/`, prowadzi nowy projekt od zera do przetestowanej, wdrożonej aplikacji webowej na JVM i JavaScript, używając tylko narzędzi ekosystemu, a ten przewodnik jest wykonywany i rejestrowany w CI  `doc-8`
+
+@ 0 12 0 0784a4e159f446670750dceae9e6274f
++ - Identyfikatory pozycji są stabilnymi kotwicami; należy je przywoływać (`core-3`, `dist-2`)
++   zamiast opisywać pracę prozą.
++ - Każde twierdzenie o postępie należy weryfikować, uruchamiając polecenie `Done when:` pozycji;
++   nigdy nie należy ufać prozie ani pamięci bardziej niż wynikowi polecenia. Wartości bazowe
++   należy zmierzyć ponownie, zanim się na nich polega, i zgłosić dryf.
++ - Bieżący stan znajduje się w [`status.tel`](https://github.com/propensive/soundness/blob/main/doc/roadmap/status.tel); aktualizuje się go w tym samym
++   commicie co pracę, którą opisuje.
++ - Gdy pozycja planu zmienia publiczne API, należy stosować konwencję instrukcji migracji
++   zdefiniowaną przez `dist-2` w `doc/standards/migration.md` – to ta konwencja godzi zasady
++   „API zmieniają się swobodnie” i „kod nadal działa”.

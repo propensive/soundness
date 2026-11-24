@@ -73,15 +73,16 @@ case class Message(texts: List[Text], messages: List[Message] = Nil):
         messages + right.messages )
 
   def segments: List[Text | Message] =
-    def recur(parts: List[Text], messages: List[Message]): List[Text | Message] = parts match
-      case head :: tail => List.head(messages) :: head :: recur(tail, List.tail(messages))
-      case Nil          => Nil
+    def recur(parts: List[Text], messages: List[Message]): List[Text | Message] =
+      parts.absolve match
+        case head :: tail => List.head(messages) :: head :: recur(tail, List.tail(messages))
+        case Nil          => Nil
 
     List.head(texts) :: recur(List.tail(texts), messages)
 
   def fold[render](initial: render)(append: (render, Text, Int) => render): render =
     def recur(done: render, textTodo: List[Text], messagesTodo: List[Message], level: Int): render =
-      messagesTodo match
+      messagesTodo.absolve match
         case Nil => append(done, List.head(textTodo), level)
 
         case sub :: messages =>
@@ -107,7 +108,7 @@ case class Message(texts: List[Text], messages: List[Message] = Nil):
   def unwrap(string: String): Text =
     val buffer: StringBuilder = StringBuilder()
 
-    def recur(lines: List[String]): Text = lines match
+    def recur(lines: List[String]): Text = lines.absolve match
       case Nil => buffer.toString.nn.tt
 
       case line :: tail =>

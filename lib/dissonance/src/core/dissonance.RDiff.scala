@@ -37,10 +37,12 @@ import vacuous.*
 case class RDiff[element](changes: Diff.Change[element]*):
   def flip: RDiff[Optional[element]] =
     val changes2 = changes.toList.map:
-      case Diff.Par(left, right, value)                 => Diff.Par(right, left, value)
-      case Diff.Del(left, value)                        => Diff.Ins(left, value)
-      case Diff.Ins(right, value)                       => Diff.Del(right, value)
-      case Diff.Sub(left, right, leftValue, rightValue) => Diff.Sub(right, left, rightValue, leftValue)
+      case Diff.Par(left, right, value) => Diff.Par(right, left, value)
+      case Diff.Del(left, value)        => Diff.Ins(left, value)
+      case Diff.Ins(right, value)       => Diff.Del(right, value)
+
+      case Diff.Sub(left, right, leftValue, rightValue) =>
+        Diff.Sub(right, left, rightValue, leftValue)
 
     RDiff(changes2*)
 

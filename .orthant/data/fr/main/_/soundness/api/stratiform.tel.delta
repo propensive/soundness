@@ -1,0 +1,145 @@
+orthant 2 language
+
+% 0 4 0 06bfb3df7c62ba2607ff2e46b4a75db1
+
+@ 0 1 0 1509c0b4edc0521e140773335e9e6a24
++   entry #Revision
++     info
++         un journal composable d'éditions, appliquées à un document une opération à la fois
+
+@ 0 1 0 011854171f69420718747641930de1a5
++   entry #Mutation
++     info
++         les opérations d'édition primitives §22.2, qui préservent la présentation, et leur
++         interpréteur
+
+@ 0 5 0 03a6563a211c058e091aac26e9fa266a
++         Chaque `.Op` est une réécriture locale adressée par un `Tel.Pointer` : les atomes,
++         commentaires, lignes vides et enfants sans rapport qui l'entourent sont intacts par
++         construction, ce qui permet à un programme de modifier une valeur dans un fichier écrit
++         par une personne et de le réécrire intact. `Mutation(tel, op)` applique une opération et
++         `Mutation(tel, ops)` une liste dans l'ordre, en renvoyant un nouveau `Tel` ; `Revision`
++         est le DSL composable sur ces mêmes opérations.
+
+@ 0 7 0 0bdbe28195ed1d45177a037d87ad30fd
++         Une étape de pointeur est un mot-clé plus un indice d'occurrence, résolus par rapport au
++         document auquel une opération est appliquée, si bien qu'un pointeur garde son sens à
++         travers des éditions sans rapport ; mais un pointeur indexé par occurrence ne doit pas
++         être réutilisé d'une opération à l'autre lorsque celles-ci déplacent, ajoutent ou
++         suppriment des composés du même mot-clé. Les préconditions qui dépendent du schéma — qu'un
++         membre supprimé n'était pas obligatoire, qu'un indicateur placé est déclaré, qu'un
++         remplacement est bien typé — sont hors de portée, comme dans l'implémentation de
++         référence : une couche consciente du schéma les vérifie avant de déléguer à ces
++         primitives.
+
+@ 0 20 0 0dcd6706d124251810739b23466f1845
++     entry .Placement
++       info
++           de quel côté de l'autre groupe `ReorderGroups` place un groupe : `Before` ou `After`
++     entry .Member
++       info
++           une description sans schéma d'un membre de structure, pour `.construct`
++       detail
++           `Value(keyword, occurrences)` est un membre scalaire avec ses occurrences présentes (une
++           pour un membre simple, plusieurs pour un membre répétable, aucune pour un membre absent
++           qui termine la suite en ligne) ; `Flag(keyword)` un membre indicateur ;
++           `Child(compound)` un enfant tout prêt ; et `Break` un membre absent qui ne contribue
++           rien mais termine la suite en ligne, comme le fait un membre scalaire absent, puisque la
++           phase d'atomes ne saute jamais une position scalaire.
++     entry .Op
++       info
++           une opération primitive, adressée par un `Tel.Pointer`
++       detail
++           Les opérations adressées par cible, dont le pointeur désigne le composé qu'elles
++           modifient : `UpdateAtom(pointer, atomIndex, text)` réécrit un atome, en conservant sa
++           forme tant que la nouvelle valeur est sûre pour elle et en passant sinon de en ligne à
++           source puis à littéral, sans jamais revenir en arrière ; `Delete(pointer)` supprime le
++           composé, ainsi qu'un bloc vidé avec ses commentaires ; `Replace(pointer, compound)`
++           substitue un composé, en conservant la remarque de l'original ;
++           `AttachRemark(pointer, text)` et `RemoveRemark(pointer)` placent et effacent la
++           remarque ; `SetFlag(pointer, keyword)` ajoute un indicateur en ligne lorsque le composé
++           n'a ni enfants ni atome source ou littéral, sinon comme enfant, et échoue avec
++           `FlagAlreadySet` s'il est présent ; `UnsetFlag(pointer, keyword)` retire un indicateur
++           en ligne ou un indicateur enfant nu, et équivaut à l'identité s'il est absent ;
++           `InsertBefore(pointer, compound)` et `InsertAfter(pointer, compound)` placent un frère à
++           côté de la cible, dans un nouveau bloc lorsque le bloc de la cible est tabulé, pour que
++           le nouveau composé ne soit pas lu comme une ligne de tableau.
+
+@ 0 23 0 14ccf0ecaffdade716db7a4078f0c302
++           Les opérations adressées par parent, dont le pointeur désigne le conteneur
++           (`Tel.Pointer.Empty` pour la racine) : `Insert(pointer, compound)` ajoute à la position
++           naturelle du membre — après le dernier composé de même mot-clé, ou dans un nouveau bloc
++           final ; `InsertIntoBlock(parentPointer, blockIndex, compound)` ajoute une ligne à un
++           bloc, remise au gabarit de sa tabulation, et échoue avec `TabulationOverflow` lorsqu'une
++           valeur de colonne ne tient pas ; `ReorderWithinGroup(parentPointer, keyword, oldIndex,
++           newIndex)` déplace une occurrence au sein du groupe de son mot-clé ;
++           `ReorderGroups(parentPointer, keyword, otherKeyword, placement)` déplace un groupe de
++           membres entier avant ou après un autre, des blocs entiers se déplaçant lorsque les blocs
++           des groupes sont disjoints ; et `ResizeTabulation(parentPointer, blockIndex,
++           plannedRows)` recalcule les décalages des marqueurs d'une tabulation pour qu'elle
++           contienne ses lignes et toute ligne planifiée, en remettant chaque ligne au gabarit. La
++           géométrie des colonnes se mesure en points de code.
++     entry .apply
++       info
++           applique une opération, ou une liste dans l'ordre, à un document
++       detail
++           `Mutation(tel, op)` et `Mutation(tel, ops)`, chacune levant `Mutation.Error`. Le propre
++           sigil du document (tiré de son pragma, `#` par défaut) alimente le test de sûreté en
++           ligne, si bien qu'une valeur mise à jour qui se réanalyserait comme une remarque sous un
++           sigil personnalisé change de forme.
++     entry .construct
++       info
++           un nouveau composé dont la forme de chaque atome est choisie par les règles de sûreté
++           §22.3
++       detail
++           `construct(keyword, atoms*)` crée un atome par valeur non vide — en ligne si la valeur
++           n'a ni saut de ligne, ni espace en tête, en fin ou doublée, et ne commence pas par le
++           sigil suivi d'une espace ; sinon un atome source si elle n'a ni ligne vide, ni ligne se
++           terminant par un espace, ni espace en tête ; sinon un atome littéral sous le plus court
++           délimiteur `---` qui n'entre en collision avec aucune ligne. Une valeur vide ne donne
++           aucun atome, puisqu'une espace en tête serait une espace finale sur la ligne du
++           mot-clé.
+
+@ 0 7 0 080b2f8885154bc50ebe4864d826f18c
++           `construct(keyword, members)` et `construct(keyword, members, sigil)` exécutent
++           l'algorithme de présentation canonique sur une liste de `Member` : les scalaires et
++           indicateurs de tête à occurrence unique et sûrs en ligne deviennent des atomes en
++           ligne ; un scalaire répétable passe entièrement en ligne lorsque chaque occurrence est
++           sûre en ligne, et sinon chaque occurrence devient un enfant ; et chaque membre restant
++           est un enfant dans un seul bloc, sans commentaires, tabulation ni lignes vides. Les
++           atomes en ligne sont précédés d'une espace simple jusqu'à la première valeur contenant
++           une espace, et d'une espace dure à partir de là, si bien que la construction se
++           réanalyse en les mêmes atomes.
+
+@ 2 2 0 1c9d477f6c39100f1fd9e17e1d68d6fa
++           ```scala
++           import soundness.*
+
+@ 0 6 0 1d47c507a453218a1019254ed44f236b
++           Tel.Mutation.construct(t"name", t"Nick Bottom").atoms.length            // 1, an inline atom
++           Tel.Mutation.construct(t"note", t"first line\nsecond line")            // a source atom
++           Tel.Mutation.construct(t"note", t"first\n\nsecond\n")                  // a literal atom
++           Tel.Mutation.construct(t"flag", t"").atoms.length                      // 0
++           ```
++     entry .Error
++       info
++           levée lorsqu'un pointeur ne se résout pas ou que l'invariant d'une opération échoue
+
+@ 0 11 0 01151dd09e78d6ca18e924e372da3734
++           Erreur `↯/s.118.2` : _the mutation failed because …_. `PointerNotFound` est un pointeur,
++           un indice de bloc ou un groupe qui ne se résout pas en un composé, y compris une
++           réorganisation dont les groupes sont entrelacés ou dont les indices sont hors limites,
++           et un `ResizeTabulation` sur un bloc sans tabulation ; `AtomIndexOutOfRange` un
++           `UpdateAtom` au-delà des atomes de la cible ; `FlagAlreadySet` un `SetFlag` d'un
++           indicateur que la cible a déjà ; `TabulationOverflow` un `InsertIntoBlock` dont la
++           valeur de colonne dépasse la capacité de sa colonne ; et `WriteUnsupported`, levée par
++           `open[Tel]` avec `Write` lorsque la source du document ne peut pas être réécrite.
++       entry .Reason
++         info
++             les cinq raisons, chacune avec un numéro
++         entry .communicable
++           info
++               rend chaque raison sous forme de message
++       entry #reason
++         info
++             pourquoi la mutation a échoué

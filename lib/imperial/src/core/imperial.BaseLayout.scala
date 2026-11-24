@@ -94,7 +94,6 @@ extends caps.Pure:
       else if path.length > 1 && path.ends(t"/") then path.skip(1, Rtl)
       else path
 
-
   given dir: BaseLayout.Dir =
     BaseLayout.Dir(baseDir.home, part.let { p => (p :: baseDir.path): List[Text] }.or(baseDir.path))
 

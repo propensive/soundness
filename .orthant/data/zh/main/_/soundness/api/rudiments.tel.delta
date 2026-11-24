@@ -1,0 +1,60 @@
+orthant 2 language
+
+@ 0 33 0 17f26642629aeb55160659fc6f449b6e
++     - **日常组合子**，适用于任何值：`pipe`、`tap`、`also`、`when`、`give`、`twin`、`yet`、`upon`，以及折叠和迭代操作交给其 lambda 的上下文访问器 `state`、`next`、`prior` 和 `ordinal`。
++     - **集合操作**，在类型类 `Traversable`、`Countable`、`Applicable`、`Segmentable` 及其同类之上只编写一次，因此 `head`、`last`、`tail`、`keep`、`skip`、`snip`、`before`、`after`、`sort`、`order`、`fuse`、`each`、`indexed`、`seek`、`where`、`total`、`mean` 等在 `List`、`Sequence`、`Set`、`Map`、冻结的 `Array`、`Text` 以及其他每个具有实例的类型上含义都相同。类型类本身位于 `murmuration`（`Traversable`、`Reshapable`、`Mappable`、`Convertible`、…）和 `denominative`（`Countable`、`Applicable`、`Definable`、…）中，并在此重新导出，因此 `import rudiments.*` 呈现的是同一个接口面。
++     - **类型中的证明。** 只对某些输入安全的操作不会被做成部分函数，而是被赋予一个要求证明的类型。`head`、`last`、`lead`、`tail` 和 `reduce` 在类型为 `& Populated` 的接收者（非空字面量，或 `occupied` 的结果）上是全函数，否则返回 `Optional`；经 `confine`、`pick`、`iterate` 或 `Surveyor` 针对某个集合检查过的序数，类型为 `Ordinal in xs.type`，用这样的索引执行 `xs(i)` 读取的是裸元素，而用其他索引读取的是 `Optional`；长度为字面量的冻结数组，类型为 `& Sized[n]`，超出 `n` 的字面量序数无法编译。链表的 `size` 或按位置访问的开销同样是一种证明——导入 `dysasymptotics.linearSize` 或 `linearAccess`——而不是悄无声息的遍历。
++     - **构建器和扫描器**，用于解析器和编解码器的热循环：`Array.scribe` 和 `Array.collect` 借出一个 `Scribe`（一个每个索引都被证明在范围内的写句柄），`survey` 借出一个 `Surveyor`（一个按步推进的游标，其匹配段以带品牌的区间返回），`lattice` 对二维平面寻址，`pairs`/`triples`/`quads` 成组地遍历集合，`Scroll` 是不装箱的可增长数组。
++     - **并发原语**：基于 JDK 原子量的 `Atomic` 单元，以 `cell()` 读取，以 `cell() = v` 写入，并以 `ere` 和 `since` 进行转换，它们会把 `_ + 1` 这样的 lambda 字面量编译为 JDK 内建函数；`Mutex`；绑定到线程的 `Scoped` 值；以及 `Loop`，一种供后台任务使用的可停止迭代。
++     - **小型值**：`Exit` 和 `Termination`（命令的返回值），`Memory`（带有 `kib`/`mib`/`gib` 字面量的字节计数），`Digit`，以及编译时辅助工具 `typeName`、`reflectClass`、`probe` 和 `!!`。
+
+@ 0 11 0 0882f0d01b38ba4e1865d4ab8163d7df
++     该包由两个库声明，这种拆分关乎构建图而非命名空间。
++     `rudiments.core` 包含组合子、集合操作、`Atomic`、`Mutex`、`Scoped`、`Loop`、`Exit`、`Memory` 和排序操作，依赖于 `murmuration`、`denominative`、`vacuous`、`symbolism` 和 `anticipation`。
++     `concordance` 库直接位于 `denominative` 之上，使 rudiments 之下的库也能安全地索引；它声明了受限索引的词汇——`apply`、`at`、`defines`、`confine`、`pick`、`unsafeAttested`、`sized`——以及 `Populated`、`Segmentable`、`Appendable`、`Prependable`、`Bijection`、`Scribe`、`Scroll`、`Surveyor`、`Lattice` 和分组组合子，全部位于 `package rudiments` 中；每个这样的条目都会注明这一点。
++     二者都可编译到 JVM、Scala.js 和 Scala Native，只要平台提供 `java.util.concurrent.atomic`，`Atomic` 就基于它实现。
+
+@ 0 1 0 0535eecbae15bc3f109040c2d5863b35
++ entry .sortingInternal   集合与排序算法所排序的数组之间的管道代码
+
+@ 0 8 0 0fe745b8661e80b91c1557df95ff27c9
++ entry .Memory   字节计数，作为量：`4.kib`、`data.bytes`
++     `Memory` 是不透明类型 `rudiments.internal.Memory`，即一个不透明的 `Long`，在此导出。
++     算术和比较把它当作量处理：两个 `Memory` 可以相加和相减，`Memory` 可以乘以和除以 `Int`，一个 `Memory` 除以另一个得到 `Double` 比值，这些都通过其伴生对象中的 given 实现，因此无需导入。
++     用 `Memory(long)` 或 `Int`、`Long` 上的字面量扩展方法 `b`、`kib`、`mib`、`gib` 和 `tib`（二进制单位：`1.kib` 是 1024 字节）构造，也可以用 `bytes` 从 `Data` 构造；用 `long` 读回，显示为 `1024 bytes`。
+
+% 0 1 0 1c92fec48a6f4dfb1aedc4b146972e49
+
+@ 0 6 0 034747922a70407e085116d3a6a620bf
++ entry .b   `n.b`：`n` 字节的 `Memory`，作用于 `Int` 或 `Long`
++ entry .kib   `n.kib`：`n` KiB（×1024）的 `Memory`
++ entry .mib   `n.mib`：`n` MiB（×1024²）的 `Memory`
++ entry .gib   `n.gib`：`n` GiB（×1024³）的 `Memory`
++ entry .tib   `n.tib`：`n` TiB（×1024⁴）的 `Memory`
++ entry .bytes   `data.bytes`：`Data` 的长度，作为 `Memory`
+
+@ 0 1 0 06bebad57dba00c11c86019577047782
++ entry .internal   `Memory`、`Digit`、`&` 提取器以及 `probe`、`typeName` 和 `reflectClass` 背后的宏的所在地
+
+@ 0 4 0 1187368ab6db671d097c03bb742d6f8a
++       不供直接使用：`Memory`、`Digit` 和 `&` 从这里导出到 `rudiments` 包，它们的页面在那里；`probe`、`name` 和 `reflectClass` 是宏的实现。
++   entry .Memory   不透明的字节数，被视为数量的 `Long`；参见 `rudiments.Memory`
+
+@ 0 7 0 016e2836f958117706da0f689b771a5f
++         不透明类型 `Memory = Long`，连同它的构造器、算术和比较 given 以及访问器。
++         它在 `rudiments` 包下的页面有完整的说明；这里的每个 given 都在 `Memory` 的隐式作用域中。
++     entry .apply   `Memory(long)`：由 `Long` 得到的字节数
++     entry .comparable   按数值对字节数排序
++     entry .zeroic   零字节，因此对字节数的 `total` 从零开始，结果是裸值
++     entry .communicable   在消息中把字节数渲染为 `n bytes`
+
+@ 0 9 0 1c4272dd222a927b16636fc8dfd49645
++     entry .addable   `Memory + Memory`
++     entry .subtractable   `Memory - Memory`
++     entry .multiplicable   `Memory * Int`
++     entry .multiplicable2   `Int * Memory`
++     entry .divisible   `Memory / Int`
++     entry .divisible2   `Memory / Memory`，以 `Double` 比值表示
++     entry .long   `bytes.long`：以 `Long` 表示的字节数
++     entry .text   `bytes.text`：以文本表示的字节数，`1024 bytes`
++   entry .Digit   不透明的十进制数字，`0 | 1 | … | 9`；参见 `rudiments.Digit`

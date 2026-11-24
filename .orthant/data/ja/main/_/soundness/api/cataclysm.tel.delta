@@ -1,0 +1,48 @@
+orthant 2 language
+
+@ 0 38 0 15177b5972e74eeb18897d1f690c0e42
++     entry .pixels   `Pixels` の量を `<length>` として：`4px`
++     entry .ems   `Ems` の量（quantitative のもの）を `<length>` として：`2em`
++     entry .rems   `Rems` の量を `<length>` として：`2rem`
++     entry .exs   `Exs` の量を `<length>` として：`1ex`
++     entry .chs   `Chs` の量を `<length>` として：`40ch`
++     entry .vws   `ViewportWidths` の量を `<length>` として：`100vw`
++     entry .vhs   `ViewportHeights` の量を `<length>` として：`100vh`
++     entry .vmins   `ViewportMins` の量を `<length>` として：`50vmin`
++     entry .vmaxes   `ViewportMaxes` の量を `<length>` として：`50vmax`
++     entry .metres   任意の物理的な長さ（`Metres` の量）を `<length>` として、`mm` で
++         `3.0*Cm`、`10.0*Mm`、`1.0*Metre`、あるいは quantitative の任意の長さとして書かれた `Distance` の量は、ミリメートルで描画される。
++         CSS は `cm`、`mm`、`m` を同じように読むからである。
++         `3.0*Cm` は `30mm` になる。
++         インチ、ポイント、パイカは自身の単位を保つ。
++     entry .inches   `Inches` の量を `<length>` として：`1in`
++     entry .points   `Points` の量を `<length>` として：`12pt`
++     entry .picas   `Picas` の量を `<length>` として：`1pc`
++     entry .percents   `Percents` の量を `<percentage>` として：`50%`
++     entry .chromatic   `Chromatic` インスタンスを持つ任意の色を `<color>` として、16 進数で描画する
++         anticipation の `Chroma` と、iridescence のすべての色の形式（`Srgb`、`Hsl`、`Cielab`、…、そして `rgb"#3344ff"` リテラル）を、それらの `Color.chromatic` インスタンスを通じて扱う。
++         それぞれ、赤、緑、青のチャンネルから 0–255 に切り詰めて、六桁の 16 進数の三つ組として描画する。
++         インスタンスは色の任意のスーパータイプについて探されるので、`Chromatic` を自身の形式から得る色のクラスも、`Css.Style(…)` が値の正確な型を求めるときに見つかる。
++     entry .seconds   任意の時間（`Seconds` の量）を `<time>` として、`ms` で
++         `200.0*Ms` は `200ms`、`1.5*S` は `1500ms` である。
++     entry .degrees   `Degrees` の量を `<angle>` として：`90deg`
++     entry .radians   `Radians` の量を `<angle>` として：`1rad`
++     entry .turns   `Turns` の量を `<angle>` として：`0.5turn`
++     entry .flexes   `Flexes` の量を `<flex>` として：`2fr`
++     entry .integer   `Int` を `<integer>` として
++     entry .decimal   `Double` を `<number>` として。余分な `.0` はつかない
++     entry .keyword   `Css.Keyword` を、その CSS での綴りとして。すべてのプロパティに対して正しい
++         トピックは `"*"` であり、プロパティの検査は既知のどのプロパティに対してもこれを受け付ける。
++     entry .colorKeyword   `Css.ColorKeyword` を `transparent` または `currentcolor` として
++     entry #value   ネイティブな値を CSS のテキストとして描画する
++   entry #rules   スタイルシートのノード。順序どおり
++   entry .Syntax   CSS の値定義構文で書かれた、プロパティの値の文法を木として表したもの
+
+@ 0 1 0 10aaf54c52c3fe0b0d316f1cd65e1109
++     entry .Matcher   プロパティの値をその文法に照らして検査する：正しい、不正、未対応のいずれか
+
+@ 0 5 0 1faf72e6fe088cd01a48ddf10a68931c
++   entry #check   値を、プロパティの文法に照らして、または `Css.Syntax` に直接照らして検査する
++       二つのオーバーロードがある。
++       `check(property: PropertyDef, value)` はプロパティのパースされた文法を使い、`check(grammar: Css.Syntax, value)` は任意の文法を使う。
++       どちらも `Tactic[Css.Error]` を必要とし、エラーが発生するのは値のテキストをトークン化できない場合（閉じられていない文字列）だけである。

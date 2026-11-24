@@ -1,0 +1,22 @@
+orthant 2 language
+
+@ 0 16 0 16e15c85ccf14a4e00013adc48012292
++         То, что `subscribe` одалживает своему блоку как контекстное значение и что доступно
++         обработчику для отправки вне формы «запрос/ответ»: объявление при вступлении,
++         прощание при выходе, ответ на что-то увиденное, а не полученное.
++     entry #send   `send(data)` всей группе; `send(data, destination, port)` одному участнику
++         Обе формы при неудаче порождают `Socket.Error(Transmit)`.
++   entry .subscribable   любой `Multicast` (или тип, уточнённый его литеральным портом) `is Subscribable` поверх `Socket.Backend` и `Every[Socket.Option.Udp]` в области
++       Вступает через `Socket.Backend#joinMulticast` на интерфейсах, которые выбирает
++       `.interfaces`.
++   entry .bindable   `Multicast is Bindable`, выведенный из `Subscribable`: `listen` на группе
++       Для участника, который только отвечает: обработчик имеет вид `Packet => Multicast.Reply`,
++       а одалживание `listen` — это `Socket.Service` без отправок. `subscribe` — одалживание
++       с ними.
++   entry .interfaces   интерфейсы, на которых подписка вступает в группу: интерфейс с MAC-адресом или каждый подходящий
++       При `Unset` — каждый работающий интерфейс с поддержкой multicast, кроме loopback,
++       который в Linux не может передавать multicast (собственные датаграммы программы
++       возвращаются вместо этого через `Socket.Option.MulticastLoop`); при `MacAddress` —
++       интерфейс, у которого он есть.
++   entry #group   адрес IPv4 или IPv6 группы
++   entry #port   UDP-порт группы

@@ -115,7 +115,7 @@ object TelSchematic:
       name.toString.tt
 
     val stored: Text = scalar.encoding.lay(t"Text")(typeName(_))
-    val sized: Text = scalar.width.lay(stored) { width => t"${stored}Of$width" }
+    val sized: Text = scalar.width.lay(stored): width => t"${stored}Of$width"
     val name: Text = if scalar.intern then t"${sized}Interned" else sized
     if taken.has(name) then t"${name}Scalar" else name
 
@@ -125,7 +125,7 @@ object TelSchematic:
       case field: Tels.Field => field.key || !field.indexes.nil
       case other             => false
 
-    val records = schema.records.to[List].exists { record => declares(record.members) }
+    val records = schema.records.to[List].exists: record => declares(record.members)
     schema.scalars.length > 0 || declares(schema.document.members) || records
 
   // A field names its type, and cannot constrain it (§20.6): a scalar with an encoding, a
@@ -136,8 +136,8 @@ object TelSchematic:
   // its field, so the schema of a type which uses none of them is what it always was.
   private[stratiform] def defined(schema: Tels): Tels =
     val taken: List[Text] =
-      schema.records.to[List].map(_.name) + schema.selects.to[List].map(_.name)
-      + schema.scalars.to[List].map(_.name)
+      schema.records.to[List].map(_.name) + schema.selects.to[List].map(_.name) +
+        schema.scalars.to[List].map(_.name)
 
     val found: java.util.LinkedHashMap[Text, Tels.ScalarDefinition] = java.util.LinkedHashMap()
 
@@ -194,12 +194,21 @@ object TelSchematic:
           selects(layer.selects) )
 
     if found.isEmpty then schema else
-      val definitions: java.util.ArrayList[Tels.ScalarDefinition] = java.util.ArrayList(found.values)
-      val added: List[Tels.ScalarDefinition] = List.range(0, definitions.size).map(definitions.get(_).nn)
+      val definitions: java.util.ArrayList[Tels.ScalarDefinition] =
+        java.util.ArrayList(found.values)
+
+      val added: List[Tels.ScalarDefinition] =
+        List.range(0, definitions.size).map(definitions.get(_).nn)
 
       Tels
         ( schema.name, document, layers.to[Array], schema.sigil, records0,
           (schema.scalars.to[List] + added).to[Array], selects0 )
+
+  object Identity:
+    // A segment as part of a TypeName: its ASCII letters and digits, capitalised, so that a package
+    // qualifies as `Pkg`. Anything else (an anonymous scope) contributes nothing.
+    private def typeName(segment: Text): Text =
+      segment.s.filter { char => char < 128 && char.isLetterOrDigit }.capitalize.tt
 
   // The identity of a derived definition — a product's record or a sum's select — as its type: the
   // type's simple name, which the definition takes when no other type in the schema shares it, and
@@ -216,21 +225,6 @@ object TelSchematic:
         case _                            => t""
 
       prefix(enclosing, depth) + name
-
-  object Identity:
-    // A segment as part of a TypeName: its ASCII letters and digits, capitalised, so that a package
-    // qualifies as `Pkg`. Anything else (an anonymous scope) contributes nothing.
-    private def typeName(segment: Text): Text =
-      segment.s.filter { char => char < 128 && char.isLetterOrDigit }.capitalize.tt
-
-  // How the definitions of a schema are named. A type whose simple name no other type in the
-  // schema shares keeps it, so a schema without clashes is unchanged by naming; the members of a
-  // group of distinct types sharing one name are each qualified by their enclosing types, to the
-  // shallowest depth that tells them apart, so a name depends only on which types the schema
-  // reaches, never on the order it reaches them. Names which coincide even so are `ambiguous`,
-  // and make the schema invalid (E210).
-  class Naming(names: Map[Identity, Text], val ambiguous: List[Text]):
-    def apply(identity: Identity): Text = names(identity).or(identity.name)
 
   object Naming:
     // Every type by its simple name.
@@ -256,6 +250,15 @@ object TelSchematic:
       val ambiguous: List[Text] = taken.filter { name => taken.count(_ == name) > 1 }.distinct
 
       new Naming(renamed, ambiguous)
+
+  // How the definitions of a schema are named. A type whose simple name no other type in the
+  // schema shares keeps it, so a schema without clashes is unchanged by naming; the members of a
+  // group of distinct types sharing one name are each qualified by their enclosing types, to the
+  // shallowest depth that tells them apart, so a name depends only on which types the schema
+  // reaches, never on the order it reaches them. Names which coincide even so are `ambiguous`,
+  // and make the schema invalid (E210).
+  class Naming(names: Map[Identity, Text], val ambiguous: List[Text]):
+    def apply(identity: Identity): Text = names(identity).or(identity.name)
 
   // The `TelSchematic` refinements of a member's schematic, which may be a plain `Schematic`.
   def schemaOf(schematic: Schematic over Tels.Type, naming: Naming): Tels.Type = schematic match
@@ -699,7 +702,9 @@ trait Tels2:
 
     // A layout is checked as that of a schema written by hand is, once its layers are
     // composed: a key which may be absent, an index over what is not a collection.
-    if TelSchematic.laidOut(defined) then Tels.Validation.checkComposed(Tels.Layers.compose(defined))
+    if TelSchematic.laidOut(defined)
+    then Tels.Validation.checkComposed(Tels.Layers.compose(defined))
+
     defined
 
 object TelsDerivation extends Derivable[TelSchematic over Tels.Type]:
@@ -734,7 +739,13 @@ object TelsDerivation extends Derivable[TelSchematic over Tels.Type]:
             case other               => other
 
           Tels.Field
-            ( schematic.polarity, schematic.repeatable, keyword, fieldType, Unset, Unset, storage.key,
+            ( schematic.polarity,
+              schematic.repeatable,
+              keyword,
+              fieldType,
+              Unset,
+              Unset,
+              storage.key,
               storage.indexes.map(Tels.Index(_)) )
 
         case _ =>

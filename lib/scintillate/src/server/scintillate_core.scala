@@ -139,6 +139,7 @@ package webserverErrorPages:
 
   // Bundled in scintillate's own jar; their absence is a packaging error.
   private def prefix(using Classloader): Data = unsafely(cp"/scintillate/error.pre.html".read[Data])
+
   private def postfix(using Classloader): Data =
     unsafely(cp"/scintillate/error.post.html".read[Data])
 

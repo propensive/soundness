@@ -66,7 +66,9 @@ trait Enumerable:
   protected def indexed(name: Text): Optional[Self] = valuesMap(name)
 
   // The value whose position among `values` a generated lookup found, or `Unset` for -1.
-  protected def numbered(index: Int): Optional[Self] = if index < 0 then Unset else values.at(index.z)
+  protected def numbered(index: Int): Optional[Self] =
+    if index < 0 then Unset else values.at(index.z)
+
   def name(value: Self): Text = value.toString.tt
   def index(value: Self): Int = value.ordinal
 

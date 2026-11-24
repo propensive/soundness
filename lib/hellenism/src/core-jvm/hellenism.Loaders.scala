@@ -40,7 +40,6 @@ import scala.caps
 
 import anticipation.*
 import gossamer.*
-import prepositional.*
 import rudiments.*
 import vacuous.*
 
@@ -74,7 +73,8 @@ extension (classpath: Classpath)
       parent: Classloader = classloaders.platformClassloader )
   :   Classloader =
 
-    new Classloader(Loaders.delegatingClassloader(Loaders.array(classpath), parent.java, delegation))
+    new Classloader
+      ( Loaders.delegatingClassloader(Loaders.array(classpath), parent.java, delegation) )
 
   inline def services[service]: Set[service] =
     Loaders.servicesFor[service](classpath, reflectClass[service])

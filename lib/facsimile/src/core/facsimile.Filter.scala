@@ -106,14 +106,14 @@ private[facsimile] object Filter:
     def recur(names: List[Text], parameters: List[Map[Text, Cos]])
     :   List[(Id, Map[Text, Cos])] =
 
-      names match
+      names.absolve match
         case Nil =>
           Nil
 
         case name :: moreNames =>
           val id = Id.parse(name).or(abort(Pdf.Error(Pdf.Error.Reason.UnknownFilter(name))))
 
-          parameters match
+          parameters.absolve match
             case parms :: moreParms => (id, parms) :: recur(moreNames, moreParms)
             case Nil                => (id, Map()) :: recur(moreNames, Nil)
 

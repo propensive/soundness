@@ -153,8 +153,7 @@ object Ram:
           try
             val write = mode.atoms.has(Write)
             val handle = new RamHandle(channel, write, size) with Granting[grants] {}
-            try block(using handle) finally
-              try handle.flush() finally handle.unmap()
+            try block(using handle) finally try handle.flush() finally handle.unmap()
           finally lock.foreach: held => if held != null then held.release()
         finally channel.close()
 
@@ -185,8 +184,7 @@ object Ram:
       val size: Long = flags.reap { case RamFlag.Size(bytes) => bytes }
         . lay(abort(Io.Error(value, Operation.Create, Reason.Unsupported)))(identity(_))
 
-      if size <= 0
-      then abort(Io.Error(value, Operation.Create, Reason.Unsupported))
+      if size <= 0 then abort(Io.Error(value, Operation.Create, Reason.Unsupported))
 
       val createFlags = flags.sweep { case flag: CreateFlag => flag }
       Creation.ensure(value, createFlags, policy)
@@ -211,8 +209,7 @@ object Ram:
             val handle =
               new RamHandle(channel, true, size) with Granting[Grant.Read & Grant.Write] {}
 
-            try block(using handle) finally
-              try handle.flush() finally handle.unmap()
+            try block(using handle) finally try handle.flush() finally handle.unmap()
           catch case throwable: Throwable =>
             try backend.deleteIfExists(value) catch case _: Exception => ()
             throw throwable

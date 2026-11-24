@@ -57,14 +57,14 @@ enum LongNameFormat:
   case Gnu
 
 object Tarfile:
+  private[bitumen] object Member:
+    given traversable: Member is Traversable by Data =
+      member => Tarfile.preamble(member.entry, member.longNameFormat).concat(member.entry.serialize)
+
   // A member's place in the archive, as the blocks it serializes to under a long-name format:
   // the description `flatMap` opens one at a time, so each member's payload stream is opened
   // only when it is reached.
   private[bitumen] class Member(val entry: Tar.Entry, val longNameFormat: LongNameFormat)
-
-  private[bitumen] object Member:
-    given traversable: Member is Traversable by Data =
-      member => Tarfile.preamble(member.entry, member.longNameFormat).concat(member.entry.serialize)
 
   val zeroBlock: Data = Array.fill[Byte](512)(0)
 
@@ -115,13 +115,13 @@ object Tarfile:
         var longLink: Optional[Text] = Unset
 
         while !pending && !done do
-          takeBlock(cursor) match
+          takeBlock(cursor).absolve match
             case Unset =>
               // The archive ended without its terminating zero blocks.
               raise(Tar.Error(Tar.Error.Reason.TruncatedStream(512, 0)))
               finish()
 
-            case head: Data if Tar.Header.isZeroBlock(head) => finish()
+            case head: Data @unchecked if Tar.Header.isZeroBlock(head) => finish()
 
             case head: Data =>
               val header = Tar.Header.parse(head)
@@ -316,12 +316,12 @@ object Tarfile:
     ( using Tactic[Tar.Error] )
   :   List[SparseSegment] =
 
-    if !hasMore then Nil else takeBlock(cursor) match
+    if !hasMore then Nil else takeBlock(cursor).absolve match
       case Unset =>
         raise(Tar.Error(Tar.Error.Reason.TruncatedStream(512, 0)))
         Nil
 
-      case head: Data =>
+      case head: Data @unchecked =>
         val builder = scala.collection.immutable.List.newBuilder[SparseSegment]
         var pos = 0
         var i = 0

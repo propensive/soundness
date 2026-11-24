@@ -32,10 +32,8 @@
                                                                                                   */
 package phoenicia
 
-import anticipation.*
 import gesticulate.*
 import prepositional.*
-import zephyrine.*
 
 package detectables:
   // The sfnt version of a font with TrueType outlines.

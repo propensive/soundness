@@ -1,5 +1,8 @@
 orthant 2 language
 
+@ 0 3 0 064a0d693208d94d0be9e9c787015ee8
++ Die Punkte der Spur, mit ihren Horizonten und harten Abhängigkeiten; [`status.tel`](https://github.com/propensive/soundness/blob/main/doc/roadmap/status.tel) hält fest, wo jeder steht:
+
 @ 0 9 0 1bd7a6beb6e17d6e0b0e8c51346922a0
 + Das Debuggen einer laufenden Anwendung sollte sich nativ anfühlen, nicht wie zu Gast: Breakpoints,
 + schrittweises Ausführen und Inspektion über einen Server für das Debug Adapter Protocol, wobei

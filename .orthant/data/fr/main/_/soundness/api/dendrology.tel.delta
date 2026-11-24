@@ -1,0 +1,18 @@
+orthant 2 language
+
+@ 0 6 0 09ddb6fad09838ff1f191f21007b7f55
++ entry .LaneDagStyles   the trait holding `LaneDagDiagram.Style` and `LaneDagDiagram.TextualStyle`
++   detail
++       `object LaneDagDiagram extends LaneDagStyles`, so the two types declared here are reached
++       through the companion, as `LaneDagDiagram.Style` and `LaneDagDiagram.TextualStyle`.
++
++   entry #Style
++     info
++         la classe de types qui rend une ligne d'un `LaneDagDiagram` ou d'un `LayeredDagDiagram`
+
+@ 0 2 0 0f386ead979952890e6c894c0eb9268d
++
++   entry #TextualStyle
++     info
++         un `LaneDagDiagram.Style` pour tout type de ligne `Textual`, à partir de quatorze morceaux
++         de texte

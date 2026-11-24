@@ -1,0 +1,17 @@
+orthant 2 language
+
+@ 0 1 0 07161a9b0652a0aa1a17db213819117e
++ entry .Structural   klasa typów typu o stałym układzie w bajtach: rekordu liczb całkowitych o określonym rozmiarze, czytanego `unpack`, zapisywanego `pack`
+
+@ 0 11 0 0dd3de458555885d0a28649aefc16776
++   entry #width   liczba slotów pierścienia: największa porcja, którą może przenieść `drain`
++   entry #size   przybliżone zapełnienie, do doradczych obliczeń zapotrzebowania; nigdy do synchronizacji
++   entry #free   przybliżona liczba wolnych slotów
++   entry #offer   strona producenta: kręci się, a potem parkuje, dopóki nie zwolni się slot, chyba że konsument zamknął pierścień – wtedy element przepada
++   entry #finish   strona producenta: nie będą oferowane kolejne elementy; idempotentne
++   entry #drain   strona konsumenta: w jednym kroku przejmuje wszystkie zbuforowane elementy do tablicy wywołującego, blokując, aż nadejdzie choć jeden
++       Zwraca liczbę przeniesionych: zero dopiero wtedy, gdy producent zakończył, a pierścień
++       jest opróżniony. Jedna publikacja `head` i jedno odparkowanie producenta na serię,
++       podczas gdy pętla `take` płaci po jednym z nich za każdy element.
++   entry #take   strona konsumenta: następny element lub `null`, gdy producent zakończył, a pierścień jest opróżniony
++   entry #close   strona konsumenta: przestaje przyjmować, opróżnia zbuforowane elementy (zwalniając zaparkowanego producenta) i odrzuca późniejsze oferty

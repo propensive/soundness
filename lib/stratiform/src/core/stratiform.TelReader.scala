@@ -90,8 +90,8 @@ extends caps.ExclusiveCapability, caps.Stateful:
   // update method requires an exclusive receiver.
   inline update def keyword(indent: Int): Optional[Text] =
     Tel.Parser.erasedDirectKeyword(parser0, indent)(using errorTactic) match
-      case null       => Unset
-      case next: Text => next
+      case null                  => Unset
+      case next: Text @unchecked => next
 
   // The next keyword step in packed form, for parsers that compare keywords
   // against literal constants (staged parsers compile wire keywords to

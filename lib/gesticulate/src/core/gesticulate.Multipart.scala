@@ -62,11 +62,11 @@ object Multipart:
       case Substrate.Bytes => 65536
       case _               => capacity(substrate)
 
-
   // The evidence is a capturing `using` parameter rather than a context bound: a body's
   // instance retains the tactic its pull raises a cut-short read through.
   def parse[input](input: input, boundary0: Optional[Text] = Unset)
-    ( using streamable: (input is Streamable by Data over Credit)^, tactic: Tactic[Multipart.Error] )
+    ( using streamable: (input is Streamable by Data over Credit)^,
+            tactic:     Tactic[Multipart.Error] )
   :   Multipart =
 
     val cursor = Cursor[Data](streamable.stream(input))

@@ -1,0 +1,54 @@
+orthant 2 release
+
+@ 0 1 0 1d9a40e28b76528706a1e010d00b22f8
++     - **Small values**: `Exit` and `Termination` (what a command returns), `Memory` (a byte
+
+@ 0 1 0 0552ded9f4c77f811491f866d939b8c8
++     `Mutex`, `Scoped`, `Loop`, `Exit`, `Memory` and the sorting operations, and depends on
+
+@ 0 1 0 1f81b95581b00e871b49891f55b7bc62
++ entry .sortingInternal   the plumbing between a collection and the array a sorting algorithm sorts
+
+@ 0 4 0 0c7ef3b75c36d49a07f77955b44efc2d
++ entry .Memory   a count of bytes, as a quantity: `4.kib`, `data.bytes`
++     `Memory` is the opaque type `rudiments.internal.Memory`, an opaque `Long`, exported here.
++     Arithmetic and comparison treat it as a quantity: two `Memory` add and subtract, a `Memory`
++     multiplies and divides by an `Int`, and one `Memory` divided by another is a `Double`
+
+@ 0 1 0 08c192731c3d979a0fb93ff25c00ce3a
++     `Memory(long)` or the literal extensions `b`, `kib`, `mib`, `gib` and `tib` on an `Int` or
+
+@ 0 1 0 1b7d436d0877d6251b50d1013e47f363
++     val limit: Memory = 4.mib
+
+@ 0 6 0 1e368e7a077d158815f8729945dcc69b
++ entry .b   `n.b`: a `Memory` of `n` bytes, on an `Int` or `Long`
++ entry .kib   `n.kib`: a `Memory` of `n` kibibytes (×1024)
++ entry .mib   `n.mib`: a `Memory` of `n` mebibytes (×1024²)
++ entry .gib   `n.gib`: a `Memory` of `n` gibibytes (×1024³)
++ entry .tib   `n.tib`: a `Memory` of `n` tebibytes (×1024⁴)
++ entry .bytes   `data.bytes`: the length of a `Data` as a `Memory`
+
+@ 0 1 0 12fdeff0dd305b5e13d7ea1b051e00a7
++ entry .internal   the home of `Memory`, `Digit`, the `&` extractor and the macros behind `probe`, `typeName` and `reflectClass`
+
+@ 0 1 0 18dba3518654ba4b1514b01b09f0303e
++       Not for direct use: `Memory`, `Digit` and `&` are exported from here to the `rudiments`
+
+@ 0 1 0 1850c72bee0a314817c496f467f91ccf
++   entry .Memory   the opaque byte count, a `Long` treated as a quantity; see `rudiments.Memory`
+
+@ 0 1 0 18bc878d1e549d750174798ecdfef660
++         The opaque type `Memory = Long`, with its constructor, its arithmetic and comparison
+
+@ 0 2 0 089be29427fd2ab7130e273c2ce77662
++         every given here is in implicit scope for a `Memory`.
++     entry .apply   `Memory(long)`: a byte count from a `Long`
+
+@ 0 6 0 137de9f6960f0dc70b812432f2a283df
++     entry .addable   `Memory + Memory`
++     entry .subtractable   `Memory - Memory`
++     entry .multiplicable   `Memory * Int`
++     entry .multiplicable2   `Int * Memory`
++     entry .divisible   `Memory / Int`
++     entry .divisible2   `Memory / Memory`, as a `Double` ratio

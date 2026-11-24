@@ -59,7 +59,9 @@ import vacuous.*
 // the path-dependent `Operand` cannot be excluded before evidence resolution and the call
 // reports ambiguity.
 extension (interval: Interval)
-  inline def unsafeAttested[within](within: within)(using erased unsafe: Unsafe): Interval in within.type =
+  inline def unsafeAttested[within](within: within)(using erased unsafe: Unsafe)
+  :   Interval in within.type =
+
     interval.asInstanceOf[Interval in within.type]
 
 extension [self](value: self)(using applicable: Applicable { type Self = self })

@@ -33,6 +33,7 @@
 package acyclicity
 
 import scala.collection.immutable as sci
+
 import rudiments.*
 
 object Poset:

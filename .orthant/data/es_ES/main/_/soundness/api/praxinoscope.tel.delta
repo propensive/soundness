@@ -1,0 +1,12 @@
+orthant 2 language
+
+@ 0 8 0 088d9de641ca59230a710ed9b6a921cb
++   entry #subsumes   si este motif coincide con todas las entradas con las que coincide otro, o con todas aquellas con las que coinciden a la vez varios
++       `motif.subsumes(that)` decide `L(that) ⊆ L(this)`; `motif.subsumes(those)` decide
++       `L(⋂those) ⊆ L(this)`, la contención de las entradas con las que coinciden *todos* los
++       motifs de una lista a la vez, algo que ningún patrón RE2 por sí solo puede expresar (RE2 no
++       tiene operador de intersección) y que una comprobación por pares resuelve mal. Ambos son
++       `Subsumption.subsumes` sobre los programas compilados, y lanzan `Motif.Error` ante un
++       límite de palabra o de línea en cualquier patrón (`Unverifiable`) o ante un par que agota
++       el presupuesto (`BudgetExceeded`). Los patrones equivalentes se subsumen mutuamente, así que
++       dos comprobaciones deciden la equivalencia.

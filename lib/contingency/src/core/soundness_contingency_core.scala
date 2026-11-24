@@ -38,10 +38,10 @@ export
       AttemptTactic, capture, certify, dare, deferAccrue, deferHandle, deferMitigate, deferRecover,
       Disturbance, EitherTactic, Emit, Errors, Expectation, Fatal,
       Foci, focus, guard, Guard, HaltTactic, handle, Handler, lest, Mitigable,
-      mitigate, Mitigation, mitigates, OptionalTactic, pacify, Pointer, raise, raises, recover, Recovery,
-      safely, survive, Tactic, throwErrors, ThrowTactic, track, TrackFoci, Tracking, tracks,
-      TrackTactic, Unchecked, UncheckedTactic, unsafely, Validate, validate, Validation, venture,
-      Venture, Venturer, VentureTactic }
+      mitigate, Mitigation, mitigates, OptionalTactic, pacify, Pointer, raise, raises, recover,
+      Recovery, safely, survive, Tactic, throwErrors, ThrowTactic, track, TrackFoci, Tracking,
+      tracks, TrackTactic, Unchecked, UncheckedTactic, unsafely, Validate, validate, Validation,
+      venture, Venture, Venturer, VentureTactic }
 
 package strategies:
   // A delegating given rather than an export forwarder: a forwarder is a method, and the

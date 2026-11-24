@@ -84,16 +84,16 @@ trait Json4:
       Intensional.Reading[label, Json.Provider, Json, result, Json.Provider.Error]
 
     given boolean: Reader["boolean", Boolean] =
-      Intensional.Reading { (json, _) => decode[Boolean](json) }
+      Intensional.Reading: (json, _) => decode[Boolean](json)
 
-    given string: Reader["string", Text] = Intensional.Reading { (json, _) => decode[Text](json) }
-    given integer: Reader["integer", Int] = Intensional.Reading { (json, _) => decode[Int](json) }
+    given string: Reader["string", Text] = Intensional.Reading: (json, _) => decode[Text](json)
+    given integer: Reader["integer", Int] = Intensional.Reading: (json, _) => decode[Int](json)
 
     // An `integer` whose `format` is `int64`
-    given long: Reader["long", Long] = Intensional.Reading { (json, _) => decode[Long](json) }
+    given long: Reader["long", Long] = Intensional.Reading: (json, _) => decode[Long](json)
 
     given number: Reader["number", Double] =
-      Intensional.Reading { (json, _) => decode[Double](json) }
+      Intensional.Reading: (json, _) => decode[Double](json)
 
     // A value the schema does not constrain to one Scala type, read as it is
     given json: ("json" is Intensional in Json.Provider from Json to Json) = Intensional(identity)
@@ -103,52 +103,52 @@ trait Json4:
     // `Tactic` its interface was given there
     given dateTime: [instant: Instantiable across Instants from Text]
     =>  Reader["date-time", instant] =
-      Intensional.Reading { (json, _) => decode[Text](json).instantiate }
+      Intensional.Reading: (json, _) => decode[Text](json).instantiate
 
     given date: [date: Instantiable across Dates from Text] => Reader["date", date] =
-      Intensional.Reading { (json, _) => decode[Text](json).instantiate }
+      Intensional.Reading: (json, _) => decode[Text](json).instantiate
 
     given time: [time: Instantiable across Times from Text] => Reader["time", time] =
-      Intensional.Reading { (json, _) => decode[Text](json).instantiate }
+      Intensional.Reading: (json, _) => decode[Text](json).instantiate
 
     given duration: [duration: Instantiable across Durations from Text]
     =>  Reader["duration", duration] =
-      Intensional.Reading { (json, _) => decode[Text](json).instantiate }
+      Intensional.Reading: (json, _) => decode[Text](json).instantiate
 
     given uriReference: Reader["uri-reference", Text] =
-      Intensional.Reading { (json, _) => decode[Text](json) }
+      Intensional.Reading: (json, _) => decode[Text](json)
 
     given email: [email: Instantiable across EmailAddresses from Text] => Reader["email", email] =
-      Intensional.Reading { (json, _) => decode[Text](json).instantiate }
+      Intensional.Reading: (json, _) => decode[Text](json).instantiate
 
     given idnEmail: [email: Instantiable across EmailAddresses from Text]
     =>  Reader["idn-email", email] =
-      Intensional.Reading { (json, _) => decode[Text](json).instantiate }
+      Intensional.Reading: (json, _) => decode[Text](json).instantiate
 
     given hostname: [hostname: Instantiable across Hostnames from Text]
     =>  Reader["hostname", hostname] =
-      Intensional.Reading { (json, _) => decode[Text](json).instantiate }
+      Intensional.Reading: (json, _) => decode[Text](json).instantiate
 
     given ipv4: [ipv4: Instantiable across IpAddresses from Text] => Reader["ipv4", ipv4] =
-      Intensional.Reading { (json, _) => decode[Text](json).instantiate }
+      Intensional.Reading: (json, _) => decode[Text](json).instantiate
 
     given ipv6: [ipv6: Instantiable across IpAddresses from Text] => Reader["ipv6", ipv6] =
-      Intensional.Reading { (json, _) => decode[Text](json).instantiate }
+      Intensional.Reading: (json, _) => decode[Text](json).instantiate
 
     given uri: [url: Instantiable across Urls from Text] => Reader["uri", url] =
-      Intensional.Reading { (json, _) => decode[Text](json).instantiate }
+      Intensional.Reading: (json, _) => decode[Text](json).instantiate
 
     given iri: [url: Instantiable across Urls from Text] => Reader["iri", url] =
-      Intensional.Reading { (json, _) => decode[Text](json).instantiate }
+      Intensional.Reading: (json, _) => decode[Text](json).instantiate
 
     given iriReference: Reader["iri-reference", Text] =
-      Intensional.Reading { (json, _) => decode[Text](json) }
+      Intensional.Reading: (json, _) => decode[Text](json)
 
     given uuid: [uuid: Instantiable across Uuids from Text] => Reader["uuid", uuid] =
-      Intensional.Reading { (json, _) => decode[Text](json).instantiate }
+      Intensional.Reading: (json, _) => decode[Text](json).instantiate
 
     given uriTemplate: Reader["uri-template", Text] =
-      Intensional.Reading { (json, _) => decode[Text](json) }
+      Intensional.Reading: (json, _) => decode[Text](json)
 
     given jsonPointer: Reader["json-pointer", JsonPointer] =
       Intensional.Reading: (json, _) =>
@@ -769,6 +769,9 @@ trait Json4:
     // the companion, applied at the `into` parameter — anything readable as JSON, such as a
     // classpath resource (`cp"/x.json"`), a file, or JSON text. A conversion rather than a second
     // constructor, so that no source type need be named here.
+    object Schema extends Schema2:
+      given json: Conversion[Json, Schema] = Schema(_)
+
     class Schema(val json: Json)
 
     trait Schema2:
@@ -776,16 +779,13 @@ trait Json4:
       =>  ( Conversion[source, Schema]^{readable} ) =
         source => Schema(source.read[Json](using readable))
 
-    object Schema extends Schema2:
-      given json: Conversion[Json, Schema] = Schema(_)
-
     object Error:
       object Reason:
         given Reason is Communicable =
           case JsonType(expected, found) => m"expected JSON type $expected, but found $found"
 
           case MissingValue(name) =>
-            name.lay(m"the value was missing") { name => m"the value of $name was missing" }
+            name.lay(m"the value was missing"): name => m"the value of $name was missing"
 
           case UnexpectedKind(found, offered) =>
             m"the value was a JSON $found, which is not one of ${offered.join(t", ")}"

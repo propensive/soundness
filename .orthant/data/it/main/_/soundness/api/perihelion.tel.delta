@@ -1,0 +1,79 @@
+orthant 2 language
+
+@ 0 9 0 03c11ec7a5a7184310281b906aa15f6a
++   entry .Message   un messaggio WebSocket completo: `Text` riassemblato e decodificato in UTF-8, o `Binary` come byte
++     detail
++         L'enum dei due tipi di messaggio che un handler vede quando il suo tipo di messaggio è
++         `Message` stesso: `Message.Text(text)` per un messaggio di testo, con i frammenti
++         riassemblati e decodificati, e `Message.Binary(data)` per uno binario. I frame di
++         controllo e la frammentazione non emergono mai qui. Un `Message` è sia `Ingressive` sia
++         `Transmissible`, quindi può essere il tipo del parametro dell'handler e l'argomento di un
++         `Reply`, e un `Channel#send` ne prende uno. Non è esportato in `soundness` — il `Message`
++         di fulminate occupa quel nome nell'ombrello — quindi si importa per nome:
++         `import perihelion.Websocket.Message`.
+
+% 0 3 0 105477f718694768199d83dcababcce3
+
+@ 0 11 0 153c72d6d809a64d096c30341c33a4c6
++         def describe(message: Message): Text = message match
++           case Message.Text(text)   => t"text: $text"
++           case Message.Binary(data) => t"${data.length} bytes"
++         ```
++     entry .ingressive   il `Message is Ingressive` formale, così `Message` soddisfa il vincolo sul messaggio di `webSocket`
++         Il reader produce già un `Message`, quindi un canale di `Message` si decodifica per
++         identità e questa istanza non viene mai applicata; esiste perché il tipo grezzo soddisfi
++         il requisito `Ingressive`, e sta nell'oggetto compagno perché non serva alcun import.
++     entry .transmissible   serializza un messaggio in un unico frame completo non mascherato
++         Un `Text` diventa un frame di testo dei suoi byte UTF-8 e un `Binary` un frame binario,
++         quindi un `Message` può essere un argomento di `Reply` o di `Conclude` e viene scritto
++         così com'è.
+
+@ 0 19 0 1893c3ff97b916690ffcf1d8c5fffdb6
++   entry .Channel   il lato in uscita di una connessione: una coda di frame thread-safe, fatta avanzare verso il socket
++     detail
++         Un `Channel` è un conduit limitato di frame codificati. Il reader (che risponde ai `Ping`
++         e ai `Close`), il ciclo dell'handler (`Reply` e `Conclude`) e il `#send` di un programma
++         accodano tutti qui, sotto un lock, e un'unica pompa — lo scrittore della risposta del
++         server o il demone del client — lo svuota verso il socket, quindi una coda piena esercita
++         contropressione su ogni producer. Ogni frame viene mascherato una volta su questo
++         confine dal `Websocket.Masking` nell'ambito: lasciato passare da
++         `Websocket.Masking.Server`, mascherato con una nuova chiave da `Websocket.Masking.Client`.
++         Si costruisce con un `Websocket.Masking` e un `Buffering`; `Websocket#channel` e la
++         connessione client tengono quello della propria connessione, e un programma lo raggiunge
++         tramite loro. Pubblico nel package, non esportato in `soundness`.
++     refer perihelion.Websocket
++     refer perihelion.Websocket.Masking
++     entry #send   accoda un messaggio come un unico frame completo, registrando `Websocket.Event.Sent`
++         Prende un `Message`; il frame viene scaricato subito, poiché un protocollo interattivo
++         deve consegnare ogni frame tempestivamente invece di riempire un blocco. Richiede un
++         `Websocket.Event is Loggable`.
++     entry #stop   termina lo stream in uscita, così la pompa finisce e il corpo della connessione termina
++     entry #close   accoda un frame di chiusura con un codice (predefinito `1000`), registra `Websocket.Event.Closed` e si ferma
+
+@ 0 14 0 0d99cb022e5a4b9f0bd2973ebe181820
++   entry .Reader   legge i frame di un peer trasformandoli in messaggi: riassemblaggio, `Ping`/`Pong`, `Close`, validazione UTF-8
++     detail
++         `Reader(body, channel)` è la metà in entrata condivisa dal server e dal client. Il suo
++         `#messages` è una `Chain[Message]` pigra sui frame analizzati da `body` (uno
++         `Spring[Data]`, prestato di nuovo ogni volta che la catena viene forzata): i frame di
++         dati vengono accumulati fino a quello con FIN, un messaggio di testo viene validato come
++         UTF-8 in modo incrementale così che byte errati facciano fallire subito la connessione,
++         a un `Ping` si risponde con un `Pong` tramite il canale, un `Pong` viene scartato, e un
++         `Close` viene rimandato indietro (con `1000` in assenza di codice), il canale fermato e
++         la catena terminata. Una violazione solleva `Websocket.Error`, con `Truncated` per un
++         corpo interrotto prima del tempo. Richiede una `Tactic[Websocket.Error]` e il
++         `Websocket.Masking` del suo lato. Il cursore sul corpo viene creato solo quando il primo
++         messaggio viene forzato, così un server può inviare il suo `101` e un client il suo
++         primo frame prima che una lettura si blocchi. Pubblico nel package, non esportato in
++         `soundness`.
+
+% 2 3 0 15bb63a56a6e7e6f0a9503bdb5260988
+
+% 0 4 0 00c478669b4906510696be516edc2cb4
+
+@ 0 5 0 1fc5c6c795607f6b17a137640838335b
++         Reader(spring, Channel()).messages.to[List]
++         ```
++     refer perihelion.Websocket.Channel
++     refer perihelion.Websocket.Message
++     entry #messages   i messaggi riassemblati, pigramente, finché il peer chiude o il corpo termina

@@ -1,0 +1,37 @@
+orthant 2 language
+
+@ 0 6 0 1904848723f57d291021f5f64fe09543
++ entry .filesize   `path.filesize()`: die Größe einer Datei oder von allem unterhalb eines Verzeichnisses, in `Memory`
++     Eine Erweiterung auf jedem `Path on <plane: Filesystem>`, die das `Explorable` der Ebene
++     und ein Backend braucht und `Io.Error` auslöst. Die Größe einer Datei ist ihre eigene;
++     die eines Verzeichnisses ist seine eigene plus die Größen aller seiner Nachfahren,
++     durchlaufen, ohne Symlinks zu folgen. `filesize` statt `size` genannt, damit es im
++     `soundness`-Umbrella nicht mit `size` der Collections konkurriert.
+
+@ 0 1 0 1a343a339f8dd63414ffb54e95e5ce48
++ entry .Umask   eine Maske für das Anlegen von Dateien, wie POSIX `umask(2)` sie definiert, angewandt auf jeden Eintrag, der in ihrem Geltungsbereich entsteht
+
+@ 0 14 0 027a7a261cdb2d831f8a03e4799853ff
++         Eine exklusive Capability. Die berechtigungsgesperrten Operationen sind die
++         Erweiterungen `.apply`, `.update` und `.grow`; `#readFrom`, `#writeTo` und `#growTo`
++         sind ihre ungesperrten operativen Formen.
++     entry #size   die gemappte Größe in Bytes
++     entry #readFrom   liest `length` Bytes an einem Offset
++     entry #writeTo   schreibt Daten an einem Offset, innerhalb der aktuellen Größe
++     entry #growTo   vergrößert die Datei und mappt sie mit größerer Größe neu; eine kleinere Größe bewirkt nichts
++         Die neue Größe muss in ein `Int` passen.
++     entry #flush   erzwingt das Schreiben der Änderungen des Mappings in die Datei
++     entry #expanse   eine geteilte positionelle Ansicht, für Verwender, die gegen das `Expanse` von Zephyrine geschrieben sind
++   entry .apply   `ram(offset, length)`: ein positioneller Lesevorgang, auf einem Handle, das `Read` gewährt
++   entry .update   `ram(offset) = data`: ein positioneller Schreibvorgang, auf einem Handle, das `Write` gewährt
++   entry .grow   `ram.grow(size)`: erweitert das Mapping, sodass Schreibvorgänge hinter dem alten Ende adressierbar sind, auf einem Handle, das `Write` gewährt
++   entry .RamOpenable   die `Openable`-Instanz hinter `path.open[Ram](mode)`
+
+@ 0 4 0 00e9fb594f49f696182f1a9cda4f790c
++ entry .observe   `path.observe[record] { observer => … }`: die jetzt veröffentlichte Version eines Namens, abgebildet, samt Mitteln, zu einer neueren zu gehen
++     Es wird keine Sperre genommen, sodass ein Beobachter nie den Besitzer aufhält und der Besitzer
++     nie einen Beobachter. Was abgebildet ist, wird beim Ende des Blocks wieder freigegeben. Ein
++     Name, unter dem nichts veröffentlicht wurde, löst `Io.Error` aus.
+
+@ 0 1 0 17f48f2f57de485414f06b97d1cabc9a
++ entry .Observer   der Halt eines Lesers an einem veröffentlichten Namen, im Block von `observe`: die aktuelle Version, abgebildet, und die Mittel, weiterzugehen

@@ -64,8 +64,9 @@ extension [self](self: self)(using traversable: self is Traversable)
 
     traversable.traverse(self)
     . fold(monad.point(List.empty[element])): (accumulator, next) =>
-        accumulator.flatMap { elements => operand(next).map(_ :: elements) }
-    . map { elements => reshapable.reshape(Iterator.from(List.iterator(List.invert(elements)))) }
+        accumulator.flatMap: elements => operand(next).map(_ :: elements)
+
+    . map: elements => reshapable.reshape(Iterator.from(List.iterator(List.invert(elements))))
 
 
   def traverse[element2, monad[_], result](lambda: traversable.Operand => monad[element2])
@@ -74,5 +75,6 @@ extension [self](self: self)(using traversable: self is Traversable)
 
     traversable.traverse(self)
     . fold(monad.point(List.empty[element2])): (accumulator, next) =>
-        accumulator.flatMap { elements => lambda(next).map(_ :: elements) }
-    . map { elements => reshapable.reshape(Iterator.from(List.iterator(List.invert(elements)))) }
+        accumulator.flatMap: elements => lambda(next).map(_ :: elements)
+
+    . map: elements => reshapable.reshape(Iterator.from(List.iterator(List.invert(elements))))

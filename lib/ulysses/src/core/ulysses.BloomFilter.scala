@@ -172,7 +172,7 @@ extends caps.Mutable:
     def recur(consume pull: Iterator.Pull[element], consume next: BloomFilter[element, algorithm]^)
     :   BloomFilter[element, algorithm]^{} =
 
-      pull match
+      pull.absolve match
         case Iterator.Exhausted => BloomFilter.freeze(next)
 
         case cursor: Iterator.Cursor[`element`] =>

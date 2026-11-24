@@ -1,0 +1,15 @@
+orthant 2 language
+
+@ 0 6 0 09ddb6fad09838ff1f191f21007b7f55
++ entry .LaneDagStyles   the trait holding `LaneDagDiagram.Style` and `LaneDagDiagram.TextualStyle`
++   detail
++       `object LaneDagDiagram extends LaneDagStyles`, so the two types declared here are reached
++       through the companion, as `LaneDagDiagram.Style` and `LaneDagDiagram.TextualStyle`.
++
++   entry #Style   la clase de tipos que representa una fila de un `LaneDagDiagram` o de un `LayeredDagDiagram`
+
+@ 0 4 0 1431e71108c5911a11f879f4a8ce3024
++     entry #serialize   las teselas de una fila, sus glifos por columna, las anchuras de las columnas y un rótulo opcional como una sola línea
++     entry #width   la anchura de visualización de un glifo, para dimensionar su columna
++
++   entry #TextualStyle   un `LaneDagDiagram.Style` para cualquier tipo de línea `Textual`, a partir de catorce textos

@@ -1,0 +1,22 @@
+orthant 2 language
+
+@ 0 4 0 0337e43960347e361518e70d51a96f82
++ entry .drop   descarta um número de bytes do início de um `Chain[Data]`
++     `chain.drop(bytes)` recebe uma contagem em `Memory` em vez de uma contagem de chunks: chunks
++     inteiros dentro da contagem são pulados e o chunk que atravessa a fronteira é cortado, de modo
++     que o resultado são os mesmos bytes, divididos em chunks novamente na fronteira. Preguiçoso.
+
+@ 0 4 0 14db9adb7100739f11e814f080bd5536
++ entry .take   mantém um número de bytes do início de um `Chain[Data]`
++     `chain.take(bytes)` recebe uma contagem em `Memory`: os chunks dentro da contagem são mantidos
++     inteiros e o que atravessa a fronteira é cortado, de modo que o resultado contém exatamente
++     `bytes` bytes (ou menos, se a cadeia for mais curta). Preguiçoso.
+
+@ 0 6 0 1f830319e961b31b164c552f3e9b1c1d
++       `Truncation.Error(total)` é o erro `↯/s.60.1`, _the stream was cut prematurely after `total`_,
++       onde `total` são os `Memory` entregues antes do corte. O pull de uma `Spring` e os givens
++       `Streamable` para origens do JDK abortam com ele por meio de uma `Tactic`; os givens
++       `Writable` e `Sink` para destinos do JDK o lançam com `raise` por meio de um `Emit`, já que
++       um escritor apenas relata um corte e nunca aborta. O tipo fica no zephyrine, ao lado de
++       `Stream` e `Spring`; esta exportação faz com que `import turbulence.*` continue bastando para
++       os módulos que o nomeiam.

@@ -93,7 +93,8 @@ object Reshapable extends Reshapable.Fallback:
   given map: [key, value, key2, value2]
   =>  Map[key, value] is Reshapable by (key2, value2) to Map[key2, value2] =
     elements =>
-      Map.build[key2, value2] { map => elements.each(pair => map(pair(0)) = pair(1)) }
+      Map.build[key2, value2]: map =>
+        elements.each: pair => map(pair(0)) = pair(1)
 
   // A `Ledger` rebuilt from pairs remains a `Ledger`, and legitimately `Stable`: insertion
   // order is its identity, so it carries the whole order-sensitive surface (`sort`, `distinct`,

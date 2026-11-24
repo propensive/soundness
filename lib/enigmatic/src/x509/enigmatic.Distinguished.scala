@@ -83,7 +83,7 @@ object Distinguished:
       def find(identifier: List[Int]): Optional[Text] =
         val values = sets.sweep:
           case Asn1.Set(List(Asn1.Sequence(List(Asn1.ObjectId(arcs), value))))
-              if arcs == identifier && text(value).present =>
+            if arcs == identifier && text(value).present =>
             text(value)
 
         values.head

@@ -50,7 +50,8 @@ import scala.reflect.ClassTag
 object Array:
   // Named `allocate`, not `apply`: the companion's `apply` is the frozen element-wise
   // literal, and a single-`Int` application must mean the one-element array, never a size.
-  inline def allocate[element: ClassTag](size: Int): Array[element]^ = new scala.Array[element](size)
+  inline def allocate[element: ClassTag](size: Int): Array[element]^ =
+    new scala.Array[element](size)
 
   // The frozen literal: builds a fresh array no writer can ever alias, so the purity
   // launder is discharged by construction -- the same argument as `freeze`. It can be
@@ -83,6 +84,7 @@ object Array:
     inline scala.compiletime.constValueOpt[length] match
       case Some(_) =>
         fill[element](count: Int)(element).asInstanceOf[Array[element]^{} & Sized[length]]
+
       case None    => fill[element](count: Int)(element)
 
   transparent inline def tabulate[element: ClassTag, length <: Int & Singleton](count: length)
@@ -93,6 +95,7 @@ object Array:
     inline scala.compiletime.constValueOpt[length] match
       case Some(_) =>
         tabulate[element](count: Int)(lambda).asInstanceOf[Array[element]^{} & Sized[length]]
+
       case None    => tabulate[element](count: Int)(lambda)
 
   // Concatenation; with two proven lengths the result's length is their sum, decided at the
@@ -168,6 +171,7 @@ object Array:
   // which stays the JVM's reference comparison, so content equality is a named operation.
   def same[element](left: Array[element]^{caps.any.rd}, right: Array[element]^{caps.any.rd})
   :   Boolean =
+
     left.length == right.length && {
       var index = 0
       var equal = true
@@ -225,7 +229,7 @@ object Array:
 
       case None =>
         quotes.reflect.report.errorAndAbort
-          ("no ClassTag is available for the elements of the array")
+          ( "no ClassTag is available for the elements of the array" )
 
   // The inverse of `freeze`: an exclusive copy of any readable array, which the caller may
   // write through -- `copy(i) = value` -- and then `freeze` again. This is the shape for an
@@ -318,8 +322,9 @@ object Array:
         targetStart: Int,
         count: Int )
     :   Unit =
+
       java.lang.System.arraycopy
-        (source.asInstanceOf[scala.Array[element]], sourceStart, buffer, targetStart, count)
+        ( source.asInstanceOf[scala.Array[element]], sourceStart, buffer, targetStart, count )
 
     // The underlying JVM array, exclusively: the escape for interop (`random.nextBytes`,
     // `stream.read`, `System.arraycopy` from external sources). The result aliases the
@@ -345,6 +350,7 @@ object Array:
     @targetName("frozenMap")
     def map[element2: scala.reflect.ClassTag](lambda: element => element2)
     :   Array[element2]^{} =
+
       val result: Array[element2]^ = Array.allocate[element2](array.length)
       var index = 0
 
@@ -354,7 +360,8 @@ object Array:
 
       Array.freeze(result)
 
-  given arrayIsSpreadable: [element] => (Spreadable[Array[element]^{}] { type Out = scala.Array[element]^{} }) =
+  given arrayIsSpreadable: [element]
+  =>  ( Spreadable[Array[element]^{}] { type Out = scala.Array[element]^{} } ) =
     new Spreadable[Array[element]^{}]:
       type Out = scala.Array[element]^{}
       def spread(value: Array[element]^{}): scala.Array[element]^{} = value

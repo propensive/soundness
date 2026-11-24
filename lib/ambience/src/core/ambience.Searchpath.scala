@@ -33,7 +33,6 @@
 package ambience
 
 import anticipation.*
-import contingency.*
 import gossamer.*
 import nomenclature.*
 import prepositional.*

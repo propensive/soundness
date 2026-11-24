@@ -11,6 +11,9 @@ orthant 2 language
 + termina com o teste de facilidade de aprendizado mais forte que existe: um agente, tendo apenas a
 + documentação, constrói e implanta uma aplicação funcional.
 
+@ 0 3 0 064a0d693208d94d0be9e9c787015ee8
++ Os itens da trilha, com seus horizontes e dependências rígidas; [`status.tel`](https://github.com/propensive/soundness/blob/main/doc/roadmap/status.tel) registra em que ponto cada um está:
+
 @ 0 5 0 185fd7a7a41b5e581955d9a60cdb9168
 + Concluído: #1791 (2026-08-14)
 + A linha de base era de 92 arquivos de texto padrão de readme por módulo, e 98 diretórios

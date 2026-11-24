@@ -1,0 +1,17 @@
+orthant 2 language
+
+@ 0 1 0 009970c27e46b24619d179c96b3ee21f
++ entry .Region   un frammento della memoria di un mezzo, sicuro rispetto ai limiti: un riferimento opaco la cui estensione viaggia come intervallo marchiato
+
+@ 0 11 0 0dd3de458555885d0a28649aefc16776
++   entry #width   il numero di slot dell'anello: la raffica più grande che un `drain` può spostare
++   entry #size   l'occupazione approssimativa, per calcoli indicativi della domanda; mai per la sincronizzazione
++   entry #free   il numero approssimativo di slot liberi
++   entry #offer   lato producer: gira a vuoto e poi si parcheggia finché uno slot si libera; se il consumatore ha chiuso, l'elemento viene scartato
++   entry #finish   lato producer: non verranno offerti altri elementi; idempotente
++   entry #drain   lato consumatore: adotta in un solo passo ogni elemento nel buffer in un array del chiamante, bloccandosi finché non ne arriva almeno uno
++       Restituisce il numero di elementi spostati: zero solo quando il producer ha terminato e
++       l'anello è svuotato. Una pubblicazione di `head` e un unpark del producer per raffica,
++       dove un ciclo di `take` paga uno di ciascuno per elemento.
++   entry #take   lato consumatore: l'elemento successivo, oppure `null` quando il producer ha terminato e l'anello è svuotato
++   entry #close   lato consumatore: smette di accettare, svuota gli elementi nel buffer (liberando un producer parcheggiato) e scarta le offerte successive

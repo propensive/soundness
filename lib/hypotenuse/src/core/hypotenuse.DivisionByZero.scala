@@ -36,20 +36,6 @@ import contingency.*
 import prepositional.*
 import symbolism.*
 
-// A policy for `/` on the fixed-width integers, the counterpart of `CheckOverflow` (which
-// explains why each instance is an `object`).
-trait DivisionByZero:
-  type Wrap[result]
-
-  val divideU64: U64 is Divisible by U64 to Wrap[U64]
-  val divideS64: S64 is Divisible by S64 to Wrap[S64]
-  val divideU32: U32 is Divisible by U32 to Wrap[U32]
-  val divideS32: S32 is Divisible by S32 to Wrap[S32]
-  val divideU16: U16 is Divisible by U16 to Wrap[U16]
-  val divideS16: S16 is Divisible by S16 to Wrap[S16]
-  val divideU8: U8 is Divisible by U8 to Wrap[U8]
-  val divideS8: S8 is Divisible by S8 to Wrap[S8]
-
 object DivisionByZero:
   import Arithmetic.Division
 
@@ -124,3 +110,17 @@ object DivisionByZero:
     object divideS8 extends Division[S8, Wrap]:
       inline def divide(left: S8, right: S8): Result =
         if right.byte == 0 then zero() else S8((left.byte/right.byte).toByte.bits)
+
+// A policy for `/` on the fixed-width integers, the counterpart of `CheckOverflow` (which
+// explains why each instance is an `object`).
+trait DivisionByZero:
+  type Wrap[result]
+
+  val divideU64: U64 is Divisible by U64 to Wrap[U64]
+  val divideS64: S64 is Divisible by S64 to Wrap[S64]
+  val divideU32: U32 is Divisible by U32 to Wrap[U32]
+  val divideS32: S32 is Divisible by S32 to Wrap[S32]
+  val divideU16: U16 is Divisible by U16 to Wrap[U16]
+  val divideS16: S16 is Divisible by S16 to Wrap[S16]
+  val divideU8: U8 is Divisible by U8 to Wrap[U8]
+  val divideS8: S8 is Divisible by S8 to Wrap[S8]

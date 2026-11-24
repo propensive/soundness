@@ -2113,7 +2113,8 @@ object Git:
           case given (`source` is Abstractable across Urls to Text)  => source.generic
           case given (`source` is Abstractable across Paths to Text) => source.generic
 
-    Operations.cloneCommit(sourceText, Operations.path(target.generic), commit, activity.or(Activity()))
+    Operations.cloneCommit
+      ( sourceText, Operations.path(target.generic), commit, activity.or(Activity()) )
 
   case class Remote
     ( name:     Text,

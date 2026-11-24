@@ -35,7 +35,6 @@ package galilei
 import scala.annotation.nowarn
 import scala.caps
 
-
 import Io.Error.{Operation, Reason}
 import anticipation.*
 import contingency.*

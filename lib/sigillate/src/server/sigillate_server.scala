@@ -40,8 +40,6 @@ import enigmatic.*
 import fulminate.*
 import gastronomy.*
 import gossamer.*
-import prepositional.*
-import scintillate.*
 import telekinesis.*
 import vacuous.*
 

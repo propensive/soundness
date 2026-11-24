@@ -96,6 +96,14 @@ orthant 2 language
 +       Le `CreateParents` strict : rien n'est créé, et le backend lève `Io.Error` avec
 +       `Reason.Nonexistent` pour le parent manquant.
 
+@ 0 6 0 1904848723f57d291021f5f64fe09543
++ entry .filesize   `path.filesize()` : la taille d'un fichier, ou de tout ce que contient un répertoire, en `Memory`
++     Une extension sur tout `Path on <plane: Filesystem>`, qui requiert l'`Explorable` du plan et
++     un backend, et qui lève `Io.Error`. La taille d'un fichier est la sienne propre ; celle d'un
++     répertoire est la sienne plus les tailles de tous ses descendants, parcourus sans suivre les
++     liens symboliques. Nommée `filesize` plutôt que `size` afin de ne pas entrer en concurrence
++     avec le `size` des collections dans le package parapluie `soundness`.
+
 @ 0 9 0 0b05e6ec838b88e109cab073cf4927aa
 +       column  Indicateur
 +       column  Effet

@@ -66,8 +66,8 @@ object internal:
       scm.HashMap()
 
     val summaries
-    :   scm.HashMap
-          [ List[core.Symbols.Symbol], (sci.Set[Designator], sci.Map[String, Text]) ] =
+    :   scm.HashMap[List[core.Symbols.Symbol], (sci.Set[Designator], sci.Map[String, Text])] =
+
       scm.HashMap()
 
   // One cache for each compiler, keyed by its `ContextBase` together with the run id: a run id
@@ -78,8 +78,8 @@ object internal:
   // discarded compiler alive; a soft one is cleared once it goes unused, and before memory runs
   // out.
   private val runCaches
-  :   java.util.WeakHashMap
-        [ core.Contexts.ContextBase, java.lang.ref.SoftReference[RunCache] ] =
+  :   java.util.WeakHashMap[core.Contexts.ContextBase, java.lang.ref.SoftReference[RunCache]] =
+
     java.util.WeakHashMap()
 
   private def runCache(using context: core.Contexts.Context): RunCache = runCaches.synchronized:

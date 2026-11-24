@@ -1,0 +1,168 @@
+orthant 2 language
+
+% 0 4 0 06bfb3df7c62ba2607ff2e46b4a75db1
+
+@ 0 1 0 1509c0b4edc0521e140773335e9e6a24
++   entry #Revision   um registro componível de edições, aplicado a um documento uma operação de cada vez
+
+@ 0 1 0 011854171f69420718747641930de1a5
++   entry #Mutation   as operações primitivas de edição do §22.2, que preservam a apresentação, e o seu interpretador
+
+@ 0 5 0 03a6563a211c058e091aac26e9fa266a
++         Cada `.Op` é uma reescrita local endereçada por um `Tel.Pointer`: os átomos ao redor, os
++         comentários, as linhas em branco e os filhos não relacionados ficam intocados por
++         construção, e é isso que permite a um programa alterar um valor em um arquivo escrito por
++         uma pessoa e escrevê-lo de volta intacto. `Mutation(tel, op)` aplica uma operação e
++         `Mutation(tel, ops)` uma lista, em ordem, devolvendo um novo `Tel`; `Revision` é a DSL
++         componível sobre as mesmas operações.
+
+@ 0 7 0 0bdbe28195ed1d45177a037d87ad30fd
++         Um passo de ponteiro é uma palavra-chave mais um índice de ocorrência, resolvido em
++         relação ao documento ao qual uma operação é aplicada, de modo que um ponteiro continua
++         significativo através de edições não relacionadas; mas um ponteiro indexado por ocorrência
++         não deve ser reutilizado entre operações que movem, acrescentam ou removem compostos da
++         mesma palavra-chave. As precondições que dependem do schema — que um membro apagado não
++         era obrigatório, que uma flag definida está declarada, que uma substituição está bem
++         tipada — estão fora do escopo, como na implementação de referência: uma camada ciente do
++         schema as verifica antes de delegar a estas primitivas.
+
+@ 0 20 0 0dcd6706d124251810739b23466f1845
++     entry .Placement   de que lado do outro grupo `ReorderGroups` coloca um grupo: `Before` ou `After`
++     entry .Member   uma descrição sem schema de um membro de struct, para `.construct`
++         `Value(keyword, occurrences)` é um membro escalar com as suas ocorrências presentes (uma
++         para um membro simples, várias para um repetível, nenhuma para um membro ausente, que
++         encerra a sequência inline); `Flag(keyword)` um membro de flag; `Child(compound)` um
++         filho pronto; e `Break` um membro ausente que não contribui com nada, mas encerra a
++         sequência inline, como faz um membro escalar ausente, porque a fase de átomos nunca pula
++         uma posição escalar.
++     entry .Op   uma operação primitiva, endereçada por um `Tel.Pointer`
++         As operações endereçadas ao alvo, cujo ponteiro nomeia o composto que alteram:
++         `UpdateAtom(pointer, atomIndex, text)` reescreve um átomo, mantendo a sua forma enquanto o
++         novo valor for seguro para ela e, caso contrário, escalando de inline → origem → literal,
++         nunca de volta; `Delete(pointer)` remove o composto, e um bloco esvaziado com os seus
++         comentários; `Replace(pointer, compound)` substitui um composto, mantendo a observação do
++         original; `AttachRemark(pointer, text)` e `RemoveRemark(pointer)` definem e removem a
++         observação; `SetFlag(pointer, keyword)` acrescenta uma flag inline quando o composto não
++         tem filhos nem átomo de origem ou literal, e, caso contrário, como filho, e falha com
++         `FlagAlreadySet` se ela estiver presente; `UnsetFlag(pointer, keyword)` remove uma flag
++         inline ou de filho simples, como identidade quando ausente;
++         `InsertBefore(pointer, compound)` e `InsertAfter(pointer, compound)` colocam um irmão ao
++         lado do alvo, em um novo bloco quando o bloco do alvo é tabulado, para que o novo composto
++         não seja lido como uma linha.
+
+@ 0 23 0 14ccf0ecaffdade716db7a4078f0c302
++         As operações endereçadas ao pai, cujo ponteiro nomeia o contêiner (`Tel.Pointer.Empty`
++         para a raiz): `Insert(pointer, compound)` acrescenta na posição natural do membro —
++         depois do último composto da mesma palavra-chave, ou em um novo bloco final;
++         `InsertIntoBlock(parentPointer, blockIndex, compound)` acrescenta uma linha a um bloco,
++         repreenchida conforme a sua tabulação, e falha com `TabulationOverflow` quando um valor de
++         coluna não cabe; `ReorderWithinGroup(parentPointer, keyword, oldIndex, newIndex)` move uma
++         ocorrência dentro do grupo da sua palavra-chave; `ReorderGroups(parentPointer, keyword,
++         otherKeyword, placement)` move um grupo de membros inteiro para antes ou depois de outro,
++         movendo blocos inteiros quando os blocos dos grupos são disjuntos; e
++         `ResizeTabulation(parentPointer,
++         blockIndex, plannedRows)` recalcula os deslocamentos dos marcadores de uma tabulação para
++         acomodar as suas linhas e quaisquer linhas planejadas, repreenchendo todas as linhas. A
++         geometria das colunas é medida em code points.
++     entry .apply   aplica uma operação, ou uma lista em ordem, a um documento
++         `Mutation(tel, op)` e `Mutation(tel, ops)`, cada um lançando `Mutation.Error`. O próprio
++         sigil do documento (do seu pragma, `#` por padrão) alimenta o teste de segurança inline,
++         de modo que um valor atualizado que seria reanalisado como observação sob um sigil
++         personalizado escala a sua forma.
++     entry .construct   um composto novo, com a forma de cada átomo escolhida pelas regras de segurança do §22.3
++         `construct(keyword, atoms*)` cria um átomo por valor não vazio — inline se o valor não
++         tiver quebra de linha, nem espaço inicial, final ou duplicado, e não começar com o sigil
++         seguido de um espaço; senão, um átomo de origem se não tiver linha vazia, nem linha
++         terminada em espaço em branco, nem espaço inicial; senão, um átomo literal sob o
++         delimitador `---` mais curto que não colida com nenhuma linha. Um valor vazio não gera
++         átomo, já que um espaço inicial seria um espaço final na linha da palavra-chave.
+
+@ 0 7 0 080b2f8885154bc50ebe4864d826f18c
++         `construct(keyword, members)` e `construct(keyword, members, sigil)` executam o algoritmo
++         de apresentação canônica sobre uma lista de `Member`: os escalares e as flags iniciais de
++         ocorrência única e seguros para inline se tornam átomos inline; um escalar repetível fica
++         todo inline quando todas as ocorrências são seguras para inline e, caso contrário, cada
++         ocorrência se torna um filho; e todos os membros restantes são filhos em um único bloco,
++         sem comentários, tabulação nem linhas em branco. Os átomos inline são precedidos por
++         espaço suave até o primeiro valor que contém um espaço, e por espaço rígido a partir daí,
++         de modo que a construção é reanalisada nos mesmos átomos.
+
+@ 0 1 0 1210220dfccc22b104fd4553a4bc7331
++     entry .Error   lançado quando um ponteiro não é resolvido ou um invariante de uma operação falha
+
+@ 0 11 0 01151dd09e78d6ca18e924e372da3734
++           Erro `↯/s.118.2`: _the mutation failed because …_. `PointerNotFound` é um ponteiro, um
++           índice de bloco ou um grupo que não é resolvido para um composto, incluindo uma
++           reordenação cujos grupos estão intercalados ou cujos índices estão fora do intervalo, e
++           um `ResizeTabulation` sobre um bloco sem tabulação; `AtomIndexOutOfRange` um
++           `UpdateAtom` além dos átomos do alvo; `FlagAlreadySet` um `SetFlag` de uma flag que o
++           alvo já tem; `TabulationOverflow` um `InsertIntoBlock` cujo valor de coluna excede a
++           capacidade da sua coluna; e `WriteUnsupported`, lançado por `open[Tel]` com `Write`
++           quando a origem do documento não pode ser escrita de volta.
++       entry .Reason   os cinco motivos, cada um com um número
++         entry .communicable   renderiza cada motivo como uma mensagem
++       entry #reason   por que a mutação falhou
+
+@ 0 58 0 041d8a79c0f609020f6021c492d1c381
++       Uma imagem sempre traz o seu schema composto, com a sua assinatura, e uma imagem selada
++       traz o hash de valor do documento, e pode trazer digests do seu corpo e do seu cabeçalho.
++       Uma imagem de trabalho não é determinística em bytes, mas uma selada é: os seus bytes são
++       uma função apenas do documento.
++   entry #Topic   o tipo de cujo valor a imagem é, se ele for conhecido: `Ratel of Cast`
++   entry .encode   uma raiz `Tel.Element` com tipo atribuído, como imagem RaTEL, pelo escritor canônico da especificação
++       `Ratel.encode(element, schema, codecs, digests)` dispõe o documento sob `schema`, que é
++       dado tal como é declarado — com as suas camadas — e é incorporado como BinTEL ao lado da
++       sua assinatura. `codecs` tem como padrão `Tel.Codec.Bindings.all`; `digests` (por padrão
++       `true`) acrescenta a seção de digests. O que ele escreve é selado. Lança `Ratel.Error`:
++       `SchemaUnlayoutable` (`↯/t.5.11`), `CodecUnresolved` (`↯/t.5.19`), `WidthMismatch`
++       (`↯/t.5.22`) para um valor cujos bytes não têm a largura que o seu escalar declara,
++       `Unencodable` para um modelo que o schema não descreve e `Oversized` para uma imagem de
++       2 GiB ou mais; e `Tel.Error(EncodingRejected)` para um valor que o seu codec rejeita. As
++       extensões `tel.ratel(schema)`, `element.ratel(schema)` e `value.ratel` chamam este método.
++   entry .openable   abre qualquer coisa `Viewable` — um caminho, uma imagem, um `Terrain` em mãos — como `Ratel`, para leitura no próprio lugar
++       `source.open[Ratel]()` empresta uma visão `Terrain` da origem por meio da sua instância
++       `zephyrine.Viewable`, copia e verifica o cabeçalho, decodifica o schema incorporado,
++       recalcula a sua assinatura, deriva o layout e verifica os diretórios de tabelas e de
++       índices contra ele (`↯/t.5.1`–`↯/t.5.13`, `↯/t.5.19`, `↯/t.5.28`, `↯/t.5.29`), e dá ao
++       bloco um `Ratel.Reader`, que o acessor `ratel` nomeia. Não lê mais nada até que lhe seja
++       pedido. O leitor captura a visão e não pode sobreviver ao bloco. As flags são
++       `Ratel.Flag`s.
++
++       Com um modo que inclui `Write`, a origem empresta os seus bytes para alteração, por meio
++       de `Viewable#hold` -- um arquivo é mapeado sob um lock exclusivo, um `Holding` é tomado
++       tal como é -- e a imagem é aberta pelo seu proprietário: uma imagem selada é desselada,
++       é marcada como suja durante o bloco, e o leitor aceita as alterações de `Ratel.Row` e
++       `Ratel.Rows`. Uma origem que não pode ser alterada, como um valor `Ratel`, é recusada com
++       `Unwritable`.
++   entry .typedOpenable   abre qualquer coisa `Viewable` como `Ratel of topic`: uma imagem de um valor do tipo `topic`, e de nada mais
++       Como `openable`, mas uma imagem cuja assinatura de schema não é a do schema derivado de
++       `topic` é recusada com `Mismatched`, antes de o bloco ser executado.
++   entry .surveyable   lê no próprio lugar uma imagem a partir de uma visão que outra coisa empresta: é por onde um `Observer` de um nome publicado a abre
++   entry .typedSurveyable   como `surveyable`, para uma imagem de um valor do tipo `topic`, recusando qualquer outra com `Mismatched`
++   entry .State   o estado em que uma imagem é lida: `Sealed` ou `Unsealed`
++       Uma imagem selada é compacta e imutável, e pode ser compartilhada; uma não selada é uma
++       imagem de trabalho que o seu proprietário fechou. Uma que está sendo alterada está suja,
++       e não é lida de forma alguma.
++   entry .Flag   o que se pode pedir a `open[Ratel]`: `Verify` e `Codecs(bindings)`
++       `Verify` executa o `verify` do leitor antes do bloco, tornando-o um leitor verificador no
++       sentido da especificação. `Codecs(bindings)` vincula codecs para codificações que este
++       módulo não define, antes de `Tel.Codec.Bindings.all`.
++   entry .viewable   uma imagem como visão dos seus bytes onde eles estão no heap, para que seja aberta como um arquivo é
++   entry .Reader   uma imagem aberta: o seu schema, a sua linha raiz e as operações sobre o documento inteiro
++     entry #Topic   a marca deste leitor: um tipo próprio, que cada linha que ele dá carrega
++     entry #root   a raiz do documento, como um `Ratel.Row of reader.Topic`
++     entry #schema   o schema composto que a imagem traz
++     entry #signature   a assinatura de schema que a imagem traz, que um leitor que exige um schema confiável compara
++     entry #valueHash   o hash de valor do documento, se o cabeçalho o trouxer
++     entry #materialise   o modelo semântico que a imagem codifica, tal como `Bintel.decode` o daria
++     entry #verify   verifica os digests, o documento inteiro, o cabeçalho de cada linha, cada índice como árvore e contra as suas linhas, e o hash de valor
++     entry #state   se a imagem foi aberta selada ou como imagem de trabalho
++     entry #seal   o documento desta imagem, escrito de novo como imagem selada: os mesmos bytes, qualquer que seja a sua história
++     entry #sealAs   como `seal`, para uma imagem de um valor de um tipo: um `Ratel of topic`, ou `Mismatched`
++     entry #repack   o documento desta imagem, escrito de novo como imagem de trabalho, com espaço para crescer e sem lixo
++   entry .Row   um registro, lido no próprio lugar: `text`, `data`, `texts`, `flag`, `count`, `record`, `/`, `has`, `holds`, `as`
+
+@ 0 3 0 11934fe7d1436cd111b3ee05fe22b1da
++ entry .width   `@width(bytes)`: promete que todo valor de um campo escalar codificado tem essa quantidade de bytes, para que RaTEL o armazene no seu registro
++     Um valor de outro comprimento é recusado quando é escrito. Uma largura sem codificação, ou
++     com `@intern`, não compila.

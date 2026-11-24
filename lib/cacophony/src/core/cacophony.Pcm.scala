@@ -38,11 +38,11 @@ import scala.{caps, math}
 
 import anticipation.*
 import aperture.*
+import cacophony.Audio.{Feed, Outlet}
 import contingency.*
 import prepositional.*
 import rudiments.reap
 import vacuous.or
-import cacophony.Audio.{Feed, Outlet}
 
 object Pcm:
   class PcmInput[layout] private[cacophony] (line: jss.TargetDataLine, chunkBytes: Int)

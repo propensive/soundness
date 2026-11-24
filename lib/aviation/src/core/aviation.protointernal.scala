@@ -35,7 +35,6 @@ package aviation
 import java.time as jt
 
 import anticipation.*
-import contingency.*
 import fulminate.*
 import gossamer.*
 import hypotenuse.*

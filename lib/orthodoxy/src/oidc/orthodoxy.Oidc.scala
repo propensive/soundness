@@ -36,7 +36,6 @@ import adversaria.*
 import anticipation.*
 import aviation.*
 import contingency.*
-import corpuscular.*
 import denominative.*
 import distillate.*
 import enigmatic.*
@@ -69,6 +68,7 @@ object Oidc:
     def client
       ( identifier: Text, secret: Optional[Text] = Unset, redirect: Optional[HttpUrl] = Unset )
     :   Issuer =
+
       Issuer(token, identifier, secret, authorization, redirect)
 
   private case class Metadata

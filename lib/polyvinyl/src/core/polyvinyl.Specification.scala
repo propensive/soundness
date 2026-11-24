@@ -90,6 +90,7 @@ object Specification:
 
     val (target, specification) = locate[self, origin, form, failure]
     given Tactic[Specification.Error] = HaltTactic[Specification.Error, Any]()
+
     val (tuple, make) =
       Expansion[origin, Unit, form, failure](target, false).tuple(specification.fields)
 
@@ -340,6 +341,7 @@ object Specification:
             if !contextual then '{$target.access($nameExpr, $data)(using $tactic)} else
               hook("accessWith", scala.Nil, scala.List(nameExpr.asTerm, data.asTerm))
                 ( context, tactic )
+
               . asExprOf[origin]
 
           if required then '{$target.required($nameExpr, $value)(using $tactic)} else value
@@ -360,6 +362,7 @@ object Specification:
           if !contextual then '{$target.repeated(${Expr(name)}, $data)(using $tactic)} else
             hook("repeatedWith", scala.Nil, scala.List(Expr(name).asTerm, data.asTerm))
               ( context, tactic )
+
             . asExprOf[List[origin]]
 
     private def fetchKeyed
@@ -376,6 +379,7 @@ object Specification:
           if !contextual then '{$target.entries(${Expr(name)}, $data)(using $tactic)} else
             hook("entriesWith", scala.Nil, scala.List(Expr(name).asTerm, data.asTerm))
               ( context, tactic )
+
             . asExprOf[List[(Text, origin)]]
 
     // Expands one field to its value's type and its reading from the enclosing value. `nested`
@@ -556,6 +560,7 @@ object Specification:
               ' {
                   ((value: origin, context: context, tactic: Tactic[failure]) =>
                     $reading(value, context, tactic).asInstanceOf[result])
+
                   . asInstanceOf[(origin, context^, Tactic[failure]) -> result]
                 }
 
@@ -572,6 +577,7 @@ object Specification:
                             scala.List(TypeRepr.of[context], result),
                             scala.List(Expr(name).asTerm, 'data.asTerm, each.asTerm) )
                           ( 'context, 'tactic )
+
                         . asExprOf[Any]
                       }
                 }
@@ -635,7 +641,7 @@ object Specification:
 // only single-value `Intensional` instances and the three primitives, `access`, `absent` and
 // `repeated`.
 trait Specification extends Original:
-  import Specification.{Member, Multiplicity}
+  import Specification.Member
 
   type Origin
   protected type Origin0 = Origin

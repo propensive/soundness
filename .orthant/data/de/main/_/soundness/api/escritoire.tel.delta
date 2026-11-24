@@ -1,0 +1,9 @@
+orthant 2 language
+
+@ 0 1 0 0ab9b4e793d8620f0360221cd123c3d0
++ info   Tabellen für das Terminal: Spalten, die umbrechen, abschneiden oder wegfallen, um in eine Breite zu passen, im gewählten Stil gezeichnet
+
+@ 0 3 0 08d7fc6e80f6961f0a34aee6471203df
++     entry #fixedWidth   die Breite, in Zellen
++     entry #ellipsis   der Text, der eine gekürzte Zelle beendet: standardmäßig `…`
++   entry .Shortened   elastisch zwischen einer Zelle und ihrer natürlichen Breite; was die festgelegte Breite übersteigt, wird mit Auslassungszeichen gekürzt

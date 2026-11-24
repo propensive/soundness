@@ -1,0 +1,7 @@
+orthant 2 language
+
+@ 0 1 0 1c16381874b6ce4b05859b9cfe64e3af
++ info   benchmarks, pruebas de estrés y perfiles: código citado preparado por etapas en su propia JVM, medido y comunicado junto a las pruebas
+
+@ 0 1 0 0971a444cb9ba9e80c2c87934ce848fc
++ entry .Stress   una prueba de estrés: una operación citada ejecutada concurrentemente durante una ventana, que informa de memoria, recolección y latencia

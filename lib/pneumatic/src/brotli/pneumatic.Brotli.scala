@@ -35,7 +35,6 @@ package pneumatic
 import scala.caps
 
 import anticipation.*
-import contingency.*
 import denominative.*
 import prepositional.*
 import zephyrine.*

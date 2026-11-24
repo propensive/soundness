@@ -1,0 +1,53 @@
+orthant 2 language
+
+@ 0 38 0 15177b5972e74eeb18897d1f690c0e42
++     entry .pixels   uma quantidade `Pixels` como `<length>`: `4px`
++     entry .ems   uma quantidade `Ems` (de quantitative) como `<length>`: `2em`
++     entry .rems   uma quantidade `Rems` como `<length>`: `2rem`
++     entry .exs   uma quantidade `Exs` como `<length>`: `1ex`
++     entry .chs   uma quantidade `Chs` como `<length>`: `40ch`
++     entry .vws   uma quantidade `ViewportWidths` como `<length>`: `100vw`
++     entry .vhs   uma quantidade `ViewportHeights` como `<length>`: `100vh`
++     entry .vmins   uma quantidade `ViewportMins` como `<length>`: `50vmin`
++     entry .vmaxes   uma quantidade `ViewportMaxes` como `<length>`: `50vmax`
++     entry .metres   qualquer comprimento físico (uma quantidade `Metres`) como `<length>`, em `mm`
++         Uma quantidade `Distance` — escrita como `3.0*Cm`, `10.0*Mm`, `1.0*Metre` ou qualquer
++         comprimento de quantitative — é renderizada em milímetros, já que CSS lê `cm`, `mm` e
++         `m` da mesma forma: `3.0*Cm` é `30mm`. Polegadas, pontos e paicas mantêm as suas
++         próprias unidades.
++     entry .inches   uma quantidade `Inches` como `<length>`: `1in`
++     entry .points   uma quantidade `Points` como `<length>`: `12pt`
++     entry .picas   uma quantidade `Picas` como `<length>`: `1pc`
++     entry .percents   uma quantidade `Percents` como `<percentage>`: `50%`
++     entry .chromatic   qualquer cor com uma instância `Chromatic` como `<color>`, renderizada em hexadecimal
++         Cobre o `Chroma` de anticipation e todas as formas de cor de iridescence (`Srgb`,
++         `Hsl`, `Cielab`, …, e o literal `rgb"#3344ff"`) por meio da sua instância
++         `Color.chromatic`, cada uma renderizada como um tripleto hexadecimal de seis dígitos a
++         partir dos seus canais vermelho, verde e azul, limitados a 0–255. A instância é
++         procurada para qualquer supertipo da cor, de modo que uma classe de cor que obtém o seu
++         `Chromatic` da sua forma é encontrada quando `Css.Style(…)` pede o tipo exato do valor.
++     entry .seconds   qualquer tempo (uma quantidade `Seconds`) como `<time>`, em `ms`
++         `200.0*Ms` é `200ms`; `1.5*S` é `1500ms`.
++     entry .degrees   uma quantidade `Degrees` como `<angle>`: `90deg`
++     entry .radians   uma quantidade `Radians` como `<angle>`: `1rad`
++     entry .turns   uma quantidade `Turns` como `<angle>`: `0.5turn`
++     entry .flexes   uma quantidade `Flexes` como `<flex>`: `2fr`
++     entry .integer   um `Int` como `<integer>`
++     entry .decimal   um `Double` como `<number>`, sem um `.0` redundante
++     entry .keyword   uma `Css.Keyword` com a sua grafia CSS, válida para qualquer propriedade
++         O tópico é `"*"`, que a verificação de propriedades aceita para qualquer propriedade
++         conhecida.
++     entry .colorKeyword   uma `Css.ColorKeyword` como `transparent` ou `currentcolor`
++     entry #value   renderiza um valor nativo como texto CSS
++   entry #rules   os nós da folha de estilo, em ordem
++   entry .Syntax   a gramática de valores de uma propriedade, na sintaxe de definição de valores de CSS, como uma árvore
+
+@ 0 1 0 10aaf54c52c3fe0b0d316f1cd65e1109
++     entry .Matcher   verifica um valor de propriedade contra a sua gramática: válido, inválido ou não suportado
+
+@ 0 5 0 1faf72e6fe088cd01a48ddf10a68931c
++   entry #check   um valor contra a gramática de uma propriedade, ou diretamente contra uma `Css.Syntax`
++       Duas sobrecargas: `check(property: PropertyDef, value)` usa a gramática analisada da
++       propriedade, e `check(grammar: Css.Syntax, value)`, qualquer gramática. Ambas
++       precisam de uma `Tactic[Css.Error]`, lançado apenas quando o texto do valor não pode
++       ser tokenizado (uma string não terminada).

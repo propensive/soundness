@@ -127,7 +127,7 @@ object Discovery:
       new Instance(label, service)(named(label, label :: service.dnsName.labels))
 
     // The inverse of `dnsName`, as a PTR record's target arrives.
-    def parse(name: Dns.Name): Optional[Instance] = name.labels match
+    def parse(name: Dns.Name): Optional[Instance] = name.labels.absolve match
       case Nil => Unset
 
       case label :: _ =>

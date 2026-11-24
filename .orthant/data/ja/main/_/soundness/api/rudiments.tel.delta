@@ -1,0 +1,64 @@
+orthant 2 language
+
+@ 0 33 0 17f26642629aeb55160659fc6f449b6e
++     - 任意の値に対する**日常的なコンビネーター**。`pipe`、`tap`、`also`、`when`、`give`、`twin`、`yet`、`upon`、そして畳み込みや反復の操作がラムダに渡すコンテキストのアクセサー `state`、`next`、`prior`、`ordinal`。
++     - **コレクション操作**。型クラス `Traversable`、`Countable`、`Applicable`、`Segmentable` とその仲間に対して一度だけ書かれているので、`head`、`last`、`tail`、`keep`、`skip`、`snip`、`before`、`after`、`sort`、`order`、`fuse`、`each`、`indexed`、`seek`、`where`、`total`、`mean` などは、`List`、`Sequence`、`Set`、`Map`、凍結済みの `Array`、`Text`、そしてインスタンスを持つほかのすべての型で同じ意味を持つ。型クラス自体は `murmuration`（`Traversable`、`Reshapable`、`Mappable`、`Convertible`、…）と `denominative`（`Countable`、`Applicable`、`Definable`、…）にあり、ここで再エクスポートされるので、`import rudiments.*` が一つの面を提示する。
++     - **型の中の証明**。一部の入力でしか安全でない操作は部分関数にはせず、証明を要求する型を与える。`head`、`last`、`lead`、`tail`、`reduce` は `& Populated` と型付けされたレシーバ（空でないリテラル、または `occupied` の結果）では全域的であり、それ以外では `Optional` である。`confine`、`pick`、`iterate`、または `Surveyor` がコレクションに照らして検査した序数は `Ordinal in xs.type` と型付けされ、そのような添字による `xs(i)` は要素をそのまま読むが、ほかの添字では `Optional` を読む。長さがリテラルである凍結済みの配列は `& Sized[n]` と型付けされ、`n` を超えるリテラルの序数はコンパイルできない。連結リストの `size` や位置によるアクセスのコストも、同様に黙った走査ではなく証明、すなわち `dysasymptotics.linearSize` や `linearAccess` のインポートである。
++     - パーサーとコーデックのホットループのための**ビルダーとスキャナー**。`Array.scribe` と `Array.collect` は `Scribe`（すべての添字が範囲内であると証明された書き込み用のハンドル）を貸し出し、`survey` は `Surveyor`（その連続部分がブランド付きの区間として返ってくる、歩調を合わせるカーソル）を貸し出し、`lattice` は二次元の平面を指し示し、`pairs`/`triples`/`quads` はコレクションをグループごとに歩き、`Scroll` はボックス化されない伸長可能な配列である。
++     - **並行処理のプリミティブ**。JDK のアトミックの上の `Atomic` セル（`cell()` で読み、`cell() = v` で書き、`ere` と `since` で遷移させる。後の二つは `_ + 1` のようなラムダリテラルを JDK の組み込み関数にコンパイルする）、`Mutex`、スレッドに結び付いた `Scoped` の値、そしてバックグラウンドのタスクのための停止可能な反復である `Loop`。
++     - **小さな値**。`Exit` と `Termination`（コマンドが返すもの）、`Memory`（`kib`/`mib`/`gib` のリテラルを持つバイト数）、`Digit`、そしてコンパイル時の補助である `typeName`、`reflectClass`、`probe`、`!!`。
+
+@ 0 11 0 0882f0d01b38ba4e1865d4ab8163d7df
++     このパッケージは二つのライブラリによって宣言されており、その分割は名前空間ではなくビルドグラフのためである。
++     `rudiments.core` はコンビネーター、コレクション操作、`Atomic`、`Mutex`、`Scoped`、`Loop`、`Exit`、`Memory`、ソート操作を持ち、`murmuration`、`denominative`、`vacuous`、`symbolism`、`anticipation` に依存する。
++     `concordance` ライブラリは、rudiments より下のライブラリが安全に添字を使えるように `denominative` の直上に位置し、限定された添字の語彙（`apply`、`at`、`defines`、`confine`、`pick`、`unsafeAttested`、`sized`）と、`Populated`、`Segmentable`、`Appendable`、`Prependable`、`Bijection`、`Scribe`、`Scroll`、`Surveyor`、`Lattice`、グループ化のコンビネーターを、すべて `package rudiments` の中で宣言する。そのような項目にはそのことが書かれている。
++     どちらも JVM、Scala.js、Scala Native 向けにコンパイルされ、`Atomic` はプラットフォームが提供する場所では `java.util.concurrent.atomic` の上に置かれる。
+
+@ 0 1 0 0535eecbae15bc3f109040c2d5863b35
++ entry .sortingInternal   コレクションと、ソートのアルゴリズムがソートする配列との間の配管
+
+@ 0 8 0 0fe745b8661e80b91c1557df95ff27c9
++ entry .Memory   量としてのバイト数。`4.kib`、`data.bytes`
++     `Memory` は不透明型 `rudiments.internal.Memory`（不透明な `Long`）であり、ここでエクスポートされている。
++     算術と比較はこれを量として扱う。
++     二つの `Memory` は足し引きでき、`Memory` は `Int` と掛け算と割り算ができ、`Memory` を別の `Memory` で割ると `Double` の比になる。
++     これらはすべてそのコンパニオンの given を通じて行われるので、インポートは不要である。
++     `Memory(long)`、`Int` や `Long` に対するリテラルの拡張 `b`、`kib`、`mib`、`gib`、`tib`（二進の単位。`1.kib` は 1024 バイト）、または `Data` から `bytes` で作る。
++     `long` で読み戻し、`1024 bytes` と表示される。
+
+% 0 1 0 1c92fec48a6f4dfb1aedc4b146972e49
+
+@ 0 6 0 034747922a70407e085116d3a6a620bf
++ entry .b   `n.b`。`n` バイトの `Memory`。`Int` または `Long` に対して使う
++ entry .kib   `n.kib`。`n` キビバイト（×1024）の `Memory`
++ entry .mib   `n.mib`。`n` メビバイト（×1024²）の `Memory`
++ entry .gib   `n.gib`。`n` ギビバイト（×1024³）の `Memory`
++ entry .tib   `n.tib`。`n` テビバイト（×1024⁴）の `Memory`
++ entry .bytes   `data.bytes`。`Data` の長さを `Memory` として返す
+
+@ 0 1 0 06bebad57dba00c11c86019577047782
++ entry .internal   `Memory`、`Digit`、抽出子 `&`、そして `probe`、`typeName`、`reflectClass` の背後にあるマクロの置き場所
+
+@ 0 4 0 1187368ab6db671d097c03bb742d6f8a
++       直接使うためのものではない。
++       `Memory`、`Digit`、`&` はここから `rudiments` パッケージにエクスポートされており、それらのページはそちらにある。`probe`、`name`、`reflectClass` はマクロの実装である。
++   entry .Memory   量として扱う `Long` である不透明なバイト数。`rudiments.Memory` を参照
+
+@ 0 7 0 016e2836f958117706da0f689b771a5f
++         不透明型 `Memory = Long` であり、そのコンストラクター、算術と比較の given、アクセサーを持つ。
++         詳しい説明は `rudiments` パッケージの下にあるそのページにある。ここにあるすべての given は、`Memory` に対する暗黙のスコープにある。
++     entry .apply   `Memory(long)`：`Long` から得るバイト数
++     entry .comparable   バイト数を数値として順序付ける
++     entry .zeroic   ゼロバイト。これによりバイト数に対する `total` はゼロから始まり、裸の値になる
++     entry .communicable   メッセージの中でバイト数を `n bytes` として描画する
+
+@ 0 9 0 1c4272dd222a927b16636fc8dfd49645
++     entry .addable   `Memory + Memory`
++     entry .subtractable   `Memory - Memory`
++     entry .multiplicable   `Memory * Int`
++     entry .multiplicable2   `Int * Memory`
++     entry .divisible   `Memory / Int`
++     entry .divisible2   `Double` の比としての `Memory / Memory`
++     entry .long   `bytes.long`：`Long` としてのバイト数
++     entry .text   `bytes.text`：テキストとしてのバイト数、`1024 bytes`
++   entry .Digit   不透明な十進数字 `0 | 1 | … | 9`。`rudiments.Digit` を参照

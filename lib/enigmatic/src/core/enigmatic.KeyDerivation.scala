@@ -52,12 +52,12 @@ import rudiments.*
 // `SymmetricKey` copies it into a cloak.
 object KeyDerivation:
   private def be32(value: Int): Data =
-    Array.tabulate[Byte](4)(index => (value >>> (24 - 8*index)).toByte)
+    Array.tabulate[Byte](4): index => (value >>> (24 - 8*index)).toByte
 
   private def xor(left: Data, right: Data): Data =
     val leftBytes = Array.unsafeJvm(left)
     val rightBytes = Array.unsafeJvm(right)
-    Array.tabulate[Byte](leftBytes.length)(index => (leftBytes(index) ^ rightBytes(index)).toByte)
+    Array.tabulate[Byte](leftBytes.length): index => (leftBytes(index) ^ rightBytes(index)).toByte
 
   // HKDF-Extract: a pseudorandom key from the input keying material. An empty salt stands for
   // a string of zeros as long as the hash's output (RFC 5869 §2.2).

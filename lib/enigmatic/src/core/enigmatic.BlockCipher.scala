@@ -272,6 +272,7 @@ extends Duct[Data, Data]:
     val targetInterval: Interval = space
     val targetOffset = targetInterval.start.n0
     val targetSpace = targetInterval.size
+
     if offset < pending.length then Duct.Progress(0, target.borrow(space)(deliver(_, _, _)))
     else
       val chunk = source.materialize(range)
@@ -284,6 +285,7 @@ extends Duct[Data, Data]:
     val targetInterval: Interval = space
     val targetOffset = targetInterval.start.n0
     val targetSpace = targetInterval.size
+
     if offset < pending.length then target.borrow(space)(deliver(_, _, _))
     else if !finished then
       finished = true

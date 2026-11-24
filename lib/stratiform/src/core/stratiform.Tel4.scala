@@ -143,8 +143,7 @@ trait Tel4:
                 if select.repeatable == Tels.Polarity.Loose then Multiplicity.Many
                 else Multiplicity.Optional
 
-              variant.keyword ->
-                typeMember(variant.variantType, schema, base, multiplicity, within)
+              variant.keyword -> typeMember(variant.variantType, schema, base, multiplicity, within)
 
         case _ => scala.Nil
 

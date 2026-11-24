@@ -32,6 +32,12 @@
                                                                                                   */
 package proscenium
 
+object Comparison:
+  // Interop in the other direction: the sign of a `compareTo`/`Comparator` result. Magnitudes
+  // are collapsed to the three cases, so every `Comparison` is canonical.
+  def apply(sign: Int): Comparison =
+    if sign < 0 then Less else if sign > 0 then More else Same
+
 // The result of a total three-way comparison, and the currency of `symbolism.Comparable`. An
 // enumeration rather than an opaque `Int`: the three cases are singletons, so it allocates no
 // more than a sign would, while remaining pattern-matchable and keeping its query operations as
@@ -60,9 +66,3 @@ enum Comparison:
   // Lexicographic composition: this comparison, unless it is `Same`, in which case `that`. The
   // second comparison is by-name, so a chain of `also`s stops at the first decisive result.
   infix def also(that: => Comparison): Comparison = if this == Same then that else this
-
-object Comparison:
-  // Interop in the other direction: the sign of a `compareTo`/`Comparator` result. Magnitudes
-  // are collapsed to the three cases, so every `Comparison` is canonical.
-  def apply(sign: Int): Comparison =
-    if sign < 0 then Less else if sign > 0 then More else Same

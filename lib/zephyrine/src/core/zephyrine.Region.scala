@@ -37,7 +37,6 @@ import scala.caps
 import anticipation.*
 import denominative.*
 import prepositional.*
-import rudiments.*
 import vacuous.*
 
 // A `Region` is a bounds-safe fragment of a medium's backing storage (issue #1666): an opaque

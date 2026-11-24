@@ -189,7 +189,7 @@ object InlinableStager:
               ( r2.TypeRepr.of[Inlinable], "Self",
                 r2.TypeBounds(rebuild(shape), rebuild(shape)) )
 
-          target.asType match
+          target.asType.absolve match
             case '[target] => '{scala.compiletime.summonInline[target]}
 
         val duration = (System.nanoTime - started)/1000000L
@@ -243,7 +243,7 @@ object InlinableStager:
                 "Form",
                 r2.TypeBounds(cbor, cbor) )
 
-          target.asType match
+          target.asType.absolve match
             case '[target] => '{scala.compiletime.summonInline[target]}
 
         result match

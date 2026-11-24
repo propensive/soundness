@@ -115,11 +115,12 @@ object Diagnostic:
         def marked(node: Diagnostic, inner: Text): Text =
           val note: Optional[Text] = shown.repeats.label(node)
 
-          val attributes = List
-            ( t"role"     -> node.role.word,
-              t"name"     -> node.name,
-              t"note"     -> note.or(t""),
-              t"repeated" -> (if shown.repeats.contains(node) then t"true" else t"") )
+          val attributes =
+            List
+              ( t"role"     -> node.role.word,
+                t"name"     -> node.name,
+                t"note"     -> note.or(t""),
+                t"repeated" -> (if shown.repeats.contains(node) then t"true" else t"") )
 
           Markup.wrap(t"node", attributes.filter(_(1) != t""), t"${unstyled(line(node))}$inner")
 
@@ -158,7 +159,8 @@ object Diagnostic:
         val repeat = node.rebuild(node.label.lay(t"as above") { label => t"$label, as above" }, Nil)
         cut.put(repeat, node)
         repeat
-      else node.rebuild(node.label, node.children.map(collapse))
+      else
+        node.rebuild(node.label, node.children.map(collapse))
 
     val nodes: List[Diagnostic] = children.map(collapse)
 
@@ -168,6 +170,7 @@ object Diagnostic:
 
     object repeats:
       def contains(node: Diagnostic): Boolean = cut.containsKey(node)
+
       def label(node: Diagnostic): Optional[Text] =
         if contains(node) then cut.get(node).nn.label else node.label
 

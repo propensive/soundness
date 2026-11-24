@@ -32,8 +32,6 @@
                                                                                                   */
 package hellenism
 
-import scala.caps
-
 import anticipation.*
 import contingency.*
 import gossamer.*

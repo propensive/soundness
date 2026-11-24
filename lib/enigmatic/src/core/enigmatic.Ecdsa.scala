@@ -38,7 +38,6 @@ import anticipation.*
 import contingency.*
 import distillate.*
 import gossamer.*
-import prepositional.*
 import rudiments.*
 import vacuous.*
 import gastronomy.Signing

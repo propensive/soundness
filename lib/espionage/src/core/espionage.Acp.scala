@@ -154,7 +154,7 @@ object Acp:
   // Prompt turns
 
   object StopReason:
-    given encodable: StopReason is Json.Encodable = Json.Encodable(() => Morphology.Str):
+    given encodable: StopReason is Json.Encodable = Json.Encodable({ () => Morphology.Str }):
       case StopReason.EndTurn         => t"end_turn".in[Json]
       case StopReason.MaxTokens       => t"max_tokens".in[Json]
       case StopReason.MaxTurnRequests => t"max_turn_requests".in[Json]
@@ -188,7 +188,7 @@ object Acp:
   // Tool calls
 
   object ToolKind:
-    given encodable: ToolKind is Json.Encodable = Json.Encodable(() => Morphology.Str):
+    given encodable: ToolKind is Json.Encodable = Json.Encodable({ () => Morphology.Str }):
       case ToolKind.Read    => t"read".in[Json]
       case ToolKind.Edit    => t"edit".in[Json]
       case ToolKind.Delete  => t"delete".in[Json]
@@ -219,7 +219,7 @@ object Acp:
     case Read, Edit, Delete, Move, Search, Execute, Think, Fetch, Other
 
   object ToolCallStatus:
-    given encodable: ToolCallStatus is Json.Encodable = Json.Encodable(() => Morphology.Str):
+    given encodable: ToolCallStatus is Json.Encodable = Json.Encodable({ () => Morphology.Str }):
       case ToolCallStatus.Pending    => t"pending".in[Json]
       case ToolCallStatus.InProgress => t"in_progress".in[Json]
       case ToolCallStatus.Completed  => t"completed".in[Json]
@@ -249,7 +249,7 @@ object Acp:
 
     private val typeTag = Json.discriminatedUnion[ToolCallContent](t"type")
 
-    given encodable: ToolCallContent is Json.Encodable = Json.Encodable(() => Morphology.Any):
+    given encodable: ToolCallContent is Json.Encodable = Json.Encodable({ () => Morphology.Any }):
       case content: ToolContent  => typeTag.rewrite(t"content",  content.in[Json])
       case content: ToolDiff     => typeTag.rewrite(t"diff",     content.in[Json])
       case content: ToolTerminal => typeTag.rewrite(t"terminal", content.in[Json])
@@ -259,7 +259,7 @@ object Acp:
     =>  ( (ToolCallContent is Json.Decodable)^{tactic} ) =
 
       Json.Decodable(Morphology.Any): json =>
-        json.`type`.as[Text] match
+        json.`type`.as[Text].s match
           case "content"  => json.as[ToolContent]
           case "diff"     => json.as[ToolDiff]
           case "terminal" => json.as[ToolTerminal]
@@ -336,7 +336,7 @@ object Acp:
   // Plans
 
   object PlanPriority:
-    given encodable: PlanPriority is Json.Encodable = Json.Encodable(() => Morphology.Str):
+    given encodable: PlanPriority is Json.Encodable = Json.Encodable({ () => Morphology.Str }):
       case PlanPriority.High   => t"high".in[Json]
       case PlanPriority.Medium => t"medium".in[Json]
       case PlanPriority.Low    => t"low".in[Json]
@@ -356,7 +356,7 @@ object Acp:
     case High, Medium, Low
 
   object PlanStatus:
-    given encodable: PlanStatus is Json.Encodable = Json.Encodable(() => Morphology.Str):
+    given encodable: PlanStatus is Json.Encodable = Json.Encodable({ () => Morphology.Str }):
       case PlanStatus.Pending    => t"pending".in[Json]
       case PlanStatus.InProgress => t"in_progress".in[Json]
       case PlanStatus.Completed  => t"completed".in[Json]
@@ -386,7 +386,7 @@ object Acp:
 
     private val typeTag = Json.discriminatedUnion[SessionUpdate](t"sessionUpdate")
 
-    given encodable: SessionUpdate is Json.Encodable = Json.Encodable(() => Morphology.Any):
+    given encodable: SessionUpdate is Json.Encodable = Json.Encodable({ () => Morphology.Any }):
       case update: UserMessageChunk  => typeTag.rewrite(t"user_message_chunk", update.in[Json])
       case update: AgentMessageChunk => typeTag.rewrite(t"agent_message_chunk", update.in[Json])
       case update: AgentThoughtChunk => typeTag.rewrite(t"agent_thought_chunk", update.in[Json])
@@ -404,7 +404,7 @@ object Acp:
     =>  ( (SessionUpdate is Json.Decodable)^{tactic} ) =
 
       Json.Decodable(Morphology.Any): json =>
-        json.sessionUpdate.as[Text] match
+        json.sessionUpdate.as[Text].s match
           case "user_message_chunk"        => json.as[UserMessageChunk]
           case "agent_message_chunk"       => json.as[AgentMessageChunk]
           case "agent_thought_chunk"       => json.as[AgentThoughtChunk]
@@ -478,7 +478,7 @@ object Acp:
 
   object PermissionOptionKind:
     given encodable: PermissionOptionKind is Json.Encodable =
-      Json.Encodable(() => Morphology.Str):
+      Json.Encodable({ () => Morphology.Str }):
         case PermissionOptionKind.AllowOnce    => t"allow_once".in[Json]
         case PermissionOptionKind.AllowAlways  => t"allow_always".in[Json]
         case PermissionOptionKind.RejectOnce   => t"reject_once".in[Json]
@@ -514,7 +514,7 @@ object Acp:
     private val typeTag = Json.discriminatedUnion[RequestPermissionOutcome](t"outcome")
 
     given encodable: RequestPermissionOutcome is Json.Encodable =
-      Json.Encodable(() => Morphology.Any):
+      Json.Encodable({ () => Morphology.Any }):
         case Selected(optionId) =>
           typeTag.rewrite(t"selected", Map(t"optionId" -> optionId.in[Json]).in[Json])
 
@@ -526,7 +526,7 @@ object Acp:
     =>  ( (RequestPermissionOutcome is Json.Decodable)^{tactic} ) =
 
       Json.Decodable(Morphology.Any): json =>
-        json.outcome.as[Text] match
+        json.outcome.as[Text].s match
           case "selected"  => Selected(json.optionId.as[Text])
           case "cancelled" => Cancelled
           case _           => abort(Json.Error(Json.Error.Reason.OutOfRange))

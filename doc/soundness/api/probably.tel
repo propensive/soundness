@@ -693,7 +693,7 @@ entry .Dissector   the engine which reads a failed predicate from TASTy and comp
       descending into the arguments of inline calls, then by the failed value alone. Setting
       the `probably.diagnosis.debug` system property prints why.
   refer probably.Diagnosis
-  entry #diagnose   the details of one failure, from the site's cached diagnosis
+  entry .diagnose   the details of one failure, from the site's cached diagnosis
 
 entry .harnesses   the `Harness` policies, each a given to import by name
   detail
@@ -1108,8 +1108,6 @@ entry .Mean   `Baseline.Compare.Mean`, exported at package level
 entry .Max   `Baseline.Compare.Max`, exported at package level
 entry .Cadential   `Baseline.Metric.Cadential`, exported at package level
 entry .Temporal   `Baseline.Metric.Temporal`, exported at package level
-entry .Arithmetic   `Baseline.Mode.Arithmetic`, exported at package level
-entry .Geometric   `Baseline.Mode.Geometric`, exported at package level
 
 entry .Benchmark   the measured result of a benchmark: iterations, timings, confidence and allocation
   detail

@@ -1,0 +1,11 @@
+orthant 2 language
+
+@ 0 1 0 121365b0005725f90fae8ad030b9c910
++   entry .diagnose   подробности одной неудачи из кешированной диагностики места
+
+@ 0 5 0 1767be29e4aa398c1ef7e61d4a0c20b6
++ entry .Min   `Baseline.Compare.Min`, экспортированный на уровень пакета
++ entry .Mean   `Baseline.Compare.Mean`, экспортированный на уровень пакета
++ entry .Max   `Baseline.Compare.Max`, экспортированный на уровень пакета
++ entry .Cadential   `Baseline.Metric.Cadential`, экспортированный на уровень пакета
++ entry .Temporal   `Baseline.Metric.Temporal`, экспортированный на уровень пакета

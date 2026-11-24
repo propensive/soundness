@@ -1,0 +1,12 @@
+orthant 2 language
+
+@ 0 8 0 088d9de641ca59230a710ed9b6a921cb
++   entry #subsumes   czy ten motyw dopasowuje wszystkie dane wejściowe, które dopasowuje inny, lub wszystkie, które dopasowują jednocześnie wszystkie z listy
++       `motif.subsumes(that)` rozstrzyga `L(that) ⊆ L(this)`; `motif.subsumes(those)`
++       rozstrzyga `L(⋂those) ⊆ L(this)`, czyli zawieranie danych wejściowych dopasowywanych
++       jednocześnie przez *wszystkie* motywy z listy, czego żaden pojedynczy wzorzec RE2 nie
++       potrafi wyrazić (RE2 nie ma operatora przecięcia) i co sprawdzanie parami ocenia
++       błędnie. Oba to `Subsumption.subsumes` na skompilowanych programach i zgłaszają
++       `Motif.Error` dla granicy słowa lub wiersza w którymkolwiek wzorcu (`Unverifiable`)
++       albo dla pary, która wyczerpuje budżet (`BudgetExceeded`). Wzorce równoważne zawierają
++       się nawzajem, więc dwa sprawdzenia rozstrzygają równoważność.

@@ -48,8 +48,7 @@ object Runner:
 
   // The name a test's coverage is recorded under: the path of its `TestEvent.Ref`, and its id.
   private def coverageName(id: Test.Id): String =
-    if !Coverage.enabled then "" else
-      TestEvent.Ref.of(id).key.s
+    if !Coverage.enabled then "" else TestEvent.Ref.of(id).key.s
 
   // `workers` overrides the selection's count (see `Suite.workers`): a suite may ask for more
   // than the host offered, never for queueing the host did not ask for.
@@ -119,7 +118,9 @@ object Runner:
     private var active: List[Test.Id] = Nil
     // [synchronized]
     @scala.caps.unsafe.untrackedCaptures
-    private var listed0: List[(Test.Id, Entry.Kind, Optional[Long], List[(Axis.Spec, Axis.Value)])] =
+    private var listed0
+    :   List[(Test.Id, Entry.Kind, Optional[Long], List[(Axis.Spec, Axis.Value)])] =
+
       Nil
     // [synchronized]
     @scala.caps.unsafe.untrackedCaptures

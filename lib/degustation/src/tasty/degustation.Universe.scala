@@ -173,7 +173,9 @@ object Universe:
   def synthetic(fullName: Text): Optional[Universe.ClassInfo] =
     def make(parents: List[Text], flags: Set[Flag] = Set(Flag.Trait)): Universe.ClassInfo =
       val parentTypes = parents.map(classRef)
-      Universe.ClassInfo(fullName, flags, List(), List(), parentTypes, List(), Unset, Unset, java = false)
+
+      Universe.ClassInfo
+        ( fullName, flags, List(), List(), parentTypes, List(), Unset, Unset, java = false )
 
     fullName.s match
       case "scala.Any"           => make(List(), Set(Flag.Abstract)).copy(members = anyMembers)
@@ -954,8 +956,12 @@ class Universe(source: Universe.Source):
     result
 
   // The class at `path` (the class names from the top-level class inwards) in a loaded file.
-  private def classIn(scope: Scope, fullName: Text, path: scala.List[Text]): Optional[Universe.ClassInfo] =
-    def search(statements: scala.List[Tree], remaining: scala.List[Text]): Optional[Universe.ClassInfo] =
+  private def classIn(scope: Scope, fullName: Text, path: scala.List[Text])
+  :   Optional[Universe.ClassInfo] =
+
+    def search(statements: scala.List[Tree], remaining: scala.List[Text])
+    :   Optional[Universe.ClassInfo] =
+
       remaining.headOption match
         case None => Unset
 
@@ -1039,8 +1045,17 @@ class Universe(source: Universe.Source):
 
       else Unset
 
-    Universe.ClassInfo(fullName, typeDef.modifiers.flags, typeParams, typeParamAddresses, parents, members,
-        valueParam, scope, java = false, typeDef.address)
+    Universe.ClassInfo
+      ( fullName,
+        typeDef.modifiers.flags,
+        typeParams,
+        typeParamAddresses,
+        parents,
+        members,
+        valueParam,
+        scope,
+        java = false,
+        typeDef.address )
 
   private def fromClassfile(classfile: Classfile.Class): Universe.ClassInfo =
     val flags = if classfile.isInterface then Set(Flag.Trait) else Set[Flag]()
@@ -1722,13 +1737,16 @@ class Universe(source: Universe.Source):
 
         case _ => Unset
 
-  def classOf(tpe: Type, scope: Optional[Scope]): Optional[Universe.ClassInfo] = owner(tpe, scope) match
-    case Resolution.Class(info, _, _) => info
-    case _                            => Unset
+  def classOf(tpe: Type, scope: Optional[Scope]): Optional[Universe.ClassInfo] =
+    owner(tpe, scope) match
+      case Resolution.Class(info, _, _) => info
+      case _                            => Unset
 
   // The member called `name` of one of the given kinds, in `info` or the first of its
   // linearization that declares one, with its declaring class.
-  def memberIn(info: Universe.ClassInfo, name: Text, kinds: Set[Kind]): Optional[(Universe.ClassInfo, Member)] =
+  def memberIn(info: Universe.ClassInfo, name: Text, kinds: Set[Kind])
+  :   Optional[(Universe.ClassInfo, Member)] =
+
     // The class's own declarations first, which also keeps a parent clause that names a member
     // of the class itself from needing the linearization it is part of computing.
     info.members.stdlib.find { m => m.name == name && kinds.contains(m.kind) } match

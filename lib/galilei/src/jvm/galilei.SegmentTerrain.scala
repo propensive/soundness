@@ -84,8 +84,8 @@ private[galilei] class SegmentTerrain(initial: jlf.MemorySegment) extends zephyr
   def same(offset: Long, data: Data): Boolean =
     val length = data.length.toLong
 
-    offset >= 0L && offset + length <= size
-    && jlf.MemorySegment.mismatch(segment, offset, offset + length, heap(data), 0L, length) == -1L
+    offset >= 0L && offset + length <= size &&
+      jlf.MemorySegment.mismatch(segment, offset, offset + length, heap(data), 0L, length) == -1L
 
   def compare(offset: Long, length: Long, data: Data): Int =
     val other = data.length.toLong
@@ -144,8 +144,7 @@ extends SegmentTerrain(initial), FilesystemBackend.Hold:
 
   def close(): Unit =
     try segment.force() finally
-      try arena.get.nn.close() finally
-        try lock.release() finally channel.close()
+      try arena.get.nn.close() finally try lock.release() finally channel.close()
 
 // A whole-file, read-only mapping: the segment's memory belongs to `arena`, and is unmapped
 // -- deterministically, rather than whenever the garbage collector notices -- by closing it.

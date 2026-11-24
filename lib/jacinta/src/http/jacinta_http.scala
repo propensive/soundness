@@ -62,4 +62,4 @@ package detectables:
   given jsonDetectable: ("application/json" is Detectable under Plausible over Probe to Json) =
     Detectable: probe =>
       probe.skipWhitespace()
-      probe.next().lay(false) { byte => byte == '{'.toByte || byte == '['.toByte }
+      probe.next().lay(false): byte => byte == '{'.toByte || byte == '['.toByte

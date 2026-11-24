@@ -1,5 +1,8 @@
 orthant 2 language
 
+@ 0 3 0 064a0d693208d94d0be9e9c787015ee8
++ Os itens da trilha, com seus horizontes e dependências rígidas; [`status.tel`](https://github.com/propensive/soundness/blob/main/doc/roadmap/status.tel) registra a situação de cada um:
+
 @ 0 5 0 027aa8507cfead550859e240b33d26f4
 + O item da pedra angular: `etc/migration.md` define o formato de instruções de migração executável
 + por agentes — o que mudou, como detectar o código afetado, a reescrita exata e como verificá-la — e

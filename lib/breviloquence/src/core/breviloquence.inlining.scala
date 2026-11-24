@@ -349,7 +349,7 @@ object inlining:
 
     if !isMap && (tpe <:< TypeRepr.of[Iterable[Any]] || isAliasCollection) then tpe match
       case AppliedType(_, arguments) =>
-        arguments.last.asType match
+        arguments.last.asType.absolve match
           case '[element] =>
             resolve[element](cache).map: instance =>
               Inlinable.IterableInlinable[element]
@@ -373,7 +373,7 @@ object inlining:
   private def sumFor[field: Type](cache: Cache)(using Quotes): Option[Inlinable] =
     sumVariants(quotes.reflect.TypeRepr.of[field].dealias).flatMap: variants =>
       val resolvable = variants.forall: (_, variantType) =>
-        variantType.asType match
+        variantType.asType.absolve match
           case '[variantType] => resolve[variantType](cache).isDefined
 
       if !resolvable then None
@@ -444,7 +444,7 @@ object inlining:
         val factoryType =
           aliasCollectionUnderlying(TypeRepr.of[collection]).getOrElse(TypeRepr.of[collection])
 
-        (arguments.last.asType, factoryType.asType) match
+        (arguments.last.asType, factoryType.asType).absolve match
           case ('[element], '[stdlib]) =>
             val instance = element0.asInstanceOf[Inlinable { type Self = element }]
 
@@ -554,7 +554,7 @@ object inlining:
         else if fieldType =:= TypeRepr.of[Double] then Literal(DoubleConstant(0.0))
         else if fieldType =:= TypeRepr.of[Float] then Literal(FloatConstant(0.0f))
         else if fieldType =:= TypeRepr.of[Boolean] then Literal(BooleanConstant(false))
-        else fieldType.asType match
+        else fieldType.asType.absolve match
           case '[fieldType] => '{null.asInstanceOf[fieldType]}.asTerm
 
       val slotDefs = List.range(0, arity).map: index =>
@@ -589,7 +589,7 @@ object inlining:
 
       // The absent expression per field, through the ladder.
       def fieldAbsent(index: Int): Expr[Any] =
-        fieldTypes(index).asType match
+        fieldTypes(index).asType.absolve match
           case '[fieldType] =>
             if builtinDirect(fieldTypes(index)).isDefined then
               '{Cbor.Parsable.missing[fieldType]()(using $tactic)}
@@ -610,7 +610,7 @@ object inlining:
             MethodType(Nil)(_ => Nil, _ => fieldTypes(index)) )
 
       val readDefDefs: List[Statement] = List.range(0, arity).map: index =>
-        fieldTypes(index).asType match
+        fieldTypes(index).asType.absolve match
           case '[fieldType] =>
             val rhs: Expr[fieldType] =
               builtinDirect(fieldTypes(index)) match
@@ -742,7 +742,7 @@ object inlining:
               While(runRef.asTerm, step) )
 
       val absents: List[Term] = List.range(0, arity).map: index =>
-        fieldTypes(index).asType match
+        fieldTypes(index).asType.absolve match
           case '[fieldType] =>
             val resolveAbsent: Term =
               Assign
@@ -753,7 +753,9 @@ object inlining:
 
                       if !declared.absent then declared.asInstanceOf[fieldType]
                       else ${fieldAbsent(index).asExprOf[fieldType]}
-                    }.asTerm )
+                    }
+
+                  . asTerm )
 
             If('{!${Ref(seens(index)).asExprOf[Boolean]}}.asTerm, resolveAbsent, unit)
 
@@ -811,7 +813,7 @@ object inlining:
               abort(wisteria.Variant.Error[sum]($tag.tt))
           }
       else
-        variants(index)(1).asType match
+        variants(index)(1).asType.absolve match
           case '[type variantType <: sum; variantType] =>
             val instance = resolve[variantType](cache).getOrElse:
               report.errorAndAbort

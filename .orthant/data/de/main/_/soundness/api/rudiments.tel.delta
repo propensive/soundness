@@ -1,0 +1,150 @@
+orthant 2 language
+
+@ 0 33 0 17f26642629aeb55160659fc6f449b6e
++     - **Alltägliche Kombinatoren** auf jedem Wert: `pipe`, `tap`, `also`, `when`, `give`,
++       `twin`, `yet`, `upon` und die kontextuellen Accessors `state`, `next`, `prior` und
++       `ordinal`, die die faltenden und iterierenden Operationen ihren Lambdas übergeben.
++     - **Collection-Operationen**, einmal über den Typklassen `Traversable`, `Countable`,
++       `Applicable`, `Segmentable` und ihren Verwandten geschrieben, sodass `head`, `last`,
++       `tail`, `keep`, `skip`, `snip`, `before`, `after`, `sort`, `order`, `fuse`, `each`,
++       `indexed`, `seek`, `where`, `total`, `mean` und der Rest auf einer `List`, einer
++       `Sequence`, einem `Set`, einer `Map`, einem eingefrorenen `Array`, einem `Text` und
++       jedem anderen Typ mit einer Instanz dasselbe bedeuten. Die Typklassen selbst liegen in
++       `murmuration` (`Traversable`, `Reshapable`, `Mappable`, `Convertible`, …) und
++       `denominative` (`Countable`, `Applicable`, `Definable`, …) und werden hier
++       reexportiert, sodass `import rudiments.*` eine einzige Oberfläche bietet.
++     - **Beweise in Typen.** Eine Operation, die nur für manche Eingaben sicher ist, wird
++       nicht partiell gemacht: Sie erhält einen Typ, der den Beweis verlangt. `head`, `last`,
++       `lead`, `tail` und `reduce` sind total auf einem Empfänger vom Typ `& Populated` (ein
++       nichtleeres Literal oder das Ergebnis von `occupied`) und sonst `Optional`; ein
++       Ordinal, das `confine`, `pick`, `iterate` oder ein `Surveyor` gegen eine Collection
++       geprüft hat, hat den Typ `Ordinal in xs.type`, und `xs(i)` mit einem solchen Index
++       liest das Element direkt, wo jeder andere Index ein `Optional` liest; ein eingefrorenes
++       Array, dessen Länge ein Literal ist, hat den Typ `& Sized[n]`, und ein literales Ordinal
++       jenseits von `n` kompiliert nicht. Die Kosten von `size` oder Positionszugriff einer
++       verketteten Liste sind ebenso ein Beweis — ein Import von `dysasymptotics.linearSize`
++       oder `linearAccess` — statt eines stillen Durchlaufs.
++     - **Builder und Scanner** für die heißen Schleifen von Parsern und Codecs: `Array.scribe`
++       und `Array.collect` verleihen einen `Scribe` (ein Schreib-Handle, dessen jeder Index
++       nachweislich im Bereich liegt), `survey` verleiht einen `Surveyor` (einen schreitenden
++       Cursor, dessen Abschnitte als markierte Intervalle zurückkommen), `lattice` adressiert
++       eine zweidimensionale Ebene, `pairs`/`triples`/`quads` durchlaufen eine Collection in
++       Gruppen, und `Scroll` ist ein ungeboxtes wachsendes Array.
++     - **Nebenläufigkeitsprimitive**: `Atomic`-Zellen über den Atomics des JDK, gelesen als
++       `cell()`, geschrieben als `cell() = v` und überführt mit `ere` und `since`, die ein
++       Lambda-Literal wie `_ + 1` zum Intrinsic des JDK kompilieren; `Mutex`; an Threads
++       gebundene `Scoped`-Werte; und `Loop`, eine anhaltbare Iteration für eine
++       Hintergrundaufgabe.
++     - **Kleine Werte**: `Exit` und `Termination` (was ein Befehl zurückgibt), `Memory` (eine
++       Byteanzahl mit den Literalen `kib`/`mib`/`gib`), `Digit` und die Hilfen zur
++       Kompilierzeit `typeName`, `reflectClass`, `probe` und `!!`.
+
+@ 0 11 0 0882f0d01b38ba4e1865d4ab8163d7df
++     Das Paket wird von zwei Bibliotheken deklariert, und die Aufteilung betrifft den
++     Build-Graphen, nicht den Namensraum. `rudiments.core` enthält die Kombinatoren, die
++     Collection-Operationen, `Atomic`, `Mutex`, `Scoped`, `Loop`, `Exit`, `Memory` und die
++     Sortieroperationen und hängt von `murmuration`, `denominative`, `vacuous`, `symbolism`
++     und `anticipation` ab. Die Bibliothek `concordance`, die direkt auf `denominative` sitzt,
++     damit Bibliotheken unterhalb von Rudiments sicher indizieren können, deklariert das
++     Vokabular des beschränkten Indizierens — `apply`, `at`, `defines`, `confine`, `pick`,
++     `unsafeAttested`, `sized` — sowie `Populated`, `Segmentable`, `Appendable`,
++     `Prependable`, `Bijection`, `Scribe`, `Scroll`, `Surveyor`, `Lattice` und die
++     Gruppierungskombinatoren, alle in `package rudiments`; jeder solche Eintrag sagt das.
++     Beide kompilieren für die JVM, Scala.js und Scala Native, wobei `Atomic` überall dort auf
++     `java.util.concurrent.atomic` aufsetzt, wo die Plattform es bereitstellt.
+
+@ 0 1 0 0535eecbae15bc3f109040c2d5863b35
++ entry .sortingInternal   die Verbindungstechnik zwischen einer Collection und dem Array, das ein Sortieralgorithmus sortiert
+
+@ 0 3 0 0088ff1efa63d9c10d27b25cea25b841
++ entry .javaInputStream   ein `Data` als `java.io.InputStream`
++     Um Memory an eine Java-API zu übergeben, die einen Stream liest: ein
++     `ByteArrayInputStream` über dem Array, ohne Kopieren.
+
+@ 0 8 0 0fe745b8661e80b91c1557df95ff27c9
++ entry .Memory   eine Anzahl von Memory, als Größe: `4.kib`, `data.bytes`
++     `Memory` ist der opake Typ `rudiments.internal.Memory`, ein opaker `Long`, hier exportiert.
++     Arithmetik und Vergleich behandeln ihn als Größe: Zwei `Memory` lassen sich addieren und
++     subtrahieren, ein `Memory` mit einem `Int` multiplizieren und durch ihn dividieren, und
++     ein `Memory` geteilt durch ein anderes ist ein `Double`-Verhältnis, alles über givens in
++     seinem Begleitobjekt, sodass kein Import nötig ist. Erzeugt mit `Memory(long)` oder den
++     Literal-Erweiterungen `b`, `kib`, `mib`, `gib` und `tib` auf einem `Int` oder `Long`
++     (binäre Einheiten: `1.kib` sind 1024 Memory) und aus einem `Data` mit `bytes`;
++     zurückgelesen mit `long` und angezeigt als `1024 bytes`.
+
+% 0 1 0 1c92fec48a6f4dfb1aedc4b146972e49
+
+@ 0 6 0 034747922a70407e085116d3a6a620bf
++ entry .b   `n.b`: ein `Memory` von `n` Memory, auf einem `Int` oder `Long`
++ entry .kib   `n.kib`: ein `Memory` von `n` Kibibytes (×1024)
++ entry .mib   `n.mib`: ein `Memory` von `n` Mebibytes (×1024²)
++ entry .gib   `n.gib`: ein `Memory` von `n` Gibibytes (×1024³)
++ entry .tib   `n.tib`: ein `Memory` von `n` Tebibytes (×1024⁴)
++ entry .bytes   `data.bytes`: die Länge eines `Data` als `Memory`
+
+@ 0 1 0 06bebad57dba00c11c86019577047782
++ entry .internal   die Heimat von `Memory`, `Digit`, dem Extraktor `&` und den Makros hinter `probe`, `typeName` und `reflectClass`
+
+@ 0 4 0 1187368ab6db671d097c03bb742d6f8a
++       Nicht zur direkten Verwendung: `Memory`, `Digit` und `&` werden von hier in das Paket
++       `rudiments` exportiert, wo ihre Seiten liegen; `probe`, `name` und `reflectClass` sind die
++       Makroimplementierungen.
++   entry .Memory   die opake Byteanzahl, ein als Größe behandelter `Long`; siehe `rudiments.Memory`
+
+@ 0 7 0 016e2836f958117706da0f689b771a5f
++         Der opake Typ `Memory = Long`, mit seinem Konstruktor, seinen Givens für Arithmetik und
++         Vergleich und seinen Accessors. Seine Seite unter dem Paket `rudiments` enthält die
++         vollständige Darstellung; jedes Given hier ist für ein `Memory` im impliziten
++         Geltungsbereich.
++     entry .apply   `Memory(long)`: eine Byteanzahl aus einem `Long`
++     entry .comparable   ordnet Byteanzahlen numerisch
++     entry .zeroic   null Memory, sodass `total` über Byteanzahlen bei null beginnt und bloß ist
++     entry .communicable   stellt eine Byteanzahl in einer Meldung als `n bytes` dar
+
+@ 0 9 0 1c4272dd222a927b16636fc8dfd49645
++     entry .addable   `Memory + Memory`
++     entry .subtractable   `Memory - Memory`
++     entry .multiplicable   `Memory * Int`
++     entry .multiplicable2   `Int * Memory`
++     entry .divisible   `Memory / Int`
++     entry .divisible2   `Memory / Memory`, als `Double`-Verhältnis
++     entry .long   `bytes.long`: die Anzahl als `Long`
++     entry .text   `bytes.text`: die Anzahl als Text, `1024 bytes`
++   entry .Digit   die opake Dezimalziffer, `0 | 1 | … | 9`; siehe `rudiments.Digit`
+
+@ 0 27 0 012d8cde5632554d13075f76b8c65c23
++         Nicht zur direkten Verwendung: nur öffentlich, weil der Inline-Verleiher und die
++         Accessors in den Paketen der Aufrufer expandieren und ihn benennen müssen. Er enthält
++         den Puffer untypisiert, den Anhänge-Cursor `mark` und die Angabe, ob der Scribe wächst.
++     entry #mark   der Anhänge-Cursor
++     entry #buffer   das untypisierte zugrunde liegende Array
++     entry #growable   ob Anhängen über das Ende hinaus den Puffer wachsen lässt
++   entry .countable   die Größe eines Scribe ist die Länge seines Puffers, sodass die Familie der beschränkten Scans auf ihn anwendbar ist
++   entry .apply   `Scribe(buffer)` erzeugt einen Scribe exakter Größe; `scribe(i)` liest an einer markierten Ordinalzahl zurück
++       Zwei Überladungen, die sich den Namen teilen. Auf dem Begleitobjekt umhüllt
++       `Scribe(buffer)` ein veränderliches JVM-Array als Scribe exakter Größe — die Erzeugung,
++       die `Array.scribe` verwendet und die abschneidet statt zu wachsen. Als Erweiterung auf
++       einem Scribe liest `scribe(i)` das Element an einem `i: Ordinal in scribe.type` zurück,
++       ohne Bereichsprüfung, da die Marke den Bereich beweist.
++   entry .varintLength   wie viele Memory die LEB128-Kodierung eines `Long` belegt, 1 bis 10
++   entry .varintInto   schreibt einen `Long` als LEB128 an einer Position in ein JVM-Byte-Array und gibt die Position danach zurück
++   entry .utf8Length   die Länge der UTF-8-Kodierung eines Strings, ohne ihn zu kodieren
++       Ein Surrogatpaar zählt als eine Vier-Byte-Sequenz und ein einzelnes Surrogat als das eine
++       Byte des `?`, das der Encoder des JDK einsetzt.
++   entry .utf8Into   kodiert einen String als UTF-8 an einer Position in ein JVM-Byte-Array und gibt die Position danach zurück
++   entry .update   `scribe(i) = value`: schreibt an einer an den Scribe gebundenen Ordinalzahl, ohne Bereichsprüfung
++   entry .append   schreibt am Cursor eines Scribe und rückt ihn vor: ein Element, ein ganzes eingefrorenes Array oder einen Ausschnitt davon
++       `append(value)` schreibt ein Element; `append(array)` kopiert ein eingefrorenes Array;
++       `append(array,
++       from, count)` kopiert einen Ausschnitt davon, für Framing-Formate, die einen Teil eines
++       größeren Blocks anhängen. Auf einem Scribe exakter Größe wird ein Schreibzugriff über das
++       Ende hinaus verworfen; ein Scribe ohne feste Größe wächst durch Verdopplung.
++   entry .mark   `scribe.mark`: die Anzahl der bisher an einen Scribe angehängten Elemente
++   entry .place   `scribe.place(array, at)`: kopiert ein eingefrorenes Array an einer markierten Position hinein und gibt zurück, wie viele hineinpassten
++       Die Kopie wird am Ende des Scribe abgeschnitten und bewegt den Anhänge-Cursor nicht.
+
+@ 0 3 0 08a90da4569ad68e085eeed55d103a1b
++ entry .appendVarint   `scribe.appendVarint(long)`: hängt einen LEB128-Varint an einen Byte-Scribe an
++     Ein bis zehn Memory, geschrieben mit einer einzigen Kapazitätsprüfung; ein Wert unter 128 wird
++     als das einzelne Byte angehängt, das er ist. Ausgeliefert in der Bibliothek `concordance`;
++     nicht in den Umbrella exportiert.

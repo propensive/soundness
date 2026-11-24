@@ -1,0 +1,16 @@
+orthant 2 language
+
+@ 0 4 0 0337e43960347e361518e70d51a96f82
++ entry .drop   从 `Chain[Data]` 的开头丢弃若干字节
++     `chain.drop(bytes)` 接受的是 `Memory` 计数而非数据块计数：计数范围内的整个数据块被跳过，跨越边界的数据块被截断，因此结果是相同的字节，在边界处重新分块。
++     惰性。
+
+@ 0 4 0 14db9adb7100739f11e814f080bd5536
++ entry .take   保留 `Chain[Data]` 开头的若干字节
++     `chain.take(bytes)` 接受 `Memory` 计数：计数范围内的数据块完整保留，跨越边界的那个被截断，因此结果恰好包含 `bytes` 个字节（如果链更短则更少）。
++     惰性。
+
+@ 0 6 0 1f830319e961b31b164c552f3e9b1c1d
++       `Truncation.Error(total)` 是错误 `↯/s.60.1`，即 _the stream was cut prematurely after `total`_，其中 `total` 是截断前已递送的 `Memory`。
++       `Spring` 的拉取以及针对 JDK 源的 `Streamable` given 通过 `Tactic` 以它中止；针对 JDK 目标的 `Writable` 和 `Sink` given 则通过 `Emit` 来 `raise` 它，因为写入者只报告截断，从不中止。
++       该类型位于 zephyrine 中，与 `Stream` 和 `Spring` 并列；这个导出使得对用到它的模块来说，`import turbulence.*` 仍然足够。

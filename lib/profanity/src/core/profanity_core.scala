@@ -87,7 +87,7 @@ def interactive[result](block: (terminal: Terminal) ?=> result)
 
   // Apply every in-scope `Terminal.Feature` around the session, nested so that each
   // turns off (in its own try/finally) in the reverse of the order it turned on.
-  def applyFeatures(remaining: List[Terminal.Feature]): result = remaining match
+  def applyFeatures(remaining: List[Terminal.Feature]): result = remaining.absolve match
     case Nil             => session
     case feature :: rest =>
       // Each feature wraps the session around the same single-owner terminal.

@@ -44,9 +44,9 @@ import vacuous.*
 //     statically-proven `Retained` edits access their values directly
 //
 // A *structural refinement*, not a trait: refinements are erasure-transparent, so
-// `Diff.Edit[Text] & Retained` still erases to `Diff.Edit`. A nominal marker would erase intersections and
-// `self <: Retained` bounds to the marker's own class, inserting checkcasts that fail at
-// runtime — the underlying value never actually implements it. (The same technique as
+// `Diff.Edit[Text] & Retained` still erases to `Diff.Edit`. A nominal marker would erase
+// intersections and `self <: Retained` bounds to the marker's own class, inserting checkcasts
+// that fail at runtime — the underlying value never actually implements it. (The same technique as
 // rudiments' `Populated`, the non-emptiness proof.)
 type Retained = Any { type Retain = true }
 

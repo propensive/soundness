@@ -31,7 +31,9 @@ the configuration language the whole toolchain standardises on — is specified 
 with stratiform as its reference implementation. The bootstrap test for the entire track is
 Soundness being buildable by fury, attestation-equal to the Mill build.
 
-The track's items, with their horizons and hard dependencies; [`status.tel`](status.tel) records where each one stands:
+The track's items, with their horizons and hard dependencies;
+[`status.tel`](https://github.com/propensive/soundness/blob/main/doc/roadmap/status.tel)
+records where each one stands:
 
 ```tabular
 column  Item

@@ -655,7 +655,7 @@ extends caps.Mutable:
 
       insertLength =
         insertLengthOffset.readUnchecked(insertCode) +
-            readBits(insertLengthNBits.readUnchecked(insertCode))
+          readBits(insertLengthNBits.readUnchecked(insertCode))
 
       copyLength =
         copyLengthOffset.readUnchecked(copyCode) + readBits(copyLengthNBits.readUnchecked(copyCode))

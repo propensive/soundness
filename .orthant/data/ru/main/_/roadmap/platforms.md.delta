@@ -1,5 +1,8 @@
 orthant 2 language
 
+@ 0 3 0 064a0d693208d94d0be9e9c787015ee8
++ Пункты направления с их горизонтами и жёсткими зависимостями; [`status.tel`](https://github.com/propensive/soundness/blob/main/doc/roadmap/status.tel) фиксирует, где стоит каждый:
+
 @ 0 6 0 1c04979355be49381f1bb8e3f8ecc451
 + `etc/compatibility.tsv` фиксирует матрицу, а `etc/check-compatibility.py` (запускается `make
 + build`) заново порождает её столбцы платформ из `build.mill` — флагов `scalaJs`/

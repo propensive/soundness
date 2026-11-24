@@ -39,7 +39,6 @@ import aperture.*
 import contingency.*
 import denominative.*
 import denominative.dysasymptotics.linearSize
-import distillate.*
 import fulminate.*
 import galilei.*
 import gossamer.*
@@ -335,10 +334,10 @@ object Tar:
 
         // Establish a nonempty current chunk, or report exhaustion.
         private update def replenish(): Boolean =
-          while offset >= chunk.length && !exhausted do chunks.next() match
+          while offset >= chunk.length && !exhausted do chunks.next().absolve match
             case Iterator.Exhausted => exhausted = true
 
-            case next: Data =>
+            case next: Data @unchecked =>
               chunk = next
               offset = 0
 

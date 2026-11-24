@@ -89,7 +89,7 @@ object Interpretable:
 
       def interpret(arguments: List[Argument]): Optional[List[element]] =
         def recur(arguments: List[Argument], done: List[element]): Optional[List[element]] =
-          arguments match
+          arguments.absolve match
             case Nil          => done.reverse
 
             case head :: tail =>

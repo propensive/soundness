@@ -279,7 +279,7 @@ object Mdns:
     // which is no conflict at all.
     def compare(ours: List[Dns.Record], theirs: List[Dns.Record]): Comparison =
       def compareSorted(ours: List[Dns.Record], theirs: List[Dns.Record]): Comparison =
-        (ours, theirs) match
+        (ours, theirs).absolve match
           case (Nil, Nil)                       => Comparison.Same
           case (Nil, _)                         => Comparison.Less
           case (_, Nil)                         => Comparison.More
@@ -296,7 +296,7 @@ object Mdns:
         case head :: tail if compare(head, record).less => head :: insert(record, tail)
         case _                                          => record :: sorted
 
-      records match
+      records.absolve match
         case Nil          => Nil
         case head :: tail => insert(head, sorted(tail))
 
@@ -413,7 +413,7 @@ object Mdns:
           def start(inlets: List[Transport.Inlet], started: List[(AnyRef, AnyRef)])
           :   List[(AnyRef, AnyRef)] =
 
-            inlets match
+            inlets.absolve match
               case Nil => started
 
               case inlet :: rest =>
@@ -515,6 +515,7 @@ object Mdns:
 
         if legacy then
           val response = respond(answers).copy(id = message.id)
+
           transport.let: transport =>
             safely(transport.reply(packet.sender, packet.port, response.in[Data]))
         else if defence || answers.all(unique) then

@@ -359,7 +359,7 @@ object Http:
         newline()
 
       (first, second) match
-        case (first: Data, second: Data) =>
+        case (first: Data @unchecked, second: Data @unchecked) =>
           val text = head(t"Transfer-Encoding: chunked")
 
           Stream
@@ -1393,7 +1393,7 @@ object Http:
             val code = response.status.code
 
             if !isRedirect(code) || remaining <= 0 then response else
-              response.textHeaders.seek(_.key.lower == t"location") match
+              response.textHeaders.seek(_.key.lower == t"location").absolve match
                 case Unset =>
                   response
 

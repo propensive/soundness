@@ -32,9 +32,9 @@
                                                                                                   */
 package dendrology
 
-import scala.collection.immutable.Vector
 // Deliberate stdlib opt-out: these internals consume acyclicity's `Dag`, whose set algebra
 // remains on the stdlib `Set` for now.
+import scala.collection.immutable.Vector
 import scala.collection.immutable.{List, Map, Nil, Set}
 import scala.collection.mutable as scm
 

@@ -210,17 +210,18 @@ case class Diff[element](edits: Diff.Edit[element]*):
   def patch(sequence: List[element], update: (element, element) -> element = (left, right) => left)
   :   Chain[element] =
 
-    def recur(todo: List[Edit[element]], sequence: List[element]): Chain[element] = todo match
-      case Nil                   => sequence.to[Chain]
-      case Ins(_, value) :: tail => value #:: recur(tail, sequence)
+    def recur(todo: List[Edit[element]], sequence: List[element]): Chain[element] =
+      todo.absolve match
+        case Nil                   => sequence.to[Chain]
+        case Ins(_, value) :: tail => value #:: recur(tail, sequence)
 
-      case Del(_, _) :: tail => sequence match
-        case _ :: rest => recur(tail, rest)
-        case _         => panic(m"the diff deletes beyond the end of the sequence")
+        case Del(_, _) :: tail => sequence match
+          case _ :: rest => recur(tail, rest)
+          case _         => panic(m"the diff deletes beyond the end of the sequence")
 
-      case Par(_, _, value) :: tail => sequence match
-        case head :: rest => value.let(update(_, head)).or(head) #:: recur(tail, rest)
-        case _            => panic(m"the diff retains beyond the end of the sequence")
+        case Par(_, _, value) :: tail => sequence match
+          case head :: rest => value.let(update(_, head)).or(head) #:: recur(tail, rest)
+          case _            => panic(m"the diff retains beyond the end of the sequence")
 
     recur(edits.to(List), sequence)
 

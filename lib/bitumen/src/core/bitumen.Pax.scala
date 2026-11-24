@@ -67,7 +67,8 @@ object Pax:
           data.readUnchecked(lengthEnd) <= '9'.toByte
         do lengthEnd += 1
 
-        if lengthEnd == pos || lengthEnd >= data.length || data.readUnchecked(lengthEnd) != ' '.toByte
+        if lengthEnd == pos || lengthEnd >= data.length ||
+          data.readUnchecked(lengthEnd) != ' '.toByte
         then
           raise(Tar.Error(Tar.Error.Reason.BadPaxRecord(data)))
           pos = data.length

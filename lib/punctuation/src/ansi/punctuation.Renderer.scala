@@ -157,7 +157,7 @@ object Renderer:
         case _ =>
           val prefix = e"${Fg(palette.subdued)}(${t"#"*level} )"
 
-          wrapped match
+          wrapped.absolve match
             case Nil =>
               List(prefix)
 
@@ -205,7 +205,7 @@ object Renderer:
     case Layout.HtmlBlock(_, html) =>
       val text: Teletype = e"${Fg(palette.subdued)}($html)"
 
-      text.cut(t"\n") match
+      text.cut(t"\n").absolve match
         case Nil => Nil
 
         case lines @ _ :: _ =>
@@ -237,7 +237,7 @@ object Renderer:
         val inner = item.map(layoutLines(_, (width - markerSize).max(1))).filter(!_.nil)
         val joined = if tight then concatItems(inner) else interleaveBlanks(inner)
 
-        joined match
+        joined.absolve match
           case Nil            => List(mk)
 
           case head :: tail =>
@@ -254,7 +254,7 @@ object Renderer:
 
   // Concatenate per-block line lists with a single blank line between blocks.
   private def interleaveBlanks(blocks: List[List[Teletype]]): List[Teletype] =
-    blocks match
+    blocks.absolve match
       case Nil          => Nil
       case head :: Nil  => head
       case head :: tail => head + (Teletype.empty :: interleaveBlanks(tail))

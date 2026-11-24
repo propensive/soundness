@@ -90,7 +90,7 @@ private case class MulticastBinding
 // The local interfaces behind urticose's descriptions, by index; one no longer present is
 // skipped.
 private def interfacesOf(interfaces: List[NetworkInterface]): List[jn.NetworkInterface] =
-  interfaces match
+  interfaces.absolve match
     case Nil => Nil
 
     case head :: tail =>
@@ -114,7 +114,7 @@ private def senderOf(address: jn.InetSocketAddress): Ipv4 | Ipv6 =
   safely(bytes.as[Ipv4]).or(safely(bytes.as[Ipv6])).or(Ipv4.Localhost)
 
 // The `DatagramSize` option, consumed by the backend rather than set on the socket.
-private def datagramSize(options: List[Socket.Option]): Int = options match
+private def datagramSize(options: List[Socket.Option]): Int = options.absolve match
   case Nil                                      => 1472
   case Socket.Option.DatagramSize(bytes) :: _   => bytes
   case _ :: tail                                => datagramSize(tail)
@@ -426,8 +426,7 @@ package socketBackends:
 
       case ClientExchange.Domain(channel) =>
         input.drain: region =>
-          range =>
-            channel.write(region.borrow(range)(ByteBuffer.wrap(_, _, _)))
+          range => channel.write(region.borrow(range)(ByteBuffer.wrap(_, _, _)))
 
         channel.shutdownOutput()
 

@@ -35,9 +35,9 @@ package proscenium
 import scala.collection.immutable as sci
 
 // The third opaque collection alias: an immutable map backed by `sci.Map`. Same design as
-// `Sequence` and `Set`: members invisible, API via typeclasses (`Applicable` provides `at`/`defines`/
-// `confine`; `Traversable by (key, value)` the transforming surface), construction and the
-// greppable `stdlib` bridge in the companion, casts at the boundary, and deliberately NO
+// `Sequence` and `Set`: members invisible, API via typeclasses (`Applicable` provides
+// `at`/`defines`/`confine`; `Traversable by (key, value)` the transforming surface), construction
+// and the greppable `stdlib` bridge in the companion, casts at the boundary, and deliberately NO
 // `Conversion` to a stdlib supertype.
 // The companion is `Pure`: the umbrella forwards it as a `val`, and under capture checking a
 // value of a non-pure object type is a tracked capability, so `xs.to(Map)` — which passes the
@@ -248,7 +248,8 @@ object Map extends scala.caps.Pure:
 
   // `.to[Map]` support (see `List`): the conversion is on `Map.type` only, so it cannot
   // expose members of `Map` values.
-  given factory: [key, value] => Conversion[Map.type, scala.collection.Factory[(key, value), Map[key, value]]] =
+  given factory: [key, value]
+  =>  Conversion[Map.type, scala.collection.Factory[(key, value), Map[key, value]]] =
     _ =>
       new scala.collection.Factory[(key, value), Map[key, value]]:
         def fromSpecific(elements: IterableOnce[(key, value)]^): Map[key, value] =
@@ -263,17 +264,19 @@ object Map extends scala.caps.Pure:
   // Lifting and unlifting for macros; see `List`'s companion for the full rationale
   // (public `from` splice, backticked pattern types, unlift limited to produced shapes).
   given toExpr: [key: {scala.quoted.Type, scala.quoted.ToExpr},
-                 value: {scala.quoted.Type, scala.quoted.ToExpr}]
+                  value: {scala.quoted.Type, scala.quoted.ToExpr}]
   =>  scala.quoted.ToExpr[Map[key, value]]:
     def apply(map: Map[key, value])(using scala.quoted.Quotes)
     :   scala.quoted.Expr[Map[key, value]] =
+
       '{Map.from(${scala.quoted.Expr.ofList(map.toList.map(scala.quoted.Expr(_)))})}
 
   given fromExpr: [key: {scala.quoted.Type, scala.quoted.FromExpr},
-                   value: {scala.quoted.Type, scala.quoted.FromExpr}]
+                    value: {scala.quoted.Type, scala.quoted.FromExpr}]
   =>  scala.quoted.FromExpr[Map[key, value]]:
     def unapply(expr: scala.quoted.Expr[Map[key, value]])(using scala.quoted.Quotes)
     :   Option[Map[key, value]] =
+
       expr match
         case '{Map.from($pairs: sci.List[(`key`, `value`)])} =>
           scala.quoted.FromExpr.ListFromExpr[(key, value)].unapply(pairs).map(Map.from(_))
@@ -288,6 +291,7 @@ object Map extends scala.caps.Pure:
   def nil[key, value](map: Map[key, value]): Boolean = map.isEmpty
   def defines[key, value](map: Map[key, value], index: key): Boolean = map.contains(index)
   def at[key, value](map: Map[key, value], index: key): value = map(index)
+
   def read[key, value](map: Map[key, value], index: key): value | Null =
     map.getOrElse[value | Null](index, null)
 

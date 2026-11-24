@@ -40,7 +40,7 @@ detail
       written as `cell() = v`, and transitioned with `ere` and `since`, which compile a lambda
       literal such as `_ + 1` to the JDK intrinsic; `Mutex`; thread-bound `Scoped` values; and
       `Loop`, a stoppable iteration for a background task.
-    - **Small values**: `Exit` and `Termination` (what a command returns), `Bytes` (a byte
+    - **Small values**: `Exit` and `Termination` (what a command returns), `Memory` (a byte
       count with `kib`/`mib`/`gib` literals), `Digit`, and the compile-time helpers `typeName`,
       `reflectClass`, `probe` and `!!`.
 
@@ -69,7 +69,7 @@ detail
 
     The package is declared by two libraries, and the split is about the build graph rather than
     the namespace. `rudiments.core` holds the combinators, the collection operations, `Atomic`,
-    `Mutex`, `Scoped`, `Loop`, `Exit`, `Bytes` and the sorting operations, and depends on
+    `Mutex`, `Scoped`, `Loop`, `Exit`, `Memory` and the sorting operations, and depends on
     `murmuration`, `denominative`, `vacuous`, `symbolism` and `anticipation`. The `concordance`
     library, which sits directly on `denominative` so that libraries below rudiments can index
     safely, declares the confined-indexing vocabulary — `apply`, `at`, `defines`, `confine`,
@@ -659,7 +659,7 @@ entry .sortingAlgorithms   the sorting algorithms, each a `SortAlgorithm` given 
   entry .bubbleSort   bubble sort: stable, quadratic, for tiny inputs
   entry .insertionSort   insertion sort: stable, quadratic, fast on nearly-sorted tiny inputs
 
-entry .sorting   the plumbing between a collection and the array a sorting algorithm sorts
+entry .sortingInternal   the plumbing between a collection and the array a sorting algorithm sorts
   hidden
   detail
       Not for direct use: public only because `sort` and `order` are inline and may not reach
@@ -739,29 +739,29 @@ entry .javaInputStream   a `Data` as a `java.io.InputStream`
     For handing bytes to a Java API which reads a stream: a `ByteArrayInputStream` over the
     array, without copying.
 
-entry .Bytes   a count of bytes, as a quantity: `4.kib`, `data.bytes`
-    `Bytes` is the opaque type `rudiments.internal.Bytes`, an opaque `Long`, exported here.
-    Arithmetic and comparison treat it as a quantity: two `Bytes` add and subtract, a `Bytes`
-    multiplies and divides by an `Int`, and one `Bytes` divided by another is a `Double`
+entry .Memory   a count of bytes, as a quantity: `4.kib`, `data.bytes`
+    `Memory` is the opaque type `rudiments.internal.Memory`, an opaque `Long`, exported here.
+    Arithmetic and comparison treat it as a quantity: two `Memory` add and subtract, a `Memory`
+    multiplies and divides by an `Int`, and one `Memory` divided by another is a `Double`
     ratio, all through givens in its companion, so no import is needed. Constructed with
-    `Bytes(long)` or the literal extensions `b`, `kib`, `mib`, `gib` and `tib` on an `Int` or
+    `Memory(long)` or the literal extensions `b`, `kib`, `mib`, `gib` and `tib` on an `Int` or
     `Long` (binary units: `1.kib` is 1024 bytes), and from a `Data` with `bytes`; read back
     with `long`, and shown as `1024 bytes`.
 
     ```scala
     import soundness.*
 
-    val limit: Bytes = 4.mib
+    val limit: Memory = 4.mib
     limit/2.kib             // 2048.0
     (limit + 1.kib).long    // 4195328
     ```
 
-entry .b   `n.b`: a `Bytes` of `n` bytes, on an `Int` or `Long`
-entry .kib   `n.kib`: a `Bytes` of `n` kibibytes (×1024)
-entry .mib   `n.mib`: a `Bytes` of `n` mebibytes (×1024²)
-entry .gib   `n.gib`: a `Bytes` of `n` gibibytes (×1024³)
-entry .tib   `n.tib`: a `Bytes` of `n` tebibytes (×1024⁴)
-entry .bytes   `data.bytes`: the length of a `Data` as a `Bytes`
+entry .b   `n.b`: a `Memory` of `n` bytes, on an `Int` or `Long`
+entry .kib   `n.kib`: a `Memory` of `n` kibibytes (×1024)
+entry .mib   `n.mib`: a `Memory` of `n` mebibytes (×1024²)
+entry .gib   `n.gib`: a `Memory` of `n` gibibytes (×1024³)
+entry .tib   `n.tib`: a `Memory` of `n` tebibytes (×1024⁴)
+entry .bytes   `data.bytes`: the length of a `Data` as a `Memory`
 
 entry .Digit   a decimal digit, `0` to `9`, as a type
     `Digit` is the opaque type `rudiments.internal.Digit`, the union `0 | 1 | … | 9`,
@@ -1172,27 +1172,27 @@ entry .&   `case A(x) & B(y)`: matches one value against two extractors at once
     extractor and `y` from the second on the same value, which otherwise needs a nested
     match or a guard.
 
-entry .internal   the home of `Bytes`, `Digit`, the `&` extractor and the macros behind `probe`, `typeName` and `reflectClass`
+entry .internal   the home of `Memory`, `Digit`, the `&` extractor and the macros behind `probe`, `typeName` and `reflectClass`
   hidden
   detail
-      Not for direct use: `Bytes`, `Digit` and `&` are exported from here to the `rudiments`
+      Not for direct use: `Memory`, `Digit` and `&` are exported from here to the `rudiments`
       package, where their pages are; `probe`, `name` and `reflectClass` are the macro
       implementations.
-  entry .Bytes   the opaque byte count, a `Long` treated as a quantity; see `rudiments.Bytes`
+  entry .Memory   the opaque byte count, a `Long` treated as a quantity; see `rudiments.Memory`
     detail
-        The opaque type `Bytes = Long`, with its constructor, its arithmetic and comparison
+        The opaque type `Memory = Long`, with its constructor, its arithmetic and comparison
         givens and its accessors. Its page under the `rudiments` package has the full account;
-        every given here is in implicit scope for a `Bytes`.
-    entry .apply   `Bytes(long)`: a byte count from a `Long`
+        every given here is in implicit scope for a `Memory`.
+    entry .apply   `Memory(long)`: a byte count from a `Long`
     entry .comparable   orders byte counts numerically
     entry .zeroic   zero bytes, so `total` over byte counts starts at zero and is bare
     entry .communicable   renders a byte count in a message as `n bytes`
-    entry .addable   `Bytes + Bytes`
-    entry .subtractable   `Bytes - Bytes`
-    entry .multiplicable   `Bytes * Int`
-    entry .multiplicable2   `Int * Bytes`
-    entry .divisible   `Bytes / Int`
-    entry .divisible2   `Bytes / Bytes`, as a `Double` ratio
+    entry .addable   `Memory + Memory`
+    entry .subtractable   `Memory - Memory`
+    entry .multiplicable   `Memory * Int`
+    entry .multiplicable2   `Int * Memory`
+    entry .divisible   `Memory / Int`
+    entry .divisible2   `Memory / Memory`, as a `Double` ratio
     entry .long   `bytes.long`: the count as a `Long`
     entry .text   `bytes.text`: the count as text, `1024 bytes`
   entry .Digit   the opaque decimal digit, `0 | 1 | … | 9`; see `rudiments.Digit`

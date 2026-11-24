@@ -38,7 +38,6 @@ import anticipation.*
 import contingency.*
 import gossamer.*
 import jacinta.*
-import vacuous.*
 
 import Lsp.*
 

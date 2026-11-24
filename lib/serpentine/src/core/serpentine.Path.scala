@@ -154,6 +154,7 @@ object Path:
         if path.nil then None
         else
           val root = eradicable.decode(path.root)
+
           if path.descent.length == 1 then Some((root, path.descent.head))
           else Some((root, Relative(0, path.descent*))) )
     :   path is Quotient of root over (Relative on filesystem) | Text

@@ -69,6 +69,7 @@ object AesKeyWrap:
   private def load
     ( words: scala.Array[Long]^, input: scala.Array[Byte], index: Int, count: Int, shift: Int )
   :   Unit =
+
     if index < count then
       words(index + shift) = be64(input, 8*index)
       load(words, input, index + 1, count, shift)
@@ -76,6 +77,7 @@ object AesKeyWrap:
   private def store
     ( words: scala.Array[Long]^, output: scala.Array[Byte]^, index: Int, count: Int, shift: Int )
   :   Unit =
+
     if index < count then
       put64(output, 8*index, words(index + shift))
       store(words, output, index + 1, count, shift)
@@ -85,6 +87,7 @@ object AesKeyWrap:
   private def wrapSteps
     ( aes: Crypto.SymmetricCipher, key: Data, words: scala.Array[Long]^, count: Int, step: Int )
   :   Unit =
+
     if step < 6*count then
       val index = step%count + 1
       val input = block(words(0), words(index))
@@ -96,6 +99,7 @@ object AesKeyWrap:
   private def unwrapSteps
     ( aes: Crypto.SymmetricCipher, key: Data, words: scala.Array[Long]^, count: Int, step: Int )
   :   Unit =
+
     if step >= 0 then
       val index = step%count + 1
       val input = block(words(0) ^ (step + 1).toLong, words(index))
@@ -116,6 +120,7 @@ object AesKeyWrap:
 
   private[enigmatic] def unwrap(aes: Crypto.SymmetricCipher, key: Data, wrapped: Data)
   :   Optional[Data] =
+
     if wrapped.length%8 != 0 || wrapped.length < 24 then Unset else
       val count = wrapped.length/8 - 1
       val words: scala.Array[Long]^ = Array.scratch[Long](count + 1)

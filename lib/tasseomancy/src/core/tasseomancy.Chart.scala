@@ -43,10 +43,10 @@ import phoenicia.Font
 import prepositional.*
 import rudiments.*
 import savagery.*
+import savagery.Svg.{Figure, Lettering, Polyline, Rectangle}
 import spectacular.*
 import vacuous.*
 import xylophone.Xml
-import savagery.Svg.{Figure, Lettering, Polyline, Rectangle}
 
 object Chart:
   enum Legend:

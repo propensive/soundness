@@ -1,0 +1,15 @@
+orthant 2 language
+
+@ 0 1 0 0bea5823ded45c690e110e06b4e7fcef
++ info   JSON jako typowana, niemutowalna wartość: parsowana, budowana, przeglądana, konwertowana do typów Scali i z powrotem oraz strumieniowana
+
+@ 0 9 0 0d6fd08d0627d7841c6deaf9f043651e
++ entry .verify   sprawdza dokument względem schematu typu i nadaje mu nowy typ, by po jego polach można było nawigować ze sprawdzaniem w czasie kompilacji
++     Rozszerzenie dla `Json`. `json.verify[T]` urzeczywistnia schemat deklarowany przez
++     `Json.Decodable` typu `T` (przez `JsonSchema.reify` jego `shape()`), przechodzi po
++     dokumencie, porównując go z tym schematem, i w razie powodzenia zwraca ten sam dokument z
++     typem `Json of T from T`: `Json`, którego fantomowy `Topic` jest położeniem w schemacie,
++     a `Origin` – korzeniem. Przy pierwszej niezgodności zgłasza `Json.Error` –
++     `Reason.NotType` dla wartości niewłaściwego rodzaju, `Reason.Absent` dla wymaganego
++     pola, którego brak w dokumencie – więc wymaga `Tactic[Json.Error]`, a
++     `safely(json.verify[T])` jest `Unset` dla dokumentu niezgodnego ze schematem.

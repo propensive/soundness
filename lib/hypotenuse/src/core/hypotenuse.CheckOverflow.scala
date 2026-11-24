@@ -38,46 +38,6 @@ import contingency.*
 import prepositional.*
 import symbolism.*
 
-// A policy for the arithmetic of the fixed-width integers: `+`, `-` and `*` on a `U*` or an `S*`
-// take their `Addable`, `Subtractable` and `Multiplicable` instances from the policy in scope,
-// and `Wrap` is what that policy makes of each result — the bare type, or one that `raises
-// Arithmetic.Error`.
-//
-// Every instance is an `object` reached by a stable path from its given (`U64.addable` is
-// `overflow.addU64`), so that the proxies the inliner introduces for them are pure paths, which
-// it drops: `a + b` compiles to the one instruction the hardware has for it. An instance
-// constructed with `new`, whether an anonymous class or a final one, survives inlining as an
-// allocation per operation.
-trait CheckOverflow:
-  type Wrap[result]
-
-  val addU64: U64 is Addable by U64 to Wrap[U64]
-  val addS64: S64 is Addable by S64 to Wrap[S64]
-  val addU32: U32 is Addable by U32 to Wrap[U32]
-  val addS32: S32 is Addable by S32 to Wrap[S32]
-  val addU16: U16 is Addable by U16 to Wrap[U16]
-  val addS16: S16 is Addable by S16 to Wrap[S16]
-  val addU8: U8 is Addable by U8 to Wrap[U8]
-  val addS8: S8 is Addable by S8 to Wrap[S8]
-
-  val subtractU64: U64 is Subtractable by U64 to Wrap[U64]
-  val subtractS64: S64 is Subtractable by S64 to Wrap[S64]
-  val subtractU32: U32 is Subtractable by U32 to Wrap[U32]
-  val subtractS32: S32 is Subtractable by S32 to Wrap[S32]
-  val subtractU16: U16 is Subtractable by U16 to Wrap[U16]
-  val subtractS16: S16 is Subtractable by S16 to Wrap[S16]
-  val subtractU8: U8 is Subtractable by U8 to Wrap[U8]
-  val subtractS8: S8 is Subtractable by S8 to Wrap[S8]
-
-  val multiplyU64: U64 is Multiplicable by U64 to Wrap[U64]
-  val multiplyS64: S64 is Multiplicable by S64 to Wrap[S64]
-  val multiplyU32: U32 is Multiplicable by U32 to Wrap[U32]
-  val multiplyS32: S32 is Multiplicable by S32 to Wrap[S32]
-  val multiplyU16: U16 is Multiplicable by U16 to Wrap[U16]
-  val multiplyS16: S16 is Multiplicable by S16 to Wrap[S16]
-  val multiplyU8: U8 is Multiplicable by U8 to Wrap[U8]
-  val multiplyS8: S8 is Multiplicable by S8 to Wrap[S8]
-
 object CheckOverflow:
   import Arithmetic.{Addition, Subtraction, Multiplication}
 
@@ -313,3 +273,43 @@ object CheckOverflow:
 
         if product < Byte.MinValue || product > Byte.MaxValue then overflow()
         else S8(product.toByte.bits)
+
+// A policy for the arithmetic of the fixed-width integers: `+`, `-` and `*` on a `U*` or an `S*`
+// take their `Addable`, `Subtractable` and `Multiplicable` instances from the policy in scope,
+// and `Wrap` is what that policy makes of each result — the bare type, or one that `raises
+// Arithmetic.Error`.
+//
+// Every instance is an `object` reached by a stable path from its given (`U64.addable` is
+// `overflow.addU64`), so that the proxies the inliner introduces for them are pure paths, which
+// it drops: `a + b` compiles to the one instruction the hardware has for it. An instance
+// constructed with `new`, whether an anonymous class or a final one, survives inlining as an
+// allocation per operation.
+trait CheckOverflow:
+  type Wrap[result]
+
+  val addU64: U64 is Addable by U64 to Wrap[U64]
+  val addS64: S64 is Addable by S64 to Wrap[S64]
+  val addU32: U32 is Addable by U32 to Wrap[U32]
+  val addS32: S32 is Addable by S32 to Wrap[S32]
+  val addU16: U16 is Addable by U16 to Wrap[U16]
+  val addS16: S16 is Addable by S16 to Wrap[S16]
+  val addU8: U8 is Addable by U8 to Wrap[U8]
+  val addS8: S8 is Addable by S8 to Wrap[S8]
+
+  val subtractU64: U64 is Subtractable by U64 to Wrap[U64]
+  val subtractS64: S64 is Subtractable by S64 to Wrap[S64]
+  val subtractU32: U32 is Subtractable by U32 to Wrap[U32]
+  val subtractS32: S32 is Subtractable by S32 to Wrap[S32]
+  val subtractU16: U16 is Subtractable by U16 to Wrap[U16]
+  val subtractS16: S16 is Subtractable by S16 to Wrap[S16]
+  val subtractU8: U8 is Subtractable by U8 to Wrap[U8]
+  val subtractS8: S8 is Subtractable by S8 to Wrap[S8]
+
+  val multiplyU64: U64 is Multiplicable by U64 to Wrap[U64]
+  val multiplyS64: S64 is Multiplicable by S64 to Wrap[S64]
+  val multiplyU32: U32 is Multiplicable by U32 to Wrap[U32]
+  val multiplyS32: S32 is Multiplicable by S32 to Wrap[S32]
+  val multiplyU16: U16 is Multiplicable by U16 to Wrap[U16]
+  val multiplyS16: S16 is Multiplicable by S16 to Wrap[S16]
+  val multiplyU8: U8 is Multiplicable by U8 to Wrap[U8]
+  val multiplyS8: S8 is Multiplicable by S8 to Wrap[S8]

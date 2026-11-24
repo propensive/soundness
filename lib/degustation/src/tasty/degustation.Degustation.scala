@@ -321,7 +321,9 @@ object Degustation:
           val fullName = Universe.qualify(path, name.unsigned.text)
 
           universe.classOf(t"$fullName$$") match
-            case module: Universe.ClassInfo => Symbol(fullName, path, false, false, t"()", Unset, Unset)
+            case module: Universe.ClassInfo =>
+              Symbol(fullName, path, false, false, t"()", Unset, Unset)
+
             // A Java class named as a term holds its statics.
             case _ if universe.classOf(fullName).lay(false)(_.java) =>
               Symbol(fullName, path, false, false, t"()", Unset, Unset)
@@ -453,7 +455,8 @@ object Degustation:
 
     // A member's full name as the compiler spells it: its declaring class's full name, carrier
     // objects included, then the member's name.
-    private def qualifiedMember(owner: Universe.ClassInfo, name: Text): Text = t"${owner.fullName}.$name"
+    private def qualifiedMember(owner: Universe.ClassInfo, name: Text): Text =
+      t"${owner.fullName}.$name"
 
     // Whether the definition `symbol` lies inside the definition at `enclosing` in `scope`.
     // Whether the definition `symbol` lies inside the definition at `enclosing` in `scope`, or is
@@ -722,8 +725,9 @@ object Degustation:
           case Tree.TypeDef(_, _, Tree.Template(_, _, _, self, _), _) => self.let(_(1))
           case _                                                      => Unset
 
-      // The class's self type with a declared one is `givenSelf & C` (`Universe.ClassInfo.selfType`), an
-      // intersection whatever is declared, and an intersection names no symbol.
+      // The class's self type with a declared one is `givenSelf & C`
+      // (`Universe.ClassInfo.selfType`), an intersection whatever is declared, and an intersection
+      // names no symbol.
       self.lay(symbolOfType(cls, t"", scope).fullName): _ => t"<none>"
 
     // Structural type encoding. `binders` tracks enclosing lambda-like binders outermost-last,
@@ -1343,7 +1347,8 @@ object Degustation:
 
       case _ => scala.Nil
 
-    private def termAtom(ownerKey: Text, tree: Tree, scope: Scope, owner: Optional[Universe.ClassInfo])
+    private def termAtom
+      ( ownerKey: Text, tree: Tree, scope: Scope, owner: Optional[Universe.ClassInfo] )
     :   Unit =
 
       val modifiers = modifiersOf(tree)
@@ -1510,7 +1515,8 @@ object Degustation:
 
         encodeType(out, mapped, scala.Nil, scope)
 
-    private def inlineAtom(ownerKey: Text, tree: Tree, scope: Scope, owner: Optional[Universe.ClassInfo])
+    private def inlineAtom
+      ( ownerKey: Text, tree: Tree, scope: Scope, owner: Optional[Universe.ClassInfo] )
     :   Unit =
 
       // The body of an inline or macro definition is copied into consumers at their compile
@@ -2129,7 +2135,10 @@ object Degustation:
     // never reaches. These proxies are declarations of the companion to the compiler's reflection,
     // and so atoms.
     private def constructorProxies
-      ( module: Tree.TypeDef, template: Tree.Template, scope: Scope, info: Optional[Universe.ClassInfo] )
+      ( module: Tree.TypeDef,
+        template: Tree.Template,
+        scope: Scope,
+        info: Optional[Universe.ClassInfo] )
 
     :   Unit =
 

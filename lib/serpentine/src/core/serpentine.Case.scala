@@ -48,14 +48,14 @@ enum Case:
     case Sensitive => left == right
     case _         => left.lower == right.lower
 
-  def equal(left: List[Text], right: List[Text]): Boolean = left match
+  def equal(left: List[Text], right: List[Text]): Boolean = left.absolve match
     case Nil => right.nil
 
     case head :: tail =>
-      right match
+      right.absolve match
         case Nil            => false
         case head2 :: tail2 => equal(head, head2) && equal(tail, tail2)
 
-  def hash(descent: List[Text]): Int = descent match
+  def hash(descent: List[Text]): Int = descent.absolve match
     case Nil          => 1
     case head :: tail => hash(tail)*31 + apply(head).##

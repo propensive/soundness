@@ -93,7 +93,7 @@ class ClasspathIndex private (local: Map[Text, ClassSurface], classloader: jn.UR
     val seen = scala.collection.mutable.LinkedHashSet[Text]()
     val missing = scala.collection.mutable.LinkedHashSet[Text]()
 
-    def recur(todo: List[Text]): Unit = todo match
+    def recur(todo: List[Text]): Unit = todo.absolve match
       case Nil => ()
 
       case next :: rest =>

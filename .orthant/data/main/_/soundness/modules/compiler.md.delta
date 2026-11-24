@@ -1,0 +1,10 @@
+orthant 2 release
+
+@ 0 1 0 0730bd52f4dce4600ed4cd194424ad7f
++   Toolchain(shrinkEdges(compiler)).produce
+
+@ 0 1 0 02d5a70498b737420f483c7f26f79bc1
++   Toolchain(nativeEdges(Toolchain.Triple.Arm64MacOs, Toolchain.Triple.X64Linux)).produce
+
+@ 0 1 0 1ad1bd2349d024ea16d5e575b3749768
++       Artifact.Binary(Toolchain.Triple.X64Linux),

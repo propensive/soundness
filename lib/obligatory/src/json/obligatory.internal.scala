@@ -117,6 +117,7 @@ object internal:
                               scala.compiletime.summonInline[param is Json.Decodable]
                               . decoded($source)
                             }
+
                           . asTerm
 
                     val application = Apply(Select(target.asTerm, method), params)

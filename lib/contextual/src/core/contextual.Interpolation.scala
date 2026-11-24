@@ -205,7 +205,7 @@ object Interpolation:
       ( parts: List[String], repr: TypeRepr = TypeRepr.of[scala.EmptyTuple.type] )
     :   TypeRepr =
 
-      parts match
+      parts.absolve match
         case head :: tail =>
           ConstantType(StringConstant(head)).asType.absolve match
             case '[label] => repr.asType.absolve match
@@ -218,7 +218,7 @@ object Interpolation:
       ( origins: List[(Int, Int)], repr: TypeRepr = TypeRepr.of[scala.EmptyTuple.type] )
     :   TypeRepr =
 
-      origins match
+      origins.absolve match
         case (start, end) :: tail =>
           ConstantType(IntConstant(start)).asType.absolve match
             case '[type s <: Int; s] => ConstantType(IntConstant(end)).asType.absolve match
@@ -242,7 +242,9 @@ object Interpolation:
                   type Topic = topic
                   type Transport = transport
                   type Origins = origins
-              } . asInstanceOf[Expr[Interpolation of topic]]
+              }
+
+            . asInstanceOf[Expr[Interpolation of topic]]
 
 trait Interpolation extends scala.caps.Pure:
   type Topic

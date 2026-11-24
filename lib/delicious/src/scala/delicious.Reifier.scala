@@ -105,6 +105,12 @@ object Reifier:
       case Syntax.Declaration(method, syntaxes, result) =>
         Syntax.Declaration(method, syntaxes.map(recur), recur(result))
 
+      case Syntax.Capturing(base, refs) =>
+        Syntax.Capturing(recur(base), refs.let(_.map(recur)))
+
+      case Syntax.Function(parameters, contextual, impure, refs, result) =>
+        Syntax.Function(recur(parameters), contextual, impure, refs.map(recur), recur(result))
+
     recur(syntax)
 
 /** Turns the TASTy payloads of semantic diagnostics back into stenography

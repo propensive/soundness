@@ -1,0 +1,125 @@
+orthant 2 language
+
+% 0 4 0 06bfb3df7c62ba2607ff2e46b4a75db1
+
+@ 0 1 0 1509c0b4edc0521e140773335e9e6a24
++   entry #Revision   un historial componible de ediciones, aplicado a un documento operación a operación
+
+@ 0 1 0 011854171f69420718747641930de1a5
++   entry #Mutation   las operaciones primitivas de edición de §22.2 que conservan la presentación, y su intérprete
+
+@ 0 5 0 03a6563a211c058e091aac26e9fa266a
++         Cada `.Op` es una reescritura local direccionada por un `Tel.Pointer`: los átomos de
++         alrededor, los comentarios, las líneas en blanco y los hijos no relacionados quedan
++         intactos por construcción, que es lo que permite a un programa cambiar un valor en un
++         fichero que escribió una persona y volver a escribirlo intacto. `Mutation(tel, op)`
++         aplica una operación y `Mutation(tel, ops)` una lista en orden, y devuelven un `Tel`
++         nuevo; `Revision` es el DSL componible sobre las mismas operaciones.
+
+@ 0 7 0 0bdbe28195ed1d45177a037d87ad30fd
++         Un paso de puntero es una palabra clave más un índice de aparición, resuelto con
++         respecto al documento al que se aplica una operación, así que un puntero sigue teniendo
++         sentido a través de ediciones no relacionadas; pero un puntero indexado por aparición
++         no debe reutilizarse entre operaciones que mueven, añaden o eliminan compuestos de la
++         misma palabra clave. Las precondiciones que dependen del esquema — que un miembro
++         eliminado no fuera obligatorio, que un indicador establecido esté declarado, que una
++         sustitución esté bien tipada — quedan fuera del alcance, como en la implementación de
++         referencia: una capa que conoce el esquema las comprueba antes de delegar en estas
++         primitivas.
+
+@ 0 20 0 0dcd6706d124251810739b23466f1845
++     entry .Placement   a qué lado del otro grupo coloca `ReorderGroups` un grupo: `Before` o `After`
++     entry .Member   una descripción sin esquema de un miembro de un struct, para `.construct`
++         `Value(keyword, occurrences)` es un miembro escalar con sus apariciones presentes (una
++         para un miembro simple, varias para uno repetible, ninguna para un miembro ausente que
++         termina la secuencia en línea); `Flag(keyword)` es un miembro indicador;
++         `Child(compound)` es un hijo ya hecho; y `Break` es un miembro ausente que no aporta
++         nada salvo terminar la secuencia en línea, como hace un miembro escalar ausente, porque
++         la fase de átomos nunca se salta una posición escalar.
++     entry .Op   una operación primitiva, direccionada por un `Tel.Pointer`
++         Las operaciones direccionadas al destino, cuyo puntero nombra el compuesto que cambian:
++         `UpdateAtom(pointer, atomIndex, text)` reescribe un átomo, conservando su forma mientras
++         el valor nuevo sea seguro para ella y, si no, escalando en línea → fuente → literal,
++         nunca hacia atrás; `Delete(pointer)` elimina el compuesto, y un bloque vaciado con sus
++         comentarios; `Replace(pointer, compound)` sustituye un compuesto, conservando la
++         observación del original; `AttachRemark(pointer, text)` y `RemoveRemark(pointer)`
++         establecen y borran la observación; `SetFlag(pointer, keyword)` añade un indicador en
++         línea cuando el compuesto no tiene hijos ni átomo de fuente o literal, o si no como
++         hijo, y falla con `FlagAlreadySet` si ya está; `UnsetFlag(pointer, keyword)` quita un
++         indicador en línea o un hijo indicador simple, y es la identidad cuando no está;
++         `InsertBefore(pointer, compound)` e `InsertAfter(pointer, compound)` colocan un hermano
++         junto al destino, en un bloque nuevo cuando el bloque del destino está tabulado, para
++         que el compuesto nuevo no se lea como una fila.
+
+@ 0 23 0 14ccf0ecaffdade716db7a4078f0c302
++         Las operaciones direccionadas al padre, cuyo puntero nombra el contenedor
++         (`Tel.Pointer.Empty` para la raíz): `Insert(pointer, compound)` añade en la posición
++         natural del miembro — después del último compuesto con la misma palabra clave, o en un
++         bloque final nuevo —; `InsertIntoBlock(parentPointer, blockIndex, compound)` añade una
++         fila a un bloque, rellenada de nuevo según su tabulación, y falla con
++         `TabulationOverflow` cuando un valor de columna no cabe;
++         `ReorderWithinGroup(parentPointer, keyword, oldIndex, newIndex)` mueve una aparición
++         dentro del grupo de su palabra clave; `ReorderGroups(parentPointer, keyword,
++         otherKeyword, placement)` mueve un grupo de miembros entero antes o después de otro, y
++         mueve bloques enteros cuando los bloques de los grupos son disjuntos; y
++         `ResizeTabulation(parentPointer, blockIndex, plannedRows)` vuelve a calcular los
++         desplazamientos de los marcadores de una tabulación para que quepan sus filas y las
++         planificadas, rellenando de nuevo cada fila. La geometría de las columnas se mide en
++         puntos de código.
++     entry .apply   aplica una operación, o una lista en orden, a un documento
++         `Mutation(tel, op)` y `Mutation(tel, ops)`, cada una de las cuales lanza
++         `Mutation.Error`. El propio sigilo del documento (de su pragma, `#` por defecto)
++         alimenta la prueba de seguridad en línea, de modo que un valor actualizado que al
++         volver a analizarse se leería como una observación bajo un sigilo personalizado escala
++         su forma.
++     entry .construct   un compuesto nuevo con la forma de cada átomo elegida según las reglas de seguridad de §22.3
++         `construct(keyword, atoms*)` crea un átomo por cada valor no vacío: en línea si el
++         valor no tiene salto de línea, ni espacios iniciales, finales o dobles, y no empieza por
++         el sigilo seguido de un espacio; si no, un átomo de fuente si no tiene ninguna línea
++         vacía, ninguna línea que termine en espacio en blanco y ningún espacio inicial; y si no,
++         un átomo literal bajo el delimitador `---` más corto que no choque con ninguna línea. Un
++         valor vacío no da ningún átomo, ya que un espacio inicial sería un espacio final en la
++         línea de la palabra clave.
+
+@ 0 7 0 080b2f8885154bc50ebe4864d826f18c
++         `construct(keyword, members)` y `construct(keyword, members, sigil)` ejecutan el
++         algoritmo de presentación canónica sobre una lista de `Member`: los escalares e
++         indicadores iniciales de una sola aparición y seguros en línea se convierten en átomos
++         en línea; un escalar repetible va todo en línea cuando todas sus apariciones son seguras
++         en línea y, si no, cada aparición se convierte en un hijo; y cada miembro restante es un
++         hijo en un único bloque sin comentarios, tabulación ni líneas en blanco. Los átomos en
++         línea van precedidos de espacio blando hasta el primer valor que contiene un espacio, y
++         de espacio duro a partir de ahí, de modo que la construcción, al volver a analizarse, da
++         los mismos átomos.
+
+@ 0 1 0 1210220dfccc22b104fd4553a4bc7331
++     entry .Error   se lanza cuando un puntero no se resuelve o falla el invariante de una operación
+
+@ 0 11 0 01151dd09e78d6ca18e924e372da3734
++           Error `↯/s.118.2`: _the mutation failed because …_. `PointerNotFound` es un puntero, un
++           índice de bloque o un grupo que no se resuelve a un compuesto, incluido un reordenamiento
++           cuyos grupos están entremezclados o cuyos índices están fuera de rango, y un
++           `ResizeTabulation` sobre un bloque sin tabulación; `AtomIndexOutOfRange` es un
++           `UpdateAtom` más allá de los átomos del destino; `FlagAlreadySet` un `SetFlag` de un
++           indicador que el destino ya tiene; `TabulationOverflow` un `InsertIntoBlock` cuyo valor
++           de columna supera la capacidad de su columna; y `WriteUnsupported`, que lanza
++           `open[Tel]` con `Write` cuando la fuente del documento no se puede volver a escribir.
++       entry .Reason   los cinco motivos, cada uno con un número
++         entry .communicable   representa cada motivo como un mensaje
++       entry #reason   por qué falló la mutación
+
+@ 0 8 0 02470b0ff0fda20a11defde5e0cb196a
++ entry .ratel   un documento, elemento o valor como imagen RaTEL, con el esquema que la imagen lleva; o el lector que tiene abierto un bloque `open[Ratel]`
++     Tres extensiones, como tiene `bintel`. `tel.ratel(schema)` compone el esquema, asigna
++     tipos al documento con respecto a él y escribe la imagen; `element.ratel(schema)` escribe
++     un `Tel.Element` ya tipado; y `value.ratel` escribe un valor bajo el esquema derivado de
++     su tipo. Las dos primeras tienen una sobrecarga que recibe unos `Tel.Codec.Bindings`; sin
++     ella, los códecs son `Tel.Codec.Bindings.all`. Lanza `Tel.Error` para un documento que no
++     se ajusta y `Ratel.Error` para un esquema o un valor que no se puede disponer. Sin
++     receptor, dentro de un bloque `open[Ratel]`, `ratel` es el `Ratel.Reader` que se dio al
++     bloque.
+
+@ 0 3 0 11934fe7d1436cd111b3ee05fe22b1da
++ entry .width   `@width(bytes)`: promete que todo valor de un campo escalar codificado tiene esa cantidad de bytes, para que RaTEL lo almacene en su registro
++     Un valor de otra longitud se rechaza al escribirlo. Una anchura sin codificación, o con
++     `@intern`, no compila.
