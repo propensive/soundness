@@ -21,7 +21,7 @@ Everything on this roadmap serves one philosophy, elaborated in the
   they have different names, they are not.
 - **Batteries included.** One platform for CLI applications, web applications (server and
   front-end), testing, scientific work and development tooling — built on
-  [open standards](../tags.md), not proprietary inventions, and modular enough that unused
+  open standards, not proprietary inventions, and modular enough that unused
   batteries cost nothing.
 - **Parity of targets.** JVM, Android, JavaScript and WASM/WASI are all viable targets, no
   harder to build for than the JVM.
@@ -80,7 +80,9 @@ The rules that keep this document trustworthy:
 - **Horizons are not dates.** *Near* is the current working set; *mid* is what the near horizon
   unblocks; *long* approaches the track's end-state. Progress is measured by criteria, never by
   the calendar.
-- **Status lives in [`status.tel`](status.tel).** The prose files say what and why;
+- **Status lives in
+  [`status.tel`](https://github.com/propensive/soundness/blob/main/doc/roadmap/status.tel).**
+  The prose files say what and why;
   `status.tel` — one record per item, machine-readable, written in TEL — says where each item
   stands. Prose never claims completion; it links.
 
@@ -188,7 +190,9 @@ This document is written to be acted on by agents as much as read by people:
 - Verify any claim of progress by running the item's `Done when:` command; never trust prose or
   memory over the command's output. Re-measure baselines before relying on them and report
   drift.
-- Read [`status.tel`](status.tel) for current status; update it in the same commit as the work
+- Read
+  [`status.tel`](https://github.com/propensive/soundness/blob/main/doc/roadmap/status.tel)
+  for current status; update it in the same commit as the work
   it describes.
 - When a roadmap item changes a public API, follow the migration-instruction convention defined
   by `dist-2` in `doc/standards/migration.md` — that convention is what makes "APIs change

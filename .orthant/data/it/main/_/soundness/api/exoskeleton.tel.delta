@@ -1,0 +1,14 @@
+orthant 2 language
+
+@ 0 1 0 1cb1c72d271e663116482ada82e487d8
++ info   applicazioni da riga di comando: argomenti, flag, sottocomandi, completamenti con Tab, aiuto e pagine di manuale da un unico corpo di codice
+
+@ 0 8 0 063838bb6926d9f30d534d2498f1491d
++ entry .Effectful   la capability cancellata che contrassegna il codice eseguito per davvero, non quello eseguito speculativamente per i completamenti
++     `Effectful` non viene mai istanziato: un blocco `execute` lo evoca dal nulla per il suo corpo, ed
++     `executives.directExecutive` lo concede all'intero corpo come suo `Permit`. `Flag#apply`,
++     `Flag#require` e `Flag#validate` smistano in base alla sua presenza con `summonFrom`,
++     risolvendosi in un handle differito (`Prospective`, `Requisite`) senza di esso e nel valore con
++     esso, e `Prospective#apply`, `Requisite#apply` e `Flag#value` lo esigono senz'altro. Anche un
++     metodo definito dall'utente può esigerlo, per rendere un'operazione irreversibile non chiamabile
++     dal preludio che il completamento con il tasto Tab esegue:

@@ -1,0 +1,48 @@
+orthant 2 language
+
+% 0 4 0 06bfb3df7c62ba2607ff2e46b4a75db1
+
+@ 0 1 0 1509c0b4edc0521e140773335e9e6a24
++   entry #Revision   可组合的编辑日志，逐个操作地应用于文档
+
+@ 0 1 0 011854171f69420718747641930de1a5
++   entry #Mutation   §22.2 中保留呈现形式的基本编辑操作，以及它们的解释器
+
+@ 0 5 0 03a6563a211c058e091aac26e9fa266a
++         每个 `.Op` 都是由 `Tel.Pointer` 寻址的局部重写：周围的原子、注释、空行和无关的子项在构造上就不会被触及，正因如此，程序才能修改人写的文件中的一个值，并把文件原样写回。
++         `Mutation(tel, op)` 应用一个操作，`Mutation(tel, ops)` 按顺序应用一个列表，返回新的 `Tel`；`Revision` 是基于同样这些操作的可组合 DSL。
+
+@ 0 7 0 0bdbe28195ed1d45177a037d87ad30fd
++         指针的每一步是一个关键字加上一个出现索引，针对被应用操作的文档进行解析，因此指针在无关的编辑之后仍然有意义；但按出现索引的指针不能在移动、添加或删除同一关键字复合项的操作之间重复使用。
++         依赖 schema 的前置条件——被删除的成员不是必需的、被设置的标志已声明、替换项类型正确——不在讨论范围内，与参考实现一样：具备 schema 意识的层会在委托给这些基本操作之前检查它们。
+
+@ 0 20 0 0dcd6706d124251810739b23466f1845
++     entry .Placement   `ReorderGroups` 把一个组放在另一组的哪一侧：`Before` 或 `After`
++     entry .Member   对一个结构体成员的无 schema 描述，用于 `.construct`
++         `Value(keyword, occurrences)` 是带有其现有出现的标量成员（单一成员为一个，可重复成员为多个，缺失的成员为零个，它会结束内联序列）；`Flag(keyword)` 是标志成员；`Child(compound)` 是现成的子项；`Break` 是缺失的成员，它不贡献任何内容，只结束内联序列，就像缺失的标量成员那样，因为原子阶段从不跳过标量位置。
++     entry .Op   一个基本操作，由 `Tel.Pointer` 寻址
++         以目标寻址的操作，其指针指向它们所修改的复合项：`UpdateAtom(pointer, atomIndex, text)` 重写一个原子，只要新值对其形式是安全的就保持该形式，否则按内联 → 源 → 字面的顺序升级，从不回退；`Delete(pointer)` 删除复合项，被清空的块连同其注释一起删除；`Replace(pointer, compound)` 替换一个复合项，保留原复合项的备注；`AttachRemark(pointer, text)` 和 `RemoveRemark(pointer)` 设置和清除备注；`SetFlag(pointer, keyword)` 在复合项没有子项、也没有源原子或字面原子时以内联方式添加标志，否则作为子项添加，若标志已存在则以 `FlagAlreadySet` 失败；`UnsetFlag(pointer, keyword)` 删除内联标志或裸子项标志，若不存在则相当于恒等操作；`InsertBefore(pointer, compound)` 和 `InsertAfter(pointer, compound)` 在目标旁边放置一个兄弟项，当目标所在的块是制表块时放入新块，以免新复合项被读作一行。
+
+@ 0 23 0 14ccf0ecaffdade716db7a4078f0c302
++         以父项寻址的操作，其指针指向容器（根为 `Tel.Pointer.Empty`）：`Insert(pointer, compound)` 在成员的自然位置追加——在同一关键字的最后一个复合项之后，或在新的尾部块中；`InsertIntoBlock(parentPointer, blockIndex, compound)` 向一个块追加一行，按其制表重新填充，当某列的值放不下时以 `TabulationOverflow` 失败；`ReorderWithinGroup(parentPointer, keyword, oldIndex, newIndex)` 在其关键字的组内移动一次出现；`ReorderGroups(parentPointer, keyword, otherKeyword, placement)` 把整个成员组移到另一组之前或之后，在各组的块互不相交时移动整个块；`ResizeTabulation(parentPointer, blockIndex, plannedRows)` 重新计算制表的标记偏移量，以容纳其各行及任何计划中的行，并重新填充每一行。
++         列的几何尺寸以码位度量。
++     entry .apply   对文档应用一个操作，或按顺序应用一个列表
++         `Mutation(tel, op)` 和 `Mutation(tel, ops)`，各自抛出 `Mutation.Error`。
++         文档自身的标记符（来自其 pragma，默认为 `#`）参与内联安全性测试，因此在自定义标记符下会被重新解析为备注的更新值会升级其形式。
++     entry .construct   一个新的复合项，其每个原子的形式由 §22.3 的安全规则选定
++         `construct(keyword, atoms*)` 为每个非空值生成一个原子——如果该值没有换行，没有前导、尾随或连续的空格，并且不以标记符加空格开头，则为内联原子；否则，如果它没有空行、没有以空白结尾的行、也没有前导空格，则为源原子；否则为字面原子，使用不与任何行冲突的最短 `---` 定界符。
++         空值不产生原子，因为前导空格会成为关键字行上的尾随空格。
+
+@ 0 7 0 080b2f8885154bc50ebe4864d826f18c
++         `construct(keyword, members)` 和 `construct(keyword, members, sigil)` 对 `Member` 列表运行规范呈现算法：开头的单次出现且内联安全的标量和标志成为内联原子；可重复标量在每次出现都内联安全时全部内联，否则每次出现都成为子项；其余每个成员都是同一个块中的子项，没有注释、制表或空行。
++         内联原子在第一个含空格的值之前以软空格开头，从该值起以硬空格开头，因此构造结果重新解析后得到相同的原子。
+
+@ 0 1 0 1210220dfccc22b104fd4553a4bc7331
++     entry .Error   当指针无法解析或操作的不变式不成立时抛出
+
+@ 0 11 0 01151dd09e78d6ca18e924e372da3734
++           错误 `↯/s.118.2`：_the mutation failed because …_。
++           `PointerNotFound` 是无法解析为复合项的指针、块索引或组，包括组交错或索引越界的重排，以及在没有制表的块上执行的 `ResizeTabulation`；`AtomIndexOutOfRange` 是超出目标原子数的 `UpdateAtom`；`FlagAlreadySet` 是对目标已有的标志执行的 `SetFlag`；`TabulationOverflow` 是列值超出其列容量的 `InsertIntoBlock`；`WriteUnsupported` 由带 `Write` 的 `open[Tel]` 在文档来源无法写回时抛出。
++       entry .Reason   五种原因，每种都带有编号
++         entry .communicable   把每个原因渲染为消息
++       entry #reason   修改失败的原因

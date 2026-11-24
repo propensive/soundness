@@ -1,0 +1,15 @@
+orthant 2 language
+
+@ 0 1 0 18c4ce0fc9b21c3a0a54de85a626d348
++ entry .Moment   una lettura dell'orologio a muro in un fuso orario: data, orario, fuso e come si risolve una sovrapposizione oraria o un secondo intercalare
+
+@ 0 9 0 0bdf42ffc71c5dd11964192a884e98f4
++         Una riga `Zone` e ogni riga di continuazione sotto di essa è uno `ZoneInfo`: lo
++         scostamento standard da UT, il nome dell'insieme di `Rule` (o `-`) in vigore, il formato
++         dell'abbreviazione, e il testo `UNTIL` in cui subentra il periodo successivo (`Unset` per
++         quello attuale).
++     entry #stdoff   lo scostamento standard da UT, come `Tzdb.Duration`
++     entry #rules   il nome delle regole in vigore, o `-` se nessuna
++     entry #format   l'abbreviazione, come funzione delle lettere della regola: `E%sT` applicato a `S` è `EST`
++     entry #until   il testo `UNTIL` del periodo, o `Unset` per l'ultimo
++   entry .MonthDate   il giorno in cui una regola entra in vigore: un giorno esatto, l'ultimo dato giorno della settimana, o uno da/fino a un giorno

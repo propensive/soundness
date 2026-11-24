@@ -163,7 +163,9 @@ A field of any other type needs a `Structural` instance of its own, which deriva
 composes like a nested record. This is how a field is given a representation the sized types
 do not offer, such as three bytes of color:
 
-```scala
+```scala fuel
+feature experimental.captureChecking
+##
 case class Rgb(red: Byte, green: Byte, blue: Byte)
 
 object Rgb:

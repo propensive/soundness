@@ -1,0 +1,12 @@
+orthant 2 language
+
+@ 0 9 0 0d6fd08d0627d7841c6deaf9f043651e
++ entry .verify   verifica un documento rispetto allo schema di un tipo e lo ritipizza, così che i suoi campi si navighino con verifica alla compilazione
++     Un'estensione su `Json`. `json.verify[T]` reifica lo schema dichiarato dal `Json.Decodable`
++     di `T` (tramite `JsonSchema.reify` della sua `shape()`), percorre il documento confrontandolo
++     con esso e, in caso di successo, restituisce lo stesso documento tipizzato come
++     `Json of T from T`: un `Json` il cui `Topic` fantasma è la posizione all'interno dello schema
++     e il cui `Origin` è la radice. Alla prima discordanza solleva `Json.Error` —
++     `Reason.NotType` per un valore del tipo sbagliato, `Reason.Absent` per un campo
++     obbligatorio che manca nel documento — quindi richiede una `Tactic[Json.Error]`, e
++     `safely(json.verify[T])` è `Unset` per un documento non conforme.

@@ -1,0 +1,22 @@
+orthant 2 language
+
+@ 0 4 0 0337e43960347e361518e70d51a96f82
++ entry .drop   odrzuca pewną liczbę bajtów z początku `Chain[Data]`
++     `chain.drop(bytes)` przyjmuje liczbę `Memory`, a nie liczbę porcji: całe porcje mieszczące
++     się w tej liczbie są pomijane, a porcja, która przekracza granicę, jest przycinana, więc
++     wynikiem są te same bajty, podzielone na porcje na nowo na granicy. Leniwe.
+
+@ 0 4 0 14db9adb7100739f11e814f080bd5536
++ entry .take   zachowuje pewną liczbę bajtów z początku `Chain[Data]`
++     `chain.take(bytes)` przyjmuje liczbę `Memory`: porcje mieszczące się w tej liczbie są
++     zachowywane w całości, a ta, która przekracza granicę, jest przycinana, więc wynik zawiera
++     dokładnie `bytes` bajtów (lub mniej, jeśli łańcuch jest krótszy). Leniwe.
+
+@ 0 6 0 1f830319e961b31b164c552f3e9b1c1d
++       `Truncation.Error(total)` to błąd `↯/s.60.1`, _the stream was cut prematurely after `total`_,
++       gdzie `total` to liczba `Memory` dostarczonych przed przerwaniem. Pobieranie ze `Spring` i
++       giveny `Streamable` dla źródeł JDK przerywają z nim działanie przez `Tactic`; giveny
++       `Writable` i `Sink` dla celów JDK zgłaszają go (`raise`) przez `Emit`, ponieważ zapisujący
++       jedynie zgłasza przerwanie i nigdy nie przerywa działania. Typ znajduje się w zephyrine, obok
++       `Stream` i `Spring`; ten eksport sprawia, że `import turbulence.*` wystarcza modułom, które go
++       nazywają.

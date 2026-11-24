@@ -1,0 +1,28 @@
+orthant 2 language
+
+@ 0 1 0 09cfd3a4f74fa71212c296fec8fcf7c7
++ entry .Producer   el sumidero en el que escribe un serializador, por partes: impulsado de forma síncrona, como canal de bloques o como sumidero de inserción
+
+@ 0 8 0 09e656f55175a2481831f3a7a9efdd26
++         La codificación pasa por el `CharsetEncoder` UTF-8 de la JDK, cuya vía ASCII está
++         vectorizada: los caracteres se amplían en un espacio temporal reutilizado y se
++         codifican en el bloque de bytes, que se publica a través del `Lending` cuando está
++         lleno. Un sustituto alto final se conserva entre llamadas, y un par mal formado se
++         codifica como U+FFFD.
++     entry #put   escribe un texto, o `size` caracteres de él a partir de un ordinal
++     entry #push   escribe un carácter
++     entry #finish   codifica la cola pendiente, publica el último bloque y devuelve los búferes al pool
++   entry .Utf8Writer   un escritor de nivel de bytes para la forma de inserción de un formato de texto: UTF-8 y escapado en una pasada sobre bloques arrendados
+
+@ 0 11 0 0dd3de458555885d0a28649aefc16776
++   entry #width   el número de posiciones del anillo: la mayor ráfaga que puede mover un `drain`
++   entry #size   la ocupación aproximada, para cálculos orientativos de demanda; nunca para sincronización
++   entry #free   el número aproximado de posiciones libres
++   entry #offer   lado del productor: gira y después se aparca hasta que se libera una posición; si el consumidor ha cerrado, el elemento se descarta
++   entry #finish   lado del productor: no se ofrecerán más elementos; idempotente
++   entry #drain   lado del consumidor: adopta de una vez todos los elementos del búfer en un array de quien llama, y se bloquea hasta que llega al menos uno
++       Devuelve el número de elementos movidos: cero solo cuando el productor ha terminado y el
++       anillo está vacío. Una publicación de `head` y un desaparcamiento del productor por
++       ráfaga, donde un bucle de `take` paga uno de cada por elemento.
++   entry #take   lado del consumidor: el elemento siguiente, o `null` cuando el productor ha terminado y el anillo está vacío
++   entry #close   lado del consumidor: deja de aceptar, vacía los elementos del búfer (liberando a un productor aparcado) y descarta las ofertas posteriores

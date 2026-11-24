@@ -1,0 +1,4 @@
+orthant 2 language
+
+@ 0 1 0 1c16381874b6ce4b05859b9cfe64e3af
++ info   benchmarks, testes de estresse e perfis: código citado executado em estágios na sua própria JVM, medido e relatado ao lado dos testes

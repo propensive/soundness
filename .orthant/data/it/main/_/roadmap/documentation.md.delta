@@ -11,6 +11,9 @@ orthant 2 language
 + Termina con la prova di apprendibilità più forte che esista: un agente, con la sola documentazione,
 + costruisce e distribuisce un'applicazione funzionante.
 
+@ 0 3 0 064a0d693208d94d0be9e9c787015ee8
++ Le voci del filone, con i loro orizzonti e le dipendenze rigide; [`status.tel`](https://github.com/propensive/soundness/blob/main/doc/roadmap/status.tel) registra a che punto è ciascuna:
+
 @ 0 5 0 185fd7a7a41b5e581955d9a60cdb9168
 + Fatto: #1791 (2026-08-14)
 + La linea di base era di 92 file di readme standard per modulo e 98 directory `lib/*/doc/`

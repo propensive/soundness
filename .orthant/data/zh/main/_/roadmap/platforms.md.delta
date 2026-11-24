@@ -1,5 +1,8 @@
 orthant 2 language
 
+@ 0 3 0 064a0d693208d94d0be9e9c787015ee8
++ 本路线的各个条目，及其时间范围和硬依赖；[`status.tel`](https://github.com/propensive/soundness/blob/main/doc/roadmap/status.tel) 记录了每个条目的进展：
+
 @ 0 6 0 1c04979355be49381f1bb8e3f8ecc451
 + `etc/compatibility.tsv` 记录这个矩阵，`etc/check-compatibility.py`（由 `make build` 运行）从 `build.mill` 重新生成其平台列——即每个组件的 `scalaJs`/`scalaNative` 标志以及 `sources`/`jsSources`/`nativeSources` 源集——并在与签入副本有任何分歧，或某项排除在 `notes` 中没有原因时失败。
 + 因此这个矩阵是一份契约：添加模块而不添加行，或翻转标志而不修改该文件，都会使构建失败，而唯一需要手写的内容，是每个 `no` 或 `core` 单元格的原因。

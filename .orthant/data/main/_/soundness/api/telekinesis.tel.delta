@@ -1,0 +1,10 @@
+orthant 2 release
+
+@ 0 1 0 01d4ea62602da0421503692e750cf941
++         `List[Cookie.Value]`, a `Memory`), through its `Decodable in Text`. The camelCase name
+
+@ 0 1 0 0adc72e61eee29a307bd02c2e8045e22
++       `contentType` (`MediaType`), `contentLength` (`Memory`), `contentEncoding` (an
+
+@ 0 1 0 1735db5c988668ec162800237f2a4796
++   entry .contentLength   `contentLength`: a `Memory` quantity, rendered as a number

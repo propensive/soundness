@@ -1,0 +1,5 @@
+orthant 2 language
+
+@ 0 2 0 0e370975db9e53a1102789034ad5343a
++   entry #overlap   wie viel eines Kastens dieses Hindernis bedeckt: genau null, wenn sie disjunkt sind
++   entry .Box   ein achsenparalleles Rechteck in einem nach unten gerichteten Koordinatensystem: ein Balken, eine Legende, die Fläche einer Beschriftung

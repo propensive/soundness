@@ -15,6 +15,10 @@ orthant 2 language
 + row  `Boxes()`  `Samples`，或它们的集合  每个集合一个箱体  连续型  `Boxes.Style`
 + row  `Annulus()`  由 `Weighted`、`Progressive` 节点构成的 `Dag`  无  无  `Annulus.Style`
 
+% 0 2 0 0786ede6c764c67c0c1afd493faded0a
+
+% 0 2 0 0d86e7d41d97de780db30039af9756ab
+
 @ 0 20 0 07a1c9f65a6293bd096dfd926a73c63d
 + column  钩子
 + column  绘制

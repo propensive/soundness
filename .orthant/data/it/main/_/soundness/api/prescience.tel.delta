@@ -1,0 +1,4 @@
+orthant 2 language
+
+@ 0 1 0 0f4f0c4707ac858807a73212a5ad6c39
++ info   una prova di fattibilità: istanze di typeclass che generano codice durante l'espansione delle macro, valutate dal vivo dalla macro derivante

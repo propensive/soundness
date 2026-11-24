@@ -1,0 +1,12 @@
+orthant 2 language
+
+@ 0 9 0 0d6fd08d0627d7841c6deaf9f043651e
++ entry .verify   prüft ein Dokument gegen das Schema eines Typs und typisiert es neu, sodass seine Felder mit Prüfung beim Kompilieren navigierbar sind
++     Eine Erweiterung auf `Json`. `json.verify[T]` vergegenständlicht das Schema, das das
++     `Json.Decodable` von `T` deklariert (über `JsonSchema.reify` seiner `shape()`), durchläuft
++     das Dokument dagegen und gibt bei Erfolg dasselbe Dokument mit dem Typ `Json of T from T`
++     zurück: ein `Json`, dessen Phantom-`Topic` die Position innerhalb des Schemas und dessen
++     `Origin` die Wurzel ist. Bei der ersten Abweichung löst es `Json.Error` aus —
++     `Reason.NotType` für einen Wert der falschen Art, `Reason.Absent` für ein Pflichtfeld, das
++     dem Dokument fehlt —, daher benötigt es einen `Tactic[Json.Error]`, und
++     `safely(json.verify[T])` ist `Unset` für ein nicht konformes Dokument.

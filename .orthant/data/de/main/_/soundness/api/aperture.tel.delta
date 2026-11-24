@@ -1,0 +1,4 @@
+orthant 2 language
+
+@ 0 1 0 135d707e598580ba1870dcfa7148b0f1
++ info   Zugriff auf Ressourcen in einem Geltungsbereich: `open`, `create`, `archive` und `session`, mit Modi als Berechtigungen im Typ des Handles

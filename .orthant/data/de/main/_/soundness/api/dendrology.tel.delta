@@ -1,0 +1,55 @@
+orthant 2 language
+
+@ 0 17 0 0e3c526da2cb7b670b1392d34788c93d
++   entry .by   ein Diagramm der gegebenen Wurzeln, dessen Kinder durch eine Funktion gefunden werden
++       `TreeDiagram.by[node](node => children)(roots*)`: die richtige Form, wenn die Struktur
++       bereits vorliegt oder wenn derselbe Typ nach verschiedenen Relationen gezeichnet wird.
++   entry .printable   schreibt ein Diagramm in ein Terminal, wobei jeder Knoten als `▪ node` gezeigt wird
++       Braucht einen `Style[Text]` im Geltungsbereich (einen aus `treeStyles`) und einen
++       `Showable`-Knotentyp; die Zeilen werden mit Zeilenumbrüchen verbunden.
++   entry #lines   die Kacheln und der Knoten jeder Zeile, als lazy `Chain`
++   entry #render   die Zeilen als dargestellter Text: die Beschriftung jedes Knotens, davor seine Kacheln über den `TreeDiagram.Style` im Geltungsbereich
++       `diagram.render(node => label)`, mit der Beschriftung des Zeilentyps, den der Stil
++       darstellt — `Text` mit den Givens aus `treeStyles` oder ein gestalteter Terminaltyp mit
++       einem Stil dafür.
++   entry #flow   die Zeilen, wobei jede Beschriftung auf eine Breite umbrochen wird und Fortsetzungszeilen die Folgekacheln des Stils erhalten
++       `diagram.flow(width)(node => label)`: Der Inhalt jedes Knotens fließt in Zeilen, die nicht
++       breiter als `width` sind, einschließlich seines Kachelpräfixes, und die Fortsetzungszeilen
++       erhalten Kacheln aus `Style#followOn` — eine Verlängerung setzt sich unter einem Zweig fort,
++       und ein Leerraum folgt auf ein letztes Kind —, sodass die Linien des Baums über eine
++       umbrochene Beschriftung hinweg weiterlaufen. Braucht ein `Text is Measurable` (etwa
++       `textMetrics.uniformMetric`) und eine `Hyphenation` im Geltungsbereich sowie einen
++       Beschriftungstyp, der `Textual` über Zeichen ist.
+
+@ 0 6 0 09ddb6fad09838ff1f191f21007b7f55
++ entry .LaneDagStyles   the trait holding `LaneDagDiagram.Style` and `LaneDagDiagram.TextualStyle`
++   detail
++       `object LaneDagDiagram extends LaneDagStyles`, so the two types declared here are reached
++       through the companion, as `LaneDagDiagram.Style` and `LaneDagDiagram.TextualStyle`.
++
++   entry #Style   die Typklasse, die eine Zeile eines `LaneDagDiagram` oder eines `LayeredDagDiagram` darstellt
+
+@ 0 4 0 1431e71108c5911a11f879f4a8ce3024
++     entry #serialize   die Kacheln einer Zeile, ihre Glyphen nach Spalte, die Spaltenbreiten und eine optionale Beschriftung als eine Zeile
++     entry #width   die Anzeigebreite einer Glyphe, um ihre Spalte zu bemessen
++
++   entry #TextualStyle   ein `LaneDagDiagram.Style` für jeden `Textual`-Zeilentyp, aus vierzehn Textstücken
+
+@ 0 17 0 156974dcad9728a91333fbab67ab0e0b
++     entry #space   der Text einer `Space`-Kachel
++     entry #vertical   der Text einer `Vertical`-Kachel: eine Bahn, die an einer Zeile vorbeiführt
++     entry #horizontal   der Text einer `Horizontal`-Kachel: eine Kante, die entlang einer Zeile verläuft
++     entry #cornerNe   der Text einer `CornerNe`-Kachel: eine Kante von oben, die nach rechts abbiegt
++     entry #cornerNw   der Text einer `CornerNw`-Kachel: eine Kante von oben, die nach links abbiegt
++     entry #cornerSe   der Text einer `CornerSe`-Kachel: eine Kante von rechts, die nach unten abbiegt
++     entry #cornerSw   der Text einer `CornerSw`-Kachel: eine Kante von links, die nach unten abbiegt
++     entry #teeN   der Text einer `TeeN`-Kachel: ein waagerechter Verlauf, in den von oben eine Linie mündet
++     entry #teeS   der Text einer `TeeS`-Kachel: ein waagerechter Verlauf, der nach unten abzweigt
++     entry #teeE   der Text einer `TeeE`-Kachel: eine Bahn, die nach rechts abzweigt
++     entry #teeW   der Text einer `TeeW`-Kachel: eine Bahn, in die von links eine Linie mündet
++     entry #junction   der Text einer `Junction`-Kachel: Bahnen, die von allen vier Seiten zusammentreffen
++     entry #crossing   der Text einer `Crossing`-Kachel: ein waagerechter Verlauf, der über eine weiterlaufende Bahn führt
++     entry #node   der Text einer `Node`-Kachel: der vorgegebene Aufzählungspunkt, verwendet, wenn für den Knoten keine Glyphe angegeben ist
++     entry #width   die Anzeigebreite einer Glyphe, über das `Text is Measurable`, mit dem der Stil erzeugt wurde
++     entry #serialize   die Zelle jeder Kachel, auf die Breite ihrer Spalte aufgefüllt, eine Glyphe statt des Aufzählungspunkts eines Knotens, dann die Beschriftung
++     entry #text   der Text einer Kachel

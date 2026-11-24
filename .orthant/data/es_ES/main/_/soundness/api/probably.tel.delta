@@ -1,0 +1,14 @@
+orthant 2 language
+
+@ 0 1 0 18a73cbf36db49000b31a7ff44697573
++ info   el framework de pruebas: suites de pruebas como valores, aserciones con contrastes estructurales y un flujo tipado de eventos al anfitrión
+
+@ 0 1 0 121365b0005725f90fae8ad030b9c910
++   entry .diagnose   los detalles de un fallo, a partir del diagnóstico en caché del sitio
+
+@ 0 5 0 1767be29e4aa398c1ef7e61d4a0c20b6
++ entry .Min   `Baseline.Compare.Min`, exportado en el nivel del paquete
++ entry .Mean   `Baseline.Compare.Mean`, exportado en el nivel del paquete
++ entry .Max   `Baseline.Compare.Max`, exportado en el nivel del paquete
++ entry .Cadential   `Baseline.Metric.Cadential`, exportado en el nivel del paquete
++ entry .Temporal   `Baseline.Metric.Temporal`, exportado en el nivel del paquete

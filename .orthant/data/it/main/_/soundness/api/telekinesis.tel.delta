@@ -1,0 +1,117 @@
+orthant 2 language
+
+@ 0 33 0 0609521b7376318b01d45525685eae0a
++       entry .communicable   rende ogni motivo come messaggio
++       entry #reason   l'`Http.Request.Error.Reason`
++     entry #method   il metodo
++     entry #version   la versione del protocollo
++     entry #host   l'host a cui è indirizzata la richiesta, dalla sua intestazione `Host`
++     entry #target   il target della richiesta così come è scritto: percorso, e query se presente
++     entry #textHeaders   ogni campo di intestazione, in ordine, come `Http.Header`
++     entry #body   il corpo come `Spring[Data]`: lo si chiama per ottenere uno stream nuovo
++         `request.body()` crea uno stream (richiedendo un `Tactic[Truncation.Error]`); per una
++         richiesta analizzata presta il resto dell'input, quindi va letto una sola volta, oppure
++         con `memoize`.
++     entry #request   la richiesta stessa, per il ricevente della funzione contestuale di un handler
++     entry #path   il percorso del target come `Path on Www`, con radice in `%`
++         `location` decodificato come `Path on Www under %.type`, il tipo di percorso degli URL,
++         così che i segmenti possano essere confrontati con pattern `/`.
++     entry #on   l'URL completo della richiesta, data un'origine: `request.on(origin)`
++         `Url[scheme](origin, target)` per un `Origin["http"]` o un `Origin["https"]`; ciò che
++         il client registra nel log in `Http.Event.Send`.
++     entry #query   i parametri della query, dall'URL e da un corpo codificato come modulo insieme
++         Una `Query` della parte `?…` del target, più il corpo decodificato come
++         `application/x-www-form-urlencoded` quando il `Content-Type` dice che lo è. Leggere il
++         corpo richiede un `Tactic[Truncation.Error]`; un `Parameter` ne legge un campo.
++     entry #location   il target senza la sua query: `/path` da `/path?q=1`
++     entry #headers   accesso tipizzato alle intestazioni per nome: `request.headers.contentType`
++         Un selettore dinamico: `request.headers.accept`, `request.headers.cookie`,
++         `request.headers.contentLength` sono ciascuno la `List` dei valori di quel campo,
++         decodificati nel tipo che il `Directive` di quel nome dichiara (un `MediaType`, una
++         `List[Cookie.Value]`, un `Memory`), tramite il suo `Decodable in Text`. Il nome in
++         camelCase viene trasformato nel nome di campo in kebab-case.
++     entry #contentType   l'intestazione `Content-Type` come `MediaType`, oppure `Unset`
++     entry #textCookies   i cookie della richiesta come `Map` da nome a valore
++         Analizzati dall'intestazione `Cookie`; `Cookie#apply()` ne legge uno decodificato nel
++         suo tipo.
++   entry .Backend   il trasporto che invia una richiesta e ne restituisce la risposta
+
+@ 0 3 0 1e400bdf625c2dd00a2861bd04a11c3a
++       Il companion dichiara una direttiva per ogni intestazione standard: quelle tipizzate sono
++       `accept` (un `MediaType`, o una `List[MediaType]`), `authorization` (`Auth`),
++       `contentType` (`MediaType`), `contentLength` (`Memory`), `contentEncoding` (un
+
+@ 0 73 0 0941d85f02c0a1920e8c79ddc68dce7c
++   entry #Self   il nome dell'intestazione, come tipo letterale: `"contentType"`
++   entry #encode   rende un valore del tipo dell'intestazione come testo del campo
++   entry #key   il nome dell'intestazione come testo, ricavato da `Self`
++   entry .contentEncoding   `contentEncoding`: un `Encoding`, reso con il suo nome
++   entry .accept   `accept`: un `MediaType`
++   entry .accept2   `accept`: una `List[MediaType]`, unita con virgole
++   entry .authorization   `authorization`: un `Auth`
++   entry .cacheControl   `cacheControl`: testo
++   entry .connection   `connection`: testo
++   entry .contentMd5   `contentMd5`: testo
++   entry .contentType   `contentType`: un `MediaType`, reso senza i suoi parametri
++   entry .contentLength   `contentLength`: una quantità `Memory`, resa come numero
++   entry .cookie   `cookie`: una `List[Cookie.Value]`, unita con `; `
++   entry .date   `date`: testo
++   entry .expect   `expect`: testo
++   entry .forwarded   `forwarded`: testo
++   entry .from   `from`: testo
++   entry .host   `host`: un `Host`
++   entry .http2Settings   `http2Settings`: testo
++   entry .ifMatch   `ifMatch`: testo
++   entry .ifModifiedSince   `ifModifiedSince`: testo
++   entry .ifNoneMatch   `ifNoneMatch`: testo
++   entry .ifRange   `ifRange`: testo
++   entry .ifUnmodifiedSince   `ifUnmodifiedSince`: testo
++   entry .maxForwards   `maxForwards`: un `Int`
++   entry .origin   `origin`: qualsiasi tipo di URL `Abstractable across Urls to Text`
++   entry .pragma   `pragma`: testo
++   entry .prefer   `prefer`: testo
++   entry .proxyAuthorization   `proxyAuthorization`: testo
++   entry .range   `range`: un `Interval` di ordinali, reso come `bytes=start-end`
++   entry .referer   `referer`: testo
++   entry .te   `te`: testo
++   entry .trailer   `trailer`: testo
++   entry .transferEncoding   `transferEncoding`: un `TransferEncoding`
++   entry .userAgent   `userAgent`: testo
++   entry .upgrade   `upgrade`: testo
++   entry .via   `via`: testo
++   entry .warning   `warning`: testo
++   entry .acceptCharset   `acceptCharset`: testo
++   entry .accessControlAllowOrigin   `accessControlAllowOrigin`: testo
++   entry .accessControlAllowCredentials   `accessControlAllowCredentials`: testo
++   entry .accessControlExposeHeaders   `accessControlExposeHeaders`: testo
++   entry .accessControlMaxAge   `accessControlMaxAge`: testo
++   entry .accessControlAllowMethods   `accessControlAllowMethods`: testo
++   entry .accessControlAllowHeaders   `accessControlAllowHeaders`: testo
++   entry .acceptPatch   `acceptPatch`: testo
++   entry .acceptRanges   `acceptRanges`: testo
++   entry .age   `age`: testo
++   entry .allow   `allow`: testo
++   entry .altSvc   `altSvc`: testo
++   entry .contentDisposition   `contentDisposition`: testo
++   entry .contentLanguage   `contentLanguage`: testo
++   entry .contentLocation   `contentLocation`: testo
++   entry .contentRange   `contentRange`: testo
++   entry .deltaBase   `deltaBase`: testo
++   entry .eTag   `eTag`: testo
++   entry .expires   `expires`: testo
++   entry .im   `im`: testo
++   entry .lastModified   `lastModified`: testo
++   entry .link   `link`: testo
++   entry .location   `location`: testo
++   entry .p3p   `p3p`: testo
++   entry .preferenceApplied   `preferenceApplied`: testo
++   entry .proxyAuthenticate   `proxyAuthenticate`: testo
++   entry .publicKeyPins   `publicKeyPins`: testo
++   entry .retryAfter   `retryAfter`: testo
++   entry .server   `server`: testo
++   entry .setCookie   `setCookie`: testo
++   entry .strictTransportSecurity   `strictTransportSecurity`: testo
++   entry .tk   `tk`: testo
++   entry .vary   `vary`: testo
++   entry .wwwAuthenticate   `wwwAuthenticate`: testo
++   entry .xFrameOptions   `xFrameOptions`: testo

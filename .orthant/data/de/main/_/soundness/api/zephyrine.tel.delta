@@ -1,0 +1,48 @@
+orthant 2 language
+
+@ 0 8 0 0401c90956d974790c8c8732f11cdb5a
++   entry .derived   das Layout einer Case-Klasse in der Byte-Reihenfolge im Geltungsbereich; ohne diese oder für ein Feld ohne festes Layout kompiliert es nicht
++   entry .width   die Anzahl der Bytes, die ein Wert eines Typs belegt, ohne dass ein Wert vorliegt
++   entry .Error   ein Datensatz wurde an einem Offset angefordert, an dem nicht seine ganze Breite vorhanden ist
++       Trägt den `offset`, die `width` des Datensatzes und die `size` der Daten oder des
++       Expanse. `↯/s.60.3`.
++   entry #width   die Anzahl der Bytes, die das Layout belegt
++   entry #load   der an einem Offset abgelegte Wert, ungeprüft: `unpack` ist der geprüfte Einstiegspunkt
++   entry #store   legt einen Wert an einem Offset in einem Byte-Array ab, ungeprüft: `pack` ist der geprüfte Einstiegspunkt
+
+@ 0 21 0 0b5dc797580f50b5153a86dc5c818905
++   entry .over   der vertrauenswürdige Konstruktor: verleiht eine Region über einem Speicher, deren Ausdehnung auf die wahre des Speichers begrenzt wird
++       `Region.over[medium, result](storage, offset, limit)(lambda)`, das das `Addressable` des
++       Mediums braucht: Die Region wird an einen stabilen Namen gebunden, und das Lambda erhält
++       sie mit ihrem markierten Intervall, `offset until limit`, begrenzt auf den Speicher,
++       sodass die Invariante der Totalität durch die Konstruktion hergestellt wird.
++   entry .apply   das Element an einer markierten Ordinalzahl: total, ohne Grenzprüfung
++   entry .visit   führt ein Lambda auf jeder markierten Ordinalzahl eines Bereichs aus, der Reihe nach
++   entry .visit8   führt ein Lambda auf jeweils acht aufeinanderfolgenden Ordinalzahlen aus, mit einem zweiten für den Rest
++       Die Antwort mit abgeleitetem Index für ausgerollte heiße Schleifen: Die Arithmetik `+1`..`+7`
++       wird hier einmal bewiesen, und Benutzercode sieht immer nur markierte Ordinalzahlen.
++   entry .materialize   ein neuer Wert des Mediums, aus einem Bereich kopiert
++   entry .cloneTo   kopiert einen Bereich in einen Builder des `Target`-Typs des Mediums
++   entry .transfer   kopiert so viel eines Bereichs, wie in den Platz einer Slate passt, und gibt die Anzahl zurück
++   entry .unsafeRaw   der rohe Speicher, hinter `Unsafe`, für Kernels, deren Indexarithmetik über die Kombinatoren hinausgeht
++       Rückverweise von Kompressoren und Ähnliches: Der Aufrufer übernimmt wieder die
++       Verantwortung für die Grenzen.
++   entry .borrow   verleiht das rohe Array einer Byte-Region mit Offset und Länge des Bereichs, für APIs mit `(array, offset, length)`
++       Eine Erweiterung auf `Region[Data]`: `OutputStream.write`, `ByteBuffer.wrap`,
++       `Deflater.setInput` und das `update` eines Hashverfahrens nehmen ein Tripel, das durch
++       die Konstruktion im gültigen Bereich liegt, daher ist kein `Unsafe` nötig; das Array ist
++       nur für den Aufruf sichtbar, der es weder behalten noch außerhalb des Tripels indizieren
++       darf.
+
+@ 0 11 0 0dd3de458555885d0a28649aefc16776
++   entry #width   die Anzahl der Slots des Rings: der größte Schub, den ein `drain` bewegen kann
++   entry #size   ungefähre Belegung, für beratende Bedarfsberechnungen; nie zur Synchronisierung
++   entry #free   die ungefähre Anzahl freier Slots
++   entry #offer   Produzentenseite: dreht Runden und parkt dann, bis ein Slot frei wird, außer der Konsument hat geschlossen; dann wird das Element verworfen
++   entry #finish   Produzentenseite: Es werden keine weiteren Elemente angeboten; idempotent
++   entry #drain   Konsumentenseite: übernimmt jedes gepufferte Element in einem Schritt in ein Array des Aufrufers und blockiert, bis mindestens eines ankommt
++       Gibt die Anzahl der bewegten Elemente zurück: null erst, wenn der Produzent fertig und
++       der Ring geleert ist. Eine Veröffentlichung von `head` und ein Aufwecken des Produzenten
++       pro Schub, wo eine `take`-Schleife je Element eines von beidem bezahlt.
++   entry #take   Konsumentenseite: das nächste Element oder `null`, sobald der Produzent fertig und der Ring geleert ist
++   entry #close   Konsumentenseite: nimmt nichts mehr an, leert gepufferte Elemente (und gibt einen geparkten Produzenten frei) und verwirft spätere Angebote

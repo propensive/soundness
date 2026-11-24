@@ -1,11 +1,7 @@
 orthant 2 language
 
-! The full table is in the
-! [rule reference](https://github.com/propensive/consequent/blob/main/doc/rules/README.md#migrating-from-the-sn--identifiers).
-! Each retired `SN-nnn` page under [`doc/work/errors/`](../errors/) also names its
-! replacement, so an older reference still resolves.
-@ 0 4 0 0e3c7c7dfb4f85750ea21880445a76ea
+@ 0 4 0 09fccef6a8330d3712e19f8b0ac2f77c
 + La tabla completa está en la
 + [referencia de reglas](https://github.com/propensive/consequent/blob/main/doc/rules/README.md#migrating-from-the-sn--identifiers).
-+ Cada página retirada `SN-nnn` en [`doc/work/errors/`](../errors/) nombra también su sustituta, así que
++ Cada página retirada `SN-nnn` en [`doc/work/errors/`](../errors/sn.md) nombra también su sustituta, así que
 + una referencia antigua sigue resolviéndose.

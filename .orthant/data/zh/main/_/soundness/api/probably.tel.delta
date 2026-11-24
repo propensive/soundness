@@ -1,0 +1,11 @@
+orthant 2 language
+
+@ 0 1 0 121365b0005725f90fae8ad030b9c910
++   entry .diagnose   一次失败的详细信息，来自该位置缓存的诊断
+
+@ 0 5 0 1767be29e4aa398c1ef7e61d4a0c20b6
++ entry .Min   `Baseline.Compare.Min`，在包级别导出
++ entry .Mean   `Baseline.Compare.Mean`，在包级别导出
++ entry .Max   `Baseline.Compare.Max`，在包级别导出
++ entry .Cadential   `Baseline.Metric.Cadential`，在包级别导出
++ entry .Temporal   `Baseline.Metric.Temporal`，在包级别导出

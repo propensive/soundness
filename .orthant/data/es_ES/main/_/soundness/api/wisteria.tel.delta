@@ -1,0 +1,4 @@
+orthant 2 language
+
+@ 0 1 0 06d9387b528b1ffd1a291452557159e2
++   entry .Error   se lanza si un nombre no nombra ninguna variante de la suma: _the specified variant (`x`) is not one of the valid variants (…) of sum type `S`_

@@ -1,0 +1,43 @@
+orthant 2 language
+
+@ 0 16 0 16e15c85ccf14a4e00013adc48012292
++         Was `subscribe` seinem Block als Kontextwert leiht und worauf ein Handler
++         zugreifen kann, um außerhalb der Request/Response-Gestalt zu senden: eine Ankündigung
++         beim Beitritt, ein Abschied beim Austritt, eine Antwort auf etwas Beobachtetes statt
++         Empfangenes.
++     entry #send   `send(data)` an die ganze Gruppe; `send(data, destination, port)` an ein einzelnes Mitglied
++         Beide lösen bei einem Fehlschlag `Socket.Error(Transmit)` aus.
++   entry .subscribable   jedes `Multicast` (oder ein durch seinen literalen Port verfeinerter Typ) `is Subscribable`, über `Socket.Backend` und `Every[Socket.Option.Udp]`
++       Tritt über `Socket.Backend#joinMulticast` auf den Schnittstellen bei, die `.interfaces`
++       auswählt.
++   entry .bindable   `Multicast is Bindable`, abgeleitet aus dem `Subscribable`: `listen` auf einer Gruppe
++       Für ein Mitglied, das nur antwortet: Der Handler ist `Packet => Multicast.Reply`, und
++       die Leihgabe von `listen` ist ein `Socket.Service` ohne Sendungen. `subscribe` ist die
++       Leihgabe mit ihnen.
++   entry .interfaces   die Schnittstellen, auf denen ein Abonnement beitritt: die mit einer MAC-Adresse oder jede geeignete
++       Mit `Unset` jede aktive, multicastfähige Schnittstelle außer Loopback, die unter Linux
++       kein Multicast transportieren kann (die eigenen Datagramme eines Programms kommen
++       stattdessen über `Socket.Option.MulticastLoop` zurück); mit einer `MacAddress` die
++       Schnittstelle, die sie hat.
++   entry #group   die IPv4- oder IPv6-Adresse der Gruppe
++   entry #port   der UDP-Port der Gruppe
+
+@ 0 16 0 122792cb0af5bc26024ee2f888192cfc
++   entry .strict   das Standard-Given: `TlsAcceptance()` — Versionen der Plattform, striktes Vertrauen, nachgiebige Widerrufsprüfung
++   entry .materialize   der JSSE-`SSLContext` und die `SSLParameters`, auf die eine Akzeptanz hinausläuft
++       Eine Erweiterung `acceptance.materialize()`: der Kontext (der der Plattform für eine
++       strikte Akzeptanz ohne Schlüssel, sonst einer mit dem umhüllenden Trust Manager) und
++       Parameter mit gesetzten Versionen und gesetztem Algorithmus zur Endpunktidentifikation.
++       Für die JDK-APIs, die diese annehmen.
++   entry .tls   präsentiert eine Akzeptanz als `Tls` für `SecureEndpoint` und bietet optional ALPN-Protokolle an
++       Eine Erweiterung `acceptance.tls(protocols = Nil)`: der materialisierte Kontext,
++       `verify` aus der Hostname-Einstellung der Akzeptanz, die Versionen und die angegebenen
++       ALPN-Protokolle. Kein Schlüsselmaterial: Gegenüber der Gegenseite wird keine
++       Authentifizierung vorgenommen.
++   entry .keyed   präsentiert das Schlüsselmaterial eines Keystores unter dem Vertrauen einer Akzeptanz, für einen Server oder authentifizierenden Client
++       Eine Erweiterung `acceptance.keyed(keystore, password, protocols = Nil, mutual = false)`.
++       Was jedes Ende einer gegenseitig authentifizierten Verbindung braucht, da `Tls.keyed`
++       allein den Ankern der Plattform vertraut und `.tls` allein kein Zertifikat präsentiert.
++       Mit `mutual` verlangt ein mit dem Ergebnis gebundener `SecurePort` von jedem Client ein
++       Zertifikat, das diese Akzeptanz dann beurteilt — eine gepinnte lässt genau den gepinnten
++       Client zu.

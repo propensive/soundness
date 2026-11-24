@@ -16,7 +16,9 @@ documentation — infrastructure that fluence and LIRA's API-derived versioning 
 It ends with the strongest learnability test there is: an agent, given only the documentation,
 builds and deploys a working application.
 
-The track's items, with their horizons and hard dependencies; [`status.tel`](status.tel) records where each one stands:
+The track's items, with their horizons and hard dependencies;
+[`status.tel`](https://github.com/propensive/soundness/blob/main/doc/roadmap/status.tel)
+records where each one stands:
 
 ```tabular
 column  Item

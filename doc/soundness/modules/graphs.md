@@ -386,8 +386,8 @@ dependency on its longest path. No link in this graph crosses another:
 ```scala fuel
 run
 ##
-Out.println(layering.rank(2).show)
-Out.println(layering.rank(8).show)
+Out.println(layering.rank.at(2).inspect)
+Out.println(layering.rank.at(8).inspect)
 Out.println(layering.crossings.show)
 ```
 
@@ -406,7 +406,7 @@ val deep = Dag(1 -> Set(), 5 -> Set(), 2 -> Set(1), 3 -> Set(2, 5))
 ```scala fuel
 run
 ##
-Out.println(deep.layered.rank(5).show)
+Out.println(deep.layered.rank.at(5).inspect)
 ```
 
 `rankings.balancedRanking` instead pulls each node which has dependents down to the layer above
@@ -418,7 +418,7 @@ run
 ##
 locally:
   import rankings.balancedRanking
-  Out.println(deep.layered.rank(5).show)
+  Out.println(deep.layered.rank.at(5).inspect)
 ```
 
 ### Drawing

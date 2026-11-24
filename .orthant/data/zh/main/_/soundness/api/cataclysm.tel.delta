@@ -1,0 +1,44 @@
+orthant 2 language
+
+@ 0 38 0 15177b5972e74eeb18897d1f690c0e42
++     entry .pixels   作为 `<length>` 的 `Pixels` 量：`4px`
++     entry .ems   作为 `<length>` 的 `Ems` 量（quantitative 的）：`2em`
++     entry .rems   作为 `<length>` 的 `Rems` 量：`2rem`
++     entry .exs   作为 `<length>` 的 `Exs` 量：`1ex`
++     entry .chs   作为 `<length>` 的 `Chs` 量：`40ch`
++     entry .vws   作为 `<length>` 的 `ViewportWidths` 量：`100vw`
++     entry .vhs   作为 `<length>` 的 `ViewportHeights` 量：`100vh`
++     entry .vmins   作为 `<length>` 的 `ViewportMins` 量：`50vmin`
++     entry .vmaxes   作为 `<length>` 的 `ViewportMaxes` 量：`50vmax`
++     entry .metres   作为 `<length>` 的任意物理长度（`Metres` 量），以 `mm` 表示
++         `Distance` 量——写作 `3.0*Cm`、`10.0*Mm`、`1.0*Metre` 或任何 quantitative 长度——以毫米渲染，因为 CSS 对 `cm`、`mm` 和 `m` 的读取方式相同：`3.0*Cm` 即 `30mm`。
++         英寸、点和派卡保留各自的单位。
++     entry .inches   作为 `<length>` 的 `Inches` 量：`1in`
++     entry .points   作为 `<length>` 的 `Points` 量：`12pt`
++     entry .picas   作为 `<length>` 的 `Picas` 量：`1pc`
++     entry .percents   作为 `<percentage>` 的 `Percents` 量：`50%`
++     entry .chromatic   任何具有 `Chromatic` 实例的颜色，作为 `<color>`，渲染为十六进制
++         通过 `Color.chromatic` 实例涵盖 anticipation 的 `Chroma` 以及 iridescence 的每种颜色形式（`Srgb`、`Hsl`、`Cielab`……以及 `rgb"#3344ff"` 字面量），每种都由其红、绿、蓝通道渲染为六位十六进制三元组，并截断到 0–255。
++         该实例会在颜色的任何超类型中查找，因此当 `Css.Style(…)` 请求值的确切类型时，从其形式获得 `Chromatic` 的颜色类也能被找到。
++     entry .seconds   作为 `<time>` 的任意时间（`Seconds` 量），以 `ms` 表示
++         `200.0*Ms` 即 `200ms`；`1.5*S` 即 `1500ms`。
++     entry .degrees   作为 `<angle>` 的 `Degrees` 量：`90deg`
++     entry .radians   作为 `<angle>` 的 `Radians` 量：`1rad`
++     entry .turns   作为 `<angle>` 的 `Turns` 量：`0.5turn`
++     entry .flexes   作为 `<flex>` 的 `Flexes` 量：`2fr`
++     entry .integer   作为 `<integer>` 的 `Int`
++     entry .decimal   作为 `<number>` 的 `Double`，不带多余的 `.0`
++     entry .keyword   以 CSS 拼写形式表示的 `Css.Keyword`，对每个属性都有效
++         主题为 `"*"`，属性检查对任何已知属性都接受它。
++     entry .colorKeyword   作为 `transparent` 或 `currentcolor` 的 `Css.ColorKeyword`
++     entry #value   将原生值渲染为 CSS 文本
++   entry #rules   样式表的节点，按顺序
++   entry .Syntax   属性的值语法，以 CSS 值定义语法表示，作为一棵树
+
+@ 0 1 0 10aaf54c52c3fe0b0d316f1cd65e1109
++     entry .Matcher   根据语法检查属性值：有效、无效或不支持
+
+@ 0 5 0 1faf72e6fe088cd01a48ddf10a68931c
++   entry #check   根据属性的语法检查值，或直接根据 `Css.Syntax` 检查
++       两个重载：`check(property: PropertyDef, value)` 使用属性的已解析语法，`check(grammar: Css.Syntax, value)` 使用任意语法。
++       两者都需要一个 `Tactic[Css.Error]`，只有当值的文本无法进行词法分析（未终止的字符串）时才会抛出。

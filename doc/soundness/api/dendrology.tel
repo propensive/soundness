@@ -411,7 +411,12 @@ entry .LaneDagDiagram   the lane drawing of a graph: nodes as bullets on vertica
   entry #nodes   the node of each node row, in drawing order
   entry #tiles   the tiles of every row, connector rows included
 
-  entry .Style   the typeclass which renders a row of a `LaneDagDiagram` or a `LayeredDagDiagram`
+entry .LaneDagStyles   the trait holding `LaneDagDiagram.Style` and `LaneDagDiagram.TextualStyle`
+  detail
+      `object LaneDagDiagram extends LaneDagStyles`, so the two types declared here are reached
+      through the companion, as `LaneDagDiagram.Style` and `LaneDagDiagram.TextualStyle`.
+
+  entry #Style   the typeclass which renders a row of a `LaneDagDiagram` or a `LayeredDagDiagram`
     detail
         `Style[line]` turns a row's `List[DagDiagram.Tile]`, the glyphs to draw at particular
         columns, each column's width and an optional label into one rendered line of type
@@ -423,7 +428,8 @@ entry .LaneDagDiagram   the lane drawing of a graph: nodes as bullets on vertica
     refer dendrology.laneDagStyles
     entry #serialize   a row's tiles, its glyphs by column, the column widths and an optional label as one line
     entry #width   the display width of a glyph, for sizing its column
-  entry .TextualStyle   a `LaneDagDiagram.Style` for any `Textual` line type, from fourteen pieces of text
+
+  entry #TextualStyle   a `LaneDagDiagram.Style` for any `Textual` line type, from fourteen pieces of text
     detail
         `LaneDagDiagram.TextualStyle(space, vertical, horizontal, cornerNe, cornerNw, cornerSe, cornerSw,
         teeN, teeS, teeE, teeW, junction, crossing, node)` gives the text of each `DagDiagram.Tile`, and

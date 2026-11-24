@@ -11,6 +11,10 @@ orthant 2 language
 + derivado de la API de LIRA. Termina con la prueba de facilidad de aprendizaje más exigente que
 + existe: un agente, con solo la documentación, compila y despliega una aplicación que funciona.
 
+@ 0 3 0 064a0d693208d94d0be9e9c787015ee8
++ Los elementos de la línea de trabajo, con sus horizontes y sus dependencias estrictas;
++ [`status.tel`](https://github.com/propensive/soundness/blob/main/doc/roadmap/status.tel) registra en qué punto está cada uno:
+
 @ 0 5 0 185fd7a7a41b5e581955d9a60cdb9168
 + Hecho: #1791 (2026-08-14)
 + La línea base era de 92 ficheros de texto repetitivo de readme por módulo, y 98 directorios

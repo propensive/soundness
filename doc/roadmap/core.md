@@ -17,7 +17,9 @@ drain loop was deprecate → fix call sites → delete; the compat file is now g
 is invisible — in signatures, in stack traces, in rendered values — everywhere but inside
 proscenium itself.
 
-The track's items, with their horizons and hard dependencies; [`status.tel`](status.tel) records where each one stands:
+The track's items, with their horizons and hard dependencies;
+[`status.tel`](https://github.com/propensive/soundness/blob/main/doc/roadmap/status.tel)
+records where each one stands:
 
 ```tabular
 column  Item

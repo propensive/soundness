@@ -3,6 +3,14 @@ orthant 2 release
 @ 0 1 0 18674ba5a234d219074ee05de16b15e8
 + row  `Annulus()`  a `Dag` of `Weighted`, `Progressive` nodes  none  none  `Annulus.Style`
 
+@ 0 2 0 1e51ebdbf382496e148719db20dcdb36
++   :   List[Svg.Figure] =
++     List(Svg.Rectangle(corner, width.toFloat, height.toFloat, style = Css.Style(fill = color.to[Srgb])))
+
+@ 0 2 0 13dc7fc57877f04316e8ebff1f652186
++   override def arrowhead(tip: Point, axis: Chart.Axis, color: Color in Srgb): List[Svg.Figure] =
++     List(Svg.Polyline(List(tip, Point(tip.x - 6, tip.y - 3), Point(tip.x - 6, tip.y + 3)), closed = true))
+
 @ 0 1 0 1454579a535e72fb13fc54f99206731a
 + row  `shade`, `sector`, `remainder`  a sector's colour and its two parts  `Annulus.Style`
 

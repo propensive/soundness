@@ -16,7 +16,9 @@ independently pass `make attest`, and keep the benchmarks compiling (`make build
 document was produced by a full audit of the codebase (2026-08); file and line references are
 snapshots from that audit and must be re-verified at implementation time.
 
-The track's items, with their horizons and hard dependencies; [`status.tel`](status.tel) records where each one stands:
+The track's items, with their horizons and hard dependencies;
+[`status.tel`](https://github.com/propensive/soundness/blob/main/doc/roadmap/status.tel)
+records where each one stands:
 
 ```tabular
 column  Item

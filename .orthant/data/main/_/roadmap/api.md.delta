@@ -3,6 +3,11 @@ orthant 2 release
 @ 0 1 0 1e20761ba0b2e982193e903c29fe5df5
 + The surface has already been measured: `etc/api-reduction-candidates.md` inventories every
 
+@ 0 1 0 0c0d9dd5db7d32ca0190c6fa32c2b6a2
++ The track's items, with their horizons and hard dependencies;
++ [`status.tel`](https://github.com/propensive/soundness/blob/main/doc/roadmap/status.tel)
++ records where each one stands:
+
 @ 0 1 0 1b87c40e0deaabbf0bf3e9cd08ea15c5
 + Done when: the rename table in `etc/api-nesting-proposal.md` (which superseded the C1
 

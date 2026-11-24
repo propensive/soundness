@@ -1,0 +1,15 @@
+orthant 2 language
+
+@ 0 6 0 09ddb6fad09838ff1f191f21007b7f55
++ entry .LaneDagStyles   the trait holding `LaneDagDiagram.Style` and `LaneDagDiagram.TextualStyle`
++   detail
++       `object LaneDagDiagram extends LaneDagStyles`, so the two types declared here are reached
++       through the companion, as `LaneDagDiagram.Style` and `LaneDagDiagram.TextualStyle`.
++
++   entry #Style   класс типов, который отрисовывает строку `LaneDagDiagram` или `LayeredDagDiagram`
+
+@ 0 4 0 1431e71108c5911a11f879f4a8ce3024
++     entry #serialize   плитки строки, её глифы по столбцам, ширины столбцов и необязательная метка как одна строка
++     entry #width   ширина отображения глифа, для определения размера его столбца
++
++   entry #TextualStyle   `LaneDagDiagram.Style` для любого типа строки `Textual`, из четырнадцати фрагментов текста

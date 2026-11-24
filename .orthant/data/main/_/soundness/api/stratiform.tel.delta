@@ -1,0 +1,118 @@
+orthant 2 release
+
+@ 0 7 0 036baf4596d9ed7214245b84c635ccb0
++ entry .TelRevision   the trait holding `Tel.Revision`, the log of edits
++   detail
++       `object Tel extends TelRevision`, so `Revision` is reached through the companion, as
++       `Tel.Revision`.
+
+@ 0 93 0 035df7f2f78ef0f501511c11dd41da59
++   entry #Revision   a composable log of edits, applied to a document one operation at a time
+
+@ 2 0 0 11ce676448042a4616ab12a7c910a4a1
++ entry .TelMutation   the trait holding `Tel.Mutation`, the edit operations of §22.2
++   detail
++       `object Tel extends TelMutation`, so `Mutation` is reached through the companion, as
++       `Tel.Mutation`.
++
++   entry #Mutation   the primitive presentation-preserving edit operations of §22.2, and their interpreter
++     detail
++         Each `.Op` is a local rewrite addressed by a `Tel.Pointer`: surrounding atoms, comments,
++         blank lines and unrelated children are untouched by construction, which is what lets a
++         program change one value in a file a person wrote and write it back intact.
++         `Mutation(tel, op)` applies one operation and `Mutation(tel, ops)` a list in order,
++         returning a new `Tel`; `Revision` is the composable DSL over the same operations.
++
++         ```scala
++         import soundness.*
++         import strategies.throwUnsafely
++
++         val document: Tel = t"name Percy\nage 30\n".read[Tel]
++         val pointer: Tel.Pointer = Tel.Pointer.of(t"name")
++         Tel.Mutation(document, Tel.Mutation.Op.UpdateAtom(pointer, 0, t"Hal")).show   // t"name Hal\nage 30\n"
++         ```
++
++         A pointer step is a keyword plus an occurrence index, resolved against the document an
++         operation is applied to, so a pointer stays meaningful across unrelated edits; but an
++         occurrence-indexed pointer must not be reused across operations which move, add or
++         remove compounds of the same keyword. Schema-dependent preconditions — that a deleted
++         member was not required, that a set flag is declared, that a replacement is well-typed
++         — are out of scope, as in the reference implementation: a schema-aware layer checks
++         them before delegating to these primitives.
++     refer stratiform.Tel.Revision
++     refer stratiform.Tel.Pointer
++     entry .Placement   which side of the other group `ReorderGroups` places a group: `Before` or `After`
++     entry .Member   a schema-free description of one struct member, for `.construct`
++         `Value(keyword, occurrences)` is a scalar member with its present occurrences (one for a
++         single member, several for a repeatable one, none for an absent member which ends the
++         inline run); `Flag(keyword)` a flag member; `Child(compound)` a ready-made child; and
++         `Break` an absent member which contributes nothing but ends the inline run, as an absent
++         scalar member does because the atom phase never skips a scalar position.
++     entry .Op   one primitive operation, addressed by a `Tel.Pointer`
++         The target-addressed operations, whose pointer names the compound they change:
++         `UpdateAtom(pointer, atomIndex, text)` rewrites one atom, keeping its form while the
++         new value is safe for it and otherwise escalating inline → source → literal, never
++         back; `Delete(pointer)` removes the compound, and an emptied block with its comments;
++         `Replace(pointer, compound)` substitutes a compound, keeping the original's remark;
++         `AttachRemark(pointer, text)` and `RemoveRemark(pointer)` set and clear the remark;
++         `SetFlag(pointer, keyword)` adds a flag inline when the compound has no children and
++         no source or literal atom, else as a child, and fails with `FlagAlreadySet` if present;
++         `UnsetFlag(pointer, keyword)` removes an inline or bare-child flag, as the identity when
++         absent; `InsertBefore(pointer, compound)` and `InsertAfter(pointer, compound)` place a
++         sibling next to the target, in a new block when the target's block is tabulated so the
++         new compound is not read as a row.
++
++         The parent-addressed operations, whose pointer names the container (`Tel.Pointer.Empty`
++         for the root): `Insert(pointer, compound)` appends at the member's natural position —
++         after the last compound of the same keyword, or in a fresh trailing block;
++         `InsertIntoBlock(parentPointer, blockIndex, compound)` appends a row to a block,
++         re-padded to its tabulation, failing with `TabulationOverflow` when a column value does
++         not fit; `ReorderWithinGroup(parentPointer, keyword, oldIndex, newIndex)` moves one
++         occurrence within its keyword's group; `ReorderGroups(parentPointer, keyword,
++         otherKeyword, placement)` moves a whole member group before or after another, whole
++         blocks moving where the groups' blocks are disjoint; and `ResizeTabulation(parentPointer,
++         blockIndex, plannedRows)` recomputes a tabulation's marker offsets to fit its rows and
++         any planned ones, re-padding every row. Column geometry is measured in code points.
++     entry .apply   applies one operation, or a list in order, to a document
++         `Mutation(tel, op)` and `Mutation(tel, ops)`, each raising `Mutation.Error`. The
++         document's own sigil (from its pragma, `#` by default) feeds the inline-safety test, so
++         an updated value which would re-parse as a remark under a custom sigil escalates its
++         form.
++     entry .construct   a fresh compound with each atom's form chosen by the §22.3 safety rules
++         `construct(keyword, atoms*)` makes one atom per non-empty value — inline if the value
++         has no line break, no leading, trailing or doubled space and does not begin with the
++         sigil and a space; else a source atom if it has no empty line, no line ending in
++         whitespace and no leading space; else a literal atom under the shortest `---` delimiter
++         which collides with no line. An empty value yields no atom, since a leading space would
++         be a trailing space on the keyword line.
++
++         `construct(keyword, members)` and `construct(keyword, members, sigil)` run the canonical
++         presentation algorithm over a `Member` list: leading single-occurrence inline-safe
++         scalars and flags become inline atoms; a repeatable scalar goes all inline when every
++         occurrence is inline-safe and otherwise every occurrence becomes a child; and every
++         remaining member is a child in one block with no comments, tabulation or blank lines.
++         Inline atoms are soft-space-preceded up to the first value containing a space, and
++         hard-space-preceded from there on, so the construction re-parses to the same atoms.
++
++         ```scala
++         import soundness.*
++
++         Tel.Mutation.construct(t"name", t"Nick Bottom").atoms.length            // 1, an inline atom
++         Tel.Mutation.construct(t"note", t"first line\nsecond line")            // a source atom
++         Tel.Mutation.construct(t"note", t"first\n\nsecond\n")                  // a literal atom
++         Tel.Mutation.construct(t"flag", t"").atoms.length                      // 0
++         ```
++     entry .Error   raised when a pointer does not resolve or an operation's invariant fails
++       detail
++           Error `↯/s.118.2`: _the mutation failed because …_. `PointerNotFound` is a pointer, block
++           index or group which does not resolve to a compound, including a reorder whose groups
++           are interleaved or whose indices are out of range, and a `ResizeTabulation` on a block
++           with no tabulation; `AtomIndexOutOfRange` an `UpdateAtom` beyond the target's atoms;
++           `FlagAlreadySet` a `SetFlag` of a flag the target already has; `TabulationOverflow` an
++           `InsertIntoBlock` whose column value exceeds its column's capacity; and
++           `WriteUnsupported`, raised by `open[Tel]` with `Write` when the document's source
++           cannot be written back.
++       entry .Reason   the five reasons, each with a number
++         entry .communicable   renders each reason as a message
++       entry #reason   why the mutation failed
++

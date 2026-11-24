@@ -1,0 +1,7 @@
+orthant 2 language
+
+@ 0 1 0 0c5523d30a7fc3671ba9d1752c8af003
++ info   compiladores y enlazadores como valores: Scala, Java y Kotlin en el proceso, con salidas para JVM, JavaScript, Wasm, código nativo y Android
+
+@ 0 1 0 18f8eea5c8ff2274036495f9a8db0057
++ entry .linkerOptions   ajustes para todos los formatos que produce el enlazador de Scala.js: comprobaciones del IR, mapas de fuente, versión de ES, optimizador

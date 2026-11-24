@@ -1,5 +1,67 @@
 orthant 2 language
 
+@ 0 34 0 05679073b2e8fc4d0775ad6ce595259e
++ - **Sicherheit.** Es ist schwer oder unmöglich, Soundness-Code zu schreiben, der zur Laufzeit
++   überraschend fehlschlägt. Jede API ist total oder
++   [deklariert die Fehler, die sie auslöst](../philosophy/error-handling.md). Veränderlichkeit ist
++   nur erlaubt, wo Separation-Checking sie als sicher nachweist; Capture-Checking setzt durch, was
++   Signaturen versprechen. Partialität an irgendeiner Stelle – auch in den Standardbibliotheken
++   von Java und Scala unter uns – untergräbt alles, deshalb werden partielle APIs ersetzt, nicht
++   geduldet.
++ - **Kohärenz.** APIs sind vorhersehbar, klar und verallgemeinert. Ähnliche Dinge teilen eine API;
++   Variation ist ein Parameter, kein Name. Wenn zwei Dinge einen Namen teilen, sind sie dasselbe;
++   wenn sie verschiedene Namen haben, sind sie es nicht.
++ - **Batteries included.** Eine Plattform für Kommandozeilenanwendungen, Webanwendungen (Server
++   und Frontend), Tests, wissenschaftliche Arbeit und Entwicklungswerkzeuge – gebaut auf
++   offenen Standards, nicht auf proprietären Erfindungen, und modular genug, dass
++   ungenutzte Batterien nichts kosten.
++ - **Gleichwertigkeit der Ziele.** JVM, Android, JavaScript und WASM/WASI sind alle tragfähige
++   Ziele, für die das Bauen nicht schwerer ist als für die JVM.
++ - **Eine Welt, die sich nativ anfühlt.** Soundness-Code zu entwickeln, zu debuggen und
++   auszuführen fühlt sich nie so an, als bediene man ein fortgeschrittenes System in einer
++   Umgebung, die nicht dafür entworfen wurde. Java-Kodierungen von Werten sind nie sichtbar.
++ - **Erlernbar, dokumentiert, spezifiziert.** Jede API ist dokumentiert; jede Fehlermeldung ist
++   aussagekräftig und hat eine dokumentierte Seite; jede neuartige Idee hat eine Spezifikation.
++   Die Dokumentation ist so geschrieben, dass Menschen wie KI-Agenten verlässlich danach handeln
++   können.
++ - **Stabilität durch Migration.** APIs ändern sich, sobald es einen besseren oder sichereren
++   Entwurf gibt. Stabilität entsteht nicht durch das Einfrieren von APIs, sondern dadurch, dass
++   Migration billig ist: Jede inkompatible Änderung wird mit Anweisungen ausgeliefert, die präzise
++   genug sind, dass ein Agent sie ausführen kann.
++ - **Eine vertrauenswürdige Toolchain.** Soundness-Code wird mit eigenen Werkzeugen gebaut,
++   getestet, debuggt, erkundet und verteilt – `fury`, `fume`, `flame`, `fluence`, dem
++   `exegesis`-LSP-Server, dem `vivisection`-Debugger und dem `synesthesia`-MCP-Server –, mit
++   Releases, die attestiert, vorhersehbar und überprüfbar sind, und Bibliotheken, die als
++   LIRA-Dateien verteilt werden, deren sichere Komposition garantiert ist. TEL ist die
++   Konfigurationssprache, wo immer Konfiguration nötig ist. Die Werkzeuge, die keine Module
++   dieses Repositorys sind – fury, fume, flame, fluence –, werden in eigenen Repositorys
++   entwickelt; diese Roadmap verfolgt nur, was Soundness für sie bereitstellen muss. Soundness
++   wird mit dem Proscala-Compiler gebaut, der geändert werden darf, wann immer die Sicherheit es
++   verlangt, unter einer Bedingung: Veröffentlichte Artefakte bleiben für den Mainline-Scala-Compiler
++   lesbar.
+
+@ 0 19 0 126e198d4e09544111f5d9bc21c23212
++ - **Bezeichner von Punkten sind dauerhaft.** Sie tragen das Präfix ihrer Spur, sind fortlaufend
++   und werden nie wiederverwendet – dieselbe Disziplin wie bei Bolt-Codes. Ein abgeschlossener
++   Punkt behält seine Überschrift und erhält eine `Done:`-Zeile, die den abschließenden Commit
++   oder Pull-Request nennt. Die einzige Ausnahme ist ein Punkt, dessen Kriterium *das* Löschen
++   eines Artefakts ist.
++ - **Jedes Kriterium ist ein Befehl oder eine beobachtbare Tatsache.** Ein `Done when:`-Block
++   enthält einen ausführbaren Befehl mit seiner erwarteten Ausgabe als nachgestelltem Kommentar
++   oder nennt eine Tatsache über die Existenz oder Leere einer Datei oder den Status einer
++   CI-Prüfung. Nichts anderes ist zulässig. „Weitgehend vollständig“ und „im Wesentlichen
++   erledigt“ sind keine Kriterien; was sich nicht zählen, greppen oder beobachten lässt, gehört
++   nicht hierher.
++ - **Ausgangswerte sind datiert.** Zahlen verschieben sich, während die Arbeit fortschreitet; ein
++   Agent, der einen Ausgangswert neu misst, sollte mit einer Abweichung rechnen und sie melden,
++   statt stillschweigend einer veralteten Zahl zu vertrauen.
++ - **Horizonte sind keine Termine.** *Nah* ist die aktuelle Arbeitsmenge; *mittel* ist, was der
++   nahe Horizont freigibt; *fern* nähert sich dem Endzustand der Spur. Fortschritt wird an
++   Kriterien gemessen, nie am Kalender.
++ - **Der Status steht in [`status.tel`](https://github.com/propensive/soundness/blob/main/doc/roadmap/status.tel).** Die Prosadateien sagen, was und warum;
++   `status.tel` – ein Datensatz pro Punkt, maschinenlesbar, in TEL geschrieben – sagt, wo jeder
++   Punkt steht. Prosa behauptet nie einen Abschluss; sie verlinkt.
+
 @ 0 17 0 0ec7a54fa0928f921723afad3dc6834b
 + column  Kriterium
 + column  Punkte
@@ -18,3 +80,15 @@ orthant 2 language
 + row  Jedes Release wird als attestierte LIRA-Dateien veröffentlicht  `dist-7`
 + row  JOSE, TOML und WebAuthn sind ausgeliefert  `brd-1`, `brd-2`, `brd-3`
 + row  Ein Agent, der nur der Dokumentation in `doc/` folgt, bringt ein neues Projekt von nichts zu einer getesteten, bereitgestellten Webanwendung für JVM und JavaScript, nur mit Werkzeugen des Ökosystems, und diese Schritt-für-Schritt-Anleitung wird in der CI ausgeführt und aufgezeichnet  `doc-8`
+
+@ 0 12 0 0784a4e159f446670750dceae9e6274f
++ - Bezeichner von Punkten sind stabile Anker; zitieren Sie sie (`core-3`, `dist-2`), statt Arbeit
++   in Prosa zu beschreiben.
++ - Überprüfen Sie jede Behauptung über Fortschritt, indem Sie den `Done when:`-Befehl des Punkts
++   ausführen; vertrauen Sie nie Prosa oder Erinnerung mehr als der Ausgabe des Befehls. Messen Sie
++   Ausgangswerte neu, bevor Sie sich auf sie verlassen, und melden Sie Abweichungen.
++ - Lesen Sie [`status.tel`](https://github.com/propensive/soundness/blob/main/doc/roadmap/status.tel) für den aktuellen Status; aktualisieren Sie die Datei im
++   selben Commit wie die Arbeit, die sie beschreibt.
++ - Wenn ein Punkt der Roadmap eine öffentliche API ändert, folgen Sie der Konvention für
++   Migrationsanweisungen, die `dist-2` in `doc/standards/migration.md` festlegt – diese Konvention
++   macht „APIs ändern sich frei“ und „Code funktioniert weiter“ miteinander vereinbar.
