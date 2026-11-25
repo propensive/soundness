@@ -32,7 +32,6 @@
                                                                                                   */
 package gastronomy
 
-import scala.annotation.implicitNotFound
 import scala.caps
 
 // Capability evidence that a `concession` (a weak algorithm, key length or mode)
@@ -44,20 +43,12 @@ import scala.caps
 // gastronomy so both gastronomy (weak hashes) and enigmatic (weak ciphers) share
 // one permit vocabulary.
 
-@implicitNotFound("this operation uses an algorithm whose status is \"legacy use\" or worse; "+
-    "import a permit (e.g. `cryptoPermits.permitLegacyCrypto` to process existing data, or "+
-    "`cryptoPermits.permitDisallowedCrypto`) to allow it")
 object ProcessingPermit:
   // [erased-evidence] erased crypto permit given
   erased given acceptable: ProcessingPermit[Concession.Acceptable] = caps.unsafe.unsafeErasedValue
 
 trait ProcessingPermit[concession]
 
-@implicitNotFound("this operation uses a sub-optimal algorithm, key length or mode — or a "+
-    "checksum in place of a hash; import the matching permit "+
-    "(`cryptoPermits.permitNonCryptographicHashes` for CRC-32/CRC-64/Adler-32, or "+
-    "`cryptoPermits.permitUnauthenticatedCrypto`, `cryptoPermits.permitDeprecatedCrypto` or "+
-    "`cryptoPermits.permitDisallowedCrypto`) to allow it")
 object Permit:
   // `Acceptable` crypto needs no permission, so this permit is always available.
   // [erased-evidence] erased crypto permit given

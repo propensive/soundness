@@ -89,11 +89,6 @@ object Typesettable:
 // lives: the companion of `Web` holds the generic families, the companion of `Print` holds PDF's
 // standard fourteen, and a project declares its own as givens in an object it imports. A provision
 // from a file at a known location carries the path as its `Locus`, for the compile-time check.
-@missingContext
-  ( "phoenicia: no provision is in scope for this typeface in this medium. Declare one, such as "+
-    "`given inter: (Typeface of \"Inter\") is Typesettable in Medium = "+
-    "Typesettable.embedded(sfnt)` for a font file, or a provision the medium supplies, such as "+
-    "`Web.imported(url, coverage)`." )
 trait Typesettable extends Typeclass.Pure, Formal, Locative:
   type Self <: Typeface
   def sources: List[Typesettable.Source]

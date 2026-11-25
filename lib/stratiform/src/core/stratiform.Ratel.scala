@@ -554,9 +554,6 @@ object Ratel:
 
   // An open image. It serves reads for as long as the view it was opened on is mapped, and
   // may be shared between threads.
-  @missingContext
-    ( "a row or a record of a RaTEL image is read through the reader of that image, which is "+
-      "not in scope here: read it within the `open[Ratel]` block it came from" )
   abstract class Reader private[stratiform](opening: Opening):
     // The view the image is read from. It is a member which a reader of this module defines,
     // and not a parameter, since a parameter which is tracked would be part of the type of

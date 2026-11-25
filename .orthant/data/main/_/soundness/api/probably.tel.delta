@@ -1,5 +1,12 @@
 orthant 2 release
 
+@ 0 3 0 09612cb2da4c1d92199841f03673c33e
++       A `test` with no `Testable` in scope is a compile error: a test must be declared for a
++       `Suite` — in its body, or in a method taking `(using Testable of "<the suite's name>")` —
++       or inside an `impromptu` block. A method which declares tests for a suite names it by
+
+@ 0 4 0 04cea76c7643033b0edd463397916feb
+
 @ 0 1 0 09d19207d7ee20b6156d1c2830f8a488
 +   entry .diagnose   the details of one failure, from the site's cached diagnosis
 

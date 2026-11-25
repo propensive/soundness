@@ -111,9 +111,9 @@ entry .test   declares a test by its description, with optional moniker and tags
       test(n"square", m"square a number", n"quick")(3*3).assert(_ == 9)
       ```
 
-      A `test` with no `Testable` in scope is a compile error, _a test must be declared for a
-      Suite — in its body, or in a method taking `(using Testable of "<the suite's name>")` —
-      or inside an `impromptu` block_. A method which declares tests for a suite names it by
+      A `test` with no `Testable` in scope is a compile error: a test must be declared for a
+      `Suite` — in its body, or in a method taking `(using Testable of "<the suite's name>")` —
+      or inside an `impromptu` block. A method which declares tests for a suite names it by
       its id, `def numbers()(using Testable of "parser"): Unit`, or is generic in the topic,
       `[topic <: Label](using Testable of topic)`.
   refer probably.Test
@@ -347,10 +347,6 @@ entry .Testable   what tests are attached to: a `Suite`, a `suite` group or an `
   refer probably.test
   refer probably.Impromptu
   refer probably.Derived
-  entry .orphan   the compile error for a `test` with no `Testable` in scope
-      The text of the `@missingContext` annotation on every declaration's parameter: _a test
-      must be declared for a Suite — in its body, or in a method taking `(using Testable of
-      "<the suite's name>")` — or inside an `impromptu` block_.
   entry .of   makes a `Testable of topic` from a name, with an optional parent, moniker and key
       `Testable.of[topic](name, parent, moniker, key)` needs a `Codepoint`, which marks where
       it was declared. `suite` uses it to make each group's `Testable` from the enclosing one.

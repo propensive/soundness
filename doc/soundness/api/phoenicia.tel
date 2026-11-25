@@ -983,8 +983,7 @@ entry .Typesettable   the provision of a typeface in a medium: where the font co
 
       A requester asks for a provision `in (? >: medium)`: an instance `in Medium` serves
       every medium, while one `in Web` serves only the web, and `Font.of[Print](face)` with
-      only a `Web` provision in scope is a compile error. The `@missingContext` message says
-      so, and names the two ways to declare one.
+      only a `Web` provision in scope is a compile error.
 
       A provision is `Locative`: made from a classpath resource (`Typesettable.embedded
       (cp"/fonts/Inter.ttf")`) it keeps the path as its `Locus`, and a `Font` made from it is

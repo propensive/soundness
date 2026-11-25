@@ -125,7 +125,6 @@ extends Rig:
     ( using runner:    Runner[report],
             inclusion: Inclusion[report, Strain],
             threading: Threading,
-            @missingContext(Testable.orphan)
             suite:     Testable of topic,
             codepoint: Codepoint )
   :   Unit raises Compiler.Error raises Rig.Error =

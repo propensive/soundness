@@ -1,0 +1,16 @@
+orthant 2 release
+
+@ 0 3 0 020641a09a6e4a731726ed1a122321b1
++       one accumulator. Without a permit, the compile error names the missing
++       `Permit[concession]`; without a provider it names the missing `Hash in algorithm`.
+
+@ 0 5 0 14f942d72721b075076fe2201580fba5
++       Without one, the compile error names the missing `Permit[concession]`. The permits are
++       `cryptoPermits.permitNonCryptographicHashes` for CRC-32/CRC-64/Adler-32, and
++       `cryptoPermits.permitUnauthenticatedCrypto`, `cryptoPermits.permitDeprecatedCrypto` and
++       `cryptoPermits.permitDisallowedCrypto`.
+
+@ 0 3 0 0fc6301279b46fdb0d0d470ff5877aea
++       Without one, the compile error names the missing `ProcessingPermit[concession]`.
++       `cryptoPermits.permitLegacyCrypto` allows existing data to be processed, and
++       `cryptoPermits.permitDisallowedCrypto` allows everything.

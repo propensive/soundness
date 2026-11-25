@@ -64,7 +64,7 @@ detail
     keeping (`nn`, `summon`, `identity`, `locally`, `valueOf`, `is`, `ArrowAssoc`, the
     primitive wrappers and array ops, `assert`, `???`), `ClassTag`, `Typeable`, `TreeMap`,
     `TreeSet`, `TrieMap`, `NonFatal`, `boundary`/`break`, the `…HasAsScala`/`…HasAsJava`
-    converters, `tailrec`/`targetName`/`switch`/`missingContext`, the `unchecked…`
+    converters, `tailrec`/`targetName`/`switch`, the `unchecked…`
     annotations, and a few of its own: `classOf` (an inline version which is correct through
     an export), `absolve` (Predef's `runtimeChecked`), `Void`, `Nat`, `Label`, `Zero`,
     `Mono`, `~>`, `prohibits`, `infer`, `provide`, `->` and the `unexported` annotation.
@@ -990,9 +990,6 @@ entry .tailrec   `scala.annotation.tailrec`, re-exported
 entry .targetName   `scala.annotation.targetName`, re-exported
 entry .switch   `scala.annotation.switch`, re-exported
 entry .StaticAnnotation   `scala.annotation.StaticAnnotation`, re-exported: the base of a user annotation
-entry .missingContext   `scala.annotation.implicitNotFound`, renamed: the message for a missing given
-    `@missingContext("…")` on a typeclass or a given's type sets the error reported when
-    no instance is found.
 entry .uncheckedVariance   `scala.annotation.unchecked.uncheckedVariance`, re-exported
 entry .uncheckedCaptures   `scala.annotation.unchecked.uncheckedCaptures`, re-exported
 entry .uncheckedStable   `scala.annotation.unchecked.uncheckedStable`, re-exported

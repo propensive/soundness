@@ -238,7 +238,6 @@ object Bench:
         ( using runner:    Runner[report],
                 inclusion: Inclusion[report, Benchmark],
                 anchors:   Inclusion[report, Anchor],
-                @missingContext(Testable.orphan)
                 suite:     Testable of topic,
                 codepoint: Codepoint )
       :   Unit raises Compiler.Error raises Rig.Error =
@@ -292,7 +291,6 @@ object Bench:
         ( using runner:    Runner[report],
                 inclusion: Inclusion[report, Benchmark],
                 anchors:   Inclusion[report, Anchor],
-                @missingContext(Testable.orphan)
                 suite:     Testable of topic,
                 codepoint: Codepoint )
       :   Unit raises Compiler.Error raises Rig.Error =
@@ -364,7 +362,6 @@ object Bench:
       ( using System, TemporaryDirectory, Stageable over Json in Text )
       ( using runner:    Runner[report],
               inclusion: Inclusion[report, Benchmark],
-              @missingContext(Testable.orphan)
               suite:     Testable of topic,
               codepoint: Codepoint )
     :   Unit raises Compiler.Error raises Rig.Error =
@@ -404,7 +401,6 @@ object Bench:
       ( using runner:    Runner[report],
               inclusion: Inclusion[report, Benchmark],
               anchors:   Inclusion[report, Anchor],
-              @missingContext(Testable.orphan)
               suite:     Testable of topic,
               codepoint: Codepoint )
     :   Unit raises Compiler.Error raises Rig.Error =
@@ -418,7 +414,6 @@ object Bench:
       ( using runner:    Runner[report],
               inclusion: Inclusion[report, Benchmark],
               anchors:   Inclusion[report, Anchor],
-              @missingContext(Testable.orphan)
               suite:     Testable of topic,
               codepoint: Codepoint )
     :   Unit raises Compiler.Error raises Rig.Error =
@@ -432,7 +427,6 @@ object Bench:
       ( using runner:    Runner[report],
               inclusion: Inclusion[report, Benchmark],
               anchors:   Inclusion[report, Anchor],
-              @missingContext(Testable.orphan)
               suite:     Testable of topic,
               codepoint: Codepoint )
     :   Unit raises Compiler.Error raises Rig.Error =
@@ -446,7 +440,6 @@ object Bench:
       ( using runner:    Runner[report],
               inclusion: Inclusion[report, Benchmark],
               anchors:   Inclusion[report, Anchor],
-              @missingContext(Testable.orphan)
               suite:     Testable of topic,
               codepoint: Codepoint )
     :   Unit raises Compiler.Error raises Rig.Error =
@@ -460,7 +453,6 @@ object Bench:
       ( using runner:    Runner[report],
               inclusion: Inclusion[report, Benchmark],
               anchors:   Inclusion[report, Anchor],
-              @missingContext(Testable.orphan)
               suite:     Testable of topic,
               codepoint: Codepoint )
     :   Unit raises Compiler.Error raises Rig.Error =
@@ -478,7 +470,6 @@ object Bench:
       ( using runner:    Runner[report],
               inclusion: Inclusion[report, Benchmark],
               anchors:   Inclusion[report, Anchor],
-              @missingContext(Testable.orphan)
               suite:     Testable of topic,
               codepoint: Codepoint )
     :   Unit raises Compiler.Error raises Rig.Error =

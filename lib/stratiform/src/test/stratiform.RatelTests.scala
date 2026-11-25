@@ -558,7 +558,7 @@ object RatelTests extends Suite("ratel", m"Stratiform RaTEL tests"):
           val first = image.open[Ratel]()((ratel.root / t"play")(Prim))
           image.open[Ratel]()(first.text(t"title"))
         . map(_.message.tt)
-      . assert(_.exists(_.contains(t"is read through the reader of that image")))
+      . assert(_.exists(_.contains(t"stratiform.Ratel.Reader of first.Topic")))
 
       test(m"a row is read through its own reader within another's block"):
         val other: Ratel = catalogue.ratel(catalogueSchema)

@@ -62,7 +62,7 @@ export scala.jdk.CollectionConverters
     EnumerationHasAsScala }
 
 export scala.annotation
-. { tailrec, implicitNotFound as missingContext, targetName, switch, StaticAnnotation }
+. { tailrec, targetName, switch, StaticAnnotation }
 
 export scala.annotation.unchecked.{uncheckedVariance, uncheckedCaptures, uncheckedStable}
 

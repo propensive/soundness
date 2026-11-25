@@ -83,7 +83,7 @@ export
 
 export
   scala.annotation
-  . { implicitNotFound as missingContext, StaticAnnotation, switch, tailrec, targetName }
+  . { StaticAnnotation, switch, tailrec, targetName }
 
 export scala.annotation.unchecked.{uncheckedCaptures, uncheckedStable, uncheckedVariance}
 

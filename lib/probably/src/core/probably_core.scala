@@ -66,7 +66,7 @@ export hypotenuse.{!==, +/-, ===, Checkable, Tolerance, ±}
 // by which a selection can admit or exclude it. The contextual `Testable` must say where the
 // test belongs: a `Suite`'s literal name, or `Impromptu` (see `Testable`).
 def test[topic <: Label](name: Message, tags: Tag*)
-  ( using @missingContext(Testable.orphan) suite: Testable of topic, codepoint: Codepoint )
+  ( using suite: Testable of topic, codepoint: Codepoint )
 :   Test.Id =
 
   Test.Id(name, suite, codepoint, Unset, tags)
@@ -75,14 +75,14 @@ def test[topic <: Label](name: Message, tags: Tag*)
 // its description. The moniker addresses the test in selections and charts, independently
 // of edits to the description.
 def test[topic <: Label](name: Name[Probing], description: Message, tags: Tag*)
-  ( using @missingContext(Testable.orphan) suite: Testable of topic, codepoint: Codepoint )
+  ( using suite: Testable of topic, codepoint: Codepoint )
 :   Test.Id =
 
   Test.Id(description, suite, codepoint, name, tags)
 
 
 def suite[topic <: Label, report](name: Message)
-  ( using @missingContext(Testable.orphan) suite: Testable of topic,
+  ( using suite: Testable of topic,
           runner: Runner[report],
           codepoint: Codepoint )
   ( block: (Testable of topic) ?=> Unit )
@@ -92,7 +92,7 @@ def suite[topic <: Label, report](name: Message)
 
 
 def suite[topic <: Label, report](name: Name[Probing], description: Message)
-  ( using @missingContext(Testable.orphan) suite: Testable of topic,
+  ( using suite: Testable of topic,
           runner: Runner[report],
           codepoint: Codepoint )
   ( block: (Testable of topic) ?=> Unit )

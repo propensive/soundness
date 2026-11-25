@@ -42,13 +42,6 @@ import rudiments.*
 import vacuous.*
 
 object Testable:
-  // What the compiler says of a declaration with no `Testable` that has a topic. On each
-  // declaration's parameter rather than on the class, where it would not be consulted for
-  // the refined type that is sought.
-  final val orphan =
-    "a test must be declared for a Suite — in its body, or in a method taking `(using Testable " +
-      "of \"<the suite's name>\")` — or inside an `impromptu` block"
-
   def of[topic]
     ( name:    Message,
       parent:  Optional[Testable]      = Unset,

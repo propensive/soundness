@@ -60,7 +60,7 @@ object Orphans:
   def refused: proscenium.List[Boolean] =
     demilitarize:
       def orphan()(using Testable): Test.Id = test(m"orphan")
-    . map(_.message.tt.contains(t"a test must be declared for a Suite"))
+    . map(_.message.tt.contains(t"probably.Testable"))
 
 object Tests extends Suite("testing", m"Probably Tests"):
   // The event sequence of a suite invoked with `terms`, as `label`s, with the exit status.

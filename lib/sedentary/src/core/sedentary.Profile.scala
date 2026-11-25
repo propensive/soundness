@@ -94,7 +94,6 @@ extends Rig:
     ( using System, TemporaryDirectory, Stageable over Transport in Form )
     ( using runner:    Runner[report],
             inclusion: Inclusion[report, Hotspots],
-            @missingContext(Testable.orphan)
             suite:     Testable of topic,
             codepoint: Codepoint )
   :   Unit raises Compiler.Error raises Rig.Error =

@@ -144,9 +144,8 @@ entry .digest   the digest of any `Digestible` value, in the algorithm named as 
 
       A value is digested whole; `checksum` digests what is *behind* a value (a stream's
       chunks, a file's content) without holding it, and `Digester` digests several values into
-      one accumulator. Without a permit, the compile error reads _this operation uses a
-      sub-optimal algorithm, key length or mode — or a checksum in place of a hash; import the
-      matching permit …_; without a provider it names the missing `Hash in algorithm`.
+      one accumulator. Without a permit, the compile error names the missing
+      `Permit[concession]`; without a provider it names the missing `Hash in algorithm`.
   refer gastronomy.Digestible
   refer gastronomy.Digest
   refer gastronomy.Hash
@@ -717,11 +716,10 @@ entry .Permit   erased evidence that a weak algorithm, key length or mode may be
       t"Hello world".digest[Md5]
       ```
 
-      Without one, the compile error reads _this operation uses a sub-optimal algorithm, key
-      length or mode — or a checksum in place of a hash; import the matching permit
-      (`cryptoPermits.permitNonCryptographicHashes` for CRC-32/CRC-64/Adler-32, or
-      `cryptoPermits.permitUnauthenticatedCrypto`, `cryptoPermits.permitDeprecatedCrypto` or
-      `cryptoPermits.permitDisallowedCrypto`) to allow it_.
+      Without one, the compile error names the missing `Permit[concession]`. The permits are
+      `cryptoPermits.permitNonCryptographicHashes` for CRC-32/CRC-64/Adler-32, and
+      `cryptoPermits.permitUnauthenticatedCrypto`, `cryptoPermits.permitDeprecatedCrypto` and
+      `cryptoPermits.permitDisallowedCrypto`.
   refer gastronomy.cryptoPermits
   refer gastronomy.Concession
   refer gastronomy.ProcessingPermit
@@ -736,9 +734,9 @@ entry .ProcessingPermit   erased evidence that already-protected data may be *pr
       permit, for Triple-DES and DSA, used by enigmatic's `decrypt` and `verify`; gastronomy's
       own operations all apply protection and need a full `Permit`.
 
-      Without one, the compile error reads _this operation uses an algorithm whose status is
-      "legacy use" or worse; import a permit (e.g. `cryptoPermits.permitLegacyCrypto` to
-      process existing data, or `cryptoPermits.permitDisallowedCrypto`) to allow it_.
+      Without one, the compile error names the missing `ProcessingPermit[concession]`.
+      `cryptoPermits.permitLegacyCrypto` allows existing data to be processed, and
+      `cryptoPermits.permitDisallowedCrypto` allows everything.
   refer gastronomy.Permit
   refer gastronomy.cryptoPermits
   entry .acceptable   `ProcessingPermit[Concession.Acceptable]`, always in scope
