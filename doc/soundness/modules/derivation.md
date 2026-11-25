@@ -165,9 +165,7 @@ so a derivation can drop the type name for a tuple, or the parentheses for a sin
 With the object above in scope, any case class or enumeration has a `Presentation`. It is
 resolved automatically, or requested explicitly with a `derives` clause:
 
-```scala fuel
-parse
-##
+```scala
 case class Person(name: Text, age: Int) derives Presentation
 
 val presented: Text = Person(t"Hamlet", 30).present
@@ -200,9 +198,7 @@ in hand, through `contexts`. Since derivation composes the instances of a produc
 every field type needs one, even where it is trivial, as it is for the labels of a `Text` or an
 `Int`, which have none:
 
-```scala fuel
-parse
-##
+```scala
 trait Labels[value]:
   def labels: List[Text]
 
@@ -236,9 +232,7 @@ a new instance of the product. Its lambda receives the typeclass instance for ea
 is the only thing capable of making a value of a type the body cannot see, and returns the value
 of that field. Here is a parser of comma-separated fields, in full:
 
-```scala fuel
-parse
-##
+```scala
 trait Parsing[value]:
   def parse(text: Text): value
 
@@ -264,9 +258,7 @@ dispatches to the instance of that variant. `variant` can read the answer off a 
 given. `delegate` is told which variant to produce, so the label usually comes out of the input,
 here a `Date:` or `DateTime:` prefix. A label which names no variant raises a `Variant.Error`:
 
-```scala fuel
-parse
-##
+```scala
 object ParsingSums extends Derivation[Parsing]:
   inline def conjunction[derivation <: Product: ProductReflection]: Parsing[derivation] =
     Parsing.conjunction[derivation]
@@ -298,9 +290,7 @@ the corresponding job inside `variant`. It retrieves the other value, narrowed t
 It returns an [`Optional`](optional-values.md), since the two values need not be the same
 variant, and if they are not, there is no meaningfully typed value to return:
 
-```scala fuel
-parse
-##
+```scala
 trait Equivalence[value]:
   def equal(left: value, right: value): Boolean
 
@@ -371,7 +361,6 @@ available, and calling `default` gives an `Optional[field]`: the declared defaul
 where the field has none. Here is a parser which tolerates missing trailing columns:
 
 ```scala fuel
-parse
 frame
   label Every column must be present
   code
@@ -448,9 +437,7 @@ A recursive type is a special case. It cannot be derived in place, because the d
 have to summon itself part of the way through. Defining the instance on the type's companion,
 with a `derives` clause, breaks the cycle:
 
-```scala fuel
-parse
-##
+```scala
 enum Tree derives Presentation:
   case Leaf
   case Branch(left: Tree, value: Int, right: Tree)
@@ -486,9 +473,7 @@ extension [value](value: value)
   def render(using rendering: Rendering[value]): Text = rendering.render(value)
 ```
 
-```scala fuel
-parse
-##
+```scala
 val person: Text = Person(t"Hamlet", 30).render
 val number: Text = 3.14.render
 ```
@@ -512,9 +497,7 @@ Occasionally one field of one type needs a different instance from the default: 
 for one column, or an override for one path. `specifically` builds such a map of overrides by
 naming the paths, which are checked against the actual structure of the type:
 
-```scala fuel
-parse
-##
+```scala
 case class Play(hero: Person, villain: Person)
 
 val shout: Text is Json.Encodable = Json.Encodable(() => Morphology.Str): text => Json(text.upper)
