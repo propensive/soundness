@@ -1,0 +1,58 @@
+orthant 2 language
+
+@ 0 1 0 158c59481a2f3e56104b9d4c8eee0bc6
++ # Zasób, którego szukał kompilator
+
+@ 0 3 0 1bb098320a31ac87128b338dd9266fdb
++ Odwołanie do zasobu na ścieżce klas, zapisane przez `cp"…"`, jest wyszukiwane w czasie
++ kompilacji, na ścieżce klas kompilatora. Odwołanie do zasobu, którego tam nie ma, jest błędem
++ kompilacji, a nie wartością `null` znalezioną, gdy program po raz pierwszy o nie poprosi.
+
+% 0 1 0 12705ff5e291290d17fbc8389d59ef4a
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 17f316f5e91b75bc19524fb291c81e07
++   label Zasób, który nie istnieje
+
+% 0 1 0 1477c34ff41c7c99183443e1d3238ae1
+
+% 1 1 0 0960c596329e4eb20a0b442aaa85c43a
+
+% 0 1 0 187c5cc938b0cab1035353975f70c645
+
+% 1 1 0 1da86295e78db0c51ced7084687a35fb
+
+@ 0 2 0 182932c20205907302445386de19b655
++   label Zasób, który istnieje
++   highlight cp"/scala/Option.class"  znaleziony na ścieżce klas
+
+% 1 1 0 0c6cc81d383fe86f03194453da6a5065
+
+% 1 1 0 150472f9ba5173cc080ecf56e11fa3f1
+
+% 1 1 0 10e8f1f3e5a340df16acb81ef71438b0
+
+@ 0 1 0 1eb84ef770a66abf19843fc25bc1285c
++   label Jego bajty
+
+% 0 1 0 0de5101ac336926918fd8d8edc2eac7e
+
+% 1 1 0 04bbf523871232ea07c0771baa02fee3
+
+% 0 1 0 17b3dc81bf1e25bd0a5db6a4d3464186
+
+% 1 1 0 19da001770fe6d620c58b961bc740c4d
+
+% 0 1 0 15a32d5c8ae29dea0cc9bed7f60ad9cc
+
+% 0 1 0 18eafb32caed3dd50f976e787bd035ca
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 3 0 1b852659c1b950741bbabfbbdad98295
++ [Odczyt zasobu](../../soundness/modules/classpath.md#reading-a-resource) opisuje to
++ sprawdzenie, a [bezpieczeństwo przez konstrukcję](../../philosophy/safety-by-construction.md) –
++ jego powód.

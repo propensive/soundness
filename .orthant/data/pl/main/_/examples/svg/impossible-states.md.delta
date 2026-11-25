@@ -1,0 +1,74 @@
+orthant 2 language
+
+@ 0 1 0 0508929b37a0e9a31cef11ee4da7a541
++ # Dwóch pozycji nie można dodać
+
+@ 0 3 0 0b6de48b8b8ce9811acf9f443443c4bc
++ `Point` to pozycja na rysunku, a `Delta` to przesunięcie, i są to różne typy. Punkt przesunięty o
++ deltę jest punktem; suma dwóch punktów nic nie znaczy i nie jest wyrażeniem.
+
+% 2 1 0 1bbf4f6889d9cb251083545013a3b370
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 0aa1dddbcd23bd570addd54b662a4d5b
++   label Pozycja dodana do pozycji
+
+% 0 1 0 1477c34ff41c7c99183443e1d3238ae1
+
+% 1 1 0 0960c596329e4eb20a0b442aaa85c43a
+
+% 2 1 0 0dc9b92e1210b7eb01aa9588a36f94e8
+
+% 0 1 0 16f0c17b8a850e280610f74b29b2e683
+
+% 1 1 0 054c3f30a11952331b4d9abd73526745
+
+@ 0 2 0 08131acffd30ae9d10c83416eae35766
++   label Pozycja przesunięta o przesunięcie
++   highlight Delta  przesunięcie, o które można przesunąć punkt
+
+% 1 1 0 092c85e3981dbeb41575f3997fade069
+
+% 2 1 0 0bf0f4d4ec7e63b306bf36817a5ae717
+
+% 3 1 0 162f38a4e448291f09fbbab94b499ccd
+
+% 1 1 0 0b931228eed6a0da177144e5c55f1b21
+
+@ 0 2 0 017f7370df5e6aa81a84f265a5973c37
++   label Przesunięcie między dwiema pozycjami
++   highlight -  punkt minus punkt to delta
+
+% 1 1 0 0021e41508ad987903e5cc54d9b3417f
+
+% 2 1 0 1b97fbdb222aabbc0192ee5f0b82e088
+
+% 3 1 0 009ef8026b363eb4107d78900a0b8719
+
+% 0 1 0 02767bd11f23f66b09966a4ddf70f7c2
+
+% 1 1 0 02825d341a3fc49107fba24c447a379f
+
+% 1 1 0 136d267ff733a60e0f6246170d49df5f
+
+% 2 1 0 1525a46c87e9e0571e7d21b8e7c42b7a
+
+% 0 1 0 08a86cbdc9b8cb0109ed8ce5b435ce67
+
+% 1 1 0 0cd6459499a6bd5203d659b3bcc1b6aa
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 0 1 0 067451cc3163de0c0cab65ed04f83edc
+
+% 0 1 0 1fdef15fd0e1fbf713f4344a223272e1
+
+% 1 1 0 13d9dec768086cf600fc2c5cc3f46cba
+
+@ 0 3 0 1035b90a12502a65038cbc1997b1f19a
++ Sekcja [Punkty i przesunięcia](../../soundness/modules/svg.md#points-and-deltas) zawiera całą tabelę
++ arytmetyki, a [stany niemożliwe](../../philosophy/impossible-states.md) – powód istnienia dwóch
++ typów.

@@ -1,0 +1,85 @@
+orthant 2 language
+
+@ 0 1 0 0b9f90b6c29fdf6c0a20148e5bca68fd
++ # Wartość, która nadejdzie później
+
+@ 0 3 0 0af91c759582fb440681067cf3d2a088
++ `Promise` to wartość, którą dostarczy inne zadanie. Strona, która jej potrzebuje, wywołuje
++ `await` i otrzymuje ją jako wynik tego wywołania: nie trzeba rejestrować żadnego callbacku ani
++ niczego mapować.
+
+% 2 1 0 183237bee6a89ace0be12d307a84c68d
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 0beebd835c0c4696102a4373804ca32f
++   label Obietnica
+
+% 1 1 0 105c70e568dbd4e80c9f6ffa39fe7513
+
+% 2 1 0 0a50d7e8a0ac6c4209c27b7d3af6d594
+
+% 4 1 0 0ab4b79c519e309b1de058550053bc60
+
+% 5 1 0 0bf2ddbbee0b12ef01e5fffcddfc95eb
+
+% 1 1 0 12e912a709a67c51157b077e52aba4f2
+
+% 2 1 0 1d7050a1d39413ed04ce43e20692db3d
+
+@ 0 2 0 1e8e2fb353b533791bfb040ef00f2a81
++   label Spełniona gdzie indziej
++   highlight fulfill(154)  w innym zadaniu
+
+% 1 1 0 05ab4cdc538b416718329ecf9f6a21e9
+
+% 2 1 0 1295a690ee737b6911ee219bba4cc77d
+
+% 4 1 0 1057b39a8f179d4612bce255353ae046
+
+% 5 1 0 05fabcd3e46317c915bfd8cbd1ddf511
+
+% 6 1 0 1196a678c84b837d01050a315c3e4ef5
+
+% 1 1 0 0ea61a32cb688f8f0eb6db7e9812ec1d
+
+% 2 1 0 1bee23c2207ceb220c2475edf42f7165
+
+@ 0 2 0 00409a14bf98909e006b6dcbc55c3291
++   label I oczekiwana tutaj
++   highlight await()  czeka i daje wartość
+
+% 1 1 0 0efba690756eb85412a8d0c5739ed134
+
+% 2 1 0 1b13db5c2098432e19508ae546926980
+
+% 4 1 0 10f348c28597e3971ef2fe1838038551
+
+% 5 1 0 1f94e6a33c8cde6709cefb7f1f5373be
+
+% 6 1 0 1d87580cdefd5073014c950b5a32cb40
+
+% 0 1 0 02b998b25890521907a165a4676797f3
+
+% 1 1 0 193ea93a4f9e608b1ac6442c6da3cb66
+
+% 1 1 0 136d267ff733a60e0f6246170d49df5f
+
+% 2 1 0 1525a46c87e9e0571e7d21b8e7c42b7a
+
+% 0 1 0 08a86cbdc9b8cb0109ed8ce5b435ce67
+
+% 1 1 0 0cd6459499a6bd5203d659b3bcc1b6aa
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 0 1 0 1ebf1475eb7d7abb0166dc9d234f3a3c
+
+% 1 1 0 16cc713194ff66b90a0ccd72f470708a
+
+@ 0 2 0 1fe5420e3c07d5fe0144f0acd22b22c4
++ [Obietnice](../../soundness/modules/concurrency.md#promises) je opisują, a
++ [styl bezpośredni](../../philosophy/direct-style.md) wyjaśnia, dlaczego czekanie jest zwykłym
++ wywołaniem.

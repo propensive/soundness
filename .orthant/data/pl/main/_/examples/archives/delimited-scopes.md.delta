@@ -1,0 +1,57 @@
+orthant 2 language
+
+@ 0 1 0 08954e06f918314b10a3be75a3b019c6
++ # Archiwum otwarte na jeden blok
+
+@ 0 2 0 084b644a6de2974918a7f98d669ddae3
++ Otwarcie archiwum udostępnia jego wpisy na czas trwania bloku i zamyka plik pod nim, gdy blok się
++ kończy. Wewnątrz `zipfile` jest otwartym archiwum. Na zewnątrz nie ma żadnego.
+
+% 0 1 0 12705ff5e291290d17fbc8389d59ef4a
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 0c3732511fe46f441e3ba0d4e125d265
++   label Uchwyt tam, gdzie nic nie jest otwarte
+
+% 0 1 0 1477c34ff41c7c99183443e1d3238ae1
+
+% 1 1 0 0960c596329e4eb20a0b442aaa85c43a
+
+% 2 1 0 0d4f2a5f421f82161e01a4cd6ded1f6c
+
+% 3 1 0 09efc60888ab21b00511d0dd9bd85d23
+
+% 5 1 0 11b198b75b0141dd0af6c6d715548a3e
+
+% 0 1 0 0580338021f75f001d70ce2875bb5400
+
+% 1 1 0 100a078c6b17718c001f3d7fedb4b956
+
+@ 0 1 0 1cd14b9ce5da8707148f728e0b57f8be
++   label Uchwyt wewnątrz swojego zasięgu
+
+% 0 1 0 0836699fc10f785c13e51f137075d165
+
+% 1 1 0 0927c6b32113dcb10aa3f1d254de7289
+
+% 2 1 0 05fbfddc7d3d21031c52a79222e6fce1
+
+% 3 1 0 12317b9ea92bce4103944c3336a51bb3
+
+% 5 1 0 040493d214469ca60dcb66bbfc3be9fe
+
+% 0 1 0 034e096ff8623bcc036b9f9030ec8b75
+
+% 0 1 0 167de41d58746bc719076025ec9d0fa8
+
+% 0 1 0 18eafb32caed3dd50f976e787bd035ca
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 3 0 09de05a0dad88d000ff92a987a9dbed8
++ Przykład jest kompilowany, ale nie jest uruchamiany, ponieważ odczytuje plik. Sekcja
++ [ZIP](../../soundness/modules/archives.md#zip) otwiera w ten sam sposób plik JAR, a [ograniczone
++ zasięgi](../../philosophy/delimited-scopes.md) opisują ten kształt.

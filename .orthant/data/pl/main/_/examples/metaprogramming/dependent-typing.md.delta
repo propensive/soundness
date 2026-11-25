@@ -1,0 +1,72 @@
+orthant 2 language
+
+@ 0 1 0 0f5c4edda99feae20001e95108917acf
++ # Wartość niesiona w typie
+
+@ 0 3 0 0c4d7ba7ef39c6811998e9d410c8d291
++ Listę imion można zapisać jako typ: krotkę typów singletonowych pod `TypeList`. Pozostaje ona w
++ systemie typów, gdzie może ją badać makro lub klasa typów, a `reify` zamienia ją w wartość
++ czasu wykonania w chwili, gdy jest potrzebna.
+
+% 2 1 0 00c826958a1e33a214581a8bb776569b
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 0e1ddcea9189ca641593c383f2623516
++   label Jeden literał jako typ
+
+% 1 1 0 0e591f6d47974f1a00791732133a7e91
+
+% 2 1 0 0e7a85f8f6046d6815414d7619677d9a
+
+% 1 1 0 02041c7d74b9452a1a212e5cbe107654
+
+@ 0 2 0 117fbb5bda602db31de518f2e8afb9f2
++   label Ich lista
++   highlight TypeList  krotka czytana jako lista
+
+% 1 1 0 119ec5f21b62ee571790bc5935416647
+
+% 2 1 0 17cb8aa68253656f1add0da6e02a1788
+
+% 3 1 0 11a81169a6ab1404198d9aef190a5791
+
+% 1 1 0 1f1d81e360787dad0c305c955a3d1522
+
+@ 0 2 0 10e8f9355f1a52f614e15990f22b2717
++   label Ich zbiór
++   highlight TypeSet  unia czytana jako zbiór
+
+% 1 1 0 1a8f6664ccfde0b009c6af1492b6aeea
+
+% 2 1 0 158b4b1e596ba06513b725131bb53c85
+
+% 3 1 0 15a7d32858a64baf1a63471293cdfb9d
+
+% 0 1 0 1ce058fe51ae1f0b0e2b6c6edc3696a7
+
+% 1 1 0 183779ebc894057a1086d7ddc3e99de5
+
+% 1 1 0 136d267ff733a60e0f6246170d49df5f
+
+% 2 1 0 1525a46c87e9e0571e7d21b8e7c42b7a
+
+% 0 1 0 08a86cbdc9b8cb0109ed8ce5b435ce67
+
+% 1 1 0 0cd6459499a6bd5203d659b3bcc1b6aa
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 0 1 0 13c6ed804208a48c0dabf7745dfdbc3f
+
+% 0 1 0 1cd0ae2eab3bfe5217a7fdccd3dd6841
+
+% 0 1 0 091d905cb5271d3409e4db024982c4fc
+
+% 1 1 0 1f8454e0244676b8139b9e874ea71d0d
+
+@ 0 2 0 02a967851dcd084608c21a9152eef2c8
++ [Wartości na poziomie typów](../../soundness/modules/metaprogramming.md#type-level-values)
++ wymieniają postać na poziomie typów każdego rodzaju wartości.

@@ -1,0 +1,60 @@
+orthant 2 language
+
+@ 0 1 0 14b1beddf5f3e9fb17c827d1f2dab233
++ # Cykl albo jego brak
+
+@ 0 3 0 192443ba45d9ee2e1fb6fb53201bf434
++ `Digraph` może zawierać cykl lub nie, a `cycle` odpowiada wartością `Optional`: węzłami cyklu
++ albo `Unset`. Żadna z tych odpowiedzi nie jest błędem, a nieobecnej nie da się pomylić z listą.
+
+% 2 1 0 01790473062fee1008d7051dfa7d570d
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 1d54d2aea3f636221c6d2c15120ad884
++   label Waśń, która zatacza krąg
+
+% 1 1 0 095744f567094fa913953fe031aaacb9
+
+% 2 1 0 047158f1a81f7d6a0bf48acab8504697
+
+% 3 1 0 0c921c2f1758758400ccb6762a5a2a12
+
+% 1 1 0 14426435c5b89f9e02b2e549461d452d
+
+@ 0 3 0 06be782d6e60d0711421193bcee3cb71
++   label Co znaczy każda odpowiedź
++   highlight let  cykl połączony w jeden wiersz
++   highlight or(t"no..cycle")  i jego brak
+
+% 1 1 0 06478009b10b105013ff683249545217
+
+% 2 1 0 0c40be4bcfc0dc5203d17c95d0bea770
+
+% 3 1 0 0227b3f555e954ec1b79b28bf4dcfad4
+
+% 0 1 0 19f9e414930e7548135a7329b1fbb839
+
+% 1 1 0 1152eebf2d72389400eb019cb34de42f
+
+% 1 1 0 136d267ff733a60e0f6246170d49df5f
+
+% 2 1 0 1525a46c87e9e0571e7d21b8e7c42b7a
+
+% 0 1 0 08a86cbdc9b8cb0109ed8ce5b435ce67
+
+% 1 1 0 0cd6459499a6bd5203d659b3bcc1b6aa
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 0 1 0 07565b98205385fe17252d66073203c0
+
+% 0 1 0 19422b62a97e9b5207adcf488cca7836
+
+% 1 1 0 1c0fbcff3088ad071a16a09db7b2fa2d
+
+@ 0 2 0 17c89c67cdc9b91006aa9791f43f8376
++ [Budowanie grafu](../../soundness/modules/graphs.md#building-a-graph) przedstawia `cycle`, a
++ [opcjonalność](../../philosophy/optionality.md) wyjaśnia `let` i `or`.

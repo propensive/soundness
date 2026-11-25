@@ -1,0 +1,67 @@
+orthant 2 language
+
+@ 0 1 0 1d2220c23912c43102d3a02bfcf92cf7
++ # Bajty zapisane jako literał
+
+@ 0 3 0 022e1a0a1d0ab0381cc056bd8d336665
++ Literał `hex"…"` to bajty zapisane szesnastkowo i odczytywane przez kompilator. Znak, który nie
++ jest cyfrą szesnastkową, jest błędem kompilacji, a bajtów poprawnego literału nie trzeba
++ dekodować w trakcie działania programu.
+
+% 2 1 0 1ed6f866c80e09c417e40af2b64c8094
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 08820bbdc75c57981ede68fb9004bcaf
++   label Litera, która nie jest cyfrą
+
+% 0 1 0 1477c34ff41c7c99183443e1d3238ae1
+
+% 1 1 0 0960c596329e4eb20a0b442aaa85c43a
+
+% 0 1 0 013730db82a0d7ec139e221d82b72f97
+
+% 1 1 0 1229dfe1a185797f0f09712b5f540bde
+
+@ 0 1 0 00fedc4e36a79c2c15f8184eaa3507af
++   label Cztery bajty
+
+% 1 1 0 1c99fbdc7dc7efc9079876f2e1c81869
+
+% 1 1 0 17ec06ceea4cfe7f11501e4f8cd04d3b
+
+% 1 1 0 08dd50466e3b747519dcc18f507f3112
+
+@ 0 2 0 178575eef66cff5f14598be7fcebfc70
++   label Te same bajty w Base64
++   highlight serialize[Base64]  sześć bitów na znak
+
+% 1 1 0 1e371fdbc5a83b770c1469c1e5ba9516
+
+% 0 1 0 1e16732a0b3e88fb034a49fc31ebb932
+
+% 1 1 0 1cc193eca0f9f815159a085a6824b597
+
+% 0 1 0 1e1f22cc44e9fcb50a10d5e81be15e57
+
+% 1 1 0 0c4d5b247b0d071c056a0b3e93cd0ef9
+
+% 1 1 0 136d267ff733a60e0f6246170d49df5f
+
+% 2 1 0 1525a46c87e9e0571e7d21b8e7c42b7a
+
+% 0 1 0 08a86cbdc9b8cb0109ed8ce5b435ce67
+
+% 1 1 0 0cd6459499a6bd5203d659b3bcc1b6aa
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 0 1 0 14850a09f6384c9f159ab6d95b562121
+
+% 1 1 0 02c371e50557b52a07c2c78bb855e0e2
+
+@ 0 2 0 0e0c1dfb379028011317c6c47769f800
++ [Inne podstawy](../../soundness/modules/base-encoding.md#other-bases) wymieniają podstawy, w
++ których można zapisać bajty literału.

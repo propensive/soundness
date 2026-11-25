@@ -1,0 +1,72 @@
+orthant 2 language
+
+@ 0 1 0 1e95fd99a88efffd1608fa8f57ab7237
++ # Linia odniesienia, której może nie być
+
+@ 0 3 0 0535ffa3c2e9cd8c142d330349f9dc64
++ Etykieta, którą trzeba było przesunąć daleko od jej punktu, ma linię odniesienia, linię
++ prowadzącą z powrotem do tego, co nazywa, a etykieta, która została na miejscu, nie ma żadnej.
++ Linia odniesienia jest więc wartością opcjonalną i nie można jej narysować, zanim kod nie powie,
++ co oznacza jej nieobecność.
+
+% 2 1 0 1943e8a136644d31165ffbdb5fdc5603
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 0c27de8375b91d4f1c04c86a6f99cfd5
++   label Linia odniesienia użyta tak, jakby zawsze była
+
+% 0 1 0 1477c34ff41c7c99183443e1d3238ae1
+
+% 1 1 0 0960c596329e4eb20a0b442aaa85c43a
+
+% 2 1 0 053a7b135af77a49056f9a7fdfa9f94a
+
+% 3 1 0 017a528903fb533f1a4fbe1cf8acea5f
+
+% 4 1 0 10d7c61680c48bd81202213d5b4210c0
+
+% 0 1 0 10238a1ab2f1948b0e8923739805dd68
+
+% 1 1 0 0fb818bf7f804f981df317e2bbb31e12
+
+@ 0 2 0 1706f23f5d40c3271b6ec628bd506ccd
++   label Długość tam, gdzie jest linia, i zero tam, gdzie jej nie ma
++   highlight lay(0.0)  wartość, która oznacza brak linii odniesienia
+
+% 1 1 0 0dcd80bcbb2c57c50e9d9fec68882136
+
+% 2 1 0 0945b473a09c40a61d531e89cec1d479
+
+% 3 1 0 179544f85df76ab004fa6cac03f1f819
+
+% 4 1 0 0a14e5c76278fd321956209b5d0f868a
+
+% 0 1 0 1dd1e8b5ee0d8b9700b06a91b925541e
+
+% 0 1 0 1bf41146cfe7b48b1ca9aca55008cb1e
+
+% 1 1 0 0d7cc1a721e506f00dad73f9a167fad4
+
+% 1 1 0 136d267ff733a60e0f6246170d49df5f
+
+% 2 1 0 1525a46c87e9e0571e7d21b8e7c42b7a
+
+% 0 1 0 08a86cbdc9b8cb0109ed8ce5b435ce67
+
+% 1 1 0 0cd6459499a6bd5203d659b3bcc1b6aa
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 0 1 0 1723ead770986b44057821f0c1a99251
+
+% 0 1 0 098b53af700beb6d1782d412b280aa00
+
+% 1 1 0 0ef54a9cd1ae2b70189c3f7370f070b5
+
+@ 0 3 0 0979e76efa7c1ed1033d2c32727a1c45
++ [Odsunięcie i linie odniesienia](../../soundness/modules/label-placement.md#displacement-and-leaders)
++ mówi, kiedy etykieta otrzymuje linię, a [opcjonalność](../../philosophy/optionality.md) opisuje
++ `lay` i metody pokrewne.

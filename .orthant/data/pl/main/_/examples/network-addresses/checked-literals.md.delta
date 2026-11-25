@@ -1,0 +1,51 @@
+orthant 2 language
+
+@ 0 1 0 1aae7ce717343eb21594bcffd5b241e6
++ # Adres ze zbyt wieloma częściami
+
+@ 0 2 0 1719e9a04e44ee701ad5858abcb0f7e4
++ Adres IP zapisany za pomocą `ip"…"` parsuje kompilator. Jego typem jest `Ipv4` lub `Ipv6`, zależnie
++ od tego, co zapisano, a tekst, który nie jest żadnym z nich, nie kompiluje się.
+
+% 0 1 0 12705ff5e291290d17fbc8389d59ef4a
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 0e38dfceed7cfd580753eab6fae3b91d
++   label Sześć liczb
+
+% 0 1 0 1477c34ff41c7c99183443e1d3238ae1
+
+% 1 1 0 0960c596329e4eb20a0b442aaa85c43a
+
+% 0 1 0 128c30409db832570ab61daaedec10d9
+
+% 1 1 0 0e1255a51fe060ad1fdf41a74b428541
+
+@ 0 1 0 1b34dfcfb1afad2509fe6d2ccbd2b4b6
++   label Cztery liczby
+
+% 1 1 0 0420590518a5ea0b0a3ec44054ae4189
+
+% 0 1 0 027ccfbf5d5d25f612762b23bcd35591
+
+% 1 1 0 00493855d4c6f2b512598dcb2a325965
+
+@ 0 1 0 1df99869f9001a1e1ccca1b6ba986a32
++   label Wywnioskowany typ
+
+% 0 1 0 03abcff1b5fb12f0085a5d3aa28a3279
+
+% 1 1 0 0dfdb8c18e92159317425330b0edbe3d
+
+% 0 1 0 1cff28ddbccc3dfe07e554b43ce18188
+
+% 0 1 0 18eafb32caed3dd50f976e787bd035ca
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 2 0 1a09a47b0566d0a10c5b22e3fd2bd0c5
++ Strona [Adresy sieciowe](../../soundness/modules/network-addresses.md) zawiera to samo dla adresów
++ URL, adresów MAC, nazw hostów i portów.

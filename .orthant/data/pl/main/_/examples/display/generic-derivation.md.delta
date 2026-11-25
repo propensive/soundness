@@ -1,0 +1,66 @@
+orthant 2 language
+
+@ 0 1 0 077ffd742d424b74022bcf665c901988
++ # Postać diagnostyczna dla dowolnej klasy case
+
+@ 0 2 0 1f4368202115960e108047dc86c49794
++ `inspect` zapisuje wartość dla programisty. Dla klasy case lub wyliczenia jej postać jest derywowana
++ z pól, z których każde jest po kolei przedstawiane, więc dla typu nie pisze się niczego.
+
+% 2 1 0 00634c2232e1884e08ef8ca7fbc52729
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 1f38bb3f241655771a4c29182b1fd0ab
++   label Klasa case
+
+% 1 1 0 01a565a20e2e79c301f8fa8d6d508eb9
+
+% 2 1 0 0725e00f71663d000961651e862496e0
+
+% 0 1 0 0fcf0ffbe821e70003fb36e25d69a605
+
+% 1 1 0 14a0a510884e2f311895d030bae38d88
+
+@ 0 2 0 14b7b5ba700f3f2d0606a2c1ad460a7f
++   label Zagnieżdżona w wyliczeniu
++   highlight Role  nie pisze się dla niej żadnej instancji
+
+% 1 1 0 13cccc803e201e8e06726313959e7bb9
+
+% 2 1 0 1f18e8fc8d56994f0b56afd6db14c93e
+
+% 0 1 0 1e33dbbfbbf7166a0c4308c03ee5ee5b
+
+% 0 1 0 096993f2865335b51aeff94a2121169d
+
+% 0 1 0 103e7f6f9d5103331aa25bdefc12ebb2
+
+% 0 1 0 0c699dd2ad160d4b0265a05eb402ee79
+
+% 0 1 0 0f7d83b39598720d1e3e529f6e21ee43
+
+% 1 1 0 1435d55b1ce29ba206809f1b26798986
+
+% 1 1 0 136d267ff733a60e0f6246170d49df5f
+
+% 2 1 0 1525a46c87e9e0571e7d21b8e7c42b7a
+
+% 0 1 0 08a86cbdc9b8cb0109ed8ce5b435ce67
+
+% 1 1 0 0cd6459499a6bd5203d659b3bcc1b6aa
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 0 1 0 0760f2890b0d1f2708019551d5bd9e7f
+
+% 0 1 0 026aa6b6b8d403391d469cf676cd9fa2
+
+% 1 1 0 14890b542cf8ac791fa70f0afb995a45
+
+@ 0 3 0 038a6c171327778f04df7100eb793230
++ Tekst jest zapisywany tak, jak w kodzie źródłowym, brak wartości jest kółkiem, a przypadek bez pól
++ jest samą nazwą. [Przedstawianie diagnostyczne](../../soundness/modules/display.md#inspecting)
++ opisuje każdą postać.

@@ -1,0 +1,63 @@
+orthant 2 language
+
+@ 0 1 0 194fc95fd162a0f91958e5cc39d9e885
++ # Jedno słowo czyni program rezydentnym
+
+@ 0 3 0 1f7d22cd2561b0301d76bb2a67896383
++ Program wiersza poleceń staje się demonem, gdy jego ciało opakuje się w `cli`, a nie w
++ `application`. Ciało się nie zmienia: `Out` nigdy nie było globalnym wyjściem JVM, lecz standardowym
++ wyjściem tego wywołania, które jest w zasięgu, a teraz jest ich wiele.
+
+% 0 1 0 12705ff5e291290d17fbc8389d59ef4a
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 2 0 1aed8b600e09d8e610f685d43291a1c7
++   label Program, który za każdym razem uruchamia JVM
++   highlight application(args)  jeden proces na każde wywołanie
+
+% 1 1 0 0558951194f143d5048d5e139c0a2f69
+
+% 2 1 0 1a3e91f8e3884da60fa1d1c29b621b9d
+
+% 3 1 0 0a03904449b0afb21bed920ad6330691
+
+% 4 1 0 04722b00d5b6475816351388de6699af
+
+% 0 1 0 135fb5ab35f0d7d0152be81f0d67bada
+
+% 1 1 0 01c8bf8980ffaecf1ac9c90f03b3b133
+
+% 2 1 0 12d90be47160606f0da478308af86c8e
+
+% 1 1 0 0bbd6d02382494b41a33a964001e0913
+
+@ 0 2 0 15d8b6ee57f39a5605136fb082801dbb
++   label Program, który pozostaje uruchomiony
++   highlight cli  każde wywołanie jest przekazywane do tego samego procesu
+
+% 1 1 0 0305826908305a490acf5fc8fe606ed1
+
+% 2 1 0 1006227ef33242c10103a01d326426a7
+
+% 3 1 0 15720edad5c9a9c51f306caca0be2559
+
+% 4 1 0 1a86532dcc53063214ab636151afebb4
+
+% 0 1 0 0d79df1325e0f5f21b165e58b3f4b2f4
+
+% 1 1 0 10e1c693b2ca3beb0e6a14348b41b647
+
+% 2 1 0 167e6d3af6fd34a2003d32988d25edec
+
+% 0 1 0 18eafb32caed3dd50f976e787bd035ca
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 4 0 0c9554f7107e4a75165e494153b44206
++ Przykład jest kompilowany, ale nie jest uruchamiany, ponieważ definiuje cały program. [Aplikacja
++ demona](../../soundness/modules/daemons.md#a-daemon-application) opisuje, co przekazuje launcher, a
++ [kontekst deklaratywny](../../philosophy/declarative-context.md) – dlaczego nic, co dotyczy
++ wywołującego, nie jest globalne.

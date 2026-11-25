@@ -1,0 +1,70 @@
+orthant 2 language
+
+@ 0 1 0 116193a45185bbe8139788492c0bb5d1
++ # Polecenie, które zna własne wyjście
+
+@ 0 3 0 0e4178e3d2ae701a189194cba49b1e61
++ Polecenie zastosowane bez typu daje wyjście, które wynika z jego nazwy. Nazwa jest odczytywana z
++ literału podczas kompilacji programu, więc `echo` to tekst, a `cat` to strumień wierszy, i
++ kompilator trzyma każde z nich za słowo.
+
+% 0 1 0 12705ff5e291290d17fbc8389d59ef4a
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 2 0 0ce1fe15c664d75f08e65428af866010
++   label Wyjście echo jest tekstem
++   highlight ()  nie podano typu
+
+% 1 1 0 1a9185bf5ade1d8e03fb2569b2fd0deb
+
+% 2 1 0 11f74e8583e58d970801d3eaf18af20d
+
+% 3 1 0 09bf5f331fd1b8c312da29d135554569
+
+% 5 1 0 1eaef3120f43050a1cae2ff679fb3a03
+
+% 1 1 0 166fc8e9b12e9c7c076ec52831dc7cd5
+
+@ 0 1 0 11407f915d30b90119d0e6f38b29ad83
++   label Wyjście cat nim nie jest
+
+% 0 1 0 1477c34ff41c7c99183443e1d3238ae1
+
+% 1 1 0 0960c596329e4eb20a0b442aaa85c43a
+
+% 2 1 0 0ef06f8307c5e5ad0d8d7894d391398c
+
+% 3 1 0 028351ac28e77a4e03f722a550f4699f
+
+% 5 1 0 0baf70118b8380791e40c70a49bfd4c2
+
+% 0 1 0 1896d9382db5964a1368e16f63a22146
+
+% 1 1 0 16b785ba2f50bec0027444d14878773e
+
+@ 0 1 0 0524d96b1e5a64b503d19f1b32685491
++   label Jest strumieniem wierszy
+
+% 0 1 0 1f50c862a05e4e061035a5a89f4c5c9b
+
+% 1 1 0 009de853693c17f1193d11b95bbc4c83
+
+% 2 1 0 189db277bf0554a7013de84659990c42
+
+% 3 1 0 172768071d8a7d940e20bb07d7f41357
+
+% 5 1 0 1a67d766873c86850d677d22c0275cd4
+
+% 0 1 0 09371e42d82fd33e1ed2e49002fc6e4e
+
+% 0 1 0 18eafb32caed3dd50f976e787bd035ca
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 3 0 0ec26581d3e8bbda1c1b61070905c062
++ Przykład jest kompilowany, ale nie jest uruchamiany, ponieważ czyta plik. [Domyślny typ
++ wyjścia](../../soundness/modules/processes.md#an-implied-output-type) mówi, które polecenia są
++ znane.

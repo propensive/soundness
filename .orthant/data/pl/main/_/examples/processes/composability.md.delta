@@ -1,0 +1,53 @@
+orthant 2 language
+
+@ 0 1 0 039ed89de5fc54ea0e1effeebb005a6a
++ # Ścieżka jako argument
+
+@ 0 2 0 19c00f71ee9228bd1696f23ed7fd686c
++ Ścieżka jest wstawiana do polecenia taka, jaka jest, bez wcześniejszej zamiany na tekst. Staje się
++ jednym argumentem, więc katalog ze spacją w nazwie nie wymaga cudzysłowów.
+
+% 2 1 0 1d55a3cfe1a6988612e9b9d861bacde8
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 19eaabd868209f130ed267502877a65b
++   label Ścieżka
+
+% 1 1 0 0ba5bde5915702ab0831864fc9e92df2
+
+% 2 1 0 0ef095f9c53d8ee401b613ca894add0f
+
+% 1 1 0 13f4b313b175f59e0438ea27c4d2c25d
+
+@ 0 2 0 0927ce4456ef30f404b8c393ee9149f1
++   label Umieszczona w poleceniu
++   highlight $folio  jeden argument
+
+% 1 1 0 0222fe292b955ec70494946b3765c78b
+
+% 2 1 0 17e9cd344864ae5202827eb0473b1c54
+
+% 0 1 0 1fd7b3d60b16634f165fd15838acad03
+
+% 1 1 0 17ce25893a17664f0e0e97c5a0f9cf0d
+
+% 1 1 0 136d267ff733a60e0f6246170d49df5f
+
+% 2 1 0 1525a46c87e9e0571e7d21b8e7c42b7a
+
+% 0 1 0 08a86cbdc9b8cb0109ed8ce5b435ce67
+
+% 1 1 0 0cd6459499a6bd5203d659b3bcc1b6aa
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 0 1 0 05548783c8ccd4890f1cdee2a999ebfb
+
+% 1 1 0 168616acd93e82170c26d0e9aea5b9dd
+
+@ 0 3 0 159c9f1ab0cf082c111d1d08f76ee015
++ [Podstawianie i escapowanie](../../soundness/modules/processes.md#substitution-and-escaping) mówi,
++ co jeszcze można podstawić, a [ścieżki](../../soundness/modules/paths.md) – jak buduje się ścieżkę.

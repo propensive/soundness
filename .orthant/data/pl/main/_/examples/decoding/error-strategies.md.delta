@@ -1,0 +1,52 @@
+orthant 2 language
+
+@ 0 1 0 16d1425289bbe0771273fc2cc8e6d982
++ # Jeden dekoder, trzy sposoby niepowodzenia
+
+@ 0 2 0 1dfbe3e46618051c19078cd733a150c1
++ `as[Int]` nie decyduje, co się dzieje, gdy tekst nie jest liczbą. Decyduje kod, który je wywołuje, a
++ każdy wybór nadaje wynikowi inny typ.
+
+% 0 1 0 12705ff5e291290d17fbc8389d59ef4a
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+@ 0 1 0 1aed2c02017a8aa603fcb302d2005cb5
++ alternative Wartość nieobecna
+
+% 0 1 0 095674c459fb074f082ec3675cad07bf
+
+% 1 1 0 06c9028e272c82fd03be89f91f94796b
+
+% 0 1 0 050613a0cdaf9ae11412e15cce8b6e22
+
+@ 0 1 0 1b2a29c685b94be2020bd9cabb40bd7c
++ alternative Zastępstwo
+
+% 0 1 0 05e95e550c85ca9a00b6dc7307d8579b
+
+% 1 1 0 14ad50394d45ac7217d24449a307742e
+
+% 0 1 0 0a4b4418476ddf850ee359aaa95cd8bf
+
+% 0 1 0 1ffe5c415422113702a4a9b03386f84a
+
+% 0 1 0 182246258f8ce1ee0519696ca2883165
+
+% 0 1 0 0731de0a252bb725026b6fae75218e3f
+
+@ 0 2 0 01757e6f1a229ae61679a845fa7ba9d0
++ alternative Decyzja wywołującego
++   highlight raises..Error  wybiera wywołujący
+
+% 1 1 0 07a415795b510bf115ba42e0963f870d
+
+% 0 1 0 01b170a9842da0f814fe9491f77237db
+
+% 0 1 0 18eafb32caed3dd50f976e787bd035ca
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 1 0 141297c64ab1e5b51e58f1abefcf418d
++ Sekcja [Wybór strategii](../../soundness/modules/errors.md#choosing-a-strategy) zawiera pełny
++ zestaw.

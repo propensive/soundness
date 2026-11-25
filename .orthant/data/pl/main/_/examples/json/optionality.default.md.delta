@@ -1,0 +1,75 @@
+orthant 2 language
+
+@ 0 1 0 1ccf6dead56c628008af6984d8c2b79d
++ # Trzy sposoby, w jakie pole może brakować
+
+@ 0 3 0 1f4f89901c72160817b6fd98f258ca42
++ Typ pola mówi, co dokument może pominąć. Zwykłe pole jest wymagane, pole z wartością domyślną
++ przyjmuje tę wartość, a pole `Optional` jest odczytywane jako `Unset`. Nie ma czwartego
++ przypadku, w którym brakujące pole staje się `null`.
+
+% 2 1 0 116252d9a305f69b1c164b426344f574
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 0b9f30cac6cb6c03135b69ad190a4bbf
++   label Pole wymagane
+
+% 1 1 0 019c78093c45038d0e52411fab1f3c52
+
+% 2 1 0 0b3f37b4aba64ff614d69e9cf2aed625
+
+% 0 1 0 13840d4d20227fac189d875ce82acf30
+
+% 2 1 0 08928adbbeb7f6af1530e311f3186709
+
+% 3 1 0 03f7599b4704435c02ceef55071d0aa1
+
+@ 0 2 0 009b11bf427e9bb709a5d52836354303
++   label Wartość domyślna
++   highlight age..18  używana, gdy brakuje klucza
+
+% 1 1 0 1cb09fda2a39e3d5032037345ca8d1c4
+
+% 2 1 0 09a66dba35145318161a15e11d5f9780
+
+% 0 1 0 1e2bec2241128a411555ac55d64e7728
+
+% 2 1 0 0dec607d5c978e190c2d33681bc7e784
+
+% 3 1 0 1cbacab192f475b300f4b5be864a7ce4
+
+@ 0 2 0 1a5257207888fbb20b9dcde035646ae4
++   label Pole opcjonalne
++   highlight Optional[Int]  Unset, gdy brakuje klucza
+
+% 1 1 0 04be4bcc2cb186431951a21b346631b8
+
+% 2 1 0 0aa49817955998d51c882f06261a6f64
+
+% 0 1 0 0f0864f428f07d490f2fbacfadc7bb30
+
+% 2 1 0 14f3557038ddd71708c9bb6870b85c34
+
+% 1 1 0 1b0db10d87fbc2771de7a0c96215898a
+
+% 1 1 0 136d267ff733a60e0f6246170d49df5f
+
+% 2 1 0 1525a46c87e9e0571e7d21b8e7c42b7a
+
+% 0 1 0 08a86cbdc9b8cb0109ed8ce5b435ce67
+
+% 1 1 0 0cd6459499a6bd5203d659b3bcc1b6aa
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 0 1 0 02e8d6b67100447e1405fcbd9ea217f7
+
+% 1 1 0 0a3724cfb1eee16818720e26522d89e2
+
+@ 0 3 0 1e7af3c455f0aa1006d566ad82b94cb5
++ W pierwszej klatce `fool` ma wartość `Unset`, ponieważ dokumentu nie da się zdekodować.
++ [Pola opcjonalne i wartości domyślne](../../soundness/modules/json.md#optional-fields-and-defaults)
++ omawiają każdy przypadek.

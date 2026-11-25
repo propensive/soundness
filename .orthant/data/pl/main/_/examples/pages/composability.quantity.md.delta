@@ -1,0 +1,72 @@
+orthant 2 language
+
+@ 0 1 0 0946deaa8852696c11ef1d66f75d1a17
++ # Panel szeroki na wielkość
+
+@ 0 3 0 180d57ddad5ea59d183ffaa9b52c2f55
++ Wymiary funkcji to hooki, które strona nadpisuje. Szerokość panelu bocznego jest długością z
++ jednostką, tak jak [wielkości](../../soundness/modules/quantities.md) wszędzie indziej, a nie
++ napisem CSS.
+
+% 0 1 0 12705ff5e291290d17fbc8389d59ef4a
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 020d6cab216291a30511fc2b94cf14b8
++   label Panel boczny
+
+% 1 1 0 1d368d845789733715a84b49fb0c6764
+
+% 2 1 0 0585ac0df2b8696f0b36fe206018d1df
+
+% 4 1 0 0bd085b1f7b3d6bc1fe009f28d88485c
+
+% 5 1 0 05665ef0ab14498a08d338385f052e88
+
+% 6 1 0 113def015386da971f012f93a054dd8c
+
+% 1 1 0 140ee85c7d0f6dba0f36e5d48cf82599
+
+@ 0 2 0 0c4c220c68e4f1bb190c159432e882cc
++   label Jego szerokość w jednostkach rem
++   highlight 20.0*Rem  długość sprawdzona jako długość
+
+% 1 1 0 1febabeacc79580614fedc3a125d2e28
+
+% 2 1 0 17651f4e5896f14a05738229af7c8ed5
+
+% 4 1 0 1df0b1799801d0ab0266994cf8c08c9f
+
+% 5 1 0 124bec56444530b10046f3251f93a4bb
+
+% 6 1 0 1c82e24eeb91a1c91b707850fd6421c5
+
+% 0 1 0 1bfc6b0d36ca7534181cc0734374ff85
+
+% 1 1 0 001d3d0d80de9baa0914320016381bca
+
+@ 0 1 0 18dfc893714bad8f0d26e756d54573f5
++   label Czas trwania nie jest szerokością
+
+% 0 1 0 1477c34ff41c7c99183443e1d3238ae1
+
+% 1 1 0 0960c596329e4eb20a0b442aaa85c43a
+
+% 2 1 0 1556ad06aba8bec61b9a1d90b3fb5989
+
+% 4 1 0 0ed2050cc0393cd11dc6c2a7a89cdf91
+
+% 5 1 0 1ea855afe304608a1e3dd71ac18b3698
+
+% 6 1 0 1ce4c994b785414507b3cec46a473624
+
+% 0 1 0 19bc4ee8677664141638ed8706bc674d
+
+% 0 1 0 18eafb32caed3dd50f976e787bd035ca
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 2 0 0c69be9c630679ae10e812c20824574f
++ [Kolejność opakowywania](../../soundness/modules/pages.md#framing-order) opisuje panele i ich hooki.

@@ -1,0 +1,70 @@
+orthant 2 language
+
+@ 0 1 0 13d0b95133b517fb1db704171975e7f9
++ # Kolor i długość w arkuszu stylów
+
+@ 0 2 0 0b5d6857ca27602118c4226f90b519a5
++ Literał `css"…"` przyjmuje typowane wartości tam, gdzie CSS ma wartości. Kolor zapisuje się jako
++ jego kod szesnastkowy, a długość z jej jednostką, więc żadne z nich nie jest nigdy składane z
++ tekstu.
+
+% 2 1 0 169c6135b776cb720b5cb51d3f32f6b1
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 1ba4db5030e7e59f0ca28828256c9442
++   label Arkusz stylów jako tekst
+
+% 1 1 0 0d999ea412a1b4880222bffbb081ce6a
+
+% 0 1 0 03c312238ff79aa50ff95cacf96dfd97
+
+% 1 1 0 1cc46f96854c0915167ec4e125e77ef3
+
+@ 0 2 0 0fa3d9c37084b83016f1fb3224e003c3
++   label Kolor jako kolor
++   highlight $red  zapisany szesnastkowo
+
+% 1 1 0 0ae0dcb683c7926910a86cac991f6e69
+
+% 2 1 0 0ba2d9b4f6c0a4df06f890b2679a86e7
+
+% 0 1 0 0ffb1538c39108c90094fa9aad9aff1e
+
+% 1 1 0 0d93a4fa919d095c097601051fd7b1d3
+
+@ 0 2 0 0f2d1c5f92095a7d069ff63ef3267d87
++   label Szerokość jako długość
++   highlight $width  zapisana z jednostką
+
+% 1 1 0 00bfec763ff2c7d403e84bd2182d9b57
+
+% 2 1 0 1d049a0c606087661ca4ee2aafe3dac0
+
+% 0 1 0 1397ebd4eed2715e0e95deb5b06fb1f1
+
+% 0 1 0 07fe97c5823b5e53039f8d6055d192a5
+
+% 1 1 0 1ecc4e344b19ae6d124d7d50be2cc9e9
+
+% 1 1 0 136d267ff733a60e0f6246170d49df5f
+
+% 2 1 0 1525a46c87e9e0571e7d21b8e7c42b7a
+
+% 0 1 0 08a86cbdc9b8cb0109ed8ce5b435ce67
+
+% 1 1 0 0cd6459499a6bd5203d659b3bcc1b6aa
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 0 1 0 07a29b7ed89339f9006c7b74c3839c5b
+
+% 0 1 0 1db668a981b055c1090be1418122b30a
+
+% 1 1 0 03b62e97330b982110668b5898a0a520
+
+@ 0 2 0 156eb5d879ef170e0147e19cdc5a2d42
++ Sekcja [Pisanie CSS](../../soundness/modules/css.md#writing-css) opisuje literał, a
++ [Kolory](../../soundness/modules/colors.md) – wartości, które przyjmuje.

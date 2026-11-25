@@ -1,0 +1,49 @@
+orthant 2 language
+
+@ 0 1 0 00d968de08cc00d914122b7702adff97
++ # Format obrazu w jego typie
+
+@ 0 2 0 1f7a8e8fe6734fd803523e616ebec0a1
++ `Raster in Png` czyta się tak, jak się go zapisuje: raster w formacie PNG. `Raster in Jpeg` to
++ inny typ, więc PNG nigdy nie zostanie podany jako JPEG przez zapomnienie o konwersji.
+
+% 0 1 0 12705ff5e291290d17fbc8389d59ef4a
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 01b3408dc1c935eb07c8a7e1c7da7441
++   label PNG tam, gdzie potrzebny jest JPEG
+
+% 0 1 0 1477c34ff41c7c99183443e1d3238ae1
+
+% 1 1 0 0960c596329e4eb20a0b442aaa85c43a
+
+% 2 1 0 052b5d53c564213f191f74be413a911f
+
+% 4 1 0 0eaf84f79e7a8e531a587cdf11cb372d
+
+% 0 1 0 143d10b16d07c367087cef03ae210d02
+
+% 1 1 0 0a16268704c579e51e5456e8e59ae698
+
+@ 0 2 0 0237ad17cb9d459911b041986920cfe3
++   label PNG po konwersji
++   highlight to[Jpeg]  daje `Raster in Jpeg`
+
+% 1 1 0 10ee9917c0117d421b355e39a079bbca
+
+% 2 1 0 0a80e65cab1871190fd2e605206a935f
+
+% 4 1 0 178a2f9d11385af503383552e9c7f067
+
+% 0 1 0 16a0b11823744164012c6da612844949
+
+% 0 1 0 18eafb32caed3dd50f976e787bd035ca
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 2 0 001952d28b29bb280810ad8d0a9c8ba7
++ [Konwersja i zapis](../../soundness/modules/images.md#converting-and-writing) wymieniają
++ formaty, a [typy infiksowe](../../philosophy/infix-types.md) – słowa, które je łączą.

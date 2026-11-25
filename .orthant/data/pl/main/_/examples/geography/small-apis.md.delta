@@ -1,0 +1,76 @@
+orthant 2 language
+
+@ 0 1 0 0d1ea5458f1abe981d0e9d30bb0b2172
++ # URI geo odczytany i zapisany
+
+@ 0 2 0 19fd08d1b1525f1d108239809bec0ec5
++ URI `geo:` odczytuje się przez `as`, metodę, która odczytuje liczbę lub datę, a zapisuje z
++ powrotem przez `encode`. Żadna metoda nie jest nazwana od formatu.
+
+% 2 1 0 1af3d712984221860decbd6514e0c2d9
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 2 0 1c03cb9786ce97d11a98726dbd290328
++   label Tekst jako położenie
++   highlight as[Geolocation]  typ, który jest potrzebny
+
+% 1 1 0 09f627395e358379125f23fa92ba1567
+
+% 2 1 0 11409948ada0d8f40264423294883aaa
+
+% 4 1 0 0de386a37c04ee7d16b2224bb1ca4413
+
+% 1 1 0 016e0d46416d14c9008110b7006cd018
+
+@ 0 2 0 0567391417cff759057a48ab1504b4e3
++   label Jego części
++   highlight altitude  opcjonalna w formacie i w typie
+
+% 1 1 0 013caf9b9c2803501815ff34b8247062
+
+% 2 1 0 0b3bd730044d673c0280cbd221b95904
+
+% 4 1 0 1272892a9cdb45f20bfecb98fac550b3
+
+% 5 1 0 12f760adca316db917bd41d9f6604ea2
+
+% 1 1 0 0efc0e5a2848c1c5005743c37e188de6
+
+@ 0 2 0 061ac535ead789671667fcbb4c92dc61
++   label I znów tekst
++   highlight encode  droga powrotna
+
+% 1 1 0 02a1f132133b41da0033af6efd2f0624
+
+% 2 1 0 05d885a75600342a116c364bb71ff5b1
+
+% 4 1 0 14ec13a193c28a3b101753e6f18837cd
+
+% 5 1 0 132efbb2eb7f93431abcb4f64983e695
+
+% 0 1 0 1424fd570f108d9e01eb884adea80c6e
+
+% 1 1 0 0a384a2bd5d4fd2c1c623821a3896a3f
+
+% 1 1 0 136d267ff733a60e0f6246170d49df5f
+
+% 2 1 0 1525a46c87e9e0571e7d21b8e7c42b7a
+
+% 0 1 0 08a86cbdc9b8cb0109ed8ce5b435ce67
+
+% 1 1 0 0cd6459499a6bd5203d659b3bcc1b6aa
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 0 1 0 132cfe53778e2c680bf598cb626cd33d
+
+% 0 1 0 021c76cc528da6d500bfecc6131cd340
+
+% 1 1 0 07c3730247fa197f152063907c84f373
+
+@ 0 2 0 1a822327cc47b85c136d2c1d084c0415
++ [Identyfikatory URI geo](../../soundness/modules/geography.md#geo-uris) opisują format, a
++ [małe API](../../philosophy/small-apis.md) – powody, dla których nazwa jest jedna.

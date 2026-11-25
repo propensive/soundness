@@ -1,0 +1,63 @@
+orthant 2 language
+
+@ 0 1 0 0b827c31b80bf10c18c1c954c98823a0
++ # Trzy sposoby wskazania pozycji
+
+@ 0 3 0 196ecf4c18a9c89d16d3fed11cd71243
++ Zakres pozycji zapisuje się tak, jak się go wypowiada: od trzeciej `thru` szóstą, od trzeciej `till`
++ szóstą albo trzy pozycje od trzeciej. Słowo mówi, czy koniec jest wliczony, więc nie ma `+ 1`, o
++ którym można zapomnieć.
+
+% 2 1 0 0f3ec95336c828980301900d33264e80
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 2 0 0b12df2bee87460a1c164fb5ffc24572
++   label Z końcem włącznie
++   highlight thru  trzecia, czwarta, piąta i szósta
+
+% 1 1 0 0bfba30477e3c77419b845d3256150aa
+
+% 0 1 0 08ba4d6516acced60e5173ba6378265b
+
+% 1 1 0 0616cbacbb0e74d415d7a4451258dfe7
+
+@ 0 2 0 00dbc3d5e29cf0d01aa05a4efe2a480f
++   label Bez końca
++   highlight till  trzecia, czwarta i piąta
+
+% 1 1 0 14619c1b0eb0fa5f02514f5f9985e557
+
+% 0 1 0 037cd55f5d16787308bbd894bf464284
+
+% 1 1 0 0ae383a904e8f617024edf619ce8afc9
+
+@ 0 2 0 0ab6a7379bb9042118b742606400a599
++   label Według długości
++   highlight span  trzy pozycje od trzeciej
+
+% 1 1 0 17affb7a91c1655807ede4476d0b8d04
+
+% 0 1 0 0150e55d48f34c5407924b82ce0c9a3f
+
+% 1 1 0 144c792da2cb68b403ea384f811cc06f
+
+% 1 1 0 136d267ff733a60e0f6246170d49df5f
+
+% 2 1 0 1525a46c87e9e0571e7d21b8e7c42b7a
+
+% 0 1 0 08a86cbdc9b8cb0109ed8ce5b435ce67
+
+% 1 1 0 0cd6459499a6bd5203d659b3bcc1b6aa
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 0 1 0 17210bb319b883e91008e31ded2ac103
+
+% 1 1 0 19a0891801206d711e4ad7f3687e6b95
+
+@ 0 2 0 04452e480607e4191d5a6a90d74f3dbf
++ Sekcja [Liczby porządkowe](../../soundness/modules/numbers.md#ordinals) opisuje przedziały i to,
++ czego dowodzą.

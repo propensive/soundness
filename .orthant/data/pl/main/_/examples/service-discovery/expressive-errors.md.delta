@@ -1,0 +1,67 @@
+orthant 2 language
+
+@ 0 1 0 1157789aa8161d3907ffefda8ca4db85
++ # Odmowa, która nazywa usterkę
+
+@ 0 2 0 1d741f6a4d938ab810b33294e399c221
++ `Discovery.Error` przechowuje swoją przyczynę jako wartość: która z rzeczy, które mogą pójść
++ źle, poszła źle, i dla jakiej nazwy. Jego komunikat to zdanie utworzone z tej przyczyny.
+
+% 2 1 0 19bff4ad1f3d37d208a4398566beadc2
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 032f07b33f964523042139e183f617a8
++   label Nazwa dłuższa niż piętnaście znaków
+
+% 1 1 0 0fd8799165f15d0c07aa739c562c5849
+
+% 2 1 0 18644d60f9b283ea023801501d2e74d1
+
+% 4 1 0 0faadbe398e45d1a165fcb2856e3c586
+
+% 5 1 0 162d1f2377a3b26a12a305efae8402a9
+
+% 1 1 0 19b6a1174edd8c2e156ec71e233f54b5
+
+@ 0 2 0 1b4d52fdc255c5cd0b99c7913a2caed2
++   label Przyczyna rozłożona na części
++   highlight InvalidService(name)  usterka i nazwa, której dotyczy
+
+% 1 1 0 164594041ecdb13a07a2da821d96bd54
+
+% 2 1 0 0e1095ac9155df2d0539a51380d63b8a
+
+% 4 1 0 094a7679c9c963bb0de0ae3cbdd66021
+
+% 5 1 0 1c47bb3eaf2721c80e3d1544f9648440
+
+% 0 1 0 041f4e692f9e75431849b4af11d51d6c
+
+% 0 1 0 04ace666d50b61f404fc5690f9f08b4c
+
+% 0 1 0 1c31f0908c0d84c9052bd4a5e0d5152b
+
+% 1 1 0 02363a620f0c7d7903ce42ba143b127b
+
+% 1 1 0 136d267ff733a60e0f6246170d49df5f
+
+% 2 1 0 1525a46c87e9e0571e7d21b8e7c42b7a
+
+% 0 1 0 08a86cbdc9b8cb0109ed8ce5b435ce67
+
+% 1 1 0 0cd6459499a6bd5203d659b3bcc1b6aa
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 0 1 0 06c0c12ea078c17c0106e3dee6af1925
+
+% 0 1 0 04ed9c60d006d22a02e8db8df444c61b
+
+% 1 1 0 1f200b9f179bc8221505650e0b8ce55b
+
+@ 0 2 0 0484ba30774d6d090873479c36c610ad
++ [Błędy](../../soundness/modules/service-discovery.md#errors) wymieniają przyczyny, a
++ [ekspresywne błędy](../../philosophy/expressive-errors.md) mówią, dlaczego są one wartościami.

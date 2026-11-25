@@ -1,0 +1,69 @@
+orthant 2 language
+
+@ 0 1 0 17d1cc9e26adb0e61fde8324a4921f48
++ # Rodzic ścieżki, która może być korzeniem
+
+@ 0 3 0 04bf8ce7324107170ce56b3fb073713a
++ Każda ścieżka oprócz korzenia ma rodzica, a ścieżka, która nadchodzi w czasie wykonania, może być
++ korzeniem. `parent` jest więc ścieżką typu `Optional`, a kod, który go wywołuje, mówi, co oznacza
++ przypadek braku.
+
+% 2 1 0 0461602d8599057914c181c3d3e6c096
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 0f0ec49b2dd14d610e57eccbd51eb00f
++   label Rodzic przyjęty za pewnik
+
+% 0 1 0 1477c34ff41c7c99183443e1d3238ae1
+
+% 1 1 0 0960c596329e4eb20a0b442aaa85c43a
+
+% 0 1 0 0261ae00ff33c943007e0649ee3890de
+
+% 1 1 0 0a635e4b48ec6dca1b704ea96fd31fb1
+
+@ 0 2 0 1fddd0dc12a8a69a08586aa6caf85847
++   label Rodzic, którego może brakować
++   highlight Optional  korzeń nie ma rodzica
+
+% 1 1 0 18755609798a7b4c02ec427e37210355
+
+% 0 1 0 0e495d53a37ecba3027acb9572ed9353
+
+% 1 1 0 01306590c7314ada13b2e1312fd10287
+
+@ 0 2 0 19be6b57bfa2d7320806a3f06acee759
++   label Korzeń tam, gdzie rodzica nie ma
++   highlight or(path)  co oznacza tu brak
+
+% 1 1 0 14a1bfe7e10f3fda166800bae9c73c4e
+
+% 0 1 0 12ea906e2a0fbe8f02f7aa11c9458e1f
+
+% 1 1 0 0f7e6c414fd51fea0943534a664fa4d3
+
+% 1 1 0 136d267ff733a60e0f6246170d49df5f
+
+% 2 1 0 1525a46c87e9e0571e7d21b8e7c42b7a
+
+% 0 1 0 08a86cbdc9b8cb0109ed8ce5b435ce67
+
+% 1 1 0 0cd6459499a6bd5203d659b3bcc1b6aa
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 0 1 0 0db1a0ecc5cc04ab14e285e7be2d415a
+
+% 0 1 0 1565c77865c236c50cca49809a0480a6
+
+% 0 1 0 025a6e16ea2b3fe81708822171335d3b
+
+% 1 1 0 0a2b5c5252f85516067c366fde4ebcbd
+
+@ 0 4 0 1df2d83dd6f760241c132ee95401b3ab
++ Ostatnia klatka robi to, co powłoka: rodzicem korzenia jest korzeń. [Między dwiema
++ ścieżkami](../../soundness/modules/paths.md#between-two-paths) zawiera więcej arytmetyki na
++ ścieżkach, a [przejścia totalne](../../philosophy/total-transitions.md) wyjaśniają zasadę.

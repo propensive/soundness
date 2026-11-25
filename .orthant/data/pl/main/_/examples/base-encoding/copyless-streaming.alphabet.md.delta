@@ -1,0 +1,65 @@
+orthant 2 language
+
+@ 0 1 0 07e3edd8ff71ee0f1192d77081001ea9
++ # Alfabet jest etapem strumienia
+
+@ 0 3 0 13944ab3a7e532e90443e92e21dafe71
++ Bajty są kodowane w trakcie przepływu, bez wcześniejszego zbierania. Grupa Base64 to trzy bajty,
++ a porcja może skończyć się w jej środku, więc etap przenosi resztę do następnej porcji, a
++ strumieniowany tekst jest taki sam jak tekst całej wartości.
+
+% 2 1 0 06c1cc8599733fb0184fcb6ed6d64594
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 1f60434d6faedc5207231d4639dc9170
++   label Cała wartość, zserializowana
+
+% 0 1 0 118136aa635a2c401517aef67cb1dce0
+
+% 1 1 0 1e3bf6dc5a7a2d961921256e6fe42f13
+
+% 2 1 0 1a9e5f4ca2a7a5fe15d32a67d3044ffa
+
+% 4 1 0 0ae4c40079f3a4de091c72da6a950083
+
+% 1 1 0 1f75a5808eed7214181115a75f7de30b
+
+@ 0 1 0 08139949be0952e019a8cfb87eb14960
++   label Dwie porcje kodowane w trakcie przepływu
+
+% 0 1 0 0ff016dad49ba0fd0c889dcc33938d56
+
+% 1 1 0 1c2278cf25457a891260937b3520ba53
+
+% 2 1 0 052a86a412b7faa6089f7b1503863ff8
+
+% 4 1 0 133a02a8bbadf17b18d1793501b9a9cb
+
+% 0 1 0 00c7aa12eedd58e51c4a437491b9a1e0
+
+% 0 1 0 1568469951f9ac9113588659b3d36da3
+
+% 1 1 0 13376e21f26de4b21297aef430bf4090
+
+% 1 1 0 136d267ff733a60e0f6246170d49df5f
+
+% 2 1 0 1525a46c87e9e0571e7d21b8e7c42b7a
+
+% 0 1 0 08a86cbdc9b8cb0109ed8ce5b435ce67
+
+% 1 1 0 0cd6459499a6bd5203d659b3bcc1b6aa
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 0 1 0 1e224a8c996edae2132ff03383a06102
+
+% 0 1 0 159a94b0c5ad35da002a9e5adb61afd4
+
+% 1 1 0 18647d3af767b0ca16d60213954dd7da
+
+@ 0 2 0 18d9cd7d60caec5716e0d3ec296f29e2
++ [Kodowanie strumienia](../../soundness/modules/base-encoding.md#encoding-a-stream) opisuje ten
++ etap i jego odpowiednik do dekodowania.

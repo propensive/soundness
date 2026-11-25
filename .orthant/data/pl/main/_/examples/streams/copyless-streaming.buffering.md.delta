@@ -1,0 +1,75 @@
+orthant 2 language
+
+@ 0 1 0 1712ed978963c5a31fb34ebce306d4e8
++ # Jeden given ustala rozmiar każdego bloku
+
+@ 0 3 0 14c68637134fe9370dac00dc1c0aef60
++ Żaden etap potoku nie wybiera rozmiaru własnych buforów. Każdy sięga do `Buffering` z zasięgu,
++ a konsument prosi o nie więcej, niż pozwala ta polityka, więc jeden given decyduje, ile danych
++ jest w drodze w dowolnym miejscu potoku i ile wstrzymuje powolny konsument.
+
+% 2 1 0 022e4ea0d7106d151ff8fc5dcb001678
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 0edacbd2926d80b90f64d4e144396703
++   label Okna strumienia, policzone przy standardowej polityce
+
+% 0 1 0 0ca4062398ce997e14290a014c8b04e9
+
+% 1 1 0 19ff9acf140059e914247aba7d101bd0
+
+% 2 1 0 0f17f6335b038ac20da02533adae957b
+
+% 2 1 0 10029ceaffafa61d110c6e59341d4c4d
+
+% 4 1 0 0176468ced3b8cf8159a0794bf864dc5
+
+% 5 1 0 178b001eb26b79000e8494b79ef8a1f5
+
+% 1 1 0 0a88bf0592e50c9812402cdf840c6474
+
+@ 0 1 0 1baa1fde7e9fddb818d9cbeaaa1833f5
++   label Ten sam strumień przy polityce bloków jednobajtowych
+
+% 0 1 0 13312fcc404acdd613903a46dd95b01f
+
+% 1 1 0 161b62835d5f38281eb80005a59402ee
+
+% 2 1 0 0a8e248f6a939735112b0ec9874357f2
+
+% 0 1 0 1336c5f838f288cc1944df8bd19cd48d
+
+% 0 1 0 1f7d38aaff0cfd350cb7fd0dfa909bf0
+
+% 0 1 0 191b2fd1c586a8a31e21e390c7ebddd2
+
+% 2 1 0 1ad02f78555d887017b7a34b2c2f17be
+
+% 4 1 0 16f4254f2f9cdefe073a669b6fe21bb6
+
+% 5 1 0 14861efc505eec59074d3e5822211fee
+
+% 1 1 0 0ec902479fae15750db59fee26475664
+
+% 1 1 0 136d267ff733a60e0f6246170d49df5f
+
+% 2 1 0 1525a46c87e9e0571e7d21b8e7c42b7a
+
+% 0 1 0 08a86cbdc9b8cb0109ed8ce5b435ce67
+
+% 1 1 0 0cd6459499a6bd5203d659b3bcc1b6aa
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 0 1 0 0ad468f9fe2f289b0007df200e2e58b5
+
+% 1 1 0 16537aa8fde930bd09501fdb48c502c5
+
+@ 0 4 0 19284e78776fd27e1e118c6f3981fab8
++ Blok, który przekracza granicę, to szesnaście bloków pośrednich, więc trzydzieści sześć bajtów
++ zostaje pożyczonych w trzech oknach po co najwyżej szesnaście.
++ [Dostrajanie przeciwciśnienia](../../soundness/modules/streams.md#tuning-backpressure) opisuje
++ każdą składową polityki.

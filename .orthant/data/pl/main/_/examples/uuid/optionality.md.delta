@@ -1,0 +1,68 @@
+orthant 2 language
+
+@ 0 1 0 10dcdebdb602bc9a0431994886b86954
++ # Identyfikator albo żaden
+
+@ 0 3 0 16555510ecf29bb2059675d908f3dfd8
++ `Uuid.extract` daje `Optional[Uuid]`: identyfikator albo `Unset`. Przypadek nieobecności nie
++ ma opakowania do rozpakowania i nie można go przez pomyłkę użyć jako identyfikatora, a `or`
++ mówi, co go zastępuje.
+
+% 2 1 0 14bf20d9e7221bc300159679121bf42f
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 09f02831e2d236b017adc890f31a8d39
++   label Użyty tak, jakby był obecny
+
+% 0 1 0 1477c34ff41c7c99183443e1d3238ae1
+
+% 1 1 0 0960c596329e4eb20a0b442aaa85c43a
+
+% 0 1 0 080498db2b60ce210f4c6c643790c02b
+
+% 1 1 0 17d9ca4dd19f09b908c44c09e0f73aae
+
+@ 0 2 0 018a29ca7cafe07a19bfe77535fc4817
++   label Przekształcony, jeśli jest
++   highlight let(_.text)  stosowane tylko do wartości obecnej
+
+% 1 1 0 16a2d1bf60b7ccd919919d5334ac0a08
+
+% 0 1 0 1dd53fe7b9e790531a722621a7e7e7c9
+
+% 1 1 0 0bde1f0f0516a6050746cea9db792a84
+
+@ 0 2 0 1b4e4f71e83661150847254fb33cdc93
++   label I zastąpiony, jeśli go nie ma
++   highlight or(t"anonymous")  co nieobecność oznacza tutaj
+
+% 1 1 0 029aa6277068fff8175af8335de1eeb5
+
+% 0 1 0 19256342578d4b9017a7091af4e10f9c
+
+% 0 1 0 191876b67384f90901feb4d452e07b4a
+
+% 1 1 0 15f4bbf6045c07680fc60c05c5c1bb26
+
+% 1 1 0 136d267ff733a60e0f6246170d49df5f
+
+% 2 1 0 1525a46c87e9e0571e7d21b8e7c42b7a
+
+% 0 1 0 08a86cbdc9b8cb0109ed8ce5b435ce67
+
+% 1 1 0 0cd6459499a6bd5203d659b3bcc1b6aa
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 0 1 0 0ec0cdd36a2e4abf0701d093c962866c
+
+% 0 1 0 038fadb3539bd9c70a8b06571782b3de
+
+% 1 1 0 0d3fb9d4bf0d4ed8049452fd7048daa0
+
+@ 0 2 0 0a58b41216ff8acf1693f791e77561cc
++ [Parsowanie](../../soundness/modules/uuid.md#parsing) stawia `extract` obok `parse`, a
++ [opcjonalność](../../philosophy/optionality.md) wyjaśnia `let` i `or`.

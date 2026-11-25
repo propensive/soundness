@@ -1,0 +1,67 @@
+orthant 2 language
+
+@ 0 1 0 0ae634601cdc3d8d1b252b45ad6ed454
++ # Wzorzec, który dekoduje podczas dopasowania
+
+@ 0 3 0 0b850b36c0975893155e7e67ea703e79
++ `As[Int]` jest ekstraktorem, który dopasowuje tekst zawierający liczbę i wiąże tę liczbę. Zagnieżdża
++ się w każdym innym wzorcu, więc listę tekstów rozkłada się i dekoduje w jednym `case`, a wszystko,
++ co nie pasuje, przechodzi do następnego.
+
+% 2 1 0 1e074a2562eceeca1e2da17f60c29ec6
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 2 0 14fe4c0448035fc70e424719648fd1d6
++   label Jedna wartość
++   highlight As[Int](hours)  dopasowuje tekst zawierający liczbę
+
+% 1 1 0 10fb9a5b086f333808ffc1c135320594
+
+% 0 1 0 0426ece5b6a06786149ee29018baca29
+
+% 0 1 0 19ec334fda48791c01f83c663b820968
+
+% 0 1 0 1638262d8478cdf90865b5f36b9d475e
+
+% 1 1 0 0bbd51e8b71a46b014d0c11058f2d05c
+
+@ 0 2 0 076d0d7a9167c049005f0a4d9d11fd5b
++   label Trzy, wewnątrz wzorca listy
++   highlight As[Int](hours)..Nil  trzy dekodery w jednym wzorcu
+
+% 1 1 0 0958a52ec3334fe90ab241732b169c03
+
+% 0 1 0 0a6997e5c8080d5e1c3c8d5eed5d79f9
+
+% 0 1 0 0e900de9d4851e9c0ed23646f77447c2
+
+% 0 1 0 181fb90cdbebc4c413bfe49cb1459879
+
+% 0 1 0 108d5e4d9e7cd92d1bf5b45d711dbc60
+
+% 0 1 0 04e6d4d11ff7aa61105de61e06afb228
+
+% 1 1 0 1d668e58b5e369fb0de8998f70b136aa
+
+% 1 1 0 136d267ff733a60e0f6246170d49df5f
+
+% 2 1 0 1525a46c87e9e0571e7d21b8e7c42b7a
+
+% 0 1 0 08a86cbdc9b8cb0109ed8ce5b435ce67
+
+% 1 1 0 0cd6459499a6bd5203d659b3bcc1b6aa
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 0 1 0 17f63ed8f9d2a5a910430a15c9b6fd11
+
+% 0 1 0 1b81b07a008da402095be8277f896023
+
+% 1 1 0 06f4102c4b7e9c22135116aaf6c3c15b
+
+@ 0 1 0 0d62f8225e5bca36035212b3856960b4
++ Więcej zawiera sekcja [Ekstrakcja we
++ wzorcach](../../soundness/modules/decoding.md#extracting-in-patterns).

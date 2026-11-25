@@ -1,0 +1,48 @@
+orthant 2 language
+
+@ 0 1 0 00d933aca2956f3d19af1104f77cb1dd
++ # Miesiąc nie jest liczbą sekund
+
+@ 0 2 0 08a0579b8753fee91b7c88e252e4fead
++ Chwila fizyczna przesuwa się o czas fizyczny, w godzinach i sekundach. Miesiąc jest odcinkiem
++ kalendarza bez stałej długości, więc nie można go dodać do chwili, choć można do daty.
+
+% 0 1 0 12705ff5e291290d17fbc8389d59ef4a
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 1a72e7b50507dc621218d44d718189b7
++   label Godzinę później
+
+% 1 1 0 00e9b2d76ee1d9fa14a35409fab20985
+
+% 2 1 0 11827decc6e8c3740dcd2c0b167444b7
+
+% 4 1 0 12083bd7321faf240d7c43b6ebda6ec6
+
+% 0 1 0 027bfc7306ab833e12bfa34c98ce8431
+
+% 1 1 0 0937ab3d710fc340091966e0db9d54ab
+
+@ 0 1 0 0278a5dd4cde0a1b0a46d79ca9f15417
++   label Miesiąc później
+
+% 0 1 0 1477c34ff41c7c99183443e1d3238ae1
+
+% 1 1 0 0960c596329e4eb20a0b442aaa85c43a
+
+% 2 1 0 02c6103f6119da9d03a3464aff17c7e3
+
+% 4 1 0 1e3f611108bfe78c0bed02ac9b4e51fe
+
+% 0 1 0 096772a37601b77b0648281e85a5bdb8
+
+% 0 1 0 18eafb32caed3dd50f976e787bd035ca
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 2 0 0e423ff8c3752c2702ee69dd4206344d
++ [Czasy trwania i okresy](../../soundness/modules/time.md#durations-and-timespans) wyznacza granicę
++ między oboma rodzajami upływającego czasu.

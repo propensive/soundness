@@ -1,0 +1,57 @@
+orthant 2 language
+
+@ 0 1 0 0ba92bdab916f1990f9b3252700387ce
++ # Wymagany parametr zapytania
+
+@ 0 3 0 17f9e862693fb6f311a8de6c78bad11b
++ Parametry zapytania operacji są argumentami nazwanymi, a specyfikacja mówi, które z nich są
++ wymagane. O zdjęcia zwierzęcia trzeba prosić z `width`, a można z `height`.
+
+% 0 1 0 12705ff5e291290d17fbc8389d59ef4a
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 0ceefc8274e8f13c059182530ba3f32e
++   label Szerokość jest pominięta
+
+% 0 1 0 1477c34ff41c7c99183443e1d3238ae1
+
+% 1 1 0 0960c596329e4eb20a0b442aaa85c43a
+
+% 2 1 0 092b07dc9fd04b15104afe672311e543
+
+% 3 1 0 08c07d60eedd90850aa0366cf6e06b12
+
+% 4 1 0 15c3c6419716e78d1d1e684de6fe8ece
+
+% 6 1 0 079ff48f20b6b6051ab09622706015e9
+
+% 0 1 0 0085ab9b3dc40dee06de134e28e115db
+
+% 1 1 0 15f365775f51d31e1cb7b0164ef458ae
+
+@ 0 2 0 117a61fcfcf9b5be08315ee8c92c2d73
++   label Szerokość jest podana
++   highlight width  wymagana przez specyfikację
+
+% 1 1 0 1889357bf36192a5047e8b445dd30bfa
+
+% 2 1 0 054385d0e09cd0440623888446067172
+
+% 3 1 0 084c7c9e9fe1c9ca1ed2deb2e46c6a41
+
+% 4 1 0 127da7b4daa53a38017320cfd33520fe
+
+% 6 1 0 04e8f32613ac4e3b10487f482590458b
+
+% 0 1 0 112db280555df72110b9720739b83a3b
+
+% 0 1 0 18eafb32caed3dd50f976e787bd035ca
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 2 0 19b8ea529d66c4a407b7f49112d06b72
++ Przykład jest kompilowany, ale nie jest uruchamiany, ponieważ potrzebuje sieci.
++ [Wywoływanie](../../soundness/modules/openapi.md#calling) opisuje, jak wywołuje się operację.

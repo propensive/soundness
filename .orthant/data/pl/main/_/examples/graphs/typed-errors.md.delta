@@ -1,0 +1,46 @@
+orthant 2 language
+
+@ 0 1 0 1f625407abf84a41014a171392f0852f
++ # Krawędź, która może zamknąć cykl
+
+@ 0 3 0 034415d199b6fc04099f7a4fc21e7d0e
++ `Dag` nigdy nie zawiera cyklu, więc dodanie do niego zależności może zawieść: nowa krawędź może
++ prowadzić z powrotem do miejsca, w którym się zaczęła. `add` deklaruje `Dag.Error`, a metoda,
++ która je wywołuje, musi obsłużyć błąd albo również go zadeklarować.
+
+% 0 1 0 12705ff5e291290d17fbc8389d59ef4a
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 173c58aba76aad9408a1edb72b6d25a9
++   label Zależność dodana na wiarę
+
+% 0 1 0 1477c34ff41c7c99183443e1d3238ae1
+
+% 1 1 0 0960c596329e4eb20a0b442aaa85c43a
+
+% 0 1 0 15bca2ecb6bd0499000ffaf746bd4f4e
+
+% 1 1 0 14476bc125c07d4113ef24ab598cd107
+
+% 1 1 0 0903e558a390a7931515b580ab2a3739
+
+@ 0 2 0 178260206576879d1b35ea0e4452db81
++   label Niepowodzenie w typie zwracanym
++   highlight raises..Dag.Error  wywołujący musi za nie odpowiedzieć
+
+% 1 1 0 00becdc17c6c4de9172ffa1b1698e976
+
+% 0 1 0 0a0cdf6957ccfe1c0eb767ab25b4c9bd
+
+% 1 1 0 0b1578c08bf09ea209f0bdc6f87ccc96
+
+% 0 1 0 18eafb32caed3dd50f976e787bd035ca
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 2 0 08929fbaac6be76207d78d6d4ae36890
++ [Edycja](../../soundness/modules/graphs.md#editing) wymienia edycje, które mogą zawieść, i te,
++ które nie mogą, a [obsługa błędów](../../philosophy/error-handling.md) wyjaśnia `raises`.

@@ -1,0 +1,51 @@
+orthant 2 language
+
+@ 0 1 0 160820d4616dd4450c4997466c7ed89b
++ # Zrzut ekranu jest obrazem
+
+@ 0 2 0 1bb2bb111ef80b0f06caedf0f060faf0
++ Zrzut ekranu elementu nie jest plikiem ani tablicą bajtów. Jest `Raster in Png`, czyli typem, jako
++ który [obrazy](../../soundness/modules/images.md) są odczytywane, przekształcane i zapisywane.
+
+% 0 1 0 05f2ae76781bc53c0f28815590cdc90c
+
+% 0 1 0 16f746828b2bb3e60bb4066c2f40a307
+
+% 0 1 0 19e515dae2c3cff90e013ad9bbf3e527
+
+% 0 1 0 0340a2c5478cc3190fe31a24732d0680
+
+% 0 1 0 126ea9b3e0450b920c7880db223bf337
+
+% 0 1 0 02620c2a3d79580906f2af57cfdbe4f6
+
+% 1 1 0 0ec620ac772620a01bcfaff097559f78
+
+% 0 1 0 12705ff5e291290d17fbc8389d59ef4a
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 0 1 0 14aab7f0be2434f81421fb69d99543da
+
+@ 0 2 0 1dd415969b80219a006771de445ac0e2
++   label Zrzut ekranu nagłówka strony
++   highlight Raster..Png  obraz w swoim formacie
+
+% 0 1 0 0feeb6ee26eddc7916a3c923ea9fa7b1
+
+% 0 1 0 0f8703c290e5547706bf01185f956c9a
+
+% 0 1 0 1d67275f5058b20f1df3ecf8db5aebf0
+
+% 0 1 0 175d5074f3e6597c0675032ed74d163d
+
+% 0 1 0 07a69862b6c70aff002930cd499a5322
+
+% 0 1 0 18eafb32caed3dd50f976e787bd035ca
+
+% 1 1 0 136d267ff733a60e0f6246170d49df5f
+
+@ 0 3 0 0ebe05b5684d94261259a40ee6ec0d03
++ Przykład jest kompilowany, ale nie jest uruchamiany, ponieważ potrzebuje przeglądarki. [Znajdowanie
++ i używanie elementów](../../soundness/modules/web-automation.md#finding-and-using-elements) opisuje
++ pozostałe operacje na elemencie.

@@ -1,0 +1,86 @@
+orthant 2 language
+
+@ 0 1 0 187602ed61d491e10e4da666bbdb6a1e
++ # Klucz prywatny wychodzi tylko tam, gdzie mówi o tym kod
+
+@ 0 3 0 0d10f9bbdbba40650f0c6ef32db3ced6
++ Klucz publiczny zapisuje się jako JWK bez ceregieli. Klucz prywatny zapisuje się tylko wtedy,
++ gdy przekazuje się z nim token `Divulgence`, więc każde miejsce, w którym serializuje się
++ sekret, można znaleźć, szukając jednego słowa.
+
+% 0 1 0 12705ff5e291290d17fbc8389d59ef4a
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 1ccece4abeb5f58c1abd45c50a947b6f
++   label Połowa publiczna
+
+% 0 1 0 03001e0fe768265c1dd965588a612ec3
+
+% 1 1 0 0b8eb03f841196f11f527dffda76b9aa
+
+% 2 1 0 0198cf705885d1fd05aabc52acf3711d
+
+% 3 1 0 00fe2f6393fe6b9113998e19cb5f4752
+
+% 4 1 0 1d82a9cea43dd8760e77c798c9fa75fc
+
+% 5 1 0 16a24e46eef5bd4a12db1204c7223cf9
+
+% 7 1 0 10a0ce68579c01c40eaa7cf38f1c6df6
+
+% 9 1 0 1070a706c98441581fc0efd2f95fd754
+
+% 1 1 0 02ca3d8a6872e47a062724dfad2c2eac
+
+@ 0 1 0 0b6414cd7942a6cf1ffd45eb12117feb
++   label Połowa prywatna, przez przypadek
+
+% 0 1 0 1477c34ff41c7c99183443e1d3238ae1
+
+% 1 1 0 0960c596329e4eb20a0b442aaa85c43a
+
+% 2 1 0 058ff1ab4bd16fb508adf559c39e04f5
+
+% 3 1 0 016ebb41de88906d10ae2b7461c8297c
+
+% 4 1 0 16ed7d8452f024681314e40719d3abf8
+
+% 5 1 0 0dbea2561a09321d0a4c9765d4ee62a7
+
+% 7 1 0 1b7c587a2d60fe820c4595eb8b596694
+
+% 0 1 0 0b2e948b7f4ece7c0c7fcf60ad5fb3ce
+
+% 1 1 0 0861656b09d89fe007ee07fa38461ca9
+
+@ 0 1 0 0d7dc0c32adc11db0e39391f26ff1d0f
++   label Połowa prywatna, celowo
+
+% 0 1 0 0b8f8a2c0110d5861109cc43ba02d996
+
+% 1 1 0 199eb442378fa3a20aa91cf4c5aede7f
+
+% 2 1 0 0d50b67e0bd2b76d17d7c09b8a07d765
+
+% 3 1 0 01ae8d617432b5401b16bbbd2de96f02
+
+% 4 1 0 02b0901327b8597e16a93ec9583ae8b7
+
+% 5 1 0 1b01b091a5b75699058c3a8484ff81be
+
+% 7 1 0 064dbc21707a4c671ff107ec690e90e6
+
+% 9 1 0 1d7a96e697aa910d1f61eb9a45af370f
+
+% 0 1 0 16a6083a5e4fba850f9f2a202f71efb1
+
+% 0 1 0 18eafb32caed3dd50f976e787bd035ca
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 2 0 10a7da2f36e6b3c80613e78c49bec481
++ [Klucze jako JSON](../../soundness/modules/jose.md#keys-as-json) opisują `Jwk`, a
++ [uczciwe sygnatury](../../philosophy/honest-signatures.md) – tę zasadę.

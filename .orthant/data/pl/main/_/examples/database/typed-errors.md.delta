@@ -1,0 +1,91 @@
+orthant 2 language
+
+@ 0 1 0 11de9236c85b798b097b8e535e093f65
++ # Wartość, której nigdy nie zapisano
+
+@ 0 3 0 00000066f69e938f1a08f82a6c2ae7c6
++ `store` nie może zawieść, ponieważ dodaje to, czego brakuje. `reference` tylko szuka, a wartość,
++ której baza danych nie przechowuje, nie ma referencji, więc zgłasza `Database.Error`, który coś
++ musi obsłużyć.
+
+% 2 1 0 12c030a6d3d1b6fa0d746ac97d1074a0
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 14ffaff23569f56d0ce8cd2757cb24ef
++   label Nic nie obsługuje błędu
+
+% 0 1 0 1477c34ff41c7c99183443e1d3238ae1
+
+% 1 1 0 0960c596329e4eb20a0b442aaa85c43a
+
+% 2 1 0 023a1909472dcc831edfa2bb991ef472
+
+% 3 1 0 095d7c759a5881490745e6d156d8aea7
+
+% 5 1 0 0b6773ac0f2bed191a8d0908ccd59b50
+
+% 0 1 0 1a1a18387c8722810ebc32bc20bfbf4d
+
+% 1 1 0 16dac76a482db85d1e08b504381af3dc
+
+@ 0 1 0 0daac7ba70242cab0fa03d2463393aca
++   label Metoda go deklaruje
+
+% 0 1 0 10abe85dc0680fc80c35d1f9d1a04725
+
+% 1 1 0 1a88c34af11d3c5f0bcdee239e74b032
+
+% 2 1 0 0224d348ecafeb5d09cbbf8f418284e0
+
+% 3 1 0 1473bbb7152fb6ee180cf97a2006824b
+
+% 5 1 0 12b2587eb5e99c0417baea070d54a0b0
+
+% 7 1 0 19c604eba9104f4a19d9e44f52cdfc45
+
+% 8 1 0 160e2dc43338d7c605ef00b16d1f3f8c
+
+% 1 1 0 1d03e7204a9820841cde2ec7f4f48869
+
+@ 0 1 0 0f7d72cfa0b5e41106760c629214cb88
++   label Jej wywołujący zamienia go w wartość nieobecną
+
+% 0 1 0 095674c459fb074f082ec3675cad07bf
+
+% 1 1 0 06c9028e272c82fd03be89f91f94796b
+
+% 2 1 0 0765655b7ab18e6b0cf352093fcbc3ba
+
+% 3 1 0 132ebb984c748d8a10758ff184b55f76
+
+% 5 1 0 186f0dffbce1bf501863f6bf6f257e60
+
+% 7 1 0 1cd474c100faee7c10be16817eb473f0
+
+% 8 1 0 16e7d3321264b0980f16976233f72c16
+
+% 0 1 0 0bf4ad1cc9a4e5cd196ee9a038f9e3cc
+
+% 1 1 0 09e9300efbfbcc1c0bd75187ce3753ea
+
+% 1 1 0 136d267ff733a60e0f6246170d49df5f
+
+% 2 1 0 1525a46c87e9e0571e7d21b8e7c42b7a
+
+% 0 1 0 08a86cbdc9b8cb0109ed8ce5b435ce67
+
+% 1 1 0 0cd6459499a6bd5203d659b3bcc1b6aa
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 0 1 0 125499b3e78109e317a52db5043ebd3a
+
+% 1 1 0 1446892bf8f58b5207b5aab721a1c3a7
+
+@ 0 2 0 0cd7aaab93389111042a5cb8d5697624
++ [Wiązanie relacjami](../../soundness/modules/database.md#relating) opisuje wyszukiwanie, a
++ [Błędy](../../soundness/modules/errors.md#choosing-a-strategy) – sposoby radzenia sobie z
++ błędem.

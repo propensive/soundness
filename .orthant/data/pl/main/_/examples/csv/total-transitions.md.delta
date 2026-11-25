@@ -1,0 +1,67 @@
+orthant 2 language
+
+@ 0 1 0 123302e0303fed8800dfccc220bcbf5c
++ # Komórka może zawierać przecinek
+
+@ 0 3 0 05b815e6ac9e42180045f37ef682ffbf
++ Każdy tekst jest komórką. Komórka zawierająca ogranicznik, cudzysłów lub znak końca wiersza jest
++ przy zapisie ujmowana w cudzysłów, z podwojonymi cudzysłowami, i przy odczycie znów jest jedną
++ komórką. Żadnej wartości nie trzeba unikać i żadna nie jest dzielona.
+
+% 2 1 0 0968af3e06900bcc1f3ec1c4685e7cc6
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 0908fbae4c27b9a00591c9b0011e79f0
++   label Wiersz zwykłych komórek
+
+% 1 1 0 10809b9c7c63947a1f20ce9b491745e1
+
+% 2 1 0 1f1ded0623e0273900f4e99c29c9afd8
+
+% 3 1 0 170e8efd06173a171ddc3e47cb0f73af
+
+% 5 1 0 194c79ae9695b422167586069d3126df
+
+% 0 1 0 133b47d941e16df40bea1532151ec672
+
+% 1 1 0 1911a17d6cf81f0909ac6d3a643f1ee9
+
+@ 0 2 0 1e7eeefcdea8b0d711326bbd2e5ddff4
++   label Komórka z przecinkiem i cudzysłowem
++   highlight t"Bottom..weaver"  ujęta w cudzysłów przy zapisie
+
+% 1 1 0 07d49f6bc2fcacc4005c5643fa7be8b2
+
+% 2 1 0 174e7aa57da6540d1c6afd1f0f411377
+
+% 3 1 0 0d8ec5b912aaf0a41978246c5e09f79d
+
+% 5 1 0 074550c92eae25c0197c3385b117b900
+
+% 0 1 0 13c7147aff0f47a61a54747c61b5c423
+
+% 0 1 0 1834556ba04eaf621b5f927bb887a87c
+
+% 1 1 0 089f6628a12cfd8f0fb5832e15c328b5
+
+% 1 1 0 136d267ff733a60e0f6246170d49df5f
+
+% 2 1 0 1525a46c87e9e0571e7d21b8e7c42b7a
+
+% 0 1 0 08a86cbdc9b8cb0109ed8ce5b435ce67
+
+% 1 1 0 0cd6459499a6bd5203d659b3bcc1b6aa
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 0 1 0 1fa8adf00cdba7d5083a8b21bdfe204a
+
+% 0 1 0 12bc3a0945fba5480ee8e1198dca0262
+
+% 1 1 0 083143f770159149193b9b3d9e02a213
+
+@ 0 1 0 0d588ed08ee612350c62d1e028eee7e4
++ [Kodowanie](../../soundness/modules/csv.md#encoding) opisuje reguły ujmowania w cudzysłów.

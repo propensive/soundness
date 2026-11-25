@@ -1,0 +1,63 @@
+orthant 2 language
+
+@ 0 1 0 03deea90c95f282c1526c98a0e8f0207
++ # Podział, który niczego nie gubi
+
+@ 0 3 0 06603ece51609468129fa3771ddcaebc
++ Trzy równe części 100,00 € nie istnieją. Dzielenie zaokrągla każdą część, a części przestają
++ składać się na całość. `share` rozdziela resztę po jednym cencie, więc części zawsze sumują się
++ do podzielonej kwoty.
+
+% 2 1 0 05a3675a58b9a1071313ae4f5585b427
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 1cacb0433ff2869f19c1761730cb1b4d
++   label Dzielenie, które zaokrągla
+
+% 1 1 0 0fdade0567a5d99400b7743a118cabe2
+
+% 2 1 0 0930875d8fd750b00171eda64430bbc2
+
+% 4 1 0 117aac3216d9a8341b0a56cf1aa2869f
+
+% 5 1 0 00573d2beba99f9c13ca495d0b993c9b
+
+% 1 1 0 112c0c3809dab75b0bbe8c51e0361bf5
+
+@ 0 2 0 1918f41e20b4656e150e500f946d476e
++   label Części, które sumują się do całości
++   highlight share(3)  trzy części, żaden cent nie ginie
+
+% 1 1 0 04521c09843fc53a07f53be61caaa821
+
+% 2 1 0 01734f9f860f52b811b8c3ed19ceaf6d
+
+% 4 1 0 1d50c7126ff4e5ae1337ac63405d6fc9
+
+% 5 1 0 16e7bfd12d7cc3140c4cb1b2b255c4a3
+
+% 0 1 0 1c700b5cd7bf3f4d0fc562f14345ae66
+
+% 1 1 0 01e30fe4944192d91d898e840b6cea06
+
+% 1 1 0 136d267ff733a60e0f6246170d49df5f
+
+% 2 1 0 1525a46c87e9e0571e7d21b8e7c42b7a
+
+% 0 1 0 08a86cbdc9b8cb0109ed8ce5b435ce67
+
+% 1 1 0 0cd6459499a6bd5203d659b3bcc1b6aa
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 0 1 0 01ff21c8b5157c2f0138329254b4cedd
+
+% 0 1 0 19268dc625d05be30c2cf31d17957dca
+
+% 1 1 0 1538d6d75617cad80db025b9311106eb
+
+@ 0 1 0 0779da103e3c03b7048a990a852012be
++ [Dzielenie](../../soundness/modules/money.md#splitting) opisuje przydział.
