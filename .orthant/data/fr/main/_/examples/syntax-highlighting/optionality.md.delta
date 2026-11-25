@@ -1,0 +1,77 @@
+orthant 2 language
+
+@ 0 1 0 14c29af7ce01f93805841d23fab64109
++ # Des complétions, là où il y a un curseur
+
+@ 0 3 0 0aa4b61c8a468a171774b02d5edca6ba
++ Un source coloré n'a de complétions que s'il a été coloré avec un curseur. Le curseur est un
++ paramètre optionnel et les complétions un résultat optionnel, si bien qu'un source simplement
++ affiché ne peut pas être confondu avec un source après lequel rien ne peut venir.
+
+% 2 1 0 1a4d08fbc11f86180382eada3d053d19
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 1aeaddf4feea41be18e560c7d92ee332
++   label Pas de curseur, donc pas de complétions
+
+% 1 1 0 1fce330f2c9b06a30e63e80650ddf4fb
+
+% 2 1 0 04f8a6c7772cd22e193f01a23c7aa8b0
+
+% 4 1 0 1df6dbc64ef25e0514f2325fa0dbff7e
+
+% 1 1 0 11e2d95213141ecb0de79acda904c64a
+
+@ 0 2 0 0b488e2c2843367111e9c06b108b0d28
++   label Un curseur à la fin
++   highlight caret  une position ordinale dans le source
+
+% 1 1 0 0f3904e0853e9a1517b9440ef1b19580
+
+% 2 1 0 19098b5f0a2c789004573a5507fabc1f
+
+% 4 1 0 037a5c3ca774e7cc0f688344bf3e0919
+
+% 5 1 0 10751416a0767a8115cf8b9e2f0b8501
+
+% 1 1 0 19ab3bbaea457144017fdf856c5656ab
+
+@ 0 2 0 1e97adaa9c1b687a1c539db9391e158c
++   label Les noms proposés
++   highlight lay(Nil)  pas de complétions n'est pas la même chose qu'une liste vide
+
+% 1 1 0 00df5a5fafa5cd9018f03671c0981a58
+
+% 2 1 0 0ccd9dc8a005c5f51f91828ad0917bb1
+
+% 4 1 0 10cc533b1ee8d3531236025779e2d6f4
+
+% 5 1 0 1ada1ea5b5bacd1b1c1cd48463f5e642
+
+% 0 1 0 107dccfcc6c142d903e566bbb64880b6
+
+% 1 1 0 0c32231d8d4d87a3006034980acde559
+
+% 1 1 0 136d267ff733a60e0f6246170d49df5f
+
+% 2 1 0 1525a46c87e9e0571e7d21b8e7c42b7a
+
+% 0 1 0 08a86cbdc9b8cb0109ed8ce5b435ce67
+
+% 1 1 0 0cd6459499a6bd5203d659b3bcc1b6aa
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 0 1 0 08cc18a62b7bd88514be634a91eb656b
+
+% 0 1 0 0d008f6efb643b2a19504f0687bbf39f
+
+% 1 1 0 0d2ec62454fd749d12708a7834e61041
+
+@ 0 3 0 160cdc68383e1c160f39cc96b5b9583b
++ Le source n'est ici que découpé en lexèmes, si bien que ce sont des mots-clés qui sont proposés.
++ [Les complétions](../../soundness/modules/syntax-highlighting.md#completions) ajoute un
++ compilateur, et avec lui les membres d'un type.

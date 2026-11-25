@@ -1,0 +1,48 @@
+orthant 2 language
+
+@ 0 1 0 0a51cbe1ca299b8311df9609dd3fbfa2
++ # Une propriété système, écrite comme un chemin de membres
+
+@ 0 3 0 0687c5505e1339f21bdce16be4260609
++ Une propriété système a un nom à points, et se lit en écrivant les mêmes points : `os.name` est
++ `System.properties.os.name()`. Chacune est décodée dans le type qu'on lui sait contenir, si bien
++ que le séparateur d'un chemin est un `Char`, et non un texte de longueur un.
+
+% 0 1 0 12705ff5e291290d17fbc8389d59ef4a
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 2 0 0bbe52659ef8b3d3139c2bedf1a761c7
++   label Une propriété
++   highlight os.name()  la propriété os.name
+
+% 1 1 0 037bc23d5d1fef8213846cf91d109cdd
+
+% 2 1 0 116a786b3a6ea36f1280c8c44879ec66
+
+% 4 1 0 1574252c56a4d0d21892b2ea37cd5025
+
+% 1 1 0 0a41d2a6ea0da6e219b4f829b2739efd
+
+@ 0 2 0 1762bdab370bb6b01a017a2e3cd54d8c
++   label Une propriété qui est un caractère
++   highlight Char  décodé à partir du texte
+
+% 1 1 0 13339d70ad2351210006b3dd825023ca
+
+% 2 1 0 0ed0e2f59371c62c0a24008682f6a46f
+
+% 4 1 0 1a856a8b88642c220fa2ed7c21fbc70a
+
+% 0 1 0 0c28b3598fa8bd7a09f407133a60f3c0
+
+% 0 1 0 18eafb32caed3dd50f976e787bd035ca
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 3 0 06eabc6a7077d33019fbfd2d058d2e37
++ L'exemple est compilé, mais pas exécuté, car ses résultats dépendent de la machine.
++ [Les propriétés système](../../soundness/modules/environment.md#system-properties) compare les
++ propriétés aux variables.

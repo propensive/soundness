@@ -1,0 +1,71 @@
+orthant 2 language
+
+@ 0 1 0 1634fef1dafa51cb170ef368138248c9
++ # Une couleur, un style et un angle dans une figure
+
+@ 0 3 0 0bc6934518382adb1f178c5c29da4fd4
++ SVG a de petits langages pour les couleurs, les styles et les angles, et chacun appartient à une
++ autre bibliothèque. Une figure prend leurs valeurs telles quelles : une couleur typée dans un
++ style CSS typé, et un angle qui connaît son unité.
+
+% 2 1 0 08b6391bf0ae5db316676c5d3283f5e8
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 03a73cd22ddba5c514a0738e4a51588d
++   label Une figure
+
+% 1 1 0 062916a8e8337e2d1a81f4d8c0d71bfe
+
+% 2 1 0 123de27bd59b75371703aa64887b43f9
+
+% 0 1 0 1a415e1a28f620ac09c5a8dd2cb04757
+
+% 1 1 0 10cabe2f21f617bd0533dca405ee2cab
+
+@ 0 2 0 0f5c06a0941cc8b2175fb396e4878a7e
++   label Un remplissage, tiré des bibliothèques de couleurs et de CSS
++   highlight Css.Style(fill..))  une déclaration typée, contenant une couleur typée
+
+% 1 1 0 0b5f8380c8768f99103d0308e98ab8b5
+
+% 2 1 0 0876e9a76857d5d40a3e01354566bfc5
+
+% 4 1 0 1c05c32cc02987500820de66afc14f1d
+
+% 1 1 0 067775f15d417edd1f26bb0660ea6a42
+
+@ 0 2 0 0636904dcf33a2c504ef2756fdb699bb
++   label Une rotation, d'un angle
++   highlight Angle.degrees(45)  un angle, et non un simple nombre
+
+% 1 1 0 1b8a542f2f94894d073b143510092495
+
+% 2 1 0 02003e1885f122c206bf3004265e152d
+
+% 4 1 0 1c681bddf94e2dd612c0305270361466
+
+% 0 1 0 0a4dff803395b29e162a1854b0bf641e
+
+% 1 1 0 18e421c0fbc8da14179846f2e9415a57
+
+% 1 1 0 136d267ff733a60e0f6246170d49df5f
+
+% 2 1 0 1525a46c87e9e0571e7d21b8e7c42b7a
+
+% 0 1 0 08a86cbdc9b8cb0109ed8ce5b435ce67
+
+% 1 1 0 0cd6459499a6bd5203d659b3bcc1b6aa
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 0 1 0 1b3eb5e5e2a40a331c8890c3cc84bcc4
+
+% 1 1 0 0ccdf8451d45d8090379faded4561940
+
+@ 0 3 0 00b0af043d936f2208e9a223608050b1
++ [Groupes, polylignes et texte](../../soundness/modules/svg.md#groups-polylines-and-text) montre
++ le style d'une figure, et [la composabilité](../../philosophy/composability.md) pourquoi aucun
++ adaptateur n'est nécessaire.

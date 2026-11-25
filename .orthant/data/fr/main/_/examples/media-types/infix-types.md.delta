@@ -1,0 +1,66 @@
+orthant 2 language
+
+@ 0 1 0 0e37d64ed84a1e181d0363b2eaa0d48c
++ # Un détecteur, décrit par son type
+
+@ 0 2 0 040db4529c2ec4fc16ea0a5dffed9fe5
++ Un détecteur pour un nouveau format est un seul given, et son type est une phrase : quel type de
++ média il détecte, quel est le degré de certitude d'une correspondance, à partir de quoi il lit,
++ et comme quoi le contenu est lu.
+
+% 2 1 0 1f9fbf016ee75bca03bfb5740ee2e7d8
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 2 0 06429a156ded543e1e90c54be1f09cde
++   label La signature d'un fichier SQLite
++   highlight "application/vnd.sqlite3"..Data  quoi, avec quelle certitude, à partir de quoi, comme quoi
+
+% 1 1 0 1dcc726b61cd0b4f08ff345d3f22768b
+
+% 2 1 0 12ecb12714373a161585ab919f694ae4
+
+% 3 1 0 09a727b07692b55e0463ee425a519eb4
+
+% 1 1 0 0ccd14852dc2c4de1514b8df758662b3
+
+@ 0 2 0 0f4adad9066ca06f175a5d6de281d13e
++   label Un motif qui l'utilise
++   highlight Media["application/vnd.sqlite3"](database)  trouvé grâce au given ci-dessus
+
+% 1 1 0 0bdc2ab0ef8b16fd0d9bad5f5aeac1b2
+
+% 2 1 0 1d849bcc9f0f0c9a1311062ccbd68604
+
+% 3 1 0 17be2ab352f166761224b492bb4b525a
+
+% 0 1 0 1921e00ba13fbf2d10a3e63cd421f634
+
+% 0 1 0 1c3a581cce4b8485018dafbb9ebf92d3
+
+% 0 1 0 046f1e4f1e93d11d1125c9836cbb215c
+
+% 1 1 0 0afeb34e0f02dd8a0cb5a10d489b9b85
+
+% 1 1 0 136d267ff733a60e0f6246170d49df5f
+
+% 2 1 0 1525a46c87e9e0571e7d21b8e7c42b7a
+
+% 0 1 0 08a86cbdc9b8cb0109ed8ce5b435ce67
+
+% 1 1 0 0cd6459499a6bd5203d659b3bcc1b6aa
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 0 1 0 0dc418016962712c00084edf4baa45a5
+
+% 0 1 0 094a9a84662cf5430e30885e26fc74a3
+
+% 1 1 0 0ba5b87a82d73b990e4c6a0d90bd2873
+
+@ 0 3 0 1fbfb2cf86b8c3eb0e6f31bcf1a3d1bd
++ [Écrire un détecteur](../../soundness/modules/media-types.md#writing-a-detector) traite des
++ formats qui exigent plus qu'une signature, et [les types infixes](../../philosophy/infix-types.md)
++ des mots qui composent le type.

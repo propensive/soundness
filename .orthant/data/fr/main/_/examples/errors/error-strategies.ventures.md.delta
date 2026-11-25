@@ -1,0 +1,62 @@
+orthant 2 language
+
+@ 0 1 0 012534a682b70c921ca4547764f3599d
++ # Tous les défauts d'un document, en une passe
+
+@ 0 3 0 0948e4b4b378645c04a98095e7996991
++ Un décodeur qui s'arrête au premier champ invalide signale un défaut à la fois. Une `venture`
++ enregistre ses erreurs et laisse ses voisines s'exécuter, et sa valeur ne peut être forcée qu'à
++ l'intérieur d'un `guard`, qui est sauté si quoi que ce soit a échoué.
+
+% 0 1 0 12705ff5e291290d17fbc8389d59ef4a
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 0bfe91601680aba81bcf1472a553b76b
++   label Une venture forcée là où rien ne peut être sauté
+
+% 0 1 0 1477c34ff41c7c99183443e1d3238ae1
+
+% 1 1 0 0960c596329e4eb20a0b442aaa85c43a
+
+% 2 1 0 05a978b0f0c8af7119d1ffc39a23eea8
+
+% 4 1 0 1cdb9f73dba0d5241e9f2699ee4a402e
+
+% 6 1 0 05faa274c6f2b06c1436266cf52a1da8
+
+% 7 1 0 005d443262f9228d17e066615b42cfc4
+
+% 8 1 0 1acb2a7ecf1e90af135d4e1e125c2261
+
+% 0 1 0 1244e66331de3f6e037adfe861128771
+
+% 1 1 0 09e7d31c1675256a141b192f9b0358a1
+
+@ 0 2 0 0216ab6927af665b185bccde371ec47a
++   label Forcée dans un guard
++   highlight guard  sauté si une venture a échoué
+
+% 1 1 0 09ecb02412c1cd220ce250087c848bc3
+
+% 2 1 0 00a209aa7425cfcc148ffb51b1ec56a9
+
+% 4 1 0 0527659736caaa650eec916079503ef9
+
+% 6 1 0 09a361e22c12dc141bbf93c56d86e8f0
+
+% 7 1 0 117165877545782f18f1e3d63294c10a
+
+% 8 1 0 17045e8be34be2351fdf704f373623a1
+
+% 0 1 0 12f1d521af4bffa71e25df1b62a2df94
+
+% 0 1 0 18eafb32caed3dd50f976e787bd035ca
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 2 0 06cecef12d0fce3612c1037e4cc5dbdc
++ [Ventures et guards](../../soundness/modules/errors.md#ventures-and-guards) explique ce qui est
++ sauté et ce qui s'exécute malgré tout.

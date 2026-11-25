@@ -1,0 +1,62 @@
+orthant 2 language
+
+@ 0 1 0 1a2ba1c2c3ddd52b04cc0216a37c6f9f
++ # Une valeur JSON est un corps de requête
+
+@ 0 3 0 13c2385b7e2414d91d6a36498181718d
++ Le corps d'une requête est une valeur typée, et son type fournit le `Content-Type`. Le client
++ HTTP ne sait rien de JSON, ni JSON de HTTP. Un seul import les fait se rencontrer, et une case
++ class est envoyée comme `application/json`.
+
+% 0 1 0 12705ff5e291290d17fbc8389d59ef4a
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 05a44f3d810fe02c146e7a53e8535548
++   label Du texte, envoyé comme text/plain
+
+% 0 1 0 1834bec12c24d4d107235ccd8c7ffca6
+
+% 1 1 0 0b318b30a99786e8183d66d14896d083
+
+% 2 1 0 09ebe4b2ca8cca8413478565d6940379
+
+% 0 1 0 12926e956ab52ad01c011d19cd258ea1
+
+% 2 1 0 18cbeacae8e9e65a0060fb174294850e
+
+% 0 1 0 0d934a4be34df9151eceadeb9f430be1
+
+% 1 1 0 106445be0d2446af127078823a87ecfc
+
+@ 0 1 0 10b35e30284d164114f66653f5784978
++   label Une valeur, envoyée comme application/json
+
+% 0 1 0 1af0a328d5261ffc03422acc53c39889
+
+% 0 1 0 12433f8258e94ae913c9fa1f670d5fdd
+
+% 1 1 0 17ca6f9539a717ca1225e6ee91122a81
+
+% 2 1 0 0ab01983d11b718107b2e58c0672707b
+
+% 0 1 0 1c3d6be1da3f2cad14a4ed14e66f2f92
+
+% 0 1 0 1ae279738df7173f06e307f4ba453ed1
+
+% 2 1 0 0c0b2ea1d10647ed0aa6f0e1c90530e5
+
+% 0 1 0 022653cb17f949e7190c339a224cce2b
+
+% 0 1 0 12bf45cbbce022c20022264e660b28cf
+
+% 0 1 0 18eafb32caed3dd50f976e787bd035ca
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 3 0 1f32591e0051bbfb07604dda553097e0
++ L'exemple est compilé, mais pas exécuté, car il a besoin du réseau.
++ [Envoyer un corps](../../soundness/modules/http-client.md#posting-a-body) décrit `submit`, et
++ [JSON sur HTTP](../../soundness/modules/json.md#json-over-http) l'autre sens.

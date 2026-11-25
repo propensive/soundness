@@ -1,0 +1,42 @@
+orthant 2 language
+
+@ 0 1 0 1c15f6fdb84a56a411da726ad4478352
++ # Un échec que la signature reconnaît
+
+@ 0 3 0 1b6d382f0da3314d19f00f0641efb63c
++ Un texte peut ne pas contenir de nombre, si bien que `as[Int]` peut échouer. Une méthode qui
++ l'appelle doit soit le dire dans son propre type, avec `raises`, soit traiter l'échec. Une
++ méthode qui ne fait ni l'un ni l'autre ne compile pas.
+
+% 0 1 0 12705ff5e291290d17fbc8389d59ef4a
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 01fa51a9d47aa90400b5ce3f1f36bdf4
++   label Une méthode qui ne dit pas qu'elle peut échouer
+
+% 0 1 0 1477c34ff41c7c99183443e1d3238ae1
+
+% 1 1 0 0960c596329e4eb20a0b442aaa85c43a
+
+% 0 1 0 1e8326b2c9c8922009754d2524562522
+
+% 1 1 0 18926c4d4936b5771134e24317e8236a
+
+@ 0 2 0 1091aa83abea14280eb3ca0cb4c66372
++   label L'échec, dans le type de retour
++   highlight raises..Error  l'échec fait partie du type
+
+% 1 1 0 02737e1013aa312a18b22150d29050f5
+
+% 0 1 0 01b170a9842da0f814fe9491f77237db
+
+% 0 1 0 18eafb32caed3dd50f976e787bd035ca
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 2 0 0afb1b7f8489223e07f1d7aca3de5e1d
++ [Déclarer qu'un code peut échouer](../../soundness/modules/errors.md#declaring-that-code-can-fail)
++ explique ce qu'est `raises`.

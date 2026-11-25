@@ -1,0 +1,93 @@
+orthant 2 language
+
+@ 0 1 0 06e414511d2e912f1b189ad486d82fb2
++ # Un ensemble de cas dans un seul mot machine
+
+@ 0 3 0 0f1e0882b35de3ac1d2f330b782c26f7
++ Un `Set` des cas d'une énumération est un objet qui pointe vers d'autres. Un `Flags` de la même
++ énumération est un `Long` et rien de plus, avec un bit pour chaque cas, et il se positionne et se
++ teste toujours par nom.
+
+% 2 1 0 0ec3c79c513e9b9b19487595bf7b84d3
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 2 0 0cca2a6ef19667270c375394b69140f0
++   label Un ensemble, sur le tas
++   highlight Set[Suit]  un objet, et les objets vers lesquels il pointe
+
+% 1 1 0 19081b9576064aac1ebabfe31c684208
+
+% 2 1 0 09dce56ef2431f3b02cafdd7f78dae44
+
+% 3 1 0 1f45af11a09b3594092a850541fde104
+
+% 0 1 0 025c26abe96839ee14b30a70b97d2967
+
+% 0 1 0 1f2441d73e13d1e6006affbe99babdcf
+
+% 1 1 0 01ead63c4bd1b7fa0a9e7512c56bd63b
+
+@ 0 2 0 03968b36f49be86d04fa805ca6fa039c
++   label Le même ensemble, dans un mot
++   highlight Flags[Suit]  un `Long`
+
+% 0 1 0 0fd2ac3797a0477c02117fa7e01a94b2
+
+% 1 1 0 0428a31f3d3e43b7091c3ca786dd21af
+
+% 2 1 0 0c61a018f37f8fdc01de50d71a7533ae
+
+% 3 1 0 1945d479a732ddd809ffd80a9f54c990
+
+% 5 1 0 00813dcd4b751efc00d782fd9f56ac78
+
+% 6 1 0 016559b7253105e109c2c5ac733111a4
+
+% 7 1 0 003ca2fedd96dd281b78b10068df6567
+
+% 1 1 0 1d72c46d6c5f19e70f40b41bf661006e
+
+@ 0 2 0 047f4bdb6524f25418249b939d305aee
++   label Le mot lui-même
++   highlight bits  les mêmes 64 bits, sous forme de nombre
+
+% 1 1 0 019778d477f9a6110233aecf79bfd11b
+
+% 2 1 0 168c4e0f043217d8093395bcf906c91c
+
+% 3 1 0 1a59af5070184f3f14ecf19acd527399
+
+% 5 1 0 0781d8309672c1060882636d97cd3643
+
+% 6 1 0 067bcb4e3ab8cc081b7121e1c9631ad8
+
+% 7 1 0 10e4158d347c81fa1af4b8abf4c09838
+
+% 0 1 0 0aab34b746d4bd4c00a22f24c7c51b22
+
+% 1 1 0 0bf832aa8aa6489801718a93364775ad
+
+% 1 1 0 136d267ff733a60e0f6246170d49df5f
+
+% 2 1 0 1525a46c87e9e0571e7d21b8e7c42b7a
+
+% 0 1 0 08a86cbdc9b8cb0109ed8ce5b435ce67
+
+% 1 1 0 0cd6459499a6bd5203d659b3bcc1b6aa
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 0 1 0 0ad14d7cf65eb7661a139111fa143f43
+
+% 0 1 0 123441391b943c011488952cda2dc3d2
+
+% 1 1 0 02aeb2ebea6213be0daac3a602ecdfa4
+
+@ 0 3 0 1d885a68f163726d09037f48c5bcfe50
++ Carreau et cœur sont le deuxième et le troisième cas, si bien que les deuxième et troisième bits
++ sont activés. [À propos des ensembles d'indicateurs](../../soundness/modules/flags.md#on-flag-sets)
++ explique la représentation, et [le coût nul](../../philosophy/zero-cost.md) le type opaque qui la
++ rend gratuite.

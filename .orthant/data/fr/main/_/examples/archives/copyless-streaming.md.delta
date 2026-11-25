@@ -1,0 +1,87 @@
+orthant 2 language
+
+@ 0 1 0 1e98cf15caf9a111031833c1f8d488d4
++ # Des entrées lues dans un flux qui arrive encore
+
+@ 0 3 0 0f7a0ff5e3502af91eda94869636d9f3
++ Une archive tar est analysée paresseusement, directement sur un flux d'octets. La décompression
++ n'est qu'une étape de plus de ce flux : une archive compressée de n'importe quelle taille se lit
++ donc une entrée à la fois, et n'est jamais assemblée.
+
+% 2 1 0 15179b667f2555f8121e3cc6cd5732a5
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 0b6f0f78c3731f3e1e2b2f6456b26df0
++   label Une archive de deux fichiers
+
+% 1 1 0 062f1e6d554c6cef06621ecf19b06824
+
+% 2 1 0 0368b84d91dcc34918d650a3057d19f9
+
+% 4 1 0 1c0774bb71893a7b1c7415d2ce59a6e1
+
+% 5 1 0 1552b340968267bf0ed54d7e85d18d44
+
+% 6 1 0 1159867701290b8d1da2017aba5a1d34
+
+% 1 1 0 1b61431efd249d2d10bcd98d577188f3
+
+@ 0 2 0 1eb98c37a46e861a0af68ec841fc2e42
++   label Compressée à mesure qu'elle est écrite
++   highlight tarball.gzip  un flux, et non un tableau
+
+% 1 1 0 189b6a10cb67026a0f6369eee76b1814
+
+% 2 1 0 0e31adbd0c99206d01a81a2ed071d3d3
+
+% 4 1 0 1a4fd04d9780302402495be173bbd87c
+
+% 5 1 0 08c15a3929e51e20125a9bf5fb0fbc2c
+
+% 6 1 0 0409c4fdb74640220adf599fd05ceb6e
+
+% 8 1 0 19061e42bd79467a08f871295b5d9646
+
+% 1 1 0 0042668ee0fb015b0eddfb04cba3a380
+
+@ 0 2 0 15c6359dd4d32d750b9718bfb3729de6
++   label Décompressée à mesure qu'elle est lue
++   highlight decompress[Gzip]  une étape de plus
+
+% 1 1 0 0bc71d46f2dcde4c070a844435f6306f
+
+% 2 1 0 010971e96257380f022e31429ef96699
+
+% 4 1 0 1b2c7129e2d3fefd004e4a1a0c9d09a8
+
+% 5 1 0 07cf314d6ec6c6711ecca3f1fd32e61d
+
+% 6 1 0 0b96daa19f521c6500580a3d91081f39
+
+% 8 1 0 193816806fc96c800dd83633f756250b
+
+% 0 1 0 14e72ec6e9fa200607af5d922af9eb98
+
+% 1 1 0 02cbed6987e1790715cf1b12a4e239f2
+
+% 1 1 0 136d267ff733a60e0f6246170d49df5f
+
+% 2 1 0 1525a46c87e9e0571e7d21b8e7c42b7a
+
+% 0 1 0 08a86cbdc9b8cb0109ed8ce5b435ce67
+
+% 1 1 0 0cd6459499a6bd5203d659b3bcc1b6aa
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 0 1 0 0c1fdb46f5e9f3d31bb2eee1741a109f
+
+% 1 1 0 0e60e76464d84ad212129a2baa3dbdb8
+
+@ 0 3 0 0c93d1b0921a150b0540734641215fb3
++ [Tar](../../soundness/modules/archives.md#tar) explique ce que permet la lecture en une seule
++ passe, et [la compression](../../soundness/modules/compression.md#compressing-a-stream) l'étape
++ avec laquelle elle se compose.

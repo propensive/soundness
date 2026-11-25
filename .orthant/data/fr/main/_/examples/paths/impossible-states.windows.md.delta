@@ -1,0 +1,51 @@
+orthant 2 language
+
+@ 0 1 0 08a0ae389d0e5b6c1b64f7ab5a4eee75
++ # Un nom que Windows réserve
+
+@ 0 2 0 1733bbef33c06da30fb7772ae0a1e5e6
++ Windows garde certains noms pour ses périphériques, et un fichier ne peut pas s'appeler `aux` ou
++ `con`. Les règles de la plateforme sont vérifiées à la compilation, là où le nom est écrit.
+
+% 0 1 0 12705ff5e291290d17fbc8389d59ef4a
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 06178944aa88a25d19c57124b657ea6a
++   label Un nom de périphérique
+
+% 0 1 0 1477c34ff41c7c99183443e1d3238ae1
+
+% 1 1 0 0960c596329e4eb20a0b442aaa85c43a
+
+% 0 1 0 129c689ee983173e11a60369bdb464e5
+
+% 1 1 0 0de4bad7ccf842c80fd178aefc7194f8
+
+@ 0 2 0 0d2c08b4461aa0c40675015311d49409
++   label Tout autre nom
++   highlight "auxiliary"  pas un périphérique
+
+% 1 1 0 0e6f3050fc1721bc1f2db5599ee69016
+
+% 0 1 0 0d3a8a5d54aa5dc41b7bcb5b62d84e14
+
+% 1 1 0 0bf054cdeb9f2bee137112cce227e40c
+
+@ 0 2 0 1a32f596fecbe1c31dd0f8e5490bbd6d
++   label Le même nom convient sous Linux
++   highlight Linux  une plateforme sans cette règle
+
+% 1 1 0 07acaf0627db203804846ed790fc5697
+
+% 0 1 0 15c98a79f56b487f1f0ec454861a23dc
+
+% 0 1 0 18eafb32caed3dd50f976e787bd035ca
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 2 0 0612dfe21dc871d317502abb0e9ea1b2
++ [Plateformes](../../soundness/modules/paths.md#platforms) décrit `Local`, dont les règles sont
++ les plus strictes de toutes.

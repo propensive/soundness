@@ -1,0 +1,67 @@
+orthant 2 language
+
+@ 0 1 0 0d29d4af018b638d066e451e3e3259fc
++ # Un document qui est son propre motif
+
+@ 0 2 0 0793b223fe35fcfc073cf5d1812cd790
++ Un littéral `tel"…"` construit un document à partir des valeurs qui y sont substituées. Écrit
++ dans un `case`, le même littéral décompose un document, et lie un nom là où se trouvait une
++ valeur.
+
+% 2 1 0 0739c59d952ef9cc0a0be81273839394
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 2 0 08d50f95c59d8f0a07e72cf73abe5e2d
++   label Une valeur, écrite dans un document
++   highlight $name  encodée selon son type
+
+% 1 1 0 02b8e62ae1e7a23f0910385542193328
+
+% 1 1 0 1d286d520ec4b22e0e8ec1adcb460067
+
+% 2 1 0 14e7920aa65bc5f301cc2aef4b402541
+
+% 1 1 0 0df739f5938a584d0f77d644c1c5b0a8
+
+@ 0 2 0 1d1c487a7611612f0db092fc460194ec
++   label Le même littéral, comme motif
++   highlight $prince  lié en tant que Tel
+
+% 1 1 0 006d01c5e88c13940a2c6aaefe151466
+
+% 0 1 0 12a618ab3fc8ab800817fdfca2fcb19c
+
+% 1 1 0 01fdfa6fc571abc512d8abb8a69a68c3
+
+% 2 1 0 02971fa8802ade571740382bfd2357c5
+
+% 0 1 0 051fd946dd1eec551c69bb362372d8bf
+
+% 0 1 0 1a4a61861902cb521466920c967f4651
+
+% 0 1 0 1eb62c6f6d02aa6f01a4dae00c66e6b4
+
+% 1 1 0 0a8414f485e35c2608021d1531630873
+
+% 1 1 0 136d267ff733a60e0f6246170d49df5f
+
+% 2 1 0 1525a46c87e9e0571e7d21b8e7c42b7a
+
+% 0 1 0 08a86cbdc9b8cb0109ed8ce5b435ce67
+
+% 1 1 0 0cd6459499a6bd5203d659b3bcc1b6aa
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 0 1 0 06d5032e6dc4431416a447e71dd51efd
+
+% 0 1 0 1e76808039432f650d677aa416f7e870
+
+% 1 1 0 0e15315a6901bd731e7a09369c1af0aa
+
+@ 0 1 0 1113c04eb6adedeb18f3a9aeb07cc7f9
++ [Écrire du TEL littéralement](../../soundness/modules/tel.md#writing-tel-literally) présente le
++ reste.

@@ -1,0 +1,70 @@
+orthant 2 language
+
+@ 0 1 0 1114e6fb7eb158821a5c2dd1b29995cb
++ # Un échec, sous forme d'absence
+
+@ 0 3 0 005a6f92f553b6e40fa2137667aa5ebe
++ Quand la raison d'un échec n'a pas d'importance, l'échec est une valeur absente. `safely` exécute
++ du code faillible et donne un `Optional`, et à partir de là les opérations ordinaires sur les
++ valeurs optionnelles disent ce qui se passe ensuite.
+
+% 2 1 0 13ab868395cc151108dbe594aab49ae1
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 2 0 0cfd35ce2dee0ef209a65c6e794837de
++   label Un port, ou rien
++   highlight safely  tout échec devient Unset
+
+% 1 1 0 04ea8bc93eb974b61687597a994485a2
+
+% 2 1 0 0aa170d2bc174ac614c155d5517ed023
+
+% 4 1 0 0d6fa5f454f18eb10635d57639907adb
+
+% 6 1 0 02e30044053dfdb01abd48499c9b6946
+
+% 7 1 0 1111fc419770f2c900c305aa39de2fb7
+
+% 0 1 0 0ba5c2e7016f45341b2ca4ea0bfee0df
+
+% 1 1 0 1a92a56bb9975e9804ebf14e1c5c5478
+
+@ 0 2 0 153ddfc1f28d1760039ea8e2a5de02b3
++   label Un port, ou le port habituel
++   highlight or(8080)  la valeur de repli
+
+% 1 1 0 0d324c58eceea6b50bea24a382ae6161
+
+% 2 1 0 01efe498e06f87d31b08231f4b493572
+
+% 4 1 0 0b15e91a33103f0e15ebdec82840fb14
+
+% 6 1 0 16181c6aa510a58a1e413771d883525a
+
+% 7 1 0 01fa680d20a470ba0e8d17d8f546677b
+
+% 0 1 0 14ae628b7022ae1318a20c70ff7c8b6c
+
+% 1 1 0 18fdf88a1918391a17535849a6542780
+
+% 1 1 0 136d267ff733a60e0f6246170d49df5f
+
+% 2 1 0 1525a46c87e9e0571e7d21b8e7c42b7a
+
+% 0 1 0 08a86cbdc9b8cb0109ed8ce5b435ce67
+
+% 1 1 0 0cd6459499a6bd5203d659b3bcc1b6aa
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 0 1 0 0e49a6fa0c7ea7110a2026e589c5cc89
+
+% 1 1 0 0f95be88965de1401667d16185a6843b
+
+@ 0 3 0 11be8d88781b041f16542888d8dbf605
++ [Choisir une stratégie](../../soundness/modules/errors.md#choosing-a-strategy) place `safely` à
++ côté des autres blocs, et [Valeurs optionnelles](../../soundness/modules/optional-values.md)
++ présente les opérations.

@@ -1,0 +1,78 @@
+orthant 2 language
+
+@ 0 1 0 1f725f4826e99848198e425ae5eb996a
++ # La moyenne d'aucune mesure
+
+@ 0 2 0 1591ed63fede6ab3017178da8be37681
++ Une liste de quantités a un total même lorsqu'elle est vide : zéro. Elle n'a pas de moyenne.
++ `mean` renvoie une quantité optionnelle, et le code qui l'utilise dit ce que devient une moyenne
++ absente.
+
+% 2 1 0 1f4637461b9d38090383b6dd006c7821
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 2 0 14f9c8a6d4dacd641e50957dae23b0ef
++   label Une moyenne, qui peut être absente
++   highlight Optional[Quantity[Seconds[1]]]  `Unset` pour une liste vide
+
+% 1 1 0 1077596b7429c5111e6f512c94d06b0b
+
+% 0 1 0 1df61f879b880dc914dbbc2c9b31f6b9
+
+% 0 1 0 1b244c95ac9f39fb01a7437562158b12
+
+% 1 1 0 198145806f12a5ca1f8cbe525c41c4e4
+
+@ 0 1 0 09f02831e2d236b017adc890f31a8d39
++   label Utilisée comme si elle était présente
+
+% 0 1 0 1477c34ff41c7c99183443e1d3238ae1
+
+% 1 1 0 0960c596329e4eb20a0b442aaa85c43a
+
+% 2 1 0 079347d9bd073d170261e17cc2470811
+
+% 3 1 0 00f634b7c4b04c320b1e726b3cda34b4
+
+% 0 1 0 0dd315d57bedc2f7088adc18484e8a9e
+
+% 1 1 0 0872aa2a940d7ded09ee4df9b15fdcd9
+
+@ 0 2 0 0c2f40c503f88cef14969733c1936aba
++   label Avec une valeur pour l'absence
++   highlight or(0*Second)  ce que signifie l'absence ici
+
+% 1 1 0 1b3013662176d4ac1e397e3a2100b92e
+
+% 2 1 0 0566d9ed2acdf43b16c5d4e785cf1507
+
+% 3 1 0 1eeaa2fff3582bfe14f09ab8ea7971df
+
+% 0 1 0 194993e58f1131f107d2e402695fd004
+
+% 1 1 0 055e8852fd7946720e4486f9b3b40682
+
+% 1 1 0 136d267ff733a60e0f6246170d49df5f
+
+% 2 1 0 1525a46c87e9e0571e7d21b8e7c42b7a
+
+% 0 1 0 08a86cbdc9b8cb0109ed8ce5b435ce67
+
+% 1 1 0 0cd6459499a6bd5203d659b3bcc1b6aa
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 0 1 0 1ff46eadb86ffabc103c1dc6d8e7c8b4
+
+% 0 1 0 124bb5281ff7cc4e0e474f34ceb1b202
+
+% 0 1 0 0965eb22b810ba7a160bcb29adf80e1e
+
+% 1 1 0 080e891751d1beb304a5b0828544c256
+
+@ 0 2 0 19da770643c584210944e54420ab89de
++ [L'agrégation](../../soundness/modules/quantities.md#aggregating) énumère les réductions, et
++ [l'optionalité](../../philosophy/optionality.md) explique `or`.

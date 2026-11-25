@@ -1,0 +1,45 @@
+orthant 2 language
+
+@ 0 1 0 1aa40937c7e5ef0a030f7eb7f3a6fc71
++ # Une police dans un support
+
+@ 0 3 0 07319c674ee050ce1daf944e5580699e
++ Une fourniture se déclare pour une famille de polices dans un support, et son type dit exactement
++ cela : `(Typeface of "Inter") is Typesettable in Web`. Une `Font in Web` est destinée à un
++ navigateur et une `Font in Print` à un PDF, et chacune ne se construit qu'à partir d'une
++ fourniture de son propre support.
+
+% 0 1 0 12705ff5e291290d17fbc8389d59ef4a
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+@ 0 2 0 1bf9622e7edcd1cc0ce24ea847787c9a
++ alternative Dans un navigateur
++   highlight Font..Web  la seule police qu'acceptent une feuille de style ou un SVG
+
+% 1 1 0 1d1b4168faced54c19ced01e0214d990
+
+% 2 1 0 0227fb968f06d91501f346c550519157
+
+% 0 1 0 05845ddae64c33d7187455fded880a7f
+
+% 0 1 0 0045a676f720f3c0032953604c3d47d5
+
+@ 0 2 0 191309837070710b184ff39808b75674
++ alternative Dans un PDF
++   highlight Font..Print  construite à partir d'une fourniture que `Print` a pour Helvetica
+
+% 1 1 0 1cd14cba0ea54224043eddd84ee8c69f
+
+% 2 1 0 1f9cbcaa805eb9ef09cfc18c939968a8
+
+% 0 1 0 1902b26fa076f4e7076418903db8d6bc
+
+% 0 1 0 18eafb32caed3dd50f976e787bd035ca
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 3 0 01a7b5b947cc3c9e1c40499e1fc34376
++ [Fournir une famille de polices](../../soundness/modules/fonts.md#providing-a-typeface) donne la
++ table des fournitures et de leurs supports, et [les types infixes](../../philosophy/infix-types.md)
++ les mots qui relient les types.

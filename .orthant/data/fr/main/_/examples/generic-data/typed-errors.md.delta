@@ -1,0 +1,46 @@
+orthant 2 language
+
+@ 0 1 0 18716082b1fb6ae81da716992eb23897
++ # Des données qui n'ont peut-être pas la forme attendue
+
+@ 0 3 0 1d7cdf1f07477ae4093ec2e67a685da3
++ Un `Pojo` a perdu sa classe, si bien que le côté qui en reçoit un doit dire ce qu'il attend, et
++ les données peuvent ne pas concorder. Le décodage lève donc une `Pojo.Error`, et une méthode qui
++ décode le dit, ou ne compile pas.
+
+% 0 1 0 12705ff5e291290d17fbc8389d59ef4a
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 14255b789ce453340ee18d5d47848bc8
++   label Une méthode qui suppose que les données concordent
+
+% 0 1 0 1477c34ff41c7c99183443e1d3238ae1
+
+% 1 1 0 0960c596329e4eb20a0b442aaa85c43a
+
+% 2 1 0 060951f5a5bdf56b09a4fe1e8668aeb4
+
+% 0 1 0 181ea0293cb5798413ce06d18332f108
+
+% 1 1 0 19e84db6f636876d0b2e7651c6162672
+
+@ 0 2 0 1bcaaff51750eb2100cd4284889e526a
++   label L'échec, dans le type de retour
++   highlight raises..Pojo.Error  l'appelant doit le traiter
+
+% 1 1 0 0d522e8ce60dbc800789cc076a347d6c
+
+% 2 1 0 0ccb12d5fe5e2c1e00950c005f7713e8
+
+% 0 1 0 1db9e3b50769954f037c1abb14941579
+
+% 0 1 0 18eafb32caed3dd50f976e787bd035ca
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 2 0 154034f3f0c010e50c9d94867caf5049
++ [Encoder et décoder](../../soundness/modules/generic-data.md#encoding-and-decoding) montre
++ l'erreur pour une chaîne qui n'est pas un `Player`.

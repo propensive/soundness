@@ -1,0 +1,52 @@
+orthant 2 language
+
+@ 0 1 0 0cad3b382158a7340422270555bda98c
++ # Les canaux d'une disposition, connus par son type
+
+@ 0 3 0 08f6b5db73c3c14309658a068b8f3887
++ Une disposition de canaux est un type, et `Surround` prend son nombre de canaux comme argument de
++ type. Ce nombre se relit dans le type : un son à six canaux est donc d'un type différent de la
++ stéréo, et aucun des deux ne contient un nombre qui pourrait le contredire.
+
+% 2 1 0 18ead22462751b5809bb44228c45f62e
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 18fd7c0b4756ea76156283ac2d994b52
++   label Deux canaux
+
+% 1 1 0 1231b996d8b68243152eec59b1e0f799
+
+% 0 1 0 1d557999c6521d5c1c3950baaf7c263f
+
+% 1 1 0 16ec7075e26e77191d1edb713df36c23
+
+@ 0 2 0 0da1f24cd69facbc0eb1bf49ec68bc54
++   label Six canaux
++   highlight Surround[6]  le nombre fait partie du type
+
+% 1 1 0 01b822da3a8775d00619a22505f3a122
+
+% 0 1 0 0feda1c3bf98822c170b0a0ca3b67e4b
+
+% 1 1 0 0c818353606084d01e9213b2acd0c40e
+
+% 1 1 0 136d267ff733a60e0f6246170d49df5f
+
+% 2 1 0 1525a46c87e9e0571e7d21b8e7c42b7a
+
+% 0 1 0 08a86cbdc9b8cb0109ed8ce5b435ce67
+
+% 1 1 0 0cd6459499a6bd5203d659b3bcc1b6aa
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 0 1 0 017f78a24ab6abfc1aa39742e6ee0d6a
+
+% 1 1 0 1d1102d71452df5302632eab31bf1b14
+
+@ 0 2 0 11205ce8ef2432e006a539e51199c224
++ [Les dispositions de canaux](../../soundness/modules/audio.md#channel-layouts) énumère les
++ dispositions, qu'un enregistrement porte dans son type sous la forme `Audio across Stereo`.

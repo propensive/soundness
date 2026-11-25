@@ -1,0 +1,44 @@
+orthant 2 language
+
+@ 0 1 0 00e266ca57adaf891629c24c857b044b
++ # Les euros et les livres ne s'additionnent pas
+
+@ 0 2 0 0e1a597718ae7d120fa6f49fb9ffa115
++ Un montant d'argent porte sa devise dans son type. Une somme de deux devises n'a pas de sens sans
++ taux de change, si bien qu'elle n'a pas de type non plus.
+
+% 0 1 0 12705ff5e291290d17fbc8389d59ef4a
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 08ce4f04010ab7cd0a9c6dfea1d8a458
++   label Une somme dans une seule devise
+
+% 1 1 0 1348a00d34552c2517314de9b6ef01b8
+
+% 2 1 0 08735f5da77419e106d780bf908feca3
+
+% 0 1 0 103f866d0e55ff6f10a715bd09c3900e
+
+% 1 1 0 164a51873b2fac661ce30c6cd0eb5ec3
+
+@ 0 1 0 087246a2e5c4f87216dfc98e3859b485
++   label Une somme entre devises
+
+% 0 1 0 1477c34ff41c7c99183443e1d3238ae1
+
+% 1 1 0 0960c596329e4eb20a0b442aaa85c43a
+
+% 2 1 0 0b0b5622a9d61989152e849eda4117ea
+
+% 0 1 0 09046c98e99531040ef2cae4852baf18
+
+% 0 1 0 18eafb32caed3dd50f976e787bd035ca
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 1 0 13d4d0dabcebe5bb0676a6028b166954
++ [L'argent](../../soundness/modules/money.md#arithmetic) explique pourquoi aucun taux n'est
++ intégré.

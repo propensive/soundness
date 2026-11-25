@@ -1,0 +1,55 @@
+orthant 2 language
+
+@ 0 1 0 196fe030904c9b2e094d812074453cfa
++ # Un chemin que le type n'a pas
+
+@ 0 3 0 1141809a5c9133e607baa3ea302693e9
++ Une entrée d'un catalogue est désignée par le chemin d'un champ, écrit comme une sélection et
++ non comme du texte. Le compilateur résout la sélection par rapport au type : on ne peut donc pas
++ demander un chemin vers un champ qui n'existe pas.
+
+% 0 1 0 12705ff5e291290d17fbc8389d59ef4a
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 1be8c6636ab03b221a1587f82e86542d
++   label Le traître n'a pas de titre
+
+% 0 1 0 1477c34ff41c7c99183443e1d3238ae1
+
+% 1 1 0 0960c596329e4eb20a0b442aaa85c43a
+
+% 2 1 0 1cd2b96d223e84581b01cb607bf7c822
+
+% 3 1 0 0c6222570c358d131e7dbe9fb630db39
+
+% 5 1 0 1edf9f09190f4c4c14a00e216b9fbb19
+
+% 0 1 0 03213e4e9d1318c2146322e262c88717
+
+% 1 1 0 17c0ca19560ff5590247806a5900d456
+
+@ 0 2 0 046f06d8ec46aec912d5ed86ae53325a
++   label Le traître a un nom
++   highlight proxy.villain.name  résolu en indice par le compilateur
+
+% 1 1 0 1acf6ba136d63fd3185836dd898539ed
+
+% 2 1 0 058f6b62a3c91ec91317811390f07f5a
+
+% 3 1 0 12387cf1f8782d191f4c7ce40e85b81c
+
+% 5 1 0 10defea54dc61ae40713e8d428a9fe5d
+
+% 0 1 0 1938b39ed08d822d1df2ebeaa851d0ee
+
+% 0 1 0 18eafb32caed3dd50f976e787bd035ca
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 3 0 030ee0a2e2ebcef90d4a4a0bb613e158
++ [Désigner une entrée](../../soundness/modules/catalogs.md#addressing-an-entry) explique le
++ proxy, et [les états impossibles](../../philosophy/impossible-states.md) pourquoi une clé ne
++ devrait pas être du texte.

@@ -1,0 +1,65 @@
+orthant 2 language
+
+@ 0 1 0 0d22417861e805780884dee3dbfcc77f
++ # Ce qui ne va pas dans une URI geo
+
+@ 0 2 0 16168506b8ba0cdc116ccc5f389403de
++ L'erreur d'une URI `geo:` mal formée contient sa raison sous la forme d'une valeur d'énumération,
++ qu'un programme peut filtrer, et son message exprime la même raison en mots.
+
+% 2 1 0 1d8769b634264ffb16978d1e89225748
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 2 0 1d2553920a39407d1502c2d59fb30e7e
++   label L'erreur, capturée comme valeur
++   highlight capture[Geolocation.Error]  l'erreur que lève le décodage
+
+% 1 1 0 0ed6622d982aff9c134fecf2a489bae1
+
+% 2 1 0 05175ef690ffc1b206d447eaaa04f73b
+
+% 4 1 0 15cefc702c22f8b207ff6df320c9a539
+
+% 5 1 0 0dc44b453f8e5b7110f024763284b95c
+
+% 1 1 0 07a18ea05fbbd9e71025716370feb342
+
+@ 0 2 0 05b2bae3dc98bbb70da53c25c4d9ae91
++   label Sa raison
++   highlight error.reason  un cas d'une énumération
+
+% 1 1 0 074f46e4286b4650118fbe2ccda68e31
+
+% 2 1 0 18f7bd717cd633480845dcce78a4ad6e
+
+% 4 1 0 04c7ee4f781faaac08f2c316abe047d8
+
+% 5 1 0 0152c2475924c874113100e6288b6d59
+
+% 0 1 0 0b11fab6a63ff60014c28ea5cb9f94ce
+
+% 1 1 0 1a49415c8761ff5e1e838320b6e0f1a3
+
+% 1 1 0 136d267ff733a60e0f6246170d49df5f
+
+% 2 1 0 1525a46c87e9e0571e7d21b8e7c42b7a
+
+% 0 1 0 08a86cbdc9b8cb0109ed8ce5b435ce67
+
+% 1 1 0 0cd6459499a6bd5203d659b3bcc1b6aa
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 0 1 0 0e2e1f9d4969953d1a7a50639aacf3a8
+
+% 0 1 0 06c0c12ea078c17c0106e3dee6af1925
+
+% 1 1 0 0488b1e98ffaad4b0647b008f93761d4
+
+@ 0 3 0 05c69e80334701a70c1d3be14f562bf5
++ [URI geo](../../soundness/modules/geography.md#geo-uris) présente le format, et
++ [les erreurs expressives](../../philosophy/expressive-errors.md) plaident pour une raison qui
++ soit à la fois une valeur et une phrase.

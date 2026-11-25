@@ -1,0 +1,52 @@
+orthant 2 language
+
+@ 0 1 0 1289827b553fa9841d12c78a808db51c
++ # La langue d'une césure
+
+@ 0 3 0 004d9c6f4223d8e80b183aa1a8b11851
++ L'endroit où un mot peut être coupé dépend de sa langue, et les motifs d'une langue se choisissent
++ par une importation. Sans motifs dans la portée, rien n'est coupé, puisqu'aucune coupure n'est
++ jamais devinée, et on peut apprendre un mot particulier à un ensemble de motifs.
+
+% 0 1 0 12705ff5e291290d17fbc8389d59ef4a
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+@ 0 1 0 09a9e5d7d27cb98e004bdba7e46549c9
++ alternative Sans motifs
+
+% 1 1 0 1d1735154b4d3f7e03ffa0d97037c802
+
+% 1 1 0 02e437e55167fd9f0479bdbf0cae732f
+
+@ 0 2 0 1965a501e47da66406752657e227800d
++ alternative Anglais
++   highlight englishHyphenation  les motifs qu'emploie TeX
+
+% 1 1 0 1a2696f3c0cf4b161134b221510cce0e
+
+% 0 1 0 1d45cd473a7dec810bd056e3b2944fed
+
+% 2 1 0 0a7a3c73c6c895151069718f4bb0699e
+
+@ 0 2 0 14156164c6a195a01fa2da1cbfc757a3
++ alternative Anglais, avec une exception
++   highlight extending  les mêmes motifs, et un mot
+
+% 1 1 0 0ebb691f39e598740b274aa9c0dcd67b
+
+% 0 1 0 0001dcfa954a4e300616d2e4a0d0736d
+
+% 0 1 0 1291aa752e9916431494e4675be810a9
+
+% 2 1 0 14bb085bbdf9d97019af697952e3bed1
+
+% 0 1 0 18eafb32caed3dd50f976e787bd035ca
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 4 0 14cf82824b8e055a001d5b7785d781b1
++ Les trois donnent `presentation`, `pre-sen-ta-tion` et `present-ation`.
++ [Étendre les motifs](../../soundness/modules/hyphenation.md#extending-the-patterns) en dit plus
++ sur les exceptions, et [le contexte déclaratif](../../philosophy/declarative-context.md) les
++ raisons d'un choix par importation.

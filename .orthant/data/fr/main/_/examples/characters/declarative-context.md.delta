@@ -1,0 +1,58 @@
+orthant 2 language
+
+@ 0 1 0 0d713c33dc4248420843f325cb530a3d
++ # Le même texte, dans un autre encodage
+
+@ 0 2 0 0a47b3c631bc9cf30ef569df787b18ad
++ Le nombre d'octets que devient un morceau de texte dépend de l'encodage, et l'encodage est la
++ `Codepage` qui a été importée, quelle qu'elle soit. La conversion s'écrit une fois, et ne la
++ nomme jamais.
+
+% 2 1 0 06c792ca59639bd51573334a0cca45e6
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 2 0 0d7416031f18c304103002611f2ee563
++   label UTF-8, où une lettre accentuée fait deux octets
++   highlight codepages.utf8Codepage  huit octets
+
+% 1 1 0 1bdab4489f0dc7720955b68c6f979e7a
+
+% 0 1 0 05c7b6b663c0853b10f681bb6ec5d7d3
+
+% 2 1 0 14cf45d14b33ddd90adea01a53a03161
+
+% 1 1 0 0af03cb53b914491048a9f18c4825d75
+
+@ 0 2 0 15cb564045badc121ac28b00ec2a0630
++   label ISO-8859-1, où chaque lettre en fait un
++   highlight codepages.iso88591Codepage  sept octets
+
+% 1 1 0 12cebfaba54169a81f1b1fac163542fe
+
+% 0 1 0 13098b8cc1db86691e982d7d03fc07eb
+
+% 2 1 0 0336218c1c9e33af1fd360eb3f3ea9a3
+
+% 1 1 0 0f307ff7485a4d6e0000122766bd4f65
+
+% 1 1 0 136d267ff733a60e0f6246170d49df5f
+
+% 2 1 0 1525a46c87e9e0571e7d21b8e7c42b7a
+
+% 0 1 0 08a86cbdc9b8cb0109ed8ce5b435ce67
+
+% 1 1 0 0cd6459499a6bd5203d659b3bcc1b6aa
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 0 1 0 10ebe3a8bcc51b1c0fbf4d7459fa2180
+
+% 1 1 0 1f351bd8c2d0cd8f1c291503f8d0f534
+
+@ 0 3 0 1ff470eac2b17e151b56ccf43b01fed6
++ Les sept caractères font sept octets en ISO-8859-1, et en feraient huit en UTF-8.
++ [Les encodages](../../soundness/modules/characters.md#encodings) énumère les pages de code, et
++ [le contexte déclaratif](../../philosophy/declarative-context.md) explique l'importation.

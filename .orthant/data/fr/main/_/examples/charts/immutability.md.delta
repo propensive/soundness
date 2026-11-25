@@ -1,0 +1,72 @@
+orthant 2 language
+
+@ 0 1 0 009289299b4408d60452d2ade773741c
++ # Un graphique révisé, et non redessiné
+
+@ 0 2 0 116c4d32438cc1811dce72f9b2c79917
++ Un graphique est une valeur, et de nouvelles données ne le modifient pas. `revise` donne le
++ graphique suivant, accompagné d'une liste des parties du dessin qui diffèrent : une page ne
++ remplace donc que celles-là.
+
+% 2 1 0 04e0b2d8f9f7eb7c0af2c47a8238b657
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 06bfacf551b48e1d0564ea11c64f5116
++   label Un graphique
+
+% 1 1 0 1f29fc02f429a9b6183cde1e94f46304
+
+% 2 1 0 189c5e2a36505b0f15be6dcb3c495122
+
+% 1 1 0 0718627d4c7a8f390c7d6830264f5243
+
+@ 0 2 0 002943768cb180061257322a24fb6433
++   label Ses données, avec un point de plus
++   highlight add  donne une nouvelle série
+
+% 1 1 0 13debbbc1eea7c3e04afddcfcf7a96ca
+
+% 2 1 0 010a1253b80ab7d413edbaa3572392bd
+
+% 3 1 0 1349682b35715eb80bea9a77ac43c347
+
+% 1 1 0 1cd99315968d178711f20364928df3de
+
+@ 0 2 0 0c42b341748cd5af0105a363ebb8e759
++   label Le graphique suivant, et ce qui a changé
++   highlight revise  donne un nouveau graphique et ses différences
+
+% 1 1 0 13720d124d4a458309ed7fe3c3e1b854
+
+% 2 1 0 1160e9f8ca98593f15cd34dc9c0101bd
+
+% 3 1 0 058fd3e97c8479c1115cd06fa55b3ada
+
+% 0 1 0 01d1572ae1c9062b11eb942abab8c329
+
+% 1 1 0 00465bc599c308711c9016af62817a94
+
+% 1 1 0 136d267ff733a60e0f6246170d49df5f
+
+% 2 1 0 1525a46c87e9e0571e7d21b8e7c42b7a
+
+% 0 1 0 08a86cbdc9b8cb0109ed8ce5b435ce67
+
+% 1 1 0 0cd6459499a6bd5203d659b3bcc1b6aa
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 0 1 0 10b3b1ef2cf3b8da12c8bbd0493dd4c8
+
+% 0 1 0 1dc80aa4dd8fc7a816a42d0dcfb3f1cc
+
+% 1 1 0 0098a26f43570b011f6be276b33f0408
+
+@ 0 2 0 0c2a46405425bac4123c94fc2b5320a8
++ Le nouveau point se trouve à l'intérieur des axes : l'unique révision remplace donc la série, et
++ rien d'autre.
++ [La révision](../../soundness/modules/charts.md#revision) décrit quand un graphique entier est
++ redessiné.

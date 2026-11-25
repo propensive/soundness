@@ -1,0 +1,70 @@
+orthant 2 language
+
+@ 0 1 0 1e7f1ca10008e86d1ae4a45c3dcca47e
++ # Un graphe, trois dessins
+
+@ 0 3 0 0293b1a893a849c30ece3d48888505ea
++ Les trois diagrammes de graphe disposent un graphe de manières différentes, et s'emploient de la
++ même manière. Chacun est fait à partir du graphe, et chacun a un `render` qui prend une étiquette
++ pour un nœud et donne les lignes.
+
+% 0 1 0 12705ff5e291290d17fbc8389d59ef4a
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+@ 0 2 0 075696964182053b0f913b9831c7bc04
++ alternative En couloirs
++   highlight LaneDagDiagram  comme on dessine un historique de versions
+
+% 1 1 0 03c60acd6f37ebbc1c3da53550b1add6
+
+% 2 1 0 031c80ff2904f61704595a17677a8822
+
+% 3 1 0 04243cebbd7d83331b0a527d0158cbb2
+
+% 5 1 0 0651ce787cadc19116773162873c3b50
+
+% 6 1 0 1d9f605b76ecc539126058e0d1ca641d
+
+% 0 1 0 0cc89cb6a866537916c745ad08756dcd
+
+@ 0 2 0 19a03d57fa96724a151a994c142538e3
++ alternative En couches
++   highlight LayeredDagDiagram  par profondeur, avec peu de croisements
+
+% 1 1 0 05b218f65ab3e1300ddb6b311bf6d73e
+
+% 2 1 0 1038fc8e7dcbfb7e1becb23e455ef28b
+
+% 3 1 0 0b6c2e3713a82b6e0eea3d678f7aec39
+
+% 5 1 0 17df6c86809be9f91f7c43dd0f0aec5d
+
+% 6 1 0 119cf013c5159d0516af2e348d3613b4
+
+% 0 1 0 0f52b7ef72e38d1f00c9fb7f227fadaa
+
+@ 0 2 0 166b3fafcb2d2741000cf06da6fb8eb3
++ alternative En grille
++   highlight DagDiagram  chaque arête dessinée
+
+% 1 1 0 05b33aa3762f36ae11419db50b94a232
+
+% 2 1 0 07045d07cce3e60a069f30251b882093
+
+% 0 1 0 0798bcd6d21043b310c8f46481fc9c66
+
+% 2 1 0 0c5bbed17038830011c6901ad53b3d90
+
+% 3 1 0 0f5c1f94601cd50e0dc76f3bba852069
+
+% 0 1 0 157579aa6a6d6bfc0652cfde88c334c7
+
+% 0 1 0 18eafb32caed3dd50f976e787bd035ca
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 2 0 07a76dd870abe5ff12b061c612cb1785
++ [Choisir une disposition de graphe](../../soundness/modules/trees.md#choosing-a-graph-layout)
++ indique laquelle convient à quel graphe, et [les petites API](../../philosophy/small-apis.md)
++ pourquoi elles s'emploient de la même manière.

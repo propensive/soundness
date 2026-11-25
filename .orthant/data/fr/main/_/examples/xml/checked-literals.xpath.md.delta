@@ -1,0 +1,71 @@
+orthant 2 language
+
+@ 0 1 0 02f4734572f4b6c2053379d44da7d9d1
++ # Un chemin vérifié avant d'être utilisé
+
+@ 0 2 0 12327b0cc1f22d5b0e38f0b5a5198516
++ Un littéral `xp"…"` est un XPath que le compilateur analyse. Un prédicat jamais fermé est une
++ erreur de compilation, si bien qu'une requête ne peut pas échouer à l'exécution à cause de la
++ manière dont elle a été écrite.
+
+% 2 1 0 12c8233c6e374823093ffb0ddbaf4015
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 0fb2d08ba7442ddb19ce42944663b8da
++   label Un prédicat qui n'est pas fermé
+
+% 0 1 0 1477c34ff41c7c99183443e1d3238ae1
+
+% 1 1 0 0960c596329e4eb20a0b442aaa85c43a
+
+% 0 1 0 05507e31065231a61505c6745f66074b
+
+% 1 1 0 11f738c43060d03917e748d343596288
+
+@ 0 1 0 0b642c32c8696c3414cfddc44983ed38
++   label Un chemin bien formé
+
+% 1 1 0 005b40f1f0861eac126459901782cb1b
+
+% 1 1 0 0c5b2e4b466ecb9e041013c5f777ed65
+
+% 1 1 0 0cb86bd2f1dca60a0ca4c02171172584
+
+@ 0 2 0 0986b93527598b1508a15ecf661e057e
++   label Un document y répond
++   highlight selectText  le texte de la première correspondance
+
+% 1 1 0 11dfa424ce5e57c604a7e35bbe4e11c4
+
+% 0 1 0 12a618ab3fc8ab800817fdfca2fcb19c
+
+% 0 1 0 009a9c455423b65519521ac6f537d97a
+
+% 1 1 0 1130bb68fd1bc5340859fdd0d2cc55c1
+
+% 0 1 0 1e9ac4a8f5e4de021ab89f8c8c99f002
+
+% 0 1 0 038b0007b7d4bd310bc4f0361885376c
+
+% 1 1 0 14e7f8e83bebe43e000bf8e3e84ddffa
+
+% 1 1 0 136d267ff733a60e0f6246170d49df5f
+
+% 2 1 0 1525a46c87e9e0571e7d21b8e7c42b7a
+
+% 0 1 0 08a86cbdc9b8cb0109ed8ce5b435ce67
+
+% 1 1 0 0cd6459499a6bd5203d659b3bcc1b6aa
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 0 1 0 12388578082ea768173683a54322594f
+
+% 1 1 0 04d035e275a314dd1725e18ab14e602c
+
+@ 0 2 0 0c2f220b1507f607112fa815019b9065
++ [Chemins et requêtes](../../soundness/modules/xml.md#paths-and-queries) présente les axes, les
++ prédicats et les fonctions qu'un chemin peut employer.

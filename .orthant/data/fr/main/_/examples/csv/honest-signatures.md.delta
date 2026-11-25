@@ -1,0 +1,48 @@
+orthant 2 language
+
+@ 0 1 0 0e28c56e69208d180a5fc204397400cf
++ # Délimité par quoi ?
+
+@ 0 2 0 1d48502d0b3b2f38019a209deeb79b4e
++ Un texte ne dit pas si ses cellules sont séparées par des virgules, des tabulations ou des
++ espaces. Lire une feuille exige un format dans la portée, et sans lui le code ne compile pas :
++ un délimiteur n'est donc jamais deviné.
+
+% 0 1 0 12705ff5e291290d17fbc8389d59ef4a
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 0c601353b3b9e8c614683aa57e31c22f
++   label Une feuille sans format déclaré
+
+% 0 1 0 1477c34ff41c7c99183443e1d3238ae1
+
+% 1 1 0 0960c596329e4eb20a0b442aaa85c43a
+
+% 2 1 0 052b5d53c564213f191f74be413a911f
+
+% 2 1 0 05d48837125f8b3c14884bd245eeb542
+
+% 1 1 0 04669c54dff1246813e0059e3a4db965
+
+@ 0 2 0 1c578b65dd51911b123937951e8e76fc
++   label Des valeurs séparées par des virgules
++   highlight csvFormat  des virgules, et des guillemets "
+
+% 1 1 0 16deccfd6de1d7e8124d68e29d52c2c3
+
+% 2 1 0 0e2d70ada8eb2d5b10e73f008136696c
+
+% 0 1 0 0c893c6e75c89cb5059ab450d5b87bdf
+
+% 2 1 0 0a65f3ad5268fe091b3845a95698d109
+
+% 0 1 0 18eafb32caed3dd50f976e787bd035ca
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 2 0 0bdd39cba1bfd92b1a8516c9d3c51c34
++ [Les formats](../../soundness/modules/csv.md#formats) énumère les formats, et
++ [les signatures honnêtes](../../philosophy/honest-signatures.md) explique cette exigence.

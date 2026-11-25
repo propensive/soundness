@@ -1,0 +1,52 @@
+orthant 2 language
+
+@ 0 1 0 11a92e39aeb6fda3000c172237b84384
++ # Les mêmes peintures, mélangées selon un autre mode
+
+@ 0 2 0 0b974ad4fb38a98e129729b3bb601666
++ Du jaune et du cyan sont ajoutés à parts égales. Le résultat dépend du mode de mélange, et le
++ mode est choisi par un import : une moyenne, un produit comme celui que donnent les encres, ou
++ l'écran de deux lumières.
+
+% 0 1 0 12705ff5e291290d17fbc8389d59ef4a
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+@ 0 2 0 0d73be927819301c1136b594331ce936
++ alternative Proportionnel
++   highlight proportionalMixing  une moyenne
+
+% 1 1 0 1110a9c973629efa0c211f3e8132fbba
+
+% 0 1 0 045c05f05fa766af06ef236bb8541ba6
+
+% 2 1 0 0cdfc90bd843bff90ccebacdd0c7a9e5
+
+@ 0 2 0 05c18ef42c73ff521492ee35edd3488c
++ alternative Produit
++   highlight multiplyMixing  comme se mélangent les encres
+
+% 1 1 0 0cd92421e01cd8ac1f2aa1ebaeb26b2f
+
+% 0 1 0 12dcc8cf4aa7795a02f82cd438686fd8
+
+% 2 1 0 03c974afe6e2c95d0436fda3748623a0
+
+@ 0 2 0 06c45322e8df7f261a52a30a8ef5e541
++ alternative Écran
++   highlight screenMixing  comme se mélangent les lumières
+
+% 1 1 0 11b986e0ed50a835024232cdd10b33b9
+
+% 0 1 0 1d2f9ea4cb666026051634074d8ea8fb
+
+% 2 1 0 1f7398ba43424938186319487986bfcd
+
+% 0 1 0 18eafb32caed3dd50f976e787bd035ca
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 3 0 1b2032e48f15ce640c23b6aaf9698745
++ [Modes de mélange](../../soundness/modules/colors.md#mixing-modes) définit chaque mode, et
++ [le contexte déclaratif](../../philosophy/declarative-context.md) explique pourquoi le mode n'est
++ pas un argument.

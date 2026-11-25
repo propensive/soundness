@@ -1,0 +1,56 @@
+orthant 2 language
+
+@ 0 1 0 03a9a2e05ae96ad01659614196106680
++ # Un certificat qui peut ne nommer personne
+
+@ 0 2 0 0b737d85bc5f6b0810e941e847f659ef
++ Le sujet d'un certificat est relu depuis ses octets, et un certificat n'est pas tenu d'en avoir
++ un. Le sujet est une valeur optionnelle, si bien que son nom commun ne peut pas être lu comme s'il
++ était présent.
+
+% 0 1 0 12705ff5e291290d17fbc8389d59ef4a
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 0bb4d12ab393d9c1136147dd8a32681b
++   label Un nom, lu comme si le sujet était présent
+
+% 0 1 0 1477c34ff41c7c99183443e1d3238ae1
+
+% 1 1 0 0960c596329e4eb20a0b442aaa85c43a
+
+% 0 1 0 1845aa5895c8f9da0842e085871ea9b5
+
+% 1 1 0 0ef4ded7d0fd36490c764618c03578fb
+
+@ 0 2 0 17159803ef1a12b3042e6d8a1bf8f93f
++   label Un nom, s'il y a un sujet
++   highlight let(_.commonName)  absent si le sujet l'est
+
+% 1 1 0 0bd728ef0aadb27a1381cf9303a4793b
+
+% 0 1 0 1803f4abad2ea5e81c8ee601c1ad8df3
+
+% 0 1 0 12d3e2ec38dc08031dde67eae4ae1e36
+
+% 1 1 0 1a897e14c3976ca50e9b01270fa4a0b8
+
+@ 0 2 0 08e1eb8eb0a66cf7108394861d4e22e1
++   label Et que dire quand il n'y en a pas
++   highlight or(t"nobody")  le sens de l'absence, ici
+
+% 1 1 0 0062ebd72aad7f1012aef777882c5f1c
+
+% 0 1 0 1cc7e8fdd39417ff1fe6701b8ce7b06e
+
+% 0 1 0 12f45e27bf083cc4025d07acf99ea343
+
+% 0 1 0 18eafb32caed3dd50f976e787bd035ca
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 2 0 0bdf77446405f80a03f6aa8e69a925bf
++ [Certificats](../../soundness/modules/cryptography.md#certificates) lit les autres champs, et
++ [l'optionalité](../../philosophy/optionality.md) explique `let` et `or`.

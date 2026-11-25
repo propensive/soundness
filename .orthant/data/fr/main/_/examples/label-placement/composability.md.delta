@@ -1,0 +1,75 @@
+orthant 2 language
+
+@ 0 1 0 0bca7cedd95e9ada06188d29f9672ec3
++ # Un lettrage posé là où l'arrangement l'a placé
+
+@ 0 3 0 07e4dd219454524d0f53d5166ca95501
++ L'arrangement ne connaît que des boîtes et des points, et un dessin SVG que des figures. La
++ réponse de `position` est faite de simples coordonnées : le lettrage d'un dessin se construit
++ donc dans le corps d'`arrange`, et en sort déjà placé.
+
+% 2 1 0 0306e04500f7475c19210f7eb4934354
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 047739bc32bf48ff1f34918c1eb20909
++   label Deux noms en un même point
+
+% 1 1 0 05c57780597ed3ae024b605292c72076
+
+% 2 1 0 0ced4d5eaf3cc24b03fdcc26b42692b2
+
+% 4 1 0 156cc7da8b38698b02e697199497dc7f
+
+% 5 1 0 0aa0c0a45e9b15d004adff5df15dc0a3
+
+% 6 1 0 1f46ed1f592701aa07e73ade134da2b0
+
+% 0 1 0 0cf50d4afcc7f542003b4861d5c944fa
+
+% 1 1 0 008945cd15b6fc560721ee706a70363d
+
+@ 0 2 0 02681d6c61ea0b6a059b90f7373924f1
++   label Chaque nom, comme lettrage à sa position
++   highlight (mantua.x,..mantua.y)  une paire de nombres est un point du dessin
+
+% 1 1 0 12dcdf0934869b1a034549461f27d005
+
+% 2 1 0 02f1b61773c1a732006be90bc6ef8923
+
+% 4 1 0 09865396a9ca64c2123c8dbfff50770f
+
+% 5 1 0 1ba3d252cd63c6c61d2c4d03d1ac108a
+
+% 6 1 0 03653aa1641cb9b301dfdcba55441dc1
+
+% 0 1 0 195b9d1eee049e791f6a3ecf764ce91f
+
+% 0 1 0 1a2f43720946aa06025aac0af8585ab6
+
+% 0 1 0 0bd7111cf7592413188aefe1957acb00
+
+% 1 1 0 126e9323b6fb3a75071b03b317130a6a
+
+% 1 1 0 136d267ff733a60e0f6246170d49df5f
+
+% 2 1 0 1525a46c87e9e0571e7d21b8e7c42b7a
+
+% 0 1 0 08a86cbdc9b8cb0109ed8ce5b435ce67
+
+% 1 1 0 0cd6459499a6bd5203d659b3bcc1b6aa
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 0 1 0 1fe8f42fd013e5c41280ae2e986edd3f
+
+% 0 1 0 194585e86f42e2091e1fed3480aa69e4
+
+% 1 1 0 14d8015bbc8af5a6067bd66a8d3d67a5
+
+@ 0 4 0 00045ee93630192f170730f935cb131b
++ Le second nom a été déplacé à l'ouest du point : il est donc ancré par sa fin.
++ [Légendes et cibles](../../soundness/modules/label-placement.md#captions-and-targets) décrit la
++ position renvoyée, et [SVG](../../soundness/modules/svg.md) le lettrage.

@@ -1,0 +1,104 @@
+orthant 2 language
+
+@ 0 1 0 162d00cdd71cecd60aac2994f3ade881
++ # Un serveur dérivé d'un trait
+
+@ 0 3 0 1c0f445450d3d0ea05ecdd886c8cdd53
++ Une interface RPC est un trait dont les méthodes sont marquées `@rpc`. Le compilateur lit leurs
++ noms, leurs paramètres et leurs types, et écrit le code qui décompose une requête JSON-RPC,
++ appelle l'implémentation et enveloppe la réponse.
+
+% 2 1 0 0be3d94347e3e67e0cec59367f0cc90b
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 13d5ef6e6d734ae005b6e86c5665a2c9
++   label Une interface
+
+% 0 1 0 0a366233054486f1038302bdd6b4a81d
+
+% 1 1 0 02d3e50f070ac8ca1a3a5911b1489b86
+
+% 2 1 0 0d5b7a3406543eaa12a581130c2ffd0c
+
+% 4 1 0 0102c1bed215d7ef03ddedcf47879c4e
+
+% 5 1 0 005c1e6933a70948012258894b172305
+
+% 7 1 0 03641ff89a16ca62156bcc28c2737481
+
+% 8 1 0 1941aaeca32146a7194b4336aac4e4e4
+
+% 1 1 0 1f4737d94222bfe613b1d0d57a2c4c52
+
+@ 0 1 0 038f25a8bee3dcd516206d3adf33f0b4
++   label Une implémentation
+
+% 1 1 0 0f5581f72093a8a10fae419b5d0565ef
+
+% 2 1 0 1739bc17bef4baa311f99bd1e3d1c295
+
+% 4 1 0 00946999335ae13f1a4520d083a1d3b2
+
+% 5 1 0 1b0296a5fcbbe33a1904e08583ddd62d
+
+% 7 1 0 00d0f4f8c2e46d26077077a75c012116
+
+% 8 1 0 17916466444771511a20759264e71926
+
+% 10 1 0 0110766d1068a02c0a8356a415c9bfab
+
+% 11 1 0 162b09dbd23293dc03aef91cb18c4a3d
+
+% 1 1 0 14fd2ff28300227a0d7ec86f6aa7b452
+
+@ 0 1 0 09474aaff6f8a0241d3f3ba27db60aef
++   label Un répartiteur, de la requête à la réponse
+
+% 0 1 0 0f3b6e2873c4e7ab0b8339c07037920a
+
+% 1 1 0 1bbb64457b0bc07812aa7b327939fb0b
+
+% 2 1 0 02c388b974637e2511ec900abfb4a336
+
+% 4 1 0 0128edff9011e7ca0ad71e3ccd7481de
+
+% 5 1 0 0225a9163ba8bef514401fe1b5ff05be
+
+% 7 1 0 0d17a9dcc3d4422914dee899292aa909
+
+% 8 1 0 18815255eeac32ed1d350ff7f68fa6fd
+
+% 10 1 0 057d10bb26291a54045a27d4c88be433
+
+% 11 1 0 1a2c847b8cab6b0103561204782c0099
+
+% 0 1 0 11c79362a1368dae1ee4e7c28c9c1fd9
+
+% 1 1 0 01f56c9e1a6e2d561d75b59b19cc9fe7
+
+% 1 1 0 136d267ff733a60e0f6246170d49df5f
+
+% 2 1 0 1525a46c87e9e0571e7d21b8e7c42b7a
+
+% 0 1 0 08a86cbdc9b8cb0109ed8ce5b435ce67
+
+% 1 1 0 0cd6459499a6bd5203d659b3bcc1b6aa
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 0 1 0 026901931200bf591262a034768d6b95
+
+% 0 1 0 111bf64e8dc33433004b5b301b2adde5
+
+% 0 1 0 13b91c88a46cce241c9ea30631b3bd99
+
+% 0 1 0 1eb1b5241d088f0c1e7ba1b58731d3ad
+
+% 1 1 0 0a921cd58e4be65200f53e19971da928
+
+@ 0 2 0 05d303093195c0e8096bf3f49ecd1f5f
++ [JSON-RPC](../../soundness/modules/rpc.md#json-rpc) décrit le répartiteur et le client dérivé du
++ même trait.

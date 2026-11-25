@@ -1,0 +1,68 @@
+orthant 2 language
+
+@ 0 1 0 13f238314765d59d0159c433fa627cb5
++ # Exemples
+
+@ 0 3 0 118caabe485a828e0f4ef835380646e5
++ Ceci est un recueil de courts exemples. Chacun montre une chose qu'un lecteur peut vouloir faire
++ avec Soundness, à la lumière d'une idée qui la traverse tout entière, en deux à dix lignes de code.
++ Ils sont faits pour être lus un à un, choisis dans deux listes.
+
+@ 0 1 0 16f462eb3f0ed69103512ea22b3a401c
++ ## Les deux aspects
+
+@ 0 3 0 0d374221d04d833c09f1abfaa03232a2
++ Un *sujet* est ce que fait l'exemple : lire du JSON, envoyer une requête HTTP, écrire une date.
++ Les sujets sont les tutoriels de [la documentation](../soundness/modules/overview.md), et sont
++ énumérés dans `topics.tel`.
+
+@ 0 4 0 0cc9265ff2e3ae7c05702092f7db1d0a
++ Un *thème* est l'idée que montre l'exemple : qu'un littéral est vérifié par le compilateur, qu'une
++ erreur est nommée dans un type, qu'une capacité ne peut pas quitter sa portée. Les thèmes sont
++ énumérés dans `themes.tel`, chacun avec une phrase qui dit ce qu'il signifie, et la plupart ont un
++ essai qui leur est propre dans [la philosophie](../philosophy/correctness.md).
+
+@ 0 5 0 165a921dbd9cca9e1eb10bd9c03fe67a
++ Un exemple du thème `checked-literals` sur le sujet `json` est le fichier
++ `json/checked-literals.md`. Un second exemple de la même paire porte un mot après le thème,
++ comme `json/checked-literals.pointer.md`. La plupart des paires n'ont pas d'exemple, car la
++ plupart des sujets ne montrent bien que certains des thèmes : un exemple n'est écrit que là où la
++ paire enseigne quelque chose qu'aucun des deux aspects n'enseigne seul.
+
+@ 0 1 0 109912b0e81854f51798283e62286277
++ `python3 etc/check-examples.py --matrix` montre quelles paires sont remplies.
+
+@ 0 1 0 06547c0c9f012f3100bacf887bbc5a33
++ ## Écrire un exemple
+
+@ 0 3 0 11eff9b174d597c019639fdd0d3186a9
++ Un exemple est un titre, une phrase ou deux, un bloc de code, et une phrase qui mène au tutoriel
++ ou à l'essai qui le sous-tend. La norme pour la prose et le code est celle des
++ [tutoriels](../standards/style.md), à laquelle s'ajoutent ces règles :
+
+@ 0 20 0 01f3017254127fe91f38190ec2a9ee0b
++ - Le titre dit ce que montre l'exemple, dans les mots du sujet, et ne nomme aucun des deux aspects.
++ - Le code est le minimum qui montre l'idée : deux à dix lignes dans chaque trame. Les données
++   d'exemple viennent de Shakespeare, comme [partout ailleurs](../standards/examples.md).
++ - Le code n'a pas de commentaires. Ce qu'un commentaire dirait est dit par un `highlight` ou un
++   `focus`, par le `label` d'une trame, ou par les phrases qui entourent le code.
++ - Là où l'idée est que quelque chose de faux ne compile pas, l'exemple est une animation : une
++   trame marquée `errors show` qui contient l'erreur, avec le message même du compilateur, puis une
++   trame qui la corrige. Une erreur n'est jamais écrite à la main.
++ - Là où l'idée est un choix, comme une stratégie, un calendrier ou un backend, les versions sont
++   des `alternative`, sous des onglets.
++ - Chaque trame est compilée. Un exemple qui montre un résultat l'affiche depuis un bloc `run`
++   après l'animation, et celui qui ne peut pas s'exécuter là où la documentation est construite,
++   parce qu'il a besoin du réseau ou d'un terminal, le dit.
++ - Une marque nomme son étendue sans espace, puisque ce qui suit la première espace est sa
++   légende : une étendue de plusieurs mots s'écrit de ses premiers caractères à ses derniers, comme
++   `raises..Error`. Chaque marque a une légende.
++ - Là où chaque trame répéterait les mêmes importations, elles vont dans un bloc simple avant
++   l'animation, que les trames suivent alors.
++ - Un exemple se suffit à lui-même. Il importe ce dont il a besoin, au-delà du package `soundness`
++   lui-même, et ne dépend d'aucun autre exemple.
+
+@ 0 3 0 1e54fb1abfaef2e60c3bec21aa9a4411
++ Si le code dont un exemple a besoin n'est pas court, ou n'est pas sûr, la faute peut être dans
++ l'API et non dans l'exemple. Un tel cas est consigné dans le ticket qui les suit, et l'exemple est
++ laissé de côté jusqu'à ce que l'API soit digne d'être montrée.

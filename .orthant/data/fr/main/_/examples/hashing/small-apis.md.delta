@@ -1,0 +1,81 @@
+orthant 2 language
+
+@ 0 1 0 1c3a6ede3a7250ba0f69abbf652ca21f
++ # Une seule méthode hache n'importe quelle valeur
+
+@ 0 2 0 0d350f87864d41650e0a8ff0908e951b
++ Rien n'est sérialisé à la main avant d'être haché. `digest` reçoit l'algorithme comme type, et
++ fonctionne sur du texte, sur des octets, et sur un autre condensé.
+
+% 2 1 0 0b63399981fca0e518ae069a0b190c80
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 2 0 1393fa81d60eb136089a7a97080a24e3
++   label Du texte
++   highlight digest[Sha2[256]]  l'algorithme, comme type
+
+% 1 1 0 1dbd31b096cb683e1dabb51061f8f4d2
+
+% 2 1 0 018e4661c1b5ff911ff5ef8eb8befee3
+
+% 4 1 0 11d29c64dd1c6f9419b3be07f157809a
+
+% 5 1 0 09f4988e5ee4cf4810b97108f6dcd345
+
+% 1 1 0 0839cfb70797459608aa26178a03a974
+
+@ 0 2 0 0c6cb9c468315ef41244fcc5edd85d6b
++   label Des octets, avec un autre algorithme
++   highlight digest[Sha2[512]]  une autre entrée, un autre algorithme
+
+% 1 1 0 06594cd91392c8a008ebed8cc457967e
+
+% 2 1 0 13c788b6c5f870bb17696791f883fa78
+
+% 4 1 0 0abac6fba9723af0162796a6950f5b5e
+
+% 5 1 0 0e58d371669a2a7e187bb7f8a1a6e1a4
+
+% 6 1 0 09c8926ef8efeea9194946ea5e54d7d3
+
+% 1 1 0 154afe27820a617d171ce97dd7aa5187
+
+@ 0 2 0 10f1f7c7ac58d9ad1c76b83af4b39d17
++   label Le condensé d'un condensé
++   highlight spoken.digest[Sha2[256]]  un condensé peut lui aussi être condensé
+
+% 1 1 0 120f2c145ebed37f069d41cc9f58e494
+
+% 2 1 0 09b05596b889d5231a99277c39e065af
+
+% 4 1 0 190ceec01b346d64149ed741e6fe66ca
+
+% 5 1 0 02a6f720b7122aec1883f6b565eb24bf
+
+% 6 1 0 064cd6696a779eb4138989377b5af90c
+
+% 0 1 0 17909b6edd3088dd096029ee7473ee1a
+
+% 1 1 0 1c920776fdf3b060162d649c33b845c5
+
+% 1 1 0 136d267ff733a60e0f6246170d49df5f
+
+% 2 1 0 1525a46c87e9e0571e7d21b8e7c42b7a
+
+% 0 1 0 08a86cbdc9b8cb0109ed8ce5b435ce67
+
+% 1 1 0 0cd6459499a6bd5203d659b3bcc1b6aa
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 0 1 0 1ac2dca8e7e0e05e092e786213cc8b7d
+
+% 0 1 0 12c04756a72083590b8f4e38c21be215
+
+% 1 1 0 03b8d8fb979cffa51672e6bf30f9d688
+
+@ 0 1 0 0259bf8d346e0ecf10abc4b5e843a709
++ [Hacher une valeur](../../soundness/modules/hashing.md#hashing-a-value) énumère les algorithmes.

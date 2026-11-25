@@ -1,0 +1,61 @@
+orthant 2 language
+
+@ 0 1 0 0604ac99afc6906a185beb0ccae7fc1f
++ # Une séquence d'échappement défectueuse est déclarée
+
+@ 0 3 0 1f7634b1cb17bb9e0415086ce91b5686
++ Un vrai terminal déforme sans rien dire une séquence qu'il ne comprend pas. Un `Pty` lève une
++ `Pty.Error`, et `consume` le dit dans son type : une méthode qui alimente un terminal doit donc
++ traiter l'erreur ou la déclarer elle aussi.
+
+% 2 1 0 178a6ab8e5a5a008187a4ee60ec9c12f
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 013eedce80fb4bfa0b8111276098949e
++   label Une commande d'effacement avec un mode qui n'existe pas
+
+% 0 1 0 1477c34ff41c7c99183443e1d3238ae1
+
+% 1 1 0 0960c596329e4eb20a0b442aaa85c43a
+
+% 2 1 0 0569d114483facdb09e438786ca8ba91
+
+% 0 1 0 172e979304a6d2030aa0d1d6b89463da
+
+% 1 1 0 12b7aba4a995edb803cfe2c324176f5a
+
+@ 0 2 0 0665d994e6cf228307f1a4c106a14a8a
++   label Déclarée
++   highlight raises..Pty.Error  l'appelant le sait désormais
+
+% 1 1 0 128dd6f0051f869e16226f9419e8210c
+
+% 2 1 0 05b3dfd95a47a834074947f3f5582034
+
+% 0 1 0 01ed46508731b8341975ca888f657dc0
+
+% 1 1 0 04cc82b20516534b1af2ac3c8ca506f8
+
+% 1 1 0 136d267ff733a60e0f6246170d49df5f
+
+% 2 1 0 1525a46c87e9e0571e7d21b8e7c42b7a
+
+% 0 1 0 08a86cbdc9b8cb0109ed8ce5b435ce67
+
+% 1 1 0 0cd6459499a6bd5203d659b3bcc1b6aa
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 0 1 0 052396a9127fda4d09226a69ab3433ae
+
+% 0 1 0 06f5463ae0bdb1100764ed7aa9fd0461
+
+% 1 1 0 0f5deac58f26781c148f007432ef7b1e
+
+@ 0 2 0 00a098d8d1534fba08de2743e37339c2
++ [Alimenter un terminal](../../soundness/modules/terminal-emulator.md#feeding-a-terminal) décrit
++ l'erreur, et [la gestion des erreurs](../../philosophy/error-handling.md) les raisons de la
++ nommer.

@@ -1,0 +1,40 @@
+orthant 2 language
+
+@ 0 1 0 0e7193c3626b08a717306a79cfaaee7c
++ # Une barre oblique inverse est une barre oblique inverse
+
+@ 0 3 0 0fbbe9dd31b3a89502ded62a6a6dea22
++ Une expression régulière dans une chaîne Java est échappée deux fois : une fois pour la chaîne,
++ et une autre pour le motif. Dans `r"…"`, seules les règles des expressions régulières
++ s'appliquent : le motif du source est donc le motif.
+
+% 0 1 0 12705ff5e291290d17fbc8389d59ef4a
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 2 0 17adaf5dc879101d04dbf72d9f418a81
++   label Échappé pour la chaîne, et pour le motif
++   highlight "\\(\\d+\\)"  six barres obliques inverses pour trois
+
+% 1 1 0 0c6c677a28e54a56096783e51c6fc048
+
+% 0 1 0 019042190ada0fee076eeab302e0c260
+
+% 1 1 0 12d48a8a2690ad2b051efb6d207fb02e
+
+@ 0 2 0 18f9d373ab8948de18bceec30b2aa53e
++   label Échappé pour le motif
++   highlight r"\(\d+\)"  trois pour trois
+
+% 1 1 0 17eb793e178c4ed502e5574f75e53db5
+
+% 0 1 0 0951d11e6e8f80e413c6c8d3bfc3b2e7
+
+% 0 1 0 18eafb32caed3dd50f976e787bd035ca
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 1 0 0f6d6d8884233b651835b97d3ac7ba46
++ [L'échappement](../../soundness/modules/patterns.md#escaping) nomme l'unique exception.

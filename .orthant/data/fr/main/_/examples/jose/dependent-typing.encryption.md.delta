@@ -1,0 +1,77 @@
+orthant 2 language
+
+@ 0 1 0 15637b83b0b0298710f3f15a48d25a57
++ # Deux choix, tous deux faits par des types
+
+@ 0 3 0 0b00a4cff2a78ab5175c35ec4650385b
++ Chiffrer un jeton, c'est choisir comment son contenu est chiffré, et comment la clé du contenu
++ parvient au destinataire. Le premier choix est l'argument de type de `Jwe`, et le second découle
++ du type de la clé du destinataire. Tous deux finissent dans l'en-tête.
+
+% 2 1 0 1df64da37f3c73e217773e7a1be94239
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 3 0 0afa805959c938c3064e717a04165e07
++   label Chiffré pour un destinataire
++   highlight AesGcm[256]  comment le contenu est chiffré
++   highlight Ecdh[256]  comment sa clé est convenue
+
+% 1 1 0 0c25dbd86f2c229f0314c5bf493e7482
+
+% 2 1 0 06ab74a79ff99c1a1400c1e9202ab637
+
+% 3 1 0 0acae7e964c929f510af0b85fe39253c
+
+% 4 1 0 040aed06b46f06fb091941428c24e793
+
+% 6 1 0 107af26c2d96bb7b0c8357dbfab68532
+
+% 8 1 0 08a12de792e416a50232aae5462a4418
+
+% 1 1 0 0fce880017f5c48301b525082972c5c3
+
+@ 0 1 0 17b3a203d64588c210f0c8117426e75a
++   label Déchiffré avec le même algorithme
+
+% 0 1 0 12c1c7b6325dc29c0183525d52f4a2f1
+
+% 1 1 0 19b4c017f5925b9105a42f233f07771d
+
+% 2 1 0 14b02e3f2fcafcd402a70c5345ad8b48
+
+% 3 1 0 1898baf0909631dd0c5ce64d97639537
+
+% 4 1 0 0bfe4e23c80ff4f614000ea8e9e7a936
+
+% 6 1 0 06db64e022dfa5870fbfd9db9da76c35
+
+% 8 1 0 1df8547de1dced040a6dd149784add68
+
+% 0 1 0 15a608fc7b00269c135be063c3426c20
+
+% 1 1 0 08bc45ac7c02e72a048e2aec3e5d2540
+
+% 1 1 0 136d267ff733a60e0f6246170d49df5f
+
+% 2 1 0 1525a46c87e9e0571e7d21b8e7c42b7a
+
+% 0 1 0 08a86cbdc9b8cb0109ed8ce5b435ce67
+
+% 1 1 0 0cd6459499a6bd5203d659b3bcc1b6aa
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 0 1 0 0e66a386d39c14901983862de6df7f2d
+
+% 0 1 0 033c4ad0ebb6175a0870c86b05a074f8
+
+% 0 1 0 013ff534048fe697048128dc62ea0e90
+
+% 1 1 0 05ab03fab8b75864145da21523cb7f6e
+
+@ 0 2 0 130e350fc770be10054167f63079e7ee
++ [Chiffrer](../../soundness/modules/jose.md#encrypting) donne les tables des algorithmes de
++ chiffrement du contenu et des clés des destinataires.

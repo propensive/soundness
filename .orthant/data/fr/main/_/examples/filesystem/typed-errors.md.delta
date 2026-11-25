@@ -1,0 +1,65 @@
+orthant 2 language
+
+@ 0 1 0 0ba75ef296b23f5605343f442cfff5ae
++ # Une lecture qui peut échouer le dit
+
+@ 0 2 0 059eac820d14c9b31dfce26c433254bc
++ Un fichier peut manquer, ou ne pas être lisible. `read` lève une `Io.Error`, et une méthode qui
++ lit un fichier déclare l'erreur, ou la traite, avant de compiler.
+
+% 0 1 0 12705ff5e291290d17fbc8389d59ef4a
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 01fa51a9d47aa90400b5ce3f1f36bdf4
++   label Une méthode qui ne dit pas qu'elle peut échouer
+
+% 0 1 0 1477c34ff41c7c99183443e1d3238ae1
+
+% 1 1 0 0960c596329e4eb20a0b442aaa85c43a
+
+% 2 1 0 035408d93417bb2f13e870f1c5d140b3
+
+% 3 1 0 1fd6add8892de6f7005d34976355539c
+
+% 0 1 0 0f8b96ea37417c74106f7a363ab9b431
+
+% 1 1 0 083fce38a5a1a9e4073f30826436cf3d
+
+@ 0 2 0 1e491f9f01a8884f099cc89430ff36d8
++   label L'échec, dans le type de retour
++   highlight raises..Io.Error  la façon dont elle peut échouer
+
+% 1 1 0 0170790da1f881fb09c5a3b06ab29aef
+
+% 2 1 0 1f36c60ee47848a3179c4f524d627838
+
+% 3 1 0 043c3c983f31f0340d1c5cfd71af5d11
+
+% 0 1 0 10d4d22ec3a72776056ccc9bbd6ff3db
+
+% 1 1 0 104c3cd97a3d57d2051deda8a0b1c247
+
+@ 0 2 0 1bdf8ea23a4a930805546118eff98f6a
++   label Ou un script vide, quand aucun ne peut être lu
++   highlight safely  un échec devient une valeur absente
+
+% 1 1 0 122cee784ee67a861d0be8edbcc0494f
+
+% 2 1 0 1ebbe7f09ad45f701c57fef0933c1878
+
+% 3 1 0 0ba65acd3f1aafa11aad8af765b66a70
+
+% 0 1 0 1793c189f896e26305b5e6195a87012b
+
+% 0 1 0 18eafb32caed3dd50f976e787bd035ca
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 3 0 0ec4ff8a5041151d19419feeb522c33c
++ L'exemple est compilé, mais pas exécuté, faute de fichier à lire.
++ [Sur le système de fichiers](../../soundness/modules/filesystem.md#on-the-filesystem) dit ce que
++ contient l'erreur, et [la gestion des erreurs](../../philosophy/error-handling.md) pourquoi elle
++ figure dans le type.

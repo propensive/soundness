@@ -1,0 +1,69 @@
+orthant 2 language
+
+@ 0 1 0 015e56e4a4dc11f00bdec00c2fc9fbc7
++ # Une image est ouverte le temps d'un bloc
+
+@ 0 3 0 1569b0ec7b4809661e30480c8d9357ec
++ Une archive OCI se lit en l'ouvrant. Son index, son manifeste et ses couches s'atteignent par une
++ poignée qui n'existe qu'à l'intérieur du bloc, et ce que renvoie le bloc est une valeur ordinaire
++ qui lui survit.
+
+% 2 1 0 0f67ef2b106184ac0dbceaf64d440241
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 04592156aa73c415118124f2f6c99222
++   label Une archive, sous forme d'octets
+
+% 1 1 0 0d69d3edc7f1865404da078f56d35af2
+
+% 2 1 0 0c1fc30cddebf17b1754e039ee2c50ae
+
+% 3 1 0 170a974014c59ebd15ddb2741069578b
+
+% 5 1 0 1dbf57db10848bda131119d5a48975ac
+
+% 6 1 0 114c46727540d90a1fadcc44c0c955b0
+
+% 1 1 0 1b0590b9590182ba127ef2eb09ad93d2
+
+@ 0 2 0 046f7db077f4215e00194f8e19579955
++   label Ouverte, puis lue
++   highlight handle  n'existe qu'à l'intérieur du bloc
+
+% 1 1 0 1d853da258f027b81902879e733e5ef2
+
+% 2 1 0 07ab6bf822c760d4086f30b11ba77cd6
+
+% 3 1 0 1f11361c01a1e5960ec46eaf8c73dd83
+
+% 5 1 0 0ea31d4e1e4003f81dc531b45ccd25dc
+
+% 6 1 0 1722e9734a2946a119774c69f9287988
+
+% 0 1 0 1ce06d0d92e96eab174d4039e436bba7
+
+% 0 1 0 176feaac679e17d916b8b71e84be8d07
+
+% 1 1 0 033db4dd3c3c18590f4c8545de474b8d
+
+% 1 1 0 136d267ff733a60e0f6246170d49df5f
+
+% 2 1 0 1525a46c87e9e0571e7d21b8e7c42b7a
+
+% 0 1 0 08a86cbdc9b8cb0109ed8ce5b435ce67
+
+% 1 1 0 0cd6459499a6bd5203d659b3bcc1b6aa
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 0 1 0 0df684d959cc519612897d2265c99bd8
+
+% 1 1 0 07d476c1f4b4b8b61d961ccd2fe7940d
+
+@ 0 2 0 00910ad92bfa089d052daa3714b97888
++ [Lire une image](../../soundness/modules/docker.md#reading-an-image) présente les façons
++ d'atteindre une couche, et [les portées délimitées](../../philosophy/delimited-scopes.md) la
++ raison du bloc.

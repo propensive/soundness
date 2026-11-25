@@ -1,0 +1,56 @@
+orthant 2 language
+
+@ 0 1 0 1f179ebef46b1b3d15e012277f6b0f12
++ # La première page n'est ni la page zéro, ni la page un
+
+@ 0 3 0 1baad6c32131066a1c2fc2aae620b3b1
++ Savoir si les pages se comptent à partir de zéro ou de un est une question à laquelle chaque
++ bibliothèque PDF répond dans sa documentation. Ici, une page se trouve par un ordinal, et la
++ première est `Prim`, si bien qu'un simple nombre, qui pourrait signifier l'un ou l'autre, n'est
++ pas accepté.
+
+% 0 1 0 12705ff5e291290d17fbc8389d59ef4a
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 1c5519ffdb2289330ba035319d5e6a80
++   label Une page par son numéro
+
+% 0 1 0 1477c34ff41c7c99183443e1d3238ae1
+
+% 1 1 0 0960c596329e4eb20a0b442aaa85c43a
+
+% 2 1 0 0cc52ffb340720f6110bab5a8f866deb
+
+% 4 1 0 13477d19ee66956814681f9793c4df40
+
+% 5 1 0 151bd836b97c753b188c2ebc96eef29e
+
+% 0 1 0 00fbb436d5768010053437275b805d27
+
+% 1 1 0 0b5a73a10910fe36003667d23b407f06
+
+@ 0 2 0 00cee2d5442896621eaf0add4f1c4d8c
++   label Une page par un ordinal
++   highlight Prim  la première, quelle que soit la numérotation des pages
+
+% 1 1 0 0e0505e1fd28b24b17162879e110ac84
+
+% 2 1 0 062c75ed9244165914900007c3a0b437
+
+% 4 1 0 14a81aedf81508df1e4733911bed0909
+
+% 5 1 0 0bd9755032bafb131a3303ca7e9b9cea
+
+% 0 1 0 139113bd6c9d4ade0cc26ad4e6a35b85
+
+% 0 1 0 18eafb32caed3dd50f976e787bd035ca
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 3 0 1d8971c4028aee250a8a0dfa1e28011d
++ L'exemple est compilé, mais pas exécuté, car il lit un fichier.
++ [Les pages](../../soundness/modules/pdf.md#pages) décrit une page et ses boîtes, et
++ [les états impossibles](../../philosophy/impossible-states.md) le principe.

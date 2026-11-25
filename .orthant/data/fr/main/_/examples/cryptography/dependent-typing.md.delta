@@ -1,0 +1,68 @@
+orthant 2 language
+
+@ 0 1 0 1c51f0e032d98df2145a55a8d2d54c78
++ # Une clé lue comme l'algorithme de chiffrement que nomme son type
+
+@ 0 3 0 1372284b79acca230b340d950ad11ac7
++ Un fichier de clé indique quel algorithme il contient, et le type sous lequel il est lu indique
++ lequel était attendu. Les deux sont comparés, si bien qu'une clé Ed25519 n'est jamais lue comme
++ une clé RSA, et qu'une clé lue dispose des opérations de son algorithme de chiffrement et
++ d'aucune autre.
+
+% 0 1 0 12705ff5e291290d17fbc8389d59ef4a
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 0c77935044ca8ef005d754544c056e20
++   label Un fichier de clé, lu comme une clé Ed25519
+
+% 1 1 0 0855f5ce102ad246123ab0dc6ab13b16
+
+% 2 1 0 19b41ea02309816d10bc066f467f5782
+
+% 3 1 0 0039730a749adf7617ae04a8087e3ef2
+
+% 5 1 0 0d9802629f9e11401f774d3c31b26841
+
+% 1 1 0 152e89f9a7ff59e61a99565ff2cb8a7e
+
+@ 0 2 0 098fd3b9a3edad6111e49e6c6a5a8009
++   label Une signature avec elle
++   highlight PrivateKey[Ed25519]..Pem  l'algorithme attendu, et la forme
+
+% 1 1 0 0ed1504580a036fd05f4c20810519083
+
+% 2 1 0 104fd3ea00d119571f9b90a3a807ee7f
+
+% 3 1 0 159db7dc5e2a14a31b4d273a566ce3cf
+
+% 5 1 0 0378b062ca1d3dee1c50e9e0ebb4f335
+
+% 0 1 0 0c048c4bba4c57f50447774acc20dcb2
+
+% 1 1 0 199872114dbdb50a15c9e1c74018a80e
+
+@ 0 1 0 0e5e84c490e0ca8c1c1accf7c043f824
++   label Sa signature n'est pas une signature RSA
+
+% 0 1 0 1477c34ff41c7c99183443e1d3238ae1
+
+% 1 1 0 0960c596329e4eb20a0b442aaa85c43a
+
+% 2 1 0 058ff1ab4bd16fb508adf559c39e04f5
+
+% 3 1 0 185b7ab0534dee7f0ff026e278b66cab
+
+% 5 1 0 02efe2023b4dc3600ceead03df0576de
+
+% 0 1 0 11c23ab3fc52dec0012c9eb01d4a6475
+
+% 0 1 0 18eafb32caed3dd50f976e787bd035ca
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 2 0 1d8db05f06fa48f91b8988942d7ec7ae
++ [Lire des clés](../../soundness/modules/cryptography.md#reading-keys) énumère les formes que prend
++ un fichier de clé, et ce que signale une incohérence.

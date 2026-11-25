@@ -1,0 +1,58 @@
+orthant 2 language
+
+@ 0 1 0 1bf4c5efc58812de01e5bbc004fff213
++ # Lire du balisage comme n'importe quoi d'autre
+
+@ 0 2 0 0f8d15e79091144d0ea3a5c84214fc7a
++ Le HTML se lit depuis du texte avec `read`, la méthode qui lit du JSON, un nombre ou une date. Le
++ type demandé dit ce qui est attendu : n'importe quel balisage, ou une balise particulière.
+
+% 2 1 0 0fb2d0367ed42b3b0a92cc801328c922
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 0db381f95be18dae10516b7d3301b93d
++   label Tout balisage que contient le texte
+
+% 1 1 0 170b80c754fff28403c81fdf81026dda
+
+% 2 1 0 1a700f816f4dcb1a1d1bf07b1f27254f
+
+% 4 1 0 0f165adedcf7b4820a357053fcee1376
+
+% 1 1 0 1ab3c78ae2dd153d101bec01d4740648
+
+@ 0 2 0 10a4ce273dbfe2500a62dc1be0c8e366
++   label Une liste, et rien d'autre
++   highlight "ul"]  la balise attendue au sommet
+
+% 1 1 0 0f70c95d5403a50c193680ef35338358
+
+% 2 1 0 1dfea85c4cc29f05114786402b5a6594
+
+% 4 1 0 16348386329ef092147258cd9f452050
+
+% 0 1 0 08edb838bf054ad40d9c80b0f1ea7587
+
+% 1 1 0 15d09cd7e2a30a9b074986e61323a8a6
+
+% 1 1 0 136d267ff733a60e0f6246170d49df5f
+
+% 2 1 0 1525a46c87e9e0571e7d21b8e7c42b7a
+
+% 0 1 0 08a86cbdc9b8cb0109ed8ce5b435ce67
+
+% 1 1 0 0cd6459499a6bd5203d659b3bcc1b6aa
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 0 1 0 0d142880784279af0c4b5d1416855c74
+
+% 0 1 0 0aa5e49ab770f36200f3bfdf9b295595
+
+% 1 1 0 0bc1e2872ed37b3b1b25c2e953b02587
+
+@ 0 1 0 1fb180a838f69af3013cc7aa9a1fd117
++ [Analyse](../../soundness/modules/html.md#parsing) traite des documents entiers, que lit `load`.

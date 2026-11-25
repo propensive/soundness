@@ -1,0 +1,53 @@
+orthant 2 language
+
+@ 0 1 0 164fd287d60fda9704f24fe37b3232f9
++ # Des flux fusionnés sous un superviseur
+
+@ 0 3 0 1ea151665d0ec26e15ded219cf71f70e
++ Fusionner plusieurs flux lance une pompe pour chacun d'eux, sur un thread qui lui est propre. Une
++ pompe est une tâche, et une tâche doit appartenir à une portée, si bien qu'une `Confluence` ne
++ peut pas être créée là où rien ne la supervise.
+
+% 0 1 0 12705ff5e291290d17fbc8389d59ef4a
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 06c37575386c88c80ba5923dd9eacf20
++   label Trois flux, et rien pour superviser leurs pompes
+
+% 0 1 0 1477c34ff41c7c99183443e1d3238ae1
+
+% 1 1 0 0960c596329e4eb20a0b442aaa85c43a
+
+% 2 1 0 0d891475f8efd7bb0732b4ffea82e44d
+
+% 3 1 0 1368eb603272e63f1918ee739d63e2a7
+
+% 0 1 0 1ff5ea10d992d162157d19dd02e5346d
+
+% 1 1 0 1d5cf67fc5c7e440015ea36006f88dc2
+
+@ 0 2 0 05cba6337a3eb661133ff0a2728007c0
++   label Dans une portée supervisée
++   highlight supervise  la portée qui possède les pompes
+
+% 1 1 0 1f16df8d856ae8ab1ae4fdbf40989446
+
+% 2 1 0 1aaea59cfe5f33650c6f30d009971486
+
+% 3 1 0 114c615090be69391f6c2d4b911a6bec
+
+% 0 1 0 11a34a01adbab87b18a6806c781cc407
+
+% 0 1 0 0ad73ddc2b0144ae0e5ecb7436a994fa
+
+% 0 1 0 18eafb32caed3dd50f976e787bd035ca
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 3 0 0757483397353d150a7cd15d671e673d
++ [Combiner et répliquer des flux](../../soundness/modules/streams.md#combining-and-replicating-streams)
++ décrit la fusion et sa contre-pression, et
++ [la concurrence structurée](../../philosophy/structured-concurrency.md) la règle.

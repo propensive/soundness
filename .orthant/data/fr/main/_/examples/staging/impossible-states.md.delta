@@ -1,0 +1,67 @@
+orthant 2 language
+
+@ 0 1 0 11eaa69f3973fab0003c56875b28d90d
++ # Rien ne franchit la frontière sans splice
+
+@ 0 3 0 1724fc13b9e0388618cd050f0a47bf0a
++ Une valeur sur le tas de cette JVM ne signifie rien dans une autre. Dans un bloc quoté, une valeur
++ locale ne peut donc être nommée que dans un splice, où elle est sérialisée, et une référence qui
++ serait restée pendante est une erreur de compilation.
+
+% 0 1 0 12705ff5e291290d17fbc8389d59ef4a
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 158fc01ffa4ec0a813a296bfcf9214a7
++   label Une valeur locale, employée à distance comme si elle s'y trouvait
+
+% 0 1 0 1477c34ff41c7c99183443e1d3238ae1
+
+% 1 1 0 0960c596329e4eb20a0b442aaa85c43a
+
+% 2 1 0 0c51db964b21a74207ba9581a14b09dc
+
+% 3 1 0 0044d5e26573cc5a1853b6eff1b4f291
+
+% 4 1 0 05e2b5027f17b47f03212ea4039d2d8d
+
+% 5 1 0 1fd6fce32afec73a11b2fd5d4a5b32f7
+
+% 6 1 0 15c1c03d0df5b6bf1fbfc2829864acd5
+
+% 8 1 0 09779551678c37a1154ebb668f148915
+
+% 0 1 0 00ce4f0d7e95782e0eeeac8ddbd23cf9
+
+% 1 1 0 0ff022a5085ee4e71175eb58d19c36c0
+
+@ 0 2 0 1bde770960413191043e1c7ab01aba32
++   label Insérée par un splice, et donc transportée
++   highlight ${lines}  évaluée ici, sérialisée, et employée là-bas
+
+% 1 1 0 068db3282585a1ae0ff704f0e76b125a
+
+% 2 1 0 1f39ae797fb3e2d1067797a10c81cff6
+
+% 3 1 0 09635ba194e96105131cae15428a21ad
+
+% 4 1 0 03eddf47f3576d7e191c3e8e18db8162
+
+% 5 1 0 0a6837a293ea96491d72025ab7f9dc40
+
+% 6 1 0 021fd00c29b0a4a402fecff312bc79bd
+
+% 8 1 0 0909c84e489429e7060372a1d4aee332
+
+% 0 1 0 0ee5100ec36884b7005e0a179a3dfd4e
+
+% 0 1 0 18eafb32caed3dd50f976e787bd035ca
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 3 0 13098b24218a82e006872007c650cc4c
++ L'exemple est compilé, mais pas exécuté, car il lance un autre processus.
++ [Quotes, splices et phases](../../soundness/modules/staging.md#quotes-splices-and-phases)
++ explique la règle, et [les états impossibles](../../philosophy/impossible-states.md) le but.

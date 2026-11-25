@@ -1,0 +1,69 @@
+orthant 2 language
+
+@ 0 1 0 0bcc1903b751179613faab6753e89a1d
++ # Un tableau à partir d'une case class
+
+@ 0 3 0 085c1914eb33fdd4051f00aeb4215b14
++ Une liste de case classes est déjà un tableau. Ses colonnes sont les champs, intitulés d'après
++ leurs noms, avec les nombres alignés à droite, et un champ ajouté à la classe est une colonne
++ ajoutée au tableau.
+
+% 2 1 0 04f27605b99fb8a012b56b78ddb08247
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 2 0 0d83573330da3a0e1f60818a99d0a2e5
++   label Deux champs, deux colonnes
++   highlight tabulation  dérivé des champs de Play
+
+% 1 1 0 0c08246ecf791e0f134b46a7f6f6dfda
+
+% 2 1 0 14264b2a5dd850ba0e06668b063d29d7
+
+% 3 1 0 06e41543b4a01b52082bc44d3e52de18
+
+% 0 1 0 1b00f7f3b69cfcfa066442d11b623774
+
+% 0 1 0 0d06558869257395055a0654b0e0f880
+
+% 1 1 0 0341048607deea2b16bad09164da42ef
+
+% 1 1 0 17c4eff1ba9439aa0f969b7ed7d885c0
+
+@ 0 2 0 067db0317a9991e80a172736b87dcbd3
++   label Un troisième champ
++   highlight firstPerformed:  devient le titre « First performed »
+
+% 1 1 0 1ecc82e16f94e5501b1ae79043510ec1
+
+% 2 1 0 0d8a7fb282830f2c100ab8cdfab19006
+
+% 3 1 0 164dcbbed149e5811ece6f68057e8601
+
+% 0 1 0 1ea1fb51ce01b33f177739c90069aaa8
+
+% 0 1 0 13100e1a1d609a370eaa4ad376e893a6
+
+% 1 1 0 049ace3e4fa0f9a70201454ea2dd75ab
+
+% 1 1 0 1c053333c75d42870b0c0e8d7a1377b0
+
+% 1 1 0 136d267ff733a60e0f6246170d49df5f
+
+% 2 1 0 1525a46c87e9e0571e7d21b8e7c42b7a
+
+% 0 1 0 08a86cbdc9b8cb0109ed8ce5b435ce67
+
+% 1 1 0 0cd6459499a6bd5203d659b3bcc1b6aa
+
+% 0 1 0 00af3fdb360e27f9095168ce70444642
+
+% 0 1 0 00ed2f96dcc8b2890baca4895a0d56c7
+
+% 1 1 0 1a3c593547d7a2ec0a879975fd077067
+
+@ 0 2 0 1cc1a8c8986d970a0b8b6a6c47e5d728
++ [Un tableau à partir d'une case class](../../soundness/modules/tables.md#a-table-from-a-case-class)
++ nomme les trois types à l'œuvre.

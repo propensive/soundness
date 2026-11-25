@@ -1,0 +1,64 @@
+orthant 2 language
+
+@ 0 1 0 1ce110322fb3343308c617a2f4cc3c35
++ # Un document analysé à mesure qu'il arrive
+
+@ 0 2 0 1009b5f87fef684f1ae76021f54e991d
++ Le Markdown s'analyse à partir d'un flux, une ligne à la fois, et la source n'est jamais gardée
++ en entier. L'arbre est le même que celui que donne le texte entier, quelle que soit la façon dont
++ le flux est découpé.
+
+% 2 1 0 17405ca99e43fd4e185c89dc7965b354
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 013e6e1706b244cb12693d55d8c55495
++   label Un document, analysé à partir d'un texte
+
+% 1 1 0 101efc1f5ff138851412dae519ef00d9
+
+% 2 1 0 0d0b4a920b1edeca011a9f01d21894c0
+
+% 4 1 0 1076a74c7d47f7a71f025fddfe3a670d
+
+% 5 1 0 0cd60db19c59a11d0578cecab1cfb49c
+
+% 1 1 0 09d55e44d0e59818029832a175bf5dc0
+
+@ 0 2 0 1474ba64582e92c21d7e71b91b1f6e9b
++   label Le même document, analysé à partir d'un flux
++   highlight readme.stream  lu une ligne à la fois
+
+% 1 1 0 0fb1b38ee028bf181eae0cec9b5c2fcb
+
+% 2 1 0 071372b6cd063be00bbc38847c90faf8
+
+% 4 1 0 0968ab8d147c38ab0b6aace94c671849
+
+% 5 1 0 1c08e1bcc135d16812b0f7367f3ae6b1
+
+% 0 1 0 06a285d01e083a1f1963a0b799aa73da
+
+% 1 1 0 1b623ca6fac27e970151b5f27ffe724e
+
+% 1 1 0 136d267ff733a60e0f6246170d49df5f
+
+% 2 1 0 1525a46c87e9e0571e7d21b8e7c42b7a
+
+% 0 1 0 08a86cbdc9b8cb0109ed8ce5b435ce67
+
+% 1 1 0 0cd6459499a6bd5203d659b3bcc1b6aa
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 0 1 0 060e8cdb7d4c51541ea2ecb03beda004
+
+% 0 1 0 025147043501952a19c0b4dc5b0f3408
+
+% 1 1 0 190d72774b5eeb2400d3e89be48aa95e
+
+@ 0 2 0 0519c0e26b7b4145142c77a2cb695073
++ [Analyse](../../soundness/modules/markdown.md#parsing) dit ce qui est conservé pendant la
++ lecture d'un long document.

@@ -1,0 +1,65 @@
+orthant 2 language
+
+@ 0 1 0 12c27f755ab8f1a91a5853c9c1449db6
++ # La forme d'un nombre aléatoire
+
+@ 0 2 0 0081aad8c03609570912c2b6476600e6
++ `arbitrary[Double]` ne dit pas comment ses valeurs sont réparties. Une distribution dans la
++ portée le dit, et les plus courantes se choisissent par une importation, qui décide pour chaque
++ tirage placé sous elle.
+
+% 0 1 0 12705ff5e291290d17fbc8389d59ef4a
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+@ 0 2 0 09bc1be8c3433b0601aa4152eefad265
++ alternative Normale
++   highlight gaussianDistribution  moyenne 0, écart type 1
+
+% 1 1 0 0bd38404445d33e91ab10cf20c77f62e
+
+% 2 1 0 0a9e6087e386153516551679ade60674
+
+% 0 1 0 09eb6b68918ef5cc19b059fed8a8aec5
+
+% 2 1 0 1da7488a281cd5b31e4a1099430f8813
+
+% 4 1 0 18f7d096b1f5a4550a6ab9ddc9e33082
+
+@ 0 2 0 1f0d0f3afc8d3d2e01e30354695d76f8
++ alternative Uniforme, de 0 à 1
++   highlight uniformUnitIntervalDistribution  chaque valeur aussi probable que toute autre
+
+% 1 1 0 15ff3efaea29f5dd0c76c3d2e94b8158
+
+% 2 1 0 1f29cbd22288822a07cb4e2bf9e03a85
+
+% 0 1 0 1a649c8aa7891ff31aff1bbab297d881
+
+% 2 1 0 1fad92b40801cd76004daf04f339d9f9
+
+% 4 1 0 0e0cbdd25648f05b095880bc6b06b8e3
+
+@ 0 2 0 0d1b5b69c093bf0318327f27d3bdfabd
++ alternative Uniforme, de -1 à 1
++   highlight uniformSymmetricUnitIntervalDistribution  centrée sur zéro
+
+% 1 1 0 0a1627d79fc42d6a078e5b29c72599ac
+
+% 2 1 0 0f9a62f8bf2cbe001f57c351adef95e2
+
+% 0 1 0 1c15f02f8cbbdd4b0c451ee4db682472
+
+% 2 1 0 10803f2821c96b2b0228de36f4a9928a
+
+% 4 1 0 1d019788eaeec67318255531462865c8
+
+% 0 1 0 18eafb32caed3dd50f976e787bd035ca
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 3 0 0852a9dbe5d28fec1958a96c8e538cdd
++ Les trois sont compilées, mais pas exécutées.
++ [Les distributions](../../soundness/modules/randomness.md#distributions) donne la table, et
++ [le contexte déclaratif](../../philosophy/declarative-context.md) la raison pour laquelle la forme
++ n'est pas un argument.

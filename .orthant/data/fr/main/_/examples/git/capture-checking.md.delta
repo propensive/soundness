@@ -1,0 +1,77 @@
+orthant 2 language
+
+@ 0 1 0 126f670bd60b6aab0a5d363f69c195a2
++ # La poignée d'un worktree appartient au bloc qui l'a ouvert
+
+@ 0 3 0 0468500554e1a03b08b95d40d092b351
++ Un dépôt Git s'ouvre comme un fichier : la poignée existe le temps d'un bloc, avec les droits
++ demandés. Une fonction qui interrogerait le dépôt plus tard le ferait par une poignée qui n'est
++ plus ouverte, si bien qu'elle ne peut pas être renvoyée. Le commit qu'elle a trouvé est une
++ valeur, et peut l'être.
+
+% 0 1 0 12705ff5e291290d17fbc8389d59ef4a
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 0 1 0 05379442125b483c0fa7601737add2cc
+
+% 1 1 0 01df03af649144fc135e9cf4a153349c
+
+@ 0 1 0 1099c374e0fe95781e5fcfb5e4d909d3
++   label Une requête gardée pour plus tard
+
+% 0 1 0 1477c34ff41c7c99183443e1d3238ae1
+
+@ 0 1 0 034e819d646ea94e1dae1d24980b9aed
++   highlight worktree.head().value  interrogerait le dépôt après sa fermeture
+
+% 1 1 0 14429152a00d9e6a0cca60f302ea299d
+
+% 2 1 0 1eadf6dac81e14bb05c77fb948b53907
+
+% 3 1 0 02266f6f89812867088105d280f922d5
+
+% 4 1 0 1b8fdff24e722f8f1d777e0cf7dbad4e
+
+% 5 1 0 0835393d58ec84750f1b01d114d17b95
+
+% 6 1 0 0adc46c096b54fbd07c7f533063268d5
+
+% 8 1 0 14f4e4e45e88d8870d0cff84a1be1a9d
+
+% 10 1 0 1f1df2e273e43d3f103d83e8bc5924f0
+
+% 0 1 0 198e920957ec11bb1308c0225cc51b33
+
+% 1 1 0 155f05d75963f7991e7d5c060fd73f26
+
+@ 0 1 0 0d109a4f92967f1a0591941065055820
++   label La requête, faite pendant que le dépôt est ouvert
+
+% 0 1 0 022646809b1b10eb0961c323578cfc55
+
+% 1 1 0 0f125730ae844c130f8fd0d27048a80e
+
+% 2 1 0 01a3bc14a549a9311421ea5dc4dd3662
+
+% 3 1 0 0cb2fd227c0b424803a3270a4b162c31
+
+% 4 1 0 1a1d47505d08085f1fbbf1871fcbb74c
+
+% 5 1 0 0618d30597e3b8f30efe37391184a681
+
+% 6 1 0 1a27a0b72d419fca0e3829d2c86574e1
+
+% 8 1 0 1cb6bd23cc1ffe141faf08047131141c
+
+% 10 1 0 06ce2cb2cbf96f110182ab3f17a5bfcb
+
+% 0 1 0 174958a0966349d2150b4d343655b1f0
+
+% 0 1 0 18eafb32caed3dd50f976e787bd035ca
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 2 0 0ad5b8bf64a7d2e80c3e775af33b524b
++ L'exemple est compilé, mais pas exécuté. [Git](../../soundness/modules/git.md) décrit ce qu'offre
++ la poignée d'un worktree.

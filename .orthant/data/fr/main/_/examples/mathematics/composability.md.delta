@@ -1,0 +1,68 @@
+orthant 2 language
+
+@ 0 1 0 0628ab3dff89abb8107ed06e42ff4774
++ # Un vecteur de longueurs
+
+@ 0 3 0 01fe5fb3913e6a6a04a3c39855fe4caa
++ Un vecteur est générique en ses éléments, et trouve leur arithmétique au moyen des mêmes classes
++ de types qu'une quantité. Aucune des deux bibliothèques ne mentionne l'autre, et pourtant le
++ produit scalaire de deux vecteurs de longueurs est une surface.
+
+% 2 1 0 083e98a70da280ce03a5a345edc175dc
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 0b1711e0f750f03e16f7215187c26e16
++   label Deux vecteurs de nombres
+
+% 1 1 0 18506b36179804450bb7f64225b7b25e
+
+% 0 1 0 0458974fffc2ade60e5152dd1482c079
+
+% 0 1 0 0fef21ed8344e656138cbc8bc0dfb0d1
+
+% 1 1 0 1fc23c8f4a0a943a0544dbabdd78098c
+
+% 1 1 0 065b6ac9d6d8f02216876009c458de16
+
+@ 0 2 0 1735f2e36e2209b60ede1bec728ad925
++   label Deux vecteurs de longueurs
++   highlight Inch  une longueur, issue de la bibliothèque des quantités
+
+% 0 1 0 1accf43fe927975e1dc8da9a374d03bf
+
+% 0 1 0 0fd2ac3797a0477c02117fa7e01a94b2
+
+% 1 1 0 0428a31f3d3e43b7091c3ca786dd21af
+
+% 0 1 0 1cc0c1c0906c0cd51b2f8153b6e3dab8
+
+% 0 1 0 17d3cf38ac93e82e129869cab6614f87
+
+% 1 1 0 10831669758bd4e31186ea6d8406a2f0
+
+% 1 1 0 0a9bae0be3a1f8ff11fcd3186693d006
+
+% 1 1 0 136d267ff733a60e0f6246170d49df5f
+
+% 2 1 0 1525a46c87e9e0571e7d21b8e7c42b7a
+
+% 0 1 0 08a86cbdc9b8cb0109ed8ce5b435ce67
+
+% 1 1 0 0cd6459499a6bd5203d659b3bcc1b6aa
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 0 1 0 1ff46eadb86ffabc103c1dc6d8e7c8b4
+
+% 0 1 0 04bb6eb1a0f15fd917d3095096caf640
+
+% 1 1 0 12897cb7fd52184f0f772fe051a9b78e
+
+@ 0 4 0 0455e4cb4c53ace60bea9e14713b6d16
++ Le résultat est en pouces carrés.
++ [Des éléments qui ne sont pas des nombres](../../soundness/modules/mathematics.md#elements-that-are-not-numbers)
++ indique ce qui peut encore remplir un vecteur, et [Quantités](../../soundness/modules/quantities.md)
++ décrit les unités.

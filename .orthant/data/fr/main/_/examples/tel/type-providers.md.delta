@@ -1,0 +1,41 @@
+orthant 2 language
+
+@ 0 1 0 017baf53b9f0773a068e495b0d4b706d
++ # Des enregistrements typés par un schéma TEL
+
+@ 0 3 0 1e5f16de645b5b0a0f6aa4ca448cb250
++ Un `Tel.Provider` contient un schéma, et lit comme un enregistrement un document qui s'y
++ conforme. Les membres de l'enregistrement sont les champs du schéma, aux types que leur donne le
++ schéma, et aucune case class ne les répète.
+
+% 0 1 0 12705ff5e291290d17fbc8389d59ef4a
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 0 1 0 14aab7f0be2434f81421fb69d99543da
+
+@ 0 2 0 0ce71c7a34c3e99c150a4ca8a96977a3
++   label Des membres aux types du schéma
++   highlight record.name  un membre que le schéma déclare
+
+% 0 1 0 0feeb6ee26eddc7916a3c923ea9fa7b1
+
+% 0 1 0 03133bc60ae5e162053f2137fb7355f3
+
+% 0 1 0 090fcb3e943d6f5b01aeb295d1736605
+
+% 0 1 0 1abd9df521ba305000b0c35d43394119
+
+% 0 1 0 1ce39c776b3babd71ffc6c6af9503acd
+
+% 0 1 0 1fb577f661c5dd591c1de03fb06de272
+
+% 0 1 0 1a0c9a980a0d427e08cdaa81af966b0c
+
+% 0 1 0 18eafb32caed3dd50f976e787bd035ca
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 2 0 1d4997f2b7cedc4a0af43ecfd1504521
++ [Des enregistrements typés à partir d'un schéma](../../soundness/modules/tel.md#typed-records-from-a-schema)
++ présente sous forme de tableau la façon dont chaque déclaration d'un schéma est lue.

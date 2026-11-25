@@ -1,0 +1,62 @@
+orthant 2 language
+
+@ 0 1 0 1714b28fb8bc79b70e98e9ff7356e7e9
++ # Une variable non définie est une erreur
+
+@ 0 2 0 1b44bfc11ff356481ed5f98c45a79203
++ Lire une variable donne sa valeur, et jamais un `null` ni une chaîne vide. Là où la variable
++ n'est pas définie, la lecture lève une `Environment.Error`, et une méthode qui en lit une la
++ déclare.
+
+% 2 1 0 18e719f72b8eb90118bb7a1428465be0
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 01fa51a9d47aa90400b5ce3f1f36bdf4
++   label Une méthode qui ne dit pas qu'elle peut échouer
+
+% 0 1 0 1477c34ff41c7c99183443e1d3238ae1
+
+% 1 1 0 0960c596329e4eb20a0b442aaa85c43a
+
+% 0 1 0 09ac0f1d26cb09b8151c77db0fdaaf27
+
+% 1 1 0 17750665f42440fd099729cd43bf5735
+
+@ 0 2 0 0689e23d190398fe16427b46484c5d69
++   label L'échec, dans le type de retour
++   highlight raises..Error  la manière dont elle peut échouer
+
+% 1 1 0 0223b354e7bac9e01c561de335c95bb7
+
+% 0 1 0 07aa906142d8c2eb1de4d32efde895bd
+
+% 0 1 0 110344054c1affdd13092940fd74805e
+
+% 1 1 0 1c8a7d6ec6bc92a500a4cd61211fef9f
+
+% 1 1 0 136d267ff733a60e0f6246170d49df5f
+
+% 2 1 0 1525a46c87e9e0571e7d21b8e7c42b7a
+
+% 0 1 0 08a86cbdc9b8cb0109ed8ce5b435ce67
+
+% 1 1 0 0cd6459499a6bd5203d659b3bcc1b6aa
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 0 1 0 106d580c3e0e97e001c25791c947dd41
+
+% 0 1 0 1e156d9cde791045010dc5ca637138bc
+
+% 0 1 0 152037dd4351f55b11a0cdea7d8ff26a
+
+% 1 1 0 1b3539b2ff2dfc5b1655516e82c5eca2
+
+@ 0 4 0 1c7492d7905214c71cf5d9639898589e
++ L'exécution se fait dans un environnement vide, et affiche le message de l'erreur.
++ [Les variables d'environnement](../../soundness/modules/environment.md#environment-variables)
++ présente la lecture, et [la gestion des erreurs](../../philosophy/error-handling.md) les raisons
++ d'une erreur dans un type.

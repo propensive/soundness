@@ -1,0 +1,75 @@
+orthant 2 language
+
+@ 0 1 0 1b7679aec9248a7304ccbe0690b12456
++ # Une charge utile qui ne peut pas être lue sans vérification
+
+@ 0 3 0 0c39fd9244b0d2520338c34a49977946
++ Un `Jws` lu à partir d'un texte n'est que l'affirmation que quelqu'un a signé quelque chose. Il
++ n'a aucune méthode qui donne la charge utile sans clé : un code qui oublie de vérifier la
++ signature n'a donc rien à lire.
+
+% 2 1 0 04c281e4c9dcfc360bf10d9d73a353cd
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 10104bb5872009811b5ee96e05860610
++   label La charge utile, prise sur parole
+
+% 0 1 0 1477c34ff41c7c99183443e1d3238ae1
+
+% 1 1 0 0960c596329e4eb20a0b442aaa85c43a
+
+% 2 1 0 058ff1ab4bd16fb508adf559c39e04f5
+
+% 3 1 0 016ebb41de88906d10ae2b7461c8297c
+
+% 4 1 0 16ed7d8452f024681314e40719d3abf8
+
+% 6 1 0 1366fb435afbae5b12e15392c50ee016
+
+% 7 1 0 0cc9ee077965de9419675b2a64a6bc7a
+
+% 0 1 0 08bb9b0f287dcf5b0ef977a89e4d952c
+
+% 1 1 0 0f0b50e838f04e9b10e7cc81ffc9d83f
+
+@ 0 1 0 1acbe357054aedcf00d38f9cf32437ed
++   label La charge utile, d'une signature vérifiée
+
+% 0 1 0 0e523144564f8dcb153b4fba85105c42
+
+% 1 1 0 00efcf739bf8a1f91b9cfec70e3197b5
+
+% 2 1 0 09b4474108f2d60c09117b293cd8523e
+
+% 3 1 0 19081afe38d0df0300ab9e8b4c609408
+
+% 4 1 0 0c5b33c06b5862090320f9c73562c086
+
+% 6 1 0 0bf7a1b696602eb81174ddab6b188a5a
+
+% 7 1 0 1e048acd0187163e1f1074266a7dc6d6
+
+% 0 1 0 0e40d015a78eef7d03fae27bbd0b8c6f
+
+% 1 1 0 114183d6ed1fad9a17576dc433b05ceb
+
+% 1 1 0 136d267ff733a60e0f6246170d49df5f
+
+% 2 1 0 1525a46c87e9e0571e7d21b8e7c42b7a
+
+% 0 1 0 08a86cbdc9b8cb0109ed8ce5b435ce67
+
+% 1 1 0 0cd6459499a6bd5203d659b3bcc1b6aa
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 0 1 0 156ccd68f66eca4f027f646c013e4068
+
+% 1 1 0 0889a6aa400eabd01d3b1938d3d4eccb
+
+@ 0 2 0 062fc3f7768014830ed6712ff4d7cfad
++ [Signer](../../soundness/modules/jose.md#signing) décrit `verify`, et
++ [les états impossibles](../../philosophy/impossible-states.md) l'idée.

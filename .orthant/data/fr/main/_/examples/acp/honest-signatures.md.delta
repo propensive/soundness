@@ -1,0 +1,53 @@
+orthant 2 language
+
+@ 0 1 0 16dbacdfdd9bdbe413d5b5a8efe91da3
++ # Un gestionnaire se voit prêter ce que porte sa requête
+
+@ 0 3 0 18939d74fbeaa82c0573277bd6293bd6
++ Chaque requête d'un agent a sa propre charge utile, accessible dans le gestionnaire au moyen
++ d'accesseurs sur `Acp`. Une requête de lecture de fichier porte un chemin, une ligne et une
++ limite. Elle ne porte aucun contenu, si bien que `Acp.content` dans un gestionnaire `readFile` ne
++ compile pas.
+
+% 0 1 0 12705ff5e291290d17fbc8389d59ef4a
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 1ef914119437a30d13cccd20b65e2336
++   label Une lecture qui va chercher le contenu d'une écriture
+
+% 0 1 0 1477c34ff41c7c99183443e1d3238ae1
+
+% 1 1 0 0960c596329e4eb20a0b442aaa85c43a
+
+% 2 1 0 108fdebc0a999b431f3122166cad0a70
+
+% 3 1 0 19d42e0ab0eae5a11ba7bd82d1b5e223
+
+% 0 1 0 059316aee4399a550c14af7479ee9d40
+
+% 1 1 0 07cbae7d44389c540af2ea0f5a3ee4a8
+
+@ 0 2 0 0e4eb0a7f55bc9ff09cb34bdb4281d25
++   label Une lecture répond par le texte
++   highlight Acp.path  prêté à ce gestionnaire, avec la ligne et la limite
+
+% 1 1 0 0ecaaf580a766f1b09762797d1f40adf
+
+% 2 1 0 117da56bd4c4fc4806e982c72db89f4b
+
+% 3 1 0 00e3be0d4518f90f0d523f67dcabc91c
+
+% 0 1 0 013557a1250595d5184c352b1ec72ce9
+
+% 0 1 0 18eafb32caed3dd50f976e787bd035ca
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 3 0 005ca6b9007dcdc414df1466f27edebb
++ L'exemple est compilé, mais pas exécuté, car le gestionnaire sert un agent dans un autre
++ processus. [Mises à jour](../../soundness/modules/acp.md#updates) donne le tableau des
++ gestionnaires et de leurs accesseurs, et
++ [les signatures honnêtes](../../philosophy/honest-signatures.md) le principe.

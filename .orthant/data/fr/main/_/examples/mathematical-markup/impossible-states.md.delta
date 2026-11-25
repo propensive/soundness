@@ -1,0 +1,58 @@
+orthant 2 language
+
+@ 0 1 0 1fae595627e9110f04edcd0b2f0f96e5
++ # Une fraction a deux parties
+
+@ 0 3 0 0c6393e976660a5818ce8fcfbe1cecd3
++ Dans un texte MathML, un `<mfrac>` à un seul enfant est une erreur que découvre le navigateur.
++ Comme valeur, une fraction se construit à partir d'un numérateur et d'un dénominateur, et il n'y
++ a aucun moyen d'écrire l'un sans l'autre.
+
+% 2 1 0 05839ea978c2c07d1e7f4ba26cb44bfb
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 005b800914f112b209e02e7898c14ee7
++   label Une fraction sans dénominateur
+
+% 0 1 0 1477c34ff41c7c99183443e1d3238ae1
+
+% 1 1 0 0960c596329e4eb20a0b442aaa85c43a
+
+% 2 1 0 00e21cbefaea25260372de1520bbc2cf
+
+% 0 1 0 1067c4963d49e12e1528431307d74144
+
+% 1 1 0 007dc456155fcd2b1b2d045d42d90736
+
+@ 0 2 0 0413ae1e2f6639000935f809c6fb40a3
++   label Un numérateur et un dénominateur
++   highlight Mn(t"2")  la seconde partie, que le type demande
+
+% 1 1 0 0f9a07b4a9d03d710a42d7b47d0e0e62
+
+% 2 1 0 196e223781eb571602180fc58820fc69
+
+% 0 1 0 13725aca0c72315e0bd8f151e4d34de9
+
+% 1 1 0 016a74af26996dc014d7115878f6041e
+
+% 1 1 0 136d267ff733a60e0f6246170d49df5f
+
+% 2 1 0 1525a46c87e9e0571e7d21b8e7c42b7a
+
+% 0 1 0 08a86cbdc9b8cb0109ed8ce5b435ce67
+
+% 1 1 0 0cd6459499a6bd5203d659b3bcc1b6aa
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 0 1 0 01aefcb3f712e40904f458b85c9298ad
+
+% 1 1 0 1485cd5e5f6af5d615a6451781152859
+
+@ 0 2 0 16c3a47a84f821bd06f5895f88ad00cc
++ [L'arbre MathML](../../soundness/modules/mathematical-markup.md#the-mathml-tree) énumère les
++ éléments, et [les états impossibles](../../philosophy/impossible-states.md) le principe.

@@ -1,0 +1,79 @@
+orthant 2 language
+
+@ 0 1 0 1c2532f2eac2d3e61f92c5ead46f8ea3
++ # Une tranche plus longue que le texte
+
+@ 0 3 0 0ca56db31c09473a0b18c4507a2c0615
++ Le `substring` de Java lance une exception quand son indice dépasse la fin. `keep` prend autant
++ de caractères qu'il y en a : en demander plus que n'en a le texte donne donc le texte entier, et
++ aucun indice ne le fait échouer.
+
+% 2 1 0 134f5ab2ade232921a4cf476bb9d8842
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 2 0 189a51c198ad024a0f5593750a0ca23d
++   label Les deux premiers caractères
++   highlight keep(2)  deux caractères, depuis la gauche
+
+% 1 1 0 1a4cc00a10bfa7740eb35f6f4ec26ef3
+
+% 2 1 0 08720d6fe81ef2981a3c8d33e9562c80
+
+% 3 1 0 06893a76600643860f8de530c6451073
+
+% 1 1 0 1c8c9b8f3551ba5706b12696dbb87945
+
+@ 0 2 0 120bd27f8b6919a50e9f78965debd04a
++   label Les dix premiers, sur quatre
++   highlight keep(10)  les quatre, et aucune exception
+
+% 1 1 0 193d2e005a44b878089496bcd07761a7
+
+% 2 1 0 16fc6506a6f2759b178361cbace1dd2c
+
+% 3 1 0 02952e94db3fd92f0e56a019a33a5d55
+
+% 4 1 0 0da1f781b233e65a0e744d81db1b9484
+
+% 1 1 0 05a1e7c7f44308820fad6dd46e244d7a
+
+@ 0 2 0 11951a462503f4cc005cd44bc9d46070
++   label Les deux derniers
++   highlight Rtl  comptés depuis la droite
+
+% 1 1 0 158d10d10540e67705c04bbefaafb7a8
+
+% 2 1 0 06590581fe186b341abdc6bbd8213232
+
+% 3 1 0 0b2b42a1dc54336312c13491b5a9be37
+
+% 4 1 0 0001440ce3cf0e1100300fe3c67041e2
+
+% 0 1 0 1f0da4f3a0188fc109132cb365230378
+
+% 1 1 0 00f0f7a0a45aa70601aa7e10560f55a7
+
+% 1 1 0 136d267ff733a60e0f6246170d49df5f
+
+% 2 1 0 1525a46c87e9e0571e7d21b8e7c42b7a
+
+% 0 1 0 08a86cbdc9b8cb0109ed8ce5b435ce67
+
+% 1 1 0 0cd6459499a6bd5203d659b3bcc1b6aa
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 0 1 0 05a35b2e9daef03d037796c3c8a3a7a9
+
+% 0 1 0 1e224a8c996edae2132ff03383a06102
+
+% 0 1 0 122ccbab228dbde800394bdb87ad63da
+
+% 1 1 0 1dbb25831fb3ee790fc5ee22a14419b4
+
+@ 0 2 0 1b5c31e36f5eed6b0f2042ef86aab1b1
++ [Le découpage](../../soundness/modules/text.md#slicing) présente `skip`, `snip` et `segment`, et
++ [les transitions totales](../../philosophy/total-transitions.md) le principe.

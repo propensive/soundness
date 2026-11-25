@@ -1,0 +1,72 @@
+orthant 2 language
+
+@ 0 1 0 0c298b78c7aac4db00c02006d724140a
++ # Toute couleur est un style
+
+@ 0 2 0 064536efb12f48ce0aa1ea6207fd4b85
++ L'interpolateur de texte stylé ne définit pas de couleurs qui lui soient propres. Une couleur de
++ n'importe quel espace colorimétrique est une substitution, tout comme une couleur convertie,
++ pivotée ou mélangée en chemin.
+
+% 2 1 0 1bcb6976f9cf4e32016823bf812b02bc
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 127f0727356be55818830f6b5c00395c
++   label Une couleur nommée
+
+% 1 1 0 05586882b4658b4317c138309650199e
+
+% 2 1 0 17c198c10d26c6851d95f8396e894ea9
+
+% 0 1 0 102928939d88d7c511fc2f320b65ce0f
+
+% 1 1 0 162040bda3f335ab0eba1f0c00c1ca43
+
+@ 0 2 0 123b086453a80bd2017dbdab772f97cf
++   label Sa complémentaire, calculée dans un autre espace
++   highlight to[Hsl].complement  une couleur en HSL, employée telle quelle
+
+% 1 1 0 10727ce9bbd5b60c1c7d9dc021c755a5
+
+% 2 1 0 13c196767013bf380971d20079509085
+
+% 3 1 0 0f206d5a6c3b553410dc737e8f9a1cef
+
+% 0 1 0 099fe47a9eea15a00afe3ef4b642c626
+
+% 1 1 0 0094a680657172151a2076257884e351
+
+@ 0 2 0 1bd25d2bb95bd68f1fd0f98ad5ea2cf4
++   label Comme arrière-plan
++   highlight Bg(rose)  la même couleur, dans l'autre rôle
+
+% 1 1 0 179dc22d149c35f90b7aed2817f61e61
+
+% 2 1 0 07ccfdd43f97626b1e5e72334346bd0d
+
+% 3 1 0 0325261ebee1a461102d36bf0e1b4f01
+
+% 0 1 0 08618121a2c7a5901d0c26b40fe73aa6
+
+% 1 1 0 06ab8197428dbf4106c4bb3dd748accc
+
+% 1 1 0 136d267ff733a60e0f6246170d49df5f
+
+% 2 1 0 1525a46c87e9e0571e7d21b8e7c42b7a
+
+% 0 1 0 08a86cbdc9b8cb0109ed8ce5b435ce67
+
+% 1 1 0 0cd6459499a6bd5203d659b3bcc1b6aa
+
+% 0 1 0 06d6d3a7fec399c9124100808e28e43d
+
+% 0 1 0 156ccd68f66eca4f027f646c013e4068
+
+% 1 1 0 0889a6aa400eabd01d3b1938d3d4eccb
+
+@ 0 2 0 03fcdcc54b46daf50d5122f0ec0d7e64
++ [Les couleurs](../../soundness/modules/colors.md#adjusting) présente les ajustements, et
++ [le texte stylé](../../soundness/modules/terminal.md#styled-text) les substitutions.

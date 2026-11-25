@@ -1,0 +1,54 @@
+orthant 2 language
+
+@ 0 1 0 0fc057af5e856a15089f0497a699a425
++ # Un littéral de chemin, vérifié à la compilation
+
+@ 0 2 0 0977b4e09347723f0f96df6c00987cdd
++ Un chemin écrit `p"…"` est lu par le compilateur, qui décide d'après sa forme s'il s'agit d'un
++ chemin POSIX ou d'un chemin Windows. Un texte qui n'est ni l'un ni l'autre est une erreur de
++ compilation.
+
+% 0 1 0 12705ff5e291290d17fbc8389d59ef4a
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 0c3543a8827ba53b15acb0476db5f6ff
++   label Ni racine ni lecteur
+
+% 0 1 0 1477c34ff41c7c99183443e1d3238ae1
+
+% 1 1 0 0960c596329e4eb20a0b442aaa85c43a
+
+% 0 1 0 13a0d3e3f5fc678e00a86e310ab4632f
+
+% 1 1 0 0d854a9a7851081d14250f4be53afe21
+
+@ 0 2 0 15b0d68e77d958a101f867288f23cc4b
++   label Un chemin POSIX
++   highlight /home  une racine en fait un chemin POSIX
+
+% 1 1 0 0c8f8d8efaa64baf15b053d6335328e1
+
+% 0 1 0 0b9e5eb181cf016c16115b3c0c71f03b
+
+% 1 1 0 17925de962ed61320e2cf595617cabbd
+
+@ 0 2 0 043b37991c63507015610fb03e5cb492
++   label Ses noms sont dans son type
++   highlight Path..Posix  la feuille vient en premier
+
+% 1 1 0 1d12759f7cf9e21b0840a673a5fe6493
+
+% 0 1 0 1ed25c85eabb703a134e8a30314213a7
+
+% 0 1 0 0d0dcb7ee235c073119e80b8999aa64a
+
+% 0 1 0 18eafb32caed3dd50f976e787bd035ca
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 2 0 187d0950a884179e1b94c816214c65a8
++ [Construire un chemin](../../soundness/modules/paths.md#building-a-path) présente le littéral, et
++ [la sûreté par construction](../../philosophy/safety-by-construction.md) le principe.

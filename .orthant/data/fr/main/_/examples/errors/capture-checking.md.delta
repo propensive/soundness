@@ -1,0 +1,52 @@
+orthant 2 language
+
+@ 0 1 0 0027e6652aa78dc009eda316c2090f20
++ # Une fonction ne peut pas quitter son gestionnaire d'erreurs
+
+@ 0 4 0 0da77d61a4d3b37b1c0086ed9399200e
++ `safely` transforme un échec survenu dans son bloc en valeur absente. Une fonction créée dans le
++ bloc pourrait échouer plus tard, à son appel, bien après le retour de `safely`, quand il ne reste
++ plus rien pour intercepter l'échec. Le type de la fonction enregistre le gestionnaire dont elle
++ dépend, si bien qu'elle ne peut pas être le résultat du bloc.
+
+% 0 1 0 12705ff5e291290d17fbc8389d59ef4a
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 0 1 0 05379442125b483c0fa7601737add2cc
+
+% 1 1 0 01df03af649144fc135e9cf4a153349c
+
+@ 0 1 0 1fb171217aae517f153f2e28960f33dd
++   label Une fonction qui échouerait hors du bloc
+
+% 0 1 0 1477c34ff41c7c99183443e1d3238ae1
+
+@ 0 1 0 08c9ebca6894edbb073e899bf22161c4
++   highlight t"thrice".as[Int]  s'exécuterait plus tard, sans rien pour traiter son erreur
+
+% 1 1 0 180e187e9830042c1a417d730bc70245
+
+% 0 1 0 0f6999edfa9a0ee00416dc620790d2e9
+
+% 1 1 0 0c68460f412ae57c090d93f38164cf1f
+
+@ 0 1 0 1d6fcde73d2799431c0bf8492a31e393
++   label Le code faillible, exécuté à l'intérieur
+
+% 0 1 0 095674c459fb074f082ec3675cad07bf
+
+% 1 1 0 06c9028e272c82fd03be89f91f94796b
+
+% 0 1 0 114ebf56dfacacd70124a054342c62af
+
+% 0 1 0 18eafb32caed3dd50f976e787bd035ca
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 4 0 04f1c949e4958ff819a3948953049dc3
++ Le résultat est `Unset` : le texte n'est pas un nombre, et l'échec n'est pas allé plus loin que
++ le bloc. [Choisir une stratégie](../../soundness/modules/errors.md#choosing-a-strategy) énumère
++ les gestionnaires qu'un bloc peut recevoir, et
++ [le contrôle des captures](../../philosophy/capture-checking.md) explique comment on empêche l'un
++ d'eux de survivre à son bloc.

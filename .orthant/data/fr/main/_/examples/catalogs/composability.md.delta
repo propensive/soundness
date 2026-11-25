@@ -1,0 +1,78 @@
+orthant 2 language
+
+@ 0 1 0 02cf8581a3c90d201abaa2585dba4790
++ # Le JSON d'un champ, remplacé par son chemin
+
+@ 0 3 0 03f69ac0a352e0e603cbf9e330c22720
++ Le chemin qui désigne une entrée d'un catalogue nomme aussi un champ pour un codec dérivé. Un
++ `Specific` associe des chemins à des instances, et l'encodeur JSON dérivé pour `Play` le consulte
++ à chaque champ.
+
+% 2 1 0 1775d806fe1ebffb1968c9d1d300aed4
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 0642b32a52dc3ec6161dfb5c445370b3
++   label L'encodage dérivé
+
+% 1 1 0 15b5ea756baea1d4033fa7155c91ad8d
+
+% 2 1 0 10f223e0247beb7d0d85aeea0f64b0f4
+
+% 3 1 0 1f98291738aa466919345cd180d47172
+
+% 2 1 0 0ba5668826197f360ba1eac3025b58ab
+
+% 0 1 0 075f080ff75b92d91273682888ef7ce4
+
+% 1 1 0 03cc9923a582023a024512c80e93c7c2
+
+@ 0 2 0 1270a749ae77b703017c02e83277de64
++   label Un encodeur pour le seul nom du traître
++   highlight root.villain.name()  un chemin, vérifié par rapport à Play
+
+% 1 1 0 055bd80d77c04fbe1f99c7ffb752e7ee
+
+% 2 1 0 1129ee519290646a15217eb8e1300c08
+
+% 3 1 0 0f48f242a02492f008e6f251d2b7a9d6
+
+% 0 1 0 1be25d48c21d086c08eb2ceac2b6e199
+
+% 0 1 0 1af44709991b901d0867f523cf495ea4
+
+% 2 1 0 1b24f8d65bfb558217336f44e2e4fc39
+
+% 0 1 0 028f8d503c96e7611ef194a31cf70ec0
+
+% 0 1 0 083601ad87749ce605e19901df682db3
+
+% 0 1 0 03f4d43d99b85e8310a021de8511eb0b
+
+% 0 1 0 05835d7c209a51731795e44cc20063a0
+
+% 0 1 0 164e79fec2ea6fe71823e3643fd3268d
+
+% 1 1 0 0a071a28d633793106a3831f20550199
+
+% 1 1 0 136d267ff733a60e0f6246170d49df5f
+
+% 2 1 0 1525a46c87e9e0571e7d21b8e7c42b7a
+
+% 0 1 0 08a86cbdc9b8cb0109ed8ce5b435ce67
+
+% 1 1 0 0cd6459499a6bd5203d659b3bcc1b6aa
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 0 1 0 026901931200bf591262a034768d6b95
+
+% 0 1 0 16fc7678e5d8225f085e81802149d6a1
+
+% 1 1 0 0ae03c5ece6122340ae5da59260a87ab
+
+@ 0 2 0 1173a468067525811b407c6950b33071
++ [Les mêmes chemins dans la dérivation](../../soundness/modules/catalogs.md#the-same-paths-in-derivation)
++ donne les règles relatives à la valeur d'un chemin.

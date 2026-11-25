@@ -1,0 +1,57 @@
+orthant 2 language
+
+@ 0 1 0 0f0e4a5ef1c58d6203d92dd2b74a1a29
++ # Un serveur de noms, écrit comme il se dit
+
+@ 0 3 0 11aeeec50c812c9b1355c5997f14b7f1
++ Un endpoint est une adresse *sur* un port, et chacune des trois parties d'une requête DNS est un
++ littéral que le compilateur a vérifié : l'adresse IP, le nom du service, et le nom demandé.
+
+% 0 1 0 12705ff5e291290d17fbc8389d59ef4a
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 1735ecf60a3875650f12fc9c7adacbae
++   label Une adresse
+
+% 1 1 0 1f35d793e6a569120d3ddaf30d56bcbf
+
+% 0 1 0 021e6b721f86e02a1fc135385e5cbb90
+
+% 1 1 0 1d926aa71bdd7f96155e64c526d92036
+
+@ 0 2 0 166e3837c8265de102a1794fb01cb085
++   label Sur un port, désigné par son service
++   highlight on  un Endpoint d'un port UDP
+
+% 1 1 0 05fb55360a7a316502dd3d25eaa1376f
+
+% 1 1 0 0f0bd7db1c31125e12ab0bac59b2f7f6
+
+% 1 1 0 06a6dab3339ce3a8161306ce3fbb05e9
+
+@ 0 1 0 177741cf20fc49fb19e65d1076a11b35
++   label Interrogé sur un nom
+
+% 0 1 0 0f51289eeef8b01c0b43296bf6e119f4
+
+% 1 1 0 001a76f573e615650f44408de717ca4f
+
+% 0 1 0 07408c6a7d8882aa0e3412cd3a8669e1
+
+% 0 1 0 1884f26bf28188a80dd0c391c47df8c6
+
+% 1 1 0 13e164f8d2de0bf416f4f5b735076052
+
+% 0 1 0 13b56f814777cffa14fcc0884db7fb72
+
+% 0 1 0 18eafb32caed3dd50f976e787bd035ca
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 2 0 1c7a4c984623e12b1ba28b370330ec57
++ L'exemple est compilé, mais pas exécuté, car il enverrait une requête.
++ [Les échanges de datagrammes](../../soundness/modules/sockets.md#datagram-exchanges) décrit
++ `ask`.

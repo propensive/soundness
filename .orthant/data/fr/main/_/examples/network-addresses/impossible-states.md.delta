@@ -1,0 +1,64 @@
+orthant 2 language
+
+@ 0 1 0 0360f4c74c188ca016bd9eb9ca30d094
++ # Un sous-réseau n'a pas de bits d'hôte
+
+@ 0 3 0 049762384736e7191cae8ebc912fd9f8
++ Un sous-réseau est une adresse et une longueur de préfixe. La longueur est vérifiée selon la
++ famille de l'adresse, et les bits sous le préfixe sont mis à zéro, si bien qu'un sous-réseau
++ écrit sans soin est le sous-réseau voulu.
+
+% 2 1 0 0a10b14f8ff9a0f30c5eb9616139f9b4
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 1dd3d2d4510433520126fc1c8c6bf4fc
++   label Un préfixe plus long qu'une adresse IPv4
+
+% 0 1 0 1477c34ff41c7c99183443e1d3238ae1
+
+% 1 1 0 0960c596329e4eb20a0b442aaa85c43a
+
+% 0 1 0 0d9eefd9dc2d13f91d54a02a092596ca
+
+% 1 1 0 021d2defeb5d26791a99e18cd06be7c8
+
+@ 0 1 0 199bec79207691bd090c1f22452d4327
++   label Un préfixe dans l'intervalle
+
+% 0 1 0 05f559cf8f9d08390176f3895d52b375
+
+% 1 1 0 1ecbb52a0f6d204417ad7079047eb19d
+
+% 0 1 0 0a2b6cc1d2a26ba5049f089e76c60a84
+
+% 1 1 0 1e15c46aebb9c4a80b68e5b06493f750
+
+@ 0 2 0 1026be1dad82180116dafc32c18d9c0c
++   label Une adresse dans le sous-réseau
++   highlight 16.77  les douze derniers bits sont masqués
+
+% 1 1 0 056de60a885950c412e45944bdfb07c1
+
+% 0 1 0 0084433ee25a871816474bf1cd92be85
+
+% 1 1 0 090b9d2d911b1ac203c088db27b8b596
+
+% 1 1 0 136d267ff733a60e0f6246170d49df5f
+
+% 2 1 0 1525a46c87e9e0571e7d21b8e7c42b7a
+
+% 0 1 0 08a86cbdc9b8cb0109ed8ce5b435ce67
+
+% 1 1 0 0cd6459499a6bd5203d659b3bcc1b6aa
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 0 1 0 13d0a3f5ad6359540142631d8bdae776
+
+% 1 1 0 0728cf8d4521f9ac1942bd09e32689ee
+
+@ 0 1 0 0fb95c32e6c2c22e0e1e665f0a82f2d9
++ [Sous-réseaux](../../soundness/modules/network-addresses.md#subnets) présente la forme IPv6.

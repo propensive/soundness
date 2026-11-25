@@ -1,0 +1,87 @@
+orthant 2 language
+
+@ 0 1 0 03c84da5773be1ec1683b1319e8be276
++ # Le texte stylé se découpe comme du texte
+
+@ 0 3 0 0799f6b39a15d81703ddcce369d17bfa
++ Un `Teletype` est du texte avec des styles, et il accepte les méthodes qu'accepte `Text` :
++ `length`, `keep`, `skip` et `fit` ont chacune un seul nom, et les styles des caractères qui
++ restent sont préservés.
+
+% 2 1 0 09228ad0a89280c8010f31d18666971c
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 15d6f65994364779136da92cf8797068
++   label Du texte simple
+
+% 1 1 0 06f7e3dfb780244317fe317c3f8781b3
+
+% 2 1 0 0ee5a2b4cb98661e0823089dc1be0c5f
+
+% 0 1 0 0de9d526bae7f33b07c3fcb1208a5577
+
+% 0 1 0 147971d2fa8e35b21dfb10572139cf8f
+
+% 0 1 0 0f5a78f1489362460ba69a15ec9c4e05
+
+% 1 1 0 1146f1f20fdb555812f9d6bc0786c35f
+
+@ 0 2 0 0b115e1eaf6b32aa00e19dd9e44af3bf
++   label Le même, avec des styles
++   highlight e"  du texte stylé, là où il y avait du texte simple
+
+% 1 1 0 17b91181e0acccd619a160d050fb4ee8
+
+% 2 1 0 0dfcff07181acaf1073bb321179e5b89
+
+% 4 1 0 035e093c6e5406d00fcf231e379360de
+
+% 6 1 0 1f3785120abb0df71002d7364204d20e
+
+% 7 1 0 0adad04c03fa6c831528dbd1a90b131f
+
+% 1 1 0 155ae9b10556fdc61be1d9cf04cb3442
+
+@ 0 2 0 01c2de86163e40c3014e78f129ee219d
++   label Ajusté à une colonne
++   highlight fit(12)  douze caractères, et aucun code d'échappement brisé
+
+% 1 1 0 0e88a5892cffea3206a4f4570b4b1663
+
+% 2 1 0 1645b4dffba368d21a9c61679586ecc1
+
+% 4 1 0 0d7d73670327a6ba1e8df605cb7bc53d
+
+% 6 1 0 1c7839b2aa3ee3470b3e7bdd3f075c4f
+
+% 7 1 0 00f2a1f655ffa3ba00a5544fcb47b37b
+
+% 0 1 0 151d38830d3de5050a45602b4825a5b6
+
+% 1 1 0 1f265d51651399cf1a7f649264478e28
+
+% 1 1 0 136d267ff733a60e0f6246170d49df5f
+
+% 2 1 0 1525a46c87e9e0571e7d21b8e7c42b7a
+
+% 0 1 0 08a86cbdc9b8cb0109ed8ce5b435ce67
+
+% 1 1 0 0cd6459499a6bd5203d659b3bcc1b6aa
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 0 1 0 0881889043a729e307bf05d302ae8566
+
+% 0 1 0 10a10a76db27700e1165f33b1149f403
+
+% 0 1 0 109157e6d2d4dc1305c9610328e3fe40
+
+% 1 1 0 09ece773baf06cdc0872e5dc8fb77d30
+
+@ 0 2 0 0b3a27a2a21cf46215810c01f3c8cf36
++ La longueur compte les caractères et non les codes d'échappement, puisqu'il n'y en a aucun tant
++ que le texte n'est pas affiché. [Le texte stylé](../../soundness/modules/terminal.md#styled-text)
++ présente le reste.

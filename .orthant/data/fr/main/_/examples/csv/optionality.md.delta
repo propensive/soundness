@@ -1,0 +1,68 @@
+orthant 2 language
+
+@ 0 1 0 195319d9f84dad7912f3529a1d177746
++ # La première ligne d'une feuille peut-être vide
+
+@ 0 2 0 0de1f3c0259fa7a106b6ef06d32807cf
++ Une feuille peut n'avoir aucune ligne : sa première ligne est donc une valeur optionnelle. On ne
++ peut pas l'utiliser comme si elle était là, et `let` la décode si elle l'est.
+
+% 2 1 0 0142dbfd8997c94d1636e45694a3edf7
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 069454e6ad2af0090c83c99246fefd38
++   label Une ligne peut-être absente, utilisée comme une ligne
+
+% 0 1 0 1477c34ff41c7c99183443e1d3238ae1
+
+% 1 1 0 0960c596329e4eb20a0b442aaa85c43a
+
+% 2 1 0 052b5d53c564213f191f74be413a911f
+
+% 3 1 0 14b6d716defcc0be11477ed46f86161b
+
+% 5 1 0 1ea6995f7face4d2032236ba5452099f
+
+% 0 1 0 11fcc3715e82f6b00b551f26d4d4fcfe
+
+% 1 1 0 00ceee70aec2abd21ded68d08019e410
+
+@ 0 3 0 00c1be4d5799d9b409285caa509b0ad2
++   label Décodée si elle est là
++   highlight let(_.as[Weaver])  ne s'applique qu'à une ligne présente
++   highlight Optional[Weaver]  absente pour une feuille vide
+
+% 1 1 0 1e63d1bb2b10a6ef1ddcb111528a902e
+
+% 2 1 0 17016d67e558b4781c3e7ce453a9bdaf
+
+% 3 1 0 1346b11ce7b8248a0f1e72861d24a14e
+
+% 5 1 0 1db816122d36f2710776eef9f7450ad9
+
+% 0 1 0 110786e7cee68da20e7f084cfda1744b
+
+% 1 1 0 18697c643644b3220ef6cdcfcc835a50
+
+% 1 1 0 136d267ff733a60e0f6246170d49df5f
+
+% 2 1 0 1525a46c87e9e0571e7d21b8e7c42b7a
+
+% 0 1 0 08a86cbdc9b8cb0109ed8ce5b435ce67
+
+% 1 1 0 0cd6459499a6bd5203d659b3bcc1b6aa
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 0 1 0 06a45e89953e32051f76bcdbfffb6efd
+
+% 0 1 0 17aaffec4abf714d1e1c7da5e319c7a6
+
+% 1 1 0 194446d2742f1c161769df3db3245070
+
+@ 0 2 0 1a823c9f816d1d3d07788d92fa1ef5b1
++ [Décoder vers une case class](../../soundness/modules/csv.md#decoding-to-a-case-class) présente
++ le reste, et [l'optionalité](../../philosophy/optionality.md) les raisons.

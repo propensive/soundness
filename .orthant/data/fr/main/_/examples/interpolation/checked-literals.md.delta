@@ -1,0 +1,43 @@
+orthant 2 language
+
+@ 0 1 0 02564a47c162c95b0877f3b3d7ec3abe
++ # Un type de média que le compilateur a lu
+
+@ 0 3 0 1c2fe0aa5827d8f101b5eb04c303b97c
++ Un interpolateur analyse son littéral pendant que le code compile. Un `media"…"` qui n'est pas un
++ type de média enregistré est une erreur à l'endroit où il est mal orthographié, et celui qui
++ compile est un `MediaType`, et non du texte.
+
+% 0 1 0 12705ff5e291290d17fbc8389d59ef4a
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 0adf517f57b3ab200b0b3450b3bb0f04
++   label Un sous-type mal orthographié
+
+% 0 1 0 1477c34ff41c7c99183443e1d3238ae1
+
+% 1 1 0 0960c596329e4eb20a0b442aaa85c43a
+
+% 0 1 0 195e95a65c21d60508832f21e660b9f0
+
+% 1 1 0 03ed71824b63b97d013df026a1726fe8
+
+@ 0 2 0 12bdd622bba7c7c80aa14c45340fd2f0
++   label Un type de média
++   highlight media"text/plain"  un MediaType, et non du texte
+
+% 1 1 0 07aff364f625f3e00dccee1869a1ca86
+
+% 0 1 0 1f93d759af44179309f59423ae8bdf9a
+
+% 0 1 0 18eafb32caed3dd50f976e787bd035ca
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 3 0 13adf6fc5fbbbbab169e88bea8076886
++ [L'interpolation](../../soundness/modules/interpolation.md#on-interpolators) explique ce que fait
++ un interpolateur d'un littéral, et
++ [la sûreté par construction](../../philosophy/safety-by-construction.md) pourquoi cela compte.

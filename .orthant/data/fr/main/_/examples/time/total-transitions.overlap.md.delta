@@ -1,0 +1,80 @@
+orthant 2 language
+
+@ 0 1 0 0e0f8c4c10d1fc471f6829529a94ffb1
++ # Une heure qui a lieu deux fois
+
+@ 0 3 0 18904c55b2fd11ed05874d1beb60cd8f
++ Quand on recule les horloges, une heure de lectures d'horloge murale désigne deux instants. Un
++ moment ne choisit pas entre eux en secret : c'est la première occurrence, sauf si la seconde est
++ demandée, et les deux se résolvent en un instant précis.
+
+% 2 1 0 1636277062920ccd1c57ccc4e60ab6c3
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 0f41fa1ab23c1f761aeaa7f5dc41c2b0
++   label Une heure et demie, la première fois
+
+% 1 1 0 1b79ff5f57818b7c12b6c6bee3a34da7
+
+% 2 1 0 045561673856b1931ca92d375279b7ce
+
+% 4 1 0 193fca6874479be70ca867a085c7a069
+
+% 5 1 0 10c35adacf1569bc0107d99e586e8c1a
+
+% 1 1 0 14656c05b32bc7e906b9dae97e470e87
+
+@ 0 2 0 060364ee3c97f01503ac0685dbd2532e
++   label Une heure et demie, la seconde fois
++   highlight Occurrence.Second  la plus tardive des deux
+
+% 1 1 0 081cd43bd43018fe1b61378cf68c4c9a
+
+% 2 1 0 158def315aeac0180ce10cda16981de2
+
+% 4 1 0 05e69ce1a7ee9de71a47814de5a0b782
+
+% 5 1 0 1d51ef8d9d1da8920c9ef7eaa113b60a
+
+% 6 1 0 14ce81cf8674ea0404f11451860fbcf5
+
+% 1 1 0 0d7a7d2d4c80fc3205a343cf9964fe31
+
+@ 0 2 0 1359794471c2e6d003530240c9201072
++   label Le temps physique qui les sépare
++   highlight second.instant.long..first.instant.long  en millisecondes
+
+% 1 1 0 1565cd3200751b2d07bd9111d3628e8f
+
+% 2 1 0 1174671517dc823d1ac27d0224edf18f
+
+% 4 1 0 07d66291137219a3150319a6f9a95fc6
+
+% 5 1 0 09870da74a65b7f81d3aa4ada4df978a
+
+% 6 1 0 00745697828e334b04921b51f362d1cc
+
+% 0 1 0 05b794e8a39aa5390d403e3a1d07d518
+
+% 1 1 0 02ade2e36690baa41a24ca93942aeb77
+
+% 1 1 0 136d267ff733a60e0f6246170d49df5f
+
+% 2 1 0 1525a46c87e9e0571e7d21b8e7c42b7a
+
+% 0 1 0 08a86cbdc9b8cb0109ed8ce5b435ce67
+
+% 1 1 0 0cd6459499a6bd5203d659b3bcc1b6aa
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 0 1 0 0f6ac9e44c50878a1aef368a92b15315
+
+% 1 1 0 1146f31db4a5b75d1703b49474783410
+
+@ 0 2 0 15261599d0afa6c419ffc7d3ed6a9a73
++ [Passages à l'heure d'été](../../soundness/modules/time.md#daylight-saving-transitions) traite
++ aussi de l'heure qui n'a jamais lieu.
