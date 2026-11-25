@@ -8,7 +8,7 @@ against its real grammar, which is the value-definition syntax of the
 [MDN data](https://github.com/mdn/data), for more than six hundred properties. A misspelled
 property, or a malformed value, is therefore a structured error, not a style which silently
 fails in the browser. The `css"…"` [interpolator] writes a stylesheet in source code, with
-typed values substituted into it.
+typed values substituted into it, and checks it in the same way as the code compiles.
 
 Selectors parse to the full grammar of
 [Selectors Level 4](https://www.w3.org/TR/selectors-4/). Lengths and angles are typed
@@ -54,6 +54,25 @@ run
 ##
 Out.println(sheet.show)
 ```
+
+The text of the literal is checked as the code compiles. A property which does not exist is
+an error at its declaration, and so is a value which its property's grammar does not accept:
+
+```scala fuel
+compile
+errors show
+##
+val faulty = css"a { colour: red }"
+```
+
+```scala fuel
+compile
+errors show
+##
+val wide = css"a { width: wide }"
+```
+
+A substituted value is checked by its type, so a length cannot be given as a color.
 
 Bare declarations, with no selector, form a `Css.Style`, for use as an inline `style`
 attribute. One can equally be built from named arguments:

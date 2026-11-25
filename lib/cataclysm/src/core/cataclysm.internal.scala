@@ -60,7 +60,9 @@ object internal:
   // The macro behind the `css"…"` interpolator. The literal parts are joined with a
   // sentinel char at each `$substitution`, parsed at compile time, and the parsed
   // `Css` is rebuilt as an `Expr` — a declaration value that is a lone sentinel
-  // becomes the (type-checked) substitution, everything else is literal. Each such
+  // becomes the (type-checked) substitution, everything else is literal. A literal
+  // declaration is validated like one read at runtime, so neither an unknown property
+  // (`css"a { colour: red }"`) nor a bad value (`css"a { width: wide }"`) compiles. Each such
   // substitution's type must have a `Css.Convertible` whose VDS type is valid for that
   // property, so `css"a { color: $length }"` does not compile.
   //
@@ -98,6 +100,10 @@ object internal:
       given Diagnostics = Diagnostics.omit
 
       given HaltTactic[Css.Error, Css] = new HaltTactic[Css.Error, Css]:
+        // A validation error is raised, not aborted, so that reading at runtime can
+        // accumulate them all; at compiletime the first one stops the expansion.
+        override def record(error: Diagnostics ?=> Css.Error): Unit = abort(error)
+
         override def abort(error: Diagnostics ?=> Css.Error): Nothing =
           val cssError = error
 
@@ -120,7 +126,9 @@ object internal:
 
           halt(cssError.message, position)
 
-      CssParser.parse(Iterator(joined), validating = false)
+      // Literal declarations are validated as they are parsed; one with a substitution
+      // is left for `hole`, which checks its property against the substitution's type.
+      CssParser.parse(Iterator(joined), validating = true, placeholder)
 
     def has(text: Text): Boolean = text.contains(sentinel)
     def lift(value: Text): Expr[Text] = '{${Expr(value.s)}.tt}

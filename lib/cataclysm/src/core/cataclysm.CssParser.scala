@@ -35,6 +35,7 @@ package cataclysm
 import murmuration.Iterator
 import anticipation.*
 import contingency.*
+import denominative.*
 import gossamer.*
 import rudiments.{after, before, skip}
 import vacuous.*
@@ -58,12 +59,35 @@ private[cataclysm] object CssParser:
     Parser(Cursor[Text](input), validating).document()
 
   // The interoperation shape: an `Iterator` of chunks.
-  def parse(input: Iterator[Text], validating: Boolean = true)(using Tactic[Css.Error]): Css =
+  // A declaration containing `placeholder` (the `css"…"` interpolator's stand-in for a
+  // substitution) is not validated here: the interpolator checks it against the type of
+  // the value substituted.
+  def parse(input: Iterator[Text], validating: Boolean = true, placeholder: Optional[Text] = Unset)
+    ( using Tactic[Css.Error] )
+  :   Css =
+
     import zephyrine.lineation.linefeedChar
 
-    Parser(Cursor[Text](input), validating).document()
+    Parser(Cursor[Text](input), validating, placeholder).document()
 
-  private class Parser(cursor: Cursor[Text, ?], validating: Boolean)(using Tactic[Css.Error]):
+  // The at-rules whose blocks hold style rules or declarations of properties. The block of any
+  // other at-rule (`@font-face`, `@page`, `@counter-style`, `@property`, …) holds *descriptors*,
+  // which have grammars of their own, and are not validated as properties.
+  private def grouping(name: Text): Boolean = name match
+    case t"media" | t"supports" | t"layer" | t"container" | t"scope" | t"starting-style"
+    | t"document" | t"position-try" =>
+      true
+
+    case _ =>
+      false
+
+  private class Parser
+    ( cursor: Cursor[Text, ?], validating: Boolean, placeholder: Optional[Text] = Unset )
+    ( using Tactic[Css.Error] ):
+
+    // Whether the declarations being read are an at-rule's descriptors, not properties.
+    private var descriptors: Boolean = false
+
     def document(): Css = Css(nodes())
 
     private def fail(reason: Css.Error.Reason): Nothing =
@@ -87,6 +111,8 @@ private[cataclysm] object CssParser:
     // Parse a single node: scan a "prelude" up to a terminating `{`, `;`, `}`
     // or end-of-input, respecting comments, strings and `()`/`[]` nesting.
     private def node(): Node =
+      val line = cursor.line
+      val column = cursor.column
       val buf = java.lang.StringBuilder()
       var depth = 0
       var colonAt = -1
@@ -157,7 +183,10 @@ private[cataclysm] object CssParser:
       val text = buf.toString.nn.tt.trim
 
       if block then
+        val enclosing = descriptors
+        descriptors = text.starts(t"@") && !grouping(atRule(text)(0).lower)
         val body = nodes()
+        descriptors = enclosing
         if cursor.peek == '}' then cursor.advance() else fail(Css.Error.Reason.UnexpectedEnd)
 
         if text.starts(t"@") then
@@ -171,17 +200,22 @@ private[cataclysm] object CssParser:
       else if colonAt >= 0 then
         val property = buf.substring(0, colonAt).nn.tt.trim
         val value = buf.substring(colonAt + 1).nn.tt.trim
-        if validating then validate(property, value)
+        if validating then validate(property, value, line, column)
         Node.Declaration(property, value)
       else
-        if validating then validate(text, t"")
+        if validating then validate(text, t"", line, column)
         Node.Declaration(text, t"")
 
     // Check a declaration's property name and value, accumulating (via `raise`)
     // any error rather than aborting, so the rest of the stylesheet is still
-    // read. Custom properties (`--…`) accept any value.
-    private def validate(property: Text, value: Text): Unit =
-      if property.starts(t"--") then ()
+    // read. Custom properties (`--…`) accept any value, an at-rule's descriptors are
+    // not properties, and a declaration with a substitution is the interpolator's to
+    // check. An error is reported at the start of its declaration.
+    private def validate(property: Text, value: Text, line: Ordinal, column: Ordinal): Unit =
+      val substituted = placeholder.lay(false): placeholder =>
+        property.contains(placeholder) || value.contains(placeholder)
+
+      if property.starts(t"--") || descriptors || substituted then ()
       else PropertyDef.of(property) match
         case definition: PropertyDef =>
           Css.Syntax.Matcher.check(definition, value) match
@@ -190,14 +224,14 @@ private[cataclysm] object CssParser:
 
             case Outcome.Invalid =>
               raise:
-                Css.Error(Css.Error.Reason.BadValue(property, value), cursor.line, cursor.column)
+                Css.Error(Css.Error.Reason.BadValue(property, value), line, column)
 
             case Outcome.Unsupported(types) =>
               val reason = Css.Error.Reason.UnsupportedValue(property, types)
-              raise(Css.Error(reason, cursor.line, cursor.column))
+              raise(Css.Error(reason, line, column))
 
         case _ =>
-          raise(Css.Error(Css.Error.Reason.UnknownProperty(property), cursor.line, cursor.column))
+          raise(Css.Error(Css.Error.Reason.UnknownProperty(property), line, column))
 
     // Split an `@…` prelude into its identifier and the remaining prelude text.
     private def atRule(text: Text): (Text, Text) =
