@@ -153,7 +153,13 @@ object Subcompiler:
   :   List[CompileError] =
 
     object driver extends Driver:
-      val currentContext: Context =
+      // A FRESH context, on a `ContextBase` of its own, for every run. The runs of one `compile`
+      // call once shared a base, and so the symbols it had loaded from the classpath: under Scala
+      // 3.10.1, a nested Java class seen in one run is then not the same symbol in the next, and a
+      // macro which meets both (xenophile's facade of a Kotlin companion, typed
+      // `Regex#Companion & Regex.Companion`) fails outside every region, which ends the passes
+      // before the errors of a later phase are found.
+      def currentContext: Context =
         val context = initCtx.fresh
         val context2 = context.setSetting(context.settings.classpath, classpath)
         val ccOptions = if ccNew then List("-Ycc-new") else Nil
