@@ -54,7 +54,7 @@ object settings:
   // below like the tools, and resolved from its GitHub release by crux, which also forces every
   // `org.scala-lang` artifact to it: the flare plugin names the release it was built with, and
   // the fork stays TASTy-compatible across its patch releases.
-  val scalaVersion = "3.10.0-pro-1.2.0"
+  val scalaVersion = "3.10.1-pro-1.2.0"
 
   // The compiler *stream* — the major Scala version, without the patch level — which is what
   // decides the shape of the compiler-internal APIs a handful of modules wrap. Everything else
@@ -74,8 +74,10 @@ object settings:
   val scalaNativeVersion = "0.5.12"
   // On 3.9, the nearest published base version (no RC4 Native artifacts yet; TASTy-identical
   // to RC4). The plugin is built against compiler internals, so the 3.10 stream needs the
-  // artifacts published for 3.10: the 3.9 plugin fails there with a ClassCastException.
-  val scalaNativeScalaVersion = if scalaStream == "3.10" then "3.10.0" else "3.9.0-RC3"
+  // artifacts published for its own base version, read from `scalaVersion` so that the two
+  // cannot drift apart: the 3.9 plugin fails there with a ClassCastException.
+  val scalaNativeScalaVersion =
+    if scalaStream == "3.10" then scalaVersion.takeWhile(_ != '-') else "3.9.0-RC3"
   val scalaOptions = Seq(
     // The fork's opt-in behaviours, enabled by name (`-Z<name>`; a bare `-Z` lists
     // them). Soundness relies on every capture-checking repair the fork carries, on
@@ -2700,6 +2702,22 @@ object locomotion extends Library:
     // the fix is breviloquence.bench's — frozen `^{}` payloads — and is pending (`safety-6`).
     override def checking: Seq[String] => Seq[String] = identity
     def mvnDeps = Seq(mvn"com.google.protobuf:protobuf-java:4.29.3")
+
+    // The protoc-generated `BenchProtos.java` is compiled by javac alone, in a module of its own.
+    // Scala 3.10.1 types the Java sources of a mixed compilation more strictly than javac does,
+    // and rejects the generated builders' references to `GeneratedMessage.BuilderParent`: a
+    // protected nested type which Java lets a subclass's nested class name.
+    object protos extends JavaModule:
+      def mvnDeps = bench.mvnDeps()
+      def sources = bench.sources()
+      override def allSourceFiles = Task:
+        super.allSourceFiles().filter(_.path.ext == "java")
+
+    override def allSourceFiles = Task:
+      super.allSourceFiles().filterNot(_.path.ext == "java")
+
+    override def unmanagedClasspath = Task:
+      super.unmanagedClasspath() ++ Seq(protos.compile().classes)
 
 object mercator extends Library:
   object core extends Component(fulminate.core):

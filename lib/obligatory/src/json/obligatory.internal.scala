@@ -85,7 +85,12 @@ object internal:
           // serving loop as an error response.
           given tactic: (Tactic[Json.Error]^) = ThrowTactic()
 
-          (safely(json.method.as[Text]): @scala.unchecked) match
+          // Read by a method rather than by a `safely(…)` written here, whose block is a
+          // context function: each expansion in a compilation unit re-elaborates that type,
+          // and the root capabilities minted for its tactic and `CanThrow` parameters are
+          // memoized from the first, so a second dispatcher's block fails to conform (see
+          // `client` below).
+          (JsonRpc.method(json): @scala.unchecked) match
             case Unset =>
               JsonRpc.answer(json)
               Unset

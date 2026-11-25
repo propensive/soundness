@@ -101,7 +101,8 @@ early. `usage` holds the tokens which the last turn cost.
 A `Reply` is pure data: its message, its stop reason, its usage, and the model and identifier
 which the provider reported. It may therefore leave the block, as may a snapshot of
 `llm.history` or the folded `llm.usage`. The session itself belongs to the block. The connection
-closes when the block ends, so the session must not be kept beyond it.
+closes when the block ends, so the session cannot be kept beyond it. In code which is capture
+checked, returning the session from the block, or a closure which uses it, is a compile error.
 
 ### Streaming
 

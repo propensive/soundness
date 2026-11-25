@@ -50,6 +50,13 @@ import vacuous.*
 import zephyrine.*
 
 object internal:
+  // The body of a submitted request, as the spring which streams the payload each time the
+  // request is sent. Called from the code `submit` stages, whose evidence is already sealed.
+  def spring[payload](payload: payload, postable: payload is Postable): Spring[Data] =
+    new Spring[Data]:
+      def apply()(using Tactic[Truncation.Error]): (Stream[Data] over Credit)^ =
+        postable.stream(payload)
+
   def expand
     ( todo:   Seq[Expr[Any]],
       method: Optional[Expr[Http.Method]] = Unset,
@@ -165,13 +172,10 @@ object internal:
                   host,
                   path,
                   contentType :: $headers,
-                  // Staging-boundary seal, as for `postable0`: the inliner sees through the
-                  // sealed given to the evidence proxy, which the spring would retain.
-                  // [quote-wall] staging-boundary seal of the request body's spring
-                  caps.unsafe.unsafeAssumePure:
-                    new Spring[Data]:
-                      def apply()(using Tactic[Truncation.Error]): (Stream[Data] over Credit)^ =
-                        postable0.stream($payload) )
+                  // Built by a method rather than in the staged code: the inliner sees
+                  // through the sealed given to the evidence proxy, which a spring written
+                  // here would retain, at a level the request's own seal cannot name.
+                  telekinesis.internal.spring($payload, postable0) )
 
             $client.request(request, $submit.target)
           }

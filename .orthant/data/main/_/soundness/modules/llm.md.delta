@@ -1,0 +1,5 @@
+orthant 2 release
+
+@ 0 1 0 1b01369aa791d51614232b99ff94e8b4
++ closes when the block ends, so the session cannot be kept beyond it. In code which is capture
++ checked, returning the session from the block, or a closure which uses it, is a compile error.

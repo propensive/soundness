@@ -176,7 +176,11 @@ object Benchmarks extends Suite("dsv-bench", m"Caesura benchmarks"):
         size
 
     . over(Axis(Library), Axis(Corpus)):
-        case (library, corpus) =>
+        // Bound whole, not as `case (library, corpus)`: under `unsafeNulls`, Scala 3.10.1's
+        // capture checker rejects the null test which a tuple pattern synthesizes here.
+        case cell =>
+          val library: Library = cell(0)
+          val corpus: Corpus = cell(1)
           val document: Text = Text(caesura.Benchmarks.documentFor(corpus))
           val tsv: Boolean = corpus == Corpus.Tsv
 

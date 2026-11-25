@@ -256,7 +256,10 @@ object Benchmarks extends Suite("threads-bench", m"Effect runtimes: Soundness vs
       var i = 0
       while i < ops do
         val value = i
-        sum += async(value).await()
+        // Bound first: Scala 3.10.1 fails to type `sum += async(value).await()`, where the
+        // operand's method has a leading `using` clause, as an assignment.
+        val joined = async(value).await()
+        sum += joined
         i += 1
       sum
 

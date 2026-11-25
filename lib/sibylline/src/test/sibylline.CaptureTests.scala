@@ -34,20 +34,30 @@ package sibylline
 
 import soundness.*
 
+import errorDiagnostics.stackTracesDiagnostics
+import internetAccess.online
+import logging.silentLogging
 import strategies.throwUnsafely
 
 // The session and its in-flight streamed response are capabilities scoped to the block a
 // provider's `session` lends them to; capture checking prevents either being retained beyond
 // it, while pure values — replies, messages, usage — may leave freely.
+//
+// Every name these samples use is the library's or the sample's own. `demilitarize` compiles
+// this file by itself, so a name from another file of the test module is "not found" on a clean
+// build: the sample then fails for that reason alone, and, outside a sample, the error stops
+// the sub-compilation before capture checking, leaving every other sample with nothing to
+// report. For the same reason each test names the failure it expects.
 object CaptureTests extends Suite("llm-capture", m"Confinement tests"):
   def run(): Unit =
     test(m"the session cannot be stashed in an outer variable"):
       demilitarize:
         def attempt(using session: Llm.Session^): Unit =
-          var stash: () => Llm.Reply = () => Scripted.reply(t"")
+          var stash: () => Optional[Llm.Reply] = () => Unset
           stash = () => session.ask(t"late")
           ()
-    . assert(!_.nil)
+      . map(_.message.tt)
+    . assert(_.exists(_.contains(t"hides parameter session")))
 
     test(m"a streamed response cannot be stashed in an outer variable"):
       demilitarize:
@@ -56,7 +66,8 @@ object CaptureTests extends Suite("llm-capture", m"Confinement tests"):
           val response = session.stream(t"go")
           stash = () => response.reply().unit
           ()
-    . assert(!_.nil)
+      . map(_.message.tt)
+    . assert(_.exists(_.contains(t"hides parameter session")))
 
     test(m"a pure reply may leave the session block"):
       demilitarize:
@@ -68,4 +79,53 @@ object CaptureTests extends Suite("llm-capture", m"Confinement tests"):
       demilitarize:
         def attempt(using session: Llm.Session^): List[Llm.Message] =
           session.history
+    . assert(_.nil)
+
+    // The routes out of a provider's own `session` block (#2459). Each sample takes its
+    // provider and HTTP backend as parameters, so that it needs no fixture.
+    test(m"the session cannot be a session block's result"):
+      demilitarize:
+        def attempt(target: Anthropic)(using Http.Backend): Llm.Session^ = target.session(llm)
+      . map(_.message.tt)
+    . assert(_.exists(_.contains(t"outlives its scope")))
+
+    test(m"the session cannot leave its block as an inferred value"):
+      demilitarize:
+        def attempt(target: Anthropic)(using Http.Backend): Llm.Reply =
+          val escaped = target.session(llm)
+          escaped.ask(t"Hello")
+      . map(_.message.tt)
+    . assert(_.exists(_.contains(t"outlives its scope")))
+
+    test(m"a closure reading the session cannot leave its block"):
+      demilitarize:
+        def attempt(target: Anthropic)(using Http.Backend): Unit =
+          val history = target.session(() => llm.history)
+          history().unit
+      . map(_.message.tt)
+    . assert(_.exists(_.contains(t"outlives its scope")))
+
+    test(m"a streamed response cannot leave its block"):
+      demilitarize:
+        def attempt(target: Anthropic)(using Http.Backend): Unit =
+          val response = target.session(llm.stream(t"go"))
+          response.reply().unit
+      . map(_.message.tt)
+    . assert(_.exists(_.contains(t"outlives its scope")))
+
+    // Through the instance itself, rather than the `session` extension: the handle is known
+    // there to be stateful, so a closure which only reads it captures its read-only view,
+    // `session.rd`, whose level Scala 3.10.0 did not check.
+    test(m"a closure reading the session cannot leave an instance's block"):
+      demilitarize:
+        def attempt(target: Anthropic)(using Http.Backend): Unit =
+          val history = Anthropic.sessional.session(target) { session ?=> () => session.history }
+          history().unit
+      . map(_.message.tt)
+    . assert(_.exists(_.contains(t"outlives its scope")))
+
+    test(m"a pure reply may leave a provider's session block"):
+      demilitarize:
+        def attempt(target: Anthropic)(using Http.Backend): Llm.Reply =
+          target.session(llm.ask(t"fine"))
     . assert(_.nil)

@@ -169,6 +169,14 @@ object JsonRpc:
     id.let: id => failure.lay(result.let(receive(id, _)))(receiveFailure(id, _))
 
 
+  // The method a message names: `Unset` for a response, which names none, and for a message
+  // whose `method` is not a string. Called from the dispatcher which `serve` stages.
+  def method(json: Json): Optional[Text] =
+    import dynamicAccess.dynamicJson
+
+    safely(json.method.as[Text])
+
+
   def request(target: HttpUrl, method: Text, payload: Json)(using Monitor, Probate, Online)
   :   Promise[Json] =
 

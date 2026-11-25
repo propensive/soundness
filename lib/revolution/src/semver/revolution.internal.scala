@@ -55,7 +55,10 @@ object internal:
     // components, which the opaque `List` alias makes awkward inside a quote.
     safely(versionText.tt.as[Semver]).or(halt(m"invalid semantic version"))
 
-    ' {
-        safely(${Expr(versionText)}.tt.as[Semver])
-        . or(panic(m"the version literal was validated at expansion"))
-      }
+    '{internal.validated(${Expr(versionText)}.tt)}
+
+  // Decodes a literal which `semver` has already validated. It is an ordinary method, not part of
+  // the quote, because a `safely` block in a macro's expansion is typed against one context
+  // function when the capture checker sees its second expansion in a compilation unit, and fails.
+  def validated(text: Text): Semver =
+    safely(text.as[Semver]).or(panic(m"the version literal was validated at expansion"))
