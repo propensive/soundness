@@ -1,0 +1,71 @@
+orthant 2 language
+
+@ 0 1 0 07ad08f0753065d01c946f4ae565ac64
++ # Ein Format, das die Toolchain nicht erreicht
+
+@ 0 3 0 1cdfbf8e6bd2eab2126927d9d12f7fd8
++ Eine Toolchain ist ein Graph von Formaten, und ein Artefakt zu erzeugen ist die Suche nach einem
++ Pfad hindurch. Die Suche kann fehlschlagen, und `path` sagt das in seinem Typ: Die Frage „Lässt sich
++ das bauen?“ wird gestellt und beantwortet, bevor irgendein Werkzeug läuft.
+
+% 2 1 0 11fcdab73cb3dcac0b863d7d522bc63e
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 1d1046ca3d6d6c6d0eda6e31b80c7564
++   label Ein Weg, den es vielleicht nicht gibt
+
+% 0 1 0 1477c34ff41c7c99183443e1d3238ae1
+
+% 1 1 0 0960c596329e4eb20a0b442aaa85c43a
+
+% 0 1 0 0976a2329d1d10180c0d15d015e8ff6c
+
+% 1 1 0 1fde6a84ea671f9909249f7fed426cea
+
+% 2 1 0 1c90b2d4c55cab7504a71ab369308e81
+
+% 3 1 0 135fe79ad60adbd7008f205af71dc0ef
+
+% 1 1 0 0e2e035449654a691d2cda7f9adbd0d2
+
+@ 0 2 0 077c3ca0e117b69d1e9a2df4e639383c
++   label Deklariert
++   highlight raises..Link.Error  kein Pfad, zwei Pfade, eine doppelte Kante oder ein Zyklus
+
+% 1 1 0 085026691bc697391c4049c888f447e0
+
+% 0 1 0 0df16b9de9886a3915e5732dae8a67d0
+
+% 1 1 0 1ec4176389dff7bf14cf8f3bb4b3c2e9
+
+% 2 1 0 019a943a022f91ed0f6bd092ffa332c0
+
+% 3 1 0 11684bff89fdbb620fea56cc90c0f73e
+
+% 1 1 0 126e4696562e534618a24d8e3d16c2c2
+
+% 1 1 0 136d267ff733a60e0f6246170d49df5f
+
+% 2 1 0 1525a46c87e9e0571e7d21b8e7c42b7a
+
+% 0 1 0 08a86cbdc9b8cb0109ed8ce5b435ce67
+
+% 1 1 0 0cd6459499a6bd5203d659b3bcc1b6aa
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 0 1 0 052396a9127fda4d09226a69ab3433ae
+
+% 0 1 0 0c3358cdaed33c9e01cac7f6c2045891
+
+% 0 1 0 153795d2077145e81b39754fa9784286
+
+% 1 1 0 045bbaa9f6570eb41c9a48cba094ac5e
+
+@ 0 3 0 124297f458d7431a082126f0c44eb523
++ Ein `Apk` liegt zwei Kanten von Classfiles entfernt, und nichts in der Anfrage sagt das.
++ [Lieferergebnisse und Pfade](../../soundness/modules/compiler.md#deliverables-and-paths) beschreibt
++ die Suche und [Fehlerbehandlung](../../philosophy/error-handling.md) die Deklaration.

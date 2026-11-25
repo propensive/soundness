@@ -1,0 +1,71 @@
+orthant 2 language
+
+@ 0 1 0 13f238314765d59d0159c433fa627cb5
++ # Beispiele
+
+@ 0 3 0 118caabe485a828e0f4ef835380646e5
++ Dies ist eine Sammlung kurzer Beispiele. Jedes zeigt eine Sache, die ein Leser mit Soundness tun
++ möchte, im Licht einer Idee, die sich durch alles zieht, in zwei bis zehn Zeilen Code. Sie sind
++ dazu gedacht, eines nach dem anderen gelesen zu werden, ausgewählt aus zwei Listen.
+
+@ 0 1 0 16f462eb3f0ed69103512ea22b3a401c
++ ## Die zwei Aspekte
+
+@ 0 3 0 0d374221d04d833c09f1abfaa03232a2
++ Ein *Thema* ist, was das Beispiel tut: JSON lesen, einen HTTP-Request senden, ein Datum
++ schreiben. Die Themen sind die Tutorials [der Dokumentation](../soundness/modules/overview.md)
++ und sind in `topics.tel` aufgeführt.
+
+@ 0 4 0 0cc9265ff2e3ae7c05702092f7db1d0a
++ Ein *Leitgedanke* ist die Idee, die das Beispiel zeigt: dass ein Literal vom Compiler geprüft
++ wird, dass ein Fehler in einem Typ benannt wird, dass eine Capability ihren Geltungsbereich nicht
++ verlassen kann. Die Leitgedanken sind in `themes.tel` aufgeführt, jeder mit einem Satz, der sagt,
++ was er bedeutet, und die meisten haben einen eigenen Essay unter
++ [der Philosophie](../philosophy/correctness.md).
+
+@ 0 5 0 165a921dbd9cca9e1eb10bd9c03fe67a
++ Ein Beispiel des Leitgedankens `checked-literals` zum Thema `json` ist die Datei
++ `json/checked-literals.md`. Ein zweites Beispiel desselben Paars trägt ein Wort nach dem
++ Leitgedanken, wie `json/checked-literals.pointer.md`. Die meisten Paare haben kein Beispiel, weil
++ die meisten Themen nur einige der Leitgedanken gut zeigen: Ein Beispiel wird nur dort geschrieben,
++ wo das Paar etwas lehrt, das keiner der beiden Aspekte allein lehrt.
+
+@ 0 1 0 109912b0e81854f51798283e62286277
++ `python3 etc/check-examples.py --matrix` zeigt, welche Paare belegt sind.
+
+@ 0 1 0 06547c0c9f012f3100bacf887bbc5a33
++ ## Ein Beispiel schreiben
+
+@ 0 3 0 11eff9b174d597c019639fdd0d3186a9
++ Ein Beispiel besteht aus einem Titel, einem oder zwei Sätzen, einem Code-Block und einem Satz,
++ der zum Tutorial oder Essay dahinter führt. Für Prosa und Code gilt der Standard
++ [der Tutorials](../standards/style.md), und diese Regeln kommen hinzu:
+
+@ 0 20 0 01f3017254127fe91f38190ec2a9ee0b
++ - Der Titel sagt, was das Beispiel zeigt, in den Worten des Themas, und nennt keinen der beiden
++   Aspekte.
++ - Der Code ist das Mindeste, das die Idee zeigt: zwei bis zehn Zeilen in jedem Frame.
++   Beispieldaten stammen von Shakespeare, wie [überall sonst](../standards/examples.md).
++ - Der Code hat keine Kommentare. Was ein Kommentar sagen würde, sagt ein `highlight` oder ein
++   `focus`, die `label` eines Frames oder die Sätze um den Code.
++ - Wo die Idee ist, dass etwas Falsches nicht kompiliert, ist das Beispiel eine Animation: ein mit
++   `errors show` markierter Frame, der den Fehler enthält, mit der eigenen Meldung des Compilers
++   darauf, dann ein Frame, der ihn behebt. Ein Fehler wird nie von Hand geschrieben.
++ - Wo die Idee eine Wahl ist, etwa eine Strategie, ein Kalender oder ein Backend, sind die
++   Versionen `alternative`s, unter Reitern.
++ - Jeder Frame wird kompiliert. Ein Beispiel, das ein Ergebnis zeigt, gibt es aus einem
++   `run`-Block nach der Animation aus, und eines, das dort, wo die Dokumentation gebaut wird,
++   nicht laufen kann, weil es das Netzwerk oder ein Terminal braucht, sagt das.
++ - Eine Markierung nennt ihren Bereich ohne Leerzeichen darin, denn was nach dem ersten
++   Leerzeichen folgt, ist ihre Beschriftung: Ein Bereich aus mehreren Wörtern wird von seinen
++   ersten bis zu seinen letzten Zeichen geschrieben, wie `raises..Error`. Jede Markierung hat
++   eine Beschriftung.
++ - Wo jeder Frame dieselben mehreren Importe wiederholen würde, stehen sie in einem einfachen
++   Code-Block vor der Animation, dem die Frames dann folgen.
++ - Ein Beispiel steht für sich. Es importiert, was es braucht, über das Paket `soundness` selbst
++   hinaus, und hängt von keinem anderen Beispiel ab.
+
+@ 0 3 0 1e54fb1abfaef2e60c3bec21aa9a4411
++ Wenn der Code, den ein Beispiel braucht, nicht kurz oder nicht sicher ist, kann der Fehler in der
++ API liegen und nicht im Beispiel. Ein solcher Fall wird in dem Issue festgehalten, das sie
++ verfolgt, und das Beispiel wird weggelassen, bis die API vorzeigbar ist.

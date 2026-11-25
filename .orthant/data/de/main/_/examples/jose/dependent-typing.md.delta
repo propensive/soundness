@@ -1,0 +1,100 @@
+orthant 2 language
+
+@ 0 1 0 029312e661d2849d0780da90ee48046d
++ # Der Typ des Schlüssels wählt den Algorithmus
+
+@ 0 3 0 0f3b1cdee55c66e40eeb99ae09d9c070
++ Der Header eines signierten Objekts nennt seinen Algorithmus, und nichts im Code sagt, welchen. Er
++ wird aus dem Typ des Schlüssels berechnet: Ein `Ecdsa[256]`-Schlüssel signiert `ES256`, ein
++ `Ed25519`-Schlüssel signiert `EdDSA`, und ein HMAC-Geheimnis über SHA-256 signiert `HS256`.
+
+% 2 1 0 1c148c72fb636721142c10ddff61d72d
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 18a80cfda99a821a05c5cc80bfabb0ae
++   label Ein Schlüssel auf einer elliptischen Kurve
+
+% 0 1 0 02dd7a090c51f33b0c722e8d11632502
+
+% 1 1 0 105c18e67668015104f1a6b8dffce34b
+
+% 2 1 0 0ac056341f9a013f0efbf4ea8113305c
+
+% 3 1 0 1de053746f1ef27d1511da186e42e2d7
+
+% 4 1 0 017da2605629966b14f1c8b5b8a6f6fd
+
+% 6 1 0 1dae64cec6e379fc01dbe2751b289dd1
+
+% 8 1 0 1d94991f9d1e578401aff0fe1e44aa44
+
+% 1 1 0 08dec9aea5ea75d00994a8778830b2b1
+
+@ 0 1 0 18ca6de9438a61e61802313c2ac4bcb8
++   label Ein Schlüssel auf einer Edwards-Kurve
+
+% 0 1 0 09155002b32927300110483e8da46af4
+
+% 1 1 0 13ce178e754fa6e516a6fbbc6203172a
+
+% 2 1 0 04e76d79e7ca45fa1cc32b5b74096e18
+
+% 3 1 0 15c6e4f065f1c3040bd6f27b25cc0652
+
+% 4 1 0 1a89586da0f8438b15ccbba16dd4f98e
+
+% 6 1 0 0ee22f48069737e20d5dd90fc53171ab
+
+% 8 1 0 093bc31752e9295b0b8e8f6cd37e4f2f
+
+% 9 1 0 150c3f8376f426ed0bf5ba848e25b6ea
+
+% 1 1 0 09c570b2d05c84a40ca0c7b2f6bb7764
+
+@ 0 1 0 1b93fbdc3f728d630cd685773cc207e4
++   label Ein gemeinsames Geheimnis
+
+% 0 1 0 098920aa3572addb1976285699219d91
+
+% 1 1 0 140a47fd33381bd30dd7a1022572a58c
+
+% 2 1 0 131f56e97cc2d8d51594e7d4cb020a4b
+
+% 3 1 0 12adbff3ed74a2830c382083b21ebabd
+
+% 4 1 0 1544860ca96be23909cf70a25e382159
+
+% 6 1 0 0c21e31144588d1e193262bf32f6459d
+
+% 8 1 0 107802f0831b11e317197e1451ebcf42
+
+% 9 1 0 0e05df1fa5c004111407d9f9749973b1
+
+% 0 1 0 05fc26134c9469aa05ecc3fd55541c5f
+
+% 1 1 0 18e268640ba5ca6400103cf9f7cbf13b
+
+% 1 1 0 136d267ff733a60e0f6246170d49df5f
+
+% 2 1 0 1525a46c87e9e0571e7d21b8e7c42b7a
+
+% 0 1 0 08a86cbdc9b8cb0109ed8ce5b435ce67
+
+% 1 1 0 0cd6459499a6bd5203d659b3bcc1b6aa
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 0 1 0 0c7442d1081a4bb80e09973324e7618f
+
+% 0 1 0 0bc90af87b48915c102a9982d8494631
+
+% 0 1 0 14bb11c475b88ef710a9e4b9c2290926
+
+% 1 1 0 04100755ba8135011ed7f1bc0ceb948a
+
+@ 0 1 0 1296c43292b5653f086fa503166309c5
++ [Signieren](../../soundness/modules/jose.md#signing) enthält die Tabelle der Schlüssel und
++ Algorithmen.

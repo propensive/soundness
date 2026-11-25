@@ -1,0 +1,52 @@
+orthant 2 language
+
+@ 0 1 0 1a01bca9246980d01097f4226aa82636
++ # Ein YAML-Dokument als Pattern
+
+@ 0 2 0 1ca702c4dae2f4380ccf39a6a9545b1b
++ Ein `y"…"`-Literal in einem `case` passt auf ein Dokument seiner Gestalt und bindet jede Einsetzung
++ an das YAML, das an ihrer Stelle gefunden wird.
+
+% 2 1 0 068c6654a52f1af01ec805b7887967ab
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 0 1 0 14aab7f0be2434f81421fb69d99543da
+
+@ 0 2 0 1dde33adb3f00ec503fb9a42214c3cfa
++   label Ein Mapping mit einem Schlüssel
++   highlight $name  als Yaml gebunden
+
+% 0 1 0 1accf43fe92797611dc8da9a374d03c2
+
+% 0 1 0 0feeb6ee26eddc7916a3c923ea9fa7b1
+
+% 0 1 0 12a618ab3fc8ab800817fdfca2fcb19c
+
+% 0 1 0 14e7ef76c97f5d5b155a9bda425e8435
+
+% 0 1 0 0795aff8ea6754201791135edd8e7594
+
+% 0 1 0 12fc9fec1ccee878175ccdbe272f87a0
+
+% 1 1 0 09fe5094430c4d8e0681ca124c1008d0
+
+% 1 1 0 136d267ff733a60e0f6246170d49df5f
+
+% 2 1 0 1525a46c87e9e0571e7d21b8e7c42b7a
+
+% 0 1 0 08a86cbdc9b8cb0109ed8ce5b435ce67
+
+% 1 1 0 0cd6459499a6bd5203d659b3bcc1b6aa
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 0 1 0 17400895822f80ea137bb5416c09480d
+
+% 0 1 0 06016d1a2f7e571509f890169b95dfd5
+
+% 1 1 0 08f265cb6de877e414f99ca53ae932d8
+
+@ 0 2 0 164b4dc39f6fe5aa188c8c8d534c8058
++ [YAML literal schreiben](../../soundness/modules/yaml.md#writing-yaml-literally) beschreibt das
++ Literal als Ausdruck.

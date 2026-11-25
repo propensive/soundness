@@ -1,0 +1,79 @@
+orthant 2 language
+
+@ 0 1 0 1ef69e5aea5ea14f033a7021391b8cb6
++ # Die von einem Knoten Abhängigen
+
+@ 0 3 0 04d89ac14a28cf941bf55b8c974d1c09
++ Ein `Dag` speichert die Abhängigkeiten jedes Knotens, nicht die von ihm Abhängigen. Um zu finden,
++ was von einem Knoten abhängt, muss jede Kante gelesen werden, und eine so teure Abfrage kompiliert
++ erst, wenn die Kosten anerkannt sind oder der Graph in eine Form gebracht ist, die die Antwort
++ bereithält.
+
+% 2 1 0 1e3e38a4ab2576ef1e5ec5c999453e9a
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 03d2049c50be6204080f32b6329f431c
++   label Ein Durchlauf über jede Kante, nicht anerkannt
+
+% 0 1 0 1477c34ff41c7c99183443e1d3238ae1
+
+% 1 1 0 0960c596329e4eb20a0b442aaa85c43a
+
+% 2 1 0 052b5d53c564213f191f74be413a911f
+
+% 4 1 0 0cb18bb51455a589161fc472bdb01e14
+
+% 4 1 0 1fdbf795e59042010bc9a38ed6bcec55
+
+% 5 1 0 1f4beaac5ae3546118c768674bee51d7
+
+@ 0 2 0 0d519407319da83c18797e0428e385a1
++   label Die Kosten, anerkannt
++   highlight linearScan  jede Kante wird gelesen
+
+% 1 1 0 1637cb91d86147bd176f31d683517e52
+
+% 2 1 0 1a3ea1b5596fb0a8028494f957a72328
+
+% 0 1 0 19877de71de69ee10465826305d991a2
+
+% 2 1 0 01464ddb3173132a12ffee7309c7bd6c
+
+% 4 1 0 1bd4d5475170750f18c391164f9e3359
+
+% 5 1 0 1955b3669d0bb6d00898c9a73d4ec16e
+
+@ 0 2 0 13a1ccfcc6fa07610ce2c220dc4b0c60
++   label Oder ein eingefrorener Graph, der beide Richtungen festhält
++   highlight freeze  die Abhängigen sind gespeichert, also wird nichts durchlaufen
+
+% 1 1 0 116b436e34b83ff905b248d41064260f
+
+% 2 1 0 1e039f350298c27513bbedfedc097b79
+
+% 4 1 0 1f1ef690cca907ec16887796832c8086
+
+% 0 1 0 1dc07d206ec8a7841e074b7a188bb65f
+
+% 1 1 0 18d68db5422a31d90af792c7382ce10d
+
+% 1 1 0 136d267ff733a60e0f6246170d49df5f
+
+% 2 1 0 1525a46c87e9e0571e7d21b8e7c42b7a
+
+% 0 1 0 08a86cbdc9b8cb0109ed8ce5b435ce67
+
+% 1 1 0 0cd6459499a6bd5203d659b3bcc1b6aa
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 0 1 0 13bcf821d2971208126060c8f724ad4e
+
+% 1 1 0 1c417701a0ac878c0aa98aba70cc7c70
+
+@ 0 2 0 1d24857efc89929a0ffe980e247df773
++ [Einfrieren](../../soundness/modules/graphs.md#freezing) beschreibt die Form, die ohne Durchlauf
++ antwortet.

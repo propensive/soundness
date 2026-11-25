@@ -1,0 +1,52 @@
+orthant 2 language
+
+@ 0 1 0 0df5db1dd8487d1e0cb692070b4e2f3a
++ # Eine Collection, deren Art man sieht
+
+@ 0 3 0 0af970094379251503e12076b6915be6
++ `inspect` schreibt jede Art von Collection in einer eigenen Form, sodass die Ausgabe zeigt, was
++ ein Wert ist, ohne seinen Typ zu nennen: Eine Liste steht in eckigen Klammern, eine Menge in
++ geschweiften, und eine Map hat Pfeile.
+
+% 2 1 0 00bcf0202f151896165ef6d8ee082f5c
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 0 1 0 14aab7f0be2434f81421fb69d99543da
+
+@ 0 1 0 03a320b0c45145941909a6ff1b3fec74
++   label Drei Collections derselben Zahlen
+
+% 0 1 0 0feeb6ee26eddc7916a3c923ea9fa7b1
+
+% 0 1 0 0b51de1f0d70a8d40193aa60cc217ad0
+
+% 0 1 0 06e284263312ea16168ba8d9a38fc11e
+
+% 0 1 0 12c4f1922f7861ee0c29fb965612392d
+
+% 1 1 0 0db718a23fc3f6ff1f33c3b87fcb0cef
+
+% 1 1 0 136d267ff733a60e0f6246170d49df5f
+
+% 2 1 0 1525a46c87e9e0571e7d21b8e7c42b7a
+
+% 0 1 0 08a86cbdc9b8cb0109ed8ce5b435ce67
+
+% 1 1 0 0cd6459499a6bd5203d659b3bcc1b6aa
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 0 1 0 081757c84a21c0b90800329e17872a80
+
+% 0 1 0 05f57464fc2e557407777e5179fa2b71
+
+% 0 1 0 04c791a9014e080619dacb89b3182199
+
+% 0 1 0 0903cb1bd25794e907196be09b8ae6da
+
+% 1 1 0 182bc6f9adadfc95044b5f84c1dcacf7
+
+@ 0 2 0 19770418eb2ab38b052146e41904ad98
++ Die letzte Zeile ist eine leere Map, die dennoch nicht mit einer leeren Liste verwechselt wird.
++ [Inspizieren](../../soundness/modules/display.md#inspecting) enthält die anderen Formen.

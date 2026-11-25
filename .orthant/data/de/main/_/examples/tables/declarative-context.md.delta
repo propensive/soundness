@@ -1,0 +1,86 @@
+orthant 2 language
+
+@ 0 1 0 0864746fbeb3ce2f00d22126610f368f
++ # Dieselbe Tabelle, in einem anderen Stil
+
+@ 0 2 0 06f3b36bff589cda1f9b9fc32a5aa753
++ Wie eine Tabelle liniert wird, ist weder Teil ihrer Definition noch ein Argument der Methode, die
++ sie zeichnet. Es ist ein Given, durch einen Import gewählt, und jede in diesem Geltungsbereich
++ gezeichnete Tabelle stimmt damit überein.
+
+% 2 1 0 1c8cabf8796098a108d1323f925ff196
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+@ 0 1 0 12472e71f25b495916da127f5f93411e
++ alternative Dick
+
+% 0 1 0 1c730dbf82e138f618ecb34d6dfd1f0a
+
+% 1 1 0 0b8fdb3ee624e2e814b739ecad363a98
+
+% 0 1 0 05cd777059359d0a12caf27aae086213
+
+% 1 1 0 0b00e96a71441b6003ac5895989780ed
+
+% 3 1 0 0ab9d2e38d6e1b8d189df3f260c60067
+
+% 5 1 0 098f6c27ebb43fd21e6c199c0671099a
+
+% 6 1 0 1c512aa864b36a8712aca8a29a1d69a5
+
+@ 0 1 0 003a0c470ddbe17e16c60e44a1c5ac77
++ alternative Abgerundet
+
+% 0 1 0 07a1e1eccf6aa370151c5ed35fcc5921
+
+% 1 1 0 1ed2267b1f3e9a2f1d3e8281a7ead2ee
+
+% 0 1 0 1921d9017a849004026c9cc40cd8e548
+
+% 1 1 0 04935eb273b687ef1e1096960e40bc7a
+
+% 3 1 0 0f8937db7bd974ea0167ecc6a3756953
+
+% 5 1 0 0781d283053c64f70e47476dbacd0df8
+
+% 6 1 0 0ec72a5a60396a5f161fe9ec683a83e1
+
+% 0 1 0 09d623055eb43a01047a072cfa91bdf9
+
+% 0 1 0 1d382860a004c6030cceeba7e90dc425
+
+% 1 1 0 0cab8f3d73153af410718ff7d32a4866
+
+% 0 1 0 013d4670d629584708ba57a457402880
+
+% 1 1 0 13aeb583c0e4debe180f5e81a3b0be68
+
+% 3 1 0 02d5a2c00604a1fb0627f2593b2a780b
+
+% 5 1 0 03488cf8a1494fee084cda3148052463
+
+% 6 1 0 1a3d07078aa5a4de17af1b52f2a20135
+
+% 1 1 0 16d2f4c6fa352e5e1659501d3ec00c81
+
+% 1 1 0 136d267ff733a60e0f6246170d49df5f
+
+@ 0 1 0 18875813fbd9236804cf5022357364a3
++ Im ersten der drei Stile wird die Tabelle so gezeichnet:
+
+% 2 1 0 0d453d54ed75d45f0c3c41174e341e60
+
+% 0 1 0 08a86cbdc9b8cb0109ed8ce5b435ce67
+
+% 1 1 0 0cd6459499a6bd5203d659b3bcc1b6aa
+
+% 0 1 0 00af3fdb360e27f9095168ce70444642
+
+% 0 1 0 00ed2f96dcc8b2890baca4895a0d56c7
+
+% 1 1 0 1a3c593547d7a2ec0a879975fd077067
+
+@ 0 2 0 05a648367198dd4f050df03e17df1984
++ [Stile](../../soundness/modules/tables.md#styles) zeigt jeden davon gezeichnet, und [Deklarativer
++ Kontext](../../philosophy/declarative-context.md) erklärt den Import.

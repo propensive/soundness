@@ -1,0 +1,66 @@
+orthant 2 language
+
+@ 0 1 0 1bacd470e6844b740cbe9ad16cc6d23b
++ # Ein Wert ist eine Zeile, und eine Liste davon ist ein Sheet
+
+@ 0 2 0 06f77c48317a973d042f49cc5c4a612e
++ `dsv` kodiert, was auch immer es erhält. Eine Case-Klasse wird zu einer Zeile, eine Liste davon zu
++ einem Sheet, und `show` schreibt beides als getrennten Text im Format des Geltungsbereichs.
+
+% 2 1 0 12471e2c2b2f1b0d12e8edc92eac215f
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 2 0 1d140d5dc26ce7e40561b9fa7d2e4c43
++   label Eine Zeile
++   highlight dsv  ein Dsv
+
+% 1 1 0 07ec1899f09fe3c20c8454b72a62b320
+
+% 2 1 0 16193a7ce35ce761178647d97499719e
+
+% 4 1 0 1c0169277c99d65800e2106dcbc3af7d
+
+% 6 1 0 13f47f33fd85a4f80ee1d11a5dac3bb6
+
+% 1 1 0 09ee4da67c5f5d1e179e102863c30930
+
+@ 0 2 0 13be0e7d71583c3c0a6eb2f38735be71
++   label Ein Sheet
++   highlight dsv  ein Sheet
+
+% 0 1 0 1accf43fe92797641dc8da9a374d03c5
+
+% 1 1 0 0783dfca2d5cd0bd11be3d890fcbff21
+
+% 2 1 0 04ef84cf0397af581d6fa61445f73dba
+
+% 4 1 0 1a5a82793760e16a1fa8ec2df365e7aa
+
+% 6 1 0 1ac0b677b9890949166a9b49f2e73216
+
+% 0 1 0 1d569279f8bc8cec10a936d7a210883a
+
+% 0 1 0 15d3a2916aeb5409195f709c452308b7
+
+% 1 1 0 0222dec2e7d0ae481934faad716507df
+
+% 1 1 0 136d267ff733a60e0f6246170d49df5f
+
+% 2 1 0 1525a46c87e9e0571e7d21b8e7c42b7a
+
+% 0 1 0 08a86cbdc9b8cb0109ed8ce5b435ce67
+
+% 1 1 0 0cd6459499a6bd5203d659b3bcc1b6aa
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 0 1 0 1db668a981b055c1090be1418122b30a
+
+% 1 1 0 03b62e97330b982110668b5898a0a520
+
+@ 0 2 0 13f1bec5f41e759314c3572c89a15534
++ [Kodieren](../../soundness/modules/csv.md#encoding) enthält die Formen, die direkt in Text oder
++ Bytes schreiben.

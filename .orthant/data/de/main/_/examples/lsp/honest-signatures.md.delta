@@ -1,0 +1,58 @@
+orthant 2 language
+
+@ 0 1 0 1d77f3f4677db8cf07a832a6639be65b
++ # Ein Handler sieht die Nutzdaten seiner eigenen Anfrage
+
+@ 0 3 0 0ce16552f90735cd055e3290f778ed71
++ Innerhalb eines Handlers sind die Nutzdaten der Anfrage ambient: `document`, `position`,
++ `newName`. Jede Registrierung verleiht nur, was ihre Anfrage mitbringt. Beim Öffnen eines
++ Dokuments geht es um keine Position, daher kompiliert `position` in einem `opened`-Handler nicht.
+
+% 0 1 0 12705ff5e291290d17fbc8389d59ef4a
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 17d9876155210c900b5a1bf8ac035a98
++   label Eine Position, wo die Anfrage keine hat
+
+% 0 1 0 1477c34ff41c7c99183443e1d3238ae1
+
+% 1 1 0 0960c596329e4eb20a0b442aaa85c43a
+
+% 2 1 0 01748922feeba80609f2ad7155bdb1fa
+
+% 4 1 0 0129f089a5294bf20b510215e0ab2ff1
+
+% 0 1 0 0c1550aca558def41e4d3bb9a5d6c62e
+
+% 0 1 0 04e0ddf07cedd4251385cbb944ca780d
+
+% 1 1 0 1a228a65a9e090d80753dccf635a3022
+
+@ 0 2 0 1a79244e5543a9ce0646b9f3b8545d8a
++   label Eine Hover-Anfrage hat eine
++   highlight position  von hover verliehen, mit dem Dokument
+
+% 1 1 0 1a967a4c75862db81fb1361b226c802a
+
+% 2 1 0 1f8f8b712f0c33e716d1125528885540
+
+% 4 1 0 09a11c8fb26de1440534f899ccf10dfa
+
+% 0 1 0 1e10d71149156eb911a5bae9a56c830d
+
+% 0 1 0 01c31d802988a277086170476be32f3b
+
+% 0 1 0 1fc158d49b14c3811dee3ad74d2c75d2
+
+% 0 1 0 18eafb32caed3dd50f976e787bd035ca
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 3 0 1f7b221b0173dd6c16251e61ac9de663
++ Das Beispiel wird kompiliert, aber nicht ausgeführt, da ein Server über Standardeingabe und
++ Standardausgabe mit einem Editor spricht. [Einen Server definieren](../../soundness/modules/lsp.md#defining-a-server)
++ enthält die Tabelle der ambienten Namen, und [Ehrliche Signaturen](../../philosophy/honest-signatures.md)
++ das Prinzip.

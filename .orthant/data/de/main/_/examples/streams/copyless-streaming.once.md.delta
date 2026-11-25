@@ -1,0 +1,73 @@
+orthant 2 language
+
+@ 0 1 0 122eb680ab8f543c0fbfe528b34ea0b5
++ # Ein Stream wird einmal gelesen
+
+@ 0 4 0 0a287f543d86d512192ac01856c87b28
++ Ein Stream gibt seinem Verwender ein Fenster auf seinen eigenen Puffer, ohne Kopie, was nur korrekt
++ ist, solange es einen einzigen Verwender gibt. Jede Endoperation verbraucht daher den Stream, und
++ das Separation-Checking des Compilers weist eine zweite Verwendung zurück. Werden die Daten zweimal
++ gebraucht, leert `memoize` den Stream einmal in einen unveränderlichen Wert, der geteilt werden
++ kann.
+
+% 0 1 0 12705ff5e291290d17fbc8389d59ef4a
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 0 1 0 05379442125b483c0fa7601737add2cc
+
+% 0 1 0 1690da98c5827aee1dc24530fb9e7cf5
+
+% 1 1 0 142722dbd2f6f75102f02756f52dd53b
+
+@ 0 1 0 0a46fce724063a781eda2a9a7cfb8a75
++   label Ein Stream, zweimal geleert
+
+% 0 1 0 1477c34ff41c7c99183443e1d3238ae1
+
+% 1 1 0 0fa118cd770dcd4a09fb1405f5e23642
+
+% 0 1 0 1accf43fe92797631dc8da9a374d03c4
+
+% 1 1 0 037aa7a803bd9eed098f42f0237d9298
+
+% 2 1 0 02331232e76762b8123a8a675d3dd98c
+
+% 4 1 0 0a4a3706191eec43154bc57e7323262d
+
+% 5 1 0 16dae6b2cd6ff35605653fae3204f8df
+
+% 0 1 0 0f05c74d7299992d185e1bd15659d9a9
+
+% 0 1 0 0d7ba697fc2e13c41395c079d8b8dd91
+
+% 1 1 0 19d703c3c2d1f3460897317cad2b5e75
+
+@ 0 1 0 0d290e5234664a2119ecef2f8ac555d3
++   label Einmal geleert, und der Wert zweimal verwendet
+
+% 1 1 0 095a532d19a192ca053829ed0ca55832
+
+% 1 1 0 0b3ed71f124dddd51f852a1547368739
+
+% 2 1 0 1f046fee6ba7cf5511d87d1015d3b8cd
+
+% 4 1 0 0c71dbbc982b1d2f19bae66688bc7b39
+
+% 5 1 0 082d38905baa043d1ac235f01f51d5b6
+
+% 0 1 0 0c94a1a6ffa9fa5c1e17e94d0a1fbeec
+
+% 0 1 0 166dd1344f5e0b971d1c3103d1c59b7a
+
+% 0 1 0 164f7a750459c03a04bc2a10a21f12e3
+
+% 0 1 0 18eafb32caed3dd50f976e787bd035ca
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 3 0 1c96c515b6baa2c713fd78ea48488388
++ [Über Streaming](../../soundness/modules/streams.md#on-streaming) erklärt, warum ein Fenster einen
++ einzigen Besitzer hat, und
++ [Capture-Checking](../../philosophy/capture-checking.md#separation-checking), woher der Compiler das
++ weiß.

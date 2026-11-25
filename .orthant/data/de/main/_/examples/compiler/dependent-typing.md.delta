@@ -1,0 +1,67 @@
+orthant 2 language
+
+@ 0 1 0 1892b44d2408995b15113ad9dd2efc99
++ # Eine Option, die die Compilerversion nicht hat
+
+@ 0 3 0 1fdbe58a60f9f3fc1d4707ec71909c8c
++ Ein `Scalac` trägt seine Sprachversion als Typ, und jede Option trägt die Versionen, die sie
++ akzeptieren. Eine Option, die einem für sie zu neuen oder zu alten Compiler übergeben wird, ist ein
++ Typfehler im Build-Werkzeug, gefunden, bevor irgendein Compiler gestartet wird.
+
+% 2 1 0 14a102a56c6171cb0020083ba1ef5b9a
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 146697ff627a769e11c714d03a069793
++   label Eine Option, die nur 3.6 hat
+
+% 0 1 0 1477c34ff41c7c99183443e1d3238ae1
+
+% 1 1 0 0960c596329e4eb20a0b442aaa85c43a
+
+% 0 1 0 150f97eb5b66c16d14fb11ee260cb82b
+
+% 1 1 0 1badfa422fcad28a143146cc64a29b0a
+
+@ 0 2 0 0f8ca994674d6a7517fc130969afded3
++   label Der Compiler, zu dem sie gehört
++   highlight 3.6  die Version, als Typ
+
+% 1 1 0 0df81d930eafb2cc11e0e309e23baecc
+
+% 0 1 0 1f6a4346c070005f094d03f5ed0887d9
+
+% 1 1 0 01e78be73eab8bbd1c906b3c0acd45a8
+
+@ 0 1 0 1db4d66f3351cd4114d9a25b87e222df
++   label Mit einer Option, die jede Version hat
+
+% 0 1 0 14f8f4c4c51d6db60925488affc6075f
+
+% 1 1 0 1ecaeff5baffad9d0286a2522cc8bf6c
+
+% 0 1 0 014a28f7be620f391c0defeee86acc97
+
+% 0 1 0 0623192ce3a8b81c1198125315097f06
+
+% 1 1 0 0f092e068f0e1d5a19ac94543b6d19e4
+
+% 1 1 0 136d267ff733a60e0f6246170d49df5f
+
+% 2 1 0 1525a46c87e9e0571e7d21b8e7c42b7a
+
+% 0 1 0 08a86cbdc9b8cb0109ed8ce5b435ce67
+
+% 1 1 0 0cd6459499a6bd5203d659b3bcc1b6aa
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 0 1 0 12acee47fd3091b715cc317ba011fa14
+
+% 1 1 0 0133bc97bfeb6d010be4c0323366e0a3
+
+@ 0 2 0 0080de7511c89c1a0b18972003b170a3
++ [Einen Compiler konfigurieren](../../soundness/modules/compiler.md#configuring-a-compiler)
++ beschreibt die Optionen.

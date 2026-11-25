@@ -1,0 +1,75 @@
+orthant 2 language
+
+@ 0 1 0 0650b756cc95391802667d6995285543
++ # Ein Gast, oder die ganze Liste
+
+@ 0 3 0 17fc4977fb92acbe08344b30dbc61fc5
++ Jedes Feld eines Umschlags nimmt eine Adresse oder eine Liste davon an. Das ist ein Union-Typ und
++ kein Paar von Methoden; es gibt also kein `sendToAll`, und eine einzelne Adresse wird nie in eine
++ Liste gepackt.
+
+% 0 1 0 12705ff5e291290d17fbc8389d59ef4a
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 04e8aa305284c8b60f78c741297d22b0
++   label Ein Empfänger
+
+% 0 1 0 1f7ec24d98466bae1bbb173818e433ad
+
+% 1 1 0 0bb19366e65c9dda1fbbf2764efb6e7d
+
+% 2 1 0 1c0c4d0ccd303ffd0174465ac72af6b4
+
+% 0 1 0 17f2181144a67c70144cef0fd0c77feb
+
+% 0 1 0 06ca0ca2075de2a216a54fd198b5541b
+
+% 1 1 0 15a95b700b86c910155ab0c071d8cd06
+
+@ 0 1 0 1911a77db7c36098114801a08ebc1df3
++   label Viele Empfänger
+
+% 0 1 0 001b31afef62466c1a24aef9ecd30ff8
+
+% 1 1 0 186a96672ab9697704b8d049b8a750ae
+
+% 2 1 0 030c4a2cf2108ef315088a79177c9508
+
+% 4 1 0 07995497d26fa9491befb437d21a7949
+
+% 5 1 0 04f0004bda81baff03d99c783d7dcab5
+
+% 0 1 0 107d8241f4ed61a70e9c96e4638801ff
+
+% 1 1 0 199b422cb458bd831d31998f5da4abd6
+
+@ 0 1 0 14cbc960ac34fda90cc119aec9f7e32d
++   label Und einer in Kopie
+
+% 0 1 0 0735598e398c7e74072572f510e19647
+
+% 1 1 0 0b47dc43f14ed0ea15b1375f99a404d1
+
+% 2 1 0 0cfd592002dfe4f2021e99afa7aa7cfe
+
+% 4 1 0 18d28e8c1b2218d514698c0c7703d34a
+
+% 5 1 0 041621872534fd0e0da105b0a4eb68d7
+
+% 0 1 0 1260ceba6b2b51ad13a355c5cc07d098
+
+% 0 1 0 14421d694ca8d9bf0b233e3122a1394d
+
+% 0 1 0 04f369130f10bdb00c2e070648e4b47a
+
+% 0 1 0 00cb1b4cf26d1c54003f15013ae202c4
+
+% 0 1 0 18eafb32caed3dd50f976e787bd035ca
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 1 0 05776eb6ab62b739116a6f6930400a65
++ [Senden](../../soundness/modules/email.md#sending) listet die Felder des Umschlags auf.

@@ -1,0 +1,60 @@
+orthant 2 language
+
+@ 0 1 0 197674a7750da6bd0cd487851e449e16
++ # Ein Listener braucht einen Supervisor
+
+@ 0 2 0 0c81c1f57cc1cd9a03b93c014b7e49f2
++ `listen` führt für jede Verbindung einen Handler in einer eigenen Aufgabe aus. Diese Aufgaben müssen
++ zu etwas gehören; ein Listener kann also nicht dort gestartet werden, wo nichts ihn überwacht.
+
+% 0 1 0 12705ff5e291290d17fbc8389d59ef4a
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 1bcfa62fb90a21c000f29007dcdbe5de
++   label Ein Listener, den nichts überwacht
+
+% 0 1 0 1477c34ff41c7c99183443e1d3238ae1
+
+% 1 1 0 0960c596329e4eb20a0b442aaa85c43a
+
+% 2 1 0 19c5d1130323f8681f3b898ed8c44964
+
+% 3 1 0 0af35549e79461230abe55446f10af54
+
+% 5 1 0 09d9f477c5f4a36211281406837c9405
+
+% 0 1 0 1c6b3473f47b49cd1cb55a09153add22
+
+% 0 1 0 1c1477aceea79bec13ea212b12cb6198
+
+% 1 1 0 020a1b8470ead77b0757466352d40d3d
+
+@ 0 2 0 0032395777632d8502bc06dd852d8ef8
++   label Ein Listener in einem überwachten Geltungsbereich
++   highlight supervise  die Aufgabe jedes Handlers endet, bevor dieser Block endet
+
+% 1 1 0 147d273193a3cc730ba0ad97b962b71d
+
+% 2 1 0 18fbabbf4fca51bc1f2cc0bdf22b386e
+
+% 3 1 0 0456f9d465eb5314003747f1d391fc55
+
+% 5 1 0 0bf06eab5631772008d28cc112c7d8d3
+
+% 0 1 0 1ddbe24ca96966e71e52f5d6ca9d7a17
+
+% 0 1 0 0736367a46b1affb19d414e6bb1df48c
+
+% 0 1 0 0cae074f1d27653403bd6ab5af29b07e
+
+% 0 1 0 18eafb32caed3dd50f976e787bd035ca
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 3 0 1bb89b52439f136e03611edaa45b34c5
++ Das Beispiel wird kompiliert, aber nicht ausgeführt, da es einen Port binden würde.
++ [Bedienen](../../soundness/modules/sockets.md#serving) beschreibt `listen`, und [Strukturierte
++ Nebenläufigkeit](../../philosophy/structured-concurrency.md) die Regel.

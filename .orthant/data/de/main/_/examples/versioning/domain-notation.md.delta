@@ -1,0 +1,73 @@
+orthant 2 language
+
+@ 0 1 0 0fd51ce469f786220eb8703dadb4dc37
++ # Versionen in ihrer eigenen Ordnung
+
+@ 0 3 0 16185f47cb2822d30731b492289eab6c
++ Versionen werden mit `<` verglichen, wie Zahlen, aber nach den Regeln der Spezifikation, die weder
++ die von Zahlen noch die von Text sind. Zehn folgt auf neun, ein Release folgt auf seinen eigenen
++ Release Candidate, und Build-Metadaten zählen nichts.
+
+% 2 1 0 1aa09b9ee3fe4e3419bcf6c5ed78b406
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 2 0 12fe1a1d4a2c1c3f0d84971f7fda3c64
++   label Zahlen werden als Zahlen verglichen
++   highlight <  zehn ist mehr als neun
+
+% 1 1 0 19948b7c537a5a7914020e8a028c8563
+
+% 2 1 0 0a536fff9658fc6801d26cbe5001ee57
+
+% 1 1 0 0dc52e3c24d850ee02550ce41639c478
+
+@ 0 2 0 14dbf6f0330b50bb19c73363606bad7a
++   label Ein Release steht über seinen Prereleases
++   highlight v"1.0.0-rc.1"..v"1.0.0"  der Kandidat kommt zuerst
+
+% 1 1 0 06234ceca4a55ce6153751fb096faed4
+
+% 2 1 0 0ab8d0983e194aa50686c288ba7e9eb6
+
+% 3 1 0 03a442e0f4b6d7071f95b55780e3f081
+
+% 1 1 0 07e91982ae168e9e1c5e6145a98b2438
+
+@ 0 2 0 0f31779c81b484ca0655afb764230521
++   label Build-Metadaten werden nicht verglichen
++   highlight ==  dieselbe Version, zweimal gebaut
+
+% 1 1 0 1d601b3cfc946aff0054412499a3c8c6
+
+% 2 1 0 103e5c697e0676d811ec8de84c81da1f
+
+% 3 1 0 03c4ea02fe2675300e4d539ce21b108a
+
+% 0 1 0 09d32a1309c5e8fd15632fa82338d8cd
+
+% 1 1 0 0b51174214cee8f00f411f31ff0d6b04
+
+% 1 1 0 136d267ff733a60e0f6246170d49df5f
+
+% 2 1 0 1525a46c87e9e0571e7d21b8e7c42b7a
+
+% 0 1 0 08a86cbdc9b8cb0109ed8ce5b435ce67
+
+% 1 1 0 0cd6459499a6bd5203d659b3bcc1b6aa
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 0 1 0 12f0d1de38c3ef2d16dabb6a949ea325
+
+% 0 1 0 02a7d2b2877ecb21149a149f8c3b7b0e
+
+% 0 1 0 0f9c5f7a613f489612fe8f46673801e5
+
+% 1 1 0 0425f8d90b93aad21fd772837c4d5020
+
+@ 0 2 0 07a788fb2444767a1e87c2a537b3a7ec
++ Alle drei sind wahr. [Ordnung](../../soundness/modules/versioning.md#ordering) zeigt mehr von den
++ Vorrangregeln.

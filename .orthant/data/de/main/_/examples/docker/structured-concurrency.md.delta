@@ -1,0 +1,55 @@
+orthant 2 language
+
+@ 0 1 0 190e823ce019f8b51f42353f10135e20
++ # Ein Client lebt in einem Geltungsbereich
+
+@ 0 3 0 07beb49cd48d5eac1af2c8e46e5314c0
++ Eine Verbindung zu containerd hält Aufgaben im Hintergrund am Laufen, die ihre Requests befördern.
++ Sie brauchen einen Geltungsbereich, zu dem sie gehören, also kann ein Client nicht außerhalb eines
++ solchen erzeugt werden, und wenn der Geltungsbereich endet, enden die Aufgaben der Verbindung mit
++ ihm.
+
+% 0 1 0 12705ff5e291290d17fbc8389d59ef4a
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 0c3e8766c121913611a1dc0322ea89bb
++   label Ein Client, den nichts überwacht
+
+% 0 1 0 1477c34ff41c7c99183443e1d3238ae1
+
+% 1 1 0 0960c596329e4eb20a0b442aaa85c43a
+
+% 0 1 0 053c2db3bc6dcbfd1636faec21de7ec4
+
+% 0 1 0 140adf26283dd9c11156f3092c94dc05
+
+% 0 1 0 19b9295461099b940e83c99fed1852ae
+
+% 1 1 0 03b9d9fa6c0737db052e487c5d087801
+
+@ 0 2 0 1c8db88e91655c7b10359a78041cb60b
++   label Ein Client und sein Request, in einem überwachten Geltungsbereich
++   highlight supervise  besitzt die Hintergrundarbeit der Verbindung
+
+% 1 1 0 124ed41f13eeec8d006e37c134ff5557
+
+% 0 1 0 1f3420529ad22c40045718288cdcf5ab
+
+% 0 1 0 0113c2969eccc2fa005ba7bf2b040764
+
+% 0 1 0 11f5782c9e3687d40212691da0e20f03
+
+% 0 1 0 0655208f0e1d1a7b1c9f451366394332
+
+% 0 1 0 18eafb32caed3dd50f976e787bd035ca
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 4 0 1d247c4f8aa0462719fc160c1e232a3a
++ Das Beispiel wird kompiliert, aber nicht ausgeführt, da es einen laufenden Daemon braucht. [Mit
++ einem Daemon verbinden](../../soundness/modules/docker.md#connecting-to-a-daemon) beschreibt den
++ Endpunkt und [strukturierte Nebenläufigkeit](../../philosophy/structured-concurrency.md) die Regel,
++ dass eine Aufgabe einen Besitzer hat.

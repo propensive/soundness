@@ -1,0 +1,63 @@
+orthant 2 language
+
+@ 0 1 0 1fea2be144b9eedf05215eab650fc4f6
++ # Ein Manifest mit einem Attribut mehr
+
+@ 0 3 0 14f824bc065ca3c90f8fb46ccd283a4f
++ Ein `Manifest` ist ein Wert. Ein Attribut mit `+` hinzuzufügen ergibt ein anderes Manifest, und das,
++ zu dem es hinzugefügt wurde, bleibt unverändert, sodass ein Basismanifest von jedem JAR geteilt
++ werden kann, das daraus gebaut wird.
+
+% 2 1 0 1b201169263e4a6e0c7c2b8555bb21a8
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 0160a435453def1e064f68b9b6c8e6eb
++   label Ein Manifest für jedes JAR
+
+% 1 1 0 11d20d56052078a70509cb01ffc6cb71
+
+% 2 1 0 0040bb7a946f1c53082fcb27d0a9b293
+
+% 4 1 0 0197f59018b38f871649eaa78d30ccdc
+
+% 1 1 0 1dc82359b43ff02419ed6435d710add2
+
+@ 0 2 0 06d7d045d1d209d608e9ffc8b720bd1f
++   label Ein weiteres, für das ausführbare
++   highlight +  ein neues Manifest
+
+% 1 1 0 0423c3de8d6d8e8b01ce28d64f4cd8ad
+
+% 2 1 0 0d873af6fcc3042b15542e68e440911d
+
+% 4 1 0 0db1e94ab04232b514c234ecf35338ae
+
+% 0 1 0 05c448dbed348ee31c1e77f7e91d0e3c
+
+% 1 1 0 06dfd965520788500e11fa14fcecc668
+
+% 1 1 0 136d267ff733a60e0f6246170d49df5f
+
+% 2 1 0 1525a46c87e9e0571e7d21b8e7c42b7a
+
+% 0 1 0 08a86cbdc9b8cb0109ed8ce5b435ce67
+
+% 1 1 0 0cd6459499a6bd5203d659b3bcc1b6aa
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 0 1 0 10b3b1ef2cf3b8da12c8bbd0493dd4c8
+
+% 0 1 0 03c2517a12654e2b1e9b781c4c610daf
+
+% 0 1 0 003891864334d75c1466614740808d5d
+
+% 1 1 0 1a11f19e7f8158eb1cc2494f653e52a8
+
+@ 0 3 0 098ff5c5e858e4a00577e17bffaae54a
++ Das Basismanifest hat weiterhin ein Attribut, das neue hat zwei.
++ [Manifeste](../../soundness/modules/versioning.md#manifests) zeigt die Attribute und
++ [Unveränderlichkeit](../../philosophy/immutability.md) die Gründe.

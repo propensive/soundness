@@ -1,0 +1,63 @@
+orthant 2 language
+
+@ 0 1 0 1c40f0788b99f49a1a85784c7b174ad4
++ # Ein Tag ist kein Branch
+
+@ 0 3 0 07dc2bebccdda323092e861c1cd0e4a2
++ Ein Branch, ein Tag und ein Commit-Hash sind verschiedene Typen, obwohl jeder als kurzes Stück Text
++ geschrieben wird. Eine Operation, die `HEAD` auf einen Branch setzt, nimmt einen `Git.Branch` und
++ bekommt nicht versehentlich ein Tag.
+
+% 0 1 0 12705ff5e291290d17fbc8389d59ef4a
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 11aa62908f6e39961e77319bed35a518
++   label Zu einem Tag wechseln
+
+% 0 1 0 1477c34ff41c7c99183443e1d3238ae1
+
+% 1 1 0 0960c596329e4eb20a0b442aaa85c43a
+
+% 2 1 0 152ffc3ff2232b6805c4abaac1d7e861
+
+% 3 1 0 0a2f175aaa2a3ff31d23477a3fc53afe
+
+% 4 1 0 11092eae2bbd57da0cfc468ecd07709a
+
+% 6 1 0 0bd5342bbb7076a60768a596683e534e
+
+% 7 1 0 0277bcc0c91683c705edd82f5235546e
+
+% 0 1 0 0b7f6c175cf82865179b01b68b05b5ca
+
+% 1 1 0 1315333fa0ecb7ea07d7242029055254
+
+@ 0 2 0 0999c315c1d0477d10b4a6ac9b900612
++   label Zu einem Branch wechseln
++   highlight Git.Branch(t"second-quarto")  die einzige Art von Ref, die switch nimmt
+
+% 1 1 0 1664fe921c63106a05e5ed7ab9831d10
+
+% 2 1 0 1c0b767c2192af7705ff7c2be3b7c64a
+
+% 3 1 0 00f97ac6483f37c902b46078d34981db
+
+% 4 1 0 110679b5973336410c6e4db3b42aa2cd
+
+% 6 1 0 0ae9a468d34c5c78041296f067b59f7c
+
+% 7 1 0 0d1169659f4669911e43878428983dc9
+
+% 0 1 0 17551ff56ba4fa51036ac987c5745733
+
+% 0 1 0 18eafb32caed3dd50f976e787bd035ca
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 3 0 1f576d5dc9d3d79d07c021c0986f16ce
++ Das Beispiel wird kompiliert, aber nicht ausgeführt, da es ein Repository braucht.
++ [Refs](../../soundness/modules/git.md#references) führt die Typen auf, und [unmögliche
++ Zustände](../../philosophy/impossible-states.md) erklärt, warum sie getrennt gehalten werden.

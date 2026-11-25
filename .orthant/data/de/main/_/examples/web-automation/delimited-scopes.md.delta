@@ -1,0 +1,67 @@
+orthant 2 language
+
+@ 0 1 0 1d8c4e8d160efea71263c944ec341868
++ # Ein Browser für die Dauer eines Blocks
+
+@ 0 3 0 0713e0cc995e441c04ce3fd56c568a1c
++ `session` startet den Treiber eines Browsers, öffnet eine Sitzung und führt einen Block aus, in dem
++ `browser` diese Sitzung ist. Wenn der Block endet, durch Rückkehr oder durch Fehlschlag, werden
++ Sitzung und Treiber geschlossen.
+
+% 0 1 0 05f2ae76781bc53c0f28815590cdc90c
+
+% 0 1 0 16f746828b2bb3e60bb4066c2f40a307
+
+% 0 1 0 19e515dae2c3cff90e013ad9bbf3e527
+
+% 0 1 0 0340a2c5478cc3190fe31a24732d0680
+
+% 0 1 0 126ea9b3e0450b920c7880db223bf337
+
+% 1 1 0 0ae73885e623b9501acf5cf6512aaf4e
+
+% 0 1 0 12705ff5e291290d17fbc8389d59ef4a
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 10fdcc12dd132bb202830c666ce37d1e
++   label Eine Sitzung
+
+% 0 1 0 0dd525428d295c6c15d4349ba244ee29
+
+% 1 1 0 03708dba0854757e0edd20ede6f13086
+
+% 2 1 0 019fbecb8fd7b0591d1c4aba1dffba2f
+
+% 3 1 0 1dbd58f3a59722ce19879402f2476e7a
+
+% 0 1 0 0556d5f2afebf0b51919caf003179245
+
+% 1 1 0 0f1b027580323d180e2f0a88cf0ac61d
+
+@ 0 2 0 0948ba203cf246a412a602a3eb745659
++   label Der Browser, darin verfügbar
++   highlight browser  die Sitzung, im Geltungsbereich des Blocks
+
+% 0 1 0 0fd2ac3797a0477c02117fa7e01a94b2
+
+% 1 1 0 0428a31f3d3e43b7091c3ca786dd21af
+
+% 2 1 0 02e0e2ad19ba8a86140f3bad50312a79
+
+% 3 1 0 124af76a6eebabf80b8e606ffc5a3f03
+
+% 0 1 0 175d5074f3e6597c0675032ed74d163d
+
+% 0 1 0 116f349ff035a6c50e2d5955c68c4c09
+
+% 0 1 0 18eafb32caed3dd50f976e787bd035ca
+
+% 1 1 0 136d267ff733a60e0f6246170d49df5f
+
+@ 0 3 0 01d0b4402b4892711a4fecc4a60c73ea
++ Das Beispiel wird kompiliert, aber nicht ausgeführt, da es einen Browser braucht. [Einen Browser
++ steuern](../../soundness/modules/web-automation.md#driving-a-browser) behandelt die übrigen Browser
++ und einen Treiber, der bereits läuft.

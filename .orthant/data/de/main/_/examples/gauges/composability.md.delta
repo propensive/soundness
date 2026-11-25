@@ -1,0 +1,81 @@
+orthant 2 language
+
+@ 0 1 0 1727a4a0203bd5400c434d9d19769e69
++ # Eine Übertragung, gemessen in Bytes und Sekunden
+
+@ 0 3 0 1eb3add5e2acb80409e42ff4e6eac3e4
++ Ein `Transfer` erhält keine bloßen Zahlen. Die übertragenen Bytes sind eine Größe in Bytes, und
++ die benötigte Zeit ist eine Dauer, sodass die Rate und die Schätzung, die die Anzeige zeigt, aus
++ Werten berechnet werden, deren Einheiten der Compiler geprüft hat.
+
+% 2 1 0 065c236c174f8eff195f003995dfaaff
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 1265c8050cd822a2092ebe40acf9a52e
++   label Übertragene Bytes, von einer Gesamtmenge
+
+% 1 1 0 0667d9b20eeaedb3103be50b4253bc3e
+
+% 2 1 0 08753121886532350d229e0526fac9cf
+
+% 3 1 0 1e44cf7a208b23f01ebc2582e0ed6a76
+
+% 4 1 0 05dec93d349ce7de160fea945d26f75d
+
+% 0 1 0 07e6fabe0798e3a11f1738e029aa4df5
+
+% 1 1 0 1b549fc244d170ae1d7cad416825b410
+
+@ 0 2 0 161a3d511e5e6928172864f2cd4dff31
++   label Und die benötigte Zeit
++   highlight 32*Second  gibt der Anzeige eine Rate und eine Schätzung
+
+% 1 1 0 0fcbd2dec14072c20ca8474748c310f7
+
+% 2 1 0 06e0d0bc7d04cc450bf7eb13cc6e61f5
+
+% 3 1 0 12f19a939868ea9b1c2098f0d88b496c
+
+% 4 1 0 13a6c6446d78e6ff0e4cf76eed5053d7
+
+% 0 1 0 18f67846d6c7ea7d1491dbc813170176
+
+% 1 1 0 0dbae812d4b0c9d00d04cba8c59d2f1e
+
+@ 0 1 0 096151f9af05e9271302ec278a4bc88d
++   label Eine Länge ist keine Größe in Bytes
+
+% 0 1 0 1477c34ff41c7c99183443e1d3238ae1
+
+% 1 1 0 0960c596329e4eb20a0b442aaa85c43a
+
+% 2 1 0 04a70ed99adddf8910113b6add8d0ecc
+
+% 3 1 0 03ec8580e90ffda0008fbfab6bfd5338
+
+% 4 1 0 116e95975bfa8f1503c7cff9f1abdd9b
+
+% 0 1 0 15c2ee39ee47c34d0ff2a38a6d73f81c
+
+% 1 1 0 00be88ba5dd528331cc656faea64f5c6
+
+% 1 1 0 136d267ff733a60e0f6246170d49df5f
+
+% 2 1 0 1525a46c87e9e0571e7d21b8e7c42b7a
+
+% 0 1 0 08a86cbdc9b8cb0109ed8ce5b435ce67
+
+% 1 1 0 0cd6459499a6bd5203d659b3bcc1b6aa
+
+% 0 1 0 06d6d3a7fec399c9124100808e28e43d
+
+% 0 1 0 00532d32bee3fc090d65588b18cd53a6
+
+% 1 1 0 12cd62310515cbdd1e2464e11af31d11
+
+@ 0 2 0 01ecf7707d9b58cf190e267d61090c51
++ [Größen](../../soundness/modules/quantities.md) enthält die Einheiten, und
++ [Status](../../soundness/modules/gauges.md#statuses) die Statustypen.

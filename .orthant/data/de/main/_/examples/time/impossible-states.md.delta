@@ -1,0 +1,70 @@
+orthant 2 language
+
+@ 0 1 0 18e1859d99b6581c1ed74a31fb7a4935
++ # Zwei Zeitskalen, die sich nicht mischen lassen
+
+@ 0 3 0 0ddc589ef18d76aa155a453e4d27248a
++ Die Unix-Zeit ignoriert Schaltsekunden, die Atomzeit zählt sie, daher weichen beide um eine
++ wachsende Anzahl von Sekunden voneinander ab. Die Zeitskala ist Teil des Typs eines Zeitpunkts, und
++ eine Differenz zwischen Zeitpunkten auf zwei Zeitskalen kompiliert nicht.
+
+% 2 1 0 0c5f908981cb5e5f025ca3f3888fd2b2
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 2 0 14fcdd175fbc45c5185fe2e2a9d48a8c
++   label Zwei Zeitpunkte auf einer Zeitskala
++   highlight landing..launch  eine Größe in Sekunden
+
+% 0 1 0 1accf43fe92797631dc8da9a374d03c4
+
+% 1 1 0 037aa7a803bd9eed098f42f0237d9298
+
+% 2 1 0 0cac27135f25425b13dfd8354f51ea18
+
+% 4 1 0 0a352a1deb47496919136eb131365767
+
+% 0 1 0 057a86c284ab9f8706b8cda6022e6ea6
+
+% 2 1 0 1d477205865158e01225772c3acfcdd3
+
+% 1 1 0 09f2318defc697c215d0d988702931af
+
+@ 0 1 0 052b00112c5e12731a30d5cb8d7214d5
++   label Einer von ihnen, in Atomzeit überführt
+
+% 0 1 0 1477c34ff41c7c99183443e1d3238ae1
+
+% 1 1 0 0960c596329e4eb20a0b442aaa85c43a
+
+% 2 1 0 02c6103f6119da9d03a3464aff17c7e3
+
+% 4 1 0 182e86b78c0a2d1a00527e4a1c731232
+
+% 0 1 0 0fcff9830a0cc24017b3abc01c486b1e
+
+% 2 1 0 0ae61fa55374ca0107fa16996e2f1ea1
+
+% 1 1 0 0e3274cffc8fa09f11464c971264239f
+
+% 1 1 0 136d267ff733a60e0f6246170d49df5f
+
+% 2 1 0 1525a46c87e9e0571e7d21b8e7c42b7a
+
+% 0 1 0 08a86cbdc9b8cb0109ed8ce5b435ce67
+
+% 1 1 0 0cd6459499a6bd5203d659b3bcc1b6aa
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 0 1 0 1ff46eadb86ffabc103c1dc6d8e7c8b4
+
+% 0 1 0 17b54afe5732f90a13d5bcb376d63ac2
+
+% 1 1 0 04e3a1d0af6a4078052fff924f2bca7a
+
+@ 0 2 0 12c4b2a00733aac01a7859d8c4afb330
++ [Schaltsekunden und Atomzeit](../../soundness/modules/time.md#leap-seconds-and-atomic-time) erklärt,
++ was die Umrechnung berücksichtigt.

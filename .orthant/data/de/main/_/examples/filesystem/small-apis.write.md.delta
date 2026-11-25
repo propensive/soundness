@@ -1,0 +1,54 @@
+orthant 2 language
+
+@ 0 1 0 0d97db3e7711191503a72619124081eb
++ # Eine Methode schreibt Text oder Bytes
+
+@ 0 3 0 112a5849cc9873b411d0501265200f1b
++ Eine ganze Datei wird mit `write` geschrieben, was auch immer hineingeschrieben wird. Text wird mit
++ der Codepage im Geltungsbereich kodiert, Bytes werden geschrieben, wie sie sind, und alles andere,
++ was zu einem Stream von Bytes werden kann, wird von derselben Methode geschrieben.
+
+% 0 1 0 12705ff5e291290d17fbc8389d59ef4a
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+% 0 1 0 1117844e3962f4c4090f1881266b5cf1
+
+@ 0 1 0 1bd87efc26ee35210d1855737ad8f2bc
++   highlight write  mit der Codepage im Geltungsbereich kodiert
+
+% 1 1 0 0dead7b47d642bb90a22b027d8ff550e
+
+% 2 1 0 040b89bc79137eca0af5c094a1f95422
+
+% 3 1 0 15e7a7d26705c4ec0771289096009d5e
+
+% 5 1 0 0671f8395a046611122c5b20e271e79c
+
+% 1 1 0 13dac10b1b6f19880e359f3631cb5c51
+
+% 0 1 0 1b5898967c9caa5c13f1a8694c81e729
+
+@ 0 1 0 1a4c9c1a7e84c9411cbf193acd7a1398
++   highlight write(bytes)  dieselbe Methode
+
+% 1 1 0 1f09913421c337f2012c49eec6893265
+
+% 2 1 0 0993dd541c06729d10ea100484c8d0fe
+
+% 3 1 0 09aae3ae797cd5881e100dc2a554f98b
+
+% 5 1 0 17291839578dfb700d5a9f62872b271b
+
+% 0 1 0 176d99c50e1c32351c7db61deefc9879
+
+% 0 1 0 18eafb32caed3dd50f976e787bd035ca
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 4 0 1a1b7c41447421500bc84aaf70b8bc7f
++ Das Beispiel wird kompiliert, aber nicht ausgeführt, da es eine Datei schreiben würde. [Lesen und
++ Schreiben](../../soundness/modules/filesystem.md#reading-and-writing) behandelt die Handles für
++ größere Dateien, [Kleine APIs](../../philosophy/small-apis.md) die Gründe für einen einzigen Namen.

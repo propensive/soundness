@@ -1,0 +1,79 @@
+orthant 2 language
+
+@ 0 1 0 1cb869fdabacdda012a76aa3294a5902
++ # Eine binäre Suche, die nicht die falsche Ordnung verwenden kann
+
+@ 0 3 0 1039f76b2a0f0b401c312b5e8ffbb7d9
++ Eine binäre Suche ist nur dann korrekt, wenn die Elemente sortiert sind, und zwar nach der Ordnung,
++ mit der die Suche vergleicht. Eine `Sorting` wird aus einer Collection und einem Schlüssel erzeugt
++ und hält beide zusammen, sodass eine Suche darin immer nach dem Schlüssel erfolgt, nach dem sortiert
++ wurde.
+
+% 2 1 0 146beb360d35e1b30ea1189473a0bef8
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 0557e9d7290ff17d11699702e363ba86
++   label Spieler, ohne Reihenfolge
+
+% 1 1 0 1057e51dc9f7beeb00419b69f96c13bd
+
+% 1 1 0 12b7b8519314b7e61c8297eaf924d35d
+
+% 3 1 0 13ae2670899e09340c88621c318b41ca
+
+% 1 1 0 044de9b6e90a29c60320bfe36aa15b37
+
+@ 0 2 0 0d3a9f51e68132ae19968419c1f7cf47
++   label Nach Alter sortiert
++   highlight Sorting(players)(_.age)  die Elemente, in der Reihenfolge des Schlüssels gehalten
+
+% 1 1 0 0304ebd52e53688a1b586bbfc7665ecc
+
+% 2 1 0 1c8366b8a3b8481f068d63f0548deb00
+
+% 4 1 0 0cdf638f28a794380946ee2b8510eb64
+
+% 6 1 0 1e343604df48a395002edaaeeb21a9ec
+
+% 7 1 0 0290b36a02ac4bdb121a3fe14371e4f8
+
+% 1 1 0 15b85c02a2ca153813cadcf3a9dc7af2
+
+@ 0 2 0 1d5abc5b0d0c595a13d56e029490a1f1
++   label Nach Alter durchsucht
++   highlight find(19)  eine binäre Suche nach diesem Schlüssel
+
+% 1 1 0 0cd118ee2c86b6bf1ac35d1cd3464726
+
+% 2 1 0 1b4b405ca2b2df540bc7931cd6e0f49d
+
+% 4 1 0 03ab04407b75f1f11bb0a65608208101
+
+% 6 1 0 1aa7ccbf9fa94b390223d1a61cde39b8
+
+% 7 1 0 0cf571c26eb27e421b18657e41673fff
+
+% 0 1 0 0f2bb561b804f0d11d178f45e38fa74f
+
+% 1 1 0 1ae8adca35eb7b2f1d09714c2fc2b5ed
+
+% 1 1 0 136d267ff733a60e0f6246170d49df5f
+
+% 2 1 0 1525a46c87e9e0571e7d21b8e7c42b7a
+
+% 0 1 0 08a86cbdc9b8cb0109ed8ce5b435ce67
+
+% 1 1 0 0cd6459499a6bd5203d659b3bcc1b6aa
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 0 1 0 1bba1814f1a1fc7d0bd2415c56b38b7f
+
+% 1 1 0 0adda98d2b97fbb7114857dfbbab03bd
+
+@ 0 2 0 0118bb1b41b0103f12d55f2be72a1dab
++ [Sortiertes durchsuchen](../../soundness/modules/collections.md#searching-what-is-sorted) enthält
++ `locate` und die Grenzen.

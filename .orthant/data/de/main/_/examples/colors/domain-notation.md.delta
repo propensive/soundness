@@ -1,0 +1,76 @@
+orthant 2 language
+
+@ 0 1 0 1f17fd18b05497491e05e5fda41d4ff5
++ # Farbe, in Teilen abgemessen
+
+@ 0 2 0 07d062e8a245d9dd15ea4b2d356baafe
++ Eine Mischung wird so geschrieben, wie ein Maler sie abmisst: so viele Teile der einen Farbe und
++ so viele der anderen. `5*Red` sind fünf Teile Rot, und die Summe zweier Mengen ist eine Farbe.
+
+% 2 1 0 1802ef2a8d38804804e16be9e5fddad5
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 2 0 033612bd6277ff620d2e131f7ffd912c
++   label Fünf Teile Rot
++   highlight 5*Red  eine Menge einer Farbe
+
+% 1 1 0 01d32c9c38734979108d1aeb65468710
+
+% 2 1 0 1669d848e558f9a509c51ecd99687651
+
+% 3 1 0 06b4efc08441b80f197e7bdd9e67465e
+
+% 0 1 0 0fde7f78c88dbea301a433dad6c9f64d
+
+% 1 1 0 1a3e0807983240f71244944ff482d0b8
+
+@ 0 2 0 012c5e45bb9c19620cd994d4b5779507
++   label Drei Teile Gelb
++   highlight 3*Yellow  gegen die fünf gewichtet
+
+% 1 1 0 0b23c004ad8c42700c45526088509d89
+
+% 2 1 0 1e5d302f7968971c1153780fbdfb16d8
+
+% 3 1 0 10e09a888c12460718364c9f773c6c4f
+
+% 0 1 0 1481112a15f5ec1e184b870c792a9441
+
+% 1 1 0 166db54af533f8620efabd09292c5541
+
+@ 0 2 0 0ae2c8356fe95a010f80b8ba392ef7de
++   label Ein wenig Weiß
++   highlight 0.5*White  gegen die acht gewichtet
+
+% 1 1 0 1cdd7c958de46bc50907f37daf3bac4c
+
+% 2 1 0 0340fe6804ec99be0e67a2c6f25174f1
+
+% 3 1 0 0c4a3a6689763b450d030d716d25e8c0
+
+% 0 1 0 132d35c0913bc2090c7964c56b1e81a4
+
+% 1 1 0 03eb33eaf7915d54195832e094613ad1
+
+% 1 1 0 136d267ff733a60e0f6246170d49df5f
+
+% 2 1 0 1525a46c87e9e0571e7d21b8e7c42b7a
+
+% 0 1 0 08a86cbdc9b8cb0109ed8ce5b435ce67
+
+% 1 1 0 0cd6459499a6bd5203d659b3bcc1b6aa
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 0 1 0 127695f39bc17e851f3056895577b9f3
+
+% 0 1 0 19948350a1a8d2aa0409fd44589d5ee5
+
+% 1 1 0 1f309c554ad188c112738eae3156768c
+
+@ 0 2 0 0f5bbec306fd0d770cf04fd99d471198
++ [Nach Teilen mischen](../../soundness/modules/colors.md#mixing-by-parts) erklärt, wie jede Menge
++ gegen die Summe gewichtet wird.

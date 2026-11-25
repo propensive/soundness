@@ -1,0 +1,73 @@
+orthant 2 language
+
+@ 0 1 0 1983e922e9e65b09034c2fc8a25e6946
++ # Ein Commit hängt davon ab, was gelesen wurde
+
+@ 0 3 0 1e449882697e3543167f4f5a9ae76054
++ Andere Prozesse schreiben in ein Repository, also kann sich die Spitze eines Branches zwischen einem
++ Lesen und einem Schreiben bewegen. `commit` nimmt den Lesewert von `HEAD`, auf dem er beruht, und
++ schlägt fehl, wenn sich `HEAD` seitdem bewegt hat, sodass ein Commit, der ohne Hinsehen erstellt
++ wurde, nicht geschrieben werden kann.
+
+% 0 1 0 12705ff5e291290d17fbc8389d59ef4a
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 1b3fcf1fc8a08e670c847ceaf41a77d8
++   label Ein Commit, auf was auch immer dort ist
+
+% 0 1 0 1477c34ff41c7c99183443e1d3238ae1
+
+% 1 1 0 0960c596329e4eb20a0b442aaa85c43a
+
+% 2 1 0 152ffc3ff2232b6805c4abaac1d7e861
+
+% 3 1 0 0a2f175aaa2a3ff31d23477a3fc53afe
+
+% 4 1 0 11092eae2bbd57da0cfc468ecd07709a
+
+% 6 1 0 165f8ccbb5148db6038d7072c8d8e571
+
+% 7 1 0 15e896ba31c1da051b31cae0bd52fe19
+
+% 1 1 0 15ac398d68874bca171dea776ef90315
+
+% 0 1 0 16954b1c069820f61cdd07b057904abf
+
+% 1 1 0 0fb7ed6716fd6c42027bb9b04e04d141
+
+@ 0 3 0 1d112a3f321b02380d04b29bdb65b753
++   label Ein Commit, auf das, was gesehen wurde
++   highlight Stale[Git.Head]  gültig, als es gelesen wurde
++   highlight head)  der Commit schlägt fehl, wenn sich HEAD bewegt hat
+
+% 1 1 0 011723dfcd6062ff0a842f95ff4d8054
+
+% 2 1 0 06c9d53bca929b2c17bbe5f2dc900d2a
+
+% 3 1 0 1f1fabaf062d22e21b9a1959ddbba515
+
+% 4 1 0 1718fba6569e5ae408851fa65b4b0826
+
+% 6 1 0 1ecfd4fbcbef1aec060eee0962862a44
+
+% 7 1 0 005cad1bc3e25da217ad0ffd5e064f98
+
+% 0 1 0 1e289a6f2681b2090a6b044fdd7a9927
+
+% 1 1 0 10003952ee36bd2a191fb420e0fde7fb
+
+% 0 1 0 09d32216d4f718cc103c764ada166a6e
+
+% 0 1 0 18eafb32caed3dd50f976e787bd035ca
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 4 0 0cb7f6841049ae97058ad9a8134b0b71
++ Das Beispiel wird kompiliert, aber nicht ausgeführt, da es ein Repository braucht. [Ein Repository
++ beobachten, das andere
++ ändern](../../soundness/modules/git.md#observing-a-repository-that-others-change) beschreibt
++ `Stale`-Werte, und [totale Übergänge](../../philosophy/total-transitions.md) erklärt, warum das
++ Schreiben einen verlangt.

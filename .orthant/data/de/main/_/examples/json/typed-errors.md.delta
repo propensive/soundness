@@ -1,0 +1,45 @@
+orthant 2 language
+
+@ 0 1 0 1a43a1e6d7abaca200da75782c7c3ec3
++ # Das Dekodieren erklärt, wie es fehlschlägt
+
+@ 0 2 0 11939192be17ffa4177c6d5f43aa71bb
++ Das Dekodieren einer Case-Klasse aus JSON kann fehlschlagen, und der Typ der Methode, die es tut,
++ sagt das. Eine Methode, die den Fehlschlag weder behandelt noch deklariert, kompiliert nicht.
+
+% 0 1 0 12705ff5e291290d17fbc8389d59ef4a
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 07c9793e7967771c1b8921effa192dab
++   label Ein Fehlschlag, der nicht berücksichtigt ist
+
+% 0 1 0 1477c34ff41c7c99183443e1d3238ae1
+
+% 1 1 0 0960c596329e4eb20a0b442aaa85c43a
+
+% 2 1 0 060951f5a5bdf56b09a4fe1e8668aeb4
+
+% 0 1 0 1961d490492a628d17aea2eac4dbec79
+
+% 1 1 0 1a84bf9f36b01c1111a3ee2dfbcbcc7e
+
+@ 0 2 0 0e1eaa8d14b88117187b0d12d53af599
++   label Der Fehlschlag, deklariert
++   highlight raises..Error  Teil des Typs
+
+% 1 1 0 0fb433d34da2ace30c4b5e36c4301499
+
+% 2 1 0 02e88b6d2f1b7113198ab01831cfc46d
+
+% 0 1 0 1d0fdce0f08a79350d691a3a3f63467b
+
+% 0 1 0 18eafb32caed3dd50f976e787bd035ca
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 2 0 0b7bd73e2f7d9f2c11648ed604ac67e9
++ [Fehler](../../soundness/modules/json.md#errors) listet die Gründe auf, die ein `Json.Error` angibt,
++ und [Fehlerbehandlung](../../philosophy/error-handling.md) erklärt `raises`.

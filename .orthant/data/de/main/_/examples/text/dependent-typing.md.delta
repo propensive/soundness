@@ -1,0 +1,57 @@
+orthant 2 language
+
+@ 0 1 0 1cc17cb668ad2a83112156d599abbe2c
++ # Ein Abstand, dessen Typ seinem Maß folgt
+
+@ 0 3 0 19f0be13c3c08200012df8913bb733ec
++ Die Ähnlichkeit zweier Textstücke wird von der `Proximity` im Geltungsbereich gemessen. Eine
++ Editierdistanz ist eine ganze Zahl und eine Ähnlichkeit ein Bruch, also ist der Typ des Ergebnisses
++ der des importierten Maßes.
+
+% 2 1 0 02cfd6e0ab7e5638170d5f7de3cc4b16
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+@ 0 2 0 025706fb8256b40919e1b5aafed62c36
++ alternative Eine Editierdistanz
++   highlight Int  eine Anzahl von Bearbeitungen
+
+% 1 1 0 0cb2b0370d2b74040d7bf7314b2fd00e
+
+% 0 1 0 131a1b4bc7db06821c6200629c055666
+
+% 1 1 0 1118e79849ad83f30a07ef83e20bd831
+
+% 0 1 0 1829c3b0d810f29b10c60ec1d83112d8
+
+@ 0 2 0 1696a8c79aff42a30b51be20e765536c
++ alternative Eine Ähnlichkeit
++   highlight Double  ein Bruch zwischen null und eins
+
+% 1 1 0 06db6acd50ed665c061f3efb55e1bc7f
+
+% 0 1 0 124df119df8188320be98414d2ece06c
+
+% 1 1 0 037f6609dd37509b1f28492464dcf5ea
+
+% 0 1 0 10c99c2156d038a0166ce2611d916f5f
+
+% 1 1 0 17010b36cbd260be1621ad09b2f5bfd9
+
+% 1 1 0 136d267ff733a60e0f6246170d49df5f
+
+% 2 1 0 1525a46c87e9e0571e7d21b8e7c42b7a
+
+% 0 1 0 08a86cbdc9b8cb0109ed8ce5b435ce67
+
+% 1 1 0 0cd6459499a6bd5203d659b3bcc1b6aa
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 0 1 0 0643abd1570970761a02bdf4e2c1e611
+
+% 1 1 0 0c55317137f57bb61c38971ec8d7f724
+
+@ 0 2 0 034aa07de00904fc1997874d38047b6d
++ [Unscharfe Suche](../../soundness/modules/text.md#fuzzy-matching) baut auf diesen Maßen einen
++ Schreibvorschlag auf.

@@ -1,0 +1,80 @@
+orthant 2 language
+
+@ 0 1 0 1204c523f921080e0ce29bd4954a9d4d
++ # Ein Stacktrace, der ein Wert ist
+
+@ 0 3 0 1c298f2b4c4a710515eb03d58a17368e
++ Der Stacktrace eines `Throwable` ist veränderlicher Zustand, der ausgegeben werden soll. Ein
++ `StackTrace` ist eine Case-Klasse: Er wird mit `==` verglichen, und das Kürzen seiner Frames ergibt
++ einen anderen Stacktrace und lässt den ersten, wie er war.
+
+% 2 1 0 1d31b0245efaa27710102a6532a131af
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 2 0 05a8fe7cfeb929350f164228f9904bdb
++   label Ein Stacktrace, aus einer Ausnahme erfasst
++   highlight stackTrace  jedes Throwable hat einen
+
+% 1 1 0 09afe569a440332f0ddb758793916273
+
+% 2 1 0 0bcec2c2507966e90da33c2fcedce030
+
+% 3 1 0 0ab4491d493b5f48194923b366083af3
+
+% 1 1 0 181a8ec402a62c9d0b1933ca5083f183
+
+@ 0 2 0 12d22664507eb96908acc28aa27c3d9c
++   label Ohne seinen innersten Frame
++   highlight drop(1)  ein neuer Stacktrace
+
+% 1 1 0 11b4a751d6769de60b51a5290bdf8c8b
+
+% 2 1 0 080fc3dd902d6a631f43cf2526b52387
+
+% 3 1 0 1b57fddcacb07a7a0a42634aad558ae5
+
+% 4 1 0 00ad974223741fa10b92f88ae6254f32
+
+% 1 1 0 1edebf3dd6185ac2180652906d907012
+
+@ 0 2 0 1a7881ea7a0c33661cdef0c49261a4d2
++   label Dieselbe Ausnahme, erneut erfasst
++   highlight again  gleich dem ersten
+
+% 1 1 0 06880d9b33f301871641bb04b975176f
+
+% 2 1 0 15818e9af3b55b3d021e2228eaed1058
+
+% 3 1 0 064654ae408867711cba3edfbfabf2b9
+
+% 4 1 0 0a54e0a18ad911c104315ecaccd91f61
+
+% 0 1 0 0fd75cb9c7c5d24710180f171aa300c8
+
+% 1 1 0 19cb954e0aebf8fb00070e99753419b3
+
+% 1 1 0 136d267ff733a60e0f6246170d49df5f
+
+% 2 1 0 1525a46c87e9e0571e7d21b8e7c42b7a
+
+% 0 1 0 08a86cbdc9b8cb0109ed8ce5b435ce67
+
+% 1 1 0 0cd6459499a6bd5203d659b3bcc1b6aa
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 0 1 0 1e8e135fe3ca6d4a08ae42be90f2b7cc
+
+% 0 1 0 06a70c8e476e93240adfa53160957676
+
+% 0 1 0 1fe5e0d67ff37cc91801ec4741b3d538
+
+% 1 1 0 0df69c0afe11dc6611a4074fb070f86f
+
+@ 0 3 0 13a813b6c5eba65a059013c9def2b0fb
++ [Einen Stacktrace erfassen](../../soundness/modules/stack-traces.md#capturing-a-trace) beschreibt,
++ was der Wert enthält, und [Unveränderlichkeit](../../philosophy/immutability.md), was daraus folgt,
++ dass er sich nie ändert.

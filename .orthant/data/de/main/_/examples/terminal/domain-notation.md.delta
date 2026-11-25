@@ -1,0 +1,68 @@
+orthant 2 language
+
+@ 0 1 0 00ad010ce734ca7e1d083939254d3377
++ # Farben, die sich verschachteln
+
+@ 0 3 0 17a59bee093d626d0b182982cd40afda
++ Ein Escape-Code setzt eine Farbe und kann die vorherige nicht wiederherstellen. Im Interpolator
++ `e"…"` hat ein Stil stattdessen eine öffnende und eine schließende Klammer; eine gestaltete Spanne
++ in einer anderen endet also dort, wo sie es sagt, und der äußere Stil setzt wieder ein.
+
+% 2 1 0 02e160bca1e9e88d168bd2bdaac660d7
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 15018ed169bb11990da678b7926fbc75
++   label Eine Spanne
+
+% 1 1 0 074184c7cb57478e1b7b44c8eab60c67
+
+% 2 1 0 15c4d4b16da82b501feb702abdb6fa81
+
+% 0 1 0 1c30c442e76bd52c0fe9eb2e6563cacc
+
+% 1 1 0 13872540db91bb6b1128c62d45b94847
+
+@ 0 2 0 05bcbfa2f4d91b4e07fe88cea5585d93
++   label Eine Spanne darin
++   highlight $Indigo(glisters)  Gold setzt nach der Klammer wieder ein
+
+% 1 1 0 03bd60dfce21f6801d11c783d910d1df
+
+% 2 1 0 1e2516f5cf6bd3280802f52f7e71e209
+
+% 0 1 0 0507a57b93b4a3a408a78c876b552e35
+
+% 1 1 0 07268275f892951d0eba54f15cf54c26
+
+@ 0 2 0 190a95de20342c810000ee03903b2cab
++   label Eine dritte Ebene
++   highlight $Bold(not)  fett, und immer noch Gold
+
+% 1 1 0 1a75ab2ff6605c9a0ec8a8b9d556e8f9
+
+% 2 1 0 18bca153b6cb42761c1996e9caf09f0b
+
+% 0 1 0 01945908f44271b914c8785647c4d259
+
+% 1 1 0 1f93f4e6b01e40a701adfaaa1bcfc416
+
+% 1 1 0 136d267ff733a60e0f6246170d49df5f
+
+% 2 1 0 1525a46c87e9e0571e7d21b8e7c42b7a
+
+% 0 1 0 08a86cbdc9b8cb0109ed8ce5b435ce67
+
+% 1 1 0 0cd6459499a6bd5203d659b3bcc1b6aa
+
+% 0 1 0 06d6d3a7fec399c9124100808e28e43d
+
+% 0 1 0 0fc963c4ada6dbcd1400b248e6c99ab9
+
+% 1 1 0 0dd7fb8ea71560230d2a1d83a4e15c68
+
+@ 0 2 0 0c9d44280f03fc7f1b65ccdaaeb06786
++ [Gestalteter Text](../../soundness/modules/terminal.md#styled-text) erklärt den Stapel von Stilen
++ dahinter.

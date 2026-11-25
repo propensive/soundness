@@ -1,0 +1,70 @@
+orthant 2 language
+
+@ 0 1 0 12c66ed21efda6dc0f112b67a1560df1
++ # Welches Base64 gilt, bestimmt ein Import
+
+@ 0 2 0 1bab0289232c04360e10e4f7530a297d
++ Es gibt viele Base64-Varianten, die dieselben Bytes mit verschiedenen Zeichen schreiben.
++ `serialize[Base64]` nennt die Basis, und das Alphabet kommt aus dem Geltungsbereich. Ist dort
++ keines, kompiliert es nicht.
+
+% 2 1 0 1881621870465cf2112e995d11623139
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 06a23fc8f6729d8f1ab9d1305c149964
++   label Kein Alphabet im Geltungsbereich
+
+% 0 1 0 1477c34ff41c7c99183443e1d3238ae1
+
+% 1 1 0 0960c596329e4eb20a0b442aaa85c43a
+
+% 1 1 0 072a42a78367f81a122767199128184e
+
+% 2 1 0 0bbf30bef5a87ad410853cd9f1ca6ac4
+
+@ 0 2 0 06c18e4a93d817da0168caf80e85d22d
++   label Das Standardalphabet
++   highlight base64Standard  mit + und /
+
+% 1 1 0 08f79cbd267c7faa1a88b9b9d2f289b5
+
+% 0 1 0 1e16732a0b3e88fb034a49fc31ebb932
+
+% 2 1 0 107e9f232e7ec19c0e30cd56ee00afce
+
+% 2 1 0 196ebe5ccf77933705f94a16a3ad9d49
+
+@ 0 2 0 1982f441bdc0904419c8594e7ca39e05
++   label Das Alphabet, das in einer URL sicher ist
++   highlight base64Url  mit - und _
+
+% 1 1 0 02da5211624af3f31a60213376285102
+
+% 0 1 0 08f8b8dc07cf8439133657af70f81bd2
+
+% 2 1 0 1e1fed135443d09a1653efb8d74f7be8
+
+% 1 1 0 01b414bad21866ef0addd40dc421cf16
+
+% 1 1 0 136d267ff733a60e0f6246170d49df5f
+
+% 2 1 0 1525a46c87e9e0571e7d21b8e7c42b7a
+
+% 0 1 0 08a86cbdc9b8cb0109ed8ce5b435ce67
+
+% 1 1 0 0cd6459499a6bd5203d659b3bcc1b6aa
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 0 1 0 02db61bae3de79dd0ec9e02c46b2e96f
+
+% 1 1 0 13920d16f8387fad16a50233c3d2b750
+
+@ 0 4 0 09e4a67e559ca93301bb62b9ef6dba3f
++ Das Standardalphabet schreibt dieselben Bytes als `++//`. [Ein Alphabet
++ wählen](../../soundness/modules/base-encoding.md#choosing-an-alphabet) führt sie alle auf, und
++ [deklarativer Kontext](../../philosophy/declarative-context.md) sagt, warum das Alphabet kein Flag
++ ist.

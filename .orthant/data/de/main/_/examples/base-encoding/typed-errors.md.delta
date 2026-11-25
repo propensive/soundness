@@ -1,0 +1,73 @@
+orthant 2 language
+
+@ 0 1 0 084deaa45be983b011c0c59990b1957a
++ # Text, der vielleicht nicht im Alphabet liegt
+
+@ 0 3 0 11008870006189341af579cd7ffa0ee3
++ Alle Bytes lassen sich als Base64 schreiben, aber nicht jeder Text lässt sich daraus zurücklesen.
++ `deserialize` löst daher einen `Serialization.Error` aus, und eine Methode, die es aufruft, muss den
++ Fehler behandeln oder deklarieren.
+
+% 2 1 0 0390646595e8244e0ac0e93b237a3654
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 07c9793e7967771c1b8921effa192dab
++   label Ein Fehlschlag, der nicht berücksichtigt ist
+
+% 0 1 0 1477c34ff41c7c99183443e1d3238ae1
+
+% 1 1 0 0960c596329e4eb20a0b442aaa85c43a
+
+% 2 1 0 109bb7d290d9feba1451c0bdd02998b5
+
+% 0 1 0 1a9030a6bc29daf5092f049c8b25129f
+
+% 1 1 0 1e3f1543158886be1153a16b2fb8c34e
+
+@ 0 2 0 02d07c54120f28201c96401bb35c8ddc
++   label Der Fehlschlag, deklariert
++   highlight raises..Error  der Aufrufer entscheidet
+
+% 1 1 0 0e701529e692e7f01996bc11ab52e4f0
+
+% 2 1 0 13a9e019be9260d11a14909d85763da3
+
+% 0 1 0 02daed2fcb5ed2251c868940ca02bc65
+
+% 1 1 0 1e6c45646da66fc70d0cd7e280ebffd1
+
+@ 0 2 0 1d9646ea4bbcd0511e4f58f6232e004f
++   label Der Fehlschlag, als fehlender Wert
++   highlight safely  ein Fehlschlag wird zu Unset
+
+% 1 1 0 19f5858238928e8b08e8d4f2188c574f
+
+% 2 1 0 1fdff7640ee7a4b81d2f83c22d75fbff
+
+% 0 1 0 12f0394f42ced2c709f742f60cc9b40d
+
+% 1 1 0 05f557fa14b7d4b00665f4ec63ca2ab1
+
+% 1 1 0 136d267ff733a60e0f6246170d49df5f
+
+% 2 1 0 1525a46c87e9e0571e7d21b8e7c42b7a
+
+% 0 1 0 08a86cbdc9b8cb0109ed8ce5b435ce67
+
+% 1 1 0 0cd6459499a6bd5203d659b3bcc1b6aa
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 0 1 0 0d72380027637f36161a75b41303b8f1
+
+% 0 1 0 0b4bdd24259f01660f3d11ba2812403e
+
+% 0 1 0 0c41195e601f11a81a50eff7a81f0b94
+
+% 1 1 0 10e90e243303ff390982b9e8d725f10f
+
+@ 0 1 0 15ecd4108326391c16f81ea8a16ffde3
++ [Deserialisieren](../../soundness/modules/base-encoding.md#deserializing) zeigt den Fehler selbst.

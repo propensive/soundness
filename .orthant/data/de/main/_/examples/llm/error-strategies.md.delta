@@ -1,0 +1,86 @@
+orthant 2 language
+
+@ 0 1 0 10e4085f0ecaf9a1173f53e0bebe2920
++ # Was eine fehlgeschlagene Anfrage bewirkt, entscheidet der Aufrufer
+
+@ 0 3 0 199a2055ce42c1031016e7361cbcd919
++ Eine Anfrage an einen Provider kann auf ein Dutzend Arten fehlschlagen, jede ein `Llm.Error` mit
++ einem Grund. Der Code, der fragt, ist derselbe, was auch immer dagegen zu tun ist. Der Aufrufer
++ wählt: eine fehlende Antwort, eine nach dem Grund gewählte Antwort oder einen Fehler, der für seinen
++ eigenen Aufrufer deklariert wird.
+
+% 0 1 0 12705ff5e291290d17fbc8389d59ef4a
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+@ 0 2 0 082cdb557c2d52921e6f3dad3de1e3fd
++ alternative Eine fehlende Antwort
++   highlight safely  jeder Llm.Error wird zu Unset
+
+% 1 1 0 09aa94557ba16718107f7df09125716b
+
+% 2 1 0 1a5e5ebc9f8611bd1859f17321fca1b2
+
+% 3 1 0 073df46a1ff4eec71bc53c40077a58b6
+
+% 4 1 0 00e9b003a47ca6c70752358ca11defdc
+
+% 6 1 0 0ec66eb3f204633a1ef662b5dce0fe89
+
+% 0 1 0 0e3f68deceafdcff037fffc8b7c3951b
+
+% 0 1 0 1f1196766a4361021898d43fb640b0b4
+
+@ 0 2 0 1cd5d1af20fa0dd50a22f4c402c6ee4c
++ alternative Eine Antwort für jeden Grund
++   highlight error.reason  einer aus einer festen Menge
+
+% 1 1 0 1b591d0b24d216a00fd322e99b6e181f
+
+% 2 1 0 0e251253ae1222df012d15f6adcb33b2
+
+% 3 1 0 10374813e8f6e643006fc051a7b89e97
+
+% 4 1 0 110a111690575b2e180a45a627c3c4cf
+
+% 6 1 0 04802c7898a281cb1244ed9ec252ba62
+
+% 0 1 0 0f8b74750c9155020be35312032c87d3
+
+% 0 1 0 1ffe5c415422113702a4a9b03386f84a
+
+% 0 1 0 01e93273e73663551a59f9c0dbf3ac5f
+
+% 0 1 0 1ec75b35fc53511c0b2ca74233268639
+
+% 0 1 0 1f43b0996cf7dd891e1f70b660a246fa
+
+% 0 1 0 056f82d85e749abd0e808a95b3b1d4cb
+
+% 0 1 0 13f08089550e3255069a84e3c937e9e1
+
+@ 0 2 0 141b0b27308b3e6703db06d4a788a1de
++ alternative Die Entscheidung des Aufrufers
++   highlight raises..Error  deklariert und dem überlassen, der aufruft
+
+% 1 1 0 038f548102bc8254116cb2f87732746a
+
+% 2 1 0 0494abc6648f218508dc355c8aa80ad8
+
+% 0 1 0 194bad8a0b96615d00be45c31744cb9a
+
+% 2 1 0 042e5956b07b6f8b0cdc86edcd260da6
+
+% 0 1 0 137d6f685a1eb6300238fb4fa0880808
+
+% 0 1 0 0e2c740915abe3290d227dbae6293ba9
+
+% 0 1 0 18eafb32caed3dd50f976e787bd035ca
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 3 0 08e2e510f386b5431132f98ef54966b0
++ Das Beispiel wird kompiliert, aber nicht ausgeführt, da es einen Provider über das Netzwerk aufrufen
++ würde. [Fehler und Wiederholungen](../../soundness/modules/llm.md#errors-and-retries) listet die
++ Gründe auf, und [Eine Strategie wählen](../../soundness/modules/errors.md#choosing-a-strategy) die
++ Strategien.

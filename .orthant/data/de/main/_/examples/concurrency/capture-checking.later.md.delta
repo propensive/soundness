@@ -1,0 +1,72 @@
+orthant 2 language
+
+@ 0 1 0 0f7e0324e48a45791930b728d223c5d0
++ # Nach dem Ende des Geltungsbereichs startet nichts mehr eine Aufgabe
+
+@ 0 4 0 141080675a0ed95c1844acdb5bc586ee
++ Eine Funktion, die eine Aufgabe startet, braucht einen Supervisor, wenn sie aufgerufen wird,
++ nicht wenn sie geschrieben wird. Könnte eine solche Funktion aus `supervise` zurückgegeben
++ werden, würde sie in einen Geltungsbereich hinein starten, der bereits beendet ist; daher hält
++ der Compiler die Funktion ebenso fest im Geltungsbereich wie eine Aufgabe.
+
+% 2 1 0 10a463b314b4e58e068461f26283f47f
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 0 1 0 05379442125b483c0fa7601737add2cc
+
+% 1 1 0 01df03af649144fc135e9cf4a153349c
+
+@ 0 1 0 035c811d6e10d8e217ea98b979bee0b0
++   label Eine Funktion, die später starten würde
+
+% 0 1 0 1477c34ff41c7c99183443e1d3238ae1
+
+@ 0 1 0 13393b6daecdbfc807133645c4b4af6d
++   highlight async(6*7)  startet, wenn die Funktion aufgerufen wird
+
+% 1 1 0 16a96dd1cf89e5b203678f8bb58357de
+
+% 2 1 0 0f3d19964ab5c8b416de49edcbc27952
+
+% 0 1 0 1ccf5f9c04e8879d1519cb209243a7a3
+
+% 1 1 0 0dd92173aa2887fa11f480967ed52b27
+
+@ 0 1 0 1c29d780ecce5c1d17e3538173175f85
++   label Zwei Aufgaben, im Geltungsbereich gestartet und abgewartet
+
+% 0 1 0 02d434972af69aa10160c25a8e772de7
+
+% 1 1 0 14c7a78226f49af409ca53f5ea1ce426
+
+% 2 1 0 1e44db140b3dde81122b74e6dfa9ae06
+
+% 0 1 0 159184656117891c0f261d1e07516728
+
+% 0 1 0 0c835c79153e13ec1645113629160703
+
+% 0 1 0 07e2a75359ea4e090bee5f506a430b4a
+
+% 0 1 0 1f124752c7fea54c1d88cd81f8659840
+
+% 1 1 0 0d6f97066e99d06219260a727c49035a
+
+% 1 1 0 136d267ff733a60e0f6246170d49df5f
+
+% 2 1 0 1525a46c87e9e0571e7d21b8e7c42b7a
+
+% 0 1 0 08a86cbdc9b8cb0109ed8ce5b435ce67
+
+% 1 1 0 0cd6459499a6bd5203d659b3bcc1b6aa
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 0 1 0 104e999933729ef41bc9ab1ea8942e77
+
+% 1 1 0 01fe61f03220e025032a32786c5cfe00
+
+@ 0 3 0 15f95f0d501965de145c94d37dd7ffb7
++ [Ein überwachter Geltungsbereich](../../soundness/modules/concurrency.md#a-supervised-scope)
++ beschreibt den Geltungsbereich, und [Strukturierte Nebenläufigkeit](../../philosophy/structured-concurrency.md)
++ erklärt, warum eine Aufgabe nie ohne einen ist.

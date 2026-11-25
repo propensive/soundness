@@ -1,0 +1,54 @@
+orthant 2 language
+
+@ 0 1 0 1187c6aa2ac2c0450a5dbc5252009399
++ # Pixel, nur über eine zum Schreiben geöffnete Leinwand geschrieben
+
+@ 0 2 0 0f01d86bb37e438b14a3825c34d77e63
++ Ein Raster ist unveränderlich. Um darauf zu zeichnen, wird es für die Dauer eines Blocks als
++ `Canvas` geöffnet, und der Block darf nur schreiben, wenn es mit der Berechtigung `Write` geöffnet
++ wurde.
+
+% 0 1 0 12705ff5e291290d17fbc8389d59ef4a
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 1b5e3d3f66bce4201c3e204af49ec0a9
++   label Eine zum Lesen geöffnete Leinwand
+
+% 0 1 0 1477c34ff41c7c99183443e1d3238ae1
+
+% 1 1 0 0960c596329e4eb20a0b442aaa85c43a
+
+% 2 1 0 050421b86c2c7e180110584cdada913f
+
+% 4 1 0 1110723612cf3b0202258930ce7cb51f
+
+% 0 1 0 1a002cdad5c3b76f1d5b31a7a88b9b91
+
+% 1 1 0 0f6413fba208402302c876b954501224
+
+% 1 1 0 1ef0a1e8fe481d801dc6b4e21ffa308e
+
+@ 0 2 0 0fcb6a6984b6859311e357a138da913b
++   label Eine zum Schreiben geöffnete Leinwand
++   highlight Read..Write  die Berechtigung, die `update` verlangt
+
+% 1 1 0 071bc806aa07623b18f36231f5d2ff7e
+
+% 2 1 0 0b29eb7637f307a9135b246d1f738b38
+
+% 4 1 0 0286c650876454be00eb55be447952a2
+
+% 0 1 0 043545771583a4f216c594f3b6b3f8ab
+
+% 1 1 0 09ccdf8fc4d96c4018b4d027b6759f86
+
+% 0 1 0 18eafb32caed3dd50f976e787bd035ca
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 2 0 1e9f8817eaa9b90b05c37d6821dee836
++ [Leinwände](../../soundness/modules/images.md#canvases) beschreibt das Handle, und [Begrenzte
++ Geltungsbereiche](../../philosophy/delimited-scopes.md) das Muster, das es mit Dateien teilt.

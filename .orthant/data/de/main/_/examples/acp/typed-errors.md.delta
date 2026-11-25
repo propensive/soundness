@@ -1,0 +1,72 @@
+orthant 2 language
+
+@ 0 1 0 164bdd15f77f61ac147173dcca8f86c6
++ # Die Weigerung eines Agenten hat einen Grund
+
+@ 0 3 0 148be3464c31ab9d1b34a3748e8187ca
++ Jeder Fehler, den ein Agent meldet, kommt als `Acp.Error` an, dessen `reason` einer aus einer
++ festen Menge ist. Eine Methode, die mit dem Agenten spricht, deklariert den Fehler, und ein
++ Aufrufer, der weiß, was bei einem Grund zu tun ist, sagt es und lässt den Rest deklariert.
+
+% 0 1 0 12705ff5e291290d17fbc8389d59ef4a
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 1b335f49b844977817034f609a7ea1d9
++   label Der Fehler wird nicht berücksichtigt
+
+% 0 1 0 1477c34ff41c7c99183443e1d3238ae1
+
+% 1 1 0 0960c596329e4eb20a0b442aaa85c43a
+
+% 0 1 0 1c7ca30529b87bfc17c456fb6b52be2e
+
+% 1 1 0 1ab204137f97532111bb194faee611bc
+
+% 2 1 0 1f70724ae6ee350705b0750cf9231060
+
+@ 0 2 0 1ad11225fb3ab5701d036fd2b5f5803b
++   label Er wird deklariert
++   highlight raises..Error  an den Aufrufer weitergereicht
+
+% 1 1 0 094488e219acbd4000809ac96f129b08
+
+% 2 1 0 113e6bd71a086bcc0b077e22b474d58a
+
+% 1 1 0 08f15b4df36fe741145652388e53425f
+
+% 2 1 0 12829f0656e826250bf99496d8861f4b
+
+@ 0 3 0 199f7f739f169d861c7247d3e7809014
++   label Und ein Agent, der Authentifizierung verlangt, erhält sie
++   highlight Acp.Error.Reason.AuthRequired  der eine hier behandelte Grund
++   highlight abort(error)  jeder andere Grund wird weitergereicht
+
+% 1 1 0 1c2ff5de66ab8f761c9e738a2eed68e7
+
+% 2 1 0 0f8881b406e8254a1e42b85d4d2c08f8
+
+% 0 1 0 1ffe5c415422113702a4a9b03386f84a
+
+% 0 1 0 0abf7063d36c707b024ebf44add99766
+
+% 0 1 0 16dcfcd6bc91c0881d0d9813934e7c7d
+
+% 0 1 0 117e021819f93d55109955c9d9400fd6
+
+% 0 1 0 0e0e63ddb868c8f908e9162b194083aa
+
+% 0 1 0 1e03429728426cbb1d54f68dcc16b9a3
+
+% 0 1 0 022f9685fb5110141df9efb8cc7ab82d
+
+% 0 1 0 18eafb32caed3dd50f976e787bd035ca
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 3 0 05008875880a8fa017caf0beea44532e
++ Das Beispiel wird kompiliert, aber nicht ausgeführt, da es mit einem Agenten in einem anderen
++ Prozess spricht. [Fehler](../../soundness/modules/acp.md#errors) führt die Gründe auf, und
++ [Sitzungen](../../soundness/modules/acp.md#sessions) beschreibt `authenticate`.

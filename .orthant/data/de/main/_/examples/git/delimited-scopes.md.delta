@@ -1,0 +1,64 @@
+orthant 2 language
+
+@ 0 1 0 1ed7d14752ad8d6a068cf40c6847b207
++ # In ein zum Lesen geöffnetes Repository wird nicht geschrieben
+
+@ 0 3 0 134c717f89e3b4b31ea64b251cb637b5
++ Ein Worktree wird für einen Block geöffnet, und der Modus, mit dem er geöffnet wird, nennt, was der
++ Block tun darf. Ein Handle, dem `Read` gewährt wurde, hat keine Methode, die eine Datei vormerkt,
++ sodass ein Block, der ein Repository nur untersucht, es nicht ändern kann.
+
+% 0 1 0 12705ff5e291290d17fbc8389d59ef4a
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 17f882a86de4c6d7138fc7e52a953672
++   label Eine Datei vormerken, über ein Handle, das nur lesen darf
+
+% 0 1 0 1477c34ff41c7c99183443e1d3238ae1
+
+% 1 1 0 0960c596329e4eb20a0b442aaa85c43a
+
+% 2 1 0 152ffc3ff2232b6805c4abaac1d7e861
+
+% 3 1 0 0a2f175aaa2a3ff31d23477a3fc53afe
+
+% 4 1 0 11092eae2bbd57da0cfc468ecd07709a
+
+% 6 1 0 0cf5e4244d57ba2918982de3d0bcbbe4
+
+% 0 1 0 0c868906510c53401640e80ca92bc9af
+
+% 1 1 0 1b13bdd3861a380610081ca8f19e84cb
+
+% 1 1 0 0d1dd109b1b12fca13d5fae3b227ccb6
+
+@ 0 2 0 11f197f897653025022100a738918ec3
++   label Die Berechtigung, angefordert
++   highlight Write  der Block darf das Repository jetzt ändern
+
+% 1 1 0 028be527a8ad03b51e618ccdb36b1db3
+
+% 2 1 0 1e5046a5d27138d71ef52e548948e118
+
+% 3 1 0 1c3795d2e2295b8410193c7fc3130569
+
+% 4 1 0 021039068df67be71475787206a5009e
+
+% 6 1 0 187ee40f172d232a06a2ed2fb18dc72c
+
+% 0 1 0 09da6b33cef3915600dfe2c55c3ce305
+
+% 1 1 0 15ac398d68874bca171dea776ef90315
+
+% 0 1 0 18eafb32caed3dd50f976e787bd035ca
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 4 0 13c9fcd6d68f42e11ede50285c2cd290
++ Das Beispiel wird kompiliert, aber nicht ausgeführt, da es ein Repository braucht. [Ein Repository
++ öffnen](../../soundness/modules/git.md#opening-a-repository) beschreibt die beiden Formen von
++ Handles und [begrenzte Geltungsbereiche](../../philosophy/delimited-scopes.md) die Idee eines
++ Blocks, der eine Berechtigung hält.

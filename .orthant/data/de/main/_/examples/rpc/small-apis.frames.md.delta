@@ -1,0 +1,94 @@
+orthant 2 language
+
+@ 0 1 0 02e561fff37cca520bcf803fc9f9f239
++ # Eine Methode findet die Nachrichten in einem Stream
+
+@ 0 3 0 1b9d1044abb7e56b0f29e2a3ee3670da
++ Ein Stream kommt in Chunks an, die nichts mit den Nachrichten darin zu tun haben. `frames` stellt
++ die Nachrichten wieder her und nimmt die Konvention, die sie trennt, als Typ: ein Längenpräfix,
++ einen Header oder ein Zeilenende.
+
+% 2 1 0 19c567b38032aa3013fd3343940842ed
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 046432d2e8901276127db33b9c55293c
++   label Zeilen, über Chunks verteilt
+
+% 0 1 0 1aa0c250ca005944030544a01bab0701
+
+% 1 1 0 169812fe2eff8b820d0a0a0a32f26cb3
+
+% 2 1 0 15acb500d89191461e3dfae179002ad5
+
+% 4 1 0 01d094319d64ef2503502796b3bd497e
+
+% 5 1 0 1941509166befe871a50cb03ac17bb6c
+
+% 1 1 0 1617a5fd4cf0b88c1376fe7857f61d6b
+
+@ 0 1 0 1697fe073cf1aacd0e1f8fb254cd68e7
++   label Records mit einer Länge von vier Bytes
+
+% 0 1 0 0851c0119363bbbb03108ca45d5de6c8
+
+% 1 1 0 1e931adcb43510c411d4618d63cbef88
+
+% 2 1 0 0344d03b82a8bbf81cdcde4ee27c43db
+
+% 4 1 0 01f945c176f4665c0b173cabb3112e4a
+
+% 5 1 0 0a943782c91ed4fc0e6b52ef8876b800
+
+% 7 1 0 0b46fed56fe697740890b84308cdbefe
+
+% 8 1 0 0d9b72081a119e8c15b2e9b6993d75fe
+
+% 1 1 0 12c94bdbca2fb735125b45a078417fa0
+
+@ 0 1 0 043bb950cf0dbe5112a2bf7afb95c68f
++   label Bodies mit einem Content-Length-Header
+
+% 0 1 0 0645e80dc33b763b0d92a7ecb0e6fe72
+
+% 1 1 0 0396d3db0f51f9a01fc15929d58b9aa6
+
+% 2 1 0 1861c4a376e17b2b1d875093519b0ff5
+
+% 4 1 0 0b9bc8d2826915d502fa668551e8aa35
+
+% 5 1 0 187aa33077759b9d047d864f5a45c6fd
+
+% 7 1 0 0298e2a71cfd733e15e72fac908a4b4e
+
+% 8 1 0 1ed1f6084c2e2188116525599476994c
+
+% 0 1 0 087adb6e4499eb1909cd7add5edb7ac1
+
+% 0 1 0 0e07c31c3251fe360d84169320fc6ee6
+
+% 1 1 0 164ee0bbdee6eaf50301aa33371b1056
+
+% 1 1 0 136d267ff733a60e0f6246170d49df5f
+
+% 2 1 0 1525a46c87e9e0571e7d21b8e7c42b7a
+
+% 0 1 0 08a86cbdc9b8cb0109ed8ce5b435ce67
+
+% 1 1 0 0cd6459499a6bd5203d659b3bcc1b6aa
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 0 1 0 024b663f8837eb6d0eb276ff3bbdcdd8
+
+% 0 1 0 0f41c653d5ca17b301c22efd3fd16571
+
+% 0 1 0 1a44d6d134ecd49617eb9acbb6cf640e
+
+% 1 1 0 13b78b1dd0f642610feb7999fe18e4ba
+
+@ 0 2 0 1b01b92df096cc5d1075b7f6e053d528
++ [Framing](../../soundness/modules/rpc.md#framing) enthält die Tabelle der Konventionen, und [Kleine
++ APIs](../../philosophy/small-apis.md) den Grund für einen einzigen Namen.

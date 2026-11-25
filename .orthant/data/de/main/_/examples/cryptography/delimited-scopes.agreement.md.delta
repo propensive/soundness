@@ -1,0 +1,81 @@
+orthant 2 language
+
+@ 0 1 0 101512e696b950501fab42be4fb74e4e
++ # Ein gemeinsames Geheimnis, das für einen Block existiert
+
+@ 0 3 0 043c965d18c5b0f61291832920ed4317
++ Zwei Parteien, die die öffentlichen Schlüssel der jeweils anderen besitzen, vereinbaren ein
++ Geheimnis. Es wird nie zurückgegeben. Es wird an einen Block verliehen, der es zu dem hasht, was das
++ Protokoll braucht, und es wird genullt, wenn der Block endet.
+
+% 2 1 0 1fd59be76ce19fa20ced9e01005e1a5b
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 10cbc02411ba302815f52389323aded6
++   label Zwei Schlüsselpaare
+
+% 1 1 0 1b4904148d34c96a00901267454c76bc
+
+% 2 1 0 042c2f2809071f36174334e51915b1d1
+
+% 4 1 0 0f6a580bb5a6fcb300342f126b911d06
+
+% 5 1 0 0bf981214904c4cd124b280a3fecd7e8
+
+% 1 1 0 13630115c30c4199197ab2ee251d67fe
+
+@ 0 2 0 0e8d7e565d7f8efb0f0d614cdac03abd
++   label Das Geheimnis, wie Romeo es berechnet
++   highlight secret..=>  verliehen und dann genullt
+
+% 1 1 0 08cd5feae5ee02951bbe63339f3ae2d5
+
+% 2 1 0 0cead17c7cda39f304dfeef8c317732f
+
+% 4 1 0 0c2d199e6af7fa4e19836db0c3d80dce
+
+% 5 1 0 0cb272d497077011156a0220ce9dabba
+
+% 7 1 0 07c7d8ca5820579314ebdcfbd9515704
+
+% 1 1 0 0a6340e414dffb8f02ba012b7fb5da16
+
+@ 0 2 0 1d29238166b9af6c1a85ecb5ce3ae94e
++   label Und wie Julia es tut
++   highlight juliet.agree(romeo.public)  ihr Schlüssel, sein öffentlicher Schlüssel
+
+% 1 1 0 07db7458b922fdc80c0849d9b196413e
+
+% 2 1 0 05f71be9866d59a7048c41aa0a140874
+
+% 4 1 0 0dbbb440cd1c4e0e1f6fc12c54e59a25
+
+% 5 1 0 15d357320eea4e2519b790959cf7b4d5
+
+% 7 1 0 0c655b48b7d6ca020cfc8e32a7ef8a78
+
+% 0 1 0 0c8b03702802358c1124314057bcf5fc
+
+% 1 1 0 1e1a2c0e0d8082bb0b4e3975f8311372
+
+% 1 1 0 136d267ff733a60e0f6246170d49df5f
+
+% 2 1 0 1525a46c87e9e0571e7d21b8e7c42b7a
+
+% 0 1 0 08a86cbdc9b8cb0109ed8ce5b435ce67
+
+% 1 1 0 0cd6459499a6bd5203d659b3bcc1b6aa
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 0 1 0 0b54476108db8f171b768b2ee23b3fd7
+
+% 1 1 0 063c0205e8a5b00700a15760bc57a71c
+
+@ 0 2 0 0696e3ba2f254ebf06467121624f918b
++ [Schlüsselvereinbarung und authentifizierte
++ Verschlüsselung](../../soundness/modules/cryptography.md#key-agreement-and-authenticated-encryption)
++ verwendet das Ergebnis mit einer authentifizierenden Chiffre.

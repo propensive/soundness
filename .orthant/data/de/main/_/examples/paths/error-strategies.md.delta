@@ -1,0 +1,55 @@
+orthant 2 language
+
+@ 0 1 0 1882967bb672a3ab07fe1037873b2e99
++ # Drei Antworten auf Text, der kein Pfad ist
+
+@ 0 2 0 06dd38e23eccbeab0392b42aa9000ad3
++ Einen Pfad aus Text zu lesen entscheidet nicht, was geschieht, wenn der Text die Regeln der
++ Plattform verletzt. Das tut der Code, der ihn liest, und jede Wahl gibt der Methode einen anderen
++ Typ.
+
+% 0 1 0 12705ff5e291290d17fbc8389d59ef4a
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+@ 0 2 0 021a5b9675c2b6ce144cd18fb411cd6d
++ alternative Ein fehlender Wert
++   highlight safely  ein Fehlschlag wird zu einem fehlenden Wert
+
+% 1 1 0 122cee784ee67a861d0be8edbcc0494f
+
+% 0 1 0 08543fe06d108ff40e6f414ddb0499e7
+
+% 0 1 0 1b4bef97d03cc7de163f2a2a9d1095a9
+
+@ 0 2 0 145067586e8713161ecf427d30000c9b
++ alternative Ein Ersatz
++   highlight recover  ein Pfad, der stattdessen verwendet wird
+
+% 1 1 0 0bb15ba7eaab4ec41b8606dbfc563ac0
+
+% 0 1 0 13001a092844eb3f1b84a939f4d7920d
+
+% 0 1 0 1ffe5c415422113702a4a9b03386f84a
+
+% 0 1 0 0221f6a126f76be6153a0e011f5e106e
+
+% 0 1 0 138b39dd0e750c4601f43c8f0239a674
+
+@ 0 2 0 1017f64e7753c6e314e6790d3e4ad797
++ alternative Die Entscheidung des Aufrufers
++   highlight raises..Error  die Art, wie es fehlschlagen kann
+
+% 1 1 0 0223b354e7bac9e01c561de335c95bb7
+
+% 0 1 0 192af7053544096f0e500df80a9319b8
+
+% 0 1 0 092ab2e7704dc4610947f6c586c38dee
+
+% 0 1 0 18eafb32caed3dd50f976e787bd035ca
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 2 0 1e91be5c93500f8a0b180c3f5a4beef2
++ [Eine Strategie wählen](../../soundness/modules/errors.md#choosing-a-strategy) zeigt die ganze
++ Reihe, [Text und Pfade](../../soundness/modules/paths.md#text-and-paths) das Dekodieren.

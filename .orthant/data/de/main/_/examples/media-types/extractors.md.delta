@@ -1,0 +1,89 @@
+orthant 2 language
+
+@ 0 1 0 06e295eeb363c4ac1c1a9c7e2ffb8609
++ # Inhalt, von einem Pattern erkannt
+
+@ 0 3 0 09fee2985666afd0106bde887121b4fa
++ Bytes kommen oft ohne eine vertrauenswürdige Kennzeichnung an. Ein `Media["…"]`-Pattern sucht im
++ Inhalt nach der Signatur eines Formats und bindet den Nachweis, dass sie gefunden wurde. Der
++ Medientyp im Pattern wird wie jeder andere gegen die Registry geprüft.
+
+% 2 1 0 1d6b4b292bad027c1ed78886d403078e
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 1fb7e873eaf057860456f9e6546d8f43
++   label Ein Format
+
+% 1 1 0 10403e976e9b01300aba05bdc9d6e740
+
+% 2 1 0 0648f5f630aad8351a918df1b3f32aec
+
+% 4 1 0 04bb273e38d65a541ba1c1ea66bbbe2f
+
+% 5 1 0 0a3c10b5131293911a072d23c9ed6cf3
+
+% 1 1 0 0890b94524c5577e014f042236c83240
+
+% 2 1 0 1c68ab5c12a94f6719dce305ff94d679
+
+@ 0 2 0 11f0237346573965076cda4ae304e6d5
++   label Ein weiteres
++   highlight Media["image/gif"](gif)  versucht, wenn das erste nicht passt
+
+% 1 1 0 03ee935d2d30c06f0fb9832474e534f3
+
+% 2 1 0 19e177211010cfb002fc6e13cc73f84b
+
+% 4 1 0 1726b953c0e3b41a17f18db7dfc4cfc2
+
+% 5 1 0 06748209550ab4b906e9b02e5f9ce0ac
+
+% 0 1 0 1591b1cab8016fbb0b148559ce7be452
+
+% 1 1 0 03158a9558a7e902149a98f1ede6d223
+
+% 2 1 0 0e61d2ea96ea602b1e3d03e66e0b6360
+
+@ 0 1 0 09998edefda7f2f906967c7c5b04780c
++   label Ein Medientyp, den es nicht gibt
+
+% 0 1 0 1477c34ff41c7c99183443e1d3238ae1
+
+% 1 1 0 0960c596329e4eb20a0b442aaa85c43a
+
+% 2 1 0 12467f2c70f2000b180e3579ec2c37ee
+
+% 4 1 0 0855bdf1d810a81310d7b6da10805cfa
+
+% 5 1 0 0baa97cbb30ad42d164b86261a228bf8
+
+% 0 1 0 003b9923fde019630e89daf2f04ea6a9
+
+% 1 1 0 1ff3078bcadbf9df19c95e57e46196e3
+
+% 1 1 0 1b25a6b8bd0357980692d6316e6cdcdc
+
+% 1 1 0 136d267ff733a60e0f6246170d49df5f
+
+% 2 1 0 1525a46c87e9e0571e7d21b8e7c42b7a
+
+% 0 1 0 08a86cbdc9b8cb0109ed8ce5b435ce67
+
+% 1 1 0 0cd6459499a6bd5203d659b3bcc1b6aa
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 0 1 0 1a29668b8327690d1cae68716ae70112
+
+% 0 1 0 0cf26bd43d934e320bff4eb27dc5b6c5
+
+% 0 1 0 0126bad563de9421155e09fd05e17511
+
+% 1 1 0 14bd53c29ac9f84a0c366b9edce887d5
+
+@ 0 2 0 143470aa1477a95b1f342a96b0295acb
++ [Einen Medientyp erkennen](../../soundness/modules/media-types.md#detecting-a-media-type)
++ beschreibt, wofür der gebundene Wert ein Nachweis ist und wie ein Stream abgeglichen wird.

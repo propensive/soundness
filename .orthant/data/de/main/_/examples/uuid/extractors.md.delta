@@ -1,0 +1,66 @@
+orthant 2 language
+
+@ 0 1 0 173abb531a0e886702395b006b8e70d2
++ # Ein Bezeichner in einem Pattern
+
+@ 0 3 0 04392b21e510863615efdad2b0b65ee1
++ `Uuid` ist ebenso ein Extraktor wie ein Typ. Ein `case`, der ihn nennt, passt nur auf Text, der
++ eine wohlgeformte UUID ist, und bindet den bereits geparsten Wert, sodass es keinen zweiten
++ Schritt gibt, in dem Prüfung und Umwandlung voneinander abweichen könnten.
+
+% 2 1 0 038a61ccd9b9e31516e452fd40a70c19
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 09544f57fa1b85c416f8687b90df64db
++   label Text, als Text abgeglichen
+
+% 1 1 0 084da2d3eb338a7217377c8cdb2113f4
+
+% 2 1 0 19c47d5642009c3b026a4497d28cfc79
+
+% 0 1 0 05c4f0f786a8bb0700b8e8ddbf797876
+
+% 0 1 0 1f4748bd6c48ac8317cd25b8d9ac7dc3
+
+% 1 1 0 0f7075bf0919b3400c2dd22a166b7a32
+
+@ 0 2 0 1346a255fcaf6f021ce24aa4bdbcccc6
++   label Text, als Bezeichner abgeglichen
++   highlight Uuid(id)  `id` ist eine `Uuid`
+
+% 1 1 0 0ed46646b535637b1572dcf611e89eef
+
+% 2 1 0 1b2e8b271ae165da1045c792619463e1
+
+% 0 1 0 0caed7b37318667301ea03a59e5bcfa3
+
+% 0 1 0 1180a27bbd345eaf13955963b61b0a5a
+
+% 0 1 0 1d0f68f2006d3bab1a278307aca8f88a
+
+% 1 1 0 1522f572403f8c17000cc7560fd3b966
+
+% 1 1 0 136d267ff733a60e0f6246170d49df5f
+
+% 2 1 0 1525a46c87e9e0571e7d21b8e7c42b7a
+
+% 0 1 0 08a86cbdc9b8cb0109ed8ce5b435ce67
+
+% 1 1 0 0cd6459499a6bd5203d659b3bcc1b6aa
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 0 1 0 18b3e7d131cb2de317b102863bed19c4
+
+% 0 1 0 16f5489a293d36790de962a449cd257f
+
+% 0 1 0 121725a3953d890605b68bef0ce1e6b3
+
+% 1 1 0 1edcff094c9827ef06ef6d4cb91e51e5
+
+@ 0 2 0 1c3d462d91b83d641f0abf20bf4c2918
++ [Parsen](../../soundness/modules/uuid.md#parsing) enthält den Extraktor und die Methode, aus der
++ er gebildet ist.

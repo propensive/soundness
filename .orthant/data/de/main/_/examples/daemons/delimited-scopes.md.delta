@@ -1,0 +1,65 @@
+orthant 2 language
+
+@ 0 1 0 0b09f50980960f230f41275d122e6984
++ # Ein Terminal im kanonischen Modus, für einen Block
+
+@ 0 3 0 1a91fe34a33e030b119be14d0183cb17
++ Der Launcher eines Daemons hält das Terminal im Raw-Modus, was für einen Befehl falsch ist, der eine
++ Eingabezeile mit Echo und Rücktaste möchte. `cooked` verlangt den kanonischen Modus für die Dauer
++ eines Blocks, und der Raw-Modus kehrt zurück, wenn der Block endet.
+
+% 0 1 0 12705ff5e291290d17fbc8389d59ef4a
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 1b5e8dd3e9bdaa121ec275ee61638bf6
++   label Eine Frage, im Raw-Modus gestellt
+
+% 1 1 0 1b6f4a9bf2d7c80a0eba041ecc1645a8
+
+% 2 1 0 043e93282e26fc7916f8c05b56abecaa
+
+% 3 1 0 0f94ab15391452f007431429407986ed
+
+% 5 1 0 169474750753681a0e6b04784c7b6fd2
+
+% 6 1 0 0406fdda264de0a41d41dcfdf62c0920
+
+% 0 1 0 0b89e0b20cae50f305f3e7d13ae91df9
+
+% 1 1 0 00d76993db74dc200df4758809e7790c
+
+% 1 1 0 15c02c11820acf4a073d29a79539fc62
+
+@ 0 2 0 1a5a854a7a42553109b1734bb9056f2e
++   label Dieselbe Frage, in einem Terminal im kanonischen Modus
++   highlight resident.cooked:  kanonischer Modus, bis der Block endet
+
+% 1 1 0 1d7786f2a5c706f5142416cd7bc2cb37
+
+% 2 1 0 170c06277646d03519bc6e19c0ba6c7e
+
+% 3 1 0 0726341765094dff034efa4fd24040eb
+
+% 5 1 0 15f1407e5ccf00660e1f91257ae8ec88
+
+% 6 1 0 0949b6884a3881371937c60c6ddab0ff
+
+% 0 1 0 15f6a5c46abf05510b567b57ec4b249e
+
+% 0 1 0 16e4abc28e819e3d0a3ab2fdc62014e2
+
+% 1 1 0 175eba0219a5080d0ece949de7ddb649
+
+% 0 1 0 18eafb32caed3dd50f976e787bd035ca
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 4 0 15feca10130a90071680aa21c5b7303b
++ Das Beispiel wird kompiliert, aber nicht ausgeführt, da es ein ganzes Programm definiert. [Ein
++ Terminal im kanonischen Modus
++ anfordern](../../soundness/modules/daemons.md#asking-for-a-cooked-terminal) liest die Antwort, und
++ [Begrenzte Geltungsbereiche](../../philosophy/delimited-scopes.md) erklärt, warum der Modus einem
++ Block geliehen und nicht umgeschaltet wird.

@@ -1,0 +1,58 @@
+orthant 2 language
+
+@ 0 1 0 00cbe971e0d3bc6c02509005f224be42
++ # Eine Zeitzone, die nie definiert wurde
+
+@ 0 2 0 0b4298e332f2a2180cb2616bb66fd2fe
++ Der Name einer Zeitzone wird beim Kompilieren des Codes gegen die Zeitzonendatenbank geprüft. Eine
++ falsch geschriebene Zone ist ein Kompilierfehler und nie ein Nachschlagen, das im Produktivbetrieb
++ fehlschlägt.
+
+% 0 1 0 12705ff5e291290d17fbc8389d59ef4a
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 0da9caa37c722ec21961e6188c9b10c2
++   label Eine Zone, die die Datenbank nicht kennt
+
+% 0 1 0 1477c34ff41c7c99183443e1d3238ae1
+
+% 1 1 0 0960c596329e4eb20a0b442aaa85c43a
+
+% 0 1 0 19289f2baacf781e06255e999996aa19
+
+% 1 1 0 0cac8fa5d16642f71c0fdf772fbd4d74
+
+@ 0 2 0 08964355aa927a8304c8c03ad19a302c
++   label Eine Zone, die sie kennt
++   highlight tz"Europe/London"  in der tz-Datenbank
+
+% 1 1 0 0bf9ca4c807b02321023bb866077fb7f
+
+% 1 1 0 0bbb42b5a6747dc20e6f36674837c7ba
+
+% 1 1 0 190d48f5f8ddd6cd12cf755c64e0b2f2
+
+@ 0 2 0 11c868cb2db9618c19b5e1f042a95825
++   label Eine Wanduhrzeit dort, als physikalischer Zeitpunkt
++   highlight globe  die Zone bestimmt den Versatz
+
+% 0 1 0 1accf43fe92797621dc8da9a374d03c3
+
+% 1 1 0 1f716f85da1e6d1c01604857372f260f
+
+% 0 1 0 058eba7d435aa4600166058c340b7364
+
+% 1 1 0 1090cfd35d21775812b92072238c3016
+
+% 0 1 0 1b73994f7790c8161e01b454be495f17
+
+% 0 1 0 18eafb32caed3dd50f976e787bd035ca
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 2 0 1bf0be5c72cd6bd50da47307cce02420
++ [Zeitzonen und Momente](../../soundness/modules/time.md#time-zones-and-moments) erklärt, wie eine
++ Zone eine Uhr mit der physikalischen Zeit verbindet.

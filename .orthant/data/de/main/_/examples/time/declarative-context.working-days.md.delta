@@ -1,0 +1,80 @@
+orthant 2 language
+
+@ 0 1 0 1d99f298a045b39d0a44c2a97ebd8655
++ # Fünf Arbeitstage, nach der Woche und den Feiertagen im Geltungsbereich
+
+@ 0 3 0 14f694f51bb0e3b30d25fdaaa42968e2
++ Welche Tage Arbeitstage sind, hängt vom Land und vom Jahr ab. Arithmetik mit Arbeitstagen entnimmt
++ die Gestalt der Woche und die Liste der Feiertage ihrem Geltungsbereich und kompiliert ohne sie
++ nicht.
+
+% 2 1 0 1999e06d67ea1e3b0a6c60f9fa029f76
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 0eade4c74bcc707a0573f93056d6da39
++   label Arbeitstage, ohne Woche, in der gezählt wird
+
+% 0 1 0 1477c34ff41c7c99183443e1d3238ae1
+
+% 1 1 0 0960c596329e4eb20a0b442aaa85c43a
+
+% 0 1 0 058eba7d435aa4600166058c340b7364
+
+% 2 1 0 1b302729598a981b0add2edef62b177b
+
+% 3 1 0 135e38d54b83644a188a29235719bc67
+
+@ 0 2 0 1bda13a4bcc00d761d183c9cb1f40644
++   label Eine Woche von Montag bis Freitag
++   highlight europeanHebdomad  Samstag und Sonntag sind arbeitsfrei
+
+% 1 1 0 1954b5730ac2ec8d0b443f47e5390dad
+
+% 2 1 0 0784a2b5be19805c1fe275b489face69
+
+% 0 1 0 0c5320c99a377ab70ab8be5831432325
+
+% 2 1 0 0c3ad152cd10490f12ec2b0e8a8271ac
+
+% 3 1 0 0701796f764fa8310f01e5bb39329d64
+
+@ 0 2 0 1517fd1e688143bc1f1b70d5e9f5a30c
++   label Und zwei Feiertage
++   highlight Holiday(2025-Dec-25,..Day")  übersprungen, wie ein Wochenende
+
+% 1 1 0 1737d15465e3f812089f0bb1f99dba4c
+
+% 2 1 0 0142b7f0c2e08bf41f1436342f759e7b
+
+% 0 1 0 0bfccdb43f22c4c80a995a96f1abefae
+
+% 0 1 0 0b905c92824c80c50021e14153d8596a
+
+% 0 1 0 0abf23e3b237336b11857e9959861d72
+
+% 2 1 0 07ec9b53b274d10413ed96d74b2ae81e
+
+% 1 1 0 1033ce44fcecde2c133ac8c98896ec46
+
+% 1 1 0 136d267ff733a60e0f6246170d49df5f
+
+% 2 1 0 1525a46c87e9e0571e7d21b8e7c42b7a
+
+% 0 1 0 08a86cbdc9b8cb0109ed8ce5b435ce67
+
+% 1 1 0 0cd6459499a6bd5203d659b3bcc1b6aa
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 0 1 0 1ffc216c123501de05bfcc61dc208228
+
+% 0 1 0 1c16163b635795270b5970824034a4ac
+
+% 1 1 0 0ce14aa404f2351d0e88b95a6ff260a8
+
+@ 0 2 0 0731192aeb3544480df2dcaca8eab895
++ [Arithmetik mit Daten](../../soundness/modules/time.md#arithmetic-on-dates) beschreibt die beiden
++ Givens.

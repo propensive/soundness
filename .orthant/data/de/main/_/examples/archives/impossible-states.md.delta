@@ -1,0 +1,60 @@
+orthant 2 language
+
+@ 0 1 0 0fb90e13348d0eea06ab6c6696981cfd
++ # Ein Eintrag, der sein Archiv nicht verlassen kann
+
+@ 0 3 0 04232bf04eb2d9040680df59c480d8ff
++ Der klassische Angriff auf ein Archiv ist ein Eintrag namens `../../etc/passwd`. Der Pfad eines
++ Tar-Eintrags ist kein Text. Er wird Name für Name aufgebaut, relativ zur Wurzel des Archivs, und
++ einen Namen, der aus dem Archiv hinaussteigt, akzeptiert der Compiler nicht.
+
+% 0 1 0 12705ff5e291290d17fbc8389d59ef4a
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 2 0 0b9b03b15862cba20b7ceafe5ff79f2a
++   label Ein Pfad innerhalb des Archivs
++   highlight ?  die Wurzel des Archivs
+
+% 1 1 0 11ca92b7616d405c0b3349a4ae5192f8
+
+% 2 1 0 0b052642d9dc564d08bd6bd7c7f72ac5
+
+% 0 1 0 0570cd6ed1da36d1012390b90a3ed669
+
+% 1 1 0 1c15cc2a6093d92900e5f4229034e2d8
+
+@ 0 1 0 0d57b98f9a81272f019938d80dab5841
++   label Ein Pfad, der daraus hinaussteigt
+
+% 1 1 0 1a41f591f9bc285f0b9f7c6aa6918935
+
+% 2 1 0 0aa9609723cb1e020a6d702c28e32637
+
+% 3 1 0 14728d01289deae706bd18ba981889ed
+
+% 0 1 0 0405ca82316a42821b790ad5a9ae9178
+
+% 1 1 0 03a60a180484be1a024db3bc2bf8050c
+
+@ 0 1 0 13dcf688e3f755c40ca97aef4dda3f52
++   label Ein Trennzeichen, in einem Namen versteckt
+
+% 1 1 0 06ba155c844325391ed78fde910ef2f0
+
+% 2 1 0 0fc54a751d691786155d70d30b18b5e4
+
+% 3 1 0 0c955dcb25eafcbe06d475c77467ad4a
+
+% 0 1 0 1b1a87e9728e0a9d1bbd716d7ad026bf
+
+% 0 1 0 18eafb32caed3dd50f976e787bd035ca
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 3 0 07fe1ca181d7006e147a35ec9628150b
++ [Tar](../../soundness/modules/archives.md#tar) beschreibt Einträge, und
++ [Pfade](../../soundness/modules/paths.md) die Prüfungen, die jede Art von Pfad an ihren Namen
++ vornimmt.

@@ -1,0 +1,70 @@
+orthant 2 language
+
+@ 0 1 0 18fb99dabbd0f5dc1773b9f83795019a
++ # Drei Konventionen für eine getaggte Union
+
+@ 0 2 0 087c93f15aa970431f59849a7e788b53
++ Eine Aufzählung wird als JSON mit einem Tag geschrieben, das ihren Fall benennt. Wo das Tag steht,
++ ist eine Konvention, und ein Given wählt sie. Die Aufzählung und der Code, der sie kodiert, bleiben
++ gleich.
+
+% 0 1 0 12705ff5e291290d17fbc8389d59ef4a
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+@ 0 2 0 1caa632dabea468d06798b287c94f346
++ alternative Ein Feld neben den anderen
++   highlight jsonByKindDiscriminable  ein Feld namens kind
+
+% 1 1 0 0d7386d58076c36908abf5b99969a625
+
+% 0 1 0 1da16eceb39d1fde1b58c775e81e158a
+
+% 1 1 0 16acf69bb5d815aa0bb4d082d08b6790
+
+% 2 1 0 15efb06d8a77cadb1f33a6ee0b967b0f
+
+% 3 1 0 0d026fe5ea271abf17aeaddbe9eb7595
+
+% 2 1 0 16817bf545a25dc813ca490c4a5638f8
+
+@ 0 2 0 19383223b9198d391000910c490116c6
++ alternative Ein Wrapper
++   highlight Json.DiscriminantWrapper()  ein Objekt mit einem Schlüssel
+
+% 1 1 0 0e0dbf2ce776d7481d6d91faa8510a9e
+
+% 2 1 0 1d8a92880ab5c6951eafe4d034dc65d0
+
+% 3 1 0 0f7c68c9fcbe707618ed7e60296d48bf
+
+% 4 1 0 0d98d92dbf902bd60bbb7bf58f5c7cc4
+
+% 0 1 0 183a3f4b319c0e9e008a54c8a002b088
+
+% 2 1 0 000ef1974b8be7df192ee9ae476f9562
+
+@ 0 2 0 0341d78eb84a0a3a0c4e581b08ac647a
++ alternative Ein Umschlag
++   highlight Json.DiscriminantEnvelope..)  ein Feld für das Tag, eines für den Wert
+
+% 1 1 0 0988198e1867c53e187f0ed6faaa30b1
+
+% 2 1 0 18960010f989779405083abc9fd7b046
+
+% 3 1 0 0a3524aaf4bfb12919ab55db094a4682
+
+% 4 1 0 000c1d87f49da827024d38c8d45afe3e
+
+% 0 1 0 189b7e56560ea19300723af40cf3aadb
+
+% 2 1 0 09704e55a48f83771832c73bfae8df87
+
+% 0 1 0 18eafb32caed3dd50f976e787bd035ca
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 3 0 1f9549fa60e511ed0d3bff4c27911dbd
++ Die drei schreiben `{"by":"a bear","kind":"Pursued"}`, `{"Pursued":{"by":"a bear"}}` und
++ `{"type":"Pursued","value":{"by":"a bear"}}`. [Getaggte
++ Unions](../../soundness/modules/json.md#tagged-unions) beschreibt jede Konvention.

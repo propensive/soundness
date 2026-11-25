@@ -1,0 +1,72 @@
+orthant 2 language
+
+@ 0 1 0 1b0d698fa532499d1baf19c008b2ec00
++ # Jedes Ergebnis eines Upgrades hat einen Namen
+
+@ 0 2 0 0dd40bc778d676cc1dd1affc4427342a
++ Der Launcher, der ein Upgrade verifiziert, meldet nicht Erfolg oder Misserfolg. Er hält eines von
++ sieben Ergebnissen fest, und die Anwendung, die den Eintrag liest, beantwortet jedes davon.
+
+% 2 1 0 07e9dbc6ae5f906d1cfa9cba3911f59b
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 0608439ca7c97c310365d9666e89896e
++   label Angewandt, oder nicht
+
+% 1 1 0 1f2b193986d21aa11f7a48de6dea40db
+
+% 2 1 0 157b0b80d3047051110131fcf6770bc0
+
+% 4 1 0 0699e85f53e0f19c0407372576f433ff
+
+% 0 1 0 0257826a5e6114a1020a97748b5dbac9
+
+% 0 1 0 176f4110349f8b331a8e78f4b7161fd2
+
+% 1 1 0 036538deb2c66da0177cb5637b33cd27
+
+@ 0 2 0 1040dc66d4f408a91ddd2f0076e3bc10
++   label Jede Art, nicht angewandt zu werden
++   highlight Result.BadSignature  eine andere Antwort als bei einem Release, das bloß alt ist
+
+% 1 1 0 088554f0546c517a095f3bacefef4143
+
+% 2 1 0 0af174e2969eef7e102511b4558d492c
+
+% 4 1 0 1805022f30ebc5031a5dcaa51147c975
+
+% 0 1 0 19cbb11403e11a7e02adcdd87533f6f7
+
+% 0 1 0 1c3f86524214cde41c62b3523c0a192e
+
+% 0 1 0 0e14b98cc278c1080ba82dbb5da972e0
+
+% 0 1 0 1eb18ff201bb36ec0dc07d902aeceb42
+
+% 0 1 0 00ff296f7f9ff72c14f1538f24e44579
+
+% 1 1 0 08d882b1dbc469c21c17b4e196e6dcb7
+
+% 1 1 0 136d267ff733a60e0f6246170d49df5f
+
+% 2 1 0 1525a46c87e9e0571e7d21b8e7c42b7a
+
+% 0 1 0 08a86cbdc9b8cb0109ed8ce5b435ce67
+
+% 1 1 0 0cd6459499a6bd5203d659b3bcc1b6aa
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 0 1 0 17b3585bced658c6140d2328176c3deb
+
+% 0 1 0 1c7cddfb5d14c7250556b9479d304fd1
+
+% 1 1 0 03e5e940587e3536114e83d7a24bf59a
+
+@ 0 3 0 09bc2ba3d1a345471ecbafb951fb400b
++ [Ein Upgrade stagen](../../soundness/modules/daemons.md#staging-an-upgrade) sagt, was jedes Ergebnis
++ bedeutet, und [Totale Übergänge](../../philosophy/total-transitions.md), warum keines davon eine
++ Exception ist.

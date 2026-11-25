@@ -1,0 +1,85 @@
+orthant 2 language
+
+@ 0 1 0 1729f7ea596e424f0a871f127019d17a
++ # Ein Name für jeden Zufallswert
+
+@ 0 3 0 0c4d623e5d0dd72d0bacf1d20d112443
++ Es gibt kein `nextInt`, `nextBoolean` oder `nextGaussian`. Ein Zufallswert ist `arbitrary`, mit dem
++ gewünschten Typ, und ein Typ, der nicht zufällig sein kann, wird beim Kompilieren gefunden.
+
+% 0 1 0 12705ff5e291290d17fbc8389d59ef4a
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 1f8827131306212b1b685882b7b57131
++   label Eine Zahl
+
+% 1 1 0 097cd36392c35d7f0a16ec1486c3b83d
+
+% 2 1 0 1062dcb53ac9f7161c41ca2cb0a8a7a0
+
+% 4 1 0 0d9f2171bad653321788b20af0a17d5d
+
+% 6 1 0 0ac6384cec1651620d439b393a74edee
+
+% 1 1 0 0139ea47935b8875197986f649bac7d6
+
+@ 0 2 0 0fee932fab32aaf3038068342eaa0bb2
++   label Eine Münze
++   highlight Boolean  der Typ ist die einzige Änderung
+
+% 1 1 0 0a9d6e2f37b221bc0b13ec6ccc982e61
+
+% 2 1 0 1754190fd8208c6d074f5b68bc442345
+
+% 4 1 0 151ac4eeafa998240d19196e1b1af949
+
+% 6 1 0 162bb88c1d86c90a1f2dbabcf1c4b74f
+
+% 7 1 0 002ff76b5f11107b01af9ec5d1729b3d
+
+% 1 1 0 1107a71aed03e28a10775ded469a00e1
+
+@ 0 2 0 06bbc99ca35c022c071b605d4730492e
++   label Eine Liste, von zufälliger Länge
++   highlight List[Char]  auch ihre Länge wird gezogen
+
+% 1 1 0 08f0d94f0f6cf2f1105540d3a2040866
+
+% 2 1 0 082a76b79cb8cbad0c25bd76062ca8d4
+
+% 4 1 0 1e8402a62293dc7616edddfc9203eaf4
+
+% 6 1 0 013ec318447c73ca0cf72e596a07ae86
+
+% 7 1 0 0c0def25515cfb8f0436ff1090f05e69
+
+% 0 1 0 12701be19630eaf5166e72df18984bfb
+
+% 1 1 0 1616cae33823202511d03dcfc82d5b6e
+
+@ 0 1 0 001f6f71a0ec065f14baf408d1aa2e2a
++   label Ein Typ, den niemand zu erzeugen weiß
+
+% 0 1 0 1477c34ff41c7c99183443e1d3238ae1
+
+% 1 1 0 0960c596329e4eb20a0b442aaa85c43a
+
+% 2 1 0 0a9d57043aa3778a1543426974e3058e
+
+% 4 1 0 0e190f79ace557120776d078c36efa78
+
+% 0 1 0 04e59fab5c157b6f0eeb80f6f054d8b8
+
+% 0 1 0 1f7e0821d402a804123b291d9b46f075
+
+% 0 1 0 18eafb32caed3dd50f976e787bd035ca
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 2 0 0706ff22fd50547d020072ecd89e4841
++ [Werte erzeugen](../../soundness/modules/randomness.md#generating-values) behandelt die
++ bereitgestellten Typen, und [Kleine APIs](../../philosophy/small-apis.md) den Grund für einen
++ einzigen Namen.

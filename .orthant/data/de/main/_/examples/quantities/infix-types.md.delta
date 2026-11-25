@@ -1,0 +1,63 @@
+orthant 2 language
+
+@ 0 1 0 070246e43f3960ec02ba1d724883b715
++ # Fuß und Zoll, als Typ
+
+@ 0 3 0 14a7a7f641dd39131655c5f8de4fd850
++ Eine Höhe in Fuß und Zoll ist ein Wert in einer Kaskade von Einheiten. Der Typ gibt die Kaskade an,
++ die kleinste Einheit zuerst und die größeren nach `in`, und jede Einheit darin muss dieselbe
++ Dimension messen.
+
+% 0 1 0 12705ff5e291290d17fbc8389d59ef4a
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 2 0 078faefa0a0c753a1d718e1d387ea4e9
++   label Eine Kaskade aus zwei Einheiten
++   highlight Quanta[Inches[1]]..(Feet[1])  Zoll, in Fuß übertragen
+
+% 1 1 0 026cd00073a6c54b04a93fddc46d9f6a
+
+% 2 1 0 00f1cd9eeefda328084b5392aa39e30a
+
+% 4 1 0 1ad95e4d925ecab01a95dacf4401d2eb
+
+% 1 1 0 17a7abd29b62c3060d469ddb1ac49a9c
+
+@ 0 2 0 011b222daf60a13d077eadf60cfd8fb1
++   label Übertrag zwischen ihnen
++   highlight falstaff..Quanta(4)  neun Zoll und vier
+
+% 0 1 0 1accf43fe92797611dc8da9a374d03c2
+
+% 1 1 0 1b683763b07f3b4c19314dbe4ae0b985
+
+% 2 1 0 0320c5d35d20c9090b40927323b807f8
+
+% 4 1 0 12609694c5d9817e030f07ada4495638
+
+% 0 1 0 1016a2d6e223aa6405700afb4e4fb4b9
+
+% 1 1 0 0f764a7b997df3c31eef2e0fedd4a8a9
+
+@ 0 1 0 0950926c3edcdfaf1ee7f70029721841
++   label Eine Kaskade aus einer Länge und einer Zeit
+
+% 0 1 0 1477c34ff41c7c99183443e1d3238ae1
+
+% 1 1 0 0960c596329e4eb20a0b442aaa85c43a
+
+% 0 1 0 0be77934978bc7d11dc1dd19f5a1ac2e
+
+% 2 1 0 06dcb63163a6a9dd0ee4bc8096c7560a
+
+% 0 1 0 18eafb32caed3dd50f976e787bd035ca
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 2 0 18655ad7f45bb66409c078158352fe88
++ [Gemischte und nichtdezimale
++ Basen](../../soundness/modules/quantities.md#mixed-and-non-decimal-bases) wandelt eine Kaskade in
++ eine gewöhnliche Größe um und zurück.

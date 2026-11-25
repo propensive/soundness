@@ -1,0 +1,56 @@
+orthant 2 language
+
+@ 0 1 0 0a5df2facbb8306a18a37da4e2aaf4af
++ # Ein Blob, der vielleicht nicht im Speicher liegt
+
+@ 0 2 0 1e43cd8a3fbc2b270ffbeae6798c0522
++ Ein inhaltsadressierter Speicher wird über seinen Hashwert nach einem Blob gefragt und hat ihn
++ vielleicht nicht. Die Antwort ist ein `Optional`-Wert, der erst dann Bytes ist, wenn dem fehlenden
++ Fall eine Bedeutung gegeben wurde.
+
+% 0 1 0 12705ff5e291290d17fbc8389d59ef4a
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 08d6d4999cecf77414d5c86fdadc1c54
++   label Ein Blob, als selbstverständlich vorausgesetzt
+
+% 0 1 0 1477c34ff41c7c99183443e1d3238ae1
+
+% 1 1 0 0960c596329e4eb20a0b442aaa85c43a
+
+% 2 1 0 13286f88187b0f771926e8abf6104c34
+
+% 4 1 0 14260903d642769016e6e53971d96419
+
+% 5 1 0 1d89bdd47a8a24eb0cb19d61527a8c0e
+
+% 0 1 0 17a99897518132231007dc4edd6097c1
+
+% 1 1 0 0f0c4eb05333a97103b8bad9a8b0215a
+
+@ 0 2 0 04c12e4dc69aa95b14dc17f67328ba66
++   label Text für den fehlenden Fall
++   highlight or(t"missing")  was Fehlen hier bedeutet
+
+% 1 1 0 123a20fe4bc7972c03e7711e5c318e9f
+
+% 2 1 0 04aee675898156c813371c979d90b2c7
+
+% 4 1 0 05806d55c4852a07160f0cb7abbeeadb
+
+% 5 1 0 17ae8b3f5c5f00ad1c3380b30b3debad
+
+% 0 1 0 198647017b2c01811880ef8b9d84fed7
+
+% 0 1 0 18eafb32caed3dd50f976e787bd035ca
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 4 0 14216f8e05c9fd110cb01f8469536607
++ Das Beispiel wird kompiliert, aber nicht ausgeführt, da es keinen Speicher zum Fragen hat.
++ [Inhaltsadressierte Speicherung](../../soundness/modules/filesystem.md#content-addressed-storage)
++ behandelt die Operationen des Speichers, und [Optionalität](../../philosophy/optionality.md) erklärt
++ `let` und `or`.

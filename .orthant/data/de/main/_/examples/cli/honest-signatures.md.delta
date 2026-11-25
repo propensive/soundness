@@ -1,0 +1,69 @@
+orthant 2 language
+
+@ 0 1 0 1ee1f035d8b0f4ea1906c76de3fbad2d
++ # Was nicht geschehen darf, während der Benutzer Tab drückt
+
+@ 0 3 0 03833b8105f252970601f2a5e564372c
++ Die Tab-Vervollständigung führt die programmeigene Behandlung der Argumente aus. Eine Methode, die
++ etwas Unumkehrbares tut, verlangt `Effectful`, das nur innerhalb von `execute` existiert, daher kann
++ sie aus dem Code, den die Vervollständigung ausführt, nicht erreicht werden.
+
+% 0 1 0 12705ff5e291290d17fbc8389d59ef4a
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 1bbcf8ff20e67da71bb15ea7f79b9c88
++   label Ein Effekt im Vorspann, wo die Vervollständigung ihn ausführen würde
+
+% 0 1 0 1477c34ff41c7c99183443e1d3238ae1
+
+% 1 1 0 0960c596329e4eb20a0b442aaa85c43a
+
+% 2 1 0 0cc699ea31b238b7193019126bc743a8
+
+% 3 1 0 0152b7aab5c4a3561078156e5b2c0c49
+
+% 4 1 0 15e5ed03f7e1b5371281ba9c487b4744
+
+% 6 1 0 151cb4cb89aa726019ef5594ee131877
+
+% 7 1 0 054db01bb7b869af1b6f789f54e0544b
+
+% 0 1 0 0f5416176add0b751609c587354ba7e4
+
+% 0 1 0 1451af5ef2419e6f14588bff45e1d8c9
+
+% 1 1 0 1235bddd25d3bf711be71a20f1243217
+
+@ 0 2 0 0f1b04107a248bc3181d8d4de1dc7cf1
++   label Der Effekt in `execute`, das nur bei einem echten Aufruf läuft
++   highlight execute:  stellt `Effectful` bereit
+
+% 1 1 0 0ce97b50cdd4f64f1d982c4b4b95d3f0
+
+% 2 1 0 0348d73f7775551d0886f59c0fcc9e13
+
+% 3 1 0 0188143a68274a4210948454002856bc
+
+% 4 1 0 0cbac134dc3a3a7d0dc4965c3390b366
+
+% 6 1 0 1c678a67b207450803a63deb22750078
+
+% 7 1 0 06ae40f45d95140c041221a647d71604
+
+% 0 1 0 02a57c8420bac1e31d073b19d12e24b0
+
+% 0 1 0 11013762b88a462e004db73d7fade45f
+
+% 0 1 0 135581dff005d63d069f9a04fb8f49c0
+
+% 0 1 0 18eafb32caed3dd50f976e787bd035ca
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 4 0 008ab75878e8bd271d3d6c1a6bc3c3db
++ Das Beispiel wird kompiliert, aber nicht ausgeführt, da es ein ganzes Programm ist. [Das Executive
++ und effektbehaftete Methoden](../../soundness/modules/cli.md#the-executive-and-effectful-methods)
++ beschreibt das Token, und [Ehrliche Signaturen](../../philosophy/honest-signatures.md) das Prinzip.

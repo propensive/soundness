@@ -1,0 +1,71 @@
+orthant 2 language
+
+@ 0 1 0 091034166895fc4f009caf1af6b7626b
++ # Eine Challenge wird einmal zurückgegeben
+
+@ 0 3 0 0de7b5cdddbdcafc1c214d9fe00c60ac
++ `Ceremonies` bewahrt die Challenge einer Sitzung zwischen zwei Requests auf, und `conclude` gibt sie
++ nur einmal zurück. Beim zweiten Mal gibt es keine; sein Ergebnis ist also ein `Optional`, das nicht
++ weitergereicht werden kann, als wäre eine Challenge vorhanden.
+
+% 0 1 0 12705ff5e291290d17fbc8389d59ef4a
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 07966fdca34507c20283b5515d00c414
++   label Die Challenge kann fehlen
+
+% 0 1 0 1477c34ff41c7c99183443e1d3238ae1
+
+% 1 1 0 0960c596329e4eb20a0b442aaa85c43a
+
+% 2 1 0 0f5a48eae35563981629f68a3ea05808
+
+% 4 1 0 1f12e241b80fb5371d3c31005d809278
+
+% 5 1 0 080fef24c19515441a69ff3eda712fea
+
+% 6 1 0 14461b3d91579cec168b5df547355997
+
+% 8 1 0 10c8a8a39abcc8fa114df72801aebdbe
+
+% 9 1 0 0ca8e738775b5b3e1659c8d7ef3a58cb
+
+% 0 1 0 0b9592ddaddcd5de1e76fd31595656f1
+
+% 1 1 0 1c36d4f9cc79396103488efb3c67e1b1
+
+@ 0 2 0 11beb3dbf62f81c71076c89d94194acb
++   label Eine fehlende Challenge ist eine Ablehnung
++   highlight or:  was Fehlen hier bedeutet
+
+% 1 1 0 0e837cce2c76cb6f0d66591e5fafb90e
+
+% 2 1 0 04bd716ed4a9e69404f6f63296b027e0
+
+% 4 1 0 06ab7b57ec20e94a1fbeccc0b9bc692e
+
+% 5 1 0 17bec6f1906072220e3552ad03cf70d6
+
+% 6 1 0 1011ec8dc280e14211e6e99c261b3b92
+
+% 8 1 0 1c15f4ee68d18a9802d491dd98cdb35d
+
+% 9 1 0 159fb96e958db332186948de80d49ff7
+
+% 0 1 0 0ec72bfd57c02a220fbd15acd2a35a93
+
+% 0 1 0 074c772168b1632d00369e54e649aff1
+
+% 0 1 0 1a0bb1b12cf312a20c1ddc55973657e0
+
+% 0 1 0 18eafb32caed3dd50f976e787bd035ca
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 3 0 0016afc53ef670c41702e8592274db0c
++ Eine Antwort, die zweimal angeboten wird, findet keine laufende Zeremonie, wie [In einer
++ Webanwendung](../../soundness/modules/webauthn.md#in-a-web-application) erklärt, und
++ [Optionalität](../../philosophy/optionality.md) sagt mehr zu `or`.

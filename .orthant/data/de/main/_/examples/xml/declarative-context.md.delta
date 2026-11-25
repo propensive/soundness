@@ -1,0 +1,48 @@
+orthant 2 language
+
+@ 0 1 0 1051156d23d8421012f63f93f841f36d
++ # Das Layout von XML wird durch einen Import gewählt
+
+@ 0 2 0 16698b0bbede677b1f1539cb5680d6b7
++ Einen Wert als XML-Text zu kodieren ist `in[Text over Xml]`, welches Layout auch immer. Die
++ Formatierung im Geltungsbereich entscheidet, ob der Text kompakt ist oder für Leser eingerückt.
+
+% 0 1 0 12705ff5e291290d17fbc8389d59ef4a
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+@ 0 2 0 156354e312722aa716474b748a2574ac
++ alternative Kompakt
++   highlight compactXmlFormatting  kein Leerraum
+
+% 1 1 0 11c2eaf9dacf666909cdb1429c3ef77e
+
+% 2 1 0 010e85ab9e807d6017bd8843fccf2f49
+
+% 0 1 0 12287cf83ecdea6b0a3098330af2f276
+
+% 2 1 0 00beb8ac89621fa00d14c166e4fb064a
+
+% 4 1 0 0b50f2a6ae4c424218cd3a49dd2d2cc4
+
+@ 0 2 0 004f0c5ed411dede07831e975c37622b
++ alternative Eingerückt
++   highlight indentedXmlFormatting  ein Element pro Zeile
+
+% 1 1 0 037b43f0acd4696c01a8593c920c780f
+
+% 2 1 0 1b6e4752ceaad21c18ebdc7b59c03440
+
+% 0 1 0 1290b6ae80ce01c20c30c19b5474b7a9
+
+% 2 1 0 1cba3c0f5bc2a4ef0b190578e21da4b8
+
+% 4 1 0 02003b1723a095c90fac4a91b350690c
+
+% 0 1 0 18eafb32caed3dd50f976e787bd035ca
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 2 0 1ce3988e1ad823a0072b61153eeaef78
++ [Formatierung](../../soundness/modules/xml.md#formatting) behandelt die Formen, die ein großes
++ Dokument blockweise schreiben.

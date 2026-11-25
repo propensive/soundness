@@ -1,0 +1,60 @@
+orthant 2 language
+
+@ 0 1 0 174c50f86c3a696e0eaad60aaa560767
++ # Ein Scala-Lambda, von einer Kotlin-Methode aufgerufen
+
+@ 0 3 0 075e699ae26c262d0d1538b950ef418a
++ Kotlins `Regex.replace` nimmt eine Funktion von einem `MatchResult` auf eine Ersetzung. Ein
++ Scala-Lambda erfüllt den Zweck, ohne Adapter: Sein Parameter ist eine Fassade über dem Kotlin-Typ,
++ sodass der Treffer im Lambda genauso navigiert wird wie außerhalb, und das Ergebnis ist `Text`.
+
+% 2 1 0 18b9ad8489dd3afa13583f9cb6a7c880
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 17d5c55a47c89d780047cda9bf6b8f62
++   label Ein regulärer Ausdruck aus Kotlin
+
+% 1 1 0 1847cf623b772fc2139523b52548141c
+
+% 2 1 0 1dda8f79d18c3d5a1c84551ac5785c0d
+
+% 1 1 0 1e0f5b294977b1c71638fb6349fabbca
+
+@ 0 3 0 1fd9cf32c2fe3899124247ca1ed61d80
++   label Eine von Scala berechnete Ersetzung
++   highlight Facade..MatchResult  der Parameter des Lambdas ist Kotlins eigener Typ
++   highlight scene.value  eine Kotlin-Property, als Text gelesen
+
+% 1 1 0 08ca5a454c97f23f11383e914327ac45
+
+% 2 1 0 1e9cc83f2da33b2418db7cebd9d74809
+
+% 0 1 0 1432c26c71ca51730e5ce6454761feb4
+
+% 0 1 0 002afc2b0cc1f7591d8d7c2c29953a92
+
+% 0 1 0 17c7932a33d83cbc1077c02ea7203f60
+
+% 1 1 0 0d5e73a671e067c515891a5782bfcaba
+
+% 1 1 0 136d267ff733a60e0f6246170d49df5f
+
+% 2 1 0 1525a46c87e9e0571e7d21b8e7c42b7a
+
+% 0 1 0 08a86cbdc9b8cb0109ed8ce5b435ce67
+
+% 1 1 0 0cd6459499a6bd5203d659b3bcc1b6aa
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 0 1 0 1a77ac14a59747371074903b0ee725d5
+
+% 1 1 0 052adb628aeaef690f1535299e299687
+
+@ 0 3 0 1b0621438b488e31086e1bddbdc81d8f
++ [Kotlin- und Java-Fassaden](../../soundness/modules/foreign-interop.md#kotlin-and-java-facades)
++ beschreibt Parameter mit Funktionstyp, und [Kombinierbarkeit](../../philosophy/composability.md),
++ was es braucht, damit zwei Bibliotheken ohne Klebstoff zusammenkommen.

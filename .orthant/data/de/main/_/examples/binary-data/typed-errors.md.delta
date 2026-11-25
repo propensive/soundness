@@ -1,0 +1,92 @@
+orthant 2 language
+
+@ 0 1 0 19b4c245fc3281e607d90ec7ecd38904
++ # Ein Datensatz, der über das Ende seiner Bytes hinausreicht
+
+@ 0 2 0 1696cbb22c9bed4401381c9ffa43b128
++ `unpack` prüft den ganzen Datensatz gegen die Länge der Daten, bevor es ein Feld liest. Dass die
++ Daten zu kurz sein können, ist Teil seines Typs, also muss ein Aufrufer sagen, was dann geschieht.
+
+% 2 1 0 004e6725bc7f460a0fe279a0fe3eb40a
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 01bbc411c655cae402fb02c852bbb2a1
++   label Der Fehlschlag ist nicht berücksichtigt
+
+% 0 1 0 1477c34ff41c7c99183443e1d3238ae1
+
+% 1 1 0 0960c596329e4eb20a0b442aaa85c43a
+
+% 2 1 0 06e16eb6e100d509125c91a80583c994
+
+% 4 1 0 19ade205c85a9cad1694c632ef80f752
+
+% 6 1 0 0406b8b8d3a03ae4178a3e3014f1bfed
+
+% 7 1 0 071779e196b6d7e81e7d7784add69e13
+
+% 0 1 0 0761984b1ed0b9df1eb74ce463704f8b
+
+% 1 1 0 06db3254c899b461151e34ed45fc2256
+
+@ 0 2 0 15b3d7348bef2ae50b777401838df21c
++   label Er ist deklariert
++   highlight raises..Structural.Error  der Aufrufer entscheidet
+
+% 1 1 0 0896464988c5cabd05d05a00211c42b4
+
+% 2 1 0 04d58083a3e916680e1d79733e939050
+
+% 4 1 0 0a590f1538120bad0e086ab90cf793fc
+
+% 6 1 0 142a1eea850ef51a14b5d54a17d80e57
+
+% 7 1 0 08119306617567740ace5155bd3888b5
+
+% 0 1 0 0f1db5d8e5dc68811f89bfa55e80422e
+
+% 0 1 0 175842a4f6654b6106e3b982c04fa553
+
+% 1 1 0 1059b01b6c14b16e0acdb328a325232e
+
+@ 0 2 0 1c4b4e1b98820cbc0bf4573562684fd1
++   label Oder er wird zu einem fehlenden Wert
++   highlight safely  `Unset`, wenn die Daten zu kurz sind
+
+% 1 1 0 0f33d4df321df9961f16b8c9a0b5e6cb
+
+% 2 1 0 06a3975c8f1885970fda4fa3bb0348ce
+
+% 4 1 0 1e2a437387dc7ca51b03b7dcfbb46183
+
+% 6 1 0 1b0dbd491cadc10c1626b5498d417d29
+
+% 7 1 0 096f6b3b7254a2b015b62517febc5111
+
+% 0 1 0 1702e3fda1792e790700155f7242605f
+
+% 0 1 0 11b6b2c81a9801441cbadfaf00419e0f
+
+% 1 1 0 1236635219891b9002e0ed61d5253188
+
+% 1 1 0 136d267ff733a60e0f6246170d49df5f
+
+% 2 1 0 1525a46c87e9e0571e7d21b8e7c42b7a
+
+% 0 1 0 08a86cbdc9b8cb0109ed8ce5b435ce67
+
+% 1 1 0 0cd6459499a6bd5203d659b3bcc1b6aa
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 0 1 0 11aea17b57ccc51807914603a6b9794e
+
+% 0 1 0 064cbd18c49e638e040959b472120b2c
+
+% 1 1 0 0aba7fdb491f2e660900181ae1b682d7
+
+@ 0 1 0 07fa72c7c2bda09212b2c9091d1702be
++ [Lesen](../../soundness/modules/binary-data.md#reading) beschreibt, was der Fehler enthält.

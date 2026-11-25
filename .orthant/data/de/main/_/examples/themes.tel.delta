@@ -1,0 +1,378 @@
+orthant 2 language
+
+% 0 1 0 0f04ec4b9ac2d4270a232409219e1f6b
+
+@ 0 5 0 114ccc0feb6f4fdf15a1c5dbfe60149f
++ # Die Leitgedanken, die ein Beispiel zeigen kann: der zweite seiner beiden Aspekte, eine
++ # Arbeitsweise, die sich durch jeden Teil von Soundness zieht und dessen eigene Antwort auf ein
++ # vertrautes Problem ist. Ein Beispiel des Leitgedankens `checked-literals` zum Thema `json` ist
++ # doc/examples/json/checked-literals.md. Ein Leitgedanke mit einer `philosophy` wird in diesem
++ # Essay von doc/philosophy ausführlich begründet. doc/examples/readme.md erklärt die Sammlung.
+
+% 0 1 0 1342c943d0a985af1de498e62e800c99
+
+@ 0 2 0 12c6d8a3913e767900b08e2a07da8abd
++   title  Unmögliche Zustände
++   group  Typen
+
+% 0 1 0 0f041b856cbc287b18d2a03e8397dcfd
+
+% 1 1 0 19deaa4b8174449c0ab9457ec2e2cfd8
+
+@ 0 3 0 043509c8d19133b7021362196685268d
++       Ein Typ, der nur die Werte zulässt, die etwas bedeuten, sodass sich ein falscher Wert gar
++       nicht hinschreiben lässt: ein Pfad, der immer absolut ist, eine Zahl innerhalb ihres
++       Bereichs, ein Vektor bekannter Länge.
+
+% 0 1 0 0cafed10adc731ab1737b6ed9f3372fb
+
+@ 0 2 0 003052fd788ac7a400ddda7273e73461
++   title  Totale Übergänge
++   group  Typen
+
+% 0 1 0 08713f5249d9d4771225be45f44b435f
+
+% 1 1 0 08a4c426ac50d1c01b70acf7c6ee3302
+
+@ 0 3 0 0f37d70e1a7652f309c989a25dd6969e
++       Eine Operation, die für jeden Wert definiert ist, den ihre Parametertypen zulassen. Wo sie
++       für einige davon fehlschlagen könnte, verlangt sie einen Nachweis, gibt einen optionalen
++       Wert zurück oder deklariert den Fehler, und sie wirft nie überraschend eine Ausnahme.
+
+% 0 1 0 128fbc1c1a624ada181fc982dad46ab4
+
+@ 0 2 0 173e462a8a4fe4d61e1e613fbd3d1026
++   title  Abhängige Typen
++   group  Typen
+
+% 2 1 0 04a4833e95543a4d0df90fee9354a93f
+
+@ 0 3 0 1f99ccd7a49d95150e8d360ef767ae2c
++       Ein Typ, der einen Wert trägt, etwa `Sha2[256]` oder `Vector[Int, 3]`, und ein Ergebnis,
++       dessen Typ aus den Argumenten berechnet wird, sodass der Compiler mit Dimensionen, Längen,
++       Schranken und Schlüsselgrößen rechnet.
+
+% 0 1 0 110f3cdb4f46421e0f234d9beb2cda7d
+
+@ 0 2 0 070bcf3a2f94c01f0b58c0e01cb2949e
++   title  Infix-Typen
++   group  Typen
+
+% 0 1 0 15e7e010baab76da012d6ae22d872552
+
+% 1 1 0 1eb065e929bbac90034310d491df47f9
+
+@ 0 3 0 17d10b9315830b49045eaea79360a841
++       Typen, die sich wie Wendungen lesen: `Person is Encodable in Json`, `Path on Linux`,
++       `Text raises ParseError`. Dieselben wenigen Wörter, `is`, `in`, `on`, `of`, `by` und
++       `raises`, werden von jeder Bibliothek verwendet.
+
+% 0 1 0 0bea59fa2ea808c20bbff601d649d2fc
+
+@ 0 2 0 00ca82c81d29555e008ced0b8156e5aa
++   title  Typ-Provider
++   group  Typen
+
+% 2 1 0 0404b626618e4ff20efb5018664abb7e
+
+@ 0 3 0 0e07a3bbc40d8a2607f2d444487636b3
++       Typen, die der Compiler aus etwas außerhalb des Programms erzeugt, etwa aus einem
++       JSON-Schema, einem TEL-Schema oder einer OpenAPI-Beschreibung, sodass ein Feld, das die
++       Spezifikation nicht hat, ein Kompilierfehler ist.
+
+% 0 1 0 10a9a6ec0f132b9c05a8a641b37af735
+
+@ 0 2 0 09c0a52c7c4ed631054306a63ad8ad31
++   title  Generische Ableitung
++   group  Typen
+
+% 2 1 0 03df951b3137f32e0cc332dc54a58413
+
+@ 0 3 0 0e71e023f5f1df72099843bec20e058d
++       Eine Typklasseninstanz für eine Case-Klasse oder eine Aufzählung, die der Compiler aus den
++       Instanzen ihrer Felder baut: ein Codec, eine Anzeigeform, eine Differenz oder ein
++       Zufallswert, ohne eine einzige Zeile für den Typ.
+
+% 0 1 0 1a3c221992bb58ba177705e9f8980a12
+
+@ 0 2 0 06851d334e10536c0c2fe4c7b0703f61
++   title  Ohne Kosten
++   group  Typen
+
+% 0 1 0 1f284497d28747b30e96752fc405f08f
+
+% 1 1 0 06a6e0f0d06fd64009593ea4adac727c
+
+@ 0 3 0 12d7b1b1f31923310daf1888da2c906e
++       Garantien, die beim Kompilieren bezahlt werden und nicht zur Laufzeit: ein opaker Typ, der
++       im Bytecode sein bloßer Wert ist, eine geinlinte Typklasse, ein optionaler Wert ohne
++       Wrapper.
+
+% 0 1 0 0a1f566a0ebc889e1ad87953fb243068
+
+@ 0 1 0 14a1d1a8875c55e00b395d38f1c6b6b4
++   title  Geprüfte Literale
+
+% 1 1 0 070c19a9e2023f4816f9692d38e29a1d
+
+% 0 1 0 0ad074c2d703e17b0f543acf0dc49789
+
+% 1 1 0 1e9d53f86385a64e162b3e76f58b7960
+
+@ 0 3 0 180efd572d4a6cb40f921215214260fc
++       Eine URL, ein regulärer Ausdruck, ein Datum, ein Medientyp oder ein Stück JSON, im
++       Quelltext geschrieben und vom Compiler geparst, sodass ein fehlerhaftes ein Kompilierfehler
++       an genau dem falschen Zeichen ist.
+
+% 0 1 0 129d8f6ffa00e0030d2d1184f9dc38d2
+
+@ 0 1 0 0dda067113659fb01f9c8b40305c73eb
++   title  Fachnotation
+
+% 1 1 0 06a43623a20ce69d0c27fde77cea1cd1
+
+% 0 1 0 190710422639624b0a46e01410fb02a4
+
+% 1 1 0 18e454c8b02bc5061c3327a88383b9e9
+
+@ 0 3 0 0d98416d1e06c79904255e365d3e88ab
++       Gewöhnliche Scala-Ausdrücke, die wie die Notation ihres Fachgebiets geformt sind:
++       `2024-Jan-15`, `7.30.am`, `9.8*Metre/(Second*Second)`, `% / "usr" / "bin"`, jeder so
++       gründlich geprüft wie jeder andere Ausdruck.
+
+% 0 1 0 05e8da6e0a57d704044bd4612ba945b5
+
+@ 0 1 0 1bb63adc4a78b13a07d8f98447dbd439
++   title  Extraktoren
+
+% 1 1 0 0df89e925360d9780109e27f213e58a9
+
+% 1 1 0 1053854d452ccb5104bc708b639d31d1
+
+@ 0 2 0 132e7085da9eda9a1a31556a36cc279d
++       Die geprüfte Notation als Pattern: ein regulärer Ausdruck, dessen Gruppen typisierte
++       Variablen binden, eine URL, ein Pfad oder ein JSON-Dokument, in einem `case` zerlegt.
+
+% 0 1 0 1624d55dcdb8c4c7157b9663af906137
+
+@ 0 1 0 1afe0597630f93d50751597bbd7026c2
++   title  Kleine APIs
+
+% 1 1 0 00375b28066ea25603e24f08c8e7ff37
+
+% 0 1 0 1c991b4a2abbeaca08a429d99064a23a
+
+% 1 1 0 0679baadf22c32be0bf94e3395345459
+
+@ 0 3 0 02a6586be182af800af202224660f159
++       Ein Name für eine Operation, worauf sie auch angewandt wird. `read`, `as`, `show`, `decode`
++       und `digest` nehmen den gewünschten Typ als Parameter, und eine Typklasse liefert die
++       Implementierung.
+
+% 0 1 0 15c33b73c38650851376caf8e20750f4
+
+@ 0 2 0 08b8688df8ac95361f8abb1cce7fa829
++   title  Direkter Stil
++   group  Effekte
+
+% 0 1 0 05bcec96f9766b4418d959186f634a81
+
+% 1 1 0 04bb6567b01c5a50138928fdaba81c50
+
+@ 0 3 0 1a9bee06b6f6d72e094d7edcc4825cd1
++       Code, der fehlschlägt, wartet oder I/O ausführt, geschrieben als schlichte Folge von
++       Ausdrücken, ohne Monade, ohne `for`-Comprehension und ohne `Future`. Die Effekte stehen in
++       den Signaturen und nicht in der Gestalt des Codes.
+
+% 0 1 0 00b1dc1ebdff768101869de6f3a915a7
+
+@ 0 2 0 108b220606d5cac118f43f0f3ce6555e
++   title  Ehrliche Signaturen
++   group  Effekte
+
+% 0 1 0 1c732e605a12194c1c74a53f48c0e60a
+
+% 1 1 0 1bd8847738e8ba9c1f001540d987652a
+
+@ 0 3 0 105664b49874938603dec7bcb1ded7a2
++       Eine Methode nennt alles, was sie braucht, als Kontextparameter, ob das Netzwerk, eine Uhr,
++       eine Zufallsquelle, eine Zeichenkodierung oder die Standardausgabe, sodass Code, dem keiner
++       gegeben wurde, ihn nicht verwenden kann.
+
+% 0 1 0 16695bdee48c4b5d08bef792c5c82185
+
+@ 0 2 0 02154710533db39815bac97028319b99
++   title  Deklarativer Kontext
++   group  Effekte
+
+% 0 1 0 00c3d0366e35a9d3183a014131a9e7ea
+
+% 1 1 0 1b1e04c49aeb46f71513e3d84346136a
+
+@ 0 3 0 064ffee759587d760c80598903145f1b
++       Eine Wahl, die einmal getroffen wird, durch einen Import: ein Kalender, ein Zahlenformat,
++       ein HTTP-Backend, eine Kodierung, eine Richtlinie für optionale Felder. Sie gilt für den
++       gesamten Code in ihrem Geltungsbereich, und eine andere Wahl in einem anderen
++       Geltungsbereich ist ein anderes Programm.
+
+% 0 1 0 098d776d77481d691606eff78afbab4f
+
+@ 0 2 0 00ea12434f1539920c8c650c63d9428f
++   title  Begrenzte Geltungsbereiche
++   group  Effekte
+
+% 0 1 0 137066dfbdca8d3c171bb52a4cd034ec
+
+% 1 1 0 09a73c8953858a6515d58d901d20445a
+
+@ 0 3 0 11c9343a09ccbe780c31f05611720c03
++       Ein Block, in dem etwas verfügbar ist, etwa eine geöffnete Datei, eine Verbindung, eine
++       Transaktion oder ein temporäres Verzeichnis, das freigegeben wird, wenn der Block endet,
++       wie auch immer er endet.
+
+% 0 1 0 0561893c0d209be8181b155430b32968
+
+@ 0 2 0 0c557f87b9cf4fe601b3cfe13bc09314
++   title  Capture-Checking
++   group  Effekte
+
+% 0 1 0 0f4478ae53a30bbb192fda86f287b305
+
+% 1 1 0 1309e035eb683d0d047da7a1deae5577
+
+@ 0 3 0 1fc9ee46b60b362a17d87c16bb1efe35
++       Der Beweis des Compilers, dass nichts, was von einer Capability mit Geltungsbereich abhängt,
++       diesen verlässt: Kein lazy Stream überlebt seine Datei, kein Closure seinen Fehler-Handler,
++       keine Aufgabe ihren Supervisor, und ein veränderlicher Puffer hat einen einzigen Besitzer.
+
+% 0 1 0 13703532fdfb7c201cfcb4ae21b3bf9d
+
+@ 0 2 0 0bf0500d9306058d01e1c6bf12d81d3b
++   title  Streaming ohne Kopien
++   group  Effekte
+
+% 1 1 0 0b078a3eec67295811a326a64eb87928
+
+@ 0 3 0 12dba60c9b97fcfb06e48a492f2aa1ee
++       Daten, die in den Blöcken geparst, transformiert und geschrieben werden, in denen sie
++       ankamen, ohne Zwischenkopie, mit Backpressure und mit dem exklusiven Besitz jedes Blocks,
++       vom Compiler geprüft.
+
+% 0 1 0 0ccede5cd663113f0162899988e3d8a0
+
+@ 0 2 0 031bb7a5db04904e087c2afcb08181bf
++   title  Strukturierte Nebenläufigkeit
++   group  Effekte
+
+% 0 1 0 1b3274c5cf5a1def16907ac130cd8727
+
+% 1 1 0 16ae54de2889de911c02c883e094788a
+
+@ 0 3 0 0dd191dd24f194e01d4bffaa2060a36b
++       Aufgaben, die zu dem Geltungsbereich gehören, der sie gestartet hat. Ein Geltungsbereich
++       endet erst, wenn seine Aufgaben geendet haben, ein Fehlschlag bricht die Geschwister ab,
++       die er abbrechen soll, und eine Aufgabe kann nicht dort gestartet werden, wo nichts sie
++       überwacht.
+
+% 0 1 0 07a5b64b8a630b230c7d799cd16636dc
+
+@ 0 2 0 19a5f972455575520a0b2013637a3d65
++   title  Unveränderlichkeit
++   group  Effekte
+
+% 0 1 0 179f676ec05325e111e007bc5ec23069
+
+% 1 1 0 1909f60b8419d41b1b2cb2f7a33d50be
+
+@ 0 2 0 002bb65cd306521e1b72d05222097a18
++       Werte, die sich nie ändern: ein neuer Wert statt einer Aktualisierung, eine Linse für eine
++       Änderung tief in einer Struktur und ein Array, das eingefroren wird, bevor es geteilt
++       werden kann.
+
+% 0 1 0 0f89849faf0ba39911fbc2e30b37bc29
+
+@ 0 2 0 09aa8e3ac77536f10ffb18f27ceefee5
++   title  Typisierte Fehler
++   group  Fehler
+
+% 2 1 0 1f736b2516e3d53c02e790877bcfc60c
+
+% 3 1 0 08e2c49f3fc9c7450e3de6948379ca1e
+
+@ 0 2 0 109a389cb27d96b6186b9cf7954e4c40
++       Jede Art, auf die eine Operation fehlschlagen kann, wird in ihrem Typ mit `raises`
++       benannt, und Code, der den Fehler weder behandelt noch deklariert, kompiliert nicht.
+
+% 0 1 0 0235cbb92ffc83d016100663f9ef05a4
+
+@ 0 2 0 129f6ea46964d1c408c59e7a21b5494c
++   title  Fehlerstrategien
++   group  Fehler
+
+% 2 1 0 1c25d53ce4c21c3d01e80fd98cd36466
+
+% 3 1 0 0e94fc92d5f5e352149dbfed048c00a0
+
+@ 0 3 0 12249eae5e9537f805be0f476d35f061
++       Der Aufrufer entscheidet, was ein Fehlschlag bewirkt, und derselbe fehlbare Code dient
++       jeder Wahl: beim ersten Fehler anhalten, mit einem Wert weitermachen, ihn in einen anderen
++       Fehler übersetzen oder weiterarbeiten und alle sammeln.
+
+% 0 1 0 052e495d719b1c3c091c8d2d93eefef4
+
+@ 0 2 0 166e4a6c72a6a6cd15d625d6c8cb2d8f
++   title  Aussagekräftige Fehler
++   group  Fehler
+
+% 0 1 0 00ef9b9f0dadbf08040a9485e906cf58
+
+% 1 1 0 1da0865bed8ab02c17928c8369f849a8
+
+@ 0 3 0 0408ce3f660ebed206de0a1aba1c452f
++       Fehler, die von der Domäne sprechen und nicht von der Maschinerie: ein Kompilierfehler, der
++       sagt, dass eine Länge zu einer Zeit addiert wurde, und ein Laufzeitfehler, der Zeile,
++       Spalte und Grund als typisierte Werte enthält.
+
+% 0 1 0 187b89a4ec52fc5b05f4861748ba0b22
+
+@ 0 2 0 0723b5fbd7e1c5bb10c4b2cd13481e17
++   title  Optionalität
++   group  Fehler
+
+% 0 1 0 1d542cda57b8311717fea35d8b1455f6
+
+% 1 1 0 0243b6b1e40b87181d85d71cd13447a2
+
+@ 0 3 0 157eb55ff7149a1b0863f2b008c03cb9
++       Ein Wert, der fehlen kann, ist ein `Optional`, eine Union mit `Unset`, ohne Wrapper und
++       ohne `null`. Er wird nie verwendet, als wäre er vorhanden, und `or`, `let` und `lay`
++       sagen, was das Fehlen an der Stelle bedeutet, an der es darauf ankommt.
+
+% 0 1 0 14a1f18a91420dab0dc12fe5fe76eb6a
+
+@ 0 2 0 0f561165d56ff0951283f9e96fbf0806
++   title  Anerkannte Kosten
++   group  Fehler
+
+% 1 1 0 09a2899545ae986c090959361e215d29
+
+@ 0 3 0 0a0575b11923e2c007ea368bece7c238
++       Eine Operation, die mehr kostet, als es scheint, etwa die Größe einer verketteten Liste,
++       das letzte Element einer lazy Kette oder eine Suche nach Wert, kompiliert erst, wenn ein
++       Import die Kosten anerkennt.
+
+% 0 1 0 1d54e7eac85acacd03e57afe9daa53be
+
+@ 0 1 0 06d5bd2dac95de2b0d57038ac48ec026
++   title  Kombinierbarkeit
+
+% 0 1 0 1d13b25fefbf975401f356ce86873941
+
+% 0 1 0 0b9dd73de1cd9e451869fe02d7a088da
+
+% 1 1 0 0fc811d9bb970e500429fb23f51f84b8
+
+@ 0 3 0 12275a04ded0d78219001e258b4000d9
++       Zwei Bibliotheken, die nichts voneinander wissen, zusammen verwendet ohne Adapter: JSON als
++       Body eines HTTP-Requests, eine Tabelle als HTML dargestellt, eine Größe in einem Diagramm,
++       ein Pfad in einem Shell-Befehl.

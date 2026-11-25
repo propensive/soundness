@@ -1,0 +1,80 @@
+orthant 2 language
+
+@ 0 1 0 19590a7b3c36881505da0fd2c72e0041
++ # Drei Wege in einen Kotlin-Typ
+
+@ 0 3 0 0781c3016e6293380a921a3a8dac57e9
++ Eine Kotlin-Klasse wird über ihren Konstruktor, ihr Begleitobjekt oder, wenn sie ein Objekt ist,
++ über sich selbst erreicht. Jeder Weg ist eine Methode, die den Typ als Parameter nimmt, und alles
++ danach ist gewöhnliche Member-Auswahl, geprüft gegen das, was Kotlin deklariert hat.
+
+% 2 1 0 1f8a828ce4e785c20311e9af6fb4859a
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 2 0 1db3ab77a3b668441fa048562789ab98
++   label Eine neue Instanz
++   highlight make  der Konstruktor, mit geprüften Argumenten
+
+% 1 1 0 1ba90cab2fcb0cbe0691577c9439ef18
+
+% 2 1 0 19cc1a672185695711c70064a2dceddc
+
+% 3 1 0 03ebf930acc8374311900cec1593ce1e
+
+% 1 1 0 1eb05df61a60c199012c0f46fab75b1f
+
+@ 0 2 0 079ebf57f27e6588087bab84503b81d1
++   label Das Begleitobjekt
++   highlight companion  Regex.escape, so wie Kotlin es schreiben würde
+
+% 1 1 0 1a6ea306ace413c716d797d5b8f6c40a
+
+% 2 1 0 0fffbbc290a01232034489a655691380
+
+% 3 1 0 1d47d0efb3dfc46805fe68538ef855c5
+
+% 5 1 0 1c101063cafc480c0c8e1bbcddcaef9b
+
+% 1 1 0 165ac07c511b7c0f05436f1cdf8634a8
+
+@ 0 2 0 155913703576cf2c048ed1cc4dfbd901
++   label Ein Objekt
++   highlight singleton  Typography ist ein Kotlin-Objekt
+
+% 1 1 0 09707939fe1908e81ac2cdb623f6cbc7
+
+% 2 1 0 1c0a9f03f25a394c006d65860fba3b81
+
+% 3 1 0 169832b12f4a01481440d15140a3eece
+
+% 5 1 0 059ccb5a06336e7014af6138f51e73fb
+
+% 0 1 0 19e873ec159569710e925b3f0ddf7cb0
+
+% 1 1 0 1c35ef2814545250103901eb68691f69
+
+% 1 1 0 136d267ff733a60e0f6246170d49df5f
+
+% 2 1 0 1525a46c87e9e0571e7d21b8e7c42b7a
+
+% 0 1 0 08a86cbdc9b8cb0109ed8ce5b435ce67
+
+% 1 1 0 0cd6459499a6bd5203d659b3bcc1b6aa
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 0 1 0 06a49fd319f5819b1812c771e6c360a5
+
+% 0 1 0 0e9477a044f84e71000636d25524b7c8
+
+% 0 1 0 1c6f8b1ed1bc595814fdcbeb9607392f
+
+% 1 1 0 18f08e74eda0306b0755b668132208ea
+
+@ 0 3 0 0dde5945e46557911b4859f8ee31f475
++ [Kotlin- und Java-Fassaden](../../soundness/modules/foreign-interop.md#kotlin-and-java-facades)
++ enthält die Tabelle der drei, und [Kleine APIs](../../philosophy/small-apis.md) den Grund, warum es
++ so wenige sind.

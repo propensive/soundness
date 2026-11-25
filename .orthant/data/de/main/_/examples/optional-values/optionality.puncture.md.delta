@@ -1,0 +1,58 @@
+orthant 2 language
+
+@ 0 1 0 06db97200c993d901a507b2b63d48d8e
++ # Eine leere Antwort ist keine Antwort
+
+@ 0 3 0 16a25d4defd3906d1b7f7e80e1b44cfd
++ Daten von außen kennzeichnen Abwesenheit oft mit einem eigenen Wert: einem leeren String, einer
++ Null, einer `-1`. `puncture` macht aus diesem einen Wert `Unset`, wo die Daten eintreffen, und
++ von da an sieht der Compiler, dass er behandelt wird.
+
+% 2 1 0 12259dd96a3a9e2f0b358d1714fbc5af
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 185242214f13e9a711cec0be45c261a6
++   label Ein Sentinel, der wie ein Wert aussieht
+
+% 1 1 0 0b78fa29c291570e1909930d07c34bfe
+
+% 2 1 0 0f470653444ef67b003122eb7d8d95ad
+
+% 0 1 0 0a7d24e1a4e3077e07f772f1a78f1628
+
+% 1 1 0 0680ddfbc784bfd31df72e076c2c0149
+
+@ 0 2 0 1aef84e3c7a5f5e71da30d3d0bd4ce60
++   label Der Sentinel, zur Abwesenheit gemacht
++   highlight puncture(t"")  leerer Text wird zu Unset
+
+% 1 1 0 0fe1cd32c3be45b008561b678e2f0d89
+
+% 2 1 0 010aa51a9c36084c1edddd2cbc6b6003
+
+% 0 1 0 00ade03e16d7d0540335c043115cc59b
+
+% 0 1 0 19c24c23da4623e1140c3bf31b01dd8d
+
+% 1 1 0 1ee833a64d1658ff0c53c1108cf7ee02
+
+% 1 1 0 136d267ff733a60e0f6246170d49df5f
+
+% 2 1 0 1525a46c87e9e0571e7d21b8e7c42b7a
+
+% 0 1 0 08a86cbdc9b8cb0109ed8ce5b435ce67
+
+% 1 1 0 0cd6459499a6bd5203d659b3bcc1b6aa
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 0 1 0 169b0c76833070851cf1ec9b48d907bf
+
+% 1 1 0 0b43eba42e2bae0f055b351d2367abe9
+
+@ 0 2 0 007888668d802d3f0e7bd3afaeec4932
++ [Ein Optional bilden](../../soundness/modules/optional-values.md#building-an-optional) enthält
++ `unless` und `only`, die eine Bedingung nehmen.
