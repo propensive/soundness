@@ -72,7 +72,7 @@ private[cataclysm] object CssParser:
 
   // The at-rules whose blocks hold style rules or declarations of properties. The block of any
   // other at-rule (`@font-face`, `@page`, `@counter-style`, `@property`, …) holds *descriptors*,
-  // which have grammars of their own, and are not validated as properties.
+  // which have grammars of their own, and are validated against those, not as properties.
   private def grouping(name: Text): Boolean = name match
     case t"media" | t"supports" | t"layer" | t"container" | t"scope" | t"starting-style"
     | t"document" | t"position-try" =>
@@ -85,8 +85,9 @@ private[cataclysm] object CssParser:
     ( cursor: Cursor[Text, ?], validating: Boolean, placeholder: Optional[Text] = Unset )
     ( using Tactic[Css.Error] ):
 
-    // Whether the declarations being read are an at-rule's descriptors, not properties.
-    private var descriptors: Boolean = false
+    // The name of the at-rule whose descriptors the declarations being read are, or `Unset`
+    // if they are declarations of properties.
+    private var descriptive: Optional[Text] = Unset
 
     def document(): Css = Css(nodes())
 
@@ -183,10 +184,15 @@ private[cataclysm] object CssParser:
       val text = buf.toString.nn.tt.trim
 
       if block then
-        val enclosing = descriptors
-        descriptors = text.starts(t"@") && !grouping(atRule(text)(0).lower)
+        val enclosing = descriptive
+
+        descriptive =
+          if !text.starts(t"@") then Unset else
+            val name = atRule(text)(0).lower
+            if grouping(name) then Unset else name
+
         val body = nodes()
-        descriptors = enclosing
+        descriptive = enclosing
         if cursor.peek == '}' then cursor.advance() else fail(Css.Error.Reason.UnexpectedEnd)
 
         if text.starts(t"@") then
@@ -208,15 +214,43 @@ private[cataclysm] object CssParser:
 
     // Check a declaration's property name and value, accumulating (via `raise`)
     // any error rather than aborting, so the rest of the stylesheet is still
-    // read. Custom properties (`--…`) accept any value, an at-rule's descriptors are
-    // not properties, and a declaration with a substitution is the interpolator's to
-    // check. An error is reported at the start of its declaration.
+    // read. Custom properties (`--…`) accept any value, and a declaration with a
+    // substitution is the interpolator's to check. An error is reported at the start
+    // of its declaration.
     private def validate(property: Text, value: Text, line: Ordinal, column: Ordinal): Unit =
       val substituted = placeholder.lay(false): placeholder =>
         property.contains(placeholder) || value.contains(placeholder)
 
-      if property.starts(t"--") || descriptors || substituted then ()
-      else PropertyDef.of(property) match
+      if property.starts(t"--") || substituted then ()
+      else descriptive.lay(check(property, PropertyDef.of(property), value, line, column)):
+        rule => describe(rule, property, value, line, column)
+
+    // Check a declaration in the block of the at-rule `rule` against that rule's
+    // descriptors. An at-rule the dataset gives no descriptors (`@keyframes`, whose block
+    // holds rules, or one which is not known) is not checked. `@page` takes properties
+    // as well as its descriptors. A descriptor whose grammar uses a type the matcher
+    // does not implement (`<unicode-range-token>`) cannot be verified, and is accepted.
+    private def describe(rule: Text, name: Text, value: Text, line: Ordinal, column: Ordinal)
+    :   Unit =
+
+      if PropertyDef.descriptive(rule) then PropertyDef.descriptor(rule, name.lower) match
+        case definition: PropertyDef =>
+          if Css.Syntax.Matcher.check(definition, value) == Outcome.Invalid
+          then raise(Css.Error(Css.Error.Reason.BadValue(name, value), line, column))
+
+        case _ =>
+          if rule == t"page" then check(name, PropertyDef.of(name), value, line, column)
+          else raise(Css.Error(Css.Error.Reason.UnknownDescriptor(rule, name), line, column))
+
+    private def check
+      ( property:   Text,
+        definition: Optional[PropertyDef],
+        value:      Text,
+        line:       Ordinal,
+        column:     Ordinal )
+    :   Unit =
+
+      definition match
         case definition: PropertyDef =>
           Css.Syntax.Matcher.check(definition, value) match
             case Outcome.Valid =>

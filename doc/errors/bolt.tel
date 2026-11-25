@@ -651,6 +651,7 @@ project s soundness
       variant 7 bad-value
       variant 8 unsupported-value
       variant 9 invalid-name
+      variant 10 unknown-descriptor
 
   subdivision 91 graffiti
 

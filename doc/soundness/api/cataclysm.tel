@@ -298,7 +298,7 @@ entry .Css   a stylesheet: a list of rules, declarations and at-rules, read, wri
         // Css.Error.Reason.UnexpectedChar('!')
         ```
     refer cataclysm.Css.Errors
-    entry .Reason   why the CSS was invalid: the nine kinds of fault, each numbered
+    entry .Reason   why the CSS was invalid: the ten kinds of fault, each numbered
       detail
           A `Reason` is a `Clarification` with a `#number`, which becomes the error's subcode:
 
@@ -316,9 +316,10 @@ entry .Css   a stylesheet: a list of rules, declarations and at-rules, read, wri
           row  `BadValue(property, value)`  7  _`value` is not a valid value for the `property` property_
           row  `UnsupportedValue(property, types)`  8  _the value of `property` uses an unsupported type_  the property's grammar uses value types the matcher does not implement, listed in `types`
           row  `InvalidName(name)`  9  _`name` is not a valid CSS identifier_  a class or id
+          row  `UnknownDescriptor(rule, name)`  10  _`name` is not a recognized descriptor of the @`rule` rule_  a declaration in the block of an at-rule such as `@font-face`
           ```
       entry .communicable   renders each reason as its message
-      entry #number   the reason's number, 1 to 9, which is the error's subcode
+      entry #number   the reason's number, 1 to 10, which is the error's subcode
     entry #reason   what was wrong
     entry #line   the line of the fault, as an `Ordinal`
     entry #column   the column of the fault, as an `Ordinal`
@@ -767,6 +768,9 @@ entry .PropertyDef   the definition of a CSS property from the MDN dataset: its 
   refer cataclysm.Css.Syntax
   entry .list   every known property, in dataset order
   entry .all   every known property, keyed by name in a `Dictionary`
+  entry .descriptors   every known descriptor of an at-rule, keyed as `rule/descriptor` in a `Dictionary`
+  entry .descriptor   the definition of a descriptor of an at-rule, such as `src` in `font-face`, or `Unset`
+  entry .descriptive   whether an at-rule is one whose block holds descriptors the dataset defines
   entry .of   the definition of a named property, or `Unset` if it is not a recognized property
   entry #name   the property's name, in kebab-case
   entry #syntax   the value grammar as the dataset writes it, `<length> | auto`

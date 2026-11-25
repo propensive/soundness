@@ -1615,8 +1615,9 @@ object cataclysm extends Library:
       quantitative.units, iridescence.core, gesticulate.core, rudiments.core,
       contextual.core, nomenclature.core,
       anticipation.color, anticipation.focus, parasite.core):
-    // The MDN `css/properties.json` and `syntaxes.json` datasets (CC0), compiled into string
-    // tables: only each entry's `syntax` is used, by the `css"…"` macro and at run time alike.
+    // The MDN `css/properties.json`, `syntaxes.json` and `at-rules.json` datasets (CC0), compiled
+    // into string tables: only each entry's `syntax` is used, by the `css"…"` macro and at run
+    // time alike. A descriptor of an at-rule is named `rule/descriptor`, as `font-face/src`.
     def cssData = Task.Sources(moduleDir / os.up / os.up / "data")
     def generatedSources = Task:
       val data = cssData().head.path
@@ -1624,12 +1625,20 @@ object cataclysm extends Library:
         ujson.read(os.read(data / file)).obj.toSeq.map { (name, entry) => (name, entry("syntax").str) }
       val properties = table("properties.json")
       val syntaxes = table("syntaxes.json")
+      val descriptors: Seq[(String, String)] =
+        ujson.read(os.read(data / "at-rules.json")).obj.toSeq.flatMap { (rule, entry) =>
+          entry.obj.get("descriptors").toSeq.flatMap(_.obj.toSeq).map { (name, descriptor) =>
+            (s"${rule.stripPrefix("@")}/$name", descriptor("syntax").str)
+          }
+        }
       val source =
         "package cataclysm\n\nprivate[cataclysm] object CssData:\n"
         + stringTable("propertyNames", properties.map(_._1))
         + stringTable("propertySyntaxes", properties.map(_._2))
         + stringTable("syntaxNames", syntaxes.map(_._1))
         + stringTable("syntaxSyntaxes", syntaxes.map(_._2))
+        + stringTable("descriptorNames", descriptors.map(_._1))
+        + stringTable("descriptorSyntaxes", descriptors.map(_._2))
       os.write.over(Task.dest / "cataclysm" / "cataclysm.CssData.scala", source, createFolders = true)
       Seq(PathRef(Task.dest))
     override def scalacOptions = Task:

@@ -917,6 +917,67 @@ object Tests extends Suite("css", m"Cataclysm Tests"):
         t"""@font-face { font-family: "Inter"; src: url("inter.woff2") }""".read[Css].rules.size
       . assert(_ == 1)
 
+      test(m"the font face of the issue reads without error"):
+        val source = t"""url("https://propensive.dev/propensity.woff2") format("woff2")"""
+
+        t"""@font-face { font-family: "Propensity"; src: $source; font-display: swap }"""
+        . read[Css].rules.size
+      . assert(_ == 1)
+
+      test(m"a font source with a keyword format and a local fallback reads"):
+        t"""@font-face { src: local("Inter"), url(inter.woff2) format(woff2) tech(variations) }"""
+        . read[Css].rules.size
+      . assert(_ == 1)
+
+      test(m"the descriptors of a font face which are not properties read"):
+        t"@font-face { unicode-range: U+0025-00FF; size-adjust: 90%; ascent-override: normal }"
+        . read[Css].rules.size
+      . assert(_ == 1)
+
+      test(m"a font face Cataclysm writes reads back"):
+        val source = t"""url("https://x/inter.woff2") format("woff2")"""
+
+        t"""@font-face{font-family:"Inter";src:$source;font-weight:100 900;}""".read[Css].rules.size
+      . assert(_ == 1)
+
+      test(m"an unknown descriptor of a font face is an error"):
+        capture[Css.Errors](t"""@font-face { colour: red }""".read[Css]).errors.map(_.reason)
+      . assert(_ == List(Css.Error.Reason.UnknownDescriptor(t"font-face", t"colour")))
+
+      test(m"a property which is not a descriptor of a font face is an error"):
+        capture[Css.Errors](t"""@font-face { color: red }""".read[Css]).errors.map(_.reason)
+      . assert(_ == List(Css.Error.Reason.UnknownDescriptor(t"font-face", t"color")))
+
+      test(m"a bad value of a descriptor is an error"):
+        capture[Css.Errors](t"@font-face { font-display: quickly }".read[Css]).errors.map(_.reason)
+      . assert(_ == List(Css.Error.Reason.BadValue(t"font-display", t"quickly")))
+
+      test(m"a page rule takes its descriptors and properties"):
+        t"@page { size: A4 landscape; margin: 2cm }".read[Css].rules.size
+      . assert(_ == 1)
+
+      test(m"an unknown declaration in a page rule is an unknown property"):
+        capture[Css.Errors](t"@page { colour: red }".read[Css]).errors.map(_.reason)
+      . assert(_ == List(Css.Error.Reason.UnknownProperty(t"colour")))
+
+      test(m"the declarations of a keyframe are checked as properties"):
+        val keyframes = t"@keyframes fade { from { opacity: 0 } to { opacity: clear } }"
+
+        capture[Css.Errors](keyframes.read[Css]).errors.map(_.reason)
+      . assert(_ == List(Css.Error.Reason.BadValue(t"opacity", t"clear")))
+
+      test(m"the block of an unknown at-rule is not checked"):
+        t"@font-feature-values Inter { @styleset { nice-style: 12 } }".read[Css].rules.size
+      . assert(_ == 1)
+
+      test(m"a bad descriptor in a literal fails to compile"):
+        demilitarize(css"@font-face { font-display: quickly }").map(_.message)
+      . assert(_.exists(_.contains("quickly is not a valid value")))
+
+      test(m"every bundled descriptor has a grammar which parses"):
+        PropertyDef.descriptorList.map(_(1).grammar).size
+      . assert(_ == 36)
+
       test(m"a rule after a descriptor block is still checked"):
         capture[Css.Errors](t"""@font-face { src: url("x") } a { colour: red }""".read[Css])
         . errors.map(_.reason)

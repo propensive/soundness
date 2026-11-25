@@ -247,6 +247,9 @@ object Css:
         case UnsupportedValue(name, _)  => m"the value of $name uses an unsupported type"
         case InvalidName(name)          => m"$name is not a valid CSS identifier"
 
+        case UnknownDescriptor(rule, name) =>
+          m"$name is not a recognized descriptor of the @$rule rule"
+
     enum Reason(val number: Int) extends Clarification:
       case UnterminatedComment         extends Reason(1)
       case UnterminatedString          extends Reason(2)
@@ -257,6 +260,7 @@ object Css:
       case BadValue(property: Text, value: Text) extends Reason(7)
       case UnsupportedValue(property: Text, types: List[Text]) extends Reason(8)
       case InvalidName(name: Text) extends Reason(9)
+      case UnknownDescriptor(rule: Text, name: Text) extends Reason(10)
 
   case class Error(reason: Css.Error.Reason, line: Ordinal, column: Ordinal)(using Diagnostics)
   extends fulminate.Error(90, 1, reason.number)
