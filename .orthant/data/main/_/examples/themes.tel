@@ -1,0 +1,223 @@
+tel 1.0
+
+# The themes an example may show: the second of its two aspects, a way of working which runs
+# through every part of Soundness and is its own take on a familiar problem. An example of the
+# theme `checked-literals` on the topic `json` is doc/examples/json/checked-literals.md. A theme
+# with a `philosophy` is argued for at length in that essay of doc/philosophy.
+# doc/examples/readme.md explains the store.
+
+theme impossible-states
+  title  Impossible states
+  group  Types
+  philosophy  impossible-states
+  summary
+      A type which admits only the values that mean something, so that a wrong value cannot be
+      written down: a path that is always absolute, a number within its range, a vector of a
+      known length.
+
+theme total-transitions
+  title  Total transitions
+  group  Types
+  philosophy  total-transitions
+  summary
+      An operation defined for every value its parameter types admit. Where it could fail for
+      some of them, it asks for a proof, returns an optional value, or declares the error,
+      and never throws by surprise.
+
+theme dependent-typing
+  title  Dependent typing
+  group  Types
+  summary
+      A type which carries a value, such as `Sha2[256]` or `Vector[Int, 3]`, and a result whose
+      type is computed from the arguments, so that the compiler does arithmetic on dimensions,
+      lengths, bounds and key sizes.
+
+theme infix-types
+  title  Infix types
+  group  Types
+  philosophy  infix-types
+  summary
+      Types which read as phrases: `Person is Encodable in Json`, `Path on Linux`,
+      `Text raises ParseError`. The same few words, `is`, `in`, `on`, `of`, `by` and `raises`,
+      are used by every library.
+
+theme type-providers
+  title  Type providers
+  group  Types
+  summary
+      Types made by the compiler from something outside the program, such as a JSON schema, a
+      TEL schema or an OpenAPI description, so that a field which the specification does not
+      have is a compile error.
+
+theme generic-derivation
+  title  Generic derivation
+  group  Types
+  summary
+      A typeclass instance for a case class or an enumeration, built by the compiler from the
+      instances of its fields: a codec, a display form, a difference, or a random value, without
+      a line written for the type.
+
+theme zero-cost
+  title  Zero cost
+  group  Types
+  philosophy  zero-cost
+  summary
+      Guarantees which are paid for as the code compiles and not as it runs: an opaque type
+      which is its bare value in bytecode, an inlined typeclass, an optional value with no
+      wrapper.
+
+theme checked-literals
+  title  Checked literals
+  group  Notation
+  philosophy  safety-by-construction
+  summary
+      A URL, a regular expression, a date, a media type or a fragment of JSON written in the
+      source and parsed by the compiler, so that a malformed one is a compile error at the
+      character which is wrong.
+
+theme domain-notation
+  title  Domain notation
+  group  Notation
+  philosophy  elegant-prose
+  summary
+      Ordinary Scala expressions which are shaped like the notation of their domain:
+      `2024-Jan-15`, `7.30.am`, `9.8*Metre/(Second*Second)`, `% / "usr" / "bin"`, each as
+      thoroughly checked as any other expression.
+
+theme extractors
+  title  Extractors
+  group  Notation
+  summary
+      The checked notation used as a pattern: a regular expression whose groups bind typed
+      variables, a URL, a path or a JSON document taken apart in a `case`.
+
+theme small-apis
+  title  Small APIs
+  group  Notation
+  philosophy  small-apis
+  summary
+      One name for one operation, whatever it is applied to. `read`, `as`, `show`, `decode`
+      and `digest` take the type wanted as a parameter, and a typeclass supplies the
+      implementation.
+
+theme direct-style
+  title  Direct style
+  group  Effects
+  philosophy  direct-style
+  summary
+      Code which fails, waits, or does I/O, written as a plain sequence of expressions, with
+      no monad, no `for` comprehension and no `Future`. The effects are in the signatures and
+      not in the shape of the code.
+
+theme honest-signatures
+  title  Honest signatures
+  group  Effects
+  philosophy  honest-signatures
+  summary
+      A method names everything it needs as a contextual parameter, whether the network, a
+      clock, a source of randomness, a character encoding or standard output, so code which
+      was not given one cannot use it.
+
+theme declarative-context
+  title  Declarative context
+  group  Effects
+  philosophy  declarative-context
+  summary
+      A choice made once, by an import: a calendar, a number format, an HTTP backend, an
+      encoding, a policy for optional fields. It applies to all the code in its scope, and
+      a different choice in a different scope is a different program.
+
+theme delimited-scopes
+  title  Delimited scopes
+  group  Effects
+  philosophy  delimited-scopes
+  summary
+      A block within which something is available, such as an open file, a connection, a
+      transaction or a temporary directory, which is released when the block ends, however
+      it ends.
+
+theme capture-checking
+  title  Capture checking
+  group  Effects
+  philosophy  capture-checking
+  summary
+      The compiler's proof that nothing which depends on a scoped capability leaves its scope:
+      no lazy stream outlives its file, no closure its error handler, no task its supervisor,
+      and a mutable buffer has one owner.
+
+theme copyless-streaming
+  title  Copyless streaming
+  group  Effects
+  summary
+      Data parsed, transformed and written in the blocks in which it arrived, without an
+      intermediate copy, with backpressure, and with the exclusive ownership of each block
+      checked by the compiler.
+
+theme structured-concurrency
+  title  Structured concurrency
+  group  Effects
+  philosophy  structured-concurrency
+  summary
+      Tasks which belong to the scope that started them. A scope does not end until its
+      tasks have, a failure cancels the siblings it should, and a task cannot be started
+      where nothing supervises it.
+
+theme immutability
+  title  Immutability
+  group  Effects
+  philosophy  immutability
+  summary
+      Values which never change: a new value in place of an update, a lens for a change deep
+      inside a structure, and an array which is frozen before it can be shared.
+
+theme typed-errors
+  title  Typed errors
+  group  Errors
+  philosophy  error-handling
+  summary
+      Each way an operation can fail is named in its type with `raises`, and code which
+      neither handles the error nor declares it does not compile.
+
+theme error-strategies
+  title  Error strategies
+  group  Errors
+  philosophy  error-handling
+  summary
+      The caller decides what a failure does, and the same fallible code serves every choice:
+      stop at the first error, recover with a value, translate it to another error, or carry
+      on and collect them all.
+
+theme expressive-errors
+  title  Expressive errors
+  group  Errors
+  philosophy  expressive-errors
+  summary
+      Errors which speak of the domain and not of the machinery: a compile error which says
+      that a length was added to a time, and a runtime error which holds the line, the column
+      and the reason as typed values.
+
+theme optionality
+  title  Optionality
+  group  Errors
+  philosophy  optionality
+  summary
+      A value which may be absent is an `Optional`, a union with `Unset`, with no wrapper
+      and no `null`. It is never used as though it were present, and `or`, `let` and `lay`
+      say what absence means at the place it matters.
+
+theme complexity-gating
+  title  Acknowledged costs
+  group  Errors
+  summary
+      An operation which costs more than it looks, such as the size of a linked list, the last
+      element of a lazy chain or a search by value, does not compile until an import
+      acknowledges the cost.
+
+theme composability
+  title  Composability
+  group  Design
+  philosophy  composability
+  summary
+      Two libraries which know nothing of each other, used together with no adapter: JSON as
+      the body of an HTTP request, a table rendered as HTML, a quantity in a chart, a path
+      in a shell command.
