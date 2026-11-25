@@ -1,0 +1,10 @@
+orthant 2 release
+
+@ 0 3 0 04f592f817c3a7551a0bebb3929a550f
++ Cataclysm checks property names against the known set, the descriptors of an at-rule such as
++ `@font-face` against that rule's own set, and parses selectors against the full modern
++ grammar, so a misspelled property or a malformed selector is reported rather than passed to
++ a browser that will silently ignore it.
+
+@ 1 0 0 05d8c69db7d37e9c19d7fe7233f16f15
++ row  `↯/s.90.1.10`  `UnknownDescriptor`  <name> is not a recognized descriptor of the @<rule> rule

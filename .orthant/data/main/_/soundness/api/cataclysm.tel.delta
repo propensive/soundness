@@ -1,5 +1,14 @@
 orthant 2 release
 
+@ 0 1 0 197d6754ae7f5c75116d7cc176416a9e
++     entry .Reason   why the CSS was invalid: the ten kinds of fault, each numbered
+
+@ 1 0 0 0c9d95aa05d897bd0a8fe797fae0c683
++           row  `UnknownDescriptor(rule, name)`  10  _`name` is not a recognized descriptor of the @`rule` rule_  a declaration in the block of an at-rule such as `@font-face`
+
+@ 0 1 0 16a122775a43690314a76c360f2bbb62
++       entry #number   the reason's number, 1 to 10, which is the error's subcode
+
 @ 1 0 0 0769738dd53b4e0e1765647a845b7abe
 +   entry #rules   the stylesheet's nodes, in order
 
@@ -19,3 +28,8 @@ orthant 2 release
 +       `Tactic[Css.Error]`, raised only when the value's text cannot be tokenized (an
 +       unterminated string).
 +
+
+@ 1 0 0 1578a3b2ba867a600b2df56c43d65e0d
++   entry .descriptors   every known descriptor of an at-rule, keyed as `rule/descriptor` in a `Dictionary`
++   entry .descriptor   the definition of a descriptor of an at-rule, such as `src` in `font-face`, or `Unset`
++   entry .descriptive   whether an at-rule is one whose block holds descriptors the dataset defines
