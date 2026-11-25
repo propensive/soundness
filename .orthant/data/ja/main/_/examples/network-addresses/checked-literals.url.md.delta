@@ -1,0 +1,60 @@
+orthant 2 language
+
+@ 0 1 0 154a74c32c0edb1f16e0e6698d11f4ae
++ # 値を含む URL
+
+@ 0 2 0 1e4f8be9acd58a33067e69cd81a57030
++ `url"…"` リテラルに埋め込んだ値は、その型に応じて入れられる。テキストは URL エンコードされ、
++ 数値はポートになる。その周りの部分もコンパイラが検査する。
+
+% 2 1 0 04c178a5f0ee57480bc3325d158cc503
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 2 0 1d3c082600fafa9518eb25afead02cd3
++   label テキストはパスにエンコードされる
++   highlight $title  URL エンコードされる
+
+% 1 1 0 1312a85642efc936113406980f435dac
+
+% 2 1 0 0805757cb1e0c6771277e4905ddd431b
+
+% 3 1 0 0b308f4d6ca9e11e0027e17f3bb82ef8
+
+% 0 1 0 07149cf5474f3840158430d0f1211347
+
+% 1 1 0 1430426d77b5c23a0725a1b024db4cb9
+
+@ 0 1 0 0ae6613076a836b117a6aece26754a50
++   label 数値はポートである
+
+% 0 1 0 1fdc9ae2618a1a601c268dd1423c24fd
+
+% 1 1 0 1c8cd894868e40020e69960a25d43997
+
+% 2 1 0 116f5b94b89d17cf067f918b07e1984c
+
+% 3 1 0 0c5c74d9a5ec48b61fdbc6db43352a75
+
+% 0 1 0 198e2f7e513e55b9072a262c9146fc7b
+
+% 1 1 0 05c22e26dbfdc4e6116773440a87b806
+
+% 1 1 0 136d267ff733a60e0f6246170d49df5f
+
+% 2 1 0 1525a46c87e9e0571e7d21b8e7c42b7a
+
+% 0 1 0 08a86cbdc9b8cb0109ed8ce5b435ce67
+
+% 1 1 0 0cd6459499a6bd5203d659b3bcc1b6aa
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 0 1 0 18ee4cbe857b5bb6046c65b87246ea68
+
+% 1 1 0 0db762d28f00b57f1ec27c468d788dbb
+
+@ 0 1 0 04747b41c2ebb50616da8000d46a3b62
++ [URL](../../soundness/modules/network-addresses.md#urls)がリテラルとその各部分を説明する。

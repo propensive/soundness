@@ -1,0 +1,64 @@
+orthant 2 language
+
+@ 0 1 0 1a563a9d476212f600010148f52c712e
++ # 和として書く複素数
+
+@ 0 2 0 08e4eefae6e09ceb1dfe96312db0bde4
++ 複素数は、実部に `i` の倍数を足したものである。複素数はそのとおりに普通の式として書かれ、
++ その演算は各部分の演算である。
+
+% 2 1 0 06cd9ac64c1005411bee1c2428be9af9
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 2 0 00165580bbdd186d101b7e70e17e6e92
++   label 二つの成分
++   highlight Complex(3.0,..4.0)  実部、次に虚部
+
+% 1 1 0 02692448db8ce0160574e2f512defe70
+
+% 0 1 0 1e41ac9e61b3ba8e198b2bffaabccefc
+
+% 1 1 0 059284d0b70c260f0985c053c45e5e89
+
+@ 0 2 0 128427d53414b2bd1f6b9a2ae54c3408
++   label 実部と、i の倍数
++   highlight i*4.0  虚数単位の倍数
+
+% 1 1 0 1bc93fe91126ea2414351fc3965b70b2
+
+% 2 1 0 17f9b397bb4500ec1c8e714f1cfd5235
+
+% 1 1 0 0e7ad0bdd2bacfbf156e04cca263dad9
+
+@ 0 2 0 0a3f5231e95fd5b81180aaadae306d57
++   label その大きさ
++   highlight modulus  ゼロからの距離
+
+% 1 1 0 140999ef21bad1e00a5b39e7abd76aaa
+
+% 2 1 0 02e1b465f82d96b9008a294ee50f8822
+
+% 0 1 0 12373986f66e64b81f4d08a671f90d8c
+
+% 1 1 0 1d8d11d54ffc16151d83932530dbe5de
+
+% 1 1 0 136d267ff733a60e0f6246170d49df5f
+
+% 2 1 0 1525a46c87e9e0571e7d21b8e7c42b7a
+
+% 0 1 0 08a86cbdc9b8cb0109ed8ce5b435ce67
+
+% 1 1 0 0cd6459499a6bd5203d659b3bcc1b6aa
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 0 1 0 0b46ac06dbd54e5e13ab80c9ad3ade9b
+
+% 1 1 0 0eb9c6fa77e4ad8602ef0dfa87e57054
+
+@ 0 2 0 13650e755fdfd4a70cd6a640f105881f
++ [複素数](../../soundness/modules/mathematics.md#complex-numbers)に極形式と、
++ 単位を持つ成分の説明がある。

@@ -1,0 +1,57 @@
+orthant 2 language
+
+@ 0 1 0 01896198bbf33cb4016546dbff22e817
++ # 三通りの残し方に一つの動詞
+
+@ 0 2 0 0c800fa8d703205c1e0d4ed8d54f9041
++ `keep` はテキストの一部を残す。どの部分かは、渡すものが述べる。文字数、文字数と方向、あるいは
++ 残す各文字が満たす述語である。
+
+% 2 1 0 197fb2c87fb025141a09cc31e49b0471
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+@ 0 2 0 101172949440e5bc13862b6d209c7f27
++ alternative 文字数
++   highlight keep(4)  最初の四文字
+
+% 1 1 0 14f14a8f48a401821d8e45ea87f7496c
+
+% 0 1 0 12ebda429d0ad1051f4dfc9b4a9e5810
+
+@ 0 2 0 0d1a7c3543e47fc51f0c9ac607d3f9e7
++ alternative 右から
++   highlight Rtl  最後の四文字
+
+% 1 1 0 101e8ee050cd519715b883aee39b9c8c
+
+% 0 1 0 1ce007e843fe31b31c4561b50c8d2e6a
+
+@ 0 2 0 02bd4410e8edc48b0d564c869e778625
++ alternative 一致するもの
++   highlight _.isUpper  すべての大文字
+
+% 1 1 0 15944a21b70911ae07a87a475041c8c0
+
+% 0 1 0 01867c935939216a0698dd7c5b6d6e19
+
+% 1 1 0 1aa7d7fb630e091e0daed90d6e3e9b6a
+
+% 1 1 0 136d267ff733a60e0f6246170d49df5f
+
+% 2 1 0 1525a46c87e9e0571e7d21b8e7c42b7a
+
+% 0 1 0 08a86cbdc9b8cb0109ed8ce5b435ce67
+
+% 1 1 0 0cd6459499a6bd5203d659b3bcc1b6aa
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 0 1 0 04534c2b6d8e227f1bf81775e68b638e
+
+% 1 1 0 06ebf81c914a2ecd18399c755a39ff3b
+
+@ 0 3 0 033f547e4993914b130792936abbd17e
++ [切り出し](../../soundness/modules/text.md#slicing)と
++ [変換](../../soundness/modules/text.md#transforming)がその形を説明し、
++ [小さな API](../../philosophy/small-apis.md)は動詞が一つである理由を説明する。

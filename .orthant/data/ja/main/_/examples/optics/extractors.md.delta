@@ -1,0 +1,69 @@
+orthant 2 language
+
+@ 0 1 0 188b3c972853184d1bfb5bcba0c08bb5
++ # パターンとして書くパス
+
+@ 0 3 0 025dd90cd0a067f11aae9850914ad509
++ レンズが代入する先のパスは、`case`のパターンにもなる。`specifically`はそのようなケースのリストを読み、
++ 各ケースは`root`からのパスと、その終端にあるフィールドの値であり、コンパイラはすべてのパスを型と照合
++ する。
+
+% 0 1 0 12705ff5e291290d17fbc8389d59ef4a
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 2 0 148787c75cf890ea06057406742a2942
++   label パスで名指した2つのフィールドのエンコーダ
++   highlight root.opponent.name()  2階層下にあるDuelのフィールド
+
+% 1 1 0 023f0feb36d4fc830d32c077397085d8
+
+% 2 1 0 0adf4d2a612cda9c1e5155020723a765
+
+% 3 1 0 0493886cf57a7fa0052211ac31b6142a
+
+% 5 1 0 1c1b883360fd6a7304118d4759d81385
+
+% 6 1 0 075e6f235b8bc0841643117018dd03a4
+
+% 8 1 0 031c7ad3d4c3c39b0828ccc55f894829
+
+% 9 1 0 0af38300dc5b96d900b8f27dda2f4347
+
+% 0 1 0 16e2ad37d9c954220dfdff0ff4b24075
+
+% 0 1 0 158bdec747294ec616c2142cace3b9ed
+
+% 1 1 0 0084260672331f8818b00204bf172b79
+
+@ 0 1 0 133be3be32f755ad087cafb0dd636b09
++   label 決闘が持たないパス
+
+% 0 1 0 1477c34ff41c7c99183443e1d3238ae1
+
+% 1 1 0 0960c596329e4eb20a0b442aaa85c43a
+
+% 2 1 0 1cd2b96d223e84581b01cb607bf7c822
+
+% 3 1 0 0bcf4839af6eef840505addefa1fcbb0
+
+% 5 1 0 098937159ef6ff35148b1770bbf06251
+
+% 6 1 0 1d91d98e881a41ea14e2566921a4a377
+
+% 8 1 0 0f4a5288333386780531c76a73e5dc8c
+
+% 9 1 0 1f694fd2d849e737023ef38ed5ce0dfa
+
+% 0 1 0 18c32ba92b5105fc0ea93ff27ec1b445
+
+% 0 1 0 18eafb32caed3dd50f976e787bd035ca
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 2 0 1f14a78b263815a61bc3a3bfb2ad90e2
++ `Specific`が何のためにあるかは
++ [たどらずにパスを名指す](../../soundness/modules/optics.md#naming-paths-without-traversing-them)で説
++ 明する。

@@ -1,0 +1,62 @@
+orthant 2 language
+
+@ 0 1 0 1828344c6f8a5a6706753cd83da0be84
++ # ケースの名前で読む列挙型
+
+@ 0 2 0 085e7a947677f1d112f016be82735e92
++ 列挙型のケースはコンパイラが知っているので、テキストから読むために何も書く必要はない。`As[Direction]` はケースの名前にマッチし、
++ それ以外は退ける。
+
+% 2 1 0 0435a6a99c0a3fc401115c575165f2ab
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 03b97b9c9e6f6ac512bb1de24f02e39a
++   label 列挙型
+
+% 1 1 0 127ee81ffc5767ae1f9ecbdba1c69a6c
+
+% 2 1 0 03874b680a2d380a02afd705d867d256
+
+% 3 1 0 097381939fe004cf182bd4929d46cbf3
+
+% 1 1 0 1a47c41bf69ca02b14c0c2c1a5fc0d41
+
+@ 0 2 0 14051264c094007b179dfc2ea21fd591
++   label 名前で抽出する
++   highlight As[Direction](direction)  ケースの名前にマッチする
+
+% 1 1 0 1b712a8e63b85c690f2dc41ac3dd6e72
+
+% 2 1 0 105268478834bdd20b121bfdde4b091d
+
+% 3 1 0 00e8d11fbf660e4907285dd4b520e57b
+
+% 0 1 0 082eefebc6670c9c080f33c0cc6177ed
+
+% 0 1 0 1229b419675a013118ef40588ade5f2a
+
+% 0 1 0 0e8b422b9bd2757a0a6ad9ab755a4c09
+
+% 1 1 0 0d8b7723799a9338092d314828c6f7c2
+
+% 1 1 0 136d267ff733a60e0f6246170d49df5f
+
+% 2 1 0 1525a46c87e9e0571e7d21b8e7c42b7a
+
+% 0 1 0 08a86cbdc9b8cb0109ed8ce5b435ce67
+
+% 1 1 0 0cd6459499a6bd5203d659b3bcc1b6aa
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 0 1 0 1dfef221d600a17c1a38bdc0c516eeba
+
+% 0 1 0 0a3d157adf4d6a2904e9d66a542be135
+
+% 1 1 0 16c4a79452f3b9e819cd8e1a07a66890
+
+@ 0 2 0 05fa3357ebb98ce61b1d86aae8330db3
++ [名前と位置による列挙型](../../soundness/modules/decoding.md#enumerations-by-name-and-position)がその下にある導出されたインスタンスを説明する。

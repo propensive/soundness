@@ -1,0 +1,62 @@
+orthant 2 language
+
+@ 0 1 0 1a38966dadda5f3217aa5e1bbd30c59c
++ # スレッドの種類はインポートで決まる
+
+@ 0 3 0 0484907b6d15f8f41ff22b97d52123ed
++ タスクは、スコープにあるスレッドモデルが提供するものの上で動く。起動して待つコードは、プラットフォームスレッドでも仮想スレッドでもキャリアのプールでも同じであり、
++ インポート一つでファイル全体をあるモデルから別のモデルへ移せる。
+
+% 0 1 0 12705ff5e291290d17fbc8389d59ef4a
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+@ 0 2 0 16155ce2d41fd0da185a36a1609bcdee
++ alternative 仮想スレッド
++   highlight virtualThreads  タスクごとに仮想スレッドを一つ
+
+% 1 1 0 018827e481abc49414c48ca33643dc1d
+
+% 0 1 0 0501b13bd2211d43198087765cafdd33
+
+% 1 1 0 1a79f9034788982807fbd822f70ea321
+
+% 3 1 0 1e7c3edb77ca190f1f3a9df515711ff4
+
+% 4 1 0 115f657362bcc084171bcebd364e8a1b
+
+@ 0 2 0 05742fe134cee4fa1998aa8cd6fcdbe6
++ alternative プラットフォームスレッド
++   highlight platformThreads  タスクごとにプラットフォームスレッドを一つ
+
+% 1 1 0 19c229925b725f270ae1f2617b7e1db4
+
+% 0 1 0 0ac34298f3d746150409391e415998a7
+
+% 1 1 0 130c3b68efba48100d3b21a8af8b1194
+
+% 3 1 0 004ece4fd62aaa2b0241ecdebb6dfdfd
+
+% 4 1 0 050c55375167586a00b3363c29b01812
+
+@ 0 2 0 0b3799e6277759ab177cc85edfc1560b
++ alternative プール
++   highlight pooledThreads  待機中のキャリアがあれば、それを使う
+
+% 1 1 0 0e1dc0575860a2751f2ee0c006015005
+
+% 0 1 0 01eb806e1a7c69a61694adfdf2bca119
+
+% 1 1 0 06d9a50c4602b9470520d2c41e2f2034
+
+% 3 1 0 19b168214050c53a17e66c7abd3d4366
+
+% 4 1 0 1960f02a27fd587b120598d387bc1f3a
+
+% 0 1 0 18eafb32caed3dd50f976e787bd035ca
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 3 0 1b358982fa8bb02a0836c7b54e0be9d3
++ [スレッド](../../soundness/modules/concurrency.md#threads)がモデルを比較し、
++ [宣言的なコンテキスト](../../philosophy/declarative-context.md)がその選択を `async` の引数にしない理由を説明する。

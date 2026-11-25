@@ -1,0 +1,62 @@
+orthant 2 language
+
+@ 0 1 0 0d43681705a4132008857ed4c624557b
++ # 方位をどこから測るか
+
+@ 0 3 0 0ef683d05855592c0e47d756e8e5c448
++ 方位はある方向からの角度である。航海士は北から時計回りに測り、数学者は東を指す軸から測る。その慣習はインポートで選ばれ、
++ 方位を求めるコードは変わらない。
+
+% 0 1 0 12705ff5e291290d17fbc8389d59ef4a
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+@ 0 2 0 053c7e5e1a8170290b3d2f40f076dae1
++ alternative 北から
++   highlight fromNorthBearing  北から時計回り
+
+% 1 1 0 12f8947388b8755d03afef1fd2e99b00
+
+% 0 1 0 14d31087b042d5d2049e7c1c35c40b36
+
+% 2 1 0 15ab44f14e82fa941a4e6d3921939d63
+
+% 3 1 0 0b3ff27e9f3bf8160d7ac519493725d7
+
+% 5 1 0 067c097c8173e59a1bb2d5ca9ff9aa0a
+
+@ 0 2 0 0c7481fb91a8e32a113f7a39239b6cef
++ alternative 東から
++   highlight fromEastBearing  東を指す軸から
+
+% 1 1 0 0188ebfe7e7da9dd1adb211468b5e6e7
+
+% 0 1 0 1cdfe5c7a7c7e4d017e8086974b3a8f6
+
+% 2 1 0 0abfaacee3d408bc0b773eab1dbe15dd
+
+% 3 1 0 02bfe1590a5d10c21ee004bddf6c3b97
+
+% 5 1 0 037ea2a3ad5ee8981bb2bda8807752da
+
+@ 0 2 0 11660b635e3f747b023d0d689bed09b1
++ alternative 羅針盤の方位として
++   highlight Compass[16]  十六方位の一つ
+
+% 1 1 0 0ff125ede5bb884f17dd895357be00c0
+
+% 0 1 0 0917a8a4fc903c1e159e477c9e452381
+
+% 2 1 0 0fd55123b3e07fd500ebe7f3e14303da
+
+% 3 1 0 1d66ee04235edf420a3d7cbae555b8c3
+
+% 0 1 0 1c6268dbf43cc995007b5ccd58311fdc
+
+% 0 1 0 18eafb32caed3dd50f976e787bd035ca
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 3 0 00f6edacc6efa237075b224a209631a7
++ [地点](../../soundness/modules/geography.md#locations)に地点が答えるほかの問いがあり、
++ [宣言的なコンテキスト](../../philosophy/declarative-context.md)にインポートで選ぶ理由がある。

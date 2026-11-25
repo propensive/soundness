@@ -1,0 +1,72 @@
+orthant 2 language
+
+@ 0 1 0 022218f10851da9e1ee6ffb688143839
++ # 知っていることを保持するエラー
+
+@ 0 3 0 1ebb9a7dedacf6131c5d88c7d80b54b2
++ エラーはケースクラスであり、そのメッセージは `m"…"` で書く。失敗を説明する値は型付きのフィールドの
++ ままなので、ハンドラはポートを数として読み、解析すべきメッセージはない。
+
+% 2 1 0 0e897a303a39e2ae07ca3432033af642
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 2 0 0ed30637a803746c128c839d3b34337e
++   label フィールドとメッセージを持つエラー
++   highlight m"the..available"  型付きの埋め込みを持つメッセージ
+
+% 1 1 0 085ce190197ccf560c3ab8ec56e6c8c2
+
+% 2 1 0 1351ad4987e24488087f9713f9eefe45
+
+% 2 1 0 157983f23aaa21770fa5dc6e236bb050
+
+% 3 1 0 16267d4ca443c23104e6be7c52e21938
+
+% 1 1 0 0d725004761ff25d1de38494f00cd9c3
+
+@ 0 2 0 03924559ddfba9d30b009925954a4c43
++   label 送出され、捕捉される
++   highlight capture[PortError]  エラーそのものを返す
+
+% 1 1 0 16a1d6d27047b6120c3a0fbc248b29cf
+
+% 2 1 0 0a398cd37c3584a61e5f0f0b7efe0f0b
+
+% 0 1 0 12a618ab3fc8ab800817fdfca2fcb19c
+
+% 2 1 0 0e6058aba5d95422010c498e99418074
+
+% 3 1 0 1436e4ab005ba4c31e38c3279c78139a
+
+% 0 1 0 1094af888852f2ab157f763de8da3603
+
+% 0 1 0 09372a89ce02647311abdaac60b16531
+
+% 0 1 0 121726214084e73e1d7dd2cb0f9ccd80
+
+% 0 1 0 0c3128387fe5ac9f1da91e384a2044bc
+
+% 1 1 0 1a860f3cc3aedace08fae9a0833e2c27
+
+% 1 1 0 136d267ff733a60e0f6246170d49df5f
+
+% 2 1 0 1525a46c87e9e0571e7d21b8e7c42b7a
+
+% 0 1 0 08a86cbdc9b8cb0109ed8ce5b435ce67
+
+% 1 1 0 0cd6459499a6bd5203d659b3bcc1b6aa
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 0 1 0 06c0c12ea078c17c0106e3dee6af1925
+
+% 0 1 0 11fe9e75e643a2790b18189f030a84cf
+
+% 1 1 0 1c122999c460eb4d00f5e79ca0ca5553
+
+@ 0 2 0 02b57557c9ac330c1209e518b451d608
++ [エラーの定義](../../soundness/modules/errors.md#defining-an-error)はメッセージを説明し、
++ [表現力のあるエラー](../../philosophy/expressive-errors.md)はその目的を説明する。

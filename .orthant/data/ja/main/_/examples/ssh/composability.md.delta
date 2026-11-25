@@ -1,0 +1,68 @@
+orthant 2 language
+
+@ 0 1 0 0035a28583beeefe1b3016c9bdff56cd
++ # 分割されないリモートコマンド
+
+@ 0 3 0 1b5e14ec3cd27c7105baad1d902ce624
++ リモートシェルのためのコマンドは通常文字列であり、そこに貼り付けた値はその意味を変えうる。`exec` は `sh"…"` で書いたコマンドも受け取り、
++ その引数は一つずつ引用されるので、空白を含むブランチ名も向こう側でやはり一つの引数である。
+
+% 0 1 0 12705ff5e291290d17fbc8389d59ef4a
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 2 0 11acfebe5be48dd01340359f315267a6
++   label リモートシェルのためのテキストとしてのコマンド
++   highlight $branch  リモートシェルがどの空白でも分割する
+
+% 1 1 0 06c100526bbbad9b12dec18af6c72831
+
+% 2 1 0 07f75fbd94dcf7ec10cc314fdcf1fe1a
+
+% 3 1 0 0eba3bd7005b7d02015220599bd9fd32
+
+% 4 1 0 000ddf886d3c6c23188927d10bb6b6d6
+
+% 5 1 0 15a72e0bf9b9992f1d1164274051ba74
+
+% 7 1 0 0f54b6841f09491c0d9f18d0cae60362
+
+% 8 1 0 0855b7e6953b658a18e7130dca236fed
+
+% 10 1 0 1bf8a47d2ecec87f12012a6ae9b904c3
+
+% 0 1 0 1def94e2db9466d101f81a6d4f8ca447
+
+% 1 1 0 163734315880237410e3ec994b4cc020
+
+@ 0 2 0 1d28ed1ed26329e71f4e19c8bc6ee179
++   label 引数のリストとしてのコマンド
++   highlight $branch  何を含んでいても一つの引数
+
+% 1 1 0 138350b4d3481f8518d585637f7ac00f
+
+% 2 1 0 0b579c2567760be70ed4fac9ba6dc6a3
+
+% 3 1 0 12a510a80154192d17c71f8a193e806b
+
+% 4 1 0 15bdd72fccc420de0afcd6f365853af6
+
+% 5 1 0 0b26a7e1704e734c0c0d152192d8e1e7
+
+% 7 1 0 0abf0e7b856dd2ae08b6780834149968
+
+% 8 1 0 00a26c3db84757a7026af919d5c89d17
+
+% 10 1 0 07cd64e6ef9a841116f522f4ccdf98a1
+
+% 0 1 0 01df3ecfdda16f1204dbbd1842ce2b1b
+
+% 0 1 0 18eafb32caed3dd50f976e787bd035ca
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 3 0 0ac78857474b484611b35fd6c3f9b478
++ この例はコンパイルされるが、サーバーが必要なので実行はされない。[コマンドの実行](../../soundness/modules/ssh.md#running-commands)が `exec` を、
++ [プロセス](../../soundness/modules/processes.md#substitution-and-escaping)がエスケープを説明する。

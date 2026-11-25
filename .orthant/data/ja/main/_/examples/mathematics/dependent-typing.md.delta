@@ -1,0 +1,44 @@
+orthant 2 language
+
+@ 0 1 0 0880431e4d7caeed174ee2c1238ee1b7
++ # 自分の長さを知っているベクトル
+
+@ 0 2 0 06b4236d3496aefa0375b043440e305f
++ `Vector` の成分の数はその型の一部なので、コンパイラは計算の形を実行前に検査する。
+
+% 0 1 0 12705ff5e291290d17fbc8389d59ef4a
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 1dd7902fab7c6b7803b534f7e74a47d5
++   label 三つの成分に二つの成分を足す
+
+% 0 1 0 1477c34ff41c7c99183443e1d3238ae1
+
+% 1 1 0 0960c596329e4eb20a0b442aaa85c43a
+
+% 2 1 0 086ee329e6432f51078c5b9580d923ea
+
+% 0 1 0 1f6a42c00048490d046a595312e0ebed
+
+% 1 1 0 0a1355a7878a84e6051a875d5571530d
+
+@ 0 2 0 1819a79b18626bcd1b8f47a11330efc2
++   label 三つに三つを足す
++   highlight Vector[Int,..3]  型に含まれる三つの成分
+
+% 1 1 0 0dc3b06c6c844f9617816f7d46949f67
+
+% 2 1 0 0b641d73a62d8d83097d060c01e91ff2
+
+% 0 1 0 0c61dc3b3baaa9b419324b46b2e410ae
+
+% 0 1 0 18eafb32caed3dd50f976e787bd035ca
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 2 0 169ad572157d90681cdd8b677c6240ee
++ [数学](../../soundness/modules/mathematics.md)では、
++ 行列の行と列に対しても同じことをする。

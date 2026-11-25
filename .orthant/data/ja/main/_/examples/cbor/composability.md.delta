@@ -1,0 +1,60 @@
+orthant 2 language
+
+@ 0 1 0 178a020fb4b8acb013b54c34802b1ca5
++ # 16 進数で書き、CBOR として読むバイト
+
+@ 0 3 0 091182d3f3aee17a1c0a412a07b5f671
++ `hex"…"` リテラルは基数エンコーディングのライブラリから来るもので、
++ コンパイル時に検査される。CBOR パーサはそのバイトを受け取り、`show` は CBOR の標準が定める診断記法を返すので、
++ メッセージはその形式自身の言葉で読める。
+
+% 2 1 0 0171d317c1a62e600c3d993c5aa8b8f8
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 0b4d3c3300936be3157d701be095a1d2
++   label 三つの数の配列
+
+% 1 1 0 0190408abbdff48b1fb2fae5ef8c2d0e
+
+% 2 1 0 18c9037483a3c30f1b772ee78513e8ae
+
+% 4 1 0 1a5020975111b6c0171902ff4aa2fee7
+
+% 1 1 0 0f7b3a721076f49f1529000a68ffbd65
+
+@ 0 2 0 119d090ad0487ea91226c979ea5f02a6
++   label 4 バイトの文字列
++   highlight hex"4401020304"  コンパイル時に検査される
+
+% 1 1 0 02a952ee3708157c1ecc4ea01cb785e6
+
+% 2 1 0 13557556f8da865810c9f43ca3422230
+
+% 4 1 0 0c79e6bfb0c295f70a38bcb64d40ae2f
+
+% 0 1 0 0468ff3eb788a4f51fb94db3444e2547
+
+% 1 1 0 1fd52548d73f485e17ccdcc99d41cbe8
+
+% 1 1 0 136d267ff733a60e0f6246170d49df5f
+
+% 2 1 0 1525a46c87e9e0571e7d21b8e7c42b7a
+
+% 0 1 0 08a86cbdc9b8cb0109ed8ce5b435ce67
+
+% 1 1 0 0cd6459499a6bd5203d659b3bcc1b6aa
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 0 1 0 14357d017465598900fc8e1f9451fa89
+
+% 0 1 0 0d86b44a0d6404d40de958b965cb7b82
+
+% 1 1 0 184daf947492e4b605700cc80ad6d363
+
+@ 0 2 0 15f7c4585be2b4600f1c381c4e59d67d
++ [診断記法](../../soundness/modules/cbor.md#diagnostic-notation)に表示の説明が、
++ [基数エンコーディング](../../soundness/modules/base-encoding.md)にリテラルの説明がある。

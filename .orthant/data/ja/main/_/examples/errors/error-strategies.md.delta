@@ -1,0 +1,104 @@
+orthant 2 language
+
+@ 0 1 0 1a22f7433fe8d59e1dda7701333b50e3
++ # 失敗しうる一つのメソッドと、四通りの対応
+
+@ 0 2 0 147e92ef968142d119d7611e0ab33bf7
++ `connect` は `PortError` を送出し、その後に何が起こるかは述べない。各呼び出し側が、呼び出しを行う
++ ブロックの中で決め、結果の型はその決定から導かれる。
+
+% 0 1 0 12705ff5e291290d17fbc8389d59ef4a
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+@ 0 2 0 1c72357074def7aa1a8b27dd70bc5740
++ alternative 不在
++   highlight safely  失敗は Unset になる
+
+% 1 1 0 10fda9c9ece51e620dbf4d2cdc49f52a
+
+% 2 1 0 18b52528675b25c214f18450dfb3edd2
+
+% 4 1 0 0a26e75ab40db9881821e5018dddcccf
+
+% 5 1 0 100bed37dcde6eb902838f9cee006e88
+
+% 7 1 0 13ae016ee843b8040b150d80b58c745b
+
+% 8 1 0 0fd265cf32f2eb1c1e6ca9a927683f16
+
+% 0 1 0 0ba5c2e7016f45341b2ca4ea0bfee0df
+
+@ 0 2 0 136c0021f948659014761639fc66199d
++ alternative 置き換え
++   highlight recover  失敗に値で応える
+
+% 1 1 0 171b7ee31cde50d70a6b46050b5ed378
+
+% 2 1 0 071499f4f9cf53b70de0bed5e657c8f5
+
+% 4 1 0 117fab34265ae1961ae7283ff09ed923
+
+% 5 1 0 0d719e4d10f8594a16f5a7cb07461611
+
+% 7 1 0 06091e3fe58e25d01efb412931370884
+
+% 8 1 0 1f16b74b3811ed39002d179029c9674e
+
+% 0 1 0 0a0e68a0fe3cc8641012dd0015f21df3
+
+% 0 1 0 1ffe5c415422113702a4a9b03386f84a
+
+% 0 1 0 1a1ee649075185c119f479b30a3e00c0
+
+% 0 1 0 08c2095968f32fe2035fd5bde69661ba
+
+@ 0 2 0 1848e9c90aa837b71f39379b7a69406c
++ alternative 検査
++   highlight attempt[PortError]  値としての成功または失敗
+
+% 1 1 0 0c9b866c1f15351a1399fb376b9c05e4
+
+% 2 1 0 1e4010c7df15ac060bb744ffff0431ce
+
+% 4 1 0 0ac1e94ba6953b90127720df0fb16708
+
+% 5 1 0 11a7875c78ca19a51798e5867441223d
+
+% 7 1 0 193a1e4b502229971dac12b74175bf69
+
+% 8 1 0 1bf886630a49d80e1e20717009ed0177
+
+% 0 1 0 08418ec4d79868d7073d9e9ffcf1397f
+
+% 0 1 0 01725a014d23cc850508e38b70eae007
+
+% 0 1 0 08998831fb8c196f153dcef9d5351b4d
+
+@ 0 2 0 06aa0c23f775cade09d6b6935c1e9f6b
++ alternative 例外
++   highlight strategies.throwUnsafely  失敗は例外として投げられる
+
+% 1 1 0 1bf55cd1e6f9d9430e07a9d2fb3a5242
+
+% 2 1 0 1b29f07a32f8161715e768f8b714b3df
+
+% 0 1 0 12a618ab3fc8ab800817fdfca2fcb19c
+
+% 2 1 0 0e6058aba5d95422010c498e99418074
+
+% 3 1 0 1436e4ab005ba4c31e38c3279c78139a
+
+% 5 1 0 1d3d5351b8fa65520aa266c65d129dfa
+
+% 6 1 0 115cfaef45e24faf1b2636438dc1857b
+
+% 0 1 0 1d0582f15aa6977f1e21ad6156b0cbc5
+
+% 0 1 0 18eafb32caed3dd50f976e787bd035ca
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 2 0 0c52ef4492b4c7a01f7775a8df078e16
++ [戦略の選択](../../soundness/modules/errors.md#choosing-a-strategy)は、失敗しうるコードを実行する
++ すべての方法を比べる。

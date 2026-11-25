@@ -1,0 +1,70 @@
+orthant 2 language
+
+@ 0 1 0 0d8d6be35e108bae06c1445a85990b58
++ # ファイル名がコマンドを分割することはない
+
+@ 0 3 0 0cf878555c21fd2500bf7f2c495f1b0d
++ コマンドに埋め込まれた値は、どんな文字を含んでいても一つの引数である。コマンドは引数のリストであり、
++ シェルが改めて分割する文字列ではないので、ファイル名の中の空白やセミコロンが効果を持つ余地はない。
+
+% 2 1 0 1f4f9bf2110cd6470673bf436ab5ca6d
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 2 0 125aacd7c2c7c05b1e3f742d18e3a037
++   label 空白を含む名前
++   highlight $file  一つの引数
+
+% 1 1 0 0a04947d270e87921bfdb4959a39788d
+
+% 0 1 0 01308d114406b82212131585828b8834
+
+% 1 1 0 1fe4be8149dd2bda105a83ebfd5cb4f2
+
+% 2 1 0 15c4d790552364b7131d337fb631813a
+
+@ 0 2 0 0f6469594a7dd86806fd46d948a55f40
++   label コマンドを終わらせてしまうはずの名前
++   highlight $file  やはり一つの引数
+
+% 1 1 0 11dbf8143675d14a0719e246c1ba70fb
+
+% 0 1 0 12bae5a235f908a412d98a3bdeb69277
+
+% 1 1 0 169a00fdeeb4134a1223f147de874ca1
+
+% 2 1 0 0584bccba51fe1590aef4c4316020021
+
+@ 0 2 0 1fa820d91b55e4550668e91793559d51
++   label 値のリスト
++   highlight $files  要素ごとに一つの引数
+
+% 1 1 0 05d6e7d83a1290ec083a3649cda446a4
+
+% 0 1 0 062a3ec2384ae74e137cd9390463d25d
+
+% 0 1 0 01c23b0406f0f59e117f0690b77d1651
+
+% 1 1 0 1d2592de4ac97a8a15ae035c899dd6d3
+
+% 1 1 0 136d267ff733a60e0f6246170d49df5f
+
+% 2 1 0 1525a46c87e9e0571e7d21b8e7c42b7a
+
+% 0 1 0 08a86cbdc9b8cb0109ed8ce5b435ce67
+
+% 1 1 0 0cd6459499a6bd5203d659b3bcc1b6aa
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 0 1 0 1a305596c46f7fb30c7637f3cf240dc3
+
+% 0 1 0 07cb3a286d11eb9d0385497226cd5812
+
+% 1 1 0 0ff6d430410131901361a772ec37efe6
+
+@ 0 3 0 10c9ef210c7f97150ed7d0170a0bce9b
++ [埋め込みとエスケープ](../../soundness/modules/processes.md#substitution-and-escaping)に値の種類ごとの規則があり、
++ [不可能な状態](../../philosophy/impossible-states.md)にその原則がある。

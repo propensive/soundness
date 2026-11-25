@@ -1,0 +1,77 @@
+orthant 2 language
+
+@ 0 1 0 0162f741c574476301726bb79c0bfb03
++ # スキーマにない関係
+
+@ 0 2 0 1e92bc46a4b03ac81999104d68e417f0
++ エンティティ間の関係はデータベースの型である。棚は箱を持てるが、箱が棚を持てるとはどこにも書かれていないので、
++ 後者を前者に割り当てることはプログラムにならない。
+
+% 2 1 0 0c216a33a38fb8f51442e513bb4a56cb
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 0cbea6109a72a1e317b07a88d4f52db9
++   label 棚を箱に割り当てる
+
+% 0 1 0 1477c34ff41c7c99183443e1d3238ae1
+
+% 1 1 0 0960c596329e4eb20a0b442aaa85c43a
+
+% 2 1 0 052b5d53c564213f191f74be413a911f
+
+% 4 1 0 05007256494dcc961547f4c8fe4ddeb3
+
+% 5 1 0 0311fca95bb7628e02ec1ade09dae672
+
+% 7 1 0 1db9caff205c2a7d00c9610d9bff313c
+
+% 9 1 0 17d824d890a3dcfe0a1b37c1f98a2212
+
+% 10 1 0 0f80650ac502b76c1157fbba97091fac
+
+% 0 1 0 1c9ce21ed76563bd0fb860601d6a5cce
+
+% 1 1 0 1f9acedaeb363fff15ae91c6c7bfb20d
+
+@ 0 2 0 1f085526ae2ec97a1f94586efd6827b3
++   label 箱を棚に割り当てる
++   highlight shelf.assign(box)  関係 Shelf -< Box は宣言されている
+
+% 1 1 0 15f7fc1aee498f501f65e8409415a5a6
+
+% 2 1 0 11fbba387545a61a0c47a352b946e363
+
+% 4 1 0 025a02596261567c100d4cece4d537d6
+
+% 5 1 0 1cdb5a49c093f2bd1389324b5f2953e1
+
+% 7 1 0 1004c1135b06238b0d92155cf2da280d
+
+% 9 1 0 15be30766a1330af01047531a81ad3c9
+
+% 10 1 0 118ce86f680288e21f0ec02de420c019
+
+% 0 1 0 091a9acbeb6cd3481c4db56af93dde27
+
+% 1 1 0 04df31bcf74a36b5140097617f103bd4
+
+% 1 1 0 136d267ff733a60e0f6246170d49df5f
+
+% 2 1 0 1525a46c87e9e0571e7d21b8e7c42b7a
+
+% 0 1 0 08a86cbdc9b8cb0109ed8ce5b435ce67
+
+% 1 1 0 0cd6459499a6bd5203d659b3bcc1b6aa
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 0 1 0 1f58dbfec18802ad16fae38a18bd38fa
+
+% 1 1 0 05ecc50aad7a2df217622478403af213
+
+@ 0 2 0 1a8cb064f12f13cb158b7a33a46f8517
++ [関連付け](../../soundness/modules/database.md#relating)にほかの操作があり、
++ [不可能な状態](../../philosophy/impossible-states.md)にその背後にある考え方がある。

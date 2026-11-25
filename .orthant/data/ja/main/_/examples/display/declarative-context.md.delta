@@ -1,0 +1,67 @@
+orthant 2 language
+
+@ 0 1 0 0d0acc4a7b6ac5c40cdb5788d76fdb40
++ # 真偽値の書き方
+
+@ 0 3 0 1c79063d7deda7900d57fb65d9a6cb81
++ 「Yes」「on」「true」はそれぞれ異なる文脈に合うので、`Boolean`には固有の形がない。インポートがその
++ スコープ内のコードの使う語を指定し、それがなければ真偽値はそもそも表示されない。
+
+% 2 1 0 1e20cdd5d5ac7d251a4b093ff10f2d3a
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 07c77345b94df58f135a44f32e9aebbf
++   label 何も選ばれていない
+
+% 0 1 0 1477c34ff41c7c99183443e1d3238ae1
+
+% 1 1 0 0960c596329e4eb20a0b442aaa85c43a
+
+% 1 1 0 050d7ac06b43113a0ac5cab506053fba
+
+% 2 1 0 0127c2ed47306b6207bb3efa8c630663
+
+@ 0 2 0 1056b9fe5223918e076f0555c14bdc29
++   label YesとNo
++   highlight yesNoAffirmation  スコープ内のすべての真偽値に
+
+% 1 1 0 1f0511d6df0102851da8d95f8df16112
+
+% 0 1 0 0d1c7ee5384f25ee1b0a326ccb2b288e
+
+% 2 1 0 0aa2c2393ec180151e7d3aa9f8b8eb47
+
+% 2 1 0 0ed7508b20ff83c51d2f4c373e4638e7
+
+@ 0 2 0 1fe49e06ceda3586147c14503d11a93a
++   label プログラム独自の語の組
++   highlight Affirmation(t"aye",..t"nay")  任意の2語
+
+% 1 1 0 062c835e4166a9e70c81d87391b1b665
+
+% 0 1 0 09bdaede791545d6146cb300e78a7a78
+
+% 2 1 0 1bd3054a83628be50bef771c49fd5ac0
+
+% 1 1 0 171ca6e923a0577c0213d62e5eba6ab5
+
+% 1 1 0 136d267ff733a60e0f6246170d49df5f
+
+% 2 1 0 1525a46c87e9e0571e7d21b8e7c42b7a
+
+% 0 1 0 08a86cbdc9b8cb0109ed8ce5b435ce67
+
+% 1 1 0 0cd6459499a6bd5203d659b3bcc1b6aa
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 0 1 0 05e1974dc10412d4191a4e231871840f
+
+% 1 1 0 1a060f25eeb0e44f0c32e94675592ca0
+
+@ 0 3 0 1edd4df4932e663f0d3f521bd341a5c3
++ 提供されている肯定の語の一覧は[真偽値](../../soundness/modules/display.md#booleans)にあり、その選択
++ がインポートである理由は[宣言的なコンテキスト](../../philosophy/declarative-context.md)で説明する。

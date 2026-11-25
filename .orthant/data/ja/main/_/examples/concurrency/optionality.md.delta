@@ -1,0 +1,68 @@
+orthant 2 language
+
+@ 0 1 0 08d5b1e94c64c5141a095da4a59f754d
++ # 値の不在を返す期限
+
+@ 0 3 0 17f1ce601c2e8e29026e43b9c8d8aeb4
++ `await` には期間を渡せ、その期間が過ぎると待つのをやめてエラーを送出する。`safely` のもとではそのエラーは値の不在になるので、
++ 遅すぎるタスクは `Optional` になり、既定値は読み出す場所で選ばれる。
+
+% 0 1 0 12705ff5e291290d17fbc8389d59ef4a
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 01a8c35c9c462aba13c923e6541187db
++   label 必要なだけ待つ
+
+% 1 1 0 05686802829305fc1d98ce8abc26d80c
+
+% 2 1 0 17eabccfa7a5951a08d72229011ae5ba
+
+% 4 1 0 01cae2f5e87425ec01dbcf0e6cbf3657
+
+% 5 1 0 0ca064239cc07e2a1df2a79b3479e92b
+
+% 0 1 0 1d03c481cc14ceda012f2d893356ad66
+
+% 1 1 0 0ffa4cfcfdaf1a841226e0cbbfd99303
+
+@ 0 1 0 06a5d25ca81eb73c1a190b520ec7bb28
++   label 十分の一秒だけ待つ
+
+% 0 1 0 095674c459fb074f082ec3675cad07bf
+
+% 1 1 0 06c9028e272c82fd03be89f91f94796b
+
+% 2 1 0 0705242a04a40649068a6f6579f64b39
+
+% 0 1 0 194368311c14e2e204124419d8a5e92f
+
+% 1 1 0 0f61849ced261031166da6860503c3c8
+
+% 0 1 0 086c23415a2711f80013a2b2936ac19f
+
+% 1 1 0 0434b3f8aa8dca8004a5fa19a44f7fc2
+
+@ 0 2 0 0ea061a7e0e1da3a141684c8d920d221
++   label 沈黙の意味
++   highlight or(t"The..silent")  既定値は読み出す場所で選ばれる
+
+% 1 1 0 0a74ca838a900fc5147bb49de0f48a90
+
+% 2 1 0 0fb43a40be59547c0cf16bdd2b5ce81a
+
+% 4 1 0 0e7b6608072b91730840e867b587535b
+
+% 5 1 0 0d885719a791859e148d56ef430cff00
+
+% 0 1 0 009ebc06f398a8ed14e4b9c126dee8df
+
+% 0 1 0 18eafb32caed3dd50f976e787bd035ca
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 3 0 1625d0d1d80a64a01fc693f5df60a4d7
++ この例はコンパイルされるが、時計を相手に待つので実行はされない。[タイムアウト](../../soundness/modules/concurrency.md#timeouts)が期限を、
++ [オプショナル性](../../philosophy/optionality.md)が不在の値に対する操作を説明する。

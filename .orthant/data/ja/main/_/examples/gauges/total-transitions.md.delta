@@ -1,0 +1,67 @@
+orthant 2 language
+
+@ 0 1 0 11e0b35eb580aca6055f14646f718bb2
++ # どの幅でも、どの値でも描けるバー
+
+@ 0 3 0 07a708b26fd87dc71b920c2efe9f6989
++ `Fraction`は作られるときに範囲内に収められ、デザインは与えられたセルにぴったり収まるように自らを描く。
++ そのため、バーが行からはみ出すような割合も幅も存在しない。狭くなるにつれて伝える内容が減り、最後は1
++ つのセルになる。
+
+% 2 1 0 148868eaaa2bc7ff1b9b193b45ee81bb
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 2 0 148e0a613455618a1946f1234e033383
++   label すべてより多い
++   highlight Fraction(1.7)  1に収められる
+
+% 1 1 0 152659b23a2b83ad1e91406956fea092
+
+% 2 1 0 0fce19535ce3dd9d0048064f85dc7c5c
+
+% 3 1 0 13780bc2c133acda0961fe602ff52ef9
+
+% 5 1 0 0516be619e26adf61e0d2d1f87f79cbc
+
+% 1 1 0 12b34a70902a27061256caf606687e5b
+
+@ 0 2 0 07df472c64262c1a103d06e1387658b3
++   label どんどん狭く
++   highlight width  バーはこの数のセルに描かれる
+
+% 1 1 0 0a630a58da702f0c125034678a941ca1
+
+% 2 1 0 05ad165e9b02732e0ae16b755ecee413
+
+% 3 1 0 139cd092303e1809087adc13c4f3c0c8
+
+% 5 1 0 0302d46733f4f72e1ffc556cd7434825
+
+% 0 1 0 16d88dc3e78db5760297ce80ad5cf207
+
+% 0 1 0 1367e61d8e11736717d0383f0878dfbc
+
+% 1 1 0 051f136eb092bd2b10e596599f373fce
+
+% 1 1 0 136d267ff733a60e0f6246170d49df5f
+
+% 2 1 0 1525a46c87e9e0571e7d21b8e7c42b7a
+
+% 0 1 0 08a86cbdc9b8cb0109ed8ce5b435ce67
+
+% 1 1 0 0cd6459499a6bd5203d659b3bcc1b6aa
+
+% 0 1 0 06d6d3a7fec399c9124100808e28e43d
+
+% 0 1 0 122d2e1758ebe9881559633bf10de524
+
+% 0 1 0 0af0b394c6be33f512addd71e0336da1
+
+% 1 1 0 1381f5e6bf91dd48069a2f70bd65167f
+
+@ 0 2 0 0d688bdfe1fa301114ddb8a677c7f4d1
++ 各デザインが何を削ぎ落とすかは[劣化](../../soundness/modules/gauges.md#degradation)で、その原則は
++ [全域的な遷移](../../philosophy/total-transitions.md)で説明する。

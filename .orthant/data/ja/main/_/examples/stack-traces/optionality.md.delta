@@ -1,0 +1,65 @@
+orthant 2 language
+
+@ 0 1 0 106122e971d668491736f2b6b580e0ff
++ # 失敗の原因があるなら、その原因
+
+@ 0 3 0 0e4c1975a8efaf9a1282dae37e318866
++ 例外は、別の例外によって引き起こされたこともあれば、何によっても引き起こされていないこともある。
++ `StackTrace` の `cause` は `Optional[StackTrace]` なので、常にあるかのように読むことはできず、
++ 検査し忘れる `null` もない。
+
+% 2 1 0 1d68bc30184dd6f601c763f9fb101cb7
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 132c71582054a4870289639cdeb75ef9
++   label 原因があるものと決めてかかる
+
+% 0 1 0 1477c34ff41c7c99183443e1d3238ae1
+
+% 1 1 0 0960c596329e4eb20a0b442aaa85c43a
+
+% 2 1 0 0c1180143eb4f550102452bfe5e53c1e
+
+% 3 1 0 1fc443dd49c88d4910376b160011fc83
+
+% 0 1 0 1c8b28fc66ac103710386ca7c9824d2e
+
+% 1 1 0 01b875c50ebcd754103519ae0d210d3c
+
+@ 0 3 0 0f89a2377c3452cf0dd5ecaf1331aa5a
++   label 不在に意味を与える
++   highlight let  原因がある場合だけ
++   highlight or(t"no..cause")  原因のない例外が示すもの
+
+% 1 1 0 015a4e4286117019031d40a35f9d1550
+
+% 2 1 0 1293a5ca6c62402e1035fb5e23c4fd21
+
+% 3 1 0 00368c77b57c646113f495d751d006e4
+
+% 0 1 0 1b3725ab60d566db180db976fdcfc81f
+
+% 1 1 0 13dc0309da3d9fd61df09ae40c24ee0c
+
+% 1 1 0 136d267ff733a60e0f6246170d49df5f
+
+% 2 1 0 1525a46c87e9e0571e7d21b8e7c42b7a
+
+% 0 1 0 08a86cbdc9b8cb0109ed8ce5b435ce67
+
+% 1 1 0 0cd6459499a6bd5203d659b3bcc1b6aa
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 0 1 0 0320f73d20bd6321130800e5fe8a57bc
+
+% 0 1 0 027d17b6c26171b70e24c269f330fa5c
+
+% 1 1 0 0b1802e5f2ef0bb8195624dd7cdc6403
+
+@ 0 3 0 116ca753ab0869b814e7e75b3a6e2b7b
++ [トレースの取得](../../soundness/modules/stack-traces.md#capturing-a-trace)は値の残りを説明し、
++ [オプショナル性](../../philosophy/optionality.md)は `Optional` の背後にある合併型を説明する。

@@ -1,0 +1,57 @@
+orthant 2 language
+
+@ 0 1 0 0351517addf9190319af75a1cefcc1a2
++ # グラフであるものすべてに使えるメソッド
+
+@ 0 3 0 0d9787960222b944009ab0d08826403d
++ メソッドは`Dag`、`Digraph`、`Map`のどれかを選ぶ必要はない。`is Nodal by Text`である型、つまりノード
++ がテキストであるグラフを求めれば、その型の値が何であれ、グラフの語彙がその値で使える。
+
+% 2 1 0 10ba5aab45f7cf56133acf1814eb5c18
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 062a82275d9d6fed16a470978af4c95a
++   label `Dag`専用
+
+% 1 1 0 1d54280f52327d870859c4597e7d4c7c
+
+% 0 1 0 18a9be254b4038fd0f94db471f83e20f
+
+% 1 1 0 11319c089c72997513c57a14747510e2
+
+@ 0 2 0 0390153b92c2b1be0e7e721ca5c01302
++   label テキストのあらゆるグラフに
++   highlight graph..Text  句で記述された型
+
+% 0 1 0 1accf43fe927975e1dc8da9a374d03bf
+
+% 0 1 0 0fd2ac3797a0477d02117fa7e01a94b3
+
+% 1 1 0 0831db4166dd7587114b3740732b8e38
+
+% 0 1 0 1efca808aee15d380cb494bfb56a4aa4
+
+% 1 1 0 14f7057c75c5a88d095b727099c5e737
+
+% 1 1 0 136d267ff733a60e0f6246170d49df5f
+
+% 2 1 0 1525a46c87e9e0571e7d21b8e7c42b7a
+
+% 0 1 0 08a86cbdc9b8cb0109ed8ce5b435ce67
+
+% 1 1 0 0cd6459499a6bd5203d659b3bcc1b6aa
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 0 1 0 1a07226b14cde02b1353a5e9e182ca74
+
+% 0 1 0 1722fa369351e34707d00371abbe90b0
+
+% 1 1 0 11850d945a044a921e40c44f4da2aa21
+
+@ 0 2 0 01867284e51a3e580e29c5ca5e59f3e6
++ `Nodal`は[グラフ](../../soundness/modules/graphs.md#about)で紹介し、そのような型の読み方は
++ [中置型](../../philosophy/infix-types.md)で説明する。

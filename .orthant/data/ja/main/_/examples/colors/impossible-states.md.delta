@@ -1,0 +1,61 @@
+orthant 2 language
+
+@ 0 1 0 0a753b7a6521e2fe1aac16e4933417f8
++ # 混ぜる二つの色は同じ色空間になければならない
+
+@ 0 2 0 1b5c0d756d088d350d615f048b900e9e
++ 各色空間はそれぞれ独自の型なので、コンパイラは色がどの色空間にあるかを知っている。
++ ある色空間の座標を別の色空間の座標と混ぜても意味がなく、そう書くこともできない。
+
+% 2 1 0 1f3c16478a4abb9f1bee91053be762a5
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 05be059557110fe30b914561c693cc10
++   label sRGB の赤と HSL のスレート
+
+% 0 1 0 1477c34ff41c7c99183443e1d3238ae1
+
+% 1 1 0 0960c596329e4eb20a0b442aaa85c43a
+
+% 2 1 0 048a2380e28e55af1bd95a2ccedfc9cb
+
+% 3 1 0 1608232148075c6406f030566b8fee80
+
+% 0 1 0 198e3fbefde985ba10e2cfdeba49d047
+
+% 1 1 0 0dc3c3af9c636c05111a7d18c15d7c87
+
+@ 0 2 0 1aa6846a5b9955f21a7e69d165b61a12
++   label どちらも sRGB で
++   highlight to[Srgb]  混ぜる前に変換される
+
+% 1 1 0 0e11d756a30ee26c0c0b435898367a47
+
+% 2 1 0 1abc0dea424e8008162b56ded8fe5a20
+
+% 3 1 0 08f3bd4d9046977a03e9a74634d930f6
+
+% 0 1 0 1588635f1fb1906b1f842623759fcb02
+
+% 1 1 0 168fe3baded516d0122fbe66415bbff7
+
+% 1 1 0 136d267ff733a60e0f6246170d49df5f
+
+% 2 1 0 1525a46c87e9e0571e7d21b8e7c42b7a
+
+% 0 1 0 08a86cbdc9b8cb0109ed8ce5b435ce67
+
+% 1 1 0 0cd6459499a6bd5203d659b3bcc1b6aa
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 0 1 0 1b626c94b7973a130d1e359d71b5c6cf
+
+% 1 1 0 0024efaa2cc36a921eaa0b5eee3212c1
+
+@ 0 2 0 1db9a3278c8c75ab08416266ee512cec
++ [混色](../../soundness/modules/colors.md#mixing)で sRGB での混色と CIELAB での混色を比べており、
++ [不可能な状態](../../philosophy/impossible-states.md)にその原則の説明がある。

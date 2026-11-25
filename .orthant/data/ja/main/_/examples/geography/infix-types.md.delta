@@ -1,0 +1,75 @@
+orthant 2 language
+
+@ 0 1 0 1d6a4c76f3ba270e1c48f9c2e2a899d9
++ # 独自の羅針盤
+
+@ 0 3 0 12e4722ad2ab514610dcb1148f309ada
++ 方位は求められたどの羅針図でも与えられ、羅針図とは、角度がその値の一つになる方法を述べる任意の型である。
++ 飛行士は方位を時計の文字盤で読み、時計の文字盤に必要なのは `Hour is Directional` だけである。
+
+% 2 1 0 0fa0a767542d3b360bd90843b559e6cc
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 10bcab9e1f8eda210a9e4e378285e4ef
++   label 十二の方向
+
+% 1 1 0 124c7e5cf939325b0e52c1ef2789d36b
+
+% 2 1 0 015c562c25deb0950a5a75cbea429777
+
+% 1 1 0 1892e4e4fbf23acb18617a4663d6bdd3
+
+@ 0 2 0 0893871e375715b904603c9f6fbdc1ef
++   label 角度がその一つになる方法
++   highlight clock:..Directional  文として読める
+
+% 1 1 0 08a91b36d8fcdd010812a3fc55629a6a
+
+% 2 1 0 12b992ad1d3727070ef3c67e12a349b8
+
+% 4 1 0 134227cd272ff9c310fb3f7fadc15ab4
+
+% 5 1 0 1fc2f483a1afdee511461d123c13fce7
+
+% 1 1 0 050f1f9dc592fc020b2cf992c190e57a
+
+@ 0 2 0 157020d62fb7cb8b185d1647a21e2570
++   label 時計で表した方位
++   highlight bearing[Hour]  羅針図は型引数である
+
+% 1 1 0 192553755636386d03d5353b225b1444
+
+% 2 1 0 05c73ce98779c6d1140f2bd8f89251ba
+
+% 4 1 0 1aa803a49fdac22f044bac468291d06b
+
+% 5 1 0 0e02394d0e24a32310574f68683c5339
+
+% 0 1 0 1ab102d497025e900aa16745e6d44957
+
+% 0 1 0 1a4db2780470d0d513358c751c0af8b7
+
+% 0 1 0 03a27087eb69a0630574449cea223423
+
+% 1 1 0 1c9cde428ad68c5f1a516d7ca176a528
+
+% 1 1 0 136d267ff733a60e0f6246170d49df5f
+
+% 2 1 0 1525a46c87e9e0571e7d21b8e7c42b7a
+
+% 0 1 0 08a86cbdc9b8cb0109ed8ce5b435ce67
+
+% 1 1 0 0cd6459499a6bd5203d659b3bcc1b6aa
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 0 1 0 01cd79c298768b8b0f6383e353b5ed56
+
+% 1 1 0 0ea0f08ceae0ec4f12f6c8cf6c190252
+
+@ 0 3 0 02c15be3ae3c1fd9007f501319e917ff
++ ヴェローナはエルシノアから見て六時の方向にある。[羅針盤の方位](../../soundness/modules/geography.md#compass-points)に用意されている羅針図があり、
++ [中置型](../../philosophy/infix-types.md)にそうした型を作る語がある。

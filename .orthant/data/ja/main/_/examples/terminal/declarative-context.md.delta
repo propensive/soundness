@@ -1,0 +1,63 @@
+orthant 2 language
+
+@ 0 1 0 09009f29043956d90b5ebe758a544cea
++ # 一つのメッセージ、三つの端末
+
+@ 0 2 0 0fb5b63b25a2eb9f1d994c7f9672845a
++ スタイル付きテキストは、そのスタイルを運ぶ値であり、エスケープコードを含まない。それを出力するときに
++ 何が書き出されるかは端末の能力によって決まり、それはインポートである。
+
+% 0 1 0 12705ff5e291290d17fbc8389d59ef4a
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+@ 0 2 0 189df81bfc3d7467037fdb870f551905
++ alternative ファイル
++   highlight basicTermcap  エスケープコードのない素のテキスト
+
+% 1 1 0 07be4c4ff9e4f72415f8eaf9752e2934
+
+% 2 1 0 1d1dd33435573ab908b28775be399876
+
+% 0 1 0 19d3d555ec0db9ab06032ec3a3712c7b
+
+% 2 1 0 106264964a98f66a10fd1558ecc8a02a
+
+% 4 1 0 1e28865df06a62c71228d5b7988828e2
+
+@ 0 2 0 19ce12ec1868b84914d01306769da236
++ alternative 256 色
++   highlight xterm256Termcap  パレットの最も近い色
+
+% 1 1 0 1d9b7c443707bc1e06a12ab4327e93ab
+
+% 2 1 0 0ebfdf405a45333e043831348af7de76
+
+% 0 1 0 0735120d942630ba078c2e2d1d2d49c2
+
+% 2 1 0 172f4fd196783c06103b728d1c6246f3
+
+% 4 1 0 140468ef9dc7cc5e16d3f87f447292d6
+
+@ 0 2 0 1ea1c671f9520c0c16b0c85721da6c39
++ alternative トゥルーカラー
++   highlight xtermTrueColorTermcap  正確なクリムゾン
+
+% 1 1 0 194539573b97bac2197dccdf43bd7a8d
+
+% 2 1 0 1e70b157025ed7e609fb0723b859729c
+
+% 0 1 0 068a0a7026ef82830e40a36d3e5e5813
+
+% 2 1 0 026d0294afe6bc801630f1e7cd505994
+
+% 4 1 0 0f4419834b7747d91d5bafed353a3600
+
+% 0 1 0 18eafb32caed3dd50f976e787bd035ca
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 4 0 107374761c62635600fa78ca3eb7caae
++ メッセージとそれを出力するコードは、どれでも同じである。
++ [スタイル付きテキスト](../../soundness/modules/terminal.md#styled-text)はレンダリングを説明し、
++ [宣言的なコンテキスト](../../philosophy/declarative-context.md)は、それをインポートで選ぶ理由を説明する。

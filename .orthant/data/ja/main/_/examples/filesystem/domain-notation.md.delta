@@ -1,0 +1,67 @@
+orthant 2 language
+
+@ 0 1 0 05d743663dd5057319acedb68676de36
++ # 名前で指す標準ディレクトリ
+
+@ 0 3 0 15800d0690da5f410acfb91063e7f21f
++ システムの慣例的なディレクトリは入れ子のオブジェクトであり、ディレクトリと同じ名前を持つ。
++ `~/.local/bin` は `Home.Local.Bin` であり、
++ 綴りを誤ったディレクトリは存在しないメンバーになる。
+
+% 0 1 0 12705ff5e291290d17fbc8389d59ef4a
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 153ce50c5eb21092154ec36517b5ef91
++   label 存在しないディレクトリ
+
+% 0 1 0 1477c34ff41c7c99183443e1d3238ae1
+
+% 1 1 0 0960c596329e4eb20a0b442aaa85c43a
+
+% 2 1 0 1aad376e1ded27b3042ca924e201bcf9
+
+% 3 1 0 18e451dd13fd09590b4833dbbd6940e3
+
+% 0 1 0 032989fbd436e0be142def498568282b
+
+% 1 1 0 11c123f60ad3fbed1301ac37b80bef40
+
+@ 0 2 0 02344a8c374b3b4111db478dbdf5ea34
++   label キャッシュ
++   highlight Home.Cache  ユーザーが移していなければ ~/.cache
+
+% 1 1 0 15fedf64815c87da083f58cf57c46b57
+
+% 2 1 0 0595c8909aaff81e1bc9a6aed14c641e
+
+% 3 1 0 10999ce7ec92e7cb041f18679b1a8e0c
+
+% 5 1 0 04c7de70d03e2ebc1d47cb56c02920a7
+
+% 1 1 0 09f85c05541a47570ab6d6c7c7478140
+
+@ 0 1 0 1ea48bf05f32c47b0e043bee1b846d09
++   label さらに深く
+
+% 0 1 0 1da07269b2327154121593af8aa672ea
+
+% 1 1 0 188fadf33c02ef270b8441b93e4f2b0f
+
+% 2 1 0 000be96dafa179d61b3aac4509769de6
+
+% 3 1 0 09c1f75ee486356b0ccd8ddd5b5f705a
+
+% 5 1 0 1322d97461a6e4cb09a9b48e77494245
+
+% 0 1 0 18a395681c2f074710773ce8b506f8d8
+
+% 0 1 0 18eafb32caed3dd50f976e787bd035ca
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 3 0 1ff1dac4a3b2ff4517f7129cf1e03df7
++ この例はコンパイルされるが、結果が実行するマシン上のパスになるため実行はされない。
++ [標準ディレクトリ](../../soundness/modules/filesystem.md#standard-directories)にそのすべてが挙げられている。

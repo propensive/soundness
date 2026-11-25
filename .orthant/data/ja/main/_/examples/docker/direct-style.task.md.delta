@@ -1,0 +1,77 @@
+orthant 2 language
+
+@ 0 1 0 1b185c22bfdf88c6060995bf67806d02
++ # タスクの一生を一行ずつ
+
+@ 0 3 0 10a1b83f7c515b9c1b28d0463b52a2a6
++ コンテナは定義であり、タスクはその実行中のインスタンスである。作成、起動、
++ 待機、停止はデーモンへの四つのリクエストであり、起こる順に四つの文として書かれる。
+
+% 0 1 0 12705ff5e291290d17fbc8389d59ef4a
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 2 0 1328dc5f5d21ff72126b722b6f1cc97c
++   label ルートファイルシステムを伴って作成する
++   highlight createTask  gRPC によるリクエスト
+
+% 1 1 0 001bc4280c053c170f274aa07f1397ee
+
+% 2 1 0 0f36f4f4e7818b37004c1ea363203ed0
+
+% 4 1 0 02f4f95bccd8c6f70a2fa3eb111443ec
+
+% 5 1 0 0fb61b4b6c91a5af04903c7362b4a3de
+
+% 6 1 0 188f41e7b829564c1bc6317e2003b781
+
+% 1 1 0 0723bc2607c874cb19c492a40cc20069
+
+@ 0 2 0 044e9528d7ed98bd1a076b12805b752b
++   label 起動する
++   highlight startTask  プロセス ID を返す
+
+% 1 1 0 15684728fbb9440f103a0de453ed984d
+
+% 2 1 0 087c4be262d139fe13c05119522b71ad
+
+% 4 1 0 0e70eff82002d6db0d77044b6b846322
+
+% 5 1 0 1292940386f9662c10be4d8a4da324d8
+
+% 6 1 0 0203e387734036840ccc93c0a22f5c49
+
+% 7 1 0 06847b6ede63117807d2d84a8b279fe8
+
+% 1 1 0 07fb758950b902f3058c115b46db28de
+
+@ 0 2 0 1c2fe591931ab78301fc2c158f4a50a5
++   label 待つ、あるいは停止する
++   highlight waitTask  タスクが終了すると戻る
+
+% 1 1 0 13ff38ab7ebd567700dbea1ac40ea922
+
+% 2 1 0 1e712f759682d31f13a4aefa05ea2079
+
+% 4 1 0 18bbead23c56b6101478023df1b4118f
+
+% 5 1 0 0fa3bf07bcb0d9060d07e6bec285bcae
+
+% 6 1 0 0232a193fe49c5ec0ce0493cea6ccc85
+
+% 7 1 0 043fe02d6797774310485264ee6bc1dd
+
+% 0 1 0 059baee8ed2b52b51c148d6037b33f4f
+
+% 0 1 0 1ae4374b227ae2681c35d38a34aed6b9
+
+% 0 1 0 18eafb32caed3dd50f976e787bd035ca
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 3 0 15d8fc10878e8a5d014363e92b053e42
++ この例はコンパイルされるが、実行中のデーモンが必要なため実行はされない。
++ [タスク](../../soundness/modules/docker.md#tasks)にタスクの状態の説明が、
++ [ダイレクトスタイル](../../philosophy/direct-style.md)にリモート呼び出しがローカル呼び出しのように読める理由の説明がある。

@@ -1,0 +1,55 @@
+orthant 2 language
+
+@ 0 1 0 05ca70c2a4466b23047c11a70cb9c4f8
++ # 必ず終わる raw モード
+
+@ 0 3 0 1c87b4b51d101b9e01b835643daec4e9
++ クラッシュの後に raw モードのまま残された端末は、プログラムを起動したシェルを壊してしまう。
++ `interactive` はブロックである。端末はその中にだけ存在し、ブロックが終わるときには、どのように
++ 終わっても元に戻される。
+
+% 0 1 0 12705ff5e291290d17fbc8389d59ef4a
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 1022b7be68e2e9eb1b00f83105138f18
++   label 尋ねる先の端末がない質問
+
+% 0 1 0 1477c34ff41c7c99183443e1d3238ae1
+
+% 1 1 0 0960c596329e4eb20a0b442aaa85c43a
+
+% 0 1 0 12a618ab3fc8ab800817fdfca2fcb19c
+
+% 0 1 0 0982acddb612d7b009872356737acab7
+
+% 1 1 0 15dcee9899e41c020959980da10ee623
+
+@ 0 2 0 14b2b6b57163c8481f4a0a8a42ee8bee
++   label セッションの中で
++   highlight interactive  raw モードはこのブロックとともに始まり、終わる
+
+% 1 1 0 16bb94091faab28305e87ac595435ae4
+
+% 0 1 0 1d99d8671d0810c90f9e23457ba2983b
+
+% 0 1 0 024d364b7946796a0dc926f2e95d5b53
+
+% 0 1 0 1d386fea82db2dc4086b5e2f172fbd60
+
+% 0 1 0 1ddbe24ca96966e71e52f5d6ca9d7a17
+
+% 0 1 0 15d5fe23ec4b2ff503f3a2b876db5157
+
+% 0 1 0 1dbeb7081143993b02b3246fe3aef6dd
+
+% 0 1 0 18eafb32caed3dd50f976e787bd035ca
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 3 0 1353cf35833bcb8505ca9d1cec3d353a
++ この例はコンパイルされるが、端末を読むため、実行はされない。
++ [キーボード入力](../../soundness/modules/terminal.md#keyboard-input)はセッションを説明し、
++ [区切られたスコープ](../../philosophy/delimited-scopes.md)はそのパターンを説明する。

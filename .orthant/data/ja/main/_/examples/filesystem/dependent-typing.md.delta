@@ -1,0 +1,56 @@
+orthant 2 language
+
+@ 0 1 0 0675b09ac52caf5301ad2bfa3cde711d
++ # 自分のダイジェストだけを受け付けるストア
+
+@ 0 3 0 0842ca4c6d485b320783a6c26fef56ea
++ コンテンツアドレス型ストアは各ブロブをそのバイトのダイジェストで名付け、
++ ハッシュアルゴリズムはストアの型に含まれる。別のアルゴリズムで作ったダイジェストは別の型なので、
++ SHA-256 のストアにそれを求めることはできない。
+
+% 0 1 0 12705ff5e291290d17fbc8389d59ef4a
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 012689f4152da5510a8bc701e734bb0b
++   label SHA-512 のダイジェストを求められた SHA-256 のストア
+
+% 0 1 0 1477c34ff41c7c99183443e1d3238ae1
+
+% 1 1 0 0960c596329e4eb20a0b442aaa85c43a
+
+% 2 1 0 13286f88187b0f771926e8abf6104c34
+
+% 0 1 0 1702280059376f35061834c813be0358
+
+% 1 1 0 0579d67d3bb08e371996cf3b364fff56
+
+% 2 1 0 1ad8c229d5e4e1fb1be798c1efa3b6a5
+
+% 1 1 0 1c777bee3bc765ac0f41e7c988456121
+
+@ 0 2 0 16faee5ce4b93dc41ec757cf4e722f33
++   label 自分のダイジェストを求められる
++   highlight Sha2[256]  ストア自身のアルゴリズム
+
+% 0 1 0 0fd2ac3797a0477d02117fa7e01a94b3
+
+% 1 1 0 0831db4166dd7587114b3740732b8e38
+
+% 2 1 0 151bebcdfebb9a4a01b9c4fd1d44aa35
+
+% 0 1 0 160f17cc337e29800bddd7e10951a107
+
+% 1 1 0 1e1e1492632ae1f20bb6ef8499068ee5
+
+% 2 1 0 03e2044f1d8b1b561ed0c225ca0605a2
+
+% 0 1 0 18eafb32caed3dd50f976e787bd035ca
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 2 0 1c842bb836559ddc11d573470e8dab90
++ [コンテンツアドレス型ストレージ](../../soundness/modules/filesystem.md#content-addressed-storage)にストアの操作が、
++ [ハッシュ](../../soundness/modules/hashing.md)にダイジェストの説明がある。

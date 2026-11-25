@@ -1,0 +1,78 @@
+orthant 2 language
+
+@ 0 1 0 0a45693e2cde39fa1a7776872ac8434e
++ # コメントを保つ編集
+
+@ 0 3 0 0e7879eae5a044ec0d2481a006a0ca78
++ 解析した TEL 文書はコメント、空行、レイアウトを保持し、決して変わらない。
++ 編集すると一つのコンパウンドだけが異なる新しい文書ができ、人がその周りに書いたものはすべて、
++ 書き戻したときにも残っている。
+
+% 2 1 0 05844766a97f65aa09873db1a80645bf
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 0a743fad234972ca1fb7d8a039b36075
++   label コメントと空行のあるファイル
+
+% 1 1 0 090b3f2eacb07ec909434f190c97c174
+
+% 2 1 0 13237822dd2aa2bd1c62cd5abec75a1d
+
+% 4 1 0 1d0302106d329d130def2197af598c93
+
+% 1 1 0 0b7443ccd986f1c81ff4cd927fffdabe
+
+@ 0 2 0 1355969bc375c2d008173cb9bef6e7a6
++   label 一つのフィールドを置き換える
++   highlight modify  新しい文書
+
+% 1 1 0 02723a8978b6b9c91bc7ed950eeed277
+
+% 2 1 0 1ce49916b044d0d909be47fa1528ec59
+
+% 4 1 0 17c993aba91000991f481d3f67c9100c
+
+% 5 1 0 0e5488e6e80eb6131f306cb931cad302
+
+% 1 1 0 153e8eb45bc9ef4f0abcf3a8d8ce0ff7
+
+@ 0 2 0 0f9edf0b3b3f78c21d5e85517beffe36
++   label すべてのキーワードを変える
++   highlight transform  すべてのコンパウンドに適用される
+
+% 1 1 0 14ca04e0c89ec64d08798f9ff2186238
+
+% 2 1 0 1c7d4d24faf73f8b1cb404160f70b34c
+
+% 4 1 0 1bb98fddb40e7cec1056ab82b6a0a333
+
+% 5 1 0 03d768966c121db80412ddf7c1ce9336
+
+% 0 1 0 1c5feeb41ebface40dbc5f9771d76c1e
+
+% 0 1 0 09c186eda53929be0fa6b2f082a7e0ed
+
+% 1 1 0 11adfabe134bdecb1cf0e074ba841071
+
+% 1 1 0 136d267ff733a60e0f6246170d49df5f
+
+% 2 1 0 1525a46c87e9e0571e7d21b8e7c42b7a
+
+% 0 1 0 08a86cbdc9b8cb0109ed8ce5b435ce67
+
+% 1 1 0 0cd6459499a6bd5203d659b3bcc1b6aa
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 0 1 0 17774d15a2bf003e1284666d96bed902
+
+% 0 1 0 1adf0da0d275318e147bd4db9ea309b2
+
+% 1 1 0 05ed8bc24238c38b042c8567ca5731f3
+
+@ 0 2 0 060b3fd5ac5914b9064d70d6f18ee919
++ [ファイルを壊さずに編集する](../../soundness/modules/tel.md#editing-without-destroying-the-file)に、
++ 行の一つのアトムだけを変える、より細かな編集の説明がある。

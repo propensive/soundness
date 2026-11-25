@@ -1,0 +1,54 @@
+orthant 2 language
+
+@ 0 1 0 1f1e088fc0bfba6809d82f32a4ea6800
++ # テキストの幅は、それを測る者によって決まる
+
+@ 0 3 0 0d93215b99f0703a14fc47a3a26babfd
++ テキストをある幅まで詰め物で埋めるには、それを測る方法が必要であり、端末は一部の文字を二桁の幅で
++ 表示する。計量法はインポートで選ばれ、同じ呼び出しでも計量法ごとに埋め方が異なる。
+
+% 2 1 0 06c1b2987272eefd09dda1ddcf2f0682
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+@ 0 2 0 0658d08269c25f4d153af8d040abed60
++ alternative 端末での表示どおり
++   highlight textMetrics.wideCharacterWidthMetric  一部の文字は二桁を占める
+
+% 1 1 0 10e62042468125b007984676d6ae36ef
+
+% 0 1 0 00e9d5b71cf9ab080cfecb5746060983
+
+% 2 1 0 1055f569845ef82b1b0b1e2725971ffe
+
+@ 0 2 0 116903952d5d3ddc0f2d0117683f68a6
++ alternative どの文字も一桁
++   highlight textMetrics.uniformMetric  どの文字も一桁を占める
+
+% 1 1 0 1da9ab1c499ad1c21c3c66df6e44707d
+
+% 0 1 0 1c58b5179ed796c41c6345855147b3ee
+
+% 2 1 0 084e1c51263e3657155b2740fd158894
+
+% 1 1 0 108b31e348a3719c1acc4b98e40421a7
+
+% 1 1 0 136d267ff733a60e0f6246170d49df5f
+
+% 2 1 0 1525a46c87e9e0571e7d21b8e7c42b7a
+
+% 0 1 0 08a86cbdc9b8cb0109ed8ce5b435ce67
+
+% 1 1 0 0cd6459499a6bd5203d659b3bcc1b6aa
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 0 1 0 01f3da4f7b4c56d50640fe1fd9e0b2af
+
+% 1 1 0 009b81bc575ed54112f51700ed7033cd
+
+@ 0 4 0 1ac3067802bbda0d063b87562db97df4
++ 日本語の *ハムレット* の五文字はそれぞれ端末の二桁を占めるので、二つの点で十二桁になる。
++ 一様な計量法のもとでは、点は七つになる。
++ [詰め物と収め方](../../soundness/modules/text.md#padding-and-fitting)と
++ [書記素と幅](../../soundness/modules/text.md#graphemes-and-width)に詳細がある。

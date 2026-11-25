@@ -1,0 +1,59 @@
+orthant 2 language
+
+@ 0 1 0 1bbf3e40a8f6d476049de1492dcc8c22
++ # 参照はパスである
+
+@ 0 3 0 06bb0c0bede0e7920fdf00d0d1e1c1b8
++ `refs/heads/main` のような完全修飾の参照はパスであり、ルート `Git.Refs` からパスとして書かれる。
++ `HEAD` からの相対的なコミットは、Git と同じように、どれだけさかのぼるかで書かれる。
+
+% 2 1 0 090a3ca8434793400f5905bbe2695d03
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 2 0 0576c668bb8a29130ed50b88d38a19cf
++   label 参照
++   highlight Git.Refs  ルート refs/
+
+% 1 1 0 00c2d96cde95fa031c401a3a00562bf0
+
+% 2 1 0 0ba84ba2204fb37d0dde005dd0392f87
+
+% 4 1 0 1071ad0951a0b77915d177196a2bd321
+
+% 1 1 0 0d411acfe24562c303a11b758cfccf42
+
+@ 0 1 0 03acaba2d5fab4c50f03d556f407ebf7
++   label HEAD からさかのぼって数えたリビジョン
+
+% 0 1 0 1a4af120f9343aae1d15fc9f2ffa688c
+
+% 1 1 0 0192e2b518e42f421e1596e8dc0d4703
+
+% 2 1 0 11037e0b331e0bf10495ef15fc6797ea
+
+% 4 1 0 0e7f60c957e5dcef0650c34b021513a4
+
+% 0 1 0 1556bfe8c1ab35c115f60ffef62b75c2
+
+% 1 1 0 19b083c7e0a242e102ebc07353d93507
+
+% 1 1 0 136d267ff733a60e0f6246170d49df5f
+
+% 2 1 0 1525a46c87e9e0571e7d21b8e7c42b7a
+
+% 0 1 0 08a86cbdc9b8cb0109ed8ce5b435ce67
+
+% 1 1 0 0cd6459499a6bd5203d659b3bcc1b6aa
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 0 1 0 1ec0d7381dfcd2930cf3c96120d2db68
+
+% 1 1 0 05eec05847124e05082fa25258d106f5
+
+@ 0 2 0 05350f1abf333e0e184c5007d5bd99a6
++ [参照](../../soundness/modules/git.md#references)が参照の種類を列挙し、
++ [パス](../../soundness/modules/paths.md)が `Git.Ref` と共有する記法を説明する。

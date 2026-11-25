@@ -1,0 +1,57 @@
+orthant 2 language
+
+@ 0 1 0 09d87ed1671300220fc32b3a11a6a1cf
++ # 属性を加えても何も変わらない
+
+@ 0 2 0 0e020c11c58d174117b07def3a468265
++ 要素は値であり、決して変わらない。属性への代入は変更のように読めるが、結果が新しい要素になる式である。
+
+% 2 1 0 0b15043649a9530d1bb4c4613b4f4581
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 1cb9d2722dc4058a0c25fd99ccfa59db
++   label 画像
+
+% 1 1 0 0928cd61b6e18d7b1ca32f375afd804a
+
+% 2 1 0 1999adbe0bfe488c04c9b06a847d49c8
+
+% 4 1 0 16dddcbae033b79b1f14c81c657fb6bb
+
+% 1 1 0 0674190eeca581101bb581ec5d2d6b26
+
+@ 0 2 0 0b6652fda483cd2f0fa1aa1ee0d1b886
++   label 説明を加えた同じ画像
++   highlight image.alt  新しい要素を返す代入
+
+% 1 1 0 1d1557b9bfc2b5cf1aa7d8fd7d31b378
+
+% 2 1 0 028f8c32fd0901d2198a3de763462e4f
+
+% 4 1 0 09b5a2c85427824f163a865e3ed5fc16
+
+% 0 1 0 1dfb8038397cf57b173baa7a610b56fd
+
+% 1 1 0 06553980cf700b8b0e470f19c3afaa34
+
+% 1 1 0 136d267ff733a60e0f6246170d49df5f
+
+% 2 1 0 1525a46c87e9e0571e7d21b8e7c42b7a
+
+% 0 1 0 08a86cbdc9b8cb0109ed8ce5b435ce67
+
+% 1 1 0 0cd6459499a6bd5203d659b3bcc1b6aa
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 0 1 0 02c91c14f718cf94187c6255657c4233
+
+% 0 1 0 1b3bfe017efd3c061f0151dbd24ea451
+
+% 1 1 0 0dbfaa42ebed3b99023057146c64c9f4
+
+@ 0 2 0 18d354d403585a870f391be525efa0e8
++ [変換](../../soundness/modules/html.md#transforming)に同じように子を加える演算子がある。

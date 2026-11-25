@@ -1,0 +1,55 @@
+orthant 2 language
+
+@ 0 1 0 0f89147899f418c4198cb7c9e2aa19ef
++ # 存在の中に不在はない
+
+@ 0 3 0 1978cdf601b142a918733f632872cd94
++ `Option`の`Option`には空である方法が2つあり、コードはそれぞれが何を意味するかを決めなければならない。
++ `Optional`は`Unset`とのユニオンであり、ある型とそれ自身のユニオンはその型なので、オプショナルな
++ オプショナル値は単なるオプショナル値である。
+
+% 0 1 0 12705ff5e291290d17fbc8389d59ef4a
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 2 0 1f19c488eb4400140fb9676d023ec9c1
++   label 2種類の「何もない」
++   highlight Some(None)  存在するのに、不在
+
+% 1 1 0 1f6d3b5e74dacfcd0952a5f4858e427a
+
+% 0 1 0 1ca85897e25153021560f3fdeb37a307
+
+% 1 1 0 1fa11f6d2b8909dd1f1fe4b827aa9f5b
+
+@ 0 2 0 0ac3c9844d3827c50d6feb5e1ca646e4
++   label 1種類の「何もない」
++   highlight Unset  不在はこれしかない
+
+% 1 1 0 1887fcaa8c67cae8001040c2558719eb
+
+% 2 1 0 18d0ed4aecd51f511e008782cd355379
+
+% 1 1 0 0ad5b9927b909486131e03df985e64a7
+
+@ 0 2 0 0cd14f1805cd1e371af544ee9251469b
++   label 2つの型は1つである
++   highlight Optional[Text]  変換なしの同じ型
+
+% 0 1 0 1accf43fe927975f1dc8da9a374d03c0
+
+% 1 1 0 1355c71f5d40d7ac08d3588c7243e073
+
+% 2 1 0 11a10e229b843ca40728a3187265bc81
+
+% 0 1 0 0e90bcbf90122916161b419a3a1314e0
+
+% 0 1 0 18eafb32caed3dd50f976e787bd035ca
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 2 0 18a30106ed3954d80ffe18c7343b1acd
++ 値がないことを表す3つの方法の比較は
++ [不在について](../../soundness/modules/optional-values.md#on-absence)にある。

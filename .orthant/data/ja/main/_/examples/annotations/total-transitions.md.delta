@@ -1,0 +1,68 @@
+orthant 2 language
+
+@ 0 1 0 09c61b70b163b5470baa81c1b4e2422c
++ # 誤っているかもしれない名前で届くフィールド
+
+@ 0 3 0 0bf538134b8149210c6349a74ac18652
++ `Dereferenceable` は、コンパイル時に作る表を通して、実行時にケースクラスのフィールドに名前で届く。
++ 名前はただのテキストであり、フィールドでないかもしれないので、名前による更新は `Optional` を返す。
+
+% 2 1 0 05ae09862a0b8e7a19d60ffc5e5adfe0
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 2 0 01973f63494180181f382f33676e25e8
++   label 名前で指すレコードのフィールド
++   highlight Letters..Int]  コンパイラが作る表
+
+% 0 1 0 1accf43fe92797611dc8da9a374d03c2
+
+% 1 1 0 1b683763b07f3b4c19314dbe4ae0b985
+
+% 2 1 0 1834a782ee558b7b17dd809db267ad0b
+
+% 4 1 0 08cf5eb3045e53b60ef37c286d96ce74
+
+% 5 1 0 143394ff0483fa9618aa38d3afa60d96
+
+% 1 1 0 11096385953e1cc60a8dd26f823a1ed7
+
+@ 0 2 0 0afc0264d9335d5f0f1ed9a6bfa49203
++   label 名前による更新はフィールドを見つけられないことがある
++   highlight Optional[Letters]  その名前のフィールドがなければ Unset
+
+% 1 1 0 1749adefadf65cdc019d697f12b306c7
+
+% 2 1 0 1a553a4395b2e03b12852d45bff42006
+
+% 4 1 0 0926e822b6c8e5331b348f0f6b2853b6
+
+% 5 1 0 0fff3763ee44f7c91f220806178f7233
+
+% 0 1 0 1a1509c76762e9f51d98ba68dc4de99f
+
+% 0 1 0 02defd904da1d29512c8bca003dff047
+
+% 1 1 0 06d904c625f1da3e10174472de7ddc3a
+
+% 1 1 0 136d267ff733a60e0f6246170d49df5f
+
+% 2 1 0 1525a46c87e9e0571e7d21b8e7c42b7a
+
+% 0 1 0 08a86cbdc9b8cb0109ed8ce5b435ce67
+
+% 1 1 0 0cd6459499a6bd5203d659b3bcc1b6aa
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 0 1 0 1387a4fc86efe0b70037fdfd674bdb61
+
+% 0 1 0 0d1323c2091cd238113e4467ffba370e
+
+% 1 1 0 1282bcd7900de7830353040126173bc7
+
+@ 0 3 0 014aa70132fa55721e61f38033db49a7
++ [名前でフィールドに届く](../../soundness/modules/annotations.md#reaching-fields-by-name)にメンバーが挙げられており、
++ [全域的な遷移](../../philosophy/total-transitions.md)に結果がオプショナルである理由の説明がある。

@@ -1,0 +1,57 @@
+orthant 2 language
+
+@ 0 1 0 165099ca0ccc95170f1fe3a37770209b
++ # 三通りに書かれる一つの日付
+
+@ 0 2 0 0cd157755919ea730af563364b0f48ed
++ 日付には、それ自身のテキスト形式がない。書式はインポートであり、そのスコープで表示されるすべての
++ 日付の慣習を定める。
+
+% 0 1 0 12705ff5e291290d17fbc8389d59ef4a
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 0 1 0 0fbf9f185c8c4cf009faee92b3613027
+
+@ 0 1 0 1c0f2ba41f093765179e5d09c4f4aae3
++   highlight iso8601DateFormat  年、月、日
+
+% 1 1 0 14f2c52c01c6b0b7172aab3123993b00
+
+% 2 1 0 0d492944f81d5b6603c42e7f4eaa060e
+
+% 0 1 0 09d1f9c44b25c55910a83a33476cef04
+
+% 2 1 0 034e031233f23f710a3bf2d351904b57
+
+@ 0 2 0 005c9b38dc7d061209e8c5744229857a
++ alternative アメリカ式
++   highlight americanDateFormat  月、日、年
+
+% 1 1 0 12e6bfc0987991080bbcbede7913462c
+
+% 2 1 0 1051dcf9c5678c4c1e35bb53bad2e45e
+
+% 0 1 0 15dd9ea44720880c09eb01eda55d0ab5
+
+% 2 1 0 121f1412bcb101fa1cf6e054ae4a6833
+
+@ 0 2 0 0253c62455e087300ba8590a39e9bf73
++ alternative ヨーロッパ式
++   highlight europeanDateFormat  日、月、年
+
+% 1 1 0 09a5fdc107b937031fe7f13ab04005c4
+
+% 2 1 0 0e13cd60eb79544d05ad4117f0d3b31f
+
+% 0 1 0 02e10ce9fa05f13307fb9bae63117938
+
+% 2 1 0 0b10fa2959da67c907444e8788cfdc41
+
+% 0 1 0 18eafb32caed3dd50f976e787bd035ca
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 2 0 0c6a224edd13bed71134d4c94fd1535a
++ [日付と時刻の書式](../../soundness/modules/time.md#formatting-dates-and-times)は、それぞれの
++ 結果を示し、より小さな選択から書式を組み立てる。

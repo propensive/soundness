@@ -1,0 +1,81 @@
+orthant 2 language
+
+@ 0 1 0 10a1dd2d3bd971290ebe1a6a2f60abc1
++ # 値からバイトへ、そして値へ
+
+@ 0 3 0 1267b7130e36db491e61aacd0a8b6b2a
++ `in` と `read` は、何がどの形で求められているかを述べる型を受け取る。`Data over Protobuf` はメッセージを運ぶバイトであり、
++ `Ticket in Protobuf` はメッセージに保持されたチケットである。そのため、ワイヤはどちらの方向にも一つの式で越えられる。
+
+% 2 1 0 1b581f65f1d65aa1175c3f1d85ba57e4
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 17a51b134df5d53303164c3ccc7cbaf6
++   label メッセージ、そしてそのバイト
+
+% 1 1 0 17cd1f7056e339820e66dfa77609c0ce
+
+% 2 1 0 0059128d2287562c1e1dcc0176d888bc
+
+% 4 1 0 1051c303e42c64980a77468906506de5
+
+% 0 1 0 00c4ea02555c9a85072c2a8551584c10
+
+% 0 1 0 0f9ae79cd19a34a110aa5e800c5d1853
+
+% 1 1 0 1272ddf48503a2e211cab8442cb7e9bc
+
+@ 0 2 0 1341ff8a5e3907630c834482c02bc0a1
++   label 一段階でバイトに
++   highlight in[Data..Protobuf]  エンコードして書く
+
+% 1 1 0 120c7a7e7712bb5d10dfdf4b9ba28ed4
+
+% 2 1 0 0bdec5b0362dc68b15063df7fdecaf35
+
+% 4 1 0 00a74e21b55b8d870707278df0a982e7
+
+% 6 1 0 1d2ef2e00e1dbe1801d14e5ec6294562
+
+% 1 1 0 1fe5a74e53a568d71f03441414c2e921
+
+@ 0 2 0 183434a5f00cf5e2198788b93bfa7ecb
++   label そして再び値に
++   highlight read[Ticket..Protobuf]  解析してデコードする
+
+% 1 1 0 090028c426d88c490ffaf4975b11278a
+
+% 2 1 0 01c7c910f4292dae0454be0f4526812c
+
+% 4 1 0 0ee8ef804889bda90be0e57f5af53f73
+
+% 6 1 0 18c807d2da5c39e91a0eff13c88df002
+
+% 0 1 0 07b8bf8ca40e918b0c35504b4aa0f165
+
+% 1 1 0 1ef2d1238a90d4001c4d7c1b14223cbe
+
+% 1 1 0 136d267ff733a60e0f6246170d49df5f
+
+% 2 1 0 1525a46c87e9e0571e7d21b8e7c42b7a
+
+% 0 1 0 08a86cbdc9b8cb0109ed8ce5b435ce67
+
+% 1 1 0 0cd6459499a6bd5203d659b3bcc1b6aa
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 0 1 0 0b21de5890a84d8d05926f25583daec4
+
+% 0 1 0 13423416dcdf23d6180ec02a126fafb0
+
+% 0 1 0 08b7eddaa194dfe013c3a5c6ee273e6a
+
+% 1 1 0 06117b0a749f47640d9a96d79486fffb
+
+@ 0 2 0 084621754c051691029aba03ffee267a
++ [直接の出力](../../soundness/modules/protobuf.md#printing-directly)がバイトがどの経路をたどるかを、
++ [中置型](../../philosophy/infix-types.md)がその語彙を説明する。

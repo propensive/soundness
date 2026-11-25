@@ -1,0 +1,67 @@
+orthant 2 language
+
+@ 0 1 0 0c8b5e7093b792af144525c8262883c1
++ # Git が拒否するブランチ名
+
+@ 0 3 0 1ec1155529d2d14d02a01b95567ba710
++ Git にはブランチ名についての規則があり、たとえば `..` を含んではならない。規則は `Git.Branch` をテキストから解析するときに検査され、
++ 解析するメソッドは、名前が拒否されうることを型で示す。
+
+% 2 1 0 1f1dc3889e6fd72e09321f1ac4179a24
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 0d763bee71d2d9cd0ac2a573a1fe92c5
++   label 外部から来た名前を信用して受け取る
+
+% 0 1 0 1477c34ff41c7c99183443e1d3238ae1
+
+% 1 1 0 0960c596329e4eb20a0b442aaa85c43a
+
+% 0 1 0 0428cb7d9744fc631ad499280b36bc0e
+
+% 1 1 0 1f5e918f3a15576a129494f076599d98
+
+@ 0 1 0 01e65687c72a4f9b07b9c33b64339ad1
++   label 宣言された拒否
+
+% 0 1 0 0943af8c42a5c6dd16a58efed74fd871
+
+% 1 1 0 1ac6060b2fe6fdd510938865dd0c4ca0
+
+% 0 1 0 1ec3724b1a56dd3f1f844551d2bbc90e
+
+% 1 1 0 073caff9ae4c9e9606c74e43180ce41b
+
+@ 0 1 0 1635f7fb2b9b332f18edc0c4eb17f8d6
++   label あるいは値の不在に変える
+
+% 0 1 0 095674c459fb074f082ec3675cad07bf
+
+% 1 1 0 06c9028e272c82fd03be89f91f94796b
+
+% 0 1 0 08a81d8eea39ddb91fa6401ab7d73356
+
+% 1 1 0 033a8555235de18d0dade7257c6ded84
+
+% 1 1 0 136d267ff733a60e0f6246170d49df5f
+
+% 2 1 0 1525a46c87e9e0571e7d21b8e7c42b7a
+
+% 0 1 0 08a86cbdc9b8cb0109ed8ce5b435ce67
+
+% 1 1 0 0cd6459499a6bd5203d659b3bcc1b6aa
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 0 1 0 0fca60aadd52382b13bfb878e2e7b97a
+
+% 0 1 0 15f8406e6eb3b2b001ee8062c88d1dd5
+
+% 1 1 0 16fa8e94ac80a57100eb7785f04a754a
+
+@ 0 2 0 017410ca142df1521ccaf9d6794abf49
++ [参照](../../soundness/modules/git.md#references)に規則があり、
++ [エラー処理](../../philosophy/error-handling.md)にエラーに名前を付ける理由がある。

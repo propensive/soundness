@@ -1,0 +1,69 @@
+orthant 2 language
+
+@ 0 1 0 1d68c913b974fcb211af7724fbbd83b0
++ # アーカイブは何を持つかを示す
+
+@ 0 3 0 0f36ca139f8262870f0c6f5e49693067
++ OCI アーカイブが持つのは、展開するファイルシステムか、インスタンス化する WebAssembly コンポーネントである。
++ 読む側は開く前にどちらかを知る必要はない。`config` は二つの型のどちらかを返し、
++ それに対するマッチが両方を扱う。
+
+% 2 1 0 167c0817014f97b301c2e25127722690
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 2 0 195112cdc3592b371782a1832f6337b4
++   label どちらの種類の設定も
++   highlight Oci.Config  二つの型のどちらか
+
+% 1 1 0 10c872c974436b0d0d9679341015cf61
+
+% 2 1 0 1c99049e261d4bf71af8634c27044fc2
+
+% 0 1 0 0e9ea927b62e4b1319472120aca306f0
+
+% 0 1 0 125df4f8f697006509e58a4e376c11d9
+
+% 1 1 0 0506eef378e6cfeb065ceeeb88442e62
+
+@ 0 2 0 19f23f9be9449e9e185e32f9da5774dc
++   label それぞれの種類を扱う
++   highlight handle.config  コンポーネントの設定か、ファイルシステムの設定
+
+% 1 1 0 1fa54ec1d6692a41043df6cabdf124bb
+
+% 2 1 0 12adf2df7cbf3ac41f220e34c29dc64f
+
+% 0 1 0 0eb3a9d4820ce7c20d441af9e7c8167d
+
+% 0 1 0 0ce4fcbf9cb36a5512bc0f9896882f0c
+
+% 0 1 0 031a15505e0dff711991ad2c2811dc6f
+
+% 0 1 0 0e74dcadbb0f578b04481635a5ae0106
+
+% 1 1 0 0dddfafb12e1a6e1091b9d4e6045b39d
+
+% 1 1 0 136d267ff733a60e0f6246170d49df5f
+
+% 2 1 0 1525a46c87e9e0571e7d21b8e7c42b7a
+
+% 0 1 0 08a86cbdc9b8cb0109ed8ce5b435ce67
+
+% 1 1 0 0cd6459499a6bd5203d659b3bcc1b6aa
+
+% 0 1 0 09a1f592dd47b6c211b3f89c438b3751
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 0 1 0 100a4086accff9db0d8deddf1890c0be
+
+% 0 1 0 0842e59c8ae9939219ae00f1420132a5
+
+% 1 1 0 0df76d88fdbaede200b59c76041735b8
+
+@ 0 3 0 1a5710d0e903d57e13074518ab9f60c9
++ [イメージの読み込み](../../soundness/modules/docker.md#reading-an-image)に `config` の説明が、
++ [WebAssembly のワークロード](../../soundness/modules/docker.md#webassembly-workloads)にアーティファクトの二つの種類の説明がある。

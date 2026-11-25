@@ -1,0 +1,79 @@
+orthant 2 language
+
+@ 0 1 0 019f8c33ba47b327144c722755c787f7
++ # すべてのケースのアノテーション
+
+@ 0 2 0 06de260be6eeb02f1a461cca6c12f891
++ sealed 型のケースについては、同じ語彙の別の語、つまり型の `under` のアノテーションで問う。
++ 答えは、各バリアントの名前をそれが持つものに対応付ける。
+
+% 2 1 0 1bc63abd078b8999125fc1ac9ce3ebc4
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 1c2efbc4028ef36f1daf5db86ee8b8d0
++   label アノテーションを付けた二つのバリアント
+
+% 1 1 0 0223e1512f3a68ee05175c663fc00d9c
+
+% 2 1 0 14d0d660c9a59742020d1201328a3c5e
+
+% 3 1 0 09a5ede98e8d0362054d23b1b3e61c5a
+
+% 5 1 0 1f7c5288d06d1aa71691cc8a80dbe69d
+
+% 7 1 0 1b9a8d5e4d5e4b821d2f64db04368a81
+
+% 8 1 0 15d5f9f8f4d19f4f0f2629c649939879
+
+% 10 1 0 09242ff35d12ef550458e5073f33652b
+
+% 11 1 0 09d7813b4ccd7fb00c224edba6a89294
+
+% 1 1 0 1af797034e5288e3014652959ea10e68
+
+@ 0 2 0 0138871080208f38104162a20ea9af90
++   label 名前ごとのそのアノテーション
++   highlight Annotated..Colored  Colored のすべてのバリアント
+
+% 0 1 0 1088fc793499c93312db9002823b11ff
+
+% 1 1 0 11941d14fe9d40041b0154b82ef0f921
+
+% 2 1 0 0a2c5e0b7eb3030f0d09e3c7445d519a
+
+% 3 1 0 1b3bf82053e1a6751d8985a4cd2b7ee1
+
+% 5 1 0 0d3286cff4ba5bba1cbea0d27f96113d
+
+% 7 1 0 0ca753e55459890a1744a5f5c6b25381
+
+% 8 1 0 1aebe929d3993e6a15b4a2a5e1993c0f
+
+% 10 1 0 0672766ab9c850d61ddbecfe9e7194bb
+
+% 11 1 0 058669756818ccc90d8f5ad9fd508bb2
+
+% 0 1 0 1f223232e784177d18c173b8330de455
+
+% 1 1 0 15022ac85a50fe6a13f5b7a9a3ca3b13
+
+% 1 1 0 136d267ff733a60e0f6246170d49df5f
+
+% 2 1 0 1525a46c87e9e0571e7d21b8e7c42b7a
+
+% 0 1 0 08a86cbdc9b8cb0109ed8ce5b435ce67
+
+% 1 1 0 0cd6459499a6bd5203d659b3bcc1b6aa
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 0 1 0 14554b6a931e0f800055456865e4020e
+
+% 1 1 0 03a661a3434b656c0617d515c06e43c1
+
+@ 0 2 0 144c4f9b29ffe84f0449c7c0c0bd3500
++ [sealed 型のバリアント](../../soundness/modules/annotations.md#variants-of-a-sealed-type)で、
++ この形をほかの形と並べている。

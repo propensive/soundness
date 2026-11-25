@@ -1,0 +1,54 @@
+orthant 2 language
+
+@ 0 1 0 031ba64b5e9a519807656951065dc3ef
++ # 口で言うとおりに書く約束の時刻
+
+@ 0 2 0 0b62010d57b3aecc1354645430bf9c4d
++ 一日の中の時刻は、後ろに `am` か `pm` を付けた数であり、`on` がそれを日付に結び付ける。
++ どの部分も通常の式であり、どれも検査される。正午より前に十三時はない。
+
+% 0 1 0 12705ff5e291290d17fbc8389d59ef4a
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 1da6e233bc34427417e0c11139a16330
++   label 一日の中の時刻
+
+% 1 1 0 176445b8b5f7bb3c0f29b92027e0e5ed
+
+% 0 1 0 17375fae4f40a19c0e6816b27e8f0b64
+
+% 1 1 0 0e4698bd40e1e3dd102d73e8dfc37f67
+
+@ 0 2 0 14114b7ea0bbeafa076abb0a8ddb3e85
++   label 日付の上に
++   highlight on  時計から暦へ
+
+% 1 1 0 054870940ab03c28054d18f563aa266c
+
+% 2 1 0 0642b6f006b9fe5c102476e2793a9f96
+
+% 0 1 0 1e583ddb3520378a053235c9c9d5d150
+
+% 1 1 0 00f76d3a496d11eb174f1779754e9f63
+
+@ 0 1 0 0bdc996a5f11f53f176aff301c0e6539
++   label 時計にない時
+
+% 0 1 0 1477c34ff41c7c99183443e1d3238ae1
+
+% 1 1 0 0960c596329e4eb20a0b442aaa85c43a
+
+% 2 1 0 1813ff25c8f61a1e126d7c4dd24952e7
+
+% 0 1 0 11761a1023be35340bee86d8ff5bf2a6
+
+% 0 1 0 18eafb32caed3dd50f976e787bd035ca
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 2 0 12ab33f61c19a0aa1baf89a2a77950d2
++ [一日の中の時刻](../../soundness/modules/time.md#times-of-day)と
++ [タイムスタンプ](../../soundness/modules/time.md#timestamps)が、その二つの半分を説明する。

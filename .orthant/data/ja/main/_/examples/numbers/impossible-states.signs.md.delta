@@ -1,0 +1,48 @@
+orthant 2 language
+
+@ 0 1 0 0b9572134765e6401647cb5b7ccc6db5
++ # 符号付きと符号なし、決して偶然には変わらない
+
+@ 0 3 0 1a1a679381bb28c90d7bb677c481124e
++ `U8`と`S32`は異なる型であり、どちらも黙って他方とみなされることはない。変換は与える型の名前を持つ短
++ いメソッドなので、符号の有無や幅の変更はすべて、それが起こる場所に書かれる。
+
+% 0 1 0 12705ff5e291290d17fbc8389d59ef4a
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 14d37c70cbb993031686fa735edaf9a6
++   label 符号付きとして使われる符号なしの値
+
+% 0 1 0 1477c34ff41c7c99183443e1d3238ae1
+
+% 1 1 0 0960c596329e4eb20a0b442aaa85c43a
+
+% 2 1 0 0f6449dd6b3379fc1fdad5f0ba733fbb
+
+% 4 1 0 066c9ca96c4d5e691b7d6567e6f87d1d
+
+% 0 1 0 14943defe425b6de1fbc9d5b6458379f
+
+% 1 1 0 05ea0240435216ec0e30b1398eccaa9d
+
+@ 0 2 0 174c176399daa16d122ccd99b6baa48a
++   label 書かれた変換
++   highlight s32  広い型はすべてのU8を保持できる
+
+% 1 1 0 1d0ba367fb9b33f60b00e6b9aaf821cc
+
+% 2 1 0 02c65ae4093b7b7613a1adb45b216a44
+
+% 4 1 0 10ee0a68d8261e6911ccad711422d99c
+
+% 0 1 0 0db8932fc138a5be04b2012c9b2b9b26
+
+% 0 1 0 18eafb32caed3dd50f976e787bd035ca
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 2 0 023e55a3acaaa5931ccce7a93cf689cc
++ 型の系統とその名前は[数値型](../../soundness/modules/numbers.md#numeric-types)で説明する。

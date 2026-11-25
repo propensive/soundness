@@ -1,0 +1,63 @@
+orthant 2 language
+
+@ 0 1 0 17210e5b363981861f24a264ffbe0256
++ # 削除がディレクトリを空にしてよいか
+
+@ 0 2 0 16465d3ea1f8545c0635414d63305c57
++ 子を持つディレクトリを削除すると、ツリー全体を消すか、拒否するかのどちらかになる。
++ どちらも安全な既定ではないので、`delete` には既定がない。どちらにするかをインポートが示すまで、
++ コンパイルされない。
+
+% 0 1 0 12705ff5e291290d17fbc8389d59ef4a
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 03604e060db5bd19137b174228109da1
++   label 問いを未解決のままにした削除
+
+% 0 1 0 1477c34ff41c7c99183443e1d3238ae1
+
+% 1 1 0 0960c596329e4eb20a0b442aaa85c43a
+
+% 2 1 0 13286f88187b0f771926e8abf6104c34
+
+% 2 1 0 00ed429b042a95061e4818eaa9ac6b21
+
+% 3 1 0 04b7f17b19f6941d0dcf4678e8971d93
+
+@ 0 2 0 079e4c62bd79265005e7f5f37acbd357
++   label 空のものだけ
++   highlight deleteOnlyEmpty  子を持つディレクトリはエラーになる
+
+% 1 1 0 1d7c6ff480f43e381fdf13d0259d5052
+
+% 2 1 0 1a6bb4080162a0c91bafac0e8641f753
+
+% 0 1 0 0cd6fc6bf7f50c420971252b44f6321c
+
+% 2 1 0 1cd4f4a2fd024859094c4da6b8b5bd6f
+
+% 3 1 0 1d2a31ab9177e85a05074b63462c4e0b
+
+@ 0 2 0 1d426bded17d3707091416eda0b8bafb
++   label ツリー全体
++   highlight deleteRecursively  継承されるのではなく、明示される
+
+% 1 1 0 05d17beebe4599091c47ee7f11183986
+
+% 2 1 0 0e1709d17d42b4190d93bd997d95bde4
+
+% 0 1 0 13aeba78036930c805185a12877d23d6
+
+% 2 1 0 06a3fe2965fdb69f0e438149c9f26df3
+
+% 0 1 0 18eafb32caed3dd50f976e787bd035ca
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 4 0 0b03a3a865478a4211a01ebdfce92d31
++ この例はコンパイルされるが、ディレクトリを削除してしまうため実行はされない。
++ [コピー、移動、削除](../../soundness/modules/filesystem.md#copying-moving-and-deleting)にそれぞれのポリシーが、
++ [宣言的なコンテキスト](../../philosophy/declarative-context.md)にインポートを使う理由がある。

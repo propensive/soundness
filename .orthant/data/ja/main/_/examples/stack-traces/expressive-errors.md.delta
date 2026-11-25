@@ -1,0 +1,92 @@
+orthant 2 language
+
+@ 0 1 0 19c8c1c1b0ec6b440b4eef59859c56da
++ # 書かれたとおりに読むコンパイル後の名前
+
+@ 0 3 0 0dac4a9fd669b13806ff6b74db87df8a
++ JVM のスタックトレースは、コンパイラが生成したものを名指しする。演算子には `$plus$plus`、ラムダには
++ `$anonfun$3`、拡張メソッドには `$extension` である。`StackTrace.rewrite` はそれぞれを書かれた
++ Scala の側へ戻し、`StackTrace` のすべてのフレームはそれを通っている。
+
+% 2 1 0 02b07ecc7451be46191eed01d1e7a871
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 2 0 057d43c68574f7b31ce7c49a155d0124
++   label 演算子
++   highlight "$plus$plus"  JVM での ++ の綴り
+
+% 1 1 0 16b3416f85a6955d03d559933e12a1cf
+
+% 2 1 0 17e13525cf46cf71117d6aec58212474
+
+% 1 1 0 0b70923f0fe7b96a17719166f8bc94d2
+
+@ 0 2 0 02b4801c7684ebb807403781c22b4181
++   label ラムダ
++   highlight "$anonfun$3"  そのメソッドの三番目のラムダ
+
+% 1 1 0 0a05d351bb00c9e20c32e49c56c398ff
+
+% 2 1 0 0b7a5b799d0dcf9a08f8a23db34f4735
+
+% 3 1 0 1a7827f3a11492d91ea77de626a4a80c
+
+% 1 1 0 18022f7949ae84e700a5bd054908edd3
+
+@ 0 2 0 0a5cafff9e8118021375d8b7acb7e904
++   label 拡張メソッド
++   highlight "soliloquy$extension"  クラスファイルが名付けたとおりの拡張メソッド
+
+% 1 1 0 14ea9bd13986da780f0f247cc87d32b1
+
+% 2 1 0 124578a4ba1dcebf10059a3c161fbced
+
+% 3 1 0 0e9c0bf1fe579c24176afbdd916db968
+
+% 4 1 0 0247cd4cdf650894122fd26f67f107b4
+
+% 1 1 0 07efd9f7e5840a4007842ac70069a5ed
+
+@ 0 2 0 13a159cd4febcf0b0acd8b4eda75396d
++   label オブジェクト
++   highlight "elsinore.Hamlet$"  オブジェクトの背後にあるクラス
+
+% 1 1 0 0cd3f04f97d36dcd0d196b48a6a437ee
+
+% 2 1 0 07fb23cf5fe98314170b871debd65c6f
+
+% 3 1 0 1a362b75b70f8f720eb4f37f41c73bff
+
+% 4 1 0 07cacae53400c78d0aa881b22b191a9e
+
+% 0 1 0 1a6ea80f2d9c205100d40030eccf2bfa
+
+% 1 1 0 10b639a8cf4cbed61d6dc7f1338d16d1
+
+% 1 1 0 136d267ff733a60e0f6246170d49df5f
+
+% 2 1 0 1525a46c87e9e0571e7d21b8e7c42b7a
+
+% 0 1 0 08a86cbdc9b8cb0109ed8ce5b435ce67
+
+% 1 1 0 0cd6459499a6bd5203d659b3bcc1b6aa
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 0 1 0 1ae5f68939925be91f859ddda767f922
+
+% 0 1 0 1ef9f2a2963593f80a1365f9bec1f55b
+
+% 0 1 0 05eb5be69b402c5f11c1705eaeaf06ca
+
+% 0 1 0 1b6692b2fb35c5fa1ae8efa8e0f605ea
+
+% 1 1 0 0538b9b721eeff4e1ed65224b2f32ccd
+
+@ 0 3 0 1f8c6a61d8d826b41cd06b0b2d3534b1
++ [デマングル](../../soundness/modules/stack-traces.md#demangling)はすべての記号を列挙し、
++ [表現力のあるエラー](../../philosophy/expressive-errors.md)は、診断がプログラマの言葉を使うべき
++ 理由を述べる。

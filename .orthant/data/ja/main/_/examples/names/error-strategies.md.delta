@@ -1,0 +1,61 @@
+orthant 2 language
+
+@ 0 1 0 06dbd53b369a66da129778e689f75fda
++ # 無効な名前はどうなるか
+
+@ 0 2 0 10411b36a620e3101d61868297edc3f7
++ 検証は `Name.Error` を送出し、それがどうなるかは決めない。検証するコードが選び、同じ
++ `Name[Tag](text)` がそれぞれの選択に応える。
+
+% 0 1 0 12705ff5e291290d17fbc8389d59ef4a
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+@ 0 2 0 12792968fe05d392035dcdf37cd3be43
++ alternative 不在の値
++   highlight safely  無効な名前は Unset になる
+
+% 1 1 0 0e581a09b6201aa5058e661a3067b692
+
+% 2 1 0 161f7c48dcaf8f5d01cf12439ede1678
+
+% 4 1 0 0ea127980b0d065715fc4ca3b0bd930e
+
+% 0 1 0 162e9f5692df65490c45a05247768c41
+
+@ 0 2 0 1f1d0ddf329ebb471d1e9bded5436e44
++ alternative 置き換え
++   highlight recover  無効な名前は置き換えられる
+
+% 1 1 0 07f8c9246dd728a30f1ce7ea247dad46
+
+% 2 1 0 19b5f6ba853413b116f6ceab372311e2
+
+% 4 1 0 06404814a13012600bfcbb9a6d7c65f7
+
+% 0 1 0 1bef56f76c677d1c052ffcb6f6d2b80c
+
+% 0 1 0 1ffe5c415422113702a4a9b03386f84a
+
+% 0 1 0 08fca56ebd13de5601165c3d36b6b7fe
+
+% 0 1 0 0bff34eeac45434d0db3ae1b772bc476
+
+@ 0 2 0 1dea278e626c7eb81483ae20d88ddbd6
++ alternative 呼び出し側の決定
++   highlight raises..Name.Error  無効な名前は呼び出し側に任される
+
+% 1 1 0 196d30dd602662351d335a6df1ed6e6f
+
+% 2 1 0 0e44fc845579b0cc1cca558e360db7d7
+
+% 4 1 0 0afbeefa817c2a341151011b98274d59
+
+% 0 1 0 146df6ce5f839ac712bd48b3e6081138
+
+% 0 1 0 18eafb32caed3dd50f976e787bd035ca
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 1 0 141297c64ab1e5b51e58f1abefcf418d
++ [戦略の選択](../../soundness/modules/errors.md#choosing-a-strategy)にはその全体がある。

@@ -1,0 +1,79 @@
+orthant 2 language
+
+@ 0 1 0 11d969c4a31cf368191ce66affce9a05
++ # 画面の上で検査されるスタイル付きテキスト
+
+@ 0 3 0 069e9735e5f85b8c0ae16e8fcccf82bc
++ スタイル付きテキストはエスケープシーケンスにレンダリングされ、`Pty` はエスケープシーケンスを解釈する。
++ どちらももう一方のことを知らないが、組み合わせると、テストが問う「最初の語は画面上で太字か」という
++ 問いに答えられる。
+
+% 2 1 0 1d68f6b03ecce082100ee1115e3af822
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 1a5bb71637bd6af00a2d50c114123e18
++   label スタイル付きテキスト
+
+% 1 1 0 0a88713776b6169606acf70369c192c0
+
+% 2 1 0 105d7f176674737d0fd9f85cbc0199b5
+
+% 4 1 0 183d49222cac388505055b13ce633fc8
+
+% 1 1 0 1754807a33d8509e1b54e8feaed126ca
+
+@ 0 2 0 16f3c51879d6fdc104543c33f29e3537
++   label 端末向けにレンダリングする
++   highlight render  エスケープシーケンスを含むテキスト
+
+% 1 1 0 1f2743bf7c204c5c059bc45364e23ad0
+
+% 2 1 0 157c35ad67f3a3f21841c0bd887215b6
+
+% 4 1 0 18a902ffe194b4c4166ed5d8d3ef31e4
+
+% 5 1 0 14bedc090c39d08f08d80163aec8140d
+
+% 1 1 0 007bc67986a73d751637cf36b59470a8
+
+@ 0 2 0 00ce5144565994c203df224dc102228c
++   label 端末に読み込ませる
++   highlight consume(output)  シーケンスが効力を持つ
+
+% 1 1 0 16e0dd72ab449c4b04d2447b0785ddc4
+
+% 2 1 0 0a3632482ce5a478066ef7bd59045476
+
+% 4 1 0 17bb50052372891e0b53c5aefe2865a1
+
+% 5 1 0 0721caccaebdb1a40e54863e366313ac
+
+% 0 1 0 0219c933105fadf51ebf70a7a0c8e93d
+
+% 1 1 0 0e5b3fbc07c4aaa406c0b29bfffe0cac
+
+% 1 1 0 136d267ff733a60e0f6246170d49df5f
+
+% 2 1 0 1525a46c87e9e0571e7d21b8e7c42b7a
+
+% 0 1 0 08a86cbdc9b8cb0109ed8ce5b435ce67
+
+% 1 1 0 0cd6459499a6bd5203d659b3bcc1b6aa
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 0 1 0 0e488d0bde63d06c0925b45caf4ceab6
+
+% 0 1 0 08a65951f08329640217d7ac50ce5988
+
+% 0 1 0 01a6fdcbbd0c88651816ab78b0e229f2
+
+% 1 1 0 010c210114a95caf1ca70a96b059c410
+
+@ 0 3 0 07773568adffb8851b0f84285ddc2885
++ [画面の検査](../../soundness/modules/terminal-emulator.md#inspecting-the-screen)にはセルのほかの
++ プロパティがあり、[端末](../../soundness/modules/terminal.md#styled-text)にはレンダリングされた
++ テキストの説明がある。

@@ -1,0 +1,48 @@
+orthant 2 language
+
+@ 0 1 0 1fb042d42cb62dde1a1197bafad502bd
++ # ページが持っていないフォント
+
+@ 0 3 0 0967608d5ec3b4c80007c6a0f9d681d2
++ 書体を名指しても、それが読者のマシンに置かれるわけではない。`Font`はフェイスとプロビジョンの組であり、
++ プロビジョンは媒体がその書体をどう入手するかを述べるので、何も提供しないフォントでページを組むことは
++ できない。
+
+% 0 1 0 12705ff5e291290d17fbc8389d59ef4a
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 049c118e33370c991fae1ea4aaad95d8
++   label 何も提供しない書体
+
+% 0 1 0 1477c34ff41c7c99183443e1d3238ae1
+
+% 1 1 0 0960c596329e4eb20a0b442aaa85c43a
+
+% 2 1 0 052b5d53c564213f191f74be413a911f
+
+% 2 1 0 03fc5b6cf51ac11202b87f1342fd3ee6
+
+% 1 1 0 00e5bf32804c93521257277647a4fa3e
+
+@ 0 2 0 16576c1bd67fe80e0f96686fbcc23fc1
++   label そのためのプロビジョン
++   highlight Web.local()  読者がインストールしていることを前提とする
+
+% 1 1 0 1223952f833b0e9a0784fefe3fadd5c2
+
+% 2 1 0 0a61ab567173c9610ac207f11b19bd30
+
+% 0 1 0 05845ddae64c33d7187455fded880a7f
+
+% 2 1 0 03b293cc5774ac7a1c3231571d4d154d
+
+% 0 1 0 18eafb32caed3dd50f976e787bd035ca
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 2 0 11b171cb7bc16499192503fb0dc79f52
++ プロビジョンの種類の一覧は[書体の提供](../../soundness/modules/fonts.md#providing-a-typeface)に、そ
++ の原則は[不可能な状態](../../philosophy/impossible-states.md)にある。

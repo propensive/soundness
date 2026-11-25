@@ -1,0 +1,52 @@
+orthant 2 language
+
+@ 0 1 0 1890a65636dd0fc804fdbb0647daf0cd
++ # 1つの語彙で、どの形も自分の形を返す
+
+@ 0 2 0 1155a3a2ee04f3ee045562343c7cadd6
++ `filter`は型クラスが提供する1つの操作であり、各コレクションは与えられた形を返す。テキストはその文字
++ として走査され、テキストを返す。
+
+% 0 1 0 12705ff5e291290d17fbc8389d59ef4a
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+@ 0 2 0 12a50a290648eb870bb5911327579d8a
++ alternative リスト
++   highlight List[Int]  リストはリストを返す
+
+% 1 1 0 1aef6054b6568ca21a2d305fb20fd1d0
+
+% 0 1 0 1d12b7bc24305906155bacffcc19f2b2
+
+@ 0 2 0 0c6e3f5293b892d60a7ef3f8e0794342
++ alternative 集合
++   highlight Set[Int]  集合は集合を返す
+
+% 1 1 0 15c7fc85490020d81ea87f2a108c9745
+
+% 0 1 0 0986bb23ce8eb3ff037934e19fa289d2
+
+@ 0 2 0 0b72c7388c568b6d0401b277b87ae5e0
++ alternative 遅延チェーン
++   highlight Chain[Int]  遅延のまま
+
+% 1 1 0 01e9627533cc98cc100147d2265c9d67
+
+% 0 1 0 07cfe1d010e197650e7ba13d64cdf9bc
+
+@ 0 2 0 0edc09bb4d6cc89d1ac444bb96e6babb
++ alternative テキスト
++   highlight Text  文字はテキストを返す
+
+% 1 1 0 02eb40375bda2af717a97787fe3e0ab9
+
+% 0 1 0 1a52f73522d377da17a1b7b8603a5bd9
+
+% 0 1 0 18eafb32caed3dd50f976e787bd035ca
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 3 0 122053d72c65f7481445976a5f50a501
++ ほかの操作は[走査と変換](../../soundness/modules/collections.md#traversing-and-transforming)に、1つ
++ の語彙を支持する論拠は[小さな API](../../philosophy/small-apis.md)にある。

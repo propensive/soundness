@@ -1,0 +1,60 @@
+orthant 2 language
+
+@ 0 1 0 190a7b3e136785300b0ba9bdf33c6bbe
++ # 失敗しない順序
+
+@ 0 3 0 1e5663f37a3f35b7184c5472a09e2e64
++ トポロジカル順序は閉路のないグラフにしか存在しない。そのため`linearized`は、グラフによっては失敗する
++ メソッドではない。閉路を持たない`Dag`では提供され、閉路を持ちうる`Digraph`では提供されない。
+
+% 2 1 0 0910bd28ecd3f2210fa283aff5e9920a
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 04d8ce7f8e665fc60e1e036cf78713f2
++   label 閉路を持ちうるグラフ
+
+% 0 1 0 1477c34ff41c7c99183443e1d3238ae1
+
+% 1 1 0 0960c596329e4eb20a0b442aaa85c43a
+
+% 1 1 0 183069666c7223be18439ffa38ad50db
+
+% 0 1 0 1cd54b0162c9a16e1032d4026b9253a5
+
+% 1 1 0 069a0b9ccb4f405e1d096aac9e335cb6
+
+@ 0 2 0 13e2d7738c6a7fec1c5b981d92ca4f0e
++   label 閉路を持たないグラフ
++   highlight acyclic  閉路を探す唯一の場所
+
+% 1 1 0 0cee1f1ead3f93060d296efb7d935b27
+
+% 0 1 0 12a618ab3fc8ab800817fdfca2fcb19c
+
+% 1 1 0 1d05f684231f1d541c8d8a051401b937
+
+% 0 1 0 11a652e84c5e8b1400f1a35381d8cd6f
+
+% 1 1 0 01581a4fc96de2a5147ca9dd52906d04
+
+% 1 1 0 136d267ff733a60e0f6246170d49df5f
+
+% 2 1 0 1525a46c87e9e0571e7d21b8e7c42b7a
+
+% 0 1 0 08a86cbdc9b8cb0109ed8ce5b435ce67
+
+% 1 1 0 0cd6459499a6bd5203d659b3bcc1b6aa
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 0 1 0 037483a0290b8bfc19ab2342b06a879c
+
+% 1 1 0 101228fad57da8b31825001160a2f604
+
+@ 0 3 0 0b8548a85b788cc91e008efe40e653da
++ どの場面も、それが依存する場面の後に続く。ほかの問い合わせは
++ [順序付けと到達可能性](../../soundness/modules/graphs.md#ordering-and-reachability)に、その原則は
++ [全域的な遷移](../../philosophy/total-transitions.md)にある。

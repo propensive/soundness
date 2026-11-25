@@ -1,0 +1,71 @@
+orthant 2 language
+
+@ 0 1 0 0bcb14473b1317b8127efa92878c54c2
++ # 数値でないかもしれない内容
+
+@ 0 3 0 1ee79889c23101cb13039bafbb3c78b7
++ 要素のテキストは`as`である型として読まれるが、すべてのテキストが数値であるわけではない。この変換は
++ `Xml.Error`を送出し、それを行うメソッドはエラーを処理するか、その型に明記しなければならない。
+
+% 2 1 0 12910bfc0548969b1e098532ec695f26
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 07c9793e7967771c1b8921effa192dab
++   label 考慮されていない失敗
+
+% 0 1 0 1477c34ff41c7c99183443e1d3238ae1
+
+% 1 1 0 0960c596329e4eb20a0b442aaa85c43a
+
+% 2 1 0 131fe0edd9bf2c130a5991889375b8fe
+
+% 0 1 0 09d693af0b15de8a0e792e929c5c240c
+
+% 1 1 0 057300e7af1065291b370173f1f139a5
+
+@ 0 2 0 0e1eaa8d14b88117187b0d12d53af599
++   label 宣言された失敗
++   highlight raises..Error  型の一部
+
+% 1 1 0 0fb433d34da2ace30c4b5e36c4301499
+
+% 2 1 0 0fff1a65631ca7bb1a3f43823edcceb7
+
+% 0 1 0 0dd47aef148099fd192a869fc3543e20
+
+% 1 1 0 1c0408a43deda3a6184e511f4fb4c65b
+
+@ 0 2 0 1d9646ea4bbcd0511e4f58f6232e004f
++   label 不在の値としての失敗
++   highlight safely  失敗はUnsetになる
+
+% 1 1 0 19f5858238928e8b08e8d4f2188c574f
+
+% 2 1 0 0264207f57ccd2121337548cf0c21c48
+
+% 0 1 0 16e86c387da62a7b032e97feb6893f26
+
+% 1 1 0 0c429392773001e41e554b47bb8b177b
+
+% 1 1 0 136d267ff733a60e0f6246170d49df5f
+
+% 2 1 0 1525a46c87e9e0571e7d21b8e7c42b7a
+
+% 0 1 0 08a86cbdc9b8cb0109ed8ce5b435ce67
+
+% 1 1 0 0cd6459499a6bd5203d659b3bcc1b6aa
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 0 1 0 0c02291db893c27c04fcc599e2d10d59
+
+% 0 1 0 000edf04b3c47bfc1c94fd2f58b49761
+
+% 1 1 0 0746a166c6d4b7131dfe803e6a0ec2d1
+
+@ 0 2 0 08df3cec8c7a534800c61285bf125ca0
++ エラーは[値の読み取り](../../soundness/modules/xml.md#reading-values)で示し、`raises`については
++ [エラー処理](../../philosophy/error-handling.md)で説明する。
