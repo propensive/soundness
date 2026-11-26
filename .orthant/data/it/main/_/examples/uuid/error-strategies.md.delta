@@ -1,0 +1,55 @@
+orthant 2 language
+
+@ 0 1 0 1c3d2f7c425074b70f591a442045f8dc
++ # Un solo parser, e la scelta del fallimento al chiamante
+
+@ 0 3 0 151716c1239dfaed06b838136c26809b
++ `Uuid.parse` solleva un `Uuid.Error` e non dice che cosa ne sarà. Lo dice il codice circostante, e
++ la stessa chiamata serve un chiamante che vuole l'errore, uno che vuole un valore predefinito, e uno
++ che vuole un valore assente.
+
+% 0 1 0 12705ff5e291290d17fbc8389d59ef4a
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+@ 0 2 0 12e7ca268cb6e7340907d142500cac4b
++ alternative Dichiarato
++   highlight raises..Uuid.Error  il chiamante deve risponderne
+
+% 1 1 0 0d2d511ba7f2b7330c0b5e9c4ee6d579
+
+% 0 1 0 00c61ca43575763e010245112bbcb92c
+
+% 0 1 0 1f5c9f1a57010e451b208125dd2a98bc
+
+@ 0 2 0 1545445166c5319b07df6deda231a7ec
++ alternative Sostituito
++   highlight recover  lo sostituisce l'identificatore nullo
+
+% 1 1 0 0f8228e6bec09d29152ea9fea5b0a969
+
+% 0 1 0 1e2334299a8a288e0c51ee93a0182856
+
+% 0 1 0 1ffe5c415422113702a4a9b03386f84a
+
+% 0 1 0 018b1525e8a9403c1f6863a7569a7e43
+
+% 0 1 0 00f9d0b78ec2bb4f131dfced99cca075
+
+@ 0 2 0 14f3b4e3540758d30ed77afa45556ae0
++ alternative Assente
++   highlight safely  un fallimento diventa `Unset`
+
+% 1 1 0 17cd2c20b4d8cbd8003da3e1bd4713eb
+
+% 0 1 0 15a650d021b836810289b0114fa9a63f
+
+% 0 1 0 06be2445bab4f96405fe560a61ad4733
+
+% 0 1 0 18eafb32caed3dd50f976e787bd035ca
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 2 0 013043c5c8b6a42d05d8d065b3e1097a
++ [Scegliere una strategia](../../soundness/modules/errors.md#choosing-a-strategy) presenta l'insieme
++ completo delle scelte.

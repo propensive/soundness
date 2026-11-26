@@ -1,0 +1,68 @@
+orthant 2 language
+
+@ 0 1 0 00e783ceeb7113ed1d77d89259887dc6
++ # L'output, raccolto per la durata di un blocco
+
+@ 0 3 0 1b02702977725e3a19715ac93257ef61
++ `Stdio.capture` esegue un blocco e restituisce ciò che il blocco ha stampato, su ciascuno dei
++ due stream. Al suo interno, lo standard output e lo standard error sono quelli della cattura.
++ Dopo di essa, sono ciò che erano prima.
+
+% 2 1 0 0fcf6a6a9259031a0892738822d695ad
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 2 0 1aa7bc739726c8c613f2e68c8c671db4
++   label Un blocco che stampa
++   highlight Stdio.capture  raccoglie entrambi gli stream
+
+% 1 1 0 02be613846c479db06f17331e5e00503
+
+% 2 1 0 0b2ea3fff2a594691e4bed85835df8ac
+
+% 4 1 0 11b214ca284547b81d8e2ecdb4f34892
+
+% 0 1 0 1f5196b78e1c984e1be5dc8b8b9aa7c2
+
+% 0 1 0 1e7c729e4bf4c9b717e49d58b47e2a8a
+
+% 1 1 0 101daf8c41c7007e02a32ab4715c3ddf
+
+@ 0 2 0 0d9a1b035309c1d11ba7abc33d994227
++   label Uno stream, inviato all'altro
++   highlight Err.divert(Out)  solo per questo blocco
+
+% 1 1 0 118d91a164cb083c04b2b31c057b744b
+
+% 2 1 0 162e1636b5e89ea50d7a3a09b9939748
+
+% 4 1 0 18cc40e5fde9864808bb59de621bff4f
+
+% 0 1 0 1b71eb10f3a9ca3307280bc712cc726a
+
+% 0 1 0 0ed3bce3094ce5c71f599d0ee6a0eb1d
+
+% 0 1 0 0b0c513b57760a8119ecf6855fbc7334
+
+% 1 1 0 173de7483f33b8be12ab020624bca167
+
+% 1 1 0 136d267ff733a60e0f6246170d49df5f
+
+% 2 1 0 1525a46c87e9e0571e7d21b8e7c42b7a
+
+% 0 1 0 08a86cbdc9b8cb0109ed8ce5b435ce67
+
+% 1 1 0 0cd6459499a6bd5203d659b3bcc1b6aa
+
+% 0 1 0 17ffe7d6afaf926104173b1de5ed7182
+
+% 0 1 0 03b68a9d55c6376114a34592d1918fe2
+
+% 1 1 0 0d5528f1f836866400ef2be4805ffe19
+
+@ 0 3 0 1de8ddb2e54b6edb071b1683864ea46f
++ Entrambe le righe sono state stampate sullo standard output, e nulla ha raggiunto lo standard
++ error. [Gli stream standard](../../soundness/modules/streams.md#standard-streams) ne dice di
++ più, e [gli ambiti delimitati](../../philosophy/delimited-scopes.md) spiega la forma del blocco.

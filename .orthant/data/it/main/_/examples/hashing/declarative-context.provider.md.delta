@@ -1,0 +1,59 @@
+orthant 2 language
+
+@ 0 1 0 0c0f0cfb31ce233a1b9133ca63cf8f00
++ # Il provider decide quali algoritmi esistono
+
+@ 0 2 0 107f752d757dda100fcd577951316347
++ Gli algoritmi provengono da un provider, che si sceglie con un import. Il JDK non ha BLAKE3, quindi
++ con il suo provider un digest BLAKE3 non è un fallimento a runtime ma un errore di compilazione.
+
+% 2 1 0 1df1a3aea3def753083d8a29d7d2150e
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 00bf38f5247a600b03b344e2de8ad2fa
++   label Gli algoritmi del JDK
+
+% 0 1 0 1477c34ff41c7c99183443e1d3238ae1
+
+% 1 1 0 0960c596329e4eb20a0b442aaa85c43a
+
+% 0 1 0 0217ee48d30d58e2051a96c09cb048d9
+
+% 2 1 0 0263e8b7f18bf9bf1ec763fcbc17e481
+
+% 1 1 0 0c029854d27086e6068943eb3c18b61c
+
+@ 0 2 0 0bde2d1cb3e1ae220559e2cd9056acbb
++   label Gli algoritmi scritti in Scala
++   highlight soundnessProvider  Scala puro, su ogni piattaforma
+
+% 1 1 0 121c7510d40150161b2afcd95ab8db0c
+
+% 0 1 0 0cae0b25f8fd08db01d219606f567208
+
+% 2 1 0 0937191ae30a68791c6a0860541dbfc8
+
+% 1 1 0 1042db96df398fc301feb6f9de53a80c
+
+% 1 1 0 136d267ff733a60e0f6246170d49df5f
+
+% 2 1 0 1525a46c87e9e0571e7d21b8e7c42b7a
+
+% 0 1 0 08a86cbdc9b8cb0109ed8ce5b435ce67
+
+% 1 1 0 0cd6459499a6bd5203d659b3bcc1b6aa
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 0 1 0 0b21de5890a84d8d05926f25583daec4
+
+% 0 1 0 0155ca131e69e4fe11e5e5da2e36f248
+
+% 1 1 0 0317b7ea025047d30646693887a2b2f4
+
+@ 0 2 0 093bfbab96807bbd1dfbf7b56fba1394
++ [Hash di un valore](../../soundness/modules/hashing.md#hashing-a-value) contiene la tabella dei
++ provider, e [BLAKE3](../../soundness/modules/hashing.md#blake3) le modalità di questo.

@@ -1,0 +1,64 @@
+orthant 2 language
+
+@ 0 1 0 0551347466976afa1419a8bd0515d1a2
++ # Un task non può lasciare il suo supervisore
+
+@ 0 3 0 17e95bd204d191ec06e2247942f721d0
++ `supervise` non restituisce finché i suoi task non si sono conclusi, quindi un task consegnato
++ fuori dall'ambito verrebbe atteso sotto un supervisore che non c'è più. Il tipo del task
++ registra l'ambito da cui dipende, e il compilatore si rifiuta di lasciarlo uscire.
+
+% 2 1 0 0e2b4e425c0450751586d3c0e19736bd
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 0 1 0 05379442125b483c0fa7601737add2cc
+
+% 1 1 0 01df03af649144fc135e9cf4a153349c
+
+@ 0 1 0 0e2672e51adf875a07837a0b4d93a25c
++   label Un task restituito dal suo ambito
+
+% 0 1 0 1477c34ff41c7c99183443e1d3238ae1
+
+@ 0 1 0 179788e6e83f1658136d747fd4d702e9
++   highlight async(6*7)  il task è il risultato del blocco
+
+% 1 1 0 1034738fa35d21590bdd467c98671e13
+
+% 2 1 0 0f4776c95db47eb704173759d542c643
+
+% 0 1 0 1497a83ec9728dc71c7a768aa0eaa54a
+
+% 1 1 0 0f2c269ad323dc02019413fd6f0bfc11
+
+@ 0 2 0 1e78a439db31061f170617996abc3a71
++   label Il suo risultato restituito al suo posto
++   highlight .await()  atteso dove il supervisore è ancora presente
+
+% 1 1 0 13c280d71edfe4f813d1578defc9d0e2
+
+% 2 1 0 149d2204c47bd8980d3249b631c01e74
+
+% 0 1 0 100175973b547c1d0e7dc332806d64df
+
+% 1 1 0 127378d18470f90318428e78aaebfa19
+
+% 1 1 0 136d267ff733a60e0f6246170d49df5f
+
+% 2 1 0 1525a46c87e9e0571e7d21b8e7c42b7a
+
+% 0 1 0 08a86cbdc9b8cb0109ed8ce5b435ce67
+
+% 1 1 0 0cd6459499a6bd5203d659b3bcc1b6aa
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 0 1 0 088b0510646f44de1ef8da67e2e0e0b9
+
+% 1 1 0 1b9ff088734e623f05b6a0ba439fb3fb
+
+@ 0 3 0 0de2d13b0bc8e81609192cf997c9b95c
++ [Avviare un task](../../soundness/modules/concurrency.md#spawning-a-task) spiega come un task
++ trova il suo genitore, e [il capture checking](../../philosophy/capture-checking.md) come il
++ compilatore lo segue.

@@ -1,0 +1,77 @@
+orthant 2 language
+
+@ 0 1 0 160d51c73425d0680b7ed45780f8606a
++ # Uno stile tutto proprio
+
+@ 0 3 0 0de215a48a0a6935088cb6cbce4a7120
++ Lo stile di un albero è fatto di quattro brevi pezzi di testo: uno spazio, un ultimo ramo, un ramo,
++ e una linea che prosegue verso il basso. Un nuovo stile è un valore costruito a partire da questi
++ quattro, e un `given` lo colloca nel contesto dove un import avrebbe collocato uno degli stili
++ standard.
+
+% 2 1 0 0ddbcabcbadeaf29137fcdd4b0e98c43
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 2 0 1d1d6a5e6b2f76fa0a262806b8c1c105
++   label Uno stile standard
++   highlight squareTreeStyle  scelto con un import
+
+% 1 1 0 1d4b56f1df0739550eeb25fb25d2a505
+
+% 0 1 0 18ce7c3e0a0994cb1e5cef2e9db10256
+
+% 2 1 0 107dafef6c853b5e07a41e13220ff015
+
+% 4 1 0 04bc50e518c3ecb11f31ade807dcc8ff
+
+% 5 1 0 157862ea499b30791c3f49e1405dd980
+
+% 6 1 0 0aa651ed20a0c43713b50dd29b47b752
+
+% 7 1 0 116a0fdd7e0f5e8a05177dc97ff7d9f0
+
+% 1 1 0 11fd2b45d76f9bc211b00ed05035e52c
+
+@ 0 2 0 15d2faf97447693302d5e691548c4282
++   label Uno stile creato qui
++   highlight TreeDiagram.TextualStyle[Text]  uno spazio, un ultimo ramo, un ramo, un prolungamento
+
+% 1 1 0 1babc8ea0a80e24a185eaa9291b6000a
+
+% 0 1 0 0385e61cad2571ea0c1100b3d62c8423
+
+% 0 1 0 1d5297d095fa35d40627e6d2255d9eeb
+
+% 2 1 0 0a28dfc7840fdfe915f02b9eaca83e7f
+
+% 4 1 0 10708ac8d6377d740efaa0e9e1603ed4
+
+% 5 1 0 1a1ef8881e140de90ba3fb6a96a04e07
+
+% 6 1 0 1ab57cf3a999bb0f001f5d9e9cc9ccee
+
+% 7 1 0 00a6c60ef301650e108fa42e42a2ccd7
+
+% 1 1 0 163d6e87e438a49f0d2581def270d71c
+
+% 1 1 0 136d267ff733a60e0f6246170d49df5f
+
+% 2 1 0 1525a46c87e9e0571e7d21b8e7c42b7a
+
+% 0 1 0 08a86cbdc9b8cb0109ed8ce5b435ce67
+
+% 1 1 0 0cd6459499a6bd5203d659b3bcc1b6aa
+
+% 0 1 0 00af3fdb360e27f9095168ce70444642
+
+% 0 1 0 05bfd81584336379180455a02498a45c
+
+% 1 1 0 130b486814f853b2043cbb867c4b0110
+
+@ 0 3 0 05887a7605c77fc81195909b95ac9fc7
++ [Struttura e stile separati](../../soundness/modules/trees.md#structure-and-style-apart) presenta le
++ quattro tessere, e [il contesto dichiarativo](../../philosophy/declarative-context.md) la ragione
++ per cui uno stile non è un argomento.

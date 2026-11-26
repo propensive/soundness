@@ -1,0 +1,55 @@
+orthant 2 language
+
+@ 0 1 0 0475934dbb8e2af8111f76136adacf3e
++ # Un argomento sbagliato, segnalato nei termini del linguaggio straniero
+
+@ 0 3 0 01425bcf28cf6a081a01a804de80f5c5
++ Una chiamata a un metodo straniero viene verificata rispetto alla dichiarazione straniera. `greet` è
++ dichiarato in TypeScript come metodo che prende una `string`, quindi l'errore per un numero nomina
++ il metodo e il tipo TypeScript che si aspetta, e non un tipo Scala.
+
+% 0 1 0 12705ff5e291290d17fbc8389d59ef4a
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 00aa00a6c861e21c1c784a2dc7ca244d
++   label Un numero, dove TypeScript dichiara una stringa
+
+% 0 1 0 1477c34ff41c7c99183443e1d3238ae1
+
+% 1 1 0 0960c596329e4eb20a0b442aaa85c43a
+
+% 2 1 0 0ed69d8e40b5826e1c0a8ab49f62153e
+
+% 3 1 0 11800f1f532862c7066a251fed74adde
+
+% 5 1 0 0bc0497883d2a909128fe7035527bed9
+
+% 0 1 0 17af9efb938dad4a0ba0b95cdc822940
+
+% 1 1 0 12fc5bfb0335674e06f5c7433c35a697
+
+@ 0 2 0 06b9c7a4feb329c416e77b645d6c2110
++   label Text è una stringa
++   highlight t"Viola"  un Text Scala, passato come stringa TypeScript
+
+% 1 1 0 0a874fc5f9ff2aab12612577131b2983
+
+% 2 1 0 04173720cccb9e7f1d9b120183eaac91
+
+% 3 1 0 1e27dc009e3089301023dfeccc72798f
+
+% 5 1 0 04d36859945aa8a917c3da5af7d49a04
+
+% 0 1 0 068a5b4db65e1a1b007b306313d0ea7d
+
+% 0 1 0 18eafb32caed3dd50f976e787bd035ca
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 3 0 0df863e7065d33d214f125fe76a96a41
++ [Navigare i tipi stranieri](../../soundness/modules/foreign-interop.md#navigating-foreign-types)
++ spiega come i valori Scala corrispondono ai tipi stranieri, e gli [errori
++ espressivi](../../philosophy/expressive-errors.md) perché il messaggio è formulato così.

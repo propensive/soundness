@@ -1,0 +1,59 @@
+orthant 2 language
+
+@ 0 1 0 17579da7ced0e6330604dfdf163fedb8
++ # I permessi di ogni file creato in un ambito
+
+@ 0 3 0 04227f731b863dc7044cdfa97c646579
++ Un file viene creato sotto una maschera, che gli nega dei permessi. La maschera è un given, quindi
++ una riga rende privato ogni file creato al di sotto di essa, e ogni file viene creato con i suoi
++ permessi definitivi, mai con permessi più ampi ristretti in seguito.
+
+% 0 1 0 12705ff5e291290d17fbc8389d59ef4a
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 144f6e8727219227030b44d45bb9af1e
++   label Sotto la maschera del processo
+
+% 1 1 0 1c32ca740f8b0adb0966e48cf7f1dc2a
+
+% 2 1 0 03539e631176a94b1ab100396e48a8cd
+
+% 3 1 0 1f368479438b831d1c984bfb9311e631
+
+% 5 1 0 1efe6fa069514f1b1810f54be15cbd06
+
+% 1 1 0 1d6735ec2c247d47012b4c7dea379b1f
+
+% 2 1 0 0ba8d640354e99ed048a35a6296c0068
+
+% 1 1 0 1771d96151d928f00af104306171a183
+
+@ 0 2 0 102262b196fa9dc51021d6bef50d12c4
++   label Sotto una maschera propria
++   highlight Umask(0x3f)  077 in ottale, quindi solo il proprietario
+
+% 1 1 0 15335b193859993f0caccb35dbd79a0e
+
+% 2 1 0 04cd05bb0ed56a921d9d9af5e5cb22d2
+
+% 3 1 0 1e68ab58c5cde96d185e162c5c093da4
+
+% 5 1 0 042e282d846e5869137fd5781ca89f54
+
+% 0 1 0 0228d3cbeccad6691c2d7cf42a0b49ba
+
+% 1 1 0 029778858710995d1a1a4b99f31e501f
+
+% 2 1 0 1752702ff9a24d2804edc727722bd58f
+
+% 0 1 0 18eafb32caed3dd50f976e787bd035ca
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 3 0 078a9897cab5c5d21751dbb9323705b5
++ L'esempio viene compilato, ma non eseguito, poiché creerebbe un file. [Maschere di
++ creazione](../../soundness/modules/filesystem.md#creation-masks) spiega perché un demone ne ha
++ bisogno, e il [contesto dichiarativo](../../philosophy/declarative-context.md) il principio.

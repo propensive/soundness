@@ -1,0 +1,54 @@
+orthant 2 language
+
+@ 0 1 0 0fc057af5e856a15089f0497a699a425
++ # Un letterale di percorso, verificato durante la compilazione
+
+@ 0 2 0 0977b4e09347723f0f96df6c00987cdd
++ Un percorso scritto come `p"…"` viene letto dal compilatore, che decide dalla sua forma se è un
++ percorso POSIX o un percorso Windows. Un testo che non è né l'uno né l'altro è un errore di
++ compilazione.
+
+% 0 1 0 12705ff5e291290d17fbc8389d59ef4a
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 0c3543a8827ba53b15acb0476db5f6ff
++   label Né una radice né un'unità
+
+% 0 1 0 1477c34ff41c7c99183443e1d3238ae1
+
+% 1 1 0 0960c596329e4eb20a0b442aaa85c43a
+
+% 0 1 0 13a0d3e3f5fc678e00a86e310ab4632f
+
+% 1 1 0 0d854a9a7851081d14250f4be53afe21
+
+@ 0 2 0 15b0d68e77d958a101f867288f23cc4b
++   label Un percorso POSIX
++   highlight /home  una radice ne fa un percorso POSIX
+
+% 1 1 0 0c8f8d8efaa64baf15b053d6335328e1
+
+% 0 1 0 0b9e5eb181cf016c16115b3c0c71f03b
+
+% 1 1 0 17925de962ed61320e2cf595617cabbd
+
+@ 0 2 0 043b37991c63507015610fb03e5cb492
++   label I suoi nomi sono nel suo tipo
++   highlight Path..Posix  la foglia viene per prima
+
+% 1 1 0 1d12759f7cf9e21b0840a673a5fe6493
+
+% 0 1 0 1ed25c85eabb703a134e8a30314213a7
+
+% 0 1 0 0d0dcb7ee235c073119e80b8999aa64a
+
+% 0 1 0 18eafb32caed3dd50f976e787bd035ca
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 2 0 187d0950a884179e1b94c816214c65a8
++ [Costruire un percorso](../../soundness/modules/paths.md#building-a-path) presenta il letterale, e
++ [sicurezza per costruzione](../../philosophy/safety-by-construction.md) il principio.

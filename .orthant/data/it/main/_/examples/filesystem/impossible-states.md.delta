@@ -1,0 +1,58 @@
+orthant 2 language
+
+@ 0 1 0 08635f690412135a166ba3eecc0277bd
++ # Un file aperto in lettura non si può scrivere
+
+@ 0 3 0 1e2b762eee3aa86f19fa89eee66474bd
++ La modalità con cui un file viene aperto fa parte del tipo del suo handle. Un handle aperto in
++ lettura concede la lettura e nient'altro, quindi scriverci non è un errore a runtime: non compila.
+
+% 0 1 0 12705ff5e291290d17fbc8389d59ef4a
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 1fa4dc7fc7179562047cf00baa3a3af1
++   label Aperto in lettura, e scritto
+
+% 0 1 0 1477c34ff41c7c99183443e1d3238ae1
+
+% 1 1 0 0960c596329e4eb20a0b442aaa85c43a
+
+% 2 1 0 13286f88187b0f771926e8abf6104c34
+
+% 3 1 0 1ac1f49c1801ea8a180c3eb9c67f956c
+
+% 5 1 0 02343ce22caa7497013b8b6eee780431
+
+% 0 1 0 113fe5e6810ce99519e3a82397caa930
+
+% 1 1 0 0087242dae31f8940feaf8eec0ebd29b
+
+% 1 1 0 09a24c9a7afb8a6e1a4b70c10568daf9
+
+@ 0 2 0 06b2e115ff055b0711297880af72ec00
++   label Aperto in scrittura
++   highlight Write  il permesso che la scrittura richiede
+
+% 1 1 0 056dee61be2934731a823e350fa2c73e
+
+% 2 1 0 146bb231661c0d090bca455d2377e907
+
+% 3 1 0 1ee4e87bd21c69731795577d08e53b49
+
+% 5 1 0 02b8abd1c6fd08af14920ccb3391c81b
+
+% 0 1 0 13c3991584f988970b4336affd87a55a
+
+% 1 1 0 1a41cdacab9d23531b07dc6d2108d41c
+
+% 0 1 0 18eafb32caed3dd50f976e787bd035ca
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 3 0 1b0fa978bf11244216d624251131a0c6
++ L'esempio viene compilato, ma non eseguito, poiché scriverebbe un file. [Lettura e
++ scrittura](../../soundness/modules/filesystem.md#reading-and-writing) descrive i permessi, e gli
++ [stati impossibili](../../philosophy/impossible-states.md) il principio.

@@ -1,0 +1,67 @@
+orthant 2 language
+
+@ 0 1 0 12bdaf1eaad3257703b3ecfd76f8760d
++ # Il motivo per cui un indirizzo è stato rifiutato
+
+@ 0 3 0 1a31de184be0a62c108d917026368a6f
++ Un testo che non è un indirizzo IP solleva un `IpAddress.Error`, e l'errore è un valore. Il suo
++ motivo è un caso di un'enumerazione che contiene la parte incriminata, e il suo messaggio è
++ costruito a partire da essa.
+
+% 2 1 0 1b6d1da645d621fa0b94665720bb98e3
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 1c5727aa37bf41ed0dcb72429c32afdb
++   label L'errore, catturato
+
+% 0 1 0 0e7d2b6764e578e9070b44109afef331
+
+% 1 1 0 0e4309211cb844f705cde0c15c7e6751
+
+% 2 1 0 1f31e7295d50e2490eb1780917e5e00a
+
+% 4 1 0 1d2d802fe4679e1510ff8a919f9e0e92
+
+% 1 1 0 1d0cde6d7df15ebd02ca64a36396dbfc
+
+@ 0 2 0 12d19053d1f2d8621382f2f359813976
++   label Il suo motivo, come valore
++   highlight Ipv4ByteOutOfRange(byte)  il numero che era fuori intervallo
+
+% 1 1 0 065ce64211add019143e7f9481e5a5e8
+
+% 2 1 0 107b383064a37d981a08184de3d59ce3
+
+% 4 1 0 19f6ac483837e8851828555480ec2c90
+
+% 0 1 0 0f4290f8fc649f1b0b8d9cb03356e996
+
+% 0 1 0 067420906ada03be1673bfd4ea7a303c
+
+% 0 1 0 00b014cb78d2a4b90a6df4203ce31ba8
+
+% 1 1 0 0b4a27c16034ff3a0c15e09e064d1cb4
+
+% 1 1 0 136d267ff733a60e0f6246170d49df5f
+
+% 2 1 0 1525a46c87e9e0571e7d21b8e7c42b7a
+
+% 0 1 0 08a86cbdc9b8cb0109ed8ce5b435ce67
+
+% 1 1 0 0cd6459499a6bd5203d659b3bcc1b6aa
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 0 1 0 06c0c12ea078c17c0106e3dee6af1925
+
+% 0 1 0 004880661c553d8701dd188324b23b54
+
+% 1 1 0 1ab6e7b3923af7df083be81970276fd9
+
+@ 0 3 0 020498048521594f1347fdadb22a3552
++ [Parsing a runtime](../../soundness/modules/network-addresses.md#parsing-at-runtime) elenca l'errore
++ di ciascun identificatore, e [errori espressivi](../../philosophy/expressive-errors.md) dice perché
++ sono scritti così.

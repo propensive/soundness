@@ -1,0 +1,87 @@
+orthant 2 language
+
+@ 0 1 0 167f2d6079dd05831d24e2056a1fd5bc
++ # Un solo `listen` per ogni trasporto
+
+@ 0 3 0 09e751dac00173b40576649086cc77cd
++ Una porta TCP, una porta UDP e un socket di dominio Unix si servono tutti con `listen`. Il tipo del
++ valore socket sceglie il trasporto, e con esso ciò che riceve l'handler: una connessione, o un
++ pacchetto.
+
+% 0 1 0 12705ff5e291290d17fbc8389d59ef4a
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 0 1 0 1c980380c2db4d1f06da675a8d722ed9
+
+% 0 1 0 0e1474f1eef44ffd143686b4e772bc48
+
+@ 0 1 0 167abae4a9e4240f0a677d2959e2c950
++   highlight connection  un flusso da leggere, e una risposta da inviare
+
+% 1 1 0 00183c4d04758fe004002e6c39ea461a
+
+% 2 1 0 0eb036b09cbaf4fc0df0d62165a120d1
+
+% 3 1 0 16d1fee5a625450b092085e59481e3b4
+
+% 4 1 0 17d7d655ad7312351e3c7f8d64761a27
+
+% 6 1 0 1acb396ccd70ac6817290ccc4fae159c
+
+% 7 1 0 0229c7c3e21a58d30cd133f6210b6434
+
+% 0 1 0 0736367a46b1affb19d414e6bb1df48c
+
+% 1 1 0 134031c73da5b82414376d2e13e25c22
+
+% 0 1 0 178cb187c11fe3cd195cea8a18f0d496
+
+% 0 1 0 1cb2bea12db631c71dcf7ee5d16fb256
+
+@ 0 1 0 17a95341ae2403e80b65eb00a9b4fc1c
++   highlight packet  un datagramma e il suo mittente
+
+% 1 1 0 14cc1141c35a65f90302574e5c778816
+
+% 2 1 0 19dca555c988f6240d6f38c755e31bb9
+
+% 3 1 0 084b020d0f045977092fbd97923cba88
+
+% 4 1 0 191a158aa414cf5b16da6bf59fcf6faa
+
+% 6 1 0 0efe6fd901586501064c97834abfceb1
+
+% 7 1 0 0fc10bed6bf646011f4b0005f5d4df4a
+
+% 0 1 0 0c8c62ab7bdfefe4097cdc00389a42c3
+
+% 1 1 0 0dcab8f7647f01e61adfe9d245aa6f93
+
+@ 0 1 0 150d94835f45fac21d4f8ff3a742c88d
++ alternative Dominio Unix
+
+% 0 1 0 1043b8dac264f3de16164613fecfa758
+
+% 1 1 0 09f3c9cea6f1b501034c15a24bff05d9
+
+% 2 1 0 050811c4d24edc2f01859f4127a6ffe3
+
+% 3 1 0 08ae8f4c0028c59f1aa57cf18c1fa7e5
+
+% 5 1 0 0552c54cefc691b51d2e85fe0d54c79d
+
+% 6 1 0 025777b09ccf7eba076460644adcc45b
+
+% 0 1 0 19888a55801ecac306136e2ce4eb2df9
+
+% 1 1 0 1b3d4e481186eb1f0e291c3f65f4767f
+
+% 0 1 0 18eafb32caed3dd50f976e787bd035ca
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 3 0 1c60e10202f565350518a4c54af294ab
++ L'esempio viene compilato, ma non eseguito, poiché associerebbe dei socket.
++ [Servire](../../soundness/modules/sockets.md#serving) contiene la tabella dei trasporti, e le [API
++ ridotte](../../philosophy/small-apis.md) il motivo per cui c'è un solo nome.

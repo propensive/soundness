@@ -1,0 +1,78 @@
+orthant 2 language
+
+@ 0 1 0 01c5b7f1fe6af1ee13e344e2c72cc8cf
++ # Un'enumerazione in una mappatura YAML
+
+@ 0 2 0 1cae0d1c0560d18d14f1b237e288a3e2
++ Un'enumerazione si scrive come una mappatura con una chiave in più, che nomina il caso, e il decoder
++ derivato per essa legge prima quella chiave. Il nome della chiave viene scelto con un import.
+
+% 2 1 0 09602bbbe011014f158b6be239e3cfa5
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 2 0 19e051a4b73299860ccfc6def102019b
++   label Un caso, codificato
++   highlight yamlByKindDiscriminable  la chiave si chiama kind
+
+% 1 1 0 033e8bf03f34e1061642d37dfe3fadf1
+
+% 2 1 0 0a75756bc1956e600e8683c9b6a6298a
+
+% 3 1 0 16f8bdadca70e33c05993de521803331
+
+% 5 1 0 03a918f9db94ee9e04334c57a8813818
+
+% 6 1 0 129c8b718b7ab6a3072f5ad3bc4dcfa2
+
+% 7 1 0 0a99f6a4d0bd3fe115e32427ca8a035d
+
+% 9 1 0 179e48eb0b5460620ba9b38bcc862cc0
+
+% 1 1 0 0560a7a6b54e323312b60f3c1b0adfc1
+
+@ 0 2 0 0fbf4c8fd25e6a461156ae1c94ad7d1b
++   label Un caso, decodificato
++   highlight as[Exit]  la chiave sceglie il caso
+
+% 1 1 0 1da85eb8686fd3450a3b36e4341743ff
+
+% 2 1 0 1d12df29c715813c0f252e3b968bb64e
+
+% 3 1 0 0f3aa00d8f650e7e1aa7e4ec63f5653a
+
+% 5 1 0 14bb339f48fea45a02807ff76405029c
+
+% 6 1 0 113f2fe4bd3145be191df4393d75b32f
+
+% 7 1 0 040f978d2ca968261b1af55fb03928ee
+
+% 9 1 0 1ff1abc7412a8a411d21aaadf334b4ab
+
+% 0 1 0 10a0fe7a1a70d40d1325bdeeff223286
+
+% 1 1 0 046e877dfbed9f84178e913f831fb374
+
+% 1 1 0 136d267ff733a60e0f6246170d49df5f
+
+% 2 1 0 1525a46c87e9e0571e7d21b8e7c42b7a
+
+% 0 1 0 08a86cbdc9b8cb0109ed8ce5b435ce67
+
+% 1 1 0 0cd6459499a6bd5203d659b3bcc1b6aa
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 0 1 0 0dd199fba6079d380f53b48f83fb7a3d
+
+% 0 1 0 17698380fdd05ff3129ba1fbc0f0e0fa
+
+% 0 1 0 07ee57c933949f760bd9410882c5b531
+
+% 1 1 0 1729af700bc588fd1d785975289d8963
+
+@ 0 2 0 180060633b9937910ce46ed04cc28cee
++ [Codifica](../../soundness/modules/yaml.md#encoding) nomina i due import, e [unioni
++ etichettate](../../soundness/modules/json.md#tagged-unions) descrive la convenzione.

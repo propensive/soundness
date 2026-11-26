@@ -1,0 +1,67 @@
+orthant 2 language
+
+@ 0 1 0 19d421275b5c5eea03d6696cf058bd60
++ # Una chiave che un record TXT potrebbe non avere
+
+@ 0 3 0 17aa2b8d8eb6fd3f0b32ba0a9236ad44
++ Un'istanza si descrive in un record TXT di chiavi e valori, e un record non deve per forza avere la
++ chiave richiesta. Cercarne una dà un `Optional[Text]`, che non è `Text` finché l'assenza non viene
++ gestita.
+
+% 2 1 0 1c2cc519f1fec7f31925a9612232908b
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 16e87db2b95f7b5806b8cd4960d049e0
++   label Una versione che potrebbe essere assente
+
+% 0 1 0 1477c34ff41c7c99183443e1d3238ae1
+
+% 1 1 0 0960c596329e4eb20a0b442aaa85c43a
+
+% 2 1 0 052b5d53c564213f191f74be413a911f
+
+% 4 1 0 02ddd8e97967639e0c30043c94c65804
+
+% 0 1 0 0d5311d1700227701f145630016e38a9
+
+% 1 1 0 081f280a61aea05f0969cc0979c714b9
+
+@ 0 1 0 199e6620905227c112b18d1d114aba8b
++   label Con un valore per la sua assenza
+
+% 0 1 0 00852b80f07fccc6178a9c47850fe0a4
+
+% 1 1 0 15dae2ffde90d4ff1c7f8588621c53fa
+
+% 2 1 0 0b0eaa5f25a25edb17b5b7b7a5b94eb8
+
+% 4 1 0 02ed71eecd33463b13ebbdf89e6ca13f
+
+% 0 1 0 0770a834fbcd2a2b1ef545d24f274710
+
+% 0 1 0 03418df6818aa42e0cc43b8d7d430cc6
+
+% 1 1 0 178f2bafdb699e041b71b6c048c12ad4
+
+% 1 1 0 136d267ff733a60e0f6246170d49df5f
+
+% 2 1 0 1525a46c87e9e0571e7d21b8e7c42b7a
+
+% 0 1 0 08a86cbdc9b8cb0109ed8ce5b435ce67
+
+% 1 1 0 0cd6459499a6bd5203d659b3bcc1b6aa
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 0 1 0 1fe5bed9ec1ada1d056458a055239e23
+
+% 0 1 0 07e865c126893a4b0569cd6f4e91173c
+
+% 1 1 0 1dc1f97109a50823051615d217dbb88c
+
+@ 0 2 0 00f6f5cb890734d213a3558701f7cae9
++ [Servizi e istanze](../../soundness/modules/service-discovery.md#services-and-instances) descrive il
++ record, e l'[opzionalità](../../philosophy/optionality.md) il tipo.

@@ -1,0 +1,100 @@
+orthant 2 language
+
+@ 0 1 0 036b7bd731374cf6186499da1b1e9d38
++ # Un'immagine, costruita come valore
+
+@ 0 3 0 0ea938edb079ffb70719421d025e2471
++ Un'immagine di container è di solito l'output di uno strumento. Qui è fatta di tre espressioni: un
++ file in un archivio tar, un layer fatto dell'archivio, e un'immagine fatta del layer. Non si esegue
++ nulla, e ogni passo viene controllato durante la compilazione.
+
+% 2 1 0 0ab37c717c4e8665062f330bbb1c965b
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 1986fad437833b8f1ab05e8e6609bb60
++   label Un layer
+
+% 1 1 0 16040c1dcef7766f0534cd452be64e3e
+
+% 2 1 0 00cbd2499ff73ebe1e45b2dc64efa783
+
+% 3 1 0 0b6dfabe222bb6941f01abaf0d1fcd67
+
+% 5 1 0 0d7ecd88c63fb2a403a0222a74e16f4e
+
+% 6 1 0 1a79ca9cefc9345918c5aba28dd62efa
+
+% 7 1 0 1d6d4a2ffc256b6c0e64a27d2e2c08a1
+
+% 9 1 0 05662b6437e10fbf11312c269c25c2fd
+
+% 1 1 0 0b9f29ecce9a6e31059b2706d0b015ac
+
+@ 0 1 0 078f32a752c645bd0c3d55f2ae461b4b
++   label Un'immagine, con il comando che esegue
+
+% 1 1 0 0557bf01c4ca7a561f35a4181c207d90
+
+% 2 1 0 03e4fc93a5c770cb19390bade09fbb2b
+
+% 3 1 0 0752fdd95e4da7d20d31bdf67463ccc2
+
+% 5 1 0 016ca940909d3945052166aece873e57
+
+% 6 1 0 0d5c82e5cc0ecd4b157595be88be9372
+
+% 7 1 0 1cfebc34b9a135d817f15d73c28b1143
+
+% 9 1 0 041e400a6e82b7331ed6ccf8775bd573
+
+% 10 1 0 038c552c5d5e5a7712222e4a228e07aa
+
+% 11 1 0 07616ea381ced20708fcec730a1a6a07
+
+% 1 1 0 14b31d5a6831ac0c163a9eca8ee22966
+
+@ 0 1 0 1193e6e429b8f37b0794b10e4cb6f90b
++   label L'archivio che un runtime carica
+
+% 1 1 0 170e50cb6da7a36116bf89662835810e
+
+% 2 1 0 00671ec90d21df581009e94470e99057
+
+% 3 1 0 1f09785f330b013d02ea254461320356
+
+% 5 1 0 0caee68c8e8ee3be19e676e349d20f72
+
+% 6 1 0 19d7ebc2519a18371c32376be8850987
+
+% 7 1 0 1b72fe82924dc51e0cdcd5c4b5fc8817
+
+% 9 1 0 1c0ca6d3abe4336d056a4b9c1586701d
+
+% 10 1 0 0bebfb7427f3b9461488d7a9595dcca9
+
+% 11 1 0 10de4391cce8a33713192690eb428a64
+
+% 0 1 0 18b2b9a430f96be20989e2ae0711447f
+
+% 1 1 0 1f45d3fb65ca8b970df465f9abe885c2
+
+% 1 1 0 136d267ff733a60e0f6246170d49df5f
+
+% 2 1 0 1525a46c87e9e0571e7d21b8e7c42b7a
+
+% 0 1 0 08a86cbdc9b8cb0109ed8ce5b435ce67
+
+% 1 1 0 0cd6459499a6bd5203d659b3bcc1b6aa
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 0 1 0 1a84bd9199e805e01479979bcb7eb189
+
+% 1 1 0 043f98c173384000160005e2447603ce
+
+@ 0 2 0 0ba74a0fce7fc23b07c41b034a53a439
++ [Costruire un'immagine](../../soundness/modules/docker.md#building-an-image) nomina le parti, e [lo
++ stile diretto](../../philosophy/direct-style.md) spiega perché una build è codice ordinario.

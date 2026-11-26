@@ -1,0 +1,65 @@
+orthant 2 language
+
+@ 0 1 0 0d350eccde1d43a71e392f7edcf3744b
++ # Un'operazione che richiede una credenziale
+
+@ 0 3 0 18622a2e5d1d3f0e0b09b1127d4a4c6a
++ La specifica dice quale schema di sicurezza richiede ogni operazione, e il client chiede una
++ credenziale di quello schema come valore contestuale. Un'operazione la cui credenziale nessuno ha
++ fornito non viene chiamata senza di essa. Non compila.
+
+% 0 1 0 12705ff5e291290d17fbc8389d59ef4a
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 024d495065f0bfec1624b4b012f3987b
++   label Nessuno ha fornito una credenziale
+
+% 0 1 0 1477c34ff41c7c99183443e1d3238ae1
+
+% 1 1 0 0960c596329e4eb20a0b442aaa85c43a
+
+% 2 1 0 092b07dc9fd04b15104afe672311e543
+
+% 3 1 0 08c07d60eedd90850aa0366cf6e06b12
+
+% 4 1 0 15c3c6419716e78d1d1e684de6fe8ece
+
+% 2 1 0 0201fc93cb3e807c0e271f78336dd8a1
+
+% 3 1 0 1b3694c754d7322508d7d6205166d61d
+
+% 5 1 0 0924a46bdbb66843158100f2ea4a9d7d
+
+% 1 1 0 1ae1d859ed47eb4f1d599320a7694972
+
+@ 0 2 0 1e99c20c2e42e89d1aeff09d7f5ca22f
++   label Una chiave per lo schema che l'operazione nomina
++   highlight "api_key"..Text  lo schema, e ciò che contiene
+
+% 1 1 0 10c26bc120b016461f4d0c9e7fa333a1
+
+% 2 1 0 05422f27fc5c791a170896441f78037e
+
+% 3 1 0 0a14befd28b850181ea59d79adcc6988
+
+% 4 1 0 015f778fd807fb7a1aee4624dd2f3159
+
+% 0 1 0 130884eec99d035c1b8a2d70cc585136
+
+% 2 1 0 1ac76644d2739e3600d3324603dc7476
+
+% 3 1 0 0e2ac5a260d4e18100702fb67b08fbf5
+
+% 5 1 0 1947905f8c82026915a21af2ab583047
+
+% 0 1 0 18eafb32caed3dd50f976e787bd035ca
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 3 0 00d6d617008244b103cddd1b9c5425f5
++ L'esempio viene compilato, ma non eseguito, poiché richiede la rete.
++ [Sicurezza](../../soundness/modules/openapi.md#security) contiene la credenziale per ogni tipo di
++ schema, e le [firme oneste](../../philosophy/honest-signatures.md) l'idea.

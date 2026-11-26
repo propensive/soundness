@@ -1,0 +1,77 @@
+orthant 2 language
+
+@ 0 1 0 14f774d081fab3d91e8719cd1e8642ea
++ # Unità miste, convertite dal compilatore
+
+@ 0 3 0 087e34b1aa8272651e7d073a64941854
++ Piedi e metri misurano la stessa dimensione, quindi si sommano, in qualsiasi ordine, e il
++ risultato è nell'unità SI. Il rapporto tra loro è un tipo, noto mentre il codice compila, e una
++ grandezza è un semplice `Double` quando viene eseguita.
+
+% 2 1 0 12b968fd159afd4d09ea8b3625617289
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 2 0 03e83cb042129c8a0dff7522e520740d
++   label Metri e piedi
++   highlight 2*Metre..2*Foot  convertiti, e in metri
+
+% 1 1 0 0e20f5fee5d5897e048f85dda377e413
+
+% 2 1 0 0eb94871afe22d3e0ca46a93fd8f3c2e
+
+% 1 1 0 11fefce400f3c95f16b91b8114f2a77e
+
+@ 0 2 0 0b03515fd44f59520291c5c667d8d215
++   label Piedi e metri, la stessa lunghezza
++   highlight 2*Foot..2*Metre  anche questo in metri
+
+% 0 1 0 1accf43fe927975f1dc8da9a374d03c0
+
+% 1 1 0 1355c71f5d40d7ac08d3588c7243e073
+
+% 2 1 0 099551160a86168801a3c8beeb0b2363
+
+% 3 1 0 1148eb054af7b13e00d0b125f848a356
+
+% 1 1 0 0d9c600a329fc1881ad62ef2a922115f
+
+@ 0 2 0 0183b1d6d6332cfc07630ea529223aa4
++   label Un'area, dalle due
++   highlight stage*apron  convertite in una sola unità, al quadrato
+
+% 1 1 0 1f65da74afe9ecf21aaf642706d1d96f
+
+% 2 1 0 06ab660d1a629e5b0aa282a243f21dee
+
+% 3 1 0 0f478742db06e4fd19df7e478d9aab2a
+
+% 0 1 0 03a61bbe46bc3f401cf18457ea5fe9af
+
+% 1 1 0 1c3f3d7900e0bf371f86b1e14ae49449
+
+% 1 1 0 136d267ff733a60e0f6246170d49df5f
+
+% 2 1 0 1525a46c87e9e0571e7d21b8e7c42b7a
+
+% 0 1 0 08a86cbdc9b8cb0109ed8ce5b435ce67
+
+% 1 1 0 0cd6459499a6bd5203d659b3bcc1b6aa
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 0 1 0 1ff46eadb86ffabc103c1dc6d8e7c8b4
+
+% 0 1 0 137b31e3e7ee434b1231ac0494ff389b
+
+% 0 1 0 0485f8c2e2f8aa3819801fbcb499ab23
+
+% 0 1 0 13617b832586a5420d1ac7f005c2f16e
+
+% 1 1 0 1fd16c1a3b847033043623476a25ef0e
+
+@ 0 2 0 1a6add1d15c505e0118ffe4cee4a54fe
++ [Rapporti di conversione](../../soundness/modules/quantities.md#conversion-ratios) spiega perché
++ il rapporto è un tipo, e [costo zero](../../philosophy/zero-cost.md) che cosa resta nel bytecode.

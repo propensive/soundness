@@ -1,0 +1,53 @@
+orthant 2 language
+
+@ 0 1 0 088b72b4241c35490d8ab35caca09604
++ # Campi da un XML Schema
+
+@ 0 3 0 1f3a3c7a9e743b9e0d4a0217f5d32b28
++ Un `Xml.Provider` legge un XSD durante la compilazione. Un documento che vi corrisponde si legge
++ come un record i cui membri sono gli elementi dello schema, ciascuno del tipo che lo schema
++ dichiara, senza scrivere una case class che li ripeta.
+
+% 0 1 0 12705ff5e291290d17fbc8389d59ef4a
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 0 1 0 1368aeaeef3b4f2a04bddedfe1629a26
+
+% 0 1 0 14aab7f0be2434f81421fb69d99543da
+
+@ 0 2 0 11e4d25d3d079b9c05ad2740f3b869bc
++   label Membri dei tipi dello schema
++   highlight record.acts  un xs:int, quindi un Int
+
+% 0 1 0 0feeb6ee26eddc7916a3c923ea9fa7b1
+
+% 0 1 0 12a618ab3fc8ab800817fdfca2fcb19c
+
+% 0 1 0 009a9c455423b65519521ac6f537d97a
+
+% 0 1 0 1c8822869ea05aef19af106734d9d8ec
+
+% 0 1 0 108b499c091371ac1b55697ffd1fa72f
+
+% 0 1 0 171ae5ff1996d10a1022a82d6feab005
+
+% 0 1 0 1fb9b3a0c90f4fab040c86762d70866b
+
+% 0 1 0 015bbeb45db6004101ebb0807cd74f21
+
+% 0 1 0 0a5486d8ec3c877a1a4a3ff0814b0bec
+
+% 0 1 0 1d4f981a4e2d8daa03293be59959b303
+
+% 0 1 0 0907a92404fc6172136acd28753e18b9
+
+% 0 1 0 0d9de2ca8072fd111626fbd8c28ddc01
+
+% 0 1 0 18eafb32caed3dd50f976e787bd035ca
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 2 0 01235b7352e589cd0468d8e72909f328
++ [Record tipizzati da un XML Schema](../../soundness/modules/xml.md#typed-records-from-an-xml-schema)
++ spiega come si legge ogni costrutto di uno schema.

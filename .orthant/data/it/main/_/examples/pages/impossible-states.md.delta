@@ -1,0 +1,48 @@
+orthant 2 language
+
+@ 0 1 0 08d9f4acb66da56d02b99bacac13d0a4
++ # Una pagina deve avere un contenuto
+
+@ 0 2 0 18cab51504a25c80140026b930a14dbd
++ Una pagina è una classe che mescola le funzionalità che vuole. L'unica cosa che ogni pagina deve
++ fornire è il suo contenuto, e una pagina senza di esso è una classe con un membro astratto, che non
++ compila.
+
+% 0 1 0 12705ff5e291290d17fbc8389d59ef4a
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 0d489fc7be96580702e6286320bd536f
++   label Una testata, e niente sotto
+
+% 0 1 0 1477c34ff41c7c99183443e1d3238ae1
+
+% 1 1 0 0960c596329e4eb20a0b442aaa85c43a
+
+% 2 1 0 1556ad06aba8bec61b9a1d90b3fb5989
+
+% 0 1 0 0a0240ce71ec13260efcfb198047d480
+
+% 1 1 0 00827983215867281a7ad7c5eb74c364
+
+@ 0 2 0 0e7dcb992fc0e05f122fffc108dab37d
++   label Il contenuto fornito
++   highlight content  l'unico obbligo di una pagina
+
+% 1 1 0 1498c12f7a8c97e1116a1879e13578e1
+
+% 2 1 0 186d822b92f052db041aab5f2a2ec614
+
+% 0 1 0 074aa87d3e755d3e0375ee96a453ae16
+
+% 0 1 0 1d38eaca22303f030b1732b0b53185e2
+
+% 0 1 0 18eafb32caed3dd50f976e787bd035ca
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 2 0 1c6ddb04f69463f3090d6cc1ac7c8169
++ [Definire una pagina](../../soundness/modules/pages.md#defining-a-page) elenca le funzionalità e gli
++ slot che aggiungono.

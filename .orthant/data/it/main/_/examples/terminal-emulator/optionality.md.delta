@@ -1,0 +1,71 @@
+orthant 2 language
+
+@ 0 1 0 01edc0c266e2b900016a9d0a11bca56e
++ # Un testo che può non essere sullo schermo
+
+@ 0 3 0 17cf600b1c5f71f116f058bee2879c4e
++ `find` cerca un testo sullo schermo, e dà le celle che lo contengono. Il testo può non esserci,
++ quindi il risultato è opzionale, e non se ne può leggere uno stile finché non si è gestita
++ l'assenza.
+
+% 2 1 0 0c3ffd404a88bb200ab041cffa1f1b73
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 062e0a1bb0c8c16417f5128feeb9df90
++   label Lo stile di un testo che può mancare
+
+% 0 1 0 1477c34ff41c7c99183443e1d3238ae1
+
+% 1 1 0 0960c596329e4eb20a0b442aaa85c43a
+
+% 2 1 0 052b5d53c564213f191f74be413a911f
+
+% 4 1 0 08302a614a5facee004c8a85d1d7a4d2
+
+% 5 1 0 147ed9de5d1363a01e14b924d2e0ee9a
+
+% 0 1 0 07fdb5fa7ba995f204f7e10abae0d8cb
+
+% 1 1 0 1adb5abb9543dace1c3c6362639ed599
+
+@ 0 2 0 1a41577498d723e914d8656918f2e813
++   label Letto solo se è stato trovato
++   highlight let  si applica a un valore presente
+
+% 1 1 0 181928d63e721b821e5fec37000bf41c
+
+% 2 1 0 08c185b0c11b2a6b062a7f8ec156c757
+
+% 4 1 0 1b2f47ca7b1bd72a03b53d82a1b16d3f
+
+% 5 1 0 06476203f8391e7c18c1e3ea3c683398
+
+% 0 1 0 14c09fbbf4ff6553039941660ba84f89
+
+% 0 1 0 127b17f58034e7a7030ee42d72307528
+
+% 1 1 0 1c6e8c6147ccd4a6131703e1ed304098
+
+% 1 1 0 136d267ff733a60e0f6246170d49df5f
+
+% 2 1 0 1525a46c87e9e0571e7d21b8e7c42b7a
+
+% 0 1 0 08a86cbdc9b8cb0109ed8ce5b435ce67
+
+% 1 1 0 0cd6459499a6bd5203d659b3bcc1b6aa
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 0 1 0 05a9f70b606ba5611832da7192a76e8c
+
+% 0 1 0 1c4794afd66f81641a207e927de606ce
+
+% 1 1 0 06149a258cc2b55203db5a278ae93288
+
+@ 0 3 0 10b29859d9111d8f138298c0743a4ce6
++ [Ispezionare lo schermo](../../soundness/modules/terminal-emulator.md#inspecting-the-screen)
++ descrive ciò che una cella contiene, e [opzionalità](../../philosophy/optionality.md) le operazioni
++ su un valore che può mancare.

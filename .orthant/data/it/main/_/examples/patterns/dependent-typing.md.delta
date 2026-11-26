@@ -1,0 +1,78 @@
+orthant 2 language
+
+@ 0 1 0 09835b0ce151e1b1038e4e1c6c2f0eee
++ # Una cattura il cui tipo viene letto dal pattern
+
+@ 0 3 0 0051af0f9cd9801716d7c5b92992b618
++ Il tipo di una variabile legata segue da ciò che cattura. Un carattere è un `Char`, uno ripetuto è
++ una `List`, e uno opzionale è un `Optional`, così il modo in cui una cattura è scritta e il modo in
++ cui è usata non possono divergere.
+
+% 0 1 0 12705ff5e291290d17fbc8389d59ef4a
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 2 0 0973966267959e311774a64949bdd16a
++   label Una cifra
++   highlight Char  un carattere
+
+% 1 1 0 0ecc4e20e692f9710f55de923076c843
+
+% 2 1 0 1fa9212a32d9ee8f02c4dc3d8103099e
+
+% 0 1 0 1186d0b643f6a1d90c584701f121ac91
+
+% 0 1 0 0dc787e7444a7d4509bcd3a9f5306198
+
+% 1 1 0 04d564af5cd506de1f222660d607d54b
+
+@ 0 1 0 0069941831bad93617f6543a69b3e0fa
++   label Un quantificatore che la firma non ha seguito
+
+% 0 1 0 1477c34ff41c7c99183443e1d3238ae1
+
+% 1 1 0 0960c596329e4eb20a0b442aaa85c43a
+
+% 2 1 0 14f13987cdfde63c11abf48da88feca7
+
+% 1 1 0 0a259100e25eafc217d9f0f624a6087c
+
+% 0 1 0 01583c9956e2604f0453305d3fbadaa8
+
+% 1 1 0 1031036d321bc8ff0bfcea00b2ebd5fa
+
+@ 0 2 0 10eaa8846156e5c40fcc11419f053681
++   label Una o più cifre
++   highlight List[Char]  + lega una lista
+
+% 1 1 0 101a19d8db5d47b2035e00c1526b48c8
+
+% 0 1 0 07479f53db4a32e71a29b2ab321fa3b1
+
+% 1 1 0 01cb61794842c1ec0a14e2e175212f3e
+
+% 0 1 0 09143d4378cbf3e80e00e3d7bdee35a1
+
+% 1 1 0 0cd563b5593b859815e03f8315031575
+
+@ 0 2 0 192f2dfb549ca0af1ab6ef4fada72653
++   label Una cifra, o nessuna
++   highlight Optional[Char]  ? lega un valore opzionale
+
+% 1 1 0 0a30341792ab3dda185acee8c02539b4
+
+% 0 1 0 0fd2da724a4d80c10256f134061e1235
+
+% 0 1 0 0005b2c47c9c1b8c118596259f583735
+
+% 0 1 0 046d030074e2bc0d1324484424b32ec8
+
+% 0 1 0 18eafb32caed3dd50f976e787bd035ca
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 2 0 10e999920f07d86e17ba0e36a2adcd7b
++ [Caratteri e quantificatori](../../soundness/modules/patterns.md#characters-and-quantifiers)
++ presenta la tabella delle catture e dei loro tipi.

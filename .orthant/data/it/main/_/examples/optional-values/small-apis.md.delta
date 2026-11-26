@@ -1,0 +1,63 @@
+orthant 2 language
+
+@ 0 1 0 058dd582c39716e40427bb561a299934
++ # Un solo metodo per una funzione dell'uno o dell'altro tipo
+
+@ 0 3 0 037bddc20f3cb87e1e220ac5720146b9
++ Un `Option` richiede `map` per una funzione che dà un valore, e `flatMap` per una che dà un
++ `Option`. L'opzionalità è piatta, quindi `let` le prende entrambe, e il risultato è comunque un
++ valore opzionale.
+
+% 2 1 0 04cfced9a3eebf9d075915164c238faf
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 2 0 0a9fcd70ae37d0a81fd80e3bf518ca26
++   label Una funzione che dà sempre un valore
++   highlight let(_.upper)  come farebbe map
+
+% 1 1 0 1f38804005582d68160851d9df68f9de
+
+% 1 1 0 0f046daebee2c3fb16cf8c6bc9a0d02b
+
+% 2 1 0 1a12b3929cb9c2910a03511418032db0
+
+% 1 1 0 08060a931f2cf924130653fe84a97cc5
+
+@ 0 2 0 110997d9c7b836140d1487a9d87107d0
++   label Una funzione che può non darne nessuno
++   highlight let(initial)  come farebbe flatMap, senza un secondo livello
+
+% 1 1 0 140937d50607e2ab199db564b14b32b0
+
+% 0 1 0 0a9b0a737708b8f0041141c717bb03d1
+
+% 1 1 0 13d9facc758fbd911b197676a4f53887
+
+% 2 1 0 07c241307688daf51f775e50c9e66034
+
+% 0 1 0 1da5e939e0cfa8911619d0824c3dcbcb
+
+% 1 1 0 0e9ad44ef1574c61073153e82fdfdf65
+
+% 1 1 0 136d267ff733a60e0f6246170d49df5f
+
+% 2 1 0 1525a46c87e9e0571e7d21b8e7c42b7a
+
+% 0 1 0 08a86cbdc9b8cb0109ed8ce5b435ce67
+
+% 1 1 0 0cd6459499a6bd5203d659b3bcc1b6aa
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 0 1 0 04184424cb849ad716f2757ac7bc7aeb
+
+% 0 1 0 07d651695c540a1c1581b786b0eed806
+
+% 1 1 0 1bff92a9b3259ad208cbf6fe5664627a
+
+@ 0 2 0 02070be7cf6b03dc0f9ecbdadc26281f
++ [Trasformare](../../soundness/modules/optional-values.md#transforming) contiene `lay`, che gestisce
++ entrambi i casi insieme.

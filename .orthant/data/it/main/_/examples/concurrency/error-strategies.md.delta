@@ -1,0 +1,76 @@
+orthant 2 language
+
+@ 0 1 0 1055fc688c12b6a317355e9ec8fd75c9
++ # Quando i tentativi si esauriscono
+
+@ 0 3 0 0fd065bcd5f921af0d4b3f61f525d8b3
++ `retry` ritenta un blocco secondo una pianificazione, e solleva un `Tenacity.Error` quando la
++ pianificazione è esaurita. Che cosa ciò significhi spetta al codice circostante dirlo, e ogni
++ risposta dà al metodo un tipo diverso.
+
+% 0 1 0 12705ff5e291290d17fbc8389d59ef4a
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+@ 0 2 0 0aef14df92ad53b11e0845bb7917ced4
++ alternative Un valore assente
++   highlight safely  cinque fallimenti sono un valore assente
+
+% 1 1 0 1b17a1e1737927f51a45ae7904f94c41
+
+% 2 1 0 0b995b4f265ee9030d268ccde3215307
+
+% 4 1 0 1e622d10c6042e32177128aae82c2832
+
+% 0 1 0 1668c95a703ed4db1ce0a163a434dbf2
+
+% 1 1 0 1125a14b5b2d001c140f50a3789f05b3
+
+% 2 1 0 1baf426579ff61af03ed22213032f490
+
+@ 0 2 0 064ea32af7d3da5c0e71bb20d57c7428
++ alternative Un sostituto
++   highlight recover  cinque fallimenti sono un'altra risposta
+
+% 1 1 0 12f15b4e3ea3e22e00ec80e2fe8dc257
+
+% 2 1 0 137cefa4425a6d761880dbde77e9456a
+
+% 4 1 0 0ab04a935a3e8b4211cc4d9413a1b4a8
+
+% 0 1 0 0276417a64d4e5311af80473356fab33
+
+% 0 1 0 1ffe5c415422113702a4a9b03386f84a
+
+% 0 1 0 1b4e9e613fc1a72c0bc375d46ce7ea70
+
+% 0 1 0 10668dddf3dbacb90364827279b84605
+
+% 0 1 0 133fcd73cba62d4c0501234091d1d882
+
+% 0 1 0 0b13c356b85d4c5d109a5169b9b5226c
+
+@ 0 2 0 00e04b2cb332dde01c8c24ecb134d11b
++ alternative La decisione del chiamante
++   highlight raises  cinque fallimenti spettano al chiamante
+
+% 1 1 0 0c6729750817ab6604c9c5a3e895ea8c
+
+% 2 1 0 178e56b90d3e15ba1c117c6273e8a7c7
+
+% 4 1 0 1a8f3856f4bf72cf14c142b1c497a2f2
+
+% 0 1 0 1723afafa4641ce218e7a1bad6b9dd88
+
+% 1 1 0 1c681cc300b21efa1f8ca2b462bac58a
+
+% 2 1 0 1dcfd14836a3e8320efa298d01972576
+
+% 0 1 0 18eafb32caed3dd50f976e787bd035ca
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 3 0 113a51fbb1d2a57e096973ce970deff9
++ L'esempio viene compilato, ma non eseguito.
++ [Ritentare](../../soundness/modules/concurrency.md#retrying) descrive le pianificazioni, e
++ [scegliere una strategia](../../soundness/modules/errors.md#choosing-a-strategy) le risposte.

@@ -1,0 +1,64 @@
+orthant 2 language
+
+@ 0 1 0 1e2b3b17504d260a16fd8951dc1e8338
++ # Le intestazioni sono argomenti con nome
+
+@ 0 3 0 005aedac84de769c0d97ad94daac5c98
++ Un'intestazione di richiesta si scrive come argomento con nome di `fetch`, con il nome
++ dell'intestazione in camel case. I nomi sono quelli di intestazioni reali, e ciascuno prende un
++ valore del tipo che quell'intestazione trasporta.
+
+% 0 1 0 12705ff5e291290d17fbc8389d59ef4a
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 0f9f8cf98d4a42f406daaafa0a5c15f7
++   label Una richiesta senza intestazioni
+
+% 1 1 0 013b61e39006a2191bc9cd0a177e9492
+
+% 2 1 0 14332f2959cd33c71b444284e0fd241c
+
+% 3 1 0 1373985a171047a71f27715712bfdbda
+
+% 0 1 0 117d3168741831ab13a1dc69f5919fcd
+
+% 1 1 0 0e9b86c9a5a1aaa61dc912a511e64a55
+
+@ 0 2 0 0bce386ed38bf2880e02006ca55236b9
++   label Un'intestazione
++   highlight accept  l'intestazione Accept
+
+% 1 1 0 1dc733915c9de3731e60a377819915d6
+
+% 2 1 0 13cc2d81642f101f10749a2a4d0c426c
+
+% 3 1 0 0306bebf0d99a35f0b35553e9f56a780
+
+% 0 1 0 1ab5de8a7c75bf8c0bfa16dd7aa20cb0
+
+% 1 1 0 16ceb1827b5c0f191e71ec424151c719
+
+@ 0 2 0 046ca73ab521b0500f2802ccb7949d49
++   label Due intestazioni
++   highlight userAgent  l'intestazione User-Agent
+
+% 1 1 0 1ea9f71175946bc6181f4e38698f4e6d
+
+% 2 1 0 199d641b9a7f6352132291e4227a3eab
+
+% 3 1 0 0756424c5e09323e17d6722faacba09f
+
+% 0 1 0 130ceb77d1770a0a0a2b1570449685cd
+
+% 0 1 0 1c83a420b179d71c18ce6cb13c4f6861
+
+% 0 1 0 18eafb32caed3dd50f976e787bd035ca
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 2 0 05701694a83315831394bca86f393c39
++ L'esempio viene compilato, ma non eseguito, perché richiede la rete. [Le
++ intestazioni](../../soundness/modules/http-client.md#headers) ne dice di più.

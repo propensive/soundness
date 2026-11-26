@@ -1,0 +1,62 @@
+orthant 2 language
+
+@ 0 1 0 1febd76d25afde751b0c5ae33f6005a4
++ # Un asse reso logaritmico da un given
+
+@ 0 3 0 195e9df9f48d9a1603a4bb4f399d9efa
++ Il modo in cui i dati vengono adattati a un asse è una `Calibration`, trovata in base al tipo dei
++ valori su quell'asse. La chiamata che crea il grafico non la menziona, quindi la stessa chiamata in
++ un altro ambito dà un altro grafico.
+
+% 2 1 0 1d9d7528fc48013d0a0add8a5aef5c6e
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 071e3582e4aae38a1832fff0cb797570
++   label L'adattamento predefinito è lineare
+
+% 1 1 0 1cdbdfa0f46fdc1611f7af6b45c9f7f5
+
+% 2 1 0 06377122c036d23817e06c6c46cc6144
+
+% 1 1 0 139e82e1dac77d95022d091b7ed4c214
+
+% 2 1 0 0180a6a820e29d43074073577d0a2b5c
+
+% 1 1 0 06e1a39198990ebd0572d841ee747125
+
+@ 0 2 0 02cda68d8f84148d01164e6d5f2483a5
++   label Una calibrazione nell'ambito
++   highlight calibrations.logarithmicCalibration  per ogni asse di `Int` in questo ambito
+
+% 1 1 0 1edb2be3cc7047341a08e7b828929726
+
+% 2 1 0 1925b3075fcc70740cc88e3930af4430
+
+% 0 1 0 0ad5b753e4047aa10226236f0a92fcb5
+
+% 1 1 0 0a62fb636159c1fe0410152005103c82
+
+% 2 1 0 1c1e5086d1e9ee9f01132ada5a6472f9
+
+% 1 1 0 0b21e6d3a562179a00e84b5090af6315
+
+% 1 1 0 136d267ff733a60e0f6246170d49df5f
+
+% 2 1 0 1525a46c87e9e0571e7d21b8e7c42b7a
+
+% 0 1 0 08a86cbdc9b8cb0109ed8ce5b435ce67
+
+% 1 1 0 0cd6459499a6bd5203d659b3bcc1b6aa
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 0 1 0 0a41424351875c1e137f827adef154d2
+
+% 1 1 0 1fc2e362b6fe5f87038ab7d80b4c7a52
+
+@ 0 3 0 1e8d3b5d953ba0f8082b8e8463498a8f
++ [Adattamento](../../soundness/modules/charts.md#fitting) elenca le calibrazioni, e [contesto
++ dichiarativo](../../philosophy/declarative-context.md) dice perché la scelta non è un argomento.

@@ -1,0 +1,49 @@
+orthant 2 language
+
+@ 0 1 0 154670ea8a5c3f7306007a4575690320
++ # I casi di un'enumerazione come categorie
+
+@ 0 3 0 1d864469f757fe881f0b74d31ede022f
++ Un asse di categorie non ha bisogno di una lista delle sue etichette. Un'enumerazione è categoriale
++ perché il compilatore ne conosce i casi, quindi una serie indicizzata da una di esse viene disegnata
++ a barre, e un valore che non è un caso non può essere tracciato.
+
+% 0 1 0 12705ff5e291290d17fbc8389d59ef4a
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 18e54c6705cf50260edeb56208a65042
++   label Categorie come testo
+
+% 1 1 0 0d521d1aa2bae94610f9c80a3968d660
+
+% 0 1 0 065fc58b3112e3471f3d81bc39f3637a
+
+% 2 1 0 09d0ed2ea6fdf533125f8a947952d950
+
+% 1 1 0 078cfefdcc25410713a299ab5a3ac82f
+
+@ 0 2 0 1b6e8b5a862fc0d005863bedaede9c21
++   label Categorie come enumerazione
++   highlight Genre.Comedy  un caso, che non può essere scritto male
+
+% 1 1 0 185f6914a3826a5917c66236fac0e268
+
+% 0 1 0 01291941c519e1cc08ed0402368c2bd7
+
+% 0 1 0 1ca71a30243db4c91987b20735353126
+
+% 0 1 0 0d629b7f16e9948f0da91b23f005b0e5
+
+% 0 1 0 0b31cc068a99b39a16fa01f4890d85e3
+
+% 2 1 0 06abb7a54c8c00e404e2fb954228d293
+
+% 0 1 0 18eafb32caed3dd50f976e787bd035ca
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 2 0 0c750ff7571c7e35106bca7e07bb8c87
++ [Serie](../../soundness/modules/charts.md#series) dice quali tipi sono categoriali e quali continui.

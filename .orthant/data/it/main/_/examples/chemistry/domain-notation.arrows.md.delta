@@ -1,0 +1,78 @@
+orthant 2 language
+
+@ 0 1 0 04762fe90e93c7100537510901cdce4d
++ # Una freccia che dice di che reazione si tratta
+
+@ 0 2 0 04405cee5657b72802ba8ba9e05ff201
++ Le frecce di un chimico significano cose diverse, e ciascuna è un operatore a sé. L'equazione
++ conserva la freccia con cui è stata scritta, e la mostra.
+
+% 2 1 0 081695bc43ae05731bbb81c32c377cba
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 2 0 1fd8ebae0722370a00cec8b898ebfe2a
++   label Una reazione che procede in avanti
++   highlight -->  una reazione netta in avanti
+
+% 1 1 0 1cb68d8173165e11197718c5f0152376
+
+% 2 1 0 0436065b38bd8e1c02d61d8058b29aab
+
+% 4 1 0 1000295821718a68068b67bfbb474bad
+
+% 1 1 0 084dd71fcf5b5179059a18a919212bcc
+
+@ 0 2 0 1f9739625a57a58d10c732774a0f150d
++   label Una che procede in entrambi i sensi
++   highlight <=>  entrambi i sensi
+
+% 1 1 0 1b4b6fab2616585b0ee7400f4d1d7e95
+
+% 2 1 0 1b34910dcfd26465015d0c4b8a6f47a2
+
+% 4 1 0 09ced2eefbbd49f1120e80f4c064fd51
+
+% 5 1 0 176bd95e096848ae1acddd16748c0aeb
+
+% 1 1 0 0537af18a9c517dd13ee91af9fdf53e7
+
+@ 0 2 0 01485667b9a7325a07645a571e33eb17
++   label Una all'equilibrio
++   highlight <~>  un equilibrio
+
+% 1 1 0 0be33067ce1e165a0900bc349d1d16af
+
+% 2 1 0 19176c59926883fe0ff3a3022f503ae4
+
+% 4 1 0 1bd57ed346eedb020676e5e4bbcb4652
+
+% 5 1 0 0ac3dc823df51f2a195f6b27960e4d45
+
+% 0 1 0 1c32d32f2200c37d10f6da7d73fbff01
+
+% 1 1 0 192b9d8b565beda4142fef5189abdff5
+
+% 1 1 0 136d267ff733a60e0f6246170d49df5f
+
+% 2 1 0 1525a46c87e9e0571e7d21b8e7c42b7a
+
+% 0 1 0 08a86cbdc9b8cb0109ed8ce5b435ce67
+
+% 1 1 0 0cd6459499a6bd5203d659b3bcc1b6aa
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 0 1 0 057c2311ab3a57c9051e1bfeb6807009
+
+% 0 1 0 191d808985c6161f131a727e2523423a
+
+% 0 1 0 1cc72505064e1d7012a66319938729ab
+
+% 1 1 0 1c1d0029e7a96f000689cb1309ed742d
+
+@ 0 2 0 00b69829c01934e1023c1b0af20efbf2
++ [Le frecce di reazione](../../soundness/modules/chemistry.md#the-reaction-arrows) le elenca tutte e
++ cinque.

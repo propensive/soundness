@@ -1,0 +1,48 @@
+orthant 2 language
+
+@ 0 1 0 0baa0ac13a1a5e7a178680c5842a2a8f
++ # A che profondità si trova un nodo
+
+@ 0 2 0 0834e8eb2e806530131166fe01fdf3a3
++ `layered` dispone un grafo a strati per disegnarlo, e un ordinamento per ranghi decide lo strato di
++ ogni nodo. L'ordinamento non è un argomento. Lo sceglie un import, per ogni stratificazione nel suo
++ ambito.
+
+% 0 1 0 12705ff5e291290d17fbc8389d59ef4a
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+@ 0 1 0 1a30e411687f5ff500c790e93ca99045
++ alternative Il cammino più lungo
+
+% 1 1 0 18aea64c1d0bc1a10db99c63ef82c40a
+
+% 2 1 0 0bff94f86b1ee5ce0c0b1669660eee2d
+
+% 2 1 0 0a0c95250702c9940ae49c04f7c1048d
+
+% 3 1 0 1680ca02fc1e6b8e1c344f9f2d813404
+
+@ 0 2 0 11c5a2d2d67258aa06bf94fa9b9015d2
++ alternative Bilanciato
++   highlight balancedRanking  per ogni stratificazione in questo ambito
+
+% 1 1 0 07032f9e892544b41ec2480774f960d4
+
+% 2 1 0 11f932ef95952d071125789c9a8e0c22
+
+% 0 1 0 107cd6b5f8c4da6e0877fca1d99c87f5
+
+% 2 1 0 14ba7838ad2056a505b61656753f3a3e
+
+% 3 1 0 1cc938fff90247750a473a5819826935
+
+% 0 1 0 18eafb32caed3dd50f976e787bd035ca
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 4 0 1176367343631c1911beeb74299d9014
++ Il nodo 5 non dipende da nulla, quindi per default si trova nel primo strato. Con l'ordinamento
++ bilanciato scende nello strato sopra il nodo 3, l'unico nodo che dipende da esso.
++ [Stratificazione](../../soundness/modules/graphs.md#layering) spiega entrambi, e il [contesto
++ dichiarativo](../../philosophy/declarative-context.md) l'import.

@@ -1,0 +1,64 @@
+orthant 2 language
+
+@ 0 1 0 179067f53d74854d02c57c65262db992
++ # Una risposta si legge prima che la sua connessione si chiuda
+
+@ 0 4 0 13f98ec1715b78ad07ac403347468c39
++ `session` presta una connessione a un blocco, e la chiude quando il blocco finisce. Il lato di
++ lettura della connessione è un flusso che attinge dal socket, quindi restituirlo lascerebbe al
++ chiamante un flusso su un socket chiuso. Svuotarlo con `memoize` dà byte che non dipendono più da
++ nulla.
+
+% 0 1 0 12705ff5e291290d17fbc8389d59ef4a
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 0 1 0 05379442125b483c0fa7601737add2cc
+
+% 1 1 0 01df03af649144fc135e9cf4a153349c
+
+@ 0 1 0 026fd72b0c08596b1c7b20b0b0329e03
++   label Un flusso che verrebbe letto dopo la chiusura del socket
+
+% 0 1 0 1477c34ff41c7c99183443e1d3238ae1
+
+% 0 1 0 1b4981ed60dd3699018cd71a107c698f
+
+% 1 1 0 189e139497facabd1ff16b8aa9d121fc
+
+% 2 1 0 027994aa298659cd0b612e6701253222
+
+% 3 1 0 085d1016f10905b4160c677d6bb4b1ef
+
+% 0 1 0 026f00455eb9e28204aa82f5cfe00090
+
+% 1 1 0 0ce879c20eb131dc187bbb3c4dd0fefb
+
+% 0 1 0 06c1daad5de3ad9609bad92d246f8735
+
+% 1 1 0 1c14669d13758cff085c331f2e875a8a
+
+@ 0 1 0 0f9104e2c73ffec712094637112c7be7
++   label La risposta, letta in memoria dentro il blocco
+
+% 0 1 0 17625fc49e7734f210f3c39207fb615d
+
+% 1 1 0 038fad54fedce15e1ad5af48b26f722c
+
+% 2 1 0 0029cc587be69d2c0f963a74e16bac1a
+
+% 3 1 0 1c3b5727b823a61517190ee94babcdfd
+
+% 0 1 0 0085067d6e8372c61725de3d168e41a0
+
+% 1 1 0 1fd1954536d87972047c0da64b0f329a
+
+% 0 1 0 0125fe3b3b346cf70d3e8fb501c92fff
+
+% 0 1 0 18eafb32caed3dd50f976e787bd035ca
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 2 0 19c9033778bf740e01320a76135b4506
++ L'esempio viene compilato, ma non eseguito, poiché aprirebbe una connessione.
++ [Sessioni](../../soundness/modules/sockets.md#sessions) descrive l'ambito.

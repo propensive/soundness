@@ -1,0 +1,60 @@
+orthant 2 language
+
+@ 0 1 0 0d849139e48b3dd51311f1bb938fb21b
++ # Un digest che non dipende dai chunk
+
+@ 0 2 0 01a942ad23e0cff20c451fd1294a6c06
++ I dati troppo grandi per essere trattenuti vengono sottoposti a hash mentre passano. `checksum`
++ accumula sui chunk di un flusso, quindi il risultato è il digest dell'intero, qualunque sia la
++ dimensione dei chunk in arrivo.
+
+% 2 1 0 0357699593fe398901d2329d1f5d0d45
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 17f9cfe7c7c42e6e0942e5891503af3f
++   label Un valore, sottoposto a hash per intero
+
+% 1 1 0 0ac0dbafae2335a41e6e26864e6d7420
+
+% 2 1 0 06600d295c50269e0d73136491943ad6
+
+% 4 1 0 198a56d552fdaae01379de869ec52b2e
+
+% 1 1 0 0e62327a32b7a59007fcbaf2268d198f
+
+@ 0 2 0 1f05fa612053167c05194454d267542b
++   label Gli stessi byte, in tre chunk
++   highlight checksum[Sha2[256]]  accumulato sui chunk
+
+% 1 1 0 10eee65b451f991912f3a4ca37f8e23e
+
+% 2 1 0 0ec019d379d8b8b218ed31a5209419aa
+
+% 4 1 0 10ee9776ff7441ca1083be82cf428e09
+
+% 0 1 0 0f556ea5641fbdef00cfebd6e16b99ad
+
+% 0 1 0 16c67860e76c253c04b42dcda6a2be1b
+
+% 1 1 0 06f4d525dd87a97101f2b1fd830a1f55
+
+% 1 1 0 136d267ff733a60e0f6246170d49df5f
+
+% 2 1 0 1525a46c87e9e0571e7d21b8e7c42b7a
+
+% 0 1 0 08a86cbdc9b8cb0109ed8ce5b435ce67
+
+% 1 1 0 0cd6459499a6bd5203d659b3bcc1b6aa
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 0 1 0 18be1444d43772250bce289d489a5677
+
+% 1 1 0 1a8569388f5d26a0053e9e299a4b46c4
+
+@ 0 2 0 00b7db2e1f0722171866710be011dbbf
++ [Hash di un flusso](../../soundness/modules/hashing.md#hashing-a-stream) applica lo stesso metodo a
++ un file e a una directory.

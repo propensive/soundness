@@ -1,0 +1,52 @@
+orthant 2 language
+
+@ 0 1 0 0b9544246efa6b0d175a04b0407be1b6
++ # Un metodo invia ogni tipo di messaggio
+
+@ 0 3 0 0f5e50f36bc8577f0e301c9cc6326c34
++ Una riga di testo si invia con `send`, e così un `Email` composto con un allegato. La busta è fatta
++ degli stessi parametri ogni volta, e la struttura MIME segue da ciò che il messaggio contiene.
+
+% 0 1 0 12705ff5e291290d17fbc8389d59ef4a
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+@ 0 1 0 083794e3931fa713149a03e3ba762095
++ alternative Testo
+
+% 1 1 0 1111b2ba7530650f1f03186cc64a0188
+
+% 2 1 0 024ffd5a91c7a49a05586921c8c80aeb
+
+% 3 1 0 0d17a13cf92d5e15080c894c118fe7f0
+
+% 2 1 0 030678433d4886cc022acf65139c6887
+
+% 0 1 0 06ca0ca2075de2a216a54fd198b5541b
+
+@ 0 1 0 07dc41db6d0bc43c14b10361451773f6
++ alternative Un'email con un allegato
+
+% 0 1 0 17a67c9803f3063c0fbc8a208e1d4690
+
+% 1 1 0 1bf2572089da8bd51ef654542a62cabf
+
+% 2 1 0 1a6cdd3f743f608f0fa65a20ce5506e7
+
+% 3 1 0 1a824cf7ba2506b117f413faf42d7474
+
+% 0 1 0 096cb9772833cc4708b757e9ef0a36d3
+
+% 2 1 0 0e4f1eb82670bb8c0bce8e77b00be9f5
+
+% 0 1 0 1310d3bcbdd36f01073c96688f67ce87
+
+% 0 1 0 045da720928db67013a7549cccb4b934
+
+% 0 1 0 18eafb32caed3dd50f976e787bd035ca
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 2 0 17b4b25f9274218f041769eaab7ab5fc
++ [Comporre](../../soundness/modules/email.md#composing) presenta la tabella dei tipi di contenuto, e
++ [API ridotte](../../philosophy/small-apis.md) l'idea.

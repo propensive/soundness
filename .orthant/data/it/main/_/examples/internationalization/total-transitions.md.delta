@@ -1,0 +1,42 @@
+orthant 2 language
+
+@ 0 1 0 03b993713252eddd140f4e3f1d0212ca
++ # Ogni lingua, o non compila
+
+@ 0 3 0 056d9cfa5196e1d00ca9401c3aa4de44
++ Un valore `Polyglot` registra nel suo tipo le lingue in cui è stato scritto. Dove sono richiesti
++ sia l'inglese sia il francese, un valore con il solo inglese non basta, e la traduzione mancante
++ la trova il compilatore e non un lettore francese.
+
+% 0 1 0 12705ff5e291290d17fbc8389d59ef4a
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 13f4c1a8d18716c81c3fac2847dcea1d
++   label Solo inglese
+
+% 0 1 0 1477c34ff41c7c99183443e1d3238ae1
+
+% 1 1 0 0960c596329e4eb20a0b442aaa85c43a
+
+% 0 1 0 1590b5185c263a6a196bbe7e58cd5a9e
+
+% 1 1 0 00181fb66d4e62e80ad4f3fded693fe9
+
+@ 0 2 0 0c02770a9f4709b609f3463b7adf88ed
++   label Inglese e francese
++   highlight fr(t"Bonjour")  il francese, che il tipo richiede
+
+% 1 1 0 100f985698abe1a00562101ab1b40b1a
+
+% 0 1 0 0771a8da371f47f207a4a183aa5c8189
+
+% 0 1 0 18eafb32caed3dd50f976e787bd035ca
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 2 0 01f7c0d5b8d7ddcb134b34c893d8148a
++ [Fornire le traduzioni](../../soundness/modules/internationalization.md#providing-translations)
++ prosegue scegliendone una in base al locale.

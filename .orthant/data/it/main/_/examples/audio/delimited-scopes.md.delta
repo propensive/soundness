@@ -1,0 +1,51 @@
+orthant 2 language
+
+@ 0 1 0 0d6000cfe6a42b5118de22486d6e611c
++ # Una linea tenuta per un solo blocco
+
+@ 0 3 0 17719aeba4fbb1ea0b32ba472ebf6d45
++ Un dispositivo di uscita viene aperto come linea per la durata di un blocco, e rilasciato quando il
++ blocco termina. Riprodurre attraverso la linea richiede il permesso `Write`, quindi una linea aperta
++ in lettura non può essere usata per la riproduzione.
+
+% 0 1 0 12705ff5e291290d17fbc8389d59ef4a
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 171568552d05bfbd1447b4e4a9b9a236
++   label Una linea aperta in lettura
+
+% 0 1 0 1477c34ff41c7c99183443e1d3238ae1
+
+% 1 1 0 0960c596329e4eb20a0b442aaa85c43a
+
+% 2 1 0 0ba498857de84be61ca0f4f30a38aa16
+
+% 0 1 0 188e59505a907b4e0799f531a6c880fd
+
+% 1 1 0 11bf0fbfeab00ca90d8402f38ee241a6
+
+% 1 1 0 0be220fa1508cdff09d06629fbbf0c98
+
+@ 0 2 0 06d01a65dd7125e3101852a7c7dff77d
++   label Una linea aperta in scrittura
++   highlight Write  il permesso che `play` richiede
+
+% 1 1 0 0d9e043003f5e7f30d4110629c212499
+
+% 2 1 0 196d66a37b5a56660c9bdaef037f31cb
+
+% 0 1 0 0e87ce67f66c12720cf95aaf633e7b38
+
+% 1 1 0 08b1ee58f36f7e4f0ed27afc1b219438
+
+% 0 1 0 18eafb32caed3dd50f976e787bd035ca
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 3 0 1434d39c4ffe3a94134a10bba867e732
++ L'esempio viene compilato, ma non eseguito, perché ha bisogno di un dispositivo audio. [Linee con
++ ambito](../../soundness/modules/audio.md#scoped-lines) descrive i flag di una linea, e [ambiti
++ delimitati](../../philosophy/delimited-scopes.md) lo schema.

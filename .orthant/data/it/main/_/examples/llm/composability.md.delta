@@ -1,0 +1,53 @@
+orthant 2 language
+
+@ 0 1 0 194b44049e4e5ec2121043f6cc2885d0
++ # Un'immagine in una domanda, nominata da un URL
+
+@ 0 4 0 14bd85e1db2cbdce196a47c3f3abf92f
++ Un messaggio è un ruolo e una lista di contenuti, e un'immagine è un tipo di contenuto. Il luogo in
++ cui si trova l'immagine è un URL, come lo descrive [indirizzi di
++ rete](../../soundness/modules/network-addresses.md#urls): verificato durante la compilazione, senza
++ nulla tra le due librerie per convertirlo.
+
+% 0 1 0 12705ff5e291290d17fbc8389d59ef4a
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 0e5e01f646ea3127074da9334a79c33b
++   label Una domanda a parole
+
+% 1 1 0 020bf2ff8ef978ec0849963fb12c9581
+
+% 0 1 0 065b03c723ac2e040ae6a5ed192ae292
+
+% 1 1 0 1d9cd4a0eb60a75f14c0c6f1dd193bff
+
+@ 0 2 0 05ad5a2283e498680554e7087c89b9aa
++   label La stessa domanda, con un'immagine
++   highlight url"https://example.com/yorick.png"  un URL verificato, usato così com'è
+
+% 0 1 0 0a0deb7941ddf8a50daeecf5cd63d9cd
+
+% 1 1 0 121d75a57da2fbaa05c6421c614968ee
+
+% 0 1 0 061b8a0c981679d903085648f8f95420
+
+% 0 1 0 1e2662303c3d4356085c206e7d1c67b7
+
+% 0 1 0 09f52cc11c8467c10f3d885a12ab3805
+
+% 0 1 0 03b6f43130e34f0f1c52b501699474a7
+
+% 0 1 0 04d6a449e0a4674f0d3e8249157cdce2
+
+% 0 1 0 14b6d9841f7b10f00c92b1cfd524e575
+
+% 0 1 0 18eafb32caed3dd50f976e787bd035ca
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 2 0 1663db269c71a56b01dc8ca91fa378e6
++ [Messaggi e contenuti](../../soundness/modules/llm.md#messages-and-content) elenca i tipi di
++ contenuto, e [componibilità](../../philosophy/composability.md) l'idea.

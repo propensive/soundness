@@ -1,0 +1,45 @@
+orthant 2 language
+
+@ 0 1 0 1ed7b4985c9280c707d063cc0c0ca199
++ # Una data che il calendario non ha
+
+@ 0 2 0 0421a23b4d7b226b1d4d2f80aa3fe668
++ Una data si scrive come la si scriverebbe su carta, ed è un'espressione Scala ordinaria che il
++ compilatore verifica rispetto al calendario. Il 2011 non ebbe un 29 febbraio.
+
+% 0 1 0 12705ff5e291290d17fbc8389d59ef4a
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 0c42d68a585a87c2009a8017914dddec
++   label Non un anno bisestile
+
+% 0 1 0 1477c34ff41c7c99183443e1d3238ae1
+
+% 1 1 0 0960c596329e4eb20a0b442aaa85c43a
+
+% 2 1 0 1813ff25c8f61a1e126d7c4dd24952e7
+
+% 0 1 0 12504d830369d840106062f9b52e2b67
+
+% 1 1 0 0c96e1509857f9c50f128e43733fe535
+
+@ 0 2 0 02c9cfeaaf0bd06007e65df09b6f4f3b
++   label Un anno bisestile
++   highlight 2012-Feb-29  una `Date`, non un testo da analizzare
+
+% 1 1 0 045cb34b374c957e06ada8bc05b68cac
+
+% 2 1 0 099eac909772f2c80873621fe2a2a91f
+
+% 0 1 0 160dbeeb60c58af31d2c8e0834883dd1
+
+% 0 1 0 18eafb32caed3dd50f976e787bd035ca
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 2 0 0f957aa26ae2b839063e4458fa5a8133
++ Il calendario è una scelta, fatta dall'import. [Date](../../soundness/modules/time.md#dates)
++ descrive il resto della notazione.

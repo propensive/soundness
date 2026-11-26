@@ -1,0 +1,58 @@
+orthant 2 language
+
+@ 0 1 0 15f702f5b63cef431a39f2650bdcaf31
++ # Un grafo, come lo legge Graphviz
+
+@ 0 3 0 09d95314a8c5dad00a0f91297eeea12b
++ Un `Dag` di testo è un grafo, e DOT è un linguaggio per i grafi. `dot` dà l'uno come valore
++ dell'altro, che viene serializzato come qualsiasi altro documento, e nessuna riga di DOT viene
++ scritta a mano.
+
+% 2 1 0 19beda506502e5480a55c1b30cf91104
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 03964d1d2bc3fa0903332a1b5ed1a32b
++   label Un grafo
+
+% 1 1 0 0d6e852c2697f1f002e560bfd76bd8bd
+
+% 2 1 0 0cc65f371dcd369c03199d03952320a7
+
+% 4 1 0 1f932532449c98de09a1dd0bc0d48394
+
+% 1 1 0 1038a454ffb72054099e4da34448bb4b
+
+@ 0 2 0 1d5f6f6f71b6b41117af2fba428d344c
++   label Lo stesso grafo, come DOT
++   highlight court.dot  un documento DOT, come valore
+
+% 1 1 0 075ef416feae4ce4013cbf0c1333cec2
+
+% 2 1 0 1e80ff195faa1d851f6e27e6c0719634
+
+% 4 1 0 1439f3bc656d90af17e10691e06f5de3
+
+% 0 1 0 17470e745f6a01b404d8e5f2bf361314
+
+% 1 1 0 18b16da84de8048c067b3538cb2d75e1
+
+% 1 1 0 136d267ff733a60e0f6246170d49df5f
+
+% 2 1 0 1525a46c87e9e0571e7d21b8e7c42b7a
+
+% 0 1 0 08a86cbdc9b8cb0109ed8ce5b435ce67
+
+% 1 1 0 0cd6459499a6bd5203d659b3bcc1b6aa
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 0 1 0 15fc8b7327257a3c1d9428fbb3a47e90
+
+% 1 1 0 1cfbdc8de4583967120870a86462e722
+
+@ 0 2 0 02c3a372d538bfde0c55e96b4d170b82
++ [Disegno](../../soundness/modules/graphs.md#drawing) contiene gli altri modi di disegnare un grafo,
++ e la [componibilità](../../philosophy/composability.md) il motivo per cui si combinano.

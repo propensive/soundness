@@ -1,0 +1,74 @@
+orthant 2 language
+
+@ 0 1 0 1c35c9df340952cf151de23deb2e6569
++ # Un grafo ceduto non si può cambiare alle spalle del suo proprietario
+
+@ 0 3 0 1944153a0ddf426a1dc4eb87c3a2cb82
++ `Dag(topology)` consuma la topologia che riceve: il nuovo `Dag` ne rileva la memoria, senza copia.
++ Se il vecchio nome fosse ancora utilizzabile, una modifica attraverso di esso cambierebbe un valore
++ che dovrebbe essere immutabile. Il controllo di separazione traccia il trasferimento, e rifiuta
++ qualsiasi uso successivo del nome.
+
+% 0 1 0 12705ff5e291290d17fbc8389d59ef4a
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 0 1 0 05379442125b483c0fa7601737add2cc
+
+% 0 1 0 1690da98c5827aee1dc24530fb9e7cf5
+
+% 1 1 0 142722dbd2f6f75102f02756f52dd53b
+
+@ 0 1 0 1a799f7acb4fb3df1da5732358418bbf
++   label Una modifica attraverso un nome già consumato
+
+% 0 1 0 1477c34ff41c7c99183443e1d3238ae1
+
+% 0 1 0 19f6b9f23a4a854b00a9c67e7895d807
+
+% 0 1 0 0fd2ac3797a0477d02117fa7e01a94b3
+
+% 1 1 0 0831db4166dd7587114b3740732b8e38
+
+% 2 1 0 071ed999aba4ac1201b2510f686eef20
+
+% 4 1 0 1f51b32096e3c706020b706095e16799
+
+% 5 1 0 067e95def645c58211439a97f521a549
+
+% 6 1 0 05fc155d2a7cdeb200f0b70d968f68a4
+
+% 0 1 0 065dfbb224e32633038e87b5f60cd78f
+
+% 1 1 0 1d814b10d4bdba291be2c09dbc95c850
+
+% 0 1 0 0126cf131946964c01bc20350a025eed
+
+% 1 1 0 02d0651f151bb1d30dec370a31e20fed
+
+@ 0 1 0 08a1d208df116c2f0bdafa63e86751a8
++   label Le modifiche concluse prima del trasferimento
+
+% 0 1 0 04d1184d398dd42615e561891d3b80e0
+
+% 1 1 0 0ed7b719753e401a174d596097beddb3
+
+% 2 1 0 13a0f7c56d85cde81b77bf8734bb6f41
+
+% 4 1 0 0a677e4840e1aad505f28151c4f8bfa5
+
+% 5 1 0 1523b823399b2c3a18f6c7e466a4c235
+
+% 6 1 0 1d063e1046e776a0015766c6ddf21580
+
+% 1 1 0 128d68e5c7c8b9c40ab5af8e549a9659
+
+% 0 1 0 198b59cb6e0b0b12143d2fbc73312971
+
+% 0 1 0 18eafb32caed3dd50f976e787bd035ca
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 2 0 1f8e980956b33a7d092b72e4eee285a8
++ [Costruire un grafo](../../soundness/modules/graphs.md#building-a-graph) descrive come una topologia
++ viene modificata e poi ceduta.

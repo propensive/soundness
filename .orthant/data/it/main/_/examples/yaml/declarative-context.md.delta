@@ -1,0 +1,46 @@
+orthant 2 language
+
+@ 0 1 0 0fb12e5a1152f84e1243c69a174e51bc
++ # Che cosa significa un null per un campo opzionale
+
+@ 0 2 0 1a837653ad2fb94718ab0f3431d84777
++ Un file YAML può dare a una chiave il valore `null`. Se questo equivalga a omettere la chiave è una
++ politica, e un import la sceglie per ogni decoder nel suo ambito.
+
+% 0 1 0 12705ff5e291290d17fbc8389d59ef4a
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+@ 0 1 0 0159a175baff50d0023d1c7c5546995d
++ alternative Un null è un valore assente
+
+% 1 1 0 1acd4b47e20efa0a08d3fe43f5d809b9
+
+% 2 1 0 0c209a2eb939574d0b6c3224bbd523f3
+
+% 2 1 0 03165c0f7ee5256b1e06515909c08b54
+
+% 4 1 0 008737a542f89c3f0263cfa43e3241a6
+
+@ 0 2 0 0af219746a5a3fc400c27237441f763a
++ alternative Un null è un guasto
++   highlight strictYamlNulls  un null va al decoder di Int
+
+% 1 1 0 0ae5620a5c03885c0bb3076339e887cf
+
+% 2 1 0 1cdd7fd508c5caa40483884aee6761e2
+
+% 0 1 0 02633e2c70d10a7d0aa53513f3e78e1c
+
+% 2 1 0 012a6e34201611c80b7f015302d9e9ea
+
+% 4 1 0 0ed0a1e73ae1e1ab05f03289fd95bf17
+
+% 0 1 0 18eafb32caed3dd50f976e787bd035ca
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 3 0 0f863e70b4db76d60b3bb595fe115d55
++ Il primo dà un giocatore la cui età è `Unset`, e il secondo dà `Unset` per il giocatore, poiché
++ `null` non è un `Int`. [Campi opzionali](../../soundness/modules/yaml.md#optional-fields) presenta
++ le altre due politiche.

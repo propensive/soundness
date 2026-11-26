@@ -1,0 +1,49 @@
+orthant 2 language
+
+@ 0 1 0 1e6e0e7f9582de831941226355158ffd
++ # L'analisi chiede quali elementi sono ammessi
+
+@ 0 3 0 0b979c6ba0d3b9b60f7851aa206011f6
++ Ciò che un parser XML accetta dipende da uno schema, anche quando lo schema è «qualsiasi cosa».
++ Leggere un documento richiede quindi uno schema nell'ambito, e la scelta di ammettere ogni elemento
++ si fa con un import, dove la si può vedere.
+
+% 0 1 0 12705ff5e291290d17fbc8389d59ef4a
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 024e70e22800cb0004c1acb949b47fea
++   label Un documento letto senza schema
+
+% 0 1 0 1477c34ff41c7c99183443e1d3238ae1
+
+% 1 1 0 0960c596329e4eb20a0b442aaa85c43a
+
+% 2 1 0 052b5d53c564213f191f74be413a911f
+
+% 2 1 0 1d7e4e0f0458acfb1b1df929b7f434fc
+
+% 1 1 0 05412e98b6d1aba803f70d70cfd55f7f
+
+@ 0 2 0 1056223cfefd26921b41daadfef45803
++   label Lo schema che ammette qualsiasi cosa
++   highlight freeformXmlSchema  qualsiasi elemento, qualsiasi attributo
+
+% 1 1 0 05c1983b6ba5f90a0405725d93249cd5
+
+% 2 1 0 03d3b86cf0455ce30d9ca64188fd77d5
+
+% 0 1 0 009a9c455423b65519521ac6f537d97a
+
+% 2 1 0 003fc79da9f2ebea19f88c4725a7d14f
+
+% 0 1 0 18eafb32caed3dd50f976e787bd035ca
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 3 0 0b3529d87038b1150666ddac60847919
++ [XML](../../soundness/modules/xml.md#on-xml) presenta lo schema, e [Record
++ tipizzati](../../soundness/modules/xml.md#typed-records-from-an-xml-schema) mette al suo posto un
++ XSD.

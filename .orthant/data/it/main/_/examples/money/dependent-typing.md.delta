@@ -1,0 +1,65 @@
+orthant 2 language
+
+@ 0 1 0 1676c07487ba26181774a21ef43acac5
++ # L'unità frazionaria fa parte della valuta
+
+@ 0 2 0 0b048383459e7b011db9ee6956a22415
++ Non tutte le valute hanno cento unità frazionarie per unità principale. Il numero è nel tipo della
++ valuta, dopo `over`, e l'arrotondamento e la visualizzazione ne derivano senza che si debba dire
++ altro.
+
+% 2 1 0 03aa7cba5c7df85a19f464ede31d604d
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 2 0 1bd203f4eae9820f0e0291e790bc7120
++   label Un dinaro di mille fils
++   highlight 1000  tre cifre decimali
+
+% 1 1 0 0b1b1a4f9b61166010ca19864b079bab
+
+% 2 1 0 01a99659ffb16bf90667b90c3189624c
+
+% 0 1 0 1b751bf21c38590111140cd08e8cee3d
+
+% 0 1 0 1dcb2822167aaa0a0ce46eef0bad2709
+
+% 1 1 0 06c8351a93ccbda41a9f616bcfefcbb1
+
+@ 0 2 0 19d0210072bde781157c5962b53feb0d
++   label Uno yen, che non ha unità frazionarie
++   highlight 1  nessuna
+
+% 0 1 0 1accf43fe92797601dc8da9a374d03c1
+
+% 0 1 0 0fd2ac3797a0477c02117fa7e01a94b2
+
+% 1 1 0 0428a31f3d3e43b7091c3ca786dd21af
+
+% 2 1 0 02342ff1a481952106e05ac59f30a171
+
+% 0 1 0 17f57b5595cd9011198783d546857128
+
+% 0 1 0 11bc6ee2587af10207e93e2b9a14a34b
+
+% 1 1 0 1a5a273b653c47730a3030f1d3d36426
+
+% 1 1 0 136d267ff733a60e0f6246170d49df5f
+
+% 2 1 0 1525a46c87e9e0571e7d21b8e7c42b7a
+
+% 0 1 0 08a86cbdc9b8cb0109ed8ce5b435ce67
+
+% 1 1 0 0cd6459499a6bd5203d659b3bcc1b6aa
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 0 1 0 10cc140867c3094a0a849123ea078474
+
+% 1 1 0 05da47285b4466bc01a946741fa35f60
+
+@ 0 2 0 002e642b79fd1d9d11eb124958496db7
++ [Altre valute](../../soundness/modules/money.md#other-currencies) spiega ciascuna posizione del
++ tipo.

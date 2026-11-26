@@ -1,0 +1,48 @@
+orthant 2 language
+
+@ 0 1 0 0a5734de483c2179128df9c46b070458
++ # Campi da uno schema
+
+@ 0 3 0 0cff0d8ba62c451210962618f917f93f
++ Un `Json.Provider` legge un JSON Schema mentre il codice compila, e dà a ogni documento conforme
++ un record con i campi dello schema, ai tipi dello schema. Un campo che lo schema non ha non è un
++ membro del record.
+
+% 0 1 0 12705ff5e291290d17fbc8389d59ef4a
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 0 1 0 149ce861ceff620006b44b9e2cb11d89
+
+% 0 1 0 14aab7f0be2434f81421fb69d99543da
+
+@ 0 1 0 0cf8a6063efb7caa0ee07587baf6b452
++   label Un campo al tipo che gli dà lo schema
+
+% 0 1 0 02a7daea95c699d200abfa2a3136d66e
+
+% 0 1 0 0feeb6ee26eddc7916a3c923ea9fa7b1
+
+% 0 1 0 03133bc60ae5e162053f2137fb7355f3
+
+% 0 1 0 035a89a89a1be2ce1caa49955766c1f5
+
+% 0 1 0 149015473f8af5b818332c25647b5a7d
+
+% 0 1 0 1adfe91c9b226655155405c883ea0833
+
+% 0 1 0 0c9fd9f22770a7511a3fb366765bac89
+
+% 0 1 0 10bd2d0622a001ee09e47d74bc8495f8
+
+% 0 1 0 02e361ec542fc0f41223be78055db460
+
+% 0 1 0 1fb577f661c5dd591c1de03fb06de272
+
+% 0 1 0 18eafb32caed3dd50f976e787bd035ca
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 2 0 1ed8eab58c4c2ae71617d4b89090f5dc
++ [Record tipizzati da uno schema](../../soundness/modules/json.md#typed-records-from-a-schema) dice
++ come viene letto ogni costrutto di uno schema.

@@ -1,0 +1,88 @@
+orthant 2 language
+
+@ 0 1 0 0a03ce969565eb521ba1993ef4fd6681
++ # Che cosa ne è di un figlio non terminato
+
+@ 0 3 0 1f39bb1a4cc048cf14ba8507bdea4cf0
++ Un task non termina finché i suoi figli non sono terminati, quindi un genitore che restituisce
++ in anticipo lascia una domanda: che cosa deve accadere a un figlio ancora in esecuzione? La
++ successione nell'ambito risponde, per ogni task al di sotto dell'import.
+
+% 0 1 0 12705ff5e291290d17fbc8389d59ef4a
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+@ 0 1 0 1aadb6348f8b6ee6198e32d5d6523639
++ alternative Viene annullato
+
+% 0 1 0 0e58ce30e4498b160dedb371286bfeb8
+
+% 1 1 0 0241b024731b45a30fc93a5b2e894667
+
+% 2 1 0 116ff50bfd4c023107b824d01863a45b
+
+% 0 1 0 0e73e7682d74a82f06278b1faec7f952
+
+% 2 1 0 1590093ea37d6f1314fd98939ef87ba5
+
+% 3 1 0 12da4a4511951f7a162a71db42dcc91a
+
+% 4 1 0 11b9257629157b9700c34b795d8048c3
+
+% 5 1 0 1c92de71282f96f305a182668f408c8c
+
+% 7 1 0 0ff2cad054c4f1590a238ffb9520a627
+
+@ 0 1 0 0dd45ad3d638637b011e4989d1e981b8
++ alternative Viene atteso
+
+% 0 1 0 1ac970d00e34a08308ee63bfd3cd6d4f
+
+% 1 1 0 1fc7523b4b5c3dd70932c3fb820ac681
+
+% 2 1 0 13564ba46f62da1402116c5b5ddd0c4a
+
+% 0 1 0 11738106f6d88b28149224b62d875beb
+
+% 2 1 0 02f959d12b51ab080cc50561bb6fb955
+
+% 3 1 0 082d855df693f5b20765835c80537531
+
+% 4 1 0 141fff9d0184676301ac09a753085fbe
+
+% 5 1 0 13793b97214b73b20b59397e48b8d3bc
+
+% 7 1 0 1612d1e7e69d5991184c02b0c643dd62
+
+@ 0 1 0 0cd0472e47f0c0c81945344fc44e58ca
++ alternative È un errore
+
+% 0 1 0 0809bd739341ea880acdfb1ebc3f6a2c
+
+% 1 1 0 1c54371b381a1ef807b952d1da13065b
+
+% 2 1 0 09ce4d737c90cf9916d8fe9b7bf19611
+
+% 0 1 0 1a4258eb7696427400257c7cc7b941a0
+
+% 2 1 0 1a1f221b3641109f0970379fdf3e7235
+
+% 3 1 0 173279e65e44599a0ad586b5039493e4
+
+% 4 1 0 149d67f6c11bc9ae1baf4697e002320b
+
+% 5 1 0 1a12b715636086b80c3ca30187325c2d
+
+% 7 1 0 0f11ae594e1ab07b13ea7e3f3a01281d
+
+% 0 1 0 18eafb32caed3dd50f976e787bd035ca
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 5 0 1d80b9185eeee59b0f51b95b00aeed00
++ L'esempio viene compilato, ma non eseguito, perché fa una pausa. Con ciascuna scelta,
++ `parent.await()` restituisce solo quando il figlio si è concluso.
++ [L'annullamento in entrambe le direzioni](../../soundness/modules/concurrency.md#cancellation-in-both-directions)
++ dice quale successione si adatta a quale tipo di lavoro, e
++ [la concorrenza strutturata](../../philosophy/structured-concurrency.md) perché il genitore
++ attende.

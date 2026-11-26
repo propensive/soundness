@@ -1,0 +1,56 @@
+orthant 2 language
+
+@ 0 1 0 14615466975bcf1a190ce8fb8232f48c
++ # Dove si conserva un segreto è scritto
+
+@ 0 2 0 067b206aa7f1a575053bc008f6a6993a
++ Tra un uso e l'altro una password deve stare da qualche parte: sullo heap o fuori, in chiaro o
++ cifrata. Non c'è un valore predefinito. Un segreto non può essere costruito finché un `Cloak`
++ nell'ambito non dice dove.
+
+% 2 1 0 17a03b036baaa6ef11659db4582dd457
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 186e0ebc35f7e9241c7eb75261fb7e68
++   label Un segreto che non ha dove stare
+
+% 0 1 0 1477c34ff41c7c99183443e1d3238ae1
+
+% 1 1 0 0960c596329e4eb20a0b442aaa85c43a
+
+% 1 1 0 094efe437d34dfbe19df1f91d1d82acb
+
+% 1 1 0 1902ebb3ec37db0119db2a3455e20ecd
+
+@ 0 2 0 027e2cd1a123f9e006a791ac7c4ece3f
++   label Sullo heap
++   highlight heapCloak  in chiaro, sullo heap
+
+% 1 1 0 1257bd3f5f7e83d9101b9b62882e56b0
+
+% 0 1 0 15631df66dfa223907ed1b125ded4627
+
+% 1 1 0 0e248b6133e1d9541e29099cad2c9327
+
+% 1 1 0 1d432ef5f900e3de15509d42f81d00bd
+
+% 1 1 0 136d267ff733a60e0f6246170d49df5f
+
+% 2 1 0 1525a46c87e9e0571e7d21b8e7c42b7a
+
+% 0 1 0 08a86cbdc9b8cb0109ed8ce5b435ce67
+
+% 1 1 0 0cd6459499a6bd5203d659b3bcc1b6aa
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 0 1 0 16e7297f23cda92114c03f2a1a742e5f
+
+% 1 1 0 0b885762ad354e3204d744e926b06824
+
+@ 0 3 0 0610f0d965d812471c3baf8cfdc03992
++ Anche quando viene mostrata, una password non si rivela. [Dove sono conservati i
++ segreti](../../soundness/modules/cryptography.md#where-secrets-are-kept) confronta i quattro cloak.

@@ -1,0 +1,70 @@
+orthant 2 language
+
+@ 0 1 0 0699cfde4d9ce8451132ebef55584887
++ # Le richieste di file di un agente, servite dal filesystem
+
+@ 0 3 0 1164f382524d26870d6a7e6f5c42eb4e
++ Un agente chiede al suo client di leggere e scrivere file, e li nomina con un percorso inviato come
++ testo. Per rispondere non serve nulla di fatto apposta: il testo viene decodificato in un `Path`, e
++ il file viene aperto, letto e scritto come qualsiasi altro.
+
+% 0 1 0 12705ff5e291290d17fbc8389d59ef4a
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 3 0 13b531642ce30b131d6243d38d98ce15
++   label Una lettura
++   highlight as[Path..Local]  il testo dell'agente, analizzato come percorso
++   highlight file.read[Text]  la risposta dell'handler
+
+% 1 1 0 13870bb52e32cb4b17abe5604c1d557a
+
+% 2 1 0 0504b302555ad2d5050334d3a345f201
+
+% 3 1 0 1ce0024e9a5eb59e02cfe68b652bef44
+
+% 0 1 0 12a618ab3fc8ab800817fdfca2fcb19c
+
+% 2 1 0 11fc32cb30a27ce9169787827a9bdd1e
+
+% 3 1 0 05fda7cda87e840a009dffb74e75cbc1
+
+% 4 1 0 0729221ab6318bfc0bbe5e4491e1db05
+
+% 1 1 0 07d3a483a9e488ec1eeee7ed544cd86d
+
+@ 0 1 0 14de7271e93e58fe0c07eef57ed03350
++   label E una scrittura
+
+% 0 1 0 19c4579bf75977680ed024e478a00eab
+
+% 1 1 0 1a9f47df4f4c4f921c47b48d2b729840
+
+% 2 1 0 076876d1cfc1627703f16104516b9a7d
+
+% 3 1 0 04eaf041fc3d83001530f7876e5b4874
+
+% 0 1 0 132b7b9dbff4d1e8063c363af5be03ca
+
+% 2 1 0 06642ad3fe2df2e11937e60980dd44b5
+
+% 3 1 0 09e970a7c6088ce80306aa6d167a52aa
+
+% 4 1 0 0cf3dee9c21384bb0a78e0067c27de54
+
+% 0 1 0 193ec6d26e58717614dad5c6af479fc8
+
+% 0 1 0 1a596adb121c8bdc0f6e11f6b0363f3b
+
+% 0 1 0 14ff65354f811f200dccb02450399c06
+
+% 0 1 0 18eafb32caed3dd50f976e787bd035ca
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 4 0 0bdaa3df9f94bf1f1c69ef7a1155dc6a
++ L'esempio viene compilato, ma non eseguito, poiché gli handler servono un agente in un altro
++ processo. [Filesystem e terminali](../../soundness/modules/acp.md#filesystem-and-terminals) descrive
++ le richieste, e [Filesystem](../../soundness/modules/filesystem.md) le operazioni che vi rispondono.

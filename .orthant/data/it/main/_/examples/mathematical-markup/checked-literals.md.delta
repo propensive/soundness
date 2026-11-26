@@ -1,0 +1,55 @@
+orthant 2 language
+
+@ 0 1 0 194637b2a0000dab19999e48f398f83a
++ # Una formula con una parentesi lasciata aperta
+
+@ 0 3 0 158f52c97a86366212cfbe08331bb5f9
++ Un'espressione Ergo scritta come `ergo"…"` viene analizzata dal compilatore, e il valore che
++ rappresenta è l'albero MathML. Un gruppo mai chiuso è quindi un errore di compilazione, e non una
++ pagina che mostra mezza formula.
+
+% 2 1 0 0281cd5250260d141d324b3d9e197095
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 0df694e1f5053de915a0e46f17e6d6e3
++   label Il gruppo dell'esponente non è chiuso
+
+% 0 1 0 1477c34ff41c7c99183443e1d3238ae1
+
+% 1 1 0 0960c596329e4eb20a0b442aaa85c43a
+
+% 0 1 0 1886b12fc4d26909048d3b2e09a24406
+
+% 1 1 0 008a972e4feb5f3c0a9ad6496b561f69
+
+@ 0 1 0 06572bfbc96ff573038e987628b01c1e
++   label Ogni gruppo è chiuso
+
+% 0 1 0 09527f41e5e6a0f201f42c7f7286a96e
+
+% 1 1 0 1296c319292d0be4152c559ed169a593
+
+% 0 1 0 1873a20518b3e7271514b3a189542e7a
+
+% 1 1 0 0cea7babc748d0dc07f4048a328e98a1
+
+% 1 1 0 136d267ff733a60e0f6246170d49df5f
+
+% 2 1 0 1525a46c87e9e0571e7d21b8e7c42b7a
+
+% 0 1 0 08a86cbdc9b8cb0109ed8ce5b435ce67
+
+% 1 1 0 0cd6459499a6bd5203d659b3bcc1b6aa
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 0 1 0 1ecb96f4d0f85f7510ae8e18aac527ea
+
+% 1 1 0 14689cccea3fbcda0c1c4926293c8c29
+
+@ 0 2 0 1e73fefc1e7bd0681a6633f65768de79
++ [Ergo](../../soundness/modules/mathematical-markup.md#ergo) descrive la notazione, e la [sicurezza
++ per costruzione](../../philosophy/safety-by-construction.md) il principio.

@@ -1,0 +1,76 @@
+orthant 2 language
+
+@ 0 1 0 14ac6832a5f187dc02bd7265fdef157a
++ # Un classloader, installato per un blocco
+
+@ 0 3 0 0abb8a698c53993b14f907ffaf329428
++ Certo codice trova le sue classi attraverso il classloader di contesto del thread, che è uno stato
++ mutabile. `use` vi installa un classloader per la durata di un blocco e rimette a posto il
++ precedente al termine, quindi il cambiamento raggiunge il codice che ne ha bisogno e nient'altro.
+
+% 2 1 0 160c0ba21d0597e619ee6b1a1b2cd22a
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 0abc88b68baad22a01325a6062bcb155
++   label Un classloader per un plugin
+
+% 1 1 0 1c859943405cf9f007e57e29dda21c4c
+
+% 2 1 0 1ab470aff3d446330a805e735152e941
+
+% 3 1 0 132e6b0bd6c8c93410eb1625c9e0f299
+
+% 1 1 0 1432a6e33f2447ee076d16e4a4b4c8f4
+
+@ 0 2 0 1e5be2e431692d390235a24aa3f75212
++   label In vigore all'interno del blocco
++   highlight loader.use  il classloader di contesto, finché il blocco non termina
+
+% 1 1 0 1637e431d1ca82f9027675ac87eb5f37
+
+% 2 1 0 166b7dfccf4a1e830cfadc796ee84665
+
+% 3 1 0 1a94fd96fbde2803058489a5b3f6b170
+
+% 5 1 0 1b910865469575d3182ccce473f684b0
+
+% 1 1 0 0a348ea0360599d40bffcd8507523f81
+
+@ 0 2 0 110705f53a8fc57c198a35f1b8608352
++   label E scomparso dopo di esso
++   highlight outside  il classloader precedente è tornato
+
+% 1 1 0 1dad5417932c33571f7070c6eb1cdffc
+
+% 2 1 0 05b9f42ee4e48b700a211b3f409bc6f5
+
+% 3 1 0 0a1611cfb1ab1cf406554b096ef4451c
+
+% 5 1 0 1ea4fdd6e799eea90ad0b6aac63cb188
+
+% 0 1 0 19c11ff5fa19fd26158eaacdc8403007
+
+% 1 1 0 043106257d2ac5521c1681ab65b2c448
+
+% 1 1 0 136d267ff733a60e0f6246170d49df5f
+
+% 2 1 0 1525a46c87e9e0571e7d21b8e7c42b7a
+
+% 0 1 0 08a86cbdc9b8cb0109ed8ce5b435ce67
+
+% 1 1 0 0cd6459499a6bd5203d659b3bcc1b6aa
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 0 1 0 1624173f8ad7b0991c8fb52170272c29
+
+% 0 1 0 121166dabbf7aba0001c4165e15b1917
+
+% 1 1 0 12d5f65bb4723d1515b4e9fb7d12e3d4
+
+@ 0 2 0 1e2019c75ac3a2d406603753c626d1e5
++ [Eseguire sotto un classloader](../../soundness/modules/classpath.md#running-under-a-classloader)
++ descrive `use`, e [gli ambiti delimitati](../../philosophy/delimited-scopes.md) lo schema.

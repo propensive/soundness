@@ -1,0 +1,68 @@
+orthant 2 language
+
+@ 0 1 0 1e07007bcd8510d304ace8d59bf49d92
++ # Lo stesso difetto, come valore
+
+@ 0 3 0 03b7e28d2c57f19a040df5fc9639a61e
++ Il parser che verifica un pattern letterale è anche quello che analizza un pattern costruito a
++ runtime. Lì solleva un `Regex.Error`, che contiene il motivo come caso di un'enumerazione e la
++ posizione come numero.
+
+% 2 1 0 0641b5e40bb1bb510b9f23c46a120e2c
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 2 0 066e23cfea21e36c140a236834a8190c
++   label Un pattern dall'esterno del programma
++   highlight raises..Regex.Error  il parser del letterale, a runtime
+
+% 1 1 0 0840c477372610ca079c5399554af904
+
+% 1 1 0 1bec2458edaaccf701104f3377df0513
+
+% 1 1 0 1c37af109bc1cf5313688c288e02b3b3
+
+@ 0 2 0 1439e04c932e4c221dff4d22ad5d7bf8
++   label Il suo difetto, catturato
++   highlight capture[Regex.Error]  l'errore, come valore
+
+% 1 1 0 1d9a58ad78d5f0a511bca54caa53f4bf
+
+% 0 1 0 0116a331765d22681fde66f1f935428d
+
+% 0 1 0 12a618ab3fc8ab800817fdfca2fcb19c
+
+% 1 1 0 00c1b176a457c68e055a393e53336d6f
+
+% 0 1 0 09bb8635c35e9233019d0f8ef264d8d6
+
+% 0 1 0 1eeed417861940ca0032f64981ed1b65
+
+% 0 1 0 1debfac24f0fffdf0f666080224f1b85
+
+% 1 1 0 0fb476f17369bbb40270efd960f956b5
+
+% 1 1 0 136d267ff733a60e0f6246170d49df5f
+
+% 2 1 0 1525a46c87e9e0571e7d21b8e7c42b7a
+
+% 0 1 0 08a86cbdc9b8cb0109ed8ce5b435ce67
+
+% 1 1 0 0cd6459499a6bd5203d659b3bcc1b6aa
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 0 1 0 06c0c12ea078c17c0106e3dee6af1925
+
+% 0 1 0 08ed3da15e15480e04239d98c5ebd092
+
+% 0 1 0 1a7d4dece439e35c066855d9413481b6
+
+% 1 1 0 1a1e3bd7e4cb8a7a03ffd10caa781e14
+
+@ 0 3 0 1a5ac6515478650410e9e49dc5ef2ebe
++ [Verifica a tempo di compilazione](../../soundness/modules/patterns.md#compiletime-checking) elenca
++ i motivi, e [errori espressivi](../../philosophy/expressive-errors.md) perché un errore è più del
++ suo messaggio.

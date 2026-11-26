@@ -1,0 +1,103 @@
+orthant 2 language
+
+@ 0 1 0 107406dde52f153e00fdf32f25fff838
++ # Un solo metodo legge qualsiasi record
+
+@ 0 2 0 175125b50a166c9802b4e9bf582271ff
++ Non esistono `readHeader` né `readPairs`. `unpack` prende il tipo desiderato e l'offset a cui si
++ trova, e `pack` scrive qualsiasi valore il cui tipo abbia un layout.
+
+% 2 1 0 057a933eb460ee3e0c0eba2686e9582e
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 2 0 088f314c5a127d521e364ecd7f9595f7
++   label Un record
++   highlight unpack[Pair](0)  un record, a un offset
+
+% 1 1 0 0173350c1b53feb9008ffa91f0f237c9
+
+% 2 1 0 09fd2dfeb11bbbd512e76677c4d8c7fb
+
+% 4 1 0 0b4d5d9237e7cb2111392a79802e1500
+
+% 6 1 0 0c3abc1269f859361bb9683990578dd8
+
+% 7 1 0 0bf7aa5c7ed442e516f21a1b4f9da2ec
+
+% 9 1 0 16f3bc7f76c89482008a2d94d195f663
+
+% 10 1 0 189a7e6062d8f57e09740a7d35214064
+
+% 1 1 0 0abfca4d2d47494610c104198cc8a300
+
+@ 0 2 0 171b46119c6c6bbf0aa6832cf7e4f6af
++   label Due record, da un offset e un conteggio
++   highlight unpack[Pair](0,..2)  un offset e un conteggio
+
+% 1 1 0 015cd8ec9c2cb8e01c4a0941684ca259
+
+% 2 1 0 1a2078b5a836b17d19e01e450e63716e
+
+% 4 1 0 1bc2b0d4d36b5a990a3ac03c9d53e787
+
+% 6 1 0 0eea729f763bafed10de709e21f532ba
+
+% 7 1 0 19edac46daa7e6d502a3a3e6f9af0660
+
+% 9 1 0 165072810a9464481fb223e8b430fb2f
+
+% 10 1 0 1ad16cd0304b78d7079200c68fd5de29
+
+% 11 1 0 0cdf92a69a5193a01122f65d5e713da8
+
+% 1 1 0 07b7caa2da3974c00576fa61b71d3fff
+
+@ 0 2 0 0e4b30741dec7cd30a9744c50907f86b
++   label Di nuovo i byte
++   highlight pack  lo stesso layout, scritto
+
+% 1 1 0 1c00f9615a28da840e43ac63565217ea
+
+% 2 1 0 099919a4d2c8f8ee119383c97c0cb600
+
+% 4 1 0 1395cd56c88985aa1dc47648bdef36d8
+
+% 6 1 0 0e3bff8795181f5205fd3239b875a252
+
+% 7 1 0 0960f24d1d4cff2209b18f545366a801
+
+% 9 1 0 1837d7ac36252151080aea899de6856e
+
+% 10 1 0 0d1caca8f6a21dee056bd3b0b40c24a4
+
+% 11 1 0 04566b27aa3826190f03f281b6e4bb5a
+
+% 0 1 0 0b34963b9896fadc1eb9321b491a4246
+
+% 1 1 0 0ceda6386771fffa1a4a59eaebab2571
+
+% 1 1 0 136d267ff733a60e0f6246170d49df5f
+
+% 2 1 0 1525a46c87e9e0571e7d21b8e7c42b7a
+
+% 0 1 0 08a86cbdc9b8cb0109ed8ce5b435ce67
+
+% 1 1 0 0cd6459499a6bd5203d659b3bcc1b6aa
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 0 1 0 1956afe7fd92830c1e7807f9d729bdfa
+
+% 0 1 0 03526977cd93fab21559afc1f77220cd
+
+% 0 1 0 10ebe3a8bcc51b1c0fbf4d7459fa2180
+
+% 1 1 0 1f351bd8c2d0cd8f1c291503f8d0f534
+
+@ 0 3 0 18a6ea5cefd3865319e116e3903821b5
++ [Lettura](../../soundness/modules/binary-data.md#reading) e
++ [scrittura](../../soundness/modules/binary-data.md#writing) usano l'unica definizione in entrambe
++ le direzioni.

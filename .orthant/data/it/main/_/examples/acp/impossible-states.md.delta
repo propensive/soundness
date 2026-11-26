@@ -1,0 +1,67 @@
+orthant 2 language
+
+@ 0 1 0 14d196323e693420034748505ee52f6c
++ # Un client offre ciò per cui ha degli handler
+
+@ 0 3 0 07a2e026cc39e57d13cde98f46c4aab0
++ Un client ACP dice all'agente che cosa può fornire: file da leggere, file da scrivere, terminali.
++ Quella dichiarazione non viene scritta qui. Viene derivata dagli handler registrati, quindi un
++ agente non è mai invitato a chiedere qualcosa a cui il client non può rispondere.
+
+% 0 1 0 12705ff5e291290d17fbc8389d59ef4a
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 2 0 0dde3b3111e2612209eb6e8175c57027
++   label Un client che si limita a osservare
++   highlight Acp.updated:  non richiede alcuna capability
+
+% 1 1 0 19470dc59cbece6d06ba8c67829d9c5b
+
+% 2 1 0 1bc480bb6cfa4d181775bf1c68954f4c
+
+% 4 1 0 02f02c8d6dd16d8a1ed8abea8a332aee
+
+% 5 1 0 1c99582d213ddb1517bfb108e40452ca
+
+% 6 1 0 044e5466511ccc900dc9cca601649401
+
+% 7 1 0 1171688ad88f19d7091efe6d1fa008fc
+
+% 8 1 0 112a9fa26a8debbc05cab4ce98f6597f
+
+% 1 1 0 015029212ea938871bcf6f7063c4b02a
+
+@ 0 2 0 0ee752f1b79bc3e413df9c0d0240f59e
++   label Gli si può chiedere un file, e lo dice
++   highlight Acp.readFile:  il client ora dichiara di leggere file
+
+% 1 1 0 09823da56c7bb44e117226124ebb8d45
+
+% 2 1 0 14981f555d461afd1a96060c95db72ea
+
+% 4 1 0 0c7b436280c651c009b5eff2fabfa8c3
+
+% 5 1 0 00e6ee7671e26123085b79dea1e58ff6
+
+% 6 1 0 10bc7df079413ef0137f95e67e352703
+
+% 7 1 0 02f0ea29db79255f143e473375b589c4
+
+% 8 1 0 055cb64982ed9c9a13564d8d1ba6ecf4
+
+% 0 1 0 0100ffb3e961493a15ecc165b524a858
+
+% 0 1 0 013557a1250595d5184c352b1ec72ce9
+
+% 0 1 0 18eafb32caed3dd50f976e787bd035ca
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 3 0 0755a9578db9ab911dd81fdbdd9cf8bf
++ L'esempio viene compilato, ma non eseguito, poiché gli handler servono un agente in un altro
++ processo. [Connessione](../../soundness/modules/acp.md#connecting) dice come viene derivata la
++ dichiarazione, e gli [stati impossibili](../../philosophy/impossible-states.md) perché non viene
++ scritta a mano.
