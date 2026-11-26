@@ -1,0 +1,24 @@
+orthant 2 language
+
+@ 0 4 0 1b1113efe3b8acc60d20ec0829f77660
++ O tipo de um campo precisa ser, ele próprio, decodificável: um tipo com decodificador próprio,
++ outra case class, uma enumeração ou um sealed trait. Um tipo que não seja nenhum desses é um erro
++ de compilação, e a mensagem nomeia o campo, a case class a que ele pertence e o tipo que não pode
++ ser decodificado. Um `Vial(label: Text, contents: Poison)`, em que `Poison` é uma classe comum, é
++ recusado com:
+
+% 1 1 0 1abf28c8819c4a100ba2af9cc74b39c0
+
+% 0 1 0 12b01ab296b747291fc7be536f684132
+
+% 0 1 0 13a2ce2895d6cfab1d6f772d7f114000
+
+% 0 1 0 1910e7b5a183003019c7ef2d078a77bc
+
+% 1 1 0 11c31f98aa9aa3a4088a2a955d213950
+
+@ 0 4 0 01462b0fd03e7af10fcc63ddd7f6cc77
++ A codificação de um `Vial` é recusada com as mesmas palavras, por falta de um `Json.Encodable`.
++ [Derivação](derivation.md#when-derivation-fails) explica as outras maneiras pelas quais uma
++ derivação pode falhar, e [Decodificação](decoding.md) descreve os decodificadores que transformam
++ um único valor de texto, como uma string JSON, em um tipo próprio.

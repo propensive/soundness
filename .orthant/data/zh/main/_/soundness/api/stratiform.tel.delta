@@ -5,16 +5,44 @@ orthant 2 language
 @ 0 1 0 1509c0b4edc0521e140773335e9e6a24
 +   entry #Revision   可组合的编辑日志，逐个操作地应用于文档
 
+@ 0 1 0 05dff70ef02c8bae02867bc8383dc2aa
++ entry .TelMutation   持有 `Tel.Mutation`（§22.2 的编辑操作）的特质
+
+% 1 1 0 0ebc21e4c5ef6314061c5c48731570de
+
+@ 0 2 0 1cec67b5515628bf1c92261ab21dd98a
++       `object Tel extends TelMutation`，因此 `Mutation` 通过伴生对象访问，写作 `Tel.Mutation`。
+
 @ 0 1 0 011854171f69420718747641930de1a5
 +   entry #Mutation   §22.2 中保留呈现形式的基本编辑操作，以及它们的解释器
+
+% 1 1 0 09c5c7c6edcea57318feece1ac127ec6
 
 @ 0 5 0 03a6563a211c058e091aac26e9fa266a
 +         每个 `.Op` 都是由 `Tel.Pointer` 寻址的局部重写：周围的原子、注释、空行和无关的子项在构造上就不会被触及，正因如此，程序才能修改人写的文件中的一个值，并把文件原样写回。
 +         `Mutation(tel, op)` 应用一个操作，`Mutation(tel, ops)` 按顺序应用一个列表，返回新的 `Tel`；`Revision` 是基于同样这些操作的可组合 DSL。
 
+% 2 1 0 15dcab498a62d6ab04dca2c09c057ef6
+
+% 3 1 0 0f61f475068ada7a1a25f8e43bbf6e54
+
+% 4 1 0 09103a44a98e09230e84023593f633f4
+
+% 0 1 0 1df2f2e4ad8c45b2111ad7d8764c6b8b
+
+% 0 1 0 1c3a1ca3db3719c41146c2249bb38397
+
+% 0 1 0 0d8d982018413b051c2ae1c03813af7d
+
+% 1 1 0 0583218765dddcea142c2c301cb59feb
+
 @ 0 7 0 0bdbe28195ed1d45177a037d87ad30fd
 +         指针的每一步是一个关键字加上一个出现索引，针对被应用操作的文档进行解析，因此指针在无关的编辑之后仍然有意义；但按出现索引的指针不能在移动、添加或删除同一关键字复合项的操作之间重复使用。
 +         依赖 schema 的前置条件——被删除的成员不是必需的、被设置的标志已声明、替换项类型正确——不在讨论范围内，与参考实现一样：具备 schema 意识的层会在委托给这些基本操作之前检查它们。
+
+% 0 1 0 1ec63c4308d070021fc5ac25fe4d2369
+
+% 1 1 0 03bf26a2225a06050b9ca458f4d19132
 
 @ 0 20 0 0dcd6706d124251810739b23466f1845
 +     entry .Placement   `ReorderGroups` 把一个组放在另一组的哪一侧：`Before` 或 `After`
@@ -37,8 +65,24 @@ orthant 2 language
 +         `construct(keyword, members)` 和 `construct(keyword, members, sigil)` 对 `Member` 列表运行规范呈现算法：开头的单次出现且内联安全的标量和标志成为内联原子；可重复标量在每次出现都内联安全时全部内联，否则每次出现都成为子项；其余每个成员都是同一个块中的子项，没有注释、制表或空行。
 +         内联原子在第一个含空格的值之前以软空格开头，从该值起以硬空格开头，因此构造结果重新解析后得到相同的原子。
 
+% 2 1 0 03db84943a74235b1e0e4183fcf90275
+
+% 3 1 0 1c9d477f6c39100f1fd9e17e1d68d6fa
+
+% 0 1 0 1df6506c2fab041115325346029233e4
+
+% 0 1 0 010838ec3ff3ed2019cdfe509c15f417
+
+% 0 1 0 193c4595813db4071570bfef9726343a
+
+% 0 1 0 0083b990801a573b090d8544a95ceb78
+
+% 1 1 0 0c99a7cdc3e0320d0380e97abc3fcd34
+
 @ 0 1 0 1210220dfccc22b104fd4553a4bc7331
 +     entry .Error   当指针无法解析或操作的不变式不成立时抛出
+
+% 1 1 0 100c9fd4209bc4850e77c5c1bb963d8c
 
 @ 0 11 0 01151dd09e78d6ca18e924e372da3734
 +           错误 `↯/s.118.2`：_the mutation failed because …_。

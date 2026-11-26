@@ -1,0 +1,9 @@
+orthant 2 language
+
+@ 0 5 0 074ba3b456a021991e2ea448943cc78b
++ Alguns resultados dependem do comprimento de uma string de exemplo: as larguras das colunas de uma
++ tabela renderizada, texto com preenchimento ou alinhado, um deslocamento em bytes, um comprimento
++ codificado, o tamanho do payload de um benchmark. Um teste dirá quando um resultado desses deu
++ errado; um comentário `// result` em `doc/work/soundness/api/*.tel` não dirá, já que nada o verifica. Então, onde
++ um comprimento é essencial, escolha um nome do comprimento exigido, e onde um resultado mostrado
++ muda, avalie a amostra de novo em vez de editar o resultado à mão.

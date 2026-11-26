@@ -1,0 +1,126 @@
+orthant 2 language
+
+! column  Kind
+! column  Draws
+! column  Abscissa
+! column  Ordinate
+! column  Style
+! row  `Bars()`  a series, or a collection of series  categorical  continuous  `Bars.Style`
+! row  `StackedBars()`  a collection of series  categorical  continuous  `StackedBars.Style`
+! row  `Lines()`  a series, or a collection of series  continuous  continuous  `Lines.Style`
+! row  `Scatter()`  a series, or a collection of series  continuous  continuous  `Scatter.Style`
+! row  `Pie()`  exactly one series  categorical  continuous  `Pie.Style`
+! row  `Histogram()`  `Samples`, or a collection of them  continuous  counts  `Histogram.Style`
+! row  `Boxes()`  `Samples`, or a collection of them  one box per set  continuous  `Boxes.Style`
+! row  `Doughnut()`  a `Dag` of `Weighted`, `Progressive` nodes  none  none  `Doughnut.Style`
+@ 0 13 0 1f804944cbbab0300db1429dc29c7687
++ column  Rodzaj
++ column  Rysuje
++ column  Odcięta
++ column  Rzędna
++ column  Styl
++ row  `Bars()`  serię lub kolekcję serii  kategoryczna  ciągła  `Bars.Style`
++ row  `StackedBars()`  kolekcję serii  kategoryczna  ciągła  `StackedBars.Style`
++ row  `Lines()`  serię lub kolekcję serii  ciągła  ciągła  `Lines.Style`
++ row  `Scatter()`  serię lub kolekcję serii  ciągła  ciągła  `Scatter.Style`
++ row  `Pie()`  dokładnie jedną serię  kategoryczna  ciągła  `Pie.Style`
++ row  `Histogram()`  `Samples` lub ich kolekcję  ciągła  liczności  `Histogram.Style`
++ row  `Boxes()`  `Samples` lub ich kolekcję  jedno pudełko na zbiór  ciągła  `Boxes.Style`
++ row  `Annulus()`  `Dag` węzłów `Weighted`, `Progressive`  brak  brak  `Annulus.Style`
+
+! column  Hook
+! column  Draws
+! column  Defined on
+! row  `fontStyle`, `lettering`  the size and colour of text; every run of text  `Chart.Style`
+! row  `backdrop`  the canvas behind the chart  `Chart.Style`
+! row  `swatch`, `legendLabel`  a legend entry  `Chart.Style`
+! row  `leader`  the line from a moved label back to its point  `Chart.Style`
+! row  `axisLine`  the stroke of each axis  `Chart.Cartesian`
+! row  `axisBreak`  a break mark where a linear axis starts away from zero  `Chart.Cartesian`
+! row  `arrowhead`  the end of an axis  `Chart.Cartesian`
+! row  `tick`, `gridLine`  a gradation and its grid line  `Chart.Cartesian`
+! row  `tickLabel`  a tick's label, where it sits and whether it is rotated  `Chart.Cartesian`
+! row  `axisTitle`  an axis's title  `Chart.Cartesian`
+! row  `marker`, `errorBar`  a point and its interval  `Chart.Cartesian`
+! row  `pointLabel`  the note of a `Noted` point  `Chart.Cartesian`
+! row  `bar`  a bar  `Bars.Style`
+! row  `line`, `band`  a series line and an estimate's band  `Lines.Style`
+! row  `box`, `whisker`, `median`  a box plot's parts  `Boxes.Style`
+! row  `wedge`, `wedgeLabel`  a wedge and its percentage  `Pie.Style`
+! row  `shade`, `sector`, `remainder`  a sector's colour and its two parts  `Doughnut.Style`
+@ 0 20 0 07a1c9f65a6293bd096dfd926a73c63d
++ column  Metoda
++ column  Rysuje
++ column  Zdefiniowana w
++ row  `fontStyle`, `lettering`  rozmiar i kolor tekstu; każdy fragment tekstu  `Chart.Style`
++ row  `backdrop`  płótno za wykresem  `Chart.Style`
++ row  `swatch`, `legendLabel`  wpis legendy  `Chart.Style`
++ row  `leader`  linię od przesuniętej etykiety z powrotem do jej punktu  `Chart.Style`
++ row  `axisLine`  kreskę każdej osi  `Chart.Cartesian`
++ row  `axisBreak`  znak przerwania, gdzie oś liniowa zaczyna się z dala od zera  `Chart.Cartesian`
++ row  `arrowhead`  koniec osi  `Chart.Cartesian`
++ row  `tick`, `gridLine`  podziałkę i jej linię siatki  `Chart.Cartesian`
++ row  `tickLabel`  etykietę znacznika osi, jej położenie i to, czy jest obrócona  `Chart.Cartesian`
++ row  `axisTitle`  tytuł osi  `Chart.Cartesian`
++ row  `marker`, `errorBar`  punkt i jego przedział  `Chart.Cartesian`
++ row  `pointLabel`  notatkę punktu `Noted`  `Chart.Cartesian`
++ row  `bar`  słupek  `Bars.Style`
++ row  `line`, `band`  linię serii i pas oszacowania  `Lines.Style`
++ row  `box`, `whisker`, `median`  części wykresu pudełkowego  `Boxes.Style`
++ row  `wedge`, `wedgeLabel`  wycinek i jego procent  `Pie.Style`
++ row  `shade`, `sector`, `remainder`  kolor sektora i jego dwie części  `Annulus.Style`
+
+! column  Identifier
+! column  Holds
+! column  In
+! row  `backdrop`  the canvas, in the palette's background colour  every chart
+! row  `grid`  the grid lines  cartesian charts
+! row  `abscissa`, `ordinate`  each axis, its gradations and its title  cartesian charts
+! row  `legend`  the legend  charts with a legend
+! row  `series-0`, `series-1`, …  each series  cartesian charts
+! row  `wedges`  every wedge and its label  `Pie`
+! row  `rank-0`, `rank-1`, …  each band  `Doughnut`
+@ 0 10 0 1c600122182c2eb2189e07b099bd189d
++ column  Identyfikator
++ column  Zawiera
++ column  W
++ row  `backdrop`  płótno, w kolorze tła palety  każdym wykresie
++ row  `grid`  linie siatki  wykresach kartezjańskich
++ row  `abscissa`, `ordinate`  każdą oś, jej podziałki i tytuł  wykresach kartezjańskich
++ row  `legend`  legendę  wykresach z legendą
++ row  `series-0`, `series-1`, …  każdą serię  wykresach kartezjańskich
++ row  `wedges`  każdy wycinek i jego etykietę  `Pie`
++ row  `rank-0`, `rank-1`, …  każdy pas  `Annulus`
+
+! A `Doughnut` draws a dependency graph, a [`Dag`](graphs.md), as concentric bands. The nodes
+! which depend on nothing are in the innermost band, and each further band holds the nodes one
+! rank further out, so a build fills in from the center outwards. Each node is a sector of its
+! band, which sweeps an angle proportional to its size within the rank, and a band is as thick as
+! its rank's share of the total size.
+@ 0 5 0 094a00dfd1bbeae2143c54d55798a5bd
++ `Annulus` rysuje graf zależności, [`Dag`](graphs.md), jako koncentryczne pasy. Węzły, które od
++ niczego nie zależą, są w najbardziej wewnętrznym pasie, a każdy kolejny pas zawiera węzły o
++ jeden poziom dalej, więc kompilacja wypełnia się od środka na zewnątrz. Każdy węzeł jest
++ sektorem swojego pasa, zakreślającym kąt proporcjonalny do jego rozmiaru w obrębie poziomu, a
++ pas jest tak gruby, jak udział jego poziomu w całkowitym rozmiarze.
+
+! val doughnut = Dag(typecheck -> parse, emit -> typecheck).chart(Doughnut())
+% 0 1 0 1877856c8ab7469c04f0ffb78800176f
+
+! Out.println(doughnut.fit.bands.size.show)
+% 0 1 0 14e225babf96351702cd5d73f93e40d6
+
+! Out.println(doughnut.revise(Dag(typechecked -> parse, emit -> typechecked))(1).size.show)
+% 0 1 0 14c1482790cf4ef70542451dfecf4315
+
+! `Chart.Standard(hole = 0.3)` hollows the center. `sectorGap` and `bandGap` are the widths of the
+! grout between sectors and between bands. `Doughnut.Style` has `shade` for the color of a sector
+! from its position, and `sector` and `remainder` for its two parts. The ranking is the one
+! [graphs](graphs.md#layering) describes: `import rankings.balancedRanking` draws each node as
+! close to its dependents as it can be, rather than as close to the center.
+@ 0 5 0 0882828f30df7a830a6f292209c4fb9f
++ `Chart.Standard(hole = 0.3)` wydrąża środek. `sectorGap` i `bandGap` to szerokości fugi między
++ sektorami i między pasami. `Annulus.Style` ma `shade` dla koloru sektora wynikającego z jego
++ położenia oraz `sector` i `remainder` dla jego dwóch części. Poziomowanie jest tym, które opisują
++ [grafy](graphs.md#layering): `import rankings.balancedRanking` rysuje każdy węzeł tak blisko
++ węzłów od niego zależnych, jak to możliwe, a nie tak blisko środka.

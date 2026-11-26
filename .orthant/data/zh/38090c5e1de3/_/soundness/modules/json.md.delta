@@ -1,0 +1,17 @@
+orthant 2 language
+
+@ 0 4 0 1b1113efe3b8acc60d20ec0829f77660
++ 字段的类型本身必须可解码：它要么有自己的解码器，要么是另一个 case class、枚举或密封特质。不属于其中任何一种的类型会导致编译错误，错误信息会指出该字段、它所属的 case class 以及无法解码的类型。对于 `Vial(label: Text, contents: Poison)`，若 `Poison` 是普通类，编译器会这样拒绝：
+
+% 1 1 0 1abf28c8819c4a100ba2af9cc74b39c0
+
+% 0 1 0 12b01ab296b747291fc7be536f684132
+
+% 0 1 0 13a2ce2895d6cfab1d6f772d7f114000
+
+% 0 1 0 1910e7b5a183003019c7ef2d078a77bc
+
+% 1 1 0 11c31f98aa9aa3a4088a2a955d213950
+
+@ 0 4 0 01462b0fd03e7af10fcc63ddd7f6cc77
++ 编码 `Vial` 时，会因缺少 `Json.Encodable` 而以同样的措辞被拒绝。[派生](derivation.md#when-derivation-fails)说明了派生失败的其他情形，[解码](decoding.md)介绍了把单个文本值（例如 JSON 字符串）转换为自定义类型的解码器。

@@ -1,0 +1,13 @@
+orthant 2 language
+
+@ 0 9 0 11b8761d2079527915eedfb9394c62f1
++ Depurar uma aplicação em execução deveria parecer nativo, e não hospedado: breakpoints, passos e
++ inspeção por meio de um servidor do Debug Adapter Protocol, com os valores inspecionados
++ renderizados como seus tipos Soundness — a mesma disciplina sem codificações Java que `core-5`
++ aplica aos traces, aplicada ao estado ativo. O vivisection é esse servidor:
++ `vivisection.DapServer` trata o conjunto de requisições (launch, attach, breakpoints, threads,
++ stack traces, escopos, variáveis, evaluate, passos), e o `DapClient` de sua suíte conduz um
++ processo depurado ativo por um breakpoint, um passo `next` e uma inspeção na execução comum, com
++ cada variável local renderizada por meio de sua instância de `Inspectable` e um retrato de objeto
++ mostrado por seu nome simples e sua identidade, e não por um nome de classe JVM. O tópico é
++ `doc/work/soundness/modules/debugging.md`.

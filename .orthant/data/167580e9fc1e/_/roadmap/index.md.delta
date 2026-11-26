@@ -1,0 +1,10 @@
+orthant 2 release
+
+@ 0 1 0 1a28c8dced37ca4a0b3db28d23d0945f
++ row  `etc/api-reduction-candidates.md` no longer exists  `api-5`
+
+@ 0 1 0 09a22f72548c79781c6445e859e5a4f7
++ row  Every published module is covered by a `doc/work/soundness/modules/` topic  `doc-4`
+
+@ 0 1 0 1e111f26bd85eb821ef75eef38ece83c
++   by `dist-2` in `doc/work/standards/migration.md` — that convention is what makes "APIs change

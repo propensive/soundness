@@ -1,0 +1,32 @@
+orthant 2 language
+
+@ 0 9 0 15839a99031f9243069c375a4424b29d
++ La prose existe aujourd'hui dans trois systèmes parallèles : les guides thématiques de
++ `doc/soundness/modules/` — la direction suivie, et l'endroit où s'écrit l'essentiel —, les anciens
++ modèles par module de `lib/*/doc/`, hérités de l'époque où chaque module avait son propre dépôt,
++ et une copie séparée des textes de philosophie sous `web/res/content/`. Trois systèmes signifient
++ des divergences, et une divergence signifie que l'un d'eux ment. Ce chantier les réduit à un seul,
++ complète la couverture et ajoute la couche que la prose ne peut pas fournir : une documentation
++ d'API générée et consultable — une infrastructure dont dépendent aussi fluence et le versionnage
++ de LIRA dérivé de l'API. Il se termine par le test de facilité d'apprentissage le plus exigeant
++ qui soit : un agent, muni de la seule documentation, construit et déploie une application qui
++ fonctionne.
+
+@ 0 5 0 185fd7a7a41b5e581955d9a60cdb9168
++ Terminé : #1791 (2026-08-14)
++ La référence était de 92 fichiers de readme passe-partout par module, et de 98 répertoires
++ `lib/*/doc/` (mesuré le 2026-08-01). Ce texte passe-partout était antérieur au monodépôt ; ce
++ qui, dans `lib/*/doc/`, valait d'être conservé est passé dans les sujets de `doc/soundness/modules/`, et le
++ reste a été supprimé plutôt que laissé là pour induire en erreur. Il ne reste aucun répertoire
++ `lib/*/doc/`, et la phrase passe-partout ne correspond plus à rien.
+
+@ 0 2 0 1a857c20717058da1437188bb4029799
++ Terminé : #2306 (2026-10-21)
++ La référence était de 99 sujets dans `doc/soundness/modules/` et d'une bibliothèque sur 144 non couverte (mesuré le 2026-09-25 ; 91 sujets et 35 non couvertes le 2026-08-01) ; 101 sujets couvrent 145 bibliothèques sur 145 le 2026-10-21
+
+@ 0 5 0 0f601dfc26f27e1b08d1cb0e14f34fa1
++ Chaque module publié est couvert par au moins un sujet de `doc/soundness/modules/`, et un script de
++ couverture associe les modules aux sujets pour rendre visibles les orphelins :
++ `etc/check-doc-coverage.py`, lancé par `make build`, se termine avec un code non nul en présence
++ d'un orphelin. Le dernier, burdock, est couvert par `packaging.md` ; l'entrée `COVERED_BY` qui
++ nommait ce sujet pour ziggurat (une bibliothèque que #1973 a supprimée) nomme désormais burdock.

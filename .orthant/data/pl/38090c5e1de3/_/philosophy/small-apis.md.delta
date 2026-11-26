@@ -1,0 +1,11 @@
+orthant 2 language
+
+! The first is when an operation genuinely differs. `read` and `load` are two verbs for
+! [XML](../en/modules/xml.md), because reading yields the content and loading yields the
+! document with its header — a real distinction, not a variant. Collapsing them would
+! force a flag argument, which is a worse way to say the same thing.
+@ 0 4 0 10958a209821f8571ce41776e3eadba8
++ Pierwsza pojawia się, gdy operacja naprawdę się różni. `read` i `load` to dwa czasowniki dla
++ [XML](/doc/soundness/modules/xml.md), ponieważ odczyt daje treść, a wczytanie daje dokument wraz z
++ nagłówkiem – to rzeczywiste rozróżnienie, a nie wariant. Ich połączenie wymusiłoby argument
++ będący flagą, co jest gorszym sposobem powiedzenia tego samego.

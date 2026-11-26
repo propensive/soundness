@@ -1,0 +1,29 @@
+orthant 2 language
+
+@ 0 4 0 0527525db1d235091866ce303b9f0d3b
++ A entrada `JavaRuntime` pode dizer de que é feita, coisa de que precisa uma ferramenta que indexa
++ ou documenta a API do próprio JDK. `modules` nomeia os módulos do runtime, `exports` os pacotes
++ que um módulo exporta para todos os outros módulos, e `classes` as classes de um desses pacotes,
++ cada uma pelo seu nome completo:
+
+% 2 1 0 1a12f3a45ce050c70e6f41b772e263f0
+
+% 0 1 0 08a86cbdc9b8cb0109ed8ce5b435ce67
+
+% 1 1 0 0cd6459499a6bd5203d659b3bcc1b6aa
+
+% 0 1 0 03f33413f92e1c8919252fe9769fb3e9
+
+% 0 1 0 1dbed0c04be461bd1a347cf9aa47f70c
+
+% 0 1 0 08c47d468e83100402d57a27941d2706
+
+% 0 1 0 0ec9d6aed5e826d8052f35ac718dc9c7
+
+% 1 1 0 046ec549897f6af805e70b753dc175b9
+
+@ 0 4 0 0b806f9113affa6c062caf0e910b2d1e
++ Um pacote que um módulo exporta apenas para módulos nomeados não está entre os seus `exports`, e
++ uma classe aninhada é nomeada como o runtime a nomeia, como `java.util.Map$Entry`. Um módulo ou um
++ pacote que não existe não tem nada dentro, de modo que cada um dá uma lista vazia. Tudo isso vale
++ apenas para a JVM: um programa compilado pelo Scala Native não tem imagem de runtime para listar.

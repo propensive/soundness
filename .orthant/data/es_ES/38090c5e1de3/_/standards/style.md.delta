@@ -1,0 +1,14 @@
+orthant 2 language
+
+@ 0 4 0 08ceaae5c57e43db1316cf8896802202
++ Los documentos de `doc/soundness/modules/` son tutoriales, y cada uno presenta una funcionalidad de
++ Soundness —una capacidad que puede abarcar varios módulos internos— a un lector que se
++ encuentra con ella por primera vez. Esta guía expone cómo escribirlos: a quién se dirigen,
++ qué voz usan y qué convenciones siguen.
+
+@ 0 4 0 1315c709ae1d99bc05662163048cc767
++ Una palabra con un significado preciso en Soundness —*táctica*, *estrategia*, *capacidad*,
++ *paquete de elección*— se define en `doc/soundness/glossary.tel`, y se escribe entre corchetes donde
++ el lector quizá aún no la conozca: `[tactic]`, o `[strategies][strategy]` para una forma
++ flexionada. Fuel muestra la definición cuando se señala el término, y lo enlaza con la página
++ indicada en su entrada.

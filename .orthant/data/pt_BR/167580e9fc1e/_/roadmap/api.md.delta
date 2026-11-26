@@ -1,0 +1,37 @@
+orthant 2 language
+
+@ 0 2 0 066aaeb51b24ab230523fd39492a5681
++ A superfície já foi medida: `etc/api-reduction-candidates.md` inventaria todos os identificadores
++ que o pacote `soundness` exporta e classifica os candidatos à redução:
+
+@ 0 3 0 17e26bb135f0896e0d3cd0368f332847
++ Concluído quando: a tabela de renomeações em `etc/api-nesting-proposal.md` (que substituiu a
++ seção C1) estiver totalmente aplicada, e a seção “Remaining names by prefix family” do inventário
++ não listar nenhum nome fora de “Reviewed items which should not be moved”.
+
+@ 0 2 0 13bb210f1e21a6561a82bf562dce0f6a
++ Concluído quando: a seção C2 do inventário estiver vazia. (C3 e C3b foram substituídas por
++ `etc/api-nesting-proposal.md` e encerradas com ele.)
+
+@ 0 4 0 07f55ed7fa1d73e7092eee115a72ffa6
++ Os padrões de nomenclatura em `doc/work/standards/naming.md` e `doc/work/standards/given-naming.md` ganham
++ uma varredura de conformidade, de modo que um retorno à incoerência seja apanhado mecanicamente,
++ e não na revisão. `etc/check-given-uniqueness.py`, executado por `make build`, cobre a metade
++ relativa aos givens; nada verifica `naming.md`, embora a regra `S1.1` do flare imponha sua única
++ cláusula sobre `unsafe…`.
+
+% 0 1 0 1d3fa0088fed0fe510c1edd92a8d31f0
+
+@ 0 5 0 132121a5579d6de90996f0565b4058f9
++ O api-1 aninha um nome cujo prefixo repete seu contexto. Este item cobre o caso em que não há
++ prefixo a retirar: uma única palavra cuja grafia isolada reivindica um conceito geral quando
++ nomeia a noção de uma biblioteca. A árvore de layout do ultimatum não é *o* `Frame`. Cada
++ candidato é julgado caso a caso contra a regra R8 de `etc/api-nesting-proposal.md`. A
++ conveniência só mantém um nome no nível superior quando ele é o tipo principal da biblioteca, ou
++ um conceito que é realmente geral.
+
+@ 0 4 0 153039203ba264620a4145959946ed5e
++ Concluído quando: nenhum nome for exportado para `package soundness` por mais de uma biblioteca,
++ nenhum `@unexported` existir apenas para evitar um conflito, e cada linha das tabelas R8 em
++ `etc/api-nesting-proposal.md` tiver sido aplicada ou movida para sua lista “Reviewed and kept
++ top-level”.

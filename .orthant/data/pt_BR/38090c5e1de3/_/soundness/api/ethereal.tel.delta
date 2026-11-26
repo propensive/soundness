@@ -1,0 +1,27 @@
+orthant 2 language
+
+@ 0 10 0 1b05c2c20b8cc8d10c46a37a3628e3a6
++   entry .Composition   a base do esquema com algumas de suas camadas, e a assinatura que os documentos escritos sob ela carregam
++       Um launcher escolhe a composição, a partir da `.acceptance` que o daemon publica, e o daemon
++       responde sob aquela em que lhe escreveram. `interrupts` diz se ela tem a camada `interrupts`.
++   entry .base   a composição apenas da base do esquema, sob a qual todo launcher pode escrever
++   entry .layered   a composição da base com a camada `interrupts`
++   entry .acceptance   o que o daemon lê, para um launcher consultar antes de se conectar: a base, e cada camada que ele tem
++   entry .recognize   a mensagem do primeiro documento de uma sessão, com a composição sob a qual foi escrito
++       A composição mais rica é tentada primeiro, e o restante da sessão é lido e escrito sob a que
++       for encontrada.
+
+@ 0 13 0 1b941d28e5fa9e3c11cf3d8ac7dde519
++           `canonical` pede o modo canônico, com eco se `echo` também estiver definido; canônico
++           sem eco é como uma senha é lida; nenhuma das flags é o modo raw. O launcher não
++           responde nada, e deixa como está um terminal que não possui. `Resident#cooked` e
++           `Resident#concealed` o enviam.
++
++           `interrupts` só é transmitido sob a camada `interrupts` do esquema. No modo raw, ele deixa
++           Ctrl-C, Ctrl-\ e Ctrl-Z gerando sinais, de modo que uma invocação que não está lendo seu
++           teclado ainda possa ser interrompida por ele; as teclas passam a ser bytes em stdin quando
++           a invocação lê stdin pela primeira vez no modo raw, e não são devolvidas.
++       entry #canonical   modo canônico, ou raw quando falso
++       entry #echo   se o terminal ecoa o que é digitado
++       entry #interrupts   se, no modo raw, as teclas que geram sinais ficam com o terminal
++     entry .Closed   o stream nomeado perdeu seu leitor

@@ -1,0 +1,10 @@
+orthant 2 language
+
+@ 0 5 0 074ba3b456a021991e2ea448943cc78b
++ Manche Ergebnisse hängen von der Länge eines Beispielstrings ab: die Spaltenbreiten einer
++ dargestellten Tabelle, aufgefüllter oder ausgerichteter Text, ein Byte-Offset, eine kodierte
++ Länge, die Nutzdatengröße eines Benchmarks. Ein Test meldet, wenn ein solches Ergebnis falsch
++ geworden ist; ein `// result`-Kommentar in `doc/work/soundness/api/*.tel` tut das nicht, da nichts ihn prüft. Wo
++ also eine Länge tragend ist, wählen Sie einen Namen der erforderlichen Länge, und wo sich ein
++ gezeigtes Ergebnis ändert, werten Sie das Beispiel erneut aus, statt das Ergebnis von Hand zu
++ bearbeiten.

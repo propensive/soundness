@@ -1,0 +1,19 @@
+orthant 2 language
+
+@ 0 11 0 1f902bd79280361b10ba58acbbd8d7cb
++       Une erreur est identifiée par trois nombres, qui forment son code bolt. `module` est le
++       numéro de la bibliothèque où se trouve l'erreur, tel que l'enregistre `bolt.tel` dans
++       `doc/errors` ; `number` est le numéro propre de l'erreur au sein de cette bibliothèque,
++       le prochain libre lors de l'écriture du type d'erreur, et jamais réutilisé (un numéro retiré
++       demeure dans le registre, marqué comme tel) ; et `variant` est le numéro de la raison de
++       l'erreur — le `number` de son cas `Reason`, une énumération qui étend `Clarification` — ou 0
++       lorsque l'erreur n'a pas de raisons. L'erreur est documentée dans
++       `doc/errors/<module>.<number>.md` avec sa cause et les remèdes habituels, de sorte que le
++       `↯/s.25.1` d'un rapport d'utilisateur puisse être consulté plutôt que deviné. Une erreur
++       écrite `Error(message)` a `module = 0` : pas de code, et `getMessage` préfixe à la place son
++       composant. Le code est rendu dans le préfixe `[↯/s.25.1.2]` de `#labelled`, de `getMessage`
++       et d'un `halt` à la compilation.
+
+@ 0 3 0 18479486cd81994d11e7509da0fbbecc
++       La liste de ce que signifie chacun des codes de Soundness est `bolt.tel` dans `doc/errors`,
++       que nomme l'index des codes du dépôt [bolt](https://github.com/propensive/bolt).

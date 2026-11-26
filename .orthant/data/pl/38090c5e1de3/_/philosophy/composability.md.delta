@@ -1,0 +1,9 @@
+orthant 2 language
+
+! A [stream](../en/modules/streams.md) pipeline is the clearest case. Each stage takes a
+! stream and yields a stream, so stages chain without adapters and in any order that makes
+! sense:
+@ 0 3 0 13e0f437e82a946314fb7b5ee55f846a
++ Najwyraźniejszym przypadkiem jest potok [strumieni](/doc/soundness/modules/streams.md). Każdy etap
++ przyjmuje strumień i zwraca strumień, więc etapy łączą się w łańcuch bez adapterów i w
++ dowolnej sensownej kolejności:

@@ -1,0 +1,22 @@
+orthant 2 release
+
+@ 0 1 0 1e20761ba0b2e982193e903c29fe5df5
++ The surface has already been measured: `etc/api-reduction-candidates.md` inventories every
+
+@ 0 1 0 1b87c40e0deaabbf0bf3e9cd08ea15c5
++ Done when: the rename table in `etc/api-nesting-proposal.md` (which superseded the C1
+
+@ 0 1 0 1e7ed4c04f595edc046969e7d633312b
++ `etc/api-nesting-proposal.md` and closed with it.)
+
+@ 0 1 0 0ff4d326aa79e704190066b17207157f
++ The naming standards in `doc/work/standards/naming.md` and `doc/work/standards/given-naming.md` gain a
+
+@ 0 1 0 00e326d1bb046aa11262e578534b4047
++     test -f etc/api-reduction-candidates.md || echo absent    # absent
+
+@ 0 1 0 1351c4666652e8a3135f446582c1cdb9
++ case by case against rule R8 in `etc/api-nesting-proposal.md`. Convenience keeps a name
+
+@ 0 1 0 1c536c52ee2828b20b6961dd35384e26
++ `etc/api-nesting-proposal.md` has been either applied or moved to its "Reviewed and kept

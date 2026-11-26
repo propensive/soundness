@@ -1,0 +1,9 @@
+orthant 2 language
+
+@ 0 4 0 08ceaae5c57e43db1316cf8896802202
++ `doc/soundness/modules/` 中的文档是教程，每篇向初次接触的读者介绍 Soundness 的一项功能——一种可能横跨多个内部模块的能力。
++ 本指南说明如何编写这些教程：面向谁、使用什么语气、遵循哪些约定。
+
+@ 0 4 0 1315c709ae1d99bc05662163048cc767
++ 在 Soundness 中有精确含义的词——*战术*、*策略*、*能力*、*选择包*——在 `doc/soundness/glossary.tel` 中定义，在读者可能尚不了解它的地方写在方括号中：`[tactic]`，屈折形式则写作 `[strategies][strategy]`。
++ 指向该术语时，fuel 会显示其定义，并链接到其条目中指明的页面。

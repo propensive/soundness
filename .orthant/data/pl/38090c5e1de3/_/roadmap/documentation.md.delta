@@ -1,0 +1,33 @@
+orthant 2 language
+
+@ 0 9 0 15839a99031f9243069c375a4424b29d
++ Proza istnieje dziś w trzech równoległych systemach: przewodnikach tematycznych w
++ `doc/soundness/modules/` – kierunku, w którym zmierzamy, i miejscu, w którym powstaje zasadnicza część
++ tekstu – w starszych szablonach dla poszczególnych modułów w `lib/*/doc/`, odziedziczonych
++ z czasów, gdy każdy moduł był osobnym repozytorium, oraz w osobnej kopii materiałów
++ filozoficznych w `web/res/content/`. Trzy systemy oznaczają rozbieżności, a rozbieżność
++ oznacza, że jeden z nich kłamie. Ten nurt scala je w jeden, uzupełnia pokrycie i dodaje
++ warstwę, której proza zapewnić nie może: generowaną, przeszukiwalną dokumentację API –
++ infrastrukturę, od której zależą też fluence i wersjonowanie LIRA wyprowadzane z API. Kończy
++ się najsilniejszym istniejącym testem przystępności: agent, mając wyłącznie dokumentację,
++ buduje i wdraża działającą aplikację.
+
+@ 0 5 0 185fd7a7a41b5e581955d9a60cdb9168
++ Zrobione: #1791 (2026-08-14)
++ Stan wyjściowy wynosił 92 pliki szablonowych readme dla poszczególnych modułów i 98 katalogów
++ `lib/*/doc/` (pomiar 2026-08-01). Szablony były starsze niż monorepo; to, co w `lib/*/doc/`
++ warto było zachować, przeniesiono do tematów w `doc/soundness/modules/`, a resztę usunięto, zamiast
++ zostawiać ją, by wprowadzała w błąd. Nie pozostał żaden katalog `lib/*/doc/`, a szablonowa fraza
++ niczego nie dopasowuje.
+
+@ 0 2 0 1a857c20717058da1437188bb4029799
++ Zrobione: #2306 (2026-10-21)
++ Stan wyjściowy wynosił 99 tematów w `doc/soundness/modules/` i 1 ze 144 bibliotek nieobjęty (pomiar 2026-09-25; 91 tematów i 35 nieobjętych w dniu 2026-08-01); w dniu 2026-10-21 101 tematów obejmuje 145 ze 145
+
+@ 0 5 0 0f601dfc26f27e1b08d1cb0e14f34fa1
++ Każdy publikowany moduł jest objęty co najmniej jednym tematem w `doc/soundness/modules/`, a skrypt
++ pokrycia odwzorowuje moduły na tematy, by sieroty były widoczne:
++ `etc/check-doc-coverage.py`, uruchamiany przez `make
++ build`, kończy się kodem niezerowym, gdy znajdzie sierotę. Ostatnią, burdock, obejmuje
++ `packaging.md`; wpis `COVERED_BY`, który wskazywał ten temat dla ziggurat (biblioteki usuniętej
++ w #1973), wskazuje teraz burdock.

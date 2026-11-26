@@ -1,0 +1,7 @@
+orthant 2 language
+
+! See [impossible states](impossible-states.md) for the rule this serves, and
+! [interpolation](../en/modules/interpolation.md) for how such a literal is built.
+@ 0 2 0 00543af9c2a3807e111626140b6fb5eb
++ Zobacz [stany niemożliwe](impossible-states.md), by poznać regułę, której to służy, oraz
++ [interpolację](/doc/soundness/modules/interpolation.md), by dowiedzieć się, jak buduje się taki literał.

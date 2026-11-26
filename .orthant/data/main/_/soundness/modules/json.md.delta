@@ -1,12 +1,6 @@
 orthant 2 release
 
-@ 0 4 0 103f13f7d215cba60f13145e211559d4
-+ A field's type must itself be decodable: a type with a decoder of its own, another case class,
-+ an enumeration or a sealed trait. One which is none of these is a compile error, and the message
-+ names the field, the case class it belongs to and the type which cannot be decoded. A
-+ `Vial(label: Text, contents: Poison)`, where `Poison` is an ordinary class, is refused with:
-
-@ 2 0 0 0f842a8362dc3149044451f6022e65f2
+@ 2 0 0 0764349828a3028d1d235a17258b9a9d
 + ```
 + wisteria: the field `contents` of `Vial` needs a `Json.Decodable` instance for `Poison`, but
 + none could be found or derived: `Poison` is not a case class, an enum or a sealed trait; a
@@ -18,3 +12,5 @@ orthant 2 release
 + can fail, and [Decoding](decoding.md) describes the decoders that turn a single text value, such as
 + a JSON string, into a type of one's own.
 +
+
+@ 0 11 0 163d5f3281f32b8704fc59d454867568

@@ -1,5 +1,5 @@
 orthant 2 language
 
-@ 0 5 0 1395deb66a5d3fe90a70b538ce536ea1
+@ 1 5 0 1d5c0092601ced7c11b0f1bf26f5563c
 +   entry .markup   把诊断树渲染为语义标注：即 `.render` 所写的文本，去掉颜色，并标出其结构
 +       树的外面是一个 `tree` 标记，每个节点所在的行及其子节点的行外面是一个 `node` 标记，`delicious.Markup` 按此读取它们。去掉标记后就是同样的文本，因此纯文本的读者不会损失任何内容。当编译器以 `-Zsemantic-diagnostics` 运行时，解释用的宏会写出它。

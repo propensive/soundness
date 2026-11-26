@@ -1,0 +1,91 @@
+orthant 2 language
+
+@ 0 13 0 1f804944cbbab0300db1429dc29c7687
++ column  种类
++ column  绘制
++ column  横坐标
++ column  纵坐标
++ column  样式
++ row  `Bars()`  一个系列，或系列的集合  类别型  连续型  `Bars.Style`
++ row  `StackedBars()`  系列的集合  类别型  连续型  `StackedBars.Style`
++ row  `Lines()`  一个系列，或系列的集合  连续型  连续型  `Lines.Style`
++ row  `Scatter()`  一个系列，或系列的集合  连续型  连续型  `Scatter.Style`
++ row  `Pie()`  恰好一个系列  类别型  连续型  `Pie.Style`
++ row  `Histogram()`  `Samples`，或它们的集合  连续型  计数  `Histogram.Style`
++ row  `Boxes()`  `Samples`，或它们的集合  每个集合一个箱体  连续型  `Boxes.Style`
++ row  `Annulus()`  由 `Weighted`、`Progressive` 节点构成的 `Dag`  无  无  `Annulus.Style`
+
+@ 0 20 0 07a1c9f65a6293bd096dfd926a73c63d
++ column  钩子
++ column  绘制
++ column  定义于
++ row  `fontStyle`, `lettering`  文本的大小和颜色；每一段文本  `Chart.Style`
++ row  `backdrop`  图表背后的画布  `Chart.Style`
++ row  `swatch`, `legendLabel`  一个图例条目  `Chart.Style`
++ row  `leader`  从被移开的标注回到其点的线  `Chart.Style`
++ row  `axisLine`  每条坐标轴的笔画  `Chart.Cartesian`
++ row  `axisBreak`  线性坐标轴不从零开始处的断开标记  `Chart.Cartesian`
++ row  `arrowhead`  坐标轴的末端  `Chart.Cartesian`
++ row  `tick`, `gridLine`  一个分度及其网格线  `Chart.Cartesian`
++ row  `tickLabel`  刻度的标注，它的位置以及是否旋转  `Chart.Cartesian`
++ row  `axisTitle`  坐标轴的标题  `Chart.Cartesian`
++ row  `marker`, `errorBar`  一个点及其区间  `Chart.Cartesian`
++ row  `pointLabel`  `Noted` 点的注释  `Chart.Cartesian`
++ row  `bar`  一个条形  `Bars.Style`
++ row  `line`, `band`  系列的折线和估计值的条带  `Lines.Style`
++ row  `box`, `whisker`, `median`  箱线图的各部分  `Boxes.Style`
++ row  `wedge`, `wedgeLabel`  一个扇形及其百分比  `Pie.Style`
++ row  `shade`, `sector`, `remainder`  扇区的颜色及其两个部分  `Annulus.Style`
+
+@ 0 10 0 1c600122182c2eb2189e07b099bd189d
++ column  标识符
++ column  内容
++ column  出现于
++ row  `backdrop`  画布，使用调色板的背景色  每种图表
++ row  `grid`  网格线  笛卡尔图表
++ row  `abscissa`, `ordinate`  每条坐标轴、其分度及其标题  笛卡尔图表
++ row  `legend`  图例  带图例的图表
++ row  `series-0`, `series-1`, …  每个系列  笛卡尔图表
++ row  `wedges`  每个扇形及其标注  `Pie`
++ row  `rank-0`, `rank-1`, …  每个环带  `Annulus`
+
+@ 0 1 0 09524893beb0e5fc110f8d8b22a39a27
++ ### 环形图
+
+@ 0 5 0 094a00dfd1bbeae2143c54d55798a5bd
++ `Annulus` 把依赖图，即 [`Dag`](graphs.md)，绘制为同心的环带。
++ 不依赖任何节点的节点位于最内层的环带，此后每个环带容纳向外再进一个秩的节点，因此一次构建从中心向外逐渐填满。
++ 每个节点是其环带中的一个扇区，所扫过的角度与它在该秩内的大小成正比，而环带的厚度等于其秩在总大小中所占的份额。
+
+@ 0 7 0 11568818c01018f40832037731e60764
++ 节点的大小及其进度（从 `0.0` 到 `1.0`）来自节点类型上的两个类型类：`Weighted` 和 `Progressive`。
++ 扇区按节点的完成程度顺时针填充，剩余部分使用扇区颜色的一种柔和色调。
++ 该颜色是调色板的第一种颜色，并按扇区所在的位置调整明暗：其色相从左到右转过三十度，在中线以下较暗，以上较亮。
++ 环形图没有标注，也没有图例。
++ 每个环带是一个 `rank-0`、`rank-1`、… 组，每个扇区是一个 `sector-0`、`sector-1`、… 路径，而扇区未完成的部分是 `sector-0-rest`。
+
+@ 0 3 0 0fbbeed84c453a461e364d4fa195aed8
++ 节点携带其进度，因此环形图和任何图表一样用新数据修订。
++ 对于形状和大小相同的任何图，适配都保持不变，只替换那些扇区填充得更多的环带：
+
+% 0 1 0 1877856c8ab7469c04f0ffb78800176f
+
+% 0 1 0 14e225babf96351702cd5d73f93e40d6
+
+% 0 1 0 14c1482790cf4ef70542451dfecf4315
+
+@ 0 5 0 0882828f30df7a830a6f292209c4fb9f
++ `Chart.Standard(hole = 0.3)` 把中心挖空。
++ `sectorGap` 和 `bandGap` 是扇区之间和环带之间缝隙的宽度。
++ `Annulus.Style` 有 `shade`，根据扇区的位置给出其颜色，还有 `sector` 和 `remainder`，用于扇区的两个部分。
++ 排秩方式就是[图](graphs.md#layering)中所描述的：`import rankings.balancedRanking` 把每个节点绘制得尽可能靠近其依赖者，而不是尽可能靠近中心。
+
+@ 0 8 0 16557cb6cd42445b1d8d52e13d86e255
++ - [SVG](svg.md) 描述图表所呈现成的绘图。
++ - [标注放置](label-placement.md) 描述图表的标注如何相互避让。
++ - [字体](fonts.md) 描述图表可以使用的字体族。
++ - [量](quantities.md) 描述为坐标轴命名标题的单位。
++ - [图](graphs.md) 描述环形图所绘制的 `Dag`。
++ - [颜色](colors.md) 描述调色板的颜色。
++ - [时间](time.md) 描述连续坐标轴可以容纳的时长和瞬时。
++ - [仪表](gauges.md)和[表格](tables.md)在终端中呈现值，而[测试](testing.md)以图表展示基准测试结果。

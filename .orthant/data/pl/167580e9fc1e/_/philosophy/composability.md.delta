@@ -1,0 +1,6 @@
+orthant 2 language
+
+@ 0 3 0 13e0f437e82a946314fb7b5ee55f846a
++ Najwyraźniejszym przypadkiem jest potok [strumieni](/doc/soundness/modules/streams.md). Każdy etap
++ przyjmuje strumień i zwraca strumień, więc etapy łączą się w łańcuch bez adapterów i w
++ dowolnej sensownej kolejności:

@@ -1,0 +1,33 @@
+orthant 2 language
+
+@ 0 9 0 15839a99031f9243069c375a4424b29d
++ Die Prosa existiert heute in drei parallelen Systemen: den Themenleitfäden in `doc/soundness/modules/` –
++ der Richtung, in die es geht, und dem Ort, an dem das Wesentliche geschrieben wird –, den
++ veralteten modulweisen Vorlagen in `lib/*/doc/`, geerbt aus der Zeit, als jedes Modul ein
++ eigenes Repository war, und einer separaten Kopie des Philosophie-Materials unter
++ `web/res/content/`. Drei Systeme bedeuten Abweichung, und Abweichung bedeutet, dass eines von
++ ihnen lügt. Diese Spur führt sie zu einem zusammen, vervollständigt die Abdeckung und ergänzt
++ die Schicht, die Prosa nicht liefern kann: generierte, durchsuchbare API-Dokumentation –
++ Infrastruktur, auf die auch fluence und die aus der API abgeleitete Versionierung von LIRA
++ angewiesen sind. Sie endet mit dem stärksten Test der Erlernbarkeit, den es gibt: Ein Agent,
++ dem nur die Dokumentation vorliegt, baut eine funktionierende Anwendung und stellt sie bereit.
+
+@ 0 5 0 185fd7a7a41b5e581955d9a60cdb9168
++ Erledigt: #1791 (2026-08-14)
++ Der Ausgangswert waren 92 Dateien mit modulweisem Readme-Boilerplate und 98 Verzeichnisse
++ `lib/*/doc/` (gemessen am 2026-08-01). Das Boilerplate stammte aus der Zeit vor dem Monorepo;
++ was in `lib/*/doc/` erhaltenswert war, wanderte in Themen unter `doc/soundness/modules/`, und der Rest
++ wurde gelöscht, statt weiter in die Irre zu führen. Kein Verzeichnis `lib/*/doc/` ist übrig,
++ und die Boilerplate-Phrase findet keine Treffer mehr.
+
+@ 0 2 0 1a857c20717058da1437188bb4029799
++ Erledigt: #2306 (2026-10-21)
++ Der Ausgangswert waren 99 Themen in `doc/soundness/modules/` und 1 von 144 Bibliotheken ohne Abdeckung (gemessen am 2026-09-25; 91 Themen und 35 ohne Abdeckung am 2026-08-01); 101 Themen decken am 2026-10-21 145 von 145 ab
+
+@ 0 5 0 0f601dfc26f27e1b08d1cb0e14f34fa1
++ Jedes veröffentlichte Modul ist durch mindestens ein Thema in `doc/soundness/modules/` abgedeckt, und ein
++ Abdeckungsskript ordnet Module Themen zu, sodass verwaiste Module sichtbar werden:
++ `etc/check-doc-coverage.py`, ausgeführt von `make build`, endet bei einem verwaisten Modul mit
++ einem Exit-Status ungleich null. Das letzte, burdock, wird durch `packaging.md` abgedeckt; der
++ Eintrag in `COVERED_BY`, der dieses Thema für ziggurat nannte (eine Bibliothek, die #1973
++ entfernt hat), nennt nun burdock.

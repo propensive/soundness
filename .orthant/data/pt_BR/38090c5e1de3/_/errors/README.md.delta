@@ -1,0 +1,26 @@
+orthant 2 language
+
+@ 0 9 0 0ffe1fa729118f45146c25fc4b506118
++ - `s` é a letra pela qual os códigos bolt nomeiam o Soundness;
++ - `m` é o número do módulo em que o erro está, conforme dado pela [lista de módulos](modules.md) e
++   por `bolt.tel`: os módulos são numerados em uma ordem em que cada um vem depois daqueles de que
++   depende, tal como estavam quando cada um foi numerado, e um novo módulo recebe o próximo número;
++ - `n` é o número do erro dentro de seu módulo, o próximo livre quando o erro é escrito;
++ - `v`, quando presente, identifica uma variante específica do erro (tipicamente o caso de um enum
++   `Reason`).
+
+@ 0 8 0 190d5ec87213cd8006246e0294bc0c6e
++ `bolt.tel`, ao lado deste arquivo, é o registro de todos os códigos: o número e o nome de cada
++ módulo, erro e variante, no schema `bolt`. O índice de códigos bolt o nomeia como sendo o do
++ Soundness, e não guarda nenhuma cópia, de modo que um erro que é adicionado, renomeado ou
++ aposentado é registrado ali, na mesma alteração. Um nome fica em kebab-case, e escreve por extenso
++ a forma longa de um código: `↯/s.87.2.1` é `↯/soundness.legerdemain.query.missing`. Um tipo de
++ erro `Query.Error` recebe o nome `query`, e um `Reason` como `BadSignature`, `bad-signature`.
+
+@ 0 6 0 0e6d996121bd51fd0c84762bd81f5efa
++ Um código nunca é reutilizado. Quando um erro é removido, sua página permanece, marcada como
++ `(retired)`, dizendo o que aconteceu com ele, e seu número é marcado como aposentado em
++ `bolt.tel`: uma referência ao código vinda de uma versão mais antiga ainda é resolvida, e o número
++ não pode ser alocado de novo por acidente. Uma página aposentada diz o que substituiu o código em
++ uma tabela `Was` e `Now`, com uma linha para o código e para cada uma de suas variantes que tenha
++ um sucessor, mesmo quando há apenas um.

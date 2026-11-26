@@ -1,0 +1,15 @@
+orthant 2 language
+
+@ 0 5 0 1f52db954f55f5811eeec5c28a446ede
++ Der Einwand gegen Unveränderlichkeit ist immer derselbe: Ein Feld tief in einer Struktur zu
++ ändern heißt, jede Schicht darüber neu aufzubauen. Das stimmt, und es ist ein Problem der Syntax,
++ nicht der Semantik — also löst Soundness es mit Syntax. Eine
++ [Linse](/doc/soundness/modules/optics.md) nimmt die Aktualisierung, geschrieben als gewöhnliche
++ Zuweisung an einen Pfad, und erledigt den Neuaufbau:
+
+@ 0 5 0 13b944085c973784002ec33f12ef5462
++ Ein **`Canvas`**, das man durch Öffnen eines [Rasters](/doc/soundness/modules/images.md) zum Schreiben
++ erhält, verändert Pixel an Ort und Stelle — denn ein großes Bild Pixel für Pixel mit einem
++ Funktionsaufruf je Pixel zu erzeugen ist die falsche Gestalt für einen Zeichenalgorithmus. Die
++ Veränderung ist auf den `open`-Block beschränkt und durch die Berechtigung `Write` gesperrt, und
++ `snapshot` nimmt eine unabhängige Kopie für alles, was ihn überdauern muss.

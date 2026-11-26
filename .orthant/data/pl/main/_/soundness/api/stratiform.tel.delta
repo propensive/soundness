@@ -5,8 +5,19 @@ orthant 2 language
 @ 0 1 0 1509c0b4edc0521e140773335e9e6a24
 +   entry #Revision   składalny dziennik edycji, stosowany do dokumentu po jednej operacji
 
+@ 0 1 0 05dff70ef02c8bae02867bc8383dc2aa
++ entry .TelMutation   trait zawierający `Tel.Mutation`, operacje edycji z §22.2
+
+% 1 1 0 0ebc21e4c5ef6314061c5c48731570de
+
+@ 0 2 0 1cec67b5515628bf1c92261ab21dd98a
++       `object Tel extends TelMutation`, więc `Mutation` jest dostępne przez obiekt towarzyszący,
++       jako `Tel.Mutation`.
+
 @ 0 1 0 011854171f69420718747641930de1a5
 +   entry #Mutation   prymitywne operacje edycji z §22.2 zachowujące prezentację oraz ich interpreter
+
+% 1 1 0 09c5c7c6edcea57318feece1ac127ec6
 
 @ 0 5 0 03a6563a211c058e091aac26e9fa266a
 +         Każda `.Op` to lokalne przepisanie adresowane przez `Tel.Pointer`: otaczające atomy,
@@ -15,6 +26,20 @@ orthant 2 language
 +         z powrotem w nienaruszonym stanie. `Mutation(tel, op)` stosuje jedną operację,
 +         a `Mutation(tel, ops)` listę po kolei, zwracając nowy `Tel`; `Revision` to składalny DSL
 +         nad tymi samymi operacjami.
+
+% 2 1 0 15dcab498a62d6ab04dca2c09c057ef6
+
+% 3 1 0 0f61f475068ada7a1a25f8e43bbf6e54
+
+% 4 1 0 09103a44a98e09230e84023593f633f4
+
+% 0 1 0 1df2f2e4ad8c45b2111ad7d8764c6b8b
+
+% 0 1 0 1c3a1ca3db3719c41146c2249bb38397
+
+% 0 1 0 0d8d982018413b051c2ae1c03813af7d
+
+% 1 1 0 0583218765dddcea142c2c301cb59feb
 
 @ 0 7 0 0bdbe28195ed1d45177a037d87ad30fd
 +         Krok wskaźnika to słowo kluczowe plus indeks wystąpienia, rozstrzygany względem
@@ -25,6 +50,10 @@ orthant 2 language
 +         że ustawiana flaga jest zadeklarowana, że zamiennik jest poprawnie typowany – są poza
 +         zakresem, jak w implementacji referencyjnej: sprawdza je warstwa świadoma schematu,
 +         zanim przekaże działanie tym prymitywom.
+
+% 0 1 0 1ec63c4308d070021fc5ac25fe4d2369
+
+% 1 1 0 03bf26a2225a06050b9ca458f4d19132
 
 @ 0 20 0 0dcd6706d124251810739b23466f1845
 +     entry .Placement   po której stronie drugiej grupy `ReorderGroups` umieszcza grupę: `Before` lub `After`
@@ -89,8 +118,24 @@ orthant 2 language
 +         spację, a od niej twardą spacją, więc konstrukcja przy ponownym parsowaniu daje te same
 +         atomy.
 
+% 2 1 0 03db84943a74235b1e0e4183fcf90275
+
+% 3 1 0 1c9d477f6c39100f1fd9e17e1d68d6fa
+
+% 0 1 0 1df6506c2fab041115325346029233e4
+
+% 0 1 0 010838ec3ff3ed2019cdfe509c15f417
+
+% 0 1 0 193c4595813db4071570bfef9726343a
+
+% 0 1 0 0083b990801a573b090d8544a95ceb78
+
+% 1 1 0 0c99a7cdc3e0320d0380e97abc3fcd34
+
 @ 0 1 0 1210220dfccc22b104fd4553a4bc7331
 +     entry .Error   zgłaszany, gdy wskaźnik się nie rozstrzyga lub niezmiennik operacji nie jest spełniony
+
+% 1 1 0 100c9fd4209bc4850e77c5c1bb963d8c
 
 @ 0 11 0 01151dd09e78d6ca18e924e372da3734
 +           Błąd `↯/s.118.2`: _the mutation failed because …_. `PointerNotFound` to wskaźnik,

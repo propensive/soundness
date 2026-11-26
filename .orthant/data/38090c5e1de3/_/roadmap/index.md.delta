@@ -1,0 +1,7 @@
+orthant 2 release
+
+@ 0 1 0 0783c8819be5cd5b0f54ca482cdf9c96
++ row  Every published module is covered by a `doc/soundness/modules/` topic  `doc-4`
+
+@ 0 1 0 18beba5a2cf312d206bc0b68d127e2c1
++   by `dist-2` in `doc/standards/migration.md` — that convention is what makes "APIs change

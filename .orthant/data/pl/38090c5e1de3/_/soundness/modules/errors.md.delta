@@ -1,0 +1,45 @@
+orthant 2 language
+
+@ 0 1 0 0e6a2d5fc72a75d6005580216a7590f9
++ ### Kod, który nie został napisany w ten sposób
+
+@ 0 5 0 0d520984391183e80282dbedb6c118f0
++ Każdy handler opisany tutaj ma do czynienia z `Exception`, co jest właściwe dla kodu, który
++ zgłasza swoje błędy. Narzędzie, które steruje *obcym* kodem, takim jak kompilator albo
++ classloader, musi też przetrwać to, co ten kod rzuca, a wiele z tego wcale nie jest `Exception`:
++ nieudana asercja, wyczerpany stos albo klasa, której nie dało się zlinkować. Żadne z nich nie
++ kończy programu, ale żadne nie dociera też do `safely` ani `recover`.
+
+@ 0 2 0 06401e6939a385e10196cfcce9ddcb4e
++ `pacify` wykonuje blok takiego kodu i zgłasza wszystko, co on rzuci, jako `Disturbance` – zwykły
++ błąd, który zachowuje reprezentowany przez siebie `throwable`:
+
+% 2 1 0 0dba5c706250d4671e5743603546c51f
+
+% 3 1 0 17de0ad2648dcc39195457705a3c3cb9
+
+% 4 1 0 1cb26e680046005b08d1a34cfae2b58f
+
+% 0 1 0 1e980016bc0ae3691f2176cfce4a94ee
+
+% 0 1 0 0571eeec5b91741516793a8732dd7f8a
+
+% 0 1 0 19fd4b2af4417e5d0e09a3f1a86836d0
+
+% 0 1 0 0b84ea1ab161c55f1c224fb28dc68767
+
+% 0 1 0 138f5b6c8e0f98b30566beba6d577194
+
+% 0 1 0 04608a27162d88501f0382027e5c5d83
+
+% 0 1 0 15375e1b6e1575021224d9dc8df437b7
+
+% 0 1 0 1b007dc2e33556d113df2073cb071363
+
+% 1 1 0 1e712c7ff8b0d734180073eb67749afd
+
+@ 0 4 0 0154979ea18f29e4151a531d5d1b21cb
++ `pacify` przyjmuje każdy throwable, który nie jest fatalny dla programu, oraz trzy wymienione
++ wyżej rodzaje `java.lang.Error`. Wyczerpana sterta albo przerwanie nadal się propagują, ponieważ
++ żaden handler nie mógłby zrobić z nimi nic pożytecznego. Błąd zgłoszony poprawnie wewnątrz bloku
++ nie jest obcy: przechodzi przez `pacify` nietknięty, do handlera, dla którego został zgłoszony.

@@ -38,6 +38,14 @@ orthant 2 language
 @ 0 1 0 10aaf54c52c3fe0b0d316f1cd65e1109
 +     entry .Matcher   根据语法检查属性值：有效、无效或不支持
 
+@ 0 1 0 149d2567dd24c50e02387fde71dee163
++ entry .SyntaxMatching   持有 `Css.Syntax.Matcher.check` 的特质
+
+% 1 1 0 11404277c923a1900ed4fa47e53f37fb
+
+@ 0 2 0 08f37693408ce0041dc04ccb54d2f903
++       `object Matcher extends SyntaxMatching`，因此 `check` 通过它访问，写作 `Css.Syntax.Matcher.check`。
+
 @ 0 5 0 1faf72e6fe088cd01a48ddf10a68931c
 +   entry #check   根据属性的语法检查值，或直接根据 `Css.Syntax` 检查
 +       两个重载：`check(property: PropertyDef, value)` 使用属性的已解析语法，`check(grammar: Css.Syntax, value)` 使用任意语法。

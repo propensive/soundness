@@ -1,0 +1,18 @@
+orthant 2 release
+
+@ 0 1 0 126dfea9469aea4917bda56262650ca1
++   modules](modules.md) and `bolt.tel` give it: modules are
+
+@ 2 0 0 113f41020697efeb12538fb9addbbd64
++ `bolt.tel`, beside this file, is the record of every code: the
++ number and the name of each module, error and variant, in the `bolt` schema.
++ The index of bolt codes names it as Soundness's, and holds no copy, so an
++ error which is added, renamed or retired is recorded there, in the same
++ change. A name is in kebab-case, and spells the long form of a code:
++ `↯/s.87.2.1` is `↯/soundness.legerdemain.query.missing`. An error type
++ `Query.Error` is named `query`, and a `Reason` such as `BadSignature`,
++ `bad-signature`.
++
+
+@ 0 1 0 0d5591742c644ba915ea1b58372e9e1d
++ `bolt.tel`: a reference to the code from an older release still resolves, and

@@ -3,9 +3,13 @@ orthant 2 release
 @ 1 0 0 10172b47c55c58d0109781ea5d900299
 +   entry #trees   every `Markup.Tree` in the message, wherever it is nested
 
+@ 0 1 0 1a26dee1d32c457f154f39a6cd8b8097
+
 @ 1 0 0 1639616f7496753a0e7bfbb34a978b50
 +       row  `Tree(omitted, children)`  the tree which explains a failed contextual resolution; `omitted` counts the nodes left out for length
 +       row  `Node(role, name, note, repeated, children)`  one node of such a tree: its `Role`, the `name` of what was sought, found or proposed, a `note` on it, and whether its subtree was shown earlier and is left out
+
+@ 0 2 0 06d9964a216b63ce0ea8450093d7ce20
 
 @ 2 0 0 10bf172a4564103f045e0cb5dc62190c
 +       The children of a `Tree` or a `Node` are its child `Node`s, interleaved with the
@@ -13,9 +17,7 @@ orthant 2 release
 +       gives the `Node`s alone.
 +
 
-@ 0 2 0 1ca10bd465bb9b721b93a40f0570ae9a
-+       decides the node: `type`, `sym`, `name`, `code` and `tree` have their own cases, as has
-+       a `node` whose `role` is one of `.Role`'s, and any other kind is `Spanned`.
+@ 0 4 0 1466929d3d31e18d1cc94fcec6f8933e
 
 @ 1 0 0 0fc683c815a09c6a02b5b58070de4ac4
 +   entry .wrap   wraps text in a marker of a kind, with attributes, as the compiler's own writer does
@@ -25,5 +27,9 @@ orthant 2 release
 +     entry #glyph   the symbol the role is drawn with
 +     entry #word   the role's name in lower case, as the `role` attribute of a marker has it
 
+@ 0 6 0 190e64e3f7749b7f0fb46b29d612662b
+
 @ 1 0 0 18576687bfc961a61f33a50051c88d6f
 +   entry #nodes   the child `Node`s of a `Tree` or a `Node`, without the text which draws them
+
+@ 0 1 0 0040f586709e95720edf25cba05cb8b5

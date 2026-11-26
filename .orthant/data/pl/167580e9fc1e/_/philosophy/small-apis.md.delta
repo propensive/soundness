@@ -1,0 +1,7 @@
+orthant 2 language
+
+@ 0 4 0 10958a209821f8571ce41776e3eadba8
++ Pierwsza pojawia się, gdy operacja naprawdę się różni. `read` i `load` to dwa czasowniki dla
++ [XML](/doc/soundness/modules/xml.md), ponieważ odczyt daje treść, a wczytanie daje dokument wraz z
++ nagłówkiem – to rzeczywiste rozróżnienie, a nie wariant. Ich połączenie wymusiłoby argument
++ będący flagą, co jest gorszym sposobem powiedzenia tego samego.

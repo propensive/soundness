@@ -1,0 +1,31 @@
+orthant 2 language
+
+@ 0 9 0 15839a99031f9243069c375a4424b29d
++ Hoy la prosa existe en tres sistemas paralelos: las guías temáticas de `doc/soundness/modules/` —la
++ dirección hacia la que se avanza, y donde se escribe lo sustancial—, las plantillas heredadas por
++ módulo de `lib/*/doc/`, de cuando cada módulo era su propio repositorio, y una copia aparte del
++ material de filosofía bajo `web/res/content/`. Tres sistemas significan divergencia, y la
++ divergencia significa que uno de ellos miente. Esta línea de trabajo los reduce a uno, completa
++ la cobertura y añade la capa que la prosa no puede proporcionar: documentación de API generada y
++ en la que se puede buscar, una infraestructura de la que también dependen fluence y el versionado
++ derivado de la API de LIRA. Termina con la prueba de facilidad de aprendizaje más exigente que
++ existe: un agente, con solo la documentación, compila y despliega una aplicación que funciona.
+
+@ 0 5 0 185fd7a7a41b5e581955d9a60cdb9168
++ Hecho: #1791 (2026-08-14)
++ La línea base era de 92 ficheros de texto repetitivo de readme por módulo, y 98 directorios
++ `lib/*/doc/` (medido el 2026-08-01). El texto repetitivo era anterior al monorrepositorio; lo que
++ merecía conservarse de `lib/*/doc/` pasó a temas de `doc/soundness/modules/`, y el resto se eliminó en lugar
++ de dejarlo ahí induciendo a error. No queda ningún directorio `lib/*/doc/`, y la frase repetitiva
++ no coincide con nada.
+
+@ 0 2 0 1a857c20717058da1437188bb4029799
++ Hecho: #2306 (2026-10-21)
++ La línea base era de 99 temas en `doc/soundness/modules/` y 1 de 144 bibliotecas sin cubrir (medido el 2026-09-25; 91 temas y 35 sin cubrir el 2026-08-01); 101 temas cubren 145 de 145 el 2026-10-21
+
+@ 0 5 0 0f601dfc26f27e1b08d1cb0e14f34fa1
++ Cada módulo publicado está cubierto por al menos un tema de `doc/soundness/modules/`, y un script de
++ cobertura asigna módulos a temas para que los huérfanos sean visibles: `etc/check-doc-coverage.py`,
++ que ejecuta `make build`, termina con un estado distinto de cero ante un huérfano. El último,
++ burdock, está cubierto por `packaging.md`; la entrada de `COVERED_BY` que asignaba ese tema a
++ ziggurat (una biblioteca que eliminó #1973) ahora nombra a burdock.

@@ -1,0 +1,9 @@
+orthant 2 language
+
+@ 0 5 0 1c3f96a35b6cfdd5100a3d833acda4ab
++ Alcuni risultati dipendono dalla lunghezza di una stringa di esempio: le larghezze delle colonne di
++ una tabella resa, un testo con padding o allineato, un offset in byte, una lunghezza codificata, la
++ dimensione del payload di un benchmark. Un test dirà quando un tale risultato è andato storto; un
++ commento `// result` in `doc/soundness/api/*.tel` no, poiché nulla lo verifica. Quindi, dove una lunghezza
++ è determinante, si sceglie un nome della lunghezza richiesta, e dove un risultato mostrato cambia
++ davvero, si valuta di nuovo l'esempio invece di modificare il risultato a mano.

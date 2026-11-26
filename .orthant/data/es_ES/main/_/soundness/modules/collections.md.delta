@@ -1,116 +1,116 @@
 orthant 2 language
 
-@ 0 3 0 1aa6be138ca04a670f8b3625685973eb
+@ 2 3 0 191a1da0b137b67e1fb4a9e614bf6512
 + Un mapa con muchas entradas se llena más deprisa in situ que haciéndolo crecer con un `define`
 + cada vez. `Map.build` presta a un bloque un builder en el que escribir, y devuelve un `Map`
 + corriente cuando el bloque termina:
 
-% 2 1 0 0f98b697e6c41d691bb88b1b15af1bfb
+% 6 1 0 104391ea2b313dd11aa9a0418df0d88c
 
-% 3 1 0 07210ced258f4a681c1a04dd0d9bea40
+% 7 1 0 044e934917eda3cb0b9616b2b072b3c2
 
-% 4 1 0 0d69f8365596a1830d7c84a6bcd8f3a8
+% 8 1 0 0a40c905a0d41e7401112e8c26edb23f
 
-% 0 1 0 036e3d18961ea15012c1a11ed7c15bb9
+% 9 1 0 0600fad0e9fcc5e103f8df639fb31454
 
-% 0 1 0 11e84dd3395ae40706ff932a92a6dd4f
+% 10 1 0 18773e1570235ab0094b0cbd8b7f193b
 
-% 0 1 0 0242fd058a6ed51b174516bb8f02d8b9
+% 11 1 0 081c57f9de0a22850d3d8be158a424e1
 
-% 0 1 0 08ee33db6bc61a321dd907dc77496e1e
+% 12 1 0 1625990ebedfbaa70076bb965445d928
 
-% 0 1 0 17c0b84e775bac0d0047726f658b7a14
+% 14 1 0 0c7340e5890440be17681be35e70ecda
 
-% 0 1 0 1c4653a8e2d1eb351efbe3d964434828
+% 15 1 0 1bd2ecfe989433ba0b4f867dd8bbf305
 
-% 1 1 0 0fd88135493d95c50c914b1d988a84c0
+% 16 1 0 160fab80e68b2e0b0c9abc94ecb0bce9
 
-@ 0 3 0 01ac194f5482a86b0a11734124578b6b
+@ 18 3 0 0bd2e7e59bcd1fe00a015e475af015ea
 + Solo el builder puede escribir en el mapa, y el builder no puede salir de su bloque: guardar una
 + referencia a él para más tarde es un error de compilación. Así, el mapa es inmutable desde el
 + momento en que `build` retorna, e igual a cualquier otro mapa con las mismas entradas, se haya
 + construido como se haya construido.
 
-@ 0 1 0 199601f3bfcba9c507aa093efec6ff55
+@ 59 1 0 08ff17bfa727a2561fe13cbf2a5acf7e
 + ### Mapas con claves conocidas de antemano
 
-@ 0 4 0 13e0adbddd341ec901dcc789a05df28c
+@ 61 4 0 168ac20945dbf77716e0355dd6147c18
 + Un mapa cuyas claves se escriben todas donde se crea puede leerse más deprisa todavía. `Map.fixed`
 + encuentra un *hash perfecto* de sus claves mientras se compila el código: un pequeño cálculo que
 + envía cada clave a una posición propia. Una lectura es entonces ese cálculo y una comparación,
 + esté o no la clave:
 
-% 2 1 0 087d99a1146b4a120074b733ad2eec14
+% 66 1 0 0bd7018eb604b6280fd6daa163f3ce80
 
-% 3 1 0 0295ddd70273dc130d30f791d69f1730
+% 67 1 0 1ecf0a614cb8027f1cee6da2d65cac4f
 
-% 4 1 0 0e9a5281fc94b60300a1bffeb4ccf05b
+% 68 1 0 112e071087f6ffb7038f15c0ea8d5068
 
-% 0 1 0 0212d6dc582056b60e017ac7daa53118
+% 69 1 0 023571f32aad1fd403c98be5b9b80e0e
 
-% 0 1 0 18d82ad5e2e495a211dac03a105a842f
+% 71 1 0 1b59d4179de079dc0cddb60b62c4d3a4
 
-% 0 1 0 00bb1a6629af5b5a011556794353cd16
+% 72 1 0 1ceb5fb75397c67f095c3da9f755c00d
 
-% 0 1 0 09db8af589296320103e7dda7df82ea0
+% 73 1 0 0d5c86babe906b0d1b9d225d070467dc
 
-% 1 1 0 02b41ba3e5ee2b70047bd0310ed1d6d2
+% 74 1 0 1dec1db9cfb32ee0187ce0312770ed0d
 
-@ 0 3 0 12787f9e6defdedf1680e71ffb271af2
+@ 76 3 0 0aa008565999546b1ea2012dfdbaa016
 + Las claves deben ser literales: textos, `Int`s, `Long`s o `Char`s, todas de la misma clase, y
 + cada una dada una sola vez. Los valores pueden ser expresiones cualesquiera. Un mapa fijo es un
 + `Map` corriente para todo lo que lo usa, y `define` y `omit` funcionan con él como con cualquier
 + otro.
 
-@ 0 2 0 13533a7a726ab1810af6b285f02bc3c4
+@ 80 2 0 184f7e6d8e3354a7183920acfdf04519
 + Un mapa que no puede fijarse no compila, así que un mapa creado con `fixed` nunca es uno más
 + lento disfrazado. Dar una clave dos veces es uno de esos errores:
 
-% 2 1 0 0b4191fc662394ae12f8e1a875135793
+% 83 1 0 0ce8d21da4a0930316a441213bfe05d6
 
-% 3 1 0 11b7ede8dde8e9ed0bcd121cc5364a26
+% 84 1 0 1df8fb7dc92edb600f76328ce9125aec
 
-% 4 1 0 08380a6a5b80b4590a41e3b6670e3495
+% 85 1 0 108acb51a517284d043c54d38933bbcb
 
-% 5 1 0 0bde0a401c1b839d0eadffcdb9b0a167
+% 86 1 0 14705caaa9ac147d16449c137e846272
 
-% 0 1 0 0f8847ef63d9ab7b14f2f5b4674154b9
+% 87 1 0 0c0b2ddfc7913c1a0500ec51b5b34d7c
 
-% 1 1 0 059646d391c2806d076974b592879e40
+% 88 1 0 0564caf51459c7d112bbfaaceadf8b6c
 
-@ 0 3 0 142a051211e5b3501c00f762f66054a1
+@ 90 3 0 164b458f1d05859c0564568e333b77ce
 + Una clave que no es un literal es otro, como lo son las claves de clases distintas, y dos textos
 + que resultan compartir un código hash. Un mapa de más de 1.024 entradas es demasiado grande para
 + escribirlo así, y es mejor llenarlo con `Map.build`.
 
-@ 0 2 0 18f11cf72a29f23517d76a53d5c3e0b7
+@ 94 2 0 07726f53299d8261109ca1da5dbe7c2f
 + Cuando las claves solo se conocen una vez que el programa está en marcha, `optimize` da el mismo
 + tratamiento a un mapa existente. Encuentra el hash en ese momento, y lo compila con el
 + compilador de Scala:
 
-% 2 1 0 15f6cfbb7d4140f70665625d30a3dc7a
+% 97 1 0 0be75a6856328a4318f5177dae6fab48
 
-% 0 1 0 019a107168ace25503917c671eca070e
+% 98 1 0 1d4d7d65c471e4de16a218906107eb01
 
-% 1 1 0 02e614f0cb1a9bfa0cdde1bde3957e71
+% 99 1 0 1208a4af56496a7b182ae343967903c5
 
-% 3 1 0 0fc97e7e53a573fe08a3879b090c103c
+% 101 1 0 1d04f974f58c1ee81c91901fa71f65fd
 
-% 0 1 0 1f8ced20858dc90d10be2e346d15aee1
+% 102 1 0 0f7ec86eaa94584f02297c753ea38086
 
-% 1 1 0 1ba4c7cb7544bfd613c33004095a9d73
+% 103 1 0 1e190a6de67dc8c11efd072f55e9d946
 
-% 0 1 0 1f2e2a07b132f63810601e0081043cbc
+% 104 1 0 09e5a87e436bc9451bf8cde3e686f890
 
-% 1 1 0 12f37c45d2c674e61a6eea86ee029486
+% 105 1 0 06cb878073a1bd5506522d2e0c17a1bc
 
-@ 0 4 0 173934e42cc66606075c8a2aef795972
+@ 107 4 0 0ca446cd126c4bb8081e478779e19754
 + Por tanto, el compilador debe estar en el classpath cuando se ejecuta el programa, y por eso
 + `optimize` procede de un módulo propio, en la agrupación `staged`, y solo en la JVM. Compilar
 + lleva alrededor de una décima de segundo por mapa, y varios segundos el primero, así que conviene
 + a un mapa que se crea una vez y se lee muchísimas veces.
 
-@ 0 5 0 1abf0a14a67db8a608f3f4bf3425bcac
+@ 112 5 0 0dd103bbcc640dd20f5b85982f1b6090
 + Donde más ayuda es en un mapa con claves numéricas, que se lee unas dos veces más deprisa. Un mapa
 + con claves de texto se lee más deprisa cuando sus claves suelen encontrarse, y más despacio cuando
 + no suelen encontrarse, ya que un texto ausente debe compararse aun así con el que ocupa su posición.

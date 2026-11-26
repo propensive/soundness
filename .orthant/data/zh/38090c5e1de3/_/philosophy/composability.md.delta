@@ -1,0 +1,8 @@
+orthant 2 language
+
+! A [stream](../en/modules/streams.md) pipeline is the clearest case. Each stage takes a
+! stream and yields a stream, so stages chain without adapters and in any order that makes
+! sense:
+@ 0 3 0 13e0f437e82a946314fb7b5ee55f846a
++ [流](/doc/soundness/modules/streams.md)流水线是最清楚的例子。
++ 每个阶段接受一个流并产生一个流，因此各阶段无需适配器就能串联，并且可以按任何合理的顺序排列：

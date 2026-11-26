@@ -1,0 +1,29 @@
+orthant 2 language
+
+@ 0 10 0 1b05c2c20b8cc8d10c46a37a3628e3a6
++   entry .Composition   la base dello schema con alcuni dei suoi livelli, e la firma che portano i documenti scritti sotto di essa
++       Un launcher sceglie la composizione, in base all'`.acceptance` che il daemon pubblica, e il
++       daemon risponde sotto quella con cui gli è stato scritto. `interrupts` dice se ha il livello
++       `interrupts`.
++   entry .base   la composizione della sola base dello schema, sotto la quale ogni launcher può scrivere
++   entry .layered   la composizione della base con il livello `interrupts`
++   entry .acceptance   ciò che il daemon legge, che un launcher consulta prima di connettersi: la base, e ogni livello che possiede
++   entry .recognize   il messaggio del primo documento di una sessione, con la composizione sotto la quale è stato scritto
++       La composizione più ricca viene provata per prima, e il resto della sessione è letto e scritto
++       sotto quella trovata.
+
+@ 0 13 0 1b941d28e5fa9e3c11cf3d8ac7dde519
++           `canonical` chiede la modalità canonica, con eco se è impostato anche `echo`; la
++           modalità canonica senza eco è il modo in cui si legge una password; nessuno dei due
++           flag è la modalità raw. Il launcher non risponde nulla, e lascia com'è un terminale
++           che non possiede. `Resident#cooked` e `Resident#concealed` lo inviano.
++
++           `interrupts` è trasmesso solo sotto il livello `interrupts` dello schema. In modalità raw
++           lascia che Ctrl-C, Ctrl-\ e Ctrl-Z continuino a generare segnali, così che un'invocazione
++           che non sta leggendo la tastiera possa comunque essere interrotta da essa; i tasti
++           diventano byte su stdin quando l'invocazione legge stdin per la prima volta in modalità
++           raw, e non vengono restituiti.
++       entry #canonical   la modalità canonica, o raw quando è falso
++       entry #echo   se il terminale fa l'eco di ciò che viene digitato
++       entry #interrupts   se, in modalità raw, i tasti che generano segnali sono lasciati al terminale
++     entry .Closed   lo stream nominato ha perso il suo lettore

@@ -1,0 +1,16 @@
+orthant 2 language
+
+@ 0 6 0 1c04979355be49381f1bb8e3f8ecc451
++ `etc/compatibility.tsv` zapisuje macierz, a `etc/check-compatibility.py` (uruchamiany przez
++ `make build`) generuje na nowo jej kolumny platform z `build.mill` – z flag `scalaJs`/
++ `scalaNative` każdego komponentu i zbiorów źródeł `sources`/`jsSources`/`nativeSources` – i
++ zawodzi przy każdej rozbieżności z zatwierdzoną kopią lub przy wykluczeniu bez przyczyny w
++ `notes`. Macierz jest więc kontraktem: moduł dodany bez wiersza albo flaga przestawiona bez
++ zmiany pliku powodują niepowodzenie kompilacji, a jedyną treścią pisaną ręcznie jest przyczyna
++ każdej komórki `no` lub `core`.
+
+% 0 1 0 103e46e31a37bd190a644b6f5d3e1159
+
+@ 0 2 0 10706f14d6551a4916ff249ce6c79e6d
++ Ukończone, gdy: każda przyczyna wykluczenia w `etc/compatibility.tsv` opisuje nieodłączne
++ ograniczenie platformy, a sprawdzenie słownictwa przyczyn w CI egzekwuje to rozróżnienie.

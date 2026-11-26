@@ -5,15 +5,10 @@ orthant 2 release
 + [`status.tel`](https://github.com/propensive/soundness/blob/main/doc/roadmap/status.tel)
 + records where each one stands:
 
-@ 0 1 0 0997f08e991e1c041daa547ec08133d6
-+ The keystone item: `etc/migration.md` defines the agent-executable
+% 0 1 0 0a0ce7dc7f7527690a57fc47944af2b7
 
-@ 0 2 0 1660f037842bb39900f122d5407b493a
-+ Done when: `etc/migration.md` defines the convention, the release refuses to run without
-+ `etc/migration/<version>.md`, and a CI check fails any pull request that changes `lib/**/src`
+% 0 2 0 1d88ab33d631747f1183ee9769d4df9a
 
-@ 0 1 0 05c232f1d42a3ce413833a503e776805
-+ `etc/migration/<version>.md`, named after that release from the start.
+% 0 1 0 0a9630733900222e18650614b6e1101b
 
-@ 0 1 0 1aa70d1cbe9b6170158adeb862d93e5c
-+     git grep -c reliquary -- build.mill etc doc/soundness/modules | wc -l   # 0
+% 0 1 0 0b0af992e6bfac6c10ea3d9a4cadef9e

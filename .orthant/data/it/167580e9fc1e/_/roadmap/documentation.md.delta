@@ -1,0 +1,44 @@
+orthant 2 language
+
+@ 0 9 0 18fec6f0745a2e3303c6d7ede277ff88
++ Oggi la prosa esiste in tre sistemi paralleli: le guide tematiche in `doc/work/soundness/modules/` (la
++ direzione di marcia, e dove avviene la scrittura sostanziale), i vecchi modelli per modulo in
++ `lib/*/doc/`, ereditati da quando ogni modulo era un repository a sé, e una copia separata del
++ materiale di filosofia sotto `web/res/content/`. Tre sistemi significano divergenza, e divergenza
++ significa che uno di essi mente. Questo filone li riduce a uno, completa la copertura, e aggiunge lo
++ strato che la prosa non può fornire: documentazione delle API generata e ricercabile,
++ un'infrastruttura da cui dipendono anche fluence e il versionamento di LIRA derivato dalle API.
++ Termina con la prova di apprendibilità più forte che esista: un agente, con la sola documentazione,
++ costruisce e distribuisce un'applicazione funzionante.
+
+@ 0 3 0 0159d8134df7ee6d11f763fb21913385
++ `doc/work/standards/messages.md` si dichiarava da sé un abbozzo, nonostante la convenzione dei messaggi
++ sia portante in ogni modulo. Lo standard ora è scritto: registro, struttura, vocabolario, ciò che un
++ messaggio non deve contenere, la composizione tramite `Communicable` e gli eventi di log.
+
+% 0 1 0 0d058f6728c5dcb01b3e933f5d633bc3
+
+@ 0 5 0 013b0edf65e4af1e17f85f3aa7922f99
++ Fatto: #1791 (2026-08-14)
++ La linea di base era di 92 file di readme standard per modulo e 98 directory `lib/*/doc/`
++ (misurati il 2026-08-01). Il testo standard precedeva il monorepo; quanto in `lib/*/doc/` meritava
++ di essere conservato è passato negli argomenti di `doc/work/soundness/modules/`, e il resto è stato cancellato
++ anziché lasciato a trarre in inganno. Non rimane alcuna directory `lib/*/doc/`, e la frase standard
++ non trova più corrispondenze.
+
+@ 0 2 0 0f2e79aa2fb742540e781b793bb298a3
++ Fatto: #2306 (2026-10-21)
++ La linea di base era di 99 argomenti in `doc/work/soundness/modules/` e 1 libreria su 144 non coperta (misurati il 2026-09-25; 91 argomenti e 35 non coperte il 2026-08-01); il 2026-10-21 101 argomenti coprono 145 librerie su 145
+
+@ 0 5 0 1a3d346f8d8345721a5f85b3f99b3f85
++ Ogni modulo pubblicato è coperto da almeno un argomento di `doc/work/soundness/modules/`, e uno script di
++ copertura associa i moduli agli argomenti così che gli orfani siano visibili:
++ `etc/check-doc-coverage.py`, eseguito da `make build`, termina con un codice diverso da zero in
++ presenza di un orfano. L'ultimo, burdock, è coperto da `packaging.md`; la voce `COVERED_BY` che
++ indicava quell'argomento per ziggurat (una libreria rimossa da #1973) ora indica burdock.
+
+@ 0 3 0 0864272c52cb10310fe2fbb6e33b102e
++ La prosa sotto `web/res/content/` duplica a mano il materiale di filosofia: dieci pagine, toccate
++ l'ultima volta in #801, ciascuna una copia più vecchia e più breve di una pagina di
++ `doc/work/philosophy/`. Il sito web viene reso a partire da `doc/`: una sola sorgente, nessuna copia
++ parallela.

@@ -1,0 +1,25 @@
+orthant 2 language
+
+@ 0 2 0 0f3d1198b0e978311a11bfe6394f1f89
++   baseline  doc/soundness/modules/ にトピックが 101 個。145 個のライブラリのうち 145 個が網羅されている（2026-10-21。2026-09-25 には 144 個中 1 個が未網羅、2026-08-01 にはトピック 91 個で 35 個が未網羅）
++   criterion  python3 etc/check-doc-coverage.py がすべてのライブラリを網羅済みと報告し、0 で終了する
+
+@ 0 2 0 05558c8a0afe616c19ef03f4c9b525c6
++   baseline  スクリプト化した DAP のスイートが、ブレークポイントで止め、ステップ実行し、値をその Inspectable インスタンスを通じて調べる。トピックは doc/soundness/modules/debugging.md（2026-10-21。2026-09-25 にはオブジェクトが JVM のクラス名として表示され、トピックもなし）
++   criterion  スクリプト化した DAP のセッション（ブレークポイント、ステップ実行、Soundness で描画した値の検査）が、実行中のアプリケーションに対して CI で通る
+
+@ 0 2 0 1ecc3855de818f6814bc9b756c382eb7
++   baseline  etc/migration.md と 0.65.0.md–0.73.0.md が存在する。etc/release の migration 指令がリリースの関門となる。プルリクエストの検査はない（2026-10-21。2026-09-25 には 0.68.0 までの注記）
++   criterion  etc/migration.md が存在する。リリース（etc/release の migration 指令）が etc/migration/<version>.md なしにはタグ付けを拒む。lib/**/src を変えながら未リリースの etc/migration/<version>.md に触れないプルリクエストを、CI の検査が失敗させる
+
+@ 0 2 0 174e5970ec87b6671ec8b4594cff11a1
++   baseline  lib/reliquary（7387 行）と、anthology.lira、degustation.lira、mandible.lira、xenophile.lira およびそれらのテスト（2026-09-25）
++   criterion  lib/reliquary が存在せず、lib/*/src/lira ディレクトリが一つも残らず、build.mill、etc/、doc/soundness/modules が reliquary に言及しない
+
+@ 0 3 0 1ab90a58f440346102cbf922b597507a
++   status done
++   done  #2530 (2026-11-20)
++   baseline  lib/sigillate：Jws、Jwe、Jwk、Jwt。`http` と `server` のコンポーネントを持つ。テストは 95 個で、そのベクターは RFC 7515 §A.1–A.7、RFC 7516 §A.1–A.5、RFC 7517、RFC 7638、RFC 8037 から取っている。`↯/s.147.1`。doc/soundness/modules/jose.md（2026-11-20）
+
+@ 0 1 0 04b2a086c09d9a4a0bf490e3f6a25ee5
++   baseline  lib/chatelaine：WebAuthn.registration/register と authentication/authenticate、`none` と `packed` のアテステーション。`server` のコンポーネントを持つ。W3C 仕様のテストベクター（§16.2–16.11）の登録と認証のセレモニーに通り、テストソースにあるソフトウェアの認証器に対するスクリプト化したセレモニーにも通る。ブラウザーの仮想認証器はまだ動かしていない。`↯/s.148.1`。doc/soundness/modules/webauthn.md（2026-11-20）

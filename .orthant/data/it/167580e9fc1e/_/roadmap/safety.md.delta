@@ -1,0 +1,30 @@
+orthant 2 language
+
+@ 0 11 0 0d8437f96b7f51390097d96c0bd1f4ef
++ Il plugin flare (fissato in `etc/tools`, configurato da `.pyrocosm/flare/config.tel`, attivato
++ su ogni componente controllato dalle opzioni `-P:flare:` in `flareToolchain`) fornisce il
++ censimento: ogni regola della configurazione contata sui sorgenti, cioè le fughe dichiarate
++ (`unsafely`, la famiglia `caps.unsafe`, ogni nome con prefisso `unsafe`, ogni metodo subordinato
++ al token), gli aggiramenti della fiducia nel compilatore (`asInstanceOf`, `.nn`, `@unchecked`,
++ `???`, le clausole catch-all), le letture parziali e i costrutti imperativi che il nucleo di
++ streaming dovrebbe confinare. `make unsafety` esegue `flare metrics --dry-run` e lo stampa;
++ `flare metrics` lo registra nelle note git, commit per commit, così l'andamento vive in git
++ anziché in un paragrafo della roadmap. Una regola è già vincolante: `S1.1`, secondo cui un
++ metodo che prende `(using Unsafe)` deve chiamarsi `unsafe…`, fa fallire la build; la sua inversa
++ `S1.2` è consultiva, con le otto definizioni che la violano elencate in
++ `doc/work/standards/naming.md`.
+
+@ 0 7 0 0d173ddf177ff3580a0262c16790a340
++ Le ricette che rendono praticabili il capture checking e il controllo di separazione (quando un
++ tipo è Exclusive, Shared, Unscoped, Mutable o Pure e le trappole del reticolo tra di essi; il
++ manuale dei given onesti, `(tactic: Tactic[E]) => ((X is TC)^{tactic})`, con prove di cattura
++ esplicite al posto dei context bound; dove un risultato nuovo si può e non si può coniare; le
++ giunture `consume` e di prestito; che cosa un test può e non può fare) esistono solo come voci
++ in `rep/DECISIONS.md`, un registro di 2400 righe. Il loro posto è in
++ `doc/work/standards/capabilities.md`, con il vocabolario di tag su cui si basa `safety-2` e l'unica
++ forma di via di fuga sancita per ciascun tag, e un rimando da
++ `doc/work/philosophy/capture-checking.md`.
+
+@ 0 2 0 184abde0f441241915e910e4b48261e0
++ Fatto quando: `doc/work/standards/capabilities.md` esiste, definisce ogni tag che il censimento
++ riconosce, e le sezioni di ricette di `rep/DECISIONS.md` vi rimandano anziché ripeterle.

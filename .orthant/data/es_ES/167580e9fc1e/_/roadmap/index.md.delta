@@ -1,0 +1,32 @@
+orthant 2 language
+
+@ 0 17 0 00e5f700f5864e911ea5f726341922cd
++ column  Criterio
++ column  Elementos
++ row  `proscenium.compat` está vacío  `core-2`
++ row  Ningún fichero fuera de proscenium importa `scala.collection`  `core-3`
++ row  No queda ninguna vía de escape `caps.unsafe` en `lib/`  `safety-4`
++ row  El manifiesto de plataformas se hace cumplir en CI, sus exclusiones llevan motivos, y se construye y se firma un APK de Android en CI  `plat-1`, `plat-2`, `plat-3`
++ row  `etc/api-reduction-candidates.md` ya no existe  `api-5`
++ row  Todo tipo de error tiene un código bolt y una página de documentación, comprobados en CI  `doc-1`
++ row  Todo módulo publicado está cubierto por un tema de `doc/work/soundness/modules/`  `doc-4`
++ row  La documentación de la API se genera y se publica para cada componente  `doc-5`
++ row  `fury build` construye el propio Soundness, con una atestación igual a la de la construcción con Mill  `tool-4`
++ row  fume ejecuta la suite de pruebas completa, y no hay ninguna suite desactivada  `tool-2`
++ row  Una sesión de editor LSP guionizada pasa en CI  `tool-3`
++ row  Todo cambio incompatible de las últimas diez versiones consecutivas se publicó con instrucciones de migración ejecutables por un agente  `dist-2`
++ row  Toda versión se publica como ficheros LIRA atestiguados  `dist-7`
++ row  JOSE, TOML y WebAuthn están publicados  `brd-1`, `brd-2`, `brd-3`
++ row  Un agente, siguiendo solo la documentación de `doc/`, lleva un proyecto nuevo desde cero hasta una aplicación web JVM y JavaScript probada y desplegada usando solo herramientas del ecosistema, y este recorrido guiado se ejecuta y se registra en CI  `doc-8`
+
+@ 0 10 0 0dd4e95027ea72261a6dd2c1c524be09
++ - Los identificadores de los elementos son anclas estables; se citan (`core-3`, `dist-2`) en
++   lugar de describir el trabajo en prosa.
++ - Cualquier afirmación de progreso se verifica ejecutando la orden `Done when:` del elemento;
++   nunca hay que fiarse de la prosa ni de la memoria por encima de la salida de la orden. Las
++   líneas base se vuelven a medir antes de basarse en ellas, y se notifican las desviaciones.
++ - El estado actual se lee en [`status.tel`](status.tel); se actualiza en el mismo commit que el
++   trabajo que describe.
++ - Cuando un elemento de la hoja de ruta cambia una API pública, se sigue la convención de
++   instrucciones de migración que define `dist-2` en `doc/work/standards/migration.md`: esa convención
++   es lo que hace compatibles «las API cambian libremente» y «el código sigue funcionando».

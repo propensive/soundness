@@ -1,0 +1,22 @@
+orthant 2 language
+
+@ 0 2 0 1929cda851f58baa1629c06d27d88cdc
++ Erledigt, wenn: das Modul mit Tests, Fehlerseiten und einem Thema in `doc/work/soundness/modules/` ausgeliefert
++ wird und die Beispielvektoren aus RFC 7515/7516 auf dem Hin- und Rückweg unverändert wiedergibt.
+
+@ 0 2 0 162c48f835fd768f0a9cfd9f73a3682c
++ Erledigt, wenn: das Modul mit Tests, Fehlerseiten und einem Thema in `doc/work/soundness/modules/` ausgeliefert
++ wird und die Standard-Konformitätssuite für TOML besteht.
+
+@ 0 2 0 1385aacb6e88e9540bce32e054ba8a53
++ Erledigt, wenn: das Modul mit Tests, Fehlerseiten und einem Thema in `doc/work/soundness/modules/` ausgeliefert
++ wird und eine skriptgesteuerte Zeremonie aus Registrierung und Assertion gegen einen
++ Referenz-Authenticator besteht.
+
+@ 0 2 0 1358c2667696ccd4117c4bca7d69240c
++ Erledigt, wenn: das Modul mit Tests, Fehlerseiten und einem Thema in `doc/work/soundness/modules/` ausgeliefert
++ wird und mit einem Referenz-Server und -Client für HTTP/3 zusammenarbeitet.
+
+@ 0 2 0 03cdd5b8ffa5b93710b6b0e94e148d08
++ Erledigt, wenn: das Modul mit Tests, Fehlerseiten und einem Thema in `doc/work/soundness/modules/` ausgeliefert
++ wird und eine skriptgesteuerte Sitzung gegen einen Referenz-IMAP-Server besteht.

@@ -1,0 +1,30 @@
+orthant 2 release
+
+@ 2 0 0 1f5d14de22d759d41ccada733bfdabe0
++ A change which applies throughout a document, such as renaming a keyword wherever it occurs, is
++ a `transform`. It applies a function to every compound, the deepest first, and keeps everything
++ which is not a compound exactly as it was: comments, blank lines, the pragma and the layout.
++
++ ```scala
++ val shouted = document.transform: compound =>
++   compound.copy(keyword = compound.keyword.upper)
++ ```
++
++ ```scala fuel
++ run
++ ##
++ Out.println(shouted.show)
++ ```
++
++ The tree which `transform` walks can also be read directly. A parsed value's `document` is its
++ `Tel.Document`, with the pragma and line endings it was read with, and its `blocks` are the
++ compounds as they are laid out: each `Tel.Block` holds the comments above a group of compounds,
++ the compounds themselves, and the number of blank lines after them.
++
++ ```scala fuel
++ run
++ ##
++ document.blocks.each: block =>
++   Out.println(t"${block.comments.length} ${block.compounds.length} ${block.trailingBlankLines}")
++ ```
++

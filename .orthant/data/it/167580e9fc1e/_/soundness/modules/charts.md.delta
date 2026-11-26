@@ -1,0 +1,95 @@
+orthant 2 language
+
+@ 0 13 0 1f804944cbbab0300db1429dc29c7687
++ column  Tipo
++ column  Disegna
++ column  Ascissa
++ column  Ordinata
++ column  Stile
++ row  `Bars()`  una serie, o una collezione di serie  categoriale  continua  `Bars.Style`
++ row  `StackedBars()`  una collezione di serie  categoriale  continua  `StackedBars.Style`
++ row  `Lines()`  una serie, o una collezione di serie  continua  continua  `Lines.Style`
++ row  `Scatter()`  una serie, o una collezione di serie  continua  continua  `Scatter.Style`
++ row  `Pie()`  esattamente una serie  categoriale  continua  `Pie.Style`
++ row  `Histogram()`  `Samples`, o una loro collezione  continua  conteggi  `Histogram.Style`
++ row  `Boxes()`  `Samples`, o una loro collezione  un box per insieme  continua  `Boxes.Style`
++ row  `Annulus()`  un `Dag` di nodi `Weighted` e `Progressive`  nessuna  nessuna  `Annulus.Style`
+
+@ 0 19 0 09c98980d3198e611edeab97ea79998d
++ column  Disegna
++ column  Definito in
++ row  `fontStyle`, `lettering`  la dimensione e il colore del testo; ogni frammento di testo  `Chart.Style`
++ row  `backdrop`  la tela dietro il grafico  `Chart.Style`
++ row  `swatch`, `legendLabel`  una voce della legenda  `Chart.Style`
++ row  `leader`  la linea da un'etichetta spostata fino al suo punto  `Chart.Style`
++ row  `axisLine`  la linea di ciascun asse  `Chart.Cartesian`
++ row  `axisBreak`  un segno di interruzione dove un asse lineare non comincia da zero  `Chart.Cartesian`
++ row  `arrowhead`  l'estremità di un asse  `Chart.Cartesian`
++ row  `tick`, `gridLine`  una graduazione e la sua linea della griglia  `Chart.Cartesian`
++ row  `tickLabel`  l'etichetta di una tacca, dove sta e se è ruotata  `Chart.Cartesian`
++ row  `axisTitle`  il titolo di un asse  `Chart.Cartesian`
++ row  `marker`, `errorBar`  un punto e il suo intervallo  `Chart.Cartesian`
++ row  `pointLabel`  la nota di un punto `Noted`  `Chart.Cartesian`
++ row  `bar`  una barra  `Bars.Style`
++ row  `line`, `band`  la linea di una serie e la banda di una stima  `Lines.Style`
++ row  `box`, `whisker`, `median`  le parti di un box plot  `Boxes.Style`
++ row  `wedge`, `wedgeLabel`  uno spicchio e la sua percentuale  `Pie.Style`
++ row  `shade`, `sector`, `remainder`  il colore di un settore e le sue due parti  `Annulus.Style`
+
+@ 0 7 0 1bde30a1648b6c4d09923d7b299b7046
++ row  `backdrop`  la tela, nel colore di sfondo della tavolozza  ogni grafico
++ row  `grid`  le linee della griglia  grafici cartesiani
++ row  `abscissa`, `ordinate`  ciascun asse, le sue graduazioni e il suo titolo  grafici cartesiani
++ row  `legend`  la legenda  grafici con una legenda
++ row  `series-0`, `series-1`, …  ciascuna serie  grafici cartesiani
++ row  `wedges`  ogni spicchio e la sua etichetta  `Pie`
++ row  `rank-0`, `rank-1`, …  ciascuna banda  `Annulus`
+
+@ 0 1 0 09524893beb0e5fc110f8d8b22a39a27
++ ### Anelli
+
+@ 0 5 0 094a00dfd1bbeae2143c54d55798a5bd
++ Un `Annulus` disegna un grafo delle dipendenze, un [`Dag`](graphs.md), come bande concentriche. I
++ nodi che non dipendono da nulla stanno nella banda più interna, e ogni banda successiva contiene
++ i nodi di un rango più all'esterno, così una build si riempie dal centro verso l'esterno. Ogni
++ nodo è un settore della sua banda, che copre un angolo proporzionale alla sua dimensione entro il
++ rango, e una banda è spessa quanto la quota del suo rango sulla dimensione totale.
+
+@ 0 7 0 11568818c01018f40832037731e60764
++ La dimensione di un nodo e il suo avanzamento, da `0.0` a `1.0`, vengono da due typeclass sul
++ tipo del nodo, `Weighted` e `Progressive`. Il settore si riempie in senso orario quanto il nodo
++ è completo, con il resto in una tinta attenuata del colore del settore. Quel colore è il primo
++ colore della tavolozza, sfumato secondo la posizione del settore: la sua tinta ruota di trenta
++ gradi da sinistra a destra, ed è più scuro sotto il centro e più chiaro sopra. Un anello non ha
++ etichette né legenda. Ogni banda è un gruppo `rank-0`, `rank-1`, …, ogni settore un tracciato
++ `sector-0`, `sector-1`, …, e la parte non finita di un settore è `sector-0-rest`.
+
+@ 0 3 0 0fbbeed84c453a461e364d4fa195aed8
++ Un nodo porta con sé il proprio avanzamento, così un anello si rivede come qualsiasi grafico, con
++ nuovi dati. L'adattamento sopravvive a qualsiasi grafo della stessa forma e delle stesse
++ dimensioni, e si sostituiscono solo le bande i cui settori si sono riempiti ulteriormente:
+
+% 0 1 0 1877856c8ab7469c04f0ffb78800176f
+
+% 0 1 0 14e225babf96351702cd5d73f93e40d6
+
+% 0 1 0 14c1482790cf4ef70542451dfecf4315
+
+@ 0 5 0 0882828f30df7a830a6f292209c4fb9f
++ `Chart.Standard(hole = 0.3)` svuota il centro. `sectorGap` e `bandGap` sono le larghezze della
++ fuga tra i settori e tra le bande. `Annulus.Style` ha `shade` per il colore di un settore in base
++ alla sua posizione, e `sector` e `remainder` per le sue due parti. Il ranking è quello descritto
++ in [grafi](graphs.md#layering): `import rankings.balancedRanking` disegna ogni nodo il più vicino
++ possibile ai suoi dipendenti, anziché il più vicino possibile al centro.
+
+@ 0 8 0 16557cb6cd42445b1d8d52e13d86e255
++ - [SVG](svg.md) descrive il disegno in cui un grafico si rende.
++ - [Collocazione delle etichette](label-placement.md) descrive come le etichette di un grafico si
++   evitano a vicenda.
++ - [Font](fonts.md) descrive i caratteri tipografici in cui un grafico può essere composto.
++ - [Grandezze](quantities.md) descrive le unità che danno il titolo a un asse.
++ - [Grafi](graphs.md) descrive il `Dag` che un anello disegna.
++ - [Colori](colors.md) descrive i colori della tavolozza.
++ - [Tempo](time.md) descrive le durate e gli istanti che un asse continuo può contenere.
++ - [Indicatori](gauges.md) e [tabelle](tables.md) presentano valori nel terminale, e
++   [test](testing.md) traccia grafici dei risultati dei benchmark.

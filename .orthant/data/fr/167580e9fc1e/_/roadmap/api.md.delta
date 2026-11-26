@@ -1,0 +1,37 @@
+orthant 2 language
+
+@ 0 2 0 066aaeb51b24ab230523fd39492a5681
++ La surface a déjà été mesurée : `etc/api-reduction-candidates.md` recense chaque identifiant
++ qu'exporte le package `soundness`, et classe les candidats à la réduction :
+
+@ 0 3 0 17e26bb135f0896e0d3cd0368f332847
++ Terminé lorsque : la table de renommage de `etc/api-nesting-proposal.md` (qui a remplacé la
++ section C1) est entièrement appliquée, et que la section « Remaining names by prefix family » de
++ l'inventaire ne liste aucun nom hors de « Reviewed items which should not be moved ».
+
+@ 0 2 0 13bb210f1e21a6561a82bf562dce0f6a
++ Terminé lorsque : la section C2 de l'inventaire est vide. (C3 et C3b ont été remplacées par
++ `etc/api-nesting-proposal.md` et closes avec lui.)
+
+@ 0 4 0 07f55ed7fa1d73e7092eee115a72ffa6
++ Les normes de nommage de `doc/work/standards/naming.md` et `doc/work/standards/given-naming.md` se dotent
++ d'un balayage de conformité, afin qu'une dérive vers l'incohérence soit détectée mécaniquement
++ plutôt qu'en relecture. `etc/check-given-uniqueness.py`, exécuté par `make build`, couvre la
++ moitié relative au nommage des givens ; rien ne vérifie `naming.md`, bien que la règle `S1.1` de
++ flare impose son unique clause sur `unsafe…`.
+
+% 0 1 0 1d3fa0088fed0fe510c1edd92a8d31f0
+
+@ 0 5 0 132121a5579d6de90996f0565b4058f9
++ api-1 imbrique un nom dont le préfixe répète son contexte. Cet élément couvre le cas où il n'y a
++ pas de préfixe à retirer : un mot unique dont la graphie nue revendique un concept général alors
++ qu'il nomme une notion propre à une bibliothèque. L'arbre de disposition d'ultimatum n'est pas
++ *le* `Frame`. Chaque candidat est jugé au cas par cas d'après la règle R8 de
++ `etc/api-nesting-proposal.md`. La commodité ne garde un nom au premier niveau que lorsqu'il est le
++ type principal de la bibliothèque, ou un concept réellement général.
+
+@ 0 4 0 153039203ba264620a4145959946ed5e
++ Terminé lorsque : aucun nom n'est exporté dans `package soundness` par plus d'une bibliothèque,
++ aucun `@unexported` n'existe uniquement pour éviter un conflit, et chaque ligne des tables R8 de
++ `etc/api-nesting-proposal.md` a été soit appliquée, soit déplacée dans sa liste « Reviewed and
++ kept top-level ».

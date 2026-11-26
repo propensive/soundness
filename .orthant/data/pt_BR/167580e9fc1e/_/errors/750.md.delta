@@ -1,0 +1,5 @@
+orthant 2 language
+
+@ 0 2 0 198496c7999977bd08ee9e3009a45d42
++ O módulo `cellulose`, que implementava o CoDL e sua forma binária, o BCoDL, foi removido. Seu papel
++ é cumprido pelo [TEL](/doc/soundness/modules/tel.md), cuja codificação binária é o BinTEL.

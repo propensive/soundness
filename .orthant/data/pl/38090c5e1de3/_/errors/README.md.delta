@@ -1,0 +1,27 @@
+orthant 2 language
+
+@ 0 9 0 0ffe1fa729118f45146c25fc4b506118
++ - `s` to litera, którą kody bolt oznaczają Soundness;
++ - `m` to numer modułu, w którym znajduje się błąd, według [listy modułów](modules.md) i
++   `bolt.tel`: moduły są numerowane w kolejności, w której każdy następuje po tych,
++   od których zależy, według stanu z chwili nadania mu numeru, a nowy moduł otrzymuje następny
++   numer;
++ - `n` to numer błędu w obrębie modułu, pierwszy wolny w chwili napisania błędu;
++ - `v`, jeśli występuje, identyfikuje konkretny wariant błędu (zazwyczaj przypadek wyliczenia
++   `Reason`).
+
+@ 0 8 0 190d5ec87213cd8006246e0294bc0c6e
++ `bolt.tel`, obok tego pliku, jest rejestrem wszystkich kodów: numeru i nazwy każdego modułu, błędu
++ i wariantu, w schemacie `bolt`. Indeks kodów bolt wskazuje go jako rejestr Soundness i nie
++ przechowuje kopii, więc błąd dodany, przemianowany lub wycofany jest odnotowywany tam, w tej samej
++ zmianie. Nazwa jest zapisana w kebab-case i rozwija kod do długiej postaci: `↯/s.87.2.1` to
++ `↯/soundness.legerdemain.query.missing`. Typ błędu `Query.Error` nosi nazwę `query`, a `Reason`
++ taki jak `BadSignature` – `bad-signature`.
+
+@ 0 6 0 0e6d996121bd51fd0c84762bd81f5efa
++ Kod nigdy nie jest używany ponownie. Gdy błąd zostaje usunięty, jego strona pozostaje, oznaczona
++ `(retired)`, i mówi, co się z nim stało, a jego numer jest oznaczony jako wycofany w `bolt.tel`:
++ referencja do kodu z wcześniejszego wydania nadal się rozwiązuje, a numeru nie można przez
++ przypadek przydzielić ponownie. Strona wycofanego kodu podaje, co go zastąpiło, w tabeli `Was` i
++ `Now`, z wierszem dla kodu i dla każdego z jego wariantów, który ma następcę, nawet jeśli jest
++ tylko jeden.

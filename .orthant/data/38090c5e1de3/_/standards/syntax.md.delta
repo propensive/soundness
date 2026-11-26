@@ -1,0 +1,4 @@
+orthant 2 release
+
+@ 0 1 0 0b4307ce15cb480b1fa4dbadcd19349b
++ Each retired `SN-nnn` page under [`doc/errors/`](../errors/) also names its

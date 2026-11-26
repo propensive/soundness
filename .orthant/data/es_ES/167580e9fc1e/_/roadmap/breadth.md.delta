@@ -1,0 +1,22 @@
+orthant 2 language
+
+@ 0 2 0 1929cda851f58baa1629c06d27d88cdc
++ Terminado cuando: el módulo se distribuye con pruebas, páginas de error y un tema en
++ `doc/work/soundness/modules/`, y reproduce en ida y vuelta los vectores de ejemplo de RFC 7515/7516.
+
+@ 0 2 0 162c48f835fd768f0a9cfd9f73a3682c
++ Terminado cuando: el módulo se distribuye con pruebas, páginas de error y un tema en
++ `doc/work/soundness/modules/`, y supera la suite estándar de conformidad de TOML.
+
+@ 0 2 0 1385aacb6e88e9540bce32e054ba8a53
++ Terminado cuando: el módulo se distribuye con pruebas, páginas de error y un tema en
++ `doc/work/soundness/modules/`, y una ceremonia guionizada de registro y aserción tiene éxito frente a un
++ autenticador de referencia.
+
+@ 0 2 0 1358c2667696ccd4117c4bca7d69240c
++ Terminado cuando: el módulo se distribuye con pruebas, páginas de error y un tema en
++ `doc/work/soundness/modules/`, e interopera con un servidor y un cliente HTTP/3 de referencia.
+
+@ 0 2 0 03cdd5b8ffa5b93710b6b0e94e148d08
++ Terminado cuando: el módulo se distribuye con pruebas, páginas de error y un tema en
++ `doc/work/soundness/modules/`, y una sesión guionizada tiene éxito frente a un servidor IMAP de referencia.

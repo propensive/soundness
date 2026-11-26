@@ -1,0 +1,22 @@
+orthant 2 language
+
+@ 0 2 0 157a3a44b6f07b3214a91645500dd5a3
++ Fatto quando: il modulo viene distribuito con test, pagine di errore e un argomento in
++ `doc/soundness/modules/`, e fa l'andata e ritorno dei vettori di esempio delle RFC 7515/7516.
+
+@ 0 2 0 127cb5949af86617091c53779bd8b0f3
++ Fatto quando: il modulo viene distribuito con test, pagine di errore e un argomento in
++ `doc/soundness/modules/`, e supera la suite di conformità standard di TOML.
+
+@ 0 2 0 0242546bb2e491fe01ce6eb76fd4fb16
++ Fatto quando: il modulo viene distribuito con test, pagine di errore e un argomento in
++ `doc/soundness/modules/`, e una cerimonia scriptata di registrazione e asserzione ha esito positivo con un
++ autenticatore di riferimento.
+
+@ 0 2 0 0fa92f02db91bc5c0ffba1a2a59e6cd3
++ Fatto quando: il modulo viene distribuito con test, pagine di errore e un argomento in
++ `doc/soundness/modules/`, e interopera con un server e un client HTTP/3 di riferimento.
+
+@ 0 2 0 128a7f59440161e006b6ecc0692efdcb
++ Fatto quando: il modulo viene distribuito con test, pagine di errore e un argomento in
++ `doc/soundness/modules/`, e una sessione scriptata ha esito positivo con un server IMAP di riferimento.

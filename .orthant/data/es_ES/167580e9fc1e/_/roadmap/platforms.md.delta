@@ -1,0 +1,17 @@
+orthant 2 language
+
+@ 0 6 0 1c04979355be49381f1bb8e3f8ecc451
++ `etc/compatibility.tsv` registra la matriz, y `etc/check-compatibility.py` (que ejecuta `make
++ build`) regenera sus columnas de plataforma a partir de `build.mill` —los indicadores
++ `scalaJs`/`scalaNative` de cada componente y los conjuntos de fuentes
++ `sources`/`jsSources`/`nativeSources`— y falla ante cualquier divergencia respecto a la copia
++ registrada o ante una exclusión sin motivo en `notes`. La matriz es, por tanto, un contrato: un
++ módulo añadido sin fila, o un indicador cambiado sin tocar el fichero, hace fallar la
++ compilación, y el único contenido escrito a mano es el motivo de cada celda `no` o `core`.
+
+% 0 1 0 103e46e31a37bd190a644b6f5d3e1159
+
+@ 0 2 0 10706f14d6551a4916ff249ce6c79e6d
++ Terminado cuando: cada motivo de exclusión de `etc/compatibility.tsv` describe una limitación
++ inherente de la plataforma, y una comprobación del vocabulario de motivos en la CI impone la
++ distinción.

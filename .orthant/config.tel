@@ -56,8 +56,18 @@ axis
     label 0.77.0
     commit 9f0bb13ad599b47803efa7f7b1b8331612509548
   value
-    name main
+    name 167580e9fc1e
     parent 9f0bb13ad599
+    label 0.78.0
+    commit 167580e9fc1e51bc762eab19e53f912f2e4d01b7
+  value
+    name 38090c5e1de3
+    parent 167580e9fc1e
+    label 0.79.0
+    commit 38090c5e1de346e64f5a4795a3bb4a330991419e
+  value
+    name main
+    parent 38090c5e1de3
     branch true
   pattern 0.*
 live doc

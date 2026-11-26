@@ -1,0 +1,6 @@
+orthant 2 language
+
+@ 0 3 0 13e0f437e82a946314fb7b5ee55f846a
++ Uma pipeline de [streams](/doc/soundness/modules/streams.md) é o caso mais claro. Cada estágio recebe um
++ stream e produz um stream, de modo que os estágios se encadeiam sem adaptadores e em qualquer
++ ordem que faça sentido:

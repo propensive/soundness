@@ -1,0 +1,271 @@
+orthant 2 language
+
+@ 0 1 0 112e00a0bd848b011c4e0e445a493659
++ info   型付きのデータから描く SVG チャート：棒グラフ、折れ線グラフ、散布図、円グラフ、ヒストグラム、箱ひげ図、環状グラフ
+
+@ 0 3 0 14ed8dab4fb7b56a1fd148363610777d
++     _Tasseomancy_ は、型付きのデータからチャートを savagery の `Svg` 値として描き、チャートのライブラリが普通は一つの呼び出しに絡め合わせてしまう四つの決定を切り離しておく：データの**形**、チャートの**種類**、一方の他方への**適合**、そして**スタイル**である。
+
+@ 0 16 0 067dd5b85b1b7504178320a4b398acdc
++     - 形は型の中にある。
++       `Series[x, y]` は名前の付いた点の並びであり、その横軸の型が軸を決める：`Text`、列挙型、`Chart.Category` は `Categorical` であり、数値、`Duration`、`Instant`、任意の `Quantity` は `Continuous` である。
++       `Samples[y]` は生の測定値、`Chart.Estimate` は区間を伴う値、`Noted` は注記を伴う値であり、`Weighted` かつ `Progressive` なノードの `Dag` は依存グラフである。
++     - 種類は値である（`Bars()`、`StackedBars()`、`Lines()`、`Scatter()`、`Pie()`、`Histogram()`、`Boxes()`、`Annulus()`）。`data.chart(kind)` は、その種類がデータの形を描けると `Plottable` インスタンスが言う場合にのみコンパイルされる：三つの系列の円グラフや、カテゴリーのラベルを通る折れ線はコンパイルエラーである。
++     - 適合（各軸の範囲、変換、刻み）は軸の値の型をキーとする `Calibration` が選び、スコープにある given、`calibrations` からのインポート、あるいは種類への引数によって上書きされる。
++       結果は `Scale` か `Bands` であり、ただのデータである。これがあるので、チャートは新しいデータがまだ軸に収まるかどうかを判断できる。
++     - スタイルは `Chart.Style` 値（デフォルトは `Chart.Standard`）であり、描かれる構成要素ごとのメソッド、役割で名付けた色の `ChartPalette`、そしてレイアウトのためにテキストを測る `FontMetric` を持つ。
+
+@ 0 3 0 0a7750f3b1455772047955d94e1ba081
++     互換でない組み合わせはコンパイルされない：カテゴリーの系列は `Lines()` にできず、系列のコレクションは `Pie()` にできず、`Samples` は `Bars()` にできず、ノードが `Weighted` や `Progressive` を欠く `Dag` は `Annulus()` にできない。
+
+@ 0 1 0 1847d0c5bfa9bc0c15947b18505511cb
++ entry .Chart   データ、チャートの種類、一方の他方への適合。データが届くたびに改訂できる
+
+@ 0 6 0 1917a3de2b6d1ec40d240e530bbf9c42
++       `Chart[data, form, fit, style]` は、その `#data`、その種類（`#form`）、種類がデータから計算した `#fit`、そしてそれらを組にする `Plottable` インスタンスを保持する。
++       直接ではなく、`chart` 拡張によって作られる。
++       適合の型はその種類自身のもの（`bands` と `ordinate` を持つ `Bars.Fit`、二つのスケールを持つ `Lines.Fit`、帯を持つ `Annulus.Fit[node]`）であり、スタイルの型はその種類のスタイルのトレイトである。したがって棒グラフは `Bars.Style` に対して、円グラフは `Pie.Style` に対して描画され、`Chart.Standard` はそのすべてを実装する。
+
+@ 0 1 0 1e4303f19433f68b115e6be66e67bab5
++         label 軸を越える点はチャートを描き直す
+
+@ 0 9 0 072fce925d770d9e02e5a9a1c5d675b3
++   entry .Legend   凡例を置く場所：`Hidden`、`Right`、`Bottom`
++       `Chart.Style#legend` がその一つを選ぶ。
++       `Right` は系列ごとの色見本と名前をプロットの横に積み、`Bottom` はそれらを下端に沿って一行に流し、`Hidden` は凡例を描かず、そのための場所も取らない。
++       環状グラフには、設定にかかわらず凡例がない。
++   entry .Axis   直交座標のスタイルのフックがどの軸を描いているか：`Abscissa` または `Ordinate`
++       `Chart.Cartesian` の `axisLine`、`tick`、`tickLabel`、`gridLine`、`axisTitle`、`arrowhead`、`axisBreak`、`labelRoom` に渡されるので、一つのオーバーライドで横の軸と縦の軸を異なるように扱える。
++   entry .Anchoring   配置が決めた、テキストの並びを組む場所：点と揃え方
+
+@ 0 15 0 0e114d9ac2ce61770c34d1142af355ed
++         ラベルのアンカーとなる `#point` と、テキストをその正しい側に置く `Lettering.Anchor` と `Lettering.Baseline` である。
++         `Chart.Cartesian#tickLabel`、`#pointLabel`、`Pie.Style#wedgeLabel` はこれを受け取る：位置を選ぶのは cartouche である。ラベルは衝突を避けるために、点の別の側に移されたり、引き出し線を伴って点から離されたりしていることがあるからである。スタイルはテキストを `at.point` に `at.anchor` と `at.baseline` で描き、点には自身の変換を適用する。
++     entry .of   配置された cartouche の `Caption.Position` に対するアンカー
++         点の東にあるテキストはそこから始まり、縦方向にはそこを中心とする。西にあるテキストはそこで終わる。北にあるテキストはその上に乗り（アルファベットのベースライン）、南にあるテキストはそこから吊り下がる。斜めの配置は二つを組み合わせ、`Center` は縦横とも中央である。
++     entry #point   アンカーとなる点。描画の座標で表す
++     entry #anchor   `text-anchor`：点がテキストの始まり、中央、終わりのいずれであるか
++     entry #baseline   `dominant-baseline`：グリフのどの線が点の上にあるか
++   entry .Style   すべてのチャートの種類が共有するもの：キャンバス、フォント、凡例、共通の構成要素の描き方
+
+@ 0 6 0 08009728091e87cd1d44b27ca0a1c242
++         スタイルの階層の根である。
++         チャートの種類は幾何（ラベルがどこにあるか、棒がどれだけ高いか）を計算し、構成要素ごとにスタイルのメソッドを呼ぶ。メソッドは描く `Figure` を返す。スタイルは違う描き方をしたいメソッドをオーバーライドし、残りを継承する。
++         `Chart.Cartesian` は軸を加え、各種類は自身のトレイト（`Bars.Style`、`Lines.Style`、`Pie.Style`、…）を加える。`Chart.Standard` はそのすべてを実装し、コンパニオンのデフォルトでもあるので、スコープにスタイルがなくてもチャートは描画される。
+
+@ 0 31 0 1045ddff635d5cb31757e03525ed6e66
++     entry .standard   インポート不要のデフォルトのスタイル：`Chart.Standard()`
++         コンパニオンの given なので、レキシカルスコープにある任意の `Chart.Standard`（あるいは他のスタイル）の given がそれより優先される。
++     entry #width   描画の幅。ピクセルで表す
++     entry #height   描画の高さ。ピクセルで表す
++     entry #inset   描画の端と描かれるものとの間の余白。ピクセルで表す
++     entry #font   テキストのすべての並びを組むフォント。`Font in Web` である
++     entry #fontSize   文字の大きさ。ピクセルで表し、構成要素の間隔はこれから導かれる
++     entry #legend   凡例を置く場所。`Chart.Legend` である
++     entry #gap   構成要素の間の間隔の単位：フォントサイズの 10 分の 4
++     entry #fontStyle   ある色のテキストの並びの CSS：`font-size` と `fill`
++         フェイスそのものはここにはない。それはレタリングの `font` である。
++         オーバーライドでは、文字間隔や太さのようなプロパティを加えてよい。
++     entry #lettering   テキストの並びを点に組む：すべてのラベル、タイトル、凡例の項目はここを通る
++         その位置に、アンカー、ベースライン、色の `#fontStyle`、スタイルの `#font`、任意の変換を伴う savagery の `Lettering` を作る。
++         これをオーバーライドすると、チャートのテキストすべてのスタイルが一度に変わる。より具体的なフック（`tickLabel`、`legendLabel`、…）はこれを呼ぶ。
++     entry #backdrop   すべての背後にある図形：パレットの背景色の矩形
++         `backdrop` の部分として最初に描かれるので、暗いパレットのレタリングがページの白の上に組まれることはない。
++         透明なチャートにするには、`Nil` を返すようにオーバーライドする。
++     entry #legendLineHeight   凡例の項目一つの高さ：フォントサイズの 1.6 倍
++     entry #swatchSize   凡例の色見本の一辺：フォントサイズ
++     entry #swatch   凡例の項目の名前の横にある色の見本：デフォルトでは塗りつぶした正方形
++         色見本の左上の角、系列の色、そのインデックスを受け取るので、スタイルはある系列には線の見本を、別の系列には箱を描ける。
++     entry #legendLabel   凡例の項目の名前。色見本の右に組まれる
++     entry #leader   点から離れなければならなかったラベルからその点へ戻る線
++         デフォルトでは 1 ピクセルで線を引いた折れ線である。
++         点の注記や円グラフの扇形の百分率は、点のどの側も埋まっているときに引き出し線を伴って移される。線のスタイルを変えたり、線を消したりするには、これをオーバーライドする。
++   entry .Cartesian   横軸と縦軸を持つすべてのチャートが共有するもの：軸、グリッド、タイトル、マーカー
+
+@ 0 5 0 1831b6ac69f488340d399a735a559cbd
++         `Chart.Style` を、軸の構成要素とそのレイアウトのパラメーターで拡張する。
++         位置は描画の座標で与えられる。形、線、そしてラベルが目盛りに対してどこにあるかはスタイルが決める。
++         `Bars.Style`、`Lines.Style`、`Scatter.Style`、`Boxes.Style`、そして（`Bars.Style` を通して）`StackedBars.Style` と `Histogram.Style` がこれを拡張する。`Pie.Style` と `Annulus.Style` は軸を持たないので拡張しない。
+
+@ 0 41 0 1e369dca35c1070506662ba30fa16bdc
++     entry #pitch   一つの刻みが軸に沿って必要とする場所。ピクセルで表し、軸が得る目盛りの数を決める
++         長さ `L` の軸には `L / pitch` 個の刻みの予算が与えられる。ルーラーはその中で切りのよい間隔を選び、それでもラベルが重なる横軸にはより少ない数が与えられる。
++     entry #tickLength   目盛りが軸の線を越えて伸びる長さ。ピクセルで表す
++     entry #grid   主要な刻みにグリッド線を描くかどうか
++     entry #abscissaTitle   横軸のタイトル。型が与えるものを使うなら `Unset`
++         量の軸には、型から次元と単位によるタイトル `distance / m` が付く。ここで与えたタイトルは名前を置き換えるが、単位は保つ：`tide height / m`。
++     entry #ordinateTitle   縦軸のタイトル。型が与えるものを使うなら `Unset`
++     entry #strokeWidth   系列の線と箱ひげ図の中央値の幅。ピクセルで表す
++     entry #markerRadius   点のマーカーの半径。ピクセルで表す
++     entry #axisLine   軸の線。一端から他端まで
++     entry #arrowhead   軸の遠い端の印。デフォルトでは何もない
++     entry #axisBreak   範囲が零を含まない線形の軸の、原点側の端の印。デフォルトでは何もない
++         零より上で始まるか、零より下で終わる線形のスケールについてのみ呼ばれる。そこでは、読み手が軸は零から始まると思い込むかもしれないからである。
++     entry #gridLine   主要な刻みでプロットを横切るグリッド線。`#grid` が設定されている場合に描かれる
++     entry #tick   刻みの目盛り：横軸からは下向き、縦軸からは左向き
++         `major` は、対数軸での `2`–`9` の倍数のような、ラベルのない副次的な刻みでは偽である。
++     entry #tickLabel   刻みのラベル。配置が選んだアンカーに置かれる
++         目盛りから `tickLength + gap` だけ離れて組まれる：横軸では目盛りの下に、縦軸では目盛りの横に。
++         隣と重なるラベルは描かれずに隠される。
++         ラベルを回転させたり移動させたりするオーバーライドは、レイアウトが正しい場所を確保するように、`#labelRoom` もオーバーライドしなければならない。
++     entry #labelRoom   軸の目盛りとラベルが線の外側に取る場所。レイアウトがこれを確保する
++         横軸では、目盛り、間隔、テキスト一行である。縦軸では、目盛り、間隔、そしてスコープにある `FontMetric` が測った最も幅の広いラベルである。
++     entry #titleRoom   軸のタイトルが取る場所：フォントサイズの 1.6 倍
++     entry #axisTitle   軸のタイトル：横軸の中央の下、あるいは縦軸の横に縦向きで
++         縦軸のタイトルは描画の左端に組まれ、アンカーを中心に反時計回りに九十度回転される。
++     entry #marker   点の印：`#markerRadius` の塗りつぶした円
++         系列のインデックスを受け取るので、マーカーは系列ごとに変えられる。
++     entry #errorBar   値の下限から上限までの棒。両端に横線が付く
++         `Estimate` に対して描かれる：`top` と `bottom` の間の縦線と、両端の半幅 `cap` の横線であり、パレットの軸の色で描かれる。
++     entry #pointLabel   `Noted` 値が持つ注記。マーカーの横に組まれる
++         デフォルトでは右に、あるいは配置が他のラベル、マーカー、線と重ならないと見つけた側に、与えられた `Chart.Anchoring` で組まれる。
++   entry .Standard   すべてのチャートの種類のデフォルトのスタイル。名前付きパラメーターのケースクラスである
+
+@ 0 8 0 0891e807181f12b60920a4f6d3afeed6
++         `Bars.Style`、`StackedBars.Style`、`Histogram.Style`、`Lines.Style`、`Scatter.Style`、`Boxes.Style`、`Pie.Style`、`Annulus.Style` を一度に実装するので、スコープにある一つの値で任意のチャートのスタイルが決まる。
++         すべてのパラメーターにデフォルトがある：`width = 640.0`、`height = 400.0`、`inset = 12.0`、`font = Web.sansSerifFont`、`fontSize = 12.0`、`legend = Legend.Right`、`pitch = 60.0`、`tickLength = 5.0`、`grid = true`、未設定の `abscissaTitle` と `ordinateTitle`、`strokeWidth = 2.0`、`markerRadius = 3.5`、`markers = false`、`smoothing = 0.0`、`barGap = 0.25`、`boxGap = 0.25`、`hole = 0.0`、`sectorGap = 2.0`、`bandGap = 2.0`。
++         任意の構成要素の描画は、無名サブクラスでのオーバーライドである：
+
+@ 0 3 0 10c3baa4b9a2e622191ad31a5fe24c40
++         チャートを描画するヘルパーは、スタイルを `using` パラメーターとして受け取るべきである。そうしないヘルパーは、黙ってコンパニオンのデフォルトで描画する。
++   entry .Drawing   部分ごとに安定した識別子の下に、描画順に並べた、描画済みのチャート
+
+@ 0 15 0 1a99d3afece48c15170f5b17c966e665
++         `Chart#drawing` の結果である：キャンバスの大きさ、任意の SVG の定義、そして `Svg.Id` から `Figure` への `Ledger` であり、これは `backdrop`、続いて（直交座標のチャートでは）`grid`、`abscissa`、`ordinate`、`series-0`、`series-1`、…、`legend` を保持する。円グラフには `wedges` と `legend` があり、環状グラフには `rank-0`、`rank-1`、… がある。
++         識別子は `Chart.Revision.Replace` が名指すものであり、それぞれが SVG の `<g>` の `id` になる。
++     entry .encodable   描画全体を一つの `Svg` として。`drawing.in[Svg]` のように
++     entry #width   キャンバスの幅。スタイルから
++     entry #height   キャンバスの高さ。スタイルから
++     entry #defs   描画に必要な SVG の定義。標準の種類にはない
++     entry #parts   識別子ごとの部分。描画順に並ぶ
++   entry .encodable   チャートを `Svg` として。`chart.in[Svg]` のように、求める構成要素を伴う
++       チャート自身のスタイルの型（棒グラフなら `Bars.Style`。`Chart.Standard` はすべての種類を満たす）、`ChartPalette`、`FontMetric`、`Arranger` がスコープに必要であり、そのどれにもコンパニオンのデフォルトがある。
++       `chart.in[Svg].in[Xml].show` が SVG のテキストである。
++   entry .Revision   チャートのある描画と次の描画の間で変わったもの
+
+@ 0 22 0 10822a6e2ca5092f00d50d3d6b7bbd70
++         `Chart#revise` が返す。
++         `Redraw(svg)` は新しい描画全体を運ぶ。軸が新しいデータに合わせて動いたからである。`Replace(id, figure)` は描画の異なる一つの部分（`series-0`、`legend`、`rank-1`）を、それを置き換える図形とともに名指す。
++         SVG を保持するページは、要素を識別子で置き換えるか、要素全体を置き換えるだけでよいので、各改訂を送ることで、チャートを WebSocket 越しに最新に保てる。
++         データが変わらなければ空のリストになる。
++   entry #data   チャートの元となったデータ
++   entry #form   チャートの種類：`Bars()`、`Lines()`、… の値。明示的な較正を伴うこともある
++   entry #fit   データの種類への適合：その種類自身の適合の型であり、軸が見える
++       折れ線グラフでは `chart.fit.ordinate.transform`、棒グラフでは `chart.fit.bands.categories`、ヒストグラムでは `chart.fit.edges`、円グラフでは `chart.fit.total` である。
++   entry #plottable   データを種類と組にする `Plottable` インスタンス
++   entry #drawing   チャートを `Chart.Drawing` として描画する：部分をその識別子の下に置く
++       `.encodable` と同様に、種類のスタイル、`ChartPalette`、`FontMetric`、`Arranger` が必要である。
++       描画は呼び出しのたびに新たに計算される。
++   entry #revise   新しいデータに対する次のチャートと、ページ上で変わったもののリスト
++       `Plottable` の `accommodates` が、現在の適合がまだ新しいデータを収めると言うなら、適合は保たれ（軸は動かない）、描画の異なる部分はそれぞれ `Chart.Revision.Replace` になる。そうでなければデータは適合し直され、ただ一つの改訂は新しい SVG の `Chart.Revision.Redraw` である。
++       新しいデータは同じ型でなければならない：`Series[Double, Double]` のチャートは、そうした別の系列で改訂する。典型的には `chart.data.add(point)` である。
+
+@ 0 1 0 1844bc0d0f85efd5082ba8eb1b1342c4
++ entry .Plottable   データの形とチャートの種類の互換性、そしてそれを描くのに必要なもの
+
+@ 0 9 0 1c28ec2691d0d19507526a5acda9efaa
++       `data is Plottable in form to fit by style` は、その種類がデータを描ける場合にのみ存在する：円グラフには一つのカテゴリーの系列が、折れ線には数値の軸が、環状グラフには重み付きで進捗を持つノードの `Dag` が必要である。
++       種類は `Form`、適合は `Result`（したがってチャートの適合はその種類自身のものであり、軸が見える）、スタイルは `Operand` であり、`Chart.Style` を上限とする。
++       標準のインスタンスは各種類のコンパニオン（`Bars.series`、`Bars.traversable`、`Lines.series`、`Histogram.samples`、`Annulus.dag`、…）にあるので、インポートなしで見つかる。`traversable` インスタンスは系列や標本の任意のコレクション（`List`、`Set`、`Sequence`）を扱い、その走査の証拠は要素の型の型クラスより先に解決される。
+
+@ 0 3 0 169e240487b4d1361b0f5b63a714220f
++       新しい種類のチャートは、描ける形に対するインスタンスを伴う新しい値である。他には何も変わらない。
++       インスタンスの `#draw` は、種類のスタイル、`ChartPalette`、`FontMetric`、`Arranger` を受け取る。
+
+@ 0 8 0 10d090d5a3debda7022c250b95d296cc
++   entry #fit   データから軸を選ぶ：`Lines.Fit` のような `Result`
++   entry #accommodates   適合がまだ新しいデータを収めるかどうか。改訂が一つの部分を置き換えられるように
++       直交座標の種類では、すべての位置と区間がスケールの内にあり、すべてのカテゴリーが既知の帯であることである。円グラフではカテゴリーが変わらないこと、環状グラフではグラフの形と重みが変わらないことである。
++   entry #draw   データを適合に対して `Chart.Drawing` として描画する
++       スタイル（`Operand`）、`ChartPalette`、`FontMetric`、`Arranger` をコンテキスト値として受け取る。
+
+@ 0 4 0 1bdbb9d5ce2db9910b3f17d117999156
++ entry .Weighted   環状グラフのノードの広がり：その段の角度と帯の厚さのうちの取り分
++     `node is Weighted` は `weight(node): Double` を与える。
++     `Annulus` では、ノードの扇形区画は、その重みが段の合計に占める割合だけ帯の一周を掃き、帯の厚さは、その段がグラフ全体の重みに占める割合に従う。
++     負の重みは零として数えられる。
+
+@ 0 5 0 124bcb22acae8dcd16f6400eea87d86d
++ entry .Progressive   環状グラフのノードがどこまで進んだか。0（未着手）から 1（完了）まで
++     `node is Progressive` は `completion(node): Double` を与え、描画時に `[0, 1]` に切り詰められる。
++     ノードは自身の進捗を持つので、環状グラフは他のチャートと同様に、ノードがさらに進んだ同じ形の新しい `Dag` で改訂され、扇形区画がさらに埋まった帯だけが置き換えられる。
+
+@ 0 5 0 1730fb77401385ba01c05e9e971d3b4e
++       `Chart.Standard(hole = 0.3)` は、中心を半径の 10 分の 3 までくり抜く。
++       描画の部分は `backdrop`、`wedges`、`legend` である。
++       円グラフには動かさずにおく軸がないので、改訂はカテゴリーが同じである間は適合を保って `wedges` だけを置き換え、そうでなければ描き直す。
++   refer tasseomancy.Annulus
+
+@ 0 4 0 0c90ad492a63d8641bf0aa866cdc1ac6
++   entry .Fit   円グラフの適合：順に並んだカテゴリーの `#labels` と、それらが分け合う `#total`
++     entry #labels   カテゴリー。系列の順に並ぶ
++     entry #total   非負の値の合計
++   entry .Style   円グラフの構成要素：扇形とその百分率のラベル
+
+@ 0 11 0 011cedd28686787012e6824818081c4c
++         `Chart.Style` を拡張する（`Chart.Cartesian` ではない）。
++         `Chart.Standard` が `hole` を与える。
++     entry #hole   中心からくり抜く半径の割合：完全な円グラフなら `0.0`
++         `[0, 0.95]` に切り詰められる。
++         くり抜いた円グラフの扇形は、偶奇規則で切り取った環である。
++     entry #labelThreshold   扇形の百分率が組まれるために必要な、全体に占める最小の割合：`0.04`
++     entry #wedge   一つの扇形。その輪郭のパス操作から、系列の色で描く
++         `fill-rule: evenodd` で塗りつぶした `Outline` なので、くり抜いた扇形は穴を保つ。
++         操作は、`Outline` が保持するとおりに最後から最初へと並ぶ。
++     entry #wedgeLabel   扇形の百分率。配置が選んだアンカーに置かれる
++         他のラベルと重ならなければ扇形の中央に置かれ、重なれば引き出し線を伴って外側へ移される。
++   entry .series   一つのカテゴリーの系列は円グラフとして描ける
+
+@ 0 1 0 12f074268f4e474211e04fa1a4fdb787
++ entry .Annulus   依存グラフを同心の帯として描く：段ごとに一つの帯があり、各ノードは完了した分だけ塗られた扇形区画になる
+
+@ 0 10 0 1d16274da5ae74870b75e0bde129fae8
++       acyclicity の `Dag[node]` のためのチャートの種類であり、そのノードは `Weighted` かつ `Progressive` で、スコープに `Ranking` が必要である（acyclicity のコンパニオンのデフォルトがある。`import rankings.balancedRanking` は、各ノードをその依存元にできるだけ近く描く）。
++       何にも依存しないノードが最も内側の帯をなし、その先の帯はそれぞれ一段外側のノードをなすので、ビルドは中心から外側へと塗られていく。
++       ノードの扇形区画は、段の中でその重みに比例した角度を掃き、引き寄せられた依存先の上に来るように並べられる。帯の厚さは、その段が重みの合計に占める割合に従う。
++       扇形区画はノードが完了した分だけ時計回りに塗られ、残りは控えめな色合いになる。色はパレットの最初の色に、扇形区画のある位置による陰影を付けたものである。
++       環状グラフには、ラベルも軸も凡例もない。
+
+% 0 2 0 14e9c2ce8abadbba09354805377d870d
+
+% 0 1 0 192dfaa53893ba201815a4fa9a1268c7
+
+@ 0 4 0 1c3a815166634d4800e869f59b1c371d
++       描画の部分は `backdrop` と `rank-0`、`rank-1`、… であり、それぞれが `sector-N` と `sector-N-rest` のパスのグループである。
++       適合はグラフの形と重みだけに依存するので、ノードが進んだだけの同じ形のグラフに対しては保たれ、改訂は扇形区画がさらに埋まった帯だけを置き換える。
+
+@ 0 1 0 11991396243f136c0ff694dda99d0195
++   entry .Sector   帯の中でのノードの場所：その扇形区画が始まる角度と終わる角度、そしてその重み
+
+@ 0 6 0 187b87b21df75db81776367ead6a960a
++         角度はラジアンで表し、北から時計回りに測る。
++     entry #node   ノード
++     entry #start   扇形区画が始まる角度
++     entry #end   扇形区画が終わる角度
++     entry #size   扇形区画を配置した重み
++   entry .Band   段の帯。中心から外側へ数え、端と扇形区画を伴う
+
+@ 0 6 0 0a574bbe88c008fe0844ab8cdb6ca00c
++         `#inner` と `#outer` は、穴と外周の間の距離に対する割合である。
++     entry #rank   段。中心の `0` から数える
++     entry #inner   内側の端。使える半径に対する割合で表す
++     entry #outer   外側の端。使える半径に対する割合で表す
++     entry #sectors   段の扇形区画。描画順に並ぶ
++   entry .Fit   改訂を通して動かないものすべて：`#bands`
+
+@ 0 3 0 0c218c9188a3bb0711c8d394d44717cf
++         完了度はここにはない。描画のたびにノードから読み取られる。
++     entry #bands   帯。最も内側から並ぶ
++   entry .Style   環状グラフの構成要素：各扇形区画の完了した部分と残り、そして目地
+
+@ 0 11 0 0c3ca24d87538fed06175a0f6738d39a
++         `Chart.Style` を拡張する。
++         `Chart.Standard` が `hole`、`sectorGap`、`bandGap` を与える。
++     entry #hole   中心からくり抜く半径の割合。`Pie.Style` と共有する
++     entry #sectorGap   隣り合う扇形区画の間の目地の幅。ピクセルで表す
++     entry #bandGap   隣り合う帯の間の目地の幅。ピクセルで表す
++     entry #shade   位置から決まる扇形区画の色。パレットの最初の色から作る
++         `x` と `y` は、環状グラフの左端または下端の -1 から、右端または上端の 1 までをとる：色相は左から右へ三十度回り、下から上へは、色は 5 分の 1 暗い色から純色を経て 5 分の 1 明るい色へと移る。
++     entry #sector   ノードの扇形区画の完了した部分。そのパス操作から作る：`sector-N`
++     entry #remainder   未完了の部分。控えめな色合いで描く：`sector-N-rest`
++   entry .dag   重み付きで進捗を持つノードの `Dag` は、`Ranking` があれば環状グラフとして描ける

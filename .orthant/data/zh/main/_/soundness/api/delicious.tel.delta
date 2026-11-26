@@ -1,13 +1,13 @@
 orthant 2 language
 
-@ 0 1 0 1a26dee1d32c457f154f39a6cd8b8097
+@ 1 1 0 077af85432889cd518a314ddc0c40c07
 +   entry #trees   消息中的每一个 `Markup.Tree`，无论嵌套在何处
 
-@ 0 2 0 06d9964a216b63ce0ea8450093d7ce20
+@ 1 2 0 086d654c8617329705c861d482f84d3f
 +       row  `Tree(omitted, children)`  解释一次失败的上下文解析的树；`omitted` 统计因长度而被省略的节点数
 +       row  `Node(role, name, note, repeated, children)`  这种树的一个节点：它的 `Role`、被查找、找到或提议之物的 `name`、关于它的 `note`，以及其子树是否已在前面显示过而在此省略
 
-@ 0 3 0 19bd5f1a17ead8801f0d056cc9832871
+@ 2 3 0 1c5a3fe774bb8cbf0499f293edf990c6
 +       `Tree` 或 `Node` 的子节点是它的子 `Node`，其间穿插着把同一棵树绘制成纯文本的 `Textual`（换行和制表符）；`#nodes` 只给出这些 `Node`。
 
 @ 0 21 0 097f0e9e07a724d7170810e6bafc0c7c
@@ -26,5 +26,5 @@ orthant 2 language
 +     entry #word   角色的小写名称，与标记的 `role` 属性中的写法一致
 +   entry #plain   此节点的可见文本：它自己的文本，或其子节点文本的连接
 
-@ 0 1 0 0040f586709e95720edf25cba05cb8b5
+@ 1 1 0 1deed663ca23628d0fbb7ab345e089cf
 +   entry #nodes   `Tree` 或 `Node` 的子 `Node`，不含绘制它们的文本

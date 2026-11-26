@@ -1,0 +1,35 @@
+orthant 2 language
+
+% 0 1 0 0dd7530bae5a4d51179199a430b37390
+
+@ 0 1 0 13b950dddbc742550f4b32c8fa8e2710
++ 由 `pacify` 抛出，用以代替外部代码抛出的 `Throwable`。
+
+@ 0 1 0 1d8ed6a2d2412a231ea0d46e12dff5b7
++ ## 原因
+
+@ 0 6 0 03b1ef4e3a9a77d410b5e581773c5a96
++ `pacify` 运行一个不是用 Soundness 编写的代码块，例如编译器或类加载器，这样的代码通过抛出来报告失败。
++ 代码块抛出的任何对程序不致命的东西——`NonFatal` 接受的任何 throwable，以及 `AssertionError`、`StackOverflowError` 或 `LinkageError`——都会作为 `Disturbance` 抛出，它的 `throwable` 就是被抛出的东西。
+
+@ 0 1 0 1dde240f21b5409104721a1bcf5ec317
++ ## 示例消息
+
+% 1 1 0 1abf28c8819c4a100ba2af9cc74b39c0
+
+% 0 1 0 0a182627163b8b7311fa22b65e74234a
+
+% 1 1 0 0d335e857cd033e406e93557f46e2a71
+
+@ 0 1 0 0a3dc9137d3cf72f0228e7373e7a2cbf
++ ## 解决方法
+
+@ 0 4 0 16d318c38510311e15facc9e5921c8af
++ 像处理其他任何错误一样，用 `safely`、`recover` 或 `mitigate` 处理 `Disturbance`，并读取它的 `throwable` 以了解原因。
++ 如果该 throwable 显示出外部代码的输入有缺陷，例如类路径中缺少某个类，请更正输入。
+
+@ 0 1 0 004f241cb4a4ed0405cb108ee75b2611
++ ## 另请参阅
+
+@ 0 1 0 1d004b6495f5a14f1379a9e5d34dad65
++ - 源代码：`lib/contingency/src/core/contingency.Disturbance.scala`

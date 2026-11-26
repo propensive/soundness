@@ -1,0 +1,135 @@
+orthant 2 language
+
+!     - The shape is in the types. A `Series[x, y]` is a named run of points; its abscissa type
+!       decides the axis: a `Text`, an enum or a `Chart.Category` is `Categorical`, a number, a
+!       `Duration`, an `Instant` or any `Quantity` is `Continuous`. `Samples[y]` are raw
+!       measurements, `Chart.Estimate` a value with its interval, `Noted` a value with a note, and a
+!       `Dag` of `Weighted`, `Progressive` nodes is a dependency graph.
+!     - A kind is a value — `Bars()`, `StackedBars()`, `Lines()`, `Scatter()`, `Pie()`,
+!       `Histogram()`, `Boxes()` or `Doughnut()` — and `data.chart(kind)` compiles only where a
+!       `Plottable` instance says the kind can draw the data's shape: a pie of three series or a
+!       line through category labels is a compile error.
+!     - The fit — each axis's range, transform and gradations — is chosen by a `Calibration`
+!       keyed on the axis's value type, overridden by a scoped given, an import from
+!       `calibrations`, or an argument to the kind. The result is a `Scale` or `Bands`: plain
+!       data, which is what lets a chart tell whether new data still fits its axes.
+!     - The style is a `Chart.Style` value — `Chart.Standard` by default — with a method for
+!       every component drawn, a `ChartPalette` of colours named by role, and a `FontMetric`
+!       which measures text for the layout.
+@ 0 16 0 067dd5b85b1b7504178320a4b398acdc
++     - Kształt wynika z typów. `Series[x, y]` to nazwany ciąg punktów; typ odciętej decyduje o
++       osi: `Text`, enum lub `Chart.Category` jest `Categorical`, a liczba, `Duration`,
++       `Instant` lub dowolna `Quantity` jest `Continuous`. `Samples[y]` to surowe pomiary,
++       `Chart.Estimate` – wartość wraz z jej przedziałem, `Noted` – wartość z notatką, a `Dag`
++       węzłów `Weighted` i `Progressive` to graf zależności.
++     - Rodzaj jest wartością – `Bars()`, `StackedBars()`, `Lines()`, `Scatter()`, `Pie()`,
++       `Histogram()`, `Boxes()` lub `Annulus()` – a `data.chart(kind)` kompiluje się tylko
++       wtedy, gdy instancja `Plottable` stwierdza, że dany rodzaj potrafi narysować kształt
++       danych: wykres kołowy z trzech serii albo linia poprowadzona przez etykiety kategorii to
++       błąd kompilacji.
++     - Dopasowanie – zakres, przekształcenie i podziałki każdej osi – wybiera `Calibration`
++       kluczowana typem wartości osi, a nadpisuje je given w zasięgu, import z `calibrations`
++       lub argument rodzaju. Wynikiem jest `Scale` lub `Bands`: zwykłe dane, dzięki czemu
++       wykres może stwierdzić, czy nowe dane wciąż mieszczą się na jego osiach.
++     - Styl to wartość `Chart.Style` – domyślnie `Chart.Standard` – z metodą dla każdego
++       rysowanego komponentu, `ChartPalette` kolorów nazwanych według roli oraz `FontMetric`,
++       który mierzy tekst na potrzeby układu.
+
+!     An incompatible pairing does not compile: a categorical series cannot be `Lines()`, a
+!     collection of series cannot be `Pie()`, `Samples` cannot be `Bars()`, and a `Dag` whose
+!     nodes lack `Weighted` or `Progressive` cannot be `Doughnut()`.
+@ 0 3 0 0a7750f3b1455772047955d94e1ba081
++     Niezgodne połączenie się nie kompiluje: seria kategorialna nie może być `Lines()`, kolekcja
++     serii nie może być `Pie()`, `Samples` nie może być `Bars()`, a `Dag`, którego węzłom
++     brakuje `Weighted` lub `Progressive`, nie może być `Annulus()`.
+
+!       A `Chart[data, form, fit, style]` holds its `#data`, its kind (`#form`), the `#fit` the
+!       kind computed from the data, and the `Plottable` instance that pairs them. It is made by
+!       the `chart` extension rather than directly. The fit's type is the kind's own — `Bars.Fit`
+!       with `bands` and `ordinate`, `Lines.Fit` with two scales, `Doughnut.Fit[node]` with its
+!       bands — and the style type is the kind's style trait, so a bar chart renders against a
+!       `Bars.Style` and a pie against a `Pie.Style`; `Chart.Standard` implements all of them.
+@ 0 6 0 1917a3de2b6d1ec40d240e530bbf9c42
++       `Chart[data, form, fit, style]` przechowuje swoje dane (`#data`), swój rodzaj (`#form`),
++       dopasowanie (`#fit`) obliczone przez rodzaj na podstawie danych oraz instancję
++       `Plottable`, która je łączy. Tworzy go rozszerzenie `chart`, a nie konstruktor. Typ
++       dopasowania jest własnym typem rodzaju – `Bars.Fit` z `bands` i `ordinate`, `Lines.Fit` z
++       dwiema skalami, `Annulus.Fit[node]` ze swoimi pasami – a typ stylu jest traitem stylu
++       rodzaju, więc wykres słupkowy renderuje się względem `Bars.Style`, a kołowy względem
++       `Pie.Style`; `Chart.Standard` implementuje je wszystkie.
+
+!         Extends `Chart.Style` with the axis components and the parameters of their layout.
+!         Positions are given in the drawing's coordinates; the style decides the shape, the
+!         stroke and where a label sits relative to its tick. `Bars.Style`, `Lines.Style`,
+!         `Scatter.Style`, `Boxes.Style` and (through `Bars.Style`) `StackedBars.Style` and
+!         `Histogram.Style` extend it; `Pie.Style` and `Doughnut.Style` do not, having no axes.
+@ 0 5 0 1831b6ac69f488340d399a735a559cbd
++         Rozszerza `Chart.Style` o komponenty osi i parametry ich układu. Położenia podawane są
++         we współrzędnych rysunku; styl decyduje o kształcie, obrysie i o tym, gdzie leży
++         etykieta względem swojego znacznika osi. `Bars.Style`, `Lines.Style`, `Scatter.Style`,
++         `Boxes.Style` oraz (przez `Bars.Style`) `StackedBars.Style` i `Histogram.Style`
++         rozszerzają go; `Pie.Style` i `Annulus.Style` nie, bo nie mają osi.
+
+!         Implements `Bars.Style`, `StackedBars.Style`, `Histogram.Style`, `Lines.Style`,
+!         `Scatter.Style`, `Boxes.Style`, `Pie.Style` and `Doughnut.Style` at once, so one value
+!         in scope styles any chart. Every parameter has a default: `width = 640.0`, `height =
+!         400.0`, `inset = 12.0`, `font = Web.sansSerifFont`, `fontSize = 12.0`, `legend =
+!         Legend.Right`, `pitch = 60.0`, `tickLength = 5.0`, `grid = true`, `abscissaTitle` and
+!         `ordinateTitle` unset, `strokeWidth = 2.0`, `markerRadius = 3.5`, `markers = false`,
+!         `smoothing = 0.0`, `barGap = 0.25`, `boxGap = 0.25`, `hole = 0.0`, `sectorGap = 2.0`
+!         and `bandGap = 2.0`. Any component's rendering is an override on an anonymous subclass:
+@ 0 8 0 0891e807181f12b60920a4f6d3afeed6
++         Implementuje naraz `Bars.Style`, `StackedBars.Style`, `Histogram.Style`, `Lines.Style`,
++         `Scatter.Style`, `Boxes.Style`, `Pie.Style` i `Annulus.Style`, więc jedna wartość w
++         zasięgu nadaje styl dowolnemu wykresowi. Każdy parametr ma wartość domyślną: `width =
++         640.0`, `height = 400.0`, `inset = 12.0`, `font = Web.sansSerifFont`, `fontSize =
++         12.0`, `legend = Legend.Right`, `pitch = 60.0`, `tickLength = 5.0`, `grid = true`,
++         `abscissaTitle` i `ordinateTitle` nieustawione, `strokeWidth = 2.0`, `markerRadius =
++         3.5`, `markers = false`, `smoothing = 0.0`, `barGap = 0.25`, `boxGap = 0.25`, `hole =
++         0.0`, `sectorGap = 2.0` i `bandGap = 2.0`. Renderowanie dowolnego komponentu zmienia się
++         nadpisaniem w anonimowej podklasie:
+
+!       `data is Plottable in form to fit by style` exists only where the kind can draw the
+!       data: a pie needs one categorical series, a line needs numeric axes, a doughnut a `Dag`
+!       of weighted, progressive nodes. The kind is the `Form`, the fit the `Result` (so a
+!       chart's fit is the kind's own, with its axes visible), and the style the `Operand`,
+!       bounded by `Chart.Style`. The standard instances live in each kind's companion —
+!       `Bars.series`, `Bars.traversable`, `Lines.series`, `Histogram.samples`, `Doughnut.dag`,
+!       … — so they are found with no import; a `traversable` instance covers any collection
+!       of series or samples (a `List`, `Set` or `Sequence`), its traversal evidence resolved
+!       before the element types' typeclasses.
+@ 0 9 0 1c28ec2691d0d19507526a5acda9efaa
++       `data is Plottable in form to fit by style` istnieje tylko tam, gdzie rodzaj potrafi
++       narysować dane: wykres kołowy wymaga jednej serii kategorialnej, liniowy – osi liczbowych,
++       a pierścieniowy – `Dag` z ważonymi, postępowymi węzłami. Rodzaj to `Form`, dopasowanie to
++       `Result` (więc dopasowanie wykresu jest własnym dopasowaniem rodzaju, z widocznymi
++       osiami), a styl to `Operand`, ograniczony przez `Chart.Style`. Standardowe instancje
++       znajdują się w obiekcie towarzyszącym każdego rodzaju – `Bars.series`,
++       `Bars.traversable`, `Lines.series`, `Histogram.samples`, `Annulus.dag`, … – więc są
++       znajdowane bez importu; instancja `traversable` obejmuje dowolną kolekcję serii lub
++       próbek (`List`, `Set` lub `Sequence`), a jej dowód przechodzenia jest rozstrzygany przed
++       klasami typów typów elementów.
+
+! entry .Weighted   the extent of a doughnut's node: its share of its rank's angle and of the band's thickness
+!     `node is Weighted` gives `weight(node): Double`. In a `Doughnut`, a node's sector sweeps
+!     the share of its band's turn that its weight is of the rank's total, and a band is as
+!     thick as its rank's share of the whole graph's weight. A negative weight counts as zero.
+@ 0 4 0 1bdbb9d5ce2db9910b3f17d117999156
++ entry .Weighted   rozmiar węzła wykresu pierścieniowego: jego udział w kącie poziomu i w grubości pasa
++     `node is Weighted` daje `weight(node): Double`. W `Annulus` wycinek węzła zakreśla taką
++     część obrotu swojego pasa, jaką jego waga stanowi w sumie poziomu, a pas jest tak gruby,
++     jak udział jego poziomu w wadze całego grafu. Waga ujemna liczy się jako zero.
+
+!   refer tasseomancy.Doughnut
+% 0 1 0 054d3f904bd128ce022edacb2a896287
+
+! entry .Doughnut   a dependency graph as concentric bands: one per rank, each node a sector filled as far as it is complete
+@ 0 1 0 12f074268f4e474211e04fa1a4fdb787
++ entry .Annulus   graf zależności jako koncentryczne pasy: jeden na poziom, każdy węzeł to wycinek wypełniony w takim stopniu, w jakim jest ukończony
+
+!       val doughnut = Dag(typecheck -> parse, emit -> typecheck).chart(Doughnut())
+!       doughnut.fit.bands.size   // 3: one band per rank
+% 0 2 0 14e9c2ce8abadbba09354805377d870d
+
+!       doughnut.revise(Dag(typechecked -> parse, emit -> typechecked))(1).size   // 1: a Replace of rank-1
+% 0 1 0 192dfaa53893ba201815a4fa9a1268c7

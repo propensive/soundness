@@ -1,0 +1,46 @@
+orthant 2 language
+
+@ 0 1 0 0e6a2d5fc72a75d6005580216a7590f9
++ ### Código que no se escribió de esta manera
+
+@ 0 5 0 0d520984391183e80282dbedb6c118f0
++ Todos los manejadores vistos aquí tratan con una `Exception`, lo cual es adecuado para el código
++ que informa de sus errores. Una herramienta que maneja código *ajeno*, como un compilador o un
++ cargador de clases, también debe sobrevivir a lo que ese código lance, y buena parte de ello no
++ es en absoluto una `Exception`: una aserción fallida, una pila agotada o una clase que no pudo
++ enlazarse. Nada de eso pone fin al programa, pero tampoco llega a `safely` ni a `recover`.
+
+@ 0 2 0 06401e6939a385e10196cfcce9ddcb4e
++ `pacify` ejecuta un bloque de ese código, e informa de todo lo que lance como un `Disturbance`,
++ un error ordinario que conserva el `throwable` al que representa:
+
+% 2 1 0 0dba5c706250d4671e5743603546c51f
+
+% 3 1 0 17de0ad2648dcc39195457705a3c3cb9
+
+% 4 1 0 1cb26e680046005b08d1a34cfae2b58f
+
+% 0 1 0 1e980016bc0ae3691f2176cfce4a94ee
+
+% 0 1 0 0571eeec5b91741516793a8732dd7f8a
+
+% 0 1 0 19fd4b2af4417e5d0e09a3f1a86836d0
+
+% 0 1 0 0b84ea1ab161c55f1c224fb28dc68767
+
+% 0 1 0 138f5b6c8e0f98b30566beba6d577194
+
+% 0 1 0 04608a27162d88501f0382027e5c5d83
+
+% 0 1 0 15375e1b6e1575021224d9dc8df437b7
+
+% 0 1 0 1b007dc2e33556d113df2073cb071363
+
+% 1 1 0 1e712c7ff8b0d734180073eb67749afd
+
+@ 0 4 0 0154979ea18f29e4151a531d5d1b21cb
++ `pacify` toma todo throwable que no sea fatal para el programa, y las tres clases de
++ `java.lang.Error` nombradas arriba. Un heap agotado, o una interrupción, se siguen
++ propagando, ya que ningún manejador podría hacer nada útil con ellos. Un error del que se
++ informa como es debido dentro del bloque no es ajeno: atraviesa `pacify` intacto, hasta el
++ manejador para el que se informó de él.

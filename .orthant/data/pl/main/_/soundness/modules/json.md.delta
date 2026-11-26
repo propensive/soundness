@@ -6,17 +6,17 @@ orthant 2 language
 + a komunikat wskazuje pole, case class, do której ono należy, i typ, którego nie da się zdekodować.
 + `Vial(label: Text, contents: Poison)`, gdzie `Poison` jest zwykłą klasą, zostaje odrzucona z komunikatem:
 
-% 1 1 0 1abf28c8819c4a100ba2af9cc74b39c0
+% 2 1 0 094dfb28ca7e478d06958f0e69588b41
 
-% 0 1 0 12b01ab296b747291fc7be536f684132
+% 3 1 0 1370bedd71db94a3119a51bea80d0278
 
-% 0 1 0 13a2ce2895d6cfab1d6f772d7f114000
+% 4 1 0 06683e60f78abcfe00b7eab7355a0ec8
 
-% 0 1 0 1910e7b5a183003019c7ef2d078a77bc
+% 5 1 0 1f14a7674ea38b4a04423c3af13c52bc
 
-% 1 1 0 11c31f98aa9aa3a4088a2a955d213950
+% 6 1 0 1a00fc9b39b3baa81023723a0e1bbff1
 
-@ 0 4 0 01462b0fd03e7af10fcc63ddd7f6cc77
+@ 8 4 0 03e4b958c00a17fa0305bcb58d80639d
 + Kodowanie `Vial` zostaje odrzucone tymi samymi słowami, z braku `Json.Encodable`.
 + [Derywacja](derivation.md#when-derivation-fails) wyjaśnia, w jakich jeszcze sytuacjach derywacja
 + może się nie powieść, a [Dekodowanie](decoding.md) opisuje dekodery, które zamieniają pojedynczą

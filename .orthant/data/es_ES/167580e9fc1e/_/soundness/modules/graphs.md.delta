@@ -1,0 +1,11 @@
+orthant 2 language
+
+@ 0 7 0 0f69aa704889b83009468d9357fd3e7e
++ - [Árboles](trees.md) dibuja árboles y grafos como texto.
++ - [Colecciones](collections.md) describe el vocabulario que comparte un grafo, y los
++   reconocimientos de coste de `dysasymptotics`.
++ - [Concurrencia](concurrency.md) ejecuta las tareas que ordena un grafo de dependencias.
++ - [Estados imposibles](../../philosophy/impossible-states.md) explica por qué un `Dag` no puede
++   contener un ciclo.
++ - [Gráficos](charts.md) dibuja un grafo como un gráfico de anillo, y [compilador](compiler.md)
++   construye una cadena de herramientas como uno.

@@ -1,0 +1,24 @@
+orthant 2 language
+
+@ 0 4 0 1b1113efe3b8acc60d20ec0829f77660
++ Typ pola musi sam być dekodowalny: musi to być typ z własnym dekoderem, inna case class,
++ wyliczenie albo zapieczętowany trait. Typ, który nie jest żadnym z nich, powoduje błąd kompilacji,
++ a komunikat wskazuje pole, case class, do której ono należy, i typ, którego nie da się zdekodować.
++ `Vial(label: Text, contents: Poison)`, gdzie `Poison` jest zwykłą klasą, zostaje odrzucona z
++ komunikatem:
+
+% 1 1 0 1abf28c8819c4a100ba2af9cc74b39c0
+
+% 0 1 0 12b01ab296b747291fc7be536f684132
+
+% 0 1 0 13a2ce2895d6cfab1d6f772d7f114000
+
+% 0 1 0 1910e7b5a183003019c7ef2d078a77bc
+
+% 1 1 0 11c31f98aa9aa3a4088a2a955d213950
+
+@ 0 4 0 01462b0fd03e7af10fcc63ddd7f6cc77
++ Kodowanie `Vial` zostaje odrzucone tymi samymi słowami, z braku `Json.Encodable`.
++ [Derywacja](derivation.md#when-derivation-fails) wyjaśnia, w jakich jeszcze sytuacjach derywacja
++ może się nie powieść, a [Dekodowanie](decoding.md) opisuje dekodery, które zamieniają pojedynczą
++ wartość tekstową, taką jak napis JSON, na własny typ.

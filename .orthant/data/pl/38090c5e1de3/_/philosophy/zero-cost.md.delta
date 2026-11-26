@@ -1,0 +1,9 @@
+orthant 2 language
+
+! The [metaprogramming](../en/modules/metaprogramming.md) module exists partly to make this
+! possible: if a claim about what the compiler emitted is worth making, it is worth
+! checking on every build.
+@ 0 3 0 1331d587038b96e510e95b4bf50eca28
++ Moduł [metaprogramowania](/doc/soundness/modules/metaprogramming.md) istnieje po części po to, by to
++ umożliwić: jeśli warto wysunąć twierdzenie o tym, co wygenerował kompilator, to warto je
++ sprawdzać przy każdej kompilacji.

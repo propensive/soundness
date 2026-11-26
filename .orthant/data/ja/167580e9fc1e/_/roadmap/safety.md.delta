@@ -1,0 +1,14 @@
+orthant 2 language
+
+@ 0 11 0 0d8437f96b7f51390097d96c0bd1f4ef
++ flare プラグイン（`etc/tools` で固定され、`.pyrocosm/flare/config.tel` で設定され、`flareToolchain` の `-P:flare:` オプションで検査対象のすべてのコンポーネントに有効化される）が集計を提供する。
++ 設定にあるすべての規則がソースに対して数えられる。宣言された逃げ道（`unsafely`、`caps.unsafe` の一族、`unsafe` で始まるすべての名前、トークンで制限されたすべてのメソッド）、コンパイラの信頼を迂回するもの（`asInstanceOf`、`.nn`、`@unchecked`、`???`、何でも捕まえる節）、部分的な読み取り、そしてストリーミングのカーネルに閉じ込めるはずの命令的な構文である。
++ `make unsafety` は `flare metrics --dry-run` を実行してそれを表示し、`flare metrics` はそれをコミットごとに git notes に記録するので、推移はロードマップの段落ではなく git の中に残る。
++ 一つの規則はすでに関門になっている。`S1.1`、すなわち `(using Unsafe)` を取るメソッドは `unsafe…` と名付けなければならないという規則で、違反するとビルドが失敗する。その逆の `S1.2` は助言にとどまり、これに違反する八つの定義は `doc/work/standards/naming.md` に挙げられている。
+
+@ 0 7 0 0d173ddf177ff3580a0262c16790a340
++ キャプチャ検査と分離検査を実用的にする手順は、今は `rep/DECISIONS.md` という 2400 行の記録の項目としてしか存在しない。型をいつ Exclusive、Shared、Unscoped、Mutable、Pure にするかと、その間の束の罠。正直な given の定石（`(tactic: Tactic[E]) => ((X is TC)^{tactic})`、文脈境界の代わりに明示的なキャプチャする証拠）。新しい結果を生み出してよい場所といけない場所。`consume` と貸し出しの継ぎ目。テストがしてよいこととしてはいけないこと。
++ これらは `doc/work/standards/capabilities.md` に、`safety-2` が頼るタグの語彙と各タグに対して認められた唯一の逃げ道の形とともに置かれるべきであり、`doc/work/philosophy/capture-checking.md` からそこを指すべきである。
+
+@ 0 2 0 184abde0f441241915e910e4b48261e0
++ 完了条件：`doc/work/standards/capabilities.md` が存在し、集計が認識するすべてのタグを定義し、`rep/DECISIONS.md` の手順の節が内容を繰り返すのではなくそこへリンクしていること。

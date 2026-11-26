@@ -1,0 +1,47 @@
+orthant 2 language
+
+! The surface has already been measured: `doc/api-reduction-candidates.md` inventories every
+! identifier the `soundness` package exports, and classifies the reduction candidates:
+@ 0 2 0 066aaeb51b24ab230523fd39492a5681
++ Powierzchnię już zmierzono: `etc/api-reduction-candidates.md` inwentaryzuje każdy identyfikator
++ eksportowany przez pakiet `soundness` i klasyfikuje kandydatów do redukcji:
+
+! Done when: the rename table in `doc/api-nesting-proposal.md` (which superseded the C1
+! section) is fully applied, and the inventory's "Remaining names by prefix family" section
+! lists no name outside "Reviewed items which should not be moved".
+@ 0 3 0 17e26bb135f0896e0d3cd0368f332847
++ Ukończone, gdy: tabela zmian nazw w `etc/api-nesting-proposal.md` (która zastąpiła sekcję C1)
++ jest w pełni zastosowana, a sekcja spisu „Remaining names by prefix family” nie wymienia żadnej
++ nazwy poza „Reviewed items which should not be moved”.
+
+! Done when: the C2 section of the inventory is empty. (C3 and C3b were superseded by
+! `doc/api-nesting-proposal.md` and closed with it.)
+@ 0 2 0 13bb210f1e21a6561a82bf562dce0f6a
++ Ukończone, gdy: sekcja spisu C2 jest pusta. (C3 i C3b zostały zastąpione przez
++ `etc/api-nesting-proposal.md` i zamknięte wraz z nim).
+
+!     test -f doc/api-reduction-candidates.md || echo absent    # absent
+% 0 1 0 1d3fa0088fed0fe510c1edd92a8d31f0
+
+! api-1 nests a name whose prefix repeats its context. This item covers the case with no prefix
+! to strip: a single word whose bare spelling claims a general concept when it names one
+! library's notion. ultimatum's layout tree is not *the* `Frame`. Each candidate is judged
+! case by case against rule R8 in `doc/api-nesting-proposal.md`. Convenience keeps a name
+! top-level only when it is the library's principal type, or a concept that really is general.
+@ 0 5 0 132121a5579d6de90996f0565b4058f9
++ api-1 zagnieżdża nazwę, której prefiks powtarza jej kontekst. Ta pozycja obejmuje przypadek, w
++ którym nie ma prefiksu do usunięcia: pojedyncze słowo, którego goła pisownia rości sobie prawo
++ do ogólnego pojęcia, choć nazywa pojęcie jednej biblioteki. Drzewo układu ultimatum nie jest
++ *tym* `Frame`. Każdego kandydata ocenia się indywidualnie względem reguły R8 w
++ `etc/api-nesting-proposal.md`. Wygoda pozostawia nazwę na najwyższym poziomie tylko wtedy, gdy
++ jest ona głównym typem biblioteki albo pojęciem naprawdę ogólnym.
+
+! Done when: no name is exported into `package soundness` by more than one library, no
+! `@unexported` exists only to dodge a clash, and every row of the R8 tables in
+! `doc/api-nesting-proposal.md` has been either applied or moved to its "Reviewed and kept
+! top-level" list.
+@ 0 4 0 153039203ba264620a4145959946ed5e
++ Ukończone, gdy: żadna nazwa nie jest eksportowana do `package soundness` przez więcej niż jedną
++ bibliotekę, żadne `@unexported` nie istnieje tylko po to, by uniknąć kolizji, a każdy wiersz
++ tabel R8 w `etc/api-nesting-proposal.md` został albo zastosowany, albo przeniesiony na listę
++ „Reviewed and kept top-level”.

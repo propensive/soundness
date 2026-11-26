@@ -5,8 +5,20 @@ orthant 2 language
 @ 0 1 0 1509c0b4edc0521e140773335e9e6a24
 +   entry #Revision   ein zusammensetzbares Protokoll von Bearbeitungen, das Operation für Operation auf ein Dokument angewendet wird
 
+@ 0 1 0 05dff70ef02c8bae02867bc8383dc2aa
++ entry .TelMutation   der Trait, der `Tel.Mutation` hält, die Bearbeitungsoperationen aus §22.2
+
+% 1 1 0 0ebc21e4c5ef6314061c5c48731570de
+
+@ 0 1 0 0e3f2e13acebd8850e2df89242a2e954
++       `object Tel extends TelMutation`, sodass `Mutation` über das Begleitobjekt erreicht wird, als
+
+% 0 1 0 0bb22d47b43873a215cd0dd6faf5de60
+
 @ 0 1 0 011854171f69420718747641930de1a5
 +   entry #Mutation   die primitiven, darstellungserhaltenden Bearbeitungsoperationen aus §22.2 und ihr Interpreter
+
+% 1 1 0 09c5c7c6edcea57318feece1ac127ec6
 
 @ 0 5 0 03a6563a211c058e091aac26e9fa266a
 +         Jede `.Op` ist ein lokales Umschreiben, adressiert durch einen `Tel.Pointer`: Umgebende
@@ -16,6 +28,20 @@ orthant 2 language
 +         wendet eine Operation an und `Mutation(tel, ops)` eine Liste der Reihe nach, wobei ein
 +         neues `Tel` zurückgegeben wird; `Revision` ist die zusammensetzbare DSL über denselben
 +         Operationen.
+
+% 2 1 0 15dcab498a62d6ab04dca2c09c057ef6
+
+% 3 1 0 0f61f475068ada7a1a25f8e43bbf6e54
+
+% 4 1 0 09103a44a98e09230e84023593f633f4
+
+% 0 1 0 1df2f2e4ad8c45b2111ad7d8764c6b8b
+
+% 0 1 0 1c3a1ca3db3719c41146c2249bb38397
+
+% 0 1 0 0d8d982018413b051c2ae1c03813af7d
+
+% 1 1 0 0583218765dddcea142c2c301cb59feb
 
 @ 0 7 0 0bdbe28195ed1d45177a037d87ad30fd
 +         Ein Pointer-Schritt ist ein Schlüsselwort plus ein Vorkommensindex, aufgelöst gegen das
@@ -27,6 +53,10 @@ orthant 2 language
 +         ein Ersatz wohltypisiert ist — liegen außerhalb des Umfangs, wie in der
 +         Referenzimplementierung: Eine schemakundige Schicht prüft sie, bevor sie an diese
 +         Primitive delegiert.
+
+% 0 1 0 1ec63c4308d070021fc5ac25fe4d2369
+
+% 1 1 0 03bf26a2225a06050b9ca458f4d19132
 
 @ 0 20 0 0dcd6706d124251810739b23466f1845
 +     entry .Placement   auf welcher Seite der anderen Gruppe `ReorderGroups` eine Gruppe platziert: `Before` oder `After`
@@ -91,8 +121,24 @@ orthant 2 language
 +         Leerzeichen enthält, ein weiches Leerzeichen voran und von da an ein hartes, sodass die
 +         Konstruktion zu denselben Atomen neu geparst wird.
 
+% 2 1 0 03db84943a74235b1e0e4183fcf90275
+
+% 3 1 0 1c9d477f6c39100f1fd9e17e1d68d6fa
+
+% 0 1 0 1df6506c2fab041115325346029233e4
+
+% 0 1 0 010838ec3ff3ed2019cdfe509c15f417
+
+% 0 1 0 193c4595813db4071570bfef9726343a
+
+% 0 1 0 0083b990801a573b090d8544a95ceb78
+
+% 1 1 0 0c99a7cdc3e0320d0380e97abc3fcd34
+
 @ 0 1 0 1210220dfccc22b104fd4553a4bc7331
 +     entry .Error   ausgelöst, wenn ein Pointer nicht aufgelöst wird oder eine Invariante einer Operation verletzt ist
+
+% 1 1 0 100c9fd4209bc4850e77c5c1bb963d8c
 
 @ 0 11 0 01151dd09e78d6ca18e924e372da3734
 +           Fehler `↯/s.118.2`: _the mutation failed because …_. `PointerNotFound` ist ein Pointer,

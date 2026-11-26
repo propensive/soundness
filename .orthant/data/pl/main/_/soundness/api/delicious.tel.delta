@@ -1,13 +1,13 @@
 orthant 2 language
 
-@ 0 1 0 1a26dee1d32c457f154f39a6cd8b8097
+@ 1 1 0 077af85432889cd518a314ddc0c40c07
 +   entry #trees   każde `Markup.Tree` w komunikacie, gdziekolwiek jest zagnieżdżone
 
-@ 0 2 0 06d9964a216b63ce0ea8450093d7ce20
+@ 1 2 0 086d654c8617329705c861d482f84d3f
 +       row  `Tree(omitted, children)`  drzewo wyjaśniające nieudane rozstrzygnięcie kontekstowe; `omitted` liczy węzły pominięte ze względu na długość
 +       row  `Node(role, name, note, repeated, children)`  jeden węzeł takiego drzewa: jego `Role`, `name` tego, czego szukano, co znaleziono lub zaproponowano, `note` na jego temat oraz to, czy jego poddrzewo pokazano już wcześniej i tutaj je pominięto
 
-@ 0 3 0 19bd5f1a17ead8801f0d056cc9832871
+@ 2 3 0 1c5a3fe774bb8cbf0499f293edf990c6
 +       Dziećmi `Tree` lub `Node` są jego potomne `Node`, przeplecione z `Textual` — znakami nowej
 +       linii i znakami ramek — które rysują to samo drzewo jako zwykły tekst; `#nodes` daje same
 +       `Node`.
@@ -35,5 +35,5 @@ orthant 2 language
 +     entry #word   nazwa roli małymi literami, tak jak podaje ją atrybut `role` znacznika
 +   entry #plain   widoczny tekst tego węzła: jego własny tekst lub połączony tekst jego dzieci
 
-@ 0 1 0 0040f586709e95720edf25cba05cb8b5
+@ 1 1 0 1deed663ca23628d0fbb7ab345e089cf
 +   entry #nodes   potomne `Node` węzła `Tree` lub `Node`, bez tekstu, który je rysuje

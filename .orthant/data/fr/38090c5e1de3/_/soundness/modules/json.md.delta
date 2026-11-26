@@ -1,0 +1,24 @@
+orthant 2 language
+
+@ 0 4 0 1b1113efe3b8acc60d20ec0829f77660
++ Le type d'un champ doit lui-même être décodable : un type doté de son propre décodeur, une autre
++ classe de cas, une énumération ou un trait scellé. Un type qui n'est rien de cela est une erreur
++ de compilation, et le message nomme le champ, la classe de cas à laquelle il appartient et le type
++ qui ne peut pas être décodé. Une `Vial(label: Text, contents: Poison)`, où `Poison` est une classe
++ ordinaire, est refusée avec :
+
+% 1 1 0 1abf28c8819c4a100ba2af9cc74b39c0
+
+% 0 1 0 12b01ab296b747291fc7be536f684132
+
+% 0 1 0 13a2ce2895d6cfab1d6f772d7f114000
+
+% 0 1 0 1910e7b5a183003019c7ef2d078a77bc
+
+% 1 1 0 11c31f98aa9aa3a4088a2a955d213950
+
+@ 0 4 0 01462b0fd03e7af10fcc63ddd7f6cc77
++ L'encodage d'une `Vial` est refusé dans les mêmes termes, faute de `Json.Encodable`.
++ [Dérivation](derivation.md#when-derivation-fails) explique les autres manières dont une dérivation
++ peut échouer, et [Décodage](decoding.md) décrit les décodeurs qui transforment une valeur textuelle
++ unique, comme une chaîne JSON, en un type à soi.

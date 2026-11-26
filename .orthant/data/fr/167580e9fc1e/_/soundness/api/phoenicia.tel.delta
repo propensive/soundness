@@ -1,0 +1,312 @@
+orthant 2 language
+
+@ 0 37 0 0f98a43c85aa34a61d3e9c522ef75bda
++       def measure(font: Sfnt): Quantity[Ems[1]] = font.width(t"AB")
++       ```
++   entry #leftSideBearing   l'approche gauche d'un caractère en unités de dessin de la police
++       L'approche du glyphe du caractère d'après `hmtx`, qui se poursuit dans un tableau propre
++       pour les glyphes au-delà du nombre de métriques. Lève `Font.Error` si une table
++       nécessaire manque.
++   entry #head   la table `head` : unités par em, boîte englobante, dates de création et format de `loca`
++       Décodée en `HeadTable` ; lève `Font.Error` avec `MissingTable` si elle est absente
++       et avec `MagicNumber` si la constante de contrôle de la table n'est pas le `0x5f0f3cf5`
++       du format.
++   entry #cmap   la table `cmap` : les correspondances des caractères vers les glyphes
++       Sous forme de `CmapTable`, dont la sous-table `best` est choisie selon une préférence
++       Unicode et dont `glyph` résout un caractère. Lève `Font.Error` avec `MissingTable` si elle
++       est absente.
++   entry #hhea   la table `hhea` : jambage supérieur, jambage inférieur, interligne et nombre de métriques
++       Décodée en `HheaTable` ; lève `Font.Error` avec `MissingTable` si elle est absente.
++   entry #hmtx   la table `hmtx` : chasses et approches gauches par glyphe
++       Sous forme de `HmtxTable` dimensionnée par `hhea.numberOfHMetrics` ; lève `Font.Error` si
++       l'une ou l'autre table est absente.
++   entry #maxp   la table `maxp` : le nombre de glyphes
++       Sous forme de `MaxpTable` ; lève `Font.Error` avec `MissingTable` si elle est absente.
++   entry #post   la table `post` : angle d'italique, métriques du soulignement et chasse fixe ou non de la police
++       Sous forme de `PostTable` ; lève `Font.Error` avec `MissingTable` si elle est absente.
++   entry #os2   la table `OS/2` : classes de graisse et de largeur, métriques typographiques, droits d'incorporation
++       Sous forme d'`Os2Table` ; lève `Font.Error` avec `MissingTable` si elle est absente.
++   entry #name   la table `name` : les noms localisés de la police, par `Sfnt.NameId`
++       Sous forme de `NameTable` ; lève `Font.Error` avec `MissingTable` si elle est absente.
++   entry #fontName   le nom PostScript de la police, ou `Unset`
++       `name(Sfnt.NameId.PostScriptName)`, toute `Font.Error` étant absorbée : le nom sous lequel
++       les documents PDF et PostScript font référence à une police. `Unset` pour une police qui
++       n'en enregistre pas ou qui n'a pas de table `name`.
++   entry #familyName   le nom de famille de la police, ou `Unset`
++       `name(Sfnt.NameId.Family)`, toute `Font.Error` étant absorbée.
++   entry #fvar   la table `fvar` d'une police variable, ou `Unset` pour une police statique
++       Les axes le long desquels se déplacent les contours d'une police variable, chacun avec
++       sa plage. `Font.Coverage.of` lit ici les plages de graisse et de largeur quand la table est
++       présente.
++   entry #features   les fonctionnalités de mise en page qu'implémente la police, par tag, d'après `GSUB` et `GPOS`
++       Les listes de fonctionnalités des deux tables de mise en page, sous forme de
++       `Face.Feature`, dédupliquées. Une police sans aucune de ces tables n'en implémente
++       aucune. C'est ce qu'enregistre `Font.Coverage.of` ; ainsi une fonte qui active une
++       fonctionnalité dont la police est dépourvue est refusée.
+
+@ 0 23 0 03e8a5861eda547c0a4dde0cddff268c
++     detail
++         La table `hhea`, décodée champ par champ. `ascender`, `descender` et `lineGap` sont
++         les métriques verticales dont a besoin la mise en page d'une ligne, en unités de dessin ;
++         `numberOfHMetrics` est le nombre de paires complètes (avance, approche) que contient
++         `hmtx` avant sa fin à chasse fixe.
++     entry #majorVersion   la version majeure de la table
++     entry #minorVersion   la version mineure de la table
++     entry #ascender   le jambage supérieur typographique, en unités de dessin
++     entry #descender   le jambage inférieur typographique, en unités de dessin, négatif sous la ligne de base
++     entry #lineGap   l'interligne typographique
++     entry #advanceWidthMax   la plus grande chasse dans `hmtx`
++     entry #minLeftSideBearing   la plus petite approche gauche
++     entry #minRightSideBearing   la plus petite approche droite
++     entry #xMaxExtent   la plus grande étendue horizontale d'un glyphe
++     entry #caretSlopeRise   la montée de la pente du curseur ; 1 pour un curseur droit
++     entry #caretSlopeRun   la course de la pente du curseur ; 0 pour un curseur droit
++     entry #caretOffset   le décalage horizontal du curseur
++     entry #reserved0   un champ réservé
++     entry #reserved1   un champ réservé
++     entry #reserved2   un champ réservé
++     entry #reserved4   un champ réservé
++     entry #metricDataFormat   le format des données de métriques, 0
++     entry #numberOfHMetrics   le nombre de paires de métriques complètes dans `hmtx`
++   entry #HmtxTable   les métriques horizontales : une chasse et une approche gauche par glyphe
+
+@ 0 13 0 196ea6e7b30bc974058cd7a03d9ee008
++     detail
++         Une paire `HMetrics` par glyphe jusqu'au nombre que déclare `hhea`, après quoi la
++         dernière avance se répète — une fin à chasse fixe — et les approches se poursuivent dans
++         un tableau propre. `Sfnt#advanceWidth` et `Sfnt#leftSideBearing` y recherchent le glyphe
++         d'un caractère.
++     entry #offset   la position de la table dans le fichier
++     entry #count   le nombre de paires de métriques complètes, d'après `hhea`
++     entry #metrics   les paires de métriques complètes, lues une seule fois
++     entry #advanceWidth   la chasse d'un glyphe par identifiant, la dernière se répétant pour la fin
++     entry #leftSideBearing   l'approche gauche d'un glyphe par identifiant, d'après les paires ou la fin des approches
++     entry #HMetrics   la chasse et l'approche gauche d'un glyphe
++       entry #advanceWidth   l'avance horizontale, en unités de dessin
++       entry #leftSideBearing   l'approche gauche, en unités de dessin
++   entry #MaxpTable   le profil maximal ; seul le nombre de glyphes est lu
+
+@ 0 6 0 1086b864399954ab0c4e3545a47b63d4
++   detail
++       Un trait ouvert. Une fourniture `Typesettable` nomme le support qu'elle sert comme son
++       `Form`, et une `Font in Web` est une police pour un navigateur, une `Font in Print` une
++       police pour un PDF. Une fourniture `in Medium` elle-même — un fichier de police
++       incorporé — sert tous les supports, car un fichier peut être transporté partout ; c'est
++       pourquoi un demandeur réclame une fourniture `in (? >:
++       medium)` plutôt que `in medium`.
+
+@ 0 5 0 0825728665a9f59503055d809b0fd5c6
++       Une fourniture est `Locative` : créée à partir d'une ressource du classpath
++       (`Typesettable.embedded
++       (cp"/fonts/Inter.ttf")`), elle conserve le chemin comme son `Locus`, et une `Font` créée
++       à partir d'elle est vérifiée par rapport au fichier pendant la compilation du code. Le
++       type entier est alors mis entre parenthèses dans un given nommé, car une chaîne infixe
++       comportant un type littéral n'est pas admise autrement dans le type du given :
+
+@ 0 3 0 0fc6ab032dd5443917bc0b01cf86eed3
++       Les fournitures sont de pures données et vivent là où vit le support : dans le compagnon
++       de `Web` ou de `Print` pour celles qu'un support possède toujours, et dans un objet qu'un
++       projet importe par son nom pour les siennes — `import fonts.inter`, puisque
++       `import fonts.*` n'importe pas les givens.
+
+@ 0 1 0 0a8830c6adfc80e306051fc6c45d10d1
++   entry .Source   la façon dont un support obtient une famille : incorporée, liée, locale, importée ou générique
+
+@ 0 11 0 1767f8adba91621312a9523b1b8d66e4
++     detail
++         `Embedded(sfnt)` transporte le fichier de police lui-même dans le document ;
++         `Linked(url, format)` nomme un fichier à récupérer, avec son `Format` s'il est connu ;
++         `Local(name)` nomme une police que le lecteur a déjà installée ; `Imported(url)` nomme
++         une feuille de style qui déclare la famille ; et `Generic` est une famille que tout
++         support peut composer. Un document collecte les sources de ses polices et émet ce dont
++         son support a besoin — des règles `@font-face`, un programme incorporé.
++     entry .Format   le format d'un fichier de police lié : `Ttf`, `Otf`, `Woff` ou `Woff2`
++         Ce qu'une `src` de `@font-face` déclare avec `format(…)`, afin qu'un navigateur puisse
++         ignorer un fichier qu'il ne sait pas lire.
++   entry .Embedding   la fourniture que renvoie `.embedded` : des fichiers transportés dans le document
+
+@ 0 16 0 1943c2e7c27e0ef51a50e502b9e713ce
++     detail
++         Une classe nommée, afin que la fourniture ait un type stable. Elle est `in Medium`, ses
++         sources sont un `Source.Embedded` par fichier, et sa couverture est
++         `Font.Coverage.combine` appliqué aux `Font.Coverage.of` des fichiers.
++     entry #Self   la famille fournie
++     entry #Form   `Medium` : un fichier incorporé sert tous les supports
++     entry #sources   un `Typesettable.Source.Embedded` par fichier de police
++     entry #coverage   l'union de la couverture des fichiers, lue depuis leurs tables
++   entry .embedded   une fourniture à partir de fichiers de polices, `in Medium`, avec une couverture lue depuis les fichiers
++       Deux surcharges. `Typesettable.embedded[family](sfnts*)` prend un nombre quelconque de
++       `Sfnt` déjà disponibles et crée un `Typeface of family is Typesettable in Medium` ; la
++       famille est donnée explicitement ou inférée à partir du type déclaré du given.
++       `Typesettable.embedded (source)` prend une source `Locative` lisible en flux — une
++       ressource `cp"…"` —, la lit, et conserve son chemin comme `Locus` de la fourniture ;
++       ainsi une `Font` créée à partir de la fourniture est vérifiée, pendant la compilation du
++       code, par rapport au fichier situé à ce chemin dans le classpath du compilateur. Lorsque
++       le fichier n'est pas dans le classpath du compilateur, la vérification est laissée à
++       l'exécution.
+
+@ 0 14 0 14267d24714981110cfeed8e79344654
++           column  Cas
++           column  Code
++           column  Message
++           column  Remarque
++           row  `MissingTable(tag)`  1  _the table `tag` was not found_
++           row  `UnknownFormat(format)`  2  _the table contains data in unknown format `format`_  un format de sous-table `cmap` que la bibliothèque ne lit pas
++           row  `MagicNumber`  3  _the font did not contain expected check data_  une table `head` avec la mauvaise constante
++           row  `MissingEncoding`  4  _the font contains no usable character encoding_
++           row  `UncoveredWeight(typeface, weight)`  5  _`typeface` is not provided at weight `weight`_  _Inter is not provided at weight 300_
++           row  `UncoveredSlant(typeface, slant)`  6  _`typeface` is not provided in an `slant` face_  _Inter is not provided in an italic face_
++           row  `UncoveredStretch(typeface, stretch)`  7  _`typeface` is not provided at a stretch of `stretch`_
++           row  `UnknownAxis(typeface, axis)`  8  _`typeface` has no variation axis `axis`_  _Inter has no variation axis opsz_
++           row  `AxisOutOfRange(typeface, axis, value)`  9  _`typeface` does not admit `value` on its `axis` axis_
++           row  `MissingFeature(typeface, feature)`  10  _`typeface` does not implement the layout feature `feature`_  _Inter does not implement the layout feature onum_
+
+@ 0 4 0 12fbd9704a08573411905665cc6e71f4
++       entry #number   le numéro de la raison, de 1 à 10, qui est le sous-code de l'erreur
++     entry .communicable   restitue chaque raison sous la forme de son message
++     entry #reason   la raison
++   entry .Coverage   les styles qu'une fourniture peut composer : graisses, inclinaisons, chasses, axes et fonctionnalités
+
+@ 0 5 0 1865ff39260f0ba40f03d90d322e8091
++         Une `Font.Coverage` est soit `Unknown` — rien n'est connu des styles qu'offre une
++         source, si bien que tout style est admis —, soit `Entries(entries)`, une liste de
++         `Font.Coverage.Entry`, chacune étant un style qu'offre une fourniture ou la plage de
++         styles qu'offre une police variable. Une `Font` n'est créée que pour un style que la
++         couverture admet ; `#complaint` donne la `Font.Error.Reason` pour laquelle il ne l'est
++         pas, ou `Unset` s'il l'est.
+
+@ 0 30 0 030af9149e6c2fda0112b3f496a1bd6e
++       entry #weights   l'intervalle des graisses
++       entry #upright   si un style droit est offert
++       entry #italic   si un style italique est offert
++       entry #stretches   l'intervalle des chasses
++       entry #axes   les autres axes de variation, chacun avec sa plage
++       entry #features   les fonctionnalités implémentées, ou `Unset` si elles sont inconnues
++       entry #sets   si la graisse, l'inclinaison et la chasse de l'entrée admettent un style
++       entry #complaint   le premier réglage de variation ou de fonctionnalité que l'entrée ne peut pas donner, ou `Unset`
++           `complaint(name, variations, settings)` vérifie l'axe et la valeur de chaque variation
++           par rapport à `axes` (`UnknownAxis`, `AxisOutOfRange`) et la fonctionnalité de chaque
++           réglage par rapport à `features` (`MissingFeature`), en nommant la famille dans la
++           raison. Des fonctionnalités inconnues admettent tout.
++     entry .apply   une couverture déclarée, pour une source dont le fichier n'est pas disponible
++         `Font.Coverage(weights, upright, italic, stretches, axes)`, chacun avec une valeur par
++         défaut — normal, droit seulement, chasse normale, aucun axe —, qui crée une seule
++         `Entry` aux fonctionnalités inconnues. Pour une URL ou une police installée, dont les
++         styles sont ce que dit la déclaration, et rien de plus.
++     entry .of   la couverture d'un fichier de police, lue depuis ses tables
++         À partir de la table `fvar` d'une police variable : l'axe `wght` comme intervalle de
++         graisses, `wdth` comme intervalle de chasses, un axe `ital` ou `slnt` comme offrant les
++         deux postures, et chaque axe comme une `Variation.Range`. À partir d'une police
++         statique : les classes de graisse et de chasse de `OS/2` comme graisse et chasse
++         uniques. Les bits d'italique de `OS/2` et un angle d'italique `post` non nul rendent
++         l'entrée italique. Les fonctionnalités sont `Sfnt#features`. Un fichier dont les tables
++         ne peuvent pas être lues a une couverture `Unknown`, qui admet tout, plutôt que de
++         refuser des styles qu'il pourrait fort bien avoir.
++     entry .combine   l'union de plusieurs couvertures ; un seul `Unknown` rend l'ensemble `Unknown`
++     entry #complaint   la raison pour laquelle un style ne peut pas être composé à partir de cette couverture, ou `Unset` s'il le peut
++         Deux surcharges. `complaint(face)` vérifie un style entier.
++         `complaint(name, weight, slant, stretch, variations, features)` ne vérifie que ce qui
++         est donné : une partie passée comme `Unset` n'est pas vérifiée, et c'est la forme
++         qu'utilise la vérification à la compilation lorsque la graisse ou l'inclinaison d'un
++         style est décidée à l'exécution. Une couverture `Unknown` ne se plaint jamais.
++   entry .apply   `Font(face)` : associe un style à la fourniture dans la portée, dans le support que nomme le type attendu
++       Une méthode inline dont le support est inféré à partir du type attendu : `Font in Web`,
++       ou `Optional[Font in Web]`, puisque `Form` est un membre de type et que le type attendu
++       le fixe. Elle nécessite un `Typeface of family is Typesettable in (? >: medium)` et une
++       `Tactic[Font.Error]`. Lorsque la fourniture porte un `Locus`, la demande enregistrée du
++       style est vérifiée à la compilation ; la vérification à l'exécution a lieu ensuite
++       quoi qu'il en soit. Là où il n'y a pas de type attendu, on utilise `.of`.
++   entry .of   `Font.of[Web](face)` : la même association, avec le support nommé
++       Renvoie un `.Of[medium]` dont l'`apply` prend le style, de sorte que seul le support ait
++       à être écrit et que la famille soit inférée à partir du style. Le `Web.font(face)` de
++       Cataclysm est `Font.of[Web](face)`.
++   entry .Of   l'auxiliaire que renvoie `.of`, dont l'`apply` prend le style
+
+@ 0 13 0 12bc58932ebfe6a10ddd0e8d5f5951a2
++     detail
++         `Font.of[medium]` est un `Of[medium]` ; `Font.of[medium](face)` est son `apply`. Les
++         deux clauses sont séparées afin que le support puisse être nommé sans la famille.
+
+@ 0 12 0 1b4c725e43dd18b10fef27a9408c05aa
++     entry #apply   associe un style à la fourniture dans la portée pour sa famille, dans le support nommé
++   entry .paired   l'association à l'exécution vers laquelle s'expansent les formes inline : la vérification de couverture, puis la police
++       `Font.paired[family, medium](face)` vérifie `provision.coverage.complaint(face)`, lève
++       une `Font.Error` avec la raison s'il y en a une, et crée sinon la `Font in medium`. Les
++       formes inline `.apply` et `.of` lui ajoutent en amont la vérification à la compilation ;
++       du code qui n'a besoin d'aucune vérification statique, ou dont le style a une demande
++       absente de son type, peut l'appeler directement.
++   entry .showable   affiche une police comme son style : `Inter 700 italic`
++   entry .inspectable   inspecte une police sous la forme `Font(Face("Inter", Weight(700), Slant.Italic))`
++   entry #face   le style
++   entry #provision   la fourniture qui rend la famille disponible dans le support
++   entry #typeface   la famille du style
+
+@ 0 5 0 0c2c18a6b296054a1aaa842d44e27df2
++   detail
++       Pas pour un usage direct. `Glyph`, `Weight` et `Stretch` sont déclarés ici comme types
++       opaques, avec leurs compagnons, et exportés vers le paquetage `phoenicia`, où se trouvent
++       leurs pages ; l'objet existe afin que les types opaques et la macro de `Font` aient un
++       emplacement stable.
++   entry .Glyph   un glyphe d'une police ; voir `phoenicia.Glyph`
+
+@ 0 4 0 0f6e670abb62430f10a74f522bbee640
++     detail
++         Le compagnon du type opaque `Glyph`, exporté avec lui vers le paquetage `phoenicia`.
++     entry .apply   `Glyph(font, id)` : enveloppe un identifiant de glyphe comme glyphe de cette police
++   entry .Weight   une graisse sur l'échelle 1–1000 ; voir `phoenicia.Weight`
+
+@ 0 23 0 19afd7d81694514f0e634e90a5ab9361
++     detail
++         Le compagnon du type opaque `Weight`, exporté avec lui vers le paquetage `phoenicia`.
++     entry .apply   une graisse à partir d'un entier, ramené dans l'intervalle 1–1000
++     entry .Thin   graisse 100
++     entry .ExtraLight   graisse 200
++     entry .Light   graisse 300
++     entry .Regular   graisse 400
++     entry .Medium   graisse 500
++     entry .Semibold   graisse 600
++     entry .Bold   graisse 700
++     entry .ExtraBold   graisse 800
++     entry .Black   graisse 900
++     entry .Range   un intervalle inclusif de graisses
++       entry #lower   la graisse la plus légère de l'intervalle
++       entry #upper   la graisse la plus lourde de l'intervalle
++       entry #contains   si une graisse se trouve dans l'intervalle
++     entry .showable   affiche une graisse comme son nombre : `700`
++     entry .inspectable   inspecte une graisse sous la forme `Weight(700)`
++     entry .value   la graisse sous forme d'entier
++     entry .to   `lower to upper` : l'intervalle inclusif entre deux graisses
++     entry .range   l'intervalle de cette seule graisse
++   entry .Stretch   une chasse en pourcentage ; voir `phoenicia.Stretch`
+
+@ 0 30 0 0ea0ea179e25cda21528fd5d45ebd2ea
++     detail
++         Le compagnon du type opaque `Stretch`, exporté avec lui vers le paquetage `phoenicia`.
++     entry .apply   une chasse à partir d'un pourcentage, ramené dans l'intervalle 50–200
++     entry .UltraCondensed   50 %
++     entry .ExtraCondensed   62,5 %
++     entry .Condensed   75 %
++     entry .SemiCondensed   87,5 %
++     entry .Normal   100 %
++     entry .SemiExpanded   112,5 %
++     entry .Expanded   125 %
++     entry .ExtraExpanded   150 %
++     entry .UltraExpanded   200 %
++     entry .widthClass   la chasse que nomme une classe de chasse OS/2 de 1 à 9 ; `Normal` pour 5 ou une valeur inconnue
++     entry .Range   un intervalle inclusif de chasses
++       entry #lower   la chasse la plus étroite de l'intervalle
++       entry #upper   la chasse la plus large de l'intervalle
++       entry #contains   si une chasse se trouve dans l'intervalle
++     entry .showable   affiche une chasse sous forme de pourcentage : `100.0%`
++     entry .inspectable   inspecte une chasse sous la forme `Stretch(100.0)`
++     entry .percentage   la chasse en pourcentage de la chasse normale
++     entry .to   `lower to upper` : l'intervalle inclusif entre deux chasses
++     entry .range   l'intervalle de cette seule chasse
++   entry .id   l'identifiant du glyphe dans sa police ; 0 est le glyphe manquant
++   entry .font   la macro derrière `Font(face)` et `Font.of[medium](face)`
++       Lit le `Locus` de la fourniture depuis son type ; s'il s'agit d'un littéral de chaîne
++       nommant une ressource dans le classpath du compilateur, lit la police (une fois par
++       chemin), en dérive la `Font.Coverage` et vérifie par rapport à elle les membres de type
++       `Weights`, `Slanting` et `Enabled` du style, en s'arrêtant avec
++       _phoenicia: the font at `path` cannot set this face: …_ en cas de refus. S'expanse
++       ensuite en `Font.paired`.

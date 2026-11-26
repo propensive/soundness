@@ -1,0 +1,10 @@
+orthant 2 release
+
+@ 0 1 0 05e2aeb4a484591410770a2e558fcba4
++ The documents in `doc/soundness/modules/` are tutorials, each introducing one feature of
+
+@ 0 1 0 1c042996f46cae6502e7f6c693421217
++ - a design idea, to its essay in `doc/philosophy/`, once, where the design is being explained;
+
+@ 0 1 0 0b47193cd52feee21bfd0c815543d4bb
++ package* — is defined in `doc/soundness/glossary.tel`, and written in brackets where a reader may not yet

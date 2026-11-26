@@ -1,9 +1,5 @@
 orthant 2 release
 
-@ 0 1 0 1962db1a01d1400a03e10fff135f8249
-+       number of the library the error is in, as `bolt.tel` in `doc/errors` records it;
+% 0 1 0 097d4cee495338b409cdea95a29e449f
 
-@ 0 2 0 1e42b06c995d9a4f0576039facd8d8f9
-+       The record of what each of Soundness's codes means is `bolt.tel` in `doc/errors`,
-+       which the index of codes in the [bolt](https://github.com/propensive/bolt) repository
-+       names.
+% 0 3 0 18479486cd81994d11e7509da0fbbecc

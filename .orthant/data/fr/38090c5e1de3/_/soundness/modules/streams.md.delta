@@ -1,0 +1,54 @@
+orthant 2 language
+
+@ 0 3 0 051bffaa1ea7a8ff0ec38620ae7ae279
++ Ce qu'un bloc écrit dans les deux flux peut être recueilli au lieu d'être affiché. `Stdio.capture`
++ exécute un bloc et donne son résultat à côté du texte écrit dans chaque flux, et il atteint tout ce
++ qui y écrit, y compris le `System.out` de la JVM et le `println` de Scala :
+
+% 2 1 0 02576e6c0e61c1ec1f087471436e400a
+
+% 3 1 0 1c3e65e87e36e20308fb4ad016fb2bae
+
+% 4 1 0 0b2212c5c62e676f1b92abe82afc2c95
+
+% 0 1 0 048f47ff4088bfa112f03bd2c0d9d6c7
+
+% 0 1 0 0964e4826a1d911800f9316a93083ecb
+
+% 0 1 0 0cbdcd3e238695470f87506fd64045f4
+
+% 0 1 0 17ffe7d6afaf926104173b1de5ed7182
+
+% 0 1 0 05e05e57a866d0721d065070ce369c79
+
+% 1 1 0 097bcab0fb10d68b08a2c7985792c18b
+
+@ 0 3 0 1b30835b611a3f1f06ba1b70147f2400
++ Un terminal montre les deux flux comme un seul, dans l'ordre où ils ont été écrits, et un programme
++ qui exécute l'extrait d'un utilisateur veut généralement la même chose. `Err.divert(Out)` envoie
++ vers la sortie standard ce qu'un bloc écrit sur l'erreur standard, si bien qu'une capture qui
++ l'entoure contient un seul texte entrelacé :
+
+% 2 1 0 0965cb054814641706fd065d2194f39c
+
+% 3 1 0 02a52e1208e477391f834b8822b08005
+
+% 4 1 0 1b54b0f9068762e91af38c20129eafce
+
+% 0 1 0 0c02462f9f8a97d30409c131c215ed83
+
+% 0 1 0 135abcf2c81a5cda18de9d21c5d5d832
+
+% 0 1 0 11b11c5025025f1a0ce28535c0bdffa3
+
+% 0 1 0 15270e9b4e33e6c21a78ebd46f892d45
+
+% 0 1 0 00ce6383c1a7310a15cf5e340e48eb06
+
+% 0 1 0 149357743485717c00c9be231615817a
+
+% 1 1 0 0a40c61bd6c0e84804036d2ba3cabaa9
+
+@ 0 2 0 198c683b111a8bf71106788aa52ef46f
++ `Out.divert(Err)` fait l'inverse. Un détournement dure le temps de son bloc, et s'étend aux tâches
++ lancées à l'intérieur.

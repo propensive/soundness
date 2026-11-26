@@ -1,0 +1,13 @@
+orthant 2 language
+
+@ 0 9 0 1bd7a6beb6e17d6e0b0e8c51346922a0
++ Depurar una aplicación en ejecución debería resultar nativo, no prestado: puntos de interrupción,
++ ejecución paso a paso e inspección mediante un servidor del Debug Adapter Protocol, con los valores
++ inspeccionados representados como sus tipos de Soundness; la misma disciplina sin codificaciones
++ de Java que `core-5` aplica a las trazas, aplicada al estado en vivo. vivisection es ese servidor:
++ `vivisection.DapServer` atiende el conjunto de peticiones (launch, attach, puntos de interrupción,
++ hilos, trazas de pila, ámbitos, variables, evaluación, ejecución paso a paso), y el `DapClient` de
++ su suite lleva a un programa depurado en vivo por un punto de interrupción, un paso `next` y una
++ inspección en la ejecución ordinaria, con cada variable local representada mediante su instancia de
++ `Inspectable` y una instantánea de objeto mostrada por su nombre simple y su identidad en lugar de
++ por un nombre de clase de la JVM. El tema es `doc/soundness/modules/debugging.md`.

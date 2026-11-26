@@ -1,0 +1,32 @@
+orthant 2 release
+
+@ 0 1 0 0f9f7606100f273e166695bc9dbb2a10
++ # nine track files in doc/roadmap/. This file is the single source of status:
+
+@ 0 1 0 0be423d6db7e7e061a284c3c43e66379
++   criterion  no collection exposes a partial indexed apply (issue #1666); every remaining while is a shape doc/standards/loops.md sanctions, with a comment naming its invariant
+
+@ 0 1 0 00b880a91082413204e9196c41d2f096
++   criterion  doc/standards/capabilities.md exists, defines every tag the census recognises, and rep/DECISIONS.md's recipe sections link to it
+
+@ 0 1 0 131794d631e522870773aff16ae8aac7
++   criterion  grep -c 'Stub' doc/standards/messages.md == 0
+
+@ 0 1 0 1641788750559ef91ee4d63e42910cef
++   baseline  101 topics in doc/soundness/modules/; 145 of 145 libraries covered (2026-10-21; 1 of 144 uncovered on 2026-09-25; 91 topics and 35 uncovered on 2026-08-01)
+
+@ 0 1 0 0cd6fa0bf2725ba00d7272c3719f69cc
++   baseline  the scripted DAP suite breaks, steps and inspects values through their Inspectable instances; topic doc/soundness/modules/debugging.md (2026-10-21; objects inspected as JVM class names and no topic on 2026-09-25)
+
+@ 0 2 0 07448ba163d12a581789fe21f1724c6c
++   baseline  etc/migration.md and 0.65.0.md–0.73.0.md exist; the migration directive in etc/release gates the release; no pull-request check (2026-10-21; notes to 0.68.0 on 2026-09-25)
++   criterion  etc/migration.md exists; the release (the migration directive in etc/release) refuses to tag without etc/migration/<version>.md; a CI check fails any pull request that changes lib/**/src without touching the unreleased etc/migration/<version>.md
+
+@ 0 1 0 0b588d9685ee6c121a4466731ff5a610
++   criterion  lib/reliquary is absent, no lib/*/src/lira directory remains, and build.mill, etc/ and doc/soundness/modules do not mention reliquary
+
+@ 0 1 0 163c07224c87fce003b6ad62fec0718e
++   baseline  lib/sigillate: Jws, Jwe, Jwk and Jwt, with `http` and `server` components; 95 tests, taking their vectors from RFC 7515 §A.1–A.7, RFC 7516 §A.1–A.5, RFC 7517, RFC 7638 and RFC 8037; `↯/s.147.1`; doc/soundness/modules/jose.md (2026-11-20)
+
+@ 0 1 0 0b21a7d8349a92fd16fa9db438708eef
++   baseline  lib/chatelaine: WebAuthn.registration/register and authentication/authenticate, `none` and `packed` attestation, with a `server` component; the registration and authentication ceremonies of the W3C specification's test vectors (§16.2–16.11) pass, as do scripted ceremonies against a software authenticator in the test sources; no browser's virtual authenticator has been driven; `↯/s.148.1`; doc/soundness/modules/webauthn.md (2026-11-20)

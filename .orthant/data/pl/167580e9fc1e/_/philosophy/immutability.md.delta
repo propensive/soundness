@@ -1,0 +1,14 @@
+orthant 2 language
+
+@ 0 5 0 1f52db954f55f5811eeec5c28a446ede
++ Zarzut wobec niemutowalności jest zawsze ten sam: zmiana jednego pola głęboko w strukturze
++ oznacza odbudowę każdej warstwy nad nim. To prawda, ale jest to problem składni, a nie
++ semantyki – więc Soundness rozwiązuje go składnią. [Soczewka](/doc/soundness/modules/optics.md)
++ przyjmuje aktualizację zapisaną jako zwykłe przypisanie do ścieżki i wykonuje odbudowę:
+
+@ 0 5 0 13b944085c973784002ec33f12ef5462
++ **`Canvas`**, uzyskiwane przez otwarcie [rastra](/doc/soundness/modules/images.md) do zapisu, mutuje
++ piksele w miejscu – ponieważ generowanie dużego obrazu po jednym wywołaniu funkcji na piksel
++ to zły kształt dla algorytmu rysowania. Mutacja jest ograniczona do bloku `open` i
++ uwarunkowana uprawnieniem `Write`, a `snapshot` wykonuje niezależną kopię dla wszystkiego, co
++ musi go przeżyć.

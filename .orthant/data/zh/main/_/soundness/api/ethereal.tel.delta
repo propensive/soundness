@@ -1,6 +1,6 @@
 orthant 2 language
 
-@ 0 10 0 1b05c2c20b8cc8d10c46a37a3628e3a6
+@ 1 10 0 03068d05cb63b8501e427bb6b0b0a204
 +   entry .Composition   模式的基础部分加上它的若干层，以及在其下写出的文档所携带的签名
 +       启动器根据守护进程公布的 `.acceptance` 选择组合，守护进程则在对方写给它时所用的组合下作答。`interrupts` 表示它是否包含 `interrupts` 层。
 +   entry .base   仅由模式的基础部分构成的组合，任何启动器都可以在其下写入

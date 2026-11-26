@@ -1,0 +1,20 @@
+orthant 2 language
+
+@ 0 17 0 0ec7a54fa0928f921723afad3dc6834b
++ column  基準
++ column  項目
++ row  `proscenium.compat` が空である  `core-2`
++ row  proscenium の外のどのファイルも `scala.collection` をインポートしない  `core-3`
++ row  `lib/` に `caps.unsafe` の逃げ道が残っていない  `safety-4`
++ row  プラットフォームのマニフェストが CI で強制され、その除外には理由が付き、Android APK が CI でビルドされ署名される  `plat-1`, `plat-2`, `plat-3`
++ row  `etc/api-reduction-candidates.md` がもはや存在しない  `api-5`
++ row  すべてのエラー型にボルトコードとドキュメントのページがあり、CI で検査される  `doc-1`
++ row  公開されるすべてのモジュールが `doc/soundness/modules/` のトピックで扱われている  `doc-4`
++ row  すべてのコンポーネントについて API ドキュメントが生成され公開されている  `doc-5`
++ row  `fury build` が Soundness 自身をビルドし、Mill のビルドと証明上等しい  `tool-4`
++ row  fume が完全なテストスイートを実行し、無効にされたスイートがない  `tool-2`
++ row  スクリプト化された LSP エディターのセッションが CI で通る  `tool-3`
++ row  直近の連続する十回のリリースにおけるすべての破壊的な変更に、エージェントが実行できる移行指示が付いていた  `dist-2`
++ row  すべてのリリースが証明された LIRA ファイルとして公開される  `dist-7`
++ row  JOSE、TOML、WebAuthn が出荷されている  `brd-1`, `brd-2`, `brd-3`
++ row  エージェントが `doc/` のドキュメントだけに従い、エコシステムのツールだけを使って、新しいプロジェクトを何もない状態から、テストされ配備された JVM と JavaScript の Web アプリケーションに仕上げる。このウォークスルーは CI で実行され記録される  `doc-8`

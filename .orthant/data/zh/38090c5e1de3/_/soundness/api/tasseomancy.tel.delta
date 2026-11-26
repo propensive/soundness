@@ -1,0 +1,104 @@
+orthant 2 language
+
+!     - The shape is in the types. A `Series[x, y]` is a named run of points; its abscissa type
+!       decides the axis: a `Text`, an enum or a `Chart.Category` is `Categorical`, a number, a
+!       `Duration`, an `Instant` or any `Quantity` is `Continuous`. `Samples[y]` are raw
+!       measurements, `Chart.Estimate` a value with its interval, `Noted` a value with a note, and a
+!       `Dag` of `Weighted`, `Progressive` nodes is a dependency graph.
+!     - A kind is a value — `Bars()`, `StackedBars()`, `Lines()`, `Scatter()`, `Pie()`,
+!       `Histogram()`, `Boxes()` or `Doughnut()` — and `data.chart(kind)` compiles only where a
+!       `Plottable` instance says the kind can draw the data's shape: a pie of three series or a
+!       line through category labels is a compile error.
+!     - The fit — each axis's range, transform and gradations — is chosen by a `Calibration`
+!       keyed on the axis's value type, overridden by a scoped given, an import from
+!       `calibrations`, or an argument to the kind. The result is a `Scale` or `Bands`: plain
+!       data, which is what lets a chart tell whether new data still fits its axes.
+!     - The style is a `Chart.Style` value — `Chart.Standard` by default — with a method for
+!       every component drawn, a `ChartPalette` of colours named by role, and a `FontMetric`
+!       which measures text for the layout.
+@ 0 16 0 067dd5b85b1b7504178320a4b398acdc
++     - 形状由类型表达。
++       `Series[x, y]` 是一组具名的点序列；它的横轴类型决定坐标轴：`Text`、枚举或 `Chart.Category` 是 `Categorical`，数字、`Duration`、`Instant` 或任何 `Quantity` 是 `Continuous`。
++       `Samples[y]` 是原始测量值，`Chart.Estimate` 是带有区间的值，`Noted` 是带有注释的值，而由 `Weighted`、`Progressive` 节点组成的 `Dag` 是依赖图。
++     - 种类是一个值——`Bars()`、`StackedBars()`、`Lines()`、`Scatter()`、`Pie()`、`Histogram()`、`Boxes()` 或 `Annulus()`——而 `data.chart(kind)` 只有在某个 `Plottable` 实例表明该种类能够绘制数据的形状时才能编译：由三个序列组成的饼图，或穿过类别标注的折线，都是编译错误。
++     - 适配——每条坐标轴的范围、变换和分度——由按坐标轴值类型选取的 `Calibration` 决定，可以被作用域内的 given、从 `calibrations` 导入的 given 或传给种类的参数覆盖。
++       结果是 `Scale` 或 `Bands`：普通的数据，正因如此，图表才能判断新数据是否仍然适合它的坐标轴。
++     - 样式是一个 `Chart.Style` 值——默认为 `Chart.Standard`——它为所绘制的每个组件提供一个方法，有一个按角色命名颜色的 `ChartPalette`，还有一个为布局测量文本的 `FontMetric`。
+
+!     An incompatible pairing does not compile: a categorical series cannot be `Lines()`, a
+!     collection of series cannot be `Pie()`, `Samples` cannot be `Bars()`, and a `Dag` whose
+!     nodes lack `Weighted` or `Progressive` cannot be `Doughnut()`.
+@ 0 3 0 0a7750f3b1455772047955d94e1ba081
++     不兼容的配对无法编译：分类序列不能是 `Lines()`，序列的集合不能是 `Pie()`，`Samples` 不能是 `Bars()`，节点缺少 `Weighted` 或 `Progressive` 的 `Dag` 不能是 `Annulus()`。
+
+!       A `Chart[data, form, fit, style]` holds its `#data`, its kind (`#form`), the `#fit` the
+!       kind computed from the data, and the `Plottable` instance that pairs them. It is made by
+!       the `chart` extension rather than directly. The fit's type is the kind's own — `Bars.Fit`
+!       with `bands` and `ordinate`, `Lines.Fit` with two scales, `Doughnut.Fit[node]` with its
+!       bands — and the style type is the kind's style trait, so a bar chart renders against a
+!       `Bars.Style` and a pie against a `Pie.Style`; `Chart.Standard` implements all of them.
+@ 0 6 0 1917a3de2b6d1ec40d240e530bbf9c42
++       `Chart[data, form, fit, style]` 持有它的 `#data`、它的种类（`#form`）、该种类根据数据计算出的 `#fit`，以及把它们配对的 `Plottable` 实例。
++       它由 `chart` 扩展方法构造，而不是直接构造。
++       适配的类型是该种类自己的——`Bars.Fit` 带有 `bands` 和 `ordinate`，`Lines.Fit` 带有两个比例尺，`Annulus.Fit[node]` 带有其环带——而样式类型是该种类的样式特质，因此柱状图按 `Bars.Style` 渲染，饼图按 `Pie.Style` 渲染；`Chart.Standard` 实现了所有这些特质。
+
+!         Extends `Chart.Style` with the axis components and the parameters of their layout.
+!         Positions are given in the drawing's coordinates; the style decides the shape, the
+!         stroke and where a label sits relative to its tick. `Bars.Style`, `Lines.Style`,
+!         `Scatter.Style`, `Boxes.Style` and (through `Bars.Style`) `StackedBars.Style` and
+!         `Histogram.Style` extend it; `Pie.Style` and `Doughnut.Style` do not, having no axes.
+@ 0 5 0 1831b6ac69f488340d399a735a559cbd
++         以坐标轴组件及其布局参数扩展 `Chart.Style`。
++         位置以绘图的坐标给出；样式决定形状、描边，以及标注相对于其刻度的位置。
++         `Bars.Style`、`Lines.Style`、`Scatter.Style`、`Boxes.Style` 以及（经由 `Bars.Style`）`StackedBars.Style` 和 `Histogram.Style` 扩展它；`Pie.Style` 和 `Annulus.Style` 没有坐标轴，因此不扩展它。
+
+!         Implements `Bars.Style`, `StackedBars.Style`, `Histogram.Style`, `Lines.Style`,
+!         `Scatter.Style`, `Boxes.Style`, `Pie.Style` and `Doughnut.Style` at once, so one value
+!         in scope styles any chart. Every parameter has a default: `width = 640.0`, `height =
+!         400.0`, `inset = 12.0`, `font = Web.sansSerifFont`, `fontSize = 12.0`, `legend =
+!         Legend.Right`, `pitch = 60.0`, `tickLength = 5.0`, `grid = true`, `abscissaTitle` and
+!         `ordinateTitle` unset, `strokeWidth = 2.0`, `markerRadius = 3.5`, `markers = false`,
+!         `smoothing = 0.0`, `barGap = 0.25`, `boxGap = 0.25`, `hole = 0.0`, `sectorGap = 2.0`
+!         and `bandGap = 2.0`. Any component's rendering is an override on an anonymous subclass:
+@ 0 8 0 0891e807181f12b60920a4f6d3afeed6
++         同时实现 `Bars.Style`、`StackedBars.Style`、`Histogram.Style`、`Lines.Style`、`Scatter.Style`、`Boxes.Style`、`Pie.Style` 和 `Annulus.Style`，因此作用域中的一个值就能为任何图表设置样式。
++         每个参数都有默认值：`width = 640.0`、`height = 400.0`、`inset = 12.0`、`font = Web.sansSerifFont`、`fontSize = 12.0`、`legend = Legend.Right`、`pitch = 60.0`、`tickLength = 5.0`、`grid = true`、`abscissaTitle` 和 `ordinateTitle` 未设置、`strokeWidth = 2.0`、`markerRadius = 3.5`、`markers = false`、`smoothing = 0.0`、`barGap = 0.25`、`boxGap = 0.25`、`hole = 0.0`、`sectorGap = 2.0` 以及 `bandGap = 2.0`。
++         任何组件的渲染方式都可以在匿名子类上覆盖：
+
+!       `data is Plottable in form to fit by style` exists only where the kind can draw the
+!       data: a pie needs one categorical series, a line needs numeric axes, a doughnut a `Dag`
+!       of weighted, progressive nodes. The kind is the `Form`, the fit the `Result` (so a
+!       chart's fit is the kind's own, with its axes visible), and the style the `Operand`,
+!       bounded by `Chart.Style`. The standard instances live in each kind's companion —
+!       `Bars.series`, `Bars.traversable`, `Lines.series`, `Histogram.samples`, `Doughnut.dag`,
+!       … — so they are found with no import; a `traversable` instance covers any collection
+!       of series or samples (a `List`, `Set` or `Sequence`), its traversal evidence resolved
+!       before the element types' typeclasses.
+@ 0 9 0 1c28ec2691d0d19507526a5acda9efaa
++       `data is Plottable in form to fit by style` 只在该种类能够绘制该数据的地方存在：饼图需要一个分类序列，折线需要数值坐标轴，环形图需要由带权重、有进度的节点组成的 `Dag`。
++       种类是 `Form`，适配是 `Result`（因此图表的适配是该种类自己的，其坐标轴可见），样式是 `Operand`，以 `Chart.Style` 为上界。
++       标准实例位于各个种类的伴生对象中——`Bars.series`、`Bars.traversable`、`Lines.series`、`Histogram.samples`、`Annulus.dag`……——因此无需导入即可找到；`traversable` 实例涵盖由序列或样本组成的任何集合（`List`、`Set` 或 `Sequence`），其遍历证据会在元素类型的类型类之前解析。
+
+! entry .Weighted   the extent of a doughnut's node: its share of its rank's angle and of the band's thickness
+!     `node is Weighted` gives `weight(node): Double`. In a `Doughnut`, a node's sector sweeps
+!     the share of its band's turn that its weight is of the rank's total, and a band is as
+!     thick as its rank's share of the whole graph's weight. A negative weight counts as zero.
+@ 0 4 0 1bdbb9d5ce2db9910b3f17d117999156
++ entry .Weighted   环形图节点的大小：它在其层级角度中所占的份额，以及在环带厚度中所占的份额
++     `node is Weighted` 给出 `weight(node): Double`。
++     在 `Annulus` 中，节点的扇区所扫过的角度占其环带一周的份额，等于其权重占该层级总权重的份额；环带的厚度则等于其层级在整个图的权重中所占的份额。
++     负权重按零计算。
+
+!   refer tasseomancy.Doughnut
+% 0 1 0 054d3f904bd128ce022edacb2a896287
+
+! entry .Doughnut   a dependency graph as concentric bands: one per rank, each node a sector filled as far as it is complete
+@ 0 1 0 12f074268f4e474211e04fa1a4fdb787
++ entry .Annulus   以同心环带表示的依赖图：每个秩一条环带，每个节点一个扇区，按其完成程度填充
+
+!       val doughnut = Dag(typecheck -> parse, emit -> typecheck).chart(Doughnut())
+!       doughnut.fit.bands.size   // 3: one band per rank
+% 0 2 0 14e9c2ce8abadbba09354805377d870d
+
+!       doughnut.revise(Dag(typechecked -> parse, emit -> typechecked))(1).size   // 1: a Replace of rank-1
+% 0 1 0 192dfaa53893ba201815a4fa9a1268c7
