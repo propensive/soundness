@@ -1,0 +1,71 @@
+orthant 2 language
+
+@ 0 1 0 0f4a5b939bf82ec80f7c0e3d4f70daa2
++ # 色相按角度旋转
+
+@ 0 2 0 1b616e7831d6251b09ae3b2b8748b98b
++ 色相是色轮上的一个点，因此它按 `Angle` 旋转，测量方位或纬度用的也是这个类型。裸数字不被接受，因为它没有单位。
+
+% 2 1 0 0861ec3ab094ae6212b0ccc8b6c1a721
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 100335c6429fc69203f12052bf13ebd2
++   label 三分之一圈，没有单位
+
+% 0 1 0 1477c34ff41c7c99183443e1d3238ae1
+
+% 1 1 0 0960c596329e4eb20a0b442aaa85c43a
+
+% 2 1 0 1043503519644f01137fad9b6ab6ed2e
+
+% 0 1 0 118e847f99badbb11e8aeffafb20ced7
+
+% 1 1 0 0501f93b932f33a1179f65e86ed211fd
+
+@ 0 2 0 0f142f130d2ac9f90cac19390e35711f
++   label 以度为单位
++   highlight 120.0.deg  像罗盘上一样的角度
+
+% 1 1 0 000b1762efeea63c07bfbd33b96f2b9f
+
+% 2 1 0 1f47d3cb755b200d1bc3c1dcb4a6b3e0
+
+% 0 1 0 1444e0c2a4a5b2bd0dcffe12188a1d1d
+
+% 1 1 0 1d37ec443c92252e08f144438da6e376
+
+@ 0 2 0 08bd1518083be3861f5a97487285c2b3
++   label 超过一整圈
++   highlight 480.0.deg  一圈又三分之一
+
+% 1 1 0 0df673c44cf41e500a641bec8831fdad
+
+% 2 1 0 0b03ed26c30eb4910c9a5ff5956d6348
+
+% 0 1 0 17869585d0f4e5250d37f75602b442fb
+
+% 1 1 0 1d6236721bc2672e0e825e253b18d904
+
+% 1 1 0 136d267ff733a60e0f6246170d49df5f
+
+% 2 1 0 1525a46c87e9e0571e7d21b8e7c42b7a
+
+% 0 1 0 08a86cbdc9b8cb0109ed8ce5b435ce67
+
+% 1 1 0 0cd6459499a6bd5203d659b3bcc1b6aa
+
+% 0 1 0 1914c57b5f7a7a7700823cf0d609cd72
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 0 1 0 00677e913403fd620b1734dd729d1a53
+
+% 0 1 0 16c86e8ada901fc10d3007078748ae5f
+
+% 1 1 0 0eb637b0ab73e99408028a7cd877906e
+
+@ 0 3 0 1ee9bc2e7167c77808ab108b2a9f5828
++ 旋转会回绕，因此两种转法得到相同的色相。[调整](../../soundness/modules/colors.md#adjusting)介绍了其他调整方式，[角度](../../soundness/modules/geography.md#angles)则介绍了这个类型。

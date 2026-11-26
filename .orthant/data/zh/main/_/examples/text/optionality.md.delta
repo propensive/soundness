@@ -1,0 +1,69 @@
+orthant 2 language
+
+@ 0 1 0 04fc7263468d79f511989c1f852212f1
++ # 可能不存在的位置
+
+@ 0 2 0 09bf05a1c57e3570194fc7ba12dec2b1
++ 在文本中搜索子串时，如果子串不存在，就没有位置可以给出。`offsetOf` 返回一个可选的位置，因此缺失的位置不会被误当作一个数字。
+
+% 2 1 0 1b521986695f0eea099e21d82db0054d
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 1c068ace786cb44a037d5a8a96f8b920
++   label 把搜索结果当作位置
+
+% 0 1 0 1477c34ff41c7c99183443e1d3238ae1
+
+% 1 1 0 0960c596329e4eb20a0b442aaa85c43a
+
+% 2 1 0 15bc9e645de24a0d12cc8ed7ef78c147
+
+% 0 1 0 00357d0aaed49f9305dff311ec4bd2f5
+
+% 1 1 0 000918437986dec41361a57100c5c858
+
+@ 0 2 0 11640818b558de80027573ce76a660d5
++   label 可能一无所获的搜索
++   highlight Optional[Ordinal]  一个位置，或者什么也没有
+
+% 1 1 0 0d3813b3c8e6689005079873195fe127
+
+% 2 1 0 0897a7a971ddd23b16b568bd3270f699
+
+% 3 1 0 02bc1eeb51bae52905063bbab03372ad
+
+% 1 1 0 195d8d3802d31cf603d314e84d7fe6a4
+
+@ 0 2 0 1386aedc5eab3d481f95082c063e7e93
++   label 确定缺失的含义
++   highlight .or(line)  如果没有逗号，就取整行
+
+% 1 1 0 02e51043eb99993d049ec08ec40704f4
+
+% 2 1 0 0bcaa897a17481320034434b74332404
+
+% 3 1 0 0448b90ac2faa10c013262eb83a5e19b
+
+% 0 1 0 13f730e365ab60dc001685c558a21b85
+
+% 1 1 0 02d6763fab2dfe5f14f6b4b64f427b79
+
+% 1 1 0 136d267ff733a60e0f6246170d49df5f
+
+% 2 1 0 1525a46c87e9e0571e7d21b8e7c42b7a
+
+% 0 1 0 08a86cbdc9b8cb0109ed8ce5b435ce67
+
+% 1 1 0 0cd6459499a6bd5203d659b3bcc1b6aa
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 0 1 0 12b4883289bbb05e022141aa6a37df78
+
+% 1 1 0 0e14d1fd4b8c18d4144eed35f9f6707d
+
+@ 0 2 0 1436c2e2347174ff1701a64a9c6e343a
++ [搜索](../../soundness/modules/text.md#searching)列出了可以对文本提出的其他问题，[可选性](../../philosophy/optionality.md)则解释了为何没有 `-1`。

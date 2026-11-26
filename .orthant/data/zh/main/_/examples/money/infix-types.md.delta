@@ -1,0 +1,58 @@
+orthant 2 language
+
+@ 0 1 0 09bb6bf9a80402161cacb35c308fb6c8
++ # 由类型定义的货币
+
+@ 0 2 0 123cd0b9a2303f9f1542f5a16c59bcaf
++ 不在所提供货币之列的货币只需一行代码。它的类型是一个短语，给出 ISO 代码、名称、符号以及一个主币单位所含的辅币单位数。
+
+% 2 1 0 03319701fb7b1fd9109eb6b5cf65fbd8
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 2 0 15be15cc89f0c14c1cd4d6de5d3bd472
++   label 丹麦克朗
++   highlight "DKK"..100  代码、名称、符号、辅币单位
+
+% 1 1 0 1a59794bf2dae95c1ccef20a7d9364a8
+
+% 2 1 0 1e5f3d3378cd2de30506e46e4632b918
+
+% 4 1 0 1d36034fe87b03fe09adc64c40aa66fb
+
+% 1 1 0 08213ef59b27d7f314ca718eaa5a9754
+
+@ 0 2 0 07460a88936e8d04125ee4a27fc3674c
++   label 一笔丹麦克朗
++   highlight Money.."DKK"  代码就是货币的类型
+
+% 1 1 0 19b7a0a981e1d7b21d9f62971e5ce00b
+
+% 2 1 0 0b6c20c8abc36c7d11406d9573fb8691
+
+% 4 1 0 035661f0f1f3f181054b79cedd623dc1
+
+% 0 1 0 15ed5987d73eed5809b42116dc2cde56
+
+% 1 1 0 09e13ff629a25de31896817d2d83329c
+
+% 1 1 0 136d267ff733a60e0f6246170d49df5f
+
+% 2 1 0 1525a46c87e9e0571e7d21b8e7c42b7a
+
+% 0 1 0 08a86cbdc9b8cb0109ed8ce5b435ce67
+
+% 1 1 0 0cd6459499a6bd5203d659b3bcc1b6aa
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 0 1 0 0cc1b820709cfd670c56067bdccdf621
+
+% 0 1 0 04df2733221bf5a209c839d78d1ee1ca
+
+% 1 1 0 1c8099270d050d100568cf4a77a6d158
+
+@ 0 2 0 13c154df1dcdd167051eda4908e27cb9
++ [其他货币](../../soundness/modules/money.md#other-currencies)解释了每个位置，[中缀类型](../../philosophy/infix-types.md)则解释了它们之间的词。

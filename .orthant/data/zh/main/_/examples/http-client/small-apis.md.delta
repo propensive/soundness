@@ -1,0 +1,77 @@
+orthant 2 language
+
+@ 0 1 0 0355f7a4fc4f776f1cd0a7020f250410
++ # 一个方法读取各种正文
+
+@ 0 2 0 055a26ae9e8b111e199adc66848be20c
++ 响应用 `receive` 读取，它接受所需的类型。由类型选择正文的读取方式，并没有 `bodyAsText` 或 `bodyAsBytes` 之类需要从中挑选的方法。
+
+% 0 1 0 12705ff5e291290d17fbc8389d59ef4a
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+@ 0 2 0 01584368eacaedf817ffd646c2b0a120
++ alternative 文本
++   highlight receive[Text]  用作用域中的字符集解码
+
+% 1 1 0 0918aa61e7dd01041b06cbb513d782f6
+
+% 2 1 0 07e5184729d292740a74e219fa315afa
+
+% 3 1 0 0878d2eaeb26d1231f859d1462d0062d
+
+% 5 1 0 0080b23323e1734f08c85bbd61380a07
+
+% 0 1 0 065154808939117403bbd1dbad748e61
+
+@ 0 1 0 1c58f5e597689d0f04bf9db415f3a94c
++ alternative 字节
+
+% 0 1 0 1e07eae3d543e7d61daefff09724df3b
+
+% 1 1 0 0b07bfdc26a87ac10ffdc8b7dd1f317e
+
+% 2 1 0 1dc97ceacb3173b61a64dadfbf4c74ba
+
+% 3 1 0 05bc8bbe7ccd89b605ac66072457844e
+
+% 5 1 0 0e1b12e3b6ae11451b3a0cd875fd614f
+
+% 0 1 0 1aff5fa326e107a60f6d9883eb934343
+
+% 0 1 0 15feb55122428b2207d6a49c861c144c
+
+@ 0 1 0 012ce6db2d89c14c13194c5a7ad9a016
++   highlight receive[Json]  边读取边解析
+
+% 1 1 0 036cd4e2e7a0b66b1898c55bd1d18b6b
+
+% 2 1 0 1b14075de9369b561ff46b26f13df818
+
+% 3 1 0 05be5756fc0b0882161a5bb0cda496d5
+
+% 5 1 0 0d32ea622abf6efd0eec3cd0f1cd2ad2
+
+% 0 1 0 027978c717b8c282165ec38ecc315fac
+
+@ 0 1 0 1d496ade969e97ad0dd1f520d8ff869a
++ alternative 只要状态
+
+% 0 1 0 15276a22e25fb0fe16276aaf3c5e185c
+
+% 1 1 0 0037a493c68d77dd01a3a0f62294944a
+
+% 2 1 0 1e891049c6cafb9a0b8b7f8a19032a23
+
+% 3 1 0 021d681797c08639062444b8894d29c8
+
+% 5 1 0 05a80eaead78182309e0fa63ca4de78a
+
+% 0 1 0 1518244c7b91d27909febb94aa7cc038
+
+% 0 1 0 18eafb32caed3dd50f976e787bd035ca
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 3 0 10df5254289637ad1d649d0858915c18
++ 本示例只编译，不运行，因为它需要网络。[读取响应](../../soundness/modules/http-client.md#reading-the-response)有更多内容，[精简 API](../../philosophy/small-apis.md)则给出了理由。

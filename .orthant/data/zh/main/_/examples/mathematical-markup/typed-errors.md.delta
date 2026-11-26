@@ -1,0 +1,49 @@
+orthant 2 language
+
+@ 0 1 0 0792eb6484c52e8d11e9d68e7baa6883
++ # 并非每个公式都有简写
+
+@ 0 3 0 116f354c04efa16a16b2fc1c699ca7dc
++ Ergo 只涵盖 MathML 的一个子集，因此把树转换回 Ergo 可能失败：例如连续的文字就没有字形。`Ergo.serialize` 在其类型中写明这一失败，而不会写出近似的结果。
+
+% 0 1 0 12705ff5e291290d17fbc8389d59ef4a
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 190580def8f5e8bb19913ae2f0bb7973
++   label 错误既未处理也未声明
+
+% 0 1 0 1477c34ff41c7c99183443e1d3238ae1
+
+% 1 1 0 0960c596329e4eb20a0b442aaa85c43a
+
+% 0 1 0 18b0804c79265d10007c7df49639b1f0
+
+% 1 1 0 1fa9061bc2e1dd761a2d650d2cc18e27
+
+@ 0 2 0 008001f108933ebf1c9deca015a78a34
++   label 声明错误
++   highlight raises..Error  现在必须由调用者决定
+
+% 1 1 0 07a4ce27b07a40c50c7a525562874c98
+
+% 0 1 0 00d7d17d7b169df0053f7ff92a1bd018
+
+% 1 1 0 01dcb708cc7fccdf0d39a0741270e197
+
+@ 0 2 0 1a200606358afc3e111134a1833ed83b
++   label 或者用缺失来代表它
++   highlight safely  没有简写的树不给出任何文本
+
+% 1 1 0 05611013c719b01b165406bacdd3528b
+
+% 0 1 0 13f9bd6ae8baea3115541ca9f6389ab6
+
+% 0 1 0 18eafb32caed3dd50f976e787bd035ca
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 2 0 11ee9c6c5809e35b133be47ba424824e
++ [序列化回去](../../soundness/modules/mathematical-markup.md#serializing-back)介绍了这一保证，[错误处理](../../philosophy/error-handling.md)则介绍了各种选择。

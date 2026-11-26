@@ -1,0 +1,51 @@
+orthant 2 language
+
+@ 0 1 0 02fa22ad2e0dc9b61c134605967baa27
++ # 属于其作用域的序列化器
+
+@ 0 3 0 1d52b73b2805b7030ff412be0053a4a5
++ `Json.emit` 在一个纤程上序列化文档，并在消费者请求时通过迭代器交出文本。纤程必须有监管器，因此该调用在 `supervise` 块之外无法编译，而该块在纤程运行期间不会结束。
+
+% 0 1 0 12705ff5e291290d17fbc8389d59ef4a
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 1c12e386960ffcd315849c3a9fcd89f7
++   label 无人监管的纤程
+
+% 0 1 0 1477c34ff41c7c99183443e1d3238ae1
+
+% 1 1 0 0960c596329e4eb20a0b442aaa85c43a
+
+% 2 1 0 1f1bb34802ae54f10e5a71ef5422d5e0
+
+% 3 1 0 0735d3317a7324b9139f64b560090561
+
+% 5 1 0 076b571d37f60c0317c47e4f8aff0acc
+
+% 0 1 0 0cacacfc442f45bf180003df94e37356
+
+% 1 1 0 1c86c146ffae13e00e6d20812e5937e1
+
+@ 0 2 0 0c9bffed384548b416f978e7e6181da7
++   label 同一个纤程，位于作用域内
++   highlight supervise  纤程不能比这个块存活得更久
+
+% 1 1 0 146e52b9b1bfa7500115eacfcf32a199
+
+% 2 1 0 0f4dae2fad82ed5719158dc125e5a917
+
+% 3 1 0 14416cd013d886bf055cf72d649113b9
+
+% 5 1 0 1f99389f6a10a12018a129eb17fbadab
+
+% 0 1 0 1c4dd777e6a1e6db125eba8d436c900b
+
+% 0 1 0 18eafb32caed3dd50f976e787bd035ca
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 2 0 1a5943f513f1b7841933bb6ec5037c44
++ [格式化](../../soundness/modules/json.md#formatting)比较了各种输出形式，[结构化并发](../../philosophy/structured-concurrency.md)则解释了监管。

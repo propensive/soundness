@@ -1,0 +1,57 @@
+orthant 2 language
+
+@ 0 1 0 1696787efc20b98e16fcbb6e16747589
++ # 指明算法的排序
+
+@ 0 3 0 1f4762c50bb328331b9fccd5809d71b0
++ 算法决定相等的元素是否保持原有顺序，以及排序在接近有序的数据上表现如何。它由导入选择，作用域内没有选择时，排序无法编译。
+
+% 2 1 0 1e209017f4d6fb5b1870d88ba037d2ed
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 08054d500d0f40e306af3f2dc4e80875
++   label 尚未选择算法
+
+% 0 1 0 1477c34ff41c7c99183443e1d3238ae1
+
+% 1 1 0 0960c596329e4eb20a0b442aaa85c43a
+
+% 1 1 0 07598b11de1a24750d63af0b1cbf48e2
+
+% 2 1 0 05ebc91124cc2c751f3a492083d83e2d
+
+% 1 1 0 10318fa29d2833340a1f04835f991713
+
+@ 0 2 0 1498229640590b24033fad6d13b1fb87
++   label 稳定排序
++   highlight sortingAlgorithms.timsort  稳定，在有序数据上表现良好
+
+% 1 1 0 0e50133533c86c561118b0d1f85abf13
+
+% 0 1 0 1e5f4b9c319e82950983f04a2f5db149
+
+% 1 1 0 0c2f182f94c71e0b11ad9915f813b13e
+
+% 2 1 0 139b56aefe9b44d814ae565d35bb70b2
+
+% 1 1 0 1471d2e4a9f13c110594779201d40903
+
+% 1 1 0 136d267ff733a60e0f6246170d49df5f
+
+% 2 1 0 1525a46c87e9e0571e7d21b8e7c42b7a
+
+% 0 1 0 08a86cbdc9b8cb0109ed8ce5b435ce67
+
+% 1 1 0 0cd6459499a6bd5203d659b3bcc1b6aa
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 0 1 0 08349bfb3c1c95b619e4e927165c498b
+
+% 1 1 0 09f54fdfe39eab0a000d82f15794894e
+
+@ 0 3 0 02d70fa007029c591e49df8cdebec13a
++ Timsort 是稳定的，因此 `Othello` 仍排在同样长的 `Macbeth` 之前。[排序](../../soundness/modules/collections.md#sorting)列出了各种算法，[声明式上下文](../../philosophy/declarative-context.md)则解释了这类选择。

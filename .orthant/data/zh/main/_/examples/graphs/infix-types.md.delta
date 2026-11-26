@@ -1,0 +1,55 @@
+orthant 2 language
+
+@ 0 1 0 0351517addf9190319af75a1cefcc1a2
++ # 适用于任何图的方法
+
+@ 0 3 0 0d9787960222b944009ab0d08826403d
++ 方法无需在 `Dag`、`Digraph` 和 `Map` 之间做出选择。它要求一个 `is Nodal by Text` 的类型，即节点为文本的图，于是图的那套词汇就可以用在这个类型的值上，不论它具体是什么。
+
+% 2 1 0 10ba5aab45f7cf56133acf1814eb5c18
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 062a82275d9d6fed16a470978af4c95a
++   label 仅适用于 `Dag`
+
+% 1 1 0 1d54280f52327d870859c4597e7d4c7c
+
+% 0 1 0 18a9be254b4038fd0f94db471f83e20f
+
+% 1 1 0 11319c089c72997513c57a14747510e2
+
+@ 0 2 0 0390153b92c2b1be0e7e721ca5c01302
++   label 适用于任何文本图
++   highlight graph..Text  类型，用一个短语描述
+
+% 0 1 0 1accf43fe927975e1dc8da9a374d03bf
+
+% 0 1 0 0fd2ac3797a0477d02117fa7e01a94b3
+
+% 1 1 0 0831db4166dd7587114b3740732b8e38
+
+% 0 1 0 1efca808aee15d380cb494bfb56a4aa4
+
+% 1 1 0 14f7057c75c5a88d095b727099c5e737
+
+% 1 1 0 136d267ff733a60e0f6246170d49df5f
+
+% 2 1 0 1525a46c87e9e0571e7d21b8e7c42b7a
+
+% 0 1 0 08a86cbdc9b8cb0109ed8ce5b435ce67
+
+% 1 1 0 0cd6459499a6bd5203d659b3bcc1b6aa
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 0 1 0 1a07226b14cde02b1353a5e9e182ca74
+
+% 0 1 0 1722fa369351e34707d00371abbe90b0
+
+% 1 1 0 11850d945a044a921e40c44f4da2aa21
+
+@ 0 2 0 01867284e51a3e580e29c5ca5e59f3e6
++ [图](../../soundness/modules/graphs.md#about)介绍了 `Nodal`，[中缀类型](../../philosophy/infix-types.md)则解释了这样的类型如何阅读。

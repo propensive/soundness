@@ -1,0 +1,72 @@
+orthant 2 language
+
+@ 0 1 0 05100db2f964457200b421086bdb59ec
++ # 转过正北的角度
+
+@ 0 3 0 0058626f1223d49e10297c7d5d487465
++ 两个角度相加对任意一对角度都有定义，因为两个航向之和仍是航向。算术在一整圈处回绕，而 `canonical` 把同一个角度表示为相对正北向左或向右的转角。
+
+% 2 1 0 1e635b4e0d18a70f015010788ed283cd
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 2 0 17490609455d20250ddb9837d6b6efed
++   label 350 度再加二十度
++   highlight +  在一整圈处回绕
+
+% 1 1 0 16d0cf748ecdeff102a4a9f1ae4b11f0
+
+% 2 1 0 1b519a3ddf501b11006f8e790b884e0c
+
+% 1 1 0 0c755c944c3f3e4812da5c7efc428a4d
+
+@ 0 2 0 0b46b35449cef26605b187971511bf1c
++   label 再退回三十度
++   highlight -  在零以下回绕
+
+% 1 1 0 0419815d342fe16f00eb0f754828693d
+
+% 2 1 0 09526b0483b661cc00f26d83e7a44bd6
+
+% 3 1 0 1300ee0d3f8e171b1e232a6f066bd2da
+
+% 1 1 0 03c98fa3956c1be90581097fa46f2e1d
+
+@ 0 2 0 0267ad858315b98403db26439c414116
++   label 同一个角度，在正北左侧
++   highlight canonical  介于 −180° 与 180° 之间
+
+% 1 1 0 13de876ed110e81c020867ca9193a0b1
+
+% 2 1 0 080c18ff704e5405078711ca256f4a5d
+
+% 3 1 0 03eb14af0303df9a0a6275042705fd19
+
+% 0 1 0 0b0379f610bb8eca06da333342144db7
+
+% 1 1 0 0d3b5d0f39db83f70314c563a47abdc4
+
+% 1 1 0 136d267ff733a60e0f6246170d49df5f
+
+% 2 1 0 1525a46c87e9e0571e7d21b8e7c42b7a
+
+% 0 1 0 08a86cbdc9b8cb0109ed8ce5b435ce67
+
+% 1 1 0 0cd6459499a6bd5203d659b3bcc1b6aa
+
+% 0 1 0 1914c57b5f7a7a7700823cf0d609cd72
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 0 1 0 1fc06688a64aeefb1602a3c4ad50f54c
+
+% 0 1 0 00ce3f987c0698051888d08e293c6d6c
+
+% 0 1 0 053de1e3d675747612fcb821cd9c630d
+
+% 1 1 0 18f79eed34c3642814ffe28946950204
+
+@ 0 2 0 132b9fccf49b95801a8e13475c2abf9a
++ [角度](../../soundness/modules/geography.md#angles)介绍了两种规范形式，[全转换](../../philosophy/total-transitions.md)阐述了其中的原则。

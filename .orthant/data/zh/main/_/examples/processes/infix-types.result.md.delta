@@ -1,0 +1,61 @@
+orthant 2 language
+
+@ 0 1 0 1c797cf99eba44c4045379e9f160a9dd
++ # 自己的类型，作为结果
+
+@ 0 3 0 06e15ad8a6cfbee70a89f6f29b0bf6c9
++ `exec` 以任何 `Computable` 的类型给出结果。新类型通过映射一个已经是 `Computable` 的类型来加入，表明这一点的 given 读起来像一句话：`Int` 是可计算的，由输出的文本而来。
+
+% 2 1 0 081b3c5a8353e7390c76abb7faaece7a
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 081ebafd99b215e8088028c41ecfcd60
++   label 一个无人知道如何计算的结果
+
+% 0 1 0 1477c34ff41c7c99183443e1d3238ae1
+
+% 1 1 0 0960c596329e4eb20a0b442aaa85c43a
+
+% 2 1 0 0ef06f8307c5e5ad0d8d7894d391398c
+
+% 3 1 0 028351ac28e77a4e03f722a550f4699f
+
+% 2 1 0 1c27013acbcdd0231e2b00987c519215
+
+% 1 1 0 1c8cbebd3600742a1b0b367fbf5d82d4
+
+@ 0 2 0 1f1ccf81fe3f9d7818fd08d0e7edb21f
++   label 如何从输出中读出数字
++   highlight map  来自文本的实例
+
+% 1 1 0 130285f9747d33f6088823209ffbfbb3
+
+% 2 1 0 1dbead645d35da3309626c29d4e232a9
+
+% 3 1 0 12808e50a3a1cf4219ccbfdafb778439
+
+% 0 1 0 1cef63457efb18441c7d54aa616429f5
+
+% 2 1 0 04d4dd43d29d91dd05a3e24e9cf5cd3d
+
+% 1 1 0 00cd01ff42c97d081680a98e619874c4
+
+% 1 1 0 136d267ff733a60e0f6246170d49df5f
+
+% 2 1 0 1525a46c87e9e0571e7d21b8e7c42b7a
+
+% 0 1 0 08a86cbdc9b8cb0109ed8ce5b435ce67
+
+% 1 1 0 0cd6459499a6bd5203d659b3bcc1b6aa
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 0 1 0 00be9a8f91b3c1f71d763c7afd309848
+
+% 1 1 0 04bf1defee22cc8406297164d3f51c16
+
+@ 0 3 0 15e765fcb3d8cef6110b183f4200744d
++ [运行命令](../../soundness/modules/processes.md#running-a-command)列出了已经可计算的类型，[中缀类型](../../philosophy/infix-types.md)则介绍了书写这样一个 given 所用的词。

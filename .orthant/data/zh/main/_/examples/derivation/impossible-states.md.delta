@@ -1,0 +1,45 @@
+orthant 2 language
+
+@ 0 1 0 1237a1ac87b6f2ca120b951f7718274b
++ # 无法编码的字段
+
+@ 0 3 0 099f121d46caee2604e13b51334cb5ae
++ 派生的实例由字段的实例构建而成。如果某个字段没有实例，就无从构建，case class 也就没有实例：这一缺口在代码编译时就会被发现，而不是在第一次编码某个值时。
+
+% 0 1 0 12705ff5e291290d17fbc8389d59ef4a
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 2 0 13744fd8c15d472e0cb0e6bce2108c78
++   label 字段都可编码的 case class
++   highlight in[Json]  由 Text 和 Int 派生
+
+% 1 1 0 0678efe90cd7d6150b3f92b6357b95d3
+
+% 0 1 0 13840d4d20227fac189d875ce82acf30
+
+% 0 1 0 01cdf8e74816c8250e4ccc5a6ca6b820
+
+% 1 1 0 073095fb33c61c7e0d5d0ea69e47b7d3
+
+@ 0 1 0 0d410467abf68e23108416e8ce40a373
++   label JSON 一无所知的字段
+
+% 0 1 0 1477c34ff41c7c99183443e1d3238ae1
+
+% 1 1 0 0960c596329e4eb20a0b442aaa85c43a
+
+% 0 1 0 0ba1f7b13e93e60b02a91fae26c1df4b
+
+% 0 1 0 19ed8cd1b954e9570a29f3c66f58e6d4
+
+% 0 1 0 169bb5fdf7825f3e14ec8a8f94604508
+
+% 0 1 0 18eafb32caed3dd50f976e787bd035ca
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 2 0 1ec6e0805786023f0d4fb605f7ca3728
++ [派生失败时](../../soundness/modules/derivation.md#when-derivation-fails)列出了常见原因。

@@ -1,0 +1,59 @@
+orthant 2 language
+
+@ 0 1 0 0caeecd79b0e02221f8c57a7a3feb640
++ # 由 case class 派生的表单
+
+@ 0 3 0 1a17353dff609d851a1b4d858c5ea351
++ 表单由它所收集的类型派生。每个字段都变成一个按其类型选择、带有标注的部件，嵌套的 case class 变成一个字段组，而给类添加一个字段，就是给表单添加一个字段。
+
+% 2 1 0 1cd879c9cf40fa2711bf5985b37c946e
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 066a1a7f49d9eef00909bf58ea002c75
++   label 只有一个字段的表单
+
+% 1 1 0 0f8eb9649a46b641113e83934160cdbe
+
+% 2 1 0 0d0b398c11d42dd600d495a3896a2693
+
+% 0 1 0 0a330d0a2f487f68151b342029124e26
+
+% 2 1 0 19734b01fb445f680dc041cde19e75a3
+
+% 1 1 0 08e299e380d8ead410508a53acd0b5f7
+
+@ 0 2 0 084410c06e6ab79213dbcd56efe3a880
++   label 嵌套的 case class，变成一个字段组
++   highlight leader:..Person  表单遵循类型
+
+% 1 1 0 1ec779587d751e191ab917f3a2ae0be7
+
+% 2 1 0 0b25ebfca991c7ad037302fb44c7e848
+
+% 0 1 0 0cfe6f00907ec8af15dffcae85b6a036
+
+% 0 1 0 1e3fd59347ff999410f4d09c929bab20
+
+% 2 1 0 08e78d41c956ef5f1615e6a3f65b7b24
+
+% 1 1 0 0d22dd258da1f3b10bc5fd624f0ba7e7
+
+% 1 1 0 136d267ff733a60e0f6246170d49df5f
+
+% 2 1 0 1525a46c87e9e0571e7d21b8e7c42b7a
+
+% 0 1 0 08a86cbdc9b8cb0109ed8ce5b435ce67
+
+% 1 1 0 0cd6459499a6bd5203d659b3bcc1b6aa
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 0 1 0 0f763904aac3ceb60224537300dba089
+
+% 1 1 0 128014851ed987600c44f207ebd5a698
+
+@ 0 2 0 07b776658d543bb60b96ba2392ccceae
++ [渲染表单](../../soundness/modules/forms.md#rendering-a-form)列出了每种字段类型对应的部件。

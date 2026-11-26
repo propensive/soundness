@@ -1,0 +1,69 @@
+orthant 2 language
+
+@ 0 1 0 026812e726c4b9db1d19325b412c988f
++ # 一个 `sequence` 适用于所有集合
+
+@ 0 3 0 0c0444870c54643e0c50efd0e785d0a1
++ 由每个都可能缺失的值构成的集合，可以用 `sequence` 里外翻转：要么全部都有，要么一个都没有。这个方法只编写一次，适用于任何可遍历的东西，而结果保持调用它的那个集合的形状。
+
+% 2 1 0 0c2acdfc9a5d0bc409112c3b11536306
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 07850fe04a9b189814f40d18950ef127
++   label 一个每个元素都存在的列表
+
+% 1 1 0 009c0980766894bd146966632c20a724
+
+% 2 1 0 13b43a2fb984432602b4319ad4d81e83
+
+% 1 1 0 14164692379f751600ccc213910a121a
+
+@ 0 2 0 1492ef24b972042b10af4269599fb6cf
++   label 一个缺了一个元素的列表
++   highlight None  一处缺失就让整个结果缺失
+
+% 1 1 0 11b67ef0be17eeff05e96aa345f20d56
+
+% 2 1 0 0d686763c9ac90ae00bea409310fee38
+
+% 3 1 0 13b4af8599a82ddd1a596845798e1efb
+
+% 1 1 0 1e9aa0793ae9a9f410393b364cb6ac1b
+
+@ 0 2 0 101bc7649e63c39e18525f3f775c00b2
++   label 一个集合
++   highlight Set  给出一个 Set 的 Option
+
+% 1 1 0 0f795dedbcb7633f1282918fa3d06b80
+
+% 2 1 0 14e8d7979d9504f0006f7e2c656c7114
+
+% 3 1 0 1c3cb542db69b8eb093088fcc2f61381
+
+% 0 1 0 0d7bacb7c933b651027b3e8de988d9c4
+
+% 1 1 0 06220422c02f9a26143c3fff56762f94
+
+% 1 1 0 136d267ff733a60e0f6246170d49df5f
+
+% 2 1 0 1525a46c87e9e0571e7d21b8e7c42b7a
+
+% 0 1 0 08a86cbdc9b8cb0109ed8ce5b435ce67
+
+% 1 1 0 0cd6459499a6bd5203d659b3bcc1b6aa
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 0 1 0 0dc62eb90a65b2280aea72dc16a6bdad
+
+% 0 1 0 0bcf33917b6483dc0546b19a2d890ef4
+
+% 0 1 0 1e9b8c6d4048476e116dcfab66ca954a
+
+% 1 1 0 0a1342a76d4c41e819a42ca799be65e8
+
+@ 0 2 0 19653255ddf95154142831b80229390b
++ [对容器进行抽象](../../soundness/modules/metaprogramming.md#abstracting-over-containers)介绍了 `traverse` 以及两者背后的类型类。

@@ -1,0 +1,57 @@
+orthant 2 language
+
+@ 0 1 0 1b8a42a53c7c53e10f5a96f0a329eef7
++ # 由导入选择的设计
+
+@ 0 3 0 0b0b8613e5adefbc043d41a8a27325b1
++ 绘制进度条的那行代码说明了要计量什么以及绘制多宽。进度条的外观以及它可以使用哪些字符，由导入决定，每一项都可以独立于其他各项而改变。
+
+% 0 1 0 12705ff5e291290d17fbc8389d59ef4a
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+@ 0 1 0 11bc73b667b293b704565172ae9866f4
++ alternative 默认设计
+
+% 1 1 0 05cbf76fb6043c5d1d12cdcccad0d3a4
+
+% 2 1 0 128477e8da748bd205ddcf166f3ccea1
+
+% 3 1 0 073bf9ed7c930583165a22af9dcde9c8
+
+% 2 1 0 1760f52d38f1e7b10e5bf64a251a75bc
+
+@ 0 2 0 173294ec7914113b05be313f09f80ac0
++ alternative 箭头
++   highlight bars.arrowheadBar  Fraction 的另一种设计
+
+% 1 1 0 032e2e1fde3b56121da1215e05c50f60
+
+% 2 1 0 0c9bf3fb82c97a2215285fa08cf477cb
+
+% 3 1 0 1516e4995b91190d116aab0d2d8ac760
+
+% 0 1 0 0b0e15ccb1bf5e2419dfc7d981ca363f
+
+% 2 1 0 00ec5ac0528e221e1fa2ce0f3a12c3b0
+
+@ 0 2 0 1f35c41d3f11d54004f0445bd2841795
++ alternative 七位字符
++   highlight gaugeGlyphs.asciiGlyphs  一次性降级所有设计
+
+% 1 1 0 03b50e896b3738e5104b45e2adbe085b
+
+% 2 1 0 0cd7b06ed9eee127158c7d2de665437a
+
+% 3 1 0 0dff832750acb7320668c9d6db045a90
+
+% 0 1 0 1ac745b4027189c51cd20ad7842a542f
+
+% 2 1 0 05c78f6a33786dfa10ac8142f3741549
+
+% 0 1 0 18eafb32caed3dd50f976e787bd035ca
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 3 0 078425219e27cbc7147fb2818398a5eb
++ [选择设计](../../soundness/modules/gauges.md#choosing-a-design)和[颜色与字形](../../soundness/modules/gauges.md#colors-and-glyphs)展示了每一种的绘制效果，[声明式上下文](../../philosophy/declarative-context.md)则解释了这些导入。

@@ -1,0 +1,43 @@
+orthant 2 language
+
+@ 0 1 0 1f625407abf84a41014a171392f0852f
++ # 可能形成环的边
+
+@ 0 3 0 034415d199b6fc04099f7a4fc21e7d0e
++ `Dag` 从不含环，因此向其中添加依赖可能失败：新的边可能通回它的起点。`add` 声明了 `Dag.Error`，调用它的方法必须处理这个错误，或者同样声明它。
+
+% 0 1 0 12705ff5e291290d17fbc8389d59ef4a
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 173c58aba76aad9408a1edb72b6d25a9
++   label 一个依赖，凭信任添加
+
+% 0 1 0 1477c34ff41c7c99183443e1d3238ae1
+
+% 1 1 0 0960c596329e4eb20a0b442aaa85c43a
+
+% 0 1 0 15bca2ecb6bd0499000ffaf746bd4f4e
+
+% 1 1 0 14476bc125c07d4113ef24ab598cd107
+
+% 1 1 0 0903e558a390a7931515b580ab2a3739
+
+@ 0 2 0 178260206576879d1b35ea0e4452db81
++   label 失败，写在返回类型中
++   highlight raises..Dag.Error  调用者必须为它负责
+
+% 1 1 0 00becdc17c6c4de9172ffa1b1698e976
+
+% 0 1 0 0a0cdf6957ccfe1c0eb767ab25b4c9bd
+
+% 1 1 0 0b1578c08bf09ea209f0bdc6f87ccc96
+
+% 0 1 0 18eafb32caed3dd50f976e787bd035ca
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 2 0 08929fbaac6be76207d78d6d4ae36890
++ [编辑](../../soundness/modules/graphs.md#editing)列出了可能失败和不会失败的编辑操作，[错误处理](../../philosophy/error-handling.md)则解释了 `raises`。

@@ -1,0 +1,65 @@
+orthant 2 language
+
+@ 0 1 0 062b8bd7e37ad7100bc7d5ff0e8eafd9
++ # 像 shell 那样书写的管道
+
+@ 0 2 0 094ef2d80d915e970fd0b5006a23d9ba
++ 命令用 `|` 连接，就像在 shell 中一样，结果是一个值：一条管道，其运行和读取方式与单个命令完全相同。每个阶段仍然是受检字面量。
+
+% 2 1 0 0ec950dfdc86b16215f0209f9d04a9b0
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 0df11add522b4dec0d4e7847663d47c8
++   label 一个命令
+
+% 1 1 0 1d7200d36f71ff341e3501271d82311c
+
+% 0 1 0 0f145aace60a5a5c1f3b5135e0aa5216
+
+% 1 1 0 0d110915524b3cfd0be58acf1a86af8b
+
+@ 0 2 0 03d6560d13a04cd4009163608aa909b5
++   label 通过管道接入另一个命令
++   highlight |  一个的输出是下一个的输入
+
+% 1 1 0 0f1bbd372d8fa68a05116ec65233549a
+
+% 0 1 0 057b2590f9decb2c1842b60ffd2133cb
+
+% 1 1 0 093f7243b01980a30fd72e8e12b6f54b
+
+@ 0 2 0 020ddcb8f6d9150b181c97d7df61ce48
++   label 再接第三个
++   highlight A-Z"..sh  管道变长，而不是嵌套
+
+% 1 1 0 06c2c618cac8c8461d9b5e3e69503899
+
+% 0 1 0 1202cc3afe2b84ae17aec7d8a7a6c666
+
+% 1 1 0 1ad24413d8eab11e1c287b1722970ad2
+
+% 1 1 0 136d267ff733a60e0f6246170d49df5f
+
+% 2 1 0 1525a46c87e9e0571e7d21b8e7c42b7a
+
+% 0 1 0 08a86cbdc9b8cb0109ed8ce5b435ce67
+
+% 1 1 0 0cd6459499a6bd5203d659b3bcc1b6aa
+
+% 0 1 0 16f746828b2bb3e60bb4066c2f40a307
+
+% 0 1 0 02e6c1005672c9c80444ed0b3290de3f
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 0 1 0 0b16657394fdaf5b0a1166c80ebaa898
+
+% 0 1 0 0ea1e4d60b15b5b0062e942073d5f9ef
+
+% 1 1 0 1d6d487196cf2b450531bd291482323f
+
+@ 0 2 0 108deed747dbab3311cce6677482e4ca
++ [管道](../../soundness/modules/processes.md#piping)给出了管道组合的规则。

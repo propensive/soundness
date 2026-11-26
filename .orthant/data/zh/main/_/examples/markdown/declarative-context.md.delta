@@ -1,0 +1,55 @@
+orthant 2 language
+
+@ 0 1 0 1f465b4901735aeb07b21930a8624f32
++ # 写出的 Markdown 的宽度
+
+@ 0 2 0 1f27dc90ba2cabd906b263812bcb9367
++ 把文档写回 Markdown 用的是 `show`，而各行如何断开并不是它的参数。作用域内给出的格式化方式设定了宽度，适用于在那里写出的每个文档。
+
+% 2 1 0 1919b169c06cadfe1fc0566a58bd0534
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 0983179e909e062712164d8572d9e737
++   label 各行与其段落一样长
+
+% 1 1 0 0d83dc43ff639e5d1780914aef38c5c0
+
+% 1 1 0 18c9e21c78c42f0a1695ed8cb641f8e6
+
+% 2 1 0 1655f3cc0297876f11d14df093afbf53
+
+% 1 1 0 16133d8e360050b10a9efe904d37de0c
+
+@ 0 2 0 1be2e045969c24bf02217e44db2cf0d1
++   label 各行在三十列处换行
++   highlight Markdown.Formatting.bounded(30)  适用于作用域内的每个 show
+
+% 1 1 0 012e9b02b777dd281305c12325acdc0f
+
+% 0 1 0 022686680841867d08ec21c6463386e1
+
+% 1 1 0 1d9f6f3a2f7128a01adfd79791966142
+
+% 2 1 0 04058169dc669fd307455b2d4592f1d8
+
+% 1 1 0 1a5380d042c9598e0614719eef72cffc
+
+% 1 1 0 136d267ff733a60e0f6246170d49df5f
+
+% 2 1 0 1525a46c87e9e0571e7d21b8e7c42b7a
+
+% 0 1 0 08a86cbdc9b8cb0109ed8ce5b435ce67
+
+% 1 1 0 0cd6459499a6bd5203d659b3bcc1b6aa
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 0 1 0 14850a09f6384c9f159ab6d95b562121
+
+% 1 1 0 02c371e50557b52a07c2c78bb855e0e2
+
+@ 0 2 0 13b28648afa2beea007057fe2c5d49dc
++ [写回 Markdown](../../soundness/modules/markdown.md#writing-markdown-back)给出了其余内容，[声明式上下文](../../philosophy/declarative-context.md)则给出了其中的道理。

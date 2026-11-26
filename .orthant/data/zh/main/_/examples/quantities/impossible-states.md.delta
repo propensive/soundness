@@ -1,0 +1,71 @@
+orthant 2 language
+
+@ 0 1 0 0cb04c72c9f65c1f1b4f7a8b1d21559b
++ # 两个温度不能相加
+
+@ 0 3 0 065da360141acf961709ed81d5e2a383
++ 三十度加三十度并不是六十度的任何东西。零点任意的温标上的读数是 `Temperature`，它不是量，只有以开尔文计的差值才能与它相加。
+
+% 2 1 0 1ef2e262083bb2d90d84a5200517b56c
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 09371fe0a3bfb5fc05d11cb34ae42c58
++   label 读数加读数
+
+% 0 1 0 1477c34ff41c7c99183443e1d3238ae1
+
+% 1 1 0 0960c596329e4eb20a0b442aaa85c43a
+
+% 0 1 0 0ef6fc0d5d4ffc1f1810f4f9a793af4d
+
+% 1 1 0 1295490e2f0a521b0dfa761f47f078e3
+
+@ 0 2 0 12ff44483c6ecf471368425a0f7aa645
++   label 读数与升温
++   highlight 5*Kelvin  差值，而不是读数
+
+% 1 1 0 1a2a2c026ad516190160d8df99efe6f5
+
+% 2 1 0 0d4e947dd0f0637113cf147f532e27c9
+
+% 1 1 0 09abf237442f098711f14e9cbb434a3a
+
+@ 0 2 0 01d30e133e9da959031fc7a55012c602
++   label 两个读数之差是升温
++   highlight noon..Celsius(30)  以开尔文计的量
+
+% 0 1 0 1accf43fe927975f1dc8da9a374d03c0
+
+% 1 1 0 1355c71f5d40d7ac08d3588c7243e073
+
+% 2 1 0 11315289712ed0261616647d8ca34855
+
+% 0 1 0 1423d05641427bf41d4d1f4ea703d20e
+
+% 1 1 0 0afb0fc42878b45c0e69774b97da55f3
+
+% 1 1 0 136d267ff733a60e0f6246170d49df5f
+
+% 2 1 0 1525a46c87e9e0571e7d21b8e7c42b7a
+
+% 0 1 0 08a86cbdc9b8cb0109ed8ce5b435ce67
+
+% 1 1 0 0cd6459499a6bd5203d659b3bcc1b6aa
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 0 1 0 039c7e2e3a090ccb1aad9a7abe83ff1d
+
+% 0 1 0 1ff46eadb86ffabc103c1dc6d8e7c8b4
+
+% 0 1 0 14988bf71353f189001f27c8d0c1ee66
+
+% 0 1 0 1f8f42dfeb683d4818f8d627dedbe98b
+
+% 1 1 0 0972edc65ad4603f06910c01620ddc38
+
+@ 0 1 0 02603c2a3f0dbd83109eec368326b62b
++ [温度](../../soundness/modules/quantities.md#temperature)介绍了各种温标。

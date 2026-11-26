@@ -1,0 +1,59 @@
+orthant 2 language
+
+@ 0 1 0 0b09f50980960f230f41275d122e6984
++ # 规范模式的终端，仅限一个块
+
+@ 0 3 0 1a91fe34a33e030b119be14d0183cb17
++ 守护进程的启动器让终端保持在原始模式，这对于需要带回显和 Backspace 的一行输入的命令并不合适。`cooked` 在一个块的执行期间请求规范模式，块结束时原始模式就会恢复。
+
+% 0 1 0 12705ff5e291290d17fbc8389d59ef4a
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 1b5e8dd3e9bdaa121ec275ee61638bf6
++   label 一个问题，在原始模式下提出
+
+% 1 1 0 1b6f4a9bf2d7c80a0eba041ecc1645a8
+
+% 2 1 0 043e93282e26fc7916f8c05b56abecaa
+
+% 3 1 0 0f94ab15391452f007431429407986ed
+
+% 5 1 0 169474750753681a0e6b04784c7b6fd2
+
+% 6 1 0 0406fdda264de0a41d41dcfdf62c0920
+
+% 0 1 0 0b89e0b20cae50f305f3e7d13ae91df9
+
+% 1 1 0 00d76993db74dc200df4758809e7790c
+
+% 1 1 0 15c02c11820acf4a073d29a79539fc62
+
+@ 0 2 0 1a5a854a7a42553109b1734bb9056f2e
++   label 同一个问题，在规范模式的终端中提出
++   highlight resident.cooked:  规范模式，直到块结束
+
+% 1 1 0 1d7786f2a5c706f5142416cd7bc2cb37
+
+% 2 1 0 170c06277646d03519bc6e19c0ba6c7e
+
+% 3 1 0 0726341765094dff034efa4fd24040eb
+
+% 5 1 0 15f1407e5ccf00660e1f91257ae8ec88
+
+% 6 1 0 0949b6884a3881371937c60c6ddab0ff
+
+% 0 1 0 15f6a5c46abf05510b567b57ec4b249e
+
+% 0 1 0 16e4abc28e819e3d0a3ab2fdc62014e2
+
+% 1 1 0 175eba0219a5080d0ece949de7ddb649
+
+% 0 1 0 18eafb32caed3dd50f976e787bd035ca
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 4 0 15feca10130a90071680aa21c5b7303b
++ 本示例只编译，不运行，因为它定义了一个完整的程序。[请求规范模式的终端](../../soundness/modules/daemons.md#asking-for-a-cooked-terminal)读取了回答，[定界作用域](../../philosophy/delimited-scopes.md)说明了为何把模式借给一个块，而不是切换它。

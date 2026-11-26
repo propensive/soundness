@@ -1,0 +1,44 @@
+orthant 2 language
+
+@ 0 1 0 1574359916a00a011dba2b922add0da2
++ # 一段标记的类型
+
+@ 0 2 0 18bfd68d0781be960927c4c42581bed0
++ HTML 值的类型可以用一个短语说明它是哪个标签、可以包含什么，以及受哪个规范约束：流内容，或者 WHATWG 标准中的图片元素。
+
+% 0 1 0 12705ff5e291290d17fbc8389d59ef4a
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 2 0 1469e4e5f139f2fe06fc86ff8cf6e657
++   label 任何流内容
++   highlight Html..Flow  规范的流内容中的一个标签
+
+% 1 1 0 15ae540fb4892c6d1511b6ab3c7fdf40
+
+% 2 1 0 1ab8980af7392eff1ce460dde5f59ebf
+
+% 4 1 0 074abbae6d244b7d132942924573630c
+
+% 1 1 0 07acc1aa015644491259d9a6ebd4bfbd
+
+@ 0 2 0 05d380e3b767f4a311b121829ec385e3
++   label 一个标签，受一个规范约束
++   highlight Html.Element..Whatwg  一个标签，以及定义它的规范
+
+% 1 1 0 1bf46b531310627d1576bfff1d423d41
+
+% 2 1 0 043e01431c7949a00d240cb65a69bef2
+
+% 4 1 0 16cc5399a58dca1b13eac43696b6362c
+
+% 0 1 0 0c8b7a0b400ee0cc1c477ea3ddef8d4e
+
+% 0 1 0 18eafb32caed3dd50f976e787bd035ca
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 2 0 1b538ceca2ab19541a7a3ade184f59c1
++ [精确类型](../../soundness/modules/html.md#precise-types)给出了 `of`、`over` 和 `in` 三种细化，以及各种内容模型。

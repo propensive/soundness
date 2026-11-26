@@ -1,0 +1,56 @@
+orthant 2 language
+
+@ 0 1 0 0d4ebb3a2ae30d61093e2c0b551ae72b
++ # 位集和其他集合一样是集合
+
+@ 0 3 0 1a1b7e8fd062e87d1e7b1fa6bac44952
++ `Bitset` 用位保存成员，`Set` 用哈希表保存成员，但两者都没有专属于自己的成员判断、交集或差集方法。`has`、`intersect`、`except` 和 `size` 在两者上名称相同，只有构造器表明哪个是哪个。
+
+% 0 1 0 12705ff5e291290d17fbc8389d59ef4a
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 0 1 0 09151e915551b61005dcf2f69de0ea37
+
+@ 0 1 0 1977587663f2e43b0200b5d6879c687d
++   highlight Set  一张哈希表
+
+% 1 1 0 1dbba91536d541f21f6c0d09a6092a9a
+
+% 2 1 0 19bc15e397e7f92d03b8b3820cf09506
+
+% 0 1 0 135832fb8b53866a005e08fd0d96f4d0
+
+% 0 1 0 0de19e11b56357ba15bb9a9b0961faaa
+
+% 1 1 0 0038a24d67c3bc810dddb110e682f57c
+
+% 2 1 0 16d0900a2df379e2130e35739320a249
+
+% 3 1 0 07b3d586fdeadd791b984007d85df348
+
+% 0 1 0 11ed9def911460390e8a49bee0bbf28e
+
+@ 0 1 0 11529276c3c06aee0bce6fa0a4ed77d0
++   highlight Bitset  每个可能的成员一位
+
+% 1 1 0 018f615808b34000040561a0671c905d
+
+% 2 1 0 1322a3ef3e63ab3818503c1e9077ecd6
+
+% 0 1 0 14bf8483a87570750886868c884e14e3
+
+% 0 1 0 0bd2115ccbe5974c02566552ea5a7b6e
+
+% 1 1 0 1af95d82e3eeac200133787b0de1995e
+
+% 2 1 0 1c6e4ef5c1356d5c0654cff3ab100fde
+
+% 3 1 0 0c546e5c378fdcbd1b5887974faed769
+
+% 0 1 0 18eafb32caed3dd50f976e787bd035ca
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 2 0 1d2531d65d4409fd1c4b8b8e3820b718
++ [整数集合](../../soundness/modules/flags.md#sets-of-integers)说明了何时用位是更好的选择，[精简 API](../../philosophy/small-apis.md)说明了这些名称为何共用。

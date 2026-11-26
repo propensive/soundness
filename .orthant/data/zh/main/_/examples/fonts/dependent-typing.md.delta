@@ -1,0 +1,43 @@
+orthant 2 language
+
+@ 0 1 0 17bb16f380fede9e171825b2fcbfa66c
++ # 每个 PDF 查看器都有的字体族
+
+@ 0 3 0 094a0593cd34f57e012e9a0274dad00f
++ 字体族的名称就是它的类型：`Typeface["Times"]` 是一个 `Typeface of "Times"`。供给按这个类型查找，而 PDF 的标准字体已经有各自的供给，因此编译器能分辨出查看器一定具备的字体族和它未必具备的字体族。
+
+% 0 1 0 12705ff5e291290d17fbc8389d59ef4a
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 2 0 1a44d4d064adff390493b15b55d0abd8
++   label 标准十四种字体之一
++   highlight Typeface["Times"]  在印刷媒介中已有供给，无需声明
+
+% 1 1 0 084c449b37cdb1ed0fab45e56e172139
+
+% 2 1 0 00b58cc673af8782120f441dc36586a6
+
+% 0 1 0 153e909a9114111f0ee47ba9b823f57b
+
+% 1 1 0 03981c8e37bf58451f07df3323421bf4
+
+@ 0 1 0 0ca8153b4cefe7bd1fe488f3c139a4c2
++   label 标准没有定义的字体族
+
+% 0 1 0 1477c34ff41c7c99183443e1d3238ae1
+
+% 1 1 0 0960c596329e4eb20a0b442aaa85c43a
+
+% 2 1 0 052b5d53c564213f191f74be413a911f
+
+% 0 1 0 1c4cb0db1229a5a2089e748419702879
+
+% 0 1 0 18eafb32caed3dd50f976e787bd035ca
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 2 0 1108038c2dcfb21b04bd4034a4efdb0a
++ [字体](../../soundness/modules/fonts.md#fonts)介绍了字样与其供给的配对。

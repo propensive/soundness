@@ -1,0 +1,51 @@
+orthant 2 language
+
+@ 0 1 0 0fc057af5e856a15089f0497a699a425
++ # 编译时检查的路径字面量
+
+@ 0 2 0 0977b4e09347723f0f96df6c00987cdd
++ 写成 `p"…"` 的路径由编译器读取，编译器根据其形状判断它是 POSIX 路径还是 Windows 路径。两者都不是的文本是编译错误。
+
+% 0 1 0 12705ff5e291290d17fbc8389d59ef4a
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 0c3543a8827ba53b15acb0476db5f6ff
++   label 既没有根也没有驱动器
+
+% 0 1 0 1477c34ff41c7c99183443e1d3238ae1
+
+% 1 1 0 0960c596329e4eb20a0b442aaa85c43a
+
+% 0 1 0 13a0d3e3f5fc678e00a86e310ab4632f
+
+% 1 1 0 0d854a9a7851081d14250f4be53afe21
+
+@ 0 2 0 15b0d68e77d958a101f867288f23cc4b
++   label 一个 POSIX 路径
++   highlight /home  有根，它就是 POSIX 路径
+
+% 1 1 0 0c8f8d8efaa64baf15b053d6335328e1
+
+% 0 1 0 0b9e5eb181cf016c16115b3c0c71f03b
+
+% 1 1 0 17925de962ed61320e2cf595617cabbd
+
+@ 0 2 0 043b37991c63507015610fb03e5cb492
++   label 它的名称都在其类型中
++   highlight Path..Posix  叶节点在最前
+
+% 1 1 0 1d12759f7cf9e21b0840a673a5fe6493
+
+% 0 1 0 1ed25c85eabb703a134e8a30314213a7
+
+% 0 1 0 0d0dcb7ee235c073119e80b8999aa64a
+
+% 0 1 0 18eafb32caed3dd50f976e787bd035ca
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 2 0 187d0950a884179e1b94c816214c65a8
++ [构建路径](../../soundness/modules/paths.md#building-a-path)介绍了这种字面量，[构造即安全](../../philosophy/safety-by-construction.md)则阐述了其原则。

@@ -1,0 +1,42 @@
+orthant 2 language
+
+@ 0 1 0 1aa40937c7e5ef0a030f7eb7f3a6fc71
++ # 某个媒介中的字体
+
+@ 0 3 0 07319c674ee050ce1daf944e5580699e
++ 供给是为某个媒介中的某个字体族声明的，而它的类型恰好说明了这一点：`(Typeface of "Inter") is Typesettable in Web`。`Font in Web` 用于浏览器，`Font in Print` 用于 PDF，每一种都只能由它自己媒介中的供给创建。
+
+% 0 1 0 12705ff5e291290d17fbc8389d59ef4a
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 0 1 0 16e54041ae79e0700986860ba2a53bbb
+
+@ 0 1 0 1690283b2839e0491d6215e3daec7257
++   highlight Font..Web  样式表或 SVG 唯一接受的字体
+
+% 1 1 0 1d1b4168faced54c19ced01e0214d990
+
+% 2 1 0 0227fb968f06d91501f346c550519157
+
+% 0 1 0 05845ddae64c33d7187455fded880a7f
+
+% 0 1 0 0045a676f720f3c0032953604c3d47d5
+
+% 0 1 0 0f815ba2b91151891d3d3ef4008324ed
+
+@ 0 1 0 01d148d521ccc09e0b2ba952fd346e1f
++   highlight Font..Print  由 `Print` 为 Helvetica 提供的供给创建
+
+% 1 1 0 1cd14cba0ea54224043eddd84ee8c69f
+
+% 2 1 0 1f9cbcaa805eb9ef09cfc18c939968a8
+
+% 0 1 0 1902b26fa076f4e7076418903db8d6bc
+
+% 0 1 0 18eafb32caed3dd50f976e787bd035ca
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 3 0 01a7b5b947cc3c9e1c40499e1fc34376
++ [提供字体族](../../soundness/modules/fonts.md#providing-a-typeface)以表格列出了各种供给及其媒介，[中缀类型](../../philosophy/infix-types.md)介绍了连接这些类型的词。

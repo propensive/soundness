@@ -1,0 +1,36 @@
+orthant 2 language
+
+@ 0 1 0 0473520046be12b8037a232db8a5c380
++ # 同一个解析器，用于编译时和运行时
+
+@ 0 2 0 193aa5597461eb571ebbf1edc412db78
++ 字面量由编译器检查，以后不会失败。在运行时到达的文本由同一段代码解析，在那里失败是一个写在类型中的错误。
+
+% 0 1 0 12705ff5e291290d17fbc8389d59ef4a
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+@ 0 2 0 0edde055d4a237681176a6548da9d6fb
++ alternative 不会失败的字面量
++   highlight media"text/plain"  由编译器检查
+
+% 1 1 0 11e94fd6b6287f5f0a9b1c51e083c96e
+
+% 0 1 0 092e8500674d196d07471e4af9cc2776
+
+@ 0 2 0 153918556aaf10cc03b237542858c6bf
++ alternative 来自外部、可能失败的文本
++   highlight raises..MediaType.Error  同一个解析器，在运行时
+
+% 1 1 0 0e515908d7179a4301f2f59ceea06524
+
+% 0 1 0 038787ffebd303ad0f902c49214f1713
+
+% 0 1 0 139a61ed403091e118559c15f41a4c66
+
+% 0 1 0 18eafb32caed3dd50f976e787bd035ca
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 2 0 1fe9db3c956c3dd4054222989d109db3
++ [在编译时与运行时之间选择](../../soundness/modules/interpolation.md#choosing-between-compiletime-and-runtime)介绍了同时提供两者的惯例。

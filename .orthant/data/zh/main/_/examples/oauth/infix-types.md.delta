@@ -1,0 +1,55 @@
+orthant 2 language
+
+@ 0 1 0 1f827c6cc8d15c86107b0bc61c309aed
++ # 以其方案命名的凭据
+
+@ 0 3 0 0d3af941cbc5cbf80bbc627c236b899a
++ API 的规范指定了它的安全方案，并说明每种方案需要什么。凭据的类型中包含这两者：`"stage_door" is Credential to Authorization` 是用于该名称方案的 OAuth 令牌，不能用一个普通的密钥来代替。
+
+% 0 1 0 12705ff5e291290d17fbc8389d59ef4a
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 18750964ad57956b0cb724b6e9e39810
++   label 在方案需要令牌的地方给出密钥
+
+% 0 1 0 1477c34ff41c7c99183443e1d3238ae1
+
+% 1 1 0 0960c596329e4eb20a0b442aaa85c43a
+
+% 0 1 0 07f04a2fe736d97e1270a1e250c4762f
+
+% 1 1 0 192d5388336df0d415571d1aa45073f0
+
+@ 0 1 0 07cbb7b5eb83d6d50eb03ac173dd2338
++   label 为接受密钥的方案给出密钥
+
+% 0 1 0 15430ddc1b5deda50dde830575ac304b
+
+% 1 1 0 08194f34d8b19172048eb372bf375c5f
+
+% 2 1 0 1981be3b3d5e6a4e0d4804db952915a0
+
+% 1 1 0 0c73ede25c93f2b11d73f0c810ea2df4
+
+@ 0 1 0 13aca10c9c49e64708e6c0b2207499f4
++   label 以及为接受令牌的方案给出令牌
+
+% 0 1 0 1383037c0e1f164f09a90315feab6032
+
+% 1 1 0 1a9b484facdbb1861403ad4f69b0ca6c
+
+% 2 1 0 1f1502c1705377fc1a8aafb3a42f40ee
+
+% 0 1 0 19e54cdac1273c7a1d69824665957a58
+
+% 0 1 0 0ecd945ebe86c7980db514330503ef72
+
+% 0 1 0 18eafb32caed3dd50f976e787bd035ca
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 3 0 1a252158c9c01dce00e301398c28d096
++ [类型化客户端的凭据](../../soundness/modules/oauth.md#credentials-for-a-typed-client)说明了客户端如何找到凭据，[中缀类型](../../philosophy/infix-types.md)则解释了这些词。

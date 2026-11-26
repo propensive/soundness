@@ -1,0 +1,51 @@
+orthant 2 language
+
+@ 0 1 0 1d267f347a5ed6fb006c0f741f738ef3
++ # 违反规则的名称无法编译
+
+@ 0 2 0 0f39b3f23900166e06f16179c45a40ba
++ 命名空间以类型的形式陈述它的规则，`n"…"` 插值器在代码编译时按照这些规则检查字面量。以 `0` 开头的标签在写出它的地方就被拒绝。
+
+% 0 1 0 12705ff5e291290d17fbc8389d59ef4a
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 0a3a9b6abffdf8510e9b8563052a95c0
++   label 以 0 开头的标签
+
+% 0 1 0 1477c34ff41c7c99183443e1d3238ae1
+
+% 1 1 0 0960c596329e4eb20a0b442aaa85c43a
+
+% 2 1 0 0e2cb3e0424ca734006dc040ff40c19c
+
+% 4 1 0 10f5be93dc3687971018c9c5d092842a
+
+% 5 1 0 1ea8e4fad7fd24b2060de0e51f3fe062
+
+% 0 1 0 01b94c37e1e77f711f5c095240d940cf
+
+% 1 1 0 0083077362449e910aa962d9a4484fea
+
+@ 0 2 0 01b2dd86a66d0f7d184ddffa8f9c28bf
++   label 遵循规则的标签
++   highlight n"release"  在代码编译时检查
+
+% 1 1 0 17e2ce4a56514d3407b4d51b3081ae00
+
+% 2 1 0 1ef0c4616e9402b20ef7f700c7c858b1
+
+% 4 1 0 1e3b1e26a2ae8e7904a6df0ad8f93023
+
+% 5 1 0 1154faa057822005028f95fb0a7edd22
+
+% 0 1 0 1ef49101cb44ad441e74af30f5ca0256
+
+% 0 1 0 18eafb32caed3dd50f976e787bd035ca
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 3 0 0d2c035b2bf45ecb0d1b9c7e73ed1cb1
++ [写出名称](../../soundness/modules/names.md#writing-a-name)解释了字面量如何获得它的类型，[构造即安全](../../philosophy/safety-by-construction.md)则解释了为什么检查应当放在这里。

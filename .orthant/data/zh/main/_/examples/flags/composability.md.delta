@@ -1,0 +1,63 @@
+orthant 2 language
+
+@ 0 1 0 1e20685f5d15ae7a0a3ba2d3907d486c
++ # 标志，作为分支的集合
+
+@ 0 2 0 1e348bd50594a5541005e8e18b38985c
++ 一组标志就是一个字，对集合一无所知。`set` 把它的标志作为由枚举分支构成的普通 `Set` 给出，于是 `Set` 能做的一切都适用于它们。
+
+% 2 1 0 1237b3ad413940c316cc62bf55f040bd
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 0580cea411e148600b908b85c36c6455
++   label 两组标志
+
+% 1 1 0 02ba7fa20a7751d509560b62af0158bb
+
+% 2 1 0 1c5a01ff52e0fcae1ff9f3e6ee4d510d
+
+% 3 1 0 1f4235f75d5482e41d33eefeb91ddbb7
+
+% 5 1 0 1fbcfb06cb5beb5f1960a55bb43a3c79
+
+% 6 1 0 1ad204b8aa24aaa415cc41112432fba5
+
+% 1 1 0 1bd661b8228bc72213e544c05fdb7861
+
+@ 0 2 0 052597a349ace7240c2583f2dfbcd766
++   label 它们的共同之处
++   highlight intersect  `Set` 的运算，而不是 `Flags` 的
+
+% 1 1 0 19f621613013efbb1f6afc2d4b29f039
+
+% 2 1 0 02dce35b4f4ccdf516c9f045da555fde
+
+% 3 1 0 1aac4f3327cbeae909f2c9b31e8cfcc4
+
+% 5 1 0 12a91eff9c79a5d10731431e57e1ba30
+
+% 6 1 0 19b0f658d2bfa64f039ddfc4bd798c2b
+
+% 0 1 0 1a0c92917ed3d94c0d3a409faa6940bb
+
+% 1 1 0 077e2db6be5b89ad0d775c1051cc668d
+
+% 1 1 0 136d267ff733a60e0f6246170d49df5f
+
+% 2 1 0 1525a46c87e9e0571e7d21b8e7c42b7a
+
+% 0 1 0 08a86cbdc9b8cb0109ed8ce5b435ce67
+
+% 1 1 0 0cd6459499a6bd5203d659b3bcc1b6aa
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 0 1 0 0a46d06d58d086451bc7eff526e1c19f
+
+% 1 1 0 0c1183ac0c2e1b410e05844179947fbb
+
+@ 0 2 0 0aa8e983bf604d340033586d97f5ebd3
++ [作为集合的标志](../../soundness/modules/flags.md#flags-as-a-set)介绍了 `set`，[可组合性](../../philosophy/composability.md)说明了为何只需一次转换。

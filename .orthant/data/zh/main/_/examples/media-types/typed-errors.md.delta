@@ -1,0 +1,65 @@
+orthant 2 language
+
+@ 0 1 0 0f17b591212fcd841afa2e4066d88ddb
++ # 可能不是媒体类型的文本
+
+@ 0 2 0 020cd49ec526710b03d82db3ba6d282e
++ 以文本形式到来的媒体类型会被完整解析，而解析可能失败。在代码说明失败时如何处理之前，`as[MediaType]` 无法编译。
+
+% 2 1 0 088046a66eec16300abc5d31a313ad0e
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 01bbc411c655cae402fb02c852bbb2a1
++   label 失败未被考虑到
+
+% 0 1 0 1477c34ff41c7c99183443e1d3238ae1
+
+% 1 1 0 0960c596329e4eb20a0b442aaa85c43a
+
+% 0 1 0 06c93e8b5f3428290413af2a066ceac5
+
+% 1 1 0 03f81bff05def04b13ab8035f307fe00
+
+@ 0 2 0 199e800cbb0c998304ce2fc51500d5d6
++   label 失败已经声明
++   highlight raises..MediaType.Error  由调用者决定
+
+% 1 1 0 0d8987e8cd94b3c2147053dadd877e2c
+
+% 0 1 0 19ac2d1e9293c1f01d1a8734834918fe
+
+% 1 1 0 0f621ba43c962c091e4a1fe089293eb9
+
+@ 0 2 0 1399f50c965e6f0515eee4ebecd5c7dc
++   label 或者由默认值取而代之
++   highlight or(media"application/octet-stream")  缺失在这里意味着什么
+
+% 1 1 0 1021ace6d00595280f87d804adf59ee9
+
+% 0 1 0 12004cc25121174c173764fb1585d072
+
+% 0 1 0 1525c1596aa12d8b017e0b6251fefe4a
+
+% 1 1 0 1e23800108647aa519ce02746f9a9162
+
+% 1 1 0 136d267ff733a60e0f6246170d49df5f
+
+% 2 1 0 1525a46c87e9e0571e7d21b8e7c42b7a
+
+% 0 1 0 08a86cbdc9b8cb0109ed8ce5b435ce67
+
+% 1 1 0 0cd6459499a6bd5203d659b3bcc1b6aa
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 0 1 0 15eabd9dddca5f43080db018a5da940a
+
+% 0 1 0 0273606a371a20781b629148f2fbca5e
+
+% 1 1 0 1bcdb4a96b398b1001bd2f1e70d20f7f
+
+@ 0 2 0 1ffa3259ef8bcf160c52c30d716a4244
++ [结构](../../soundness/modules/media-types.md#structure)列出了 `MediaType.Error` 给出的各种原因。

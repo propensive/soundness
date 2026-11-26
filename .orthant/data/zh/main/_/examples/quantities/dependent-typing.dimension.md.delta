@@ -1,0 +1,70 @@
+orthant 2 language
+
+@ 0 1 0 097a20643a1dd0b0123cd47f407a55c4
++ # 量知道它所计量之物的名称
+
+@ 0 3 0 177612128a6451f61effe9df72f3336a
++ 量的类型中的单位足以让编译器说出它是哪一类东西。无论力或能量是如何得出的，`dimension` 都会给出其物理名称，这一名称由类型推算而来。
+
+% 2 1 0 1ef15b8b17fdeb991d5b0a67ceb5d6f0
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 2 0 0cc2ad9d5f42a7781c178a0c222a80e5
++   label 长度除以时间
++   highlight (Metre/Second).dimension  仅凭单位
+
+% 1 1 0 1b0fdae7eddab5ab01b4c95924201d34
+
+% 2 1 0 0bd6725a2bd811e318024bd589c28418
+
+% 1 1 0 05d796f224bfe7e90744f1d2727e4d0c
+
+@ 0 2 0 0c7a32d189ac45d208346eb3f84c247d
++   label 力乘以长度
++   highlight (Newton*Metre).dimension  具名单位，化为基本单位
+
+% 1 1 0 1109e2b53ce1d1ad0f42e37af19f9f9b
+
+% 2 1 0 0c87d42c2b1e642f1eda23cbf4997833
+
+% 3 1 0 1403cef288e77a051ff345b766fa3d44
+
+% 1 1 0 14a5c77382c9218907e41916a6198c8f
+
+@ 0 2 0 0e01661761b9856613bd4bb1969933e5
++   label 同样的量，以英尺和千克表示
++   highlight Foot*Foot*Kilo(Gram)/(Second*Second)  单位不同，量纲相同
+
+% 1 1 0 0fe6e8f5c5773eb00a6c8fe34247a969
+
+% 2 1 0 1aeb755d55c7bd511e27355346b4f5c0
+
+% 3 1 0 162fae719c7f1d460a99954df685efa0
+
+% 0 1 0 010f92d3b6b0a66c1ef47805e1032044
+
+% 1 1 0 1c398a7dd8a453e01bc7b575950442a0
+
+% 1 1 0 136d267ff733a60e0f6246170d49df5f
+
+% 2 1 0 1525a46c87e9e0571e7d21b8e7c42b7a
+
+% 0 1 0 08a86cbdc9b8cb0109ed8ce5b435ce67
+
+% 1 1 0 0cd6459499a6bd5203d659b3bcc1b6aa
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 0 1 0 1326920c417a895b0ccb10833b9ae944
+
+% 0 1 0 1d339ce1626a51040e5965519afe48cb
+
+% 0 1 0 16327f8b1714719e092a3ba67f21cb16
+
+% 1 1 0 0b29290a3535bfa212d5d6b96be0fd5d
+
+@ 0 1 0 0d260a77c397503e0484093d54c319ae
++ [导出单位](../../soundness/modules/quantities.md#derived-units)给出了名称表。

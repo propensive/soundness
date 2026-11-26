@@ -1,0 +1,57 @@
+orthant 2 language
+
+@ 0 1 0 1d34fba737e5dcbc1fa2780dea796b04
++ # 资源通过类加载器读取
+
+@ 0 3 0 0ff4e74ffa5bc2f716c2308bf85f0ef4
++ 资源引用指明一条路径，而两个类加载器在那里可能找到不同的东西。因此读取需要一个作为上下文值的 `Classloader`，没有得到类加载器的代码不会退而使用线程恰好携带的那一个。
+
+% 0 1 0 12705ff5e291290d17fbc8389d59ef4a
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 1bd8e1549094a42105a360821572b141
++   label 没有类加载器
+
+% 0 1 0 1477c34ff41c7c99183443e1d3238ae1
+
+% 1 1 0 0960c596329e4eb20a0b442aaa85c43a
+
+% 2 1 0 052b5d53c564213f191f74be413a911f
+
+% 2 1 0 0ed5949345446ee61eece3bed95cb1ff
+
+% 3 1 0 0c819e54a2216754161b63a22c8561ac
+
+@ 0 1 0 1a8506f33fc2a4601fe7313c9f32e1ec
++   label 选定的类加载器
+
+% 0 1 0 1892e90d108a8d04021ed81f8cbf1446
+
+% 1 1 0 0628146fd79d21f50c0f02d939eedea0
+
+% 0 1 0 0abb2bc15399d8011da5da81d1ff7bf9
+
+% 2 1 0 046e6e512c7954e011cccb2a3b1ec836
+
+% 3 1 0 05294bbad9a284ba0ddbda8ae0e6cf6d
+
+@ 0 1 0 0909af6780f55e970907859b71687519
++   label 或者要求提供
+
+% 0 1 0 13bd94f49118060212bbef6328b0eb48
+
+% 1 1 0 19ae2320ff8a4cef1a78b8a412765e62
+
+% 2 1 0 041e7bc4917105b01e6f8dd7a1e4bb27
+
+% 0 1 0 1184cf9f94d49f13067118ab5eb6bab9
+
+% 0 1 0 18eafb32caed3dd50f976e787bd035ca
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 3 0 0f3399a3f7c72d6e0abde0c5f049ee9e
++ [选择类加载器](../../soundness/modules/classpath.md#choosing-a-classloader)解释了为什么这一选择不能是隐式的，[诚实签名](../../philosophy/honest-signatures.md)则阐述了一般规则。

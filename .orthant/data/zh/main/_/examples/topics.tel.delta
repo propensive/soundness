@@ -1,0 +1,771 @@
+orthant 2 language
+
+% 0 1 0 0f04ec4b9ac2d4270a232409219e1f6b
+
+@ 0 3 0 09d38134c38ae3ea0c5ae65e86c09897
++ # 示例可以涉及的话题：示例两个方面中的第一个，即读者想要做的事。
++ # 每个话题都是 doc/soundness/modules 中的一篇教程，以其文件名称呼，因此话题 `json` 的示例
++ # 是 doc/examples/json 中的一个文件。doc/examples/readme.md 介绍了这个示例库。
+
+% 0 1 0 0eb8a8159aa70a3912472085667a511e
+
+@ 0 3 0 0f4f020270072a770273acbb76138404
++   title  文本
++   group  基础
++   summary  编写、切分、搜索和渲染文本，以及具有文本性质的类型
+
+% 0 1 0 1d01b1553f4846e50578408e38f94ea6
+
+@ 0 3 0 1701ab0e31d0c1570da47394656b8287
++   title  字符
++   group  基础
++   summary  编码、Unicode 属性、宽度和字素簇
+
+% 0 1 0 0272bba1045588461ba69b10f33d9e8c
+
+@ 0 3 0 0c5786640f5e4cb202873736ab17ca17
++   title  数字
++   group  基础
++   summary  受检算术、位操作、精度、序数和有界数
+
+% 0 1 0 0a1627bb049264960be6527d090ece5c
+
+@ 0 3 0 164bc31dc0fcaa561073e4fe88590083
++   title  数学
++   group  基础
++   summary  复数、向量、矩阵和置换
+
+% 0 1 0 0c81a7c30d52021602b8d65b937442ae
+
+@ 0 3 0 179e9e9061140643189981e75263a886
++   title  可选值
++   group  基础
++   summary  不用 `Option` 表示缺失，以及其代价
+
+% 0 1 0 1c01f2cecdfdb55e019a12001918830e
+
+@ 0 3 0 14b26ea04ecfec530ad1df354de3994b
++   title  错误
++   group  基础
++   summary  声明代码可能失败、选择策略以及恢复
+
+% 0 1 0 108ff8460cd094f70db2890f5d737f0d
+
+@ 0 3 0 055bdc79e66a6fd803231d9846cfd933
++   title  集合
++   group  基础
++   summary  集合类型，以及它们如何与标准库互通
+
+% 0 1 0 16e2227ea244b3891d91c175a7380c42
+
+@ 0 3 0 164b870d3632c79e15c40fd465f21574
++   title  模式
++   group  基础
++   summary  正则表达式和 glob，在代码编译时检查
+
+% 0 1 0 12340d8c4e0968600df56f4b24170ea7
+
+@ 0 3 0 1b427de93fa0c7ff0417061d2220e1bd
++   title  插值
++   group  基础
++   summary  编写你自己的插值器
+
+% 0 1 0 0701ae72a3b4132c120479c58a3c489b
+
+@ 0 3 0 1bd7687be7e1e9b819e3215776ec4d82
++   title  名称
++   group  基础
++   summary  按一个规则平面验证的标识符
+
+% 0 1 0 0d255505d0a581d805343faba2dce05a
+
+@ 0 3 0 174cb1192b7ef1e00c91fa880f4e717c
++   title  解码
++   group  基础
++   summary  把文本转换为带类型的值，并在模式中提取它们
+
+% 0 1 0 0615c8accccc325f09b7224cc350be5b
+
+@ 0 3 0 1e0fc6cd362570e00080f35452e228d7
++   title  显示
++   group  基础
++   summary  显示和检视值
+
+% 0 1 0 15e172d4b684000a016956056eb37841
+
+@ 0 3 0 089c037d9bba41ee12d153246bae0ab4
++   title  派生
++   group  基础
++   summary  为积类型和和类型派生类型类实例
+
+% 0 1 0 1637599dce832fef0cff0a14193263b8
+
+@ 0 3 0 12b617da723b137b060e3f582a153469
++   title  注解
++   group  基础
++   summary  在编译时读取注解
+
+% 0 1 0 0d62f65a9ca2faee19229455597828c6
+
+@ 0 3 0 0d373e85dd90c0530599a01af52cc6f3
++   title  通用数据
++   group  基础
++   summary  每种格式都可以借以相互转换的表示
+
+% 0 1 0 0858e97725acf5c609b77630d714c88d
+
+@ 0 3 0 18c748b6a29d40820620edec06acc94e
++   title  记录
++   group  基础
++   summary  来自规范的带类型记录
+
+% 0 1 0 1a5dce0399f7f8e2123d41471dafdf93
+
+@ 0 3 0 03be210758409cfc022ca27e8fa08d8d
++   title  目录
++   group  基础
++   summary  为类型的每个字段提供一个值，按路径访问
+
+% 0 1 0 140d0a07b0e1ec0b01f06426dbfe3e3b
+
+@ 0 3 0 1b2117be69bc245918b71296168dc0a1
++   title  光学组件
++   group  基础
++   summary  更新嵌套的不可变值
+
+% 0 1 0 143b3cddf627f2ca0764190c83bd4ad8
+
+@ 0 3 0 0957fbc11579d6250044fc739859913f
++   title  位标志
++   group  基础
++   summary  以位表示的标志集合
+
+% 0 1 0 13751e6579fba0841c8d88be0c75d18f
+
+@ 0 3 0 13af33449e89762a1e7b2e3b6c8c1554
++   title  布隆过滤器
++   group  基础
++   summary  概率性的成员判定
+
+% 0 1 0 1ac5a931162aadb11cf4bd693f1340fd
+
+@ 0 3 0 16da761bc05e97dc1348a79ceeee222a
++   title  缓存
++   group  基础
++   summary  LRU 缓存和会过期的值
+
+% 0 1 0 18443d455e6fa91e0192444d02cf855d
+
+@ 0 3 0 13459b9056b76d990fdcd4feba81a546
++   title  UUID
++   group  基础
++   summary  生成、解析和组合 UUID
+
+% 0 1 0 1366a193929a408b085e0413f3d8dad1
+
+@ 0 3 0 15be5f8d1496b81d085459c090e5ab33
++   title  随机性
++   group  基础
++   summary  随机值、分布和可复现的运行
+
+% 0 1 0 0abb3c5ed92333591f2926f1a02869a6
+
+@ 0 3 0 17c0f608f356fb651864cd0159650cba
++   title  版本
++   group  基础
++   summary  版本和清单
+
+% 0 1 0 19514ffc833bc28c016c0fe1841f9ee5
+
+@ 0 3 0 130bcd4b7d059ae613c4bee759d94a29
++   title  差异比较
++   group  基础
++   summary  差异、补丁和演化
+
+% 0 1 0 1534f8e453226c150b34091456f1255a
+
+@ 0 3 0 0463b2d9fa76ce18075c7b9f2580c785
++   title  树
++   group  基础
++   summary  绘制成图示的树和图
+
+% 0 1 0 1b9f9e596e3aabd41c74d6d4cea0df73
+
+@ 0 3 0 154b69a549ef79b80b6fcc19997fc571
++   title  图
++   group  基础
++   summary  构建、排序、折叠和绘制图
+
+% 0 1 0 1b158962f25cc42315d4272fa1f4fca7
+
+% 0 1 0 0f80313e951b67bb0b30e5c5a523818a
+
+@ 0 2 0 1dd9f38ad7ec7d570a1e92cdef3a9483
++   group  数据格式
++   summary  解析、带类型的访问、构建、schema 和验证
+
+% 0 1 0 1ad30ea64151ce0016afaa6bab989812
+
+% 0 1 0 0f3db681e41071980c0c6901aec71cf5
+
+@ 0 2 0 0c35908e1cc45c051b55e66428f71f6c
++   group  数据格式
++   summary  解析、标签、锚点和编码
+
+% 0 1 0 096ec0d5af2fd82c06bb2d599372008b
+
+% 0 1 0 0cabb2e1dac35bb21c5c2b548fd1f536
+
+@ 0 2 0 174f96c571bf740a0670ad7f6af858a8
++   group  数据格式
++   summary  节点、命名空间、XPath 和 schema
+
+% 0 1 0 0785cf048bf571031d40e76c6fc60248
+
+% 0 1 0 1bf076e02eb4149a129da60272f4872b
+
+@ 0 2 0 193207f5203016461391fcc39e9996fe
++   group  数据格式
++   summary  类似 JSON 的二进制编码，带有标签和诊断记法
+
+% 0 1 0 060cb6a8ebc16a3805b7fd4d7eea9044
+
+% 0 1 0 0949a8b51754edbe1b58fb487b4a84ef
+
+@ 0 2 0 04037c5d78d98bc30466558adba24f4c
++   group  数据格式
++   summary  行、表头和格式，解码为 case class
+
+% 0 1 0 0c9e5e979f915a28104af7e357b59c82
+
+% 0 1 0 0fdb50a3cb24ddae05ebf5de5415912e
+
+@ 0 2 0 016583147fdc136116a82911ae920e24
++   group  数据格式
++   summary  基于缩进的数据语言、其 schema 及编辑
+
+% 0 1 0 11b055dd83ab63941d02c9cc94e5c190
+
+% 0 1 0 07d376ef55a7fe1e08c40d0edf250894
+
+@ 0 2 0 14f1d971294c02430803ee8e8d1ff447
++   group  数据格式
++   summary  消息、字段和兼容性
+
+% 0 1 0 0513a439af21df4109ec09159d1cfed4
+
+% 0 1 0 14bf27ea6609204704420fd376458b2e
+
+@ 0 2 0 11ca76876fb54aab0b7bcceec359de61
++   group  数据格式
++   summary  解析、渲染和写回
+
+% 0 1 0 0d974f7f6d8945151aafd89d87667ae2
+
+@ 0 3 0 0c14172322f9fa1a1f094d7c473387ab
++   title  基数编码
++   group  数据格式
++   summary  Base64、十六进制和其他字母表
+
+% 0 1 0 191cc62a860bf6df0e6ff662c09a8b99
+
+@ 0 3 0 1ed95a4748962bb312c8d839470ae4bd
++   title  二进制数据
++   group  数据格式
++   summary  描述、读取和写入二进制布局
+
+% 0 1 0 0433104765992a0111f44d07944812b6
+
+@ 0 3 0 0483ff2905d7f8cf0cb46fbca4747a57
++   title  压缩
++   group  数据格式
++   summary  压缩值和流
+
+% 0 1 0 18c63631d7343b93011b689eb6a30f4a
+
+@ 0 3 0 125af4d709bb42c70770d7157f38e816
++   title  归档
++   group  数据格式
++   summary  ZIP、tar 和 ar
+
+% 0 1 0 00b93dc672bd6a6117bcea069bd54fdc
+
+@ 0 3 0 143204b8b61c65fd0ecb72bca58e4d49
++   title  哈希
++   group  数据格式
++   summary  摘要、校验和和快速哈希
+
+% 0 1 0 002977d37e5e27ea027fb24c3a633613
+
+@ 0 3 0 0e73e9e892ff3c7e0456514a7476823a
++   title  密码学
++   group  数据格式
++   summary  加密、签名、密钥和证书
+
+% 0 1 0 1e19a074d0ef7bb40a3544be9beaa786
+
+@ 0 3 0 121437fc5594fdf819a2d22303e8bdfe
++   title  媒体类型
++   group  数据格式
++   summary  媒体类型，以及知道自身媒体类型的类型
+
+% 0 1 0 1ad42231bf2be0821dd2149160de2700
+
+@ 0 3 0 08c4e9660553ea811f5d79852a21a40b
++   title  时间
++   group  时间、量与区域设置
++   summary  日期、时间、瞬时、时区、日历、重复和格式化
+
+% 0 1 0 00afcba6237e86ff1fdd35cd6ca1a894
+
+@ 0 3 0 0257ade0886ae9481c316a0dc36374d0
++   title  量
++   group  时间、量与区域设置
++   summary  单位、量纲和转换，在编译时检查
+
+% 0 1 0 1a4296c7cdf33f080fb539f34282f00d
+
+@ 0 3 0 0129bccfd6b1b9f2025e615ae1362538
++   title  货币
++   group  时间、量与区域设置
++   summary  金额、拆分、价格和税
+
+% 0 1 0 0fa4c4877d343f720597aa8a6fec4996
+
+@ 0 3 0 0879a1e24a9aec770b6026847dcad496
++   title  地理
++   group  时间、量与区域设置
++   summary  角度、罗盘方位和位置
+
+% 0 1 0 1dbc5f674e9ed98e1e82a493efcf68ae
+
+@ 0 3 0 120753b726c6707c0f2c61d6a89015fe
++   title  化学
++   group  时间、量与区域设置
++   summary  元素、分子、化学式和方程式
+
+% 0 1 0 04ace2a5e54e1e931c1a713048a6f899
+
+@ 0 3 0 08398b1839940bfc122656791c369d34
++   title  颜色
++   group  时间、量与区域设置
++   summary  色彩空间、混合、距离和调色板
+
+% 0 1 0 11962576e0719c930e8285a069aae21c
+
+@ 0 3 0 0334cdf0810ca52b138ce1a23c64d1ac
++   title  国际化
++   group  时间、量与区域设置
++   summary  翻译和区域设置
+
+% 0 1 0 0ee931072fb311890db3447d4f1ebc64
+
+@ 0 3 0 0a24e3ca90dcccd00b2f2345184c317f
++   title  断字
++   group  时间、量与区域设置
++   summary  单词的断字和音节划分
+
+% 0 1 0 1fb678b5ac807122150b33a691769b3a
+
+@ 0 3 0 051f4ff1bb1dc7390e1b8af72568b21e
++   title  路径
++   group  文件系统、进程与环境
++   summary  构建、关联和拆解路径
+
+% 0 1 0 1ece8d2e6f802d4807f9ebbe5ae58bee
+
+@ 0 3 0 18844bb2dc4ef4ab13b0255e87a28d45
++   title  文件系统
++   group  文件系统、进程与环境
++   summary  文件、目录、访问和监视
+
+% 0 1 0 0d41b703c242d95a1b9080ff285a2cd5
+
+@ 0 3 0 011b07c4aef4b4201bedf3c61013c103
++   title  环境
++   group  文件系统、进程与环境
++   summary  变量、属性、目录和机器
+
+% 0 1 0 02793ab5f4cee40f1019c037cb1620e1
+
+@ 0 3 0 0e06c4cc66e835891a72684f3ddaf9f7
++   title  流
++   group  文件系统、进程与环境
++   summary  读取、写入和组合数据流
+
+% 0 1 0 1277d8c3dfb3dc101bdd0a0b8e3a005d
+
+@ 0 3 0 02bddbe2ca9d26b4068075ea536691da
++   title  进程
++   group  文件系统、进程与环境
++   summary  定义、运行和用管道连接命令
+
+% 0 1 0 09ec5f9a5cd543ba15deaca4bd099f75
+
+@ 0 3 0 02ce9af2c42d6fbf1beaa367c21e1902
++   title  并发
++   group  文件系统、进程与环境
++   summary  受监管的任务、取消和 promise
+
+% 0 1 0 1e47d2fd9ea39da715e1923b97ea544a
+
+@ 0 3 0 0dcbb1faf4aac3f4181690eb7c038225
++   title  日志
++   group  文件系统、进程与环境
++   summary  日志记录器、级别和路由
+
+% 0 1 0 05bf0ed27f744d010f93acddf8d854dc
+
+@ 0 3 0 1dfb9eabe333fe080e10307bcb4c9b23
++   title  类路径
++   group  文件系统、进程与环境
++   summary  资源、类加载器和服务
+
+% 0 1 0 0e00a4e1ed73dce40d904d76f9ce2d0c
+
+@ 0 3 0 09b11ad5037737ae128005c45b5ef062
++   title  打包
++   group  文件系统、进程与环境
++   summary  按哈希获取依赖的精简 JAR
+
+% 0 1 0 0baac6285cc847cc043466177d9e4ff7
+
+@ 0 3 0 0e2759daad72af2401f9a06ad4e2acc7
++   title  守护进程
++   group  文件系统、进程与环境
++   summary  带有快速客户端的长时间运行的应用程序
+
+% 0 1 0 0d5966c9e25eb20717c5cb72fc2342a4
+
+@ 0 3 0 090ecbebbe2d00fa0a96e31e0560571e
++   title  容器
++   group  文件系统、进程与环境
++   summary  构建和读取镜像，以及与守护进程通信
+
+% 0 1 0 16679b4d95e94961045c7b877cbed978
+
+% 0 1 0 0191de6a75dde76c1d2ebf42e72d36d6
+
+@ 0 2 0 0ce78e96afc89cc80911f468a6fc3b10
++   group  文件系统、进程与环境
++   summary  仓库、提交、分支和远程仓库
+
+% 0 1 0 1160ee9075da47d51c478d65ffcdb7c5
+
+% 0 1 0 149de09ca16dcb5b11e88b60fc2dac71
+
+@ 0 2 0 1c75b48b95f0b89d13df36cc05a828bf
++   group  文件系统、进程与环境
++   summary  主机密钥、传输和远程命令
+
+% 0 1 0 07d87c1713bd9ade04338c9b3f308ce4
+
+@ 0 3 0 075362061782fd0f0efe49c454520967
++   title  数据库
++   group  文件系统、进程与环境
++   summary  声明、存储和查询
+
+% 0 1 0 0e642024263ce5390508dde8783e442e
+
+@ 0 3 0 12c35ce43c4259f70d0f34e1db288b19
++   title  网络地址
++   group  网络与 Web
++   summary  URL、主机名、IP 地址和端口
+
+% 0 1 0 0481eaaac116a5b5098b1f55f50a2068
+
+@ 0 3 0 0d9e8fd3083252d71d41290eb1e204d5
++   title  套接字
++   group  网络与 Web
++   summary  服务、客户端、TLS 和会话
+
+% 0 1 0 110016ce1afc243907771ed3666f38ba
+
+@ 0 3 0 1587638806cd3a78128df9e4c4af01a1
++   title  HTTP 客户端
++   group  网络与 Web
++   summary  请求、头部、正文和会话
+
+% 0 1 0 0e83628be358630d1ccf715ca38ad3c1
+
+@ 0 3 0 1cd660472d674e6e036c2ab97b2a6409
++   title  HTTP 服务器
++   group  网络与 Web
++   summary  服务器、响应、WebSocket 和 HTTP/2
+
+% 0 1 0 0ded6b786c4f9f7c0391f5da6d6e2b7a
+
+% 0 1 0 112a5d8497e323021932f3d569ce2025
+
+@ 0 2 0 059133e26eabb5b705e0217fb816e7ff
++   group  网络与 Web
++   summary  基于 JSON-RPC、gRPC 和服务器发送事件的接口
+
+% 0 1 0 1427d41cf9ef18d11de433a3b764335c
+
+@ 0 3 0 036e68d31d5fd9241801b2b534814933
++   title  电子邮件
++   group  网络与 Web
++   summary  撰写和发送
+
+% 0 1 0 02e3e180530a379712b900aa2087691e
+
+% 0 1 0 094a8b8e186cf06e063e6afb29e68ac1
+
+@ 0 2 0 179f898265c526710c17a53142d24c04
++   group  网络与 Web
++   summary  令牌和凭据
+
+% 0 1 0 113e258b2662affc04966be18f7dffcd
+
+% 0 1 0 05a8cd66c921539419f32a7792ac84af
+
+@ 0 2 0 0e2756a9ca8145d517ccfbb94e8046e9
++   group  网络与 Web
++   summary  签名和加密的令牌：JWS、JWE、JWK 和 JWT
+
+% 0 1 0 0e3126c76453e6bb067ff21172ba10ff
+
+% 0 1 0 0dc1873563b4ff9b0321340b03892532
+
+@ 0 2 0 053e87115bf826f305560d7fa66846c7
++   group  网络与 Web
++   summary  使用通行密钥和安全密钥的无密码登录
+
+% 0 1 0 0faef1a046940e7d12931449c658a579
+
+% 0 1 0 0153b2f39d3aaef4154407b0c19eacc3
+
+@ 0 2 0 1f2dcec36c0d361918a5ab86768f4c7d
++   group  网络与 Web
++   summary  根据文档生成的带类型客户端
+
+% 0 1 0 08eadf05f4f69026180f626412db1adf
+
+@ 0 3 0 0fbd8b638ec80c0b10d3c521d8c1f52c
++   title  服务发现
++   group  网络与 Web
++   summary  通告和浏览服务
+
+% 0 1 0 0b58032a248b79d41fcd4645a2d6d67d
+
+@ 0 3 0 1a5f3abd38071fa01e592902fc65ee07
++   title  Web 自动化
++   group  网络与 Web
++   summary  驱动浏览器
+
+% 0 1 0 0d6ec140433db5040094b3128510ad0e
+
+% 0 1 0 01d9691be5fc589c15f171a8883f31f0
+
+@ 0 2 0 146b63a6abfdd00f07501f59abad6939
++   group  网络与 Web
++   summary  构造、检查、渲染和解析 HTML
+
+% 0 1 0 0bc3cbaffb63228e0369f0089e6cb148
+
+@ 0 3 0 16ba734659aed6361e27c66190f5b65a
++   title  网页
++   group  网络与 Web
++   summary  由范式生成的完整页面
+
+% 0 1 0 0bc450054dd6d4bd18bacd96f936f5a1
+
+@ 0 3 0 1ea59faefd71729111beb1db3e2d0515
++   title  浏览器 DOM
++   group  网络与 Web
++   summary  对页面进行带类型的脚本编程
+
+% 0 1 0 060cb6a8ebc16a3505b7fd4d7eea9041
+
+% 0 1 0 0949a8b51754edbb1b58fb487b4a84ec
+
+@ 0 2 0 1f533b685061b27e04b01b8e3a17c4b0
++   group  网络与 Web
++   summary  编写、验证和渲染样式表
+
+% 0 1 0 098d094f456c643e15a5e45e8e6bc1c7
+
+@ 0 3 0 08541ebac776ae681c1af84ce601cb75
++   title  表单
++   group  网络与 Web
++   summary  渲染和处理表单
+
+% 0 1 0 1e1f2e2a06c3624d15942bf00a1f1192
+
+% 0 1 0 015c20363256e5d40b3529eb067f063e
+
+@ 0 2 0 09114785642851ea0d7aa467fe6a38f1
++   group  网络与 Web
++   summary  形状、路径、变换和文档
+
+% 0 1 0 1a84e66325b182be10837d57927e0cdc
+
+@ 0 3 0 1118a537caa9e1820db5c06dd85a3ddc
++   title  图表
++   group  网络与 Web
++   summary  数据系列、图表种类和渲染
+
+% 0 1 0 092e2016de74f25f141f6bcb93cda113
+
+@ 0 3 0 10390432c348018515736eb6f513dc5b
++   title  标注放置
++   group  网络与 Web
++   summary  避开障碍物的标注
+
+% 0 1 0 1238a2f58501ff770b29dc93dff61939
+
+@ 0 3 0 156dec7aa35835350609ca21e72f4952
++   title  图像
++   group  网络与 Web
++   summary  像素、画布和转换
+
+% 0 1 0 0db914707ecd2aa71a3de91a3eca09e3
+
+@ 0 3 0 06c57108326f438410c2b0ea9bde68c7
++   title  音频
++   group  网络与 Web
++   summary  读取、写入、录制和播放
+
+% 0 1 0 0c73e5110a5b6a991db4c79a86461ec3
+
+@ 0 3 0 09dc6072f2cf3d2016e2a8fa7e6037c6
++   title  字体
++   group  网络与 Web
++   summary  加载、度量和子集化
+
+% 0 1 0 0d89e615376819e41f8d89af340c5f53
+
+% 0 1 0 10c6d82162fb9d6a152e87aa306c53ff
+
+@ 0 2 0 0207c8c78139457e13191ef41859b59d
++   group  网络与 Web
++   summary  创建、读取和编辑文档
+
+% 0 1 0 0761f349a1f3e6dd145dbb0d8505be5e
+
+@ 0 3 0 136df3230c071ff4156c17ab1e10f559
++   title  数学标记
++   group  网络与 Web
++   summary  MathML 树
+
+% 0 1 0 0850cced444c2c650005360b66d76957
+
+@ 0 3 0 1e89cad4d072be020db84a44d59b7d5d
++   title  命令行应用程序
++   group  命令行与终端
++   summary  入口点、参数、标志、补全和帮助
+
+% 0 1 0 05af4306bb505171050ba9810e9e10bb
+
+@ 0 3 0 0b120a73a66c72ce042109594f90f6f7
++   title  终端
++   group  命令行与终端
++   summary  带样式的文本、输入、菜单和布局
+
+% 0 1 0 0ad4fb60bde148210662b386bdab80f3
+
+@ 0 3 0 10f9b9ee4ebc75471f18ae8d440f09c6
++   title  终端模拟
++   group  命令行与终端
++   summary  向终端馈送输入并检视它
+
+% 0 1 0 0ceb38e5acd3513d09aa22a9d124279b
+
+@ 0 3 0 0ad09e9c5e234fe711b0ca20f36496ae
++   title  表格
++   group  命令行与终端
++   summary  以任意宽度把值制成表格
+
+% 0 1 0 0a97b6334aedc0890344e64ee2104adb
+
+@ 0 3 0 010dbea7451c108b07f346fc01e447ba
++   title  仪表
++   group  命令行与终端
++   summary  以仪表显示状态
+
+% 0 1 0 1cd4da460bf42d990fcd9b245d1b482f
+
+@ 0 3 0 172b7befa9ecf9341c582d660e4283d5
++   title  语法高亮
++   group  命令行与终端
++   summary  高亮、类型和补全
+
+% 0 1 0 10693c8a2339ed76185cf0f288987529
+
+@ 0 3 0 0b6a6b61be467a6b1c9a9d6a6693d4c9
++   title  编译
++   group  编译器、工具与智能体
++   summary  配置和运行编译器，以及生成制品
+
+% 0 1 0 173b09279e931e7e18ff5054249f578c
+
+@ 0 3 0 14232123869d56d614488f8e83f7bc4f
++   title  元编程
++   group  编译器、工具与智能体
++   summary  given、类型层面的值和展开
+
+% 0 1 0 09b18d06ea79a1a9172862ac669a3b94
+
+@ 0 3 0 0d322a4e81f51f521500a7107f9fcd8b
++   title  分阶段执行
++   group  编译器、工具与智能体
++   summary  引用、拼接和 rig
+
+% 0 1 0 101fe82bc3a5d1e702982c1c5d5acb59
+
+@ 0 3 0 16d939ee68e384521e892eebf1c6c2c8
++   title  测试
++   group  编译器、工具与智能体
++   summary  套件、测试、对比和基准测试
+
+% 0 1 0 086b935ec7180dbf0a1b99d2cac885c5
+
+@ 0 3 0 1440d00ec826014d1db359cb0d6c62f3
++   title  调试
++   group  编译器、工具与智能体
++   summary  会话、断点和单步执行
+
+% 0 1 0 05ae92eb17e87783062910dea6b5702c
+
+@ 0 3 0 03f63c5007f767f619d0f6c2cf345fe1
++   title  堆栈跟踪
++   group  编译器、工具与智能体
++   summary  捕获、名称还原和解析堆栈跟踪
+
+% 0 1 0 0b79abce052c691516db4d60ccaec318
+
+@ 0 3 0 1e8a0f0dfe1ce16b07c9fea612f35afd
++   title  外部互操作
++   group  编译器、工具与智能体
++   summary  加载和导航外部接口
+
+% 0 1 0 126c161b296f66e20068be5b476a567f
+
+@ 0 3 0 0a1ef34dd472329919bbe15d7571c63a
++   title  语言服务器协议
++   group  编译器、工具与智能体
++   summary  定义和运行服务器
+
+% 0 1 0 14ab8723a04dc14a154d686a37c6f702
+
+% 0 1 0 17e8792fcbe144d00aee66653426ebae
+
+@ 0 2 0 18f5a9a5154f23f10534816a741beddc
++   group  编译器、工具与智能体
++   summary  智能体客户端协议
+
+% 0 1 0 052ab11147e0678b0e39147c987154ae
+
+% 0 1 0 0867a31d7373eb1103da127794d1495a
+
+@ 0 2 0 03489dca2bff0be81c362e0f6af6b51d
++   group  编译器、工具与智能体
++   summary  模型上下文协议
+
+% 0 1 0 14b02c5f81fa29191ab5f7192f572f9b
+
+@ 0 3 0 05fb7bdc3ca8ad3b0c45ad1f433940cc
++   title  语言模型
++   group  编译器、工具与智能体
++   summary  对话、工具和结构化回答

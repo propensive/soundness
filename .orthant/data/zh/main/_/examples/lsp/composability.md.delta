@@ -1,0 +1,52 @@
+orthant 2 language
+
+@ 0 1 0 036b9fa00c4cafb0160aa302b0e6c060
++ # 库未建模的回复，作为 JSON 改写
+
+@ 0 3 0 11bf9e866d00c1a90642e5e121d05278
++ 代理会转发每个方法，包括那些在这里没有 Scala 类型的方法。它们的结果依然可以修改：`rewrite.result` 指明方法，并以 `Json` 的形式获得其结果，因此整个 [JSON](../../soundness/modules/json.md) 库都适用于它。
+
+% 0 1 0 12705ff5e291290d17fbc8389d59ef4a
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 2 0 00a359a6c6bfe9330a15908d47c89eb4
++   label 已建模方法的类型化回复
++   highlight rewrite.completions  一个 CompletionList
+
+% 1 1 0 1e7300e4d2b73f2707852cdf152c8008
+
+% 2 1 0 0dc714b4d7915c3e0c6bfae3d969d8d5
+
+% 4 1 0 11dee5ecddf016e70aa47c8001047509
+
+% 5 1 0 05383c9410102b77167bc7d7eca0dca5
+
+% 1 1 0 0a554da8b7df833315c5f3da26e4d5ff
+
+@ 0 4 0 0118bf90519d759a08dd13396769a8b6
++   label 未建模方法的 JSON 回复
++   highlight rewrite.result  任何方法，按名称指明
++   highlight as[List[Text]]  解码
++   highlight in[Json]  再重新编码
+
+% 1 1 0 0cfba67b623483ca1c231ef67f451430
+
+% 2 1 0 032b71700440f28113c22f065944e70c
+
+% 4 1 0 0d9ffbffbd8118221b0861b45ec74b36
+
+% 5 1 0 02ebd86a9d4637b41625dd345ee0af11
+
+% 0 1 0 1d8952d5fcfaa30c0d5c8c55964da9ee
+
+% 0 1 0 10ddc2cf21173e561ad82678d823383d
+
+% 0 1 0 18eafb32caed3dd50f976e787bd035ca
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 4 0 19ff715752a8e93005460aa99b1ce69e
++ 该示例只编译而不运行，因为代理会启动一个服务器并与编辑器通信。[代理服务器](../../soundness/modules/lsp.md#proxying-a-server)给出了组合子的表格，[可组合性](../../philosophy/composability.md)则说明了两个库为何无需适配器就能相遇。

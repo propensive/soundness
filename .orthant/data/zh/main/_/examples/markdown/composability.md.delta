@@ -1,0 +1,51 @@
+orthant 2 language
+
+@ 0 1 0 15948375cdf2ee6e137d15d5f6bcd461
++ # 变成类型化 HTML 的 Markdown
+
+@ 0 3 0 00161a499ac974da005c7e37ce7addb4
++ 解析后的文档是一棵树，`html` 把这棵树转换为 HTML 库自己的节点。块变成流内容，行内内容变成短语内容，因此页面在写出任何一个字符之前就是格式正确的。
+
+% 2 1 0 10f2f493dc9727f50871b167965f358d
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 147f14c3a938204e1379e10f256a48a4
++   label 解析后的文档
+
+% 1 1 0 03a244fa835ce7a40b6958bda944059a
+
+% 2 1 0 154410368401fdab0f75ea81bf23bcfb
+
+% 1 1 0 08e479afc9aeac131951e83a3c3b0c71
+
+@ 0 2 0 104ad72b28c1876b1d0be26f051b650a
++   label 同一个文档，作为 HTML
++   highlight html  流内容
+
+% 1 1 0 166de32e6c5532540f017d224a64842e
+
+% 2 1 0 0a69498b48b83e5f0cd9e4bff27f8cc5
+
+% 0 1 0 12e39b1847ac92231e5366ede6517a8b
+
+% 1 1 0 1097c16a8f7446561d3d0a628743cc93
+
+% 1 1 0 136d267ff733a60e0f6246170d49df5f
+
+% 2 1 0 1525a46c87e9e0571e7d21b8e7c42b7a
+
+% 0 1 0 08a86cbdc9b8cb0109ed8ce5b435ce67
+
+% 1 1 0 0cd6459499a6bd5203d659b3bcc1b6aa
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 0 1 0 18ee4cbe857b5bb6046c65b87246ea68
+
+% 1 1 0 0db762d28f00b57f1ec27c468d788dbb
+
+@ 0 2 0 02af17f4e1152a731212c3d57a161f9b
++ [渲染为 HTML](../../soundness/modules/markdown.md#rendering-to-html)给出了细节，[HTML](../../soundness/modules/html.md#precise-types) 则给出了各种内容的类型。

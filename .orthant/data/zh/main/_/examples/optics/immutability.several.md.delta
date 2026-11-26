@@ -1,0 +1,67 @@
+orthant 2 language
+
+@ 0 1 0 0b37abf9979bfa161bf82b9adcb0256b
++ # 多项更新，一个新值
+
+@ 0 2 0 10140a2472679b0a04776b456df7c458
++ `lens` 接受任意数量的赋值，并一起应用它们。路径开头相同的更新只重建一次它们共享的结构，而原始值仍保持原样。
+
+% 2 1 0 0057dd2c031046db006a5a91a4f0889c
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 18f5ce8f30bc78dc1a894d4f1616d94c
++   label 一个赋值
+
+% 1 1 0 04477ff8ed5099a10d67d6b309022f99
+
+% 2 1 0 1fb365adb9b28782007631ed55128e35
+
+% 3 1 0 0f2d9140e48398dd005372a0616da6d6
+
+% 0 1 0 1d5f389996a267ea040880196424e825
+
+% 1 1 0 079e068858c621ee0313cc4d0703b4dc
+
+@ 0 2 0 12ca3c92f1b90dd60e68c917fe3413bd
++   label 三个赋值，其中两个在同一幕中
++   highlight _.opening.scenes  与第一个赋值有共同前缀
+
+% 1 1 0 102f7f586b5bcbb71e1de831fd441528
+
+% 2 1 0 084b2358608b354d1c68497cc73af8a5
+
+% 3 1 0 0b76608a9d75cd4d08fabc3bd3329159
+
+% 0 1 0 015286b494f73eca021a6888389eeb39
+
+% 0 1 0 0c86a3f12c1895d100dc9f025a6754fc
+
+% 0 1 0 1eff88f9f091153a09a8bb8f6d05ca28
+
+% 0 1 0 19145e4f7f6a692e0d99169fcd7de1b2
+
+% 1 1 0 0f38cebc42add4cf14ccaefee10e3a05
+
+% 1 1 0 136d267ff733a60e0f6246170d49df5f
+
+% 2 1 0 1525a46c87e9e0571e7d21b8e7c42b7a
+
+% 0 1 0 08a86cbdc9b8cb0109ed8ce5b435ce67
+
+% 1 1 0 0cd6459499a6bd5203d659b3bcc1b6aa
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 0 1 0 1436c845f07e35d31c8ad2603fecbd36
+
+% 0 1 0 1484669b55f8502a0c11d70b08f1234e
+
+% 0 1 0 11ce179a638d6330172e6318fb0817fe
+
+% 1 1 0 08ebb55e30f76fa60feb25acf4387828
+
+@ 0 2 0 1879c68da4c30fe30c843e95158e9698
++ [更新字段](../../soundness/modules/optics.md#updating-a-field)介绍了细节，[不可变性](../../philosophy/immutability.md)则解释了为什么第二行没有改变。

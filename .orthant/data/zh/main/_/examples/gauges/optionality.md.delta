@@ -1,0 +1,68 @@
+orthant 2 language
+
+@ 0 1 0 0697008da0499c8418b06880836dda22
++ # 尚不知道的进度
+
+@ 0 3 0 1f0b4fb36785e4bc15d18c6e804dc674
++ 作业开始时可能还不知道它的总量。它的进度是一个 `Optional[Fraction]`，用同一个调用绘制：每种设计都说明了没有值时绘制什么，因此总量到来时类型不会改变，尚未计量的作业也永远不会显示为一个空的进度条。
+
+% 2 1 0 03ed1dbcf1d7d9f01c0e2781e9be09ea
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 2 0 1d6b206cbd6d646f1b05795c00fb3b29
++   label 未计量
++   highlight Unset  进度条来回扫动
+
+% 1 1 0 02235e8c8f143c4102ac5d3bb6be3a85
+
+% 2 1 0 009ae12661d7f8c50bf38b9b0eb3f8aa
+
+% 3 1 0 14ce8a587e0ca8251be8875d608b0621
+
+% 5 1 0 187e98658e6455181c0574f49c2fdd4f
+
+% 6 1 0 17a734d5ab2046280a1cdf7c786e281b
+
+% 1 1 0 0cd5c38b4de47cbd0b903da1c0d0ed18
+
+@ 0 2 0 052852bb0fa2a7101c80382be1df7c2a
++   label 已计量
++   highlight Fraction.of(3,..8)  进度条逐渐填满
+
+% 1 1 0 057c86b8afe315cf11942ed7df4ed9ae
+
+% 2 1 0 07df896de8a4cb7f1be4a8cabd24bd71
+
+% 3 1 0 0091d606122f152e008d3a2279b9aa44
+
+% 5 1 0 1c917598439a40be0f14f3b99ae8f131
+
+% 6 1 0 02e4f619147e6a221c566fe9f80551a0
+
+% 0 1 0 14a97e6e3479275f107ddd2e5b3f89d1
+
+% 0 1 0 175c6f3444713dad11c9bcf931c68456
+
+% 1 1 0 144a4dd499a624640531f8ea81b65c8f
+
+% 1 1 0 136d267ff733a60e0f6246170d49df5f
+
+% 2 1 0 1525a46c87e9e0571e7d21b8e7c42b7a
+
+% 0 1 0 08a86cbdc9b8cb0109ed8ce5b435ce67
+
+% 1 1 0 0cd6459499a6bd5203d659b3bcc1b6aa
+
+% 0 1 0 06d6d3a7fec399c9124100808e28e43d
+
+% 0 1 0 14beb153cd429d2118d7e56757029736
+
+% 0 1 0 16f7401f7d1d885e0d8326b093709ec1
+
+% 1 1 0 0b6cb3b094c10ad21cb802fd83bce989
+
+@ 0 2 0 02cea671037e790b1cfd17ba3017da85
++ [状态](../../soundness/modules/gauges.md#statuses)介绍了这种提升，[可选性](../../philosophy/optionality.md)则介绍了这个类型。

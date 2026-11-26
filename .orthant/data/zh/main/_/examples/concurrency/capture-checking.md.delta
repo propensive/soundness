@@ -1,0 +1,60 @@
+orthant 2 language
+
+@ 0 1 0 0551347466976afa1419a8bd0515d1a2
++ # 任务不能离开它的监管器
+
+@ 0 3 0 17e95bd204d191ec06e2247942f721d0
++ `supervise` 要等到它的任务都已了结才会返回，因此被交出作用域的任务，将在一个已经不存在的监管器之下被等待。任务的类型记录了它所依赖的作用域，编译器拒绝让它出去。
+
+% 2 1 0 0e2b4e425c0450751586d3c0e19736bd
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 0 1 0 05379442125b483c0fa7601737add2cc
+
+% 1 1 0 01df03af649144fc135e9cf4a153349c
+
+@ 0 1 0 0e2672e51adf875a07837a0b4d93a25c
++   label 从作用域中返回的任务
+
+% 0 1 0 1477c34ff41c7c99183443e1d3238ae1
+
+@ 0 1 0 179788e6e83f1658136d747fd4d702e9
++   highlight async(6*7)  任务是代码块的结果
+
+% 1 1 0 1034738fa35d21590bdd467c98671e13
+
+% 2 1 0 0f4776c95db47eb704173759d542c643
+
+% 0 1 0 1497a83ec9728dc71c7a768aa0eaa54a
+
+% 1 1 0 0f2c269ad323dc02019413fd6f0bfc11
+
+@ 0 2 0 1e78a439db31061f170617996abc3a71
++   label 改为返回它的结果
++   highlight .await()  在监管器仍然存在的地方等待
+
+% 1 1 0 13c280d71edfe4f813d1578defc9d0e2
+
+% 2 1 0 149d2204c47bd8980d3249b631c01e74
+
+% 0 1 0 100175973b547c1d0e7dc332806d64df
+
+% 1 1 0 127378d18470f90318428e78aaebfa19
+
+% 1 1 0 136d267ff733a60e0f6246170d49df5f
+
+% 2 1 0 1525a46c87e9e0571e7d21b8e7c42b7a
+
+% 0 1 0 08a86cbdc9b8cb0109ed8ce5b435ce67
+
+% 1 1 0 0cd6459499a6bd5203d659b3bcc1b6aa
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 0 1 0 088b0510646f44de1ef8da67e2e0e0b9
+
+% 1 1 0 1b9ff088734e623f05b6a0ba439fb3fb
+
+@ 0 3 0 0de2d13b0bc8e81609192cf997c9b95c
++ [派生任务](../../soundness/modules/concurrency.md#spawning-a-task)解释了任务如何找到它的父任务，[捕获检查](../../philosophy/capture-checking.md)则解释了编译器如何跟踪它。

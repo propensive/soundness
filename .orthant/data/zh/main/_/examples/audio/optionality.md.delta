@@ -1,0 +1,49 @@
+orthant 2 language
+
+@ 0 1 0 0a6a0d810b6244b211d53ce8cab0ad4d
++ # 没有麦克风的机器
+
+@ 0 2 0 187e75c6c7a78a2c04c85c8f2339950b
++ 机器的输入设备是一个列表，而这个列表可能为空。因此，它的第一个元素是一个可选值，从它录音的代码必须说明没有输入设备时会怎样。
+
+% 0 1 0 12705ff5e291290d17fbc8389d59ef4a
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 09d814cb00eb13911acb20150b4f302f
++   label 第一个输入设备，被当作存在的值使用
+
+% 0 1 0 1477c34ff41c7c99183443e1d3238ae1
+
+% 1 1 0 0960c596329e4eb20a0b442aaa85c43a
+
+% 0 1 0 1edc66ec1649d9561fc26df283b37cb9
+
+% 1 1 0 10e9521cdac62da91e9aacf60831e569
+
+@ 0 2 0 1c8a11bc8c5248371f02c7c9c0b8d4e1
++   label 它的名称，如果存在
++   highlight let  只作用于存在的值
+
+% 1 1 0 1d4938a34ae1846a1a7fa27525a348c1
+
+% 0 1 0 0f5c75932f3170d41afa07c363250cab
+
+% 1 1 0 19e7fe243fd94a290e238deb530464a6
+
+@ 0 2 0 1d21102a0df123870ed821f16b3ee50b
++   label 以及没有时的名称
++   highlight or(t"silence")  缺失在这里的含义
+
+% 1 1 0 13bde640dc99edcc1a50bde933148898
+
+% 0 1 0 197cd1aa1f6fded9024423ee9860af4a
+
+% 0 1 0 18eafb32caed3dd50f976e787bd035ca
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 3 0 0ed1d3e95e3f84e4113fce4bcb4cc55f
++ 该示例只编译而不运行，因为它会查询机器的设备。[录音](../../soundness/modules/audio.md#recording)从输入源录音，[可选性](../../philosophy/optionality.md)则介绍了 `let` 和 `or`。

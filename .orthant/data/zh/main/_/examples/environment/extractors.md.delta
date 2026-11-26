@@ -1,0 +1,75 @@
+orthant 2 language
+
+@ 0 1 0 1d7966862f0710b202335e8373be6db8
++ # 作为值匹配的平台
+
+@ 0 3 0 1648eae4a61d58f807308851b0965ec4
++ 操作系统和处理器作为有类型的值从作用域内的 `System` 读取，而不是作为属性的文本。因此可以用模式来选择发布版本，模式中处理器的位宽是一个类型，未知的系统则绑定它的名称。
+
+% 0 1 0 12705ff5e291290d17fbc8389d59ef4a
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 107d8cde1bc66b7517dce3c5ab425acb
++   label 一个操作系统
+
+% 1 1 0 035b058ae0af705b16b0d3f7f12a687a
+
+% 0 1 0 0a2dff6018276e4512b0688901a74ae6
+
+% 0 1 0 06e322adf841b9d614b552aea0e0338f
+
+% 0 1 0 0c42e59d856e14d50c079e07c3382873
+
+% 0 1 0 01a3a9789a170c3713c47846bde5ae9a
+
+% 1 1 0 1b897a16a524d758093dfd0f821c76a9
+
+@ 0 2 0 0408337702825d9c07f2f5852c0e61b9
++   label 以及一个具有某种位宽的处理器
++   highlight Architecture.Arm(_:..64)  位宽，作为类型
+
+% 1 1 0 186def996ec8fa0504b8100d1dfd8c72
+
+% 2 1 0 1be81722690149170208ea51a4d1f72e
+
+% 3 1 0 139761c500574e6612821d941d7813e8
+
+% 4 1 0 1b7b4b0a5d4963710ca546e8f3af797c
+
+% 5 1 0 13e223ecd5d50cbd1cb21150be790908
+
+% 6 1 0 1959fb2c7d5c680319767b6bb64afda4
+
+% 1 1 0 1cca149318f7be950042986f493f0f91
+
+% 1 1 0 176e122606d5ed3b00ac3f13eccf8f30
+
+@ 0 2 0 153f585a7d90ba7b06215f7d9bda6850
++   label 没有自己的情形的系统
++   highlight Os.Other(name)  绑定系统对自己的称呼
+
+% 1 1 0 0775995b31911ea000fc7dcb1a69b466
+
+% 2 1 0 1b0ff935cbe256cb01aa0ab67af13c30
+
+% 3 1 0 13412c52a856ddcf0fbdb90592198660
+
+% 4 1 0 190e656a1dde2eb605b5b0ac4049eccb
+
+% 5 1 0 141d1e2250ca2cbf15f45121ccc0ffc7
+
+% 6 1 0 06ba441106222a9009fd378554a794d8
+
+% 0 1 0 1375246fe336e8a908d9dba5d4792381
+
+% 1 1 0 1b1c1d7dcb7bd8670c4dbbf72d40c0c7
+
+% 0 1 0 18eafb32caed3dd50f976e787bd035ca
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 2 0 17ebbf3ef704c04501c85d1491093064
++ 此示例只编译，不运行，因为它的结果取决于机器。[机器](../../soundness/modules/environment.md#the-machine)列出了各种情形。

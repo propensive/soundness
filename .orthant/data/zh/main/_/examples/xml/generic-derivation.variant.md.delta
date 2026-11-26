@@ -1,0 +1,71 @@
+orthant 2 language
+
+@ 0 1 0 15a7e4fe0511464e0de33ea64896da75
++ # 枚举是对元素的选择
+
+@ 0 2 0 1b4a352a1cca9e99069c24234d2bcad8
++ 枚举的值写成以其分支命名的元素，读取时则由元素的名称选择分支。`@name` 为分支在文档中另起一个名称。
+
+% 2 1 0 0e0ffd9b6bfbfac21fa9287719be12a9
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 0ba5d8399fda82221d056ca0e8a6ab9b
++   label 以分支命名的元素
+
+% 1 1 0 0f9c8385ce6f640013b08ea35ba532d3
+
+% 2 1 0 03cbf7f1b0a2014118aebc31b44513bb
+
+% 3 1 0 0abdf3ecfbfdb8d317c0a53800881acd
+
+% 5 1 0 134e3227db94d3c41f78c00c20715274
+
+% 0 1 0 1a17bf9a08cf90e71e9651c654ee0fe1
+
+% 1 1 0 08d16e63591148a21411c7ea444b4acb
+
+% 0 1 0 13d49a662e1a6404151ca08c8f469f53
+
+% 1 1 0 01d5089b6f986a751aedc35fd8ecc10e
+
+@ 0 2 0 1b755fef4b880b6c01405fb298fe9d3d
++   label 为 XML 重命名的分支
++   highlight @name[Xml](t"chased")  元素的名称
+
+% 1 1 0 063bef4167c07eca1f5302e46a83c8f0
+
+% 2 1 0 1091980f7fc410b9182344693099c0c2
+
+% 3 1 0 1a628b5cdd39cef91078cc21eb842637
+
+% 5 1 0 00721480a26b6eab02f83ef90cd1604a
+
+% 0 1 0 157e2f1dedd007f317ae7d3404ea35f7
+
+% 1 1 0 0cee810390696efb0f135e6161c5843a
+
+% 0 1 0 0d580ea0cd0292071a72aacb6ec6b8c6
+
+% 1 1 0 0c2f2a013bae5c2a0be42b2c08e0a02b
+
+% 1 1 0 136d267ff733a60e0f6246170d49df5f
+
+% 2 1 0 1525a46c87e9e0571e7d21b8e7c42b7a
+
+% 0 1 0 08a86cbdc9b8cb0109ed8ce5b435ce67
+
+% 1 1 0 0cd6459499a6bd5203d659b3bcc1b6aa
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 0 1 0 16034c2285c5d79c055cb1fd4c71b492
+
+% 0 1 0 198e07abbb18f6a9112d6ec362593334
+
+% 1 1 0 10a4172ddcb4619f16645dd7c19c8b5f
+
+@ 0 2 0 181deb51e86db7980dd3d24b48c4b74a
++ [case class](../../soundness/modules/xml.md#case-classes)说明了与任何分支都不匹配的名称会怎样。

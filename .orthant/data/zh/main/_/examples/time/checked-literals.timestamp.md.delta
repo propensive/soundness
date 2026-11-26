@@ -1,0 +1,59 @@
+orthant 2 language
+
+@ 0 1 0 09deaaa9c2bd6ff50c9d16becabc5218
++ # ISO 8601 时间戳，逐位检查
+
+@ 0 3 0 1b6c6152a06b1e5f0fc22b963b34dbd1
++ 从日志或规范中复制来的时间戳写成 `ts` 字面量。编译器对照日历和时钟读取它，因此 2 月 30 日在这种形式下也会被拒绝，和在其他任何形式下一样。
+
+% 2 1 0 0fbd3998d363237c1b95dbe6d43c422d
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 0e6a68bee3933dcf17a32d9abf94ec4a
++   label 2 月没有的一天
+
+% 0 1 0 1477c34ff41c7c99183443e1d3238ae1
+
+% 1 1 0 0960c596329e4eb20a0b442aaa85c43a
+
+% 2 1 0 096249aa02bb543207ce1070a3cb98b8
+
+% 3 1 0 06c8edeea16f34fc1e034672e03d1965
+
+% 0 1 0 1f61e586bfc078dc16f4fa0d5ac2f57e
+
+% 1 1 0 1a3c6084e6abbd0d107891d300760d8c
+
+@ 0 2 0 02fd65db549f19451bce9b5d97192fb2
++   label 2 月有的一天
++   highlight ts"2024-02-29T19:30:00"  一个 `Timestamp`，已经解析
+
+% 1 1 0 19a2a460ef9ffe110305cf6fe900e78f
+
+% 2 1 0 13b6c335ab562700166ead677bf10619
+
+% 3 1 0 17a68707adc5db3e0cdd123d200e0b53
+
+% 0 1 0 1814c74b9bb74c031f09bab9ebc538bf
+
+% 1 1 0 09f5bcd9a929c53d1958a8f976e9a8df
+
+% 1 1 0 136d267ff733a60e0f6246170d49df5f
+
+% 2 1 0 1525a46c87e9e0571e7d21b8e7c42b7a
+
+% 0 1 0 08a86cbdc9b8cb0109ed8ce5b435ce67
+
+% 1 1 0 0cd6459499a6bd5203d659b3bcc1b6aa
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 0 1 0 047483e60f7282d11b6e1add0b277ff9
+
+% 1 1 0 1eb9046f0bed3df51a8617ab2ef2fee0
+
+@ 0 1 0 0047bc38738303c4111d0655bdc79b55
++ [时间戳](../../soundness/modules/time.md#timestamps)展示了写出时间戳的其他方式。

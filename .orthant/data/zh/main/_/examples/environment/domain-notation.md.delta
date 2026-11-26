@@ -1,0 +1,74 @@
+orthant 2 language
+
+@ 0 1 0 18846c7bf183b8611583c7142bc16b55
++ # 以成员命名的变量
+
+@ 0 3 0 101ca9575bbf1338086c20368be89c56
++ 变量作为 `Environment` 的成员读取，与程序中其他所有名称一样采用驼峰式。名称会被转换为 shell 的大写加下划线形式，因此无需在字符串中为任何变量命名。
+
+% 2 1 0 1b7c86078470f8f115a2646b15c5962d
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 2 0 164eb1abec0157880bbbed0f45178d99
++   label 一个单词
++   highlight Environment.editor  读取 EDITOR
+
+% 1 1 0 1c251377a2d4dd84074c7c1a065f652b
+
+% 2 1 0 17cd137d6030e35a1b372a981391bfe2
+
+% 4 1 0 118885fc944a2b82159a6049763fc5bc
+
+% 5 1 0 07ef37fc28151aa00b0d474ff558b95a
+
+% 6 1 0 0c4b2c1e9c78b84215f98f2f66efe735
+
+% 7 1 0 0d59d40e568c75d81757107b4d9e1d53
+
+% 9 1 0 0cb0e30bc2dcf56000b1380e9bdc6d31
+
+% 1 1 0 018056d91cb0fa2d1ef4d911d028af44
+
+@ 0 2 0 0fc4850c6271780c1f3d4672471541fc
++   label 三个单词
++   highlight xdgConfigHome  读取 XDG_CONFIG_HOME
+
+% 1 1 0 159f676bf25c030113a732dc40d1d2cd
+
+% 2 1 0 1f75d3376cdf9098133252276428318b
+
+% 4 1 0 08b4729a040e09030d74a38f718c4c74
+
+% 5 1 0 0d7bf8ff5c40f5bf0a34334ed7c6d1b7
+
+% 6 1 0 1a7e1c9b62437a2e0b6ba3a52bce6d7b
+
+% 7 1 0 126143eba13ef0e60085ee28a4f8dcd8
+
+% 9 1 0 0ae3b95f9fc682cf16731c569ebfc826
+
+% 0 1 0 1b25272f0362b4f5185b44beda780727
+
+% 1 1 0 0013d1d5f5ee01381279dc382260ed68
+
+% 1 1 0 136d267ff733a60e0f6246170d49df5f
+
+% 2 1 0 1525a46c87e9e0571e7d21b8e7c42b7a
+
+% 0 1 0 08a86cbdc9b8cb0109ed8ce5b435ce67
+
+% 1 1 0 0cd6459499a6bd5203d659b3bcc1b6aa
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 0 1 0 103a26cec846bc011933a75878f9b571
+
+% 0 1 0 0406f92c9ebab47f13dde85393999686
+
+% 1 1 0 1b753531a734d6de1a19bbc97d5f3524
+
+@ 0 3 0 090abf8e286b5fe51a3211a6e0e372b6
++ [环境变量](../../soundness/modules/environment.md#environment-variables)介绍了这种转换，[优雅的文字](../../philosophy/elegant-prose.md)则论证了这类记法的好处。

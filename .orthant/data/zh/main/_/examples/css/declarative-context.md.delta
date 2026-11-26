@@ -1,0 +1,40 @@
+orthant 2 language
+
+@ 0 1 0 1b9a9338914518181c3a0b4049063fdc
++ # 一个样式表，两种写法
+
+@ 0 2 0 11b56a664c8c43cf15cda028c41bf121
++ 样式表如何写出，不是 `show` 的参数。它是作用域内的一种选择：为读者而缩进，或者为浏览器而紧凑。
+
+% 0 1 0 12705ff5e291290d17fbc8389d59ef4a
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 0 1 0 0db431007cec4a930363fc353f2e3708
+
+@ 0 1 0 148c6821f972b16e1c4b2a43b2edb88c
++   highlight indentedCssFormatting  用于阅读
+
+% 1 1 0 0f803917c846c9f80e0840ba5e9074ce
+
+% 0 1 0 1c6031d54935b6ce108ad983fedbc599
+
+% 2 1 0 0509b9fc1d28763300871a10e030c379
+
+% 0 1 0 01bfd19e04db2dcc0596d7c3e4f573af
+
+@ 0 1 0 0f60c9daebbb0d7d0a99bac3febc675d
++   highlight compactCssFormatting  用于提供服务
+
+% 1 1 0 0d0fa84ad14085f20e7ae819186b924d
+
+% 0 1 0 1bf7f81f07359f770e8ab01bb55a0066
+
+% 2 1 0 090e36994ac7f0e30282d5fee30e250b
+
+% 0 1 0 18eafb32caed3dd50f976e787bd035ca
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 1 0 1149c54567707f17017a064c95033416
++ [渲染](../../soundness/modules/css.md#rendering)展示了每种写法的输出。

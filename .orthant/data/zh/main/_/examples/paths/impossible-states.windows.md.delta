@@ -1,0 +1,49 @@
+orthant 2 language
+
+@ 0 1 0 08a0ae389d0e5b6c1b64f7ab5a4eee75
++ # Windows 保留的名称
+
+@ 0 2 0 1733bbef33c06da30fb7772ae0a1e5e6
++ Windows 为其设备保留了某些名称，文件不能叫 `aux` 或 `con`。平台的规则在代码编译时、在名称写下的地方检查。
+
+% 0 1 0 12705ff5e291290d17fbc8389d59ef4a
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 06178944aa88a25d19c57124b657ea6a
++   label 设备名
+
+% 0 1 0 1477c34ff41c7c99183443e1d3238ae1
+
+% 1 1 0 0960c596329e4eb20a0b442aaa85c43a
+
+% 0 1 0 129c689ee983173e11a60369bdb464e5
+
+% 1 1 0 0de4bad7ccf842c80fd178aefc7194f8
+
+@ 0 2 0 0d2c08b4461aa0c40675015311d49409
++   label 其他任何名称
++   highlight "auxiliary"  不是设备
+
+% 1 1 0 0e6f3050fc1721bc1f2db5599ee69016
+
+% 0 1 0 0d3a8a5d54aa5dc41b7bcb5b62d84e14
+
+% 1 1 0 0bf054cdeb9f2bee137112cce227e40c
+
+@ 0 2 0 1a32f596fecbe1c31dd0f8e5490bbd6d
++   label 同一名称在 Linux 上没有问题
++   highlight Linux  没有这条规则的平台
+
+% 1 1 0 07acaf0627db203804846ed790fc5697
+
+% 0 1 0 15c98a79f56b487f1f0ec454861a23dc
+
+% 0 1 0 18eafb32caed3dd50f976e787bd035ca
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 2 0 0612dfe21dc871d317502abb0e9ea1b2
++ [平台](../../soundness/modules/paths.md#platforms)介绍了 `Local`，它的规则是所有平台中最严格的。

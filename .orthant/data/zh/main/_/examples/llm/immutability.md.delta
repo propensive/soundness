@@ -1,0 +1,54 @@
+orthant 2 language
+
+@ 0 1 0 04c78aee8fa9e85d19432c83e660f6be
++ # 配置好的模型是一个值
+
+@ 0 3 0 15a6176241a4bf2f18cff751f835d2e1
++ 提供方值保存了模型、密钥和调优参数。每个调优方法都返回一个新值，而不改动调用它的那个值，因此一个模型可以作为若干配置的基础，在它们之间自由共享。
+
+% 0 1 0 12705ff5e291290d17fbc8389d59ef4a
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 0635c87f2f589917133704e6b19da3e3
++   label 一个模型
+
+% 1 1 0 166e6f03624871fe168720370dd74a99
+
+% 2 1 0 089dd15fcd891c230c4abc309ae25e79
+
+% 1 1 0 0a7db4caeccb40fd04d06d8f7fd96a4f
+
+@ 0 3 0 149bf92d5adc8e1f07ccdc90f88335e8
++   label 它的简洁变体
++   highlight prompted  一个新值，带有系统提示词
++   highlight limit(256)  又一个新值，限制了输出长度
+
+% 1 1 0 012ae1fe38f92b1c1cdccc3b0a371fd7
+
+% 2 1 0 0d4179bd9f5b88271c7c9727136ff541
+
+% 3 1 0 162ca900bcfffd0910f3ccf2513723d1
+
+% 1 1 0 0c425fe223151e910c83fcdce8f433b7
+
+@ 0 2 0 11e3d0dfd4e5707202d4e66fecfeee4f
++   label 以及基于同一基础的华丽变体
++   highlight warmth(0.9)  bard 本身没有提示词，也没有温度
+
+% 1 1 0 1b92cb4a251899f11c3b08144539020c
+
+% 2 1 0 0d8c28e4944aef1e1322ad59c08e7ca7
+
+% 3 1 0 05d805ef387426e91885beda9228712c
+
+% 0 1 0 08a7c563581dce1411df6c2d1db856be
+
+% 0 1 0 18eafb32caed3dd50f976e787bd035ca
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 2 0 01a42fcc0c7cbaad129f5462656c4e6b
++ [提供方与模型](../../soundness/modules/llm.md#providers-and-models)列出了各个调优方法，[不可变性](../../philosophy/immutability.md)则说明了共享一个值的代价。

@@ -1,0 +1,89 @@
+orthant 2 language
+
+@ 0 1 0 0dfec0c2c137d0791c8ccdd7c1024f92
++ # 模型可以省略的参数
+
+@ 0 3 0 133f8c294d8cbb9a144fdcc869d8e366
++ 工具的输入模式说明了哪些参数是必需的。这一点同样来自签名：除非参数的类型是 `Optional` 或者带有默认值，否则它就是必需的。工具随后看到的是 `Unset` 或默认值，并说明缺失值意味着什么。
+
+% 0 1 0 12705ff5e291290d17fbc8389d59ef4a
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 11ad1e17733a55b9198c633419cba996
++   label 两个参数都是必需的
+
+% 1 1 0 10e7f0f58bca24581a3ba24c4c7a805d
+
+@ 0 1 0 1364142fe602a7de18390f12d948e78d
++   highlight act:..Int  模型必须提供它
+
+% 1 1 0 11058593dd34bb4e168738c5665ea850
+
+% 2 1 0 12f55225a87a56a50411856b51ce0513
+
+% 4 1 0 0cc0689ad13abd6811f4d7f4f7c56a13
+
+% 5 1 0 056fb578f86e1545105b8e8e577fa9a0
+
+% 6 1 0 0d202d56e250907c0c22dbffbd745b9f
+
+% 7 1 0 13def625ed09af79097b144f325c4422
+
+% 8 1 0 0bb4a4d90105aecf07057e881cc9ae58
+
+% 9 1 0 119ff85244c64807077a8a0c9a45bf9f
+
+% 10 1 0 14e7c336521244861ffec6f307dff33d
+
+% 12 1 0 1d199c926b47a5eb178bd1d145964c89
+
+% 13 1 0 1eff8cfc691ab46e1d555259d63b585f
+
+% 0 1 0 1fe33a4ca7a869301e2f76d4dd3cb0e9
+
+% 1 1 0 09feec43e35decb40cdc7ee9a6b8e9fe
+
+@ 0 1 0 14ae3a63deab5fc5041c75d8d67f2435
++   label 幕可以省略
+
+% 1 1 0 12e85c254d8b1ed000c0b0160c61e4ce
+
+@ 0 2 0 1db0a64df0a8942b12aa002970acff52
++   highlight Optional[Int]  模式不再要求它
++   highlight act.absent  由工具决定省略意味着什么
+
+% 1 1 0 1018ecf6b7e3510317b80e910e02591d
+
+% 2 1 0 081da98820e10db014faf5af6727af25
+
+% 4 1 0 023f6e648b07973011793f85d003bbc9
+
+% 5 1 0 1759c1a25b29d64c1ec4111e39837058
+
+% 6 1 0 0cccf5175a6651410064bba6738b7ee4
+
+% 7 1 0 16345e0e31d453531152768675469ac3
+
+% 8 1 0 07fa80e392f81fb403eacec3c240aa3a
+
+% 9 1 0 1beaff88884373440d32c5ce5c5029bb
+
+% 10 1 0 0c48670bd65ba984110405af67fa6731
+
+% 12 1 0 0d7e0fdad14c9dd618045c58845c2843
+
+% 13 1 0 012ba09f77d6acbd04f4f8173de4dc28
+
+% 0 1 0 0399a73948a37c691543091098b7eac7
+
+% 0 1 0 007129c926e3f8d11562514e3640378a
+
+% 0 1 0 18eafb32caed3dd50f976e787bd035ca
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 4 0 1563c017641e85f1041967337f29028f
++ 该示例只编译而不运行，因为服务器通过 HTTP 与客户端通信。[与客户端回话](../../soundness/modules/mcp.md#talking-back-to-the-client)介绍了必需参数，[可选性](../../philosophy/optionality.md)则介绍了标记其他参数的类型。
