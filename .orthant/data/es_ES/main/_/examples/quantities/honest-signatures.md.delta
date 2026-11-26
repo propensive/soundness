@@ -1,0 +1,69 @@
+orthant 2 language
+
+@ 0 1 0 06fb20b026013099155cc01b6bb15a7e
++ # La precisión de un número se pide
+
+@ 0 3 0 15fd92456288f8890ee272c761275482
++ Escribir una magnitud significa elegir cuántas cifras dar, y esa no es una elección que la
++ biblioteca haga en secreto. `show` necesita un `Decimalizer`, y un método que muestra una magnitud
++ o bien proporciona uno o bien se lo pide a su llamante.
+
+% 2 1 0 0f8231575bbf60ca176718bfecf6d1f2
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 0ee231578c3bfb32086f536b52ff37a2
++   label Una magnitud mostrada, sin precisión elegida
+
+% 0 1 0 1477c34ff41c7c99183443e1d3238ae1
+
+% 1 1 0 0960c596329e4eb20a0b442aaa85c43a
+
+% 0 1 0 06a526659a27dcd6170c9dfcae2b1902
+
+% 1 1 0 03f53173a9de31840459b89fb2fdad23
+
+@ 0 2 0 184fa89dbe3d60ea025fd7ed175fe9a5
++   label La precisión, pedida al llamante
++   highlight (using..Decimalizer)  nombrada en la signatura
+
+% 1 1 0 011fd62977f74a5413163c18f78ae452
+
+% 2 1 0 1dcb080eb2d03c390f8e4008ee100e33
+
+% 1 1 0 1aa5a919443be2d1040df7fad6455620
+
+@ 0 2 0 0640b25731586bdb1d089fe8636765c5
++   label Y proporcionada, una sola vez
++   highlight Decimalizer(3)  tres cifras significativas
+
+% 1 1 0 11dd4f24d75a666b1ef2bfe78839874a
+
+% 2 1 0 1686d471326e29d104ec8024e1b8c607
+
+% 0 1 0 18c170ea352c1e1c1eb710db4fb36f6c
+
+% 0 1 0 0bde9744b6d27b651a2bf11ac776016f
+
+% 1 1 0 0cae0642c721c6c10cf6f9876c5eb3b2
+
+% 1 1 0 136d267ff733a60e0f6246170d49df5f
+
+% 2 1 0 1525a46c87e9e0571e7d21b8e7c42b7a
+
+% 0 1 0 08a86cbdc9b8cb0109ed8ce5b435ce67
+
+% 1 1 0 0cd6459499a6bd5203d659b3bcc1b6aa
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 0 1 0 133a02b1a9b50cc80a17ae10407af27c
+
+% 1 1 0 0b2ec5ebdd4bdea51a9d8221ef39738c
+
+@ 0 3 0 0765a85a185c5156114af724e4c9816f
++ [Mostrar](../../soundness/modules/quantities.md#displaying) describe cómo se escribe una magnitud,
++ y [las signaturas honestas](../../philosophy/honest-signatures.md) por qué la elección es un
++ parámetro.

@@ -1,0 +1,84 @@
+orthant 2 language
+
+@ 0 1 0 0c41cc4419d40bf01cdaf5d8e12f7a09
++ # De texto a un valor, y de vuelta, en un paso cada vez
+
+@ 0 3 0 0efef0e67b271ec613c6d4812d3c8c1f
++ `read` e `in` toman un tipo que dice qué se quiere y en qué forma. `Play in Xml` es una obra
++ contenida en XML, y `Text over Xml` es texto que porta XML, así que analizar y decodificar, y
++ codificar y escribir, son cada uno una sola expresión.
+
+% 2 1 0 02d68a6446f72b4e09fd3b43cd168831
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 1d2452efd6908905064336a50691c29e
++   label Analizado y después decodificado
+
+% 1 1 0 03aaa5f3099be9be1c97df2fb82937b4
+
+% 2 1 0 078861a71b42aa3a085d790864358cb5
+
+% 3 1 0 1d570f6950e9873a1d35442d38d64611
+
+% 5 1 0 053eaabf17354e4c166c31b622cf57a4
+
+% 0 1 0 032ed1fc1d13ed811e2e5142d516e8ec
+
+% 0 1 0 1b0ebba47cdbcd47025268b6c2048311
+
+% 1 1 0 06b7d85f2235e2260946d430525b4014
+
+@ 0 2 0 0d9b59cd883fa215168bacb95d96c176
++   label Ambos a la vez
++   highlight read[Play..Xml]  una obra, contenida en XML
+
+% 1 1 0 0ba75ea4b0cba7b2194e48f2f703923f
+
+% 2 1 0 12d06da714f05bc31c3d2a7b1c728d8c
+
+% 3 1 0 104a803e2189126a0c558ede59ee16a6
+
+% 5 1 0 0e10284b56baf4e6134cb2b86b1cdddc
+
+% 7 1 0 186364712bf999e1069f1a8a194d7ded
+
+% 1 1 0 117c3eb172dc20941a0b8c87b1363f83
+
+@ 0 2 0 172e49b4f1eb63a7022752f313b513e5
++   label Y de vuelta a texto
++   highlight in[Text..Xml]  texto, que porta XML
+
+% 1 1 0 03a36859ae7ace8d1b42e4ee3c8e98da
+
+% 2 1 0 1bf1d565cbac2f571bf74fb44763f613
+
+% 3 1 0 179727c0e3f76179194343673c3fa66a
+
+% 5 1 0 0e01485d90dd8b701ebac1bd68bc763b
+
+% 7 1 0 154b85b977ad81020aaf0104fae5cdec
+
+% 0 1 0 16ef8a5030acdba50b3eb13c322391b0
+
+% 1 1 0 0b517103e0ece27c175e4cf84e7a743b
+
+% 1 1 0 136d267ff733a60e0f6246170d49df5f
+
+% 2 1 0 1525a46c87e9e0571e7d21b8e7c42b7a
+
+% 0 1 0 08a86cbdc9b8cb0109ed8ce5b435ce67
+
+% 1 1 0 0cd6459499a6bd5203d659b3bcc1b6aa
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 0 1 0 14850a09f6384c9f159ab6d95b562121
+
+% 1 1 0 02c371e50557b52a07c2c78bb855e0e2
+
+@ 0 2 0 1d72b436f7648f35052fb8e62b9f3a73
++ [Case classes](../../soundness/modules/xml.md#case-classes) tiene los detalles, y
++ [tipos infijos](../../philosophy/infix-types.md) el vocabulario.

@@ -1,0 +1,90 @@
+orthant 2 language
+
+@ 0 1 0 06e09f20bfb940e419cf31286078fb99
++ # Muchos elementos, de cualquier colección
+
+@ 0 3 0 1b2e07bf4419d83f1e479458cae35d58
++ `++` añade a un filtro todos los elementos de una colección, sea cual sea la colección. Una
++ lista, un conjunto y una cadena perezosa se añaden con el mismo operador, en una sola pasada y
++ con una sola copia de los bits.
+
+% 2 1 0 192ea3b45c0f4c0f03254182c1d6ac8b
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 05d9c11663b7251a1fd122f67ca759e1
++   label Desde una lista
+
+% 1 1 0 06c8aafeda9f5c810207d39dd7a4d059
+
+% 2 1 0 112fe54ae20d856a0d09c32a76e5d68a
+
+% 3 1 0 0f8d5ad265e369d6183b9b0b8323dde1
+
+% 5 1 0 065db1c4fade38f30cca15aa95de709f
+
+% 6 1 0 13c5e980454046ca1e547f1d20b7a48d
+
+% 1 1 0 0a544227bfa3d9aa1c591b5c792c50cb
+
+@ 0 2 0 09fe71ab647c15a40f1704102d752359
++   label Desde un conjunto
++   highlight Set  el mismo `++`
+
+% 1 1 0 0b51a7fca8b7abbd19a8278c4aa4fc8b
+
+% 2 1 0 0acd01d242906d1b14344f3f5f21d199
+
+% 3 1 0 14b0a4c23137cc6b02e05122a93e74a7
+
+% 5 1 0 0138505fe30dcbc30344c878e99b7d48
+
+% 6 1 0 164119c695eebbe71c0846ff0caf2da8
+
+% 7 1 0 002872ea7933f5d71be4d881d355ccbe
+
+% 1 1 0 0f4e05a7c1df6f9715eaf00ecc38d788
+
+@ 0 2 0 103b7d10bf2be3521ac0d94e8eea3c7c
++   label Desde una cadena
++   highlight Chain  y otra vez
+
+% 1 1 0 16fe53387ee9b0aa070713e198d2f819
+
+% 2 1 0 08dd143728413f491f7b65c0c6f8a8b4
+
+% 3 1 0 158e4eb76985255e07ee101e44f1bc23
+
+% 5 1 0 19e8850411f8e34208e03c75072ffb7c
+
+% 6 1 0 17ed213eaed08d19156e6c3af1fd1676
+
+% 7 1 0 1fa8d4e7ccb0903619d6f96a35c55651
+
+% 0 1 0 142451ab2d31b59f04cb694542898b50
+
+% 1 1 0 0f1360c3b9553c1f1a9dcab604cc9567
+
+% 1 1 0 136d267ff733a60e0f6246170d49df5f
+
+% 2 1 0 1525a46c87e9e0571e7d21b8e7c42b7a
+
+% 0 1 0 08a86cbdc9b8cb0109ed8ce5b435ce67
+
+% 1 1 0 0cd6459499a6bd5203d659b3bcc1b6aa
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 0 1 0 0b84d72f47877754057e44dd195fa176
+
+% 0 1 0 08500653a325a5da008ad3d37c433ea0
+
+% 0 1 0 074f7d723f6ecaa61f3fc45a4efc3664
+
+% 1 1 0 163a24cb0374a51618923a7fa299c471
+
+@ 0 2 0 09181accfbefae9d16fe6e3f49e8f3e4
++ [Crear y añadir](../../soundness/modules/bloom-filters.md#creating-and-adding) tiene los
++ operadores, y [las API pequeñas](../../philosophy/small-apis.md) el motivo de que haya uno solo.

@@ -1,0 +1,60 @@
+orthant 2 language
+
+@ 0 1 0 14e4708287b3fd611afbc15e3403c2da
++ # Cada paso de una petición declara cómo falla
+
+@ 0 4 0 05be6b3cba37863f14c23544b074eee9
++ Una conexión que no puede establecerse es un `Connect.Error`. Una respuesta fuera del rango de
++ éxito es un `Http.Error`, y un cuerpo que termina antes de tiempo es un `Truncation.Error`. Un
++ método declara cada uno donde puede surgir: el primero cuando se envía la petición, y los demás
++ solo cuando se lee el cuerpo.
+
+% 0 1 0 12705ff5e291290d17fbc8389d59ef4a
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 154d73d9101368410c4a676fd21fa214
++   label Al enviar puede no lograrse la conexión
+
+% 0 1 0 10abe85dc0680fc80c35d1f9d1a04725
+
+% 1 1 0 1a88c34af11d3c5f0bcdee239e74b032
+
+% 2 1 0 1edfcc1b55f780b51566f69bafb4e506
+
+% 2 1 0 03fb7ef40fc963390751205f12bf8f8e
+
+% 3 1 0 0e5eba93dc3956031ea65c95b232240b
+
+% 1 1 0 0b70152001f5229019f43f7c513d8f7e
+
+@ 0 1 0 0a9f16c404d8b0e5170d19a1753a995a
++   label Al leer el cuerpo puede encontrarse un estado erróneo, o muy pocos bytes
+
+% 0 1 0 06604cd83f2703ab0346a8a49db96a28
+
+% 0 1 0 1accf43fe92797641dc8da9a374d03c5
+
+% 1 1 0 0783dfca2d5cd0bd11be3d890fcbff21
+
+% 2 1 0 04d61593b8a8fec0114854c9d95236f1
+
+% 0 1 0 17ae010515f1d06d1ae4a0132df07de9
+
+% 2 1 0 0864d8c69c49b42e1a619537bb41e274
+
+% 3 1 0 185a9c56c0c9634805a5b679f2601951
+
+% 0 1 0 1db1f10bcfe591cc02430a673827baa8
+
+% 0 1 0 12ac34e96f2f78c605d7863660561845
+
+% 0 1 0 18eafb32caed3dd50f976e787bd035ca
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 2 0 0e57191b2867e5051f5c8bf217df9dcb
++ El ejemplo se compila, pero no se ejecuta, porque necesita la red.
++ [Errores](../../soundness/modules/http-client.md#errors) describe lo que transporta cada error.

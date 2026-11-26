@@ -1,0 +1,61 @@
+orthant 2 language
+
+@ 0 1 0 0d40a6a00c9b0646115dc69ab8004904
++ # Una vida útil es un tiempo
+
+@ 0 3 0 1e4c01f11307607d116151a0c5f115d4
++ Una `Cache` conserva un valor durante una vida útil, y la vida útil es una magnitud física. La
++ caché no sabe nada de unidades, y las magnitudes no saben nada de cachés, pero solo una magnitud
++ que es un tiempo puede darse como vida útil.
+
+% 2 1 0 08f9243ffeba400d13f498605dcd54ea
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 0da3b0849d80ac7806137f52f3b31010
++   label Trescientos metros
+
+% 0 1 0 1477c34ff41c7c99183443e1d3238ae1
+
+% 1 1 0 0960c596329e4eb20a0b442aaa85c43a
+
+% 2 1 0 1ad65231f5954f490c6551a2f43161f9
+
+% 0 1 0 030f186474bc0a5016811bc438dc09b1
+
+% 1 1 0 121e05a1e622822f00d0b74068041262
+
+@ 0 2 0 06e8f3d52d2243e109ebfdc467f48e26
++   label Trescientos segundos
++   highlight Second  una unidad de tiempo
+
+% 1 1 0 156ed902c1233d8f014f8e7f49135487
+
+% 2 1 0 086ffd617c8c01700dd2bc0c4429cc6a
+
+% 0 1 0 1f56e720c3b72b470b7bb4dc6d96ffe3
+
+% 1 1 0 13b41bb6c262197a128e34527e61dcd7
+
+% 1 1 0 136d267ff733a60e0f6246170d49df5f
+
+% 2 1 0 1525a46c87e9e0571e7d21b8e7c42b7a
+
+% 0 1 0 08a86cbdc9b8cb0109ed8ce5b435ce67
+
+% 1 1 0 0cd6459499a6bd5203d659b3bcc1b6aa
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 0 1 0 1f077084835b095d08b7904e9a8d3eb3
+
+% 0 1 0 0a7d4a2574b4ed150ec7457a9f9c1625
+
+% 1 1 0 039b9475670e38bb0ca2f077f0c89698
+
+@ 0 3 0 11e6c9a7d2456edb135a4160199486c6
++ La segunda llamada cae dentro de la vida útil, así que da el valor que guardó la primera.
++ [Un valor que caduca](../../soundness/modules/caching.md#an-expiring-value) tiene los detalles, y
++ [componibilidad](../../philosophy/composability.md) la razón de que las dos bibliotecas encajen.

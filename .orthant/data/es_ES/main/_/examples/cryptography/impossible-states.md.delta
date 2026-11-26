@@ -1,0 +1,75 @@
+orthant 2 language
+
+@ 0 1 0 12f9e75d7e613ea50df4eee04b415499
++ # Una clave solo hace lo que su cifrado puede hacer
+
+@ 0 3 0 0b30b16e8504514c16a45f500552110a
++ Una clave está tipada por su cifrado, y el cifrado decide qué operaciones existen. Una clave
++ X25519 acuerda un secreto compartido, y no puede firmar. Una firma hecha con una curva no puede
++ comprobarse como si se hubiera hecho con otra.
+
+% 0 1 0 12705ff5e291290d17fbc8389d59ef4a
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 03aa0216054069ba17cf2c23c9421e03
++   label Una clave de acuerdo, a la que se pide firmar
+
+% 1 1 0 1533495ac51b52bf0053c0d50b96329e
+
+% 2 1 0 02b4c6c7e03377e3177d9f71e76474b1
+
+% 3 1 0 02ad133cee346a271f7cffd5d5dc8d1a
+
+% 4 1 0 113e4cded600bd9d0e20351218b31ba0
+
+% 0 1 0 111fc0f6ffcb436112d546d51464facb
+
+% 1 1 0 0c96a97f65b793fa07e2b78190d2de0d
+
+% 2 1 0 1b11327c2a838af40744290e0b4dbb0b
+
+@ 0 2 0 0c991171f1c741e90adb8501e23d3e51
++   label Una clave de firma
++   highlight Ecdsa[256]  un cifrado que puede firmar
+
+% 1 1 0 18dfec6f9e46415c1b295e9738687cd4
+
+% 2 1 0 1f2ed8a534b233ed08a9c5ea0d3e3ea3
+
+% 3 1 0 14ec20014e5d71580a068f29d9240802
+
+% 5 1 0 149f51678e7e4d851413285ed3b41777
+
+% 1 1 0 0e83b54c24c693cd1cecefbd68c3460a
+
+% 2 1 0 1c4e5c3ec133896c1fe52d07212a334b
+
+@ 0 1 0 1c496f1fbea910061930be2ef371eb97
++   label Su firma, comprobada con una clave de otro tamaño
+
+% 1 1 0 12646421114fd7b21d898e2576362521
+
+% 2 1 0 18575ee696eb69af11809df642bfa2be
+
+% 3 1 0 1076caedb53aa2b914ecee32f090331c
+
+% 4 1 0 1a0aa1cabce0fa470102cae581e24c3c
+
+% 5 1 0 066aaa6f162c4c85016e5d0aa30684ae
+
+% 0 1 0 1d6cfebe3db38dc100ce8137b8f9a4ac
+
+% 1 1 0 03e1b93150454ebc10a834eb14664eeb
+
+% 0 1 0 16175e01b17ac77c191616c601a3282c
+
+% 0 1 0 18eafb32caed3dd50f976e787bd035ca
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 2 0 03fdc456bd42cb5b09bc6753814ce065
++ [Algoritmos débiles](../../soundness/modules/cryptography.md#weak-algorithms) tiene la tabla de lo
++ que admite cada algoritmo.

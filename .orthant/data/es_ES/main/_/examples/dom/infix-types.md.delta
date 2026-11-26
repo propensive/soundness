@@ -1,0 +1,43 @@
+orthant 2 language
+
+@ 0 1 0 15c22014f3430afc04e39ebec598d1af
++ # De dónde viene un valor ajeno
+
+@ 0 3 0 1bcdc2fdb782c9061bd07ad0e7fbc369
++ El tipo de un valor de la página dice qué interfaz tiene y qué ecosistema define esa interfaz, como
++ una frase. Cada paso de una navegación tiene un tipo así, dado por la declaración del miembro que
++ se seleccionó.
+
+% 0 1 0 12705ff5e291290d17fbc8389d59ef4a
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 2 0 0f730a6eaa10cb361e8bb48177de820a
++   label El documento de la página
++   highlight Foreign..Browser  una interfaz, y el ecosistema al que pertenece
+
+% 1 1 0 1a045aee7ee1d81d15b509f5663325a9
+
+% 2 1 0 187ac856c6b1fe6f0c8016ad840b12cf
+
+% 1 1 0 1aa96e64196838c01a1f4baf44e16b38
+
+@ 0 2 0 015f34961782dae00db6fbc4672948b9
++   label Un elemento encontrado en él
++   highlight "HTMLElement"  lo que se declara que devuelve `getElementById`
+
+% 1 1 0 013fdd040b415d100f2536f11b5ce395
+
+% 2 1 0 1ac8332894f1e6b30f31acd91c577b76
+
+% 0 1 0 04c6de69d134b4a9122c7e978d759feb
+
+% 0 1 0 18eafb32caed3dd50f976e787bd035ca
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 2 0 12a2faf8e391af7b08e5bd1887c524fd
++ [Los globales de la página](../../soundness/modules/dom.md#the-pages-globals) presenta `document`
++ y `window`.

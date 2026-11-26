@@ -1,0 +1,65 @@
+orthant 2 language
+
+@ 0 1 0 0e55d7034492dc7b0be3bac9b3d32a32
++ # El resumen de una case class
+
+@ 0 2 0 01d0ff6f8270f1090a7e50c244dd304e
++ Una case class admite resumen porque sus campos lo admiten. No se escribe nada para el tipo, y un
++ cambio en cualquier campo, por profundo que esté, cambia el resumen.
+
+% 2 1 0 148b28873464b547166c4aa31bd73f01
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 031e97f85a1842b914a1a8f2f0de1081
++   label Un valor de dos campos
+
+% 1 1 0 00459f5bb8efa81208ec466d9d53f5d7
+
+% 2 1 0 14aa903e8effc8160e9635ce5a66eb47
+
+% 4 1 0 144d813202196afb0d8bf610bb58da52
+
+% 0 1 0 1fb23e9a8fa7efa0061e159fe99beb3b
+
+% 1 1 0 17d28681c16cfafa03e5b87f0a88bb96
+
+@ 0 2 0 008abebd2b7830fd13ab3882e1f3a824
++   label Un valor que contiene otros
++   highlight roles:..List[Role]  una lista de case classes
+
+% 1 1 0 04b5b91318bb259402474d05a9caf81c
+
+% 2 1 0 0a840ada2e87f3f7027a20386894256e
+
+% 4 1 0 093f1875a7fb1708182ff7248ea8fcf4
+
+% 0 1 0 0e94ca09246fea6a16f8fba1c8d9696c
+
+% 0 1 0 1d5068fbce29eab21331bfa8ae947a9f
+
+% 0 1 0 1d3945cda521696602b023d4fe166ce5
+
+% 1 1 0 05bfdc2aeb18d4421198d30be7adc74b
+
+% 1 1 0 136d267ff733a60e0f6246170d49df5f
+
+% 2 1 0 1525a46c87e9e0571e7d21b8e7c42b7a
+
+% 0 1 0 08a86cbdc9b8cb0109ed8ce5b435ce67
+
+% 1 1 0 0cd6459499a6bd5203d659b3bcc1b6aa
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 0 1 0 0310490664bed32f1b5febfe39872f1a
+
+% 0 1 0 13882ec47319d98c09eb737aac25ba8a
+
+% 1 1 0 122a56323b2a619a132670b37d2068bf
+
+@ 0 2 0 09d2145b2c8eebec077fb9377096a464
++ [Hash de tipos propios](../../soundness/modules/hashing.md#hashing-your-own-types) describe la
++ derivación.

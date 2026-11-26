@@ -1,0 +1,83 @@
+orthant 2 language
+
+@ 0 1 0 0b622124b58260690dab7853aac6459d
++ # Cualquier cosa con la forma de un grafo
+
+@ 0 3 0 144770dcf5b49b19101b25a7bb824fa3
++ Un `Dag`, un `Digraph` y un simple `Map` de nodos a sus sucesores son tipos distintos con un solo
++ vocabulario. `sources`, `successors` y `reachable` se preguntan a cada uno con las mismas palabras,
++ ya que cada uno es `Nodal`.
+
+% 0 1 0 12705ff5e291290d17fbc8389d59ef4a
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+@ 0 2 0 0747d9923f47d8661e142947a32307ce
++ alternative Un `Dag`
++   highlight Dag  comprobado en busca de ciclos
+
+% 0 1 0 0fd2ac3797a0477c02117fa7e01a94b2
+
+% 1 1 0 0428a31f3d3e43b7091c3ca786dd21af
+
+% 2 1 0 0b23ecb5a17c76ec0b2167f7e6a82efd
+
+% 0 1 0 1eb2130529fee634181093f4ded37707
+
+% 1 1 0 06c600e5d02c0e79174d107cdbb502f6
+
+% 2 1 0 0f63e6e1db1d279012582aae89612073
+
+% 3 1 0 0cf60d4b582473ea0f67030a9667950a
+
+% 5 1 0 06e969c6ab68ce6e1f757e54ed19eaf9
+
+% 6 1 0 1463c7323a54f51601d8c47a7b6cbe01
+
+@ 0 2 0 1a180508267848a2083a46d2b6757bb5
++ alternative Un `Digraph`
++   highlight Digraph  ciclos permitidos
+
+% 1 1 0 0d33c2bdd96ba42c03a58a33ef0c0415
+
+% 2 1 0 1422a496b2883b7f1e02719797e85c7f
+
+% 0 1 0 10564c6d2bcada1d1a0cf3efe58636a8
+
+% 1 1 0 0ae7169b5408d17a09382bb38f14fb71
+
+% 2 1 0 1ad0fb57a07a1e1704cfb07662e4d98f
+
+% 3 1 0 1cb8e330cc112a1205c4e37125242957
+
+% 5 1 0 065347f859afb79315e9f60e97e3f86a
+
+% 6 1 0 02598abc79df18d015a8e88b335667fc
+
+@ 0 2 0 18f7024c5f193ddc0e62eadc8668e4e9
++ alternative Un `Map`
++   highlight Map  una colección corriente
+
+% 1 1 0 1097492db550cf671b2780a8f099354d
+
+% 2 1 0 12d1a0661b041bff07963f08d13db8c6
+
+% 0 1 0 0b11727767ace2ee12c15502a7533d51
+
+% 1 1 0 11d21d170f1bfb101bd177e22cd4be48
+
+% 2 1 0 069ce6361d69964202233eb8f559bb6a
+
+% 3 1 0 199c49d5d1f0c41a156d6972ae90ac32
+
+% 5 1 0 01b0f641ed96b9d90e50ba697094ba74
+
+% 6 1 0 0e4414f8b22bbb84053acc8f99a7db31
+
+% 0 1 0 18eafb32caed3dd50f976e787bd035ca
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 2 0 1a389ed32b8a7cc4138d273ae7182e1c
++ [Grafos](../../soundness/modules/graphs.md#about) presenta la clase de tipos, y
++ [API pequeñas](../../philosophy/small-apis.md), el motivo de un solo vocabulario.

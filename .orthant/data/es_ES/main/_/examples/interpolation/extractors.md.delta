@@ -1,0 +1,65 @@
+orthant 2 language
+
+@ 0 1 0 18223fc250b3779501223e956e5564dd
++ # Un literal que construye, y desmonta
+
+@ 0 3 0 1dd0f719cb35947a15ae2cfa69cabbe9
++ Un interpolador funciona en ambas direcciones. El `j"…"` que escribe un documento JSON con un valor
++ sustituido en él es, en un `case`, un patrón que coincide con un documento de esa forma y liga lo
++ que encuentra en el mismo lugar.
+
+% 2 1 0 15e429ba2112be651f49d5418b0e6573
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 2 0 0a522957cf0ece6403177f37e2b0aea5
++   label Un documento, construido
++   highlight $lines  entra un valor
+
+% 1 1 0 0b5e139efe91c3ea0a6531963ace4685
+
+% 1 1 0 1b1656c39749a0d901d9e6c793e57ad4
+
+% 2 1 0 11638d7aae230d321302f70570215ee1
+
+% 1 1 0 0c17f6c3ad41008618d793327b5e3601
+
+@ 0 2 0 083f6e76b31ead560e0a80b6d137f782
++   label Un documento, comparado con un patrón
++   highlight $count  sale un valor
+
+% 1 1 0 0f8a7346d80e18c80791574fa67f4246
+
+% 0 1 0 12a618ab3fc8ab800817fdfca2fcb19c
+
+% 1 1 0 1febe3e14df69a6f0623d0d26f39e330
+
+% 2 1 0 1f131b1887f225950877044222049166
+
+% 0 1 0 1f67dbd13da0bd691bffcbbdb352b292
+
+% 0 1 0 1f9310f3cf69739b0a69a09874c9015b
+
+% 0 1 0 1c31f0908c0d84c9052bd4a5e0d5152b
+
+% 1 1 0 02363a620f0c7d7903ce42ba143b127b
+
+% 1 1 0 136d267ff733a60e0f6246170d49df5f
+
+% 2 1 0 1525a46c87e9e0571e7d21b8e7c42b7a
+
+% 0 1 0 08a86cbdc9b8cb0109ed8ce5b435ce67
+
+% 1 1 0 0cd6459499a6bd5203d659b3bcc1b6aa
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 0 1 0 04ed9c60d006d22a02e8db8df444c61b
+
+% 1 1 0 1f200b9f179bc8221505650e0b8ce55b
+
+@ 0 2 0 002865a87e83d9b5058effa442d8036f
++ [Patrones](../../soundness/modules/interpolation.md#patterns) nombra la clase de tipos que hay
++ detrás de la dirección inversa.

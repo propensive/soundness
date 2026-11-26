@@ -1,0 +1,74 @@
+orthant 2 language
+
+@ 0 1 0 01dc48980cd15cbc0f26ec7811575935
++ # Dónde se rompió un mensaje en la transmisión
+
+@ 0 3 0 067309986d6ffcb41874e641c1993583
++ Un `Protobuf.Error` contiene su motivo como un valor, y un motivo relativo a los bytes contiene el
++ desplazamiento en el que se detuvo la lectura. Un manejador toma el desplazamiento de un patrón, y
++ un defecto en la transmisión se encuentra sin un volcado hexadecimal.
+
+% 2 1 0 0cc709bc15b477890cacdecc6b775689
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 03677f54c8193d90056014a3eac7f764
++   label Cualquier fallo, gestionado por igual
+
+% 1 1 0 106950c606bd133709d051a5742122fe
+
+% 1 1 0 151f6f8b94e796ac1e4de02f6100ba2a
+
+% 3 1 0 1d43a9900291166818a8c3af25f70ddd
+
+% 4 1 0 1ccc23d419697dd4181f0a5719b3e0e4
+
+% 0 1 0 0fe5e7407ea6816f10b77ac40c9f6e1b
+
+% 1 1 0 08bb11afb05ed1c61d3c0152fc1f25c7
+
+% 1 1 0 1ce932f79450981a1b2f2aa38a4cf48a
+
+@ 0 2 0 0c011cca9fcaf07002de52f42281aab5
++   label Un mensaje truncado, y dónde
++   highlight Truncated(offset)  el desplazamiento, como un Int
+
+% 1 1 0 0dec7dc87d7be24f00a2aee071f82431
+
+% 0 1 0 0954cd8b5a5d82581e6355d5b75f7a32
+
+% 1 1 0 19f4fca94b9490420297ca3a3c552287
+
+% 3 1 0 16fa2b4502c3b70d1d448284a6e2cd0a
+
+% 4 1 0 0f3bd587ee6e1b1a03d00174c414cea7
+
+% 0 1 0 1e83bf2440b1a9661aed78f1f72ba27f
+
+% 0 1 0 1cf08a3a9da50e691523435c2bc328cf
+
+% 1 1 0 1df5e0f6d52522121d9d07751e12b519
+
+% 1 1 0 01297639a119a0f816a49db22c87e67a
+
+% 1 1 0 136d267ff733a60e0f6246170d49df5f
+
+% 2 1 0 1525a46c87e9e0571e7d21b8e7c42b7a
+
+% 0 1 0 08a86cbdc9b8cb0109ed8ce5b435ce67
+
+% 1 1 0 0cd6459499a6bd5203d659b3bcc1b6aa
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 0 1 0 14ac1202015ba5881caf0b78496201c2
+
+% 0 1 0 1d2e68042ebf353010fad94b0b7c47d3
+
+% 1 1 0 1fceaee3c9a6033405021045da5be382
+
+@ 0 2 0 1698e931e153945818354bf6b40e084f
++ [Errores](../../soundness/modules/protobuf.md#errors) enumera los motivos, y [los errores
++ expresivos](../../philosophy/expressive-errors.md) dice por qué son valores.

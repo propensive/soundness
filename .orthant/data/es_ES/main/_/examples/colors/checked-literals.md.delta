@@ -1,0 +1,42 @@
+orthant 2 language
+
+@ 0 1 0 028e8cf85dcf6b3c03b8bccf224ade2d
++ # Un color hexadecimal, comprobado al compilarse
+
+@ 0 2 0 1160e17dda6411f70a68a6363d67be78
++ Un color escrito como `rgb"…"` lo lee el compilador. Un dígito que no es hexadecimal es un error de
++ compilación, y nunca un color que es negro en silencio.
+
+% 0 1 0 12705ff5e291290d17fbc8389d59ef4a
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 0331a03b5b74b7bd0ccf47dc6fd00644
++   label El último dígito no es hexadecimal
+
+% 0 1 0 1477c34ff41c7c99183443e1d3238ae1
+
+% 1 1 0 0960c596329e4eb20a0b442aaa85c43a
+
+% 0 1 0 18ea589ca62417a20327eefc0b9d112a
+
+% 1 1 0 03bcb76d78e7259d17335dade3f3a7e7
+
+@ 0 2 0 02a4850eef8e7e220e15a708826fdef5
++   label Seis dígitos hexadecimales
++   highlight #abcdef  leído por el compilador
+
+% 1 1 0 10e53daf26ad65d61c4eab0171ebcf6a
+
+% 0 1 0 14aaee1420810ecf100e64ce082c9de5
+
+% 0 1 0 18eafb32caed3dd50f976e787bd035ca
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 3 0 187f28b201494abf0b71417a7a070002
++ [Hexadecimal y el terminal](../../soundness/modules/colors.md#hex-and-the-terminal) muestra el
++ color en un terminal, y [seguridad por construcción](../../philosophy/safety-by-construction.md)
++ defiende literales como este.

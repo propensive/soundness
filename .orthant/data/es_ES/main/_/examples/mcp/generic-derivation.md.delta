@@ -1,0 +1,93 @@
+orthant 2 language
+
+@ 0 1 0 09e9145a138c862e1384315f3fb88d5f
++ # Un método es una herramienta, y su signatura es el esquema
+
+@ 0 3 0 13f7ae5dc16ed47703f3aee4901267b1
++ Un servidor MCP describe cada herramienta a su cliente con un esquema JSON para la entrada y otro
++ para el resultado. Aquí no se escribe ninguno de los dos. Un método marcado con `@tool` es la
++ herramienta, y ambos esquemas se derivan de los tipos de su parámetro y de su resultado, incluidas
++ las case classes.
+
+% 0 1 0 12705ff5e291290d17fbc8389d59ef4a
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 10617734b6fcca6b017b1d81daee9f1b
++   label Una herramienta que recibe texto y devuelve un número
+
+% 0 1 0 13ecb108756d61c60288e2a01d7dbe48
+
+@ 0 1 0 0defa3e0508ba15113d3cc870e17ae5b
++   highlight (play:..Int  el esquema de entrada y el esquema del resultado
+
+% 1 1 0 05aa4d3fdd3f94620f29ca34aa93c388
+
+% 2 1 0 0417c572b260b0cf097eb5a2e3c9826f
+
+% 2 1 0 059da8fa653a58fd0807ffbed711ec35
+
+% 3 1 0 19e905ad434439ee0ad64503ff42d638
+
+% 4 1 0 117e0787c33b878a029eab5894aea436
+
+% 5 1 0 1c8fc99ab606100916e35f46586b8506
+
+% 6 1 0 0a5ffcf471329dbb0cac7a5a48a7125d
+
+% 7 1 0 17131178d7d749ec1c05bdeaaad241ee
+
+% 8 1 0 1d28f30f0e1bef8f0f6b4591779a25ae
+
+% 10 1 0 01ed82c8ec55803913459bc5390591b7
+
+% 0 1 0 1a0ac907f33326291171f70e3889fa15
+
+% 0 1 0 13aaff89f99e6af90284a9fdfef2e60b
+
+% 1 1 0 11dce0f48f73b1501ac1e76e53a49a49
+
+@ 0 1 0 0b8ec5540af8291a1c29e95e5e8145d8
++   label Una herramienta que devuelve una case class
+
+% 0 1 0 17620a9542b7451c00ee3649f972f899
+
+@ 0 1 0 0b0570c1021d6c8a1daf8fa9d6065933
++   highlight Role  su esquema se deriva de sus campos
+
+% 1 1 0 120ac119244e19de0ee29e86bc56ea56
+
+% 2 1 0 09036bc5b90c287b1f124930d56aa0f2
+
+% 0 1 0 1693b3d13aa05feb0c4b34886f5d0cff
+
+% 2 1 0 01542adca93aba4e01fa49b24c724ce4
+
+% 3 1 0 02206128a0487300029f2798612c8f74
+
+% 4 1 0 182d01011c10b99518888ebe4aa8262f
+
+% 5 1 0 0890e13636125207072769d56cae78ba
+
+% 6 1 0 095720e822c087a703e0c6a3e4607f23
+
+% 7 1 0 12bc379851635ce714d41cb58378c822
+
+% 8 1 0 0df031ffa548d0f704d098df5aa25243
+
+% 10 1 0 18462c5406e179a3077f0f8e78be1919
+
+% 0 1 0 0a90a4dbeb3ad3181f374df1319854e0
+
+% 0 1 0 188319bfa1c55e2a145baf0b5ac0e235
+
+% 0 1 0 18eafb32caed3dd50f976e787bd035ca
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 3 0 1d4147691dd15aa11b7f12317d704a55
++ El ejemplo se compila, pero no se ejecuta, porque un servidor habla con un cliente por HTTP. [Un
++ servidor](../../soundness/modules/mcp.md#a-server) describe las anotaciones, y
++ [JSON](../../soundness/modules/json.md#schemas) los esquemas que se derivan.

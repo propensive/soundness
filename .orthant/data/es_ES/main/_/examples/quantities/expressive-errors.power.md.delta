@@ -1,0 +1,64 @@
+orthant 2 language
+
+@ 0 1 0 0cba0be7db181e791e642a2b724ac49a
++ # Una longitud no es un área
+
+@ 0 3 0 00a3008ae6268fdd087f28e1540d430a
++ Dos magnitudes de la misma dimensión, elevadas a potencias distintas, son cosas distintas. Una
++ comparación entre una longitud y un área se rechaza, y el rechazo se redacta como el error que es.
+
+% 2 1 0 090a3ca8434793400f5905bbe2695d03
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 041da816526f52351b684e2655f5643e
++   label Una longitud comparada con un área
+
+% 0 1 0 1477c34ff41c7c99183443e1d3238ae1
+
+% 1 1 0 0960c596329e4eb20a0b442aaa85c43a
+
+% 0 1 0 17b894c710d0c1a318e4a2d5f8217d45
+
+% 1 1 0 1c40dc56cd7a80f1121b55924afdc6c2
+
+@ 0 2 0 1672ae7a5bede62f1404b6f9b8dba57c
++   label Un área comparada con un área
++   highlight 7*Metre*Metre  ambas en metros cuadrados
+
+% 1 1 0 0ee6eb9d938e958b03bb073b0c7de1b6
+
+% 0 1 0 1493761493d8b4f70868bedca9a45edd
+
+% 1 1 0 0e2f8eab1b9cf4d70c6d1bf6a843d90b
+
+@ 0 2 0 06613a6382254e750f170d8510aae9db
++   label En unidades distintas, que se convierten
++   highlight 60*Foot*Foot  pies cuadrados, frente a metros cuadrados
+
+% 1 1 0 06f49e9f4fd3eb0206bef8a6b00d329c
+
+% 0 1 0 09a987b698c642300b558cbf557e4a4f
+
+% 1 1 0 0c3b1a81a722f98209823dbea9e1d3ec
+
+% 1 1 0 136d267ff733a60e0f6246170d49df5f
+
+% 2 1 0 1525a46c87e9e0571e7d21b8e7c42b7a
+
+% 0 1 0 08a86cbdc9b8cb0109ed8ce5b435ce67
+
+% 1 1 0 0cd6459499a6bd5203d659b3bcc1b6aa
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 0 1 0 14d9f126b72791da0d5b138c5b94abe2
+
+% 1 1 0 1fc7b0118defbab914c87a1ad98ac37c
+
+@ 0 3 0 1c85c7dd4cff85e818f1b9cfad7bda2f
++ [Comparar](../../soundness/modules/quantities.md#comparing) dice cómo se convierten las unidades
++ en una comparación, y [los errores expresivos](../../philosophy/expressive-errors.md) por qué el
++ mensaje se redacta así.

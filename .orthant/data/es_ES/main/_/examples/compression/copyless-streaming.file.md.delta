@@ -1,0 +1,71 @@
+orthant 2 language
+
+@ 0 1 0 07d2ccce0958e11511e8e608e55c283b
++ # Un compresor a un lado del disco, un descompresor al otro
+
+@ 0 3 0 1eff9a9b5fdca59c08b9302959b09d4d
++ Un fichero comprimido se escribe bombeando un flujo a través de una etapa de compresión hasta la
++ entrada del fichero, y se lee colocando la etapa de descompresión después del fichero. Ni los
++ bytes sin comprimir ni los comprimidos se retienen nunca enteros: cada bloque se transforma y se
++ pasa adelante.
+
+% 0 1 0 12705ff5e291290d17fbc8389d59ef4a
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 192fdb942bc3a2cd150458446d3e4393
++   label Escritura: el flujo se comprime de camino al fichero
+
+% 0 1 0 13b7efdf9dd81e2e10a94ffa0b7b949e
+
+% 1 1 0 1ddece4f3c5a8e3118ebd320fcff1f82
+
+% 2 1 0 13cebd04ff32301a198390577f6e48c0
+
+% 3 1 0 02b5dd4e460ab5e2152d77214e9bb1d9
+
+% 4 1 0 18a823bf379e9d6a0eb48dbb0a1c3525
+
+% 5 1 0 17efa37407821c4808198fe4329a4153
+
+% 7 1 0 0fa3af1cd90708f2080af1815e97bc72
+
+% 9 1 0 18d98d82e6c48a0d0408f189ae0e52b3
+
+% 10 1 0 034439febbfc8b730f6a48ce5f9e7c1e
+
+% 1 1 0 0f154e2838d4cf0c00c57e10f0dda1b5
+
+@ 0 1 0 042a3df4393eab2508999a3a3982e273
++   label Lectura: el fichero se descomprime al salir
+
+% 0 1 0 1096e1035c62087918bc2a0417b31ce7
+
+% 1 1 0 1fb17e521281f17514907065948c4d05
+
+% 2 1 0 054e8729963effd41c42b2913dfc4e4e
+
+% 3 1 0 0a000ca5d692932b1f21e9f2ca6c0aff
+
+% 4 1 0 1c769fa5a68cde2d0f11f05b238b3301
+
+% 5 1 0 1e73a26647706e6d1f586885e86a1678
+
+% 7 1 0 09a8b752c68ba17e0c6ca4e19527b6eb
+
+% 9 1 0 083178d0209d55c2168252928c29673f
+
+% 10 1 0 0895ae0ca60501a20cc9f9fc3ec43a94
+
+% 0 1 0 05565dab63ba77690b938c6364c5d6b8
+
+% 0 1 0 18eafb32caed3dd50f976e787bd035ca
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 3 0 02979f1950500a821b55cf10388c11e5
++ El ejemplo se compila, pero no se ejecuta.
++ [Comprimir un flujo](../../soundness/modules/compression.md#compressing-a-stream) describe cómo
++ interoperan la forma de valor entero y la forma de flujo.

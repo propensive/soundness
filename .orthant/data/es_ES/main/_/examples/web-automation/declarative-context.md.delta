@@ -1,0 +1,64 @@
+orthant 2 language
+
+@ 0 1 0 18ec8ee456e0db5f15b9b8e4f1bc4a13
++ # Cuánto esperar lo elige el llamante
+
+@ 0 3 0 045af1b8fdfee5c703e0bdd1048b9bf0
++ Una página cambia después de cargarse, así que una prueba debe esperar lo que espera encontrar.
++ `awaitElement` sondea según la pauta de reintentos que esté en el ámbito, y la pauta es una
++ importación y no un número de milisegundos en cada llamada.
+
+% 0 1 0 05f2ae76781bc53c0f28815590cdc90c
+
+% 0 1 0 16f746828b2bb3e60bb4066c2f40a307
+
+% 0 1 0 19e515dae2c3cff90e013ad9bbf3e527
+
+% 0 1 0 0340a2c5478cc3190fe31a24732d0680
+
+% 0 1 0 126ea9b3e0450b920c7880db223bf337
+
+% 1 1 0 0ae73885e623b9501acf5cf6512aaf4e
+
+% 0 1 0 12705ff5e291290d17fbc8389d59ef4a
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 1ac9064a1e5362f61fee9c695e3272ef
++   label Esperar, sin ninguna pauta con la que esperar
+
+% 0 1 0 1477c34ff41c7c99183443e1d3238ae1
+
+% 1 1 0 0960c596329e4eb20a0b442aaa85c43a
+
+% 1 1 0 1b5cba2c54e17fdd1388dc5e2db01d3b
+
+% 2 1 0 03a589dfa34b438a00afbb17cdaee657
+
+% 3 1 0 0fdbb56b7492826112d4f1cb87432279
+
+% 1 1 0 00a9cd9418ea718f1c652481e1ba1003
+
+@ 0 2 0 0168f2b969b7ff321d5912c4685c6930
++   label Diez intentos, cada vez más espaciados
++   highlight retryTenacities.exponentialTenTimesTenacity  la pauta, elegida una sola vez
+
+% 1 1 0 05ed3f8c93127a0d131c858e74d3687b
+
+% 0 1 0 1e584f3ed9c28922132a771abd922a74
+
+% 1 1 0 0032474a0b8e797417d2c66909048597
+
+% 2 1 0 1155177d7d1a5bed1623c8547f9218db
+
+% 3 1 0 0992372074c523061770b0a1082ee1a6
+
+% 0 1 0 18eafb32caed3dd50f976e787bd035ca
+
+% 1 1 0 136d267ff733a60e0f6246170d49df5f
+
+@ 0 2 0 0bc890a26f01417a1d23fb403c159ac9
++ El ejemplo se compila, pero no se ejecuta, porque necesita un navegador.
++ [Esperar](../../soundness/modules/web-automation.md#waiting) describe qué se sondea, y por qué.

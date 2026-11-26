@@ -1,0 +1,82 @@
+orthant 2 language
+
+@ 0 1 0 1f9813b35c85634e06e01e3286e90c85
++ # Un archivo comprimido es un valor
+
+@ 0 2 0 19df643fd9aa43cd03edb42f96d2497a
++ Un archivo ZIP no es un objeto que haya que abrir, mutar y acordarse de cerrar. Es una lista de
++ entradas, cada una con una ruta y su contenido, y solo se convierte en bytes cuando se piden
++ bytes.
+
+% 2 1 0 1733edd979502e060c90ae519cea632e
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 1ed29f92970f6e900e8d7c79d1daab9b
++   label Una entrada
+
+% 1 1 0 19081c9e464ef2b502705030f1d75141
+
+% 2 1 0 0119d7e04f65cf0b1ec76a408d757d59
+
+% 3 1 0 0f568027c1a68df113bee0aa09a02c51
+
+% 5 1 0 1027c221083d6ff41bfae6ffcb29d474
+
+% 1 1 0 07df8b4223f3fd1815475c51d8ba67ee
+
+@ 0 2 0 1d9f1978af002d0c0bb1386addc3f1ff
++   label Un archivo con ella
++   highlight Zipfile(List(sonnet))  una lista de entradas
+
+% 1 1 0 1bf5272671667006072301ea541cf38f
+
+% 2 1 0 02efd34b8d8df0100786fb2b33fad04f
+
+% 3 1 0 1cd817e4cb56f15910d7512bee436ebb
+
+% 5 1 0 0452e3fb7f4d9e161df97628c9546450
+
+% 6 1 0 0e57e56b057183950e5a238bb8704588
+
+% 1 1 0 12aa7e4f0a736be007dec15633c25d1a
+
+@ 0 2 0 127460d790849203131772d605cd6ace
++   label Sus bytes, y el archivo leído de nuevo a partir de ellos
++   highlight Zipfile.read  analizado a partir de bytes
+
+% 1 1 0 0bbcf0637d832e391698f721898e8259
+
+% 2 1 0 15cedc31bc042bb10a4fb4602a7a958b
+
+% 3 1 0 0ef4a11eba73f8ba11bda38816d03ec6
+
+% 5 1 0 1b7d60fb737fccd804def62ae709da7d
+
+% 6 1 0 1c81c9c1623201ca1c05817b35652e7b
+
+% 0 1 0 0d33775c0976083b06bbaa5c21e6e019
+
+% 0 1 0 1a35cabcd6a22bf7077151902ac8f5b5
+
+% 1 1 0 003c46bad47e10b712b519740a897fff
+
+% 1 1 0 136d267ff733a60e0f6246170d49df5f
+
+% 2 1 0 1525a46c87e9e0571e7d21b8e7c42b7a
+
+% 0 1 0 08a86cbdc9b8cb0109ed8ce5b435ce67
+
+% 1 1 0 0cd6459499a6bd5203d659b3bcc1b6aa
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 0 1 0 156ccd68f66eca4f027f646c013e4068
+
+% 1 1 0 0889a6aa400eabd01d3b1938d3d4eccb
+
+@ 0 2 0 05cd7158844da62801a468698ebeb7db
++ [ZIP](../../soundness/modules/archives.md#zip) describe qué conserva de su cabecera original una
++ entrada que se ha leído.

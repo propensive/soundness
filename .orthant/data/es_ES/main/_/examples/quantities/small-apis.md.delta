@@ -1,0 +1,42 @@
+orthant 2 language
+
+@ 0 1 0 01209c68cbce61c10726962b7cdc7620
++ # Un solo método convierte a cualquier unidad
+
+@ 0 2 0 12784f2866df5e0d1b385f2aa630fc6c
++ No hay `toMetres` ni `feetToInches`. A `convert` se le dan las unidades que se quieren, y el
++ compilador encuentra la razón entre ambas.
+
+% 0 1 0 12705ff5e291290d17fbc8389d59ef4a
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 2 0 145855638d882e8f03ded5b2f7b4bb1e
++   label Pies, en metros
++   highlight convert[Metres]  las unidades que se quieren, como un tipo
+
+% 1 1 0 10c58795afacb90200dac26ca21e8e92
+
+% 2 1 0 1a4dbf483ec6eebf1f219bd2b2117f7b
+
+% 1 1 0 192e05f9adf147dd0e55845169ee3677
+
+@ 0 2 0 042564fd979009e11225283793ccffe5
++   label Metros, en pies
++   highlight convert[Feet]  el mismo método, en el otro sentido
+
+% 1 1 0 02eac1002e11642c118cc601ebdb7fc5
+
+% 2 1 0 0976fcdc0e2d4fe01e892f905d5c6dd6
+
+% 0 1 0 0743ec45cab0dab71800e0d79e5e8c29
+
+% 0 1 0 18eafb32caed3dd50f976e787bd035ca
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 2 0 08ab0ee19d2cad041adf80394b89050e
++ [Convertir](../../soundness/modules/quantities.md#converting) describe `normalize`, que nombra
++ también la potencia.

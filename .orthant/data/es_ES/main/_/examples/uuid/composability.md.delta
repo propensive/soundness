@@ -1,0 +1,66 @@
+orthant 2 language
+
+@ 0 1 0 1ab323ad88e941ec0b81d5634411fc8f
++ # Un identificador en un documento JSON
+
+@ 0 3 0 0aada4c2ee51a3bb04434ab9be3edc6f
++ Nada en la biblioteca de JSON menciona los UUID. Un `Uuid` puede decodificarse a partir de texto, y
++ eso es todo lo que necesita un campo de una case class para que la clase entera pueda leerse desde
++ JSON, y un identificador mal formado se notifica como el error tipado que es.
+
+% 2 1 0 017e0fb2e023d4b60b5c6f1828008160
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 09e5d13721482423067a50c8b88b371c
++   label Un campo que es texto
+
+% 1 1 0 033d837c880bc2e81ea06b02dd89daa5
+
+% 2 1 0 061e8abfb28ef31b183235f1986ab58f
+
+% 0 1 0 1c2cd4fd087cbe7f03710e3221a842f6
+
+% 2 1 0 027a0a73c668d1f2157510d87f54b6b7
+
+% 3 1 0 10cb114948d7760b14d8342a8ea8189a
+
+% 1 1 0 070eccd3e27574c20e6286d121b3ee2c
+
+@ 0 2 0 028737bf553d494e14c02ea5e37984fe
++   label El mismo campo, como identificador
++   highlight Uuid  decodificado a partir del texto del campo
+
+% 1 1 0 13a6e89ff59f43db029416e32f7282f8
+
+% 2 1 0 0e135d1ecdfea15c123a007c2e42f657
+
+% 0 1 0 1e70252948a6660f1ae6f198d5bc82cd
+
+% 2 1 0 0765f7b7ba10ba010f3f7c6ad6ccec4f
+
+% 3 1 0 1456163946db2bfa0a36b9e97d30954e
+
+% 1 1 0 0b4f1015ef3e7d9f09d7f9dfc3eee01c
+
+% 1 1 0 136d267ff733a60e0f6246170d49df5f
+
+% 2 1 0 1525a46c87e9e0571e7d21b8e7c42b7a
+
+% 0 1 0 08a86cbdc9b8cb0109ed8ce5b435ce67
+
+% 1 1 0 0cd6459499a6bd5203d659b3bcc1b6aa
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 0 1 0 0ece7f3235747061073b2baf8d796550
+
+% 0 1 0 06b8521fb3f9c0ef1f65fd9fe37a9b7d
+
+% 1 1 0 1854658347fec3f71196365e55c16075
+
+@ 0 2 0 199a0f60304eed6c1d9c521814bebf8f
++ [Analizar](../../soundness/modules/uuid.md#parsing) menciona el decodificador, y
++ [componibilidad](../../philosophy/composability.md), por qué no hace falta ningún adaptador.

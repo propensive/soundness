@@ -1,0 +1,73 @@
+orthant 2 language
+
+@ 0 1 0 1d080edf77d9c0f41015ad6cfda3db10
++ # Por qué falló una operación sobre un grafo
+
+@ 0 3 0 1d65da2d9237124a0b5856d374ff7e0e
++ Un `Dag.Error` contiene su motivo como valor: un ciclo, o un nodo que el grafo no tiene, con el
++ nombre del nodo. El código que gestiona el error hace una coincidencia de patrones sobre el motivo,
++ y no tiene ningún mensaje que leer.
+
+% 2 1 0 025fcbb39fede0da0c9e7e10a42ad274
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 176307d9ad878b460b85d28ffce7f26c
++   label Cualquier fallo
+
+% 1 1 0 14c42ba77d7bac5c19eae06ac5e7bf76
+
+% 2 1 0 0295aced937d2aeb0f3c05e2d8586ae5
+
+% 3 1 0 1a7b8c9670462b8a14bd69dddd7c13c3
+
+% 0 1 0 094a90d365192f2c0f1bbbca1048a2ad
+
+% 1 1 0 0f621c833fbf4ad21d55314bcf4accc5
+
+% 1 1 0 07e9fba2eeec58211f6e8bc342bcc973
+
+@ 0 2 0 1ca6c7f8f6b927de1efe3c1644a22dc8
++   label El nodo que faltaba
++   highlight NodeMissing(name)  el motivo, y lo que contiene
+
+% 1 1 0 0fdf59ebfe5a02e71b564067a10f4ac5
+
+% 2 1 0 0870ea82c4e4a53a15591580ee08f781
+
+% 3 1 0 13fe043ee54b0d770ac6e636d5aefb4b
+
+% 0 1 0 1b4a3e0f479ba5980572f817947fd22d
+
+% 0 1 0 050ae9c6bd0136ff089fccff9b692b0a
+
+% 0 1 0 06125e0d76ed44d802d34d49db9a03aa
+
+% 1 1 0 0979905887da008703ad74f3445647af
+
+% 1 1 0 0c2a3ee4fbb560fe1ae3fed1e4f7bb63
+
+% 1 1 0 136d267ff733a60e0f6246170d49df5f
+
+% 2 1 0 1525a46c87e9e0571e7d21b8e7c42b7a
+
+% 0 1 0 08a86cbdc9b8cb0109ed8ce5b435ce67
+
+% 1 1 0 0cd6459499a6bd5203d659b3bcc1b6aa
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 0 1 0 03780531473cbf9c1bb62739b36394b3
+
+% 0 1 0 0358ae6131a81bd90ce930e205cbce5f
+
+% 0 1 0 1342ca9300cf472f11d0b5019f77881c
+
+% 1 1 0 145e0085362ff3a4017c87762b22e7ab
+
+@ 0 3 0 0862c1237ad427d30316eb3e31b80b0c
++ [Orden y alcanzabilidad](../../soundness/modules/graphs.md#ordering-and-reachability) muestra el
++ error como mensaje, y [errores expresivos](../../philosophy/expressive-errors.md), por qué también
++ es un dato.

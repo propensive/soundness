@@ -1,0 +1,52 @@
+orthant 2 language
+
+@ 0 1 0 1ca92a5264638fef1ec6ca2de6e9dfd9
++ # Un permiso que el agente quizá no haya ofrecido
+
+@ 0 3 0 1e48850be64d24b20fd9362794764262
++ Un agente que pide permiso ofrece una lista de opciones, y la lista no tiene por qué contener el
++ tipo que elegiría una política. Por tanto, la primera opción de un tipo es un `Optional`, y `lay`
++ da las dos respuestas a la vez: el id de la opción si la hay, y `Cancelled` si no la hay.
+
+% 0 1 0 12705ff5e291290d17fbc8389d59ef4a
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 1026528bb65922320ed8534b6ebb55c6
++   label Se da por hecho que hay una opción de permitir una vez
+
+% 0 1 0 1477c34ff41c7c99183443e1d3238ae1
+
+% 1 1 0 0960c596329e4eb20a0b442aaa85c43a
+
+% 2 1 0 02d10c1317eeef3c0dbf1d970b53eaa6
+
+% 3 1 0 14ccb0eb61ad96d1091fb12b4011a21e
+
+% 0 1 0 00a95542a07667b50bad7e10582b7f5e
+
+% 1 1 0 1782186b87647a8a09823e335df85235
+
+@ 0 3 0 0755ea6b10bfa55817d71f9cdb04857a
++   label La petición se cancela donde no se ofreció
++   highlight lay(Acp.Cancelled)  la respuesta cuando no existe esa opción
++   highlight Acp.Selected(option.optionId)  y cuando existe
+
+% 1 1 0 1bab1b6c33b5d2c40c37bb97032527d5
+
+% 2 1 0 08b03c07e5cee01302f37d2d7e09d623
+
+% 3 1 0 190fda82788bd98605c01c74f7a2fb34
+
+% 0 1 0 05a54887e941b63b10957fddca6e3094
+
+% 0 1 0 18eafb32caed3dd50f976e787bd035ca
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 3 0 028dd2f53c2a6e1b07514386b925c3d0
++ El ejemplo se compila, pero no se ejecuta, porque el manejador responde a un agente en otro
++ proceso. [Permisos](../../soundness/modules/acp.md#permissions) tiene los tipos de opción, y
++ [opcionalidad](../../philosophy/optionality.md) el significado de `lay`.

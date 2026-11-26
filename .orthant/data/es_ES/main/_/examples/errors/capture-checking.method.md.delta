@@ -1,0 +1,53 @@
+orthant 2 language
+
+@ 0 1 0 00e78e1036ebd16a16e04496f1d5e376
++ # Un método que puede fallar se llama donde se gestiona su error
+
+@ 0 3 0 162e89dab64f146d1137d55c073f1ff3
++ Un método que lanza un error con `raises` recibe su manejador como parámetro contextual. Sacar el
++ propio método de `safely`, sin llamarlo, lo ligaría a un manejador que está a punto de
++ desaparecer, y el compilador lo rechaza igual que rechazaría cualquier otro valor que sobreviviera
++ a su ámbito.
+
+% 0 1 0 12705ff5e291290d17fbc8389d59ef4a
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 0 1 0 05379442125b483c0fa7601737add2cc
+
+% 1 1 0 01df03af649144fc135e9cf4a153349c
+
+@ 0 1 0 02a5a2a0430a9dec0c23ffc1a5a397b6
++   label El método, sacado sin llamarlo
+
+% 0 1 0 1477c34ff41c7c99183443e1d3238ae1
+
+% 0 1 0 157a59ec7dd549c40642741bccce0e65
+
+% 1 1 0 11a782cf519f60fe0e9cfe03e1e20726
+
+% 2 1 0 19b33db39b03d4a001642615a6b4cf82
+
+% 0 1 0 1fd76b009637851c16074f0d17ac41f4
+
+% 1 1 0 1716dd81b89d087f015e6e5880a64235
+
+@ 0 1 0 1afa04bc299d302c1296cec5e1d81c66
++   label El método, llamado dentro del bloque
+
+% 0 1 0 1382f38347f93cfe130573b2594b9d60
+
+% 1 1 0 13d6f82bca72c10c04b9561872ac5ff4
+
+% 2 1 0 0b5c9357169928bc0cd1155366b7d0d3
+
+% 0 1 0 189cc10297bbdb47102c392db6378cce
+
+% 0 1 0 18eafb32caed3dd50f976e787bd035ca
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 3 0 19069c350bc538a008a3cafeb329fde2
++ El texto contiene una coma, así que `hamlet` es `Unset`, y el fallo no llegó más allá del bloque.
++ [Declarar que el código puede
++ fallar](../../soundness/modules/errors.md#declaring-that-code-can-fail) describe `raises`.

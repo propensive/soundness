@@ -1,0 +1,57 @@
+orthant 2 language
+
+@ 0 1 0 036dc8f3a175d23c133c8ee3006366b8
++ # Un mapa con claves que el compilador ha pasado por un hash
+
+@ 0 3 0 16651d6459451c6d1c1cb3629f615a86
++ `Map.fixed` recibe claves que son literales, y encuentra un hash perfecto para ellas mientras el
++ código se compila. Un mapa para el que no puede encontrarse uno, como un mapa con una clave
++ escrita dos veces, no compila.
+
+% 2 1 0 1e209017f4d6fb5b1870d88ba037d2ed
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 0e359fc3bf314a7a0258e5590aca425f
++   label Una clave dada dos veces
+
+% 0 1 0 1477c34ff41c7c99183443e1d3238ae1
+
+% 1 1 0 0960c596329e4eb20a0b442aaa85c43a
+
+% 0 1 0 06c63e560e1dbc49099951c6da79de93
+
+% 1 1 0 0bf0134ffc2e60c11643ae9c75fe2820
+
+@ 0 2 0 0380cf90995532590103772a3b364c7b
++   label Cada clave una vez
++   highlight Map.fixed  pasadas por el hash mientras el código se compila
+
+% 1 1 0 0bc81ccb7757331f15634d17536ac1b4
+
+% 0 1 0 13e25d39e93fc7e01fb389c52baea1fd
+
+% 0 1 0 07cf1ad798b4f823030600590c7852a5
+
+% 1 1 0 0d38a2b07f1a231813260c984e051191
+
+% 1 1 0 136d267ff733a60e0f6246170d49df5f
+
+% 2 1 0 1525a46c87e9e0571e7d21b8e7c42b7a
+
+% 0 1 0 08a86cbdc9b8cb0109ed8ce5b435ce67
+
+% 1 1 0 0cd6459499a6bd5203d659b3bcc1b6aa
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 0 1 0 093227e05bf58aaf101551d74f2497ec
+
+% 1 1 0 066e57b9125bd5c3148ecd0364481436
+
+@ 0 2 0 031425755ba595ab12d9dfc262f3cd01
++ [Mapas con claves conocidas de
++ antemano](../../soundness/modules/collections.md#maps-with-keys-known-in-advance) dice qué más se
++ comprueba.

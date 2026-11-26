@@ -1,0 +1,75 @@
+orthant 2 language
+
+@ 0 1 0 056620b2fdbf036b03aa38958d651e0d
++ # Un flujo cifrado fragmento a fragmento
+
+@ 0 3 0 034d7b6ee4e635d91689197edce49242
++ `encrypt` se aplica a un flujo igual que a un valor, y da un flujo de texto cifrado. Cada
++ fragmento se cifra a su paso, así que unos datos demasiado grandes para retenerlos nunca se
++ ensamblan, y lo que se cifró por partes se descifra como un todo.
+
+% 2 1 0 018f5f1ed144a41b17955be6fe2577ca
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 01f423c90a27c06b0a7765f2eb1f0893
++   label Un valor entero, cifrado y descifrado
+
+% 1 1 0 0903fc802ee3defb1e33ef0f0f854644
+
+% 2 1 0 1bbc9a35d1ae6c7808e2d2e740f549dd
+
+% 3 1 0 0eea3b0e9fadcc2c192f51ea97df8680
+
+% 4 1 0 0c3c31efc902d3ea1698101c4ae0fa7d
+
+% 5 1 0 0f8a4e910232ffc608dfc9c45e963250
+
+% 7 1 0 1c0b1a1e4d853cb116d99917c8040704
+
+% 0 1 0 0f78bc3c38d9038b0dc62c525fbac7ad
+
+% 1 1 0 04bcad313455db0509bd13688f22c5a7
+
+@ 0 1 0 03c64753b2658f700c4fc93fab2e39a2
++   label Lo mismo, a través de un flujo de texto cifrado
+
+% 0 1 0 110e1ed58623803b05b38d335abc39a9
+
+% 1 1 0 1d6640424eeddf40167bb6ce0dc75f46
+
+% 2 1 0 11a1995a07d021810e351c6d7212ecb8
+
+% 3 1 0 021735892deba2cc1cc082fc6de99b02
+
+% 4 1 0 04cad93be86801b913080508890af479
+
+% 5 1 0 0f929012c0bc088a16d2718e99611fef
+
+% 7 1 0 021344a4991a7b7814bc55ecdc4ed5b1
+
+% 0 1 0 185d4be21a9ecd43116a23fe79d272b6
+
+% 0 1 0 1acc7dc5638c86ed038a869cd085777e
+
+% 1 1 0 0992553dd9512ea609020682cf664254
+
+% 1 1 0 136d267ff733a60e0f6246170d49df5f
+
+% 2 1 0 1525a46c87e9e0571e7d21b8e7c42b7a
+
+% 0 1 0 08a86cbdc9b8cb0109ed8ce5b435ce67
+
+% 1 1 0 0cd6459499a6bd5203d659b3bcc1b6aa
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 0 1 0 191c6a1e73d85fea191f678831a24431
+
+% 1 1 0 19b04eb31e17d08b0c5b5b011a3ed9bc
+
+@ 0 2 0 17533395132168b5013d2fa085f5cf59
++ [Cifrado simétrico](../../soundness/modules/cryptography.md#symmetric-encryption) describe las
++ claves y el bloque en el que se usan.

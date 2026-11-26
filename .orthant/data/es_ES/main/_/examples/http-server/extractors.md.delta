@@ -1,0 +1,94 @@
+orthant 2 language
+
+@ 0 1 0 01986f896ee374060a8ff5574b3745c9
++ # El enrutamiento es una coincidencia de patrones
+
+@ 0 3 0 1341af09f7e82fc4122403bada549e3b
++ Un manejador es un bloque que da una respuesta, y la petición a la que responde está en el ámbito
++ como `request`. Elegir una respuesta según el método y el destino de la petición no necesita
++ ninguna tabla de rutas, solo un `match`.
+
+% 0 1 0 12705ff5e291290d17fbc8389d59ef4a
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 049eb9e542367fe1100ef7c9cf0df22f
++   label Una respuesta para cada petición
+
+% 1 1 0 1a2ddd127c29551918e47c210cf89608
+
+% 2 1 0 0a698975f4ee201106522f7b56473ce0
+
+% 3 1 0 0fe45cbe69e826e30a1434e7b67d0a55
+
+% 4 1 0 03a06af4de34c8b7131c70045c631995
+
+% 6 1 0 082ed794599fe10c01aef8a14871afa5
+
+% 7 1 0 0dfdca7160d302940c912e44aee06d2a
+
+% 0 1 0 180516f9ad5e882f0ff6c304cafaf0bd
+
+% 1 1 0 1110eb3107f4ca90122e2fb5943f2059
+
+@ 0 1 0 192d46fe3b7df5740739209a52a372f4
++   label Enrutado según el destino
+
+% 0 1 0 029fe8c0a6d96b9c16fc4b0bbe2a3e1f
+
+% 1 1 0 0904500f56bea35a1565c2a1b5bb1a5e
+
+% 2 1 0 01c882390ec956fd074fadf216987061
+
+% 3 1 0 1b534c2ca13b1ce20a81d22c232b2c70
+
+% 4 1 0 08245012c8bbaeaf18d0c240da338b70
+
+% 6 1 0 11cc3290ea0180931e0ef6d38c227012
+
+% 7 1 0 131186e4df876115149957701b727e31
+
+% 0 1 0 0d932cfd06edad330f1f7777e2e1c685
+
+% 0 1 0 1758d80d475c8dbb197e408c8cbc0f25
+
+% 0 1 0 1b676f8a228ec847066e89e256a10467
+
+% 0 1 0 011c88368c3b17890ec0af96ce9a287d
+
+% 1 1 0 0d365fc4cbc0a63a130a9334fdaca390
+
+@ 0 1 0 09580e41cec043c702c6f4581d1c24fc
++   label Y según el método
+
+% 0 1 0 00e1dc78ac1cce3c0ce15ce919a293a7
+
+% 1 1 0 1e5175707f7a1e9d011e899032bea868
+
+% 2 1 0 0b649bc7bad3c3721c76a4d33ca56a93
+
+% 3 1 0 0aa62c5cf6d6f56c029ea861f816f495
+
+% 4 1 0 0cef599d168199f31962f07156f3aeb2
+
+% 6 1 0 1a85361854959de1135c17dbbacd2d02
+
+% 7 1 0 032ad324846ec78f0299388ce6800e14
+
+% 0 1 0 1b312b63724533b017e1bf1e381c2163
+
+% 0 1 0 1b2347f2f2b01f1c1746f2d343c00cb7
+
+% 0 1 0 1e3094400197d6d812ab24a7cf995f4a
+
+% 0 1 0 1e5ad9523a4703c91b7b0aff26358558
+
+% 0 1 0 18eafb32caed3dd50f976e787bd035ca
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 2 0 1cccd1b6cb8bd7c817f9b32e83d8a126
++ El ejemplo se compila, pero no se ejecuta, porque enlazaría un puerto.
++ [Un servidor](../../soundness/modules/http-server.md#a-server) describe el manejador.

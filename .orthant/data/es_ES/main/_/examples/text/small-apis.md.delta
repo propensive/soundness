@@ -1,0 +1,56 @@
+orthant 2 language
+
+@ 0 1 0 188491f5629f7303182a3ff8d1795d37
++ # Un método divide el texto de tres formas
+
+@ 0 2 0 022aeffed0ab4672023e94c3c46483bc
++ El `split` de Java recibe una expresión regular, incluso donde se pretendía un literal. `cut`
++ recibe un `Text`, un `Char` o una expresión regular, y su tipo dice cuál.
+
+% 2 1 0 1e81c6eb35dcad7d08778a3b9d4cf9de
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+@ 0 2 0 0905018f5bf030210841b3d9dbbb922f
++ alternative Por un texto
++   highlight t",..")  tomado literalmente
+
+% 1 1 0 09499c0a18ccab6519acba2891139ea1
+
+% 0 1 0 13a167e4843813260a4849ab2024d011
+
+@ 0 2 0 1320bad61e55eee5101de5611eaef04b
++ alternative Por un carácter
++   highlight ','  un solo carácter
+
+% 1 1 0 0f52dc581d9cd5bf043a9223ee71527a
+
+% 0 1 0 1bcde43da35a21b21e69b478d482406a
+
+@ 0 2 0 19c9fa08319e8049058d0b89264d9c87
++ alternative Por un patrón
++   highlight r"[,;]..*"  leído como expresión regular
+
+% 1 1 0 1130ab144785c5891c898b54a07efae9
+
+% 0 1 0 0d9296cb27bc98600415dd027f2c126d
+
+% 1 1 0 05e4be0b045940030151fc43e36c7092
+
+% 1 1 0 136d267ff733a60e0f6246170d49df5f
+
+% 2 1 0 1525a46c87e9e0571e7d21b8e7c42b7a
+
+% 0 1 0 08a86cbdc9b8cb0109ed8ce5b435ce67
+
+% 1 1 0 0cd6459499a6bd5203d659b3bcc1b6aa
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 0 1 0 0dc62eb90a65b2280aea72dc16a6bdad
+
+% 1 1 0 03e437bc1c270c730f6cd7f386925fdf
+
+@ 0 2 0 03bf5afc374c59a4126f9d41443086fc
++ [Dividir y unir](../../soundness/modules/text.md#splitting-and-joining) trata `words`, `lines` y
++ `join`, y [API pequeñas](../../philosophy/small-apis.md) defiende un solo nombre.

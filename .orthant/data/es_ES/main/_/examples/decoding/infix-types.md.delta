@@ -1,0 +1,76 @@
+orthant 2 language
+
+@ 0 1 0 17e7de57cc307404074a917cb1f4a813
++ # Un tipo nuevo como el que se puede leer un texto
+
+@ 0 2 0 12b2b4b5e8e12978100fca1d1b079f45
++ Un tipo se incorpora a `as` mediante un given cuyo tipo es una frase: un `Heading` es decodificable
++ en texto. La instancia es la única función del texto al valor, escrita como una coincidencia de
++ patrones.
+
+% 2 1 0 092270d1dfea062c04a54db2982226f9
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 0653270d918e26a3146543c96f69449a
++   label Un tipo que as no conoce
+
+% 0 1 0 1477c34ff41c7c99183443e1d3238ae1
+
+% 1 1 0 0960c596329e4eb20a0b442aaa85c43a
+
+% 2 1 0 052b5d53c564213f191f74be413a911f
+
+% 4 1 0 19a6cc849c2fdad51f0513e0abede718
+
+% 5 1 0 00c59fbf53b5132e04066884f2733f37
+
+% 2 1 0 08722f57ffccfe9e119c98c6b7a067b4
+
+% 1 1 0 1c5f0f6209d8ccf11a2974a8e3280450
+
+@ 0 2 0 1cb4ab970c0b27b51821140d5e88b457
++   label Un rumbo es decodificable en texto
++   highlight Heading..Text  el tipo de la instancia
+
+% 0 1 0 1accf43fe92797641dc8da9a374d03c5
+
+% 1 1 0 0783dfca2d5cd0bd11be3d890fcbff21
+
+% 2 1 0 0b0c610bcd97be231fecefc0133b7377
+
+% 4 1 0 186a9ba79bf1cb4c032e270c915bd8e6
+
+% 5 1 0 10999eb4a3f678a11449965914d28cf6
+
+% 0 1 0 043633eea5fbd1e70e989b5d7f9bc89e
+
+% 0 1 0 11f9d08a09eea6f803cff33f6f4d5e43
+
+% 0 1 0 1e65c01a39e5a44f0ea89eacbcde359c
+
+% 0 1 0 06a45b145d131d6714a3e6ef01c70669
+
+% 2 1 0 081d098587f85093158b01486a51ffe0
+
+% 1 1 0 009f52a416a1d5cf159ee7b78562f640
+
+% 1 1 0 136d267ff733a60e0f6246170d49df5f
+
+% 2 1 0 1525a46c87e9e0571e7d21b8e7c42b7a
+
+% 0 1 0 08a86cbdc9b8cb0109ed8ce5b435ce67
+
+% 1 1 0 0cd6459499a6bd5203d659b3bcc1b6aa
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 0 1 0 1e923147c02ee26b01950df9e2c4f162
+
+% 1 1 0 0fa4253a8869c55b05fade47ccdc5077
+
+@ 0 2 0 0f04fed76eaa287607950f4b85b98e7c
++ [Definir los propios](../../soundness/modules/decoding.md#defining-your-own) tiene las otras clases
++ de tipos, y [tipos infijos](../../philosophy/infix-types.md) explica `is` e `in`.

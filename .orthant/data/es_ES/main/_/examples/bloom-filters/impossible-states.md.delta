@@ -1,0 +1,52 @@
+orthant 2 language
+
+@ 0 1 0 0736afa8e2f0af061501c4cc9c4ddd81
++ # Una tasa de error es una probabilidad
+
+@ 0 3 0 130b7ddcc7593d77099189a6d37c0322
++ Un filtro de Bloom se crea a partir del número de elementos que espera y de la tasa de falsos
++ positivos que puede dar. La tasa es un número entre cero y uno, y su tipo lo dice, así que una
++ tasa de uno y medio no es un filtro que se comporta mal en tiempo de ejecución, sino una línea
++ que no compila.
+
+% 0 1 0 12705ff5e291290d17fbc8389d59ef4a
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 050b2ed720ad86f6041d6981af074287
++   label Una tasa mayor que uno
+
+% 0 1 0 1477c34ff41c7c99183443e1d3238ae1
+
+% 1 1 0 0960c596329e4eb20a0b442aaa85c43a
+
+% 2 1 0 07d79965cc1230e007e1304a1cb07450
+
+% 3 1 0 1593cacd58d38e131aacfa3a761c8582
+
+% 0 1 0 0c915a722a0c87f6049a5915a444462c
+
+% 1 1 0 075bd735a490cbec127dc11ad06c680d
+
+@ 0 2 0 017aa920a3a07c0b0229b3abbf3cfc50
++   label Uno entre mil
++   highlight 0.001  dentro de `0.0 ~ 1.0`
+
+% 1 1 0 1f4d8938fcc14342038a0e3f08d35ab5
+
+% 2 1 0 181bbfdccc36da300695cc3596fcf81b
+
+% 3 1 0 0b03f989c6136a770de14ea6500abbd1
+
+% 0 1 0 0e8f8e8d1867694913bf123dd090360b
+
+% 0 1 0 18eafb32caed3dd50f976e787bd035ca
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 3 0 002c1e0e3605009216984c8586539005
++ [Crear y añadir](../../soundness/modules/bloom-filters.md#creating-and-adding) describe los dos
++ parámetros, y [los estados imposibles](../../philosophy/impossible-states.md) la idea de un tipo
++ sin valores incorrectos.

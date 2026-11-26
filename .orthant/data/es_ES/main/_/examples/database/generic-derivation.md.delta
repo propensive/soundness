@@ -1,0 +1,94 @@
+orthant 2 language
+
+@ 0 1 0 09d238ac9a4083eb16de25530c0cc00d
++ # Una clave encontrada por su anotación
+
+@ 0 2 0 1bb9aee6828cc426183c2cdf6483f917
++ Donde una entidad lleva su propia clave, una referencia a ella es esa clave y nada más. El campo
++ marcado con `@primary` lo encuentra el compilador, que da a la referencia el tipo de ese campo.
+
+% 2 1 0 0f1fcf15a0d464eb0649e2f643e31a20
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 12c5f1ec8a252c7f0436a374f130d4ab
++   label La clave es un campo
+
+% 0 1 0 089d6da9df204f2f161d63a2593fa5a4
+
+% 1 1 0 1c6d0bbf1b9457be06d0c87b48853f38
+
+% 2 1 0 1fc524a558b3ad000b7aa64e3fb0a0aa
+
+% 4 1 0 1d1ce6e32311a09e1ab6e95f23a596ed
+
+% 6 1 0 158f71beb41f3e3d11f7dd3a66c5b2e2
+
+% 7 1 0 06c37965aa2cf97b039c3f90156e7127
+
+% 1 1 0 031c169fba17f4a90c0fece5e0b0c02e
+
+@ 0 2 0 0bdd3c704886960e149990e25762c1ae
++   label Un conjunto de valores resuelve una clave
++   highlight Lover..Text  el tipo del campo anotado
+
+% 1 1 0 1f9c1e3dd08cd6c70b9bb2587b79a2c1
+
+% 2 1 0 00bf43401b4a1cf41940986de3373d8e
+
+% 4 1 0 0fba10f4a953111312522d6ac56dbfca
+
+% 6 1 0 15795823f02214a50fb62ab48a83e400
+
+% 7 1 0 0a51367b79af876903022f4def267ee5
+
+% 9 1 0 04ef6bfb274e6dd508baca20534d4271
+
+% 1 1 0 1cd27237b4c8a2101ee3bfa23a4d052f
+
+@ 0 1 0 1cf334ea7a7dffd611fc84efd42bf15a
++   label Una referencia solo contiene la clave
+
+% 0 1 0 1f37c4db8e17a76b0269003a57e2f18c
+
+% 1 1 0 06825548fb856dda1e21704219ce3bc5
+
+% 2 1 0 14b764436ec7c6960d33673e656a88a1
+
+% 4 1 0 1f2ad9748e13cd7110aef801478df45e
+
+% 6 1 0 11cebac52104f07d02cca1e6c696f962
+
+% 7 1 0 12ddf684273ea3ee07861f38b40e171a
+
+% 9 1 0 07477e0710b8bc271c53cb1e9e144963
+
+% 0 1 0 03cddb392bf273f80d23a75485f6c3f2
+
+% 0 1 0 11b8b07741fb815b0a5cc22c8fda168d
+
+% 1 1 0 0e86b9d31f70bf3716d682feca21072d
+
+% 1 1 0 136d267ff733a60e0f6246170d49df5f
+
+% 2 1 0 1525a46c87e9e0571e7d21b8e7c42b7a
+
+% 0 1 0 08a86cbdc9b8cb0109ed8ce5b435ce67
+
+% 1 1 0 0cd6459499a6bd5203d659b3bcc1b6aa
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 0 1 0 138ca117fe25475211b92ec54b136dbf
+
+% 0 1 0 1c4461de375b71af171c54ac456f3753
+
+% 1 1 0 1e9e17179bd90f8416b84b8bdddfaefc
+
+@ 0 2 0 1cc5ecff52c6e84c00e08761cdcc2c80
++ [Referencias por clave](../../soundness/modules/database.md#references-by-key) trata el resto, y
++ [Anotaciones](../../soundness/modules/annotations.md#finding-the-annotated-field) describe
+
+% 0 1 0 00c6291752e25642087a8ba9e173b1f3

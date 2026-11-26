@@ -1,0 +1,69 @@
+orthant 2 language
+
+@ 0 1 0 13f238314765d59d0159c433fa627cb5
++ # Ejemplos
+
+@ 0 3 0 118caabe485a828e0f4ef835380646e5
++ Esta es una colección de ejemplos breves. Cada uno muestra algo que un lector puede querer hacer
++ con Soundness, a la luz de una idea que la recorre entera, en dos a diez líneas de código. Están
++ pensados para leerse de uno en uno, elegidos de entre dos listas.
+
+@ 0 1 0 16f462eb3f0ed69103512ea22b3a401c
++ ## Los dos aspectos
+
+@ 0 3 0 0d374221d04d833c09f1abfaa03232a2
++ Un *asunto* es lo que hace el ejemplo: leer JSON, hacer una petición HTTP, escribir una fecha. Los
++ asuntos son los tutoriales de [la documentación](../soundness/modules/overview.md), y se enumeran
++ en `topics.tel`.
+
+@ 0 4 0 0cc9265ff2e3ae7c05702092f7db1d0a
++ Un *tema* es la idea que muestra el ejemplo: que el compilador comprueba un literal, que un
++ error se nombra en un tipo, que una capacidad no puede salir de su ámbito. Los temas se
++ enumeran en `themes.tel`, cada uno con una frase que dice lo que significa, y la mayoría tiene un
++ ensayo propio en [la filosofía](../philosophy/correctness.md).
+
+@ 0 5 0 165a921dbd9cca9e1eb10bd9c03fe67a
++ Un ejemplo del tema `checked-literals` sobre el asunto `json` es el fichero
++ `json/checked-literals.md`. Un segundo ejemplo del mismo par lleva una palabra tras el tema,
++ como `json/checked-literals.pointer.md`. La mayoría de los pares no tiene ejemplo, porque la
++ mayoría de los asuntos solo muestra bien algunos de los temas: un ejemplo se escribe solo donde
++ el par enseña algo que ninguno de los dos aspectos enseña por sí solo.
+
+@ 0 1 0 109912b0e81854f51798283e62286277
++ `python3 etc/check-examples.py --matrix` muestra qué pares están cubiertos.
+
+@ 0 1 0 06547c0c9f012f3100bacf887bbc5a33
++ ## Escribir un ejemplo
+
+@ 0 3 0 11eff9b174d597c019639fdd0d3186a9
++ Un ejemplo es un título, una o dos frases, un bloque de código y una frase que lleva al tutorial
++ o al ensayo que hay detrás. La norma para la prosa y el código es la de
++ [los tutoriales](../standards/style.md), con estas reglas añadidas:
+
+@ 0 20 0 01f3017254127fe91f38190ec2a9ee0b
++ - El título dice lo que muestra el ejemplo, con las palabras del asunto, y no nombra ninguno de
++   los dos aspectos.
++ - El código es lo mínimo que muestra la idea: de dos a diez líneas en cada fotograma. Los datos
++   de ejemplo proceden de Shakespeare, como [en todas partes](../standards/examples.md).
++ - El código no lleva comentarios. Lo que diría un comentario lo dice un `highlight` o un
++   `focus`, el `label` de un fotograma o las frases que rodean el código.
++ - Donde la idea es que algo incorrecto no compila, el ejemplo es una animación: un fotograma
++   marcado con `errors show` que contiene el error, con el propio mensaje del compilador sobre
++   él, y después un fotograma que lo corrige. Un error nunca se escribe a mano.
++ - Donde la idea es una elección, como una estrategia, un calendario o un backend, las versiones
++   son `alternative`s, en pestañas.
++ - Cada fotograma se compila. Un ejemplo que muestra un resultado lo imprime desde un bloque
++   `run` tras la animación, y uno que no puede ejecutarse donde se construye la documentación,
++   porque necesita la red o un terminal, lo dice.
++ - Una marca nombra su rango sin ningún espacio, ya que lo que sigue al primer espacio es su
++   leyenda: un rango de varias palabras se escribe desde sus primeros caracteres hasta los
++   últimos, como `raises..Error`. Toda marca tiene una leyenda.
++ - Donde cada fotograma repetiría las mismas importaciones, estas van en un bloque simple antes
++   de la animación, al que siguen después los fotogramas.
++ - Un ejemplo se sostiene por sí solo. Importa lo que necesita, aparte del propio paquete
++   `soundness`, y no depende de otro ejemplo.
+
+@ 0 3 0 1e54fb1abfaef2e60c3bec21aa9a4411
++ Si el código que necesita un ejemplo no es breve, o no es seguro, el fallo puede estar en la API
++ y no en el ejemplo. Un caso así se registra en la incidencia que los sigue, y el ejemplo se deja
++ fuera hasta que la API esté en condiciones de mostrarse.

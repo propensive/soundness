@@ -1,0 +1,56 @@
+orthant 2 language
+
+@ 0 1 0 11f86fe6a0ea10fd0f91488f03111a9c
++ # Prosa ajustada para quien lee el código fuente
+
+@ 0 3 0 1abb1aed95df373b137e6b4c22c8e92a
++ Un párrafo en el código fuente se ajusta y se sangra para adaptarse al código que lo rodea, y nada
++ de eso pertenece a la salida. `txt"…"` une las líneas de un párrafo con espacios simples, quita la
++ sangría, y conserva una línea en blanco como salto de párrafo.
+
+% 2 1 0 11cc7efdfba24d0409cc2e34e0c414bc
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 2 0 13ea2ac0459fd74e167b6931bf8b6e6f
++   label Una línea larga
++   highlight t"If..mended."  una línea, tan larga como la frase
+
+% 1 1 0 19dae1c3e25f960716d0b354eccf6248
+
+% 0 1 0 13b932321af24c5c0fd7f71914eebcf3
+
+% 1 1 0 17c9bbb4b47e250315e1022cc5abe97e
+
+@ 0 2 0 1294bf7c260b47a01d4aef5b3db102eb
++   label Ajustado en el código fuente, y no en el resultado
++   highlight txt  se eliminan los saltos de línea y la sangría
+
+% 1 1 0 1dfae4c9f261e78914a319b4fbf106da
+
+% 0 1 0 0d27a5c9d71a67e5032102cab20f280c
+
+% 0 1 0 11d511cb2d86bf7e1f8873dc191b8123
+
+% 0 1 0 15271f01d770ddc20b393d80b9a84c16
+
+% 1 1 0 1746494c3d5bc6f01498d0b7b8669f94
+
+% 1 1 0 136d267ff733a60e0f6246170d49df5f
+
+% 2 1 0 1525a46c87e9e0571e7d21b8e7c42b7a
+
+% 0 1 0 08a86cbdc9b8cb0109ed8ce5b435ce67
+
+% 1 1 0 0cd6459499a6bd5203d659b3bcc1b6aa
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 0 1 0 15e872dd64477270029f8b489fc2424d
+
+% 1 1 0 09596f77a9caf09f1f97f103d7130653
+
+@ 0 1 0 080685cbc1f5357e0d7d2aed8b08731b
++ [Escribir texto](../../soundness/modules/text.md#writing-text) describe ambos interpoladores.

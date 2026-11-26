@@ -1,0 +1,66 @@
+orthant 2 language
+
+@ 0 1 0 056a9c6fe59226750a472645d530865d
++ # Una captura que no podría ligar
+
+@ 0 3 0 04335e54bdab61301ea1b9e203857033
++ Las capturas de un patrón se convierten en variables, así que el compilador comprueba algo más
++ que sus paréntesis. Una captura dentro de un grupo repetido coincidiría muchas veces y ligaría
++ una sola, y una repetición escrita al revés nunca puede coincidir: cada una es un error en el
++ lugar donde se escribe el patrón.
+
+% 0 1 0 12705ff5e291290d17fbc8389d59ef4a
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 02464ccd7ccf14490e4eb1c2c6579746
++   label Una captura dentro de una repetición
+
+% 1 1 0 19b24915070985ae1b799a1af0f18521
+
+% 2 1 0 05d4852633dca963086cb19b4f812f48
+
+% 3 1 0 054ddaaa585c03db134fec1bc8608aeb
+
+% 0 1 0 0841cc108a48afc903b0b5d81e7ed1b5
+
+% 0 1 0 08572b0a31964cd70e585357e1984104
+
+% 1 1 0 0f620b73c95a456301966775ae091c9d
+
+@ 0 1 0 16d427fa883dca910a8cb97478c2103c
++   label Una repetición de cinco a dos
+
+% 1 1 0 136a6ebcb7b62ba2011f3f261cf43135
+
+% 2 1 0 091f37e90d14a1bd0829077a104bed51
+
+% 3 1 0 155c3a2d14b41e3e0a6fd015ebb2546a
+
+% 0 1 0 1d8b752c618eb76c01e21c375ea9d002
+
+% 1 1 0 178ee638af254dfb08791e61c7246acd
+
+% 1 1 0 1c3e167372c84c7f175184c88d37fe48
+
+@ 0 2 0 16b463864b18e02217f187d5fe4fe60b
++   label Un patrón que tiene sentido
++   highlight {2,5}  de dos a cinco
+
+% 1 1 0 08b481492890635a1d2527c630be55a1
+
+% 2 1 0 040cbaacf3c6072809a277e08fbc28c9
+
+% 0 1 0 0d7a4d482833f8fb01ad680ff227c417
+
+% 1 1 0 1d56dcf2697cc79e0b1714f403cd7b56
+
+% 0 1 0 18eafb32caed3dd50f976e787bd035ca
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 2 0 054b4171d099778004ed47376d463fe8
++ [Comprobación en tiempo de compilación](../../soundness/modules/patterns.md#compiletime-checking)
++ enumera todos los motivos por los que se rechaza un patrón.

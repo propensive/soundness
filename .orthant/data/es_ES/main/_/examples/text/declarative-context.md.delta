@@ -1,0 +1,74 @@
+orthant 2 language
+
+@ 0 1 0 14297b3feb8b87561b80f7de10377792
++ # Un orden para el texto, elegido una vez
+
+@ 0 2 0 11d53ce6050057fb118d576af9d888f1
++ El texto no tiene un orden natural: que `café` vaya antes que `caff` depende de la intercalación.
++ Una comparación no compila hasta que una importación ha elegido una.
+
+% 2 1 0 0a30c132f7e9303e17e790930530a260
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 04f8f7f7591f4cd308632d5f78cbdc3f
++   label No se ha elegido ninguna intercalación
+
+% 0 1 0 1477c34ff41c7c99183443e1d3238ae1
+
+% 1 1 0 0960c596329e4eb20a0b442aaa85c43a
+
+% 1 1 0 021e49e6628cbc850bb21f9a218281f8
+
+% 2 1 0 1a2b22bafd8e2ee7099b7f68821ad27f
+
+@ 0 2 0 150f6c5b151d7e3e03e8a7071fcc9d0b
++   label Orden de puntos de código
++   highlight collations.codepointCollation  por punto de código
+
+% 1 1 0 0d40087ba3246a2d0f7a80030df3aea9
+
+% 2 1 0 1cfef9e2e98ccd150ad132cd19f199d8
+
+% 0 1 0 1cbc786e5b047d6214b4fa242e2946e7
+
+% 2 1 0 0856db75553eeea000a6b4adc71b1620
+
+% 2 1 0 07dab058d75d474b1f0f8ca533fe0503
+
+@ 0 2 0 07ae497e4f1bdcc411d2a207bff3dc80
++   label Orden de diccionario
++   highlight collations.unicodeCollation  como lo haría un diccionario
+
+% 1 1 0 1147121e1a912cd3158e0af96d14a25d
+
+% 2 1 0 13f5b2c4e0798413161e26c72b84d004
+
+% 0 1 0 1285ef31f17a40770ec6b6f0bbd813af
+
+% 2 1 0 17c8a123a5fd15760d9da0e1e1e1cdf6
+
+% 1 1 0 102006b6d9fe1b0203f4169c547236d1
+
+% 1 1 0 136d267ff733a60e0f6246170d49df5f
+
+% 2 1 0 1525a46c87e9e0571e7d21b8e7c42b7a
+
+% 0 1 0 08a86cbdc9b8cb0109ed8ce5b435ce67
+
+% 1 1 0 0cd6459499a6bd5203d659b3bcc1b6aa
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 0 1 0 11d3d978df4d382719c0b50863a762c7
+
+% 1 1 0 11756fc5b87659e51c91c4b646b17d9a
+
+@ 0 5 0 1685c1130fbd8a011ea8028ca4204aeb
++ Por punto de código, `é` va después de todas las letras sin acento, y la respuesta sería `false`.
++ En orden de diccionario es `true`.
++ [Ordenar y comparar texto](../../soundness/modules/text.md#sorting-and-comparing-text) describe las
++ dos intercalaciones, y [contexto declarativo](../../philosophy/declarative-context.md), por qué la
++ elección es una importación.

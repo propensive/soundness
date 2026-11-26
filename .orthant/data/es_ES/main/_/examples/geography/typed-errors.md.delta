@@ -1,0 +1,68 @@
+orthant 2 language
+
+@ 0 1 0 139a04126e9658000f2a876be828dd47
++ # Una URI geo que puede estar mal formada
+
+@ 0 2 0 1eef61f19d745682048b164c6f15e4b8
++ Una URI `geo:` llega como texto, y el texto puede ser cualquier cosa. Decodificarla lanza un
++ `Geolocation.Error`, y un método que decodifica una debe decirlo en su tipo.
+
+% 2 1 0 197f46823f1be7c7070b6dd0aae316cf
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 01fa51a9d47aa90400b5ce3f1f36bdf4
++   label Un método que no dice que puede fallar
+
+% 0 1 0 1477c34ff41c7c99183443e1d3238ae1
+
+% 1 1 0 0960c596329e4eb20a0b442aaa85c43a
+
+% 0 1 0 1b113fefe1f30eff0b050d6a089b551b
+
+% 1 1 0 150992a60e029d7104bf0d84bb96c764
+
+@ 0 2 0 0689e23d190398fe16427b46484c5d69
++   label El fallo, en el tipo de retorno
++   highlight raises..Error  la forma en que puede fallar
+
+% 1 1 0 0223b354e7bac9e01c561de335c95bb7
+
+% 0 1 0 057e38642359efa114b3930e88d14d8d
+
+% 0 1 0 02989d48606c9e7806c7c1baa3c339b1
+
+% 1 1 0 11cdc51ea670da551a6443d2befc2f39
+
+@ 0 2 0 129f06f7e19188dc12c67557a3fd2373
++   label O ninguna ubicación
++   highlight safely  un fallo se convierte en un valor ausente
+
+% 1 1 0 122cee784ee67a861d0be8edbcc0494f
+
+% 0 1 0 12149df3136c2bc91bb243d95b3e0155
+
+% 0 1 0 13a5f558647f1920173744b78de1f3d5
+
+% 1 1 0 08b1c246f58aae0c185edb16c9a4ed21
+
+% 1 1 0 136d267ff733a60e0f6246170d49df5f
+
+% 2 1 0 1525a46c87e9e0571e7d21b8e7c42b7a
+
+% 0 1 0 08a86cbdc9b8cb0109ed8ce5b435ce67
+
+% 1 1 0 0cd6459499a6bd5203d659b3bcc1b6aa
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 0 1 0 02050eccd5195ff70ae5f4c168ec5f08
+
+% 0 1 0 133d4c0876cb593b1632fcb4e26705a5
+
+% 1 1 0 1c60a62ee85f905a012f083537c99747
+
+@ 0 1 0 012189a3581332071bcb623253f10b90
++ [URI geo](../../soundness/modules/geography.md#geo-uris) describe el formato.

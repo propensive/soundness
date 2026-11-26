@@ -1,0 +1,75 @@
+orthant 2 language
+
+@ 0 1 0 00df319dd693dd0a16506ab54cb1f549
++ # Un estado de salida es una respuesta
+
+@ 0 3 0 036f3090825c683a1e1448b1e31b9fba
++ `grep` termina con un estado distinto de cero cuando no encuentra nada, lo cual es una respuesta y
++ no un fallo. Pedir a un comando su `Exit` da el estado como un valor con dos casos, y no se lanza
++ nada en ninguno de ellos.
+
+% 2 1 0 1740ba4072951e711d7bfe7b2f8eb1f9
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 131335ac7fad4d3f11d5ce6a734174a4
++   label El estado del último comando
+
+% 0 1 0 0a6315d678caf8a90e6b6f6b7a22b4f6
+
+% 1 1 0 15c6697617d3beb209b2abdc1ecb1bad
+
+% 2 1 0 0cd1823e3c25dfff1c49bf7b957cae84
+
+% 3 1 0 03bffa50f9169ece0612ea89a21c7cf3
+
+% 5 1 0 176491a1f7d0e88b0a77552efd0fb910
+
+% 6 1 0 0860b8f726a80d870d89be63c91626da
+
+% 1 1 0 0f2110a8d145e05804d91896417dffbe
+
+@ 0 2 0 01eb1dc9cca1d49800da1d151caab966
++   label Sus dos casos
++   highlight Exit.Fail(_)  una respuesta ordinaria
+
+% 1 1 0 15b82e0a7b09a3e3025044c554a0e3e7
+
+% 2 1 0 0df13ef53a3224f61ed2881a1c689a13
+
+% 3 1 0 1a8a9194d152eacf070d2eddb8b33b27
+
+% 5 1 0 10b5e294252e616107f7ceb29f3d9bd6
+
+% 6 1 0 0a2617836eca64d913d07a59ea8b9a9a
+
+% 0 1 0 0e1eb73cba502d5007dfe80c9f0b51f8
+
+% 0 1 0 1d41179819f477bf0b67ba52557ae6b8
+
+% 0 1 0 1ad7ea018ea6c976126efb17d76d2cdb
+
+% 1 1 0 11b5035c296505860d77746c6bf73042
+
+% 1 1 0 136d267ff733a60e0f6246170d49df5f
+
+% 2 1 0 1525a46c87e9e0571e7d21b8e7c42b7a
+
+% 0 1 0 08a86cbdc9b8cb0109ed8ce5b435ce67
+
+% 1 1 0 0cd6459499a6bd5203d659b3bcc1b6aa
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 0 1 0 03fd6c4d99d89b8c12cef2c9fa02dae9
+
+% 0 1 0 0b72c5201618c3d10e219893f637c90a
+
+% 1 1 0 10134e73a6fd1beb02b98170f2e6977f
+
+@ 0 3 0 09c27ab7f821d72400cccb08f7644f8c
++ [Fallos](../../soundness/modules/processes.md#failure) explica por qué interpretar un estado
++ distinto de cero corresponde al llamante, y
++ [transiciones totales](../../philosophy/total-transitions.md) por qué no es una excepción.

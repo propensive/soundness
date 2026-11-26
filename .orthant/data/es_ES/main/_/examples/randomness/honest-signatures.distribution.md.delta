@@ -1,0 +1,64 @@
+orthant 2 language
+
+@ 0 1 0 0e088223610e0f5a1800f4834e15dd28
++ # Un número aleatorio tiene una distribución
+
+@ 0 3 0 187e660ca9c484b41bfea178fe04e3a1
++ Un `Int` aleatorio es cualquier `Int`, pero no existe tal cosa como cualquier `Double`: una
++ extracción es uniforme, o normal, o de otro tipo. `arbitrary[Double]` pide a su contexto una
++ `Distribution`, y no compila hasta que se ha nombrado una.
+
+% 2 1 0 1024416025af40a9043f194dd4494a4d
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 0346e5038d5582db0da0effd434b2acd
++   label Una extracción sin ninguna forma en particular
+
+% 0 1 0 1477c34ff41c7c99183443e1d3238ae1
+
+% 1 1 0 0960c596329e4eb20a0b442aaa85c43a
+
+% 2 1 0 06ff77c106dc513e172d94dab7c62ca7
+
+% 4 1 0 147b4636fd0e481f0320f16545648700
+
+% 2 1 0 1980bd833f2e977000120c726181c4c5
+
+% 1 1 0 139d4c5f5a5c18211c08d37a537a3869
+
+@ 0 2 0 1cbb775973f2eca50fb1528c690d0234
++   label Una distribución normal, en torno a 170
++   highlight Gaussian(170.0..8.0)  la media y la desviación típica
+
+% 1 1 0 185bbf09b9cc52e61d0f69f9e72a824c
+
+% 2 1 0 08d035b3676cc23b14ecfac79e2fac3a
+
+% 4 1 0 0514dd0d429fafdf14042ab73cd0e092
+
+% 0 1 0 0448b83154db2a260235b87088a0d287
+
+% 2 1 0 1f095938bccdd81d17936d0cf14464dd
+
+% 1 1 0 17dd8fa1672520fe177e4688f5b52a59
+
+% 1 1 0 136d267ff733a60e0f6246170d49df5f
+
+% 2 1 0 1525a46c87e9e0571e7d21b8e7c42b7a
+
+% 0 1 0 08a86cbdc9b8cb0109ed8ce5b435ce67
+
+% 1 1 0 0cd6459499a6bd5203d659b3bcc1b6aa
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 0 1 0 132cfe53778e2c680bf598cb626cd33d
+
+% 1 1 0 089b60a91ad5cf7609f88a6466819331
+
+@ 0 2 0 136112d8960367d5151b438b1dd4c2af
++ [Distribuciones](../../soundness/modules/randomness.md#distributions) enumera las formas que se
++ proporcionan.

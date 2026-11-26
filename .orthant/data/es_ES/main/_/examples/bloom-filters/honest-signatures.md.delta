@@ -1,0 +1,49 @@
+orthant 2 language
+
+@ 0 1 0 12475bb9310c717600fcf45bfc13a883
++ # Un hash rápido necesita un permiso
+
+@ 0 3 0 112ac9541e787e4702db05db60d1b66e
++ MurmurHash3 es adecuado para un filtro de Bloom, que tiene una distribución que repartir y ningún
++ adversario al que resistir. Sin embargo, no es un hash criptográfico, y un filtro no lo usa hasta
++ que el código que lo rodea ha dicho que lo sabe.
+
+% 0 1 0 12705ff5e291290d17fbc8389d59ef4a
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 0abdea0d20cff22511110431d96d446c
++   label Un hash que no es criptográfico
+
+% 0 1 0 1477c34ff41c7c99183443e1d3238ae1
+
+% 1 1 0 0960c596329e4eb20a0b442aaa85c43a
+
+% 2 1 0 07d79965cc1230e007e1304a1cb07450
+
+% 2 1 0 1912ec644ca5fbc905121a0c71e32ed3
+
+% 1 1 0 16d874d7a837a9090f56cfed32822f8f
+
+@ 0 2 0 0ad731ffeb24c1a81c66a6c77a45537b
++   label El permiso, en el ámbito
++   highlight permitNonCryptographicHashes  no se resiste a ningún adversario
+
+% 1 1 0 01246547907027710e8537ec0dc8994c
+
+% 2 1 0 167fd36a08e6359a1a8b396ed44e847d
+
+% 0 1 0 190c8e29a31ad7080847281e0adda70f
+
+% 2 1 0 1127b39f1082410a1a9e5f94d2e05f69
+
+% 0 1 0 18eafb32caed3dd50f976e787bd035ca
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 3 0 0b446925e186dfab01ce4cccad138c39
++ [De dónde vienen los bits](../../soundness/modules/bloom-filters.md#where-the-bits-come-from)
++ tiene los motivos para elegirlo, y [las signaturas honestas](../../philosophy/honest-signatures.md)
++ los motivos para pedirlo.

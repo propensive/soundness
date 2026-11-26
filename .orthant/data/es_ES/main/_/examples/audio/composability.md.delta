@@ -1,0 +1,91 @@
+orthant 2 language
+
+@ 0 1 0 1aac701092dc75b31663c004e4f616ec
++ # Una frecuencia de muestreo es una frecuencia
+
+@ 0 2 0 1e2a1ff4b193988719082b94212e136c
++ La frecuencia de muestreo de un sonido no es un simple número de hercios, y su duración no es un
++ simple número de segundos. Ambas son magnitudes, así que la aritmética sobre ellas tiene unidades,
++ y las unidades se comprueban.
+
+% 2 1 0 1f0e26bbce2f94bd16f90efa7731b52d
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 0241d1077e6e02ff0f6b481e009566f0
++   label Un sonido, leído de los bytes de un fichero WAV
+
+% 1 1 0 17d62f7df2d82d8c1d74e55add451f5c
+
+% 2 1 0 127c8ea10590acbb0dcf239d02ca41a9
+
+% 4 1 0 06e60e8a09ca317f03200bc401c605e0
+
+% 5 1 0 0785392163c1c8c707f6b463fe839fe0
+
+% 7 1 0 0b48eef98e1c0b4a1e2437a2571ad65a
+
+% 1 1 0 1487c2325df734e3098769b68eedcb0d
+
+@ 0 2 0 114104ae5c574b7e11eefb2d4e0ebff3
++   label Su frecuencia, dividida por dos
++   highlight sampleRate/2  sigue siendo una frecuencia
+
+% 1 1 0 196fda315040c93b0b36d93241f1fc62
+
+% 2 1 0 07adfac0b7401d9312ce554022bdb47a
+
+% 4 1 0 021672710be8686d0af8fb3746006317
+
+% 5 1 0 1790c90fa5dcd19e13aae16491ae6b66
+
+% 7 1 0 16c818b39692873a1a2321c353799926
+
+% 8 1 0 18922e13627e94cf12be524bfe4c3724
+
+% 1 1 0 171c54c0f14d84fd1c6824dcbaf43569
+
+@ 0 1 0 06c3eca5d8092363177ba124e963b6ef
++   label Una frecuencia sumada a un tiempo
+
+% 0 1 0 1477c34ff41c7c99183443e1d3238ae1
+
+% 1 1 0 0960c596329e4eb20a0b442aaa85c43a
+
+% 2 1 0 052b5d53c564213f191f74be413a911f
+
+% 4 1 0 0361b2bddb1b502b1394a1218269ae0b
+
+% 5 1 0 0e33b190dc40b3ca01c74beb4aeab2df
+
+% 7 1 0 1704e0d85f8b354400430ae524cbcf0b
+
+% 8 1 0 1cc7749d7aad983a076b89ec74969fab
+
+% 0 1 0 129514bf79dc54ac1cf2c18dc51e0b0d
+
+% 1 1 0 16a252779cf15b170e71059b8b96b472
+
+% 1 1 0 136d267ff733a60e0f6246170d49df5f
+
+% 2 1 0 1525a46c87e9e0571e7d21b8e7c42b7a
+
+% 0 1 0 08a86cbdc9b8cb0109ed8ce5b435ce67
+
+% 1 1 0 0cd6459499a6bd5203d659b3bcc1b6aa
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 0 1 0 0433d9363e1303900355a7f4dc583bf9
+
+% 0 1 0 0a46c2ea1811a5d51622ddd66b4bdef6
+
+% 0 1 0 10b9eff7ebde753914d01c1814a017a3
+
+% 1 1 0 06c697603b0baa5807c6911f9fc5480f
+
+@ 0 2 0 07546303eeb1fb2a19c44e177c30070c
++ [Leer audio](../../soundness/modules/audio.md#reading-audio) describe lo que un sonido sabe de sí
++ mismo, y [magnitudes](../../soundness/modules/quantities.md) la aritmética.

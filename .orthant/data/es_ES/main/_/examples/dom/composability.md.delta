@@ -1,0 +1,59 @@
+orthant 2 language
+
+@ 0 1 0 0577a0d08c069ffd144e4132674f0d83
++ # Un manejador de eventos que no es una cadena
+
+@ 0 2 0 0256d172018190c702e3188ded582481
++ Un atributo `onclick` espera un script, que es un tipo propio. Una expresión DOM comprobada lo es,
++ y se escribe en la página como JavaScript. Un texto no lo es, por mucho que se parezca a
+
+% 0 1 0 1ba4290a5393a43f0d913595347f3413
+
+% 2 1 0 102d1b3cd1a840e40a92b971bc5bc400
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 11a35a302327183515cc289f44f4cf34
++   label JavaScript en una cadena
+
+% 0 1 0 1477c34ff41c7c99183443e1d3238ae1
+
+% 1 1 0 0960c596329e4eb20a0b442aaa85c43a
+
+% 2 1 0 1bbd94d0e721f1ee0d0a109118d37676
+
+% 0 1 0 0eb5596270598db219c5a40f4da64f78
+
+% 1 1 0 0e41f85c308bf6320addd47e4be93871
+
+@ 0 2 0 0d8aea976df9cd5115656891fe893819
++   label El mismo script, comprobado
++   highlight document.getElementById(t"stage").focus()  navegado, no entrecomillado
+
+% 1 1 0 1df36ad046bcb83e16d86bcaffc0d979
+
+% 2 1 0 0c74363a5e9062b60f6491632dfcea98
+
+% 0 1 0 0d31dd1d7871e39b03b743da34e576da
+
+% 1 1 0 01607ec7dcbbfcf31cf92efc621de97a
+
+% 1 1 0 136d267ff733a60e0f6246170d49df5f
+
+% 2 1 0 1525a46c87e9e0571e7d21b8e7c42b7a
+
+% 0 1 0 08a86cbdc9b8cb0109ed8ce5b435ce67
+
+% 1 1 0 0cd6459499a6bd5203d659b3bcc1b6aa
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 0 1 0 0d20cde2f010e01f1f8d81f94777dd3c
+
+% 1 1 0 132ee5787ceafda906eb5aabdc8a06dc
+
+@ 0 2 0 0d4ee6f1d3c52446023aecae351c41ff
++ [Scripts en atributos HTML](../../soundness/modules/dom.md#scripts-in-html-attributes) explica
++ por qué solo sirve una expresión del ecosistema del navegador.

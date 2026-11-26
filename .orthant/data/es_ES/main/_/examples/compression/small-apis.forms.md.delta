@@ -1,0 +1,57 @@
+orthant 2 language
+
+@ 0 1 0 1943bd226b252cf0139780bde6b568a4
++ # Un nombre para un valor, una cadena y un flujo
+
+@ 0 3 0 0bd9572cebfa0d9e0b5e156ef6014f57
++ Tanto si los datos se tienen enteros como si llegan como una cadena de fragmentos o fluyen por
++ un flujo, comprimirlos es el mismo método con el mismo argumento de tipo. Solo difiere el
++ resultado: tiene la forma de lo que se comprimió.
+
+% 0 1 0 12705ff5e291290d17fbc8389d59ef4a
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+@ 0 2 0 08d72347536195c113902f1178c5d39f
++ alternative Un valor
++   highlight compress[Gzip]  entran bytes, salen bytes
+
+% 1 1 0 1be8e0839360847c0e3b083f614b53ea
+
+% 2 1 0 15f82dfaac9b6f9b0365bc4e7623bb77
+
+% 4 1 0 1207a9eca3ceaa14182f28824be3b082
+
+% 0 1 0 015d7175395444b00acf743cfbfb6bfe
+
+@ 0 2 0 1c3517a514cba4be1c3d7580763fb865
++ alternative Una cadena de fragmentos
++   highlight compress[Gzip]  cada fragmento, según se pide
+
+% 1 1 0 12dcb7dea1d5d0111d987a461b2505a6
+
+% 2 1 0 0e63db1ab185ab951e6cf3464a31bb2d
+
+% 0 1 0 1a3bdda81ad8c0ca00e037e7c20deb15
+
+% 0 1 0 1b4fbbf42f1e15b51b032fffa222aaf3
+
+@ 0 2 0 0a6861ffc8020be21a5e0b10987539d5
++ alternative Un flujo
++   highlight compress[Gzip]  una etapa de un pipeline
+
+% 1 1 0 0c93602fa6f3a359185c5f8233fad174
+
+% 2 1 0 0e12e838b8caa95e0ad21c29beb22089
+
+% 4 1 0 127506390a8d6e6509c6cf63a3238ea2
+
+% 0 1 0 02fffa0c86ac29e612aea5a12a2d23fa
+
+% 0 1 0 18eafb32caed3dd50f976e787bd035ca
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 2 0 10f57a2cd45a42351995c2841ad14e62
++ [Comprimir un flujo](../../soundness/modules/compression.md#compressing-a-stream) dice cómo
++ interoperan las formas.

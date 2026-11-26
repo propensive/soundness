@@ -1,0 +1,66 @@
+orthant 2 language
+
+@ 0 1 0 1e1a2e5775a602dc116e38106b3fe223
++ # Un identificador que llega como texto
+
+@ 0 2 0 10ae4456c8c0d00a14e1220961932666
++ Un ISIN escrito en el código fuente lo comprueba el compilador. Uno que llega mientras se ejecuta
++ el programa se comprueba en ese momento, con las mismas reglas, y que la comprobación pueda fallar
++ está en el tipo.
+
+% 2 1 0 08593e20b794c88c0ef5b3cebe59ab6b
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 01bbc411c655cae402fb02c852bbb2a1
++   label El fallo no está contemplado
+
+% 0 1 0 1477c34ff41c7c99183443e1d3238ae1
+
+% 1 1 0 0960c596329e4eb20a0b442aaa85c43a
+
+% 0 1 0 07c5d7c60e954e300d0a7f5b1261a075
+
+% 1 1 0 19a9c48862adb34800317518cbd0242f
+
+@ 0 2 0 18283744c4aed0630723e8c6b92de04f
++   label Se declara
++   highlight raises..Isin.Error  decide el llamante
+
+% 1 1 0 10162aa49d070f630185cffab01bf001
+
+% 0 1 0 07cbfe95f2ced08710e8a9ae3862ecf1
+
+% 1 1 0 07f92be667dfae0c0d0bb0641417ee31
+
+@ 0 2 0 045b66d7cf17f8211a2f06dfd871eeb1
++   label O un código no válido no es ningún valor
++   highlight safely  `Unset` si se incumple una regla
+
+% 1 1 0 0024159e35038f681305d4b40d606181
+
+% 0 1 0 167d910ae6b0aca20dd076c777276dc4
+
+% 1 1 0 022e08011e876ec6163cc69b44a39522
+
+% 1 1 0 136d267ff733a60e0f6246170d49df5f
+
+% 2 1 0 1525a46c87e9e0571e7d21b8e7c42b7a
+
+% 0 1 0 08a86cbdc9b8cb0109ed8ce5b435ce67
+
+% 1 1 0 0cd6459499a6bd5203d659b3bcc1b6aa
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 0 1 0 0db5c178e0ba9e011ae67bf18f5e4fef
+
+% 0 1 0 0fd7f723268ac03d10f459c8a596094d
+
+% 1 1 0 1d1d101423abc50c0e37ddbad2cb7767
+
+@ 0 2 0 1dee334ff01a93631b79dd9a322ad87c
++ [Identificadores](../../soundness/modules/money.md#identifiers) enumera los motivos que da un
++ `Isin.Error`.

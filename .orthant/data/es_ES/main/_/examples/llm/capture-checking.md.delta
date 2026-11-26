@@ -1,0 +1,70 @@
+orthant 2 language
+
+@ 0 1 0 1aff8cfc2688556400931e35d67b1a60
++ # Una conversación termina con su bloque
+
+@ 0 3 0 0754c333a386796b075c86a098e7e609
++ Una sesión con un modelo de lenguaje mantiene una conexión, que se cierra cuando termina el bloque.
++ Una respuesta es un simple dato y puede devolverse. Una función que haría otra pregunta más tarde
++ sigue dependiendo de la sesión, así que no puede.
+
+% 0 1 0 12705ff5e291290d17fbc8389d59ef4a
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 0 1 0 05379442125b483c0fa7601737add2cc
+
+% 1 1 0 01df03af649144fc135e9cf4a153349c
+
+@ 0 1 0 160f70c65e99945b0e8ac33b982bedeb
++   label Una pregunta para hacerla cuando la sesión ya se ha cerrado
+
+% 0 1 0 1477c34ff41c7c99183443e1d3238ae1
+
+@ 0 1 0 10951ac695fe232d0b663c63e8cbf30b
++   highlight llm.ask(question)  preguntaría cuando la sesión ya no existiera
+
+% 1 1 0 18b045d0b58c84601e368ae0b712510d
+
+% 2 1 0 06d5775cb8f49162168dfc4319ff9cec
+
+% 3 1 0 1e2a67a82514f0621d4140908e180bc9
+
+% 4 1 0 115ec83a2ddf09fb0572f2d3960195d2
+
+% 6 1 0 11d9aba6bbfad126031bb36bfba1182f
+
+% 0 1 0 1cdb41e9c3229ba30a5b623d7d56223e
+
+% 0 1 0 1770ba797b60b48b142251efef7649a8
+
+% 1 1 0 0c57d3d4d2c90f30106cff0654c181ef
+
+@ 0 2 0 17762ef0b3d1eece0debf78756da9d32
++   label Las preguntas, hechas dentro de ella
++   highlight Llm.Reply  la respuesta es un dato, y sale libremente
+
+% 1 1 0 11cea3b4eba875191621d3c8458f664d
+
+% 2 1 0 02e3c4d2e735144804967d28d561d626
+
+% 3 1 0 03365ee5960c367306f5296d7948c8e6
+
+% 4 1 0 0b08f1d1ea7a5c58143934e7533b82bc
+
+% 6 1 0 11ac9e886cbc23d01b7e4b610c739c99
+
+% 0 1 0 1bac680a1d3325da00f37e6561de726d
+
+% 0 1 0 0d4d486ac8375a980666678fcbf73165
+
+% 0 1 0 148b9d7c1decc01e047954531a2a4676
+
+% 0 1 0 18eafb32caed3dd50f976e787bd035ca
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 2 0 1fce1386f52cfd421d2ca87fc7ab29bf
++ El ejemplo se compila, pero no se ejecuta, porque llamaría a un proveedor a través de la red.
++ [Una conversación](../../soundness/modules/llm.md#a-conversation) describe lo que registra una
++ sesión.

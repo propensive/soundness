@@ -1,0 +1,57 @@
+orthant 2 language
+
+@ 0 1 0 106398e86b862d3e12de489a9e509916
++ # Marcos resueltos a su código fuente, mediante una importación
+
+@ 0 3 0 125201bff64fb99e02dd87158e6b082d
++ Desdecorar arregla un nombre compilado, pero no puede decir qué lambda era `λ₃`. Un resolutor
++ encuentra la definición que hay detrás de cada marco a partir de las posiciones que registró el
++ compilador, y cuesta una lectura de fichero por cada clase, así que se elige con una importación
++ y no es automático.
+
+% 0 1 0 12705ff5e291290d17fbc8389d59ef4a
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 2 0 19ad38d6e6ef27ea006d25fbfdc123bf
++   label Marcos tal como los nombra la JVM, desdecorados
++   highlight displayMethod  el nombre compilado, arreglado
+
+% 1 1 0 125b0a3caa638bd40c99b4cee63390f7
+
+% 1 1 0 09ad4ceb848976100b10c1be69f963d7
+
+% 3 1 0 1439d5d2df4f19b907689299ecbc9153
+
+% 1 1 0 1ee5aedb26dc2c7c18595c4fa36e650c
+
+@ 0 3 0 072bfc3a9348d203027467694f28218e
++   label Marcos tal como los nombra el código fuente
++   highlight tastyStackResolution  se resuelve cada traza capturada en este ámbito
++   highlight displayMethod  el nombre en el código fuente
+
+% 1 1 0 1117607f9a60b8190bed82a71b7db854
+
+% 0 1 0 16d0e72e209c38f51220547030e5288b
+
+% 0 1 0 1b2fc40646840a3f068e0180d211f5ea
+
+% 0 1 0 0d7f1e4b8b541f5918a614304decdd48
+
+% 1 1 0 0e82da093b366fa60f5aabc9454dcc33
+
+% 3 1 0 0df05787df81ba5e0c04516f6da85080
+
+% 0 1 0 18eafb32caed3dd50f976e787bd035ca
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 5 0 01c1f4de22e645db1c042fb0d840dd9c
++ El ejemplo se compila, pero no se ejecuta, porque las clases de un fragmento de documentación no
++ están en un classpath que un resolutor pueda leer.
++ [Resolver los marcos a su código fuente](../../soundness/modules/stack-traces.md#resolving-frames-to-their-source)
++ describe lo que contiene un marco resuelto, y
++ [el contexto declarativo](../../philosophy/declarative-context.md) por qué la elección es una
++ importación.
