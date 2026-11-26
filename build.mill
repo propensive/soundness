@@ -686,8 +686,10 @@ trait Benchmarks(dependencies: PublishModule*) extends BaseScalaModule:
 // file count, size and deployment frequency ruled out publishing every component across three
 // platforms); releases now go to GitHub Releases, one asset per component jar (see `release`
 // below), and the bundles remain as the coarse-grained fat jars — `soundness-cli.jar` and so on
-// — that tools and documentation put on a classpath. Components remain ordinary `PublishModule`s
-// in the build, so `mill rudiments.core.publishLocal` still works for debugging.
+// — that tools and documentation put on a classpath. A release has each bundle too, but as a
+// name for its components and not as this jar: see `release.bundleReleases`. Components remain
+// ordinary `PublishModule`s in the build, so `mill rudiments.core.publishLocal` still works for
+// debugging.
 //
 // Two invariants keep the bundles sound, both enforced by `groupCheck.validate`:
 //
@@ -4101,8 +4103,9 @@ def bundleClosure(roots: Seq[Bundled]): Seq[Bundle] =
 
 // Everything a release publishes: every component of every library (which includes the three
 // compiler plugins), plus the `js` and `native` cross of each platform-capable component. Each is
-// released as its own jar. Not the bundles or the universal artifact (whose contents are these
-// same jars), and not the test, benchmark or `Internal` modules, which are never released.
+// released as its own jar. Not the test, benchmark or `Internal` modules, which are never
+// released. The bundles and the universal artifact are released beside these, as jars with no
+// classfiles whose descriptors name these as dependencies (`release.bundleReleases`).
 val releasableModules: Seq[PublishModule] =
   allLibraries.flatMap(_.moduleDirectChildren).flatMap:
     case component: Component =>
@@ -4119,9 +4122,10 @@ val releasableModules: Seq[PublishModule] =
 
 // The release pipeline's view of the build, driven by `etc/ci/release.sh`. Releases go to GitHub
 // Releases rather than Maven Central: a tagged version becomes one release whose assets are the
-// jars of `releasableModules`, each named `<artifactId>-<version>.jar` — no bundles, no source or
-// javadoc jars, and no checksum files (GitHub records a SHA-256 digest per asset, which is what
-// downstream tools such as burdock match against).
+// jars of `releasableModules`, each named `<artifactId>-<version>.jar`, and a jar without
+// classfiles for each bundle (`bundleReleases`) — no source or javadoc jars, and no checksum
+// files (GitHub records a SHA-256 digest per asset, which is what downstream tools such as
+// burdock match against).
 //
 // Each released jar is self-describing: it carries its own POM and ivy.xml under
 // `META-INF/maven/<group>/<artifactId>/`, the Maven convention for an embedded descriptor. That
@@ -4184,7 +4188,9 @@ object release extends Module:
       docsOutput().toSeq.flatMap: compiled =>
         stageDocs(Task.dest, compiled.path, docsArtifact(), docsSettings())
 
-    documentation ++ jars.flatMap: (jar, group, artifactId, version, pom, ivy) =>
+    val bundles: Seq[BundleRelease] = Task.sequence(bundleReleases)()
+
+    val components: Seq[PathRef] = jars.flatMap: (jar, group, artifactId, version, pom, ivy) =>
       val target = Task.dest / s"$artifactId-$version.jar"
       val prefix = s"META-INF/maven/$group/$artifactId"
       val descriptors = Seq(s"$prefix/pom.xml" -> pom.path, s"$prefix/ivy.xml" -> ivy.path)
@@ -4192,6 +4198,8 @@ object release extends Module:
       val metadata = Task.dest / s"$artifactId-$version.ivy.xml"
       os.write.over(metadata, stripDescriptor(os.read(ivy.path)))
       Seq(PathRef(target), PathRef(metadata))
+
+    documentation ++ components ++ bundles.flatMap(stageBundle(Task.dest, _))
 
   // The documentation, compiled: `dev.propensive:soundness-docs`, a jar of data and no classes,
   // which depends on nothing. It holds what `fuel compile` writes for the documents in `doc`
@@ -4302,6 +4310,87 @@ object release extends Module:
     os.write.over(metadata, stripDescriptor(ivy))
     Seq(PathRef(target), PathRef(metadata))
 
+  // A bundle as it is released: a name for a set of components, and nothing more. Its jar holds
+  // no classfiles, only its own descriptors, and those name each component it stands for as a
+  // dependency; so a build which depends on `soundness-cli` depends on every component of the
+  // `cli` bundle, each resolved as its own jar, and a build which names a bundle and one of its
+  // components besides has each class once. (The fat jar a `Bundle` module builds is a different
+  // thing: one file to put on a classpath by hand, which is never released.)
+  //
+  // There is one for each platform a bundle has components on — `soundness-cli`,
+  // `soundness-cli_sjs1_3`, `soundness-cli_native0.5_3` — naming that platform's components; and
+  // one of everything for each platform — `soundness`, `soundness_sjs1_3`,
+  // `soundness_native0.5_3` — naming that platform's bundles, without the opt-in ones (see
+  // `soundness.universal`).
+  //
+  // A jar, though it is empty, because everything downstream of a release takes a module to be
+  // one: the release counts a descriptor for each jar, `sync_releases.py` installs a module from
+  // the descriptors inside its jar, and a resolver asked for a module fetches its artifact.
+  private case class BundleRelease
+    ( artifact: Artifact, components: Seq[Artifact], settings: PomSettings )
+
+  private def bundleRelease
+    ( artifact: Task[Artifact], components: Seq[Task[Artifact]], settings: Task[PomSettings] )
+  :   Task[BundleRelease] =
+    Task.Anon(BundleRelease(artifact(), Task.sequence(components)(), settings()))
+
+  // The universal artifact's coordinate on a platform: its own name, with the suffix that
+  // platform gives a bundle's.
+  private def universal(plain: Task[Artifact], cross: Task[Artifact]): Task[Artifact] = Task.Anon:
+    val artifact = soundness.universal.artifactMetadata()
+    artifact.copy(id = artifact.id + cross().id.stripPrefix(plain().id))
+
+  private def bundleReleases: Seq[Task[BundleRelease]] =
+    val platforms: Seq[(Bundle => Seq[PublishModule], Bundle => PublishModule)] = Seq(
+      ((bundle: Bundle) => bundle.contents,       (bundle: Bundle) => bundle),
+      ((bundle: Bundle) => bundle.jsContents,     (bundle: Bundle) => bundle.js),
+      ((bundle: Bundle) => bundle.nativeContents, (bundle: Bundle) => bundle.native))
+
+    platforms.flatMap: (contents, cross) =>
+      val bundles: Seq[Bundle] = leafBundles.filter(contents(_).nonEmpty)
+
+      val each: Seq[Task[BundleRelease]] = bundles.map: bundle =>
+        bundleRelease
+          ( cross(bundle).artifactMetadata,
+            contents(bundle).map(_.artifactMetadata),
+            bundle.pomSettings )
+
+      val everything: Task[BundleRelease] =
+        bundleRelease
+          ( universal(soundness.base.artifactMetadata, cross(soundness.base).artifactMetadata),
+            bundles.filterNot(_.optIn).map(cross(_).artifactMetadata),
+            soundness.universal.pomSettings )
+
+      each :+ everything
+
+  // Writes a bundle's jar and its descriptor into `directory`, under the names a component's
+  // have.
+  private def stageBundle(directory: os.Path, bundle: BundleRelease): Seq[PathRef] =
+    val Artifact(group, id, version) = bundle.artifact
+    val dependencies: Seq[mill.javalib.publish.Dependency] =
+      bundle.components.map(mill.javalib.publish.Dependency(_, Scope.Compile))
+    val ivy: String = Ivy(bundle.artifact, dependencies)
+    val pom: String = Pom(bundle.artifact, dependencies, id, bundle.settings, Map(), "jar", None)
+    val prefix = s"META-INF/maven/$group/$id"
+    val target = directory / s"$id-$version.jar"
+    val output = new java.util.zip.ZipOutputStream(new java.io.FileOutputStream(target.toIO))
+
+    try
+      val entries = Seq(
+        "META-INF/MANIFEST.MF" -> "Manifest-Version: 1.0\r\n\r\n",
+        s"$prefix/pom.xml"     -> pom,
+        s"$prefix/ivy.xml"     -> ivy)
+
+      for (name, content) <- entries do
+        output.putNextEntry(new java.util.zip.ZipEntry(name))
+        output.write(content.getBytes("UTF-8"))
+        output.closeEntry()
+    finally output.close()
+
+    val metadata = directory / s"$id-$version.ivy.xml"
+    os.write.over(metadata, stripDescriptor(ivy))
+    Seq(PathRef(target), PathRef(metadata))
+
   // The documentation's jar alone, without a single component staged.
   def docs: T[Seq[PathRef]] = Task:
     docsOutput().toSeq.flatMap: compiled =>
@@ -4312,6 +4401,11 @@ object release extends Module:
   def docsUnchecked(): Command[Seq[PathRef]] = Task.Command:
     val compiled = mill.api.BuildCtx.workspaceRoot / "out" / "fuel"
     stageDocs(Task.dest, compiled, docsArtifact(), docsSettings())
+
+  // The bundles alone, staged without building a single component: what they are named and what
+  // each stands for is decided by the module graph, so this is how to look at them.
+  def bundles: T[Seq[PathRef]] = Task:
+    Task.sequence(bundleReleases)().flatMap(stageBundle(Task.dest, _))
 
 // A tiny Scala.js app whose `fastLinkJS` actually LINKS a representative slice of
 // the JS-capable modules, so the linker reports any reachable reference to a
