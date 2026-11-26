@@ -267,7 +267,10 @@ extension [endpoint: {Routable as routable, Showable}](endpoint: endpoint)
 // socket-specific); re-exported so `import coaxial.*` users compile unchanged.
 export aperture.{Sessional, session}
 
-extension [endpoint: {Connectable as connectable, Showable}](endpoint: endpoint)
+// The `Connectable` instance is a `using` parameter with a capture set of its own, and not a
+// context bound: a context bound admits only a pure instance, and the instance for a TCP
+// endpoint captures the `Online` permission it was resolved with.
+extension [endpoint: Showable](endpoint: endpoint)
   // Open a persistent, bidirectional connection for the duration of `lambda` and
   // always close it afterwards — whether `lambda` returns or throws. This is the
   // shape a multiplexing protocol such as HTTP/2 needs (concurrent reads and writes
@@ -275,13 +278,15 @@ extension [endpoint: {Connectable as connectable, Showable}](endpoint: endpoint)
   // connection is never half-closed. A long-lived connection that must outlive any
   // single block keeps `lambda` running (e.g. parked on its supervisor) until the
   // enclosing scope ends, at which point the loan closes the connection.
-  def duplex[result](lambda: Duplex => result)
+  def duplex[result, instance^](lambda: Duplex => result)
+    ( using connectable: (endpoint is Connectable)^{instance} )
     ( using (Socket.Event is Loggable)^, Tactic[Socket.Error] )
   :   result =
 
     duplex(lambda)(Unset)
 
-  def duplex[result](lambda: Duplex => result)(interface: Optional[MacAddress])
+  def duplex[result, instance^](lambda: Duplex => result)(interface: Optional[MacAddress])
+    ( using connectable: (endpoint is Connectable)^{instance} )
     ( using (Socket.Event is Loggable)^, Tactic[Socket.Error] )
   :   result =
 
