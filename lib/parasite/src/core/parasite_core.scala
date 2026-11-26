@@ -267,7 +267,10 @@ extension [result](stream: Chain[result])
       case _             => Chain()
 
 
-def supervise[result](block: Monitor ?=> result)(using threading: Threading, codepoint: Codepoint)
+// The block's parameter is named so that a capture-checking error about a task which would
+// outlive its supervisor names `monitor`, and not a synthetic `contextual$1`.
+def supervise[result](block: (monitor: Monitor) ?=> result)
+  ( using threading: Threading, codepoint: Codepoint )
 :   (Tactic[Async.Error]^) ?->{block, threading} result =
 
   block(using Root(threading.supervisor()))
