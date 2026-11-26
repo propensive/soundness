@@ -290,7 +290,7 @@ extends caps.ExclusiveCapability, caps.Stateful, Cursor.Snapshot[Data, Byte]:
     // Block-scoped like `begin`; the parser snapshot is refreshed afterwards.
     locally:
       val current = cursor
-      current.cue(mark)
+      current.cue(mark)(using Cursor.shared)
 
     syncFrom()
 

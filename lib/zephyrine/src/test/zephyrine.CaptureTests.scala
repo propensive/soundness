@@ -61,3 +61,28 @@ object CaptureTests extends Suite("streams-capture", m"Lending confinement tests
         Producer.lendUtf8(region => interval => kept = region.materialize(interval) :: kept):
           _.put(t"Exit")
     . assert(_ == Nil)
+
+    // A mark is a position in a buffer which only a hold keeps: outside one, a mark which was
+    // carried out of its hold cannot be taken up again (#2565).
+    test(m"a mark carried out of its hold cannot be grabbed"):
+      demilitarize:
+        val cursor = Cursor(Iterator(t"hello", t"world"))
+        val mark = cursor.hold(cursor.mark)
+        cursor.grab(mark, mark)
+    . assert(!_.nil)
+
+    test(m"a mark carried out of its hold cannot be returned to"):
+      demilitarize:
+        val cursor = Cursor(Iterator(t"hello", t"world"))
+        val mark = cursor.hold(cursor.mark)
+        cursor.cue(mark)
+    . assert(!_.nil)
+
+    test(m"marks are grabbed within the hold which took them"):
+      demilitarize:
+        val cursor = Cursor(Iterator(t"hello", t"world"))
+        val word: Text = cursor.hold:
+          val start = cursor.mark
+          cursor.next()
+          cursor.grab(start, cursor.mark)
+    . assert(_ == Nil)

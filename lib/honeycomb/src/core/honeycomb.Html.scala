@@ -1144,7 +1144,7 @@ object Html extends Tag.Container
       cursor.mark(using heldToken.nn)
 
     protected def slice(start: Cursor.Mark, end: Cursor.Mark): BaseText =
-      cursor.grab(start, end).asInstanceOf[BaseText]
+      cursor.grab(start, end)(using Cursor.shared).asInstanceOf[BaseText]
 
     // ASCII-range character predicates and case fold. Lower the per-character
     // overhead from `Character.isLetter`/`Character.isDigit`/`Character.toLowerCase`
@@ -1162,7 +1162,7 @@ object Html extends Tag.Container
 
     update protected def reset(start: Cursor.Mark): Unit =
       syncTo()
-      cursor.cue(start)
+      cursor.cue(start)(using Cursor.shared)
       syncFrom()
 
     protected def cloneTo

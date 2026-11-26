@@ -4484,7 +4484,7 @@ object Tel extends Tel2, TelMutation, TelRevision:
           cursor.advance()
           steps += 1
 
-        cursor.cue(mk)
+        cursor.cue(mk)(using Cursor.shared)
         syncFrom()
 
     // Peek the byte one past the current position, refilling if necessary.
@@ -4675,7 +4675,7 @@ object Tel extends Tel2, TelMutation, TelRevision:
     // `directEntrySubstance` idiom).
     private update def rewindTo(mark: Cursor.Mark): Unit =
       syncTo()
-      cursor.cue(mark)
+      cursor.cue(mark)(using Cursor.shared)
       syncFrom()
 
     // ── Reset (per-thread reuse) ──────────────────────────────────────────────
@@ -5035,7 +5035,7 @@ object Tel extends Tel2, TelMutation, TelRevision:
       else
         // Not a pragma — cue back to before any blanks were consumed.
         syncTo()
-        cursor.cue(mk)
+        cursor.cue(mk)(using Cursor.shared)
         syncFrom()
         prevLineWasBoundary = savedBoundary
         lineNo = savedLineNo
@@ -5355,7 +5355,7 @@ object Tel extends Tel2, TelMutation, TelRevision:
       val outerMark = beginMark()
       val kw = readKeyword()
       syncTo()
-      cursor.cue(outerMark)
+      cursor.cue(outerMark)(using Cursor.shared)
       syncFrom()
       kw
 
@@ -5759,7 +5759,7 @@ object Tel extends Tel2, TelMutation, TelRevision:
         if !keep then
           // Rewind.
           syncTo()
-          cursor.cue(mk)
+          cursor.cue(mk)(using Cursor.shared)
           syncFrom()
           head.leadingSpaces = savedHeadSnapshot._1
           head.indentLevels  = savedHeadSnapshot._2
@@ -5788,7 +5788,7 @@ object Tel extends Tel2, TelMutation, TelRevision:
     :   Unit =
 
       syncTo()
-      cursor.cue(mark)
+      cursor.cue(mark)(using Cursor.shared)
       syncFrom()
       head.leadingSpaces = snapshot._1
       head.indentLevels  = snapshot._2
@@ -5876,7 +5876,7 @@ object Tel extends Tel2, TelMutation, TelRevision:
         else
           // Rewind to the first blank.
           syncTo()
-          cursor.cue(mk)
+          cursor.cue(mk)(using Cursor.shared)
           syncFrom()
           head.leadingSpaces = firstBlankSnapshot._1
           head.indentLevels  = firstBlankSnapshot._2
@@ -5942,7 +5942,7 @@ object Tel extends Tel2, TelMutation, TelRevision:
 
       // Rewind.
       syncTo()
-      cursor.cue(mk)
+      cursor.cue(mk)(using Cursor.shared)
       syncFrom()
       found
 
@@ -6171,7 +6171,7 @@ object Tel extends Tel2, TelMutation, TelRevision:
 
         // Cue back so parseCompoundLine reads the row from the start.
         syncTo()
-        cursor.cue(mk)
+        cursor.cue(mk)(using Cursor.shared)
         syncFrom()
 
     // ── Source / literal atom dispatch ───────────────────────────────────────
@@ -7528,7 +7528,7 @@ object Tel extends Tel2, TelMutation, TelRevision:
           compound.atoms.length > 0 || compound.children.exists(_.compounds.length > 0)
 
         syncTo()
-        cursor.cue(mk)
+        cursor.cue(mk)(using Cursor.shared)
         syncFrom()
         head.leadingSpaces = savedHead._1
         head.indentLevels  = savedHead._2
