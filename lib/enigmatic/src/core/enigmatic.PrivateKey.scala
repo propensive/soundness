@@ -102,7 +102,7 @@ object PrivateKey:
   private def adopt[cipher <: Cipher](data: Data)
     ( using algorithm: cipher is KeyAlgorithm, cloak: Cloak^ )
     ( using Tactic[PrivateKey.Error], Diagnostics )
-  :   PrivateKey[cipher]^{cloak} =
+  :   Cloaked[PrivateKey[cipher], {cloak}] =
 
     Pkcs8.unwrap(data) match
       case Pkcs8(_, identifier, octets, rest) =>
@@ -119,14 +119,14 @@ object PrivateKey:
         PrivateKey(data)
 
   def generate[cipher <: Cipher]()(using cipher: cipher, cloak: Cloak^)
-  :   PrivateKey[cipher]^{cloak} =
+  :   Cloaked[PrivateKey[cipher], {cloak}] =
 
     PrivateKey(cipher.genKey())
 
   // Adopts freshly-generated key material. `Cloak.cloak` zeroes what it is given, so it
   // gets an exclusive copy: a frozen `Data` cannot be written through (see `SymmetricKey`).
   private[enigmatic] def apply[cipher <: Cipher](data: Data)(using cloak: Cloak^)
-  :   PrivateKey[cipher]^{cloak} =
+  :   Cloaked[PrivateKey[cipher], {cloak}] =
 
     val material: Array[Byte]^ = Array.allocate[Byte](data.length)
     material.place(data)

@@ -41,7 +41,7 @@ import prepositional.*
 
 object SymmetricKey:
   def generate[cipher <: Cipher & Symmetric]()(using cipher: cipher, cloak: Cloak^)
-  :   SymmetricKey[cipher]^{cloak} =
+  :   Cloaked[SymmetricKey[cipher], {cloak}] =
 
     // `Cloak.cloak` zeroes the array it is given, so it gets its own exclusive copy of the
     // key: a frozen `Data` cannot be written through. The provider's own copy is left to
@@ -60,7 +60,9 @@ object SymmetricKey:
   // should prefer the `Array[Byte]` overload where the material is mutable. Defining
   // `apply` suppresses the synthetic constructor proxy, so these are the sole
   // `SymmetricKey(bytes)` constructors.
-  def apply[cipher <: Cipher](bytes: Data)(using cloak: Cloak^): SymmetricKey[cipher]^{cloak} =
+  def apply[cipher <: Cipher](bytes: Data)(using cloak: Cloak^)
+  :   Cloaked[SymmetricKey[cipher], {cloak}] =
+
     new SymmetricKey(cloak.cloak(bytes.stdlib.to(scala.Array)))
 
   // Adopt externally-supplied key material from a mutable array, which is zeroed as it is
@@ -68,12 +70,12 @@ object SymmetricKey:
   // disambiguates from the `Data` overload, with which it clashes after erasure.)
   @targetName("applyMutable")
   def apply[cipher <: Cipher](bytes: scala.Array[Byte])(using cloak: Cloak^)
-  :   SymmetricKey[cipher]^{cloak} =
+  :   Cloaked[SymmetricKey[cipher], {cloak}] =
 
     new SymmetricKey(cloak.cloak(bytes))
 
-class SymmetricKey[cipher <: Cipher](handle: Secret^)
-extends PrivateKey[cipher](handle):
+class SymmetricKey[cipher <: Cipher](private[enigmatic] override val secret: Secret^)
+extends PrivateKey[cipher](secret):
   def verify[value: Encodable in Data](value: value, signature: Signature[cipher])
     ( using signing: cipher & Signing, erased weakness: ProcessingPermit[Weakness[cipher]] )
   :   Boolean =

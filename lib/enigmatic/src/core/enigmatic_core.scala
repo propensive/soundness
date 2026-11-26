@@ -89,6 +89,12 @@ package blockCipherPaddings:
 // and the `cryptoPermits.permit…Crypto` aggregates live in gastronomy; these map a cipher
 // type to its concession.
 
+// A secret value — a `Password`, `PrivateKey` or `SymmetricKey` — typed with the cloak which
+// stores it. Naming the cloak in the type of the secret's storage, as well as in the capture
+// set of the value, leaves no anonymous root capability in a secret's type, so a `val` which
+// holds one needs no ascription, and a heap-cloaked secret is wholly pure.
+type Cloaked[secret <: AnyRef, cloak^] = secret { val secret: Secret^{cloak} }^{cloak}
+
 // The algorithm/key-length concession of a cipher type, extracted by matching the
 // (possibly `over`/`against`-refined) cipher. Anything not named here — AES,
 // RSA-2048, HMAC — is `Acceptable` and needs no permission.
