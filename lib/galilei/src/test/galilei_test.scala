@@ -155,7 +155,7 @@ object Tests extends Suite("filesystem", m"Galilei tests"):
       . assert(_ == t"from the table")
 
       test(m"A governed path is opened through its descriptor"):
-        unsafely(virtual.open[File]()(file.stream.read[Data]).utf8)
+        unsafely(virtual.open[File]()(file.read[Data]).utf8)
       . assert(_ == t"from the table")
 
       test(m"A governed path is written through its descriptor"):
@@ -205,7 +205,7 @@ object Tests extends Suite("filesystem", m"Galilei tests"):
 
         test(m"The file accessor reaches the contextual handle"):
           unsafely:
-            dest.open[File]()(file.stream.read[Data]).utf8
+            dest.open[File]()(file.read[Data]).utf8
         . check(_ == t"Hello world!")
 
     suite(m"Opening directories"):
@@ -1180,7 +1180,7 @@ object Tests extends Suite("filesystem", m"Galilei tests"):
 
         test(m"An Exclusive file open succeeds and reads its content"):
           unsafely:
-            target.open[File](Read & Exclusive)(file.stream.read[Data]).utf8
+            target.open[File](Read & Exclusive)(file.read[Data]).utf8
         . check(_ == t"content")
 
         test(m"A second Exclusive open of the same file is Busy"):
