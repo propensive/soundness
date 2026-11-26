@@ -55,6 +55,16 @@ inline def more[value](using value: value aka "more"): value =
   // `Tagged` unwrapping.
   value()
 
+// A stream is read by consuming it: it is a capability and not a value which a `Streamable`
+// instance could be asked to stream again, so it has a `read` of its own, which the compiler
+// prefers to the generic one for its more specific receiver. This is what lets the stream of
+// an open file, or of a pipeline over one, be read as text within the block which owns it.
+extension (consume stream: (Stream[Data] over Credit)^)
+  def read[result](using readable: (Chain[Data] is Readable to result)^, buffering: Buffering)
+  :   result =
+
+    readable.read(stream.chain)
+
 extension [value](value: value)
   // A streamable value's pull endpoint: the fluent form of
   // `Streamable.stream` (`file.source`, `entry.source`). (Named `source`
