@@ -1,0 +1,92 @@
+orthant 2 language
+
+@ 0 1 0 0ca09d4521b9eed714be26dbf809b879
++ # Token uzyskany w jednym wierszu
+
+@ 0 3 0 0737fc3b887841760dcfb7955833701e
++ Grant client-credentials to żądanie do serwera autoryzacji i odpowiedź do sparsowania. Zapisuje się
++ go jako jedno wywołanie, które zwraca `Authorization`, a dalszy kod używa tokenu jako zwykłej
++ wartości.
+
+% 0 1 0 12705ff5e291290d17fbc8389d59ef4a
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 150863c1163daf461643c718c4723012
++   label Serwer autoryzacji
+
+% 1 1 0 19fa1d796dffe8eb1738a7a0c4038aee
+
+% 2 1 0 090558f9a9b07ed81f77370a6423630c
+
+% 3 1 0 1bc6713c133d49d303b32668a5669bd7
+
+% 5 1 0 13a5d80bdbf0af4f1de9f67d95d43ca2
+
+% 1 1 0 14e37082a5e56e9a1f81d344f8181a1a
+
+@ 0 1 0 0ae83460ffa6af310274c19e65fcd315
++   label Token dla dwóch zakresów uprawnień
+
+% 0 1 0 124323093660f92a11e9e38bbb9f07cd
+
+% 1 1 0 18c82ed55e48fadf05cce0d2ab361d7e
+
+% 2 1 0 1a6b2a5cd3b4ea5a1dd5113f4bb18ebd
+
+% 3 1 0 07c4cf67b187e84b1208b7c5574305ad
+
+% 5 1 0 0025a37289230baa033b71a2a37416dd
+
+% 6 1 0 1b1198a08e40975b0e4b5cf03014bcb1
+
+% 1 1 0 0357033e35d7fc9f131cd59687223ddc
+
+@ 0 1 0 1be25756391d2b030b37e8d71585f1d3
++   label Na co pozwala
+
+% 0 1 0 0f3543d002c9ed2b1d46a8059f39ef83
+
+% 1 1 0 1af5a4b7c7fec9f51828c86527f4554d
+
+% 2 1 0 1cf7aee7ff0d651d07ac5f5b6124d069
+
+% 3 1 0 15787dd9a02851ab0d5869217f155f82
+
+% 5 1 0 1f18636139af4e2c0058673ccc40359c
+
+% 6 1 0 0a36dff0a4f1519019ca38039f4aed1d
+
+% 7 1 0 11ca4ea5e8edb45719e0c6f8be1363f3
+
+% 1 1 0 19c256fe1715171e00cd6638e7b056f6
+
+@ 0 1 0 0bc4ceca9f765ce51a430c86eeb57f6e
++   label I nowy, gdy wygaśnie
+
+% 0 1 0 0ca6138cc4a23f54109cd97382f017d7
+
+% 1 1 0 177bd859fd56cde01eefd5e9fc022ad8
+
+% 2 1 0 0b8c9c8431fcf18e1752411a081b948e
+
+% 3 1 0 04706ad3918d4bd21b140c01ba17235a
+
+% 5 1 0 14356d8cfa487d90102d1d1ab08869bd
+
+% 6 1 0 03a154b56d75b3bb1f28deedea21e27b
+
+% 7 1 0 18b5718ebc49b81503d6f1468a0c271a
+
+% 0 1 0 19ed29898a72e65c1e986d935574e36f
+
+% 0 1 0 18eafb32caed3dd50f976e787bd035ca
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 3 0 1ca77c04c099794803d691ecee4af5cd
++ Przykład jest kompilowany, ale nie jest uruchamiany, ponieważ łączyłby się z serwerem autoryzacji.
++ [Uzyskiwanie tokenu](../../soundness/modules/oauth.md#obtaining-a-token) opisuje pozostałe granty, a
++ [styl bezpośredni](../../philosophy/direct-style.md) – ideę.

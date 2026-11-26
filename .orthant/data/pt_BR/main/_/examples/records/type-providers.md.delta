@@ -1,0 +1,71 @@
+orthant 2 language
+
+@ 0 1 0 0ee56bf2b20e7ca31948913a9bff5bfd
++ # Uma tupla nomeada a partir de um schema
+
+@ 0 3 0 0cb3fbb522123ee80f79e5bf9138468e
++ Um provedor transforma um documento em um registro, cujos campos são lidos à medida que são usados,
++ ou em uma tupla nomeada, cujos campos são todos lidos de uma vez. Os nomes, os tipos e a ordem da
++ tupla são os do schema, e ela é desmontada por posição como qualquer outra tupla.
+
+% 0 1 0 12705ff5e291290d17fbc8389d59ef4a
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 2 0 1b46a37d11835f7c1eb7244c3ffe9816
++   label Um registro, lido campo a campo
++   highlight record  lê cada campo quando ele é selecionado
+
+% 0 1 0 0fd2ac3797a0477c02117fa7e01a94b2
+
+% 1 1 0 0428a31f3d3e43b7091c3ca786dd21af
+
+% 2 1 0 1b910fd06c99accd08488b333f1ed354
+
+% 4 1 0 03e79b72f7a35fa31a875db0788e8fd5
+
+% 5 1 0 1567cbf1cd5076a0153d1cb55b022b59
+
+% 6 1 0 0ae5cdffb37ce5c81831f179f361337b
+
+% 7 1 0 0796c87e554fba320aa5d4153527a751
+
+% 8 1 0 13c9b6c2843bdfad01ca386f26fdc797
+
+% 0 1 0 02e361ec542fc0f41223be78055db460
+
+% 0 1 0 1fb577f661c5dd591c1de03fb06de272
+
+% 1 1 0 009572a8bf0e33381cd5710bc3cca054
+
+@ 0 2 0 028fea5d58d06af812b8e0eee56c86c2
++   label Uma tupla, lida inteira
++   highlight (name,..acts)  na ordem do schema
+
+% 1 1 0 1aefa47acecf7b0300e3cad091b839af
+
+% 2 1 0 14a1c45069c538580dfc4aa628048701
+
+% 4 1 0 14ad96e1bc13707b16b9da6352247293
+
+% 5 1 0 16ed4f10d9a2d9301588fbb17f33866a
+
+% 6 1 0 1e7cd945ca4c96941a6d3fe54b89c82d
+
+% 7 1 0 158e6b7745dc6a491d4e922f77052b2d
+
+% 8 1 0 121a1c392c192966139c062a25e68b9d
+
+% 0 1 0 0858ef4a7dcf5143147c9343cca64f62
+
+% 0 1 0 1a931c4b79b8f69217033585223a0c79
+
+% 0 1 0 18eafb32caed3dd50f976e787bd035ca
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 2 0 1f3a2979c7f9545202b2c1d781b4a222
++ [Tuplas em vez de registros](../../soundness/modules/records.md#tuples-instead-of-records) compara
++ as duas formas.

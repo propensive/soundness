@@ -1,0 +1,171 @@
+orthant 2 language
+
+@ 0 7 0 00dccf0c678a22f718a2ac7f9134af54
++ entry .p   l'interpolateur `p"…"` : un littéral de chemin, vérifié et typé à la compilation du code
++     `p"/home/user/data.csv"` décode son littéral comme un chemin POSIX et, à défaut, comme un
++     chemin Windows, et produit un `Path` dont la plateforme est `Posix` ou `Windows` en
++     conséquence et dont le `Topic` est le tuple des types littéraux de ses noms, la feuille en
++     premier : `p"/verona/capulet/juliet"` est un
++     `Path of ("juliet", "capulet", "verona") on Posix`. Un texte qui n'est un chemin valide ni
++     pour POSIX ni pour Windows est une erreur de compilation, _Le chemin `…` n'est pas un chemin
++     Windows ou POSIX valide_. L'interpolateur n'accepte aucune substitution `$`.
+
+@ 0 8 0 01e0527ca3b95a1302baed996cb2a029
++     detail
++         Le message se lit _l'opération `operation` en `path` sur `filesystem` a échoué parce que
++         `reason`_ — par exemple, _l'opération de lecture en /tmp/x sur Linux a échoué parce que
++         l'entrée n'existe pas_. Ses raisons sont la table errno de POSIX sous des noms lisibles
++         (`Nonexistent` est `ENOENT`, `NotSameVolume` est `EXDEV`, `Physical` est `EIO`), si bien
++         que les échecs qu'un système de fichiers peut signaler sont nommés une seule fois et que
++         chaque backend s'y rapporte. Le constructeur `Io.Error(path, operation, reason)` requiert
++         que le plan du chemin ait un `Filesystem` (pour en faire le rendu) et un `Diagnostics`
++         dans la portée.
+
+@ 0 19 0 02c1e6b72179e3ac072409b95e51bdce
++     entry .communicable   rend chaque événement sous forme de message : _créé `path`_, _déplacé `from` vers `to`_, …
++     entry .Create   une entrée a été créée : _créé `path`_
++       entry #path   le chemin créé, sous forme de texte
++     entry .Delete   une entrée a été supprimée : _supprimé `path`_
++       entry #path   le chemin supprimé, sous forme de texte
++     entry .Move   une entrée a été déplacée : _déplacé `from` vers `to`_
++       entry #from   le chemin source, sous forme de texte
++       entry #to   le chemin de destination, sous forme de texte
++     entry .Copy   une entrée a été copiée : _copié `from` vers `to`_
++       entry #from   le chemin source, sous forme de texte
++       entry #to   le chemin de destination, sous forme de texte
++     entry .HardLink   un lien physique a été créé : _lien physique de `from` vers `to`_
++       entry #from   l'entrée existante, sous forme de texte
++       entry #to   le nouveau lien, sous forme de texte
++     entry .Symlink   un lien symbolique a été créé : _lien symbolique de `link` vers `target`_
++       entry #link   le nouveau lien, sous forme de texte
++       entry #target   ce vers quoi il pointe, sous forme de texte
++     entry .Touch   la date de modification d'une entrée a été mise à jour : _touché `path`_
++       entry #path   le chemin touché, sous forme de texte
+
+@ 0 48 0 01453ece02b6183508e6ad33388a35cd
++   entry .dereferenceSymlinks   suivre un lien symbolique en dernier composant : agir sur ce vers quoi il pointe
++       Le `DereferenceSymlinks` permissif : `entry()` indique le type de la cible, `copyTo` copie
++       le contenu de la cible, `descendants` et `checksum` parcourent les répertoires liés,
++       `hardLinks()` compte les liens de la cible.
++   entry .preserveSymlinks   ne pas suivre un lien symbolique : agir sur le lien lui-même
++       Le `DereferenceSymlinks` strict : `entry()` indique `Symlink`, `copyTo` copie le lien, un
++       parcours ne descend pas dans un répertoire lié. `filesize()` utilise toujours celui-ci, si
++       bien que la taille d'un lien est celle du lien.
++   entry .moveAtomically   `moveTo` doit être atomique, et est `Unsupported` là où il ne peut pas l'être
++       Le `MoveAtomically` qui demande au backend un renommage atomique (`ATOMIC_MOVE` sur la
++       JVM). Un lecteur ne voit jamais une entrée à moitié déplacée ; un déplacement entre
++       volumes, qui ne peut pas être atomique, lève `Io.Error` avec `Unsupported` plutôt que de
++       se replier sur une copie.
++   entry .moveNonAtomically   `moveTo` peut être une copie suivie d'une suppression
++       Le `MoveAtomically` qui autorise un déplacement non atomique, si bien qu'un déplacement
++       entre volumes réussit, au prix qu'un échec en cours de route peut laisser à la fois la
++       source et une destination partielle.
++   entry .copyAttributes   une copie emporte avec elle les attributs de la source (horodatages, permissions)
++       Le `CopyAttributes` permissif. Aucune opération ne le consulte actuellement : la politique
++       existe pour que le traitement des attributs par une copie soit énoncé une fois que les
++       backends le respecteront.
++   entry .discardAttributes   une copie ne prend que le contenu ; les attributs de la copie sont neufs
++       Le `CopyAttributes` strict ; voir `.copyAttributes` pour son statut actuel.
++   entry .deleteRecursively   `delete` et `wipe` sur un répertoire suppriment d'abord tout ce qu'il contient
++       Le `DeleteRecursively on <plane>` permissif, pour tout plan doté d'un `Explorable` et d'un
++       backend. Il supprime les enfants en profondeur d'abord avant l'opération qu'il protège, si
++       bien que `wipe()` supprime un arbre entier. C'est aussi ce dont a besoin
++       `overwritePreexisting`, pour que remplacer un répertoire puisse le vider.
++   entry .deleteOnlyEmpty   `delete` et `wipe` refusent un répertoire qui a des enfants
++       Le `DeleteRecursively` strict : un répertoire ayant le moindre enfant lève `Io.Error` avec
++       `Operation.Delete` et `Reason.DirectoryNotEmpty` avant que quoi que ce soit ne soit
++       touché. Un programme qui ne doit jamais supprimer plus d'une entrée à la fois importe
++       celui-ci.
++   entry .overwritePreexisting   une destination qui existe déjà est d'abord supprimée
++       L'`OverwritePreexisting on <plane>` permissif, qui requiert un
++       `DeleteRecursively on <plane>` dans la portée (pour vider un répertoire en cours de
++       remplacement). `copyTo`, `moveTo`, `hardLinkTo`, `symlinkTo` et `Device.create` ne peuvent
++       alors pas lever `AlreadyExists`.
++   entry .failOnPreexisting   une destination qui existe déjà est une `Io.Error`
++       L'`OverwritePreexisting` strict : l'opération se déroule sans modification, et le backend
++       lève `Io.Error` avec `Reason.AlreadyExists` lorsqu'elle entre en collision avec une entrée
++       existante, ce que l'appelant doit alors traiter.
++   entry .createParents   les répertoires ancêtres manquants d'une destination sont créés
++       Le `CreateParents on <plane>` permissif, qui requiert un backend. Avant l'opération,
++       chaque ancêtre absent de la destination est créé, en remontant depuis le plus proche. Les
++       répertoires sont créés avec le masque propre du processus. `copyInto`, `moveInto` et
++       `symlinkInto` l'utilisent implicitement, puisque leur répertoire de destination est
++       nommé. Lorsqu'il est dans la portée, `create[…]` crée aussi les ancêtres manquants, comme
++       si `CreateFlag.Parents` avait été donné.
++   entry .requireParents   une destination dont le parent est manquant est une `Io.Error`
++       Le `CreateParents` strict : rien n'est créé, et le backend lève `Io.Error` avec
++       `Reason.Nonexistent` pour le parent manquant.
+
+@ 0 9 0 0b05e6ec838b88e109cab073cf4927aa
++       column  Indicateur
++       column  Effet
++       row  `Create`  crée le fichier s'il n'existe pas, selon le `Umask` dans la portée ; sans lui, ouvrir un fichier manquant lève `Nonexistent`
++       row  `Exclusive`  avec `Create`, échoue avec `AlreadyExists` si le fichier existe (`O_EXCL`)
++       row  `Truncate`  vide le fichier à l'ouverture
++       row  `Sync`, `Dsync`  écritures synchrones, des données et des métadonnées ou des données seules
++       row  `NoFollow`  refuse d'ouvrir à travers un lien symbolique
++       row  `Lock`, `LockShared`  détient un verrou consultatif du système d'exploitation, exclusif ou partagé, pendant toute la durée de l'ouverture
++       row  `Await`  attend que le verrou et l'inscription interne au processus puissent être acquis, plutôt que d'échouer aussitôt avec `Busy`
+
+@ 0 3 0 14ab18cdcb0dc6bf183a0e20830e9404
++     detail
++         Le message se lit _le condensé des données, `actual`, n'est pas `expected`_, tous deux
++         en hexadécimal minuscule. Rien n'est écrit lorsqu'elle est levée.
+
+@ 0 3 0 18159c9b9dcb7048159bb99b739f5a39
++       `dataSearch()` et `configSearch()` construisent les `Stems` des chemins de recherche XDG de
++       données et de configuration à partir de l'environnement. Les fonctions auxiliaires de
++       l'objet ne sont publiques que parce que les opérations sont transparent inline ; appelez les
++       opérations.
+
+@ 0 5 0 18916a5e4d0632a90e392941c933a4b3
++     detail
++         `Searchpaths.Stems on Xdg.Data onto Linux` : `#Plane` est le plan virtuel, `#Target` la
++         plateforme sous-jacente, et `#stems` les répertoires par ordre de priorité, au moins un —
++         la tête est l'endroit où vont les écritures, puisque la spécification XDG Base Directory
++         demande aux applications de n'écrire que dans le répertoire de base propre à
++         l'utilisateur.
+
+@ 0 7 0 180ffa103693576a1c5b6a04372fd3df
++     entry #Plane   le plan de chemins de recherche, comme `Xdg.Data`
++     entry #Target   la plateforme sur laquelle se trouvent les racines, comme `Linux`
++     entry #stems   les répertoires à essayer, par ordre de priorité ; non vide
++   entry .resolve   `Searchpaths.resolve(stem, path)` : les noms du chemin ajoutés sous une racine
++   entry .locateResolved   la première racine sous laquelle le chemin existe, ou `Unset`
++   entry .locationsResolved   toutes les racines sous lesquelles le chemin existe, par ordre de priorité
++   entry .entryNames   les noms d'enfants fusionnés de toutes les racines, sans doublons, les premières racines d'abord
+
+@ 0 4 0 0b310b54a9ef907a1147f3cf8ca85ee0
++ entry .destination   `path.destination()` : la place du chemin sous la racine de tête, là où la spécification XDG dirige les écritures
++     Une extension sur `Path on <plane <: Searchpath>`. Totale : rien n'est vérifié sur le
++     disque. Créer les éventuels répertoires intermédiaires manquants incombe à l'appelant, au
++     moyen de `filesystemOptions.createParents` lors de l'écriture elle-même.
+
+@ 0 5 0 04a06f921a7ec17e016913eceb8605fb
++ entry .javaPath
++   info
++       `path.javaPath` : le `java.nio.file.Path` d'un chemin de plateforme, pour les API Java qui
++       en prennent un
++   detail
++       Une extension sur tout `Path on <plane: Filesystem>` dans `galilei.jvm`, délibérément *non*
++       exportée vers le package parapluie `soundness` : c'est une échappatoire hors de l'API typée,
++       et l'atteindre par `galilei.javaPath` (ou via `import galilei.javaPath`) conserve ce
++       caractère délibéré.
+
+@ 0 3 0 0389c40fa2c1c945087667f75690e56a
++       ```scala
++       import soundness.*
++       import galilei.javaPath
+
+@ 0 3 0 0f855149935193ee04655f3452bc0827
++       val path: Path on Linux = unsafely((% / "tmp").on[Linux])
++       path.javaPath.toAbsolutePath
++       ```
+
+@ 0 2 0 01b8163724b009240a787270cb339100
++ entry .javaFile
++   info
++       `path.javaFile` : le `java.io.File` d'un chemin de plateforme
++   detail
++       Comme `javaPath`, pour l'ancienne API ; dans `galilei.jvm` et non exportée vers le package
++       parapluie.

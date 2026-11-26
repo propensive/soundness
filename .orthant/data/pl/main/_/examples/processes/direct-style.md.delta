@@ -1,0 +1,64 @@
+orthant 2 language
+
+@ 0 1 0 1ae84c841120ac171cc0e5a8921ec865
++ # Wyjście jednego polecenia w argumentach następnego
+
+@ 0 2 0 19f202b1d3e28d37172a280ea52300da
++ Uruchomienie polecenia jest wyrażeniem, a jego wyjście jest wartością. Drugie polecenie przyjmuje tę
++ wartość jako argument w następnym wierszu, bez wywołania zwrotnego i bez strumienia do opróżnienia
++ między nimi.
+
+% 2 1 0 0c17eb5fe85036c919e459ee7a55754a
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 2 0 06313819da403c85138c5d9fcfafe753
++   label Wyjście polecenia
++   highlight author  wartość, gdy polecenie się zakończy
+
+% 1 1 0 1aa6e594e8b92a810fa876a4d40320ef
+
+% 2 1 0 1682ceb8cd9a3586005e93250e646caf
+
+% 3 1 0 17fe650d9d4e89b40d8148e89babb547
+
+% 5 1 0 0ea929baa57f75c00f37e1b516d8fe8f
+
+% 1 1 0 136ad39df2091d920d057d8ffc1ecbd6
+
+@ 0 2 0 022a27c9c191883c086409f0e7d3c000
++   label Użyte jako argument
++   highlight $author  wyjście pierwszego polecenia
+
+% 1 1 0 099c273e93daa62406faaa64d20c6c8e
+
+% 2 1 0 14361bded52651ce01993826a9e13240
+
+% 3 1 0 124ebd8c6f71beee08b809c8f4e72b0b
+
+% 5 1 0 16b67f134b125d1c0d08ad7fb9e739ae
+
+% 0 1 0 0a4d4d441c90285f0f49b63e4edd9f27
+
+% 1 1 0 060266186742dd18048a09bb1d8723b4
+
+% 1 1 0 136d267ff733a60e0f6246170d49df5f
+
+% 2 1 0 1525a46c87e9e0571e7d21b8e7c42b7a
+
+% 0 1 0 08a86cbdc9b8cb0109ed8ce5b435ce67
+
+% 1 1 0 0cd6459499a6bd5203d659b3bcc1b6aa
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 0 1 0 1d32db6002faf236075bb2b045132a97
+
+% 1 1 0 170659ffc113f56e1047e35b92c89173
+
+@ 0 3 0 074610c4668feba3004f40ba72176026
++ [Uruchamianie polecenia](../../soundness/modules/processes.md#running-a-command) mówi, kiedy
++ zwracany jest każdy rodzaj wyniku, a [styl bezpośredni](../../philosophy/direct-style.md) – dlaczego
++ czekanie zapisuje się jako zwykłe wywołanie.

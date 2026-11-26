@@ -1,0 +1,64 @@
+orthant 2 language
+
+@ 0 1 0 1832061beced5c63118412558843af0d
++ # 工作树中的文件就是文件
+
+@ 0 3 0 101d155a274306b81c9d5c29735bcc69
++ 打开的工作树同时也是一个目录。由它构成的路径，用与其他任何文件相同的 `overwrite` 写入，所依据的是打开工作树时的授权，而 `add` 暂存的也正是这条路径。
+
+% 0 1 0 12705ff5e291290d17fbc8389d59ef4a
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 2 0 1ed85498eb22390a16bc2f04d0a8ec0b
++   label 写入工作树的文件
++   highlight overwrite  一个文件系统操作
+
+% 1 1 0 0fb7db97a91c62e10c462b2f53838fd0
+
+% 2 1 0 11a79b43f523b64414fd166aa94920a8
+
+% 3 1 0 0e85834e7a1bc2551407755464d0fdeb
+
+% 4 1 0 0b3d32e2bbbc63200aa7d411086b7c22
+
+% 0 1 0 1818cb31627b64961520a80541e92106
+
+% 1 1 0 100a1b7d6019165911bfaad48396e8eb
+
+% 1 1 0 1a39c7a5895b1f9d042445610b538066
+
+% 1 1 0 08087effd4469bdd05b77c537559b33e
+
+@ 0 2 0 0e4f1cc6baad41d0189366014618fa04
++   label 暂存并提交
++   highlight worktree.add  一个 Git 操作，作用于同一路径
+
+% 1 1 0 0e067af8fe4859f01df93d400e534211
+
+% 2 1 0 0b551b9532bcc1651a5b44ec369df13f
+
+% 3 1 0 067fa712234eed581b60fd20411b7713
+
+% 4 1 0 0c3e510fe482e0891ba7736fe22679e6
+
+% 0 1 0 0303c0060320ac1e183f237240b226b1
+
+% 1 1 0 045085dfd91a77a203a334c0c21fd733
+
+% 0 1 0 1746c028e6965b360d3218654089d3a9
+
+% 1 1 0 1dddb1219982c66d193e96fd63553faa
+
+% 0 1 0 0af567c13877aa13157f21c0fec341ef
+
+% 0 1 0 09d32216d4f718cc103c764ada166a6e
+
+% 0 1 0 18eafb32caed3dd50f976e787bd035ca
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 3 0 1b547e3ed9cc2e6a18b309afbea995fa
++ 此示例只编译，不运行，因为它需要一个仓库。[创建提交](../../soundness/modules/git.md#making-a-commit)介绍了提交，[文件系统](../../soundness/modules/filesystem.md)则介绍了对文件的操作。

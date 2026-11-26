@@ -1,0 +1,60 @@
+orthant 2 language
+
+@ 0 1 0 1525e4a7a957cb6e1551416a617b7f24
++ # Une requête à la VM peut être refusée
+
+@ 0 3 0 168c9e0b079015dc08307b844d3cd79c
++ La VM peut répondre à toute requête par une erreur : le thread est mort, le cadre a disparu, la
++ connexion est tombée. Chaque méthode d'une session `raises Debugger.Error`, si bien qu'une
++ méthode qui demande quelque chose à la VM déclare cette erreur ou décide de ce qu'il faut en
++ faire.
+
+% 0 1 0 12705ff5e291290d17fbc8389d59ef4a
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 0bee1772299d4bab02a2e057156f584e
++   label Rien ne rend compte du refus
+
+% 0 1 0 1477c34ff41c7c99183443e1d3238ae1
+
+% 1 1 0 0960c596329e4eb20a0b442aaa85c43a
+
+% 0 1 0 1e08687cb13957e8035b172cb8fc6d89
+
+% 1 1 0 051dddca37b9759e0823d8a32fac3262
+
+@ 0 2 0 1ad11225fb3ab5701d036fd2b5f5803b
++   label Il est déclaré
++   highlight raises..Error  transmis à l'appelant
+
+% 1 1 0 094488e219acbd4000809ac96f129b08
+
+% 0 1 0 1636123759f8e61d00f4cece0d80263e
+
+% 0 1 0 0712c4862a830cfe1a47a1554d6d66f3
+
+% 1 1 0 15bd238c8df88cd515c6ac5a434df68d
+
+@ 0 3 0 00f5ec64e3a4855907c40052edfbce5e
++   label Ou un thread qui ne peut pas être nommé reçoit un nom
++   highlight safely  un résultat Optional à la place de l'erreur
++   highlight or(t"exeunt")  ce que signifie ici son absence
+
+% 1 1 0 113e7bd988f5df6f05afba4167f04583
+
+% 0 1 0 1f75ae734e17be47168fa469c2ddbfbf
+
+% 0 1 0 0fc302efafad757714e1c2e004791887
+
+% 0 1 0 18eafb32caed3dd50f976e787bd035ca
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 4 0 1df00f3578a91d9701dcd19260fe85e7
++ L'exemple est compilé, mais pas exécuté, car il a besoin d'une autre JVM à déboguer.
++ [Threads et cadres](../../soundness/modules/debugging.md#threads-and-frames) présente les
++ requêtes, et [les erreurs](../../soundness/modules/errors.md#choosing-a-strategy) les stratégies
++ qui répondent à une `Debugger.Error`.

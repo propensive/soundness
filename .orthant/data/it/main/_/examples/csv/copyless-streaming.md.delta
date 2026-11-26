@@ -1,0 +1,71 @@
+orthant 2 language
+
+@ 0 1 0 157e82ab4e2967d00f581d6d609339d3
++ # Record da uno stream, senza righe in mezzo
+
+@ 0 3 0 1c4f5882b0fc7ba30976abaa8c5b4039
++ Un file troppo grande per essere tenuto in memoria viene letto da una sorgente, un record alla
++ volta. Un tipo con un'istanza di `Dsv.Parsable` viene analizzato dalle celle là dove si trovano nel
++ buffer del lettore, e nessuna riga viene costruita per esso lungo il percorso.
+
+% 2 1 0 1715c25a51ead5970b6fb38c3df5d4b2
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 0827b65c2130da39092bdc47c81e4956
++   label Righe da una sorgente, ciascuna decodificata
+
+% 1 1 0 17e5b84524c8f4700fcbcdd180317f8f
+
+% 2 1 0 0e83a54959162e210ab1bce3c2bd1114
+
+% 3 1 0 05fc6fc58de616d71698500d9b37e574
+
+% 5 1 0 12f89316fdff818e029c597b935ad453
+
+% 2 1 0 14d6fcb3a9ffcbce0122b19196096c6b
+
+% 0 1 0 1173a339fa8db331028295efe1a51ba0
+
+% 1 1 0 07f1bfc2bbd73afb04c75d9ce0c9af9e
+
+@ 0 3 0 1523838280bccb800eef009ef2a78d8e
++   label Record analizzati direttamente dalla sorgente
++   highlight rowsOf[Part]  un record alla volta
++   highlight Dsv.Parsable.derived  un parser per questa forma
+
+% 1 1 0 17ee043c646b3d690b399ff3a6a73b18
+
+% 2 1 0 1bd369cb23da80df1777bc182ede9a1e
+
+% 3 1 0 1407adceff0f9a5c10ad3faa73039421
+
+% 5 1 0 0fb727194f55f6af099217187418c3e6
+
+% 0 1 0 1d31c7f303803491166736fb3d15d6ad
+
+% 2 1 0 01ea1ebf272f9f34066c79552f589bfd
+
+% 0 1 0 10c63fc1dd5fb6b00bfe6fb8bfb6b1f4
+
+% 1 1 0 170a1751a4340cd30815276b3379889e
+
+% 1 1 0 136d267ff733a60e0f6246170d49df5f
+
+% 2 1 0 1525a46c87e9e0571e7d21b8e7c42b7a
+
+% 0 1 0 08a86cbdc9b8cb0109ed8ce5b435ce67
+
+% 1 1 0 0cd6459499a6bd5203d659b3bcc1b6aa
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 0 1 0 024b663f8837eb6d0eb276ff3bbdcdd8
+
+% 1 1 0 1eddef44801c62120c49980a19f3dba9
+
+@ 0 2 0 1551916b8e82905601d15f9e34474f4b
++ [Analizzare direttamente in un tipo](../../soundness/modules/csv.md#parsing-directly-to-a-type) dice
++ quali campi può avere un tipo analizzato direttamente.

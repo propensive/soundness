@@ -1,0 +1,10 @@
+orthant 2 release
+
+@ 0 1 0 0784fc81a0e6f7f51638d0c39a5cae8d
++ `etc/compatibility.tsv` records the matrix, and `etc/check-compatibility.py` (run by `make
+
+@ 0 1 0 131c76c742857dfc08f4e5d29215867d
++     grep -v '^#' etc/compatibility.tsv | awk -F'\t' '$3=="yes"{n++} END{print n}'    # 104 → 145 minus inherent exclusions
+
+@ 0 1 0 17ad45c43fc1de4e00fba3768502af96
++ Done when: every exclusion reason in `etc/compatibility.tsv` describes an inherent platform

@@ -1,0 +1,61 @@
+orthant 2 language
+
+@ 0 1 0 133144f1dd11322b0b1f65a54931e459
++ # 根据旧值计算的更新
+
+@ 0 3 0 0ba2ab359e2089fd12321782df9d9a2a
++ `lens` 中的赋值替换一个值，而在其中，`prior` 就是被替换的值。因此对列表中每个元素的修改只是一个表达式，没有循环，也没有任何东西被修改。
+
+% 2 1 0 07690bfa9417f7360a9f487e4ad2add6
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 0c29a23dbc39a3a611095a3279956174
++   label 每个场景，都重新编号为同一个值
+
+% 1 1 0 07203e7f890e02ad0339991563df5d48
+
+% 2 1 0 042b2eae0eb1d43210d5c26a4ed26c7f
+
+% 3 1 0 1c062e2ac2b569aa15a07cdcfb764866
+
+% 0 1 0 15407960a3d826ea174cf4a7995e02d4
+
+% 1 1 0 01acc0f79ec4211d169d2b310aea505e
+
+@ 0 2 0 1c8c6a7eb3597dcb01a2612433bd6091
++   label 每个场景，都根据自己的值重新编号
++   highlight prior  这个场景原来的编号
+
+% 1 1 0 103a1187ba42c2d103e7515be0e41277
+
+% 2 1 0 01f677ad85ba2ffb129f725aad82f303
+
+% 3 1 0 1bdf9788218117b51baa748607d7a12b
+
+% 0 1 0 153fc8ac7ca1f708193ce3acadd348b3
+
+% 1 1 0 02c10bb81374494209261afa9113bed5
+
+% 1 1 0 136d267ff733a60e0f6246170d49df5f
+
+% 2 1 0 1525a46c87e9e0571e7d21b8e7c42b7a
+
+% 0 1 0 08a86cbdc9b8cb0109ed8ce5b435ce67
+
+% 1 1 0 0cd6459499a6bd5203d659b3bcc1b6aa
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 0 1 0 0269d6a79c1259ff00227fb7900a7d9c
+
+% 0 1 0 1db569d79c25af7b06088b3ff7b6a208
+
+% 0 1 0 0825e42d6e6c94630149276cab0a1219
+
+% 1 1 0 04767385b9d943990d7e6201b2945171
+
+@ 0 3 0 19568f5a6bd6b1120fe88784b1930f07
++ 第二行是原始值，它没有改变。[根据旧值更新](../../soundness/modules/optics.md#updating-from-the-old-value)有更多内容，[不可变性](../../philosophy/immutability.md)则给出了理由。

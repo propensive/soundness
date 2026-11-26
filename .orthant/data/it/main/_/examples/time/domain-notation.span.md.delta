@@ -1,0 +1,68 @@
+orthant 2 language
+
+@ 0 1 0 0d6739a4073a694e001a0ec3f900c3a1
++ # Un tratto di calendario, come somma
+
+@ 0 2 0 0d4ab3ffd31dd714006c8808c485c1a5
++ Una lunghezza di tempo di calendario è un numero moltiplicato per un'unità, e diversi di questi
++ sommati insieme. Il risultato è un `Timespan`, le cui parti si rileggono per nome.
+
+% 2 1 0 1ed97eebf6f2dd8819eeb48e7696dffc
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 198fc43a880f25a91fa6d2ddad66bfa3
++   label Due anni
+
+% 1 1 0 15dc9737714741981eced812d2ab4a52
+
+% 0 1 0 0361e828ee8a698f1e8f452f74fb2b14
+
+% 1 1 0 19350535dfa84e6916e701d7a2719bd4
+
+@ 0 2 0 0262c3dc072dcf09164a4536108b5a22
++   label E tre mesi
++   highlight 3*Month  un'altra unità, sommata
+
+% 1 1 0 1ec3fce43cc35f470bfe8f10faee5030
+
+% 0 1 0 0a783e1186b399b40cd71a901a246503
+
+% 1 1 0 1bd3c3fa1b0ba492148909f4ce5b1884
+
+@ 0 2 0 19cfe31252b8004e082571c0e3a06054
++   label E due settimane
++   highlight 14*Day  e un'altra
+
+% 1 1 0 120fe131c85985b2059e9f1c1fc03527
+
+% 0 1 0 1fa416dce8cb7b2001d98bed50c5c804
+
+% 1 1 0 112dff1b766fd86d08c423c3acc71d09
+
+% 1 1 0 136d267ff733a60e0f6246170d49df5f
+
+% 2 1 0 1525a46c87e9e0571e7d21b8e7c42b7a
+
+% 0 1 0 08a86cbdc9b8cb0109ed8ce5b435ce67
+
+% 1 1 0 0cd6459499a6bd5203d659b3bcc1b6aa
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 0 1 0 18e94b554742e1bf12317056f1391980
+
+% 0 1 0 1798b9612c69a958125753c2c9f60f35
+
+% 0 1 0 1092d77bb79964b917599286157e795d
+
+% 0 1 0 175c0c7c8ec05cd215866adef9d4c0d8
+
+% 1 1 0 1c4be5d589644a7702afdd19905d2a9e
+
+@ 0 3 0 19980782fcae169c12bd25a720630261
++ L'ultima riga è il tratto nella sua forma ISO 8601. [Durate e durate di
++ calendario](../../soundness/modules/time.md#durations-and-timespans) spiega perché un tratto non è
++ un numero di secondi.

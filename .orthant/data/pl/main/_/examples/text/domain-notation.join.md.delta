@@ -1,0 +1,56 @@
+orthant 2 language
+
+@ 0 1 0 0b14f3ad2ed6f1ca19ac4699c4fa7c2b
++ # Lista, którą czyta się jak zwykłe zdanie
+
+@ 0 3 0 0aaaf845687cca321bb579d517510ce0
++ Lista w zdaniu ma przecinki między elementami i inne słowo przed ostatnim. `join` przyjmuje
++ separator i opcjonalnie separator końcowy, więc zdania nie składa się ręcznie.
+
+% 2 1 0 0dda8b029b159023118e76e88714227f
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 2 0 0f22d73078fbf41a02c95b539c43ac0a
++   label Jeden separator
++   highlight join(t",..")  między każdą parą
+
+% 1 1 0 19d1215e7b1a751219c0730e4ca24f4b
+
+% 2 1 0 1a6dd299d3da8e550b0f42a18612ac42
+
+% 0 1 0 05537143c8bf76f90daefbd851afd9f7
+
+% 1 1 0 14464d734f164c5901637b786d0acc4d
+
+@ 0 2 0 034a0c843807fa920ce61b3acd5ef57f
++   label Inny przed ostatnim
++   highlight and  słowo przed ostatnim elementem
+
+% 1 1 0 0bbb829b77fc1b95187be889639a345a
+
+% 2 1 0 0613b723fc1186a110de3db52182a611
+
+% 0 1 0 061e863ebcd323a300807022810426f2
+
+% 1 1 0 07f61fe86a1adf6815316ecfe0e44e99
+
+% 1 1 0 136d267ff733a60e0f6246170d49df5f
+
+% 2 1 0 1525a46c87e9e0571e7d21b8e7c42b7a
+
+% 0 1 0 08a86cbdc9b8cb0109ed8ce5b435ce67
+
+% 1 1 0 0cd6459499a6bd5203d659b3bcc1b6aa
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 0 1 0 156ccd68f66eca4f027f646c013e4068
+
+% 1 1 0 0889a6aa400eabd01d3b1938d3d4eccb
+
+@ 0 2 0 0f83f1fe6f27721d0718c1d89881f169
++ Sekcja [Dzielenie i łączenie](../../soundness/modules/text.md#splitting-and-joining) zestawia `join`
++ z `mkString`.

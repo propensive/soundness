@@ -1,0 +1,25 @@
+orthant 2 language
+
+@ 0 2 0 0f3d1198b0e978311a11bfe6394f1f89
++   baseline  101 temas en doc/soundness/modules/; 145 de 145 bibliotecas cubiertas (2026-10-21; 1 de 144 sin cubrir el 2026-09-25; 91 temas y 35 sin cubrir el 2026-08-01)
++   criterion  python3 etc/check-doc-coverage.py informa de que todas las bibliotecas están cubiertas y termina con 0
+
+@ 0 2 0 05558c8a0afe616c19ef03f4c9b525c6
++   baseline  la suite DAP guionizada se detiene, avanza paso a paso e inspecciona valores mediante sus instancias de Inspectable; tema doc/soundness/modules/debugging.md (2026-10-21; objetos inspeccionados como nombres de clase de la JVM y sin tema el 2026-09-25)
++   criterion  una sesión DAP guionizada (punto de interrupción, paso, inspección con valores representados por Soundness) pasa contra una aplicación en ejecución en la CI
+
+@ 0 2 0 1ecc3855de818f6814bc9b756c382eb7
++   baseline  existen etc/migration.md y 0.65.0.md–0.73.0.md; la directiva de migración de etc/release protege la publicación; ninguna comprobación en las pull requests (2026-10-21; notas hasta 0.68.0 el 2026-09-25)
++   criterion  etc/migration.md existe; la publicación (la directiva de migración de etc/release) se niega a etiquetar sin etc/migration/<version>.md; una comprobación de la CI hace fallar toda pull request que cambie lib/**/src sin tocar el etc/migration/<version>.md no publicado
+
+@ 0 2 0 174e5970ec87b6671ec8b4594cff11a1
++   baseline  lib/reliquary (7387 líneas) más anthology.lira, degustation.lira, mandible.lira, xenophile.lira y sus pruebas (2026-09-25)
++   criterion  lib/reliquary no existe, no queda ningún directorio lib/*/src/lira, y build.mill, etc/ y doc/soundness/modules no mencionan reliquary
+
+@ 0 3 0 1ab90a58f440346102cbf922b597507a
++   status done
++   done  #2530 (2026-11-20)
++   baseline  lib/sigillate: Jws, Jwe, Jwk y Jwt, con los componentes `http` y `server`; 95 pruebas, que toman sus vectores de RFC 7515 §A.1–A.7, RFC 7516 §A.1–A.5, RFC 7517, RFC 7638 y RFC 8037; `↯/s.147.1`; doc/soundness/modules/jose.md (2026-11-20)
+
+@ 0 1 0 04b2a086c09d9a4a0bf490e3f6a25ee5
++   baseline  lib/chatelaine: WebAuthn.registration/register y authentication/authenticate, atestación `none` y `packed`, con un componente `server`; pasan las ceremonias de registro y de autenticación de los vectores de prueba de la especificación del W3C (§16.2–16.11), así como ceremonias guionizadas contra un autenticador software en las fuentes de prueba; no se ha controlado el autenticador virtual de ningún navegador; `↯/s.148.1`; doc/soundness/modules/webauthn.md (2026-11-20)

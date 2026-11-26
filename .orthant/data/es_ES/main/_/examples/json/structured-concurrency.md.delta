@@ -1,0 +1,54 @@
+orthant 2 language
+
+@ 0 1 0 02fa22ad2e0dc9b61c134605967baa27
++ # Un serializador que pertenece a su ámbito
+
+@ 0 3 0 1d52b73b2805b7030ff412be0053a4a5
++ `Json.emit` serializa un documento en una fibra, y entrega el texto a través de un iterador a
++ medida que el consumidor lo pide. Una fibra debe tener un supervisor, así que la llamada no compila
++ fuera de un bloque `supervise`, y el bloque no termina mientras la fibra se ejecuta.
+
+% 0 1 0 12705ff5e291290d17fbc8389d59ef4a
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 1c12e386960ffcd315849c3a9fcd89f7
++   label Una fibra sin nada que la supervise
+
+% 0 1 0 1477c34ff41c7c99183443e1d3238ae1
+
+% 1 1 0 0960c596329e4eb20a0b442aaa85c43a
+
+% 2 1 0 1f1bb34802ae54f10e5a71ef5422d5e0
+
+% 3 1 0 0735d3317a7324b9139f64b560090561
+
+% 5 1 0 076b571d37f60c0317c47e4f8aff0acc
+
+% 0 1 0 0cacacfc442f45bf180003df94e37356
+
+% 1 1 0 1c86c146ffae13e00e6d20812e5937e1
+
+@ 0 2 0 0c9bffed384548b416f978e7e6181da7
++   label La misma fibra, en un ámbito
++   highlight supervise  la fibra no puede sobrevivir a este bloque
+
+% 1 1 0 146e52b9b1bfa7500115eacfcf32a199
+
+% 2 1 0 0f4dae2fad82ed5719158dc125e5a917
+
+% 3 1 0 14416cd013d886bf055cf72d649113b9
+
+% 5 1 0 1f99389f6a10a12018a129eb17fbadab
+
+% 0 1 0 1c4dd777e6a1e6db125eba8d436c900b
+
+% 0 1 0 18eafb32caed3dd50f976e787bd035ca
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 2 0 1a5943f513f1b7841933bb6ec5037c44
++ [Formato](../../soundness/modules/json.md#formatting) compara las formas de salida, y
++ [concurrencia estructurada](../../philosophy/structured-concurrency.md) explica la supervisión.

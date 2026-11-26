@@ -1,0 +1,56 @@
+orthant 2 language
+
+@ 0 1 0 066462476b47858e02769d89e912a666
++ # Una actualización, preparada a partir de una respuesta HTTP
+
+@ 0 3 0 0b87a2461c9c24701557e09653b4371c
++ Una actualización se prepara a partir de cualquier fuente de bytes. Una respuesta HTTP es una de
++ ellas, así que la versión se descarga y se prepara en una sola expresión, sin ningún fichero
++ temporal y sin copiar ningún flujo a mano.
+
+% 0 1 0 12705ff5e291290d17fbc8389d59ef4a
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 08e9366e675641ea14d5d763ab0436d2
++   label Una versión, descargada
+
+% 1 1 0 002ebaa5c89139a10d11c48b415a5fbb
+
+% 2 1 0 0c83ed771e8f1c9111567053896b1b8f
+
+% 3 1 0 1a8d2dfc0c241b280574f9b6f9fed7ec
+
+% 4 1 0 0039fc43b5bbc76d168ab8245433cbf3
+
+% 0 1 0 1b656b2eb005f51813324159a1187719
+
+% 1 1 0 1c7a64afaee5025315a647576bab8f09
+
+@ 0 2 0 0d30a9356d360d3607247bf8abe99815
++   label Y preparada
++   highlight Upgrade.stage  la verifica el lanzador en la siguiente invocación
+
+% 1 1 0 0d52b6ccb7c5d7e71aa975b4403b5609
+
+% 2 1 0 073cdde6d8867c54174ee180c31c48a3
+
+% 3 1 0 0a01030bcca4250d1676b4db40bd6fa1
+
+% 4 1 0 12de4c9d60c9d41d11e0aa408f0976cb
+
+% 0 1 0 0da68d5564fa23d81621896f8186a0c8
+
+% 0 1 0 0aab647790189fbd1a6e4a0e74c4b2ac
+
+% 0 1 0 18eafb32caed3dd50f976e787bd035ca
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 3 0 0632289270d84ee318773d0c1be0ef75
++ El ejemplo se compila, pero no se ejecuta, porque necesita la red.
++ [Preparar una actualización](../../soundness/modules/daemons.md#staging-an-upgrade) describe lo
++ que hace después el lanzador, y [el cliente HTTP](../../soundness/modules/http-client.md) la
++ petición.

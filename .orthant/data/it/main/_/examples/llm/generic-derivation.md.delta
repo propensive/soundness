@@ -1,0 +1,67 @@
+orthant 2 language
+
+@ 0 1 0 1d28e5f2b99b38e51c8c7a268eb61c5e
++ # Una risposta che è una case class
+
+@ 0 3 0 108778b722a7598700e5e0037c5add2e
++ Un modello risponde con del testo, e un programma vuole un valore. `solicit` prende il tipo della
++ risposta. Il suo schema JSON viene derivato dalla case class e inviato al modello, e il documento
++ che torna indietro viene decodificato in essa, così il risultato ha dei campi e non prosa da
++ analizzare.
+
+% 0 1 0 12705ff5e291290d17fbc8389d59ef4a
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 15046f1e1d27fed51dcac0a490d9ed61
++   label Una domanda, con risposta testuale
+
+% 0 1 0 00e2f9e1d02982db15db023d5331c9cf
+
+% 1 1 0 17b7d0b33cdcbafb0a97e9b6c29c8339
+
+% 2 1 0 14d6613f4c46831a1077403236a2e2c0
+
+% 3 1 0 17fcee0cc6d513b202ac9839322ffedd
+
+% 4 1 0 0ed432bd52c9740a19edc09fc3555fb8
+
+% 2 1 0 18c381e28ea4b5a21c18de5e5a48dc50
+
+% 0 1 0 1dccd12739bd34391bac7629f1f85f63
+
+% 0 1 0 0208498e462092431a15aa990df6a336
+
+% 1 1 0 0b02309aac2a86531167d2f34db8eaa3
+
+@ 0 3 0 0ddc1627d4bdad33006e4a855f57787d
++   label La stessa domanda, con risposta come valore
++   highlight solicit[Verdict]  lo schema di Verdict è ciò che il modello deve soddisfare
++   highlight case..Double)  per esso non si scrive né un codec né uno schema
+
+% 1 1 0 02a53faf9de52678079cddcc8f7b7fe1
+
+% 2 1 0 15a7b49c4d8714931327ffb38ebc2a90
+
+% 3 1 0 0abdc60e25f6748801e1b208f6e6666d
+
+% 4 1 0 036a5bb9ae4f1bac03fe88ed666364b4
+
+% 0 1 0 16db5203ec1737f313cd733dae46e646
+
+% 2 1 0 0b3bfba0eddaea161c040244911517df
+
+% 0 1 0 0978cf4b3b054fb611d5d971fd08ff7f
+
+% 0 1 0 0a921fbaf2e1ae441d426eade1e17931
+
+% 0 1 0 18eafb32caed3dd50f976e787bd035ca
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 3 0 0f9ad0044d70183a104917e56a3cfa38
++ L'esempio viene compilato, ma non eseguito, perché chiamerebbe un provider attraverso la rete.
++ [Risposte strutturate](../../soundness/modules/llm.md#structured-answers) dice come lo schema
++ raggiunge ciascun provider.

@@ -1,0 +1,76 @@
+orthant 2 language
+
+@ 0 1 0 1ddfb66a12a5d2ce19ca185f2bc9d681
++ # To samo drzewo w innym stylu
+
+@ 0 3 0 0fa932e4f1fb1d841ee206fded24a806
++ `TreeDiagram` wie, które linie się rozgałęziają, a które biegną dalej, ale nie wie, jak wygląda
++ gałąź. Znaki pochodzą ze stylu, który wybiera import, a kod rysujący drzewo się nie zmienia.
+
+% 0 1 0 12705ff5e291290d17fbc8389d59ef4a
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+@ 0 2 0 1d31a9fdddbe5ba40a261c72e5f27d2b
++ alternative Kwadratowy
++   highlight squareTreeStyle  kwadratowe narożniki
+
+% 1 1 0 143e4698fd4f76ac1a99da9c4ab0ce9a
+
+% 0 1 0 18ce7c3e0a0994cb1e5cef2e9db10256
+
+% 2 1 0 107dafef6c853b5e07a41e13220ff015
+
+% 4 1 0 04bc50e518c3ecb11f31ade807dcc8ff
+
+% 5 1 0 157862ea499b30791c3f49e1405dd980
+
+% 6 1 0 0aa651ed20a0c43713b50dd29b47b752
+
+% 7 1 0 116a0fdd7e0f5e8a05177dc97ff7d9f0
+
+@ 0 2 0 18a39084427046e40a59a0a40d243814
++ alternative Zaokrąglony
++   highlight roundedTreeStyle  zaokrąglone narożniki
+
+% 1 1 0 1e4a8cb49e6890a611a697430dbb3dd3
+
+% 0 1 0 14d9b15a0f712180194822fc61a44203
+
+% 2 1 0 16eeaa10b8a739c60e2852256f3b37c0
+
+% 4 1 0 0d06dfb54bafd6c31cbf4a58a29fabd4
+
+% 5 1 0 05106a97991d7d6102e2d3e770957cea
+
+% 6 1 0 183c38f4f39eedf41ef8b4ffcd160482
+
+% 7 1 0 1753901f8dc361561be289c1f0944c4c
+
+% 0 1 0 14cb7df5afd2f69c11399ac8cd5e0daa
+
+@ 0 1 0 0a802aacacd02b970dbb49a579bdb87b
++   highlight asciiTreeStyle  nic poza ASCII
+
+% 1 1 0 0bf9fa6fc0e0c7e60000a221bf2533b4
+
+% 0 1 0 18574ce4f06e0e0814a7e4af05b9c7da
+
+% 2 1 0 16f451fd7570cd2f0b6c5fb782e0a7df
+
+% 4 1 0 14f48ed0fa4c0fc51543e75fa926b0e9
+
+% 5 1 0 0d257693381a4cbd113ffb01928da8d3
+
+% 6 1 0 148ffadf535893d0125ec6ebfe80c999
+
+% 7 1 0 149abb509a709c7b1b5dc268b28d7a95
+
+% 0 1 0 18eafb32caed3dd50f976e787bd035ca
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 3 0 0535513fee47a78618f95d7ee6f9a8f8
++ [Drzewa](../../soundness/modules/trees.md#trees) wypisują każdy z trzech, a
++ [kontekst deklaratywny](../../philosophy/declarative-context.md) wyjaśnia, dlaczego styl nie
++ jest argumentem.

@@ -1,0 +1,69 @@
+orthant 2 language
+
+@ 0 1 0 170e3bb21574a0d80b2fa4d54a0be365
++ # Ein Attribut, das ein Manifest vielleicht nicht hat
+
+@ 0 3 0 03b3e2c765742b6e0fe32c30f8b9d610
++ Ein JAR muss keine Hauptklasse nennen, also ergibt das Lesen von `MainClass` aus einem Manifest
++ einen `Optional`-Klassennamen. Es gibt kein `null`, das man vergessen könnte, und keine Ausnahme für
++ ein Bibliotheks-JAR, und `or` sagt, was das Fehlen bedeutet.
+
+% 2 1 0 07f7bed0c9e2535f0d9f0b908395a662
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 076b6c3c72a06ebc08efd7c702ea70ca
++   label Eine Bibliothek, ohne Hauptklasse
+
+% 1 1 0 15e88316c9c570fe07468bec61087f5f
+
+% 2 1 0 0d11dbbcfd16093a0337d7e70cbc9bec
+
+% 3 1 0 06c36ff2bfc84e4c1daf7ecadeaf8151
+
+% 5 1 0 1ceae35fd9a643720bf4cc66bbdbd363
+
+% 6 1 0 148e063121ceef6004ca33f6b3aa10b7
+
+% 1 1 0 0d9f72adc25089f71e44cd19a8428064
+
+@ 0 3 0 06b26468a7a5dc47115b4b7b6e4ca4d8
++   label Was ihr Fehlen bedeutet
++   highlight let(_.text)  nur, wenn es eine gibt
++   highlight or(t"not..runnable")  was eine Bibliothek ist
+
+% 1 1 0 01f8760b3d38772a011371ea7fcb6dc4
+
+% 2 1 0 1781de9b336b7f5c17cb827ec7b175c9
+
+% 3 1 0 0abdde94d0d81e63185ec99677f07831
+
+% 5 1 0 13dcbeb65aa97fa900d032ac9f7cc3a5
+
+% 6 1 0 09d417aedd9d55d71faebcccc2808106
+
+% 0 1 0 08fbadfa3e4ecad41e8504dc56a80f43
+
+% 1 1 0 0987ea50ab29ebf20e61df6f4e318541
+
+% 1 1 0 136d267ff733a60e0f6246170d49df5f
+
+% 2 1 0 1525a46c87e9e0571e7d21b8e7c42b7a
+
+% 0 1 0 08a86cbdc9b8cb0109ed8ce5b435ce67
+
+% 1 1 0 0cd6459499a6bd5203d659b3bcc1b6aa
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 0 1 0 038cd05c2938e6de0994299434c409b9
+
+% 0 1 0 05f266b5c529f8af1b500fde46646322
+
+% 1 1 0 11abafa9372dbbc8021e23c5cff7c610
+
+@ 0 2 0 079e5e74b137fd5318d9ef3e7e28dc7f
++ [Manifeste](../../soundness/modules/versioning.md#manifests) beschreibt die Attribute, und
++ [Optionalität](../../philosophy/optionality.md) erklärt `let` und `or`.

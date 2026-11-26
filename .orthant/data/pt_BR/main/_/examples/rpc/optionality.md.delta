@@ -1,0 +1,91 @@
+orthant 2 language
+
+@ 0 1 0 1370a2d61b4b406a1c97d4ed3e8af8a7
++ # Uma notificação não tem resposta
+
+@ 0 3 0 1f6db68589aefc7b0b6d47b6aca57bfe
++ Um método JSON-RPC que devolve `Unit` é uma notificação, e nada é enviado de volta para ela. O
++ resultado do despachante é, portanto, um `Optional[Json]`, e o código que envia a resposta precisa
++ dizer o que faz quando não há nenhuma.
+
+% 2 1 0 08e65b53fbb5a97b046821f86f4a31c0
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 2 0 0343d3e99acc4c911648427435e18536
++   label Uma chamada, e uma notificação
++   highlight Unit  nada a enviar de volta
+
+% 1 1 0 049f534f2d8ad4c70359d57da20e3bae
+
+% 2 1 0 1281a2e3ba12391f1cea9d3c71b98517
+
+% 3 1 0 0bf8ccf69121cced17aef12bdb63453b
+
+% 5 1 0 1aa4cb9901a635d513d5d775ccbb90ba
+
+% 6 1 0 1e96a0932a66ba041d1f429e7e0448a3
+
+% 7 1 0 1fdc5aa90cf8c77c0defb12f1bf763e1
+
+% 9 1 0 0540f5f46e1db771038d113928ab8cfc
+
+% 10 1 0 0c3fe4256ecff0a70a2df28dbc52c4a9
+
+% 11 1 0 185af5e078da44b11104996e026ba166
+
+% 13 1 0 103d839cdc12de3001b69fb2a4baa0a5
+
+% 1 1 0 0a8b938b609e93f301ea2e51d67d3431
+
+@ 0 2 0 14d17c612c8269a51b3c616cdcfeb01e
++   label A resposta, onde houver uma
++   highlight let(_.show).or(t"no..reply")  o que a ausência significa, dito uma vez
+
+% 1 1 0 0694ad3cfe8179b211f97cc44c2fef24
+
+% 2 1 0 1e950d9b429ba0c40781057078b93dc7
+
+% 3 1 0 0b47360e6ddeb18a18c83b3788b78d7d
+
+% 5 1 0 01c8db2361000dcf1256e33f5aa79a75
+
+% 6 1 0 10e8115340064daf0444e602bba41602
+
+% 7 1 0 0628f956e6dfbe8411842692df52d2d2
+
+% 9 1 0 1da17646f0f9b4d60b303e1c5ca07c2c
+
+% 10 1 0 1db249ceba271bc800275949a1b1510e
+
+% 11 1 0 0958fdc4049b5bf5145a84a2b8b16a7d
+
+% 13 1 0 0c4e353f7a6df2331bbab66905febadd
+
+% 0 1 0 0574c80fdab5024a1af7eba3417a6db7
+
+% 0 1 0 1bd68e43bc3c868d0d4e08dc3528cc4c
+
+% 1 1 0 0da1b2172426244e0efb713777f6ca28
+
+% 1 1 0 136d267ff733a60e0f6246170d49df5f
+
+% 2 1 0 1525a46c87e9e0571e7d21b8e7c42b7a
+
+% 0 1 0 08a86cbdc9b8cb0109ed8ce5b435ce67
+
+% 1 1 0 0cd6459499a6bd5203d659b3bcc1b6aa
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 0 1 0 01011756adbabd7a13ca13eae1293345
+
+% 0 1 0 07d36d5b1f45fb5d1aecf1527e771c53
+
+% 1 1 0 0f91469ba974264913f6a0fe3dcfc06a
+
+@ 0 2 0 08096381a3ff05ac079fd791976fc025
++ [JSON-RPC](../../soundness/modules/rpc.md#json-rpc) descreve o despachante, e
++ [opcionalidade](../../philosophy/optionality.md) explica `let` e `or`.

@@ -1,0 +1,64 @@
+orthant 2 language
+
+@ 0 1 0 05135a16dad588391c859e620bc5cba0
++ # Wartość domyślna tylko tam, gdzie typ ją ma
+
+@ 0 2 0 0e8ac331cadc63670c5770991d7b05e3
++ `presume` zastępuje wartość nieobecną wartością domyślną jej typu: pustym tekstem, zerem, pustą
++ listą. Jest zdefiniowane dla typów, które deklarują wartość domyślną, a nowy typ zyskuje ją jednym
++ wierszem.
+
+% 2 1 0 0f2cd430d3db6dfa000fb21d3a148587
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 1690742de54a1fa31b7c5e839ae753d7
++   label Typ bez wartości domyślnej
+
+% 0 1 0 1477c34ff41c7c99183443e1d3238ae1
+
+% 1 1 0 0960c596329e4eb20a0b442aaa85c43a
+
+% 2 1 0 0e41dc139a59f1481df24879787a0950
+
+% 2 1 0 0814e0c233315ed215d11449873df575
+
+% 3 1 0 103853422adb71be10a2ec7ba6e17198
+
+% 1 1 0 11a887a939f47f5501caad37be0f3e40
+
+@ 0 2 0 127824e359e4bebe181e269f0ebdf301
++   label Wartość domyślna, zadeklarowana
++   highlight Default[Volume]  do czego wraca presume
+
+% 1 1 0 052ef7170c1425ac1be98ccdeb6ec6fd
+
+% 2 1 0 1e0e7c08cb31c14c08c87c2b53efec01
+
+% 0 1 0 05f769741eb7e0f0185afdc51fa3de06
+
+% 2 1 0 18049762548de4a30b77cea02677cad2
+
+% 3 1 0 1da8f19b75adcdb21f6b02c2a0cf4dca
+
+% 1 1 0 15e8caeb46bd88321d402046604a302f
+
+% 1 1 0 136d267ff733a60e0f6246170d49df5f
+
+% 2 1 0 1525a46c87e9e0571e7d21b8e7c42b7a
+
+% 0 1 0 08a86cbdc9b8cb0109ed8ce5b435ce67
+
+% 1 1 0 0cd6459499a6bd5203d659b3bcc1b6aa
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 0 1 0 1f8e77e0eab0264d026e01d220de4a6c
+
+% 1 1 0 1e27327db4107a6d161afe69a73a8bdd
+
+@ 0 2 0 113d557e5ec08a6d091cc51d83fd1fc8
++ Sekcja [Wartości domyślne](../../soundness/modules/optional-values.md#defaults) mówi, kiedy wartość
++ domyślna jest obliczana.

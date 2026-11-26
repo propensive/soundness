@@ -1,0 +1,47 @@
+orthant 2 language
+
+@ 0 1 0 0a51cbe1ca299b8311df9609dd3fbfa2
++ # メンバーのパスとして書くシステムプロパティ
+
+@ 0 3 0 0687c5505e1339f21bdce16be4260609
++ システムプロパティはドットで区切られた名前を持ち、同じドットを書いて読む。`os.name`は
++ `System.properties.os.name()`である。それぞれは保持すると分かっている型にデコードされるので、パスの
++ 区切り文字は長さ1のテキストではなく`Char`である。
+
+% 0 1 0 12705ff5e291290d17fbc8389d59ef4a
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 2 0 0bbe52659ef8b3d3139c2bedf1a761c7
++   label プロパティ
++   highlight os.name()  os.nameプロパティ
+
+% 1 1 0 037bc23d5d1fef8213846cf91d109cdd
+
+% 2 1 0 116a786b3a6ea36f1280c8c44879ec66
+
+% 4 1 0 1574252c56a4d0d21892b2ea37cd5025
+
+% 1 1 0 0a41d2a6ea0da6e219b4f829b2739efd
+
+@ 0 2 0 1762bdab370bb6b01a017a2e3cd54d8c
++   label 文字であるもの
++   highlight Char  テキストからデコードされる
+
+% 1 1 0 13339d70ad2351210006b3dd825023ca
+
+% 2 1 0 0ed0e2f59371c62c0a24008682f6a46f
+
+% 4 1 0 1a856a8b88642c220fa2ed7c21fbc70a
+
+% 0 1 0 0c28b3598fa8bd7a09f407133a60f3c0
+
+% 0 1 0 18eafb32caed3dd50f976e787bd035ca
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 3 0 06eabc6a7077d33019fbfd2d058d2e37
++ 結果がマシンに依存するので、この例はコンパイルされるが、実行はされない。プロパティと変数の比較は
++ [システムプロパティ](../../soundness/modules/environment.md#system-properties)にある。

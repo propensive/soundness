@@ -1,0 +1,371 @@
+orthant 2 language
+
+% 0 1 0 0f04ec4b9ac2d4270a232409219e1f6b
+
+@ 0 5 0 114ccc0feb6f4fdf15a1c5dbfe60149f
++ # Motywy, które może pokazywać przykład: drugi z jego dwóch aspektów, sposób pracy, który
++ # przenika każdą część Soundness i jest jej własnym podejściem do znanego problemu. Przykład
++ # motywu `checked-literals` na temat `json` to doc/examples/json/checked-literals.md. Motyw z
++ # `philosophy` jest szczegółowo uzasadniony w tym eseju z doc/philosophy.
++ # doc/examples/readme.md objaśnia zbiór.
+
+% 0 1 0 1342c943d0a985af1de498e62e800c99
+
+@ 0 2 0 12c6d8a3913e767900b08e2a07da8abd
++   title  Stany niemożliwe
++   group  Typy
+
+% 0 1 0 0f041b856cbc287b18d2a03e8397dcfd
+
+% 1 1 0 19deaa4b8174449c0ab9457ec2e2cfd8
+
+@ 0 3 0 043509c8d19133b7021362196685268d
++       Typ, który dopuszcza tylko wartości mające sens, tak że błędnej wartości nie da się
++       zapisać: ścieżka, która jest zawsze bezwzględna, liczba w swoim przedziale, wektor znanej
++       długości.
+
+% 0 1 0 0cafed10adc731ab1737b6ed9f3372fb
+
+@ 0 2 0 003052fd788ac7a400ddda7273e73461
++   title  Przejścia totalne
++   group  Typy
+
+% 0 1 0 08713f5249d9d4771225be45f44b435f
+
+% 1 1 0 08a4c426ac50d1c01b70acf7c6ee3302
+
+@ 0 3 0 0f37d70e1a7652f309c989a25dd6969e
++       Operacja określona dla każdej wartości, którą dopuszczają typy jej parametrów. Tam, gdzie
++       dla niektórych z nich mogłaby zawieść, żąda dowodu, zwraca wartość opcjonalną albo
++       deklaruje błąd, i nigdy nie rzuca wyjątku niespodziewanie.
+
+% 0 1 0 128fbc1c1a624ada181fc982dad46ab4
+
+@ 0 2 0 173e462a8a4fe4d61e1e613fbd3d1026
++   title  Typowanie zależne
++   group  Typy
+
+% 2 1 0 04a4833e95543a4d0df90fee9354a93f
+
+@ 0 3 0 1f99ccd7a49d95150e8d360ef767ae2c
++       Typ, który niesie wartość, taki jak `Sha2[256]` lub `Vector[Int, 3]`, oraz wynik, którego
++       typ jest obliczany z argumentów, tak że kompilator wykonuje arytmetykę na wymiarach,
++       długościach, granicach i rozmiarach kluczy.
+
+% 0 1 0 110f3cdb4f46421e0f234d9beb2cda7d
+
+@ 0 2 0 070bcf3a2f94c01f0b58c0e01cb2949e
++   title  Typy infiksowe
++   group  Typy
+
+% 0 1 0 15e7e010baab76da012d6ae22d872552
+
+% 1 1 0 1eb065e929bbac90034310d491df47f9
+
+@ 0 3 0 17d10b9315830b49045eaea79360a841
++       Typy, które czyta się jak frazy: `Person is Encodable in Json`, `Path on Linux`,
++       `Text raises ParseError`. Tych samych kilku słów, `is`, `in`, `on`, `of`, `by` i `raises`,
++       używa każda biblioteka.
+
+% 0 1 0 0bea59fa2ea808c20bbff601d649d2fc
+
+@ 0 2 0 00ca82c81d29555e008ced0b8156e5aa
++   title  Dostawcy typów
++   group  Typy
+
+% 2 1 0 0404b626618e4ff20efb5018664abb7e
+
+@ 0 3 0 0e07a3bbc40d8a2607f2d444487636b3
++       Typy tworzone przez kompilator z czegoś spoza programu, takiego jak schemat JSON, schemat
++       TEL lub opis OpenAPI, tak że pole, którego specyfikacja nie zawiera, jest błędem
++       kompilacji.
+
+% 0 1 0 10a9a6ec0f132b9c05a8a641b37af735
+
+@ 0 2 0 09c0a52c7c4ed631054306a63ad8ad31
++   title  Derywacja generyczna
++   group  Typy
+
+% 2 1 0 03df951b3137f32e0cc332dc54a58413
+
+@ 0 3 0 0e71e023f5f1df72099843bec20e058d
++       Instancja klasy typów dla klasy case lub wyliczenia, zbudowana przez kompilator z instancji
++       jej pól: kodek, postać do wyświetlania, różnica lub losowa wartość, bez jednego wiersza
++       napisanego dla tego typu.
+
+% 0 1 0 1a3c221992bb58ba177705e9f8980a12
+
+@ 0 2 0 06851d334e10536c0c2fe4c7b0703f61
++   title  Zerowy koszt
++   group  Typy
+
+% 0 1 0 1f284497d28747b30e96752fc405f08f
+
+% 1 1 0 06a6e0f0d06fd64009593ea4adac727c
+
+@ 0 3 0 12d7b1b1f31923310daf1888da2c906e
++       Gwarancje, za które płaci się podczas kompilacji kodu, a nie podczas jego działania: typ
++       nieprzezroczysty, który w bajtkodzie jest samą wartością, rozwinięta klasa typów,
++       wartość opcjonalna bez opakowania.
+
+% 0 1 0 0a1f566a0ebc889e1ad87953fb243068
+
+@ 0 2 0 070c19a9e2023f4816f9692d38e29a1d
++   title  Sprawdzane literały
++   group  Notacja
+
+% 0 1 0 0ad074c2d703e17b0f543acf0dc49789
+
+% 1 1 0 1e9d53f86385a64e162b3e76f58b7960
+
+@ 0 3 0 180efd572d4a6cb40f921215214260fc
++       URL, wyrażenie regularne, data, typ mediów lub fragment JSON zapisany w kodzie źródłowym i
++       parsowany przez kompilator, tak że niepoprawny jest błędem kompilacji wskazującym znak,
++       który jest błędny.
+
+% 0 1 0 129d8f6ffa00e0030d2d1184f9dc38d2
+
+@ 0 2 0 06a43623a20ce69d0c27fde77cea1cd1
++   title  Notacja dziedzinowa
++   group  Notacja
+
+% 0 1 0 190710422639624b0a46e01410fb02a4
+
+% 1 1 0 18e454c8b02bc5061c3327a88383b9e9
+
+@ 0 3 0 0d98416d1e06c79904255e365d3e88ab
++       Zwykłe wyrażenia Scali, które mają kształt notacji swojej dziedziny:
++       `2024-Jan-15`, `7.30.am`, `9.8*Metre/(Second*Second)`, `% / "usr" / "bin"`, każde
++       sprawdzane równie dokładnie jak każde inne wyrażenie.
+
+% 0 1 0 05e8da6e0a57d704044bd4612ba945b5
+
+@ 0 2 0 0df89e925360d9780109e27f213e58a9
++   title  Ekstraktory
++   group  Notacja
+
+% 1 1 0 1053854d452ccb5104bc708b639d31d1
+
+@ 0 2 0 132e7085da9eda9a1a31556a36cc279d
++       Sprawdzana notacja użyta jako wzorzec: wyrażenie regularne, którego grupy wiążą typowane
++       zmienne, URL, ścieżka lub dokument JSON rozłożone na części w `case`.
+
+% 0 1 0 1624d55dcdb8c4c7157b9663af906137
+
+@ 0 2 0 00375b28066ea25603e24f08c8e7ff37
++   title  Małe API
++   group  Notacja
+
+% 0 1 0 1c991b4a2abbeaca08a429d99064a23a
+
+% 1 1 0 0679baadf22c32be0bf94e3395345459
+
+@ 0 3 0 02a6586be182af800af202224660f159
++       Jedna nazwa dla jednej operacji, do czegokolwiek zostanie zastosowana. `read`, `as`,
++       `show`, `decode` i `digest` przyjmują żądany typ jako parametr, a implementację dostarcza
++       klasa typów.
+
+% 0 1 0 15c33b73c38650851376caf8e20750f4
+
+@ 0 2 0 08b8688df8ac95361f8abb1cce7fa829
++   title  Styl bezpośredni
++   group  Efekty
+
+% 0 1 0 05bcec96f9766b4418d959186f634a81
+
+% 1 1 0 04bb6567b01c5a50138928fdaba81c50
+
+@ 0 3 0 1a9bee06b6f6d72e094d7edcc4825cd1
++       Kod, który zawodzi, czeka lub wykonuje operacje wejścia-wyjścia, zapisany jako zwykły ciąg
++       wyrażeń, bez monady, bez wyrażenia `for` i bez `Future`. Efekty są w sygnaturach, a nie w
++       kształcie kodu.
+
+% 0 1 0 00b1dc1ebdff768101869de6f3a915a7
+
+@ 0 2 0 108b220606d5cac118f43f0f3ce6555e
++   title  Uczciwe sygnatury
++   group  Efekty
+
+% 0 1 0 1c732e605a12194c1c74a53f48c0e60a
+
+% 1 1 0 1bd8847738e8ba9c1f001540d987652a
+
+@ 0 3 0 105664b49874938603dec7bcb1ded7a2
++       Metoda wymienia wszystko, czego potrzebuje, jako parametr kontekstowy, czy to sieć, zegar,
++       źródło losowości, kodowanie znaków, czy standardowe wyjście, więc kod, który go nie
++       otrzymał, nie może z niego korzystać.
+
+% 0 1 0 16695bdee48c4b5d08bef792c5c82185
+
+@ 0 2 0 02154710533db39815bac97028319b99
++   title  Kontekst deklaratywny
++   group  Efekty
+
+% 0 1 0 00c3d0366e35a9d3183a014131a9e7ea
+
+% 1 1 0 1b1e04c49aeb46f71513e3d84346136a
+
+@ 0 3 0 064ffee759587d760c80598903145f1b
++       Wybór dokonywany raz, przez import: kalendarz, format liczb, backend HTTP, kodowanie,
++       polityka dla pól opcjonalnych. Dotyczy całego kodu w swoim zasięgu, a inny wybór w innym
++       zasięgu to inny program.
+
+% 0 1 0 098d776d77481d691606eff78afbab4f
+
+@ 0 2 0 00ea12434f1539920c8c650c63d9428f
++   title  Wydzielone zasięgi
++   group  Efekty
+
+% 0 1 0 137066dfbdca8d3c171bb52a4cd034ec
+
+% 1 1 0 09a73c8953858a6515d58d901d20445a
+
+@ 0 3 0 11c9343a09ccbe780c31f05611720c03
++       Blok, wewnątrz którego coś jest dostępne, na przykład otwarty plik, połączenie, transakcja
++       lub katalog tymczasowy, zwalniane, gdy blok się kończy, niezależnie od tego, jak się
++       kończy.
+
+% 0 1 0 0561893c0d209be8181b155430b32968
+
+@ 0 2 0 0c557f87b9cf4fe601b3cfe13bc09314
++   title  Sprawdzanie przechwytywania
++   group  Efekty
+
+% 0 1 0 0f4478ae53a30bbb192fda86f287b305
+
+% 1 1 0 1309e035eb683d0d047da7a1deae5577
+
+@ 0 3 0 1fc9ee46b60b362a17d87c16bb1efe35
++       Dowód kompilatora, że nic, co zależy od zdolności o ograniczonym zasięgu, nie opuszcza
++       tego zasięgu: żaden leniwy strumień nie przeżyje swojego pliku, żadne domknięcie swojego
++       handlera błędów, żadne zadanie swojego nadzorcy, a bufor mutowalny ma jednego właściciela.
+
+% 0 1 0 13703532fdfb7c201cfcb4ae21b3bf9d
+
+@ 0 2 0 0bf0500d9306058d01e1c6bf12d81d3b
++   title  Strumieniowanie bez kopiowania
++   group  Efekty
+
+% 1 1 0 0b078a3eec67295811a326a64eb87928
+
+@ 0 3 0 12dba60c9b97fcfb06e48a492f2aa1ee
++       Dane parsowane, przekształcane i zapisywane w blokach, w których nadeszły, bez kopii
++       pośredniej, z przeciwciśnieniem i z wyłącznym prawem własności każdego bloku sprawdzanym
++       przez kompilator.
+
+% 0 1 0 0ccede5cd663113f0162899988e3d8a0
+
+@ 0 2 0 031bb7a5db04904e087c2afcb08181bf
++   title  Współbieżność strukturalna
++   group  Efekty
+
+% 0 1 0 1b3274c5cf5a1def16907ac130cd8727
+
+% 1 1 0 16ae54de2889de911c02c883e094788a
+
+@ 0 3 0 0dd191dd24f194e01d4bffaa2060a36b
++       Zadania, które należą do zasięgu, który je uruchomił. Zasięg nie kończy się, dopóki nie
++       skończą się jego zadania, niepowodzenie anuluje te zadania siostrzane, które powinno, a
++       zadania nie można uruchomić tam, gdzie nic go nie nadzoruje.
+
+% 0 1 0 07a5b64b8a630b230c7d799cd16636dc
+
+@ 0 2 0 19a5f972455575520a0b2013637a3d65
++   title  Niemutowalność
++   group  Efekty
+
+% 0 1 0 179f676ec05325e111e007bc5ec23069
+
+% 1 1 0 1909f60b8419d41b1b2cb2f7a33d50be
+
+@ 0 2 0 002bb65cd306521e1b72d05222097a18
++       Wartości, które nigdy się nie zmieniają: nowa wartość zamiast aktualizacji, soczewka do
++       zmiany głęboko wewnątrz struktury i tablica, która zostaje zamrożona, zanim będzie można
++       ją współdzielić.
+
+% 0 1 0 0f89849faf0ba39911fbc2e30b37bc29
+
+@ 0 2 0 09aa8e3ac77536f10ffb18f27ceefee5
++   title  Typowane błędy
++   group  Błędy
+
+% 2 1 0 1f736b2516e3d53c02e790877bcfc60c
+
+% 3 1 0 08e2c49f3fc9c7450e3de6948379ca1e
+
+@ 0 2 0 109a389cb27d96b6186b9cf7954e4c40
++       Każdy sposób, w jaki operacja może zawieść, jest nazwany w jej typie za pomocą `raises`, a
++       kod, który ani nie obsługuje błędu, ani go nie deklaruje, nie kompiluje się.
+
+% 0 1 0 0235cbb92ffc83d016100663f9ef05a4
+
+@ 0 2 0 129f6ea46964d1c408c59e7a21b5494c
++   title  Strategie obsługi błędów
++   group  Błędy
+
+% 2 1 0 1c25d53ce4c21c3d01e80fd98cd36466
+
+% 3 1 0 0e94fc92d5f5e352149dbfed048c00a0
+
+@ 0 3 0 12249eae5e9537f805be0f476d35f061
++       To wywołujący decyduje, co oznacza niepowodzenie, a ten sam zawodny kod służy każdemu
++       wyborowi: zatrzymać się na pierwszym błędzie, zastąpić go wartością, przetłumaczyć go na
++       inny błąd albo kontynuować i zebrać je wszystkie.
+
+% 0 1 0 052e495d719b1c3c091c8d2d93eefef4
+
+@ 0 2 0 166e4a6c72a6a6cd15d625d6c8cb2d8f
++   title  Wymowne błędy
++   group  Błędy
+
+% 0 1 0 00ef9b9f0dadbf08040a9485e906cf58
+
+% 1 1 0 1da0865bed8ab02c17928c8369f849a8
+
+@ 0 3 0 0408ce3f660ebed206de0a1aba1c452f
++       Błędy, które mówią o dziedzinie, a nie o mechanizmie: błąd kompilacji, który mówi, że
++       długość została dodana do czasu, i błąd czasu wykonania, który przechowuje wiersz, kolumnę
++       i przyczynę jako typowane wartości.
+
+% 0 1 0 187b89a4ec52fc5b05f4861748ba0b22
+
+@ 0 2 0 0723b5fbd7e1c5bb10c4b2cd13481e17
++   title  Opcjonalność
++   group  Błędy
+
+% 0 1 0 1d542cda57b8311717fea35d8b1455f6
+
+% 1 1 0 0243b6b1e40b87181d85d71cd13447a2
+
+@ 0 3 0 157eb55ff7149a1b0863f2b008c03cb9
++       Wartość, której może brakować, jest typu `Optional`, czyli unią z `Unset`, bez opakowania
++       i bez `null`. Nigdy nie jest używana tak, jakby była obecna, a `or`, `let` i `lay`
++       mówią, co oznacza jej brak, w miejscu, w którym ma to znaczenie.
+
+% 0 1 0 14a1f18a91420dab0dc12fe5fe76eb6a
+
+@ 0 2 0 0f561165d56ff0951283f9e96fbf0806
++   title  Uznane koszty
++   group  Błędy
+
+% 1 1 0 09a2899545ae986c090959361e215d29
+
+@ 0 3 0 0a0575b11923e2c007ea368bece7c238
++       Operacja, która kosztuje więcej, niż się wydaje, na przykład rozmiar listy jednokierunkowej,
++       ostatni element leniwego łańcucha albo wyszukiwanie po wartości, nie kompiluje się, dopóki
++       import nie uzna tego kosztu.
+
+% 0 1 0 1d54e7eac85acacd03e57afe9daa53be
+
+@ 0 2 0 14d5f0a4fa3764c81322cc9ed7adb10c
++   title  Składalność
++   group  Projekt
+
+% 0 1 0 0b9dd73de1cd9e451869fe02d7a088da
+
+% 1 1 0 0fc811d9bb970e500429fb23f51f84b8
+
+@ 0 3 0 12275a04ded0d78219001e258b4000d9
++       Dwie biblioteki, które nic o sobie nie wiedzą, używane razem bez adaptera: JSON jako treść
++       żądania HTTP, tabela renderowana jako HTML, wielkość na wykresie, ścieżka w poleceniu
++       powłoki.

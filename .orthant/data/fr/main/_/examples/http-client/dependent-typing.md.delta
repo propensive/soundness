@@ -1,0 +1,77 @@
+orthant 2 language
+
+@ 0 1 0 10b75bc5e233cea20d51a0cb635df9cb
++ # Un en-tête de réponse a le type de son nom
+
+@ 0 3 0 12ff187122005a101710ce06fccaa19b
++ Les en-têtes d'une réponse se lisent par leur nom, et le nom détermine le type de ce qui est
++ renvoyé : un type de média pour `contentType`, du texte pour `server`. Un nom qui n'est pas un
++ en-tête n'a pas de type, et ne compile pas.
+
+% 0 1 0 12705ff5e291290d17fbc8389d59ef4a
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 0b0ba5de8a0d753d1dade30048895fab
++   label Un type de média
+
+% 0 1 0 0e1065c4b43e241e0e18cb95b9301d17
+
+% 1 1 0 1dc1699ea6a0bf050cd94e758c8f5118
+
+% 2 1 0 1b166ee3899cbd170c1fb0853577059a
+
+% 3 1 0 05de1241fdee8332084f1b52b2f0dc28
+
+% 5 1 0 09f607590ec055c31152764fa29668bd
+
+% 6 1 0 0ac7c0618d1c3af10b33b2edba81bef3
+
+% 1 1 0 0461534a6a81469a0d1df7bbb753cdd6
+
+@ 0 1 0 1117844e3962f4c4090f1881266b5cf1
++   label Du texte
+
+% 0 1 0 0a826180a918a7af0b3a6f46c99451b9
+
+% 1 1 0 14f4698953e6534a0b3da12fa5d25999
+
+% 2 1 0 0501abbff1a3006d0b93b5ee0e06dba5
+
+% 3 1 0 18001e61110aa5ea1788d9526bbf6f11
+
+% 5 1 0 0599c2e17e63724407786dfb91e63253
+
+% 6 1 0 1035e9738404f98e09ad7374b6776956
+
+% 0 1 0 0d567d3f3dc065da154a451fb08766a2
+
+% 1 1 0 0c429f48a44a052d059beaac526af989
+
+@ 0 1 0 00500445fa5ecf6705317cd6e1d032bd
++   label Un en-tête qui n'existe pas
+
+% 0 1 0 1477c34ff41c7c99183443e1d3238ae1
+
+% 1 1 0 0960c596329e4eb20a0b442aaa85c43a
+
+% 2 1 0 1ef511dbb07561db0a7ad9c807515499
+
+% 3 1 0 067e821158a7d4ab1c7bdfd89b8941fc
+
+% 5 1 0 021bec6526b91ccf1448ed4a9c986ee4
+
+% 6 1 0 05c66f4c0f131be01936ff65a5783be1
+
+% 0 1 0 13b948cfda43775f1630918b57511397
+
+% 0 1 0 18eafb32caed3dd50f976e787bd035ca
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 3 0 1ab73e6e2ea4ec1104d2c9922167a495
++ L'exemple est compilé, mais pas exécuté, car il a besoin du réseau.
++ [En-têtes](../../soundness/modules/http-client.md#headers) décrit les mêmes noms sur une
++ requête.

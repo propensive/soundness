@@ -1,0 +1,53 @@
+orthant 2 language
+
+@ 0 1 0 1497015dd84b91f40e0845aad84cf5d3
++ # Un identifiant de titre avec une mauvaise somme de contrôle
+
+@ 0 2 0 15ccc052feac11f30881215639ad1f69
++ Un ISIN fait douze caractères, dont le dernier est un chiffre de contrôle. Un littéral `isin"…"`
++ est validé pendant que le code compile, somme de contrôle comprise, si bien qu'un identifiant mal
++ saisi n'atteint jamais une transaction.
+
+% 0 1 0 12705ff5e291290d17fbc8389d59ef4a
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 13eadf3564444ec609021a7fa82742e3
++   label Un chiffre de moins
+
+% 1 1 0 09056d1edf49bcbd1d24dfbc829c6ab2
+
+% 2 1 0 070676dedb6833bd021c390081858f15
+
+% 0 1 0 1654e204b29716c90c39dda6803d1812
+
+% 1 1 0 13596a6ca683864203b38572ee1cb542
+
+@ 0 1 0 0842aa4c330da90b009d462d39c8ae6e
++   label Un chiffre faux
+
+% 1 1 0 09f42e8ab4cece1c0a71b828c9f09916
+
+% 2 1 0 1323635d833ff3580ec204f5aed2feca
+
+% 0 1 0 1421942ed2ddfae50c63f875aeb9714b
+
+% 1 1 0 1f1f0317d97680a200c57a6f0fc54a02
+
+@ 0 2 0 0751585f830d293d19ca110a6ed9d8a3
++   label Un identifiant valide
++   highlight isin"GB00BH4HKS39"  somme de contrôle comprise
+
+% 1 1 0 03ecf8bed4eb06cf1cd8b27a33e78422
+
+% 0 1 0 1860feb7588103b81f7d82a3b229e48f
+
+% 0 1 0 18eafb32caed3dd50f976e787bd035ca
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 2 0 1554c29c4b4e1b3a053c289d55e262bf
++ [Les identifiants](../../soundness/modules/money.md#identifiers) énumère les règles, et dit ce que
++ coûte la détention d'un `Isin`.

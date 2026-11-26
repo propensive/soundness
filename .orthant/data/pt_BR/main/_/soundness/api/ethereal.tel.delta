@@ -1,6 +1,6 @@
 orthant 2 language
 
-@ 0 10 0 1b05c2c20b8cc8d10c46a37a3628e3a6
+@ 1 10 0 03068d05cb63b8501e427bb6b0b0a204
 +   entry .Composition   a base do esquema com algumas de suas camadas, e a assinatura que os documentos escritos sob ela carregam
 +       Um launcher escolhe a composição, a partir da `.acceptance` que o daemon publica, e o daemon
 +       responde sob aquela em que lhe escreveram. `interrupts` diz se ela tem a camada `interrupts`.

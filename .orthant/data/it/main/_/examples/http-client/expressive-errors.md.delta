@@ -1,0 +1,62 @@
+orthant 2 language
+
+@ 0 1 0 022ecaf7ebb9ad541ea5398e8c958c7c
++ # Perché una connessione è fallita
+
+@ 0 3 0 0ae12af69f7b38f20940b132c64a1219
++ Un `Connect.Error` contiene il suo motivo come valore di un'enumerazione, e un fallimento TLS
++ contiene lo stadio in cui è avvenuto. Un programma può agire su ciascuno, e il compilatore controlla
++ che nessuno venga dimenticato.
+
+% 0 1 0 12705ff5e291290d17fbc8389d59ef4a
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 1c5727aa37bf41ed0dcb72429c32afdb
++   label L'errore, catturato
+
+% 0 1 0 0a1dabaf441c1d7115db05dc4065a67e
+
+% 1 1 0 0a16d01b2c878d6e04f8e9e931e64d62
+
+% 2 1 0 1ae50f615f2271c80595a2cc24025b23
+
+% 3 1 0 176e1979c6ddc9cc17ccc1949aea5533
+
+% 5 1 0 1e4ce85e100dbd8b098b94a12189e1bd
+
+% 1 1 0 0d720e292f3f154e016dd4aa0e8747e2
+
+@ 0 2 0 10aac6729c0db7e4025952e3b63bd034
++   label Un consiglio per ogni motivo
++   highlight Ssl(stage)  Handshake, Key, Peer o Protocol
+
+% 1 1 0 06c3763c289c6e0415391a3ec440b353
+
+% 2 1 0 129586c720e0095114015090d6eee66f
+
+% 3 1 0 1cfd0a6ec87902650b6f5419c670dcd0
+
+% 5 1 0 0fe26b0640db81cd191139b15a49862d
+
+% 0 1 0 14c0428f9a7a3ead12e09e7e933e9e4a
+
+% 0 1 0 0c5853bda8ce45421d7710685a04deaa
+
+% 0 1 0 0afb3754346158301b8af7bff5cf5c9a
+
+% 0 1 0 1eab9eaf08d5c7fe0549e4f03e0c2f21
+
+% 0 1 0 001d23d452110e841017c90c9a4b9a5b
+
+% 0 1 0 0f3ab6958c4e0da806a31af209664a92
+
+% 0 1 0 18eafb32caed3dd50f976e787bd035ca
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 2 0 1c515c3ca5f97dbd0b2ce76498694885
++ L'esempio viene compilato, ma non eseguito, perché richiede la rete. [Gli
++ errori](../../soundness/modules/http-client.md#errors) presenta la tabella dei motivi.

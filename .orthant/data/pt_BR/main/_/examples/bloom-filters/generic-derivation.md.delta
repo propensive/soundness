@@ -1,0 +1,64 @@
+orthant 2 language
+
+@ 0 1 0 0de7b6a48b27ed660f40dfdc8cfdcff9
++ # Um filtro de case classes
+
+@ 0 2 0 12deb46e7500fe721165d0583dce403f
++ Um elemento entra em um filtro de Bloom pelo seu digest, e o digest de uma case class é feito a
++ partir dos seus campos. Um filtro de um novo tipo, portanto, não precisa de nada escrito para esse
++ tipo.
+
+% 2 1 0 10164b57b1f54d8310d622c836acd06c
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 0437171b39463184014877c6084381ab
++   label Um filtro de texto
+
+% 1 1 0 028610d8d3b0fcb500ac2967efb89733
+
+% 2 1 0 0783fd1b3eb5090d1fb48c4c791dc80d
+
+% 3 1 0 143dd349300e21aa1a45449fc0c0eb9d
+
+% 0 1 0 08f8b4086947e48d0fa2e1f428c3cc54
+
+% 1 1 0 16ea6119125fc6e01c7bdb410dc0f40c
+
+@ 0 2 0 1767417f900843311ee626b73a7e3132
++   label Um filtro de um tipo próprio
++   highlight BloomFilter[Exit]  digest feito a partir dos seus três campos
+
+% 1 1 0 1dbd89cfafe8bc000377d2c7e07e32e2
+
+% 2 1 0 07a6d084ad2eb93b18de8cda61405b7b
+
+% 3 1 0 0083bc75c2d4cac40bbd753da45adaf0
+
+% 0 1 0 01d6d871ed5fd9521b293407fd6f2914
+
+% 0 1 0 1a19ef4a73755d901f50ef470de39b7d
+
+% 1 1 0 1feed9c9194494c704c21dab3af757ed
+
+% 1 1 0 136d267ff733a60e0f6246170d49df5f
+
+% 2 1 0 1525a46c87e9e0571e7d21b8e7c42b7a
+
+% 0 1 0 08a86cbdc9b8cb0109ed8ce5b435ce67
+
+% 1 1 0 0cd6459499a6bd5203d659b3bcc1b6aa
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 0 1 0 1fdd2e8ae822ff161ce5dfb005b92a3a
+
+% 0 1 0 0aaa69379ef3bbb209dcbdf7f483c42e
+
+% 1 1 0 1158132361145e4b104b0438395444e0
+
+@ 0 2 0 000d28fe21165b0f147567ae51689ff6
++ [Fazendo hash dos seus próprios tipos](../../soundness/modules/hashing.md#hashing-your-own-types)
++ explica como uma case class passa a admitir digest.

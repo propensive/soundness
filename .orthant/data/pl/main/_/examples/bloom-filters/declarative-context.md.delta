@@ -1,0 +1,55 @@
+orthant 2 language
+
+@ 0 1 0 1f8d19281a70fd7213a0bf5f60af192b
++ # Hasz stojący za filtrem
+
+@ 0 3 0 0ffbf3a65419c2040548e41b0311fa4a
++ Każdy bit filtra Blooma pochodzi ze skrótu elementu, a algorytm, który tworzy skrót, wybiera
++ kontekst. Algorytm jest też częścią typu filtra, więc dwa filtry utworzone przy różnych
++ wyborach nie są wartościami tego samego rodzaju.
+
+% 0 1 0 12705ff5e291290d17fbc8389d59ef4a
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 0 1 0 13ae098ad7fd45570145fe165538ce86
+
+@ 0 1 0 08606c0ed5712a951cebb6e37e36fec7
++   highlight Blake3.hash  hasz kryptograficzny
+
+% 1 1 0 1efec20d78de238e0038c8f63ec66b09
+
+% 2 1 0 175cc89f006febf714ee0fdfd79531f4
+
+% 0 1 0 10294f9649b4eb8f1704687c976eb80a
+
+% 2 1 0 0196e2ef7d7d6b59010466383b7afdfc
+
+% 3 1 0 1ff164d75ee3872c181bf6add38dfa60
+
+% 0 1 0 1d8360653de493441b4c63617653b9be
+
+@ 0 2 0 0432cd56282d2de2022a038c7d86d00c
++   highlight Murmur3.hash  około jednej piątej pracy
++   highlight permitNonCryptographicHashes  to nie jest hasz kryptograficzny
+
+% 1 1 0 054f1dac18738f3c02c0dfbbbf93c345
+
+% 2 1 0 088ba433cf63635119ccd696001c3bf4
+
+% 0 1 0 1d214d155eb8fa63111a895f6680252d
+
+% 0 1 0 190c8e29a31ad7080847281e0adda70f
+
+% 2 1 0 11b014917de7a74f1a9349aeabbf09bc
+
+% 3 1 0 0d8090552aa6551c0a0850683c41d90e
+
+% 0 1 0 18eafb32caed3dd50f976e787bd035ca
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 3 0 10aaff4db59211ed09ea908040f7aaa1
++ [Skąd biorą się bity](../../soundness/modules/bloom-filters.md#where-the-bits-come-from)
++ porównuje koszty, a [kontekst deklaratywny](../../philosophy/declarative-context.md) wyjaśnia
++ import.

@@ -1,0 +1,51 @@
+orthant 2 language
+
+@ 0 1 0 08020894cb9759ec03247b5ad3ba4aa5
++ # 标题有六级，且不包含块
+
+@ 0 3 0 05abbc2108b16f3219bd29e03400e459
++ Markdown 文档的树有一个表示块的类型 `Layout`，另有一个表示块中行内内容的类型 `Prose`。标题的级别是六个数字之一，其内容是行内文字，因此第七级标题以及位于链接中的标题都不是值。
+
+% 0 1 0 12705ff5e291290d17fbc8389d59ef4a
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 0ff38e46d5a71c8b175e1121d18d3d5c
++   label 二级标题
+
+% 1 1 0 179a9277d7a42d6c12fb5f5dcd5970f4
+
+% 2 1 0 0ec153e7d8b9ede91490a6a2371fbfde
+
+% 1 1 0 124a06941bf3c2001a0acffdc14372c0
+
+@ 0 1 0 0258f14eb83ac05212e3f26f20721989
++   label 第七级
+
+% 1 1 0 1b5f000354996297025ea0e7cad55094
+
+% 2 1 0 07705bac8e488fde1751a4b84dd5fcb3
+
+% 0 1 0 104051ae29cf02b30ae126e6e7cf5cc8
+
+% 1 1 0 14dac70954a81fb70d89aad2ab3f4097
+
+@ 0 1 0 0ddc85c1c7d0d1d51ad96fb680c0c8a2
++   label 链接中的标题
+
+% 1 1 0 177919a7441ec7dd145e1981c6b25e95
+
+% 2 1 0 0e9299cb071b76bb0eba4092464248cd
+
+% 2 1 0 1a2aa5245a40d2e912d76d76c11579b6
+
+% 0 1 0 13679e5ce46dfab609dc6acf70f8f34f
+
+% 0 1 0 18eafb32caed3dd50f976e787bd035ca
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 3 0 1fbaf0c2df9187a819fdf7fc9756fe03
++ [语法树](../../soundness/modules/markdown.md#the-syntax-tree)列出了每一种节点，[不可能状态](../../philosophy/impossible-states.md)则论证了这类类型的价值。

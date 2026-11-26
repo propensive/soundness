@@ -1,0 +1,55 @@
+orthant 2 language
+
+@ 0 1 0 159e8aa6ca4f3c2b1e44237c04b73246
++ # Un método que necesita la petición lo dice
+
+@ 0 3 0 1f7df1a8608295190e5e8017f3854d83
++ Dentro de un manejador, `request` es la petición a la que se está respondiendo. Es un valor
++ contextual, así que un método que la lee debe pedirla, y entonces puede llamarse desde un
++ manejador, o desde una prueba que ha creado una petición a mano, sin ningún servidor.
+
+% 0 1 0 12705ff5e291290d17fbc8389d59ef4a
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 0fe6b1b1717895d11d18b7c4bb236d35
++   label Una petición, donde no hay ninguna
+
+% 0 1 0 1477c34ff41c7c99183443e1d3238ae1
+
+% 1 1 0 0960c596329e4eb20a0b442aaa85c43a
+
+% 2 1 0 184cfb5ee95bfaf901fdf87d0d03b757
+
+% 0 1 0 1cce7d1ec89afbaa049713b542565d6c
+
+% 1 1 0 0af73f2bfdd879a2074a10ab3f582c34
+
+% 2 1 0 06b5d730dc183f961867c50e977628e9
+
+% 1 1 0 061fc8e1aa4b818e03d6f87df222969e
+
+@ 0 1 0 008eda5928403381028f634ac69285b1
++   label La petición, pedida al llamante
+
+% 0 1 0 0ea3f433f0a0f88409d5cdece0de5a5b
+
+% 1 1 0 0ee9e5d1b08e1aab0988d2b2112ee7c7
+
+% 2 1 0 01ec79cb14aa5a16008f046a5feea67b
+
+% 0 1 0 1ac89a4a917266af0b0d542b7da2a03b
+
+% 1 1 0 0a118f3ae50bcfa20bd3ad65483761bc
+
+% 2 1 0 0737030b6b3ff521136f42ffc62b9898
+
+% 0 1 0 18eafb32caed3dd50f976e787bd035ca
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 2 0 03ff25ccc59ac40119fe37ea734ff486
++ [Un servidor](../../soundness/modules/http-server.md#a-server) describe `request`, y
++ [las signaturas honestas](../../philosophy/honest-signatures.md) el principio.

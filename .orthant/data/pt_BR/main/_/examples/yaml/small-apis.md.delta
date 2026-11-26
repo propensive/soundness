@@ -1,0 +1,81 @@
+orthant 2 language
+
+@ 0 1 0 066b1d1be5217d0e0ecc9b9d133eec5c
++ # As mesmas palavras que o JSON
+
+@ 0 3 0 0aa648a38f4b330414895ae75c79be23
++ Um formato acrescenta um tipo e nenhum método. `read`, `as` e `in` fazem para YAML o que fazem para
++ JSON, então uma case class que é lida de um é lida do outro, e um documento é levado de um para o
++ outro decodificando e codificando de novo.
+
+% 2 1 0 1bc3612ec8632d9e1c44161ea4714a44
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 07d3881ab076b51c0f1173fab2957a4c
++   label Um jogador, lido de YAML
+
+% 0 1 0 05a91f91bc2bf3180b357ce8afb93930
+
+% 1 1 0 029c7a3762e2d075192abf58f09b8aa2
+
+% 2 1 0 0502785dee3911581209e7137a564fd9
+
+% 4 1 0 10f1813e38131ada0658179c81364fb8
+
+% 6 1 0 024b2744d6cbc20b079b2422adf40b14
+
+% 1 1 0 07387fb7739d513b1f110b3cab62e923
+
+@ 0 1 0 1b0df146cb948ed117e432f2e05fbda2
++   label O mesmo jogador, lido de JSON
+
+% 0 1 0 1f1abff241c0332714ae99e7f0a53e42
+
+% 1 1 0 0b694a2caa3e4f560d9516255b7a82ab
+
+% 2 1 0 09eb9061397c1e0a09a25755e5496127
+
+% 4 1 0 11999d765ae3beab08954e4d4c14198a
+
+% 0 1 0 0a42af37c05122a614fab6da9be7220b
+
+% 1 1 0 0b4c66b189589498159912ebc593e3b5
+
+@ 0 2 0 0502f480a305dd2b1664aa8f9d33c912
++   label De um formato para o outro
++   highlight in[Json]  codificado de novo
+
+% 1 1 0 16dee87871607880051e13d715eb8cb2
+
+% 2 1 0 18347e6be94d62fc0b00b600c66c14e2
+
+% 4 1 0 00b7ecb0b0c68ecf0d9513c615885ff2
+
+% 6 1 0 159c9346dd2f09b31c98d64662345a66
+
+% 0 1 0 122d5c0a74be10b417b77615aa736042
+
+% 1 1 0 011936d134ca7ea41cc15a075725c016
+
+% 1 1 0 136d267ff733a60e0f6246170d49df5f
+
+% 2 1 0 1525a46c87e9e0571e7d21b8e7c42b7a
+
+% 0 1 0 08a86cbdc9b8cb0109ed8ce5b435ce67
+
+% 1 1 0 0cd6459499a6bd5203d659b3bcc1b6aa
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 0 1 0 026901931200bf591262a034768d6b95
+
+% 0 1 0 16fc7678e5d8225f085e81802149d6a1
+
+% 1 1 0 0ae03c5ece6122340ae5da59260a87ab
+
+@ 0 2 0 0f03bdd433be6ce61055f3aeac2b397d
++ [Análise e decodificação](../../soundness/modules/yaml.md#parsing-and-decoding) traz o lado do YAML,
++ e [APIs pequenas](../../philosophy/small-apis.md) o motivo de haver um só vocabulário.

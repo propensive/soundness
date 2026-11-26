@@ -1,0 +1,58 @@
+orthant 2 language
+
+@ 0 1 0 027fef687bae4e340f41234292bf1a78
++ # Un programa que olvida su código de salida
+
+@ 0 3 0 14b0b9cd2bcdc57813e7d7e8f37c2f65
++ Un shell sabe si un comando ha funcionado por su código de salida, y un programa que termina sin
++ elegir uno lo ha elegido por accidente. El cuerpo de `application` devuelve un `Exit`, así que un
++ camino por el programa que no da ninguno no compila.
+
+% 0 1 0 12705ff5e291290d17fbc8389d59ef4a
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 039edf96b7992e3d0505d03388f20fd9
++   label Un cuerpo que solo imprime
+
+% 0 1 0 1477c34ff41c7c99183443e1d3238ae1
+
+% 1 1 0 0960c596329e4eb20a0b442aaa85c43a
+
+% 2 1 0 1370fde91f549635091e04a7dae5a766
+
+% 3 1 0 0e958df266f2b0e81fa0ba5b26f0aa5d
+
+% 4 1 0 00c479959509c72d09c740519008e291
+
+% 5 1 0 0c9cdd47ea1ffe1a1e92a532fd69baa0
+
+% 1 1 0 1c459c0446dfa4cf0237ff63d6c0aa5b
+
+@ 0 2 0 1f76c89730510adf11131ed4d9ff0b3c
++   label Un cuerpo que dice cómo terminó
++   highlight Exit.Ok  el código que recibe el shell
+
+% 1 1 0 0f8c233866a3b0f40c057d7716957e66
+
+% 2 1 0 18faf93a1a95f40d0aa9503166f19489
+
+% 3 1 0 1fd654171ff9347a0965ea493df41bd8
+
+% 4 1 0 07b7ef985aaa17770990b07e032bf829
+
+% 5 1 0 15b7fc08e76dc3dc058f285930e7dd03
+
+% 0 1 0 0550eda7b20141fd1917f71781eeafe5
+
+% 0 1 0 18eafb32caed3dd50f976e787bd035ca
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 4 0 01c192e097033339001ba8dbb9cc2666
++ El ejemplo se compila, pero no se ejecuta, porque es un programa completo.
++ [Un punto de entrada](../../soundness/modules/cli.md#an-entry-point) describe el cuerpo, y
++ [código de salida y errores](../../soundness/modules/cli.md#exit-status-and-errors), los códigos
++ que tienen nombre.

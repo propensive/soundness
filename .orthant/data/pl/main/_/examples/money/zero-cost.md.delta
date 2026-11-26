@@ -1,0 +1,56 @@
+orthant 2 language
+
+@ 0 1 0 12e3202bcc21ab4d1029645337a7189e
++ # Kwota jest całkowitą liczbą centów
+
+@ 0 3 0 0dbd595a57f229bc1512f470acd0d891
++ Binarna liczba zmiennoprzecinkowa nie potrafi przechować jednej dziesiątej, więc sumy ułamków
++ dziesiętnych dryfują. Kwota pieniędzy to `Long` najmniejszych jednostek waluty, z walutą tylko
++ w typie, więc jej arytmetyka jest dokładna i kosztuje tyle, co arytmetyka całkowitoliczbowa.
+
+% 2 1 0 12fe8d10d5fcbe5a1aa9e3a3e5400035
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 1e1967a91f81fc1d058dc0394742943e
++   label Suma ułamków
+
+% 1 1 0 0cbb5f3cbfdcc1d7049910ee12e9cc70
+
+% 0 1 0 10688498654970e30a6363299ee1400c
+
+% 1 1 0 1856bbbe545d29191967838689dcedd8
+
+@ 0 2 0 1e95015f66efefff1f9104df2ade392f
++   label Suma pieniędzy
++   highlight Eur(0.10)..Eur(0.30)  arytmetyka całkowitoliczbowa na centach
+
+% 1 1 0 16eafb2a975b2e4a0ea9c0c70cad7ba2
+
+% 0 1 0 03feb3af7b834e61019156afa08e8cb8
+
+% 0 1 0 12151aabd8e38d070093eeb32f0ec3d1
+
+% 1 1 0 133cce2c8036ad790521ea2da422a089
+
+% 1 1 0 136d267ff733a60e0f6246170d49df5f
+
+% 2 1 0 1525a46c87e9e0571e7d21b8e7c42b7a
+
+% 0 1 0 08a86cbdc9b8cb0109ed8ce5b435ce67
+
+% 1 1 0 0cd6459499a6bd5203d659b3bcc1b6aa
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 0 1 0 16ff1f13700043880b6f99c860809ea7
+
+% 0 1 0 0182142c7ceb4d25000d42862a0f50aa
+
+% 1 1 0 188426df3384db8912b1249f21790b5b
+
+@ 0 2 0 0c5e3696941fceb40ba939961bcd9c02
++ [Arytmetyka](../../soundness/modules/money.md#arithmetic) mówi, czym kwota jest pod spodem, a
++ [zerowy koszt](../../philosophy/zero-cost.md) – dlaczego to ma znaczenie.

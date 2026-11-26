@@ -1,0 +1,47 @@
+orthant 2 language
+
+@ 0 1 0 1659547a481392230611c67104699c53
++ # Un en-tête de réponse prend le type de ce qu'il porte
+
+@ 0 3 0 098a14d37aeee9da1f27096a13280145
++ Les en-têtes d'une réponse sont des arguments nommés, chacun du type de ce que contient cet
++ en-tête. `cacheControl` est du texte, et `contentType` est un type de média, lui-même vérifié par
++ le compilateur.
+
+% 0 1 0 12705ff5e291290d17fbc8389d59ef4a
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 1be4d88621c6495e022912ed136fe2ca
++   label Du texte là où va un type de média
+
+% 0 1 0 1477c34ff41c7c99183443e1d3238ae1
+
+% 1 1 0 0960c596329e4eb20a0b442aaa85c43a
+
+% 2 1 0 184cfb5ee95bfaf901fdf87d0d03b757
+
+% 0 1 0 0ccc988ea1dc341712c6397f195fc5fc
+
+% 1 1 0 19acfb09e1aa7de000e128ce3e96efba
+
+@ 0 1 0 0b0ba5de8a0d753d1dade30048895fab
++   label Un type de média
+
+% 0 1 0 0bbeac845d8263c6136ea8bdf8f41736
+
+% 1 1 0 1fa5f66e0ca2178007b3d1196c3f2bb5
+
+% 2 1 0 0953cafb0fbb6e6c0ca05217c05eda65
+
+% 0 1 0 086d36ae3f3b9ea616e10d7d3ba6b616
+
+% 0 1 0 18eafb32caed3dd50f976e787bd035ca
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 2 0 12f3846fc4e4f9010fb10c4d44e34005
++ [Les réponses](../../soundness/modules/http-server.md#responses) en dit plus sur les en-têtes et
++ les corps d'une réponse.

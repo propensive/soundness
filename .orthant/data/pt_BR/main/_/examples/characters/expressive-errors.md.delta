@@ -1,0 +1,69 @@
+orthant 2 language
+
+@ 0 1 0 1af3b00cd7a2c4f903d1eb9a6db5074b
++ # Onde os bytes deram errado
+
+@ 0 3 0 02a476bf3b25238309756bc249fcdeed
++ Um decodificador estrito levanta um `Charset.Error` na primeira sequência que não consegue
++ decodificar. O erro contém a posição da falha como um número e a codificação como um valor, então um
++ programa pode agir sobre qualquer um dos dois sem ler a mensagem.
+
+% 2 1 0 1629cd5f0d427e3610bca664efd7b3c8
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 2 0 03b4c564e8f8201900cf03d029bf13fe
++   label Bytes que não são UTF-8
++   highlight -62  começa um caractere que nunca termina
+
+% 1 1 0 145eb4b550ea173713046b8b2dc9c833
+
+% 2 1 0 1bda7db67238046d1b946a61e2223cbc
+
+% 3 1 0 0d09614b7363141009f056b2f16ce30e
+
+% 5 1 0 0efbde06d5664b871a20109cc62c9e38
+
+% 6 1 0 0c0d1cd8eb8670fc09bc9c5b2b889403
+
+% 1 1 0 17cc2975ab5711240ed67825a8b7d6fb
+
+@ 0 2 0 025da49b483251160c3ce3a0289d6cff
++   label A posição da falha
++   highlight error.position  um número, não parte de uma mensagem
+
+% 1 1 0 03eaddac177d433a0c81dddc37040267
+
+% 2 1 0 0fda31c2db84b5c2003a69d79662749c
+
+% 3 1 0 0048613a4c3f91db06871919d22aa762
+
+% 5 1 0 124c2052265474471859c84ddf10dcab
+
+% 6 1 0 1e6733265efa639807bdd5059802c857
+
+% 0 1 0 03b8e5e62b633f9b1246f828f456b125
+
+% 1 1 0 0c12363358c9ae2f03c7c458a8fe7016
+
+% 1 1 0 136d267ff733a60e0f6246170d49df5f
+
+% 2 1 0 1525a46c87e9e0571e7d21b8e7c42b7a
+
+% 0 1 0 08a86cbdc9b8cb0109ed8ce5b435ce67
+
+% 1 1 0 0cd6459499a6bd5203d659b3bcc1b6aa
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 0 1 0 06c0c12ea078c17c0106e3dee6af1925
+
+% 0 1 0 0f4c2dc3584a3f491295a483f94e91ff
+
+% 1 1 0 06088b3138aac8611ac738885cae2fcc
+
+@ 0 2 0 0d8efe3dc1df05ef1949265be6193c1f
++ [Entrada inválida](../../soundness/modules/characters.md#bad-input) descreve os sanitizadores, e
++ [erros expressivos](../../philosophy/expressive-errors.md) por que um erro guarda os seus valores.

@@ -1,0 +1,84 @@
+orthant 2 language
+
+@ 0 1 0 1e918f51368839751f4afd4696a9006a
++ # Jedna podróż na dwóch planetach
+
+@ 0 3 0 16bc1a2c4960edf8107fd7b0216db163
++ Odległość między dwiema lokalizacjami to `Angle`: część ortodromy, która leży między nimi.
++ Pomnożona przez promień, który jest wielkością, staje się długością w jednostkach promienia.
+
+% 2 1 0 076a6d7f5cedd2831bc04b7fd7d79ff2
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 09c3120b53deec0a0af4f075a7d5f7bb
++   label Kąt między dwoma miejscami
+
+% 1 1 0 172c120474a6812e1d1b8587e5ab85f3
+
+% 2 1 0 154f064952eb6feb0195becf09d2cad8
+
+% 3 1 0 123c55ab93c7bbdf1b72763ebaff8dce
+
+% 5 1 0 1df5d49df4f814bd0488f48f826ebaa0
+
+% 1 1 0 04055b07d0e3fe3d0be1302c0ca81d9d
+
+@ 0 2 0 01bd65eb37a244a417e4e78b4193e5f1
++   label Długość na Ziemi
++   highlight 6371.0*Kilo(Metre)  promień Ziemi
+
+% 1 1 0 0fca43637690a74c0897c0afdc406e13
+
+% 2 1 0 062a4913e4eea2ff111eae4c970b55ce
+
+% 3 1 0 1ac2c77b65f4959d04a887c7fbcd43d9
+
+% 5 1 0 13504462d92409dd19f75895f61c99da
+
+% 6 1 0 1e9e04d71408c10a1f03f1a900b37580
+
+% 1 1 0 1ccbb01d5df864fb0dbcab499f1f454e
+
+@ 0 2 0 155e72ab043deaa1106ea26c4fca2d27
++   label Ten sam łuk na Marsie
++   highlight 3390.0*Kilo(Metre)  promień Marsa
+
+% 1 1 0 0792b3ab7a8b80d016c7d06d24638930
+
+% 2 1 0 17616583f4e35e7701d090113a424d94
+
+% 3 1 0 010a6fcdb070877017be2fe2ce46c1a0
+
+% 5 1 0 012bc7e0ee996bd10d83884535df2d86
+
+% 6 1 0 0831b6bd6b981b0214ca9ccfd2dc56df
+
+% 0 1 0 0bb3bcdc11ac1f8217168303799ff16c
+
+% 1 1 0 126a8e4a25597fd21921d9fa9388dcf7
+
+% 1 1 0 136d267ff733a60e0f6246170d49df5f
+
+% 2 1 0 1525a46c87e9e0571e7d21b8e7c42b7a
+
+% 0 1 0 08a86cbdc9b8cb0109ed8ce5b435ce67
+
+% 1 1 0 0cd6459499a6bd5203d659b3bcc1b6aa
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 0 1 0 1ff46eadb86ffabc103c1dc6d8e7c8b4
+
+% 0 1 0 1a6618fa0c89c29813d8aae69cdcb6e1
+
+% 0 1 0 04a571bc9995c3c91284db7733838bf2
+
+% 1 1 0 1002d140a4188b5401f03b3161caa7ad
+
+@ 0 2 0 06a3cc82740290d017f3df4d2e045ac0
++ [Lokalizacje](../../soundness/modules/geography.md#locations) wyjaśniają, dlaczego geometrię
++ trzyma się oddzielnie od sfery, a [Wielkości](../../soundness/modules/quantities.md) zawierają
++ jednostki.

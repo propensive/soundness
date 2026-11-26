@@ -1,0 +1,83 @@
+orthant 2 language
+
+@ 0 1 0 0c18568a1d00438e13d92ed9e12712fb
++ # Un overflow che non può passare inosservato
+
+@ 0 3 0 13e28393711c14ef06d0d705fa17f11a
++ L'aritmetica intera prende la sua politica di overflow da un import. Con `checkedOverflow`, il tipo
++ di `+` cambia in uno che può sollevare un `Arithmetic.Error`, e una somma che lo ignora non compila
++ più.
+
+% 2 1 0 15f7672542548f6b1a0ab2192ca23be9
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 2 0 0d2c745b3c67f0fa077a8e1c1b6a23b0
++   label Avvolgimento, come fa l'hardware
++   highlight uncheckedOverflow  la somma si avvolge in un numero negativo
+
+% 1 1 0 03a0771b7c97182b1c3685c1a7f5af5e
+
+% 2 1 0 06655b3190a51a7f118349c533fa45a2
+
+% 0 1 0 15bea7d826df8bf8060e321e5f8ce218
+
+% 2 1 0 0cc6f0eee487f824115b14a30d6e859e
+
+% 3 1 0 02f5b4078fa358a803cbc686a79798f0
+
+% 4 1 0 17d3e757673742001cec8c2485c54f13
+
+@ 0 1 0 0943f488a550d7c80fde8e123f126e6a
++   label Verificato, e non gestito
+
+% 0 1 0 1477c34ff41c7c99183443e1d3238ae1
+
+% 1 1 0 0960c596329e4eb20a0b442aaa85c43a
+
+% 2 1 0 0f6449dd6b3379fc1fdad5f0ba733fbb
+
+% 3 1 0 18df38ef8d219c480c1b19f244b6f353
+
+% 5 1 0 0ee897b1c21ff9b50938c0b36976503e
+
+% 3 1 0 06295b74c1c0965614d11d20a4ce7b81
+
+% 4 1 0 1f9647e071de852f05eb0dacec30ed54
+
+@ 0 2 0 142c1ec10364bbdf194ebd6c9f6c3605
++   label Verificato, e gestito
++   highlight safely  un overflow diventa Unset
+
+% 1 1 0 03a1b6d5c329f97307314146470a6df9
+
+% 2 1 0 1aecf93edee473c006cb8b9d28ddfba3
+
+% 3 1 0 180a06cef67b1c58080ca07e90e8ae25
+
+% 5 1 0 0667f2fac764308301e26ec4b1266477
+
+% 0 1 0 18ab7bc40b5990571b7df9991da9368c
+
+% 1 1 0 072833ee7ccb93f30f3a97ad0ff0a7b7
+
+% 1 1 0 136d267ff733a60e0f6246170d49df5f
+
+% 2 1 0 1525a46c87e9e0571e7d21b8e7c42b7a
+
+% 0 1 0 08a86cbdc9b8cb0109ed8ce5b435ce67
+
+% 1 1 0 0cd6459499a6bd5203d659b3bcc1b6aa
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 0 1 0 066b3efec69311ef19f6253a860da4ff
+
+% 1 1 0 0c9db1eb595fc6d51afc6201ecfcca6a
+
+@ 0 3 0 1f7e4034958add2d0e8dd0761b577f2b
++ La somma non sta in 32 bit, quindi il risultato è assente, e non un numero negativo. [Aritmetica
++ verificata](../../soundness/modules/numbers.md#checked-arithmetic) presenta anche le politiche per
++ la divisione.

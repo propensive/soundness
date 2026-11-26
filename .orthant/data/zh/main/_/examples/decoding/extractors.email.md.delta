@@ -1,0 +1,46 @@
+orthant 2 language
+
+@ 0 1 0 0608d964ebd321000d8a4fb9bcc33ae4
++ # 在一个模式中完成验证与转换
+
+@ 0 3 0 144e8634ce093ae40314a2f6a7646740
++ `As` 适用于文本可以读取为的任何类型，而不仅仅是数字。对 `As[EmailAddress]` 进行匹配会检查文本是否为格式正确的地址，并把它绑定为地址，而回退值是编译器已经检查过的字面量。
+
+% 2 1 0 1b2b85b562ceb14c18b17b15812131e1
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 0 1 0 14aab7f0be2434f81421fb69d99543da
+
+@ 0 2 0 17aa4799d58faa240ee7fef371b1c92a
++   label 可能是地址的文本
++   highlight As[EmailAddress](address)  绑定 EmailAddress，而不是 Text
+
+% 0 1 0 0feeb6ee26eddc7916a3c923ea9fa7b1
+
+% 0 1 0 027bca3f9d420e9e03d84a0bff89be1d
+
+% 0 1 0 1cde59c590ee00121a603bb2d6563e92
+
+% 0 1 0 08ae60a3b4913d5e086519ae41f72452
+
+% 1 1 0 06ce41a48b5cce6e0986dd8527376966
+
+% 1 1 0 136d267ff733a60e0f6246170d49df5f
+
+% 2 1 0 1525a46c87e9e0571e7d21b8e7c42b7a
+
+% 0 1 0 08a86cbdc9b8cb0109ed8ce5b435ce67
+
+% 1 1 0 0cd6459499a6bd5203d659b3bcc1b6aa
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 0 1 0 1ac99dce96f8bf78021df6b335fbbcf8
+
+% 0 1 0 013163c77f9b27b20f178fd2c5e6c58e
+
+% 1 1 0 1ffb06fc96e80ddb19b7a70fdb8b2fec
+
+@ 0 2 0 0a176d31fc39def20316e5a736b189bf
++ [在模式中提取](../../soundness/modules/decoding.md#extracting-in-patterns)展示了在更大的模式中使用同一个提取器。

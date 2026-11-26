@@ -1,0 +1,56 @@
+orthant 2 language
+
+@ 0 1 0 1b7bbc8c85421b90194f1d7958de9ed4
++ # Parâmetros, escritos como argumentos nomeados
+
+@ 0 2 0 1539f27d8257fe80164795ae41bf7eff
++ Um tipo de mídia é um valor com partes tipadas, e nunca uma string a ser concatenada. Um parâmetro
++ como o conjunto de caracteres é acrescentado aplicando o tipo de mídia a um argumento nomeado.
+
+% 2 1 0 146fd3dce0e10d420b688d2edd4bfa52
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 0b0ba5de8a0d753d1dade30048895fab
++   label Um tipo de mídia
+
+% 1 1 0 097187ca200cdb1b0ab9f79c2fb83a48
+
+% 0 1 0 14e38882246e22e404ccfb6625cae48a
+
+% 1 1 0 163dc6a0c0e2718f1986ec91cf1484f2
+
+@ 0 2 0 18589613fc6f1f720ceb4e8480a2658f
++   label Com um parâmetro
++   highlight (charset..t"UTF-8")  um parâmetro, pelo nome
+
+% 1 1 0 0e89336ff3c6ade71e44a047b78d2ee9
+
+% 0 1 0 1a3f83773535561a165e02cc1dc535b3
+
+% 1 1 0 0163d3f2ebc20f611e22f12363fba746
+
+% 1 1 0 136d267ff733a60e0f6246170d49df5f
+
+% 2 1 0 1525a46c87e9e0571e7d21b8e7c42b7a
+
+% 0 1 0 08a86cbdc9b8cb0109ed8ce5b435ce67
+
+% 1 1 0 0cd6459499a6bd5203d659b3bcc1b6aa
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 0 1 0 18ee4cbe857b5bb6046c65b87246ea68
+
+% 0 1 0 16879ad085336ed91268a0e526c37682
+
+% 0 1 0 12fa7fc2fe78d4de04b64f71660680df
+
+% 0 1 0 1f95217e8310b1e5085f53aa274c4a58
+
+% 1 1 0 0405e8551ff1971a03afc53267ab8f97
+
+@ 0 1 0 0b058696a0c318ed0862bd3d9a3976c6
++ [Estrutura](../../soundness/modules/media-types.md#structure) nomeia as quatro partes.

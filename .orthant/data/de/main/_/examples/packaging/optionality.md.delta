@@ -1,0 +1,47 @@
+orthant 2 language
+
+@ 0 1 0 11a1e22bde45a7cd16950a5a101eadc1
++ # Das öffentliche Zuhause einer Abhängigkeit, oder keines
+
+@ 0 3 0 0df3c983354d6cc4197ecb7f13e03264
++ Der Repackager findet über den Inhalts-Hash heraus, wo sich eine Abhängigkeit herunterladen lässt.
++ Ein Resolver ist eine Funktion von einem Hash auf eine optionale URL; zwei Quellen werden also mit
++ `or` kombiniert: zuerst die genannten Hinweise, dann der globale Index, und ein Hash, den keiner von
++ beiden kennt, ist `Unset`.
+
+% 0 1 0 12705ff5e291290d17fbc8389d59ef4a
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 10925d93413ca704169b81e6377a720a
++   label Die genannten Hinweise
+
+% 1 1 0 1e7e49f1b20e59391198c02e738f2042
+
+% 2 1 0 0f9863940590366109e31a87388b5004
+
+% 0 1 0 00921e405914d50503f3187b9d69e617
+
+% 1 1 0 100617df151cb4741d0d78833b866761
+
+@ 0 2 0 0f06590f73afcf1708098fc74c8483ec
++   label Dann der Index der Maven-Artefakte
++   highlight or(DepsDev.mavenUrl(hash))  nur gefragt, wo die Hinweise nichts haben
+
+% 1 1 0 1af5f9efb2e449ce1c2407cc6919fb68
+
+% 2 1 0 084145c6de1574b7191b6b3cf54991c8
+
+% 0 1 0 13287be15b0d9e6a138bf351eed17cea
+
+% 0 1 0 18eafb32caed3dd50f976e787bd035ca
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 3 0 03871b1df1050b0a1915aa1866606bf7
++ Das Beispiel wird kompiliert, aber nicht ausgeführt, da das Nachschlagen das Netzwerk braucht. Eine
++ Abhängigkeit ohne Zuhause wird in das JAR eingebettet, wie
++ [Repackaging](../../soundness/modules/packaging.md#repackaging) beschreibt, und
++ [Optionalität](../../philosophy/optionality.md) behandelt die hier verwendeten Operationen.

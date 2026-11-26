@@ -1,0 +1,62 @@
+orthant 2 language
+
+@ 0 1 0 1e1332c31db115820bbf55e15a2a6d8a
++ # Una case class es la definición de un mensaje
+
+@ 0 3 0 0b91d8f8e37926320adb48efd86d3c2a
++ No hay ningún fichero de esquema ni código generado. Los campos de una case class, cada uno con su
++ número, son el mensaje, y el compilador deriva de ellos el formato de transmisión. Los bytes son
++ los que escribe `protoc` para el mismo mensaje.
+
+% 2 1 0 14e9cad364d9e6150f4e6b81c37e4deb
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 2 0 0afcb1081843b2d2172eb46592486640
++   label El mensaje de ejemplo de la documentación de proto3
++   highlight @field(1)  el número del campo en la transmisión
+
+% 1 1 0 0190d461efc079410cc036f182293b62
+
+% 2 1 0 1396482542162c7817652cb9291bf03c
+
+% 0 1 0 191b7ae8b4522c131714b416a8b14f74
+
+% 0 1 0 16dd1ebd7490a7050d38289998cf43b9
+
+% 1 1 0 005b06945f12fe8c09ce75e7ebff6d4a
+
+@ 0 2 0 047a540615a62cfb1218591f28c46360
++   label Un segundo campo, con numeración dispersa
++   highlight @field(7)  los números no tienen por qué ser consecutivos
+
+% 1 1 0 172a68909cae3a991d0d7e2f34b74146
+
+% 2 1 0 111b7218c842d1cd096d10b5166bbdf7
+
+% 0 1 0 032a65e98b02ad1515615bda1c00a6cd
+
+% 0 1 0 09e61600337a618e1bcc9cbd58db0701
+
+% 1 1 0 03471988ce903af609ff48168668cc7f
+
+% 1 1 0 136d267ff733a60e0f6246170d49df5f
+
+% 2 1 0 1525a46c87e9e0571e7d21b8e7c42b7a
+
+% 0 1 0 08a86cbdc9b8cb0109ed8ce5b435ce67
+
+% 1 1 0 0cd6459499a6bd5203d659b3bcc1b6aa
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 0 1 0 14727c75f7289bd214965b396ab961c8
+
+% 1 1 0 09d87d7f465a91ca0f0b594ee0837bca
+
+@ 0 3 0 0e926a3e247b20850d202b19839453b3
++ Los tres primeros bytes son los `08 96 01` documentados.
++ [Mensajes](../../soundness/modules/protobuf.md#messages) tiene el resto, y [tipos de
++ campo](../../soundness/modules/protobuf.md#field-types) la codificación de cada tipo.

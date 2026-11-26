@@ -1,0 +1,69 @@
+orthant 2 language
+
+@ 0 1 0 0f86ef4afa84460b0c683dbe9b1ac05d
++ # Cómo se leen los bytes está en el tipo del campo
+
+@ 0 3 0 1e1c65c09a4ef686081751cb2842d7c0
++ Un tipo con tamaño fija algo más que un ancho. Dos bytes declarados como `U16` son un número sin
++ signo, y los mismos dos bytes declarados como `S16` son uno con signo, así que la disposición dice
++ qué significan los bytes y ninguna llamada tiene que decirlo nunca.
+
+% 2 1 0 07967a08d58b60cb1f34181a023e93b1
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 2 0 1bb6fa0923d0097a1b9266737ffc35b4
++   label Dieciséis bits, sin signo
++   highlight U16  dos bytes, de 0 a 65535
+
+% 1 1 0 1fc494fdd37d11350855978ded59645e
+
+% 2 1 0 18c6d8a47ed5740106e786fbf817e1d0
+
+% 0 1 0 151c3e09c155ad7513aca17c67bd8375
+
+% 2 1 0 00941a35708f526f1fa6d45b93854415
+
+% 3 1 0 1600fc77785e4f9c0849127f8627293b
+
+% 5 1 0 15bbd32d34e17661024586ddae46eaf8
+
+% 1 1 0 08eba11e81df7a4f0199bc1b8184cb4a
+
+@ 0 2 0 1477c50fa5e529e104ca2d40f26498f4
++   label Dieciséis bits, con signo
++   highlight S16  los mismos dos bytes, de -32768 a 32767
+
+% 1 1 0 0579c7df33538d7a0bbd72c781d3fb98
+
+% 2 1 0 11d8df96297a38b20827c968e038d0dd
+
+% 0 1 0 193f0779a4db2223053748b9c9abe7ee
+
+% 2 1 0 1fa44037240fcf211f0cf470c9683c77
+
+% 3 1 0 0bb8b967302cd32f1664ad058a876f48
+
+% 5 1 0 10d3a5f4f318bd3c155b73170aeba0b3
+
+% 1 1 0 0d2be4608ea8832c1d0f2f2a23bfbd39
+
+% 1 1 0 136d267ff733a60e0f6246170d49df5f
+
+% 2 1 0 1525a46c87e9e0571e7d21b8e7c42b7a
+
+% 0 1 0 08a86cbdc9b8cb0109ed8ce5b435ce67
+
+% 1 1 0 0cd6459499a6bd5203d659b3bcc1b6aa
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 0 1 0 14145eaa0aa1fae50550b110f29a88d7
+
+% 1 1 0 15acb1d4746d29441e872e3559cdb50b
+
+@ 0 2 0 179b9fad93bc7ac8177528b1c0dc58e0
++ [La clase de tipos](../../soundness/modules/binary-data.md#the-typeclass) tiene la tabla de tipos
++ con tamaño.

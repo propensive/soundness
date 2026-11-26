@@ -1,0 +1,27 @@
+orthant 2 language
+
+@ 0 2 0 066aaeb51b24ab230523fd39492a5681
++ 这个接口已经被测量过：`etc/api-reduction-candidates.md` 盘点了 `soundness` 包导出的每个标识符，并对精简候选项分类：
+
+@ 0 3 0 17e26bb135f0896e0d3cd0368f332847
++ 完成条件：`etc/api-nesting-proposal.md`（它取代了 C1 一节）中的改名表全部应用完毕，且清单的“Remaining names by prefix family”一节中不再列出“Reviewed items which should not be moved”之外的任何名称。
+
+@ 0 2 0 13bb210f1e21a6561a82bf562dce0f6a
++ 完成条件：清单的 C2 一节为空。
++ （C3 和 C3b 已被 `etc/api-nesting-proposal.md` 取代，并随之关闭。）
+
+@ 0 4 0 07f55ed7fa1d73e7092eee115a72ffa6
++ `doc/work/standards/naming.md` 和 `doc/work/standards/given-naming.md` 中的命名标准获得一项一致性检查，使得退回不一致的偏移被机械地发现，而不是在评审中发现。
++ 由 `make build` 运行的 `etc/check-given-uniqueness.py` 覆盖了 given 命名这一半；没有任何东西检查 `naming.md`，不过 flare 的 `S1.1` 规则强制执行了其中关于 `unsafe…` 的那一条。
+
+% 0 1 0 1d3fa0088fed0fe510c1edd92a8d31f0
+
+@ 0 5 0 132121a5579d6de90996f0565b4058f9
++ api-1 嵌套的是前缀重复其上下文的名称。
++ 本条目涵盖没有前缀可去除的情形：一个单词，其裸拼写宣称一个普遍的概念，而它命名的却是某个库自己的概念。
++ ultimatum 的布局树并不是*那个* `Frame`。
++ 每个候选项都依据 `etc/api-nesting-proposal.md` 中的规则 R8 逐个判断。
++ 只有当一个名称是该库的主要类型，或确实是一个普遍的概念时，便利性才让它留在顶层。
+
+@ 0 4 0 153039203ba264620a4145959946ed5e
++ 完成条件：没有名称由多于一个库导出到 `package soundness` 中，不存在仅为规避冲突而设的 `@unexported`，且 `etc/api-nesting-proposal.md` 中 R8 表的每一行都已应用，或已移入其“Reviewed and kept top-level”列表。

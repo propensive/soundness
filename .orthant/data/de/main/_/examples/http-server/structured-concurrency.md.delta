@@ -1,0 +1,64 @@
+orthant 2 language
+
+@ 0 1 0 08d3d853a7eba10201befea6362f7f9c
++ # Ein Server gehört zu einem Geltungsbereich
+
+@ 0 3 0 0b2d9500b94c011b1b2c43ab4eb49bff
++ Ein Server behandelt jede Verbindung in einer eigenen Aufgabe, und diese Aufgaben brauchen einen
++ Supervisor. Ein innerhalb von `supervise` gestarteter Server besteht so lange wie dieser Block, und
++ einer, der anderswo gestartet wird, kompiliert nicht.
+
+% 0 1 0 12705ff5e291290d17fbc8389d59ef4a
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 1da5a0797920fee706e53af1e62e69c4
++   label Ein Server, den nichts überwacht
+
+% 0 1 0 1477c34ff41c7c99183443e1d3238ae1
+
+% 1 1 0 0960c596329e4eb20a0b442aaa85c43a
+
+% 2 1 0 1eb3dd4221c3556d04c399dc5c1ec01e
+
+% 3 1 0 1018de605987e3ee1b781031b2529f55
+
+% 4 1 0 040949ad1e6b43e90b8897d697c9ed60
+
+% 0 1 0 1c268a86574e4b8f1a9f82deaebacb45
+
+% 1 1 0 1c038376615d168d162106a9a6f872f7
+
+% 2 1 0 10f14a830496926a0de5070673a7a7cf
+
+% 1 1 0 1110eb3107f4ca90122e2fb5943f2059
+
+@ 0 2 0 10c3b85d52a8a629173bf4e225df247b
++   label Ein Server in einem überwachten Geltungsbereich
++   highlight supervise  endet nicht, solange der Server läuft
+
+% 1 1 0 0d49cd942e8ac41e072c21ef9040866a
+
+% 2 1 0 0b0bc9404807cf491b19afc49190dcc2
+
+% 3 1 0 18b0a1357d3bb2cd15b4b4b32e9a4dfd
+
+% 4 1 0 06ca0f38f066be89153fab5582ebf77b
+
+% 0 1 0 1df36e9f80c69ca1074e720cb8d6a3ae
+
+% 1 1 0 12fd853e1e49f79015cb9ae33cc1a3c9
+
+% 2 1 0 0b60703a70c993e6151ff9ad7aec2527
+
+% 0 1 0 18eafb32caed3dd50f976e787bd035ca
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 4 0 0792b66a017c749500d820099800b943
++ Das Beispiel wird kompiliert, aber nicht ausgeführt, da es einen Port belegen würde. [Ein
++ Server](../../soundness/modules/http-server.md#a-server) sagt, wie ein Server gestoppt wird, und
++ [strukturierte Nebenläufigkeit](../../philosophy/structured-concurrency.md), warum er überwacht
++ werden muss.

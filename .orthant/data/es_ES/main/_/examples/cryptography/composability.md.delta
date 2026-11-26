@@ -1,0 +1,94 @@
+orthant 2 language
+
+@ 0 1 0 1b90f298bb15dc5305df6793a69ef3b8
++ # Un certificado válido entre dos fechas
+
+@ 0 3 0 125ac2d366ea620a0ca5f42af148e74e
++ Un certificado es válido durante un periodo, y el periodo es el que define la biblioteca de
++ tiempo: dos instantes unidos por `~`. La clave procede del mismo generador que cualquier otra, y
++ el resultado se exporta como PEM.
+
+% 2 1 0 036ca6269df323951effa1ffbaffa854
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 191b44b7206b1b411b9175bbee3649dc
++   label Un sujeto y una clave
+
+% 1 1 0 08cf5dbf11fa45bc14f53ce2fde1c4fc
+
+% 2 1 0 073c82c5407f747816d8750ff02cd9a5
+
+% 3 1 0 0fe2b95cd365b2df1fbeeaf29f5c94c8
+
+% 4 1 0 07c50d4ef6353ae3155061ebaae2cb1c
+
+% 6 1 0 0b7f4104843987a10c1ce2fdb20c9454
+
+% 7 1 0 1054e622e57684ac12129cb30f8a5f5f
+
+% 1 1 0 06b7775d381aa26d17214e36bc977bb1
+
+@ 0 2 0 15b59adffa3e65581cba549a44764603
++   label Un periodo de validez
++   highlight ~  un periodo entre dos instantes
+
+% 1 1 0 162a6e5c705ce0ba0d39a2b3fcae1add
+
+% 2 1 0 1ce0ec9db94d0ae2089d95a419aaf8fc
+
+% 3 1 0 1f3110a9621d7b4212dcbacbb6bc6fe9
+
+% 4 1 0 13312f02f8aa5b181b308fb131e023fd
+
+% 6 1 0 0013b314482007df155fae7d254a1f25
+
+% 7 1 0 1a590a5a6732a76f15c3f2c1253a811d
+
+% 8 1 0 0a17330864b297b31f573b97d71efe71
+
+% 1 1 0 08058c78e8aea18d1c11a5906ee8fd4b
+
+@ 0 2 0 0b00d93da1ce7882100af5826a93887c
++   label Un certificado autofirmado
++   highlight Certificate.selfSigned  firmado con su propia clave
+
+% 1 1 0 0b459a57928392c41f24e72bf8ff6ac9
+
+% 2 1 0 08e23a1abd98e32512e2ba846d1ef782
+
+% 3 1 0 13a18cadcb6d040a08d6cea2bfb7f4db
+
+% 4 1 0 01fc957aae996dda0c479264d28221c6
+
+% 6 1 0 162050119515dfe4126aabd9ca1acdbd
+
+% 7 1 0 1027f6b163126e9802a9b9a1cd023511
+
+% 8 1 0 0042801bb73ed2241e9930a58a3febfd
+
+% 0 1 0 0a8c6d34854959e51e50472514a3ae09
+
+% 1 1 0 06abeb66ec6d1be7116706407b06b3f8
+
+% 1 1 0 136d267ff733a60e0f6246170d49df5f
+
+% 2 1 0 1525a46c87e9e0571e7d21b8e7c42b7a
+
+% 0 1 0 08a86cbdc9b8cb0109ed8ce5b435ce67
+
+% 1 1 0 0cd6459499a6bd5203d659b3bcc1b6aa
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 0 1 0 1cfc106eec3dfd151bb36e88a72500c7
+
+% 0 1 0 1e05208695d11162105f21c1cbab3510
+
+% 1 1 0 017cb27e920b3de805f15da16cde9e37
+
+@ 0 2 0 1e79d359c09d5a0f137f25dffc338fc0
++ [Certificados](../../soundness/modules/cryptography.md#certificates) emite un certificado desde
++ una autoridad, y valida una cadena.

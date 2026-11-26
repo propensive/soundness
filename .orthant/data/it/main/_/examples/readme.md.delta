@@ -1,0 +1,69 @@
+orthant 2 language
+
+@ 0 1 0 13f238314765d59d0159c433fa627cb5
++ # Esempi
+
+@ 0 3 0 118caabe485a828e0f4ef835380646e5
++ Questa è una raccolta di esempi brevi. Ciascuno mostra una cosa che un lettore può voler fare con
++ Soundness, alla luce di un'idea che attraversa tutta la libreria, in un numero di righe di codice
++ compreso tra due e dieci. Sono pensati per essere letti uno alla volta, scelti da due elenchi.
+
+@ 0 1 0 16f462eb3f0ed69103512ea22b3a401c
++ ## I due aspetti
+
+@ 0 3 0 0d374221d04d833c09f1abfaa03232a2
++ Un *argomento* è ciò che l'esempio fa: leggere JSON, fare una richiesta HTTP, scrivere una data. Gli
++ argomenti sono i tutorial della [documentazione](../soundness/modules/overview.md), e sono elencati
++ in `topics.tel`.
+
+@ 0 4 0 0cc9265ff2e3ae7c05702092f7db1d0a
++ Un *tema* è l'idea che l'esempio mostra: che un letterale è verificato dal compilatore, che un
++ errore è nominato in un tipo, che una capability non può uscire dal suo ambito. I temi sono elencati
++ in `themes.tel`, ciascuno con una frase che ne dice il significato, e la maggior parte ha un saggio
++ tutto suo nella [filosofia](../philosophy/correctness.md).
+
+@ 0 5 0 165a921dbd9cca9e1eb10bd9c03fe67a
++ Un esempio del tema `checked-literals` sull'argomento `json` è il file `json/checked-literals.md`.
++ Un secondo esempio della stessa coppia ha una parola dopo il tema, come
++ `json/checked-literals.pointer.md`. La maggior parte delle coppie non ha esempi, perché la maggior
++ parte degli argomenti mostra bene solo alcuni dei temi: un esempio viene scritto solo dove la coppia
++ insegna qualcosa che nessuno dei due aspetti insegna da solo.
+
+@ 0 1 0 109912b0e81854f51798283e62286277
++ `python3 etc/check-examples.py --matrix` mostra quali coppie sono coperte.
+
+@ 0 1 0 06547c0c9f012f3100bacf887bbc5a33
++ ## Scrivere un esempio
+
+@ 0 3 0 11eff9b174d597c019639fdd0d3186a9
++ Un esempio è un titolo, una o due frasi, un blocco di codice, e una frase che porta al tutorial o al
++ saggio che vi sta dietro. Lo standard per la prosa e per il codice è quello dei
++ [tutorial](../standards/style.md), con l'aggiunta di queste regole:
+
+@ 0 20 0 01f3017254127fe91f38190ec2a9ee0b
++ - Il titolo dice che cosa mostra l'esempio, con le parole dell'argomento, e non nomina nessuno dei
++   due aspetti.
++ - Il codice è il minimo che mostra l'idea: da due a dieci righe in ogni frame. I dati di esempio
++   vengono da Shakespeare, come [ovunque](../standards/examples.md).
++ - Il codice non ha commenti. Ciò che un commento direbbe è detto da un `highlight` o da un `focus`,
++   dalla `label` di un frame, o dalle frasi attorno al codice.
++ - Dove l'idea è che qualcosa di sbagliato non compila, l'esempio è un'animazione: un frame marcato
++   `errors show` che contiene l'errore, con il messaggio del compilatore stesso, poi un frame che lo
++   corregge. Un errore non viene mai scritto a mano.
++ - Dove l'idea è una scelta, come una strategia, un calendario o un backend, le versioni sono
++   `alternative`, in schede.
++ - Ogni frame viene compilato. Un esempio che mostra un risultato lo stampa da un blocco `run` dopo
++   l'animazione, e uno che non può essere eseguito dove la documentazione viene costruita, perché ha
++   bisogno della rete o di un terminale, lo dice.
++ - Un contrassegno nomina il suo intervallo senza spazi, poiché ciò che segue il primo spazio è la
++   sua didascalia: un intervallo di più parole si scrive dai suoi primi caratteri agli ultimi, come
++   `raises..Error`. Ogni contrassegno ha una didascalia.
++ - Dove ogni frame ripeterebbe gli stessi import, questi vanno in un blocco semplice prima
++   dell'animazione, che i frame poi seguono.
++ - Un esempio sta in piedi da solo. Importa ciò di cui ha bisogno, oltre al package `soundness`
++   stesso, e non dipende da un altro esempio.
+
+@ 0 3 0 1e54fb1abfaef2e60c3bec21aa9a4411
++ Se il codice di cui un esempio ha bisogno non è breve, o non è sicuro, la colpa può essere dell'API
++ e non dell'esempio. Un caso del genere viene registrato sulla issue che ne tiene traccia, e
++ l'esempio viene escluso finché l'API non è adatta a essere mostrata.

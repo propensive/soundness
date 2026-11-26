@@ -1,0 +1,55 @@
+orthant 2 language
+
+@ 0 1 0 146783e296416f6706187776567ecfd3
++ # 不是仓库的提示
+
+@ 0 3 0 02dd744c57663f8b1270cbd6167da96d
++ 重新打包器通过 `owner/repo` 形式的提示得知去哪里查找下载。提示来自命令行，因此可能是任何东西，而读取提示的方法在其类型中说明它可能拒绝。
+
+% 2 1 0 09d117885616fa5b0ee2766063997b37
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 0f651093b4a33aed0a927bb6a62abdd0
++   label 轻信得来的提示
+
+% 0 1 0 1477c34ff41c7c99183443e1d3238ae1
+
+% 1 1 0 0960c596329e4eb20a0b442aaa85c43a
+
+% 0 1 0 023c9be25ca9442a1c675489361d9975
+
+% 1 1 0 1554d2ad1527643f0a82c9bbbd961e92
+
+@ 0 2 0 0005aef65af501340d544ac62abf422c
++   label 声明的拒绝
++   highlight raises  格式错误的提示是用户的错误
+
+% 1 1 0 0df3961118e1e0a61f7fd6b3c2b24495
+
+% 0 1 0 0e2fb78dc52b0ba00c3122501380d564
+
+% 0 1 0 000e6b3900a8d37114083e6e27254554
+
+% 1 1 0 185213eca3e66363120a4369228e582a
+
+% 1 1 0 136d267ff733a60e0f6246170d49df5f
+
+% 2 1 0 1525a46c87e9e0571e7d21b8e7c42b7a
+
+% 0 1 0 08a86cbdc9b8cb0109ed8ce5b435ce67
+
+% 1 1 0 0cd6459499a6bd5203d659b3bcc1b6aa
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 0 1 0 16b84550d5ce08371b500a7a6f4e73ee
+
+% 0 1 0 1314b5ebc3e0af8f12986fe4ddac0bf0
+
+% 1 1 0 02d73465b0f19f8f060328a9cc3369bc
+
+@ 0 2 0 1c898c6b9b3df20c17f290f92264d2d4
++ [错误](../../soundness/modules/packaging.md#errors)列出了 `UserError` 还会报告什么，[错误处理](../../philosophy/error-handling.md)则解释了这一声明。

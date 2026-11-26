@@ -1,0 +1,56 @@
+orthant 2 language
+
+@ 0 1 0 14497284e6b1cd84051498f34d2ff8fb
++ # 在书写处检查的 YAML
+
+@ 0 3 0 0b4e5bb5df377db710e83ffb6a9f3d4f
++ `y"…"` 字面量是由编译器解析的 YAML。从未闭合的流映射是编译错误，而代入的值在构建文档时就在文档中占据其位置。
+
+% 0 1 0 12705ff5e291290d17fbc8389d59ef4a
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 11b4f851374643940b914c628077c5bf
++   label 未闭合的映射
+
+% 0 1 0 1477c34ff41c7c99183443e1d3238ae1
+
+% 1 1 0 0960c596329e4eb20a0b442aaa85c43a
+
+% 0 1 0 01b024b53fd72d621d59bdc0504a15d7
+
+% 1 1 0 0bc55171b711f5f51146dfdb23eb2254
+
+@ 0 1 0 080ea6f7d44d69e803788d40eb196f44
++   label 格式良好的 YAML
+
+% 1 1 0 0a5809e894acaa1b1d1f8c8cbac8e7e6
+
+% 0 1 0 03a3dd04bc8e3f7d1dbbe62488764b84
+
+% 1 1 0 07e267190607b58615048f0f7fae5238
+
+@ 0 2 0 009f84fe5cc16f9f1bf6c355375b53ed
++   label 以块样式代入的值
++   highlight $name  编码为 YAML 字符串
+
+% 1 1 0 035a2462b3aae35f1e5ccf488f6ec071
+
+% 0 1 0 1df4c24d9bd279f40aa9b11fba4bfc3a
+
+% 0 1 0 13ce1ba943042c101bb418dae059167c
+
+% 0 1 0 1e875b017608c0ae119567776ad94cc1
+
+% 0 1 0 0bdf001b35ae25b5142d8f1cd2ec1e50
+
+% 0 1 0 10e11833b929d9591d3607f85dc84c5f
+
+% 0 1 0 18eafb32caed3dd50f976e787bd035ca
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 2 0 0b0d6bbdf66c6bf11bd10c71e4926214
++ [按字面书写 YAML](../../soundness/modules/yaml.md#writing-yaml-literally)把这样的字面量解码为 case class。

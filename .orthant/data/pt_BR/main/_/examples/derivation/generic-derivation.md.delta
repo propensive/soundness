@@ -1,0 +1,47 @@
+orthant 2 language
+
+@ 0 1 0 09d3f1f8331985a817b3015f64ebe2aa
++ # Soma, campo a campo
+
+@ 0 3 0 110f03aa51461f6b132a3848fe4f19d3
++ A derivação não serve só para codecs. Com `arithmetic.addable` importado, dois valores de uma case
++ class são somados somando cada par de campos, com o que quer que a soma signifique para o tipo de
++ cada um.
+
+% 2 1 0 06c1b2987272eefd09dda1ddcf2f0682
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 0 1 0 14aab7f0be2434f81421fb69d99543da
+
+@ 0 2 0 0a048db59e8408a300e64e2eb7c2dcb8
++   label Textos se concatenam, e números se somam
++   highlight +  derivado para Pair
+
+% 0 1 0 0feeb6ee26eddc7916a3c923ea9fa7b1
+
+% 0 1 0 107ee72a262313ce044d407112366029
+
+% 0 1 0 1fdd89478da912871630955ea3d1933c
+
+% 0 1 0 10f3a5e7e339122316454a85dc374bf2
+
+% 1 1 0 0af7d61955634d310e164c334075b316
+
+% 1 1 0 136d267ff733a60e0f6246170d49df5f
+
+% 2 1 0 1525a46c87e9e0571e7d21b8e7c42b7a
+
+% 0 1 0 08a86cbdc9b8cb0109ed8ce5b435ce67
+
+% 1 1 0 0cd6459499a6bd5203d659b3bcc1b6aa
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 0 1 0 1d11ee3d6c6efe391c3d80e782df876a
+
+% 1 1 0 186b3d59cfd8252b112a0dcacd4cc69c
+
+@ 0 2 0 1d71b5748dfec02a0b375ebfcb3fe96a
++ [Derivando além dos codecs](../../soundness/modules/derivation.md#deriving-beyond-codecs) nomeia as
++ outras operações que se derivam da mesma forma.

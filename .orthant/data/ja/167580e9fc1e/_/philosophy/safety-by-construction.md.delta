@@ -1,0 +1,4 @@
+orthant 2 language
+
+@ 0 2 0 00543af9c2a3807e111626140b6fb5eb
++ これが仕える規則については[不可能な状態](impossible-states.md)を、そうしたリテラルがどう作られるかについては[補間](/doc/soundness/modules/interpolation.md)を参照。

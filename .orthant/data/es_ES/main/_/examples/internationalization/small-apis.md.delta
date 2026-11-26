@@ -1,0 +1,69 @@
+orthant 2 language
+
+@ 0 1 0 05b57a0eeb70cfac1ed987023c884493
++ # Una configuración regional, leída de un código de idioma
+
+@ 0 2 0 079e8a953c5d551f1e6bdf4d94eaabdc
++ El idioma del usuario llega como texto, en una cabecera o en un ajuste. Se lee con `as`, como un
++ número o una fecha, y el tipo que se pide nombra los idiomas que admite el programa.
+
+% 2 1 0 052930f4c35d79b108529e7f05da17e2
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 102ec3995e7d24a2047279c218107fc3
++   label Un saludo en cinco idiomas
+
+% 1 1 0 162088b9df377e581f54ce9397a0e0bd
+
+% 2 1 0 1967b7974a730c4f0456bf442a062ebf
+
+% 3 1 0 0341b59e5e073ca715b9065a5e2fa192
+
+% 1 1 0 1d076588c934468204944ccd373e564e
+
+@ 0 2 0 1e272e737373e2a40f13934f673e52c2
++   label Una configuración regional, a partir de un código de idioma
++   highlight as[Locale[en..es]]  los idiomas que admite el programa
+
+% 1 1 0 1864d0987169e32414647b5285df8fc3
+
+% 2 1 0 177dc91cf188080a18d4c20534838222
+
+% 3 1 0 057f356aa580707b19ae723b221c326a
+
+% 0 1 0 1ac8b2b5d6e8cd6505441531e4389bb7
+
+% 0 1 0 198dccbc1ac5de0217ab5eecec120363
+
+% 0 1 0 1864770d348f4bf017084480eaa392a0
+
+% 0 1 0 0136b16336f4e1c30d0cfd74c32c7258
+
+% 1 1 0 17a6472a111c46e01d2d01bd087e1bf1
+
+% 1 1 0 136d267ff733a60e0f6246170d49df5f
+
+% 2 1 0 1525a46c87e9e0571e7d21b8e7c42b7a
+
+% 0 1 0 08a86cbdc9b8cb0109ed8ce5b435ce67
+
+% 1 1 0 0cd6459499a6bd5203d659b3bcc1b6aa
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 0 1 0 084fbd3e473b29070381fb9c06742456
+
+% 0 1 0 0d7b6bdb084d39d403c4271845b2c0f2
+
+% 0 1 0 0c4dc106009ac4c208dc89fb56d6240a
+
+% 1 1 0 149fea9ffa10083d04b8c27a5bd3dce9
+
+@ 0 3 0 15c1a12b984d42d203e1fe2c5157359c
++ El último código no es ninguno de los cinco, y se lee como inglés. [Una configuración regional a
++ partir de datos en tiempo de
++ ejecución](../../soundness/modules/internationalization.md#a-locale-from-runtime-data) describe el
++ valor de reserva.

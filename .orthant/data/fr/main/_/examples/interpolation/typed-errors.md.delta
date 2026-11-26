@@ -1,0 +1,38 @@
+orthant 2 language
+
+@ 0 1 0 0473520046be12b8037a232db8a5c380
++ # Un seul analyseur, à la compilation comme à l'exécution
+
+@ 0 2 0 193aa5597461eb571ebbf1edc412db78
++ Un littéral est vérifié par le compilateur, et ne peut pas échouer plus tard. Le texte qui arrive
++ à l'exécution est analysé par le même code, et là, l'échec est une erreur nommée dans le type.
+
+% 0 1 0 12705ff5e291290d17fbc8389d59ef4a
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+@ 0 2 0 0edde055d4a237681176a6548da9d6fb
++ alternative Un littéral, qui ne peut pas échouer
++   highlight media"text/plain"  vérifié par le compilateur
+
+% 1 1 0 11e94fd6b6287f5f0a9b1c51e083c96e
+
+% 0 1 0 092e8500674d196d07471e4af9cc2776
+
+@ 0 2 0 153918556aaf10cc03b237542858c6bf
++ alternative Du texte venu de l'extérieur, qui le peut
++   highlight raises..MediaType.Error  le même analyseur, à l'exécution
+
+% 1 1 0 0e515908d7179a4301f2f59ceea06524
+
+% 0 1 0 038787ffebd303ad0f902c49214f1713
+
+% 0 1 0 139a61ed403091e118559c15f41a4c66
+
+% 0 1 0 18eafb32caed3dd50f976e787bd035ca
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 2 0 1fe9db3c956c3dd4054222989d109db3
++ [Choisir entre compilation et exécution](../../soundness/modules/interpolation.md#choosing-between-compiletime-and-runtime)
++ décrit la convention qui consiste à offrir les deux.

@@ -1,0 +1,45 @@
+orthant 2 language
+
+@ 0 1 0 050b1a691d04c7d9097d9a178681af00
++ # Quanto a fondo legge il compilatore
+
+@ 0 3 0 159e18640df93e890a7d1e66ca883022
++ La chiamata che evidenzia il sorgente è la stessa sia che il compilatore si limiti a suddividerlo in
++ token sia che ne verifichi anche i tipi. La profondità è un given: con un compilatore e un classpath
++ nell'ambito, un import trasforma identificatori colorati in identificatori che conoscono i propri
++ tipi.
+
+% 0 1 0 12705ff5e291290d17fbc8389d59ef4a
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+@ 0 1 0 1fb75bdb104f13a314aa5e2138cacbda
++ alternative Suddiviso in token
+
+% 1 1 0 07b164a2cba528070df14a4d50c4d2e7
+
+% 1 1 0 0b25fa7d67f99f481edac82290aeb870
+
+@ 0 2 0 1cb632f051b93ce3004b96e997a03413
++ alternative Con verifica dei tipi
++   highlight highlighting.typecheckedScala  l'intero front end, per questo ambito
+
+% 1 1 0 05e4e978664896441838267116c8e0f8
+
+% 0 1 0 15c489dcb535c0621c72590855d006c4
+
+% 0 1 0 18b945dcac0938111e3a0a8a110c712c
+
+% 0 1 0 0e1b2e36dcacd6581905b64a2faeffbf
+
+% 1 1 0 0ffb879b1ea698de0324b22d6c0320cd
+
+% 0 1 0 18eafb32caed3dd50f976e787bd035ca
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 4 0 0ab9991a87de20ee0d50e4b98578218a
++ L'esempio viene compilato, ma non eseguito, poiché la seconda forma avvia un compilatore.
++ [Sull'evidenziazione](../../soundness/modules/syntax-highlighting.md#on-highlighting) elenca le
++ profondità, e il [contesto dichiarativo](../../philosophy/declarative-context.md) spiega perché la
++ scelta è un import.

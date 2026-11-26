@@ -1,0 +1,76 @@
+orthant 2 language
+
+@ 0 1 0 0fd4fbcdfec162990ba6443ca578212d
++ # Un nome di classe letto da un testo potrebbe non esserlo
+
+@ 0 3 0 13fdb018addf5fe516507d28769cc17a
++ Il testo che arriva durante l'esecuzione del programma diventa un `Fqcn` analizzandolo, e l'analisi
++ può fallire. La firma di `Fqcn` lo dice con `raises Fqcn.Error`, e un metodo che lo chiama deve dire
++ lo stesso, o gestire l'errore.
+
+% 2 1 0 1cf894e6bbe44c2d0f2d48eb3200f9f2
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 01bbc411c655cae402fb02c852bbb2a1
++   label Il fallimento non viene preso in considerazione
+
+% 0 1 0 1477c34ff41c7c99183443e1d3238ae1
+
+% 1 1 0 0960c596329e4eb20a0b442aaa85c43a
+
+% 0 1 0 1240d88532fae3a01ad658423ee1a4c8
+
+% 1 1 0 0cbb93c6b35184c207ec79278794f6c5
+
+@ 0 2 0 0a9a27e7f251b74e181629d3f658fe22
++   label Viene dichiarato
++   highlight raises..Error  il chiamante deve occuparsene
+
+% 1 1 0 0e14c3adeeafa69a1201ccfea17133d9
+
+% 2 1 0 015e91377ccf11571795d518ad1b56d4
+
+% 1 1 0 0488d3c6539a41561111fefa05593aae
+
+@ 0 2 0 1d56802065a5a7140d04c50f759a2420
++   label Oppure gestito, con il motivo in mano
++   highlight error.reason  uno di quattro casi, ciascuno con la propria formulazione
+
+% 1 1 0 161445164229487c1cbc0efdb98e7fc6
+
+% 2 1 0 096c2f83711ac2220bedf6ad9b4b4af6
+
+% 0 1 0 1a920da3f634053f187b301f2c66067d
+
+% 0 1 0 1ffe5c415422113702a4a9b03386f84a
+
+% 0 1 0 0db04349e2b6545a14382614631dfb2b
+
+% 0 1 0 17216296096269f41628747af49106aa
+
+% 1 1 0 1d58acafbd2b210b122277836bb6d86d
+
+% 1 1 0 136d267ff733a60e0f6246170d49df5f
+
+% 2 1 0 1525a46c87e9e0571e7d21b8e7c42b7a
+
+% 0 1 0 08a86cbdc9b8cb0109ed8ce5b435ce67
+
+% 1 1 0 0cd6459499a6bd5203d659b3bcc1b6aa
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 0 1 0 0023678705a3e13c15f1f7c1a03b7ab2
+
+% 0 1 0 10daa8c93a181fc61a8508c362dc0990
+
+% 0 1 0 0466dc1fefac0b5d1ea875fe02d58f6d
+
+% 1 1 0 01cc4baa90e27ff40dae7ae7613e76e4
+
+@ 0 2 0 156b9a0661cad37702f5f07733d433f9
++ [Nomi di classe](../../soundness/modules/stack-traces.md#class-names) descrive le regole, e
++ [Errori](../../soundness/modules/errors.md) che cosa significano `raises` e `recover`.

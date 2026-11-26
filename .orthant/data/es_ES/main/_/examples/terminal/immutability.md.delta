@@ -1,0 +1,79 @@
+orthant 2 language
+
+@ 0 1 0 18223b48af8d607d0826e35cbb75fc5e
++ # Un editor de línea que es un valor
+
+@ 0 3 0 11918fa35922dd40131b34a6e41693b1
++ Un `LineEditor` contiene una línea de texto y la posición del cursor. Aplicarle una pulsación de
++ tecla da un editor nuevo, y deja el antiguo como estaba, así que cada estado de una edición puede
++ conservarse, compararse y probarse sin un terminal.
+
+% 2 1 0 17263177e33498ba078480ac073bbdbd
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 01b4a2a8888a3c8e1b3b880d4f7a8934
++   label Una línea vacía
+
+% 1 1 0 0330408aa64b9ae709457f5704b5ebfa
+
+% 2 1 0 1b1b1cabd27d3377015a3a76bce0688f
+
+% 4 1 0 1261b0b4da15d65600e9d22e1e9efe92
+
+% 1 1 0 154278c184bb83bb0ac1b7c294498e69
+
+@ 0 2 0 1ed1b44cd7af803c19042a029feed5b6
++   label Dos teclas tecleadas
++   highlight empty(CharKey('O'))(CharKey('h'))  cada aplicación es un editor nuevo
+
+% 1 1 0 0b78ae3184f11ebf103137edb4ef4e90
+
+% 2 1 0 11b423142cbe823104d04a133c6e91e0
+
+% 4 1 0 06d0d8b8a5de34ac00ffd5e678a31eec
+
+% 5 1 0 1ccb8e8472d9961514538ab1f2e69158
+
+% 1 1 0 0a5208293785a34516a40ceb73446c23
+
+@ 0 2 0 1739a2243028734405ff7de018b68571
++   label Una de ellas deshecha
++   highlight typed(Backspace)  typed no cambia
+
+% 1 1 0 19b5704c7ca7a3ec0b164e2cd3c2dc06
+
+% 2 1 0 1c655265c9c9eaa306193eaef7fc0f4d
+
+% 4 1 0 073b05c1f3e04a201b30ee81633e9d16
+
+% 5 1 0 1e0e545d363aa7e9063c8b0916545b94
+
+% 0 1 0 16cebfb568f5cb14108a4779e6633d17
+
+% 1 1 0 1eb9c8a534e4d5701238604907e7cc3f
+
+% 1 1 0 136d267ff733a60e0f6246170d49df5f
+
+% 2 1 0 1525a46c87e9e0571e7d21b8e7c42b7a
+
+% 0 1 0 08a86cbdc9b8cb0109ed8ce5b435ce67
+
+% 1 1 0 0cd6459499a6bd5203d659b3bcc1b6aa
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 1 1 0 10577d5b5c869b270d329c7b45ff69d2
+
+% 0 1 0 1bd956f070854df200ac1f1c038a6db8
+
+% 1 1 0 0baaa561e36a863a0c9fa46955dcb329
+
+% 1 1 0 0c9f294615f7bacd1d2d44b6a09ab6a8
+
+@ 0 3 0 01f6b730fb2b779e0b541d2f88afaa8e
++ [Edición de líneas y menús](../../soundness/modules/terminal.md#line-editing-and-menus) ejecuta la
++ misma máquina de estados con un teclado real, y [la
++ inmutabilidad](../../philosophy/immutability.md) dice por qué lo es.

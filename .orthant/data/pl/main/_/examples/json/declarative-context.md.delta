@@ -1,0 +1,44 @@
+orthant 2 language
+
+@ 0 1 0 1736be43a29670591d46c6fa261e492e
++ # Układ JSON-a wybiera import
+
+@ 0 2 0 1161c7fe6c23b79217dfbe02a483afe0
++ Zapisanie wartości jako tekstu JSON to jedno wyrażenie, `in[Text over Json]`. To, czy tekst jest
++ zwarty, czy wcięty, nie jest jego argumentem, lecz zależy od formatowania będącego w zasięgu.
+
+% 0 1 0 12705ff5e291290d17fbc8389d59ef4a
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+@ 0 2 0 0f49686e15e5ea3602b2a23b6b3220ea
++ alternative Zwarty
++   highlight compactJsonFormatting  bez białych znaków
+
+% 1 1 0 0bddcf98af9652931dc830bf80f18c07
+
+% 0 1 0 1ae279738df7173f06e307f4ba453ed1
+
+% 2 1 0 048e43fb3a8bca9f1ce0356d95cdc8a1
+
+% 4 1 0 01131f73e43ccddc17933bbffc7b9e61
+
+@ 0 2 0 1df00921f5dc564d1d3c6776d8e5bb82
++ alternative Wcięty
++   highlight indentedJsonFormatting  znaki nowego wiersza i wcięcia
+
+% 1 1 0 1ded336bae2936d21d8b91433fd3a6f6
+
+% 0 1 0 161b10e6671043260dd02d4743c65266
+
+% 2 1 0 18d02a701a6d0939059b3cdf621e74a3
+
+% 4 1 0 02bd94bf1b61d88b047cba9a1e9238ed
+
+% 0 1 0 18eafb32caed3dd50f976e787bd035ca
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 2 0 1a8af6aad70ac8780d9e5ffe060ca398
++ [Formatowanie](../../soundness/modules/json.md#formatting) przedstawia postacie wyjścia, które
++ dostarczają duży dokument blok po bloku.

@@ -1,0 +1,78 @@
+orthant 2 language
+
+@ 0 1 0 0a80db19f991ec5319166a6b7772a101
++ # 含有 Scala 值的 JSON
+
+@ 0 3 0 0c90e5cbb45c722c0e35ad0d3717325b
++ `j"…"` 字面量按 JSON 的样子书写，Scala 值则放在 JSON 值本该出现的位置。处于值位置的值会被编码，后跟 `*` 的集合会被拼接进数组，处于字段位置的映射则把它的字段加入对象。
+
+% 2 1 0 007b648cc67ed4160825ddd6ac881846
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 2 0 000138cada5b44ee01a1b0a13c811d64
++   label 一个值
++   highlight $name  编码为字符串
+
+% 1 1 0 0156d53fdd29df331be1c29c3631ae45
+
+% 2 1 0 05846b3b186474d511638644651f640c
+
+% 0 1 0 1be1bbcbb0cc9fbf1ccd5ac200194a19
+
+% 1 1 0 0f331e3171bdc82000c0c5932210bbf7
+
+@ 0 2 0 016cf477d0dde84b0d6168c2026fc67c
++   label 拼接的集合
++   highlight $songs*  它的元素，而不是数组中的数组
+
+% 1 1 0 15dc0122e58bc2a30535d4a6f88a0ab9
+
+% 2 1 0 15bfae5584e8ed8d173a4cdbddad7ac5
+
+% 3 1 0 094bd68489816b9f1fd8157b9a79c8c9
+
+% 0 1 0 1e546e3b0836fb0108a2c56f89f6874a
+
+% 1 1 0 066a55af832b02ae05b3f70cbe5da871
+
+@ 0 2 0 1bf3c48a584ef76d07073ece246fa739
++   label 合并的更多字段
++   highlight $more  每个条目都成为一个字段
+
+% 0 1 0 1accf43fe92797621dc8da9a374d03c3
+
+% 1 1 0 1f716f85da1e6d1c01604857372f260f
+
+% 2 1 0 162740a6b7ac4f6713670f1859eed638
+
+% 3 1 0 0615d44fda309fc20683d5b748e914d0
+
+% 0 1 0 183b733654ef59ca1bf62e574e4e67b6
+
+% 0 1 0 0808bbab7914d6151867faf0e3bc7a59
+
+% 0 1 0 0427fa3138062da61d4d1de291079d3a
+
+% 1 1 0 04ff09ea59597e28032d8164c8fec113
+
+% 1 1 0 136d267ff733a60e0f6246170d49df5f
+
+% 2 1 0 1525a46c87e9e0571e7d21b8e7c42b7a
+
+% 0 1 0 08a86cbdc9b8cb0109ed8ce5b435ce67
+
+% 1 1 0 0cd6459499a6bd5203d659b3bcc1b6aa
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 0 1 0 026901931200bf591262a034768d6b95
+
+% 0 1 0 1e43176792872e7d12f6a9d544492587
+
+% 1 1 0 06d50fbc6968879208386d89473fc192
+
+@ 0 1 0 00026a1a67e2d790164d4289bd2c5cfa
++ [构建 JSON](../../soundness/modules/json.md#building-json)介绍了每种插值。

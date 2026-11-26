@@ -1,0 +1,72 @@
+orthant 2 language
+
+@ 0 1 0 1ad4db090082eaf80d8b63034068b409
++ # Uma árvore, escrita de três maneiras
+
+@ 0 3 0 1250cc0647e402831e4785d8a706f531
++ Um documento analisado é um valor, e cada forma de saída é um método dele. `html` dá HTML tipado,
++ `show` dá Markdown de novo, e `terminal` dá texto estilizado para um console, tudo a partir da
++ árvore que foi analisada uma vez.
+
+% 2 1 0 096461bcec5bbdb51b972ee2d837f3ad
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 1bdcfc08e348434c0f72d8352b54f4fc
++   label Analisado uma vez
+
+% 1 1 0 052624f115bc22750d60635a0b33cfdf
+
+% 2 1 0 00ebd7a2e21dd1510de1972c4ef5b634
+
+% 1 1 0 08e479afc9aeac131951e83a3c3b0c71
+
+@ 0 2 0 0027e7b8b192d5f10de7096d822bc1d5
++   label Como HTML
++   highlight html  nós tipados, depois texto
+
+% 1 1 0 180b4eedb70097370ca9c47ade277674
+
+% 2 1 0 0bb9789833540f4b0389052fcd0c1893
+
+% 3 1 0 174c1b2865a53bcd0443c56d83eab728
+
+% 1 1 0 0739b09f91ed2a100a27fcf94e7975c8
+
+@ 0 2 0 0296575a261b533a1c434a264e44c96e
++   label Como Markdown, e para um terminal
++   highlight terminal(width..40)  texto estilizado, quebrado
+
+% 1 1 0 1beccfe1d55902d51f3552db0bd5389e
+
+% 2 1 0 0d70243c7baac83402c54e3d0b922e2c
+
+% 3 1 0 1590aebe3f26b0fd1c054c6fd17f6aaa
+
+% 0 1 0 1d049a3d9ffebdd50a65b91d7cd65c72
+
+% 0 1 0 0d0652084314bfc004833a6ac130cea3
+
+% 1 1 0 1bb935ba2ea8c297064de3d52291d73a
+
+% 1 1 0 136d267ff733a60e0f6246170d49df5f
+
+% 2 1 0 1525a46c87e9e0571e7d21b8e7c42b7a
+
+% 0 1 0 08a86cbdc9b8cb0109ed8ce5b435ce67
+
+% 1 1 0 0cd6459499a6bd5203d659b3bcc1b6aa
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 0 1 0 01067f1b8f0a81120881caef599fa000
+
+% 0 1 0 07aa9c7c05486e5f050724ace8e4f4c1
+
+% 1 1 0 113aadb3889a87c70e0e46995bf14c91
+
+@ 0 2 0 153e49565437f75902e8479d3ef0dae6
++ [Escrevendo Markdown de volta](../../soundness/modules/markdown.md#writing-markdown-back) e [saída
++ no terminal](../../soundness/modules/markdown.md#terminal-output) trazem os detalhes.

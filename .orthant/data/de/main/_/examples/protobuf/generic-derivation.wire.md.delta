@@ -1,0 +1,62 @@
+orthant 2 language
+
+@ 0 1 0 01ad225a757c8240060940ec96dd0b94
++ # Der Typ eines Felds wählt seine Kodierung
+
+@ 0 3 0 15d839f80a8f999f1c80149597844b9b
++ Proto3 kennt mehrere Arten, eine Ganzzahl zu schreiben, und ein Schema nennt für jedes Feld eine.
++ Hier nennt sie der Scala-Typ des Felds. Ein `Int` ist ein `int32`, das für eine negative Zahl zehn
++ Bytes aufwendet, und ein `S32` ist ein `sint32`, das eines aufwendet.
+
+% 2 1 0 152b15c36a9248021242e7ff3d0cfd4c
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 024d4c17046b321c0950873543db7b80
++   label Eine Änderung, als int32
+
+% 1 1 0 08c6f616df5030f80cddc280c55241c2
+
+% 2 1 0 16118bd1d210b274045c78a992592e23
+
+% 2 1 0 00fb4c5764c2faa702f97c49d9c13b07
+
+% 1 1 0 10917ebabc0016d818535fae6f1c9596
+
+@ 0 2 0 15838d07b266739f0d0e8d5b807ec691
++   label Dieselbe Änderung, als sint32
++   highlight S32  Zickzack-kodiert
+
+% 1 1 0 193f00e09bdee857042145e482e06730
+
+% 2 1 0 07a5c7725a46f9f1128a5b9e4c25764b
+
+% 0 1 0 166a7f8f7c806f981ba9e1e1c6e0064e
+
+% 2 1 0 1ef178ed26898bfc02cc48bd61f320b0
+
+% 0 1 0 1b5dd828212d05a104471e3da93fbe9c
+
+% 1 1 0 1519afd1e697dd8c085689edc77a9c98
+
+% 1 1 0 136d267ff733a60e0f6246170d49df5f
+
+% 2 1 0 1525a46c87e9e0571e7d21b8e7c42b7a
+
+% 0 1 0 08a86cbdc9b8cb0109ed8ce5b435ce67
+
+% 1 1 0 0cd6459499a6bd5203d659b3bcc1b6aa
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 0 1 0 0e1e62ddd381a8020d9a7d361cb611f3
+
+% 0 1 0 000e3a52a8a87d4006cca2afc3a903e9
+
+% 1 1 0 1ad150b05d31bbc70d4d5925dddf79fe
+
+@ 0 2 0 0a5b6f308d8848fc1020fa16422bf759
++ Jede Länge enthält ein Byte für die Nummer des Felds.
++ [Feldtypen](../../soundness/modules/protobuf.md#field-types) enthält die ganze Tabelle.

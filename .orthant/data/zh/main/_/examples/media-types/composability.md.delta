@@ -1,0 +1,47 @@
+orthant 2 language
+
+@ 0 1 0 167e80c1096b8d810488c5a90627146b
++ # 作为头部值的媒体类型
+
+@ 0 3 0 1e96ae0b16fe8901026da5d48d82a4b4
++ HTTP 客户端对媒体类型注册表一无所知，但仍然把媒体类型作为其 `accept` 参数的值。那里不接受文本，因此头部不可能携带一个从未经过检查的类型。
+
+% 0 1 0 12705ff5e291290d17fbc8389d59ef4a
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 0ab4a1f41e9fa07901886da6fb6ba9e5
++   label 在需要媒体类型的地方使用文本
+
+% 0 1 0 1477c34ff41c7c99183443e1d3238ae1
+
+% 1 1 0 0960c596329e4eb20a0b442aaa85c43a
+
+% 2 1 0 1ef511dbb07561db0a7ad9c807515499
+
+% 3 1 0 067e821158a7d4ab1c7bdfd89b8941fc
+
+% 0 1 0 1d0cad8aff443a2012eaeff6fcac736f
+
+% 1 1 0 0af678e2d0884664093001e9defaa4c7
+
+@ 0 2 0 16f8e9dd909f9b561daee1a6ef44e65f
++   label 经过检查的媒体类型
++   highlight media"application/json"  已对照注册表检查
+
+% 1 1 0 1a3a7438406f91c9001d9fcad0bee9cc
+
+% 2 1 0 1b84148da0ba36bc154eace45bb6b569
+
+% 3 1 0 1d6362e1965768a81a386f50f7415321
+
+% 0 1 0 07ef14b59204181108c7acf2d78ee545
+
+% 0 1 0 18eafb32caed3dd50f976e787bd035ca
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 3 0 0d446b0ac1b318e407f5507e36abf44a
++ 本示例只编译，不运行，因为它需要网络。[头部](../../soundness/modules/http-client.md#headers)介绍了请求的类型化参数。

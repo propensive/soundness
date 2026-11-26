@@ -1,0 +1,47 @@
+orthant 2 language
+
+@ 0 1 0 0d6000cfe6a42b5118de22486d6e611c
++ # 在一个代码块中占用的线路
+
+@ 0 3 0 17719aeba4fbb1ea0b32ba472ebf6d45
++ 输出设备在一个代码块持续期间作为线路打开，并在代码块结束时释放。通过线路播放需要 `Write` 授权，因此为读取而打开的线路无法用来播放。
+
+% 0 1 0 12705ff5e291290d17fbc8389d59ef4a
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 171568552d05bfbd1447b4e4a9b9a236
++   label 为读取而打开的线路
+
+% 0 1 0 1477c34ff41c7c99183443e1d3238ae1
+
+% 1 1 0 0960c596329e4eb20a0b442aaa85c43a
+
+% 2 1 0 0ba498857de84be61ca0f4f30a38aa16
+
+% 0 1 0 188e59505a907b4e0799f531a6c880fd
+
+% 1 1 0 11bf0fbfeab00ca90d8402f38ee241a6
+
+% 1 1 0 0be220fa1508cdff09d06629fbbf0c98
+
+@ 0 2 0 06d01a65dd7125e3101852a7c7dff77d
++   label 为写入而打开的线路
++   highlight Write  `play` 所要求的授权
+
+% 1 1 0 0d9e043003f5e7f30d4110629c212499
+
+% 2 1 0 196d66a37b5a56660c9bdaef037f31cb
+
+% 0 1 0 0e87ce67f66c12720cf95aaf633e7b38
+
+% 1 1 0 08b1ee58f36f7e4f0ed27afc1b219438
+
+% 0 1 0 18eafb32caed3dd50f976e787bd035ca
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 3 0 1434d39c4ffe3a94134a10bba867e732
++ 该示例只编译而不运行，因为它需要一个音频设备。[作用域内的线路](../../soundness/modules/audio.md#scoped-lines)介绍了线路的各种标志，[定界作用域](../../philosophy/delimited-scopes.md)则介绍了这种模式。

@@ -1,0 +1,67 @@
+orthant 2 language
+
+@ 0 1 0 194f97c5f572dc051f59362b9ff7d828
++ # Une variable qui connaît son type
+
+@ 0 3 0 113bde5b93c53e9e1068891cee9d2168
++ Une variable se lit comme un membre d'`Environment`, nommé en camel case. Le nom décide du type :
++ on sait que `COLUMNS` contient un nombre, si bien qu'`Environment.columns` est un `Int`, décodé à
++ partir du texte de la variable.
+
+% 0 1 0 12705ff5e291290d17fbc8389d59ef4a
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 1227bfb6214daeb40d72d81e10e3c4a9
++   label Une variable qui contient un nombre
+
+% 1 1 0 0a873e690b030199041981d46fa7cce5
+
+% 2 1 0 0bf0d9dfde16851506187cfd5304eb8d
+
+% 4 1 0 1082593ff3142a7a1fde224d369c1d59
+
+% 6 1 0 109167088f5ec42303a6a4947c6dc751
+
+% 1 1 0 0794282d5aba91461d7e909a0be53251
+
+@ 0 2 0 0e13a3f1a2e5631e107ae06ca3613c79
++   label C'est un nombre
++   highlight Int  décodé à partir du texte
+
+% 1 1 0 11619b709f7f77991ef11071795f7a76
+
+% 2 1 0 00dcfcb83037b1990fe64cea262ba7a9
+
+% 4 1 0 14aa02361bf410f0091179e629034ee4
+
+% 6 1 0 1912ff51407aa57a04157c26dcf8570d
+
+% 0 1 0 103c7dd714907e370ec24cb1d4a85d9d
+
+% 1 1 0 1990141dc78880a80e11332c24e61dac
+
+@ 0 1 0 1bfcaffbb14ae74a03c8dd42b28cba4e
++   label Ce n'est pas du texte
+
+% 0 1 0 1477c34ff41c7c99183443e1d3238ae1
+
+% 1 1 0 0960c596329e4eb20a0b442aaa85c43a
+
+% 2 1 0 052b5d53c564213f191f74be413a911f
+
+% 4 1 0 1a8197718a1223490debb8e7f4eb8b3a
+
+% 6 1 0 156f58ca5035ad21040aa5d78f2a6889
+
+% 0 1 0 1b98ca5742eb5a950dd8e1828408f480
+
+% 0 1 0 18eafb32caed3dd50f976e787bd035ca
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 2 0 016a5712d9e2881d1689019cff0d63b0
++ [Les variables d'environnement](../../soundness/modules/environment.md#environment-variables)
++ indique comment un nom est traduit.

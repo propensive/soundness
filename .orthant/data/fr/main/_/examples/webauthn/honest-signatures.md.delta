@@ -1,0 +1,57 @@
+orthant 2 language
+
+@ 0 1 0 1b99c1efec81fa8b15d856903e0b8dbf
++ # Un défi a besoin d'une source d'aléa
+
+@ 0 2 0 1902966e67ec7a951bd6d05ce832df0d
++ Un défi fait 32 octets aléatoires, et les octets aléatoires viennent d'un fournisseur de
++ cryptographie. Créer un défi en demande un dans sa signature, si bien qu'un défi ne peut pas être
++ créé là où aucun n'a été choisi.
+
+% 2 1 0 1a04575d4063653b0a6c0c5e52939b76
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 1efc6efb2e05f80d1a1a8e6e878a850c
++   label Aucun fournisseur dans la portée
+
+% 0 1 0 1477c34ff41c7c99183443e1d3238ae1
+
+% 1 1 0 0960c596329e4eb20a0b442aaa85c43a
+
+% 1 1 0 1d2b66b16ce955f81e7e6e21c646e498
+
+% 1 1 0 06204182f92589d31ca89df20ca30fed
+
+@ 0 2 0 1f09ead79f001ea914ce91125ddf2c15
++   label Le fournisseur du JDK
++   highlight javaBaseProvider  d'où viennent les octets aléatoires
+
+% 1 1 0 107b0e0ab322ffd31017bd314ed141dc
+
+% 0 1 0 172fab6c72d28aa3153d634214ecdbde
+
+% 1 1 0 0200f3cf23964f8f02c8582ca19b4cf5
+
+% 1 1 0 0a6084c505ee92b0181e1100aede01dd
+
+% 1 1 0 136d267ff733a60e0f6246170d49df5f
+
+% 2 1 0 1525a46c87e9e0571e7d21b8e7c42b7a
+
+% 0 1 0 08a86cbdc9b8cb0109ed8ce5b435ce67
+
+% 1 1 0 0cd6459499a6bd5203d659b3bcc1b6aa
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 0 1 0 141a810089b6d0ea1508f679db055c0a
+
+% 1 1 0 1f11b55fa7472fbf02823a46e827de26
+
+@ 0 2 0 1d581916a704cc4d01556ee8cb774e23
++ [Enregistrement](../../soundness/modules/webauthn.md#registration) commence par un défi, et
++ [les signatures honnêtes](../../philosophy/honest-signatures.md) explique pourquoi il en demande
++ un.

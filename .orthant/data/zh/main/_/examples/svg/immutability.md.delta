@@ -1,0 +1,75 @@
+orthant 2 language
+
+@ 0 1 0 0d09f349f9a525e5151da17d0165ec53
++ # 变换得到一个新图形
+
+@ 0 2 0 0ecbaa9b04aee8b21a795819cfebdc1b
++ 图形是一个值，变换不会移动它：`translate` 和 `rotate` 给出另一个图形，它把变换记录在定义它时所用的几何数据旁边。
+
+% 2 1 0 02782bf59e480e251c1799becbd1e312
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 1e0ff5454bc1e0ed1fc2c87f323b2bc1
++   label 一个正方形
+
+% 1 1 0 1317bc8822f26339043060358d18efc3
+
+% 2 1 0 16750b7b47ca3bb51cce264345fb61c3
+
+% 4 1 0 1d28bbc796bd3e58163a682a1509acab
+
+% 1 1 0 140bb92631369f2002063284b7c7d50e
+
+@ 0 2 0 0cf5d33e7fd054c50dbd5dc587c7f3e7
++   label 移动后的正方形
++   highlight translate  给出一个新图形
+
+% 1 1 0 1ac28632081ec29613bd6a6954a7c399
+
+% 2 1 0 0c096d431ea21128036fc71af2cade55
+
+% 4 1 0 04a8d838c0a8405110790ce6dab600d6
+
+% 5 1 0 18b05ea2ee0ec1821b1eaa1ed01149e5
+
+% 1 1 0 057faefd8a41ada90967f3553bced5a4
+
+@ 0 2 0 135856dc1c1bffcb04ed99f30069e020
++   label 移动后的正方形，再旋转
++   highlight rotate  接受一个类型化的角度
+
+% 1 1 0 0fd41c4213537c091d68adbfa6af2e32
+
+% 2 1 0 030aa9b13b622ae50ce2c70613ea3941
+
+% 4 1 0 1433097e1d6a863514379f8394d5f1ed
+
+% 5 1 0 1a67502b5c42a81f08ca26153bfc0a6f
+
+% 0 1 0 1302052a38c7f0b31203f4fc7a838a84
+
+% 1 1 0 11c3666eeb818f1000a13b6fba378816
+
+% 1 1 0 136d267ff733a60e0f6246170d49df5f
+
+% 2 1 0 1525a46c87e9e0571e7d21b8e7c42b7a
+
+% 0 1 0 08a86cbdc9b8cb0109ed8ce5b435ce67
+
+% 1 1 0 0cd6459499a6bd5203d659b3bcc1b6aa
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 0 1 0 1735d3fecebc793014e045b0cec3c830
+
+% 0 1 0 0401a6c1fb491aaa04c8653d06a2bd62
+
+% 0 1 0 079a598e7956b96504c758cea394103f
+
+% 1 1 0 0fc46d8c1484181b15adc44a71345464
+
+@ 0 3 0 165a64e295421cf519f87eef7dd90a7d
++ 三个图形都有相同的角点和尺寸，而 `square` 保持原样。[变换](../../soundness/modules/svg.md#transforms)解释了为什么变换被记录而不是被应用。

@@ -1,0 +1,78 @@
+orthant 2 language
+
+@ 0 1 0 03d63e226d9b4d690ec70fd834e567d8
++ # Jedna metoda odczytuje każdy typ
+
+@ 0 2 0 1e08509699040f881398819126b34b92
++ Nie ma `toInt`, `parseDate` ani `fromString`. Tekst odczytuje się za pomocą `as`, które przyjmuje
++ żądany typ, a każda biblioteka uczy je własnego typu.
+
+% 0 1 0 12705ff5e291290d17fbc8389d59ef4a
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 1f8827131306212b1b685882b7b57131
++   label Liczba
+
+% 1 1 0 097cd36392c35d7f0a16ec1486c3b83d
+
+% 2 1 0 0af0e304c58aa0cb001dfc817d003332
+
+% 4 1 0 05ea69a48799e776066beb7ea9803eb5
+
+% 1 1 0 00b76ae282c1e2dd111a6134af9329c6
+
+@ 0 1 0 1735ecf60a3875650f12fc9c7adacbae
++   label Adres
+
+% 0 1 0 03abcff1b5fb12f0085a5d3aa28a3279
+
+% 1 1 0 0dfdb8c18e92159317425330b0edbe3d
+
+% 2 1 0 1543f8ee1944680d07796200e402b531
+
+% 4 1 0 0bd198513063114d184bceae7a3ec3b1
+
+% 5 1 0 19181d9f8374f60415b1b14d33c56439
+
+% 1 1 0 1f9952d4f5a462001711517b49153a87
+
+@ 0 1 0 1c6d5b24c7d392ce15f0df97062d7ca3
++   label Wersja
+
+% 0 1 0 157f972a4f27d083015b9328088ec09d
+
+% 1 1 0 19b4aa789c69abc2123b34839a77672f
+
+% 2 1 0 14b2ffb8f0331c4d0f327bff7ea78c86
+
+% 4 1 0 10214067553741d61946d3337c0d0448
+
+% 5 1 0 12cc65662e7759eb110beaee92f01012
+
+% 0 1 0 1738f4d1aa00ede61830110f13d0dc27
+
+% 1 1 0 1c6e386a2ba7fcf10e1c615dfff2d370
+
+@ 0 1 0 06235c7e924641d60784d0295aaa7c32
++   label Typ, którego nic nie potrafi odczytać
+
+% 0 1 0 1477c34ff41c7c99183443e1d3238ae1
+
+% 1 1 0 0960c596329e4eb20a0b442aaa85c43a
+
+% 2 1 0 052b5d53c564213f191f74be413a911f
+
+% 0 1 0 0389acc31b4b7f0d0edb78c21c254075
+
+% 0 1 0 0141042afb62ab1419ac7c6d829ba9a0
+
+% 0 1 0 18eafb32caed3dd50f976e787bd035ca
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 2 0 1d42ac1c4187420206a08073ba4dc439
++ Strona [Dekodowanie](../../soundness/modules/decoding.md) pokazuje, jak dołącza nowy typ, a [małe
++ API](../../philosophy/small-apis.md) – dlaczego jest jedna nazwa.

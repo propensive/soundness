@@ -1,0 +1,6 @@
+orthant 2 language
+
+@ 0 3 0 13e0f437e82a946314fb7b5ee55f846a
++ Una canalización de [flujos](/doc/soundness/modules/streams.md) es el caso más claro. Cada etapa recibe
++ un flujo y produce un flujo, así que las etapas se encadenan sin adaptadores y en cualquier orden
++ que tenga sentido:

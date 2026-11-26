@@ -1,0 +1,55 @@
+orthant 2 language
+
+@ 0 1 0 05beb9f4eecd22af0ddfee6ff3f68ada
++ # Das erste Element einer Liste, die eines hat
+
+@ 0 3 0 02f92d249d51457301b506290af52e99
++ `head` wirft in der Standardbibliothek bei einer leeren Liste eine Exception. Hier wird eine Liste,
++ die mit ihren Elementen ausgeschrieben ist, als befüllt typisiert, und ihr `head` ist ein Element.
++ Eine Liste unbekannter Länge liefert ein optionales, und nichts wirft eine Exception.
+
+% 0 1 0 12705ff5e291290d17fbc8389d59ef4a
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 2 0 18477038dbe1ba6101c88441ac839028
++   label Eine Liste, deren Länge bekannt ist
++   highlight Text  nicht optional: die Liste ist bekanntermaßen befüllt
+
+% 0 1 0 1accf43fe927975f1dc8da9a374d03c0
+
+% 1 1 0 1355c71f5d40d7ac08d3588c7243e073
+
+% 0 1 0 0c8e25be73d5af4a182b36270426bb69
+
+% 0 1 0 1d4d6849a76ec950121d535715a0d56c
+
+% 1 1 0 1657a3b71de1ad6817694ade1c593961
+
+@ 0 2 0 116fa246e023a0ff01d9f501beb64ec7
++   label Eine Liste, die leer sein kann
++   highlight Optional[Text]  die Liste kann leer sein
+
+% 1 1 0 04e75e699920492e176e77c422e74684
+
+% 0 1 0 174bfcf597270a2a19b8c4caf744a826
+
+% 1 1 0 036422b9c293b4bd07347513767609c1
+
+@ 0 2 0 013a1e0a61808da30d1dc80eb46edb9a
++   label Eine Antwort für die leere
++   highlight or  die Antwort für eine leere Liste
+
+% 1 1 0 0eca83f15b5b8c7e00c653744385a789
+
+% 0 1 0 0aa3acb159f5fb7903ce0b930de2fccc
+
+% 0 1 0 18eafb32caed3dd50f976e787bd035ca
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 2 0 0b2cb45cc142de400862fe043f305338
++ [Die Typen](../../soundness/modules/collections.md#the-types) führt befüllte Listen ein, und [Totale
++ Übergänge](../../philosophy/total-transitions.md) das Prinzip.

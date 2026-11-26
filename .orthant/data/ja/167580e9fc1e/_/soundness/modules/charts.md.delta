@@ -1,0 +1,91 @@
+orthant 2 language
+
+@ 0 13 0 1f804944cbbab0300db1429dc29c7687
++ column  種類
++ column  描くもの
++ column  横軸
++ column  縦軸
++ column  スタイル
++ row  `Bars()`  一つの系列、または系列のコレクション  カテゴリー的  連続的  `Bars.Style`
++ row  `StackedBars()`  系列のコレクション  カテゴリー的  連続的  `StackedBars.Style`
++ row  `Lines()`  一つの系列、または系列のコレクション  連続的  連続的  `Lines.Style`
++ row  `Scatter()`  一つの系列、または系列のコレクション  連続的  連続的  `Scatter.Style`
++ row  `Pie()`  ちょうど一つの系列  カテゴリー的  連続的  `Pie.Style`
++ row  `Histogram()`  `Samples`、またはそのコレクション  連続的  度数  `Histogram.Style`
++ row  `Boxes()`  `Samples`、またはそのコレクション  集合ごとに一つの箱  連続的  `Boxes.Style`
++ row  `Annulus()`  `Weighted` かつ `Progressive` なノードの `Dag`  なし  なし  `Annulus.Style`
+
+@ 0 20 0 07a1c9f65a6293bd096dfd926a73c63d
++ column  フック
++ column  描くもの
++ column  定義されている場所
++ row  `fontStyle`、`lettering`  テキストの大きさと色。テキストのあらゆる連なり  `Chart.Style`
++ row  `backdrop`  チャートの背後のキャンバス  `Chart.Style`
++ row  `swatch`、`legendLabel`  凡例のエントリー  `Chart.Style`
++ row  `leader`  移動したラベルからその点へ戻る線  `Chart.Style`
++ row  `axisLine`  各軸の線  `Chart.Cartesian`
++ row  `axisBreak`  線形の軸がゼロから離れて始まる場所の切れ目の印  `Chart.Cartesian`
++ row  `arrowhead`  軸の端  `Chart.Cartesian`
++ row  `tick`、`gridLine`  刻みとそのグリッド線  `Chart.Cartesian`
++ row  `tickLabel`  目盛りのラベル、その位置、回転するかどうか  `Chart.Cartesian`
++ row  `axisTitle`  軸のタイトル  `Chart.Cartesian`
++ row  `marker`、`errorBar`  点とその区間  `Chart.Cartesian`
++ row  `pointLabel`  `Noted` な点の注記  `Chart.Cartesian`
++ row  `bar`  棒  `Bars.Style`
++ row  `line`、`band`  系列の線と推定値の帯  `Lines.Style`
++ row  `box`、`whisker`、`median`  箱ひげ図の部品  `Boxes.Style`
++ row  `wedge`、`wedgeLabel`  扇形とその百分率  `Pie.Style`
++ row  `shade`、`sector`、`remainder`  扇形区画の色とその二つの部分  `Annulus.Style`
+
+@ 0 10 0 1c600122182c2eb2189e07b099bd189d
++ column  識別子
++ column  持つもの
++ column  対象
++ row  `backdrop`  パレットの背景色によるキャンバス  すべてのチャート
++ row  `grid`  グリッド線  直交座標のチャート
++ row  `abscissa`、`ordinate`  各軸、その刻み、そのタイトル  直交座標のチャート
++ row  `legend`  凡例  凡例を持つチャート
++ row  `series-0`、`series-1`、…  各系列  直交座標のチャート
++ row  `wedges`  すべての扇形とそのラベル  `Pie`
++ row  `rank-0`、`rank-1`、…  各帯  `Annulus`
+
+@ 0 1 0 09524893beb0e5fc110f8d8b22a39a27
++ ### 環状グラフ
+
+@ 0 5 0 094a00dfd1bbeae2143c54d55798a5bd
++ `Annulus` は依存グラフ、つまり [`Dag`](graphs.md) を同心の帯として描く。
++ 何にも依存しないノードは最も内側の帯にあり、外側の各帯は一段ずつ外のノードを持つので、ビルドは中心から外へ向かって埋まっていく。
++ 各ノードはその帯の扇形区画であり、段の中での大きさに比例した角度を占め、帯の厚さは全体の大きさに対するその段の割合である。
+
+@ 0 7 0 11568818c01018f40832037731e60764
++ ノードの大きさとその進捗（`0.0` から `1.0` まで）は、ノードの型に対する二つの型クラス `Weighted` と `Progressive` から来る。
++ 扇形区画はノードが完了した分だけ時計回りに埋まり、残りは扇形区画の色の控えめな色合いになる。
++ その色はパレットの最初の色であり、扇形区画の位置によって陰影が付けられる。その色相は左から右へ三十度回り、中央より下では暗く、上では明るい。
++ 環状グラフにはラベルも凡例もない。
++ 各帯は `rank-0`、`rank-1`、… のグループであり、各扇形区画は `sector-0`、`sector-1`、… のパスであり、扇形区画の未完了の部分は `sector-0-rest` である。
+
+@ 0 3 0 0fbbeed84c453a461e364d4fa195aed8
++ ノードは自身の進捗を持つので、環状グラフは他のチャートと同様に新しいデータで改訂される。
++ 適合は同じ形と大きさのどのグラフに対しても保たれ、扇形区画がさらに埋まった帯だけが置き換えられる：
+
+% 0 1 0 1877856c8ab7469c04f0ffb78800176f
+
+% 0 1 0 14e225babf96351702cd5d73f93e40d6
+
+% 0 1 0 14c1482790cf4ef70542451dfecf4315
+
+@ 0 5 0 0882828f30df7a830a6f292209c4fb9f
++ `Chart.Standard(hole = 0.3)` は中心をくり抜く。
++ `sectorGap` と `bandGap` は、扇形区画の間と帯の間の目地の幅である。
++ `Annulus.Style` には、位置から扇形区画の色を決める `shade` と、その二つの部分のための `sector` と `remainder` がある。
++ 段付けは[グラフ](graphs.md#layering)が説明するものである。`import rankings.balancedRanking` は、各ノードを中心にできるだけ近づけるのではなく、その依存元にできるだけ近づけて描く。
+
+@ 0 8 0 16557cb6cd42445b1d8d52e13d86e255
++ - [SVG](svg.md) は、チャートの描画先である図を説明している。
++ - [ラベルの配置](label-placement.md)は、チャートのラベルが互いを避ける方法を説明している。
++ - [フォント](fonts.md)は、チャートを組める書体を説明している。
++ - [物理量](quantities.md)は、軸のタイトルとなる単位を説明している。
++ - [グラフ](graphs.md)は、環状グラフが描く `Dag` を説明している。
++ - [色](colors.md)は、パレットの色を説明している。
++ - [時間](time.md)は、連続的な軸が持ちうる継続時間と時点を説明している。
++ - [ゲージ](gauges.md)と[表](tables.md)は端末で値を示し、[テスト](testing.md)はベンチマークの結果をチャートにする。

@@ -1,0 +1,57 @@
+orthant 2 language
+
+@ 0 1 0 125fd6789128c18b0faf0460c4a950c8
++ # Los valores presentes de una lista
+
+@ 0 3 0 11152711c69f56e505c9c34053283a53
++ Los valores opcionales y las colecciones se encuentran sin ceremonias. Una lista de valores
++ opcionales es una lista corriente, y `compact` la reduce a los valores que están presentes, en una
++ lista cuyo tipo ya no menciona la ausencia.
+
+% 2 1 0 0ce23e6794a914a4077030006ec85b02
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 2 0 1e7076ff5bff8ed205a507bded65c856
++   label Un reparto con huecos
++   highlight List[Optional[Text]]  algunos papeles aún no tienen actor
+
+% 1 1 0 0a95e0f60326c56b19b0ded19dc74c04
+
+% 2 1 0 168e8851131760d90347fb2c7310d202
+
+% 1 1 0 10abdba33dd0ee3f1cd08065d1da3caf
+
+@ 0 2 0 03cd55ee019f0e6c06d418485e7c96c8
++   label Solo los papeles cubiertos
++   highlight List[Text]  no queda nada opcional
+
+% 0 1 0 1accf43fe927975f1dc8da9a374d03c0
+
+% 1 1 0 1355c71f5d40d7ac08d3588c7243e073
+
+% 2 1 0 157cbe0016168fe70d73ec6ab6186daf
+
+% 0 1 0 0a42be86d1377fba0d510baaac4939be
+
+% 1 1 0 17005effb7be53a00720518c921d619b
+
+% 1 1 0 136d267ff733a60e0f6246170d49df5f
+
+% 2 1 0 1525a46c87e9e0571e7d21b8e7c42b7a
+
+% 0 1 0 08a86cbdc9b8cb0109ed8ce5b435ce67
+
+% 1 1 0 0cd6459499a6bd5203d659b3bcc1b6aa
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 0 1 0 0d79ab3e8b5444aa147b4b2032e029f3
+
+% 1 1 0 17647a4fd6ab77dd14cdc05f9980d370
+
+@ 0 2 0 08f3bb059973d86611050fb4934157ab
++ [La ausencia en las colecciones](../../soundness/modules/optional-values.md#absence-from-collections)
++ trata la otra dirección, en la que una colección da un valor opcional.

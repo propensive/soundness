@@ -1,0 +1,73 @@
+orthant 2 language
+
+@ 0 1 0 101a55aec0d63c2f01ad673d0672f2f0
++ # Sekret nie jest kluczem publicznym
+
+@ 0 3 0 0bd67393bcc980c51ce00878362203aa
++ Najbardziej znany atak na podpisane tokeny przedstawia klucz publiczny tak, jakby był sekretem
++ HMAC, i liczy na to, że weryfikator zrobi to, co mówi nagłówek. Tutaj nagłówek jest jedynie
++ porównywany z algorytmem klucza, a odmowa mówi, które dwa się nie zgadzały.
+
+% 2 1 0 1dc50ed1a2b44dc00a5824c20b651836
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 09921eb384c29cd90316aee657093c8a
++   label Token podpisany kluczem na krzywej eliptycznej
+
+% 1 1 0 1d48f7bc715d1b76162c823507fbdbb1
+
+% 2 1 0 01285e93d8bb919f057a22e1e6673662
+
+% 3 1 0 045039dc756cde5f07322d60bdd1b36b
+
+% 4 1 0 1ccc88b969e4106b0048d84892be029a
+
+% 6 1 0 0d07e7244e67022a13504d35ddce146b
+
+% 7 1 0 1072b48945623b4d0aa206304c3672ff
+
+% 1 1 0 15b69bdf19ced46618af90393a551d60
+
+@ 0 1 0 0a024e66cf062d4b0e8ac0b14598ab31
++   label Weryfikowany sekretem
+
+% 0 1 0 198af488c31a68990cfc96825b7b69f8
+
+% 1 1 0 16d112528215908806024a7633be58f3
+
+% 2 1 0 0fa341aad835f5b91f16f6ec75a5002c
+
+% 3 1 0 0ab7ee4c0d63580c197099463c3255f6
+
+% 4 1 0 107c2afc5b8d53740363a2cef709f5b9
+
+% 6 1 0 1d7a37d1cd36976801fa5fbaeb688f2d
+
+% 7 1 0 0d4ee1eca5cd97f21a9207e7b9f5682f
+
+% 0 1 0 0a39d2f1937705ae062fbb1ed84b2b84
+
+% 0 1 0 023464263d8d90cd11e2b1240ee52271
+
+% 1 1 0 0e39d583a73b8fba13eaf1edf1bad189
+
+% 1 1 0 136d267ff733a60e0f6246170d49df5f
+
+% 2 1 0 1525a46c87e9e0571e7d21b8e7c42b7a
+
+% 0 1 0 08a86cbdc9b8cb0109ed8ce5b435ce67
+
+% 1 1 0 0cd6459499a6bd5203d659b3bcc1b6aa
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 0 1 0 0c74bd7da4da71bd010e10c7d0872750
+
+% 1 1 0 0160f4a69a6c1ab01175a58433573700
+
+@ 0 2 0 1a33ef0497e40f6f1fe3d436ad76adb9
++ [O wyborze algorytmu](../../soundness/modules/jose.md#on-choosing-the-algorithm) opisuje oba
++ ataki.

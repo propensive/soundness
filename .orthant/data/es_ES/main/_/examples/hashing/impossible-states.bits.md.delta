@@ -1,0 +1,45 @@
+orthant 2 language
+
+@ 0 1 0 1fe828b139f62db71318e15d37e4125f
++ # Solo los tamaños que define SHA-2
+
+@ 0 2 0 14713db7c9c53bc20dc72db7f3236fe8
++ SHA-2 es una familia de cuatro resúmenes, de 224, 256, 384 y 512 bits. El tamaño es un número en
++ el tipo, y un número que el estándar no define no es un hash que pueda pedirse.
+
+% 0 1 0 12705ff5e291290d17fbc8389d59ef4a
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 2 0 023562baf97ac03609170094b15eede5
++   label Un tamaño que existe
++   highlight Sha2[384]  uno de los cuatro
+
+% 1 1 0 0b5550182104d1fe153f0a39cc41cbee
+
+% 2 1 0 13f349749e627c71047acac566d20037
+
+% 0 1 0 15216ca400e316591293f26e70cebdf7
+
+% 1 1 0 1e7700da2b8f6aea1ca089a5be83fb2f
+
+@ 0 1 0 16852b9b11ed6f0a14677376e86a11c8
++   label Un tamaño que no existe
+
+% 0 1 0 1477c34ff41c7c99183443e1d3238ae1
+
+% 1 1 0 0960c596329e4eb20a0b442aaa85c43a
+
+% 2 1 0 149d32f158a8cea016220d823aee285c
+
+% 0 1 0 0ad78469ac72b1a71b1aab5dd84f85f5
+
+% 0 1 0 18eafb32caed3dd50f976e787bd035ca
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 2 0 1c389e0f4f62b16c0ba7dbb12c21ef60
++ [Hash de un valor](../../soundness/modules/hashing.md#hashing-a-value) tiene la tabla de
++ algoritmos y sus tamaños.

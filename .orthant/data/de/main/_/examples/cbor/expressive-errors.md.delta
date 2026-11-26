@@ -1,0 +1,71 @@
+orthant 2 language
+
+@ 0 1 0 1fa8e653a4c09732130919c24c73c366
++ # Das Byte, an dem eine Nachricht schiefging
+
+@ 0 3 0 00bb49378bfe6c2216611c1de6f0317c
++ Ein `Cbor.Error` hält seinen Grund als Wert fest, und ein Grund, der die Bytes betrifft, enthält den
++ Offset, an dem der Parser anhielt. Ein Handler nimmt den Offset aus einem Pattern und nie aus dem
++ Text einer Meldung.
+
+% 2 1 0 06c0c8e7e46d6182024fbbbcfbe8c196
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 03677f54c8193d90056014a3eac7f764
++   label Jeder Fehlschlag, gleich behandelt
+
+% 1 1 0 106950c606bd133709d051a5742122fe
+
+% 1 1 0 1ac4d1ba44279f9f1c1f5997cee67ceb
+
+% 2 1 0 17cd63762c8076020877f5d3eba7b2a7
+
+% 0 1 0 1e6296ba34194e211fa120b739746331
+
+% 1 1 0 19dd4977487dccbc053b66c29d0b35b3
+
+% 1 1 0 1da4ecfbdedffb141bbd1d477b5868a4
+
+@ 0 2 0 095218e3f5f41e2b17cfaccadaa6aaaf
++   label Eine abgeschnittene Nachricht, und wo sie anhielt
++   highlight Truncated(offset)  der Offset, als Long
+
+% 1 1 0 0c0955c98a5850961c8df803378fbd85
+
+% 0 1 0 0b433c796db937e9035b1b188984fb3a
+
+% 1 1 0 1f9a5ed7fad49935006943a2aa3ae548
+
+% 2 1 0 057cf114064f8e661dec03109d8ae52b
+
+% 0 1 0 0a92b034cac59a9a023fc1c9177f60f8
+
+% 0 1 0 1d0f329a8e53a5b7141c12ee6d5c4b7d
+
+% 1 1 0 19c0e6e9b7a8238b0f23e33584df787d
+
+% 1 1 0 01e5303deba903f2173290561d935a94
+
+% 1 1 0 136d267ff733a60e0f6246170d49df5f
+
+% 2 1 0 1525a46c87e9e0571e7d21b8e7c42b7a
+
+% 0 1 0 08a86cbdc9b8cb0109ed8ce5b435ce67
+
+% 1 1 0 0cd6459499a6bd5203d659b3bcc1b6aa
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 0 1 0 1fc88dceb2dcd05d02878af1c8276285
+
+% 0 1 0 10ea3ca51bb8a9e61dd2d4e51451a36a
+
+% 1 1 0 0d88a3b03d4eae23165ac47ca1387f2c
+
+@ 0 3 0 1bcc5a0eeac846f60996e6da131a380d
++ Die zweite Nachricht verspricht ein Array aus drei Elementen und enthält zwei.
++ [Fehler](../../soundness/modules/cbor.md#errors) listet die Gründe auf, und [Aussagekräftige
++ Fehler](../../philosophy/expressive-errors.md) sagt, warum sie Werte sind.

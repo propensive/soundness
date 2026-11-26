@@ -1,0 +1,65 @@
+orthant 2 language
+
+@ 0 1 0 16ee5838264b79ba08cc0f7b2db03295
++ # Ein Image ist die eine Art oder die andere
+
+@ 0 3 0 0a73aaaac07b6d530a31d5940f22a5dc
++ Ein Image enthält entweder die Konfiguration eines Dateisystems oder die einer
++ WebAssembly-Komponente. Jede wird als optionaler Wert erfragt, sodass die, die ein Image nicht hat,
++ `Unset` ist und keine Ausnahme oder ein leerer Datensatz.
+
+% 2 1 0 0a2a12de844a06820e29e69a0ae4d6ed
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 2 0 09dcffdafae56fe91d134f2e8a101400
++   label Die Konfiguration einer Komponente
++   highlight wasmConfig  vorhanden, bei einem Wasm-Artefakt
+
+% 1 1 0 0ccc4c0e986df97c0a5218e6122f3fbb
+
+% 2 1 0 134f51e2129080b402952f3219b45ddf
+
+% 4 1 0 0d766e3b479870fc1d39d355c876504f
+
+% 5 1 0 14509eda018871391eec4ed353ba93bb
+
+% 1 1 0 03e3fa02494644ee12ab59411253b79d
+
+@ 0 2 0 07d68b0cb74c7f3904662e9a1abea8c2
++   label Und die eines Dateisystems, die es nicht hat
++   highlight imageConfig  fehlt, beim selben Artefakt
+
+% 1 1 0 1b43166ab0ca8f7b11df30f74213d788
+
+% 2 1 0 008f0ad856fbf0321d5e53e1ae33bff4
+
+% 4 1 0 033c386ee2c03f2b157fef5688b4f07e
+
+% 5 1 0 055ff86dcf2443a715cb1c44030523a4
+
+% 0 1 0 1e033de056006c4a1d622bb2ceaf1eb9
+
+% 1 1 0 14a24ca904916c940b514007c6411b7e
+
+% 1 1 0 136d267ff733a60e0f6246170d49df5f
+
+% 2 1 0 1525a46c87e9e0571e7d21b8e7c42b7a
+
+% 0 1 0 08a86cbdc9b8cb0109ed8ce5b435ce67
+
+% 1 1 0 0cd6459499a6bd5203d659b3bcc1b6aa
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 0 1 0 1a6f02bcf9c5a84015e4b7896a90bfc7
+
+% 0 1 0 1167fb1ace83e8db0c5c65d40a9af6bb
+
+% 1 1 0 0955546e9ba94ec20df61abeca25b3e9
+
+@ 0 2 0 0d2cb7965c18f10d1d61d054364ec81b
++ [WebAssembly-Workloads](../../soundness/modules/docker.md#webassembly-workloads) beschreibt die
++ beiden Arten und [Optionalität](../../philosophy/optionality.md) `let`.

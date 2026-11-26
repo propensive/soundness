@@ -1,0 +1,85 @@
+orthant 2 language
+
+@ 0 1 0 1e99f6a8c8b0364f1e2259d9df269809
++ # Ustawienie flagi daje nowy zbiór
+
+@ 0 3 0 13099865179404801ea1f70a4ba40ba8
++ Zbiór flag jest wartością i nigdy się nie zmienia. Przypisanie do flagi jest wyrażeniem, a jego
++ wynikiem jest inny zbiór z przełączoną flagą, więc zbiór, z którego go utworzono, nadal istnieje i
++ można go porównać.
+
+% 2 1 0 0adb5934d6e733d10d9042ce6fb942bf
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 01e23b8c9c23c7640f49b6f4cd405c0b
++   label Brak flag
+
+% 1 1 0 099ae5dff65ef6ad08101b283fd95c47
+
+% 2 1 0 1ec5b960d8fe493f167a7b624ddff9ef
+
+% 3 1 0 06f8ea0e928e6bc70305f926e2c7a6a6
+
+% 5 1 0 1b66bdbb034cfa4718ecf99d62139b49
+
+% 1 1 0 091584a5517b360706bc3f5aac9facc1
+
+@ 0 2 0 0a9fedfd1c93763f16e80e96f3e97dba
++   label Jedna flaga włączona, w nowym zbiorze
++   highlight calm(Humor.Choler)..true  wyrażenie, a nie instrukcja
+
+% 1 1 0 101270f07ff67fd412f2c4c0fcba6fb2
+
+% 2 1 0 022428c35c3adc480e996349b1e773e8
+
+% 3 1 0 062388d7e5a365351064cf724a1a89a0
+
+% 5 1 0 1f7426cb678ff82c08b6598d51bf9b02
+
+% 6 1 0 0da1e2804586c4931ea00fe8f3f92bf4
+
+% 1 1 0 0204bcb4833af489127ef10d13968510
+
+@ 0 2 0 052f87081ee4276a0daddfe0a1b6d1e3
++   label Kolejna, w trzecim
++   highlight angry(Humor.Melancholy)..true  a `angry` jest taki, jaki był
+
+% 1 1 0 1dd7f334562c0b3a0806ff5de98cc582
+
+% 2 1 0 0feb1600075a464b128e1e14662ef421
+
+% 3 1 0 1c77c98c6836ce7a060beb4a9746b1c8
+
+% 5 1 0 0c9294a23d70a45f04b141e711f8ec1f
+
+% 6 1 0 0efc760e02db66cf0fe6fbc7e623e6c0
+
+% 0 1 0 00930ae392a5f283115efa351e969c0f
+
+% 1 1 0 05127533c1e96c2706527594befe3054
+
+% 1 1 0 136d267ff733a60e0f6246170d49df5f
+
+% 2 1 0 1525a46c87e9e0571e7d21b8e7c42b7a
+
+% 0 1 0 08a86cbdc9b8cb0109ed8ce5b435ce67
+
+% 1 1 0 0cd6459499a6bd5203d659b3bcc1b6aa
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 0 1 0 02f8b6131592f34d00f051df307eb005
+
+% 0 1 0 0aa945582d5ac90e1e2675061175b126
+
+% 0 1 0 177935c292f5908203de05cde621a51d
+
+% 1 1 0 05a002c8f1671e9a080659de1982ac67
+
+@ 0 3 0 1828e01f54c3078703f88e7528a28692
++ Sekcja [Ustawianie i sprawdzanie flag](../../soundness/modules/flags.md#setting-and-testing-flags)
++ pokazuje te same kroki z `var`, a [niemutowalność](../../philosophy/immutability.md) – dlaczego
++ wartość, która nie może się zmienić, można bezpiecznie współdzielić.

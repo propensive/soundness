@@ -1,0 +1,62 @@
+orthant 2 language
+
+@ 0 1 0 1706c6a8de52cfe21ab79d45d4e4df6d
++ # Exportar una clave privada lo dice
+
+@ 0 3 0 10f466198653492d161dbdfbea13ac88
++ Una clave pública se escribe libremente. Una clave privada solo se exporta cuando la llamada
++ nombra `Divulgence`, así que cada lugar en el que material secreto sale del programa puede
++ encontrarse por su nombre.
+
+% 0 1 0 12705ff5e291290d17fbc8389d59ef4a
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 05ab96c05b4ebab31218234e0ad32f10
++   label Una clave pública, como PEM
+
+% 1 1 0 099a5f51cfd3311e0b0fc0ed335ab673
+
+% 2 1 0 064702d9890bca4307bba61faadd7515
+
+% 4 1 0 0d34013f7dc8860a08eb5b51b9fae015
+
+% 0 1 0 00b7aa3b80765cf814d6ba3342387e24
+
+% 1 1 0 0cdfed68baea07391ac9d6115cc4ddfe
+
+@ 0 1 0 0ea36e5deb165919000aa30908e3ae98
++   label Una clave privada, de la misma manera
+
+% 0 1 0 1477c34ff41c7c99183443e1d3238ae1
+
+% 1 1 0 0960c596329e4eb20a0b442aaa85c43a
+
+% 2 1 0 10f81f0f06b7bd5c1cccb6a85bfbda61
+
+% 4 1 0 06eb57401c25fe091217c84dcbbe1138
+
+% 0 1 0 16f25f75355ac0a21b6647f751d0c954
+
+% 1 1 0 0dfd5078336b506b1daf99f6c939bf36
+
+@ 0 2 0 10b17484ef8c659808135041e8930f34
++   label Una clave privada, deliberadamente
++   highlight Divulgence  el material secreto sale aquí
+
+% 1 1 0 16ffc91a14db78cc1c560a9eb1173c4d
+
+% 2 1 0 11f39cc227d03acd05ab5e2b39625604
+
+% 4 1 0 193c8376e4e841300630da91ce2cab3f
+
+% 0 1 0 108450832ea0237b11fd8ce72d091a50
+
+% 0 1 0 18eafb32caed3dd50f976e787bd035ca
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 1 0 1dcd25ab3aa5ded01d61a6b157bbfef7
++ [PEM](../../soundness/modules/cryptography.md#pem) describe el texto con armadura ASCII.

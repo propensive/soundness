@@ -1,0 +1,67 @@
+orthant 2 language
+
+@ 0 1 0 13f238314765d59d0159c433fa627cb5
++ # Przykłady
+
+@ 0 3 0 118caabe485a828e0f4ef835380646e5
++ To jest zbiór krótkich przykładów. Każdy pokazuje jedną rzecz, którą czytelnik może chcieć
++ zrobić z Soundness, w świetle jednej idei, która przenika całą bibliotekę, w dwóch do dziesięciu
++ wierszach kodu. Są przeznaczone do czytania pojedynczo, wybierane z dwóch list.
+
+@ 0 1 0 16f462eb3f0ed69103512ea22b3a401c
++ ## Dwa aspekty
+
+@ 0 3 0 0d374221d04d833c09f1abfaa03232a2
++ *Temat* to to, co przykład robi: odczyt JSON, wysłanie żądania HTTP, zapis daty. Tematy to
++ samouczki [dokumentacji](../soundness/modules/overview.md), wymienione w `topics.tel`.
+
+@ 0 4 0 0cc9265ff2e3ae7c05702092f7db1d0a
++ *Motyw* to idea, którą przykład pokazuje: że literał jest sprawdzany przez kompilator, że błąd
++ jest nazwany w typie, że zdolność nie może opuścić swojego zasięgu. Motywy są wymienione w
++ `themes.tel`, każdy ze zdaniem mówiącym, co oznacza, a większość ma własny esej w
++ [filozofii](../philosophy/correctness.md).
+
+@ 0 5 0 165a921dbd9cca9e1eb10bd9c03fe67a
++ Przykład motywu `checked-literals` na temat `json` to plik `json/checked-literals.md`. Drugi
++ przykład tej samej pary ma słowo po nazwie motywu, jak `json/checked-literals.pointer.md`.
++ Większość par nie ma przykładu, ponieważ większość tematów dobrze pokazuje tylko niektóre
++ motywy: przykład pisze się tylko tam, gdzie para uczy czegoś, czego żaden z aspektów nie uczy
++ osobno.
+
+@ 0 1 0 109912b0e81854f51798283e62286277
++ `python3 etc/check-examples.py --matrix` pokazuje, które pary są wypełnione.
+
+@ 0 1 0 06547c0c9f012f3100bacf887bbc5a33
++ ## Pisanie przykładu
+
+@ 0 3 0 11eff9b174d597c019639fdd0d3186a9
++ Przykład to tytuł, jedno lub dwa zdania, jeden blok kodu i zdanie, które prowadzi do samouczka
++ lub eseju, który za nim stoi. Prozę i kod obowiązuje standard
++ [samouczków](../standards/style.md), do którego dochodzą następujące zasady:
+
+@ 0 20 0 01f3017254127fe91f38190ec2a9ee0b
++ - Tytuł mówi, co przykład pokazuje, słowami tematu, i nie nazywa żadnego z aspektów.
++ - Kod jest minimum, które pokazuje ideę: od dwóch do dziesięciu wierszy w każdej klatce. Dane
++   przykładowe pochodzą z Szekspira, jak [wszędzie indziej](../standards/examples.md).
++ - Kod nie ma komentarzy. To, co powiedziałby komentarz, mówi `highlight` lub `focus`,
++   `label` klatki albo zdania wokół kodu.
++ - Tam, gdzie idea polega na tym, że coś błędnego się nie kompiluje, przykład jest animacją:
++   klatka oznaczona `errors show`, która zawiera błąd, z własnym komunikatem kompilatora, a
++   następnie klatka, która go naprawia. Błędu nigdy nie pisze się ręcznie.
++ - Tam, gdzie idea polega na wyborze, na przykład strategii, kalendarza lub backendu, wersje są
++   wariantami `alternative`, w zakładkach.
++ - Każda klatka jest kompilowana. Przykład, który pokazuje wynik, wypisuje go z bloku `run` po
++   animacji, a ten, którego nie da się uruchomić tam, gdzie budowana jest dokumentacja, bo
++   potrzebuje sieci lub terminala, mówi o tym.
++ - Znacznik nazywa swój zakres bez spacji, ponieważ to, co następuje po pierwszej spacji, jest
++   jego podpisem: zakres złożony z kilku słów zapisuje się od jego pierwszych znaków do
++   ostatnich, jak `raises..Error`. Każdy znacznik ma podpis.
++ - Tam, gdzie każda klatka powtarzałaby te same importy, umieszcza się je w zwykłym bloku przed
++   animacją, a klatki po nim następują.
++ - Przykład jest samodzielny. Importuje to, czego potrzebuje, poza samym pakietem `soundness`,
++   i nie zależy od innego przykładu.
+
+@ 0 3 0 1e54fb1abfaef2e60c3bec21aa9a4411
++ Jeśli kod, którego przykład potrzebuje, nie jest krótki albo nie jest bezpieczny, wina może
++ leżeć w API, a nie w przykładzie. Taki przypadek odnotowuje się w zgłoszeniu, które je śledzi,
++ a przykład pomija się, dopóki API nie będzie nadawało się do pokazania.

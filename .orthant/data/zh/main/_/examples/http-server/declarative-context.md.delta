@@ -1,0 +1,56 @@
+orthant 2 language
+
+@ 0 1 0 060f9855f2bf9cd90bc28f48af77e279
++ # 同一个处理函数，换一个前端
+
+@ 0 3 0 0033963f2aea695b16e3f62929dfb7b0
++ 连接如何被服务不是处理函数的一部分。由导入选择的 `Frontend` 决定每个连接是拥有自己的虚拟线程，还是由少数几个选择器线程服务所有连接。
+
+% 0 1 0 12705ff5e291290d17fbc8389d59ef4a
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 0 1 0 05b89b17d85ffb8f0dac13e56f7b6a11
+
+@ 0 1 0 10dd85921e1390000e965d8106faea0d
++   highlight frontends.threadPerConnectionFrontend  处理函数可以阻塞
+
+% 1 1 0 1f47b234454b1def0bea5dd4e94804d9
+
+% 2 1 0 0cfab0d5ac711bcc1334856388411700
+
+% 3 1 0 0390da64aefc8ca706abf5312ea17579
+
+% 0 1 0 1bd0f274d48c9f3617426d93676ee3e8
+
+% 2 1 0 110294d275e38f4f0aeb09efec975032
+
+% 3 1 0 19eea4da3769cc93131feac940846c2b
+
+% 4 1 0 0f1eca1881de802000c451e1591c975a
+
+% 0 1 0 0e8640c5b6852ec80c0abc450ab09305
+
+@ 0 1 0 137c7b3d81466cb502016ee0ce9fc57a
++   highlight frontends.reactiveFrontend  处理函数不得阻塞
+
+% 1 1 0 1985656f2b1c00430d4ee744e7473b21
+
+% 2 1 0 0a48447900a9bb170619b3d0b4b913ab
+
+% 3 1 0 1e72ee66b7cfc3c50c8717d31c234732
+
+% 0 1 0 12cd52019310ba120926e9b2d609c81d
+
+% 2 1 0 0e1472ca63352e0d0ae2a26072931e7d
+
+% 3 1 0 01cdf3b33e221f180f2c80baa02c20ba
+
+% 4 1 0 1baf1a6a22c696b80112578076871308
+
+% 0 1 0 18eafb32caed3dd50f976e787bd035ca
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 3 0 1717695aeb8186e70b340f04ae2e2ffa
++ 本示例只编译，不运行，因为它会绑定端口。[前端](../../soundness/modules/http-server.md#front-ends)比较了这两种前端，[声明式上下文](../../philosophy/declarative-context.md)解释了这种做法。

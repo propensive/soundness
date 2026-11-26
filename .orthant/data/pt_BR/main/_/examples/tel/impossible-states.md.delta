@@ -1,0 +1,54 @@
+orthant 2 language
+
+@ 0 1 0 1e73dddb7063d3e311281334b2c0a3bb
++ # Uma palavra-chave que o tipo não tem
+
+@ 0 3 0 1b154f90432106a302bfc8d40db2788f
++ `verify` verifica um documento TEL contra a forma de uma case class, e lhe dá essa forma como
++ tipo. Cada passo dentro dele é então verificado pelo compilador, e uma palavra-chave que falta à
++ case class não pode ser pedida.
+
+% 0 1 0 12705ff5e291290d17fbc8389d59ef4a
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 2 0 1260c9591d2adf1d04ef8cabb7c8fe61
++   label Um caminho por um documento verificado
++   highlight verify[Residence]  verificado uma vez, durante a execução
+
+% 1 1 0 1eab64b846ff8360045666f7b582066d
+
+% 2 1 0 12ecee10db1e5e3a18beff4bc1d3b5cf
+
+% 4 1 0 1c6341f140835cc2187d465a2fdcaf61
+
+% 5 1 0 06c8443aaba31b5408b2677ec0bbab07
+
+% 0 1 0 1cb3cc0ae1e77b9e113a7254ac1ed933
+
+% 1 1 0 01b4b0ffb6c15a460f1c70c4a20ffdc3
+
+@ 0 1 0 1e57421ba669e75a0408bebe764fc38f
++   label Um passo que o tipo não permite
+
+% 0 1 0 1477c34ff41c7c99183443e1d3238ae1
+
+% 1 1 0 0960c596329e4eb20a0b442aaa85c43a
+
+% 2 1 0 052b5d53c564213f191f74be413a911f
+
+% 4 1 0 0fd2a1e6563a298a1341a6eb08bb2023
+
+% 5 1 0 0cdc27b0a323c605184c24de1174fa33
+
+% 0 1 0 01d0e8dccf3c5b2d1a11d6379f8a72b6
+
+% 0 1 0 18eafb32caed3dd50f976e787bd035ca
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 2 0 1805dc577e07e81816929b164c9c6184
++ [Navegação verificada](../../soundness/modules/tel.md#verified-navigation) contrasta isso com o
++ acesso dinâmico, que não verifica nada.

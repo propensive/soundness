@@ -1,0 +1,45 @@
+orthant 2 language
+
+@ 0 1 0 14dae1355584a2390d1b20b312feb3f9
++ # Znaczniki, których zabrania specyfikacja
+
+@ 0 2 0 022d07fb3d35a820138b0a54b0b0ed37
++ HTML zapisany za pomocą `h"…"` parsuje kompilator, według reguł specyfikacji. Akapit bezpośrednio
++ wewnątrz listy nie jest HTML, więc się nie kompiluje.
+
+% 0 1 0 12705ff5e291290d17fbc8389d59ef4a
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 14a281f63c3db8851e73272ff7b6e71a
++   label Akapit tam, gdzie mogą być tylko elementy listy
+
+% 0 1 0 1477c34ff41c7c99183443e1d3238ae1
+
+% 1 1 0 0960c596329e4eb20a0b442aaa85c43a
+
+% 2 1 0 1556ad06aba8bec61b9a1d90b3fb5989
+
+% 0 1 0 057158bdba2bcfb804a873303105f045
+
+% 1 1 0 10d05b29b737a58106815c95501f4932
+
+@ 0 2 0 1643d9c57ea5981816cb4ea5b0e15436
++   label Element listy
++   highlight <li>Oberon</li>  co może zawierać lista
+
+% 1 1 0 191c4063f8b6ba8313dbb32f619cec9d
+
+% 2 1 0 11dccb00e1262c9b06b1d3a214fe22cd
+
+% 0 1 0 1e2ffe9441a9bd01127a2f1fa4e2ffeb
+
+% 0 1 0 18eafb32caed3dd50f976e787bd035ca
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 2 0 09e3be2abed02b991ae60a88788d88c5
++ [Dosłowne zapisywanie HTML](../../soundness/modules/html.md#writing-html-literally) mówi, co można
++ podstawić do literału.

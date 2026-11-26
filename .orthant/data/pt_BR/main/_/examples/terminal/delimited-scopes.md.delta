@@ -1,0 +1,55 @@
+orthant 2 language
+
+@ 0 1 0 05ca70c2a4466b23047c11a70cb9c4f8
++ # Um modo raw que sempre termina
+
+@ 0 3 0 1c87b4b51d101b9e01b835643daec4e9
++ Um terminal deixado em modo raw depois de uma falha estraga o shell que iniciou o programa.
++ `interactive` é um bloco: o terminal só existe dentro dele, e é restaurado quando o bloco
++ termina, seja como for que termine.
+
+% 0 1 0 12705ff5e291290d17fbc8389d59ef4a
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 1022b7be68e2e9eb1b00f83105138f18
++   label Uma pergunta, sem terminal em que fazê-la
+
+% 0 1 0 1477c34ff41c7c99183443e1d3238ae1
+
+% 1 1 0 0960c596329e4eb20a0b442aaa85c43a
+
+% 0 1 0 12a618ab3fc8ab800817fdfca2fcb19c
+
+% 0 1 0 0982acddb612d7b009872356737acab7
+
+% 1 1 0 15dcee9899e41c020959980da10ee623
+
+@ 0 2 0 14b2b6b57163c8481f4a0a8a42ee8bee
++   label Dentro de uma sessão
++   highlight interactive  o modo raw começa e termina com este bloco
+
+% 1 1 0 16bb94091faab28305e87ac595435ae4
+
+% 0 1 0 1d99d8671d0810c90f9e23457ba2983b
+
+% 0 1 0 024d364b7946796a0dc926f2e95d5b53
+
+% 0 1 0 1d386fea82db2dc4086b5e2f172fbd60
+
+% 0 1 0 1ddbe24ca96966e71e52f5d6ca9d7a17
+
+% 0 1 0 15d5fe23ec4b2ff503f3a2b876db5157
+
+% 0 1 0 1dbeb7081143993b02b3246fe3aef6dd
+
+% 0 1 0 18eafb32caed3dd50f976e787bd035ca
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 3 0 1353cf35833bcb8505ca9d1cec3d353a
++ O exemplo é compilado, e não é executado, já que lê um terminal.
++ [Entrada pelo teclado](../../soundness/modules/terminal.md#keyboard-input) descreve a sessão, e
++ [escopos delimitados](../../philosophy/delimited-scopes.md) o padrão.

@@ -1,0 +1,62 @@
+orthant 2 language
+
+@ 0 1 0 1ca5e67cff43caa8070e0e5d154b0cf1
++ # 走向不存在的字段
+
+@ 0 3 0 158c570cb26ca5c40d086202539161b7
++ 进入文档的每一步对每个键都有定义，无论该键是否存在。缺失的字段给出一个缺失值，还可以继续从它往下走，在代码请求某个类型之前什么都不会失败。如果请求的是可选类型，缺失本身就是一个答案。
+
+% 2 1 0 10908852334e95e402ccd12ae1aee37e
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 2 0 129d943e0eb5011d14a7d6d52ecc89a9
++   label 进入文档的两步
++   highlight (t"patron")(t"title")  每一步都是安全的
+
+% 1 1 0 117e00fbde4399970bbb85e7597e1191
+
+% 2 1 0 0d5632bd4bdd9a8b11fde02b277aa050
+
+% 4 1 0 1af9d50992ae25b31083ac36b3cef81a
+
+% 5 1 0 0d8049fb3d8d52a41f93586401a2470f
+
+% 1 1 0 1b98258a3612b059068713e336c269cc
+
+@ 0 2 0 001652086c7db719000ac51f2957d3e9
++   label 同样的步骤，走到空处
++   highlight (t"master")(t"title")  缺失，但依然安全
+
+% 1 1 0 1e6ff02c87d22b36123dc10ccd6c4d4a
+
+% 2 1 0 0c15175ed1af8a2f0b9a82925d18cb09
+
+% 4 1 0 0351464996efa47b1e9dcb97496b63e3
+
+% 5 1 0 1f25649aa11cb1a00a003064eca7bff4
+
+% 0 1 0 0e6f46c53244fec80162409f1a9dd3eb
+
+% 1 1 0 052727b9d091f72118b0a80e666b6edc
+
+% 1 1 0 136d267ff733a60e0f6246170d49df5f
+
+% 2 1 0 1525a46c87e9e0571e7d21b8e7c42b7a
+
+% 0 1 0 08a86cbdc9b8cb0109ed8ce5b435ce67
+
+% 1 1 0 0cd6459499a6bd5203d659b3bcc1b6aa
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 0 1 0 0f042c47f3a8943a1832469f8087b297
+
+% 0 1 0 1a0e586e190d787c0e7ae73245d36cf8
+
+% 1 1 0 057a01d385fe15d00ca9b25e8954cf2c
+
+@ 0 2 0 01ed7464b124b7ad13bb5eb1822884d2
++ [导航](../../soundness/modules/json.md#navigating)展示了必需类型给出的错误，[全转换](../../philosophy/total-transitions.md)则阐述了这一原则。

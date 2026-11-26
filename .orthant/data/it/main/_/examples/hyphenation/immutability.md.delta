@@ -1,0 +1,84 @@
+orthant 2 language
+
+@ 0 1 0 14f0c4493e9b53ee0d446a6facc06904
++ # Pattern che vengono estesi, non modificati
+
+@ 0 2 0 0220c4c37f183572004d44cf2c639800
++ Un insieme di pattern è un valore. Insegnargli una parola dà un nuovo insieme, e l'insieme da cui è
++ stato creato spezza ogni parola come faceva prima, ovunque altro sia in uso.
+
+% 2 1 0 1088a4a8e022a239046c29266a22f28d
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 00308612c4eba7c1198b3f2be1f610b7
++   label I pattern inglesi
+
+% 1 1 0 0604e87987b45b440a53bdfd2944953b
+
+% 2 1 0 0c0a76a92cc0b81d11a7ef078fc6b5a2
+
+% 4 1 0 1f2c32f3e18a567c081ad46ae299e4a7
+
+% 1 1 0 13f70ac4ee924d2d0c0b3be99a0d3364
+
+@ 0 2 0 10844e393835252a1a7f0223b7791788
++   label Un nuovo insieme, che conosce una parola in più
++   highlight extending  dà un nuovo insieme di pattern
+
+% 1 1 0 1c370bb34a99381e1ad46c0889052813
+
+% 2 1 0 0fc785cdfac47a74047519881eb33c10
+
+% 4 1 0 072a77108431364314da19927a17baaa
+
+% 6 1 0 1fd27006c9bec02f0d9dd7091e3a7e06
+
+% 7 1 0 11d169814e92fefc0b291de2b96401a2
+
+% 1 1 0 0bfbafed94c6d7ee0035eda1b67a84f1
+
+@ 0 2 0 0ef96b709b19005201b0ba310453c927
++   label La stessa parola, con ciascuno
++   highlight (using..players)  il nuovo insieme, passato a mano
+
+% 1 1 0 084b177aea7a282f119ebc8bfdcb1274
+
+% 2 1 0 0262ff2dd72b4e1d07de9ff11d34dd78
+
+% 4 1 0 0e62c74ea2cbf71c01960575a29b40a3
+
+% 6 1 0 134fa76bee63c00b05d3c3ae0c513553
+
+% 7 1 0 1ce31e91cdfcf96207ede5e40659b214
+
+% 0 1 0 1a0d7523e667f1c9097f0fd660c98259
+
+% 0 1 0 087ecef69fb604991f710de1c5419a18
+
+% 1 1 0 05f311b1c70528ec195f0a03afbe5b86
+
+% 1 1 0 136d267ff733a60e0f6246170d49df5f
+
+% 2 1 0 1525a46c87e9e0571e7d21b8e7c42b7a
+
+% 0 1 0 08a86cbdc9b8cb0109ed8ce5b435ce67
+
+% 1 1 0 0cd6459499a6bd5203d659b3bcc1b6aa
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 0 1 0 0c8397a4eaa7e48f1932541c553bfade
+
+% 0 1 0 040a25175a359a5f04785e13b1b7ce45
+
+% 0 1 0 0c858468ab883a9f1b2e2a2c1499a4df
+
+% 1 1 0 141ac6b60264a6070a9fe643b4b1e8b1
+
+@ 0 3 0 1a4d37defb30f9070873a996a40d15f8
++ [Estendere i pattern](../../soundness/modules/hyphenation.md#extending-the-patterns) aggiunge
++ pattern oltre che eccezioni, e [immutabilità](../../philosophy/immutability.md) presenta il
++ principio.

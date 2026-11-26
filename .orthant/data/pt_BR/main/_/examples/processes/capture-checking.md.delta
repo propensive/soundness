@@ -1,0 +1,68 @@
+orthant 2 language
+
+@ 0 1 0 0011d57d84cab2f51daa9f32b35dc335
++ # Só se digita em um terminal enquanto seu programa está em execução
+
+@ 0 4 0 0650bc9b6a3970ff1279c7aecdf3cefd
++ Um comando executado em um pseudoterminal é uma sessão: o terminal é alocado para um bloco, e
++ liberado quando o bloco termina. Uma função que lesse do terminal depois disso dependeria de algo
++ que já foi liberado, e o compilador diz isso. O texto que o programa imprimiu é um valor.
+
+% 0 1 0 12705ff5e291290d17fbc8389d59ef4a
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 0 1 0 05379442125b483c0fa7601737add2cc
+
+% 1 1 0 01df03af649144fc135e9cf4a153349c
+
+@ 0 1 0 1dfa4002cf44b46217a793e2e656a32b
++   label Uma função que leria um terminal liberado
+
+% 0 1 0 1477c34ff41c7c99183443e1d3238ae1
+
+@ 0 1 0 0840fc504d6f4e7c090996e179a98a41
++   highlight terminal.text()  leria depois que o terminal foi liberado
+
+% 1 1 0 1ca80f7683fffe311cf33f1cf6106b05
+
+% 2 1 0 049e241857fa30e9138cd8ebb6357e92
+
+% 3 1 0 1d01ab29173c90921f3c542877593fe4
+
+% 4 1 0 1de867ef456adb33055aaecad51be220
+
+% 0 1 0 171c9a6e011c327012a22954affa02d2
+
+% 1 1 0 0efa0921b0314a64171c9d8eb94b39ac
+
+% 0 1 0 1dc214cc389bcf4419a0c688354982f9
+
+% 1 1 0 1f6c0e16f878374f12667136ce220fce
+
+@ 0 1 0 1cb6dcaea9d5e0150a1430ad2910edda
++   label Sua saída, lida dentro da sessão
+
+% 0 1 0 09e56e5fbf76e5220f0ea6440de37272
+
+% 1 1 0 0ef6141d502a45c81a4e6e73b1633304
+
+% 2 1 0 090cc4fa0978a23e1a09d892608688e4
+
+% 3 1 0 016bd37b4cf8557e0e5d09814325a33a
+
+% 4 1 0 0a607306ea9019f306cc146d75bc5fae
+
+% 0 1 0 1f42d78840db5c7513e86be618be29f6
+
+% 1 1 0 1f09b7790e2b9ae30a2a2a6ab22c7f65
+
+% 0 1 0 0f3fb2a77ecee1310419fc5cb9bc8621
+
+% 0 1 0 18eafb32caed3dd50f976e787bd035ca
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 2 0 1e44bbd720281106011eedbf7d66ff9d
++ O exemplo é compilado, e não é executado, já que iniciaria um processo.
++ [Em um terminal](../../soundness/modules/processes.md#on-a-terminal) descreve os pseudoterminais.

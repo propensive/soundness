@@ -1,0 +1,56 @@
+orthant 2 language
+
+@ 0 1 0 106398e86b862d3e12de489a9e509916
++ # Des cadres résolus vers leur source, par un import
+
+@ 0 3 0 125201bff64fb99e02dd87158e6b082d
++ Le démanglage nettoie un nom compilé, mais ne peut pas dire quelle lambda était `λ₃`. Un
++ résolveur retrouve la définition derrière chaque cadre à partir des positions que le compilateur
++ a enregistrées, et coûte une lecture de fichier par classe, si bien qu'il est choisi par un
++ import et n'est pas automatique.
+
+% 0 1 0 12705ff5e291290d17fbc8389d59ef4a
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 2 0 19ad38d6e6ef27ea006d25fbfdc123bf
++   label Les cadres tels que la JVM les nomme, démanglés
++   highlight displayMethod  le nom compilé, nettoyé
+
+% 1 1 0 125b0a3caa638bd40c99b4cee63390f7
+
+% 1 1 0 09ad4ceb848976100b10c1be69f963d7
+
+% 3 1 0 1439d5d2df4f19b907689299ecbc9153
+
+% 1 1 0 1ee5aedb26dc2c7c18595c4fa36e650c
+
+@ 0 3 0 072bfc3a9348d203027467694f28218e
++   label Les cadres tels que la source les nomme
++   highlight tastyStackResolution  chaque trace capturée dans cette portée est résolue
++   highlight displayMethod  le nom dans la source
+
+% 1 1 0 1117607f9a60b8190bed82a71b7db854
+
+% 0 1 0 16d0e72e209c38f51220547030e5288b
+
+% 0 1 0 1b2fc40646840a3f068e0180d211f5ea
+
+% 0 1 0 0d7f1e4b8b541f5918a614304decdd48
+
+% 1 1 0 0e82da093b366fa60f5aabc9454dcc33
+
+% 3 1 0 0df05787df81ba5e0c04516f6da85080
+
+% 0 1 0 18eafb32caed3dd50f976e787bd035ca
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 5 0 01c1f4de22e645db1c042fb0d840dd9c
++ L'exemple est compilé, mais pas exécuté, car les classes d'un fragment de documentation ne sont
++ pas sur un classpath qu'un résolveur peut lire.
++ [Résoudre les cadres vers leur source](../../soundness/modules/stack-traces.md#resolving-frames-to-their-source)
++ décrit ce que contient un cadre résolu, et
++ [le contexte déclaratif](../../philosophy/declarative-context.md) pourquoi le choix est un import.

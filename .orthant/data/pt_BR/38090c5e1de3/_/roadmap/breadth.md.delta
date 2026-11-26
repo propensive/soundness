@@ -1,0 +1,21 @@
+orthant 2 language
+
+@ 0 2 0 157a3a44b6f07b3214a91645500dd5a3
++ Concluído quando: o módulo é publicado com testes, páginas de erro e um tópico em `doc/soundness/modules/`,
++ e faz a ida e volta dos vetores de exemplo das RFCs 7515/7516.
+
+@ 0 2 0 127cb5949af86617091c53779bd8b0f3
++ Concluído quando: o módulo é publicado com testes, páginas de erro e um tópico em `doc/soundness/modules/`,
++ e passa na suíte padrão de conformidade TOML.
+
+@ 0 2 0 0242546bb2e491fe01ce6eb76fd4fb16
++ Concluído quando: o módulo é publicado com testes, páginas de erro e um tópico em `doc/soundness/modules/`,
++ e uma cerimônia roteirizada de registro e asserção passa contra um autenticador de referência.
+
+@ 0 2 0 0fa92f02db91bc5c0ffba1a2a59e6cd3
++ Concluído quando: o módulo é publicado com testes, páginas de erro e um tópico em `doc/soundness/modules/`,
++ e interopera com um servidor e um cliente HTTP/3 de referência.
+
+@ 0 2 0 128a7f59440161e006b6ecc0692efdcb
++ Concluído quando: o módulo é publicado com testes, páginas de erro e um tópico em `doc/soundness/modules/`,
++ e uma sessão roteirizada passa contra um servidor IMAP de referência.

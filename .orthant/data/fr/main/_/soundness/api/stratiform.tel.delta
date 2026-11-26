@@ -7,11 +7,24 @@ orthant 2 language
 +     info
 +         un journal composable d'éditions, appliquées à un document une opération à la fois
 
+@ 0 1 0 05dff70ef02c8bae02867bc8383dc2aa
++ entry .TelMutation
++   info
++       le trait qui contient `Tel.Mutation`, les opérations d'édition du §22.2
+
+% 1 1 0 0ebc21e4c5ef6314061c5c48731570de
+
+@ 0 2 0 1cec67b5515628bf1c92261ab21dd98a
++       `object Tel extends TelMutation`, si bien que `Mutation` s'atteint par le compagnon, sous la
++       forme `Tel.Mutation`.
+
 @ 0 1 0 011854171f69420718747641930de1a5
 +   entry #Mutation
 +     info
 +         les opérations d'édition primitives §22.2, qui préservent la présentation, et leur
 +         interpréteur
+
+% 1 1 0 09c5c7c6edcea57318feece1ac127ec6
 
 @ 0 5 0 03a6563a211c058e091aac26e9fa266a
 +         Chaque `.Op` est une réécriture locale adressée par un `Tel.Pointer` : les atomes,
@@ -20,6 +33,20 @@ orthant 2 language
 +         par une personne et de le réécrire intact. `Mutation(tel, op)` applique une opération et
 +         `Mutation(tel, ops)` une liste dans l'ordre, en renvoyant un nouveau `Tel` ; `Revision`
 +         est le DSL composable sur ces mêmes opérations.
+
+% 2 1 0 15dcab498a62d6ab04dca2c09c057ef6
+
+% 3 1 0 0f61f475068ada7a1a25f8e43bbf6e54
+
+% 4 1 0 09103a44a98e09230e84023593f633f4
+
+% 0 1 0 1df2f2e4ad8c45b2111ad7d8764c6b8b
+
+% 0 1 0 1c3a1ca3db3719c41146c2249bb38397
+
+% 0 1 0 0d8d982018413b051c2ae1c03813af7d
+
+% 1 1 0 0583218765dddcea142c2c301cb59feb
 
 @ 0 7 0 0bdbe28195ed1d45177a037d87ad30fd
 +         Une étape de pointeur est un mot-clé plus un indice d'occurrence, résolus par rapport au
@@ -31,6 +58,10 @@ orthant 2 language
 +         remplacement est bien typé — sont hors de portée, comme dans l'implémentation de
 +         référence : une couche consciente du schéma les vérifie avant de déléguer à ces
 +         primitives.
+
+% 0 1 0 1ec63c4308d070021fc5ac25fe4d2369
+
+% 1 1 0 03bf26a2225a06050b9ca458f4d19132
 
 @ 0 20 0 0dcd6706d124251810739b23466f1845
 +     entry .Placement
@@ -124,6 +155,8 @@ orthant 2 language
 +     entry .Error
 +       info
 +           levée lorsqu'un pointeur ne se résout pas ou que l'invariant d'une opération échoue
+
+% 1 1 0 100c9fd4209bc4850e77c5c1bb963d8c
 
 @ 0 11 0 01151dd09e78d6ca18e924e372da3734
 +           Erreur `↯/s.118.2` : _the mutation failed because …_. `PointerNotFound` est un pointeur,

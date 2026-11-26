@@ -1,0 +1,72 @@
+orthant 2 language
+
+@ 0 1 0 1c7642710f5ef7391c727e1ae4ba10ea
++ # Eine Case-Klasse, in ein Dokument zugewiesen
+
+@ 0 3 0 01de98f157005a171a839f38c334a6e7
++ Eine Linse stammt aus der Optik-Bibliothek und ein Encoder aus der Ableitung einer Case-Klasse.
++ Zusammen wird ein Wert der Case-Klasse einer Stelle in einem XML-Dokument zugewiesen und beim
++ Ankommen kodiert.
+
+% 2 1 0 0175501af9576eed1baff1787e5255db
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 07207d00c57cdf530e91e977e5fed690
++   label Ein Element, durch XML ersetzt
+
+% 1 1 0 079e03f83a21990d1a39347ec8e50bfd
+
+% 2 1 0 02a36fe2db4707331e8dec5d0dace781
+
+% 3 1 0 16f6cf2f620047f401ae2f6b81425189
+
+% 4 1 0 153c08294a23a8de0c7534c4d7c95916
+
+% 6 1 0 071030b8195876781f4186fdd62e155f
+
+% 8 1 0 101c99a90a2a91cd149f94aafef9deb9
+
+% 0 1 0 00af88bebec78779084d958a38fd277a
+
+% 1 1 0 1af661cbae897252164c3a52f7f2c7d5
+
+@ 0 2 0 14ea7eb0710147460904c15bae5fedd5
++   label Dasselbe Element, durch einen Wert ersetzt
++   highlight Player(t"Feste"..30)  beim Zuweisen kodiert
+
+% 1 1 0 0bedd218f55de1b2033f6c975c7ae6ef
+
+% 2 1 0 1e7e16156560d2140c7d9400a152cddb
+
+% 3 1 0 0929f1350066fe780e9de38a8457b17c
+
+% 4 1 0 0a9e1d072bcf732b1e6184d2f1695cc9
+
+% 6 1 0 1a73c71ad34d021e169210ca12284efe
+
+% 8 1 0 17edda62aa5e51a902177785dbb18ca7
+
+% 0 1 0 154f0cd6844a809917d16ec4f5c10f70
+
+% 1 1 0 091e23386d24de021be38661e36a19d3
+
+% 1 1 0 136d267ff733a60e0f6246170d49df5f
+
+% 2 1 0 1525a46c87e9e0571e7d21b8e7c42b7a
+
+% 0 1 0 08a86cbdc9b8cb0109ed8ce5b435ce67
+
+% 1 1 0 0cd6459499a6bd5203d659b3bcc1b6aa
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 0 1 0 1c421cdc424d46701223b146db137d74
+
+% 1 1 0 1a8b5d39348f794e087582808fc6fbb6
+
+@ 0 2 0 1fef6315e3b0ddd91a9d841633b55be0
++ [Aktualisieren](../../soundness/modules/xml.md#updating) merkt an, dass für die Kodierung kein
++ Import nötig ist.

@@ -1,0 +1,70 @@
+orthant 2 language
+
+@ 0 1 0 172d11347e84832703475e5641b0bb6d
++ # 字样，按排版师的说法写出
+
+@ 0 2 0 0f88661747768b751da01fb5413f3735
++ 字样是一个带有字重、倾斜以及排版所用特性的字体族。它写成字体族的名称，后面跟着对它的要求，每个词都给出一个新的字样。
+
+% 2 1 0 007b0cbc998a892a1546cc78c12a783e
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 17069e8d1cea0291001a3e7c1b41a715
++   label 一个字体族
+
+% 1 1 0 02938133a65c85d503eed5b4d670b5ab
+
+% 2 1 0 06b629efa454c00f13e9dd2e02b7f3e2
+
+% 1 1 0 0fd39afb44caa3020edabf69a3213ab2
+
+@ 0 1 0 035714454dfe0f041ddbed66a3b63535
++   label 字重和倾斜
+
+% 0 1 0 143673058fc76b2c1f16ff1a2cf95257
+
+% 1 1 0 0bb1f5fba9c3fc9c030822f3f1f86dd0
+
+% 2 1 0 1473c1f8bbfeba501c7acd4565ecf3f7
+
+% 3 1 0 129229451a5c6c1c14e1075f72f87c82
+
+% 1 1 0 06fc2bc9752b580114e96b445a139bdc
+
+@ 0 2 0 005cbdd5bc292d771e91d39a8ba0454e
++   label 打开和关闭的特性
++   highlight enabling(Face.Feature.OldstyleNumerals)  一个 OpenType 特性，按名称给出
+
+% 1 1 0 0db169b64519dd1b11e1574de9a7001d
+
+% 2 1 0 082ad74c340f9f7d14b45549c5253af2
+
+% 3 1 0 04e35eda26414fc50001c9501716c923
+
+% 0 1 0 1acc5faa7e9d1ba7196aa6a618956cf6
+
+% 0 1 0 14fa503ebd43b8d502ff4fd44cad5b0f
+
+% 1 1 0 1a7f0f954c9903221096d58b0073e179
+
+% 1 1 0 136d267ff733a60e0f6246170d49df5f
+
+% 2 1 0 1525a46c87e9e0571e7d21b8e7c42b7a
+
+% 0 1 0 08a86cbdc9b8cb0109ed8ce5b435ce67
+
+% 1 1 0 0cd6459499a6bd5203d659b3bcc1b6aa
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 0 1 0 0f042c47f3a8943a1832469f8087b297
+
+% 0 1 0 0fb332afe7e6f0fd11a9e4fa2a4e3ab7
+
+% 1 1 0 0cab15dec3dfce641461c5277fe41dd0
+
+@ 0 2 0 1a46fb1396726f0605f04423f2648f5a
++ [字体族与字样](../../soundness/modules/fonts.md#typefaces-and-faces)介绍了字样的各种属性，并以表格列出了各种特性。

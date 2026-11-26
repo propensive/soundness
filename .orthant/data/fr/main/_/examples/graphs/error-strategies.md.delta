@@ -1,0 +1,66 @@
+orthant 2 language
+
+@ 0 1 0 150b8493359097ce14657bd750acb025
++ # Un cycle, et que faire
+
+@ 0 2 0 1a02afdf9e2c41be15a84d3195724364
++ Construire un `Dag` à partir d'arêtes les vérifie à la recherche d'un cycle, et lève une
++ `Dag.Error` quand il en trouve un. La suite revient à l'appelant, et la même construction sert
++ chaque réponse.
+
+% 0 1 0 12705ff5e291290d17fbc8389d59ef4a
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+@ 0 2 0 14247e9c2e3ebece16cfa392563632f6
++ alternative Déclarée
++   highlight raises..Dag.Error  l'appelant doit en répondre
+
+% 1 1 0 00becdc17c6c4de9172ffa1b1698e976
+
+% 0 1 0 0c96ba927b1f1f821a79166be7ce9019
+
+% 0 1 0 06f909b2dcf98c8d0297c7136e47b9db
+
+@ 0 2 0 001697efda25a207075a7553db93d117
++ alternative Absente
++   highlight safely  un cycle devient `Unset`
+
+% 1 1 0 0818a5027850cb8d1696dd5511993a1c
+
+% 0 1 0 0d7520fe9005d1131a54e2fb5fa47d62
+
+% 0 1 0 156630a3f9be02950b744e732054f094
+
+@ 0 2 0 00ffaeb8f504ea5806d3925804db4a3a
++ alternative Remplacée
++   highlight recover  les mêmes arêtes, en un graphe qui peut être cyclique
+
+% 1 1 0 166654b3fc1622ba07898409acbfc1d3
+
+% 0 1 0 11cf2968e51135df07145fee026ad0cd
+
+% 0 1 0 1ffe5c415422113702a4a9b03386f84a
+
+% 0 1 0 1c5b3eae06e0f4fc1fefe5c777e08857
+
+% 0 1 0 18e5fd571a5239a10eeda7c19f08a394
+
+@ 0 2 0 1f1a3a8fa521fed30a0d7a8feedb48d7
++ alternative Lancée
++   highlight unsafely  un cycle est lancé comme exception
+
+% 1 1 0 0a9db19667366582032dcd1609313c56
+
+% 0 1 0 03439d61e4864e571653c7eb6eb8e580
+
+% 0 1 0 094b1ec6e36a493003be0f42c865361d
+
+% 0 1 0 18eafb32caed3dd50f976e787bd035ca
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 3 0 1a8f0b1e9c52ef6e19a4303f47783ac6
++ [Construire un graphe](../../soundness/modules/graphs.md#building-a-graph) montre l'erreur, et
++ [choisir une stratégie](../../soundness/modules/errors.md#choosing-a-strategy) l'ensemble des
++ réponses.

@@ -1,0 +1,63 @@
+orthant 2 language
+
+@ 0 1 0 0d5a99859d9aae1810f8e591567b5ce2
++ # Eine Übermittlung, dekodiert wie jeder Text
+
+@ 0 3 0 165fea90e03f686f04e7d758fc0b173c
++ Die Übermittlung eines Formulars wird mit `as` gelesen, der Methode, die eine Zahl oder ein Datum
++ liest: einmal, um den gesendeten Text als `Query` zu zerlegen, und einmal, um die Query als den Typ
++ zu dekodieren, aus dem das Formular abgeleitet wurde.
+
+% 2 1 0 06944d2d659a9fbb02c05fe8f5ed7bde
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 2 0 18634ba351bd59621c3652355b0b8dff
++   label Der gesendete Text, als Query
++   highlight as[Query]  Schlüssel und Werte
+
+% 1 1 0 02dfe08e277a884f1d972ee8139225d8
+
+% 2 1 0 1260193adefe76e40ea756e3659223d2
+
+% 4 1 0 04c91b57ffb9f1fe098bd2fc427c0657
+
+% 6 1 0 0a82669b7fb6378b01bf3faeaf67cd26
+
+% 1 1 0 0d2e97611d48575610564d4d43f220df
+
+@ 0 2 0 182990faad4f04f11d1a0807c9f856eb
++   label Die Query, als der Typ
++   highlight as[Troupe]  die Felder, in ihren Typen
+
+% 1 1 0 1c3559a240cc0e3c11e2203249d0b6be
+
+% 2 1 0 0e2fb7945f89510c1c282c0ff31a3fd6
+
+% 4 1 0 1ec28859eeaf166004d07b76b7fe0ec3
+
+% 6 1 0 0f0c58432b0bfaa70ce9b4eb89443da4
+
+% 0 1 0 10eed7b41cd79ba01f51aff6f89b1e4b
+
+% 1 1 0 1d308ffd02cf033f1c252aebe1a5b4e8
+
+% 1 1 0 136d267ff733a60e0f6246170d49df5f
+
+% 2 1 0 1525a46c87e9e0571e7d21b8e7c42b7a
+
+% 0 1 0 08a86cbdc9b8cb0109ed8ce5b435ce67
+
+% 1 1 0 0cd6459499a6bd5203d659b3bcc1b6aa
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 0 1 0 178e200d94e27b4f1d503e0668a102a7
+
+% 1 1 0 096789637ad7b17311a9aba846b6a501
+
+@ 0 2 0 00f6e18fc891ad1c01e287ff76fa6846
++ [Übermittlungen](../../soundness/modules/forms.md#submissions) behandelt verschachtelte Felder, die
++ in der Query mit Punkten geschrieben werden.

@@ -1,13 +1,13 @@
 orthant 2 language
 
-@ 0 1 0 1a26dee1d32c457f154f39a6cd8b8097
+@ 1 1 0 077af85432889cd518a314ddc0c40c07
 +   entry #trees   メッセージ中のすべての `Markup.Tree`。どこに入れ子になっていてもよい
 
-@ 0 2 0 06d9964a216b63ce0ea8450093d7ce20
+@ 1 2 0 086d654c8617329705c861d482f84d3f
 +       row  `Tree(omitted, children)`  失敗した文脈的な解決を説明する木。`omitted` は長さのために省かれたノードの数である
 +       row  `Node(role, name, note, repeated, children)`  そのような木のノードひとつ。その `Role`、探された・見つかった・提案されたものの `name`、それについての `note`、および部分木が前に示されていてここでは省かれているかどうか
 
-@ 0 3 0 19bd5f1a17ead8801f0d056cc9832871
+@ 2 3 0 1c5a3fe774bb8cbf0499f293edf990c6
 +       `Tree` または `Node` の子は、その子の `Node` と、同じ木をプレーンテキストとして描く `Textual`（改行と罫線素片）とが交互に並んだものである。`#nodes` は `Node` だけを返す。
 
 @ 0 21 0 097f0e9e07a724d7170810e6bafc0c7c
@@ -26,5 +26,5 @@ orthant 2 language
 +     entry #word   小文字での役割の名前。マーカーの `role` 属性が持つとおりのもの
 +   entry #plain   このノードの見えるテキスト。自身のテキスト、または子のテキストを連結したもの
 
-@ 0 1 0 0040f586709e95720edf25cba05cb8b5
+@ 1 1 0 1deed663ca23628d0fbb7ab345e089cf
 +   entry #nodes   `Tree` または `Node` の子の `Node`。それらを描くテキストは含まない

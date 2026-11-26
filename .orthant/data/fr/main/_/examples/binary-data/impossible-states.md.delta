@@ -1,0 +1,66 @@
+orthant 2 language
+
+@ 0 1 0 17b1dfa515f3c88d00d2b9bc88e8baab
++ # Seul un champ de largeur fixe a sa place dans une disposition
+
+@ 0 2 0 0f510b2339725dcf11e18d0a06425d04
++ Chaque champ d'un enregistrement binaire doit occuper un nombre connu d'octets. Un champ de texte
++ n'a pas de largeur fixe, si bien qu'un enregistrement qui en contient un n'a pas de disposition,
++ et le compilateur le dit.
+
+% 2 1 0 0220d3ec9f1d353a181db28999368461
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 115f8697a7dd085a099d6a62ea215dde
++   label Un nom de longueur quelconque
+
+% 0 1 0 1477c34ff41c7c99183443e1d3238ae1
+
+% 1 1 0 0960c596329e4eb20a0b442aaa85c43a
+
+% 2 1 0 06e16eb6e100d509125c91a80583c994
+
+% 0 1 0 0d2e8c2ce01125be044eefd3c4c29f8d
+
+% 2 1 0 01d0cce22a18d35c18b297551490460a
+
+% 3 1 0 114e3748235a0d671f8799d67a67d24b
+
+% 1 1 0 06fe724d477795111b348f0f0b95e5eb
+
+@ 0 2 0 118f281524d69e8609d661a176eae111
++   label Un nom d'exactement huit octets
++   highlight B64  huit octets bruts
+
+% 1 1 0 0da1553d409a45e70954879ad1a6b568
+
+% 2 1 0 0fc4e2d24d361c4b166ea774b07fd6c7
+
+% 0 1 0 1586a950c99000861dbe7798c1ebbbb0
+
+% 2 1 0 1697e3a76eeb90ec163120fd17953e13
+
+% 3 1 0 151b8565d7ca32261c71aa3a8bb5790f
+
+% 1 1 0 0b3eb58f54409dee16aa021dadd0d7db
+
+% 1 1 0 136d267ff733a60e0f6246170d49df5f
+
+% 2 1 0 1525a46c87e9e0571e7d21b8e7c42b7a
+
+% 0 1 0 08a86cbdc9b8cb0109ed8ce5b435ce67
+
+% 1 1 0 0cd6459499a6bd5203d659b3bcc1b6aa
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 0 1 0 12df64ecf333101c00bf04ff43936a13
+
+% 1 1 0 0c5326494c84556a1493f1cbf325293e
+
+@ 0 2 0 17c0b07cfe5ccaac1d3a00801ea9e4d7
++ [La classe de types](../../soundness/modules/binary-data.md#the-typeclass) énumère les types dont
++ la largeur est connue.

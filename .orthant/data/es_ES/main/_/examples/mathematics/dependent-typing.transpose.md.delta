@@ -1,0 +1,58 @@
+orthant 2 language
+
+@ 0 1 0 0eb7a2a7b8af42f81a6c44382e91547f
++ # Una traspuesta que intercambia su tipo
+
+@ 0 3 0 03b52bebeb5e7c1a0e75cda975269dc4
++ La traspuesta de una matriz de dos filas y tres columnas tiene tres filas y dos columnas. El
++ compilador lo calcula a partir del tipo de la original, y una traspuesta asignada a la forma
++ equivocada no compila.
+
+% 2 1 0 0a0b169c2d455d251a114667b52e22c9
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 0c9868d195caa96b0649f489fc01499d
++   label Una traspuesta que aún se dice de dos por tres
+
+% 0 1 0 1477c34ff41c7c99183443e1d3238ae1
+
+% 1 1 0 0960c596329e4eb20a0b442aaa85c43a
+
+% 2 1 0 02c4ed5de1d30d5a0ef6b5b7aae15b9b
+
+% 0 1 0 1fe601073b6ceaea0022e3057a83df39
+
+% 1 1 0 17da9e500211529301c1cecf8685a1af
+
+@ 0 2 0 1df06cbc7666259414a2b88a4ca21630
++   label Tres por dos
++   highlight Matrix[Int,..2]  filas y columnas intercambiadas
+
+% 1 1 0 05679a04f2ca45171fa1d2682894fff9
+
+% 2 1 0 0554a6d1f273a17b1ab88dfa10273bce
+
+% 0 1 0 1666a3537f2d5ac40f688e82d71a5a35
+
+% 1 1 0 156521b279468a930a08ce7d1cc6a0b5
+
+% 1 1 0 136d267ff733a60e0f6246170d49df5f
+
+% 2 1 0 1525a46c87e9e0571e7d21b8e7c42b7a
+
+% 0 1 0 08a86cbdc9b8cb0109ed8ce5b435ce67
+
+% 1 1 0 0cd6459499a6bd5203d659b3bcc1b6aa
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 0 1 0 0a1a7f978f871ccb153322375343980b
+
+% 1 1 0 126fdae134829cdd1de0f71e34c03875
+
+@ 0 2 0 1876d4cbcd7e8a5e15d0c286448f9a4e
++ [Matrices](../../soundness/modules/mathematics.md#matrices) enumera las operaciones que se tipan de
++ esta forma.

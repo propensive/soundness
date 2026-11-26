@@ -1,0 +1,65 @@
+orthant 2 language
+
+@ 0 1 0 091bf636ea6929141c928bd81403907c
++ # 未设置的字段不占字节
+
+@ 0 2 0 12ac3a13a554c2891c907516baaf2d1a
++ 类型为 `Optional` 且值为 `Unset` 的字段会被完全排除在编码后的映射之外，而没有该键的映射读回时为 `Unset`。消息只在携带某个字段时才为它付出代价。
+
+% 2 1 0 1528874f920526300c1656ac2da5ffb6
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 13c8c4a6cb6fa00c173758135f822716
++   label 带有值的读数
+
+% 1 1 0 0da053b2c23ddb2e19b3c9efe69c74b7
+
+% 2 1 0 1491012d69a9e299008574cb01a75581
+
+% 4 1 0 0a216cac4d644a0e1ae0a84ccc022d4e
+
+% 6 1 0 0d8629153123ac950cc9c9a87ea12f6f
+
+% 1 1 0 1c3ba21500912bdc1871d8ced94fd1b7
+
+@ 0 2 0 07be5159e9ede4b40668fd8c0506dc6d
++   label 没有值的读数
++   highlight Unset  不写出该键
+
+% 1 1 0 00afb9313f1d0d791ef371c431abb5b5
+
+% 2 1 0 06b643cf538baaea17c7050249da091b
+
+% 4 1 0 0c7cd17e8eefd29b18ee59ed5e78337f
+
+% 6 1 0 04ee26494b05ea6a00405032f068ec3e
+
+% 0 1 0 1ec341403127f54708f97273fa040060
+
+% 0 1 0 0f289f83c1c1076a10541e9521dacdb0
+
+% 1 1 0 1f37ad725a52b20e16bdbdc94a38a9c4
+
+% 1 1 0 136d267ff733a60e0f6246170d49df5f
+
+% 2 1 0 1525a46c87e9e0571e7d21b8e7c42b7a
+
+% 0 1 0 08a86cbdc9b8cb0109ed8ce5b435ce67
+
+% 1 1 0 0cd6459499a6bd5203d659b3bcc1b6aa
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 0 1 0 177d8344e289102c07b072b39982ea98
+
+% 0 1 0 1045acaba96874201e8b7fd299cd79c4
+
+% 0 1 0 11b471e029bdb4f016d40577727d0d2e
+
+% 1 1 0 0d79dd7e1d1e0c7e026274b88832da40
+
+@ 0 2 0 03d66a0f347d49e7126b64c701a43176
++ [可选字段](../../soundness/modules/cbor.md#optional-fields)给出了读取可选字段的方针。

@@ -1,0 +1,71 @@
+orthant 2 language
+
+@ 0 1 0 11b64a51f5bc150704fa193884f3e82b
++ # Um título que não é o nome do campo
+
+@ 0 3 0 1994019c90c7a9fc0d0a90f2e20a5570
++ Uma tabela derivada dá a cada coluna o título de seu campo. Onde se quer outro título, um
++ `Table.Relabelling` o fornece pelo nome, e a derivação o utiliza: o campo mantém seu nome no
++ código, e a tabela recebe o seu.
+
+% 2 1 0 0a04236506bedcf80edb0c2e3714f61f
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 0e2bcb1f56e5e4241c816d99a4efbb6f
++   label O título derivado
+
+% 1 1 0 0e4445b208d8902d139f685f19722869
+
+% 2 1 0 0f49fc4c4df3fce812b21b6585b9dfd7
+
+% 3 1 0 12ac0d52bac6f0fa116f6369e9d28ee5
+
+% 5 1 0 164ac5507aa797f31e849b9028b77147
+
+% 2 1 0 1f4842f72400b254190a4cb10c00e67b
+
+% 3 1 0 02d894d3af5a7c1f0297b450e43be779
+
+% 1 1 0 1292b184ed6c25811ae3dd0e9c851a91
+
+@ 0 2 0 01e8142b8882e83902190a25e48d7761
++   label Um título próprio
++   highlight Table.Relabelling[Play]  encontrado pela derivação, durante a compilação
+
+% 1 1 0 01a64e72f2031ecd1098d493e9f6bbf1
+
+% 2 1 0 10a937b9c5ad20651e995eae462dc2b9
+
+% 3 1 0 1581a813055a11551a3143abcd2aa68d
+
+% 5 1 0 0a5e822f1927ecf7161a0360eca11534
+
+% 0 1 0 1545e63251d06bbb1ffa11d81abc5498
+
+% 0 1 0 1d1b8e6032062c2a09b6c3e3e2594c7d
+
+% 2 1 0 0967c7f65b6969341773c1e151d1e473
+
+% 3 1 0 0e5399fc510c1b8609ccbc1d415cafc7
+
+% 1 1 0 16d2f4c6fa352e5e1659501d3ec00c81
+
+% 1 1 0 136d267ff733a60e0f6246170d49df5f
+
+% 2 1 0 1525a46c87e9e0571e7d21b8e7c42b7a
+
+% 0 1 0 08a86cbdc9b8cb0109ed8ce5b435ce67
+
+% 1 1 0 0cd6459499a6bd5203d659b3bcc1b6aa
+
+% 0 1 0 00af3fdb360e27f9095168ce70444642
+
+% 0 1 0 00ed2f96dcc8b2890baca4895a0d56c7
+
+% 1 1 0 1a3c593547d7a2ec0a879975fd077067
+
+@ 0 1 0 1081d7ad6b329c3b068d08e117118bed
++ [Títulos](../../soundness/modules/tables.md#titles) traz as outras formas de renomear uma coluna.

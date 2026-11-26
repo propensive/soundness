@@ -1,0 +1,76 @@
+orthant 2 language
+
+@ 0 1 0 15b4b98e1ee798ca055d72c3bf39994e
++ # Una ruta, escrita como texto y leída de nuevo
+
+@ 0 3 0 16f16b0ac51969571fdb78a5fa9e1c14
++ Una ruta se convierte en texto con `encode`, y un texto se convierte en una ruta con `as`, los
++ mismos métodos que hacen lo propio con un número o una fecha. La plataforma del tipo de la ruta
++ aporta el separador y la raíz.
+
+% 2 1 0 1d5f3832253714bd054fc413fee486db
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 066ce02f1b215b10111b4f0da02965c6
++   label Una ruta de Windows
+
+% 1 1 0 02a120bd0865cdfb0d5387fbc7508332
+
+% 2 1 0 15518f714ef247010ff01b6906f848ae
+
+% 4 1 0 09b2a9027560ee661faa3a58c37a1584
+
+% 1 1 0 1c7420a16ecea9090aef4411908bc1ac
+
+@ 0 2 0 1d81bf6bb481746e17bd043a2be7ed57
++   label Como texto
++   highlight encode  con el separador de la plataforma
+
+% 1 1 0 160ce9f14478adcb007fc102aa9d67fb
+
+% 2 1 0 0fb2aa1b876619810238070c0076e157
+
+% 4 1 0 1e596f2284ea42e71c6c5dd915319cea
+
+% 5 1 0 1a244a50673c0753062100b586dc00cb
+
+% 1 1 0 14ae4f41e9e4bf6417ded9f5f488db2e
+
+@ 0 2 0 102a70e9f90030600a5e6ff4203e9b3c
++   label Y de nuevo una ruta
++   highlight as[Path..Windows]  la plataforma cuyas reglas se aplican
+
+% 1 1 0 130a00b3fe8f7f411e3f482f4242fed6
+
+% 2 1 0 0b0e1013852b4e8b00ba0784cdf24580
+
+% 4 1 0 039209058d4529ae0747120eb31de6ce
+
+% 5 1 0 121b1167eb5e72fd15222b5b7415d0d0
+
+% 0 1 0 12e7a6b0228490020fd98d80cf97017a
+
+% 1 1 0 1886c3ba71b71a4e0068a205306566cc
+
+% 1 1 0 136d267ff733a60e0f6246170d49df5f
+
+% 2 1 0 1525a46c87e9e0571e7d21b8e7c42b7a
+
+% 0 1 0 08a86cbdc9b8cb0109ed8ce5b435ce67
+
+% 1 1 0 0cd6459499a6bd5203d659b3bcc1b6aa
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 0 1 0 14850a09f6384c9f159ab6d95b562121
+
+% 0 1 0 1e4aa6cf6b818ce914252f028d7eb260
+
+% 1 1 0 0a616fb725582cf018396214dbfcac86
+
+@ 0 2 0 030d9a44a09a3106081f1ac1d3921c72
++ [Texto y rutas](../../soundness/modules/paths.md#text-and-paths) trata ambas direcciones, y
++ [API pequeñas](../../philosophy/small-apis.md), los motivos de un solo nombre.

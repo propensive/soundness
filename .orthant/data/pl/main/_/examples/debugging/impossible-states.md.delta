@@ -1,0 +1,61 @@
+orthant 2 language
+
+@ 0 1 0 162e4adac96b38d207dde28b96377322
++ # Ramka nie jest wątkiem
+
+@ 0 3 0 026b052e99567b590d18ce76a51718c2
++ Protokół debugowania nazywa każdy wątek, ramkę, metodę i obiekt liczbą. Każdy rodzaj identyfikatora
++ ma tu własny typ, otagowany widok jednej nieprzezroczystej liczby całkowitej, więc identyfikatora
++ ramki nie można podać tam, gdzie oczekuje się identyfikatora wątku.
+
+% 0 1 0 12705ff5e291290d17fbc8389d59ef4a
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 1aa8ede0f9b44bb51bde965c1ad70529
++   label Identyfikator ramki użyty do nazwania wątku
+
+% 0 1 0 1477c34ff41c7c99183443e1d3238ae1
+
+% 1 1 0 0960c596329e4eb20a0b442aaa85c43a
+
+% 2 1 0 052b5d53c564213f191f74be413a911f
+
+% 4 1 0 05a18a81671627bd0abecb7294540b02
+
+% 5 1 0 177810a8851382e4189b1e249ce79381
+
+% 6 1 0 0736a0555b07585004d83fa5989983aa
+
+% 0 1 0 18bbddfc73fbfdac014a5222c85c670b
+
+% 1 1 0 164bb9367a05c2e406a93db5282f5527
+
+@ 0 2 0 0d973be42904fc3e12c2a020c5eb7c15
++   label Własny identyfikator wątku
++   highlight debug.name(thread)  ThreadId, tak jak żąda metoda
+
+% 1 1 0 0071fa88d37f76550197167f562c5a72
+
+% 2 1 0 1aec4de219d363b9093b0855436000a7
+
+% 4 1 0 02645c8b2de2cff60124f849d328528e
+
+% 5 1 0 1e7312a499e95f291c5168804938ecec
+
+% 6 1 0 19556a7edc8eb1f51f5ad1dab5887036
+
+% 0 1 0 147f955891c141151699dafa3358c2f7
+
+% 0 1 0 18eafb32caed3dd50f976e787bd035ca
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 4 0 187420cc35a8ecc314aa9df4d8824b62
++ Przykład jest kompilowany, ale nie jest uruchamiany, ponieważ `Debug` istnieje tylko wtedy, gdy
++ debugowana jest inna JVM. Sekcja [Słownictwo
++ protokołu](../../soundness/modules/debugging.md#the-protocol-vocabulary) wymienia typy
++ identyfikatorów, a [stany niemożliwe](../../philosophy/impossible-states.md) – ideę, która za nimi
++ stoi.

@@ -1,0 +1,64 @@
+orthant 2 language
+
+@ 0 1 0 1b4baf939cf942de04e16086679b8d5d
++ # 可能有误的配置文件
+
+@ 0 3 0 1bf0df8a6e3fa5a30db49af844d9117a
++ 当某个键缺失或类型不对时，解码配置会抛出 `Yaml.Error`。由读取它的程序决定这意味着什么：没有配置、使用默认值，或者交给调用者处理。每种情况下的解码器都是同一个。
+
+% 0 1 0 12705ff5e291290d17fbc8389d59ef4a
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+@ 0 2 0 07009f2b1a8632d20348b9f0a43c7aee
++ alternative 没有配置
++   highlight safely  失败变成 Unset
+
+% 1 1 0 19f5858238928e8b08e8d4f2188c574f
+
+% 2 1 0 1f012f015234b1cb0f20456d5ab4eaed
+
+% 0 1 0 1e2f5d14ac1407b30f62e1e30f6ceef2
+
+@ 0 2 0 00b6627c1c6c18fd15537fcbaf2bd401
++ alternative 默认值
++   highlight recover  失败变成一个值
+
+% 1 1 0 1e41d2b26e3b84820c41949058186f6b
+
+% 2 1 0 19c7fd3b6ffb8d960fded925fa093a53
+
+% 0 1 0 0774bce8d47f97cd0b03ed24faae8c32
+
+% 0 1 0 1ffe5c415422113702a4a9b03386f84a
+
+% 0 1 0 18f932ff7093d94e1822fbaa2d73c135
+
+% 1 1 0 0ade989c9f3197da11eceab0509fd544
+
+@ 0 2 0 1573e0324667a7f201de125c90e12467
++ alternative 另一个错误
++   highlight mitigate  失败变成调用者那一类的失败
+
+% 1 1 0 194a205c0eb1ae5918a07da141e28104
+
+% 0 1 0 0116a331765d22681fde66f1f935428d
+
+% 0 1 0 127373b56099a7a70df82f413ae2a4a9
+
+% 1 1 0 12928c670872354e18741793671e0c3f
+
+% 0 1 0 05a5f9974b6887971015149574216416
+
+% 0 1 0 16d74b67b6a573c609b54f1332ce0373
+
+% 0 1 0 0c80ac70690680f908fb56f134dbc900
+
+% 1 1 0 1f7c9422ffb907211eaa9963834744c8
+
+% 0 1 0 18eafb32caed3dd50f976e787bd035ca
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 2 0 18f03f8f8e930e8808b3518f3e6839b6
++ [选择策略](../../soundness/modules/errors.md#choosing-a-strategy)和[恢复](../../soundness/modules/errors.md#recovering)给出了全部选择。

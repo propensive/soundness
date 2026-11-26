@@ -1,0 +1,65 @@
+orthant 2 language
+
+@ 0 1 0 0e4ae29a4b8d2c4b171097d0b8a7dad9
++ # Własny wymiar
+
+@ 0 3 0 127fb40dcf00877708e9a30b24d9e6d7
++ Szybkość procesora w operacjach zmiennoprzecinkowych na sekundę mogłaby być gołą częstotliwością,
++ w odwrotnościach sekund, i wtedy dodawałaby się do każdej częstotliwości. Gdy ma własny wymiar,
++ dodaje się tylko do innego pomiaru tego samego rodzaju.
+
+% 0 1 0 12705ff5e291290d17fbc8389d59ef4a
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 06609711fc0594551b4429aeed658dc5
++   label Częstotliwość, taka jak każda inna
+
+% 1 1 0 0dd787874e80b2360ef7787115626b27
+
+% 0 1 0 04eeedd792f799ba00d283dcc5fa401e
+
+% 2 1 0 0ca0a2f22177d2270966ac79522f5b49
+
+% 3 1 0 1af79808547b4e0d0e5b1f453f33394f
+
+@ 0 1 0 0eab3d4a7c853e2404d6d71486ea6375
++   label Wymiar i jego jednostki
+
+% 0 1 0 1477c34ff41c7c99183443e1d3238ae1
+
+% 1 1 0 0960c596329e4eb20a0b442aaa85c43a
+
+% 2 1 0 1b5e861b1ad730631c815101b0299879
+
+% 3 1 0 1cca17dfccac63a9141157c26e1175e3
+
+% 5 1 0 063bacd9807fb13601381e89cca638c5
+
+% 2 1 0 146be7d456019acc0abb619362700ebe
+
+% 3 1 0 1c30f3f520292b9d130b9328c3c1fe2f
+
+@ 0 2 0 14f4c3b0c94a2dfe06f776e8588f679d
++   label Dwa procesory
++   highlight 3*Giga(Flop)..500*Mega(Flop)  ten sam wymiar
+
+% 1 1 0 07ff49180256ca581fa4435c9a5f0767
+
+% 2 1 0 0d6fee5db5bd080015941ba07b2a37ee
+
+% 3 1 0 0c84b643f220400c1d78a876726ac11e
+
+% 5 1 0 1deb191c7ef66322123447e15ca51242
+
+% 0 1 0 14deb30daf0d0fbb1792c11599526707
+
+% 0 1 0 18eafb32caed3dd50f976e787bd035ca
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 2 0 0d6a991b70dd1b8b19fddfde19d7eb48
++ [Definiowanie własnej jednostki](../../soundness/modules/quantities.md#defining-a-unit-of-your-own)
++ buduje jednostkę krok po kroku.

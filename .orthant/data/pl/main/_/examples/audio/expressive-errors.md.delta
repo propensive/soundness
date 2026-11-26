@@ -1,0 +1,47 @@
+orthant 2 language
+
+@ 0 1 0 12d41aae2d568e1111cc65f76fe3c27e
++ # Bajty, które nie są w formacie, w jakim się je odczytuje
+
+@ 0 2 0 092986a1ed15cd4c09d54df6d0ff6a2b
++ Odczyt nazywa oczekiwany format, więc bajty w innym formacie są błędem, który mówi, który format
++ zawiódł, a nie szumem. Te bajty są plikiem WAV.
+
+% 2 1 0 1e70beb32a76979f0f002de0a8832e65
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 0 1 0 14aab7f0be2434f81421fb69d99543da
+
+@ 0 1 0 03e0bf6cf1eb873304b20b24db9b28d1
++   label Plik WAV
+
+% 0 1 0 0feeb6ee26eddc7916a3c923ea9fa7b1
+
+% 0 1 0 12a618ab3fc8ab800817fdfca2fcb19c
+
+% 0 1 0 0e1614c8535fda590c24d8527efce447
+
+% 0 1 0 1e7f6d1a583923461121c9840164bc80
+
+% 0 1 0 0d75bd5317da63e3195b322eb21fa54a
+
+% 1 1 0 18c805746ac03dc004fcdcc53128bcfd
+
+% 1 1 0 136d267ff733a60e0f6246170d49df5f
+
+% 2 1 0 1525a46c87e9e0571e7d21b8e7c42b7a
+
+% 0 1 0 08a86cbdc9b8cb0109ed8ce5b435ce67
+
+% 0 1 0 036507956a3da5f908cf31ec98bf4ed3
+
+% 1 1 0 07f2b8311cc534e60b2b7413314b03b3
+
+% 0 1 0 035484a9a0bf5b8c17db555a0a361a1d
+
+% 1 1 0 06a7fd8ad6090fe9179f09bd96981f82
+
+@ 0 3 0 03a19b63fadb04aa0b98398fbf18e052
++ [Odczyt dźwięku](../../soundness/modules/audio.md#reading-audio) opisuje zgłaszany `Audio.Error`, a
++ [wymowne błędy](../../philosophy/expressive-errors.md) – co powinien mówić błąd.

@@ -1,0 +1,51 @@
+orthant 2 language
+
+@ 0 1 0 027ba959012a1e1d1972d32655434289
++ # JSON controllato dove viene scritto
+
+@ 0 2 0 12bd940d9a92f1ad03a91bd7b2bf4740
++ Un letterale `j"…"` è JSON che il compilatore analizza. Una virgola di troppo è un errore di
++ compilazione nel punto della virgola, e un valore sostituito viene codificato in base al suo tipo.
+
+% 0 1 0 12705ff5e291290d17fbc8389d59ef4a
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 0e9293c756c473320fe4e87be700700c
++   label Una virgola finale
+
+% 0 1 0 1477c34ff41c7c99183443e1d3238ae1
+
+% 1 1 0 0960c596329e4eb20a0b442aaa85c43a
+
+% 0 1 0 133396804ac56dd11098ad525ead45fc
+
+% 1 1 0 150ee6761af92f3e02164025188ae7e6
+
+@ 0 1 0 085121b48558600b029d0a04e175d3d9
++   label JSON ben formato
+
+% 1 1 0 09f6537aba6499af12be519fdb0f6b4a
+
+% 0 1 0 1f3129d72514390201cecf9e2d9994da
+
+% 1 1 0 0d584d9276e5fd551dd0ed1bb67d7383
+
+@ 0 2 0 00e5c0216512710002e614f6ab62ac79
++   label Un valore sostituito
++   highlight $songs  codificato come numero JSON
+
+% 1 1 0 17e381b05254ef241bb2fc5330859cce
+
+% 0 1 0 0f6c6f8b80fe34d5157595ce5db1e1ad
+
+% 0 1 0 0b876292d341e2830af7cf03f8c5bd7b
+
+% 0 1 0 18eafb32caed3dd50f976e787bd035ca
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 1 0 12f136d4fb395df21d795eaf26dc2d83
++ [Costruire JSON](../../soundness/modules/json.md#building-json) descrive la sostituzione.

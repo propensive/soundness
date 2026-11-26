@@ -1,10 +1,7 @@
 orthant 2 release
 
-@ 0 1 0 0ac13b1824715e3e04ecf5bae99713c2
-+ The documents in `doc/soundness/modules/` are tutorials, each introducing one feature of
+% 0 1 0 18544e184caefdd103bbfea2ccd295e7
 
-@ 0 1 0 0d4394e2f64f6435021e3f0782c5b0c5
-+   `etc/fixtures/<tutorial>.scala`, which both checkers compile before the first fence.
+% 0 1 0 09c4d223098841621aae34338b2bf53b
 
-@ 0 1 0 017ea14065a6e7d00d1b0b2ab8b715a6
-+ package* — is defined in `doc/soundness/glossary.tel`, and written in brackets where a reader may not yet
+% 0 1 0 0397fbe264d8eef30013f29a7b460d44

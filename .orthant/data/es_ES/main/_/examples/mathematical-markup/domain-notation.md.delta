@@ -1,0 +1,81 @@
+orthant 2 language
+
+@ 0 1 0 1ba058da60ad4f7a1deb81493d61fa69
++ # La fórmula cuadrática en una línea
+
+@ 0 3 0 12d8284e5571fc9b0948c2a8867f699d
++ MathML dice que una ecuación es un árbol, con diez veces la longitud de la ecuación. El mismo
++ árbol se escribe en Ergo con un glifo para cada estructura: `↗` eleva, `/` divide y `√` extrae una
++ raíz.
+
+% 2 1 0 13f330dd7ef931a61dfee12ab46f3cf2
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 0f40ae96bf84027e17b05206039411f2
++   label Una potencia, como un árbol
+
+% 1 1 0 0aa2e2f72d5a6e6f18b7a6b0faf8871c
+
+% 2 1 0 1b5897091f240a851d2b9e0e67525a83
+
+% 0 1 0 1196ec1216c0d6e91141a71530762d47
+
+% 1 1 0 106372f07bf6472901710362bec05219
+
+@ 0 2 0 1ba9e142d8fe67120337058c74e16723
++   label La misma potencia, en Ergo
++   highlight ↗  un superíndice
+
+% 1 1 0 11f6544f1178ef491af90184f1f4f9e6
+
+% 2 1 0 09c96a21f5c206281799b2ae3186156d
+
+% 0 1 0 007077309b091d5b14f2914ad6aa2ee8
+
+% 1 1 0 10c39adb2462334e1bd568ed6c5c74c3
+
+@ 0 2 0 174106c3332f59471407e7382e259d95
++   label Bajo una raíz
++   highlight √  una raíz cuadrada, del grupo que sigue
+
+% 1 1 0 1770baead46e8b891a57adcbb3f10f5a
+
+% 2 1 0 1595a6f00ce4719d1fa40011c8fc2702
+
+% 0 1 0 17306483039e895f16966f61e5108900
+
+% 1 1 0 148bdb04a70645c81c0209c1f4c2ae2e
+
+@ 0 2 0 0edc4a27bd31961c029caabd150629d7
++   label Sobre un denominador
++   highlight /  una fracción, de los grupos a cada lado
+
+% 1 1 0 0bf93488b6317e0c093f732d0252d619
+
+% 2 1 0 0810bf37ed9cbf1c08f11345b18862ab
+
+% 0 1 0 0a334075d95233ba013dedd8e90464b3
+
+% 1 1 0 0df4f4f474fa67321e682c849fc3d521
+
+% 1 1 0 136d267ff733a60e0f6246170d49df5f
+
+% 2 1 0 1525a46c87e9e0571e7d21b8e7c42b7a
+
+% 0 1 0 08a86cbdc9b8cb0109ed8ce5b435ce67
+
+% 1 1 0 0cd6459499a6bd5203d659b3bcc1b6aa
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 0 1 0 16f20dcaf970da5709afc8c077e3648c
+
+% 1 1 0 1fbce4fa7ff08d3f0738146df2473ce0
+
+@ 0 3 0 15fe0d1613cfc74006f20ebfe771a243
++ `draw` compone el árbol en el terminal, e `in[Xml]` lo escribe para un navegador. [Glifos
++ estructurales](../../soundness/modules/mathematical-markup.md#structural-glyphs) tiene la tabla
++ completa.

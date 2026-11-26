@@ -1,0 +1,59 @@
+orthant 2 language
+
+@ 0 1 0 0537721fcbc309d11ff91a973986a1a9
++ # Une URL qui ne nomme aucun port
+
+@ 0 2 0 0e5ca4399992e9d10c94a1bb8281c956
++ La plupart des URL ne disent pas quel port elles désignent, si bien que le port d'une URL est un
++ `Optional[Int]`. Il ne peut pas être utilisé comme un nombre tant que quelque chose n'a pas dit
++ ce que signifie son absence.
+
+% 2 1 0 0b1444010363dde31a326934db1a06a0
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 072860a46d0cb2430ed8a86c057eff55
++   label Le port, utilisé comme s'il était là
+
+% 0 1 0 1477c34ff41c7c99183443e1d3238ae1
+
+% 1 1 0 0960c596329e4eb20a0b442aaa85c43a
+
+% 2 1 0 001a7c630336352f14a36f93b832f184
+
+% 0 1 0 1c5ed3ea12e23ac419e77b81ba4d0189
+
+% 1 1 0 070d5e9e5fa27bcc18da292605f8c3e4
+
+@ 0 1 0 09804d5affae075e1b2c97d1fb7d2990
++   label Le port, ou celui par défaut pour le schéma
+
+% 0 1 0 08a9a5d8a356755601b6590f94b3c9bb
+
+% 1 1 0 1a7e52c3eb253043046b90cae513fc7f
+
+% 2 1 0 099974fe7caf03fd0ba799bf7a921446
+
+% 0 1 0 19fb190cdb0be79d1946afb5c21d9e7b
+
+% 1 1 0 10d6ba3cdadca7de07cb964496f43995
+
+% 1 1 0 136d267ff733a60e0f6246170d49df5f
+
+% 2 1 0 1525a46c87e9e0571e7d21b8e7c42b7a
+
+% 0 1 0 08a86cbdc9b8cb0109ed8ce5b435ce67
+
+% 1 1 0 0cd6459499a6bd5203d659b3bcc1b6aa
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 0 1 0 0e49a6fa0c7ea7110a2026e589c5cc89
+
+% 1 1 0 0f95be88965de1401667d16185a6843b
+
+@ 0 2 0 07d49985caa4bbbd0dd3038bcf67bb8a
++ [URL](../../soundness/modules/network-addresses.md#urls) énumère les parties d'une URL, et
++ [l'optionalité](../../philosophy/optionality.md) explique `let` et `or`.

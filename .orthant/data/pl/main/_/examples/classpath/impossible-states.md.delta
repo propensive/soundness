@@ -1,0 +1,71 @@
+orthant 2 language
+
+@ 0 1 0 146c5f10d1d11b70191302ab5314fff2
++ # Lokalna ścieżka klas nie ma adresów URL
+
+@ 0 3 0 0f2a1178094a3cb111ef602b47bd9306
++ Wpis ścieżki klas to katalog, archiwum, zdalny URL albo środowisko uruchomieniowe Javy. Wpisy
++ `LocalClasspath` mają typ obejmujący tylko trzy z nich, więc kod, który obsługuje lokalną
++ ścieżkę klas, nie obsługuje wpisu zdalnego i nie można go o to poprosić.
+
+% 2 1 0 005a717d93f0b5ab0d9f77539233c5bf
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 0798d23ba064c61817861714d10dc643
++   label Przypadek, który nie może wystąpić
+
+% 0 1 0 1477c34ff41c7c99183443e1d3238ae1
+
+% 1 1 0 0960c596329e4eb20a0b442aaa85c43a
+
+% 2 1 0 0e6e53f148d054890c6a5a0a4aad1e95
+
+% 3 1 0 09dc89c3a6725315154f6f4958c43c7e
+
+% 4 1 0 0bac73b0c18b3386142ad2cca388a1c1
+
+% 0 1 0 13bb37c0920e0f60177a01fdba7f6507
+
+% 1 1 0 0f71c07ad038ee521c5ae121c344c2a4
+
+% 1 1 0 0cfd2407740879020fdd058b6c395732
+
+@ 0 1 0 07c84a05516527ac0afcb4270545a4ad
++   label Trzy, które mogą
+
+% 1 1 0 1250cd1721acd7dd16b07e564167f1f2
+
+% 2 1 0 1fd51c4a3384ab381efe0e6acc1d0b13
+
+% 3 1 0 0fcba68aa40c89841df9f55e2ee296e2
+
+% 4 1 0 11b53d68a900f8511e3544bf575b192b
+
+% 1 1 0 078a41bdb1319926193deac74a26bd45
+
+% 1 1 0 113d674980d181df0b52789a0e744922
+
+% 1 1 0 136d267ff733a60e0f6246170d49df5f
+
+% 2 1 0 1525a46c87e9e0571e7d21b8e7c42b7a
+
+% 0 1 0 08a86cbdc9b8cb0109ed8ce5b435ce67
+
+% 1 1 0 0cd6459499a6bd5203d659b3bcc1b6aa
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 0 1 0 1d713c560c3fef450eb50bbf8f2dbcaa
+
+% 0 1 0 09fe4809404b89a41541383452d46f42
+
+% 0 1 0 08b840a6a861ac6c14426330867a81d9
+
+% 1 1 0 04daa91c009938ae0f4c85794caf4a13
+
+@ 0 3 0 17ec1d01ee4c9d94138879907cf55f53
++ [Badanie ścieżki klas](../../soundness/modules/classpath.md#inspecting-the-classpath) zawiera
++ tabelę wpisów, a [stany niemożliwe](../../philosophy/impossible-states.md) – tę zasadę.

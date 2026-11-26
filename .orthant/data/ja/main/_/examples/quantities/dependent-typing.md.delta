@@ -1,0 +1,64 @@
+orthant 2 language
+
+@ 0 1 0 057635e4c4a545c601266be8b3bef0e7
++ # コンパイラが計算する単位
+
+@ 0 3 0 117720b9a6dca1ca0bd7f31d3fa5d8f5
++ 量の型はその単位を、それぞれの指数とともに列挙する。乗算は指数を足し、除算は指数を引くので、
++ コンパイラは結果の単位を求め、宣言された型と照合する。
+
+% 0 1 0 12705ff5e291290d17fbc8389d59ef4a
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 2 0 1b705383d498e88d1b8042aea4f39748
++   label 速度はメートルの1乗、秒のマイナス1乗である
++   highlight Metres[1]..Seconds[-1]  除算から求められる
+
+% 0 1 0 1accf43fe92797611dc8da9a374d03c2
+
+% 1 1 0 1b683763b07f3b4c19314dbe4ae0b985
+
+% 2 1 0 01774617032b94081037b9a3356ef3ac
+
+% 3 1 0 10f3939ce9a8a55e0a4d7a4fef4ea20f
+
+% 0 1 0 074f9de1cfde9994138c3f83bf7137e2
+
+% 1 1 0 0066cea91935e7fc1f03e673c7983a8a
+
+@ 0 1 0 03cd7e598489969417964b8a7a18aee3
++   label 加速度は速度ではない
+
+% 0 1 0 1477c34ff41c7c99183443e1d3238ae1
+
+% 1 1 0 0960c596329e4eb20a0b442aaa85c43a
+
+% 2 1 0 0f87090b197096950d1cf9e7e8c251bc
+
+% 3 1 0 09b1c8a9516e08f60bc993a63b2e7589
+
+% 0 1 0 059f2c740c19abf30933e916a106d596
+
+% 1 1 0 00cb2f7cc437433304886b76845f62a1
+
+@ 0 2 0 0a9374e56df2772e13afbc39d5a7f4a5
++   label 秒のマイナス2乗を持つ
++   highlight Seconds[-2]  時間でもう一度割る
+
+% 1 1 0 01171f0c2e2d15590adfc36ea3c66a5a
+
+% 2 1 0 0b9ebba81e577b9c0f97880fb9f7f0d8
+
+% 3 1 0 0cf6c55506a92f240539b7fbb71acb7e
+
+% 0 1 0 13c1c5bb2e477465053ce0ce2f3e9f68
+
+% 0 1 0 18eafb32caed3dd50f976e787bd035ca
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 2 0 1885d25cd7d38336136062bfce269a9a
++ 指数については[量と単位](../../soundness/modules/quantities.md#quantities-and-units)で説明する。

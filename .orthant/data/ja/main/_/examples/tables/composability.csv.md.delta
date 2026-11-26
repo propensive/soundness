@@ -1,0 +1,69 @@
+orthant 2 language
+
+@ 0 1 0 0d2702a458b55e6200dab53021b3e8a0
++ # CSV から表へ
+
+@ 0 2 0 1ce2315b3cb1a8df1eb69318d410b7de
++ 一つのケースクラスが行を二度記述する。CSV リーダーにはデコードすべきフィールドとして、表には描くべき列として。
++ 両者をつなぐために書くものは何もない。
+
+% 2 1 0 1be616765bee2c940b7d47c1fed3b07b
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 2 0 15dde37edcb7beb61ec2f9d7f05a0ae0
++   label デコードした CSV の行
++   highlight as[Play]  Play のフィールドでデコードされる
+
+% 1 1 0 1c5da8e3e7a212f81d0a0b8b81442e92
+
+% 2 1 0 1789ec3e274006b40852344602cb8c7b
+
+% 2 1 0 06f98bde2fc0f040119bfb0b86521fbe
+
+% 4 1 0 12c9229192e970e507630a9daf2a76a1
+
+% 5 1 0 008f3eb176915fb9077ee3fef8a85373
+
+% 1 1 0 0954eb39cab696e81b42cb2c45503e69
+
+@ 0 2 0 16cb5fc23e02804a1767e5a1d100e4dd
++   label 表にした同じ行
++   highlight tabulation  Play のフィールドで描かれる
+
+% 1 1 0 1b0bbdd6e86bf3490060476c19dc14a8
+
+% 2 1 0 0f9b2b2a3ade3ba90f5719c3169917ab
+
+% 0 1 0 05cd777059359d0a12caf27aae086213
+
+% 0 1 0 1193f86229d02c141bfaf5bcf5efbb1e
+
+% 2 1 0 01ab06f1388d8b631dfff30229b4a5cb
+
+% 4 1 0 0804cd787ebd91591fa2ae6ae7a0ff57
+
+% 5 1 0 19efca1144135e6c0207052d77652ebd
+
+% 0 1 0 0f0d4a6a81d1723f04992ea6d68c6659
+
+% 1 1 0 16d2f4c6fa352e5e1659501d3ec00c81
+
+% 1 1 0 136d267ff733a60e0f6246170d49df5f
+
+% 2 1 0 1525a46c87e9e0571e7d21b8e7c42b7a
+
+% 0 1 0 08a86cbdc9b8cb0109ed8ce5b435ce67
+
+% 1 1 0 0cd6459499a6bd5203d659b3bcc1b6aa
+
+% 0 1 0 00af3fdb360e27f9095168ce70444642
+
+% 0 1 0 00ed2f96dcc8b2890baca4895a0d56c7
+
+% 1 1 0 1a3c593547d7a2ec0a879975fd077067
+
+@ 0 2 0 1bbee6fcca7586671f9088796cde35ce
++ [CSV](../../soundness/modules/csv.md)が行を読み、[表](../../soundness/modules/tables.md#a-table-from-a-case-class)がそれを描く。

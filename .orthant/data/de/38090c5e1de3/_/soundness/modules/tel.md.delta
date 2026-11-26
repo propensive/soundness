@@ -1,0 +1,44 @@
+orthant 2 language
+
+@ 0 3 0 1c336ec65a38717a144663c44d58154f
++ Eine Änderung, die im ganzen Dokument gilt, etwa das Umbenennen eines Schlüsselworts, wo immer es
++ vorkommt, ist ein `transform`. Es wendet eine Funktion auf jeden Compound an, den tiefsten zuerst,
++ und behält alles, was kein Compound ist, genau so bei, wie es war: Kommentare, Leerzeilen, das
++ Pragma und das Layout.
+
+% 2 1 0 1ce791bc6b140bc1065210aaaf6fc25d
+
+% 0 1 0 1afd1a5e332fdd3e107da47971a327f6
+
+% 0 1 0 1ecff8a1898066421b64d7f8f41aa090
+
+% 1 1 0 1741babaafa624e917e89f56d854b5cd
+
+% 3 1 0 1389a99686c563601fff2ca5cab11a0e
+
+% 4 1 0 06d6614a7262ac6f14fd51f8d269f3d2
+
+% 5 1 0 1cdf13aca036701911a50c2714523566
+
+% 0 1 0 17774d15a2bf003e1284666d96bed902
+
+% 1 1 0 1775a6a26d562a3d1835b597825cb710
+
+@ 0 4 0 168fcde3993f9ce40924dec5b2c5cd24
++ Der Baum, den `transform` durchläuft, lässt sich auch direkt lesen. Das `document` eines geparsten
++ Werts ist sein `Tel.Document`, mit dem Pragma und den Zeilenenden, mit denen es gelesen wurde, und
++ seine `blocks` sind die Compounds, so wie sie angeordnet sind: Jeder `Tel.Block` enthält die
++ Kommentare über einer Gruppe von Compounds, die Compounds selbst und die Anzahl der Leerzeilen nach
++ ihnen.
+
+% 2 1 0 1c0b24a03a2c7b7d0c5f93c32efac912
+
+% 3 1 0 006852f90de2138211da7fdc88cf2ea4
+
+% 4 1 0 15631571c072d5b303604293c82f4587
+
+% 0 1 0 1d4e1e76f02f99c61d9980b78a662d8e
+
+% 0 1 0 11380e027e21fdb306885fcaaca3b1f6
+
+% 1 1 0 1229670e4d47f09e1a9b907351841625

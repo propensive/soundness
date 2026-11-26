@@ -1,0 +1,45 @@
+orthant 2 language
+
+@ 0 1 0 0b305a26d37e79f60cc763dbbee161dd
++ # Un'immagine da un'API
+
+@ 0 3 0 13ab623ad94ce8aa169044ba536faa53
++ Una risposta del tipo di media `image/png` è trasportata da un `Raster in Png`, il tipo di
++ un'immagine in ogni altro contesto. Il client non sa nulla delle immagini. Un import dice quale tipo
++ trasporta il tipo di media, e il lettore dell'immagine fa il resto.
+
+% 0 1 0 12705ff5e291290d17fbc8389d59ef4a
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 0 1 0 14aab7f0be2434f81421fb69d99543da
+
+@ 0 2 0 145bb00a0b04006b13a3cb790d2d4cc1
++   label Il codice QR di un biglietto
++   highlight pngConstruable  image/png è un Raster in Png
+
+% 0 1 0 0feeb6ee26eddc7916a3c923ea9fa7b1
+
+% 0 1 0 16a5c3341a34d5561f4387a584d405bf
+
+% 0 1 0 1eadab2e56c85e3f1cb126daca146502
+
+% 0 1 0 13d14f453ecdf0530b51d75c4f776c5f
+
+% 0 1 0 014a5ba4890a74fd100c9ff7f0f6bdb9
+
+% 0 1 0 16a7ada95123d0de196d45ed6dde8682
+
+% 0 1 0 099a54fd0421ae6914294f7802815918
+
+% 0 1 0 00a2e6b6ea0ed38205cc63b6edd6a285
+
+% 0 1 0 18eafb32caed3dd50f976e787bd035ca
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 4 0 09754876f295eeed011c7a9420b8c658
++ L'esempio viene compilato, ma non eseguito, poiché richiede la rete. [I tipi di media e i loro
++ portatori](../../soundness/modules/openapi.md#media-types-and-their-carriers) contiene il portatore
++ di ogni tipo di media, e [Immagini](../../soundness/modules/images.md) ciò che si può fare con un
++ `Raster`.

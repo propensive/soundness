@@ -1,0 +1,30 @@
+orthant 2 language
+
+@ 0 4 0 0527525db1d235091866ce303b9f0d3b
++ Der Eintrag `JavaRuntime` kann sagen, woraus er besteht, was ein Werkzeug braucht, das die eigene
++ API des JDK indiziert oder dokumentiert. `modules` nennt die Module der Laufzeit, `exports` die
++ Pakete, die ein Modul an jedes andere Modul exportiert, und `classes` die Klassen eines dieser
++ Pakete, jede mit ihrem vollständigen Namen:
+
+% 2 1 0 1a12f3a45ce050c70e6f41b772e263f0
+
+% 0 1 0 08a86cbdc9b8cb0109ed8ce5b435ce67
+
+% 1 1 0 0cd6459499a6bd5203d659b3bcc1b6aa
+
+% 0 1 0 03f33413f92e1c8919252fe9769fb3e9
+
+% 0 1 0 1dbed0c04be461bd1a347cf9aa47f70c
+
+% 0 1 0 08c47d468e83100402d57a27941d2706
+
+% 0 1 0 0ec9d6aed5e826d8052f35ac718dc9c7
+
+% 1 1 0 046ec549897f6af805e70b753dc175b9
+
+@ 0 4 0 0b806f9113affa6c062caf0e910b2d1e
++ Ein Paket, das ein Modul nur an benannte Module exportiert, gehört nicht zu seinen `exports`, und
++ eine verschachtelte Klasse wird so benannt, wie die Laufzeit sie benennt, etwa
++ `java.util.Map$Entry`. Ein Modul oder ein Paket, das nicht existiert, enthält nichts, sodass jedes
++ eine leere Liste ergibt. Diese gibt es nur für die JVM: Ein von Scala Native kompiliertes Programm
++ hat kein Laufzeit-Image, das sich auflisten ließe.

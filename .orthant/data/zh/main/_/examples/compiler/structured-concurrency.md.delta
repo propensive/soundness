@@ -1,0 +1,57 @@
+orthant 2 language
+
+@ 0 1 0 08516cb608ea69b007377dde08f81bd0
++ # 属于一个作用域的编译
+
+@ 0 3 0 1a0272c51312d9a31a747d2cddb95a86
++ 编译与启动它的代码并行运行，并随时报告它的通知。因此它是一个任务，而任务需要监管器：在 `supervise` 之外无法启动编译器，而在它之内，编译器运行期间块不会结束。
+
+% 0 1 0 12705ff5e291290d17fbc8389d59ef4a
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 033f29793f80491a053b97cab9da49de
++   label 凭空启动的编译器
+
+% 0 1 0 1477c34ff41c7c99183443e1d3238ae1
+
+% 1 1 0 0960c596329e4eb20a0b442aaa85c43a
+
+% 2 1 0 101f1d0fa2a3868800a59a0719e077bf
+
+% 3 1 0 0461520cac767beb115172428e9c7f20
+
+% 5 1 0 0612d647a157174e0cc1e998ccee8d5c
+
+% 7 1 0 08a6c41f32cc831c1f3e360cd318059c
+
+% 0 1 0 0d5d63e3e361ec8f1968a9965240f42e
+
+% 1 1 0 0816a18457bc0e24101a779889b3e785
+
+@ 0 2 0 1af37150f902581b1737d9936d3b52a6
++   label 受到监管
++   highlight supervise  编译不能比这个块存在得更久
+
+% 1 1 0 0012492de5a1aba013b394e30d3d29c0
+
+% 2 1 0 1f65b4363fcfc90f078b212502db02dc
+
+% 3 1 0 03ecd21ff7e5b9a31ea1c116e83dde26
+
+% 5 1 0 03f933e4d5af277e13b2c8d07f293787
+
+% 7 1 0 1b5407fe61cbc38a1fc47f0c7e8355fb
+
+% 0 1 0 1ddbe24ca96966e71e52f5d6ca9d7a17
+
+% 0 1 0 182865ea359852bc16876473f8240b98
+
+% 0 1 0 18eafb32caed3dd50f976e787bd035ca
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 3 0 029f8fefef7756321b9d516af25f42b6
++ 本示例只编译，不运行，因为它会启动编译器。[编译](../../soundness/modules/compiler.md#compiling)读取了该过程的通知，[结构化并发](../../philosophy/structured-concurrency.md)解释了这个作用域。

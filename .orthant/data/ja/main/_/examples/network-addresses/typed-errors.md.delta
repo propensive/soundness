@@ -1,0 +1,60 @@
+orthant 2 language
+
+@ 0 1 0 1192c399318ea180047a9f9a1ad2a35c
++ # 識別子はそれぞれ独自の仕方で失敗する
+
+@ 0 3 0 05b9a79ab91f6d5518c37fd2b7e92705
++ ホスト名のデコードは `Hostname.Error` を、IP アドレスのデコードは `IpAddress.Error` を送出する。
++ 両方を行うメソッドは両方を宣言し、その呼び出し側は何がうまくいかない可能性があるかを正確に知る。
+
+% 0 1 0 12705ff5e291290d17fbc8389d59ef4a
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 1d14eeaf3dcea7891d95f95fd27f90a2
++   label 何も宣言されていない
+
+% 0 1 0 1477c34ff41c7c99183443e1d3238ae1
+
+% 1 1 0 0960c596329e4eb20a0b442aaa85c43a
+
+% 0 1 0 1fc6a6e38264fc2303c53c6e3b6e8617
+
+% 1 1 0 190226f929ee20960038be95b173e1b4
+
+@ 0 1 0 010caa8a68955828041cd471ec1466ae
++   label アドレスが不正な形式かもしれない
+
+% 1 1 0 16fa2ec005bc4a750650717c36b2edc4
+
+% 1 1 0 1a88c34af11d3c5f0bcdee239e74b032
+
+% 2 1 0 11264092ba04da0a14f16fe2a0f8ddb4
+
+% 1 1 0 0fe415fbdedde856184f643e075f37d3
+
+@ 0 1 0 1ac46dfd5fbcdcc119c3297dbf6b784b
++   label ホスト名も同様である
+
+% 1 1 0 1f8f48cba43701a81348bfdd49c545b2
+
+% 0 1 0 0fd2ac3797a0477d02117fa7e01a94b3
+
+% 1 1 0 0831db4166dd7587114b3740732b8e38
+
+% 2 1 0 132f0298fac3460312982f601fc9ab47
+
+% 0 1 0 192691aceb1655d5022bb17e9530d2a0
+
+% 0 1 0 1e98315c2127ce621a08dc2f67fb6f10
+
+% 0 1 0 164665ee7ce27f371a1b429d11f2da56
+
+% 0 1 0 18eafb32caed3dd50f976e787bd035ca
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 2 0 0743763340888d080ae5d35158ac3f1f
++ [実行時の解析](../../soundness/modules/network-addresses.md#parsing-at-runtime)に型とそのエラーの表がある。

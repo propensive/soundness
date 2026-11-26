@@ -1,0 +1,84 @@
+orthant 2 language
+
+@ 0 1 0 1c1ef003322eda900b8b419484c6a3f5
++ # Un valore casuale di un nuovo tipo
+
+@ 0 3 0 084b4d6bde24e9d610523a53f2e0e8a8
++ `arbitrary` dà un valore casuale di qualsiasi tipo che sia `Randomizable`. Un'enumerazione sceglie
++ uno dei suoi casi e una case class genera ciascuno dei suoi campi, quindi un tipo fatto di parti
++ randomizzabili non ha bisogno di un generatore scritto apposta.
+
+% 2 1 0 0c7914b15fa9bb7312d98d3c2bec2c48
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 182e12d6872bf29e1b814d5de1016e38
++   label Un numero casuale
+
+% 1 1 0 096095f8f0cf80ba0d16813570e10019
+
+% 0 1 0 147a33188140db7f06261e1919884d24
+
+% 2 1 0 1bb6d1e54171fee90ce4d4789806f8fb
+
+% 0 1 0 1a037e69369138710c5036dc00f90592
+
+% 1 1 0 06acdc879e4c84c800d008b518b79cd7
+
+@ 0 2 0 09145e286cb07d1b0567dd1a2191e0af
++   label Un caso casuale di un'enumerazione
++   highlight arbitrary[Suit]  uno dei quattro casi
+
+% 1 1 0 0fba0ca9d4e75eaf03a1336e83a385b7
+
+% 2 1 0 06cbac2a512c471618102f18520cc0be
+
+% 4 1 0 03d02c5d00f812020bfa8dc2db6c9a44
+
+% 6 1 0 0b97f417a258b1ff13c089f3f862d612
+
+% 7 1 0 081cf33ec7113f8a17c4291f7446577d
+
+% 0 1 0 1ff69d298862d4a410ac452562a81ccc
+
+% 1 1 0 0e330d15e65dbbe206b1a86dafde74a2
+
+@ 0 2 0 1c44b1c4c3b329421db5236dfd396ee8
++   label Un valore casuale di una case class
++   highlight arbitrary[Card]  un seme casuale e un segno casuale
+
+% 1 1 0 1bdcd6206f1562231e008429c984e985
+
+% 2 1 0 0673ded57033f46707a97183ab6cff99
+
+% 4 1 0 05fa54e391a9f38609b093b37180e52a
+
+% 6 1 0 0fe04f3e41b030e815d6e914c1c23195
+
+% 7 1 0 10f87bfec9e8292e158f161bcb2b00b0
+
+% 0 1 0 03ead4f81b94db5d17085db919b588df
+
+% 0 1 0 0d82de70c4d927c31d5deb4f6c106b9a
+
+% 1 1 0 107d86f4534df5e80ff4cd0331710b29
+
+% 1 1 0 136d267ff733a60e0f6246170d49df5f
+
+% 2 1 0 1525a46c87e9e0571e7d21b8e7c42b7a
+
+% 0 1 0 08a86cbdc9b8cb0109ed8ce5b435ce67
+
+% 1 1 0 0cd6459499a6bd5203d659b3bcc1b6aa
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 0 1 0 064375a399679a3a032f821dc45fc1a7
+
+% 1 1 0 198b1d5a2b967bbd19a9a06a2a6ae76d
+
+@ 0 2 0 022a93ee580f516411ce093e57634362
++ [Collezioni e tipi personalizzati](../../soundness/modules/randomness.md#collections-and-custom-types)
++ mostra come scrivere un'istanza a mano, quando ogni campo a caso non è ciò che si vuole.

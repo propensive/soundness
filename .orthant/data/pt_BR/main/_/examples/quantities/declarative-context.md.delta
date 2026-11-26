@@ -1,0 +1,60 @@
+orthant 2 language
+
+@ 0 1 0 124504d3d570bb9117dfa41bf11971f8
++ # Uma temperatura, lida na escala no escopo
+
+@ 0 2 0 0f12441a9102f9a210a3c84b5e51c9db
++ Uma temperatura é criada em uma escala nomeada, e é a mesma temperatura qualquer que seja a
++ escala em que é exibida. A escala com que ela é exibida é um import, e nenhuma conversão é
++ escrita.
+
+% 0 1 0 12705ff5e291290d17fbc8389d59ef4a
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 0 1 0 0603fe15aa20f5d61cbb819e60e118cf
+
+@ 0 1 0 1ac983848db2accb193802abe64222b9
++   highlight celsiusScale  graus Celsius
+
+% 1 1 0 19e6d4771e5b748c18412af414da59a0
+
+% 0 1 0 188e7d22cea0c78300098d70f42a0cc0
+
+% 2 1 0 0e52c202a7fbe32b040e364688b20bf9
+
+% 4 1 0 175b7485161fa9e2071e603c3f834048
+
+% 0 1 0 0bf3aa745c2c2f1d03fc8d0221378384
+
+@ 0 1 0 0fded30b53409e8919ed28e767879b68
++   highlight fahrenheitScale  graus Fahrenheit
+
+% 1 1 0 09d1dcad3a2de2c4075c0b2a1d7f27d0
+
+% 0 1 0 054341ef0b038e2d0e829b941e3ddd73
+
+% 2 1 0 01b9aa1affbb92fe03c26cf7751b14f7
+
+% 4 1 0 115c63791c53911d1353a70913e52f26
+
+% 0 1 0 0fbd98e0daec0e91039550434ff7712d
+
+% 0 1 0 0144dfa30690c695093db7673120a1a8
+
+% 1 1 0 0311d4b58efa23820c908fbedd52fa44
+
+% 0 1 0 1a9bb4a47804f482096c5c8795c5d50a
+
+% 2 1 0 021e659e02b585fd0bf7f6eed6babc0f
+
+% 4 1 0 0a516ac76662d54d17274e84e5a7ab04
+
+% 0 1 0 18eafb32caed3dd50f976e787bd035ca
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 3 0 135ee5c177ec93b11113691cacbc278d
++ [Temperatura](../../soundness/modules/quantities.md#temperature) mostra as leituras, e
++ [contexto declarativo](../../philosophy/declarative-context.md) por que a escala não é um
++ argumento.

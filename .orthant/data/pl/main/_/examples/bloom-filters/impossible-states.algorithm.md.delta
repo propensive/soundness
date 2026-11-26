@@ -1,0 +1,72 @@
+orthant 2 language
+
+@ 0 1 0 07e8aa6c9503a0da164a6cf0827fa53d
++ # Dwa filtry, dwa hasze
+
+@ 0 3 0 05670c696ff1d10b0c5ac57eff5fc7b6
++ Bity filtra nic nie znaczą bez hasza, który je ustawił, więc hasz jest częścią typu filtra.
++ Filtru utworzonego jednym algorytmem nie można podać tam, gdzie oczekiwany jest filtr innego, a
++ na zapytanie nigdy nie można odpowiedzieć złym haszem.
+
+% 2 1 0 0b26f0dca89777bc178716065afc08b9
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 01c04453a32672d0022371f5efaffeec
++   label Filtr BLAKE3 tam, gdzie oczekiwany jest MurmurHash3
+
+% 0 1 0 1477c34ff41c7c99183443e1d3238ae1
+
+% 1 1 0 0960c596329e4eb20a0b442aaa85c43a
+
+% 2 1 0 07d79965cc1230e007e1304a1cb07450
+
+% 3 1 0 1e770960b239798c0befb9dbe98b7487
+
+% 5 1 0 07ad7e185b621ff119596da13011df39
+
+% 0 1 0 1d208845abe37ed601d6a2d18d0863c1
+
+% 1 1 0 0479f13cbaaf82a3068feb313af717c5
+
+% 1 1 0 0435fd62dafe184f1790dffb457ffc97
+
+@ 0 2 0 0c8f1fc16092f53518d0893cd077d128
++   label Algorytm, który nazywa typ
++   highlight [Murmur3]  ten sam algorytm co w parametrze
+
+% 0 1 0 0fd2ac3797a0477c02117fa7e01a94b2
+
+% 1 1 0 0428a31f3d3e43b7091c3ca786dd21af
+
+% 2 1 0 0dd028c7a82a868d19e32383c21e122d
+
+% 3 1 0 0bb3e02203a8e9d811392446dbcd92ae
+
+% 5 1 0 05e7eafd94f69e4414c11467c580ba79
+
+% 0 1 0 1d6144fc9f74585818bb708c101f204d
+
+% 1 1 0 164141cfc5039aa91e1d14ccc8590d2e
+
+% 1 1 0 087640a4e7c7212c13065309e7baee87
+
+% 1 1 0 136d267ff733a60e0f6246170d49df5f
+
+% 2 1 0 1525a46c87e9e0571e7d21b8e7c42b7a
+
+% 0 1 0 08a86cbdc9b8cb0109ed8ce5b435ce67
+
+% 1 1 0 0cd6459499a6bd5203d659b3bcc1b6aa
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 0 1 0 0f8e62ba886a3771160bfc263523ca05
+
+% 1 1 0 002af5d9e8e490fa05f124e88fbffc13
+
+@ 0 2 0 020c70a6af6feb9f1d6590fa4bdd0e83
++ [Skąd biorą się bity](../../soundness/modules/bloom-filters.md#where-the-bits-come-from)
++ wyjaśnia, dlaczego dwa filtry zgadzają się tylko wtedy, gdy zgadzają się ich algorytmy.

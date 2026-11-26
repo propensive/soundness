@@ -1,0 +1,73 @@
+orthant 2 language
+
+@ 0 1 0 056490a70971822a1fef05be67f3ab92
++ # Opcje są zwykłym JSON
+
+@ 0 2 0 036d558ceac2430513e64c752bf4ed3a
++ Opcje ceremonii to wartość `Json`, w której typie nie ma nic z WebAuthn. Działa na nich wszystko, co
++ odczytuje, pokazuje lub wysyła JSON, a do składowej dociera się po jej nazwie.
+
+% 2 1 0 1d1f326bac4e667919d45179eb4b82c6
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 1ba68bf1b958755a0c5a3a594a110f40
++   label Opcje rejestracji
+
+% 1 1 0 0ced0755872346351eb538738834fc32
+
+% 2 1 0 0a4a799556417ac21feb62679b7cb160
+
+% 3 1 0 0128a62b876fae8c08d9017e2e1735bc
+
+% 5 1 0 0a19ecbffc8d197c1c5b7e0c3caf49e6
+
+% 6 1 0 128d7f7366267fed0a712cc85c53ac56
+
+% 7 1 0 1514f0f748b8f060188e7ad68adf4272
+
+% 9 1 0 0f86504fbb04f34d0ca6e56042bcb5c6
+
+% 1 1 0 14fb65827fd416ed098553c63698416b
+
+@ 0 2 0 1b13510ac4b88f8d064e4794912abcb3
++   label Jedna z ich składowych
++   highlight options.user.displayName.as[Text]  ścieżka w głąb JSON
+
+% 1 1 0 133df3d866d428850ba57bdf0a52a708
+
+% 2 1 0 010771de8dd71f4307ac5061d8eb3caa
+
+% 3 1 0 1ed2e7a7f56758b70520294e6533bdc1
+
+% 5 1 0 1d6279200ea26b480c07c78d5a2721d4
+
+% 6 1 0 1642b32eaeeee9f709c62c60cc176b25
+
+% 7 1 0 0bd21cc943b7dae205efc9de48e9837b
+
+% 9 1 0 0ba0fdb6290e0d780ba4f709d6322202
+
+% 0 1 0 0ddcdd1e30d3455c1b3252c88e3523c1
+
+% 1 1 0 037a84b1fd40108004c0df8e149b5279
+
+% 1 1 0 136d267ff733a60e0f6246170d49df5f
+
+% 2 1 0 1525a46c87e9e0571e7d21b8e7c42b7a
+
+% 0 1 0 08a86cbdc9b8cb0109ed8ce5b435ce67
+
+% 1 1 0 0cd6459499a6bd5203d659b3bcc1b6aa
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 0 1 0 117a1b6af53e615a11d1673d8f019f42
+
+% 1 1 0 1fd3ea35d964e4f60990842659342f93
+
+@ 0 2 0 0ca42b93df8c361807f67e38d092b662
++ Sekcja [Rejestracja](../../soundness/modules/webauthn.md#registration) mówi, co strona robi z
++ opcjami, a [JSON](../../soundness/modules/json.md) – co jeszcze można z nimi zrobić.

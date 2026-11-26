@@ -1,0 +1,61 @@
+orthant 2 language
+
+@ 0 1 0 0f07817695ec2adf01d7c2f843098812
++ # Ein Befehl, der nicht ausgeführt werden kann, sagt, warum
+
+@ 0 3 0 0f996ed3efa8f6e407141b5696dbc67e
++ Ein Handler, der nicht antworten kann, löst einen `Lsp.Error` mit einem der Gründe des Protokolls
++ aus. Jedem Handler wird ein Ort verliehen, an dem er ihn auslösen kann, und der Server macht
++ daraus eine JSON-RPC-Fehlerantwort mit dem Übertragungscode des Grundes und der ID der Anfrage.
++ Kein Handler baut diese Antwort.
+
+% 0 1 0 12705ff5e291290d17fbc8389d59ef4a
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 0ddd2fdeb470cde911f6a5bb885a2b5b
++   label Ein Befehl, der immer antwortet
+
+% 1 1 0 16fe54e9bcb792950d36e828ed932c4a
+
+% 2 1 0 097a4e52403c141c068094db88d6c2e6
+
+% 4 1 0 1985e41d95c8ed291595d1328f41da56
+
+% 5 1 0 10b83388ed91713810ccb8a0fae72c57
+
+% 1 1 0 0d62df542673c4340ca3f8e29962b65f
+
+% 1 1 0 10c19e10d734fa911febd21a484412c6
+
+@ 0 1 0 0adc88fbc3da4cfc1bfa240bfb18fe35
++   label Und einer, der ablehnt
+
+% 0 1 0 16237d2ddd23bcfc12c2c7e0e42d6fc4
+
+@ 0 1 0 1bb3487ab6f8b15f10b5b9f331b5043c
++   highlight Lsp.Error.Reason.RequestFailed  Übertragungscode -32803
+
+% 1 1 0 1da84b37d6affa281cedfc842de95798
+
+% 2 1 0 130a5e6c5ab0043d14aabca7e6f53018
+
+% 4 1 0 0c011c1ea6e6396000c1f33779c0e17c
+
+% 5 1 0 15bfe453abe75cb60b595ce2a8c54f3e
+
+% 0 1 0 0e0b85fdcbb8cf13130e9679855ddf80
+
+% 1 1 0 12250252a8e5d6a412cf2ebf0d0b5697
+
+% 0 1 0 18eafb32caed3dd50f976e787bd035ca
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 3 0 0f81cc5325136a3406e35b217b845be8
++ Das Beispiel wird kompiliert, aber nicht ausgeführt, da ein Server über Standardeingabe und
++ Standardausgabe mit einem Editor spricht. [Fehler melden](../../soundness/modules/lsp.md#reporting-errors)
++ beschreibt, was aus einem Fehler wird, der für eine Anfrage ausgelöst wird, und was aus einem für
++ eine Benachrichtigung.

@@ -1,0 +1,68 @@
+orthant 2 language
+
+@ 0 1 0 0d6739a4073a694e001a0ec3f900c3a1
++ # 和として書く暦の上の期間
+
+@ 0 2 0 0d4ab3ffd31dd714006c8808c485c1a5
++ 暦の上の時間の長さは、数に単位を掛けたものであり、そのいくつかを足し合わせたものである。
++ 結果は `Timespan` であり、その各部分は名前で読み出せる。
+
+% 2 1 0 1ed97eebf6f2dd8819eeb48e7696dffc
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 198fc43a880f25a91fa6d2ddad66bfa3
++   label 二年
+
+% 1 1 0 15dc9737714741981eced812d2ab4a52
+
+% 0 1 0 0361e828ee8a698f1e8f452f74fb2b14
+
+% 1 1 0 19350535dfa84e6916e701d7a2719bd4
+
+@ 0 2 0 0262c3dc072dcf09164a4536108b5a22
++   label そして三か月
++   highlight 3*Month  別の単位を足す
+
+% 1 1 0 1ec3fce43cc35f470bfe8f10faee5030
+
+% 0 1 0 0a783e1186b399b40cd71a901a246503
+
+% 1 1 0 1bd3c3fa1b0ba492148909f4ce5b1884
+
+@ 0 2 0 19cfe31252b8004e082571c0e3a06054
++   label そして二週間
++   highlight 14*Day  さらにもう一つ
+
+% 1 1 0 120fe131c85985b2059e9f1c1fc03527
+
+% 0 1 0 1fa416dce8cb7b2001d98bed50c5c804
+
+% 1 1 0 112dff1b766fd86d08c423c3acc71d09
+
+% 1 1 0 136d267ff733a60e0f6246170d49df5f
+
+% 2 1 0 1525a46c87e9e0571e7d21b8e7c42b7a
+
+% 0 1 0 08a86cbdc9b8cb0109ed8ce5b435ce67
+
+% 1 1 0 0cd6459499a6bd5203d659b3bcc1b6aa
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 0 1 0 18e94b554742e1bf12317056f1391980
+
+% 0 1 0 1798b9612c69a958125753c2c9f60f35
+
+% 0 1 0 1092d77bb79964b917599286157e795d
+
+% 0 1 0 175c0c7c8ec05cd215866adef9d4c0d8
+
+% 1 1 0 1c4be5d589644a7702afdd19905d2a9e
+
+@ 0 3 0 19980782fcae169c12bd25a720630261
++ 最後の行は、ISO 8601 の形式での期間である。
++ [持続時間と期間](../../soundness/modules/time.md#durations-and-timespans)は、期間が秒数ではない
++ 理由を説明する。

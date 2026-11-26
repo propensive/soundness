@@ -1,0 +1,54 @@
+orthant 2 language
+
+@ 0 1 0 17e2c6a266c78f8617ce98cdbedaef3f
++ # Un nom qu'une plateforme n'autorise pas
+
+@ 0 2 0 0cd6f96bd9442f9e1ba57b9d290f3487
++ Lier un chemin à une plateforme vérifie chacun de ses noms au regard des règles de cette
++ plateforme. Un nom qui contient une barre oblique n'est pas un nom sous Linux : le chemin qui le
++ contient n'est donc pas un chemin.
+
+% 2 1 0 0054449e22e58f51056b65f68e84912e
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 14c01eec19b728a3052822d66e422cab
++   label Deux noms, écrits comme un seul
+
+% 0 1 0 1477c34ff41c7c99183443e1d3238ae1
+
+% 1 1 0 0960c596329e4eb20a0b442aaa85c43a
+
+% 0 1 0 0434c3cacbbbc38118a3bc55d9147100
+
+% 1 1 0 145e37768be9f79d0c472cbf33f01dda
+
+@ 0 2 0 1ae2b7001d8f90ae05344e581e6952ae
++   label Deux noms
++   highlight "letters"  un nom à part entière
+
+% 1 1 0 1be522339545e02f076c20f58e08da0d
+
+% 0 1 0 14c151a5bc79babb1879a5efcd2f4696
+
+% 1 1 0 1ff273444d2bb5bf1f213cecd88dd30b
+
+% 1 1 0 136d267ff733a60e0f6246170d49df5f
+
+% 2 1 0 1525a46c87e9e0571e7d21b8e7c42b7a
+
+% 0 1 0 08a86cbdc9b8cb0109ed8ce5b435ce67
+
+% 1 1 0 0cd6459499a6bd5203d659b3bcc1b6aa
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 0 1 0 11441682450bd16a1d60015dfd9f2019
+
+% 1 1 0 06976ceaf2f873261caea89e6c72b6f6
+
+@ 0 2 0 088fc06d0858a611120aa9664429ea5f
++ [Plateformes](../../soundness/modules/paths.md#platforms) présente les plateformes, et
++ [Noms](../../soundness/modules/names.md) la manière dont leurs règles sont énoncées.

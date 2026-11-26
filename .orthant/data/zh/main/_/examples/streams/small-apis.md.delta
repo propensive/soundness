@@ -1,0 +1,62 @@
+orthant 2 language
+
+@ 0 1 0 098526329458f5eb08123e6cfd743571
++ # 一个方法把源读取为任意类型
+
+@ 0 2 0 15a8732d23b5589712525c5def3d0708
++ `read` 把源读入，并接受所需的类型。同一个源可以按作用域内的编码读取为文本或字节，没有哪个方法以某个类型命名。
+
+% 2 1 0 0e21fedc4b1552ce1da3d6711e1ccea5
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 2 0 19437c6c67993379165de7413ffada42
++   label 作为文本
++   highlight read[Text]  所需的类型
+
+% 1 1 0 168d6c447fd480a307842b43b739c877
+
+% 2 1 0 070721d55402f96004c29ad671dacf3a
+
+% 4 1 0 00ee80ac18906a3b004f733e4a8561a6
+
+% 5 1 0 0a297f48b3a5ddd50ba6d9cbf6be2375
+
+% 1 1 0 100e1da74bb9a38001466ad4cc95cbd2
+
+@ 0 2 0 0ddc20a4619d21fb1066dc2858e69436
++   label 作为字节
++   highlight read[Data]  按作用域内的编码
+
+% 1 1 0 12622e53f9ebb98502a2dae7a57e9dfb
+
+% 2 1 0 1226b41be2fcd2090bbc00129e1dd4ef
+
+% 4 1 0 1e67f8e75c11f3361b265316048ebbda
+
+% 5 1 0 1532f9fae1eb1ae816286aa28fe23505
+
+% 0 1 0 1d475f868d7499b60f2d0500c7e7bf23
+
+% 1 1 0 1b9e772e81bc64d401bf30a15c3aa404
+
+% 1 1 0 136d267ff733a60e0f6246170d49df5f
+
+% 2 1 0 1525a46c87e9e0571e7d21b8e7c42b7a
+
+% 0 1 0 08a86cbdc9b8cb0109ed8ce5b435ce67
+
+% 1 1 0 0cd6459499a6bd5203d659b3bcc1b6aa
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 0 1 0 14850a09f6384c9f159ab6d95b562121
+
+% 0 1 0 10ebe3a8bcc51b1c0fbf4d7459fa2180
+
+% 1 1 0 1f351bd8c2d0cd8f1c291503f8d0f534
+
+@ 0 2 0 06600632771d5c211b56c646e67e482c
++ [读取源](../../soundness/modules/streams.md#reading-a-source)列出了其他各种源，[精简 API](../../philosophy/small-apis.md)解释了为何只有一个动词。

@@ -44,6 +44,16 @@ orthant 2 language
 @ 0 1 0 10aaf54c52c3fe0b0d316f1cd65e1109
 +     entry .Matcher   prüft einen Eigenschaftswert gegen seine Grammatik: gültig, ungültig oder nicht unterstützt
 
+@ 0 1 0 149d2567dd24c50e02387fde71dee163
++ entry .SyntaxMatching   der Trait, der `Css.Syntax.Matcher.check` hält
+
+% 1 1 0 11404277c923a1900ed4fa47e53f37fb
+
+@ 0 1 0 15a0a0021e50426100f5c798f9730d18
++       `object Matcher extends SyntaxMatching`, sodass `check` darüber erreicht wird, als
+
+% 0 1 0 0e5406930c31b54001c9d097474150af
+
 @ 0 5 0 1faf72e6fe088cd01a48ddf10a68931c
 +   entry #check   ein Wert gegen die Grammatik einer Eigenschaft oder direkt gegen eine `Css.Syntax`
 +       Zwei Überladungen: `check(property: PropertyDef, value)` verwendet die geparste

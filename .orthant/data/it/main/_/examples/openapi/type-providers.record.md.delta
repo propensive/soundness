@@ -1,0 +1,82 @@
+orthant 2 language
+
+@ 0 1 0 1f56ff0952ab496b1a709336c3cee1d6
++ # Una risposta senza una classe che la rispecchi
+
+@ 0 3 0 0832bdf67723604501e4d426a433c9d1
++ `record()` legge una risposta JSON come un record i cui membri sono le proprietà dello schema della
++ risposta, ciascuna del tipo che lo schema dichiara. Non si scrive alcuna case class, e nessuna può
++ perdere l'allineamento con la specifica.
+
+% 0 1 0 12705ff5e291290d17fbc8389d59ef4a
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 066d1a1fd5765cbb1dc837aaccae2f17
++   label Un record dello schema Pet
+
+% 1 1 0 0aed4813e7a00d400028c4fdbb44b71e
+
+% 2 1 0 157a32a7148bcada1930d9190e601a58
+
+% 3 1 0 09090b81998fc9071759a6e9872d43c4
+
+% 4 1 0 022f2925a42888d81f467f0c0e82867b
+
+% 6 1 0 0a470d853d47f48c182b522ff47b3018
+
+% 8 1 0 1d3604cc2c4b97c200471f3d9be27acf
+
+% 1 1 0 0cd25612957dbf951a51ba9d183fc978
+
+@ 0 2 0 0c9be3a97079ffdd195fe148b2a76d85
++   label Le sue proprietà
++   highlight crab.name  una stringa nello schema
+
+% 1 1 0 09eb2333909bf609017ec414454af729
+
+% 2 1 0 04b8ec2d2085e1010081e9b7c4383e07
+
+% 3 1 0 0d006b3504ef977d1b0d469b2873db05
+
+% 4 1 0 13a99736d52963f012d1bbce1eb87365
+
+% 6 1 0 03d1d1f58cc662ea06cf3ad734b2cde8
+
+% 8 1 0 04166b549501e4d015a4b7ee5ab29ad5
+
+% 9 1 0 0a48e56afe96b7ea1133fd9d7bcd6923
+
+% 1 1 0 02fcaa706f19e9fe1576b6c17e45cf19
+
+@ 0 1 0 197c824105357bfa1acaf403d80ff64b
++   label Il nome di ogni animale
+
+% 0 1 0 143d9fb9e6126b3400bf4a294a5139a6
+
+% 1 1 0 1529115422139bcc17eeac6a80741d2d
+
+% 2 1 0 1e91cc24d411084c0b3cfb7119a030f9
+
+% 3 1 0 10a7c8d80733a9a6190ae585675dc35a
+
+% 4 1 0 111788e90cfb82160a7cd0326da6fac6
+
+% 6 1 0 1d9111f774cb918f1383bff8733da8cb
+
+% 8 1 0 1e9a6ef989bd0e0f0c0996c12b193587
+
+% 9 1 0 0d54ce9a58cc1d55010f0d64ae5c4aad
+
+% 0 1 0 1cdf66421ad4b729097af7d6dfcfcf30
+
+% 0 1 0 18eafb32caed3dd50f976e787bd035ca
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 3 0 080f897ac33b95cd191e498cd7ea995d
++ L'esempio viene compilato, ma non eseguito, poiché richiede la rete. [Record da una
++ risposta](../../soundness/modules/openapi.md#records-from-a-response) descrive gli schemi annidati,
++ e `tuple()`.

@@ -1,0 +1,71 @@
+orthant 2 language
+
+@ 0 1 0 02253fe60689002f1cdb980d80bf299a
++ # Argumenty w typach samej przeglądarki
+
+@ 0 3 0 1e86fe0336c3f24c162af915657670f8
++ Argument metody DOM jest sprawdzany względem typu, który deklaruje jej interfejs, w kategoriach
++ przeglądarki. `scrollTo` przyjmuje dwie 32-bitowe liczby całkowite, więc przyjmuje dwie
++ wartości `S32`, a identyfikator jest tekstem, a nie liczbą.
+
+% 2 1 0 032fd692d04c05a410b7e0763ac66aee
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 0005e8155c3fc2ac1b349fe8356a7c4f
++   label Liczba tam, gdzie DOM chce napisu
+
+% 0 1 0 1477c34ff41c7c99183443e1d3238ae1
+
+% 1 1 0 0960c596329e4eb20a0b442aaa85c43a
+
+% 0 1 0 108aded7431b0482151ef577698cf343
+
+% 1 1 0 00d4256252aab43015a26f1a31d3a360
+
+@ 0 1 0 02ea2446d34318c6068d17756895cffc
++   label Tekst jako identyfikator
+
+% 1 1 0 12996a59a88aacaf073f52166e135ace
+
+% 2 1 0 1fc88fc6e6b757e00e908f497a01209c
+
+% 1 1 0 0071116f94c1ffbe1de97bfb5205dd11
+
+@ 0 2 0 0c0b4e2c7218f2f8167653f5ddab6932
++   label Liczby całkowite o określonym rozmiarze jako pozycja
++   highlight S32  to, co interfejs nazywa `long`
+
+% 0 1 0 0fd2ac3797a0477d02117fa7e01a94b3
+
+% 1 1 0 0831db4166dd7587114b3740732b8e38
+
+% 2 1 0 07e11a811b90d0f71b4d8db2aaa7e487
+
+% 0 1 0 1e98b8e3e30e55b0090ece2d7f384628
+
+% 0 1 0 19fa80c918b046b81098b8b6ec33ed04
+
+% 0 1 0 1d8f34fc087c9b890be7dfff3a19a106
+
+% 1 1 0 0e6d8ad9a84db0bb131838f034010ae3
+
+% 1 1 0 136d267ff733a60e0f6246170d49df5f
+
+% 2 1 0 1525a46c87e9e0571e7d21b8e7c42b7a
+
+% 0 1 0 08a86cbdc9b8cb0109ed8ce5b435ce67
+
+% 1 1 0 0cd6459499a6bd5203d659b3bcc1b6aa
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 0 1 0 13296006bb9760a3147e8e72dd1d4ff7
+
+% 1 1 0 0753306c92fda43a0f3b351ac46d9023
+
+@ 0 2 0 0fa32f95c98ef55f162c466675ac20e0
++ [Wartości przekraczające granicę](../../soundness/modules/dom.md#values-that-cross-the-boundary)
++ wymieniają, które typy Scali odpowiadają którym typom obcym.

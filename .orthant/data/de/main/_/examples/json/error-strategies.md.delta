@@ -1,0 +1,58 @@
+orthant 2 language
+
+@ 0 1 0 043e827ccce020811cac2f0612b830ed
++ # Der Aufrufer entscheidet, was fehlerhaftes JSON bewirkt
+
+@ 0 2 0 152d2b61f80db7ef0dbe1187b0c266df
++ `as[Player]` löst einen `Json.Error` aus, wenn ein Dokument kein Spieler ist. Was aus dem Fehler
++ wird, entscheidet sich dort, wo der Decoder aufgerufen wird, und jede Entscheidung gibt dem Ergebnis
++ einen anderen Typ.
+
+% 0 1 0 12705ff5e291290d17fbc8389d59ef4a
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+@ 0 2 0 154a55b9f43b57cd145997eec176cc47
++ alternative Ein fehlender Wert
++   highlight safely  ein Fehlschlag wird zu Unset
+
+% 1 1 0 19f5858238928e8b08e8d4f2188c574f
+
+% 2 1 0 154d918723cb9b691282c122e3b511fe
+
+% 0 1 0 1ee2188d23cf9ee0011b0050845591d4
+
+@ 0 2 0 10236e337e4f12ff0427fe32c2b65294
++ alternative Ein Ersatz
++   highlight recover  ein Fehlschlag wird zu einem Wert
+
+% 1 1 0 1e41d2b26e3b84820c41949058186f6b
+
+% 2 1 0 10145fc141927734134154db83096164
+
+% 0 1 0 10c39c22a1d5bf9a1d4a37e52d191ed6
+
+% 0 1 0 1ffe5c415422113702a4a9b03386f84a
+
+% 0 1 0 034952e98a2ce6a11fb2f400aec018b0
+
+% 0 1 0 0e8b8df814d6a2f20dc51e818e211530
+
+@ 0 2 0 03f07efebc0e34591f67f64a452f7a1e
++ alternative Die Entscheidung des Aufrufers
++   highlight raises..Error  ein Fehlschlag geht an den Aufrufer
+
+% 1 1 0 0d0af55cc0129d8a14d4e3d3745ebde2
+
+% 2 1 0 0d2ead2d6636328619fcb4d777d80423
+
+% 0 1 0 1d0fdce0f08a79350d691a3a3f63467b
+
+% 0 1 0 18eafb32caed3dd50f976e787bd035ca
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 3 0 1a337ecd0c95bc93089cd022c929c3fc
++ [Eine Strategie wählen](../../soundness/modules/errors.md#choosing-a-strategy) vergleicht sie, und
++ [Alle Fehler sammeln](../../soundness/modules/json.md#collecting-every-error) zeigt eine Strategie,
++ die alle Mängel eines Dokuments auf einmal meldet.

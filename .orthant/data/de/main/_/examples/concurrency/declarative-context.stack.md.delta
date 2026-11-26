@@ -1,0 +1,68 @@
+orthant 2 language
+
+@ 0 1 0 1e8a4bda391e7f7e001bfb052bdedae0
++ # Ein tieferer Stack, für einen Block
+
+@ 0 3 0 095434bc01b338491cbef91849bcd7c5
++ Der Stack eines Threads wird festgelegt, wenn der Thread erzeugt wird, und tiefe Rekursion
++ braucht einen größeren. Das Thread-Modell ist ein Kontextwert; daher wird eines, das Threads mit
++ einem Stack bestimmter Größe erzeugt, für den Block gebunden, der es braucht, und die dort
++ gestarteten Aufgaben erhalten ihn.
+
+% 2 1 0 0193303210fdc39503b0375026bdb8f9
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 16296ba633660e3f19901ebf408c3f8e
++   label Eine Rekursion, zu tief für einen gewöhnlichen Thread
+
+% 1 1 0 1f547ed2951841e90ae7d967025f29aa
+
+% 2 1 0 06f6a8670439305001505113f8e03e0d
+
+% 0 1 0 0501b13bd2211d43198087765cafdd33
+
+% 2 1 0 01d64ba6ff6d866f1174be934939276e
+
+% 0 1 0 0e55eb45d4892102095e00a2bd33d406
+
+% 1 1 0 083ae6cd0efce817170367c7db7bd751
+
+@ 0 2 0 0afc4d5377e43b081806f244a3b947ad
++   label Threads mit einem Stack von 512 MiB, für diesen Block
++   highlight threads.stackThreads(512.mib)  das Thread-Modell, nur für diesen Block
+
+% 1 1 0 1f3f789cba35c0ec0c9abb899d0a192b
+
+% 2 1 0 18fbf3f9d38ae51a0392094c1e07d1ee
+
+% 2 1 0 04da715f089a3699079b54db671f7f8a
+
+% 0 1 0 17e8074d55bea81b092454938a606259
+
+% 0 1 0 103b237d68bc360d12c888a02098c742
+
+% 0 1 0 02395fecfb6783c30014cfc01e311394
+
+% 1 1 0 020df930522a7c0e099d946365a73708
+
+% 1 1 0 136d267ff733a60e0f6246170d49df5f
+
+% 2 1 0 1525a46c87e9e0571e7d21b8e7c42b7a
+
+% 0 1 0 08a86cbdc9b8cb0109ed8ce5b435ce67
+
+% 1 1 0 0cd6459499a6bd5203d659b3bcc1b6aa
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 0 1 0 0415b5c484f324e60fe551554b6c670f
+
+% 1 1 0 0b74dc3bb2d20eb512c5a2e1ed92acf0
+
+@ 0 3 0 1ce12e2dcb54e1ae041023b5a920f781
++ [Threads](../../soundness/modules/concurrency.md#threads) führt die importierbaren
++ Thread-Modelle auf, und [Deklarativer Kontext](../../philosophy/declarative-context.md) erklärt,
++ warum sich eines ebenso leicht binden lässt.

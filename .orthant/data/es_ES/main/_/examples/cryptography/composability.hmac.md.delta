@@ -1,0 +1,80 @@
+orthant 2 language
+
+@ 0 1 0 0eb3a9dd245b9b9a06ed491d12ab068d
++ # Un mensaje autenticado, y escrito en hexadecimal
+
+@ 0 2 0 061225bef83d404b130b8b78f82571f9
++ Un HMAC se calcula con cualquiera de los algoritmos de hash, que son los tipos que define la
++ biblioteca de hashing, y su resultado lo escriben las codificaciones en base. Tres bibliotecas se
++ encuentran en una línea.
+
+% 2 1 0 022c8372005ca15f0591dcc13be786c7
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 09f1a14bffc666c21c1e67f2c388ae93
++   label Un mensaje y un secreto compartido
+
+% 1 1 0 03331aa62b92a7d7003b804ef73bd954
+
+% 2 1 0 1db5e26101e8093012069c38ce5016b2
+
+% 4 1 0 06a4ef4871736e9f14dbb5529729f7ab
+
+% 5 1 0 19b0760cd3cb440e0de7f6e16840ad0a
+
+% 1 1 0 182490cc397e3c5a1fa40402b4ad716a
+
+@ 0 2 0 0fbf312c5540293310005780d77a1342
++   label Autenticado con SHA-256
++   highlight hmac[Sha2[256]](secret)  el hash es un tipo
+
+% 1 1 0 1eaa73cd6ed32a0416bfcd9bcb98378f
+
+% 2 1 0 05fde6ef382f629207d7f1d00fa01590
+
+% 4 1 0 0f3f07e48a9ade3c1c9a1a522290b3c8
+
+% 5 1 0 17d72e6b90bd8e1f0fabfbf7ef3af964
+
+% 6 1 0 1dbb97944bfed0341dccf868b624cf60
+
+% 1 1 0 0635a84e3f8f78d300f79adf2e3c3ddb
+
+@ 0 2 0 15fb825bd77d64f21b0722ecbe679676
++   label Y escrito
++   highlight serialize[Hex]  el alfabeto es una importación
+
+% 1 1 0 1ce9147291ce68240696d3d097ebdb5a
+
+% 2 1 0 18a792a9fd4a69f20af16d6082d52c8e
+
+% 4 1 0 1e24f15011d1f9a20f3182943321c14f
+
+% 5 1 0 1a8a34cdab66216e0e3f73d7bf7d5e3f
+
+% 6 1 0 15581d0f9a0b7604005fbb155b392e12
+
+% 0 1 0 1e26106cec11753f0b897e167459899c
+
+% 1 1 0 116e6383e239f58b1dfebbda6c06ed31
+
+% 1 1 0 136d267ff733a60e0f6246170d49df5f
+
+% 2 1 0 1525a46c87e9e0571e7d21b8e7c42b7a
+
+% 0 1 0 08a86cbdc9b8cb0109ed8ce5b435ce67
+
+% 1 1 0 0cd6459499a6bd5203d659b3bcc1b6aa
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 0 1 0 1442df4da9c395c41108c164a90f7806
+
+% 1 1 0 0664f7004a8d22c10d13c275edf4ccfb
+
+@ 0 2 0 1db87588b0597ebc14d385f915652f37
++ [HMAC](../../soundness/modules/cryptography.md#hmac) describe la operación, y
++ [hashing](../../soundness/modules/hashing.md#hashing-a-value) los algoritmos.

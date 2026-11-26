@@ -1,0 +1,78 @@
+orthant 2 language
+
+@ 0 1 0 1553a15c802e744a04ff1a7a91ce553c
++ # Złe bajty są błędem tylko tam, gdzie są zabronione
+
+@ 0 3 0 0ee6f2fd8b14e06f0603668ae59a7609
++ To, co dekoder robi z bajtami niepoprawnymi w swoim kodowaniu, decyduje sanityzator będący w
++ zasięgu. Pobłażliwy nie może zawieść, więc typ dekodera nie zawiera błędu. Ścisły może, a wtedy to
++ samo wywołanie deklaruje `Charset.Error` albo go obsługuje.
+
+% 2 1 0 1b6edababa1b2818159973fb95a2d5bb
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 2 0 0df48d4b54086bf10fe3767af21df9c1
++   label Złe bajty są zastępowane i nic nie może zawieść
++   highlight substituteSanitizer  nie może zawieść
+
+% 1 1 0 1419cee53cdf9ef418e1cf762e108add
+
+% 0 1 0 038cc035db33453d06b6e3c446be01bc
+
+% 0 1 0 0aea1bb1a639def316f437c7e112f712
+
+% 1 1 0 142b2601409f99f0080ab7c2496ae26e
+
+% 2 1 0 12faaf3fbb5c89011aad8a4d84609408
+
+@ 0 2 0 0d1a90e0bb4f55c217a4b6fe680822c1
++   label Złe bajty są błędem, który jest deklarowany
++   highlight raises..Charset.Error  ścisły sanityzator może
+
+% 1 1 0 1457a1c161bff1ae07b7beb1b2ce08bf
+
+% 2 1 0 1c3ee5343ca93abe1c5d3b50b6c4a8b0
+
+% 0 1 0 1f7615f5fa5e351203936b85934087f0
+
+% 1 1 0 181048ccda09c31c1495e4b99f20fbf1
+
+% 2 1 0 0cfb1209b3ae0db908493925797d4928
+
+@ 0 2 0 0aba1f32d10e891c09e253c9c0fc4ad9
++   label Albo obsługiwany jako brak wartości
++   highlight safely  niepowodzenie staje się Unset
+
+% 1 1 0 19f5858238928e8b08e8d4f2188c574f
+
+% 2 1 0 0f108b0460ca6c0c1a550a1168710583
+
+% 0 1 0 0495708129a6d3a3068ebcae02904e43
+
+% 0 1 0 071851fde2b31f681c9fcc2539e7d188
+
+% 1 1 0 0093b0805d5db00e01f9ee4575ff1692
+
+% 1 1 0 136d267ff733a60e0f6246170d49df5f
+
+% 2 1 0 1525a46c87e9e0571e7d21b8e7c42b7a
+
+% 0 1 0 08a86cbdc9b8cb0109ed8ce5b435ce67
+
+% 1 1 0 0cd6459499a6bd5203d659b3bcc1b6aa
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 0 1 0 0a9545fafca8a5e917e335a287f92026
+
+% 0 1 0 013368c3a8ce0c7912d6cfbb7e338bb3
+
+% 1 1 0 019740a33b982de917870e9f73804d18
+
+@ 0 3 0 1cd7bef128e4d9b7041dd9a05c79fa8f
++ Ostatni bajt drugiej sekwencji zaczyna znak, który nigdy się nie kończy. [Złe
++ wejście](../../soundness/modules/characters.md#bad-input) opisuje pozostałe sanityzatory, w tym
++ taki, który zgłasza każdą usterkę, zachowując tekst.

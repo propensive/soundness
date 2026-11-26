@@ -1,0 +1,65 @@
+orthant 2 language
+
+@ 0 1 0 01d6320b80feaed80b6bc84064a76f0c
++ # Uma mensagem selada que foi adulterada
+
+@ 0 3 0 00fdd8bfef639df1062e759c5d36f7ac
++ Uma cifra autenticada se recusa a abrir uma mensagem cujos bytes, ou cujo cabeçalho, mudaram. Essa
++ recusa é um erro no tipo de `unseal`, e um método que o chama não compila até dizer o que uma recusa
++ significa.
+
+% 0 1 0 12705ff5e291290d17fbc8389d59ef4a
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 0bee1772299d4bab02a2e057156f584e
++   label A recusa não é levada em conta
+
+% 0 1 0 1477c34ff41c7c99183443e1d3238ae1
+
+% 1 1 0 0960c596329e4eb20a0b442aaa85c43a
+
+% 2 1 0 095f27c50db8034a09cf06af74ceba6e
+
+% 0 1 0 029b7782e4d008ae1b3245912487ef73
+
+% 1 1 0 10bee7f619beece303d25031f6e2a062
+
+% 2 1 0 076baa8ea7954616021b3db2e5a9b155
+
+@ 0 2 0 19017a05ca1ca3cf03ff8506edc8b942
++   label Ela é declarada
++   highlight raises..Crypto.Error  quem chama decide
+
+% 1 1 0 13e16addab8911670bb0b423a2a49bd2
+
+% 2 1 0 02bf6247e9f2f89507c33cb29d45b0b0
+
+% 0 1 0 0e120947eafc235718407090b523fa84
+
+% 1 1 0 176b96028ad1ccd4017b71dd8b3eb8ea
+
+% 2 1 0 02aeaeefa5d6aab11958f9c2739e7f56
+
+@ 0 2 0 16c75b5a75c1ef2519b4cb6cae6311f2
++   label Ou uma falsificação é uma mensagem ausente
++   highlight safely  `Unset` se foi adulterada
+
+% 1 1 0 1fce87536310bc270ba8995eb0509cf6
+
+% 2 1 0 0cfa8254326867820c6e514fd8367e86
+
+% 0 1 0 018f07fc325e21810fe53e4b82d9f4d2
+
+% 0 1 0 0ac916360e6dd4960891546ae7941620
+
+% 0 1 0 18eafb32caed3dd50f976e787bd035ca
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 2 0 143e87b832d500851c32338c09cca209
++ [Acordo de chaves e criptografia
++ autenticada](../../soundness/modules/cryptography.md#key-agreement-and-authenticated-encryption)
++ sela e abre uma mensagem.

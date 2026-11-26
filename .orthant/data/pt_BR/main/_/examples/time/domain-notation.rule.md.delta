@@ -1,0 +1,72 @@
+orthant 2 language
+
+@ 0 1 0 0befc96d3e7a0a921909a223baf25bd3
++ # A última sexta-feira de cada mês
+
+@ 0 2 0 11b87599f171481c1d137eb28c553298
++ Uma recorrência que segue o calendário é descrita nomeando o que seleciona os seus dias. A regra se
++ lê como a frase que ela representa, e as suas ocorrências são uma cadeia preguiçosa de datas.
+
+% 2 1 0 07a7543b9348cb901606df54b97fce53
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 0879db340b5364da1a7193fc368a0a71
++   label Todo mês, a partir de um início
+
+% 1 1 0 14e7ecd3528b6a4c003406402c6d9d3d
+
+% 2 1 0 0185b488c83fc3141a817d8dcef8ba26
+
+% 0 1 0 09792d65c0110f590350c95525acd9f8
+
+% 1 1 0 03b77c9f825c8c3d1ce12528a98d6050
+
+@ 0 2 0 0e97a963401373e4103551ca91a5c4da
++   label Na sua última sexta-feira
++   highlight WeekdayOrdinal(Fri,..-1)  contada para trás a partir do fim
+
+% 1 1 0 0952f3f2e0df8c371a2f0736815c48f3
+
+% 2 1 0 19a25bfd1cd726691a5568ce23910536
+
+% 4 1 0 14ad0288074877031d8575d6604a5c12
+
+% 5 1 0 0beb5c763425779812464a8e0ad82b72
+
+% 1 1 0 17047b96afa69dfc0c8f719069201e79
+
+@ 0 2 0 08ab33340372abee0f251b47d48ca0c4
++   label Como datas
++   highlight occurrences  calculadas à medida que são pedidas
+
+% 1 1 0 06a2807f6c4595281641e8b847648dbe
+
+% 2 1 0 1b6d73e67e1355770b3cd80a0f62da4e
+
+% 4 1 0 01769038c230dc2f17840a74c55b91e9
+
+% 5 1 0 179f56e994d93151038a1093723a7be7
+
+% 0 1 0 10ba01e94f7ec0db02ea5667d0538e59
+
+% 1 1 0 16e274929222ea3f0a7e44bc7eb0261c
+
+% 1 1 0 136d267ff733a60e0f6246170d49df5f
+
+% 2 1 0 1525a46c87e9e0571e7d21b8e7c42b7a
+
+% 0 1 0 08a86cbdc9b8cb0109ed8ce5b435ce67
+
+% 1 1 0 0cd6459499a6bd5203d659b3bcc1b6aa
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 0 1 0 0899032e3f8f5ec813a56bbbc3ea9c45
+
+% 1 1 0 026fc1b1f41d51080d93ea3df1e09953
+
+@ 0 1 0 0dbb4ab186ab544014949678188d1dea
++ [Regras de recorrência](../../soundness/modules/time.md#recurrence-rules) traz a tabela de campos.

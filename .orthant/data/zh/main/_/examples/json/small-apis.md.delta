@@ -1,0 +1,76 @@
+orthant 2 language
+
+@ 0 1 0 0e06825af50beae912c2de10ab0b1786
++ # 一个方法解码所有类型
+
+@ 0 2 0 0f39adcf4710f4631415b845cf52f592
++ 没有 `getInt`、`getString` 或 `getList`。`as` 接受所需的类型，并以同一个名称读取数字、列表或映射。
+
+% 2 1 0 13db228483daf4ec1e62398db0199047
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 2 0 05c88f31d4716167011311c07f0314fa
++   label 数字
++   highlight as[Int]  一个原始值
+
+% 1 1 0 05e4c8e609a1fbe100750bc104ecad6f
+
+% 2 1 0 1bac400b7a93d0fa1cffb5090c80b671
+
+% 4 1 0 098404cce69aa62904c56420d493765f
+
+% 1 1 0 13f0b6d3f8711bd1123d319633da1fdc
+
+@ 0 2 0 18df549ac990fffb03ccae3f2b81f841
++   label 列表
++   highlight as[List[Text]]  一个集合
+
+% 1 1 0 0b8f51a9082dddf20bc598c709fc73ed
+
+% 2 1 0 05a0e28a869e0f6b11d773a6a5e8ff14
+
+% 4 1 0 16996c75b7d1482c18e1c9a58c6055da
+
+% 5 1 0 0424a313aa66d08a0bed16c01229c481
+
+% 1 1 0 16f17edd40cb96bc1dd690b04a0ede7e
+
+@ 0 2 0 0a3252b443d12a5b1e219d7c6108d574
++   label 映射
++   highlight as[Map[Text..Int]]  一个对象，按其键读取
+
+% 1 1 0 0706b99b69456e9305c56280ab7b1a17
+
+% 2 1 0 187cdbdd30a0aecc17bf7df6e7759d6e
+
+% 4 1 0 100c1827cfaa542b0716526703786336
+
+% 5 1 0 1a329f281b479fc809c723262c1dce4e
+
+% 0 1 0 05a5cd54d5d885221b4118061b9dd74a
+
+% 1 1 0 04a90494a7e149111f1c2ae6847b7e28
+
+% 1 1 0 136d267ff733a60e0f6246170d49df5f
+
+% 2 1 0 1525a46c87e9e0571e7d21b8e7c42b7a
+
+% 0 1 0 08a86cbdc9b8cb0109ed8ce5b435ce67
+
+% 1 1 0 0cd6459499a6bd5203d659b3bcc1b6aa
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 0 1 0 099a7ddffde5366119166f578443185a
+
+% 0 1 0 088a30453ec05752171121a299b94e08
+
+% 0 1 0 024b663f8837eb6d0eb276ff3bbdcdd8
+
+% 1 1 0 1eddef44801c62120c49980a19f3dba9
+
+@ 0 2 0 09d698722c30eadf03c267fd027c94f9
++ [读取值](../../soundness/modules/json.md#reading-values)给出了其余内容，[精简 API](../../philosophy/small-apis.md)则说明了只用一个名称的理由。

@@ -1,0 +1,52 @@
+orthant 2 language
+
+@ 0 1 0 0027e6652aa78dc009eda316c2090f20
++ # Una función no puede abandonar su manejador de errores
+
+@ 0 4 0 0da77d61a4d3b37b1c0086ed9399200e
++ `safely` convierte un fallo dentro de su bloque en un valor ausente. Una función creada dentro del
++ bloque podría fallar más tarde, cuando se la llame, mucho después de que `safely` haya regresado y
++ ya no quede nada que capture el fallo. El tipo de la función registra el manejador del que
++ depende, así que no puede ser el resultado del bloque.
+
+% 0 1 0 12705ff5e291290d17fbc8389d59ef4a
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 0 1 0 05379442125b483c0fa7601737add2cc
+
+% 1 1 0 01df03af649144fc135e9cf4a153349c
+
+@ 0 1 0 1fb171217aae517f153f2e28960f33dd
++   label Una función que fallaría fuera del bloque
+
+% 0 1 0 1477c34ff41c7c99183443e1d3238ae1
+
+@ 0 1 0 08c9ebca6894edbb073e899bf22161c4
++   highlight t"thrice".as[Int]  se ejecutaría más tarde, sin nada que gestione su error
+
+% 1 1 0 180e187e9830042c1a417d730bc70245
+
+% 0 1 0 0f6999edfa9a0ee00416dc620790d2e9
+
+% 1 1 0 0c68460f412ae57c090d93f38164cf1f
+
+@ 0 1 0 1d6fcde73d2799431c0bf8492a31e393
++   label El código que puede fallar, ejecutado dentro de él
+
+% 0 1 0 095674c459fb074f082ec3675cad07bf
+
+% 1 1 0 06c9028e272c82fd03be89f91f94796b
+
+% 0 1 0 114ebf56dfacacd70124a054342c62af
+
+% 0 1 0 18eafb32caed3dd50f976e787bd035ca
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 4 0 04f1c949e4958ff819a3948953049dc3
++ El resultado es `Unset`: el texto no es un número, y el fallo no llegó más allá del bloque.
++ [Elegir una estrategia](../../soundness/modules/errors.md#choosing-a-strategy) enumera los
++ manejadores que se le pueden dar a un bloque, y [la comprobación de
++ capturas](../../philosophy/capture-checking.md) explica cómo se impide que uno sobreviva a su
++ bloque.

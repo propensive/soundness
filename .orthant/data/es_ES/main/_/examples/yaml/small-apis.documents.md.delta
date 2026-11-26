@@ -1,0 +1,58 @@
+orthant 2 language
+
+@ 0 1 0 0d5871437505dbe511f95344bc7ffdde
++ # Un documento, o un flujo de ellos
+
+@ 0 2 0 12dafeb600fd789e1e3fbfe3fea7fe9e
++ Una fuente YAML puede contener varios documentos, separados por `---`. No hay un segundo método
++ para leerlos: `read` toma el tipo que se quiere, y una lista de documentos es un tipo.
+
+% 2 1 0 09001594da28eacc079988e9678b8a58
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 2 0 1a68f53947ce31b3022b65a80c94fc98
++   label Un documento
++   highlight read[Yaml]  un solo documento
+
+% 1 1 0 1129426e9ff33a9b11a3abcff45ae333
+
+% 2 1 0 14f35638066ac2761b4e6d26ef04d60d
+
+% 0 1 0 108b7e42cbb8806d06f5038c9671f58b
+
+% 1 1 0 1bcd45e17044da97107c164f0f224a94
+
+@ 0 2 0 12be057546eca7731b8b854c5b49c168
++   label Todos los documentos de un flujo
++   highlight read[List[Yaml]]  cada documento entre los marcadores
+
+% 1 1 0 0c2c1c50f6a8527c11185e97c955ebd4
+
+% 2 1 0 01fddb2f3d34adfb0dad722aed950175
+
+% 0 1 0 14525e26a80322980d054ed5fbf292d4
+
+% 0 1 0 1594040d39f4333e0a17d2fd65e41c1d
+
+% 1 1 0 1dfeff233c0b0300012d5dbc8d5f4c44
+
+% 1 1 0 136d267ff733a60e0f6246170d49df5f
+
+% 2 1 0 1525a46c87e9e0571e7d21b8e7c42b7a
+
+% 0 1 0 08a86cbdc9b8cb0109ed8ce5b435ce67
+
+% 1 1 0 0cd6459499a6bd5203d659b3bcc1b6aa
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 0 1 0 09d93d3278738f7e0a44e6b5acd0a6f7
+
+% 1 1 0 0efa4139d593cca0144578705e3d7669
+
+@ 0 2 0 0190b3e46e031b431b4ca731b1f4673f
++ [Análisis y decodificación](../../soundness/modules/yaml.md#parsing-and-decoding) dice cómo se lee
++ un flujo grande sin retenerlo entero.

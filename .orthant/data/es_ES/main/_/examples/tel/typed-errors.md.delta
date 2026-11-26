@@ -1,0 +1,70 @@
+orthant 2 language
+
+@ 0 1 0 01d68dc28e2d3f3a170cd2431718bf54
++ # Un documento al que puede faltarle una palabra clave
+
+@ 0 2 0 0e3998196aef19f51bc63c3d3e3f6596
++ Un fichero TEL lo escribe una persona, y puede no tener lo que necesita una case class.
++ Decodificarlo lanza un `Tel.Error`, y un método que decodifica debe manejar el error o nombrarlo
++ en su tipo.
+
+% 2 1 0 19b80cae5b95d99711d6862eaac860f4
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 07c9793e7967771c1b8921effa192dab
++   label Un fallo que no se tiene en cuenta
+
+% 0 1 0 1477c34ff41c7c99183443e1d3238ae1
+
+% 1 1 0 0960c596329e4eb20a0b442aaa85c43a
+
+% 2 1 0 060951f5a5bdf56b09a4fe1e8668aeb4
+
+% 0 1 0 1d1637c96e93ff4901605f8b1e768584
+
+% 1 1 0 10f30383f72225800850a47d2386a644
+
+@ 0 2 0 0e1eaa8d14b88117187b0d12d53af599
++   label El fallo, declarado
++   highlight raises..Error  parte del tipo
+
+% 1 1 0 0fb433d34da2ace30c4b5e36c4301499
+
+% 2 1 0 02e88b6d2f1b7113198ab01831cfc46d
+
+% 0 1 0 1fa4ad5df300ed070f18a8534fd153a9
+
+% 1 1 0 182159bf2aed9e3f0a858aaabcc0ab21
+
+@ 0 2 0 1d9646ea4bbcd0511e4f58f6232e004f
++   label El fallo, como un valor ausente
++   highlight safely  un fallo se convierte en Unset
+
+% 1 1 0 19f5858238928e8b08e8d4f2188c574f
+
+% 2 1 0 154d918723cb9b691282c122e3b511fe
+
+% 0 1 0 020a8c919d5f0ee109e0bf610fcaf9b7
+
+% 1 1 0 0316220e813d640e0586650ec5a9901a
+
+% 1 1 0 136d267ff733a60e0f6246170d49df5f
+
+% 2 1 0 1525a46c87e9e0571e7d21b8e7c42b7a
+
+% 0 1 0 08a86cbdc9b8cb0109ed8ce5b435ce67
+
+% 1 1 0 0cd6459499a6bd5203d659b3bcc1b6aa
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 0 1 0 111d3cb3335085151aca1c70666e6385
+
+% 1 1 0 0f4e2e04604a6f7b15c4262a2bca7258
+
+@ 0 2 0 1895ce12e855e8341ee3bf2f6e24c90c
++ [Análisis y decodificación](../../soundness/modules/tel.md#parsing-and-decoding) muestra los
++ propios errores.

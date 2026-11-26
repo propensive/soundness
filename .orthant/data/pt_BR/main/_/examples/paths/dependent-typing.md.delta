@@ -1,0 +1,55 @@
+orthant 2 language
+
+@ 0 1 0 0309aafab54299f415d8413f74c42c49
++ # Um caminho cujos nomes estão em seu tipo
+
+@ 0 2 0 1766621ca11a0f581e38cf3231820d69
++ Um caminho construído a partir de literais carrega cada nome em seu tipo, do mais interno para o
++ mais externo. Um tipo que nomeia uma casa não é satisfeito por um caminho para outra.
+
+% 0 1 0 12705ff5e291290d17fbc8389d59ef4a
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 1259ce41ae5cca1a10743936cc90634a
++   label A casa errada
+
+% 0 1 0 1477c34ff41c7c99183443e1d3238ae1
+
+% 1 1 0 0960c596329e4eb20a0b442aaa85c43a
+
+% 0 1 0 076d8c818f37552f126cee8bbd7c9205
+
+% 1 1 0 158beb467be0f08f187f0830d5c06386
+
+@ 0 2 0 0165a230047a33521ad9a8a490551493
++   label A casa certa
++   highlight "capulet"  corresponde ao primeiro nome do tipo
+
+% 0 1 0 0fd2ac3797a0477d02117fa7e01a94b3
+
+% 1 1 0 0831db4166dd7587114b3740732b8e38
+
+% 2 1 0 0092d079dbc5981619195dfe3c3afeb8
+
+% 1 1 0 1eadb308f4c26119003eebb183e5190d
+
+@ 0 2 0 127fbfd853cf9ec9163d976af81ef39f
++   label Descer um nível acrescenta um nome ao tipo
++   highlight "juliet"  o novo nome vem primeiro
+
+% 1 1 0 028c52fb832778b81f41e8b8bfae5b88
+
+% 2 1 0 18a7f69911217f7b1049309de0abb491
+
+% 0 1 0 1743a34fb9092ab716214c1ed3db610b
+
+% 0 1 0 18eafb32caed3dd50f976e787bd035ca
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 2 0 18b7ea9389506a3719bc58106ed30cc0
++ [Caminhos no tipo](../../soundness/modules/paths.md#paths-in-the-type) diz o que o compilador
++ faz com um caminho que ele conhece.

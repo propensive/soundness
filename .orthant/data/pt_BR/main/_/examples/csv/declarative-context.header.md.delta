@@ -1,0 +1,68 @@
+orthant 2 language
+
+@ 0 1 0 0b502897bc0dc5400cf2f39317a36aa8
++ # Cabeçalhos de coluna, lidos como nomes de membros
+
+@ 0 3 0 01fef8a875be761a1173a28a8a3c622d
++ Uma célula de uma linha com cabeçalho é lida como um membro, no tipo pedido. Os cabeçalhos de um
++ arquivo raramente se parecem com nomes de Scala, então o código precisa dizer como um se torna o
++ outro, e não compila até que o tenha dito.
+
+% 2 1 0 18d81dd9d365ed6a1efe2ec0f8630e5c
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 15033a254df890d40291af61e7f1386c
++   label Um membro, e nenhuma regra para o seu cabeçalho
+
+% 0 1 0 1477c34ff41c7c99183443e1d3238ae1
+
+% 1 1 0 0960c596329e4eb20a0b442aaa85c43a
+
+% 2 1 0 052b5d53c564213f191f74be413a911f
+
+% 3 1 0 0138c454cb34dffa13b63f7f5bfe778a
+
+% 2 1 0 0e2cd27c428e864507dd469e3a97bed1
+
+% 3 1 0 1602a26ba39f34261f385d61b026fe0c
+
+% 1 1 0 050e0a3c3c29b802008f543d3e3864d2
+
+@ 0 2 0 1af509b6797831ce166443f46eb53e4e
++   label Uma regra que lê palavras com inicial maiúscula
++   highlight capitalizedWordsRedesignation  firstLine é First Line
+
+% 1 1 0 0c75072f6ddfe1c51ee7335bf383e197
+
+% 2 1 0 1dc86846327340810fa39dee48744fc4
+
+% 3 1 0 1f38880dc45000d60acb6e922ef43ad4
+
+% 0 1 0 093762cf0254003a07e7bdead5e5670b
+
+% 2 1 0 119bcbcd2c85e7100abb1aa300bb0cf6
+
+% 3 1 0 1038bf73d1e8315b1025f49f3cee76d5
+
+% 1 1 0 094e4d7e48f2c0df1c04c74be07356c1
+
+% 1 1 0 136d267ff733a60e0f6246170d49df5f
+
+% 2 1 0 1525a46c87e9e0571e7d21b8e7c42b7a
+
+% 0 1 0 08a86cbdc9b8cb0109ed8ce5b435ce67
+
+% 1 1 0 0cd6459499a6bd5203d659b3bcc1b6aa
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 0 1 0 0ad483d2090815d6057dad00d994515b
+
+% 1 1 0 093f8c37db6c21c916cd5364881f4d31
+
+@ 0 2 0 0c014715473ab36201511fbcbea3e3d3
++ [Endereçando células pelo nome](../../soundness/modules/csv.md#addressing-cells-by-name) lista as
++ regras e os cabeçalhos que cada uma espera.

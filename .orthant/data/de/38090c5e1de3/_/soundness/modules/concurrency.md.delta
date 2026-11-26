@@ -1,0 +1,66 @@
+orthant 2 language
+
+@ 0 4 0 116039505d7799e102fc0724b884b287
++ Manche Arbeit rekurriert tief: Das Kompilieren oder Auswerten des Codes eines Benutzers ist der
++ übliche Fall. Der Stack eines Threads wird festgelegt, wenn der Thread erzeugt wird, also braucht
++ solche Arbeit einen Thread, der mit einem größeren erzeugt wurde. `threads.stackThreads` ist ein
++ Thread-Modell, das jeder Aufgabe einen eigenen Plattform-Thread mit einem Stack der verlangten Größe
++ gibt. Es nimmt diese Größe entgegen, wird also gebunden und nicht importiert:
+
+% 2 1 0 02dc8d1e5e9e362409ed693112cbb8c3
+
+% 3 1 0 1a5d75eed85ff67e159b239676a82de3
+
+% 4 1 0 08d8dac3f788acf70cd7937c3ac8c91a
+
+% 0 1 0 15cea9b948946ab218c7d56e773e9ac6
+
+% 0 1 0 0f2af863e5e92938047f21fd70823889
+
+% 0 1 0 054995314d0372921e86ada8920b86e5
+
+% 0 1 0 0e3c9d1035115d7805df688afe964177
+
+% 0 1 0 0b3e4df41e974db01821f92c645955cd
+
+% 1 1 0 0f7814a212d4376206a0c642669adef2
+
+@ 0 1 0 03866c7e953bb38708139d6ec40acf61
++ #### Ein eigener Thread
+
+@ 0 5 0 1291ac58fc58e3381b3c04353a6587c0
++ Mancher fremde Zustand darf nur von einem einzigen Thread aus berührt werden: Ein Compiler und sein
++ Kontext sind das übliche Beispiel. Eine `Lane` ist ein einzelner Thread, dem Arbeit übergeben wird
++ und der diese Arbeit Block für Block erledigt, in der Reihenfolge, in der sie eingereicht wurde.
++ `submit` ergibt einen gewöhnlichen `Task` mit dem Ergebnis des Blocks, sodass auf ihn gewartet, er
++ abgebrochen und überwacht wird wie jeder andere, gleich welche Aufgabe ihn eingereicht hat:
+
+% 2 1 0 1c039e805af3cd88092457663a2e27da
+
+% 3 1 0 03e0e1d0a6bfe7fb1bdcc91238947ea6
+
+% 4 1 0 0ab3a39a90d525fe0216437ea8fa7de6
+
+% 0 1 0 1fba0d6aac3935390cf530046ef20694
+
+% 0 1 0 1255643e429532be15e1072f16d34b3d
+
+% 0 1 0 05eb095abf89fca5036c53e81f14c177
+
+% 0 1 0 03991aa5bb189ad518e14341b32d177f
+
+% 0 1 0 01ec73c9ff3d190c083dae6e683c7f49
+
+% 0 1 0 0225542be2dffe6e196f7ad4cee1f5b5
+
+% 0 1 0 08c73c82ca5046440bcf6845c644cdfa
+
+% 0 1 0 0ccb519ea78688cc1037e58e32746327
+
+% 1 1 0 0f7a1d03193fbd691922f42bdaaf3b05
+
+@ 0 3 0 0ad53fab9dc08e0d058acfe9e8fca4a1
++ Auch einer Lane lässt sich eine Stack-Größe geben, als `Lane(t"compiler", 512.mib)`. Ihr Thread ist
++ ein Daemon, sodass eine offene Lane das Programm nicht am Leben hält, und `close` beendet sie,
++ sobald die bereits eingereichte Arbeit erledigt ist. Eine Lane braucht einen echten Thread, ist also
++ nichts für Scala.js.

@@ -1,0 +1,83 @@
+orthant 2 language
+
+@ 0 1 0 1d9083af84ad3f9102848de2475bb705
++ # Flaga dowolnego typu, jako który można odczytać tekst
+
+@ 0 2 0 07e0b612fdf8b06b11cf54ca644101c0
++ Nie ma `intFlag`, `listFlag` ani `pathFlag`. `Flag` przyjmuje typ swojej wartości, a wszystko,
++ co da się zdekodować z tekstu, może być wartością flagi.
+
+% 0 1 0 12705ff5e291290d17fbc8389d59ef4a
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 1f8827131306212b1b685882b7b57131
++   label Liczba
+
+% 0 1 0 03b2ece1cf3cf55e114e24a60089d5e4
+
+% 1 1 0 0fa1762191ae9f8d041b41c516243a7d
+
+% 2 1 0 18ec4cbebbfb71a41705aeabcf45ee0a
+
+% 3 1 0 0b60ee293339fbc811fe05cff85815de
+
+% 4 1 0 145a533777b105691d4b354ae81f0179
+
+% 5 1 0 1f440248ca97ce4b1868fbf611e0019c
+
+% 1 1 0 0aed9f639ef1e8701b2ae9a7cb3ab986
+
+% 2 1 0 18dcf994473ff2fa0a377f495b01b811
+
+@ 0 2 0 12e0f856d6838f8c0820fccce8823e72
++   label Adres
++   highlight Flag[Ipv4]  dekodowana tak jak `t"…".as[Ipv4]`
+
+% 1 1 0 1197822e576fc9131a23d9c652aee4a7
+
+% 2 1 0 0371718a4b79c0b71ba05fd5860b77f5
+
+% 3 1 0 090b4105fbe5124a0a1909d26a5fb45f
+
+% 4 1 0 01c9fd4f88df0a8d09c867c211bf1e35
+
+% 5 1 0 1e69066af56804a20b4cdbfc2888bdf6
+
+% 6 1 0 19de72e2149a62c9046ffce56b8795c3
+
+% 1 1 0 12b163f84b20b5610d8023729ae8a554
+
+% 2 1 0 1cf73c7bc6a45e881485050dea2fdbb8
+
+@ 0 1 0 099f82d894bec444063169a8878fc3ef
++   label Każde wystąpienie powtarzanej flagi
+
+% 0 1 0 0fc5ab30a50554ab04e01982606dfde6
+
+% 1 1 0 112d5e48361a35050fc7c36ea7f818ec
+
+% 2 1 0 02c3b46394e1c7e4011717449c20e4b0
+
+% 3 1 0 02454ba8658876aa1bf07215e8ea8ece
+
+% 4 1 0 06f42191fdd14bf50b886047222e5d8b
+
+% 5 1 0 1f62d4fe649bc0991360b5441cb975e2
+
+% 6 1 0 0d8d5dca5e968b321ec56e0d41052ed0
+
+% 0 1 0 1d4da646ea28acfd1b002ab61c281e44
+
+% 1 1 0 1e9d04b07f1e37370025454aab931781
+
+% 0 1 0 18eafb32caed3dd50f976e787bd035ca
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 3 0 13b487705ab47cdd138f92736fe5eab9
++ Przykład jest kompilowany, ale nie jest uruchamiany, ponieważ jest całym programem.
++ [Flagi](../../soundness/modules/cli.md#flags) opisują, jak odczytywana jest flaga, a
++ [małe API](../../philosophy/small-apis.md) – dlaczego nazwa jest jedna.

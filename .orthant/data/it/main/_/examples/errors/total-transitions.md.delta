@@ -1,0 +1,81 @@
+orthant 2 language
+
+@ 0 1 0 09d1f685a41d45590a5e53225c4d90b4
++ # Un errore gestito esce dal tipo
+
+@ 0 2 0 03e610ed298f32070fdaa238dbb16349
++ `recover` fornisce un valore per ogni errore che nomina. Una volta che ogni errore di un blocco ha
++ una risposta, il blocco non può fallire, e il metodo che lo contiene non dichiara più nulla.
+
+% 2 1 0 0f49a9f819baee450df0e8685d2f665d
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 2 0 1f9ae883bb2e97cd1621ff7f998291b3
++   label Un metodo che può fallire
++   highlight raises..PortError  passato al chiamante
+
+% 0 1 0 1accf43fe92797661dc8da9a374d03c7
+
+% 1 1 0 0f96500e809b345d021c32bae868d834
+
+% 2 1 0 1172c55a187c9f5604d52ae46d0184af
+
+% 4 1 0 067c1ee03712037500db5210578c8951
+
+% 5 1 0 066de93a8690d2b8116ec35bbc3bc9a1
+
+% 7 1 0 0ebcdcc8213dfcab1474a53b3ad377a9
+
+% 8 1 0 1fec3fc059969e710a176a73b3ad21bd
+
+% 0 1 0 0278a424a678335106d6d4edd3cb80a6
+
+% 1 1 0 18e111ff5bb2a7db0aaea4d0dfa10eea
+
+@ 0 1 0 12e6277281b104e20e0b012f3ccb4ee5
++   label Un metodo che non può
+
+% 0 1 0 14af91bf67b0368c146d895e3b8ab7cb
+
+% 1 1 0 15d52af3accbd6b90a5cd1b1d7ee82d5
+
+% 2 1 0 1cd4116fc22be361198f6cf7f13a8db9
+
+% 4 1 0 04d4088d70993ccb0e7791f5e36aa396
+
+% 5 1 0 16b4419afcebc6270f4b303be10613b7
+
+% 7 1 0 0bf1c26d0bc211681fc2238ba8b80abe
+
+% 8 1 0 1e371dc61d67971619adf30c3aed60b1
+
+% 0 1 0 1188673bac512ea403290da2a466103d
+
+% 0 1 0 1ffe5c415422113702a4a9b03386f84a
+
+% 0 1 0 1a1ee649075185c119f479b30a3e00c0
+
+% 0 1 0 05074088c58efd17084ba02fac0df110
+
+% 1 1 0 158c3276dc2cf0f7017762444b532c20
+
+% 1 1 0 136d267ff733a60e0f6246170d49df5f
+
+% 2 1 0 1525a46c87e9e0571e7d21b8e7c42b7a
+
+% 0 1 0 08a86cbdc9b8cb0109ed8ce5b435ce67
+
+% 1 1 0 0cd6459499a6bd5203d659b3bcc1b6aa
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 0 1 0 148029561ac820b91388e2e58e7d34ed
+
+% 1 1 0 00596f04eb7f6ff90856961cdf3cd222
+
+@ 0 2 0 08eefe50997a31ae076dd2c225e136c5
++ [Recupero](../../soundness/modules/errors.md#recovering) contiene `mitigate`, che scambia un errore
++ con un altro.

@@ -1,0 +1,54 @@
+orthant 2 language
+
+@ 0 1 0 196d8f6a0c5f4a921e17ddac3def936d
++ # Un pointeur avec un échappement invalide
+
+@ 0 2 0 1ae86905875458020977caf5925ca9df
++ Un JSON Pointer a deux échappements, `~0` pour un tilde et `~1` pour une barre oblique. Un
++ littéral `jp"…"` est analysé par le compilateur, si bien que tout autre échappement est une erreur
++ de compilation au caractère fautif.
+
+% 2 1 0 022f0527a78877b5199fdb68871fc723
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 12b4e74e21e36441143693312ec868eb
++   label Un échappement qui n'existe pas
+
+% 0 1 0 1477c34ff41c7c99183443e1d3238ae1
+
+% 1 1 0 0960c596329e4eb20a0b442aaa85c43a
+
+% 0 1 0 03746d6abaabb4b70d8a94f5ad0e4737
+
+% 1 1 0 0a9911c360ee6bae01e5c10cd1750be0
+
+@ 0 2 0 08a1a17e37d734e9121ecf8b5d2ecfe3
++   label Une barre oblique dans un segment
++   highlight ~1  une barre oblique, échappée
+
+% 1 1 0 0e461c3e6b1e453918611c320b7167c7
+
+% 0 1 0 1d8f779155fb72270c07f8e5f6fe44fd
+
+% 1 1 0 0cdfc386590c52761981feee3fa1a1c6
+
+% 1 1 0 136d267ff733a60e0f6246170d49df5f
+
+% 2 1 0 1525a46c87e9e0571e7d21b8e7c42b7a
+
+% 0 1 0 08a86cbdc9b8cb0109ed8ce5b435ce67
+
+% 1 1 0 0cd6459499a6bd5203d659b3bcc1b6aa
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 0 1 0 0fb34f460f10f5fe14d05242077ef73d
+
+% 1 1 0 15790100e6dd9de703c7eb5cb97b526a
+
+@ 0 2 0 0aba66d386cdb5351da68665aa3e83a2
++ [JSON Pointers](../../soundness/modules/json.md#json-pointers) montre un pointeur construit
++ segment par segment.

@@ -1,0 +1,39 @@
+orthant 2 language
+
+@ 0 1 0 1361aadb43f590630e8199e8ac182c1c
++ # 只有编码器才能生成 Pojo
+
+@ 0 3 0 1611aec9dfebc940075272b8d0443c25
++ `Pojo` 是建立在它所允许的少数几种 JDK 类型之上的不透明类型。任意对象都不是 `Pojo`，即使是允许类型的对象也不是，因此任何类型为 `Pojo` 的东西都是由编码器生成的，并且可以解码。
+
+% 0 1 0 12705ff5e291290d17fbc8389d59ef4a
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 0d1b1ffc2f7200bb11d91e12db84d03c
++   label JDK 对象不是 Pojo
+
+% 0 1 0 1477c34ff41c7c99183443e1d3238ae1
+
+% 1 1 0 0960c596329e4eb20a0b442aaa85c43a
+
+% 0 1 0 07a76a720d46a56e0e84a19b51c3b4b1
+
+% 1 1 0 1a6ec2f2c26081730829ee1418f2e602
+
+@ 0 2 0 087fe8f39143552d1bdfa828bd6293b8
++   label 编码得到的值才是
++   highlight pojo  生成 Pojo 的唯一途径
+
+% 1 1 0 0fa5637086296378123825808cb43266
+
+% 0 1 0 00b6d2e05b16a5bb134abf24863f5930
+
+% 0 1 0 18eafb32caed3dd50f976e787bd035ca
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 2 0 1c24899cd55b8fca1b05e78efb3c3fb9
++ [表示](../../soundness/modules/generic-data.md#the-representation)列出了每种 Scala 值会变成什么。

@@ -1,0 +1,47 @@
+orthant 2 language
+
+@ 0 1 0 071cad924e737f4f042ffcb516a6c248
++ # 値としてのレンズ
+
+@ 0 3 0 00a6bb60f5cc7c5708b942aae36e4460
++ パスの構文の下では、レンズは普通の値であり、その型はそれが何であるかを述べる。フィールド`"name"`は
++ `Act`からのレンズである。それはその型によって召喚され、型が持たないフィールドは見つからない。
+
+% 0 1 0 12705ff5e291290d17fbc8389d59ef4a
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 2 0 0ab8fcad746e6a55096cc24b31d80eea
++   label フィールドへのレンズ
++   highlight "name"..Act  レンズの型
+
+% 1 1 0 0a1535882f71bd4b06fee0d1b056dee5
+
+% 2 1 0 1e120656556fd5200da53ee7a78fe55d
+
+% 0 1 0 1fc86a4faa9a818e1919314389618e57
+
+% 0 1 0 1ae0b5ac547d8402169412d2edbb21db
+
+% 1 1 0 1a96b18d4c4d867d0a0a1f38bd85f70a
+
+@ 0 1 0 0723cbaa66d1c45905d52f144d56de31
++   label 幕が持たないフィールド
+
+% 0 1 0 1477c34ff41c7c99183443e1d3238ae1
+
+% 1 1 0 0960c596329e4eb20a0b442aaa85c43a
+
+% 2 1 0 1d81f1ffff4109e40aca27c1f743b705
+
+% 0 1 0 18aa9584a8d63983009ceb9292b5440f
+
+% 0 1 0 18eafb32caed3dd50f976e787bd035ca
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 2 0 1306c1faf78a80cd03afd37def14b24d
++ 2つのレンズの合成は[値としてのレンズ](../../soundness/modules/optics.md#lenses-as-values)で示し、
++ `is`と`from`は[中置型](../../philosophy/infix-types.md)で説明する。

@@ -1,0 +1,64 @@
+orthant 2 language
+
+@ 0 1 0 0464a970994d2f4911852ff7e8227ee2
++ # バイトに直接書き込まれるメッセージ
+
+@ 0 4 0 007c00ce4d8a0aca0be0d9f25d2e24dc
++ エンコードは通常、各フィールドと各入れ子のメッセージについて `Protobuf` 値を組み立て、
++ それから書き出す。`derives Protobuf.Direct` するメッセージは、コンパイル時にその形に合わせて組み立てられたプリンタとパーサを持ち、
++ それらは間に何も挟まずにフィールドを測って書く。そして一つのインポートで、そうしたメッセージすべてにその経路をとらせる。
+
+% 2 1 0 121872dd7ec6270c119ef8d16a608642
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 11f90f8ce8e9882d09c91e54a405c901
++   label Protobuf 値を経由する
+
+% 1 1 0 14be9f59e8a673790379009d10086e5f
+
+% 2 1 0 0e5e8b1e0707fa58197de4d10dfddcb6
+
+% 0 1 0 1e48f59df5c1654f067a260f7037828b
+
+% 2 1 0 0c00393aa734cf901eb23d0cc791d3f0
+
+% 1 1 0 1fe5a74e53a568d71f03441414c2e921
+
+@ 0 3 0 0c13185ffcb68277002c23350984d3ba
++   label 生成されたコーデックで直接
++   highlight derives..Direct  この形のためのパーサとプリンタ
++   highlight codecs.direct  あればどこでも使われる
+
+% 1 1 0 1ac7a000d5c3665c0a3c2feee8292d20
+
+% 2 1 0 1c2db55bae2c738d0c393e95413a79b3
+
+% 0 1 0 1259f8d3213e675f15216be5427e718c
+
+% 0 1 0 06ce809dca3445fc0a105cfa19e90f12
+
+% 2 1 0 14341ec55c7121961b29419908fb5e11
+
+% 0 1 0 07b8bf8ca40e918b0c35504b4aa0f165
+
+% 1 1 0 1ef2d1238a90d4001c4d7c1b14223cbe
+
+% 1 1 0 136d267ff733a60e0f6246170d49df5f
+
+% 2 1 0 1525a46c87e9e0571e7d21b8e7c42b7a
+
+% 0 1 0 08a86cbdc9b8cb0109ed8ce5b435ce67
+
+% 1 1 0 0cd6459499a6bd5203d659b3bcc1b6aa
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 0 1 0 08b7eddaa194dfe013c3a5c6ee273e6a
+
+% 1 1 0 06117b0a749f47640d9a96d79486fffb
+
+@ 0 3 0 137840c9f5fd3de31fde55c931069d8d
++ どちらの経路でもバイトは同じである。[すべての型の経路の選択](../../soundness/modules/protobuf.md#choosing-the-route-for-every-type)が三つのモードを比較する。

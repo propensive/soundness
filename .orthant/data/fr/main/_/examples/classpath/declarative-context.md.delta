@@ -1,0 +1,57 @@
+orthant 2 language
+
+@ 0 1 0 10c1e34757807a200b9c18e0e6455123
++ # Le même chemin, par un autre chargeur de classes
+
+@ 0 2 0 14d63a7dde6b5fff00e33b953a131078
++ Le chargeur de classes qui résout une ressource est choisi par une importation, pour chaque
++ lecture dans sa portée. La référence et la lecture sont les mêmes avec chacun.
+
+% 0 1 0 12705ff5e291290d17fbc8389d59ef4a
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+@ 0 2 0 0a9eb0a1beae41d7141b37df26cc3eda
++ alternative Celui du thread
++   highlight threadContextClassloader  convient à la plupart des applications
+
+% 1 1 0 1fd6d97125feced71a2a972afc2ae069
+
+% 0 1 0 1b2fc40646840a3f068e0180d211f5ea
+
+% 1 1 0 0a9774e8cce418fd102b5b80640363a9
+
+% 3 1 0 1754fd6282c421fc0a7781571a0415ba
+
+@ 0 2 0 0f688e0b154220ca00355ec666a2f12b
++ alternative Celui du système
++   highlight systemClassloader  le classpath avec lequel la JVM a démarré
+
+% 1 1 0 0663c066387649091dd12418af267a68
+
+% 0 1 0 12bc8e4ebc1ce01b147e8c48c72954aa
+
+% 1 1 0 1e49e3bef95139cf01c890039e71cb61
+
+% 3 1 0 0004623dc8de429e00587284367c5617
+
+@ 0 2 0 05f0b659b3bf40521961d7c6a1319e1c
++ alternative Celui de Scala
++   highlight scalaClassloader  celui qui a chargé la bibliothèque Scala
+
+% 1 1 0 01995bab5d97ad5803ecf6cbc174f176
+
+% 0 1 0 061af400e074735e043e1c82fd57a2f5
+
+% 1 1 0 1185966c09c0c6d5051a42fff3059af0
+
+% 3 1 0 195f5a93bf1670831b2f5d191e714318
+
+% 0 1 0 18eafb32caed3dd50f976e787bd035ca
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 3 0 0be773c25ad6d5cd05c8be12a726494b
++ [Choisir un chargeur de classes](../../soundness/modules/classpath.md#choosing-a-classloader)
++ donne la liste complète, et [le contexte déclaratif](../../philosophy/declarative-context.md) les
++ arguments en faveur d'un choix par importation.

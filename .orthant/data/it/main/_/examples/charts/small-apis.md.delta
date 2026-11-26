@@ -1,0 +1,52 @@
+orthant 2 language
+
+@ 0 1 0 1c490d711ab8e3c11858ee1c3f440f1c
++ # Un metodo disegna ogni tipo di grafico
+
+@ 0 2 0 11db695b8a853e9719d4663ffcf34e44
++ Non ci sono `barChart`, `lineChart` o `pieChart`. I dati si rappresentano con `chart`, che prende il
++ tipo come valore, e il disegno si produce con `in[Svg]`, come un SVG si scrive `in[Xml]`.
+
+% 0 1 0 12705ff5e291290d17fbc8389d59ef4a
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+@ 0 1 0 191f1ca58e7854d3023cc3f1f6fc2b52
++ alternative Barre
+
+% 0 1 0 1ff4943f444aea8501190dc35d5cb840
+
+% 1 1 0 1837b588ab7c01970136443cbd49c4f6
+
+% 2 1 0 0a200a81497713cf1fb7bff6ef929171
+
+% 0 1 0 0f385d9c76423ced0e4ca700bc9bbc5a
+
+@ 0 1 0 040cbce6c2651fe7192e4e6b672a579f
++ alternative Una torta
+
+% 0 1 0 0f123dfe62c592190ae8ba59ad6a3f00
+
+% 1 1 0 0a6a4245365038481c63bb4e5b34168d
+
+% 2 1 0 061a03efe5b78c6c1d1d333c0014a302
+
+% 0 1 0 0d184c630fb2ff771078c9eb21f4ced4
+
+@ 0 2 0 0015746ca6e859c8187aac8d16325db6
++ alternative Un istogramma
++   highlight Histogram()  un tipo che disegna campioni, non punti
+
+% 1 1 0 097da3259c78133f15396909f5c04154
+
+% 0 1 0 0bf7a392406cf353163b1538e61bb5e8
+
+% 0 1 0 00736b1e749a8df91d32ef20d456d117
+
+% 0 1 0 18eafb32caed3dd50f976e787bd035ca
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 2 0 12e2854e27c42b7e042cbd5d8763fec4
++ [Tipi di grafico](../../soundness/modules/charts.md#chart-kinds) elenca i tipi, e
++ [rendering](../../soundness/modules/charts.md#rendering) ciò che il disegno contiene.

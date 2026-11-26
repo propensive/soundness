@@ -1,0 +1,81 @@
+orthant 2 language
+
+@ 0 1 0 1f86bef3f03839b004444a42c31dcbf5
++ # Ein Pfeil für Elemente, Moleküle und Formeln
+
+@ 0 3 0 1d4b777d580fe96d0ec89c47cfc9f5b8
++ Ein Element ist ein Molekül aus einem Atom, und ein Molekül ist eine Formel aus einem Term. Dasselbe
++ `+` und derselbe Pfeil akzeptieren daher jedes der drei, auf beiden Seiten, und nichts wird von Hand
++ umgewandelt.
+
+% 2 1 0 0dda8b029b159023118e76e88714227f
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 2 0 1533cf5faf4a659f036b3c4c834f94b3
++   label Zwei Elemente ergeben ein Molekül
++   highlight Fe*S  ein Molekül, aus zwei Elementen
+
+% 1 1 0 1d65ac11af0aa6470a361c33dece1e2c
+
+% 2 1 0 13e13dcec503ede006780437543ddd1e
+
+% 4 1 0 05db643f793c188919e333659ab987bb
+
+% 1 1 0 183a1216ca7d01731f3f7c0e0812819e
+
+@ 0 2 0 05416c388c9f9d8b00c9ddf4e411ab95
++   label Ein Element und ein Molekül
++   highlight O[2]  ein Molekül neben einem Element
+
+% 1 1 0 108b8e1b0a470f7f11fb15d1591c5505
+
+% 2 1 0 0cbc490c19277cf507e688b9b96dd450
+
+% 4 1 0 008bd64143b6510b1838359e19954742
+
+% 5 1 0 0ceb854ce179182e0d8f3d50e0b477a7
+
+% 1 1 0 084dd71fcf5b5179059a18a919212bcc
+
+@ 0 2 0 06d14fdc3d9f25b21d904b0e76d30f45
++   label Terme mit Koeffizienten
++   highlight Fe*4  ein Term einer Formel
+
+% 1 1 0 07a7a9bbc218440f0b409e3354be0f7a
+
+% 2 1 0 00589a0ec276010804e4174fe721bfce
+
+% 4 1 0 125880e60d4a675d17455218a105d7dd
+
+% 5 1 0 0e2f3d54c3c698600171523343eefb79
+
+% 0 1 0 0b91c32d60c6e23710d49550506b2bd9
+
+% 1 1 0 10aed656cd51bfa51eb4530417e85c25
+
+% 1 1 0 136d267ff733a60e0f6246170d49df5f
+
+% 2 1 0 1525a46c87e9e0571e7d21b8e7c42b7a
+
+% 0 1 0 08a86cbdc9b8cb0109ed8ce5b435ce67
+
+% 1 1 0 0cd6459499a6bd5203d659b3bcc1b6aa
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 0 1 0 1f043b58767ec96906bda4704595d18f
+
+% 0 1 0 057c2311ab3a57c9051e1bfeb6807009
+
+% 0 1 0 19e83915ee2f6d22170a7f3fae98446c
+
+% 0 1 0 06e9f686058038f902030d6e8b69f188
+
+% 1 1 0 1e3b1e2c861a3fe504ae9d2e88123341
+
+@ 0 2 0 01b24e3754a3722f1eb40c14b41647e7
++ [Bausteine](../../soundness/modules/chemistry.md#building-blocks) listet die Operatoren auf und
++ wofür jeder definiert ist.

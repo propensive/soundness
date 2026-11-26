@@ -79,12 +79,20 @@ unsafety:
 # it. The scripts which read the documentation read the English at `main` as the store has it,
 # exported to out/doc, so that they and the translations are checked against one text; an edit
 # in doc which `orthant tag` has not stored is refused here, before anything reads a stale copy.
+# So is a release which the store has no snapshot of: `orthant sync` takes a release tag up, and
+# must do so before anything more is stored (etc/check-doc-store.py).
 docs:
+	python3 etc/check-doc-store.py
 	rm -rf out/doc
 	$(ORTHANT) export out/doc en main
 	@diff -rq out/doc doc >/dev/null || { \
 	  echo "docs: doc/ differs from the Orthant store; store it with \`orthant tag\` (\`orthant status\` lists the edits)" >&2; \
 	  exit 1; }
+
+# The translations: fails unless every language is complete at every release, with no line left
+# to translate and no passage left stale. Run it before a change to the documentation is proposed.
+translations:
+	ORTHANT=$(ORTHANT) python3 etc/check-doc-store.py --translations
 
 # The coercion-helper census: small defs that only re-wrap a value, found from the parse tree and
 # judged by a model against doc/standards/plumbing.md (read from out/doc), recorded in git notes under
@@ -203,4 +211,4 @@ matrix:
 	    $(foreach scala,3.6.1 3.6.2 3.6.3 3.6.4 3.7.0 3.7.1 3.7.1 main, \
 			    $(MAKE) bootstrap/$(scala):$(jdk);))
 
-.PHONY: publishLocal docs plumbing build dev ci check-givens check-while check-escapes check-scratch unsafety wasm-e2e doccheck fuelcheck test bench matrix attest verify-attest push release tools snapshot snapshot-prune xek-fetch
+.PHONY: publishLocal docs translations plumbing build dev ci check-givens check-while check-escapes check-scratch unsafety wasm-e2e doccheck fuelcheck test bench matrix attest verify-attest push release tools snapshot snapshot-prune xek-fetch

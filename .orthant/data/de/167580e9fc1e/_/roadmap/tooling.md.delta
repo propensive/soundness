@@ -1,0 +1,14 @@
+orthant 2 language
+
+@ 0 9 0 11b8761d2079527915eedfb9394c62f1
++ Das Debuggen einer laufenden Anwendung sollte sich nativ anfühlen, nicht wie zu Gast: Breakpoints,
++ schrittweises Ausführen und Inspektion über einen Server für das Debug Adapter Protocol, wobei
++ inspizierte Werte als ihre Soundness-Typen dargestellt werden — dieselbe Disziplin ohne
++ Java-Kodierungen, die `core-5` auf Traces anwendet, angewandt auf den aktiven Zustand. vivisection
++ ist dieser Server: `vivisection.DapServer` bearbeitet die Menge der Anfragen (Launch, Anhängen,
++ Breakpoints, Threads, Stacktraces, Scopes, Variablen, Auswertung, schrittweises
++ Ausführen), und der `DapClient` seiner Suite steuert im gewöhnlichen Lauf einen aktiven Debuggee
++ durch einen Breakpoint, einen `next`-Schritt und eine Inspektion, wobei jede lokale Variable über
++ ihre `Inspectable`-Instanz dargestellt wird und eine Objekt-Momentaufnahme mit ihrem einfachen
++ Namen und ihrer Identität statt mit einem JVM-Klassennamen gezeigt wird. Das Thema ist
++ `doc/work/soundness/modules/debugging.md`.

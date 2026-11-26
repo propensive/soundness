@@ -1,0 +1,65 @@
+orthant 2 language
+
+@ 0 1 0 004d2dc3ae933bc410b928656efa8589
++ # Una página ensamblada a partir de funcionalidades
+
+@ 0 2 0 0f08d40d94f7c2711c4bb4041ce05410
++ Cada funcionalidad de una página es un trait: una cabecera, un pie, un titular. Mezclar uno añade a
++ la vez su marcado, sus estilos y sus metadatos, y la página rellena el hueco que introduce.
+
+% 0 1 0 12705ff5e291290d17fbc8389d59ef4a
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 1f107eae0cca11c4057b7b06e6bfa03c
++   label Solo el contenido
+
+% 1 1 0 1e4382240f6a86b506e32619d8d3b9bb
+
+% 2 1 0 0e3d53bc46b67678186bfcdd2b3864a6
+
+% 0 1 0 0d50cfcddd7e06e4011a3411dfbc6016
+
+% 1 1 0 1beea42bd3f05f6c09b322ffc545dcee
+
+% 2 1 0 1944cdac9bcae9490c08c000baa34ea6
+
+@ 0 2 0 0dec28860362d2381fa6773558bfa633
++   label Un titular, que es también el título del documento
++   highlight Headline(t"Illyria")  un trait, un `<h1>` y un `<title>`
+
+% 1 1 0 027e6c4af70a527e1dd0dc215fa7df50
+
+% 2 1 0 108cdf62fd87d5631651244cdf14f880
+
+% 0 1 0 1829de350bcce03205cf0539b1f7a05c
+
+% 1 1 0 13aaa9e161c9aea5145f2df020e37671
+
+% 2 1 0 0ac335a94dbad1711e2af638ae8b8c5a
+
+@ 0 2 0 084b4cb213beda4e0368024f6b0c5af9
++   label Una cabecera, y el hueco que introduce
++   highlight masthead  el hueco, rellenado al redefinirlo
+
+% 0 1 0 1accf43fe92797621dc8da9a374d03c3
+
+% 1 1 0 1f716f85da1e6d1c01604857372f260f
+
+% 2 1 0 0341d6f69f8bf15f1545c663826ebb9c
+
+% 0 1 0 1c42d9c7fe205a3f06f0e1fab87591ad
+
+% 1 1 0 09f46d705acbc5fc0ab457a37bb7b231
+
+% 0 1 0 0e88f8941f5c53fa0fa876350e1d5b1c
+
+% 0 1 0 18eafb32caed3dd50f976e787bd035ca
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 2 0 1425aef00fcde47109e587e3b8451cdd
++ [Orden de enmarcado](../../soundness/modules/pages.md#framing-order) explica cómo el orden de los
++ traits decide qué envuelve a qué.

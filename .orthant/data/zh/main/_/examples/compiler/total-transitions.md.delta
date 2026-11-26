@@ -1,0 +1,61 @@
+orthant 2 language
+
+@ 0 1 0 04486fe4b986310a1866a55ebf81b3d5
++ # 编译器崩溃是一个值
+
+@ 0 3 0 0ab4142e42d1235d0af34186aaa22f81
++ 编译以三种方式之一结束，而 `Compiler.Result` 为每种方式都准备了一个分支。编译器崩溃不是一个会逃出启动它的工具的异常。它是第三个分支，带有它的堆栈跟踪，而遗漏它的 `match` 是不完整的。
+
+% 2 1 0 1060e685705cdc21177627bd6c533a8e
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 151856de3896239504acb43102093a56
++   label 成功与失败
+
+% 1 1 0 1a0a75c32729496b0cfcadcbd1f151fe
+
+% 2 1 0 093d889d9ae8000809712b181c4209b5
+
+% 0 1 0 1f3356f247d264de1fbe39cdc340b91b
+
+% 0 1 0 1c973b563230048501e2d0d62f9bd754
+
+% 0 1 0 185f98fee2f3c502028d2e3f9679b848
+
+% 1 1 0 16e56376b03a4ebb0b1d6322cc31eaec
+
+@ 0 2 0 14b1873b181370c206fd17913a8560f9
++   label 以及第三个分支
++   highlight Crash(trace)  编译器自身的失败，带有它的堆栈跟踪
+
+% 1 1 0 0b667ac8123417ab08bbaddce5fc8c40
+
+% 2 1 0 1b9ef1ab6d304a431eb26a4564df9f12
+
+% 0 1 0 007559904b41c942120cbdb906943fcd
+
+% 0 1 0 000b3778ae7ffcb71225b1ffd1b52cfd
+
+% 0 1 0 0aa862b1214314bf0b612c6751cea6da
+
+% 1 1 0 1678213a157cff981bf22c6575b3600c
+
+% 1 1 0 136d267ff733a60e0f6246170d49df5f
+
+% 2 1 0 1525a46c87e9e0571e7d21b8e7c42b7a
+
+% 0 1 0 08a86cbdc9b8cb0109ed8ce5b435ce67
+
+% 1 1 0 0cd6459499a6bd5203d659b3bcc1b6aa
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 0 1 0 1198c42c5295f54f057075ca556d430a
+
+% 1 1 0 14b626be0024c5b112428711ce96f925
+
+@ 0 2 0 0a23b1bd29d18eee149819a8326a75f5
++ [编译](../../soundness/modules/compiler.md#compiling)介绍了给出结果的过程，[全转换](../../philosophy/total-transitions.md)阐述了其中的原则。

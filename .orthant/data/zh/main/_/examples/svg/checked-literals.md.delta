@@ -1,0 +1,43 @@
+orthant 2 language
+
+@ 0 1 0 060551db4a1781af1662d6f80fc6a867
++ # 超出末端的渐变色标
+
+@ 0 3 0 1798ba2127a9ef6e138dddc2cffa64d4
++ 渐变的色标有一个介于零和一之间的偏移量。偏移量是一个有界的数，因此编译器会读取这个字面量，位于渐变末端之外的色标永远不会被写入绘图。
+
+% 0 1 0 12705ff5e291290d17fbc8389d59ef4a
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 0ca00b3a6972c5d40901b37258f58ba1
++   label 位于 150% 的色标
+
+% 0 1 0 1477c34ff41c7c99183443e1d3238ae1
+
+% 1 1 0 0960c596329e4eb20a0b442aaa85c43a
+
+% 2 1 0 1585b9f046b3c20a0633358e8d9eaf5e
+
+% 0 1 0 045c649263c054521b776793bb037542
+
+% 1 1 0 094e270808f59f0e19972756e4529d4f
+
+@ 0 2 0 07705cbe1ec8c47505057c182a46ac1e
++   label 位于末端的色标
++   highlight 1.0  在偏移量的范围之内
+
+% 1 1 0 1ebd24ba21a584ef03e93412b9a3b006
+
+% 2 1 0 090bc47f073d380314f263b8a0cf6b5c
+
+% 0 1 0 0f0770e5c0d0ff7e09bcbcc72a1a1417
+
+% 0 1 0 18eafb32caed3dd50f976e787bd035ca
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 3 0 1cbca38223e0b71c1b61b257798e2f32
++ [渐变与颜色](../../soundness/modules/svg.md#gradients-and-color)介绍了这一定义，[构造即安全](../../philosophy/safety-by-construction.md)则阐述了其中的原则。

@@ -1,0 +1,5 @@
+orthant 2 language
+
+@ 0 4 0 11f8eac5354ac26d09f58580eba3a54e
++ 完全な表は [規則のリファレンス](https://github.com/propensive/consequent/blob/main/doc/rules/README.md#migrating-from-the-sn--identifiers) にある。
++ [`doc/work/errors/`](../errors/) の下にある廃止された `SN-nnn` の各ページもその後継を名指ししているので、古い参照も解決される。

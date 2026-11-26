@@ -1,0 +1,72 @@
+orthant 2 language
+
+@ 0 1 0 0b958651694bbee91bca09029a19d53d
++ # Um valor que só conta se passar
+
+@ 0 3 0 1068b105846d31071ef3da183a351e40
++ Uma condição transforma um valor simples em um opcional. `unless` descarta um valor que satisfaz um
++ predicado, e `only` mantém o resultado de uma função parcial onde ela está definida, então o teste e
++ a ausência que ele implica são uma única expressão.
+
+% 2 1 0 07e53b2781ddda541a455d5868924987
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 110c7e44df3ed4cb141612d6124edbcd
++   label Um teste, e uma ausência à parte
+
+% 1 1 0 10f659e36d7cc2ef09f22989f8a7b96e
+
+% 2 1 0 1d6693755cdddd260121266e33ee9aa5
+
+% 0 1 0 0e16845f20683ad3016bac422140f2a9
+
+% 1 1 0 037a2434ead79546047f31a2ea48e5e9
+
+@ 0 2 0 035d46d556e30e5919595967d022424f
++   label Descartado quando um predicado vale
++   highlight unless(_..0)  zero linhas não é comprimento nenhum
+
+% 1 1 0 059786e96e7eddac11dcaedc3da5157e
+
+% 2 1 0 0234093bcb25989f13c854930cbf21ed
+
+% 3 1 0 1a42cdd529e47da20b1091898123ddbd
+
+% 1 1 0 0a30cc82b60406980f7724db36a12ba1
+
+@ 0 2 0 1381b980d79ac7830fa01877138ecef8
++   label Mantido, e alterado, onde um padrão casa
++   highlight only  Unset onde quer que o caso não esteja definido
+
+% 1 1 0 0e93040bcf7e3cdc06f26ab2b16d706d
+
+% 2 1 0 03ef99177a56598309a71ab0d57c5308
+
+% 3 1 0 1898cb16290273ab078b138bd97c44f0
+
+% 0 1 0 1c6d7a1eb0f16e6013f7a393c059af7c
+
+% 1 1 0 1ed02d4dd09864791c7a19a837c8ee39
+
+% 1 1 0 136d267ff733a60e0f6246170d49df5f
+
+% 2 1 0 1525a46c87e9e0571e7d21b8e7c42b7a
+
+% 0 1 0 08a86cbdc9b8cb0109ed8ce5b435ce67
+
+% 1 1 0 0cd6459499a6bd5203d659b3bcc1b6aa
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 0 1 0 098b53af700beb6d1782d412b280aa00
+
+% 0 1 0 198d5e54e0cf4bcd01fab40cb33fb549
+
+% 1 1 0 0ce49a2267be1241082d463543f7748f
+
+@ 0 2 0 05875309924705b20fcfba3084b50b0a
++ [Construindo um opcional](../../soundness/modules/optional-values.md#building-an-optional) traz
++ `puncture`, para um único valor que representa a ausência.

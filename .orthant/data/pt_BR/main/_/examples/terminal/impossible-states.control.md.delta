@@ -1,0 +1,54 @@
+orthant 2 language
+
+@ 0 1 0 0ae33ec82f4fecda0b752ccb861ae283
++ # Caracteres de controle, e nenhum outro
+
+@ 0 3 0 0170ab9ae28801311f6cb6efa9515e26
++ Um terminal pode relatar Ctrl com uma letra, e com alguns sinais de pontuação, porque esses são
++ os caracteres de controle que o ASCII tem. O tipo de `Ctrl` admite exatamente esses caracteres,
++ então uma combinação que nenhum terminal pode enviar não é um valor.
+
+% 2 1 0 13fe13dc4315ae8f0653bd930e85c686
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 1c60290894410bdd06abc0dc7f7f0b5e
++   label Ctrl com um dígito
+
+% 0 1 0 1477c34ff41c7c99183443e1d3238ae1
+
+% 1 1 0 0960c596329e4eb20a0b442aaa85c43a
+
+% 0 1 0 014213378b45692d0af8dcfee0578a1f
+
+% 1 1 0 09cd03da0a1ea8d51a416fc79444d7ce
+
+@ 0 2 0 021eaa80f8c585b9096e2f52a64e97db
++   label Ctrl com uma letra
++   highlight 'C'  um dos caracteres que o tipo lista
+
+% 1 1 0 15f24c6ba11078330796e33776ffd5e5
+
+% 0 1 0 0c964b1f155e46d801886d17613ab1af
+
+% 1 1 0 0f5668df422d55bd0c9629fb900a4e2e
+
+% 1 1 0 136d267ff733a60e0f6246170d49df5f
+
+% 2 1 0 1525a46c87e9e0571e7d21b8e7c42b7a
+
+% 0 1 0 08a86cbdc9b8cb0109ed8ce5b435ce67
+
+% 1 1 0 0cd6459499a6bd5203d659b3bcc1b6aa
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 0 1 0 045281731ef378331aca2fae74bbdbbb
+
+% 1 1 0 1ff30c51b68edf341f1c87d0ade34142
+
+@ 0 2 0 09a8928df10e28fa02e2199d6cb1c142
++ [Entrada pelo teclado](../../soundness/modules/terminal.md#keyboard-input) descreve como os
++ modificadores se aninham.

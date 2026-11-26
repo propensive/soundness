@@ -1,38 +1,25 @@
 orthant 2 release
 
-@ 0 1 0 0ac84549b1736f350456b8a52b1f5ccd
-+   criterion  CI regenerates etc/compatibility.tsv, fails on divergence, and no exclusion lacks a reason
+% 0 1 0 022ea576232c1c8a022ca96cc65a6c23
 
-@ 0 1 0 069584389bdd742f121a30abef4ca5ab
-+   criterion  every exclusion reason in etc/compatibility.tsv is inherent; a reason-vocabulary check enforces it in CI
+% 0 1 0 1d5dac460d0144ed0e9ce85ab7f751a9
 
-@ 0 1 0 1037c94b0677f33407709f3f6e61e442
-+   criterion  the rename table in etc/api-nesting-proposal.md is fully applied, and the 'Remaining names by prefix family' section of etc/api-reduction-candidates.md lists no name outside 'Reviewed items which should not be moved'
+% 0 1 0 14a9dc0b3e949ece0caaceafa0141d60
 
-@ 0 1 0 13d2f19eaf90efcd0453c813043f60a5
-+   criterion  the C2 section of etc/api-reduction-candidates.md is empty (C3 and C3b were superseded by etc/api-nesting-proposal.md and closed with it)
+% 0 1 0 13d88f3a35cc840f04b57d9c36a50217
 
-@ 0 1 0 07708d807a20586f1f04a11b894f95cb
-+   criterion  etc/api-reduction-candidates.md no longer exists
+% 0 1 0 06c6c31327182c871e92b37f5e2c26af
 
-@ 0 1 0 1be93617d0eaa37800a01d8c17e815de
-+   criterion  no name is exported by more than one library, no @unexported dodges a clash, and every row of the R8 tables in etc/api-nesting-proposal.md is applied or reviewed-kept
+% 0 1 0 115b15a89e2628830259a9bf2aec9abb
 
-@ 0 1 0 05b28bf6e92ceb9c1197a2ca4fa1a843
-+   baseline  101 topics in doc/soundness/modules/; 145 of 145 libraries covered (2026-10-21; 1 of 144 uncovered on 2026-09-25; 91 topics and 35 uncovered on 2026-08-01)
+% 0 1 0 024e7f704efe241b07697b7622af54d5
 
-@ 0 1 0 014bf2f87532bb3613c7f0231ff02e1d
-+   baseline  the scripted DAP suite breaks, steps and inspects values through their Inspectable instances; topic doc/soundness/modules/debugging.md (2026-10-21; objects inspected as JVM class names and no topic on 2026-09-25)
+% 0 1 0 0c4fb8fd7c757039191ced624cd9bf8c
 
-@ 0 2 0 1b63a81c02b33b310f12ecafbe40db74
-+   baseline  etc/migration.md and 0.65.0.md–0.73.0.md exist; the migration directive in etc/release gates the release; no pull-request check (2026-10-21; notes to 0.68.0 on 2026-09-25)
-+   criterion  etc/migration.md exists; the release (the migration directive in etc/release) refuses to tag without etc/migration/<version>.md; a CI check fails any pull request that changes lib/**/src without touching the unreleased etc/migration/<version>.md
+% 0 2 0 1ecc3855de818f6814bc9b756c382eb7
 
-@ 0 1 0 0fa0e513a6ce0ca416f786984e64873b
-+   criterion  lib/reliquary is absent, no lib/*/src/lira directory remains, and build.mill, etc/ and doc/soundness/modules do not mention reliquary
+% 0 1 0 093b80658f84f37919209897c8c898ce
 
-@ 0 1 0 03b1836ad208abeb17ad1303ec829386
-+   baseline  lib/sigillate: Jws, Jwe, Jwk and Jwt, with `http` and `server` components; 95 tests, taking their vectors from RFC 7515 §A.1–A.7, RFC 7516 §A.1–A.5, RFC 7517, RFC 7638 and RFC 8037; `↯/s.147.1`; doc/soundness/modules/jose.md (2026-11-20)
+% 0 1 0 00d30d3ff78760421de447bd2e7173f5
 
-@ 0 1 0 049ddac88d5f34260c7a028bfdb08cf5
-+   baseline  lib/chatelaine: WebAuthn.registration/register and authentication/authenticate, `none` and `packed` attestation, with a `server` component; the registration and authentication ceremonies of the W3C specification's test vectors (§16.2–16.11) pass, as do scripted ceremonies against a software authenticator in the test sources; no browser's virtual authenticator has been driven; `↯/s.148.1`; doc/soundness/modules/webauthn.md (2026-11-20)
+% 0 1 0 04b2a086c09d9a4a0bf490e3f6a25ee5

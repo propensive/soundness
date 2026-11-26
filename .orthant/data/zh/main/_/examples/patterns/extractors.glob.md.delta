@@ -1,0 +1,72 @@
+orthant 2 language
+
+@ 0 1 0 114ce3c543f1b05208e204a690f9d83e
++ # 用 glob 拆开的路径
+
+@ 0 3 0 069a4a72b8096b7c1b29430ad6334d66
++ glob 是命令行的通配符语法，`g"…"` 把它变成模式。其中的 `$name` 绑定路径的一个段，`*` 代表一个不需要的段，`**` 代表任意数量的段。
+
+% 2 1 0 1ae448f28c08c29e0b4d075ed9fe0980
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 2 0 1991a303794b77ea07c4162b84836b73
++   label 一个段，已绑定
++   highlight $play  绑定一个段
+
+% 1 1 0 0ba323cdafaf9ce7059daef971af9fb2
+
+% 2 1 0 1a7247d5762f5b140def3f92ec7cd633
+
+% 0 1 0 037f79c163eb88371d24afa5a7abcf1f
+
+% 0 1 0 082914cfa0bed3701a3d28f996637e13
+
+% 1 1 0 084ad6228b6431781926f7e3bc92b346
+
+@ 0 2 0 024d3ae65f7dd04f0ff825e29b2b70f8
++   label 一个可以是任何内容的段
++   highlight *  一个段，不绑定
+
+% 1 1 0 1513fc5f84cb15f61fb82ae38c1babe1
+
+% 2 1 0 0c2419ed28d2d1e4073e0e87fd8aff17
+
+% 0 1 0 032442cc1f20f99912b5de6838a61047
+
+% 0 1 0 1b52217c6f35947605809b9af44ec468
+
+% 1 1 0 0b17104454ade0d210b41615014ace42
+
+@ 0 2 0 14ca8df47b4fdd7602198010a0a263c1
++   label 任意数量的段
++   highlight **  路径的其余部分
+
+% 1 1 0 0ac310f8d07b55c00d7e8034a52fde98
+
+% 2 1 0 05d4fd32b1ecc92801f1d6c8636350b7
+
+% 0 1 0 0ec87bf69840559309758fb671816850
+
+% 0 1 0 1e56797d555eb8df18cab3a640793a1a
+
+% 1 1 0 02a2c22760a51ee409ae1205b1a61efa
+
+% 1 1 0 136d267ff733a60e0f6246170d49df5f
+
+% 2 1 0 1525a46c87e9e0571e7d21b8e7c42b7a
+
+% 0 1 0 08a86cbdc9b8cb0109ed8ce5b435ce67
+
+% 1 1 0 0cd6459499a6bd5203d659b3bcc1b6aa
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 0 1 0 1a5f2bd8e2388ca61c22ef06ba2444d7
+
+% 1 1 0 0ace205f0f631b0d05397ca09c418335
+
+@ 0 2 0 0481051cf38b48d8150a785287486c63
++ [Glob](../../soundness/modules/patterns.md#globs)介绍了完整的语法，以及它到正则表达式的转换。

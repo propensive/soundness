@@ -1,0 +1,59 @@
+orthant 2 language
+
+@ 0 1 0 111f48139c36db7c1dadddfa3bb4cecc
++ # 任何东西的差异
+
+@ 0 2 0 18eb16005480ecc806ca9add44b3711b
++ `diff` 不是文本的函数。它比较任意元素的两个序列，给出的编辑保存着该类型的元素，因此字符、行和记录都用同一个方法比较。
+
+% 0 1 0 12705ff5e291290d17fbc8389d59ef4a
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 0 1 0 008f479a89bc2e790a63d78435fd41c3
+
+@ 0 1 0 0a609830586d524d0eb6bbe83ff97aa7
++   highlight diff  两个 `Char` 序列之间
+
+% 1 1 0 0245e3d65670b2490d1f008ad447d07a
+
+% 0 1 0 05dade03e36ef06909a4f07912042356
+
+% 0 1 0 0bf34d1360e58a6010dc05535a8f7d92
+
+% 0 1 0 0a64f02ae96d138e19300bf624e7e35a
+
+% 0 1 0 16382772b924dbec19e77f134bad93c6
+
+@ 0 1 0 11eb168180fe96f3177032cbd9760898
++   highlight diff  两个 `Text` 序列之间
+
+% 1 1 0 05fa6ec7699f038b117a09a45eff3fa9
+
+% 0 1 0 02297a19421b02bf15f82ab9203e34ce
+
+% 0 1 0 012aeaab0fb4f39708379886510eba80
+
+% 0 1 0 06d34f795332e2c9184559fac6f69efd
+
+% 0 1 0 119d44480dd784661b3deb73282ccf0a
+
+@ 0 1 0 00050d3067cac26b1a74dd8817075c0a
++   highlight diff  两个 `Role` 序列之间
+
+% 1 1 0 02787f82cd6722d61e2606468605455c
+
+% 0 1 0 1693b3d13aa05feb0c4b34886f5d0cff
+
+% 0 1 0 092567dc2664f0f30be09951e45b3303
+
+% 0 1 0 02649da5d73faed21d86308481a11641
+
+% 0 1 0 19ec37ac0fbdf94c11688bb2d7bdfa31
+
+% 0 1 0 18eafb32caed3dd50f976e787bd035ca
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 2 0 1804a7fbbfdf9303071f5c0a3e9e6291
++ [计算差异](../../soundness/modules/diffing.md#computing-a-diff)介绍了各种编辑，[精简 API](../../philosophy/small-apis.md)说明了为何一个名称就够用。

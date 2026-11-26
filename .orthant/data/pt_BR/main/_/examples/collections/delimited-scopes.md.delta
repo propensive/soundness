@@ -1,0 +1,60 @@
+orthant 2 language
+
+@ 0 1 0 1fd448a25498a4130474189f3b18fc4f
++ # Um mapa preenchido no lugar, depois congelado
+
+@ 0 3 0 19d70b9c7acd8a581f4a451e73b4ca5e
++ Um mapa grande é mais rápido de preencher no lugar do que de crescer uma entrada de cada vez.
++ `Map.build` empresta um builder a um bloco, e o builder não pode sair dele, então o mapa é imutável
++ a partir do momento em que o bloco termina.
+
+% 2 1 0 0c9a6d9ba8742a7113c1dd3b952b8839
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 0a610de03da993c8183ca68141f00098
++   label Crescido uma entrada de cada vez
+
+% 1 1 0 16c8ddb862e4e77a121a4cab14ce4d50
+
+% 0 1 0 0c5558ff7d33bd5b1602370a792f48f9
+
+% 1 1 0 09d441cd0beb87fd0327b9f6a6f1edcd
+
+@ 0 2 0 11ee4800900ebc1f04955671cb20fd54
++   label Preenchido dentro de um bloco
++   highlight map  o builder só existe aqui
+
+% 0 1 0 1accf43fe927975e1dc8da9a374d03bf
+
+% 1 1 0 0f4c8efd33a1a5dc00a45df385f573ea
+
+% 0 1 0 07be964dc357bc420946b38ef3e962d6
+
+% 0 1 0 15be61cd5690fcec17c524fbb7961583
+
+% 0 1 0 061910ffa7a4ee00080aa88cb3f210ee
+
+% 0 1 0 11f0cb0242cc23cc184239c5ace4726d
+
+% 1 1 0 11e63001f6c6193e0e31939f83fdb293
+
+% 1 1 0 136d267ff733a60e0f6246170d49df5f
+
+% 2 1 0 1525a46c87e9e0571e7d21b8e7c42b7a
+
+% 0 1 0 08a86cbdc9b8cb0109ed8ce5b435ce67
+
+% 1 1 0 0cd6459499a6bd5203d659b3bcc1b6aa
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 0 1 0 17c0b84e775bac0d0047726f658b7a14
+
+% 1 1 0 1bb0266012a9a20b0d36bfe18933de72
+
+@ 0 2 0 02935dd892b0ae5f1868457819d961b4
++ [Conjuntos e mapas](../../soundness/modules/collections.md#sets-and-maps) descreve `build`, e
++ [escopos delimitados](../../philosophy/delimited-scopes.md) o padrão.

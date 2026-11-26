@@ -1,0 +1,73 @@
+orthant 2 language
+
+@ 0 1 0 0a67a183ed1290e91ebdb5cd21f92a01
++ # Von einer Tabelle zu JSON
+
+@ 0 2 0 190b31ebe359f1bf16a6b81beb80b031
++ Eine Case-Klasse hat für jedes Format einen Codec, jeder aus denselben Feldern abgeleitet.
++ CSV-Zeilen werden in sie dekodiert und als JSON kodiert, und keines der beiden Formate hat vom
++ anderen gehört.
+
+% 2 1 0 09f3fda48414bf511b9e222c8cd27fb9
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 1fbae5155fc5e5b909e1d3c9c4ee0adf
++   label Zeilen, dekodiert
+
+% 1 1 0 104998c33251b6030169e31e021228c4
+
+% 2 1 0 0bcea38fd8c7b8e41cccb9787f085765
+
+% 3 1 0 1dd27b0ae5b313ff1396dae71646db11
+
+% 5 1 0 1f5b23043cdcd3ad0fdaf71bbd02085b
+
+% 7 1 0 162dd914b22dc7bf108778488606fd6e
+
+% 8 1 0 06dc81943c8f8857198d6d7b24c68cd2
+
+% 1 1 0 139dca47ba9cc4951773e6c0d2721740
+
+@ 0 2 0 0626719a759317bf150f1218eb5decc7
++   label Dieselben Werte, als JSON-Array
++   highlight in[Json]  dieselbe Ableitung, ein anderes Format
+
+% 1 1 0 0dd906815d75b3dd13c63b10c247c080
+
+% 2 1 0 1109641266285ce418f3e5d1cd53d4a9
+
+% 3 1 0 0580cd39fc1e78851909a3da6c54d5ae
+
+% 5 1 0 10b5e8b5c2589ce718e3c18af332b6eb
+
+% 7 1 0 09c44cc6aa65e8321c77e8c9dd6e4ed7
+
+% 8 1 0 06916d060e0f2091077097b3a8624464
+
+% 0 1 0 19326dfe78f8ab7f127c2d2acfc8694e
+
+% 1 1 0 088e24066e36283308449b0c50f46018
+
+% 1 1 0 136d267ff733a60e0f6246170d49df5f
+
+% 2 1 0 1525a46c87e9e0571e7d21b8e7c42b7a
+
+% 0 1 0 08a86cbdc9b8cb0109ed8ce5b435ce67
+
+% 1 1 0 0cd6459499a6bd5203d659b3bcc1b6aa
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 0 1 0 026901931200bf591262a034768d6b95
+
+% 0 1 0 16fc7678e5d8225f085e81802149d6a1
+
+% 1 1 0 0ae03c5ece6122340ae5da59260a87ab
+
+@ 0 2 0 113f05f1941f97750263dac7a7163853
++ [In eine Case-Klasse dekodieren](../../soundness/modules/csv.md#decoding-to-a-case-class) und
++ [JSON](../../soundness/modules/json.md#case-classes-and-enumerations) beschreiben die beiden
++ Hälften.

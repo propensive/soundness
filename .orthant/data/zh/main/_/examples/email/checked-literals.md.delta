@@ -1,0 +1,56 @@
+orthant 2 language
+
+@ 0 1 0 0cd8caaa493764f607da7bacb0420593
++ # 发给无人的邀请
+
+@ 0 3 0 1f265c10b1bf55fa017ddf0c0143a99d
++ 消息的收件人是一个 `EmailAddress`，而用 `email"…"` 写出的地址由编译器检查。发往一个永远无法投递的地址的消息不会被发送，因为它根本无法编译。
+
+% 0 1 0 12705ff5e291290d17fbc8389d59ef4a
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 053714fe5b73532b09b0c0248b662dbc
++   label 没有邮箱名的地址
+
+% 0 1 0 1477c34ff41c7c99183443e1d3238ae1
+
+% 1 1 0 0960c596329e4eb20a0b442aaa85c43a
+
+% 2 1 0 184cfb5ee95bfaf901fdf87d0d03b757
+
+% 4 1 0 04a6eb794d6886f012b2e56ec88f2ce7
+
+% 5 1 0 1f3bcb0d0843359d0bf65fcca7a6e1e5
+
+% 6 1 0 013c6bc00a3bba190334b04c0929aebe
+
+% 0 1 0 07bf8d9a0a6168fa1a16418443c096d7
+
+% 1 1 0 12691bc4a1ae71b7196669d54e10d2f4
+
+@ 0 1 0 1ed1306a66df2c4515bc4820057b24c2
++   label 格式正确的地址
+
+% 0 1 0 0ffa6d21493d9bec110a9428cdf09f32
+
+% 1 1 0 184c59ad3fc391941fc3df5180847621
+
+% 2 1 0 03e1ea6d2ecbae6f145ea392f47abec2
+
+% 4 1 0 01eace90a8ef05d00d05c8d8c31e211c
+
+% 5 1 0 172bb5d57cf1424e1ef80eed28c969a8
+
+% 6 1 0 1464f746b94506f91eeba9acb2dfa911
+
+% 0 1 0 0157c7a121bf00c10d1ca864b3d58e41
+
+% 0 1 0 18eafb32caed3dd50f976e787bd035ca
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 3 0 114a70c42076255c1844c9d74b2f5ff4
++ [发送](../../soundness/modules/email.md#sending)介绍了 `send`，[网络地址](../../soundness/modules/network-addresses.md#email-addresses)则介绍了这种字面量。

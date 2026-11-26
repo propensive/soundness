@@ -1,0 +1,9 @@
+orthant 2 language
+
+@ 0 5 0 1c3f96a35b6cfdd5100a3d833acda4ab
++ Niektóre wyniki zależą od długości przykładowego napisu: szerokości kolumn przedstawionej
++ tabeli, tekst z dopełnieniem lub wyrównany, przesunięcie bajtowe, zakodowana długość, rozmiar
++ ładunku benchmarku. Test powie, kiedy taki wynik się zepsuł; komentarz `// result` w
++ `doc/soundness/api/*.tel` tego nie zrobi, bo nic go nie sprawdza. Tam więc, gdzie długość ma znaczenie,
++ należy wybrać imię o wymaganej długości, a tam, gdzie pokazany wynik się zmienia, obliczyć
++ próbkę ponownie, zamiast poprawiać wynik ręcznie.

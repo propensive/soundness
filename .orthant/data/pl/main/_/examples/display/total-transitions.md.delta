@@ -1,0 +1,77 @@
+orthant 2 language
+
+@ 0 1 0 1f83421db6064f5f1987e920a4d74c4b
++ # Wyjście diagnostyczne, którego nic nie blokuje
+
+@ 0 3 0 1bad171bf63351cf15435406f7dd4934
++ `show` jest dla człowieka i odmawia się go typowi, który nie powiedział, jak ma wyglądać. `inspect`
++ jest dla programisty i jest określone dla każdej wartości: przechodzi przez inne postaci typu,
++ dopóki któraś nie pasuje.
+
+% 2 1 0 196cedb97646d5c40adef1fb3da00cee
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 0d56512e690bc9a911f8c26987ea16e8
++   label Typ bez postaci dla czytelnika
+
+% 0 1 0 1477c34ff41c7c99183443e1d3238ae1
+
+% 1 1 0 0960c596329e4eb20a0b442aaa85c43a
+
+% 2 1 0 18de1dbc8deb74381a5198654ce08627
+
+% 0 1 0 0609f4c11dd318f305cca8b2b80fc13f
+
+% 1 1 0 071f54eca42791bd0cd634d9c091eb19
+
+@ 0 2 0 0684ebf16386aa8a13e691df5f4875a6
++   label Ta sama wartość przedstawiona przez inspect
++   highlight inspect  zawsze określone
+
+% 0 1 0 0fd2ac3797a0477d02117fa7e01a94b3
+
+% 1 1 0 0831db4166dd7587114b3740732b8e38
+
+% 2 1 0 1ad19a02742bff0b02e474b67414e428
+
+% 2 1 0 02af0955230d04480d4e34ec65b65110
+
+% 1 1 0 0822950fdbb295e3053ede478ad39455
+
+@ 0 2 0 0eb64582aa2bdd0f1692f10b8aa034a9
++   label Postać dla czytelnika, którą inspect pożycza
++   highlight Purse..Showable  pożyczona przez inspect
+
+% 0 1 0 1accf43fe92797601dc8da9a374d03c1
+
+% 1 1 0 175eff4186e0097c110253255e924cfc
+
+% 2 1 0 0ed36de46d7e3c8506db6f0917c667f5
+
+% 0 1 0 1393f91ca4bdaca5108a9d2edd0b8f16
+
+% 2 1 0 1a1f921735a7943b08c992a8f1aeda9e
+
+% 1 1 0 0c62d851e87b9ec000b451562d0e8645
+
+% 1 1 0 136d267ff733a60e0f6246170d49df5f
+
+% 2 1 0 1525a46c87e9e0571e7d21b8e7c42b7a
+
+% 0 1 0 08a86cbdc9b8cb0109ed8ce5b435ce67
+
+% 1 1 0 0cd6459499a6bd5203d659b3bcc1b6aa
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 0 1 0 08ce6922f205656313d703b312d20d59
+
+% 1 1 0 167eb1bf671a4c900dcf54505affff70
+
+@ 0 3 0 1747639eb921f7d20341ebcfc01ac2fa
++ Nawiasy oznaczają postać pożyczoną od `Showable`. [Łańcuch
++ rezerwowy](../../soundness/modules/display.md#the-fallback-chain) wymienia, czego się próbuje i w
++ jakiej kolejności.

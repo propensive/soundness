@@ -1,0 +1,66 @@
+orthant 2 language
+
+@ 0 1 0 0e2674d65be94ede09df90afe7eb31e5
++ # Uma case class é um elemento
+
+@ 0 3 0 18da4c673cb6fe4b0c5d001437ac54ce
++ Uma case class é escrita como um elemento com o nome do tipo, com um elemento filho para cada
++ campo. Uma anotação em um campo o torna um atributo, e o decodificador muda junto com o
++ codificador.
+
+% 2 1 0 0cc538ff9552ad4e01fa670e85efc28a
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 169d744fc507ca850f8191759f708876
++   label Um elemento filho para cada campo
+
+% 1 1 0 0c174be32ff2ad2e1669fc8ceeab383b
+
+% 2 1 0 0424584100d935e11f3a92278693cc52
+
+% 3 1 0 169a2f301084a4a109702212fa9cb69c
+
+% 0 1 0 18e038da1372cf16003ba798039f5e4e
+
+% 2 1 0 0bd5488b94faae0a15397d6ca77e4798
+
+% 1 1 0 1d68b71ecabb7e4d0faa8958c3235fe1
+
+@ 0 2 0 0affdc44d94187a91d46b1fd06fbff6a
++   label Um campo como atributo
++   highlight @attribute  escrito na tag de abertura
+
+% 1 1 0 03db3b60bad9958e18031bbdf3eba457
+
+% 2 1 0 0e3c31d2e7d08deb1a6017f242c97182
+
+% 3 1 0 03f7b89a4aab3b841eca4579dfc28acd
+
+% 0 1 0 08f4cf7806fa414d18d49f4d47c63332
+
+% 2 1 0 00e60f7b2cb4e55301b5d03b8c8a3e3f
+
+% 1 1 0 01a8fa60d784872b0b1ffc67655e51d1
+
+% 1 1 0 136d267ff733a60e0f6246170d49df5f
+
+% 2 1 0 1525a46c87e9e0571e7d21b8e7c42b7a
+
+% 0 1 0 08a86cbdc9b8cb0109ed8ce5b435ce67
+
+% 1 1 0 0cd6459499a6bd5203d659b3bcc1b6aa
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 0 1 0 1115140b4f2b411f1685fb665498fa11
+
+% 0 1 0 1baf9e1739ff2be008d4d1aeb7b027e6
+
+% 1 1 0 0f3a7a9aafe22fed0f8475889c7f6e94
+
+@ 0 2 0 16a608818b78cf010952cb7aaa9e008a
++ [Case classes](../../soundness/modules/xml.md#case-classes) mostra em uma tabela no que cada
++ parte de um tipo se torna.

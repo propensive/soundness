@@ -1,0 +1,70 @@
+orthant 2 language
+
+@ 0 1 0 19a5909029f471021f86865a11b03b2c
++ # 本身就是规范的客户端
+
+@ 0 3 0 1f455e9d9eb8d6fc05e1a7f8268d3f74
++ `Api` 在代码编译时读取一份 OpenAPI 文档，它给出的值可以按文档所声明的路径进行导航。不生成任何代码，文档中没有的路径也就不是成员。
+
+% 0 1 0 12705ff5e291290d17fbc8389d59ef4a
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 0b578182f545250f13cff6804f3400e9
++   label 规范
+
+% 1 1 0 0eafd3d92061ca7e17bc0ff920fedfaa
+
+% 2 1 0 068710c99e34b1920268a52ce553f712
+
+% 1 1 0 15dc7683284cbb3015cb0db879cfd21e
+
+@ 0 2 0 17ef8a49b1e0122816c8739afb99d8ab
++   label 一条路径
++   highlight api.pets  路径 /pets
+
+% 1 1 0 1526f0992d24f2c214b8bf7d6a8c1e4c
+
+% 2 1 0 0f115765ae99d1de1929247b5b7b3d96
+
+% 4 1 0 1cec1e55de6d98f214c03139908c4e15
+
+% 1 1 0 0927d47e4c659c3319ab290199603b6a
+
+@ 0 2 0 1e1f8c5f07c493da1e9f96729b0b821b
++   label 带参数的路径
++   highlight api.pets(42).photos  路径 /pets/{petId}/photos
+
+% 1 1 0 1237d287f631e6861879ed59a34578a9
+
+% 2 1 0 041a13da1c4f85930e4006d34f7ded6e
+
+% 4 1 0 1857fe9250f5d08b1da0041f75a92234
+
+% 5 1 0 1f4961d4afb4a7df1ba7031905574849
+
+% 1 1 0 0919e51ca43a480b0388e7314b128751
+
+@ 0 1 0 000be19175e808581a2f9c50d7febd5f
++   label 规范中没有的路径
+
+% 0 1 0 1477c34ff41c7c99183443e1d3238ae1
+
+% 1 1 0 0960c596329e4eb20a0b442aaa85c43a
+
+% 2 1 0 1f08353c1092c6d21c5cc4b38f49f476
+
+% 4 1 0 14a32c62c5d1da50039f277dada039f0
+
+% 5 1 0 0a250c54eb2e08821b6ed2e3277e8455
+
+% 0 1 0 13d31ffcc47531790ce3113bce852d5a
+
+% 0 1 0 18eafb32caed3dd50f976e787bd035ca
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 2 0 1f527d3d12d9b5611c75d427daa19e45
++ 此示例只编译，不运行。[类型化客户端](../../soundness/modules/openapi.md#a-typed-client)说明了基础 URL 从何而来。

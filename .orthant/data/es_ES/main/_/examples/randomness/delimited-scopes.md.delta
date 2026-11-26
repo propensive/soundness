@@ -1,0 +1,75 @@
+orthant 2 language
+
+@ 0 1 0 06d1f2cecb530eb41d9b9d269273d109
++ # Un ámbito que puede reproducirse
+
+@ 0 3 0 1e74327d942e18ea00bfe1f9314caa7d
++ Un bloque `stochastic` crea una nueva fuente de aleatoriedad cuando empieza, y la fuente
++ desaparece cuando termina. Con un generador con semilla, el bloque entero es por tanto una función
++ de su semilla, y ejecutarlo de nuevo extrae los mismos valores en el mismo orden.
+
+% 2 1 0 0323ae922f4f21fc0657f5ebb4544130
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 1ac8381d55080298089dd917a13e84f0
++   label Tres tiradas de un dado
+
+% 1 1 0 188a5aec26fcb2f208d11d91ae02823c
+
+% 2 1 0 15850781dc7458d9130adff60c6e7c8a
+
+% 4 1 0 140615d12678e450169c40e420976ada
+
+% 5 1 0 127c7cec478708111b3cee56b9fd1b1e
+
+% 0 1 0 044ee310293f26391149986f13edb5de
+
+% 0 1 0 04e6d4d11ff7aa62105de61e06afb229
+
+% 1 1 0 1d2f8338d2b992ee1aa22119bac4b143
+
+@ 0 3 0 0a13963fdf6d990209010155d5add40d
++   label Una fuente, mientras dura el bloque
++   highlight stochastic:  una fuente nueva, iniciada con la semilla
++   highlight arbitrary[Int]()  extraído de la fuente del bloque
+
+% 1 1 0 1ddcf7e5dca12aeb0869bded27c8aec5
+
+% 2 1 0 0c62c9caf00b3c800d2cdf6588bdb107
+
+% 4 1 0 13d5717135eec53d0ea223bbf7d5f214
+
+% 5 1 0 198ea21582eb6b6d01d84d81e0849bf3
+
+% 0 1 0 185e37f08f2198a407f3b12f1ad7d6d3
+
+% 0 1 0 15f815d424741b3a18b5578be98de99e
+
+% 0 1 0 0b8c7ec3e5f94bc30aa5f27950979bee
+
+% 1 1 0 05d4d7defc12efef1bbbd133b8fe4bce
+
+% 1 1 0 136d267ff733a60e0f6246170d49df5f
+
+% 2 1 0 1525a46c87e9e0571e7d21b8e7c42b7a
+
+% 0 1 0 08a86cbdc9b8cb0109ed8ce5b435ce67
+
+% 1 1 0 0cd6459499a6bd5203d659b3bcc1b6aa
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 1 1 0 1b8f0532777d494d0e01494db2c599cf
+
+% 1 1 0 01146f0baa63a1390ba7645ec4fe7864
+
+% 1 1 0 004492a1b482a1fc0948caadd9841855
+
+@ 0 4 0 03a24e89591d7e8b0c60cf03102e5a51
++ Cada llamada abre su propio ámbito, y cada ámbito empieza con la semilla. [Reproducir una
++ ejecución](../../soundness/modules/randomness.md#reproducing-a-run) dice hasta dónde llega la
++ garantía, y [los ámbitos delimitados](../../philosophy/delimited-scopes.md) por qué un bloque es
++ la unidad.

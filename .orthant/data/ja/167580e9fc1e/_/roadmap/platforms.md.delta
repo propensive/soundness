@@ -1,0 +1,10 @@
+orthant 2 language
+
+@ 0 6 0 1c04979355be49381f1bb8e3f8ecc451
++ `etc/compatibility.tsv` は行列を記録し、`etc/check-compatibility.py`（`make build` が実行する）は、そのプラットフォームの列を `build.mill`（各コンポーネントの `scalaJs`/`scalaNative` フラグと、`sources`/`jsSources`/`nativeSources` のソースセット）から再生成し、コミットされた写しとの食い違いや、`notes` に理由のない除外があれば失敗する。
++ したがって行列は契約である。行なしで追加されたモジュールや、ファイルを変えずに切り替えたフラグはビルドを失敗させ、手で書く内容は、すべての `no` または `core` のセルの理由だけである。
+
+% 0 1 0 103e46e31a37bd190a644b6f5d3e1159
+
+@ 0 2 0 10706f14d6551a4916ff249ce6c79e6d
++ 完了条件：`etc/compatibility.tsv` のすべての除外の理由が本質的なプラットフォームの制限を記述し、CI の理由の語彙の検査がその区別を強制すること。

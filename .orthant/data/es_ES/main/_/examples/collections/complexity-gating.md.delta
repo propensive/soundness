@@ -1,0 +1,47 @@
+orthant 2 language
+
+@ 0 1 0 0620bc10c615f0521133a5b41d2a3ac4
++ # El coste de contar una lista
+
+@ 0 2 0 0183bcb877e80dae0eaf16447ae9f5ea
++ Una `List` es una lista enlazada, así que averiguar su tamaño significa recorrerla entera. Es
++ fácil olvidarlo dentro de un bucle, así que `size` no compila hasta que se ha reconocido el coste.
+
+% 0 1 0 12705ff5e291290d17fbc8389d59ef4a
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 0bb747fe22bc151005c393b8b13730c0
++   label Contar una lista enlazada
+
+% 0 1 0 1477c34ff41c7c99183443e1d3238ae1
+
+% 1 1 0 0960c596329e4eb20a0b442aaa85c43a
+
+% 1 1 0 0bc1d0c2e6c7e7841c1046b51520bf96
+
+% 2 1 0 12dcd521a8e0843f06f07633b1a1e6b3
+
+% 1 1 0 10d3904b429bd0f11a2c735830e60382
+
+@ 0 2 0 1fa1306c7267edf207642e7856d3d326
++   label El coste, reconocido
++   highlight import..linearSize  el recorrido queda ahora registrado
+
+% 1 1 0 11ae6f4af19cb5bc1d09dd76c36583f2
+
+% 0 1 0 0bf87a32fe9bce971e59d6ea8c2a0221
+
+% 1 1 0 10975de09d74e11a005a30bff07527f3
+
+% 2 1 0 008c62bf82af9ca31c64837063851937
+
+% 0 1 0 18eafb32caed3dd50f976e787bd035ca
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 2 0 103ca9cb9f2e6e3e1401ea802df85ab8
++ [Posiciones y acceso](../../soundness/modules/collections.md#positions-and-access) enumera los
++ demás reconocimientos.

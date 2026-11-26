@@ -1,0 +1,90 @@
+orthant 2 language
+
+@ 0 1 0 02d6530e5ff3ef271d696ee942ded200
++ # 一个方法写出每一种图形
+
+@ 0 3 0 190cd17a3e62c2fe10a19aca419c9121
++ 没有哪种图形有自己的 `toXml`。一个形状、一组形状和一整幅绘图都用 `in[Xml]` 写出，SVG 文本则用 `read[Svg]` 读回，它也是读取其他一切的方法。
+
+% 2 1 0 04ff8f9c48a857c418bd5020eb4c8fdb
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 2 0 1d6d8df99fc1a0e40a62415b0bdecc43
++   label 一个形状
++   highlight in[Xml]  一个圆，写成 XML
+
+% 1 1 0 12059fad45e5b178118fa886986e485a
+
+% 2 1 0 1e69ea02193af2ca1f669e39e8349d31
+
+% 3 1 0 0f4251c074b39b32103f8d3e99c55ed2
+
+% 5 1 0 0cc660d9355d07210f8f7ee104c788c2
+
+% 6 1 0 137a8f8a3df01f2b0c5c86358698c10a
+
+% 1 1 0 019cf1c6d97c4ea20dab0b31da9fb611
+
+@ 0 2 0 0e2fa23e17fc890e07c14f5f58a2e922
++   label 一个组
++   highlight in[Xml]  一个组，使用同一个方法
+
+% 0 1 0 1accf43fe92797631dc8da9a374d03c4
+
+% 1 1 0 037aa7a803bd9eed098f42f0237d9298
+
+% 2 1 0 0f117427c36f88fd095c06a89174b355
+
+% 3 1 0 0c2d88e4a487dca70ae31173d9902f44
+
+% 5 1 0 1aa8103df189dc380e0c279a7a1fd729
+
+% 6 1 0 073ff22e70130c250c0e4cd4fe5ce974
+
+% 7 1 0 1d558b7df99818ab0d026eeda4a5db54
+
+% 1 1 0 18bfc63e6206365e077f26ca9c656c8d
+
+@ 0 2 0 0ed0b7aaa85bc2e01639b73a3772a0d1
++   label 从文本读取的绘图
++   highlight read[Svg]  读取 JSON、字节和文件的那个方法
+
+% 1 1 0 09cdab2ab0986b0c04f9bb92c3f915db
+
+% 2 1 0 0da1ceff2d768462021d352049975076
+
+% 3 1 0 14eaa8a9015f72f2142ca2c59fb28731
+
+% 5 1 0 0c5154395583efc919de93d69fc899da
+
+% 6 1 0 10b8ca3c5c6dc79e03870f05e202f497
+
+% 7 1 0 15e2491a4a9f455b12e3e01f38cd62d7
+
+% 0 1 0 044ea130b76fb4431d7c46e16e9db927
+
+% 1 1 0 1f75c2db87a9c5ea08abf2f3a7bbdd58
+
+% 1 1 0 136d267ff733a60e0f6246170d49df5f
+
+% 2 1 0 1525a46c87e9e0571e7d21b8e7c42b7a
+
+% 0 1 0 08a86cbdc9b8cb0109ed8ce5b435ce67
+
+% 1 1 0 0cd6459499a6bd5203d659b3bcc1b6aa
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 0 1 0 159467e3ef70ff630bfdebf078017c52
+
+% 0 1 0 1067720965bfbda40590b1ce03d182be
+
+% 0 1 0 1a3dfdd51f978aeb1722f0a7d6493ffd
+
+% 1 1 0 1a2e07a377c269ff00b7e2569a0bdab7
+
+@ 0 2 0 1d7d6d0eadefbe630a47d8303c1844c8
++ [形状](../../soundness/modules/svg.md#shapes)列出了每种图形被写成的元素，[精简 API](../../philosophy/small-apis.md)则说明了为什么它们共用一个名称。

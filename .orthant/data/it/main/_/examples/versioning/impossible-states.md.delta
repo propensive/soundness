@@ -1,0 +1,59 @@
+orthant 2 language
+
+@ 0 1 0 1b93ce0d570298a3008b2ae9e73590c9
++ # Una classe principale è un nome di classe
+
+@ 0 3 0 12b93c8a013c65e5043fc4dcc64aca38
++ La `Main-Class` di un manifest JAR deve nominare una classe, e un manifest che nomina qualcos'altro
++ viene scoperto quando si esegue il JAR. Qui l'attributo prende un `Fqcn`, che è un nome di classe
++ già verificato, e un testo non lo è.
+
+% 0 1 0 12705ff5e291290d17fbc8389d59ef4a
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 1117844e3962f4c4090f1881266b5cf1
++   label Testo
+
+% 1 1 0 1d67f8ae530602c91c852775e888ef47
+
+% 2 1 0 12c2783ec1807e5707dd4c6c3f7caa6a
+
+% 3 1 0 0e14192fa09cfcfe1046873a9c29b0ff
+
+% 0 1 0 1db412c55d3a5a110fba0f9db70aa6a0
+
+% 1 1 0 0ae0be2a1c52f9540de7406a33bac9a3
+
+@ 0 1 0 18a3d3fcb03f689c1ce7dba0f54c118f
++   label Non un nome di classe
+
+% 1 1 0 1f38960275bcc32803840b57d9286a0a
+
+% 2 1 0 011c29b46a274d13044b3cf45f6586ea
+
+% 3 1 0 07c4fa31d58ccc3607283bf8be75d509
+
+% 0 1 0 19f2ed9b41e42de01cacff1373a3dec4
+
+% 1 1 0 04fee50f6204e9070e40044a891f11f5
+
+@ 0 2 0 0592e829a89c79ff00fa173166d05257
++   label Un nome di classe
++   highlight fqcn"globe.Prompter"  verificato durante la compilazione
+
+% 1 1 0 1f244d7b3e01dd891404adfd299b0a2c
+
+% 2 1 0 10375b4aa4cb74a514023572f5d0b994
+
+% 0 1 0 03851e2b0db9eac800bf065a4118f302
+
+% 0 1 0 18eafb32caed3dd50f976e787bd035ca
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 2 0 018991a709e95f1012121978603544d3
++ [Manifest](../../soundness/modules/versioning.md#manifests) contiene gli altri attributi, e gli
++ [stati impossibili](../../philosophy/impossible-states.md) il principio.

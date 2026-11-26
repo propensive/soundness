@@ -1,0 +1,110 @@
+orthant 2 language
+
+@ 0 1 0 0a8fb1570e892b9a02988e254e599c6e
++ # Ein Token, das eine Case-Klasse trägt
+
+@ 0 3 0 16f29de3945a960301fa38a0a3ab9ff7
++ Die registrierten Claims eines JWT sind ein `Jwt.Claims`, die eigenen einer Anwendung jeder Wert,
++ den JSON kodieren kann. Das Token wird mit einem Schlüssel aus der Kryptografie-Bibliothek signiert,
++ sein Ablauf ist ein Zeitpunkt aus der Zeitbibliothek, und die Claims kommen als Case-Klasse zurück.
+
+% 2 1 0 1434bb3717b4ebd91a60429a84f53ac0
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 1646d10df1e1c4ce006368ca8533bbe7
++   label Die Claims
+
+% 0 1 0 07c5c212f79c025d05c2f6a454b90d82
+
+% 1 1 0 1bae6bdfe30b2a0b1419afe399e223df
+
+% 2 1 0 1161bf9a5f9e19761d5200ffe2b3791d
+
+% 3 1 0 199148b70d9362670f4b1434daabd278
+
+% 4 1 0 1a98a705bcafe4261874f9af90152d55
+
+% 5 1 0 009fff868b6c304d118336817fed0029
+
+% 7 1 0 18e4157768a9f30a0d7f6bb520165caa
+
+% 9 1 0 0c39c188679782ee0b8a25fbbf5d4490
+
+% 10 1 0 12921ecd56b7cc051ef316271d59ab9b
+
+% 0 1 0 140223cbc98bb24404c90eb2013eb682
+
+% 1 1 0 0891f19d7e7326aa015cbde9ae1c3d23
+
+@ 0 1 0 18a120d98d5849cc19b118bd9dc5c439
++   label Signiert, als Text
+
+% 0 1 0 096c3fb6dc626ad609495f7b87db8eb6
+
+% 1 1 0 131a5f48f4012f8206e03e2741608112
+
+% 2 1 0 02a058700ba4f73d127191feae3b7895
+
+% 3 1 0 1c80dd4a3d9404b20ca15912605632cf
+
+% 4 1 0 17643640419fb24a0996e5612763a284
+
+% 5 1 0 1cdf51c9a8eb63890b5bd378c4795c87
+
+% 7 1 0 018650cdf311eb341ffe5f5b582e553a
+
+% 9 1 0 18d85590e48a748505641160a3393d20
+
+% 10 1 0 140c1c7e461a992902527ee50d8764c1
+
+% 12 1 0 0a3e474c6dfd878f1cac9650c6691862
+
+% 1 1 0 029de1e43384788e1ba7332da2bfbc3e
+
+@ 0 1 0 022dc43e14a585c604a6674ca4d90217
++   label Verifiziert und zurückgelesen
+
+% 0 1 0 02effb5ef90e7ec00e95a0a695ac99b8
+
+% 1 1 0 0cadd1a36ec2d434189d8872894da14b
+
+% 2 1 0 025d393b4b466103125ec405cbd6f500
+
+% 3 1 0 0aecaddc20cc2798002a09dfcc3eb6aa
+
+% 4 1 0 1edf12d5eee297860f616e55e3f00b86
+
+% 5 1 0 13b69a0af77626bb10aab17ec83ef998
+
+% 7 1 0 1438bc6583b0653c018db5b57edb0d6a
+
+% 9 1 0 120a432a84c0eee8051907b9d605ba00
+
+% 10 1 0 12cbfd5ee18344bb07a3a7e8d8d1c347
+
+% 12 1 0 1792248ea1871eab196ceaa036316435
+
+% 0 1 0 0094f23ff138d4ce0012464ef627265b
+
+% 1 1 0 131115413add8b3c0515c64c3a558fce
+
+% 1 1 0 136d267ff733a60e0f6246170d49df5f
+
+% 2 1 0 1525a46c87e9e0571e7d21b8e7c42b7a
+
+% 0 1 0 08a86cbdc9b8cb0109ed8ce5b435ce67
+
+% 1 1 0 0cd6459499a6bd5203d659b3bcc1b6aa
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 0 1 0 16f4c972b66106c015b8b18ff1c2525b
+
+% 1 1 0 079f7ee6ebe75f8e14a4163126b6b5b4
+
+@ 0 2 0 1518167b0f84b62d0cf5b677dbe08e35
++ [Tokens](../../soundness/modules/jose.md#tokens) beschreibt, was `verify` prüft, und
++ [Komponierbarkeit](../../philosophy/composability.md), warum die Bibliotheken zusammenpassen.

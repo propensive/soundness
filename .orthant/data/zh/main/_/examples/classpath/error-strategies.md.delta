@@ -1,0 +1,50 @@
+orthant 2 language
+
+@ 0 1 0 0225de9334ee11fd0a32c13822c30203
++ # 不在类路径上的资源
+
+@ 0 2 0 11399a82c4232fca0beaba160b24a087
++ 在运行时指定的资源可能不存在，读取它会抛出 `Classpath.Error`。在每种方针下，读取都是同一行代码。缺失的资源意味着什么，在它的周围决定。
+
+% 0 1 0 12705ff5e291290d17fbc8389d59ef4a
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+@ 0 2 0 03ea7916983235a502d10f402738745f
++ alternative 缺失值
++   highlight safely  缺失的资源就是没有数据
+
+% 1 1 0 015b15b04ac08e860ac0ece80004e1de
+
+% 2 1 0 00716a7ed4e595b30a9017f589c0b944
+
+% 0 1 0 01efa9d141a7bbab09ab7e9a246528b6
+
+@ 0 2 0 1bc72f668541692f0267210757e6417e
++ alternative 由调用者决定
++   highlight raises  读取可能失败的两种方式都被声明
+
+% 1 1 0 15d0da22dbde36a80f5611c06bc773f1
+
+% 2 1 0 1d9f38c9cb2d1d101df79df578776e56
+
+% 0 1 0 1c46f75002361eeb017e405a5d086a38
+
+% 0 1 0 0648f29c72c62af006bd4e1f15608cfc
+
+@ 0 2 0 0fba9ad8d4db5c3e1771d3fefd765d9b
++ alternative 异常
++   highlight throwUnsafely  缺失的资源会终止程序
+
+% 1 1 0 17a2bf4482b072030d8dffe3757f3995
+
+% 0 1 0 17b3dc81bf1e25bd0a5db6a4d3464186
+
+% 0 1 0 065924b5d6babc4703ff0be4896900d4
+
+% 0 1 0 18eafb32caed3dd50f976e787bd035ca
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 3 0 1c3042a7456fc3910d8302e2031e801a
++ [读取资源](../../soundness/modules/classpath.md#reading-a-resource)介绍了这些路径，[选择策略](../../soundness/modules/errors.md#choosing-a-strategy)则介绍了这些方针。

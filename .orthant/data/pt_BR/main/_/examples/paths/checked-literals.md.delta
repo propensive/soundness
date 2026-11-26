@@ -1,0 +1,53 @@
+orthant 2 language
+
+@ 0 1 0 0fc057af5e856a15089f0497a699a425
++ # Um literal de caminho, verificado na compilação
+
+@ 0 2 0 0977b4e09347723f0f96df6c00987cdd
++ Um caminho escrito como `p"…"` é lido pelo compilador, que decide por sua forma se ele é um
++ caminho POSIX ou um caminho Windows. Um texto que não é nenhum dos dois é um erro de compilação.
+
+% 0 1 0 12705ff5e291290d17fbc8389d59ef4a
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 0c3543a8827ba53b15acb0476db5f6ff
++   label Nem uma raiz nem uma unidade
+
+% 0 1 0 1477c34ff41c7c99183443e1d3238ae1
+
+% 1 1 0 0960c596329e4eb20a0b442aaa85c43a
+
+% 0 1 0 13a0d3e3f5fc678e00a86e310ab4632f
+
+% 1 1 0 0d854a9a7851081d14250f4be53afe21
+
+@ 0 2 0 15b0d68e77d958a101f867288f23cc4b
++   label Um caminho POSIX
++   highlight /home  uma raiz o torna um caminho POSIX
+
+% 1 1 0 0c8f8d8efaa64baf15b053d6335328e1
+
+% 0 1 0 0b9e5eb181cf016c16115b3c0c71f03b
+
+% 1 1 0 17925de962ed61320e2cf595617cabbd
+
+@ 0 2 0 043b37991c63507015610fb03e5cb492
++   label Seus nomes estão em seu tipo
++   highlight Path..Posix  a folha vem primeiro
+
+% 1 1 0 1d12759f7cf9e21b0840a673a5fe6493
+
+% 0 1 0 1ed25c85eabb703a134e8a30314213a7
+
+% 0 1 0 0d0dcb7ee235c073119e80b8999aa64a
+
+% 0 1 0 18eafb32caed3dd50f976e787bd035ca
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 2 0 187d0950a884179e1b94c816214c65a8
++ [Construindo um caminho](../../soundness/modules/paths.md#building-a-path) traz o literal, e
++ [segurança por construção](../../philosophy/safety-by-construction.md) o princípio.

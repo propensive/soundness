@@ -1,0 +1,73 @@
+orthant 2 language
+
+@ 0 1 0 0384a7beec57064b1678dd8b67e6b4e8
++ # DER z czasownikami każdego innego formatu
+
+@ 0 2 0 161b268b4b37fc4a0787189e83bf88ad
++ Struktury pod kluczami i certyfikatami są wartościami ASN.1 przenoszonymi jako DER. Kodowanie to
++ `in[Der]`, a dekodowanie to `as[Asn1]` – te same metody, które zapisują i odczytują każdy format.
+
+% 2 1 0 185e34a5c6c846be07dc4020aa5f823e
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 1d2d0d4e3d08dd7903799bb94061f570
++   label Sekwencja liczby całkowitej i napisu
+
+% 1 1 0 0c02bfbde2692a381912ce019100a268
+
+% 2 1 0 0c775b9cd2e3cfda044b2a8c1eeefb3a
+
+% 4 1 0 1413901699a291810d973a466a624fa2
+
+% 1 1 0 150852e0cec7258e12b9ace1c725b461
+
+@ 0 2 0 005e884683a403950ffb6b1830fc78dd
++   label Zakodowana
++   highlight in[Der]  jedyne kanoniczne kodowanie
+
+% 1 1 0 15a080bf74b172e9183437f55b0f34e6
+
+% 2 1 0 1fecc54bd313b5d7028dd14455eeceb1
+
+% 4 1 0 180aafb94236d4b309d63bfc058e0cf4
+
+% 5 1 0 054bf43825b6c2090f7bf1ac9ba54f75
+
+% 1 1 0 198a1e3a28fa37f005532c7b428f733d
+
+@ 0 2 0 0f34aca02c6a479e14173e92bffe0ac7
++   label I zdekodowana
++   highlight as[Asn1]  sprawdzona pod kątem kanoniczności
+
+% 1 1 0 11925a5ea904de020576b0922cbfd252
+
+% 2 1 0 0237ad0ed7ba2ef0164f45a8ec408dcc
+
+% 4 1 0 0ad7f0b53444f1941dc4cb80bc42f16b
+
+% 5 1 0 0e307c3a5d3567491e8fee108122699e
+
+% 0 1 0 19ebb8241300bf4d045a1b50f6b6c1c6
+
+% 1 1 0 0d0e9b4200e8989d15e12f33734f43ca
+
+% 1 1 0 136d267ff733a60e0f6246170d49df5f
+
+% 2 1 0 1525a46c87e9e0571e7d21b8e7c42b7a
+
+% 0 1 0 08a86cbdc9b8cb0109ed8ce5b435ce67
+
+% 1 1 0 0cd6459499a6bd5203d659b3bcc1b6aa
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 0 1 0 12a8c2dc436105cf10781ba5a4470703
+
+% 1 1 0 198255bf027410a305133663d62c4869
+
+@ 0 2 0 1a7ff0240b111e69122685332b09f2e5
++ Sekcja [ASN.1 i DER](../../soundness/modules/cryptography.md#asn1-and-der) wymienia błędy, które
++ zgłasza dekoder.

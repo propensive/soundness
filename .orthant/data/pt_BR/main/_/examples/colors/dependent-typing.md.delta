@@ -1,0 +1,60 @@
+orthant 2 language
+
+@ 0 1 0 14b249ef989ba5d919d745680276711f
++ # Um pixel sabe quais canais tem
+
+@ 0 2 0 0c67131091f1428905eab89ae40b2b84
++ O layout de um pixel é uma tupla de tipos de canal, e os seus acessores são calculados a partir
++ do layout. Um layout sem canal alfa não tem alfa para ler, e o compilador diz isso.
+
+% 2 1 0 091635d63241e20c16bb774f8043452b
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 1d63927dcbf9cc8b006cbc8b47f7e7ed
++   label Três canais, e um quarto é pedido
+
+% 0 1 0 1477c34ff41c7c99183443e1d3238ae1
+
+% 1 1 0 0960c596329e4eb20a0b442aaa85c43a
+
+% 0 1 0 07ecc02d5d9931c61172e0b70d6b3a6e
+
+% 1 1 0 157318385dbea72201b3ef9cf69b4e31
+
+% 1 1 0 1e429bcfe5d9cc3a175c98aabf818a8b
+
+@ 0 2 0 0018ae1acc6b8375077cadf89e785a98
++   label Quatro canais
++   highlight Pixel[Rgba](  um layout com um canal alfa
+
+% 1 1 0 0049f61d3b95b15e162217197789ba6b
+
+% 0 1 0 0940eeeab0f129810b9c7027d01189fc
+
+% 1 1 0 1258dfff48699d0608b79f499e1fa7d5
+
+% 1 1 0 0282df11f2a2d51812d20bb961bc7c7b
+
+% 1 1 0 136d267ff733a60e0f6246170d49df5f
+
+% 2 1 0 1525a46c87e9e0571e7d21b8e7c42b7a
+
+% 0 1 0 08a86cbdc9b8cb0109ed8ce5b435ce67
+
+% 1 1 0 0cd6459499a6bd5203d659b3bcc1b6aa
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 0 1 0 0c8d116356454ccb1ca8fafa3f5cae37
+
+% 0 1 0 06e34fcdc48df932176656ad1336fc25
+
+% 1 1 0 0bf36a2d50ab8efb03bf6ef07ab8ab5e
+
+@ 0 3 0 0faac18245710857140c9b7e24223be3
++ Cada acessor é um deslocamento e uma máscara cujos operandos o compilador deduz a partir da
++ posição do canal na tupla. [Layouts de pixel](../../soundness/modules/colors.md#pixel-layouts)
++ tem os layouts.

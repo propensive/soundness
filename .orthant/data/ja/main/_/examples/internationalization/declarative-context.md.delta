@@ -1,0 +1,56 @@
+orthant 2 language
+
+@ 0 1 0 019767825173dc0f01de7135df100d9c
++ # 言語は一度だけ選ぶ
+
+@ 0 3 0 1c793fa542f90bcc188f9a7e2bd92d08
++ `Polyglot` は適用して読み、言語はスコープ内の `Locale` から来る。
++ テキストを読むコードはどの言語も名指さず、一つの given が、その下で読むすべてのテキストについて決める。
+
+% 0 1 0 12705ff5e291290d17fbc8389d59ef4a
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+@ 0 2 0 14c77d7ebf69f42118452f504a68ea2a
++ alternative フランス語で
++   highlight Locale(fr)  言語を名指す唯一の場所
+
+% 1 1 0 11c656d6e79c9e3a00e0e3508232eaf0
+
+% 2 1 0 097ae6ee4be68efc19763c1baebacb15
+
+% 3 1 0 05dac651c9eb5cbe01228861667c02bf
+
+% 5 1 0 18b7ba93c672708b1eea70122ddb0f63
+
+% 7 1 0 1ebab89071110e8b0d8566629c365f94
+
+% 0 1 0 026f019b7b52afdf0d4ffbd5a9260627
+
+% 1 1 0 13cbdd4f63865cb21451f2a41310ea9f
+
+@ 0 2 0 15ce82dcd693056f0f0fd14122b72e07
++ alternative 英語で
++   highlight Locale(en)  言語を名指す唯一の場所
+
+% 1 1 0 1c7d83c6d07f779505952490b9306125
+
+% 2 1 0 02711128222005c2105e929b7d2a5a88
+
+% 3 1 0 12dd3d7db4a7a93f15e0b2c9a54f80cb
+
+% 5 1 0 155c3af1a7670dd6145d56330fa3dfe2
+
+% 7 1 0 06b51d7d73a655401b62fb488117e25e
+
+% 0 1 0 1abc13faec24feb70180da1c1356069c
+
+% 1 1 0 0b1e2bfcca3df85d0a8a9ef99fce8cc1
+
+% 0 1 0 18eafb32caed3dd50f976e787bd035ca
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 3 0 0d20dc5d3a7e592b1cbf14a790aca866
++ [言語の選択](../../soundness/modules/internationalization.md#selecting-a-language)に詳細が、
++ [宣言的なコンテキスト](../../philosophy/declarative-context.md)に引数ではない選択を使う理由がある。

@@ -1,6 +1,6 @@
 orthant 2 language
 
-@ 0 10 0 1b05c2c20b8cc8d10c46a37a3628e3a6
+@ 1 10 0 03068d05cb63b8501e427bb6b0b0a204
 +   entry .Composition
 +     info
 +         la base du schéma avec certaines de ses couches, et la signature que portent les documents
@@ -27,14 +27,14 @@ orthant 2 language
 +         La composition la plus riche est essayée en premier, et le reste de la session est lu et
 +         écrit sous celle qui a été trouvée.
 
-@ 0 4 0 02dd17362e3c6a7c0ceebdece010d12e
+@ 2 4 0 1584effe733b5e871be4b533a27318a8
 +           `interrupts` n'est transmis que sous la couche `interrupts` du schéma. En mode brut, il
 +           laisse Ctrl-C, Ctrl-\ et Ctrl-Z engendrer des signaux, de sorte qu'une invocation qui ne
 +           lit pas son clavier puisse tout de même être interrompue depuis celui-ci ; les touches
 +           deviennent des octets sur stdin lorsque l'invocation lit stdin pour la première fois en
 +           mode brut, et ne sont pas rendues.
 
-@ 0 1 0 04127018d7147c150fc6b1becd6a361f
+@ 1 1 0 0190423d59cffb3e00aa2ef6af4f67af
 +       entry #interrupts
 +         info
 +             si, en mode brut, les touches qui engendrent des signaux sont laissées au terminal

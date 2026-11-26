@@ -1,0 +1,56 @@
+orthant 2 language
+
+@ 0 1 0 1b2f40a2d9cb49570d8524492cfbd715
++ # Texto estilizado, centralizado como qualquer outro
+
+@ 0 3 0 0e24459fa7dd0ba71db08825f0708a3a
++ As operações sobre texto são escritas contra a classe de tipos `Textual`, e não contra `Text`. O
++ texto estilizado de um terminal também é textual, então ele é centralizado pelo mesmo método, e
++ mantém os seus estilos.
+
+% 2 1 0 1118d4cf65b69f8c096bec45b70d224d
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 15d6f65994364779136da92cf8797068
++   label Texto simples
+
+% 1 1 0 06f7e3dfb780244317fe317c3f8781b3
+
+% 2 1 0 0ee5a2b4cb98661e0823089dc1be0c5f
+
+% 0 1 0 16ff1b14253a55ee1ab2e473620ad175
+
+% 1 1 0 18690782c379a018089b4dbbfd6db0d6
+
+@ 0 2 0 1709910a8bbc77851db5163b27148875
++   label Texto estilizado
++   highlight e"$Bold(Twelfth)..Night"  texto estilizado, centralizado pelo mesmo método
+
+% 1 1 0 17a39eef0a3326b1022fb97f59ce826b
+
+% 2 1 0 10453e173af9980e1b8a1357a9f8baf9
+
+% 0 1 0 061e6048999c50f60c545973b2df6dc1
+
+% 1 1 0 199caca00c918f91124b6ade3e1370d5
+
+% 1 1 0 136d267ff733a60e0f6246170d49df5f
+
+% 2 1 0 1525a46c87e9e0571e7d21b8e7c42b7a
+
+% 0 1 0 08a86cbdc9b8cb0109ed8ce5b435ce67
+
+% 1 1 0 0cd6459499a6bd5203d659b3bcc1b6aa
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 0 1 0 08e63467a57ef4a21b6954f72a6b13b7
+
+% 1 1 0 0adabefe0c4b90bb07cd13f544cfdec5
+
+@ 0 2 0 0bc1afd569e843471c81ef4d923fe6f2
++ [Qualquer tipo textual](../../soundness/modules/text.md#any-textual-type) explica a classe de tipos,
++ e [Terminal](../../soundness/modules/terminal.md) os estilos.

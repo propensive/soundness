@@ -1,0 +1,82 @@
+orthant 2 language
+
+@ 0 1 0 1fd7387edbe97efe1bab74db690f55af
++ # Klucz hosta otrzymuje jeden z czterech werdyktów
+
+@ 0 3 0 1aa30a4596a02a740ff234be0022e8f8
++ Sprawdzenie klucza hosta względem pliku `known_hosts` nie odpowiada „tak” ani „nie” i nie
++ rzuca wyjątku w przypadkach, które nie są „tak”. Odpowiada werdyktem, a host, którego nigdy
++ nie widziano, to inny werdykt niż host, którego klucz się zmienił.
+
+% 2 1 0 1fbd480efa602c991869dcda70e2232f
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 2 0 186096b287a6bc221bae3d4acc499d90
++   label Werdykt dla hosta i jego klucza
++   highlight KnownHosts.Verdict  jedna z czterech odpowiedzi
+
+% 1 1 0 04e37f2029ae0080157756d0b5896d73
+
+% 2 1 0 084e74f7d008d8cf101012af9f5e4df6
+
+% 4 1 0 180ec96ee175339a1003fad647aae0ef
+
+% 5 1 0 12eaea6f1ac5bfa80e2d23071438314e
+
+% 7 1 0 13b1339150ba8a2e031e25f62e2fa681
+
+% 8 1 0 14cf2484f002ff65056a3e80706ed1a8
+
+% 1 1 0 1799727e616078d7118376f8d9f0a7ab
+
+@ 0 2 0 13a1fb37439cdb990314d7c1ae34125f
++   label Co zrobić z każdym z nich
++   highlight KnownHosts.Verdict.Unknown  nigdy niewidziany, co nie jest tym samym co zmieniony
+
+% 1 1 0 0561102fc7b58fe41e0ccad2df8db8b5
+
+% 2 1 0 0f0d6d27bfc9a9c90879ee819ebf18c6
+
+% 4 1 0 0250313dc0a0f1a402fbec3d3df43991
+
+% 5 1 0 1125cf64bcda40541d0119fdb5410947
+
+% 7 1 0 0d9e3f3c8a9b5b7d0f45d52bde27abc8
+
+% 8 1 0 04ea4fd6ad941a82036e2718b646b267
+
+% 0 1 0 119540f881ec4a2b1fa7d3b21c0bc4ed
+
+% 0 1 0 079b17d61ded8a8f1dcd3d43afdd0887
+
+% 0 1 0 1755728593d2722e140066fd278fe700
+
+% 0 1 0 0aff883fe589c20a1483d5331ad07d7d
+
+% 0 1 0 07d6252b7536aa390b97ac98febed446
+
+% 1 1 0 0747285959f828f4162e372d3ce95d7e
+
+% 1 1 0 136d267ff733a60e0f6246170d49df5f
+
+% 2 1 0 1525a46c87e9e0571e7d21b8e7c42b7a
+
+% 0 1 0 08a86cbdc9b8cb0109ed8ce5b435ce67
+
+% 1 1 0 0cd6459499a6bd5203d659b3bcc1b6aa
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 0 1 0 083f374aa822fe4c0181a736bda18552
+
+% 0 1 0 16bf080bf56165051aeb474ab75b68b3
+
+% 1 1 0 1544b64d3f3cb65c18cdd2d9602f4888
+
+@ 0 2 0 05ee51845748efee03c7211516d45eb9
++ [Klucze hostów](../../soundness/modules/ssh.md#host-keys) mówią, kiedy wydawany jest każdy
++ werdykt, a [przejścia totalne](../../philosophy/total-transitions.md) – dlaczego żaden z nich
++ nie jest wyjątkiem.

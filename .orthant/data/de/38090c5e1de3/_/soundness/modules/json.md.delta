@@ -1,0 +1,24 @@
+orthant 2 language
+
+@ 0 4 0 1b1113efe3b8acc60d20ec0829f77660
++ Der Typ eines Felds muss selbst dekodierbar sein: ein Typ mit eigenem Decoder, eine weitere
++ Case-Klasse, eine Aufzählung oder ein Sealed Trait. Einer, der nichts davon ist, ist ein
++ Kompilierfehler, und die Meldung nennt das Feld, die Case-Klasse, zu der es gehört, und den Typ,
++ der sich nicht dekodieren lässt. Ein `Vial(label: Text, contents: Poison)`, wobei `Poison` eine
++ gewöhnliche Klasse ist, wird abgelehnt mit:
+
+% 1 1 0 1abf28c8819c4a100ba2af9cc74b39c0
+
+% 0 1 0 12b01ab296b747291fc7be536f684132
+
+% 0 1 0 13a2ce2895d6cfab1d6f772d7f114000
+
+% 0 1 0 1910e7b5a183003019c7ef2d078a77bc
+
+% 1 1 0 11c31f98aa9aa3a4088a2a955d213950
+
+@ 0 4 0 01462b0fd03e7af10fcc63ddd7f6cc77
++ Das Kodieren eines `Vial` wird mit denselben Worten abgelehnt, mangels eines `Json.Encodable`.
++ [Ableitung](derivation.md#when-derivation-fails) erklärt die anderen Arten, auf die eine Ableitung
++ fehlschlagen kann, und [Dekodieren](decoding.md) beschreibt die Decoder, die einen einzelnen
++ Textwert, etwa einen JSON-String, in einen eigenen Typ verwandeln.

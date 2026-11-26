@@ -1,0 +1,71 @@
+orthant 2 language
+
+@ 0 1 0 17a06b90621af55a1ba8ec2cc2783abf
++ # Parole simili, accoppiate
+
+@ 0 3 0 067446cdb6e4e65501e74e13ffe613fd
++ Un diff semplice riporta una parola cambiata come una cancellazione e un inserimento. `rdiff` li
++ accoppia dove un predicato dice che sono simili, e il predicato qui è la distanza di edit della
++ libreria del testo, che non sa nulla dei diff.
+
+% 2 1 0 16536101b0cf111303b9038a84e92d23
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 13a68eafc2a4c55e0f7940d6ac3daae9
++   label Cancellazioni e inserimenti
+
+% 1 1 0 1dbfd39307f4e6380d6b6d111724b54f
+
+% 2 1 0 1228010e49bbf45c1ad57e7358d09551
+
+% 2 1 0 18f10fa8c1a4330e123cb911c81835b2
+
+% 3 1 0 093d9a64bc8accbf1e544eafee4e8518
+
+% 0 1 0 0ab47590e607acfe05dd25e13000e387
+
+% 1 1 0 14c54122a527fd9600ce86a52e93c03a
+
+@ 0 2 0 0014cdfd5491239318ad426fcd509a4f
++   label Sostituzioni, dove due parole sono vicine
++   highlight _.proximity(_)..2  la distanza di edit tra due parole
+
+% 1 1 0 0e5c000e6b59688908ffd88d0ce4e34f
+
+% 2 1 0 1fe0b4e0008995ca1ad34808dbc5434a
+
+% 0 1 0 1d8340f1ff4f69370244227a2fecf7b8
+
+% 2 1 0 064910f42ea5a3d502a0d330f696ece9
+
+% 3 1 0 16cd291d613dacba0d55075898e9f88c
+
+% 0 1 0 1487cc258ff54a600530544b23ad07bb
+
+% 1 1 0 1b868101f3e3f638130387caa5015839
+
+% 1 1 0 136d267ff733a60e0f6246170d49df5f
+
+% 2 1 0 1525a46c87e9e0571e7d21b8e7c42b7a
+
+% 0 1 0 08a86cbdc9b8cb0109ed8ce5b435ce67
+
+% 1 1 0 0cd6459499a6bd5203d659b3bcc1b6aa
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 0 1 0 04e41d111906840b15012e815fb8d681
+
+% 0 1 0 102a9987a9437c460ca79e367fb2f456
+
+% 0 1 0 1869e77559fac8640dd0fa7853e50ef4
+
+% 1 1 0 0d1845e617cc240103f0ec79aea37940
+
+@ 0 3 0 00fe269e93bc813b1336955549d31a0c
++ [Differenze allineate](../../soundness/modules/diffing.md#aligned-differences) descrive
++ l'accoppiamento, e la [componibilità](../../philosophy/composability.md) perché un predicato è tutto
++ ciò che unisce le due librerie.

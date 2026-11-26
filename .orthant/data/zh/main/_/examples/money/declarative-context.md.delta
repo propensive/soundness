@@ -1,0 +1,42 @@
+orthant 2 language
+
+@ 0 1 0 095707f4a356c4df0e63cb7cc03c8b9b
++ # 符号还是代码，只需选择一次
+
+@ 0 2 0 1498b8e899fb59cc0d5c74f1661d1ae5
++ 金额如何书写不是金额本身的属性。作用域内的货币样式会在货币符号和 ISO 代码之间做出选择，适用于在那里显示的每一个金额。
+
+% 0 1 0 12705ff5e291290d17fbc8389d59ef4a
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+@ 0 2 0 1cfed34f5ca5a9681f42d9ea42334194
++ alternative 本地样式
++   highlight localCurrencyStyle  货币符号
+
+% 1 1 0 0b61a57db2db380f0648ae1b47f51a31
+
+% 2 1 0 06c640254bb56bbf0201635f708458ee
+
+% 0 1 0 060e2cd692e3c85317dd006cb74bec53
+
+% 2 1 0 07e9561602f729a7146c7956001082e6
+
+@ 0 2 0 0a0ae4ccc828b2f71f4211dc1548ac1c
++ alternative 通用样式
++   highlight genericCurrencyStyle  ISO 代码
+
+% 1 1 0 0cf8d462b30cac471fefbaaa641419ad
+
+% 2 1 0 1d02442f271cff151df8d69436741cff
+
+% 0 1 0 09b65be742cdc9b503d6f0ca5b852410
+
+% 2 1 0 1b0760891ec1fb6c1722a9624189cc1a
+
+% 0 1 0 18eafb32caed3dd50f976e787bd035ca
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 3 0 0a74337e560a3c980c689d4c2411aac8
++ [渲染](../../soundness/modules/money.md#rendering)展示了两种结果，[声明式上下文](../../philosophy/declarative-context.md)则说明了样式为何不是参数。

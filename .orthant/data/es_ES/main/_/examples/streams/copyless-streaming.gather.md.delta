@@ -1,0 +1,66 @@
+orthant 2 language
+
+@ 0 1 0 130670eb5e7909ba11f8edeb8cd62fb9
++ # Un total calculado sobre las propias ventanas
+
+@ 0 3 0 11c85d4b934d77d903f9ad7fc399406d
++ `gather` consume un flujo y hace pasar un valor por cada ventana de su búfer. La función recibe
++ la ventana donde está, y no una copia de ella ni sus elementos uno a uno, así que un flujo de
++ cualquier longitud se reduce en la memoria de un solo bloque.
+
+% 2 1 0 0a4c0b3a0da4a0dd07586072d401f4ee
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 1d96eeebab576e0d0a7e0bd383321322
++   label Cada ventana, según se rellena
+
+% 0 1 0 00be51730992b34d0f6538e69790fde1
+
+% 1 1 0 19a5034cd788b5d8122ebc98c9469703
+
+% 2 1 0 1c7e47ede5cd4ccb043743a307cda05a
+
+% 4 1 0 020d8ae1e1b5bc131079d8f16f12bda9
+
+% 6 1 0 04f1611bc7ba6d491aa7fb8ca0d3aa25
+
+% 0 1 0 069e9950609e216e0efad9079fbda4c7
+
+% 1 1 0 1b493d4cac720e41169fb7e338ce9b30
+
+@ 0 2 0 00c3dc2beb5c8e940ce70b6d24ece508
++   label Su tamaño, sumado al total
++   highlight (window:..size  la ventana se mide donde está
+
+% 1 1 0 1de56a494b16cc0b0861be72bd1707bd
+
+% 2 1 0 0be42f2fb3cd3cfd083a95091136b885
+
+% 4 1 0 1aac974992771fa902152f006a648f89
+
+% 6 1 0 1aa90cb0a079b0c91e479a879a7078b5
+
+% 0 1 0 0860e091a619a0fc16faedec5c578bfd
+
+% 1 1 0 05369e83d8a17d79036bf904080d1d6f
+
+% 1 1 0 136d267ff733a60e0f6246170d49df5f
+
+% 2 1 0 1525a46c87e9e0571e7d21b8e7c42b7a
+
+% 0 1 0 08a86cbdc9b8cb0109ed8ce5b435ce67
+
+% 1 1 0 0cd6459499a6bd5203d659b3bcc1b6aa
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 0 1 0 0f0957f368f956881a00c92f3c40729f
+
+% 1 1 0 1cd9dd4b7396508a081ac57b34c01e89
+
+@ 0 2 0 151b05d7640edeae05a818484f788aa8
++ [Componer un pipeline](../../soundness/modules/streams.md#composing-a-pipeline) compara `gather`
++ con las demás operaciones que consumen un flujo.

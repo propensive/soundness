@@ -1,0 +1,87 @@
+orthant 2 language
+
+@ 0 1 0 13e4157bbc753e1b1c7d8099425d760e
++ # Muchas tareas, esperadas como una
+
+@ 0 3 0 18a0d72967d44d8f0bb950a1af8fb0be
++ Con `sequence`, una lista de tareas se convierte en una tarea de una lista. Las tareas se
++ ejecutan en paralelo, los resultados vuelven en el orden en que se escribieron las tareas, y
++ todo ha terminado antes de que `supervise` regrese.
+
+% 2 1 0 0ffedcff569e4bda1d8bf82e6df108a3
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 128f39b815fd44e213c2ba23d14b066b
++   label Tres tareas
+
+% 1 1 0 0c32e71d2d1c3e821953701d6ffd6018
+
+% 2 1 0 15ce18f2bf6b37fc0daaf0acd90e7066
+
+% 4 1 0 0e694f978ab2ef2414a579da18d96b57
+
+% 6 1 0 0d2316a7b8dca68d025a565701f7df17
+
+% 7 1 0 1998c7e50775c9a30a8c74c159305d5b
+
+% 0 1 0 10cc173c23dc41bc0ea0d810fd81a144
+
+% 1 1 0 0e64dcbc1e3334881ca75dc75e8f3449
+
+@ 0 1 0 05f3944c3f762d2e18b857dcd9db1d87
++   label Una tarea de tres resultados
+
+% 0 1 0 038943f82c25306d129ddbb318c52b2d
+
+% 1 1 0 137d44a7ccd21e1d01499aaad16a3d6f
+
+% 2 1 0 133ef4e79667bf82178608905e0214cc
+
+% 4 1 0 1a61a2f065e2da4f0c78c15d7805c501
+
+% 6 1 0 0ea91fd392202d7e1511574d6c9af2c9
+
+% 7 1 0 1970372f23c5e539091b810372e04730
+
+% 0 1 0 065536bb0f2f656d0d941689b1807bff
+
+% 1 1 0 051acde843d3dd41002643b18d6cb107
+
+@ 0 2 0 1e429c66c0ff90a21fd98ec489618d5c
++   label Los resultados
++   highlight await()  una lista, en el orden de las obras
+
+% 1 1 0 1a8ebad1c9f791e114d870896fb8f098
+
+% 2 1 0 19c0b26350b6c48b0d0406ed218aeda9
+
+% 4 1 0 02781b97c27aeefc11d4f79e3ea93790
+
+% 6 1 0 0a32f92c91659e7c085e3d2c14ef5266
+
+% 7 1 0 0382076d6c89e50205b031cf2bb223c0
+
+% 0 1 0 198d3e5b6c9e3385165e79968391eeeb
+
+% 1 1 0 12f8e5c90ba736861e826d274a68d4c1
+
+% 1 1 0 136d267ff733a60e0f6246170d49df5f
+
+% 2 1 0 1525a46c87e9e0571e7d21b8e7c42b7a
+
+% 0 1 0 08a86cbdc9b8cb0109ed8ce5b435ce67
+
+% 1 1 0 0cd6459499a6bd5203d659b3bcc1b6aa
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 0 1 0 1d87d85d3b8e5cb71e5976f9f09cdabf
+
+% 1 1 0 154a346da31d010402530f28036d830e
+
+@ 0 2 0 01a2b579933503411deb715ffab952ee
++ [Combinar tareas](../../soundness/modules/concurrency.md#combining-tasks) presenta `race`, `map`
++ y `bind` a su lado.

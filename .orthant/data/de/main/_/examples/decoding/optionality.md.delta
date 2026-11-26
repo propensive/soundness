@@ -1,0 +1,90 @@
+orthant 2 language
+
+@ 0 1 0 088d3ef2be62fe640781145279d03ae5
++ # Ein Fall, den es vielleicht nicht gibt
+
+@ 0 3 0 16fd58ad0957e6640754037936487f03
++ Eine Aufzählung wird über den Namen eines Falls oder über seine Position nachgeschlagen, durch eine
++ Instanz, die der Compiler ableitet. Weder ein Name noch eine Position entspricht sicher einem Fall;
++ jedes Nachschlagen liefert also ein `Optional`, und der Code sagt, was ein Fehltreffer bedeutet.
+
+% 2 1 0 06c7820db2ab0fbb0c978708d7fc44f5
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 2 0 1b13458b237eda0409eddea117ab9df3
++   label Die abgeleitete Instanz
++   highlight Direction..Enumerable  dafür wird nichts geschrieben
+
+% 0 1 0 1accf43fe92797611dc8da9a374d03c2
+
+% 1 1 0 1b683763b07f3b4c19314dbe4ae0b985
+
+% 2 1 0 096d53ab56ee01f60e90a4df21651b00
+
+% 3 1 0 0cd78b72afce909602be3161a99901e8
+
+% 5 1 0 0f070623a77db9bd1ed400d3c95775bc
+
+% 1 1 0 0ee8b5a90f2ee78301144accabdac158
+
+@ 0 2 0 0181339a7be5633708f0363a230237bf
++   label Ein Nachschlagen nach Name und eines nach Position
++   highlight Optional[Direction]  ein Name passt vielleicht auf keinen Fall
+
+% 0 1 0 1accf43fe92797631dc8da9a374d03c4
+
+% 1 1 0 037aa7a803bd9eed098f42f0237d9298
+
+% 2 1 0 01632d736b3e6c421bb2770e24f29b45
+
+% 3 1 0 1764713ab161c6761326505fd39d8676
+
+% 5 1 0 1b06bbb8c0adecc302268c8138da4c61
+
+% 0 1 0 0d2cd9ead2668b911bdf2b5c64331c4d
+
+% 1 1 0 1fb7515d2a7ec2d80c92c1c3b9056af8
+
+% 1 1 0 0a4969d7f32f4b9b03a4e35e0f21def8
+
+@ 0 2 0 1e372302be6a676c13aada7d2354cdb0
++   label Eine Vorgabe für einen Fehltreffer
++   highlight or(Direction.North)  was ein Fehltreffer hier bedeutet
+
+% 1 1 0 174d6b8b2ce4b5aa19431aca9a954281
+
+% 2 1 0 071e0e74384cdb1c0c1744653c360ca8
+
+% 3 1 0 173080895d5974f61a467fad6d803452
+
+% 5 1 0 0ffac6d79d13e7d404d8872dcaf7c00e
+
+% 0 1 0 1d0c056fe8649f630b5103eaf15b6caf
+
+% 1 1 0 11048a9ffa420aa4093b8c5259f023d4
+
+% 1 1 0 0e89ad19fff854781f1a566cb15cd0e7
+
+% 1 1 0 136d267ff733a60e0f6246170d49df5f
+
+% 2 1 0 1525a46c87e9e0571e7d21b8e7c42b7a
+
+% 0 1 0 08a86cbdc9b8cb0109ed8ce5b435ce67
+
+% 1 1 0 0cd6459499a6bd5203d659b3bcc1b6aa
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 0 1 0 0ff90708dfcc9c39180e64ce9ab78faf
+
+% 0 1 0 00efd11b696118791574b6758ed1b9a0
+
+% 1 1 0 011c0d9e0b8efc700f66f19dd944d0cc
+
+@ 0 2 0 198e5706ad3ec5b40bf655247221dc3b
++ [Aufzählungen nach Name und
++ Position](../../soundness/modules/decoding.md#enumerations-by-name-and-position) listet die Arten
++ des Nachschlagens auf, und [Optionalität](../../philosophy/optionality.md) erklärt `or`.

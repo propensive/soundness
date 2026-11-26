@@ -1,0 +1,41 @@
+orthant 2 language
+
+@ 0 1 0 03a3f8aa46fa64af0bc58290c7af789f
++ # Texto que pode não ser um identificador
+
+@ 0 2 0 19a4cc738d9b67571a526ef21c3142c3
++ O texto que chega em tempo de execução pode não ser um UUID, e `Uuid.parse` diz isso no seu
++ tipo. Um método que o chama, e nem trata um `Uuid.Error` nem o declara, não compila.
+
+% 0 1 0 12705ff5e291290d17fbc8389d59ef4a
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 0fa485db7431f1641b7b26bfab8f5294
++   label Uma falha pela qual ninguém responde
+
+% 0 1 0 1477c34ff41c7c99183443e1d3238ae1
+
+% 1 1 0 0960c596329e4eb20a0b442aaa85c43a
+
+% 0 1 0 13d90dec7136cc771210e3a25eea5319
+
+% 1 1 0 195d6ae8c62a36321591bcdbf6d1ebe1
+
+@ 0 2 0 1645abaac3eeb0030d6e17be3e2954d6
++   label A falha, no tipo de retorno
++   highlight raises..Uuid.Error  quem chama precisa responder por ela
+
+% 1 1 0 0d2d511ba7f2b7330c0b5e9c4ee6d579
+
+% 0 1 0 1ca92c3d145d83a71136e2e5f43d7ffd
+
+% 0 1 0 18eafb32caed3dd50f976e787bd035ca
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 2 0 0d4f322043599bf90e1dd7cbdfcb5b36
++ [Análise](../../soundness/modules/uuid.md#parsing) mostra o erro quando é levantado, e o
++ [tratamento de erros](../../philosophy/error-handling.md) o que `raises` significa.

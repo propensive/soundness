@@ -1,0 +1,54 @@
+orthant 2 language
+
+@ 0 1 0 0244fce59a16033204da6f3220f3646f
++ # Un emplacement accepte ce qui y a sa place
+
+@ 0 2 0 1401c858774b30f8110e7f3b51394d60
++ Les emplacements d'une page ont les types qui régissent tout le HTML. Un bandeau contient du
++ contenu de flux, si bien qu'un élément de liste, qui n'a sa place que dans une liste, ne peut pas
++ y être placé.
+
+% 0 1 0 12705ff5e291290d17fbc8389d59ef4a
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 06d01a58a80884ac14d952a12726e011
++   label Un élément de liste dans le bandeau
+
+% 0 1 0 1477c34ff41c7c99183443e1d3238ae1
+
+% 1 1 0 0960c596329e4eb20a0b442aaa85c43a
+
+% 2 1 0 1556ad06aba8bec61b9a1d90b3fb5989
+
+% 4 1 0 1299936663427e541b7fe91f39030c72
+
+% 5 1 0 0f7848e94b1649231071600c06dbfc6d
+
+% 0 1 0 0f785fededebc2c10317c57e49bc4839
+
+% 1 1 0 0b5d5208f16643b304fb04a941d2a3f1
+
+@ 0 2 0 016d49a856d8efec1edfc501938028ca
++   label Du contenu de flux dans le bandeau
++   highlight Strong("The..Globe")  du contenu phrastique, qui est du contenu de flux
+
+% 1 1 0 1619e90148060da3199ed338f908fef1
+
+% 2 1 0 071abef8083788f606c7eff9227c59ac
+
+% 4 1 0 1ef951f833cc82c60f90bc0c5ec24c13
+
+% 5 1 0 1c92b854c147822a0b0dccdc9e1679e0
+
+% 0 1 0 0e88f8941f5c53fa0fa876350e1d5b1c
+
+% 0 1 0 18eafb32caed3dd50f976e787bd035ca
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 2 0 0a0787bd7cf8766e1e0c98413c5e7057
++ [Définir une page](../../soundness/modules/pages.md#defining-a-page) nomme chaque emplacement et
++ sa fonctionnalité.

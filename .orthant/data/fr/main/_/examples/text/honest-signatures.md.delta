@@ -1,0 +1,58 @@
+orthant 2 language
+
+@ 0 1 0 1c0a1b06954826ba0f747c2d20ed5f25
++ # Le texte ne devient des octets que par un encodage
+
+@ 0 3 0 0cd7b369671304990ed99c1dc1636273
++ Les octets d'un texte dépendent d'un encodage de caractères, et aucun encodage n'est présumé.
++ Convertir du texte en `Data` en exige un dans la portée : du code auquel aucun encodage n'a été
++ donné ne peut donc pas utiliser discrètement celui de la plateforme par défaut.
+
+% 2 1 0 0b8b32dbef9df9e111bd7a221bcbd6ca
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 0717edea9135284a00fe5bcb4cd9304f
++   label Aucun encodage n'a été nommé
+
+% 0 1 0 1477c34ff41c7c99183443e1d3238ae1
+
+% 1 1 0 0960c596329e4eb20a0b442aaa85c43a
+
+% 1 1 0 189ba0fce4f3208f0ab06fd133b975c4
+
+% 1 1 0 07ead73cbf382310071d15130f9614f2
+
+% 0 1 0 00fad5852207d51209a71ad6380b003d
+
+@ 0 1 0 0470d7c60c7f5d1e0585d2a36419f36b
++   highlight codepages.utf8Codepage  l'encodage, nommé
+
+% 1 1 0 04d369bcfb6836ab0bf172edc3c1f2a5
+
+% 0 1 0 05c7b6b663c0853b10f681bb6ec5d7d3
+
+% 1 1 0 1d712e1a9ba01a250efa59dc0f0dde20
+
+% 1 1 0 0c2b1a7ecc012bed02928821b1d106e2
+
+% 1 1 0 136d267ff733a60e0f6246170d49df5f
+
+% 2 1 0 1525a46c87e9e0571e7d21b8e7c42b7a
+
+% 0 1 0 08a86cbdc9b8cb0109ed8ce5b435ce67
+
+% 1 1 0 0cd6459499a6bd5203d659b3bcc1b6aa
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 0 1 0 10ebe3a8bcc51b1c0fbf4d7459fa2180
+
+% 1 1 0 1f351bd8c2d0cd8f1c291503f8d0f534
+
+@ 0 2 0 05ece7e58855494814381afa66165368
++ Les huit caractères font dix octets en UTF-8. [Les octets](../../soundness/modules/text.md#bytes)
++ donne le chemin inverse, et [les signatures honnêtes](../../philosophy/honest-signatures.md) le
++ principe.

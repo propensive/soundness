@@ -1,0 +1,63 @@
+orthant 2 language
+
+@ 0 1 0 12c83fc063cf8b611f49ce61f6bc40ef
++ # Les cas d'une énumération comme valeurs d'une option
+
+@ 0 2 0 19d1407e7a8b0d4f1aee5b56f1f2113c
++ Une option dont le type est une énumération n'a besoin ni d'analyseur ni de liste de ses valeurs.
++ Le compilateur connaît les cas : l'option en lit donc un par son nom, et un nom qui n'est pas un
++ cas n'est pas une valeur.
+
+% 0 1 0 12705ff5e291290d17fbc8389d59ef4a
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 1e91a805cf02de9c1a443d98b197b170
++   label Une option textuelle, qui accepte n'importe quoi
+
+% 1 1 0 179e1504a8d48ee415937843a303397c
+
+% 2 1 0 04cd030e134370ed037adb7caac520a6
+
+% 3 1 0 178b265219c748181b9240d301cc2797
+
+% 1 1 0 0883579841ef3e510868f3bb5ba6a795
+
+% 0 1 0 042952acfebefeaf198bd5b74840952d
+
+% 1 1 0 0bb77ee3142070120c2f3112ef3071d2
+
+% 1 1 0 0bbd6d02382494b41a33a964001e0913
+
+@ 0 2 0 1e879ff2eefa10041b2de3e83af18aba
++   label Une option d'une énumération
++   highlight Flag[Genre]  lit `--genre tragedy`
+
+% 1 1 0 0bc47c5f2df0858112da9510333fdacb
+
+% 2 1 0 1802f2bad50e461717021e008222026e
+
+% 3 1 0 120b934d67010796184b916c3a6584d5
+
+% 0 1 0 0a64e7aa3d9799e41209266460234792
+
+% 0 1 0 01291941c519e1cc08ed0402368c2bd7
+
+% 0 1 0 1ca71a30243db4c91987b20735353126
+
+% 1 1 0 0f02772d973ac30b1fa0c480907f2aff
+
+% 0 1 0 1f8f1a77141d876a0adc22e605c2ec15
+
+% 1 1 0 00159947392ac72613daca557fd3d6c4
+
+% 0 1 0 18eafb32caed3dd50f976e787bd035ca
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 3 0 10f4d57c0c8a524f01c57a5c819fa60d
++ L'exemple est compilé, mais pas exécuté, car c'est un programme entier.
++ [Complétions conditionnelles](../../soundness/modules/cli.md#conditional-completions) lit une
++ telle option, et dit comment le style de ses noms est choisi.

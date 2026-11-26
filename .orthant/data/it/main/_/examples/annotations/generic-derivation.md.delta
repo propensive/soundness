@@ -1,0 +1,62 @@
+orthant 2 language
+
+@ 0 1 0 1511b5cd4cbdfaf21a0808ed0b2ca30a
++ # I campi di un tipo, senza cast
+
+@ 0 3 0 1456a93189e6c9df1cd5fdf092d9d41f
++ Un renderer che vuole ogni numero di un record non ha bisogno di conoscere il record.
++ `membersOfType` seleziona i campi di un tipo, tramite accessori che il compilatore genera, e li dà
++ di quel tipo.
+
+% 2 1 0 01fb0b64e870eefd13cf1500f08fd7bd
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 01bc408e4bb327400a874fec9c64e326
++   label Un record di campi misti
+
+% 1 1 0 03985b26d07c20390e494c63e6232d8c
+
+% 2 1 0 1b1a69ce4852feea0f4cf189d266888e
+
+% 4 1 0 12a2bf2449509cee14291689dd6b0f12
+
+% 1 1 0 1f4600a4832525950848148c1ba7fcb4
+
+@ 0 2 0 0060fb6f86ab4474199e7b665d2d41a2
++   label I suoi numeri, e il suo testo
++   highlight membersOfType[Int]  una Map da Text a Int
+
+% 1 1 0 17e169a554894fe2169c1c54a3c1c2f4
+
+% 2 1 0 15a3cf1629962d8e0c60f36171d03b18
+
+% 4 1 0 1eb3e6f6b616aa9f13dbc5ddfff0212a
+
+% 0 1 0 097e1b82f32ee2e216dae7b9245d026a
+
+% 0 1 0 194e17351a8dceb916729e421bd30e57
+
+% 1 1 0 1dcb2e6f5f5e56e60a2e24e3bce6df65
+
+% 1 1 0 136d267ff733a60e0f6246170d49df5f
+
+% 2 1 0 1525a46c87e9e0571e7d21b8e7c42b7a
+
+% 0 1 0 08a86cbdc9b8cb0109ed8ce5b435ce67
+
+% 1 1 0 0cd6459499a6bd5203d659b3bcc1b6aa
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 0 1 0 09d93d3278738f7e0a44e6b5acd0a6f7
+
+% 0 1 0 12711cfc3edb8a4d0403b1ff7cfda999
+
+% 1 1 0 1257a325fc5b38bc0c589b334738c88d
+
+@ 0 2 0 1053c7e1cb72b1240db2c53e6c457be7
++ [Raggiungere i campi per nome](../../soundness/modules/annotations.md#reaching-fields-by-name)
++ contiene la typeclass sottostante.

@@ -1,7 +1,6 @@
 orthant 2 release
 
-@ 0 1 0 18674ba5a234d219074ee05de16b15e8
-+ row  `Annulus()`  a `Dag` of `Weighted`, `Progressive` nodes  none  none  `Annulus.Style`
+% 0 1 0 1ed1b6f012071a0205c574a246d4e4be
 
 @ 0 2 0 1e51ebdbf382496e148719db20dcdb36
 +   :   List[Svg.Figure] =
@@ -11,35 +10,24 @@ orthant 2 release
 +   override def arrowhead(tip: Point, axis: Chart.Axis, color: Color in Srgb): List[Svg.Figure] =
 +     List(Svg.Polyline(List(tip, Point(tip.x - 6, tip.y - 3), Point(tip.x - 6, tip.y + 3)), closed = true))
 
-@ 0 1 0 1454579a535e72fb13fc54f99206731a
-+ row  `shade`, `sector`, `remainder`  a sector's colour and its two parts  `Annulus.Style`
+% 0 1 0 0969b9bfec99fcc5163f092955685f23
 
-@ 0 1 0 01e9637a0cedaf9111e43b8990bf050c
-+ row  `rank-0`, `rank-1`, …  each band  `Annulus`
+% 0 1 0 07f63a630b5a9e56025248448c85353e
 
-@ 0 1 0 011d83e381dd7f9214bb8471ad71a2cd
-+ ### Annuli
+% 0 1 0 09524893beb0e5fc110f8d8b22a39a27
 
-@ 0 1 0 01ae7a32f8c2c466107915cb06d6b916
-+ An `Annulus` draws a dependency graph, a [`Dag`](graphs.md), as concentric bands. The nodes
+% 0 1 0 1db199c21a252344091fbed58b201760
 
-@ 0 1 0 0f360b278a05fa851c3cc8d50f429b61
-+ right, and it is darker below the middle and lighter above. An annulus has no labels and no
+% 0 1 0 0c658bab5bf6051115305144f91c7e8b
 
-@ 0 1 0 103221f3f049c213150bc72510d481bd
-+ A node carries its progress, so an annulus is revised like any chart, with new data. The fit
+% 0 1 0 084a7cddff1f96b2165cb379b45d11db
 
-@ 0 1 0 18ceb764a89b38990f901c38d106eee2
-+ val annulus = Dag(typecheck -> parse, emit -> typecheck).chart(Annulus())
+% 0 1 0 1877856c8ab7469c04f0ffb78800176f
 
-@ 0 1 0 144953e5d6637f7211871894602a275f
-+ Out.println(annulus.fit.bands.size.show)
+% 0 1 0 14e225babf96351702cd5d73f93e40d6
 
-@ 0 1 0 1a1a1757fda426f01cd5a437e645ec0e
-+ Out.println(annulus.revise(Dag(typechecked -> parse, emit -> typechecked))(1).size.show)
+% 0 1 0 14c1482790cf4ef70542451dfecf4315
 
-@ 0 1 0 1c679cd07b9575e9015a6f9bf26226ca
-+ grout between sectors and between bands. `Annulus.Style` has `shade` for the color of a sector
+% 0 1 0 0995cde0bbcec09f16839dbb40923c60
 
-@ 0 1 0 02ffef9b61d8bbda1be93b5f536e1a8d
-+ - [Graphs](graphs.md) describes the `Dag` which an annulus draws.
+% 0 1 0 1fab1bbcaeee462c19ac49e9b9da0ba8

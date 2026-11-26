@@ -1,0 +1,68 @@
+orthant 2 language
+
+@ 0 1 0 157e82ab4e2967d00f581d6d609339d3
++ # 来自流的记录，中间没有行
+
+@ 0 3 0 1c4f5882b0fc7ba30976abaa8c5b4039
++ 大到无法容纳的文件从一个源读取，一次一条记录。具有 `Dsv.Parsable` 实例的类型直接从单元格在读取器缓冲区中所在的位置解析出来，途中不为它构建任何行。
+
+% 2 1 0 1715c25a51ead5970b6fb38c3df5d4b2
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 0827b65c2130da39092bdc47c81e4956
++   label 来自源的行，逐行解码
+
+% 1 1 0 17e5b84524c8f4700fcbcdd180317f8f
+
+% 2 1 0 0e83a54959162e210ab1bce3c2bd1114
+
+% 3 1 0 05fc6fc58de616d71698500d9b37e574
+
+% 5 1 0 12f89316fdff818e029c597b935ad453
+
+% 2 1 0 14d6fcb3a9ffcbce0122b19196096c6b
+
+% 0 1 0 1173a339fa8db331028295efe1a51ba0
+
+% 1 1 0 07f1bfc2bbd73afb04c75d9ce0c9af9e
+
+@ 0 3 0 1523838280bccb800eef009ef2a78d8e
++   label 直接从源解析的记录
++   highlight rowsOf[Part]  一次一条记录
++   highlight Dsv.Parsable.derived  针对这一形状的解析器
+
+% 1 1 0 17ee043c646b3d690b399ff3a6a73b18
+
+% 2 1 0 1bd369cb23da80df1777bc182ede9a1e
+
+% 3 1 0 1407adceff0f9a5c10ad3faa73039421
+
+% 5 1 0 0fb727194f55f6af099217187418c3e6
+
+% 0 1 0 1d31c7f303803491166736fb3d15d6ad
+
+% 2 1 0 01ea1ebf272f9f34066c79552f589bfd
+
+% 0 1 0 10c63fc1dd5fb6b00bfe6fb8bfb6b1f4
+
+% 1 1 0 170a1751a4340cd30815276b3379889e
+
+% 1 1 0 136d267ff733a60e0f6246170d49df5f
+
+% 2 1 0 1525a46c87e9e0571e7d21b8e7c42b7a
+
+% 0 1 0 08a86cbdc9b8cb0109ed8ce5b435ce67
+
+% 1 1 0 0cd6459499a6bd5203d659b3bcc1b6aa
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 0 1 0 024b663f8837eb6d0eb276ff3bbdcdd8
+
+% 1 1 0 1eddef44801c62120c49980a19f3dba9
+
+@ 0 2 0 1551916b8e82905601d15f9e34474f4b
++ [直接解析为类型](../../soundness/modules/csv.md#parsing-directly-to-a-type)说明了直接解析的类型可以具有哪些字段。

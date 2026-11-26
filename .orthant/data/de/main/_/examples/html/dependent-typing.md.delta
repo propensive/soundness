@@ -1,0 +1,45 @@
+orthant 2 language
+
+@ 0 1 0 1b65f0638917a28a032df12423bf085a
++ # Ein Attribut weiß, was es enthält
+
+@ 0 2 0 02597e60bb48a6d71f056637d105c7a0
++ Jedes Attribut hat den Typ, den die Spezifikation ihm gibt. Die Breite eines Bilds ist eine ganze
++ Zahl von Pixeln, also nimmt `width` ein `Int`, und ein Bruch ist ein Kompilierfehler.
+
+% 0 1 0 12705ff5e291290d17fbc8389d59ef4a
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 157f0dc209c122071ab7520d39294295
++   label Eine gebrochene Breite
+
+% 0 1 0 1477c34ff41c7c99183443e1d3238ae1
+
+% 1 1 0 0960c596329e4eb20a0b442aaa85c43a
+
+% 2 1 0 1556ad06aba8bec61b9a1d90b3fb5989
+
+% 0 1 0 1ce3ab84cf852ac80f224ef0d018537e
+
+% 1 1 0 03ebedd78cac5682187f10d71bdac0df
+
+@ 0 2 0 12a0a90a9bc462140b044bd8b693d352
++   label Eine ganze Zahl von Pixeln
++   highlight 64  ein `Int`, wie die Spezifikation sagt
+
+% 1 1 0 0e75dcd5b6db3e8409810ea0133189d1
+
+% 2 1 0 182180d82c99c3e90d42ac69a3718584
+
+% 0 1 0 1bc1b62118ca3ddc105234b72744b364
+
+% 0 1 0 18eafb32caed3dd50f976e787bd035ca
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 1 0 051febaac11f7aa614a29c37146c1278
++ [Attribute](../../soundness/modules/html.md#attributes) beschreibt die Typen, die die Attribute
++ nehmen.

@@ -1,0 +1,39 @@
+orthant 2 language
+
+% 0 1 0 0dd7530bae5a4d51179199a430b37390
+
+@ 0 1 0 13b950dddbc742550f4b32c8fa8e2710
++ Sollevato da `pacify` al posto di un `Throwable` lanciato da codice esterno.
+
+@ 0 1 0 1d8ed6a2d2412a231ea0d46e12dff5b7
++ ## Causa
+
+@ 0 6 0 03b1ef4e3a9a77d410b5e581773c5a96
++ `pacify` esegue un blocco di codice che non è stato scritto con Soundness, come un compilatore o
++ un classloader, e che segnala i propri fallimenti lanciando eccezioni. Tutto ciò che il blocco
++ lancia e che non è fatale per il programma — qualunque throwable accettato da `NonFatal`, e anche
++ un `AssertionError`, uno `StackOverflowError` o un `LinkageError` — viene sollevato come
++ `Disturbance`, il cui `throwable` è ciò che è stato lanciato.
+
+@ 0 1 0 1dde240f21b5409104721a1bcf5ec317
++ ## Messaggio di esempio
+
+% 1 1 0 1abf28c8819c4a100ba2af9cc74b39c0
+
+% 0 1 0 0a182627163b8b7311fa22b65e74234a
+
+% 1 1 0 0d335e857cd033e406e93557f46e2a71
+
+@ 0 1 0 0a3dc9137d3cf72f0228e7373e7a2cbf
++ ## Soluzione
+
+@ 0 4 0 16d318c38510311e15facc9e5921c8af
++ Gestire il `Disturbance` come qualunque altro errore, con `safely`, `recover` o `mitigate`, e
++ leggerne il `throwable` per conoscere la causa. Se il throwable rivela un difetto negli input del
++ codice esterno, come una classe mancante da un classpath, correggere gli input.
+
+@ 0 1 0 004f241cb4a4ed0405cb108ee75b2611
++ ## Vedi anche
+
+@ 0 1 0 1d004b6495f5a14f1379a9e5d34dad65
++ - Sorgente: `lib/contingency/src/core/contingency.Disturbance.scala`

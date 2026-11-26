@@ -1,0 +1,68 @@
+orthant 2 language
+
+@ 0 1 0 15a442e13045d7be140f0a9990609560
++ # Una riga che si ferma prima
+
+@ 0 3 0 0f03da1c3d80e2b007554a4d8744ae8a
++ Le righe di un foglio di calcolo lasciano spesso vuote le ultime celle. Un campo finale di tipo
++ `Optional` occupa una colonna, e viene letto come `Unset` da una riga che non la raggiunge, dove un
++ campo semplice sarebbe un errore.
+
+% 2 1 0 0e3ff61118c0a77103af184da120321b
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 0adce5e9ae50cbde0887f712a0dc5560
++   label Una riga con entrambe le celle
+
+% 1 1 0 1bf9d566772c69771f3bf4d649e2f1dc
+
+% 2 1 0 12e48e070af7889d0c5570919f3fb7e8
+
+% 3 1 0 1b36efe6b5e0bda70c43ddae829958b9
+
+% 5 1 0 0b7d59689423177b0f18428262fcb3c5
+
+% 7 1 0 14ed55b4c0af80dc1ef8030d23054093
+
+% 1 1 0 06462325bac1fd59009535d896e91ca1
+
+@ 0 2 0 113c384c060901e518c8d0fb8178a5df
++   label Una riga con una sola
++   highlight Optional[Text]  Unset dove la riga finisce prima
+
+% 1 1 0 0b95f61f752a2af4195ad6c587cd2397
+
+% 2 1 0 14f0c7653a6cd3f10fdd46c9dd5063c7
+
+% 3 1 0 1f7e55c8723ca8dc19667a5ccd3a2cfa
+
+% 5 1 0 19b9f7381f55916b1f120ef76568d35d
+
+% 7 1 0 066a770842dfbfd711718ba3a9e1d68c
+
+% 0 1 0 1035ff8e1ccd7186116de4617f52a341
+
+% 1 1 0 12756c52ee0df70c05763a30a49e5c4a
+
+% 1 1 0 136d267ff733a60e0f6246170d49df5f
+
+% 2 1 0 1525a46c87e9e0571e7d21b8e7c42b7a
+
+% 0 1 0 08a86cbdc9b8cb0109ed8ce5b435ce67
+
+% 1 1 0 0cd6459499a6bd5203d659b3bcc1b6aa
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 0 1 0 0b91a5e19b58d83c0ff17a9c75feafe0
+
+% 0 1 0 0bcf33917b6483dc0546b19a2d890ef4
+
+% 1 1 0 00785cacdea238411b56997ee546e2ab
+
+@ 0 2 0 1a72b03cc0723d550da87c1421f85f79
++ [Colonne opzionali](../../soundness/modules/csv.md#optional-columns) presenta le politiche che
++ rendono un errore una colonna mancante.

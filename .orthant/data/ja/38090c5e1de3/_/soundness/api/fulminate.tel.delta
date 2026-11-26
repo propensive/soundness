@@ -1,0 +1,17 @@
+orthant 2 language
+
+@ 0 11 0 1f902bd79280361b10ba58acbbd8d7cb
++       エラーは三つの番号で識別され、それがボルトコードになる。
++       `module` はエラーがあるライブラリの番号で、`doc/errors` の `bolt.tel` が記録しているものである。
++       `number` はそのライブラリの中でのエラー自身の番号で、エラー型を書いたときに次に空いているものが使われ、
++       決して再利用されない（廃止された番号はそうと印を付けてレジストリに残る）。
++       `variant` はエラーの理由の番号、つまり `Clarification` を継承する列挙型である `Reason` のケースの `number` であり、
++       エラーに理由がなければ 0 である。
++       エラーは `doc/errors/<module>.<number>.md` に、その原因と通常の対処法とともに文書化されるので、
++       ユーザーの報告にある `↯/s.25.1` は推測するのではなく調べられる。
++       `Error(message)` と書かれたエラーは `module = 0` であり、コードを持たず、`getMessage` は代わりにそのコンポーネントを接頭辞とする。
++       コードは `#labelled`、`getMessage`、コンパイル時の `halt` の接頭辞 `[↯/s.25.1.2]` に描画される。
+
+@ 0 3 0 18479486cd81994d11e7509da0fbbecc
++       Soundness の各コードの意味の記録は `doc/errors` の `bolt.tel` であり、
++       [bolt](https://github.com/propensive/bolt) リポジトリにあるコードの索引がそれを名指す。

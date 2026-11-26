@@ -1,0 +1,59 @@
+orthant 2 language
+
+@ 0 1 0 1c2506b3a7140ced1eeaae1875c73c10
++ # Los bits no son un número
+
+@ 0 3 0 1e220dc91f53617f0e46421b5f23c29e
++ Un `B32` son treinta y dos bits, y un `S32` es un número en treinta y dos bits. El patrón de bits
++ tiene desplazamientos y máscaras y no tiene aritmética, así que nunca se escribe por error un
++ desplazamiento como una suma, ni una suma como un desplazamiento.
+
+% 2 1 0 03a23dd8077971d91e6687bf77bd8180
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 1fb1724f1e49dbdd09d3108c8a2e7bdb
++   label Sumar dos patrones de bits
+
+% 0 1 0 1477c34ff41c7c99183443e1d3238ae1
+
+% 1 1 0 0960c596329e4eb20a0b442aaa85c43a
+
+% 2 1 0 18768a2239b308e11282e83ba49b68fe
+
+% 0 1 0 0fd22a1f3626e2e21b94fdbaa9634542
+
+% 1 1 0 09482d4bb8ab40ac026cf4a7875b6625
+
+@ 0 2 0 09147a6e6e2ac0cb1d46d6955255fea5
++   label Desplazar uno
++   highlight <<  definido para los bits, y + no
+
+% 1 1 0 107a7acdb462136a01c51221b86127d9
+
+% 2 1 0 14b0fcf14134ff111fe38e2b70aa0af3
+
+% 0 1 0 1917dfe0e641300f02be7b879ae0e731
+
+% 1 1 0 069741e5403befcc148e0a51986b2edc
+
+% 1 1 0 136d267ff733a60e0f6246170d49df5f
+
+% 2 1 0 1525a46c87e9e0571e7d21b8e7c42b7a
+
+% 0 1 0 08a86cbdc9b8cb0109ed8ce5b435ce67
+
+% 1 1 0 0cd6459499a6bd5203d659b3bcc1b6aa
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 0 1 0 1a33b10dfc71f0b40eb3ff2c568fca18
+
+% 1 1 0 1822de3091c589c1158aea4eecfc6ea9
+
+@ 0 2 0 055bb71814f4faa601e150ea7ab44068
++ El patrón se imprime con toda su anchura, incluidos los ceros a la izquierda.
++ [Manipulación de bits](../../soundness/modules/numbers.md#bit-manipulation) enumera las
++ operaciones.

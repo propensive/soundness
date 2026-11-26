@@ -1,0 +1,53 @@
+orthant 2 language
+
+@ 0 1 0 0225de9334ee11fd0a32c13822c30203
++ # Una risorsa che non è sul classpath
+
+@ 0 2 0 11399a82c4232fca0beaba160b24a087
++ Una risorsa nominata a runtime può non esistere, e leggerla solleva un `Classpath.Error`. La lettura
++ è la stessa riga con ogni politica. Che cosa significhi una risorsa mancante viene deciso attorno a
++ essa.
+
+% 0 1 0 12705ff5e291290d17fbc8389d59ef4a
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+@ 0 2 0 03ea7916983235a502d10f402738745f
++ alternative Un valore assente
++   highlight safely  una risorsa mancante non dà alcun dato
+
+% 1 1 0 015b15b04ac08e860ac0ece80004e1de
+
+% 2 1 0 00716a7ed4e595b30a9017f589c0b944
+
+% 0 1 0 01efa9d141a7bbab09ab7e9a246528b6
+
+@ 0 2 0 1bc72f668541692f0267210757e6417e
++ alternative La decisione del chiamante
++   highlight raises  entrambi i modi in cui la lettura può fallire sono dichiarati
+
+% 1 1 0 15d0da22dbde36a80f5611c06bc773f1
+
+% 2 1 0 1d9f38c9cb2d1d101df79df578776e56
+
+% 0 1 0 1c46f75002361eeb017e405a5d086a38
+
+% 0 1 0 0648f29c72c62af006bd4e1f15608cfc
+
+@ 0 2 0 0fba9ad8d4db5c3e1771d3fefd765d9b
++ alternative Un'eccezione
++   highlight throwUnsafely  una risorsa mancante ferma il programma
+
+% 1 1 0 17a2bf4482b072030d8dffe3757f3995
+
+% 0 1 0 17b3dc81bf1e25bd0a5db6a4d3464186
+
+% 0 1 0 065924b5d6babc4703ff0be4896900d4
+
+% 0 1 0 18eafb32caed3dd50f976e787bd035ca
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 3 0 1c3042a7456fc3910d8302e2031e801a
++ [Leggere una risorsa](../../soundness/modules/classpath.md#reading-a-resource) descrive i percorsi,
++ e [scegliere una strategia](../../soundness/modules/errors.md#choosing-a-strategy) le politiche.

@@ -1,0 +1,55 @@
+orthant 2 language
+
+@ 0 1 0 1bdd4c35021f56c91e300491aaadf82e
++ # Uma aspa que nunca é fechada
+
+@ 0 3 0 0be689af50db1ca30bff1ccb22acea07
++ Um comando escrito com `sh"…"` é dividido em seus argumentos enquanto o programa é compilado,
++ pelas regras que um shell usaria. Uma aspa que é aberta e não é fechada é encontrada nesse
++ momento, e não pelo shell que a teria recebido.
+
+% 2 1 0 13161ac326ef748c1718ed525621faba
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 18c24f5e3272221715c6d06a68ec67bb
++   label Uma aspa desbalanceada
+
+% 0 1 0 1477c34ff41c7c99183443e1d3238ae1
+
+% 1 1 0 0960c596329e4eb20a0b442aaa85c43a
+
+% 0 1 0 0003285f160ca1591c54e556d72ce06c
+
+% 1 1 0 00a6bbe15215850e0d99d197e6fece38
+
+@ 0 2 0 1e003e07eb4eaa811ca58d3a453aba94
++   label Dois argumentos
++   highlight 'Enter..Viola'  um só argumento, com um espaço
+
+% 1 1 0 1774729d4c6d2ec413b8d2edfaa81eec
+
+% 0 1 0 12467fa581d3a1dd0afc50f367745fad
+
+% 1 1 0 0aced2152ef4877c1ebb33b983fa1247
+
+% 1 1 0 136d267ff733a60e0f6246170d49df5f
+
+% 2 1 0 1525a46c87e9e0571e7d21b8e7c42b7a
+
+% 0 1 0 08a86cbdc9b8cb0109ed8ce5b435ce67
+
+% 1 1 0 0cd6459499a6bd5203d659b3bcc1b6aa
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 0 1 0 01962a8658bd65a81f0dbf86b3b6999a
+
+% 1 1 0 17032259fa960fdb0f5bbd6ca2e990b4
+
+@ 0 3 0 1fde9c7135d35ab10f2907d5340be6c7
++ [Definindo um comando](../../soundness/modules/processes.md#defining-a-command) descreve a
++ análise, e [segurança por construção](../../philosophy/safety-by-construction.md) o motivo de
++ fazê-la cedo.

@@ -1,0 +1,40 @@
+orthant 2 language
+
+@ 0 4 0 1c1902d2afe7b9801eeac822185723d5
++ I documenti in `doc/work/soundness/modules/` sono tutorial, ciascuno dei quali presenta una funzionalità di
++ Soundness — una capacità che può estendersi su diversi moduli interni — a un lettore che la
++ incontra per la prima volta. Questa guida stabilisce come scriverli: a chi si rivolgono, la voce
++ che usano e le convenzioni che seguono.
+
+@ 0 10 0 1d1b8603f33b4c510a3852b70716f80f
++ - Un esempio deve introdurre ogni nome che usa, in un blocco recintato dello stesso tutorial,
++   così che i blocchi formino un'unica sessione continua. Dove un tutorial ha bisogno di un valore
++   che non può costruire in modo sensato nel testo — un percorso che deve esistere, un servizio in
++   esecuzione — si mette il binding in `etc/fixtures/<tutorial>.scala`, che entrambi i controllori
++   compilano prima del primo blocco.
++ - Una riga che non deve compilare porta in coda un commento `// does not compile` (con una
++   spiegazione facoltativa dopo i due punti). Entrambi i controllori la compilano da sola e la
++   segnalano se dopo tutto compila; fuel mostra il suo errore come nota sulla riga. I nuovi esempi
++   usano invece un blocco `errors show`, per il motivo dato in «Mostrare, non raccontare».
++ - Un blocco che dice più del proprio codice lo fa in un preambolo TEL: si apre con
++   ` ```scala fuel `, e il preambolo finisce a una riga che contiene `##`. Le sue direttive sono
++   qui sotto.
+
+@ 0 9 0 01c4ec9013f5cd181a943251159092c2
++ - un concetto che un altro tutorial insegna, al suo primo uso in ogni sezione, con l'ancora della
++   sezione dove il bersaglio è una sezione di una pagina lunga:
++   `[strategy](errors.md#choosing-a-strategy)`;
++ - una combinazione di due funzionalità, da entrambe le pagine. Dove un'istanza unisce il tipo di un
++   modulo alla typeclass di un altro — una data codificata in JSON, una grandezza mostrata in una
++   tabella, un percorso che è un parametro da riga di comando — ciascun tutorial dà alla
++   combinazione una breve sezione o una frase, con un esempio, e collega l'altro;
++ - un'idea di design, al suo saggio in `doc/work/philosophy/`, una volta, dove il design viene spiegato;
++ - un'entità dell'API, nominandola in codice in linea con il suo sigillo (`` `#Json` `` per un
++   tipo, `` `.fetch` `` per un termine), che fuel risolve e collega.
+
+@ 0 4 0 1b87f88d1cf8a39e1b25121794ec7fd4
++ Una parola con un significato preciso in Soundness — *tattica*, *strategia*, *capability*,
++ *package di scelta* — è definita in `doc/work/soundness/glossary.tel`, e scritta tra parentesi quadre dove un
++ lettore potrebbe non conoscerla ancora: `[tactic]`, o `[strategies][strategy]` per una forma
++ flessa. Fuel mostra la definizione quando si punta il termine, e lo collega alla pagina indicata
++ nella sua voce.

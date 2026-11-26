@@ -1,0 +1,66 @@
+orthant 2 language
+
+@ 0 1 0 010f055babd61d4211dbca4f230767c3
++ # 解码器有多严格，由导入决定
+
+@ 0 3 0 170912fd23b4e1871c3dacbc9ce89047
++ 十六进制可以用大写或小写书写，解码器可以两者都接受，也可以只接受自己的写法。这是作用域内字母表的一个属性：`hexLowerCase` 两种都能读取，`hexStrictLowerCase` 只读取它自己会写出的形式。
+
+% 2 1 0 0460e1c5dbe135220974a16131941fe9
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 2 0 05317ac9dcb1b4f90d8bbeba5338d625
++   label 包容的字母表
++   highlight hexLowerCase  写出小写，读取两种
+
+% 1 1 0 1ab0dbb3ccbbd7ba118ab55b90594dc3
+
+% 2 1 0 0485c75a230276341a94cefa694737f5
+
+% 3 1 0 03fffa0237bf3af819f114af14d39ac3
+
+% 4 1 0 15d0d88edc2a924f1c24bf195a9744be
+
+% 1 1 0 0f576b4de3e03b5d1ea6776190965de3
+
+@ 0 2 0 0f2c78718c28a3691079611b4a462b8d
++   label 严格的字母表
++   highlight hexStrictLowerCase  只读取小写
+
+% 1 1 0 1ec7ecc2b0f11c040345af71ab0b19ee
+
+% 2 1 0 017513c668b709de0b85058b24ad06e3
+
+% 3 1 0 1d57d62ee27cf38519cf854a151b2696
+
+% 4 1 0 07275b566cbcfea91614ef079c64651f
+
+% 0 1 0 1b33f796e51e911911c3cae8d353efe0
+
+% 0 1 0 01a52448dd15682d00b0a2255d7136b1
+
+% 1 1 0 155cc60380b32bd3037a98165ffec25c
+
+% 1 1 0 1397ae8ff0a9443a1a1bea7032d14fd3
+
+% 1 1 0 136d267ff733a60e0f6246170d49df5f
+
+% 2 1 0 1525a46c87e9e0571e7d21b8e7c42b7a
+
+% 0 1 0 08a86cbdc9b8cb0109ed8ce5b435ce67
+
+% 1 1 0 0cd6459499a6bd5203d659b3bcc1b6aa
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 0 1 0 12b65861ad621e1e002a1d4506627876
+
+% 0 1 0 0cf3e0dbdbad10d700eb7f46b3d4f5e7
+
+% 1 1 0 077f5c7e3020eac916d39400aa6b9205
+
+@ 0 2 0 0e9169b972cababe0a7bd541bcafee5f
++ [选择字母表](../../soundness/modules/base-encoding.md#choosing-an-alphabet)列出了每种字母表还接受的内容。

@@ -1,0 +1,82 @@
+orthant 2 language
+
+@ 0 1 0 1fbd5beab8b701bc07081f7988107b72
++ # Una edición que puede no aplicarse
+
+@ 0 3 0 0c90b9b5f7ac74770f5c1ed6ac8f1453
++ Una reescritura nombra las líneas que quitar y las que añadir, y encuentra por sí misma dónde van.
++ Una línea que no está en el original no puede encontrarse, así que `patch` declara un
++ `Redraft.Error`, y el código que aplica una edición debe decir qué ocurre cuando no encaja.
+
+% 2 1 0 0ad4fc418144a55c021b72795c82290e
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 1bf462ce81d626a6191fa64dc095e780
++   label Una edición, aplicada a ciegas
+
+% 0 1 0 1477c34ff41c7c99183443e1d3238ae1
+
+% 1 1 0 0960c596329e4eb20a0b442aaa85c43a
+
+% 2 1 0 1fad4d928a7bd3761c6e4a6b062ec621
+
+% 4 1 0 0fc9e14107c1e87e088f271faaff992b
+
+% 1 1 0 190bc585fc44c0191ddf4ac7a6fb1402
+
+% 2 1 0 05d936cfd343a404018f1472b53198d5
+
+@ 0 2 0 132e3190ccc13243091fd4d5fd9cf0dd
++   label El fallo, en el tipo de retorno
++   highlight raises..Redraft.Error  el llamante debe responder de él
+
+% 1 1 0 1953ce844ad2f4a10ed6155c4b7a6420
+
+% 2 1 0 164fe41f3c0cab621cad05c2a54ed277
+
+% 0 1 0 1ac87f191313a99b197d7af3cf2e527f
+
+% 1 1 0 00bfb642331d5cb3046955a0d791ef7d
+
+% 2 1 0 142f9261f78bb04b1279f4444aca7ec4
+
+@ 0 2 0 11dcf29dce3658ea031ad96e256c45c2
++   label O la escena tal como estaba
++   highlight recover  una edición que no encaja no se aplica
+
+% 1 1 0 0055cb10b3ec22e412ee787caed0f7f5
+
+% 2 1 0 01f91e8e492b0d570815b50a6bce032f
+
+% 4 1 0 17f7dce642e26b861ba7e42b5014c1a0
+
+% 0 1 0 1ffe5c415422113702a4a9b03386f84a
+
+% 0 1 0 1d6ba5739d01656e1d916223eb4b9294
+
+% 0 1 0 1f6878d020f5ed1901bfcd575ee208ee
+
+% 1 1 0 05d6e73a42955f8c0418b56b94951471
+
+% 1 1 0 136d267ff733a60e0f6246170d49df5f
+
+% 2 1 0 1525a46c87e9e0571e7d21b8e7c42b7a
+
+% 0 1 0 08a86cbdc9b8cb0109ed8ce5b435ce67
+
+% 1 1 0 0cd6459499a6bd5203d659b3bcc1b6aa
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 0 1 0 006ccf5d3eb8acbf198bd8e1bd3c9a68
+
+% 0 1 0 115d4b312402d0d30834adcc24e08996
+
+% 1 1 0 0bdacfc8b9ea6fbd1de47692282fe36f
+
+@ 0 2 0 097b5168c88aa0f614988c28c976908f
++ La segunda edición nombra una línea que la escena no tiene, y la escena se imprime sin cambios.
++ [Reescrituras](../../soundness/modules/diffing.md#redrafts) describe el formato.

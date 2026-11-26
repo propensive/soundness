@@ -1,0 +1,77 @@
+orthant 2 language
+
+@ 0 1 0 04986f5f13450f210fadf35cf9040d6e
++ # Die erste, die fertig wird, und keine Nachzügler
+
+@ 0 2 0 0e5feb893fcdc396131597c051b2046f
++ `race` liefert das Ergebnis derjenigen Aufgabe, die zuerst fertig wird. Die anderen werden
++ abgebrochen, da ihre Ergebnisse nicht mehr gebraucht werden, und der Geltungsbereich endet erst,
++ wenn sie angehalten haben.
+
+% 2 1 0 0ff47bbc68d87c3e1d1e5563a9b9892c
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 1c53eec0b653d45a0fc69d733ee1f370
++   label Zwei Aufgaben
+
+% 1 1 0 1c0acc94016ac496097cda8587c0c1cf
+
+% 2 1 0 1d68743ae0d2b4451a9bfcc7523d38b1
+
+% 4 1 0 124e00bd32e4d35b0dc915a5a49138fc
+
+% 5 1 0 0f5c50ef968e1b560fd6fb32b08ee971
+
+% 6 1 0 05a9f5b5ea42d0e31f48903767ade41c
+
+% 7 1 0 183a886d7d3cadbc16ddc08478ecd7cb
+
+% 9 1 0 0721218ae174416d001edaebbe5f0618
+
+% 0 1 0 0192e155de18f874176bfeea26975bf0
+
+% 1 1 0 0ffb5e29b263922d1827d2c43e320c3d
+
+@ 0 2 0 188125b8a70ff8130957acfd6708e97b
++   label Die erste von ihnen
++   highlight race()  der Verlierer wird in seinem snooze abgebrochen
+
+% 1 1 0 0af7a879d01bd52d18c757c3a61d046c
+
+% 2 1 0 1414c3590a64afc5072d76b41ba2d957
+
+% 4 1 0 1ca31f369903e7a71e316288f076b662
+
+% 5 1 0 02a6a7a406030a21188eee95f756ebcc
+
+% 6 1 0 1de0a5ee24ec8eff118ab2e6bd74fc64
+
+% 7 1 0 1ee147d1591061990cbd0c75d9c8ebf9
+
+% 9 1 0 1e09dbdbdf229b0f081b1f6a957cc22a
+
+% 0 1 0 12aa11494c5f055a1758578b12eebda1
+
+% 1 1 0 1278bdee5670901b1876fcbae13b9834
+
+% 1 1 0 136d267ff733a60e0f6246170d49df5f
+
+% 2 1 0 1525a46c87e9e0571e7d21b8e7c42b7a
+
+% 0 1 0 08a86cbdc9b8cb0109ed8ce5b435ce67
+
+% 1 1 0 0cd6459499a6bd5203d659b3bcc1b6aa
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 0 1 0 0e47c1a1f93c8aa601db93fe45747c12
+
+% 1 1 0 1399933fa9335a9b1dee972333f128b0
+
+@ 0 3 0 071d8cbd97dd39cb150771e335bd3b92
++ [Aufgaben kombinieren](../../soundness/modules/concurrency.md#combining-tasks) stellt `sequence`
++ daneben, und [Strukturierte Nebenläufigkeit](../../philosophy/structured-concurrency.md) erklärt,
++ warum der Verlierer nicht weiterläuft.

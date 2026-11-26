@@ -1,0 +1,83 @@
+orthant 2 language
+
+@ 0 1 0 0eb727fe4f21eb510318f1a29881a74c
++ # Una risposta tipizzata dalla sua operazione
+
+@ 0 3 0 08467045de3e92ae037c8f09b9375ed6
++ Il tipo con cui si legge una risposta deve essere conforme allo schema che la specifica dichiara per
++ quell'operazione. Un animale è un oggetto, quindi si legge come una case class con i suoi campi, e
++ non come un numero.
+
+% 0 1 0 12705ff5e291290d17fbc8389d59ef4a
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 2 0 021c83449b66d27b07091f3f762b44c8
++   label Un animale, letto come animale
++   highlight call[Pet]  conforme allo schema della risposta 200
+
+% 1 1 0 1fd71e53242f1de3129efce3a7b9e37e
+
+% 2 1 0 02760606cf265eb608f494ffb14173bd
+
+% 3 1 0 1fa786ccae14fe7b13e4b04b765750ef
+
+% 4 1 0 03c8967123eb8f8f18a0f6fa1d70a044
+
+% 6 1 0 005be588df8a5e841769a0867d2584cd
+
+% 8 1 0 1a0e38ea9b68b3c11b1552d7c26cb1fe
+
+% 10 1 0 16e4be67bc50a765124ebe8931c3db04
+
+% 1 1 0 16339ce841f9c9a80d8b87fd9c359b0e
+
+@ 0 2 0 1867317210fcbddb0f73d6a3c18db9f8
++   label Un'eliminazione, che risponde senza corpo
++   highlight Unit  la risposta 204 non dichiara contenuto
+
+% 1 1 0 03ad44fd3bde1aef0d82ec76b3c9ec94
+
+% 2 1 0 1dc29e397794d13c06f8a5a471683bac
+
+% 3 1 0 0555256395812d6509239c0749d0573e
+
+% 4 1 0 1887ec9cb1452a301465327817ef63d4
+
+% 6 1 0 13e638a33689f89b122700c3ae32ade0
+
+% 8 1 0 0a02a39beeae37991100ed61a947a742
+
+% 10 1 0 12a18f689641d1ba0188d7155a5b2846
+
+% 0 1 0 055ee492dcaae19e0a0e93d03b2ccfd9
+
+% 1 1 0 0f5ae76f9e005a890570019648cb6288
+
+@ 0 1 0 0df8cac06585150903591610c5f3ca02
++   label Un animale, letto come numero
+
+% 0 1 0 1477c34ff41c7c99183443e1d3238ae1
+
+% 1 1 0 0960c596329e4eb20a0b442aaa85c43a
+
+% 2 1 0 092b07dc9fd04b15104afe672311e543
+
+% 3 1 0 08c07d60eedd90850aa0366cf6e06b12
+
+% 4 1 0 15c3c6419716e78d1d1e684de6fe8ece
+
+% 2 1 0 1023457debe74b050b228cb3d145808f
+
+% 0 1 0 061bdb09220972db1501744ba434726c
+
+% 0 1 0 18eafb32caed3dd50f976e787bd035ca
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 3 0 15d7793703e52af20e420c500295b447
++ L'esempio viene compilato, ma non eseguito, poiché richiede la rete.
++ [Chiamate](../../soundness/modules/openapi.md#calling) dice quale risposta viene scelta dove
++ un'operazione ne dichiara diverse.

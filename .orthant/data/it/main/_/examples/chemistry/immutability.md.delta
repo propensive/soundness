@@ -1,0 +1,77 @@
+orthant 2 language
+
+@ 0 1 0 07a3bb15dad8fcc912709b56afab868f
++ # Una molecola in un altro stato
+
+@ 0 2 0 0833c04926b296c817356ccd8b38d72c
++ Una molecola è un valore, e annotarne lo stato fisico dà una nuova molecola. L'acqua da cui è stata
++ ricavata resta acqua, in nessuno stato in particolare.
+
+% 2 1 0 1b50829d01e6a07c07946e7e46f996a6
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 158bd8f8ef4e2cde17f0206ab32953a8
++   label Acqua
+
+% 1 1 0 07bf0377d9286c201c09be0941055904
+
+% 2 1 0 184197ebeee72c5006baa0fe7db13ce5
+
+% 4 1 0 1476c4a46b12af2c13d05adfc316a20e
+
+% 1 1 0 11657d8c24c8ad8b1668769e59c18997
+
+@ 0 2 0 0e4c07474066be6a033ab9bfb2aaed34
++   label Vapore
++   highlight inState  dà una nuova molecola
+
+% 1 1 0 155e91ff6deb3f8e14dcd400bfa91a9e
+
+% 2 1 0 19ebf59ed4641deb0b3eec6992a4dd45
+
+% 4 1 0 163bf6638b0b49ab085dd7c144caf8a0
+
+% 5 1 0 1fb39227027db5fb16796c3ca310d089
+
+% 1 1 0 166fb0ffef13ae090db92b7f5106fbe2
+
+@ 0 2 0 17f545af2b8f97691900fe93c87d316e
++   label Ghiaccio, dalla stessa acqua
++   highlight water.inState(PhysicalState.Solid)  l'acqua non è cambiata
+
+% 1 1 0 1bd0fdf46bc0679c1b0d2dbdf880310b
+
+% 2 1 0 1fbee6e918757da605cf4ffcab17a3f0
+
+% 4 1 0 125fd3e82f8e6b1a14cc457bf9cb7254
+
+% 5 1 0 1f1e36f5d7fd05131244664143beee7f
+
+% 0 1 0 04684f8707f1c3ed0c055a61f7235dab
+
+% 1 1 0 12e34574a9c4a04e1089a03e8647310d
+
+% 1 1 0 136d267ff733a60e0f6246170d49df5f
+
+% 2 1 0 1525a46c87e9e0571e7d21b8e7c42b7a
+
+% 0 1 0 08a86cbdc9b8cb0109ed8ce5b435ce67
+
+% 1 1 0 0cd6459499a6bd5203d659b3bcc1b6aa
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 0 1 0 00236d29977178c21c37a85c4f21f907
+
+% 0 1 0 0474cbf74bd55e4f11bc5d7e6544f117
+
+% 0 1 0 02349aa4b2d133cb000b47eaa37caea6
+
+% 1 1 0 01832ce0d905605f0a75a0a692e480c0
+
+@ 0 2 0 1142c18751a5d14d02ca46bfcfbc214c
++ [Carica e stato](../../soundness/modules/chemistry.md#charge-and-state) presenta i quattro stati, e
++ [l'immutabilità](../../philosophy/immutability.md) il principio.

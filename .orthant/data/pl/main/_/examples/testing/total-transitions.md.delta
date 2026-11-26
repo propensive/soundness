@@ -1,0 +1,58 @@
+orthant 2 language
+
+@ 0 1 0 00788d1bfdc6f8c41d9be92500ebc9ce
++ # Siatka z uczciwymi lukami
+
+@ 0 3 0 00f58408267308ab1dcdc60af59c7af1
++ Test na dwóch osiach wypełnia siatkę. Tam, gdzie kombinacja nie ma zastosowania, ciało po prostu nie
++ ma dla niej przypadku: ciało jest funkcją częściową, a pozycja, którą pomija, jest zapisywana jako
++ pusta, a nie jako niepowodzenie ani puste zaliczenie.
+
+% 0 1 0 12705ff5e291290d17fbc8389d59ef4a
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 15a75c2e3a88e6f2144d4c5cfee2b0a6
++   label Każda kombinacja
+
+% 1 1 0 1a95826dd04a656819a7a61cbe1e6008
+
+% 2 1 0 1869ee69a044cf570f19bc927d245afd
+
+% 3 1 0 063adc52d378dc5004182a8cce7fc9b7
+
+% 4 1 0 1e1e50f3938433f20419aea5106fce7c
+
+% 0 1 0 090e59f7555db983023d9f3ed1b79f0f
+
+% 1 1 0 0d8a143b0d03300e0e4ee0c50770421c
+
+% 1 1 0 0e9a57016836333c00cc0424d87a6ab7
+
+@ 0 2 0 0e6cf739d874b31f09b9dcf8a5fd7c5d
++   label Wszystkie oprócz jednej
++   highlight if..12  kombinacja, która nie ma zastosowania
+
+% 1 1 0 0bd7f523d8b82dd206ef47825ee962d3
+
+% 2 1 0 110ea875811645bf0cac7378be05627d
+
+% 3 1 0 1e836c8f02654dfb1a0cf83dd62c0568
+
+% 4 1 0 17eb9ba2f17a63ce11df497d9509d3b4
+
+% 0 1 0 03e8936ba79b3ff3128491f1796adb5e
+
+% 1 1 0 0f211ba12e014694055f0c5f33e46ded
+
+% 0 1 0 18eafb32caed3dd50f976e787bd035ca
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 4 0 0ef0ce89482820b41fd5ba6d3c4e6482
++ Przykład jest kompilowany, ale nie jest uruchamiany, ponieważ test uruchamia runner testów.
++ [Rozkładanie testu na osie](../../soundness/modules/testing.md#spreading-a-test-over-axes) pokazuje,
++ jak zgłaszana jest siatka, a [przejścia totalne](../../philosophy/total-transitions.md) – dlaczego
++ luka jest lepsza niż pozory.

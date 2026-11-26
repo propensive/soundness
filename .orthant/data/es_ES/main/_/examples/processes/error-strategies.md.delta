@@ -1,0 +1,66 @@
+orthant 2 language
+
+@ 0 1 0 0c73eff9542e1aad1a501099a6420658
++ # Tres respuestas a un binario que falta
+
+@ 0 2 0 0ce7833eb20f77a70c6df6e7d22f1872
++ `exec` lanza un `Exec.Error` cuando su comando no puede iniciarse, y no decide qué ocurre después.
++ Lo decide el código que lo rodea, y cada elección da al método un tipo distinto.
+
+% 0 1 0 12705ff5e291290d17fbc8389d59ef4a
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+@ 0 1 0 1aed2c02017a8aa603fcb302d2005cb5
++ alternative Un valor ausente
+
+% 0 1 0 095674c459fb074f082ec3675cad07bf
+
+% 1 1 0 06c9028e272c82fd03be89f91f94796b
+
+% 2 1 0 141bbbd53b49a7951ba127e27a3e08d3
+
+% 3 1 0 17bca6a7d1bf6418095f795741b3b676
+
+% 0 1 0 042663dcad17302b19e49e96cb715342
+
+@ 0 1 0 1b2a29c685b94be2020bd9cabb40bd7c
++ alternative Un sustituto
+
+% 0 1 0 05e95e550c85ca9a00b6dc7307d8579b
+
+% 1 1 0 14ad50394d45ac7217d24449a307742e
+
+% 2 1 0 1225ee4716cb3ff10bd39a938620e6cb
+
+% 3 1 0 10139706825ee3b21fa5b38a51c036d7
+
+% 0 1 0 07cc63c99edc34b5010e17b360bafd21
+
+% 0 1 0 1ffe5c415422113702a4a9b03386f84a
+
+% 0 1 0 11d11f7f59f6379417174a9ab192b21b
+
+% 0 1 0 1f85533e748000510677ed809cf781f8
+
+@ 0 1 0 1bee66d1f472317e1c7ea1049987a1d1
++ alternative La decisión del llamante
+
+% 0 1 0 10abe85dc0680fc80c35d1f9d1a04725
+
+% 1 1 0 1a88c34af11d3c5f0bcdee239e74b032
+
+% 2 1 0 0edb29c2ad480487187995687bf4c9f9
+
+% 3 1 0 1901a6c69a7a8d7c10f6e2dfdd04d94b
+
+% 0 1 0 084ec8185351d8570867884c8be333e2
+
+% 0 1 0 18eafb32caed3dd50f976e787bd035ca
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 3 0 1f422862ea0840b51ebd6d0b092154ae
++ [Fallos](../../soundness/modules/processes.md#failure) describe el error, y
++ [elegir una estrategia](../../soundness/modules/errors.md#choosing-a-strategy) el conjunto completo
++ de respuestas posibles.

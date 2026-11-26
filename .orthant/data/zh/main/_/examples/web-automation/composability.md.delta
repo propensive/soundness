@@ -1,0 +1,62 @@
+orthant 2 language
+
+@ 0 1 0 1bf41c0630d9b892124a52560bb06b25
++ # 按生成元素的标签查找元素
+
+@ 0 3 0 1b68070de93cf585100a60d30d6fba63
++ 元素通过在别处描述页面的那些值来定位：[HTML](../../soundness/modules/html.md) 用来构建它的标签，或者赋予它的经过验证的标识符。无需在字符串中写出任何选择器。
+
+% 0 1 0 05f2ae76781bc53c0f28815590cdc90c
+
+% 0 1 0 16f746828b2bb3e60bb4066c2f40a307
+
+% 0 1 0 19e515dae2c3cff90e013ad9bbf3e527
+
+% 0 1 0 0340a2c5478cc3190fe31a24732d0680
+
+% 0 1 0 126ea9b3e0450b920c7880db223bf337
+
+% 0 1 0 02620c2a3d79580906f2af57cfdbe4f6
+
+% 1 1 0 0ec620ac772620a01bcfaff097559f78
+
+% 0 1 0 12705ff5e291290d17fbc8389d59ef4a
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 2 0 1c381a2b2e3766ab08f1a800f1e11bf8
++   label 标题，按其标签查找
++   highlight H1  HTML 构建标题所用的标签
+
+% 1 1 0 1dacdbb74c9ad477094e3ce5cb50de2c
+
+% 0 1 0 0b4062068334a7901128ad63811072df
+
+% 1 1 0 18aa038a3274e65b1792852e5b6522b1
+
+% 0 1 0 014976018f1c004b00d0cf02658b8e6e
+
+% 1 1 0 0b6943aae3182f201f7ac1f942d3bc13
+
+@ 0 2 0 03b63ded65fc23ee10e8c328cee69cfd
++   label 字段，按其标识符查找
++   highlight Name[DomId](t"query")  一个标识符，按标识符的规则检查
+
+% 1 1 0 183564d4d6802e6b0c6074c6135ba1b3
+
+% 0 1 0 09ea873f22802b7b0bcb72c1775ec05e
+
+% 1 1 0 1fb0ef7086094bf81f41de661cd0b051
+
+% 0 1 0 1f69a637258bc86b0ce63f8e986c28e9
+
+% 0 1 0 0f348ec1b2c761e413795b27e8f7afe9
+
+% 0 1 0 18eafb32caed3dd50f976e787bd035ca
+
+% 1 1 0 136d267ff733a60e0f6246170d49df5f
+
+@ 0 3 0 1dbd4025955a216309c86cb4116a6c85
++ 本示例只编译，不运行，因为它需要浏览器。[查找和使用元素](../../soundness/modules/web-automation.md#finding-and-using-elements)列出了各种定位器以及元素所提供的操作。

@@ -1,0 +1,25 @@
+orthant 2 language
+
+@ 0 2 0 0f3d1198b0e978311a11bfe6394f1f89
++   baseline  101 тема в doc/soundness/modules/; охвачено 145 из 145 библиотек (2026-10-21; 1 из 144 не охвачена на 2026-09-25; 91 тема и 35 не охвачено на 2026-08-01)
++   criterion  python3 etc/check-doc-coverage.py сообщает, что охвачена каждая библиотека, и завершается с кодом 0
+
+@ 0 2 0 05558c8a0afe616c19ef03f4c9b525c6
++   baseline  скриптовый набор тестов DAP останавливается, выполняет шаги и инспектирует значения через их экземпляры Inspectable; тема doc/soundness/modules/debugging.md (2026-10-21; на 2026-09-25 объекты инспектировались как имена классов JVM и темы не было)
++   criterion  скриптовая сессия DAP (точка останова, шаг, инспекция со значениями, отображёнными Soundness) проходит против запущенного приложения в CI
+
+@ 0 2 0 1ecc3855de818f6814bc9b756c382eb7
++   baseline  существуют etc/migration.md и 0.65.0.md–0.73.0.md; директива migration в etc/release блокирует релиз; проверки pull request нет (2026-10-21; заметки до 0.68.0 на 2026-09-25)
++   criterion  etc/migration.md существует; релиз (директива migration в etc/release) отказывается ставить тег без etc/migration/<version>.md; проверка CI проваливает любой pull request, который меняет lib/**/src, не затрагивая невыпущенный etc/migration/<version>.md
+
+@ 0 2 0 174e5970ec87b6671ec8b4594cff11a1
++   baseline  lib/reliquary (7387 строк) плюс anthology.lira, degustation.lira, mandible.lira, xenophile.lira и их тесты (2026-09-25)
++   criterion  lib/reliquary отсутствует, не осталось ни одного каталога lib/*/src/lira, а build.mill, etc/ и doc/soundness/modules не упоминают reliquary
+
+@ 0 3 0 1ab90a58f440346102cbf922b597507a
++   status done
++   done  #2530 (2026-11-20)
++   baseline  lib/sigillate: Jws, Jwe, Jwk и Jwt с компонентами `http` и `server`; 95 тестов, берущих векторы из RFC 7515 §A.1–A.7, RFC 7516 §A.1–A.5, RFC 7517, RFC 7638 и RFC 8037; `↯/s.147.1`; doc/soundness/modules/jose.md (2026-11-20)
+
+@ 0 1 0 04b2a086c09d9a4a0bf490e3f6a25ee5
++   baseline  lib/chatelaine: WebAuthn.registration/register и authentication/authenticate, аттестация `none` и `packed`, с компонентом `server`; церемонии регистрации и аутентификации из тестовых векторов спецификации W3C (§16.2–16.11) проходят, как и скриптовые церемонии против программного аутентификатора из тестовых исходников; виртуальный аутентификатор браузера ещё не задействовался; `↯/s.148.1`; doc/soundness/modules/webauthn.md (2026-11-20)

@@ -1,0 +1,46 @@
+orthant 2 language
+
+@ 0 1 0 005d9b099cf5e88e13158372afe3be71
++ # 図でないかもしれない図
+
+@ 0 3 0 06590d1f146a8f28189233a8203354a4
++ 図として読まれるテキストは、XMLでないかもしれないし、SVGでないXMLかもしれない。`read[Svg]`は、そこか
++ ら何が起こるかを決めない。それを呼び出すメソッドが決め、その戻り値の型がどちらを選んだかを示す。
+
+% 0 1 0 12705ff5e291290d17fbc8389d59ef4a
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+@ 0 2 0 03d921a22c0b8c660d8c98bd80ae12d0
++ alternative 不在の図
++   highlight safely  どの失敗も不在の値になる
+
+% 1 1 0 16b882843cd64ea00dd663c69d846962
+
+% 0 1 0 0b2fc4dbf4d474281a58f9a7d79183f2
+
+@ 0 2 0 0d67c9fbf2960a220b29c47a5a04ca07
++ alternative 空白の図
++   highlight or(Svg(40,..))  ここで不在が意味するもの
+
+% 1 1 0 0060148d136cb8240384dcc5b753a822
+
+% 0 1 0 15b19e31d79d2beb0b66412971c0912f
+
+@ 0 2 0 05d56548f73fd1591825d663d1219d6e
++ alternative 呼び出し側の判断
++   highlight raises..Svg.Error  テキストが誤りうるそれぞれの場合
+
+% 1 1 0 0edbff737f6350ee068e5c7f4105b236
+
+% 0 1 0 04236ff4de4c0e710f288c433b5a4716
+
+% 0 1 0 0176192c5fe5a4440eca2c60a93af00f
+
+% 0 1 0 18eafb32caed3dd50f976e787bd035ca
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 2 0 16f8192a0fb8c89b16d6cb3636897b1b
++ 何が読まれるかは[文書](../../soundness/modules/svg.md#documents)で、ほかの選択肢は
++ [戦略の選択](../../soundness/modules/errors.md#choosing-a-strategy)で説明する。

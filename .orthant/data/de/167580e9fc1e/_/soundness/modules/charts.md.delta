@@ -1,0 +1,92 @@
+orthant 2 language
+
+@ 0 9 0 100b3ca4d8a8e9af1ee2b5559f874e9f
++ column  Stil
++ row  `Bars()`  eine Datenreihe oder eine Collection von Datenreihen  kategorial  stetig  `Bars.Style`
++ row  `StackedBars()`  eine Collection von Datenreihen  kategorial  stetig  `StackedBars.Style`
++ row  `Lines()`  eine Datenreihe oder eine Collection von Datenreihen  stetig  stetig  `Lines.Style`
++ row  `Scatter()`  eine Datenreihe oder eine Collection von Datenreihen  stetig  stetig  `Scatter.Style`
++ row  `Pie()`  genau eine Datenreihe  kategorial  stetig  `Pie.Style`
++ row  `Histogram()`  `Samples` oder eine Collection davon  stetig  Anzahlen  `Histogram.Style`
++ row  `Boxes()`  `Samples` oder eine Collection davon  eine Box pro Menge  stetig  `Boxes.Style`
++ row  `Annulus()`  ein `Dag` aus `Weighted`-, `Progressive`-Knoten  keine  keine  `Annulus.Style`
+
+@ 0 19 0 09c98980d3198e611edeab97ea79998d
++ column  Zeichnet
++ column  Definiert in
++ row  `fontStyle`, `lettering`  Größe und Farbe des Texts; jede Textfolge  `Chart.Style`
++ row  `backdrop`  die Zeichenfläche hinter dem Diagramm  `Chart.Style`
++ row  `swatch`, `legendLabel`  einen Legendeneintrag  `Chart.Style`
++ row  `leader`  die Linie von einer verschobenen Beschriftung zurück zu ihrem Punkt  `Chart.Style`
++ row  `axisLine`  den Strich jeder Achse  `Chart.Cartesian`
++ row  `axisBreak`  eine Bruchmarke, wo eine lineare Achse nicht bei null beginnt  `Chart.Cartesian`
++ row  `arrowhead`  das Ende einer Achse  `Chart.Cartesian`
++ row  `tick`, `gridLine`  eine Abstufung und ihre Gitterlinie  `Chart.Cartesian`
++ row  `tickLabel`  die Beschriftung eines Teilstrichs, wo sie sitzt und ob sie gedreht ist  `Chart.Cartesian`
++ row  `axisTitle`  den Titel einer Achse  `Chart.Cartesian`
++ row  `marker`, `errorBar`  einen Punkt und sein Intervall  `Chart.Cartesian`
++ row  `pointLabel`  die Notiz eines `Noted`-Punkts  `Chart.Cartesian`
++ row  `bar`  einen Balken  `Bars.Style`
++ row  `line`, `band`  die Linie einer Datenreihe und das Band einer Schätzung  `Lines.Style`
++ row  `box`, `whisker`, `median`  die Teile eines Boxplots  `Boxes.Style`
++ row  `wedge`, `wedgeLabel`  ein Segment und seinen Prozentwert  `Pie.Style`
++ row  `shade`, `sector`, `remainder`  die Farbe eines Sektors und seine zwei Teile  `Annulus.Style`
+
+@ 0 7 0 1bde30a1648b6c4d09923d7b299b7046
++ row  `backdrop`  die Zeichenfläche in der Hintergrundfarbe der Palette  jedem Diagramm
++ row  `grid`  die Gitterlinien  kartesischen Diagrammen
++ row  `abscissa`, `ordinate`  jede Achse, ihre Abstufungen und ihren Titel  kartesischen Diagrammen
++ row  `legend`  die Legende  Diagrammen mit Legende
++ row  `series-0`, `series-1`, …  jede Datenreihe  kartesischen Diagrammen
++ row  `wedges`  jedes Segment und seine Beschriftung  `Pie`
++ row  `rank-0`, `rank-1`, …  jedes Band  `Annulus`
+
+@ 0 1 0 09524893beb0e5fc110f8d8b22a39a27
++ ### Ringdiagramme
+
+@ 0 5 0 094a00dfd1bbeae2143c54d55798a5bd
++ Ein `Annulus` zeichnet einen Abhängigkeitsgraphen, einen [`Dag`](graphs.md), als konzentrische
++ Bänder. Die Knoten, die von nichts abhängen, liegen im innersten Band, und jedes weitere Band enthält
++ die Knoten einen Rang weiter außen, sodass sich ein Build von der Mitte nach außen füllt. Jeder Knoten
++ ist ein Sektor seines Bands, der einen Winkel proportional zu seiner Größe innerhalb des Rangs
++ überstreicht, und ein Band ist so dick, wie es dem Anteil seines Rangs an der Gesamtgröße entspricht.
+
+@ 0 7 0 11568818c01018f40832037731e60764
++ Die Größe eines Knotens und sein Fortschritt, von `0.0` bis `1.0`, stammen aus zwei Typklassen auf
++ dem Knotentyp, `Weighted` und `Progressive`. Der Sektor füllt sich im Uhrzeigersinn so weit, wie der
++ Knoten fertig ist, und der Rest erscheint in einer gedämpften Tönung der Farbe des Sektors. Diese
++ Farbe ist die erste Farbe der Palette, schattiert nach der Lage des Sektors: Ihr Farbton dreht sich
++ von links nach rechts um dreißig Grad, und sie ist unterhalb der Mitte dunkler und oberhalb heller.
++ Ein Ringdiagramm hat keine Beschriftungen und keine Legende. Jedes Band ist eine Gruppe `rank-0`,
++ `rank-1`, …, jeder Sektor ein Pfad `sector-0`, `sector-1`, …, und der unfertige Teil eines Sektors ist
++ `sector-0-rest`.
+
+@ 0 3 0 0fbbeed84c453a461e364d4fa195aed8
++ Ein Knoten trägt seinen Fortschritt, daher wird ein Ringdiagramm wie jedes Diagramm mit neuen Daten
++ überarbeitet. Die Anpassung übersteht jeden Graphen derselben Gestalt und Größen, und nur die Bänder,
++ deren Sektoren sich weiter gefüllt haben, werden ersetzt:
+
+% 0 1 0 1877856c8ab7469c04f0ffb78800176f
+
+% 0 1 0 14e225babf96351702cd5d73f93e40d6
+
+% 0 1 0 14c1482790cf4ef70542451dfecf4315
+
+@ 0 5 0 0882828f30df7a830a6f292209c4fb9f
++ `Chart.Standard(hole = 0.3)` höhlt die Mitte aus. `sectorGap` und `bandGap` sind die Breiten der
++ Fugen zwischen Sektoren und zwischen Bändern. `Annulus.Style` hat `shade` für die Farbe eines
++ Sektors nach seiner Position sowie `sector` und `remainder` für seine zwei Teile. Die Rangbildung ist
++ die, die [Graphen](graphs.md#layering) beschreibt: `import rankings.balancedRanking` zeichnet jeden
++ Knoten so nah an den von ihm Abhängigen wie möglich statt so nah an der Mitte.
+
+@ 0 8 0 16557cb6cd42445b1d8d52e13d86e255
++ - [SVG](svg.md) beschreibt die Zeichnung, als die ein Diagramm dargestellt wird.
++ - [Platzierung von Beschriftungen](label-placement.md) beschreibt, wie die Beschriftungen eines
++   Diagramms einander ausweichen.
++ - [Schriften](fonts.md) beschreibt die Schriftarten, in denen ein Diagramm gesetzt werden kann.
++ - [Größen](quantities.md) beschreibt die Einheiten, die eine Achse betiteln.
++ - [Graphen](graphs.md) beschreibt den `Dag`, den ein Ringdiagramm zeichnet.
++ - [Farben](colors.md) beschreibt die Farben der Palette.
++ - [Zeit](time.md) beschreibt die Zeitdauern und Zeitpunkte, die eine stetige Achse enthalten kann.
++ - [Messanzeigen](gauges.md) und [Tabellen](tables.md) präsentieren Werte im Terminal, und
++   [Testen](testing.md) stellt Benchmark-Ergebnisse in Diagrammen dar.

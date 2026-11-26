@@ -1,0 +1,70 @@
+orthant 2 language
+
+@ 0 1 0 0a65dbfaafb27d1411fe5575f3fca413
++ # 同一类型的三种写法
+
+@ 0 3 0 10c1bd56d16a51b90d24a54d1fc28874
++ `raises` 是一个别名，不隐藏任何东西。声明了 `raises PortError` 的方法以上下文参数的形式接受其错误的处理方式，下面的每一个签名都是同一个方法。
+
+% 0 1 0 12705ff5e291290d17fbc8389d59ef4a
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+@ 0 2 0 1a685e165063f7f412ce2b6e7bbadd4a
++ alternative 上下文参数
++   highlight (using..Tactic[PortError])  错误的处理方式，作为参数
+
+% 1 1 0 0f8c937f94dab7971872e6b6e2677afa
+
+% 2 1 0 0618d8e58531dc481dd72dfa9aeadbd6
+
+% 4 1 0 0a915db1ad8145c0179669aca9c787b9
+
+% 5 1 0 0b3576c19fc4187402ec8bd15317afe8
+
+% 0 1 0 1e73550845c16b421ae5dd1568b6b0f3
+
+% 1 1 0 01d2032afaaf0c2608d3d8b7edcd5fe0
+
+@ 0 2 0 0875199410661682187e310f5730abee
++ alternative 上下文函数
++   highlight Tactic[PortError]..Int  同一个参数，位于结果类型中
+
+% 1 1 0 079a332ae1a39c880145fd80a4f77a13
+
+% 2 1 0 0a7ed8cf84d3c88f093587c2c4dd7a7e
+
+% 3 1 0 1729bb107e748b8f0fbd0f744de72f18
+
+% 5 1 0 15842113ff45037c0c2bf2e019424c91
+
+% 6 1 0 0b80fd203ddbdd22064a405aa8557e13
+
+% 0 1 0 18136896f2a741f10862776cfdc1fde0
+
+% 1 1 0 1bc45fd87af72d7d13645044219f89ce
+
+@ 0 2 0 007aaee716c82ed1176e606f18f6708a
++ alternative 短语
++   highlight raises..PortError  上下文函数的别名
+
+% 1 1 0 172d3c77dac09def16c08fc0aa89a4bf
+
+% 2 1 0 0a3116ca052ec80f0f00bb557352e329
+
+% 3 1 0 026d74f2bbbe347318e560b6bc5e348c
+
+% 5 1 0 035b71153892a2ab03e13bc5558c756a
+
+% 6 1 0 0d305abd1e40b1b40f4705727555ea43
+
+% 0 1 0 1094af888852f2ab157f763de8da3603
+
+% 1 1 0 1174df80e33a6d2d1ea2c93d4056e0d8
+
+% 0 1 0 18eafb32caed3dd50f976e787bd035ca
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 3 0 0e355498062c35de18c9dc8206b3faa4
++ [声明代码可能失败](../../soundness/modules/errors.md#declaring-that-code-can-fail)介绍了这一机制，[中缀类型](../../philosophy/infix-types.md)则介绍了以这种方式阅读的其他词。

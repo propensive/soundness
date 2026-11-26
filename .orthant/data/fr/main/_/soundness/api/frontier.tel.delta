@@ -1,6 +1,6 @@
 orthant 2 language
 
-@ 0 5 0 1395deb66a5d3fe90a70b538ce536ea1
+@ 1 5 0 1d5c0092601ced7c11b0f1bf26f5563c
 +   entry .markup
 +     info
 +         rend un arbre de diagnostic sous forme de balisage sémantique : le texte qu'écrit `.render`,

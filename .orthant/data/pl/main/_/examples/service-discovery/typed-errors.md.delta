@@ -1,0 +1,72 @@
+orthant 2 language
+
+@ 0 1 0 0cef8b18a9ef2cbc1ee6f51974119f71
++ # Nazwa usługi może zostać odrzucona
+
+@ 0 3 0 0502ee0cd056ce551507ee52f5762945
++ Nazwa typu usługi jest sprawdzana względem ograniczeń DNS przy tworzeniu `Discovery.Service`,
++ więc utworzenie usługi może się nie powieść. Niepowodzenie to `Discovery.Error` w typie
++ konstruktora, a metoda, która nazywa usługę, musi je obsłużyć albo przekazać dalej.
+
+% 2 1 0 1bebceefaf425dc006ba252660e80647
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 0bee1772299d4bab02a2e057156f584e
++   label Odmowa nie jest uwzględniona
+
+% 0 1 0 1477c34ff41c7c99183443e1d3238ae1
+
+% 1 1 0 0960c596329e4eb20a0b442aaa85c43a
+
+% 0 1 0 1430c14bfe173a1a146ea74313334fc9
+
+% 1 1 0 146d2acba0c008a203c643d3b562d950
+
+@ 0 1 0 0673c6636e1ebae61a9df8b8f27db10f
++   label Odmowa jest zadeklarowana
+
+% 0 1 0 10abe85dc0680fc80c35d1f9d1a04725
+
+% 1 1 0 1a88c34af11d3c5f0bcdee239e74b032
+
+% 0 1 0 1965887ebe4ee2011691e9abd88d28ee
+
+% 0 1 0 1842943131d81b1712df41d02df444d5
+
+% 1 1 0 0c290cdf5ae530c514859cbbdbfcdfa0
+
+@ 0 1 0 01f11c3f48c91e980dd3d26e59711f68
++   label Albo jest nieobecną usługą
+
+% 0 1 0 095674c459fb074f082ec3675cad07bf
+
+% 1 1 0 06c9028e272c82fd03be89f91f94796b
+
+% 0 1 0 131081e1eaccd4c317f6d2ce23d6dfa3
+
+% 0 1 0 16332509f377e07f149703322cfcdf0e
+
+% 1 1 0 1807c81e31712694164439696d34bad9
+
+% 1 1 0 136d267ff733a60e0f6246170d49df5f
+
+% 2 1 0 1525a46c87e9e0571e7d21b8e7c42b7a
+
+% 0 1 0 08a86cbdc9b8cb0109ed8ce5b435ce67
+
+% 1 1 0 0cd6459499a6bd5203d659b3bcc1b6aa
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 0 1 0 1a1ccb7235ba92430f476a175a3d7a7c
+
+% 0 1 0 146db704b1b54eeb10dbd1de13c45d3d
+
+% 1 1 0 14717081f552b6761e6e63af07664680
+
+@ 0 2 0 1c871aa183f3f95b03b9407842d888e9
++ [Usługi i instancje](../../soundness/modules/service-discovery.md#services-and-instances)
++ zawierają ograniczenia, a [obsługa błędów](../../philosophy/error-handling.md) – powody.

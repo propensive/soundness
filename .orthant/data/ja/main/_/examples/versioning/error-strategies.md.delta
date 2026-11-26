@@ -1,0 +1,55 @@
+orthant 2 language
+
+@ 0 1 0 1246e60dab941c8e0d8205db3aa61475
++ # バージョンでないかもしれないタグ
+
+@ 0 3 0 064bf8acdaa8a05108c00123c13722c6
++ `as[Semver]` は、テキストがセマンティックバージョンでないときに `Semver.Error` を送出し、その結果を
++ 呼び出し側に任せる。同じ式が、伝えるべきエラーにも、代わりに使うバージョンにも、バージョンなしにも
++ なる。
+
+% 0 1 0 12705ff5e291290d17fbc8389d59ef4a
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+@ 0 2 0 1637179235a1121a1fcf1cec48a12f61
++ alternative 宣言
++   highlight raises..Semver.Error  呼び出し側がそれに応えなければならない
+
+% 1 1 0 02561e8ebeb71bab1389cc6252d9a8f6
+
+% 0 1 0 0b0cd4eaf80cd2a2171da2c821e15ca1
+
+% 0 1 0 18d98428a296bfe30ade8ff61c6fe8a9
+
+@ 0 2 0 09514a650defd7bf03ebb03d5120794f
++ alternative 置き換え
++   highlight recover  読めないタグはまだリリースなしとみなす
+
+% 1 1 0 002f83eb21d9a1851a517e43355fe1b8
+
+% 0 1 0 105fda586b6da7dd18f002940aab1a1c
+
+% 0 1 0 1ffe5c415422113702a4a9b03386f84a
+
+% 0 1 0 0e570ebffbfb0b121e694dfd01967674
+
+% 0 1 0 0fb7cc8c1cb8f4ec1e187100a1b418c6
+
+@ 0 2 0 14f3b4e3540758d30ed77afa45556ae0
++ alternative 不在
++   highlight safely  失敗は `Unset` になる
+
+% 1 1 0 17cd2c20b4d8cbd8003da3e1bd4713eb
+
+% 0 1 0 01e1aa5aec3abf09168f799bc78ffb69
+
+% 0 1 0 09f7b7cc479dda210f9d837198a60840
+
+% 0 1 0 18eafb32caed3dd50f976e787bd035ca
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 3 0 1d330f9c2e0bd1501b7f7c98bc356378
++ [バージョン](../../soundness/modules/versioning.md#versions)はそのエラーを示し、
++ [戦略の選択](../../soundness/modules/errors.md#choosing-a-strategy)は対処の全体を示す。

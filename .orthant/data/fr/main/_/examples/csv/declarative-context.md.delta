@@ -1,0 +1,65 @@
+orthant 2 language
+
+@ 0 1 0 18b3c7aded5763b2145307f5f0348624
++ # Le délimiteur est une affaire d'import
+
+@ 0 2 0 0c9c014e56ab70a6150a9939adca2777
++ Que les cellules soient séparées par des virgules ou des tabulations, et que la première ligne
++ nomme les colonnes, est décidé par le format présent dans la portée. Le code qui lit une ligne
++ est le même sous chacun.
+
+% 0 1 0 12705ff5e291290d17fbc8389d59ef4a
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+@ 0 2 0 0f36a68534a6d616123ddce7dddd69eb
++ alternative Virgules
++   highlight csvFormat  des virgules
+
+% 1 1 0 13f830dffdcfb2d202da6b5e1ded944d
+
+% 2 1 0 01080cb75220c1f604ff55f6f54d1431
+
+% 0 1 0 0c893c6e75c89cb5059ab450d5b87bdf
+
+% 2 1 0 1204e85d8bab6e0b072deceface43c4f
+
+% 0 1 0 079fb1bcb920e6ad0e0459818c7ce354
+
+@ 0 2 0 0610e7af8e45b7ea008b75fb4a714566
++ alternative Tabulations
++   highlight tsvFormat  des tabulations
+
+% 1 1 0 06b4d7f578ac4f270e2f5d898e87538d
+
+% 2 1 0 121facb5be14063d011d3b431f7ba7ca
+
+% 0 1 0 10bd8fde257d08371f47115becc8a1b9
+
+% 2 1 0 0f984d601d9d9c2000af26772d459194
+
+% 0 1 0 139e00144e4875820c89c23364ab393a
+
+@ 0 2 0 07eb6e49c07990241a30146561fafd49
++ alternative Une ligne d'en-tête
++   highlight csvWithHeaderFormat  colonnes associées par leur nom
+
+% 1 1 0 0eec080d6229a5e403a94dcc46e63cdf
+
+% 2 1 0 11b78c9d734d898809464662ec39de35
+
+% 0 1 0 0c15c375faba44951e26628e1217fed5
+
+% 2 1 0 1bfe3d4135397a2405a7aa75d5c01e7a
+
+% 0 1 0 173a3b91669bf8ca1be3d29a06480b94
+
+% 0 1 0 18eafb32caed3dd50f976e787bd035ca
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 4 0 027addda33cd07dc0b11d0d5f6b88d00
++ Avec un en-tête, chaque colonne va au champ de son nom, quel que soit l'ordre des colonnes.
++ [Les formats](../../soundness/modules/csv.md#formats) énumère les formats, et
++ [le contexte déclaratif](../../philosophy/declarative-context.md) explique pourquoi le format
++ n'est pas un argument.

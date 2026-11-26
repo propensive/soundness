@@ -1,0 +1,66 @@
+orthant 2 language
+
+@ 0 1 0 17e55cfcfc2e1d3e15515d15ecbffa78
++ # Один метод архивирует каталог в любом формате
+
+@ 0 2 0 1dc76843cc82e4710340663095b0d7d1
++ Нет ни `TarBuilder`, ни `ZipOutputStream`. `archive` принимает формат как тип, а его результат —
++ архив как значение, которое можно передавать потоком, сжимать или записывать.
+
+% 0 1 0 12705ff5e291290d17fbc8389d59ef4a
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 0 1 0 1c067f806bf655ff03d898bef49fb105
+
+@ 0 1 0 107a6968f21b1da61a8a2808d2bf555d
++   highlight archive[Tar]()  `Tarfile`
+
+% 1 1 0 038675afa17aacd008e6896d17bb653f
+
+% 2 1 0 05cf3255a5734b550884162afa5e10a7
+
+% 3 1 0 1f1bf2399ae6ed541df26ccf9de3235b
+
+% 4 1 0 0dd0c90983adbf8a1bce136f0a3b485a
+
+% 0 1 0 16579f33c819aceb0aef0d28d81e4660
+
+% 0 1 0 1e5417aab876d53215e97a77d26a114a
+
+@ 0 1 0 1d0cb5fa2f3743fa0db9a4c3af38c7a6
++   highlight archive[Zip]()  `Zipfile`
+
+% 1 1 0 1cb44ef010221b9f09ac753c344cc7ae
+
+% 2 1 0 19509250d8df96ec11f2d885a079b2c4
+
+% 3 1 0 1f8a2830df059ffc154ee028b9e428c2
+
+% 4 1 0 094b90780551765c161718772209dc15
+
+% 0 1 0 0aebcf4c6ba6fe61101435e52eb33c0f
+
+% 0 1 0 133348b276cfce3010617bd4f58ec0c2
+
+@ 0 1 0 1cfc1906bc64f4e2052db4ffe63ae88c
++   highlight archive[Ar]()  `Arfile`
+
+% 1 1 0 1f7c5746d4fd43be1739e22ce3bb9779
+
+% 2 1 0 142e3c55d7a0b761025029db23147998
+
+% 3 1 0 134d8b49987108ca1a2d6a618dfcb933
+
+% 4 1 0 04f50ec724d3a48c1d8734adf2258d41
+
+% 0 1 0 1ec922d6d9fdb9b50f4ef564110fa8b7
+
+% 0 1 0 18eafb32caed3dd50f976e787bd035ca
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 3 0 15895a63b4f152941294e0c842bedc6f
++ Пример компилируется, но не запускается, поскольку читает каталог. [Архивирование
++ каталога](../../soundness/modules/archives.md#archiving-a-directory) говорит, что может хранить
++ каждый формат.

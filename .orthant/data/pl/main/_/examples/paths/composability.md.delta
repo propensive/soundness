@@ -1,0 +1,54 @@
+orthant 2 language
+
+@ 0 1 0 0b5f2468ea9cedb9044d0e79e7f4c2cd
++ # Ścieżka w poleceniu powłoki
+
+@ 0 2 0 1c58d51fa6e0e9511a9d066e102099db
++ Ścieżka jest wstawiana do polecenia taka, jaka jest, bez zamiany na tekst. Jakkolwiek zapisane są
++ jej nazwy, jest jednym argumentem, więc spacja w nazwie nie dzieli jej na dwa.
+
+% 2 1 0 14b555b89aa5cb4215281372d39e6d51
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 19bb3fc98c737f6710e09ff8c57d55b3
++   label Ścieżka ze spacją w nazwie
+
+% 1 1 0 1a081f2a4a6b6fae00c8af1f4bc09f31
+
+% 2 1 0 017b9a80f191e5cd046f5b7ec5e34461
+
+% 1 1 0 0c04a52d27187b7218fa1b8a8f8161c2
+
+@ 0 2 0 0f224aa82556eaaf0300e51b54b39ba0
++   label Ścieżka jako argument
++   highlight $sonnet  jeden argument, cokolwiek zawiera
+
+% 1 1 0 08831ef7277c3f5f0ea783789284892a
+
+% 2 1 0 18b4475137b789751fcefc61d72cb7ee
+
+% 0 1 0 037125aa5bcbc57b12a587073e7cf12a
+
+% 1 1 0 1c971c474daec43b18f6eec40a1c7e4f
+
+% 1 1 0 136d267ff733a60e0f6246170d49df5f
+
+% 2 1 0 1525a46c87e9e0571e7d21b8e7c42b7a
+
+% 0 1 0 08a86cbdc9b8cb0109ed8ce5b435ce67
+
+% 1 1 0 0cd6459499a6bd5203d659b3bcc1b6aa
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 0 1 0 1a305596c46f7fb30c7637f3cf240dc3
+
+% 1 1 0 13cde774bb5b4a8d04a34ed96574254b
+
+@ 0 3 0 0ccc355ec48ccdbe1d45458c11019ba2
++ Polecenie jest budowane, ale nie jest uruchamiane. [Procesy](../../soundness/modules/processes.md)
++ opisuje, jak podstawia się argumenty, a [składalność](../../philosophy/composability.md) – dlaczego
++ nie jest potrzebny żaden adapter.

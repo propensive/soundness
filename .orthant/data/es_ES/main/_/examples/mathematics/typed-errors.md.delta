@@ -1,0 +1,54 @@
+orthant 2 language
+
+@ 0 1 0 136b4353912ca1c604d8fe43510d217a
++ # Una reordenación que debe serlo
+
+@ 0 3 0 1eece33892a152d8033a200cd439c156
++ Una permutación se construye a partir de una secuencia de índices, y no toda secuencia es una
++ permutación: un índice puede estar repetido, o faltar. Por eso construir una puede fallar, y lo
++ dice en su tipo.
+
+% 2 1 0 0c054a2230b5ff2c1830dad1cb03290d
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 03ca276eb8bf57bc0645114cab831144
++   label Índices que pueden no ser una permutación
+
+% 0 1 0 1477c34ff41c7c99183443e1d3238ae1
+
+% 1 1 0 0960c596329e4eb20a0b442aaa85c43a
+
+% 0 1 0 1ced0607739f9ef1136ade3ac9bd692b
+
+% 1 1 0 07a335e2da7ffb4419d3736b418aa710
+
+@ 0 2 0 19b8aa23ca2aa8a80377bc2346ff98ca
++   label El fallo, gestionado
++   highlight safely  Unset, ya que el 1 aparece dos veces
+
+% 1 1 0 016f88c402122b9e1933ab1cc2071180
+
+% 0 1 0 06e4f17a16a864b413f78b80064cc792
+
+% 1 1 0 0133f205fecacb171e8e11c98c524072
+
+% 1 1 0 136d267ff733a60e0f6246170d49df5f
+
+% 2 1 0 1525a46c87e9e0571e7d21b8e7c42b7a
+
+% 0 1 0 08a86cbdc9b8cb0109ed8ce5b435ce67
+
+% 1 1 0 0cd6459499a6bd5203d659b3bcc1b6aa
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 0 1 0 1eb61b5576bcc119154f3cb6ff519654
+
+% 1 1 0 111035cdb9fc790e1963c9f00d9fc422
+
+@ 0 2 0 0652bb1f5515df860fa0e792661ebf15
++ [Permutaciones](../../soundness/modules/mathematics.md#permutations) describe cómo se almacena y se
++ aplica una permutación.

@@ -1,0 +1,61 @@
+orthant 2 language
+
+@ 0 1 0 0319683d35d6702d0ee5d950504865a9
++ # El camino entre dos rutas, hallado por el compilador
+
+@ 0 3 0 09e898e1477e058e1aa4d36bb0340d74
++ Para dos rutas cuyos nombres se conocen, `toward` halla la ruta relativa de una a otra mientras se
++ compila el código, y `conjunction`, su ancestro común más cercano. Ambos son valores simples, y no
++ opcionales, ya que el compilador ha visto que las rutas comparten una raíz.
+
+% 2 1 0 00953940fe9b81a0101a01a7368ba983
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 0c478e3d471b82b71a2c5f5233939d16
++   label Dos rutas
+
+% 1 1 0 10f97519af00aaaf1ae38b533f656941
+
+% 2 1 0 039cfe6a5e3b3652011655ec2c0a9c2c
+
+% 3 1 0 0d28dbdaae0ba625057e75f326018f94
+
+% 1 1 0 1ac7a188b4c10b561ff3dad362252258
+
+@ 0 2 0 011dc4f4a0c07d9a0b39ac7cafb2cac8
++   label De una a la otra
++   highlight toward  calculado a partir de los dos tipos
+
+% 1 1 0 0a6252f09fdefe8b11f52a50a39baca3
+
+% 2 1 0 12210f8eb0316b011986e1c772868630
+
+% 3 1 0 0ca30b661f85f9f4059664090ecb1d3b
+
+% 0 1 0 15e369a80cee9de70462d358c9e57c1a
+
+% 0 1 0 1635226d557971e414f92fe1510e8651
+
+% 1 1 0 1322758bc8081bea163b2302beab48c0
+
+% 1 1 0 136d267ff733a60e0f6246170d49df5f
+
+% 2 1 0 1525a46c87e9e0571e7d21b8e7c42b7a
+
+% 0 1 0 08a86cbdc9b8cb0109ed8ce5b435ce67
+
+% 1 1 0 0cd6459499a6bd5203d659b3bcc1b6aa
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 0 1 0 1152ba311afcbdcc1944270ff5222d17
+
+% 0 1 0 0b7635db8ec7a2c3190bf6b964579fc9
+
+% 1 1 0 0cb7ba6994d0b38816853aedad702fed
+
+@ 0 1 0 1af44f9a93badf0515385c4faaa736d6
++ [Entre dos rutas](../../soundness/modules/paths.md#between-two-paths) trata ambas operaciones.

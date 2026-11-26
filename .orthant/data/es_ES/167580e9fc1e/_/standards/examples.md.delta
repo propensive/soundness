@@ -1,0 +1,9 @@
+orthant 2 language
+
+@ 0 5 0 074ba3b456a021991e2ea448943cc78b
++ Algunos resultados dependen de la longitud de una cadena de ejemplo: las anchuras de columna de una
++ tabla representada, un texto con relleno o alineado, un desplazamiento en bytes, una longitud
++ codificada, el tamaño de la carga útil de un benchmark. Una prueba dirá cuándo un resultado así ha
++ salido mal; un comentario `// result` en `doc/work/soundness/api/*.tel` no lo dirá, ya que nada lo comprueba.
++ Así que, donde una longitud es determinante, elige un nombre de la longitud necesaria, y donde un
++ resultado mostrado sí cambia, vuelve a evaluar el ejemplo en lugar de editar el resultado a mano.

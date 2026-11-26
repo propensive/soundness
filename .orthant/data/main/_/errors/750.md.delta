@@ -1,4 +1,3 @@
 orthant 2 release
 
-@ 0 1 0 11473f40e4317b7800975015f033f8c6
-+ removed. Its role is filled by [TEL](/doc/soundness/modules/tel.md), whose binary encoding is BinTEL.
+% 0 1 0 18f9bac58260a530065a0ad08bf73f11

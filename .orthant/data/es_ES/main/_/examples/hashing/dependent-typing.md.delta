@@ -1,0 +1,49 @@
+orthant 2 language
+
+@ 0 1 0 10f33fd85bcd277b190d116b4be2b9e8
++ # El algoritmo está en el tipo del resumen
+
+@ 0 2 0 0d1f4af404d6443d13a99dd1ecfc8274
++ El tipo de un resumen registra el algoritmo que lo creó. `digest` toma el algoritmo del tipo que
++ se espera, y un resumen de otro algoritmo es un tipo distinto.
+
+% 0 1 0 12705ff5e291290d17fbc8389d59ef4a
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 2 0 0847bc5eaee509820c323b38e7885fd7
++   label El tipo del campo elige SHA-256
++   highlight Digest..Sha2[256]  el algoritmo, en el tipo
+
+% 1 1 0 0e6e1215aee7d06206de63b0a14f0cc4
+
+% 2 1 0 0f1a9047407b8f6c1f1324f4913ada5d
+
+% 4 1 0 1ecb74b9e3b42c981fe11413a2d45a96
+
+% 0 1 0 084aef9a7708de4d1403cdd78f650c03
+
+% 1 1 0 1cf970233ec14f7b0c435193cc5e4524
+
+@ 0 1 0 15d8f353352d644608bbfcb68f043000
++   label Un resumen SHA-512 no es un resumen SHA-256
+
+% 0 1 0 1477c34ff41c7c99183443e1d3238ae1
+
+% 1 1 0 0960c596329e4eb20a0b442aaa85c43a
+
+% 2 1 0 149d32f158a8cea016220d823aee285c
+
+% 4 1 0 1e0962cbb1e44f6f1295abe557401470
+
+% 0 1 0 05e572bbe15e1977122abffe7df87936
+
+% 0 1 0 18eafb32caed3dd50f976e787bd035ca
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 2 0 13037c5286547bb40682d9e33719a5da
++ [El algoritmo en el tipo](../../soundness/modules/hashing.md#the-algorithm-in-the-type) dice cómo
++ las claves y las firmas siguen la misma regla.

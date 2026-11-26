@@ -1,0 +1,58 @@
+orthant 2 language
+
+@ 0 1 0 0e09907b4c4c1a851603c49a3c00c974
++ # Une méthode Kotlin mal orthographiée, avec la graphie de Kotlin suggérée
+
+@ 0 3 0 15484c2ea2989b6e0e24d86215629093
++ Un membre qu'une classe Kotlin ne déclare pas est une erreur de compilation en Scala. Quand le
++ nom est proche d'un nom que la classe déclare, l'erreur le suggère, avec la signature écrite
++ comme l'écrit Kotlin.
+
+% 2 1 0 038f9a1094ab747c065f3e1b27284025
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 0af8571b110d4ab700fc412d4d3aaabe
++   label Une méthode que la Regex de Kotlin n'a pas
+
+% 0 1 0 1477c34ff41c7c99183443e1d3238ae1
+
+% 1 1 0 0960c596329e4eb20a0b442aaa85c43a
+
+% 2 1 0 1ca3c0c948d2173b1fa22465bd6b56f2
+
+% 0 1 0 1fd9dcc87c280b22196cffdee453b6fd
+
+% 1 1 0 154f5483101bb4801e2dfc34f2a6fcd8
+
+@ 0 2 0 1ed84255d70d17c313a121f0e986dbd7
++   label Celle qu'elle a
++   highlight matches  déclarée par Kotlin comme matches(input: CharSequence): Boolean
+
+% 1 1 0 1c3f01958dc4352e15d9791032a108be
+
+% 2 1 0 161402bb749eb0bf0a8c5c987907584e
+
+% 0 1 0 1c89a0bc815f7e851f8f2bc30efb0fae
+
+% 1 1 0 02f0a1382729ca771ca182559cf24d0e
+
+% 1 1 0 136d267ff733a60e0f6246170d49df5f
+
+% 2 1 0 1525a46c87e9e0571e7d21b8e7c42b7a
+
+% 0 1 0 08a86cbdc9b8cb0109ed8ce5b435ce67
+
+% 1 1 0 0cd6459499a6bd5203d659b3bcc1b6aa
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 0 1 0 06a49fd319f5819b1812c771e6c360a5
+
+% 1 1 0 149341e5456745411345784b432668bb
+
+@ 0 2 0 03e302a2e928a896026286c5a4a791e2
++ [Façades Kotlin et Java](../../soundness/modules/foreign-interop.md#kotlin-and-java-facades)
++ décrit comment une façade trouve ses membres.

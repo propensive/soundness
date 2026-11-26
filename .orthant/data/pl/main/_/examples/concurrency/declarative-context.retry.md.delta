@@ -1,0 +1,60 @@
+orthant 2 language
+
+@ 0 1 0 1058f1e161650ff5154edfa57f6f8c9e
++ # Ponawianie bez pętli
+
+@ 0 3 0 099e801f59a3a93401f36511b7cb59d3
++ Praca, która nie powiodła się z przemijającej przyczyny, jest ponawiana przez `retry`, a
++ harmonogramu ponowień nie zapisuje się w miejscu wywołania. Jest wartością w zasięgu, wybraną
++ importem, więc blok mówi tylko, które niepowodzenia są warte kolejnej próby.
+
+% 0 1 0 12705ff5e291290d17fbc8389d59ef4a
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+@ 0 1 0 08f03c3fbf72adbf04b3a04ad973c6ba
++ alternative Dziesięć razy, z wydłużaniem odstępów
+
+% 0 1 0 127df54cec43da3d001b61d45ea6d414
+
+% 1 1 0 1a11c160320b6986024fd298298f640e
+
+% 0 1 0 1e584f3ed9c28922132a771abd922a74
+
+% 1 1 0 1c187e3b4b40e78715cb9dc3e4df84f7
+
+% 3 1 0 1890b27d15a0f75f1fdea8e809efef6a
+
+% 5 1 0 18f22e47a4891aa9133672dab04cd5d5
+
+% 6 1 0 177ea56896fb2293025bbcf198e72248
+
+% 7 1 0 066eeba25ab8e8d40b0df6a8a30c9766
+
+@ 0 1 0 0f990bdbd33ce2d01f785ddc00e4cf23
++ alternative Pięć razy, od razu
+
+% 0 1 0 07a1085ba4f67e3116c544f920539e07
+
+% 1 1 0 1cbcc97f58d583280a11248d826823cd
+
+% 0 1 0 0607e46f17a2554113e90b90e6781f6b
+
+% 1 1 0 0b950c7572ba01700274c3b48d39c3b3
+
+% 3 1 0 1b7bab5d25adf1300f1355d0ec7a37d7
+
+% 5 1 0 1393db38f3609e2e15fad983d6c4b764
+
+% 6 1 0 0cda0ed0e4090b9b19a102b9c7eecdc2
+
+% 7 1 0 02c3ac5dee4ee2b916cc98be833faa4c
+
+% 0 1 0 18eafb32caed3dd50f976e787bd035ca
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 3 0 03ec958ef12d399c0d7769d04a9bcb4a
++ Przykład jest kompilowany, ale nie jest uruchamiany, ponieważ czekałby między próbami.
++ [Ponawianie](../../soundness/modules/concurrency.md#retrying) wymienia harmonogramy i mówi, co
++ się dzieje, gdy próby się wyczerpią.

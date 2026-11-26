@@ -1,0 +1,74 @@
+orthant 2 language
+
+@ 0 1 0 1e434f96bef11f350d8db7ea7cc75bb3
++ # Skompresowany strumień adresowany swoim skrótem
+
+@ 0 3 0 18dde0af14a8b7150610324d67b5bea1
++ Kompresja i haszowanie nic o sobie nie wiedzą, ale obie działają na strumieniu bajtów. Skompresowana
++ warstwa jest identyfikowana skrótem swojej skompresowanej postaci, w jednym wyrażeniu, a dane nigdy
++ nie są przechowywane między nimi.
+
+% 2 1 0 149839df07e28a52179f4fdf4957ee65
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 1986fad437833b8f1ab05e8e6609bb60
++   label Warstwa
+
+% 1 1 0 16040c1dcef7766f0534cd452be64e3e
+
+% 2 1 0 1f6bf164c707102b1c78645fa9b5f6be
+
+% 4 1 0 09fb3abe3e6f82251f8f17007c4fc2bf
+
+% 1 1 0 1b1671646302cb7d03f78a20cf0eba94
+
+@ 0 2 0 1d030c46ab5e2d010e015e58998be427
++   label Skompresowana
++   highlight compress[Gzip]  etap strumienia
+
+% 1 1 0 1291cdf34e17773606b58a4c96cde356
+
+% 2 1 0 0ea4bdad250e969b14b918c9a8a36a2c
+
+% 4 1 0 17ce10bd1c81f89b14b542c0507830c2
+
+% 5 1 0 1ec2e0cc5686930f040a69a20c91ef46
+
+% 1 1 0 0d38ddfd8d85368d1cd2f4ceaefc8cb6
+
+@ 0 2 0 153c7e995b2c1b571506afd4343d6af7
++   label I nazwana tym, co zawiera
++   highlight checksum[Sha2[256]]  haszowana w przelocie
+
+% 1 1 0 044d5eb8ceb65445061fcc461ae6e8f1
+
+% 2 1 0 1f3379a72b77e448104162871127e44a
+
+% 4 1 0 1e7c0b0eeb22a134070c72703bce1bb9
+
+% 5 1 0 145f84dc69cb4eb900ba85c8ed790fc3
+
+% 0 1 0 1a58060e13a53f4318de7d89d53d556a
+
+% 1 1 0 07f2e9c908b68d201d6ea38730a87231
+
+% 1 1 0 136d267ff733a60e0f6246170d49df5f
+
+% 2 1 0 1525a46c87e9e0571e7d21b8e7c42b7a
+
+% 0 1 0 08a86cbdc9b8cb0109ed8ce5b435ce67
+
+% 1 1 0 0cd6459499a6bd5203d659b3bcc1b6aa
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 0 1 0 1e3840325dffa0140f7627940773d9bf
+
+% 1 1 0 14856f7b53142335140e74a403505718
+
+@ 0 2 0 0e99b676c85e16771ba7ec8fb56b8134
++ [Haszowanie strumienia](../../soundness/modules/hashing.md#hashing-a-stream) opisuje skrót, a
++ [składalność](../../philosophy/composability.md) – dlaczego między nimi nie stoi żaden adapter.

@@ -1,0 +1,64 @@
+orthant 2 language
+
+@ 0 1 0 193cd7ad316f1ec705b30a8ab7ad1e96
++ # プラットフォーム上のパス
+
+@ 0 2 0 05f6828293da00e11f936c9b7a5fb45f
++ `Path on Linux` と `Path on Windows` は別の型であり、
++ それぞれ書かれたとおりに読める。ドライブから下るパスは Linux 上のパスではなく、
++ コンパイラもそうは見なさない。
+
+% 2 1 0 0b299d6ad3cabbd6157efba3963b47fc
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 0f6af5c6857356cf0b494c3793128a8f
++   label Linux 上のドライブ
+
+% 0 1 0 1477c34ff41c7c99183443e1d3238ae1
+
+% 1 1 0 0960c596329e4eb20a0b442aaa85c43a
+
+% 0 1 0 0a164053fda156df0897a9fbb946f7b0
+
+% 1 1 0 16636f75ab05ff2b16597d8ce0b3bc98
+
+@ 0 2 0 1c7c74bac40b364b1dc6c3d2905b1509
++   label Windows 上のドライブ
++   highlight on..Windows  ドライブのプラットフォーム
+
+% 1 1 0 15d9c343b6707e0702b117a48faaa270
+
+% 0 1 0 1c2aee6b1c265ce90d6cba2610f2941a
+
+% 1 1 0 18615a4b9fefe76315d6aac70aa2dc1e
+
+@ 0 2 0 0dbda0658cd295a40c51da5a6249c473
++   label Linux 上のルート
++   highlight on..Linux  このルートのプラットフォーム
+
+% 1 1 0 1fc9c2106ee7dafe00f48a8251200455
+
+% 0 1 0 0ee1f79cc0e8f9dd0b644653e579e760
+
+% 1 1 0 0a695c2a4646e67e1d87ae8e9ebed242
+
+% 1 1 0 136d267ff733a60e0f6246170d49df5f
+
+% 2 1 0 1525a46c87e9e0571e7d21b8e7c42b7a
+
+% 0 1 0 08a86cbdc9b8cb0109ed8ce5b435ce67
+
+% 1 1 0 0cd6459499a6bd5203d659b3bcc1b6aa
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 0 1 0 0fb34f460f10f5fe14d05242077ef73d
+
+% 1 1 0 15790100e6dd9de703c7eb5cb97b526a
+
+@ 0 2 0 11a8b41c1bda76531daa3c812a4f59af
++ [プラットフォーム](../../soundness/modules/paths.md#platforms)に各プラットフォームの説明が、
++ [中置型](../../philosophy/infix-types.md)にこうした型を作る語の説明がある。

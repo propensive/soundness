@@ -1,0 +1,70 @@
+orthant 2 language
+
+@ 0 1 0 1307a62430a596b709af48e5349cb56e
++ # O que foi encontrado, e o que se queria
+
+@ 0 3 0 0c9efa4c5b94e5e711194112e4f5e869
++ Um `Json.Error` carrega o seu motivo como um valor. Para um valor do tipo errado, o motivo contém o
++ tipo encontrado e o tipo desejado, e um handler os lê de um padrão, sem nenhuma mensagem para
++ analisar.
+
+% 2 1 0 10d93fd930bdbbab1b33639fd2327ee7
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 03677f54c8193d90056014a3eac7f764
++   label Qualquer falha, tratada da mesma forma
+
+% 1 1 0 106950c606bd133709d051a5742122fe
+
+% 1 1 0 1d5c96d10e81b13217bdd20905ca9429
+
+% 2 1 0 0db432dbed95b0f80e54b4e95038cacd
+
+% 0 1 0 012e7d517a468b5700697dedbad4d200
+
+% 1 1 0 1ce3ef22aca0f4241270392ffafcba1f
+
+% 1 1 0 0f1020f50164e80b1a662a90c01afeb2
+
+@ 0 2 0 122354babce46b3b1e13bcefcd0afae8
++   label Os dois tipos, tirados do motivo
++   highlight NotType(found..wanted)  ambos são valores de Json.Primitive
+
+% 1 1 0 0733e02f4f21475d04493fe19f3e341d
+
+% 0 1 0 19fd72dee017628605d67c8ef8c1f849
+
+% 1 1 0 023223eec52eaac91c07bc13e11efc85
+
+% 2 1 0 1b63c079c764c95b03c8c226021bfd52
+
+% 0 1 0 1bf59c1201da383f1566d50cdd56c6d7
+
+% 0 1 0 0e30897b3bfab396103442dabb509ecc
+
+% 1 1 0 1b6d19c2bd2d0b620de2903fdcdc2222
+
+% 1 1 0 135064370e2df0e815db9d9f6255f0a2
+
+% 1 1 0 136d267ff733a60e0f6246170d49df5f
+
+% 2 1 0 1525a46c87e9e0571e7d21b8e7c42b7a
+
+% 0 1 0 08a86cbdc9b8cb0109ed8ce5b435ce67
+
+% 1 1 0 0cd6459499a6bd5203d659b3bcc1b6aa
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 0 1 0 0922b64cf76b80d41e6e96a3087cde1a
+
+% 0 1 0 0065a2faaca1b7a700cb04d776b2142b
+
+% 1 1 0 1b66340dd50f16440a926a09fd526546
+
+@ 0 2 0 1e7698b01a944dce0e238c93e9e135b0
++ [Erros](../../soundness/modules/json.md#errors) lista os motivos, e [erros
++ expressivos](../../philosophy/expressive-errors.md) diz por que eles são valores.

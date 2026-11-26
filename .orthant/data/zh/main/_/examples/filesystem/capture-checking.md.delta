@@ -1,0 +1,65 @@
+orthant 2 language
+
+@ 0 1 0 09a0fb1965b3ad321c7ad16c3d1e050e
++ # 文件的句柄留在打开它的块内
+
+@ 0 3 0 056b648eaeb6461817983ba62cd58a52
++ `open` 把句柄借给一个块，并在块结束时关闭文件。在那之后仍持有句柄的函数会从已关闭的描述符读取，因此编译器不让句柄出去。块读入内存的内容是普通的值，可以自由离开。
+
+% 0 1 0 12705ff5e291290d17fbc8389d59ef4a
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 0 1 0 05379442125b483c0fa7601737add2cc
+
+% 1 1 0 01df03af649144fc135e9cf4a153349c
+
+@ 0 1 0 0d1e0ec21726da5e1cefe62ee5f6e062
++   label 一个会在文件关闭后读取的函数
+
+% 0 1 0 1477c34ff41c7c99183443e1d3238ae1
+
+@ 0 1 0 0a18d3985b227a451212bb0682fd30d1
++   highlight handle.stream.read[Text]  会在函数被调用时读取
+
+% 1 1 0 1dda4477923ed60f007c3e578e123842
+
+% 2 1 0 0162e778fb52fda50128316cfd719d91
+
+% 3 1 0 0585533864439b1d171610465cd7bceb
+
+% 4 1 0 0a5afd448a78c04b1406f102e4b72895
+
+% 6 1 0 15f6792832993ca0070e2d31a75fa5b2
+
+% 0 1 0 0b614259fa91707402054d7f8fe543f5
+
+% 0 1 0 00b9aa70eafe3c77008990ccb5e804fa
+
+% 1 1 0 162df6dab0cf2cf708966d95b16bdaf8
+
+@ 0 1 0 0bebc54eb0244d8004ecb95774ba5047
++   label 文本，在文件打开期间读取
+
+% 0 1 0 007899bc84012fb70cdb95778ea6667d
+
+% 1 1 0 08a97702eeff0ab505c6c5699c34d8ed
+
+% 2 1 0 150722bc067f4ad401191c95f7a9f6f8
+
+% 3 1 0 17a11000d63a6bb900a332286aac973a
+
+% 4 1 0 12f49187f3d7fed51280f961f9853cfc
+
+% 6 1 0 1b44fa8b6cdbc3731e831d28215db843
+
+% 0 1 0 012e8a04ddba3b050366cef7616ad897
+
+% 0 1 0 110732935579a8ee167c5a1c9854dbb2
+
+% 0 1 0 18eafb32caed3dd50f976e787bd035ca
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 4 0 1c6a04c5f28400d01f32ea7b8322a77c
++ 本示例只编译，不运行。[读取与写入](../../soundness/modules/filesystem.md#reading-and-writing)介绍了句柄及其授权，[定界作用域](../../philosophy/delimited-scopes.md)介绍了每个 `open` 都具有的形状。

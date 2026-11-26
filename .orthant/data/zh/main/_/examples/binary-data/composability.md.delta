@@ -1,0 +1,97 @@
+orthant 2 language
+
+@ 0 1 0 12f4f6103df4846d076cf2ed596aa34f
++ # 打包后以十六进制写出的记录
+
+@ 0 3 0 1e7d84fc9b7b0ceb0cd0ccea58a887a5
++ `pack` 给出记录的字节，而字节正是基数编码所写出的内容。一个值只需一个表达式就能从 case class 变成其线上格式的十六进制形式，再用另一个表达式变回来。
+
+% 2 1 0 1bd466003d27266415656e8cda3fb15e
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 0b0b1d50b670bd6a1f912be8b187bf3f
++   label 一条记录
+
+% 1 1 0 02734407289a06fd152b6580d6bd345b
+
+% 2 1 0 09103dee3d93e43a08f66a41d18999ae
+
+% 3 1 0 01479657ecc7a1cd0f593f7e33432847
+
+% 5 1 0 1d158bc72efe5b761aebf8562c53620a
+
+% 7 1 0 1e25944e52f0b0401a83ea41e441ad6e
+
+% 8 1 0 1f8ab749064c59250afd31c75bab00ca
+
+% 10 1 0 0c6c9f65da4d4d4b06c7c47c38caf919
+
+% 1 1 0 1166e7bcb78f7c4d17b5e8b9c1697d60
+
+@ 0 2 0 040374f91756d17e1d636240066339b6
++   label 它的字节，以十六进制表示
++   highlight pack.serialize[Hex]  两个库，一个表达式
+
+% 1 1 0 0998a4711c43bff8191c653ad57f55c9
+
+% 2 1 0 0372952130c445601d07a0c863d17587
+
+% 3 1 0 18c4dea631cb27c010e73a283a880fd8
+
+% 5 1 0 088d553f96433ffd0f8e8df0cbed2a07
+
+% 7 1 0 14ee81d82ee5abe20a763ba394f4209d
+
+% 8 1 0 023a4568b09686e41d6f9b066cf09b1f
+
+% 10 1 0 1df34e264f179fb008eee6a17d9371bf
+
+% 11 1 0 1a52549125c84d720ca5ab8479833e1d
+
+% 1 1 0 1c15bbe26b5b8a10002aed47e918b6bd
+
+@ 0 2 0 1208d371de3dc77f0862cba9f3a33a6b
++   label 再从十六进制字面量得到记录
++   highlight hex"07800438"  在代码编译时检查
+
+% 1 1 0 0ef9fd03cd6a4d0419badaf911c0ebf7
+
+% 2 1 0 020ce73d605f1f050b0a54d235f0e70b
+
+% 3 1 0 0fcd3bd34d77a8a315a54cada0a92aa7
+
+% 5 1 0 1d78ff3c160686651a7cb291bcbe9fa4
+
+% 7 1 0 0c4e69194fca8da91c464a72396742d2
+
+% 8 1 0 05d3bd1e212b9253146f2f59ceca429e
+
+% 10 1 0 017dcee459491611020314c2630308e7
+
+% 11 1 0 19729d9ceb0a568f18bab55a61f5b35b
+
+% 0 1 0 01cb35d35fb349ae19a55e079041a2b9
+
+% 1 1 0 1936178c969f1e5c17baad4a0c60484a
+
+% 1 1 0 136d267ff733a60e0f6246170d49df5f
+
+% 2 1 0 1525a46c87e9e0571e7d21b8e7c42b7a
+
+% 0 1 0 08a86cbdc9b8cb0109ed8ce5b435ce67
+
+% 1 1 0 0cd6459499a6bd5203d659b3bcc1b6aa
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 0 1 0 17cb2f81c80b1f870c596c159a55cb99
+
+% 0 1 0 0e2f7fed37c1f61d158c6b64238f44eb
+
+% 1 1 0 197609082d2e05c0184d7cc661499afe
+
+@ 0 2 0 1eea77e2b00f48711f74f4e8a69733b7
++ [写入](../../soundness/modules/binary-data.md#writing)介绍了 `pack`，[基数编码](../../soundness/modules/base-encoding.md)则介绍了各种字母表。

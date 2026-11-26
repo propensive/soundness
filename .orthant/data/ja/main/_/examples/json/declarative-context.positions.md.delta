@@ -1,0 +1,62 @@
+orthant 2 language
+
+@ 0 1 0 1f9e0413d17ba7e11afa565481f840bf
++ # 位置情報は、求めるプログラムにだけ
+
+@ 0 3 0 0d68b09338f2c20903845db5bef34629
++ すべての値の位置を記録するパーサは、ほとんどのプログラムが使わない仕事をすることになる。
++ `parsing.trackPositions`がスコープになければ解析は位置を保持せず、それがあれば、以前は何も返さなかっ
++ た同じ`locate`が値の行を返す。
+
+% 2 1 0 04c9377f8deeecac1a70ec044e7c23fc
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 16aee27f79bc9c14090f203757572033
++   label 通常の解析
+
+% 1 1 0 0bce75e4353af83b1b5c4edad931deaf
+
+% 2 1 0 04594a1ccbd616d60d562b0667dc28ae
+
+% 2 1 0 18f361fcdd77b431081bbfb781664fa8
+
+% 3 1 0 1e4793b732093af910117ff45d738314
+
+% 1 1 0 1c92e0bb33fb09eb07dc3ef96d160137
+
+@ 0 2 0 0e4a88a7e52cbcea18d261c7212f221a
++   label 位置を追跡する解析
++   highlight parsing.trackPositions  readが各値の範囲を記録する
+
+% 1 1 0 1d426edc5257491e15fa078b1ff7e0a0
+
+% 2 1 0 19a19b52155a214f0000812a9b768a45
+
+% 0 1 0 1cdc57769a14db061e8c86d90120bb16
+
+% 2 1 0 0f9b8cb5ec09a75a1a2b830a551565b1
+
+% 3 1 0 0f33ba2606c936a00d00348578638e7e
+
+% 1 1 0 00d323fd40c412c90351b2080f50f327
+
+% 1 1 0 136d267ff733a60e0f6246170d49df5f
+
+% 2 1 0 1525a46c87e9e0571e7d21b8e7c42b7a
+
+% 0 1 0 08a86cbdc9b8cb0109ed8ce5b435ce67
+
+% 1 1 0 0cd6459499a6bd5203d659b3bcc1b6aa
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 0 1 0 0ad483d2090815d6057dad00d994515b
+
+% 1 1 0 093f8c37db6c21c916cd5364881f4d31
+
+@ 0 3 0 00c1f28ec4142e921ec44ba36e4af8c8
++ インポートがなければ、`line`は`Unset`である。位置が何を含むかは
++ [ソース位置](../../soundness/modules/json.md#source-positions)で述べる。

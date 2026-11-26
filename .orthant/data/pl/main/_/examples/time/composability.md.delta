@@ -1,0 +1,88 @@
+orthant 2 language
+
+@ 0 1 0 0f39b4f8cc3e036e02887a6bd96f7e5f
++ # Prędkość z dwóch chwil
+
+@ 0 2 0 1d144efcdd652576042ea9785d7008c8
++ Różnica między dwiema chwilami jest wielkością wyrażoną w sekundach, tego samego typu, z którym
++ pracuje biblioteka jednostek fizycznych. Odległość podzielona przez nią jest prędkością, bez żadnego
++ ręcznego przeliczania.
+
+% 2 1 0 19ae2126e9f610d90eb7e41915452676
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 15a2c6fc8eef9647160273e45a07fdc6
++   label Dwie chwile
+
+% 1 1 0 01f2f36758ac4b3e0b31e72158a3ecf5
+
+% 2 1 0 15657f002a2b52251d518ed2fab35575
+
+% 4 1 0 120eef938073b9bb1144494075c5a187
+
+% 5 1 0 0b2285e2959639331017493ea51edf43
+
+% 1 1 0 132c58942d8ccc1503388ab622618452
+
+@ 0 2 0 052b31eca3846209075bb5b6e78ade88
++   label Czas między nimi
++   highlight finish..start  wielkość w sekundach
+
+% 0 1 0 1accf43fe92797631dc8da9a374d03c4
+
+% 1 1 0 037aa7a803bd9eed098f42f0237d9298
+
+% 2 1 0 0cac27135f25425b13dfd8354f51ea18
+
+% 4 1 0 0a4a2c15c2b5b0c31c73e6eba657154f
+
+% 5 1 0 0c760f986d13d73f1040279d8d8950ba
+
+% 7 1 0 1cec8a4acc9ea40c02bc7d0d344cef24
+
+% 1 1 0 110daf4cb13ab726032b4f30a0c61074
+
+@ 0 2 0 16c9514b97f9165a05cb0b4ade707895
++   label Odległość podzielona przez niego
++   highlight 100*Metre/elapsed  metry na sekundę
+
+% 1 1 0 19165cde0f9f7b321cc34efb324f3bdb
+
+% 2 1 0 0eac52556506202e1f91e24a7e0ffbc4
+
+% 4 1 0 1f62b4323abbca021cc18e74a02349ab
+
+% 5 1 0 038ee6d12cb3bfb8137dc04d5941a4a8
+
+% 7 1 0 068852c0b538d50e0f2a3e312e1c3db8
+
+% 0 1 0 08cfc03ef1abdeea1711a462a1f7e0dc
+
+% 1 1 0 123d280ae21d084206f28224180d3389
+
+% 1 1 0 136d267ff733a60e0f6246170d49df5f
+
+% 2 1 0 1525a46c87e9e0571e7d21b8e7c42b7a
+
+% 0 1 0 08a86cbdc9b8cb0109ed8ce5b435ce67
+
+% 1 1 0 0cd6459499a6bd5203d659b3bcc1b6aa
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 0 1 0 1ff46eadb86ffabc103c1dc6d8e7c8b4
+
+% 0 1 0 0f685a1692957b34199a57cbd3d48936
+
+% 0 1 0 08696c30ff91869c180f872ca84eb83f
+
+% 1 1 0 18c1ddf875e6039813b1dcb31fcc0d8b
+
+@ 0 4 0 18acd05bc6e497720d583cbd1f85f946
++ [Czasy trwania i okresy](../../soundness/modules/time.md#durations-and-timespans) mówi, dlaczego
++ czas trwania jest wielkością, a liczba miesięcy nie, a
++ [wielkości](../../soundness/modules/quantities.md#arithmetic-and-dimensions) – jak łączą się
++ jednostki.

@@ -1,0 +1,24 @@
+orthant 2 language
+
+! The objection to immutability is always the same: changing one field deep inside a
+! structure means rebuilding every layer above it. That is true, and it is a problem of
+! syntax rather than of semantics — so Soundness solves it with syntax. A
+! [lens](../en/modules/optics.md) takes the update written as an ordinary path assignment and
+! does the rebuilding:
+@ 0 5 0 1f52db954f55f5811eeec5c28a446ede
++ Zarzut wobec niemutowalności jest zawsze ten sam: zmiana jednego pola głęboko w strukturze
++ oznacza odbudowę każdej warstwy nad nim. To prawda, ale jest to problem składni, a nie
++ semantyki – więc Soundness rozwiązuje go składnią. [Soczewka](/doc/soundness/modules/optics.md)
++ przyjmuje aktualizację zapisaną jako zwykłe przypisanie do ścieżki i wykonuje odbudowę:
+
+! A **`Canvas`**, obtained by opening a [raster](../en/modules/images.md) for writing, mutates
+! pixels in place — because generating a large image one pixel-function call at a time is
+! the wrong shape for a drawing algorithm. The mutation is scoped to the `open` block and
+! gated on the `Write` grant, and `snapshot` takes an independent copy for anything that
+! must outlive it.
+@ 0 5 0 13b944085c973784002ec33f12ef5462
++ **`Canvas`**, uzyskiwane przez otwarcie [rastra](/doc/soundness/modules/images.md) do zapisu, mutuje
++ piksele w miejscu – ponieważ generowanie dużego obrazu po jednym wywołaniu funkcji na piksel
++ to zły kształt dla algorytmu rysowania. Mutacja jest ograniczona do bloku `open` i
++ uwarunkowana uprawnieniem `Write`, a `snapshot` wykonuje niezależną kopię dla wszystkiego, co
++ musi go przeżyć.

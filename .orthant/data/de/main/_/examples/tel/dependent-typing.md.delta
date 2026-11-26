@@ -1,0 +1,60 @@
+orthant 2 language
+
+@ 0 1 0 09aa91ab5222e08915842542e23767b7
++ # Ein Image, das seinen Typ kennt
+
+@ 0 3 0 12a5d9dd26ed00cf1810db2ed1c67fff
++ RaTEL legt ein Dokument als Tabellen an, die an Ort und Stelle gelesen werden. Das Image eines
++ Werts, ohne Angabe eines Schemas erzeugt, wird unter dem Schema des Typs des Werts angelegt, und
++ dieser Typ ist Teil seines eigenen: Ein `Ratel of Playbill` ist kein `Ratel of` irgendetwas anderem.
+
+% 0 1 0 12705ff5e291290d17fbc8389d59ef4a
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 2 0 0ecfba41b60791241814aa78c0736124
++   label Ein Image eines Theaterzettels
++   highlight Ratel..Playbill  das Schema, im Typ
+
+% 1 1 0 0a4b9f3e2abd4e1c1cd7175ee2475132
+
+% 2 1 0 0c8a2966182d45e81a915e6230d89d25
+
+% 4 1 0 19257a077876e1f20c67d857d69faed2
+
+% 5 1 0 103aad9fb282311c0859588899156c31
+
+% 2 1 0 0ba0e0de88b9c1c919c83d627d2de44d
+
+% 0 1 0 05c9f60bc68f3484087c916698e24c09
+
+% 1 1 0 00d8e81c865b7ace06bdd0150185c779
+
+@ 0 1 0 04a361c62f654282089a107fc22f6c5b
++   label Dasselbe Image, für einen anderen Typ gehalten
+
+% 0 1 0 1477c34ff41c7c99183443e1d3238ae1
+
+% 1 1 0 0960c596329e4eb20a0b442aaa85c43a
+
+% 2 1 0 052b5d53c564213f191f74be413a911f
+
+% 4 1 0 1ead2b841c99168c12f87e429498e0a1
+
+% 5 1 0 0450647bcd8eea5619e24ce0063eb050
+
+% 0 1 0 05bd3f481f51b20f10188bdffa49e77a
+
+% 2 1 0 0e425f9bc1206d6a0fdcde999fddaad8
+
+% 0 1 0 07d8837121cab7c30d5273559e58b48c
+
+% 0 1 0 18eafb32caed3dd50f976e787bd035ca
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 2 0 0602e3badc851acd0ef0004ec6e8a277
++ [RaTEL](../../soundness/modules/tel.md#ratel) beschreibt die Annotationen, die einem Image seine
++ Indizes geben.

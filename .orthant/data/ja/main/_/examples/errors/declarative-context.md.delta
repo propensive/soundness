@@ -1,0 +1,68 @@
+orthant 2 language
+
+@ 0 1 0 10e4270714cef4000ca76312d559b34c
++ # エラーがスタックトレースを記録するかどうか
+
+@ 0 3 0 159e5f4f7f2265400d38091abbaace53
++ エラーを構築するには、スコープ内に `Diagnostics` が必要であり、それがスタックトレースを記録するか
++ どうかを決める。その選択はインポートであり、スコープが構築するすべてのエラーについて一度だけ行われ、
++ 何も仮定されない。
+
+% 0 1 0 12705ff5e291290d17fbc8389d59ef4a
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 07c77345b94df58f135a44f32e9aebbf
++   label 選択がされていない
+
+% 0 1 0 1477c34ff41c7c99183443e1d3238ae1
+
+% 1 1 0 0960c596329e4eb20a0b442aaa85c43a
+
+% 1 1 0 110cda0c4cac5fc013bdae3a542c48e1
+
+% 2 1 0 0e595d6eab668da505c2b77e1a9e9fcc
+
+% 4 1 0 1024de3049b4d3bd19a7bdded4b88945
+
+% 5 1 0 1cf5f4114cc5e225159404a6b45c79e0
+
+@ 0 2 0 0cbf3085bcd6855b08b80da45412b80a
++   label デバッグのためのトレース
++   highlight errorDiagnostics.stackTracesDiagnostics  すべてのエラーが作られた場所を記録する
+
+% 1 1 0 1c0742e1ccd665a10bef9ed2ad2c7605
+
+% 0 1 0 0116a331765d22681fde66f1f935428d
+
+% 2 1 0 157983f23aaa21770fa5dc6e236bb050
+
+% 3 1 0 16267d4ca443c23104e6be7c52e21938
+
+% 5 1 0 1bc910455e934cb81060ef942e473311
+
+% 5 1 0 0f4d0e239851b361013a13081e660af4
+
+@ 0 2 0 1d85763581f95bc41cbb10ffdbe40fbe
++   label エラーが想定される場所でのトレースなし
++   highlight errorDiagnostics.emptyDiagnostics  エラーはそのフィールドだけになる
+
+% 1 1 0 11afa558fc8361a51d85555e94fa9745
+
+% 0 1 0 0503e4bf306595d50c837a6ab2678906
+
+% 2 1 0 018ffdcba02c460212f0dcdf480c01fe
+
+% 3 1 0 1aab5321816184b90986aba875fb2f08
+
+% 5 1 0 0fc0e4d638dbc2c511b07d41d2348d44
+
+% 0 1 0 18eafb32caed3dd50f976e787bd035ca
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 2 0 04d3e113a850fc071ae1470d2ed3102c
++ [診断](../../soundness/modules/errors.md#diagnostics)は、トレースのないエラーがほかのどんな値とも
++ 同じ代価しかかからない理由を説明する。

@@ -1,0 +1,53 @@
+orthant 2 language
+
+@ 0 1 0 1e100b3a392e78f61e44864a9e6ec29b
++ # 编译器已读过的标识符
+
+@ 0 2 0 10c4d6d6f24c5e0e1fc1d4c69f2c7e71
++ 写在源代码中的 UUID 在代码编译时被解析。含有非十六进制数字的 UUID 并不是一个稍后才失败的 `Uuid`，因为它根本不会成为 `Uuid`。
+
+% 2 1 0 0a9f6f002c4d5f2b03422fe74a1d0544
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 016afdbbc5e15ad80d98e56148c23bba
++   label 两个不是数字的字母
+
+% 0 1 0 1477c34ff41c7c99183443e1d3238ae1
+
+% 1 1 0 0960c596329e4eb20a0b442aaa85c43a
+
+% 0 1 0 117e1ba9f1f63eae093491721317212c
+
+% 1 1 0 0377a208a77aaab60d5e6748c51620f5
+
+@ 0 2 0 1c2f8768252003521f35ba57fe13dc7b
++   label 三十二位数字
++   highlight 8c  十六进制数字
+
+% 1 1 0 00dc6a66336a80501c8b4d03abd4f7c0
+
+% 0 1 0 054fd5301622db971b14d70d33b552ba
+
+% 1 1 0 13a46fcc5e2a84b004f4ba18fe645000
+
+% 1 1 0 136d267ff733a60e0f6246170d49df5f
+
+% 2 1 0 1525a46c87e9e0571e7d21b8e7c42b7a
+
+% 0 1 0 08a86cbdc9b8cb0109ed8ce5b435ce67
+
+% 1 1 0 0cd6459499a6bd5203d659b3bcc1b6aa
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 0 1 0 0e5caaffa224f67f1107113c4da69147
+
+% 0 1 0 158a74144c5dedae19644f6bbe17ab39
+
+% 1 1 0 168fc182556325291fb515ab681da8c7
+
+@ 0 3 0 0fc1e77dd5f07d4e1537143eb2b67bf2
++ [字面量](../../soundness/modules/uuid.md#literals)给出了其余内容，[构造即安全](../../philosophy/safety-by-construction.md)则说明了值为何要在构造之处检查。

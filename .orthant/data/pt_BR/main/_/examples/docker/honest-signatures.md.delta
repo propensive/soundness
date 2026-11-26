@@ -1,0 +1,68 @@
+orthant 2 language
+
+@ 0 1 0 1c4a09ce14fd2163086d7cb10d7f1959
++ # Uma chamada ao daemon pode esperar
+
+@ 0 3 0 153acb00ad2cfa8b11e8123dad04348d
++ Todo método de um cliente containerd é uma requisição por um socket, que suspende a tarefa que a
++ faz. Cada um pede um `Monitor`, então um método que chama o daemon também precisa pedir um, e só
++ pode ser chamado de dentro de um escopo supervisionado.
+
+% 0 1 0 12705ff5e291290d17fbc8389d59ef4a
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 17ffe115a8a488500afdab8b77a210f4
++   label Uma requisição, em um método que não pode esperar
+
+% 0 1 0 1477c34ff41c7c99183443e1d3238ae1
+
+% 1 1 0 0960c596329e4eb20a0b442aaa85c43a
+
+% 2 1 0 052b5d53c564213f191f74be413a911f
+
+% 0 1 0 18cc11b1811f402e0b8d042d13afdb06
+
+% 1 1 0 0db882c79f7da2f50e94771c0064933c
+
+@ 0 1 0 0384e4465d70f97514ab0c150da14727
++   label Um método que pode
+
+% 0 1 0 0ad1677b817fbbd61758c5807cf23dfc
+
+% 1 1 0 14455fb64e290781126a70014e2f29e0
+
+% 2 1 0 1c43999aae4b072804a30add842d1db5
+
+% 2 1 0 184ea366e1ab1155006b31a68638ff98
+
+% 3 1 0 0b4fd105518e813e0366249ac24579f8
+
+% 1 1 0 1d0365dc124d2f8403d34fc5e0574deb
+
+@ 0 1 0 0c52c0a2295f2bce0bb1cb04699a0fb9
++   label Chamado de um escopo supervisionado
+
+% 0 1 0 1acd59770eb867130b67a4d9e2a58dc8
+
+% 1 1 0 014b1aff7d3848991d96c0c54a45b1e0
+
+% 0 1 0 024d364b7946796a0dc926f2e95d5b53
+
+% 2 1 0 1bf7eb242d4eff570ab6dcb59e2e1a7d
+
+% 3 1 0 19a2d5804968a0f21051f1655118ed5d
+
+% 0 1 0 19c0cf4039e790ab1989e1513e29bdad
+
+% 0 1 0 18eafb32caed3dd50f976e787bd035ca
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 4 0 1fed056e6c17485b0fcbf07d91cfc334
++ O exemplo é compilado, e não é executado, já que precisa de um daemon em execução.
++ [Contêineres, imagens e namespaces](../../soundness/modules/docker.md#containers-images-and-namespaces)
++ lista as requisições, e [assinaturas honestas](../../philosophy/honest-signatures.md) explica por
++ que a espera é declarada.

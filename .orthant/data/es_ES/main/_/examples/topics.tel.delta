@@ -1,0 +1,779 @@
+orthant 2 language
+
+% 0 1 0 0f04ec4b9ac2d4270a232409219e1f6b
+
+@ 0 3 0 09d38134c38ae3ea0c5ae65e86c09897
++ # Los asuntos de los que puede tratar un ejemplo: el primero de sus dos aspectos, lo que un lector
++ # quiere hacer. Cada uno es un tutorial de doc/soundness/modules, por cuyo nombre de fichero se
++ # conoce, así que un ejemplo del asunto `json` es un fichero de doc/examples/json.
++ # doc/examples/readme.md explica la colección.
+
+% 0 1 0 0eb8a8159aa70a3912472085667a511e
+
+@ 0 3 0 0f4f020270072a770273acbb76138404
++   title  Texto
++   group  Fundamentos
++   summary  escribir, trocear, buscar y representar texto, con los tipos que son textuales
+
+% 0 1 0 1d01b1553f4846e50578408e38f94ea6
+
+@ 0 3 0 1701ab0e31d0c1570da47394656b8287
++   title  Caracteres
++   group  Fundamentos
++   summary  codificaciones, propiedades Unicode, anchuras y grupos de grafemas
+
+% 0 1 0 0272bba1045588461ba69b10f33d9e8c
+
+@ 0 3 0 0c5786640f5e4cb202873736ab17ca17
++   title  Números
++   group  Fundamentos
++   summary  aritmética comprobada, manipulación de bits, precisión, ordinales y números acotados
+
+% 0 1 0 0a1627bb049264960be6527d090ece5c
+
+@ 0 3 0 164bc31dc0fcaa561073e4fe88590083
++   title  Matemáticas
++   group  Fundamentos
++   summary  números complejos, vectores, matrices y permutaciones
+
+% 0 1 0 0c81a7c30d52021602b8d65b937442ae
+
+@ 0 3 0 179e9e9061140643189981e75263a886
++   title  Valores opcionales
++   group  Fundamentos
++   summary  la ausencia sin `Option`, y lo que cuesta
+
+% 0 1 0 1c01f2cecdfdb55e019a12001918830e
+
+@ 0 3 0 14b26ea04ecfec530ad1df354de3994b
++   title  Errores
++   group  Fundamentos
++   summary  declarar que el código puede fallar, elegir una estrategia y recuperarse
+
+% 0 1 0 108ff8460cd094f70db2890f5d737f0d
+
+@ 0 3 0 055bdc79e66a6fd803231d9846cfd933
++   title  Colecciones
++   group  Fundamentos
++   summary  los tipos de colección, y cómo pasan a la biblioteca estándar
+
+% 0 1 0 16e2227ea244b3891d91c175a7380c42
+
+@ 0 3 0 164b870d3632c79e15c40fd465f21574
++   title  Patrones
++   group  Fundamentos
++   summary  expresiones regulares y globs, comprobados mientras se compila el código
+
+% 0 1 0 12340d8c4e0968600df56f4b24170ea7
+
+@ 0 3 0 1b427de93fa0c7ff0417061d2220e1bd
++   title  Interpolación
++   group  Fundamentos
++   summary  escribir un interpolador propio
+
+% 0 1 0 0701ae72a3b4132c120479c58a3c489b
+
+@ 0 3 0 1bd7687be7e1e9b819e3215776ec4d82
++   title  Nombres
++   group  Fundamentos
++   summary  identificadores validados según un plano de reglas
+
+% 0 1 0 0d255505d0a581d805343faba2dce05a
+
+@ 0 3 0 174cb1192b7ef1e00c91fa880f4e717c
++   title  Decodificación
++   group  Fundamentos
++   summary  convertir texto en valores tipados, y extraerlos en patrones
+
+% 0 1 0 0615c8accccc325f09b7224cc350be5b
+
+@ 0 3 0 1e0fc6cd362570e00080f35452e228d7
++   title  Presentación
++   group  Fundamentos
++   summary  mostrar e inspeccionar valores
+
+% 0 1 0 15e172d4b684000a016956056eb37841
+
+@ 0 3 0 089c037d9bba41ee12d153246bae0ab4
++   title  Derivación
++   group  Fundamentos
++   summary  derivar instancias de clases de tipos para productos y sumas
+
+% 0 1 0 1637599dce832fef0cff0a14193263b8
+
+@ 0 3 0 12b617da723b137b060e3f582a153469
++   title  Anotaciones
++   group  Fundamentos
++   summary  leer anotaciones en tiempo de compilación
+
+% 0 1 0 0d62f65a9ca2faee19229455597828c6
+
+@ 0 3 0 0d373e85dd90c0530599a01af52cc6f3
++   title  Datos genéricos
++   group  Fundamentos
++   summary  una representación a través de la cual puede convertirse cualquier formato
+
+% 0 1 0 0858e97725acf5c609b77630d714c88d
+
+@ 0 3 0 18c748b6a29d40820620edec06acc94e
++   title  Registros
++   group  Fundamentos
++   summary  registros tipados a partir de una especificación
+
+% 0 1 0 1a5dce0399f7f8e2123d41471dafdf93
+
+@ 0 3 0 03be210758409cfc022ca27e8fa08d8d
++   title  Catálogos
++   group  Fundamentos
++   summary  un valor para cada campo de un tipo, accesible por su ruta
+
+% 0 1 0 140d0a07b0e1ec0b01f06426dbfe3e3b
+
+@ 0 3 0 1b2117be69bc245918b71296168dc0a1
++   title  Ópticas
++   group  Fundamentos
++   summary  actualizar valores inmutables anidados
+
+% 0 1 0 143b3cddf627f2ca0764190c83bd4ad8
+
+@ 0 3 0 0957fbc11579d6250044fc739859913f
++   title  Indicadores de bits
++   group  Fundamentos
++   summary  conjuntos de indicadores como bits
+
+% 0 1 0 13751e6579fba0841c8d88be0c75d18f
+
+@ 0 3 0 13af33449e89762a1e7b2e3b6c8c1554
++   title  Filtros de Bloom
++   group  Fundamentos
++   summary  pertenencia probabilística
+
+% 0 1 0 1ac5a931162aadb11cf4bd693f1340fd
+
+@ 0 3 0 16da761bc05e97dc1348a79ceeee222a
++   title  Caché
++   group  Fundamentos
++   summary  una caché LRU y valores que caducan
+
+% 0 1 0 18443d455e6fa91e0192444d02cf855d
+
+@ 0 3 0 13459b9056b76d990fdcd4feba81a546
++   title  UUID
++   group  Fundamentos
++   summary  generar, analizar y combinar UUID
+
+% 0 1 0 1366a193929a408b085e0413f3d8dad1
+
+@ 0 3 0 15be5f8d1496b81d085459c090e5ab33
++   title  Aleatoriedad
++   group  Fundamentos
++   summary  valores aleatorios, distribuciones y ejecuciones reproducibles
+
+% 0 1 0 0abb3c5ed92333591f2926f1a02869a6
+
+@ 0 3 0 17c0f608f356fb651864cd0159650cba
++   title  Versionado
++   group  Fundamentos
++   summary  versiones y manifiestos
+
+% 0 1 0 19514ffc833bc28c016c0fe1841f9ee5
+
+@ 0 3 0 130bcd4b7d059ae613c4bee759d94a29
++   title  Diferencias
++   group  Fundamentos
++   summary  diferencias, parches y evoluciones
+
+% 0 1 0 1534f8e453226c150b34091456f1255a
+
+@ 0 3 0 0463b2d9fa76ce18075c7b9f2580c785
++   title  Árboles
++   group  Fundamentos
++   summary  árboles y grafos dibujados como diagramas
+
+% 0 1 0 1b9f9e596e3aabd41c74d6d4cea0df73
+
+@ 0 3 0 154b69a549ef79b80b6fcc19997fc571
++   title  Grafos
++   group  Fundamentos
++   summary  construir, ordenar, plegar y dibujar grafos
+
+% 0 1 0 1b158962f25cc42315d4272fa1f4fca7
+
+% 0 1 0 0f80313e951b67bb0b30e5c5a523818a
+
+@ 0 2 0 1dd9f38ad7ec7d570a1e92cdef3a9483
++   group  Formatos de datos
++   summary  análisis, acceso tipado, construcción, esquemas y validación
+
+% 0 1 0 1ad30ea64151ce0016afaa6bab989812
+
+% 0 1 0 0f3db681e41071980c0c6901aec71cf5
+
+@ 0 2 0 0c35908e1cc45c051b55e66428f71f6c
++   group  Formatos de datos
++   summary  análisis, etiquetas, anclas y codificación
+
+% 0 1 0 096ec0d5af2fd82c06bb2d599372008b
+
+% 0 1 0 0cabb2e1dac35bb21c5c2b548fd1f536
+
+@ 0 2 0 174f96c571bf740a0670ad7f6af858a8
++   group  Formatos de datos
++   summary  nodos, espacios de nombres, XPath y esquemas
+
+% 0 1 0 0785cf048bf571031d40e76c6fc60248
+
+% 0 1 0 1bf076e02eb4149a129da60272f4872b
+
+@ 0 2 0 193207f5203016461391fcc39e9996fe
++   group  Formatos de datos
++   summary  codificación binaria al estilo de JSON, con etiquetas y notación de diagnóstico
+
+% 0 1 0 060cb6a8ebc16a3805b7fd4d7eea9044
+
+% 0 1 0 0949a8b51754edbe1b58fb487b4a84ef
+
+@ 0 2 0 04037c5d78d98bc30466558adba24f4c
++   group  Formatos de datos
++   summary  filas, cabeceras y formatos, decodificados a case classes
+
+% 0 1 0 0c9e5e979f915a28104af7e357b59c82
+
+% 0 1 0 0fdb50a3cb24ddae05ebf5de5415912e
+
+@ 0 2 0 016583147fdc136116a82911ae920e24
++   group  Formatos de datos
++   summary  el lenguaje de datos basado en la indentación, sus esquemas y su edición
+
+% 0 1 0 11b055dd83ab63941d02c9cc94e5c190
+
+% 0 1 0 07d376ef55a7fe1e08c40d0edf250894
+
+@ 0 2 0 14f1d971294c02430803ee8e8d1ff447
++   group  Formatos de datos
++   summary  mensajes, campos y compatibilidad
+
+% 0 1 0 0513a439af21df4109ec09159d1cfed4
+
+% 0 1 0 14bf27ea6609204704420fd376458b2e
+
+@ 0 2 0 11ca76876fb54aab0b7bcceec359de61
++   group  Formatos de datos
++   summary  analizar, representar y volver a escribir
+
+% 0 1 0 0d974f7f6d8945151aafd89d87667ae2
+
+@ 0 3 0 0c14172322f9fa1a1f094d7c473387ab
++   title  Codificación en base
++   group  Formatos de datos
++   summary  Base64, hexadecimal y otros alfabetos
+
+% 0 1 0 191cc62a860bf6df0e6ff662c09a8b99
+
+@ 0 3 0 1ed95a4748962bb312c8d839470ae4bd
++   title  Datos binarios
++   group  Formatos de datos
++   summary  describir, leer y escribir una disposición binaria
+
+% 0 1 0 0433104765992a0111f44d07944812b6
+
+@ 0 3 0 0483ff2905d7f8cf0cb46fbca4747a57
++   title  Compresión
++   group  Formatos de datos
++   summary  comprimir valores y flujos
+
+% 0 1 0 18c63631d7343b93011b689eb6a30f4a
+
+@ 0 3 0 125af4d709bb42c70770d7157f38e816
++   title  Archivos comprimidos
++   group  Formatos de datos
++   summary  ZIP, tar y ar
+
+% 0 1 0 00b93dc672bd6a6117bcea069bd54fdc
+
+% 0 1 0 10f3bff991f6e0b20abe435f06f00ef9
+
+@ 0 2 0 11db58c79a428c6f1a2b7791e1993d7e
++   group  Formatos de datos
++   summary  resúmenes, sumas de comprobación y hashing rápido
+
+% 0 1 0 002977d37e5e27ea027fb24c3a633613
+
+@ 0 3 0 0e73e9e892ff3c7e0456514a7476823a
++   title  Criptografía
++   group  Formatos de datos
++   summary  cifrado, firma, claves y certificados
+
+% 0 1 0 1e19a074d0ef7bb40a3544be9beaa786
+
+@ 0 3 0 121437fc5594fdf819a2d22303e8bdfe
++   title  Tipos de medio
++   group  Formatos de datos
++   summary  tipos de medio, y tipos que conocen el suyo
+
+% 0 1 0 1ad42231bf2be0821dd2149160de2700
+
+@ 0 3 0 08c4e9660553ea811f5d79852a21a40b
++   title  Tiempo
++   group  Tiempo, magnitudes y configuración regional
++   summary  fechas, horas, instantes, zonas, calendarios, recurrencias y formato
+
+% 0 1 0 00afcba6237e86ff1fdd35cd6ca1a894
+
+@ 0 3 0 0257ade0886ae9481c316a0dc36374d0
++   title  Magnitudes
++   group  Tiempo, magnitudes y configuración regional
++   summary  unidades, dimensiones y conversiones, comprobadas en tiempo de compilación
+
+% 0 1 0 1a4296c7cdf33f080fb539f34282f00d
+
+@ 0 3 0 0129bccfd6b1b9f2025e615ae1362538
++   title  Dinero
++   group  Tiempo, magnitudes y configuración regional
++   summary  importes, repartos, precios e impuestos
+
+% 0 1 0 0fa4c4877d343f720597aa8a6fec4996
+
+@ 0 3 0 0879a1e24a9aec770b6026847dcad496
++   title  Geografía
++   group  Tiempo, magnitudes y configuración regional
++   summary  ángulos, puntos cardinales y ubicaciones
+
+% 0 1 0 1dbc5f674e9ed98e1e82a493efcf68ae
+
+@ 0 3 0 120753b726c6707c0f2c61d6a89015fe
++   title  Química
++   group  Tiempo, magnitudes y configuración regional
++   summary  elementos, moléculas, fórmulas y ecuaciones
+
+% 0 1 0 04ace2a5e54e1e931c1a713048a6f899
+
+@ 0 3 0 08398b1839940bfc122656791c369d34
++   title  Colores
++   group  Tiempo, magnitudes y configuración regional
++   summary  espacios de color, mezcla, distancia y paletas
+
+% 0 1 0 11962576e0719c930e8285a069aae21c
+
+@ 0 3 0 0334cdf0810ca52b138ce1a23c64d1ac
++   title  Internacionalización
++   group  Tiempo, magnitudes y configuración regional
++   summary  traducciones y configuraciones regionales
+
+% 0 1 0 0ee931072fb311890db3447d4f1ebc64
+
+@ 0 3 0 0a24e3ca90dcccd00b2f2345184c317f
++   title  Separación silábica
++   group  Tiempo, magnitudes y configuración regional
++   summary  dividir palabras con guiones y en sílabas
+
+% 0 1 0 1fb678b5ac807122150b33a691769b3a
+
+@ 0 3 0 051f4ff1bb1dc7390e1b8af72568b21e
++   title  Rutas
++   group  Sistema de ficheros, procesos y entorno
++   summary  construir, relacionar y descomponer rutas
+
+% 0 1 0 1ece8d2e6f802d4807f9ebbe5ae58bee
+
+@ 0 3 0 18844bb2dc4ef4ab13b0255e87a28d45
++   title  Sistema de ficheros
++   group  Sistema de ficheros, procesos y entorno
++   summary  ficheros, directorios, acceso y vigilancia
+
+% 0 1 0 0d41b703c242d95a1b9080ff285a2cd5
+
+@ 0 3 0 011b07c4aef4b4201bedf3c61013c103
++   title  Entorno
++   group  Sistema de ficheros, procesos y entorno
++   summary  variables, propiedades, directorios y la máquina
+
+% 0 1 0 02793ab5f4cee40f1019c037cb1620e1
+
+@ 0 3 0 0e06c4cc66e835891a72684f3ddaf9f7
++   title  Flujos
++   group  Sistema de ficheros, procesos y entorno
++   summary  leer, escribir y componer flujos de datos
+
+% 0 1 0 1277d8c3dfb3dc101bdd0a0b8e3a005d
+
+@ 0 3 0 02bddbe2ca9d26b4068075ea536691da
++   title  Procesos
++   group  Sistema de ficheros, procesos y entorno
++   summary  definir, ejecutar y encadenar comandos
+
+% 0 1 0 09ec5f9a5cd543ba15deaca4bd099f75
+
+@ 0 3 0 02ce9af2c42d6fbf1beaa367c21e1902
++   title  Concurrencia
++   group  Sistema de ficheros, procesos y entorno
++   summary  tareas supervisadas, cancelación y promesas
+
+% 0 1 0 1e47d2fd9ea39da715e1923b97ea544a
+
+% 0 1 0 0e825530bddd13f908e2eb9403051367
+
+@ 0 2 0 0a20ea069f2d12c700f2a335b78d9ad1
++   group  Sistema de ficheros, procesos y entorno
++   summary  loggers, niveles y encaminamiento
+
+% 0 1 0 05bf0ed27f744d010f93acddf8d854dc
+
+% 0 1 0 1e45b378d5a496170b45f49736cb176a
+
+@ 0 2 0 11a5c9d7bba1df3003a1d9d569b8f2dc
++   group  Sistema de ficheros, procesos y entorno
++   summary  recursos, cargadores de clases y servicios
+
+% 0 1 0 0e00a4e1ed73dce40d904d76f9ce2d0c
+
+@ 0 3 0 09b11ad5037737ae128005c45b5ef062
++   title  Empaquetado
++   group  Sistema de ficheros, procesos y entorno
++   summary  JAR ligeros cuyas dependencias se obtienen por hash
+
+% 0 1 0 0baac6285cc847cc043466177d9e4ff7
+
+@ 0 3 0 0e2759daad72af2401f9a06ad4e2acc7
++   title  Demonios
++   group  Sistema de ficheros, procesos y entorno
++   summary  aplicaciones de larga duración con clientes rápidos
+
+% 0 1 0 0d5966c9e25eb20717c5cb72fc2342a4
+
+@ 0 3 0 090ecbebbe2d00fa0a96e31e0560571e
++   title  Contenedores
++   group  Sistema de ficheros, procesos y entorno
++   summary  construir y leer imágenes, y comunicarse con un demonio
+
+% 0 1 0 16679b4d95e94961045c7b877cbed978
+
+% 0 1 0 0191de6a75dde76c1d2ebf42e72d36d6
+
+@ 0 2 0 0ce78e96afc89cc80911f468a6fc3b10
++   group  Sistema de ficheros, procesos y entorno
++   summary  repositorios, commits, ramas y remotos
+
+% 0 1 0 1160ee9075da47d51c478d65ffcdb7c5
+
+% 0 1 0 149de09ca16dcb5b11e88b60fc2dac71
+
+@ 0 2 0 1c75b48b95f0b89d13df36cc05a828bf
++   group  Sistema de ficheros, procesos y entorno
++   summary  claves de host, transportes y comandos remotos
+
+% 0 1 0 07d87c1713bd9ade04338c9b3f308ce4
+
+@ 0 3 0 075362061782fd0f0efe49c454520967
++   title  Bases de datos
++   group  Sistema de ficheros, procesos y entorno
++   summary  declarar, almacenar y consultar
+
+% 0 1 0 0e642024263ce5390508dde8783e442e
+
+@ 0 3 0 12c35ce43c4259f70d0f34e1db288b19
++   title  Direcciones de red
++   group  Redes y la web
++   summary  URL, nombres de host, direcciones IP y puertos
+
+% 0 1 0 0481eaaac116a5b5098b1f55f50a2068
+
+% 0 1 0 14bc6cdde0501c061c8c78ae6024df84
+
+@ 0 2 0 0b3ea3ed47340b4e09a454bd27035540
++   group  Redes y la web
++   summary  servir, clientes, TLS y conversaciones
+
+% 0 1 0 110016ce1afc243907771ed3666f38ba
+
+@ 0 3 0 1587638806cd3a78128df9e4c4af01a1
++   title  Cliente HTTP
++   group  Redes y la web
++   summary  peticiones, cabeceras, cuerpos y sesiones
+
+% 0 1 0 0e83628be358630d1ccf715ca38ad3c1
+
+@ 0 3 0 1cd660472d674e6e036c2ab97b2a6409
++   title  Servidor HTTP
++   group  Redes y la web
++   summary  servidores, respuestas, WebSockets y HTTP/2
+
+% 0 1 0 0ded6b786c4f9f7c0391f5da6d6e2b7a
+
+% 0 1 0 112a5d8497e323021932f3d569ce2025
+
+@ 0 2 0 059133e26eabb5b705e0217fb816e7ff
++   group  Redes y la web
++   summary  interfaces sobre JSON-RPC, gRPC y eventos enviados por el servidor
+
+% 0 1 0 1427d41cf9ef18d11de433a3b764335c
+
+@ 0 3 0 036e68d31d5fd9241801b2b534814933
++   title  Correo electrónico
++   group  Redes y la web
++   summary  redactar y enviar
+
+% 0 1 0 02e3e180530a379712b900aa2087691e
+
+% 0 1 0 094a8b8e186cf06e063e6afb29e68ac1
+
+@ 0 2 0 179f898265c526710c17a53142d24c04
++   group  Redes y la web
++   summary  tokens y credenciales
+
+% 0 1 0 113e258b2662affc04966be18f7dffcd
+
+% 0 1 0 05a8cd66c921539419f32a7792ac84af
+
+@ 0 2 0 0e2756a9ca8145d517ccfbb94e8046e9
++   group  Redes y la web
++   summary  tokens firmados y cifrados: JWS, JWE, JWK y JWT
+
+% 0 1 0 0e3126c76453e6bb067ff21172ba10ff
+
+% 0 1 0 0dc1873563b4ff9b0321340b03892532
+
+@ 0 2 0 053e87115bf826f305560d7fa66846c7
++   group  Redes y la web
++   summary  inicio de sesión sin contraseña con passkeys y llaves de seguridad
+
+% 0 1 0 0faef1a046940e7d12931449c658a579
+
+% 0 1 0 0153b2f39d3aaef4154407b0c19eacc3
+
+@ 0 2 0 1f2dcec36c0d361918a5ab86768f4c7d
++   group  Redes y la web
++   summary  clientes tipados a partir de un documento
+
+% 0 1 0 08eadf05f4f69026180f626412db1adf
+
+@ 0 3 0 0fbd8b638ec80c0b10d3c521d8c1f52c
++   title  Descubrimiento de servicios
++   group  Redes y la web
++   summary  anunciar y explorar servicios
+
+% 0 1 0 0b58032a248b79d41fcd4645a2d6d67d
+
+@ 0 3 0 1a5f3abd38071fa01e592902fc65ee07
++   title  Automatización web
++   group  Redes y la web
++   summary  controlar un navegador
+
+% 0 1 0 0d6ec140433db5040094b3128510ad0e
+
+% 0 1 0 01d9691be5fc589c15f171a8883f31f0
+
+@ 0 2 0 146b63a6abfdd00f07501f59abad6939
++   group  Redes y la web
++   summary  construir, comprobar, representar y analizar HTML
+
+% 0 1 0 0bc3cbaffb63228e0369f0089e6cb148
+
+@ 0 3 0 16ba734659aed6361e27c66190f5b65a
++   title  Páginas web
++   group  Redes y la web
++   summary  páginas completas a partir de arquetipos
+
+% 0 1 0 0bc450054dd6d4bd18bacd96f936f5a1
+
+@ 0 3 0 1ea59faefd71729111beb1db3e2d0515
++   title  El DOM del navegador
++   group  Redes y la web
++   summary  scripting tipado de la página
+
+% 0 1 0 060cb6a8ebc16a3505b7fd4d7eea9041
+
+% 0 1 0 0949a8b51754edbb1b58fb487b4a84ec
+
+@ 0 2 0 1f533b685061b27e04b01b8e3a17c4b0
++   group  Redes y la web
++   summary  escribir, validar y representar hojas de estilo
+
+% 0 1 0 098d094f456c643e15a5e45e8e6bc1c7
+
+@ 0 3 0 08541ebac776ae681c1af84ce601cb75
++   title  Formularios
++   group  Redes y la web
++   summary  representar y procesar formularios
+
+% 0 1 0 1e1f2e2a06c3624d15942bf00a1f1192
+
+% 0 1 0 015c20363256e5d40b3529eb067f063e
+
+@ 0 2 0 09114785642851ea0d7aa467fe6a38f1
++   group  Redes y la web
++   summary  formas, trazados, transformaciones y documentos
+
+% 0 1 0 1a84e66325b182be10837d57927e0cdc
+
+@ 0 3 0 1118a537caa9e1820db5c06dd85a3ddc
++   title  Gráficos
++   group  Redes y la web
++   summary  series, tipos de gráfico y representación
+
+% 0 1 0 092e2016de74f25f141f6bcb93cda113
+
+@ 0 3 0 10390432c348018515736eb6f513dc5b
++   title  Colocación de rótulos
++   group  Redes y la web
++   summary  rótulos que evitan sus obstáculos
+
+% 0 1 0 1238a2f58501ff770b29dc93dff61939
+
+@ 0 3 0 156dec7aa35835350609ca21e72f4952
++   title  Imágenes
++   group  Redes y la web
++   summary  píxeles, lienzos y conversión
+
+% 0 1 0 0db914707ecd2aa71a3de91a3eca09e3
+
+% 0 1 0 159158f516bfbdd61e9ea0ddbb40101c
+
+@ 0 2 0 0a8bafaec8862418116e45634798d910
++   group  Redes y la web
++   summary  leer, escribir, grabar y reproducir
+
+% 0 1 0 0c73e5110a5b6a991db4c79a86461ec3
+
+@ 0 3 0 09dc6072f2cf3d2016e2a8fa7e6037c6
++   title  Fuentes
++   group  Redes y la web
++   summary  cargar, medir y crear subconjuntos
+
+% 0 1 0 0d89e615376819e41f8d89af340c5f53
+
+% 0 1 0 10c6d82162fb9d6a152e87aa306c53ff
+
+@ 0 2 0 0207c8c78139457e13191ef41859b59d
++   group  Redes y la web
++   summary  crear, leer y editar documentos
+
+% 0 1 0 0761f349a1f3e6dd145dbb0d8505be5e
+
+@ 0 3 0 136df3230c071ff4156c17ab1e10f559
++   title  Marcado matemático
++   group  Redes y la web
++   summary  árboles MathML
+
+% 0 1 0 0850cced444c2c650005360b66d76957
+
+@ 0 3 0 1e89cad4d072be020db84a44d59b7d5d
++   title  Aplicaciones de línea de comandos
++   group  Línea de comandos y terminal
++   summary  puntos de entrada, argumentos, opciones, autocompletado y ayuda
+
+% 0 1 0 05af4306bb505171050ba9810e9e10bb
+
+% 0 1 0 155ac6b7723792771f61b03ee7c69d14
+
+@ 0 2 0 164921f631d6766d1055843e4cb8245d
++   group  Línea de comandos y terminal
++   summary  texto con estilo, entrada, menús y disposición
+
+% 0 1 0 0ad4fb60bde148210662b386bdab80f3
+
+@ 0 3 0 10f9b9ee4ebc75471f18ae8d440f09c6
++   title  Emulación de terminal
++   group  Línea de comandos y terminal
++   summary  alimentar e inspeccionar un terminal
+
+% 0 1 0 0ceb38e5acd3513d09aa22a9d124279b
+
+@ 0 3 0 0ad09e9c5e234fe711b0ca20f36496ae
++   title  Tablas
++   group  Línea de comandos y terminal
++   summary  tabular valores a cualquier anchura
+
+% 0 1 0 0a97b6334aedc0890344e64ee2104adb
+
+@ 0 3 0 010dbea7451c108b07f346fc01e447ba
++   title  Indicadores de estado
++   group  Línea de comandos y terminal
++   summary  estados como indicadores
+
+% 0 1 0 1cd4da460bf42d990fcd9b245d1b482f
+
+@ 0 3 0 172b7befa9ecf9341c582d660e4283d5
++   title  Resaltado de sintaxis
++   group  Línea de comandos y terminal
++   summary  resaltado, tipos y autocompletado
+
+% 0 1 0 10693c8a2339ed76185cf0f288987529
+
+@ 0 3 0 0b6a6b61be467a6b1c9a9d6a6693d4c9
++   title  Compilación
++   group  Compilador, herramientas y agentes
++   summary  configurar y ejecutar compiladores, y producir artefactos
+
+% 0 1 0 173b09279e931e7e18ff5054249f578c
+
+@ 0 3 0 14232123869d56d614488f8e83f7bc4f
++   title  Metaprogramación
++   group  Compilador, herramientas y agentes
++   summary  givens, valores a nivel de tipos y expansiones
+
+% 0 1 0 09b18d06ea79a1a9172862ac669a3b94
+
+@ 0 3 0 0d322a4e81f51f521500a7107f9fcd8b
++   title  Ejecución por etapas
++   group  Compilador, herramientas y agentes
++   summary  citas, splices y montajes
+
+% 0 1 0 101fe82bc3a5d1e702982c1c5d5acb59
+
+@ 0 3 0 16d939ee68e384521e892eebf1c6c2c8
++   title  Pruebas
++   group  Compilador, herramientas y agentes
++   summary  suites, pruebas, contrastes y benchmarks
+
+% 0 1 0 086b935ec7180dbf0a1b99d2cac885c5
+
+@ 0 3 0 1440d00ec826014d1db359cb0d6c62f3
++   title  Depuración
++   group  Compilador, herramientas y agentes
++   summary  sesiones, puntos de interrupción y ejecución paso a paso
+
+% 0 1 0 05ae92eb17e87783062910dea6b5702c
+
+@ 0 3 0 03f63c5007f767f619d0f6c2cf345fe1
++   title  Trazas de pila
++   group  Compilador, herramientas y agentes
++   summary  capturar, desdecorar y resolver trazas
+
+% 0 1 0 0b79abce052c691516db4d60ccaec318
+
+@ 0 3 0 1e8a0f0dfe1ce16b07c9fea612f35afd
++   title  Interoperabilidad con código externo
++   group  Compilador, herramientas y agentes
++   summary  cargar y recorrer interfaces externas
+
+% 0 1 0 126c161b296f66e20068be5b476a567f
+
+% 0 1 0 17b05d4c069cb1a10c7281dff2c66a72
+
+@ 0 2 0 0fee6333dc2803e108f680f553fa598f
++   group  Compilador, herramientas y agentes
++   summary  definir y ejecutar un servidor
+
+% 0 1 0 14ab8723a04dc14a154d686a37c6f702
+
+% 0 1 0 17e8792fcbe144d00aee66653426ebae
+
+@ 0 2 0 18f5a9a5154f23f10534816a741beddc
++   group  Compilador, herramientas y agentes
++   summary  el protocolo de cliente de agentes
+
+% 0 1 0 052ab11147e0678b0e39147c987154ae
+
+% 0 1 0 0867a31d7373eb1103da127794d1495a
+
+@ 0 2 0 03489dca2bff0be81c362e0f6af6b51d
++   group  Compilador, herramientas y agentes
++   summary  el protocolo de contexto de modelos
+
+% 0 1 0 14b02c5f81fa29191ab5f7192f572f9b
+
+@ 0 3 0 05fb7bdc3ca8ad3b0c45ad1f433940cc
++   title  Modelos de lenguaje
++   group  Compilador, herramientas y agentes
++   summary  conversaciones, herramientas y respuestas estructuradas

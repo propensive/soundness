@@ -1,0 +1,7 @@
+orthant 2 language
+
+! The [metaprogramming](../en/modules/metaprogramming.md) module exists partly to make this
+! possible: if a claim about what the compiler emitted is worth making, it is worth
+! checking on every build.
+@ 0 3 0 1331d587038b96e510e95b4bf50eca28
++ [元编程](/doc/soundness/modules/metaprogramming.md)模块的存在，部分就是为了让这成为可能：如果一个关于编译器产出了什么的主张值得提出，它就值得在每次构建时检查。

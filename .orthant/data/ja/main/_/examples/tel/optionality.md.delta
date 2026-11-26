@@ -1,0 +1,86 @@
+orthant 2 language
+
+@ 0 1 0 0855aafe5c50aad80b4b41b5f1ca1661
++ # 欠落の二つの書き方
+
+@ 0 3 0 0ade36eeab6dc5521158ea0b0c61d959
++ TEL 文書では、キーワードを省くことも、後に何も書かずにキーワードだけを書くこともできる。
++ `Optional` 型のフィールドはどちらも `Unset` として読むので、
++ 残したまま空にしたキーワードは、取り除いたキーワードと同じ意味になる。
+
+% 2 1 0 0b7fd790479064cd02514eee49289bd9
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 136ebd39c6073d801f7187571fbe343a
++   label 値のあるキーワード
+
+% 1 1 0 021748021d2aa5100fb32df711191c8c
+
+% 2 1 0 1c5b065679ca077d1a86d4c1322a003e
+
+% 4 1 0 1a29bc83aef5d1150e23202300355942
+
+% 6 1 0 1e5247b753cf720809d721ff31b674ec
+
+% 1 1 0 02235768f20511d6100426fb061930af
+
+@ 0 2 0 0a22f961e348d116045f2b3ca933f113
++   label 省いたキーワード
++   highlight t"name..\n"  そのようなキーワードはない
+
+% 0 1 0 1accf43fe92797631dc8da9a374d03c4
+
+% 1 1 0 037aa7a803bd9eed098f42f0237d9298
+
+% 2 1 0 1f7e97428e8cbede068329e3e9eb57ac
+
+% 4 1 0 19f2c64981549d320ba7d64809302b46
+
+% 6 1 0 1a41afbdc5af9301186cf22e8c065b0e
+
+% 7 1 0 1d9d30756b0d65b71a898eac829effc2
+
+% 1 1 0 09da53b6321817e91d85228a6fe17f78
+
+@ 0 2 0 1070e4757967a1ad18c2abbfdeb7ee4d
++   label 後に何もないキーワード
++   highlight patron\n  存在するが、空である
+
+% 1 1 0 17c4d6c1c72d5512021fcdad7be35c8f
+
+% 2 1 0 12a07869bc78de0a1dba689ae0b531f8
+
+% 4 1 0 141fd627d86eceba0ad6e072a601aa42
+
+% 6 1 0 0be87c623cc0104212d985d6a6161229
+
+% 7 1 0 08971a22369ebb9411bff793a8cc8660
+
+% 0 1 0 1d87a6fa435cfef311a8863ca0d7dbe7
+
+% 1 1 0 08b5c41ec0c48e0413190e84af76f2ec
+
+% 1 1 0 136d267ff733a60e0f6246170d49df5f
+
+% 2 1 0 1525a46c87e9e0571e7d21b8e7c42b7a
+
+% 0 1 0 08a86cbdc9b8cb0109ed8ce5b435ce67
+
+% 1 1 0 0cd6459499a6bd5203d659b3bcc1b6aa
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 0 1 0 0b91a5e19b58d83c0ff17a9c75feafe0
+
+% 0 1 0 0f67f0c80bc2b15418cb83ee2de729b2
+
+% 0 1 0 0890c6999214ead5191a21ecad558849
+
+% 1 1 0 04d91fd88f313b821c10f777939682b9
+
+@ 0 2 0 0f5a7b7bdecea22d0738a5226015c534
++ [オプショナルなフィールド](../../soundness/modules/tel.md#optional-fields)に、
++ 欠落をエラーにするポリシーの説明がある。

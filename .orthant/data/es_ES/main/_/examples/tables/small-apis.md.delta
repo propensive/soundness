@@ -1,0 +1,97 @@
+orthant 2 language
+
+@ 0 1 0 015310db6423ab4f028fab503e1f7d68
++ # Una sola `Column` para cualquier tipo de celda
+
+@ 0 3 0 19e87ef6e67a32911c009632f0ac95f9
++ Una columna es un título y una función de una fila a un valor. El valor puede ser texto, un número
++ o cualquier otra cosa que pueda mostrarse: el tipo del título decide lo que es una celda, y cada
++ valor se muestra como tal. Una columna que no es esencial lo dice, y cede su sitio cuando la tabla
++ es estrecha.
+
+% 2 1 0 0c7516590527476405cca97082298765
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 1b81012ce96e6ebd0d0843e4d5dac276
++   label Una columna de texto
+
+% 1 1 0 0b42093410f26d7911e761b85704c6b2
+
+% 2 1 0 0416c4a191f64ca118aadc67af1abcb9
+
+% 3 1 0 1a172e61fce545450d244cf47bb6adde
+
+% 5 1 0 17ea3ea6ca0d25a81e47ca7598c40783
+
+% 7 1 0 0bc8b40968aa48e6117e4b443826f381
+
+% 0 1 0 12f1cc30fd17856d0e0b04263180da2d
+
+% 1 1 0 15b4356721ca5554104c0ab1590422f3
+
+@ 0 2 0 0e56d450d80757a302914632ac4f57d9
++   label Una columna de números
++   highlight _.scenes  un Int, mostrado como texto
+
+% 1 1 0 0ed4bc18d682845c0e0407250cfb7fcd
+
+% 2 1 0 1bd3c084b00513ef0dc5de48a1f53fba
+
+% 3 1 0 18065767d09ac05314e028b556cfc0cc
+
+% 5 1 0 1117a4b73a005589106c347d1351bd95
+
+% 7 1 0 07e7b822a5c7a1c61a3033f5e75af006
+
+% 0 1 0 0b7926d9332920ba13579b45bdbbcdee
+
+% 1 1 0 1c3db3c0a3759baa02016e6144327784
+
+@ 0 2 0 0bb66c7f0dbd1bb0087ce4af95b991e2
++   label Una columna que puede suprimirse
++   highlight columnar.Collapsible(0.5)  desaparece cuando falta anchura
+
+% 1 1 0 0017736b2edf8eda02a0caa8ec852503
+
+% 2 1 0 1ea44b5cdb9d3d591e426f83c4385efd
+
+% 3 1 0 17a28a8d1575fcdd170c7b57cdf6b325
+
+% 5 1 0 0742f276a20b2b4a00a6e6c34574280b
+
+% 7 1 0 0ad1026813b635da187c8b9277acc26a
+
+% 0 1 0 1dac0b112d6fd109182dfa1dad9dab35
+
+% 0 1 0 048b86be1853281905d13696ee8cd993
+
+% 0 1 0 1377fd33a8bb611d03ddcb277c3b286a
+
+% 0 1 0 0e9057f0b6f6ffc40879a26ba5839f92
+
+% 1 1 0 1f51c956f213fb0510f8b59ff66f5781
+
+% 1 1 0 136d267ff733a60e0f6246170d49df5f
+
+% 2 1 0 1525a46c87e9e0571e7d21b8e7c42b7a
+
+% 0 1 0 08a86cbdc9b8cb0109ed8ce5b435ce67
+
+% 1 1 0 0cd6459499a6bd5203d659b3bcc1b6aa
+
+% 0 1 0 00af3fdb360e27f9095168ce70444642
+
+% 0 1 0 1c04cc9d968d4a620681f07560e588c0
+
+% 0 1 0 1cc8fb88a446575d191000141aace8df
+
+% 1 1 0 0caf1f9bb5c1f5e60452981584f7efd0
+
+@ 0 3 0 0dd002bbcffc25ae174533817f4f6ab5
++ [Columnas explícitas](../../soundness/modules/tables.md#explicit-columns) enumera los
++ dimensionamientos, y [representaciones con distintas
++ anchuras](../../soundness/modules/tables.md#renderings-at-different-widths) muestra cómo ceden su
++ sitio.

@@ -1,0 +1,13 @@
+orthant 2 language
+
+@ 0 11 0 0d8437f96b7f51390097d96c0bd1f4ef
++ flare 插件（在 `etc/tools` 中固定版本，由 `.pyrocosm/flare/config.tel` 配置，通过 `flareToolchain` 中的 `-P:flare:` 选项在每个受检查的组件上启用）提供了普查：配置中的每条规则都在源码上计数——已声明的逃逸（`unsafely`、`caps.unsafe` 家族、每个以 `unsafe` 为前缀的名称、每个由该令牌把关的方法）、绕过编译器信任的写法（`asInstanceOf`、`.nn`、`@unchecked`、`???`、兜底的 catch 子句）、偏读取，以及流式内核本应限定使用的命令式结构。
++ `make unsafety` 运行 `flare metrics --dry-run` 并打印结果；`flare metrics` 将其逐个提交地记录在 git notes 中，因此趋势保存在 git 里，而不是路线图的某个段落中。
++ 有一条规则已经起到门控作用：`S1.1`，即接受 `(using Unsafe)` 的方法必须命名为 `unsafe…`，否则构建失败；其逆规则 `S1.2` 仅作建议，违反它的八个定义列在 `doc/work/standards/naming.md` 中。
+
+@ 0 7 0 0d173ddf177ff3580a0262c16790a340
++ 使捕获检查和分离检查切实可行的方法——一个类型何时是 Exclusive、Shared、Unscoped、Mutable 或 Pure，以及它们之间的格陷阱；诚实 given 的操作手册（`(tactic: Tactic[E]) => ((X is TC)^{tactic})`，用显式的捕获证据代替上下文界定）；新鲜结果在何处可以、何处不可以产生；`consume` 和借出接缝；测试可以做什么、不可以做什么——目前只作为条目存在于 `rep/DECISIONS.md` 这份 2400 行的日志中。
++ 它们应当放在 `doc/work/standards/capabilities.md` 中，连同 `safety-2` 所依赖的标签词汇以及每个标签唯一认可的舱口形式，并在 `doc/work/philosophy/capture-checking.md` 中给出指向它的链接。
+
+@ 0 2 0 184abde0f441241915e910e4b48261e0
++ 完成条件：`doc/work/standards/capabilities.md` 存在，定义了普查所识别的每个标签，且 `rep/DECISIONS.md` 的方法章节链接到它，而不是重复其内容。

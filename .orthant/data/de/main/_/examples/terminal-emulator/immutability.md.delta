@@ -1,0 +1,81 @@
+orthant 2 language
+
+@ 0 1 0 1c041c0f85e6b74c0400eddb774452e7
++ # Ein Bildschirm, der ein Wert ist
+
+@ 0 3 0 0c37bace5270b63f09d36a1dc580c2dc
++ Ein echtes Terminal wird durch alles verändert, was darauf geschrieben wird. Ein `Pty` nicht: Das
++ Verarbeiten von Text liefert ein neues Terminal, und das vorherige ist noch da, sodass ein Test
++ jeden Zustand eines Bildschirms festhalten und vergleichen kann.
+
+% 2 1 0 161e0aa728ffe0640d3881d367d34d00
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 1354097d56da7a3d1eccc21b637e51a4
++   label Ein leeres Terminal
+
+% 1 1 0 0820007e43ded8bc1a3f04f64062b0f1
+
+% 2 1 0 06adc2a75e869b3d05b4d49545e2c89e
+
+% 4 1 0 1aae8495b8ec5f14041a88a35015082c
+
+% 1 1 0 0b86b9f74e0294c21dbe7e38b4901ce7
+
+@ 0 2 0 00e2c4902a04c79a10ddbd2aeec6fbb1
++   label Text, darauf geschrieben
++   highlight consume  liefert ein neues Terminal
+
+% 1 1 0 08fcc89cc1229c93164f125b7208471c
+
+% 2 1 0 1ddfbc0891bfbad3103bdab13da7fe4d
+
+% 4 1 0 177b6189e45acfee048aeef96d4fb13e
+
+% 5 1 0 0f506b615d419d021fe7f95318974967
+
+% 1 1 0 1a05156f21dc57b60762799dac79bada
+
+@ 0 2 0 06699547ef4f234b1b550d270e9be1c7
++   label Und noch mehr, darauf
++   highlight asked.consume  asked behält seinen eigenen Bildschirm
+
+% 1 1 0 1f268fe53be67d6016eaad8819577289
+
+% 2 1 0 05d573d924f1fed917f8b848b27d8944
+
+% 4 1 0 05b505d05412c53a0be51ab232677271
+
+% 5 1 0 17c08331c6421cb80b6b201b1c68acc4
+
+% 0 1 0 11b922aa80ca0a9812066ffe0076ef0f
+
+% 1 1 0 143b093effff01eb117af7887ec0e075
+
+% 1 1 0 136d267ff733a60e0f6246170d49df5f
+
+% 2 1 0 1525a46c87e9e0571e7d21b8e7c42b7a
+
+% 0 1 0 08a86cbdc9b8cb0109ed8ce5b435ce67
+
+% 1 1 0 0cd6459499a6bd5203d659b3bcc1b6aa
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 0 1 0 01cf807da5f149b70776c641804ff9ed
+
+% 0 1 0 04bb3d18aa135d5101bb14baf9dce7d9
+
+% 0 1 0 1ce9063d8f20271c183f84e62957ffc5
+
+% 0 1 0 12dfe78e16cd69f713716da8c38f2993
+
+% 1 1 0 0961ddd86e10046b041b4ac9fd7e81ac
+
+@ 0 3 0 0351a4053d845887100d8871da6a9c76
++ [Ein Terminal füttern](../../soundness/modules/terminal-emulator.md#feeding-a-terminal) zeigt
++ Escape-Sequenzen, die auf dieselbe Weise verarbeitet werden, und
++ [Unveränderlichkeit](../../philosophy/immutability.md), was man dadurch gewinnt.

@@ -1,0 +1,34 @@
+orthant 2 language
+
+@ 0 6 0 180f15359b93ca3d06aed49479fd5a4b
++     错误类型有一个 bolt 代码——`Error(25, 1, 0)`，即第二十五个模块的第一个错误，为 `↯/s.25.1`——它在各个版本之间保持稳定，从不复用，并在 `doc/work/errors/25.1.md` 中有文档；它的各个不同原因是扩展 `Clarification` 的 `Reason` 枚举的分支，每个分支在该错误内编号（`↯/s.25.1.1`），并各自通过自己的 `Communicable` 呈现。
++     下面是一个逐步完善的完整错误（900 代表该错误所在模块的编号）：
+
+@ 0 11 0 00754b8c838935451e83a02692b7a2af
++       错误由三个数字标识，它们构成其 bolt 代码。
++       `module` 是错误所在库的编号，记录在 `bolt` 注册表的 `s.tel` 中；`number` 是该错误在库内自己的编号，即编写该错误类型时下一个空闲的编号，且从不复用（已退役的编号留在注册表中，并加以标记）；`variant` 是错误原因的编号——即其 `Reason` 分支（一个扩展 `Clarification` 的枚举）的 `number`——若该错误没有原因则为 0。
++       错误在 `doc/work/errors/<module>.<number>.md` 中有文档，说明其起因和常见的补救办法，因此用户报告中的 `↯/s.25.1` 可以被查到，而不必猜测。
++       以 `Error(message)` 编写的错误的 `module = 0`：没有代码，`getMessage` 改为以其组件作为前缀。
++       该代码呈现在 `#labelled`、`getMessage` 以及编译时 `halt` 的 `[↯/s.25.1.2]` 前缀中。
+
+@ 0 4 0 09841ddff78e3e0f1470142376faa577
++       消息的内部风格规范是 `doc/work/standards/messages.md`：小写，末尾不加句号，使用现在时，将出错的具体资源作为带类型的值插入，并且从不以 *invalid* 或 *bad* 作为整个谓语。
++       错误是用来被匹配的：处理函数解构该 case class 及其 `Reason`，从不解构其文本。
+
+@ 0 1 0 1b00085c23cb817210b7e86018390e25
++     关于消息内容的内部风格规范是 `doc/work/standards/messages.md`。
+
+@ 0 8 0 0a1b5cee94d0e9b919081a6989fc0ce7
++ entry .Clarification   `Reason` 枚举所扩展的特质：为错误的每个不同原因提供一个编号
++     `trait Clarification { def number: Int }`。
++     错误的各个不同原因是扩展 `Clarification` 的 `Reason` 枚举的分支，每个都有一个在该错误内唯一的编号，因此 `Error(25, 1, reason.number)` 呈现为 `↯/s.25.1.1`、`↯/s.25.1.2`……，并且每个原因在 `doc/work/errors` 中该错误的页面里都有一个小节。
++     在诊断需要时，`Reason` 携带自己的数据（`Ipv4ByteOutOfRange(byte: Int)`），并提供自己的 `Communicable` 实例为每个分支措辞，错误的消息会插入它。
++     接收 `Clarification` 的 `halt` 或 `warn` 会将其编号放入诊断信息的前缀中。
+
+@ 0 12 0 1dbf1624ea54f120159469e4d76409eb
++ entry .halt   从宏中报告编译错误并中止展开
++     用于宏实现，作用域中需有 `Quotes`。
++     `halt(message)` 通过 `report.errorAndAbort` 报告该 `Message` 的文本（当编译器的 `-color` 设置开启时，通过 `Message#colorText` 着色）；`halt(message, position)` 附加一个位置。
++     带编号的重载以错误的代码 `[↯/s.25.1] ` 作为诊断信息的前缀——`halt(module, number, message)`、`halt(module, number, message, position)`——或者以其原因的编号 `[↯/s.25.1.2] ` 作为前缀：`halt(module, number, reason, message)` 和 `halt(module, number, reason, message, position)`，其中 `reason` 是一个 `Clarification`。
++     带编号形式的位置参数是 `Matchable`，不是 `quotes.reflect.Position` 的值（或 `null`）会不带位置地报告。
++     每个由宏抛出的代码都与运行时错误一样，在 `doc/work/errors` 中有一个页面。

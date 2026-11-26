@@ -1,0 +1,107 @@
+orthant 2 language
+
+@ 0 1 0 00fafe4ffb6ea369080afe072f63b834
++ # Una consulta es un predicado
+
+@ 0 3 0 057da9d3472e0486120e0e5ee13a041c
++ Una búsqueda da un `Set` de referencias, y un `Set` ya tiene `filter` y `map`. Por eso el lenguaje
++ de consultas de una base de datos es el mismo en que está escrito el resto del programa, comprobado
++ de la misma forma.
+
+% 2 1 0 11bf5a4b85d4369d0685c6f06fcdbab0
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 00073846dc4a702619008502fa911191
++   label Todas las cajas del estante
+
+% 0 1 0 1e6bb7b23c17908004a943207a9111fd
+
+% 1 1 0 040399a5a95c0da318c866d4ad1bcc65
+
+% 2 1 0 0471a5f38e1dd3ed11b3978f73262841
+
+% 4 1 0 1b65cbf2d324676a1da28fed00d35b81
+
+% 5 1 0 1a84cc779647c750067256b16f3587df
+
+% 7 1 0 024ba3182105264f16ebe33b59c0075b
+
+% 9 1 0 0856178bae0dac4b129328fecf717ee2
+
+% 10 1 0 0e74f517ae58f6aa0fa203e607b89e83
+
+% 11 1 0 062eddbb327db60601bfecb7c3a0dd08
+
+% 0 1 0 18b2a7db3a0dfc2c19ee8dbb461404e5
+
+% 1 1 0 0b17eca4e2b55be804b2e43594c36c24
+
+@ 0 2 0 02b7325fd77524701c8c81685d97bacd
++   label Aquellas cuyo nombre empieza por A
++   highlight filter(_().name.starts(t"a"))  una referencia se aplica para dar su valor
+
+% 1 1 0 0561c12526f16b0c065edd2e78842cda
+
+% 2 1 0 00ef9a114a1053b814831f4ea99fd9cf
+
+% 4 1 0 1f16cbda3ee86af918be0e36dadc2456
+
+% 5 1 0 099c48ac5e4ae1a4174d8d43c94c18ae
+
+% 7 1 0 07bf0190ae24e2261db46704443eaaad
+
+% 9 1 0 00129358da75b6480a89687db6b3126c
+
+% 10 1 0 00b1e91ae359f9bb04d0933606b9093e
+
+% 11 1 0 148f9a5d16deffbf18e431b260801c4b
+
+% 0 1 0 0b5b27ea722f2cae00660bfa8e35c4a0
+
+% 1 1 0 1fdc296557c7cdde000815f30d08cb84
+
+@ 0 1 0 03f218073087214a14f981c0c457efe2
++   label Y sus nombres
+
+% 0 1 0 162a12372b2eddbd0955c383f8f0cbe3
+
+% 1 1 0 04f3d6bb8128450112facf29cc63b3a5
+
+% 2 1 0 131d6a0ac083a0ec14010a80518cfc07
+
+% 4 1 0 13e969bd078bc8de1f7a3810ad2e7100
+
+% 5 1 0 08d26c9f0ca2b9db19ea41f0f7a67d0f
+
+% 7 1 0 0c52e25b44dc864c1e368d68c58442f8
+
+% 9 1 0 0a849fa220bc6ca700e6a9df8d7856e3
+
+% 10 1 0 036b28c55b5f501e1f0329feb4600110
+
+% 11 1 0 09ca6dfa71f66ce90e63b5f2310803ba
+
+% 0 1 0 1e0444bf7061a6ea12cea1c77bac118d
+
+% 1 1 0 1cf07529b854526008a9db7c3538cc4b
+
+% 1 1 0 136d267ff733a60e0f6246170d49df5f
+
+% 2 1 0 1525a46c87e9e0571e7d21b8e7c42b7a
+
+% 0 1 0 08a86cbdc9b8cb0109ed8ce5b435ce67
+
+% 1 1 0 0cd6459499a6bd5203d659b3bcc1b6aa
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 0 1 0 0f8e62ba886a3771160bfc263523ca05
+
+% 1 1 0 002af5d9e8e490fa05f124e88fbffc13
+
+@ 0 2 0 07c15898a2ce94f20ed58eea14440432
++ [Consultar](../../soundness/modules/database.md#querying) dice más, y
++ [Colecciones](../../soundness/modules/collections.md) trata las operaciones de un `Set`.

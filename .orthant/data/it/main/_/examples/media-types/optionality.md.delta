@@ -1,0 +1,66 @@
+orthant 2 language
+
+@ 0 1 0 0556f81b5771213e186a66d4a96dccd6
++ # Un parametro che può mancare
+
+@ 0 3 0 08cf781de41ed57016794adda51ac7e1
++ Un tipo di media può portare un set di caratteri, e la maggior parte non lo fa. Cercare un parametro
++ dà un valore opzionale, e il codice che ha bisogno di un set di caratteri dice che cosa presume
++ quando non ne è dato alcuno.
+
+% 2 1 0 0406e0b333c32ed8141612e51af4062a
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 2 0 125aa8cfaf8b352c13eba2ad44f83735
++   label Il parametro, che può essere assente
++   highlight Optional[Text]  nessun wrapper, e nessun `null`
+
+% 1 1 0 03c485655d82828c145a298a1bfb35eb
+
+% 0 1 0 074a8580c357002412eab563c8006cd6
+
+% 1 1 0 1acc6739cd23f60a06de88984207e0af
+
+@ 0 1 0 09f02831e2d236b017adc890f31a8d39
++   label Usato come se fosse presente
+
+% 0 1 0 1477c34ff41c7c99183443e1d3238ae1
+
+% 1 1 0 0960c596329e4eb20a0b442aaa85c43a
+
+% 0 1 0 1dbe6cbc3309b6c0138588cd7765700b
+
+% 1 1 0 1707fcbf6ddfd79d079813805de988f0
+
+@ 0 2 0 10643d0ee4b45b391884d2b0e107e349
++   label Con il valore predefinito dato dal protocollo
++   highlight or(t"ISO-8859-1")  che cosa significa qui l'assenza
+
+% 1 1 0 137b440d4ec0d7571c5de34d63547ab7
+
+% 0 1 0 126615a623348519175c5f9a8e28e784
+
+% 1 1 0 021edadf4402b44c1e92940d6b7e7657
+
+% 1 1 0 136d267ff733a60e0f6246170d49df5f
+
+% 2 1 0 1525a46c87e9e0571e7d21b8e7c42b7a
+
+% 0 1 0 08a86cbdc9b8cb0109ed8ce5b435ce67
+
+% 1 1 0 0cd6459499a6bd5203d659b3bcc1b6aa
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 0 1 0 136908b38327ca7b009fdd326168327c
+
+% 0 1 0 0b73f675dcad9cd20c4a3eceba054e92
+
+% 1 1 0 00d72d001ea426851369ef88eb3d3db8
+
+@ 0 2 0 05a7d743f935750e011f2dfb5f9628a7
++ [La struttura](../../soundness/modules/media-types.md#structure) nomina le parti di un tipo di
++ media, e [l'opzionalità](../../philosophy/optionality.md) spiega `or`.

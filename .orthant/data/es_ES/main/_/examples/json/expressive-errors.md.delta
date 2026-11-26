@@ -1,0 +1,55 @@
+orthant 2 language
+
+@ 0 1 0 0333df0a165a35d8113c8a4c330866d3
++ # Un campo que no se puede decodificar
+
+@ 0 2 0 0259c1ea383e23c50005999e149925ae
++ Un decodificador se deriva campo a campo. Cuando el tipo de un campo no tiene decodificador, el
++ compilador nombra el campo, la case class que lo contiene y el tipo culpable, y dice qué serviría
++ en su lugar.
+
+% 0 1 0 12705ff5e291290d17fbc8389d59ef4a
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 0d756156d24bbca50d122bc4a05fca37
++   label Un campo de una clase ordinaria
+
+% 0 1 0 1477c34ff41c7c99183443e1d3238ae1
+
+% 1 1 0 0960c596329e4eb20a0b442aaa85c43a
+
+% 2 1 0 052b5d53c564213f191f74be413a911f
+
+% 0 1 0 05f8da9fc6932ce81b65714cdd664fac
+
+% 1 1 0 14ac95a7d10bade60fb22f5eeed927c1
+
+% 3 1 0 06d73b919a01ce6d13c15b2019cb83a5
+
+% 1 1 0 166cf83b7c761f6818e4168d4db8d60a
+
+@ 0 2 0 0f9677e0f3838bf81e7ede5ec59ef11f
++   label Un campo de una case class
++   highlight case..Poison  ahora derivable
+
+% 1 1 0 05b16bd7bd12b2ff0f3a867c9a43a80a
+
+% 2 1 0 0c0acfa953913205074a6e38a1f1b96d
+
+% 0 1 0 023e633adb28f1a80541c9f953019834
+
+% 1 1 0 1424c7b8aaebe02108cbd7bf18378fd8
+
+% 3 1 0 10db23feadf87dc61cf5166b0ccd6d84
+
+% 0 1 0 18eafb32caed3dd50f976e787bd035ca
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 3 0 0033adc16f51d4a11d30ba3fa206f25f
++ [Case classes y enumeraciones](../../soundness/modules/json.md#case-classes-and-enumerations)
++ dice qué tipos puede tener un campo, y
++ [errores expresivos](../../philosophy/expressive-errors.md) por qué el mensaje se redacta así.

@@ -1,0 +1,58 @@
+orthant 2 language
+
+@ 0 6 0 180f15359b93ca3d06aed49479fd5a4b
++     Un tipo de error tiene un código bolt —`Error(25, 1, 0)`, el primer error del vigésimo
++     quinto módulo, es `↯/s.25.1`— que es estable entre versiones, nunca se reutiliza y está
++     documentado en `doc/work/errors/25.1.md`; sus distintas causas son los casos de un enum `Reason`
++     que extiende `Clarification`, cada uno numerado dentro del error (`↯/s.25.1.1`), y cada uno
++     representado a través de su propio `Communicable`. Un error completo, construido paso a
++     paso (900 representa el número del módulo en que está el error):
+
+@ 0 11 0 00754b8c838935451e83a02692b7a2af
++       Un error se identifica por tres números, que forman su código bolt. `module` es el
++       número de la biblioteca en que está el error, tal como lo registra el `s.tel` del
++       registro `bolt`; `number` es el número propio del error dentro de esa biblioteca, el
++       siguiente libre cuando se escribe el tipo de error, y nunca se reutiliza (un número
++       retirado permanece en el registro, marcado como tal); y `variant` es el número del
++       motivo del error —el `number` de su caso `Reason`, un enum que extiende
++       `Clarification`—, o 0 cuando el error no tiene motivos. El error se documenta en
++       `doc/work/errors/<module>.<number>.md` con su causa y los remedios habituales, de modo que
++       `↯/s.25.1` en el informe de un usuario puede consultarse en lugar de adivinarse. Un error
++       escrito `Error(message)` tiene `module = 0`: no tiene código, y `getMessage` antepone en
++       su lugar su componente. El código se representa en el prefijo `[↯/s.25.1.2]` de
++       `#labelled`, de `getMessage` y de un `halt` en tiempo de compilación.
+
+@ 0 4 0 09841ddff78e3e0f1470142376faa577
++       El estilo de la casa para el mensaje es `doc/work/standards/messages.md`: en minúsculas, sin
++       punto final, en presente, con el recurso concreto en falta interpolado como valor
++       tipado, y nunca *invalid* o *bad* como predicado completo. Los errores están pensados
++       para hacer coincidencia de patrones con ellos: un manejador descompone la case class y
++       su `Reason`, nunca su texto.
+
+@ 0 1 0 1b00085c23cb817210b7e86018390e25
++     El estilo de la casa para lo que dice un mensaje es `doc/work/standards/messages.md`.
+
+@ 0 8 0 0a1b5cee94d0e9b919081a6989fc0ce7
++ entry .Clarification   el trait que extiende un enum `Reason`: un número para cada causa distinta de un error
++     `trait Clarification { def number: Int }`. Las distintas causas de un error son los casos
++     de un enum `Reason` que extiende `Clarification`, cada uno con un número único dentro del
++     error, de modo que `Error(25, 1, reason.number)` se representa como `↯/s.25.1.1`,
++     `↯/s.25.1.2`… y cada uno tiene una subsección de la página del error en `doc/work/errors`. Un
++     `Reason` lleva datos propios donde el diagnóstico los necesita
++     (`Ipv4ByteOutOfRange(byte: Int)`), y da su propia instancia de `Communicable` que formula
++     cada caso, y que interpola el mensaje del error. Un `halt` o un `warn` al que se da una
++     `Clarification` pone su número en el prefijo del diagnóstico.
+
+@ 0 12 0 1dbf1624ea54f120159469e4d76409eb
++ entry .halt   informa de un error de compilación desde una macro y aborta la expansión
++     Para implementaciones de macros, con `Quotes` en el ámbito. `halt(message)` informa del
++     texto del `Message` (en color, a través de `Message#colorText`, cuando está activado el
++     ajuste `-color` del compilador) con `report.errorAndAbort`; `halt(message, position)`
++     adjunta una posición. Las sobrecargas numeradas anteponen al diagnóstico el código del
++     error como `[↯/s.25.1] ` —`halt(module, number, message)`, `halt(module, number, message,
++     position)`— o el número de su motivo como `[↯/s.25.1.2] `: `halt(module, number,
++     reason, message)` y `halt(module, number, reason, message, position)`, donde `reason` es
++     una `Clarification`. El parámetro de posición de las formas numeradas es `Matchable`, y
++     un valor que no es un `quotes.reflect.Position` (o `null`) informa sin posición. Todo
++     código lanzado por una macro tiene una página en `doc/work/errors`, igual que el de un error
++     de tiempo de ejecución.

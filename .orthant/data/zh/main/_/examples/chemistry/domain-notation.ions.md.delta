@@ -1,0 +1,78 @@
+orthant 2 language
+
+@ 0 1 0 03cf04f20149f14a024e29bf6f09863c
++ # 离子携带它的电荷
+
+@ 0 3 0 046986748d6e96a401e5154887e6dbef
++ 单位电荷是写在粒子前面的一个符号，就像在纸上写在粒子后面一样，粒子结合时电荷相加。因此一个阳离子和一个阴离子构成一种中性的盐，无需为它标注电荷。
+
+% 2 1 0 102da6bd7ac14d4d07ce7ae56576989f
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 2 0 0b7eb49950e7819506e6f72b4d2406b3
++   label 一个阳离子
++   highlight +Na  多一个电荷
+
+% 1 1 0 1522671628eba61813fcdcc0cd9eeac0
+
+% 2 1 0 1109a7fc11ed3e6b0a73fd80c6464bcf
+
+% 4 1 0 17209edfb7342615144cea2d70d4295a
+
+% 1 1 0 189fc68dcc6ec3360842704ffdfeb80b
+
+@ 0 2 0 18bd9ded08aa9c771ae1b9ef499d37bd
++   label 一个阴离子
++   highlight -Cl  少一个电荷
+
+% 1 1 0 1d17920e7cb2f21616f42ea09ced3386
+
+% 2 1 0 0923a5c1d483046d0a894f74741103e5
+
+% 4 1 0 01e6af5db8978e5410d5b94da33e326c
+
+% 5 1 0 0c9caee99fd142fc00ae05da2f168048
+
+% 1 1 0 19a94f7e1e2a09681397cc1c3b1b60e2
+
+@ 0 2 0 15b5d48adf0871dd005986c1a78aeacd
++   label 一种盐
++   highlight sodium*chloride  电荷相加为零
+
+% 1 1 0 146fa364d8482d1103e460064a70578e
+
+% 2 1 0 01c54cac2f55b70f0077ac57d47e955b
+
+% 4 1 0 0713cd6a254d24201e1f219e1679fb91
+
+% 5 1 0 08dbba34e71184b505b06ec9866d4d06
+
+% 0 1 0 023e44fc2c10641910a3623c33a67f00
+
+% 1 1 0 0ba17c20322a56980b904e014558b885
+
+% 1 1 0 136d267ff733a60e0f6246170d49df5f
+
+% 2 1 0 1525a46c87e9e0571e7d21b8e7c42b7a
+
+% 0 1 0 08a86cbdc9b8cb0109ed8ce5b435ce67
+
+% 1 1 0 0cd6459499a6bd5203d659b3bcc1b6aa
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 0 1 0 0a1b932a8647a6dd1443ff9af6309fd3
+
+% 0 1 0 011eeb3f01241e4e1be61e7fb9c86f7a
+
+% 0 1 0 05377e4f2ae276171e8aec983e93575f
+
+% 0 1 0 1aab9c1fc4ec4e1d128a10224123e689
+
+% 1 1 0 1826e0d967be11a5027023515e797bc9
+
+@ 0 4 0 045a05effed79bb30ef148ca45e787ba
++ 这种盐没有电荷，并按希尔顺序书写，在这种顺序下，不含碳的化合物的元素符号按字母顺序排列。[电荷与状态](../../soundness/modules/chemistry.md#charge-and-state)介绍了大于一的电荷以及各种物态。

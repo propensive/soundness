@@ -1,0 +1,71 @@
+orthant 2 language
+
+@ 0 1 0 15d316ed44637eaa0ad0335893f4b3d4
++ # Błąd przetłumaczony na granicy
+
+@ 0 3 0 0205586e8cfce18713d6f7a437899b7b
++ Wywołujący usługę nie powinien musieć wiedzieć, że zawiodła ona z braku portu. `mitigate` wymienia
++ jeden błąd na inny, więc niskopoziomowe niepowodzenie dociera do wywołującego w słownictwie API,
++ które wywołał.
+
+% 0 1 0 12705ff5e291290d17fbc8389d59ef4a
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 2 0 16348092f36370271a59993b850906ef
++   label Niskopoziomowy błąd ucieka
++   highlight raises..PortError  szczegół implementacji w sygnaturze
+
+% 0 1 0 1accf43fe92797661dc8da9a374d03c7
+
+% 1 1 0 0f96500e809b345d021c32bae868d834
+
+% 2 1 0 1172c55a187c9f5604d52ae46d0184af
+
+% 4 1 0 1dbd6e377d1a77c309c6c67df4874eec
+
+% 5 1 0 0779c1488061fc2e0aa674dc59fd1501
+
+% 7 1 0 17c7177d26960fd20722d1fc8b78b897
+
+% 8 1 0 0527fae061fb661a1850ccb484b1489f
+
+% 0 1 0 0f97d0682b35ebd400a27468883744ba
+
+% 1 1 0 13b1a05d8dc219c80d1ed30e26ee6562
+
+@ 0 1 0 1413a703e9cdb46211a5cdef41d540f0
++   label Wymieniony na błąd tego API
+
+% 0 1 0 173566d4665457b0092a1cdb5afdae0e
+
+% 1 1 0 08cf7d7ac9f5f42000865a7fb14dc0b9
+
+% 2 1 0 109ad138891709711e0ddb2616735ded
+
+% 4 1 0 0e1c63a11b05e8410147fd61b2e76486
+
+% 5 1 0 1cd40745a3f2d7571c7e8a9f0c4767fc
+
+% 7 1 0 14046b886e19ea711c8e59bbe18a976f
+
+% 8 1 0 17fb5be9552bf6630a4b71cb8e1e00c7
+
+% 0 1 0 0257cfc5eeba83c40367ebbc3305d683
+
+% 0 1 0 16d74b67b6a573c609b54f1332ce0373
+
+% 0 1 0 0d2ae7c787161dbb1e93a924d7f42613
+
+% 0 1 0 05074088c58efd17084ba02fac0df110
+
+% 0 1 0 18eafb32caed3dd50f976e787bd035ca
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 3 0 1fee4b4ef9b4ddcd1101a0c62285f8d1
++ Sekcja [Naprawianie](../../soundness/modules/errors.md#recovering) opisuje `mitigate`, a
++ [Tłumaczenie i eskalacja](../../soundness/modules/errors.md#translating-and-escalating) – sposób, by
++ zastosować tłumaczenie wszędzie.

@@ -1,0 +1,49 @@
+orthant 2 language
+
+@ 0 1 0 0f66b86ea1b06c760f462626b49a0a8f
++ # Âncoras, aliases e um decodificador derivado
+
+@ 0 3 0 00f8d0ccbcb10a1619f2f5c6d92f0162
++ Uma âncora nomeia um nó de um documento YAML e um alias o repete. Os aliases são resolvidos à medida
++ que o documento é lido, então o decodificador que o compilador deriva para uma case class vê um
++ documento comum.
+
+% 2 1 0 0b3fec22ed9f21d20fbc4f6d76f1513b
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 0 1 0 14aab7f0be2434f81421fb69d99543da
+
+@ 0 2 0 027630ffdb3a11c817bc2d6197584688
++   label Um bloco, ancorado e usado duas vezes
++   highlight Map[Text..Stage]  cada valor decodificado pelo decodificador derivado
+
+% 0 1 0 0feeb6ee26eddc7916a3c923ea9fa7b1
+
+% 0 1 0 12a618ab3fc8ab800817fdfca2fcb19c
+
+% 0 1 0 1d37aac74e8b960e153b0ba75f2aa81f
+
+% 0 1 0 0b8f1d8ee16c26eb0c8e9a2f55250fa9
+
+% 0 1 0 01f74696a2fcfadd0650b6eee5ff9f43
+
+% 1 1 0 007f0d425c4f0c571fbd490d27534ed7
+
+% 1 1 0 136d267ff733a60e0f6246170d49df5f
+
+% 2 1 0 1525a46c87e9e0571e7d21b8e7c42b7a
+
+% 0 1 0 08a86cbdc9b8cb0109ed8ce5b435ce67
+
+% 1 1 0 0cd6459499a6bd5203d659b3bcc1b6aa
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 0 1 0 10246fcad41e269619e300d81c4e88de
+
+% 1 1 0 126a4f6a3df14d8c0d082bc6e827fe26
+
+@ 0 2 0 152d2dd94ededd52153d1ba8b0e6388f
++ [Âncoras e aliases](../../soundness/modules/yaml.md#anchors-and-aliases) trata dos nós que podem ser
++ ancorados.

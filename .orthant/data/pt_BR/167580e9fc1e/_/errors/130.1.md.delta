@@ -1,0 +1,6 @@
+orthant 2 language
+
+@ 0 3 0 0e4ca06698293693048feb52cbda8aab
++ Verifique se o elemento e seus atributos estão entre os que o Savagery modela. Um SVG produzido
++ por um programa de desenho pode conter construções fora desse subconjunto; lê-lo como
++ [XML](/doc/soundness/modules/xml.md) simples é o fallback.

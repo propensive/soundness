@@ -1,0 +1,86 @@
+orthant 2 language
+
+@ 0 1 0 084e555f45ec9bcd03a62f5768a31ef2
++ # Scalaコンパイラが読むTypeScriptの宣言ファイル
+
+@ 0 3 0 0c7d5110cb9c12840315a6c4961f1028
++ `Interface`は外部の宣言のファイルを名指し、そのファイルはコンパイル時に読まれる。すると`Foreign`の値
++ のメンバーは、そのファイルが宣言するメンバーになる。ここでは、`scene`とメソッド`greet`を持ち、
++ `interval`という名前のものは持たないインターフェース`Play`である。
+
+% 0 1 0 12705ff5e291290d17fbc8389d59ef4a
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 2 0 046e7f36701baea5098bc1076d4906dc
++   label 宣言と、それが宣言する型の値
++   highlight "/xenophile/definitions.ts"  コンパイラのクラスパス上のリソース
+
+% 1 1 0 15e5dbe1b12f51730994e98e490011fd
+
+% 2 1 0 0a9fd77070b00468026772334a623ad7
+
+% 3 1 0 1b3431213913d6561dc50841be60babe
+
+% 5 1 0 0c778ad30c46a9c318cf3ea53910cf6a
+
+% 1 1 0 0ab29186a5db22381bb7f5a4b024c14b
+
+@ 0 2 0 14a6ecb02db90c060c27617ba4f180c3
++   label ファイルが宣言するメンバー
++   highlight play.scene  ファイルのとおりScene型を持つ
+
+% 1 1 0 0fae9580be0b0fba19565344e9a1b6b8
+
+% 2 1 0 1e9b6244381c1bad0bb5eeaffafd8b64
+
+% 3 1 0 0b05148c7ee75d8b02b00d9e13ec1e97
+
+% 5 1 0 11df6a5692839ca71aee05b2a7bcfc91
+
+% 7 1 0 12385ac358b453af04c494ef830d3325
+
+% 1 1 0 081ba4ac61880e0d067dffe8bc669306
+
+@ 0 2 0 1d0aacf80ea7bcad15977b2b689ed998
++   label 適用されるメソッド
++   highlight play.greet(t"Viola")  文字列を取り、文字列を返す
+
+% 1 1 0 1d014cee48be54740ca1de83770a300b
+
+% 2 1 0 163c3c6ef5cdd1ae137a8fb07c80fb2b
+
+% 3 1 0 1acae311184b0b31155452833355d037
+
+% 5 1 0 04afd7d6859c86e802c481ae6eb4690b
+
+% 7 1 0 1997a5a3651a3db711c84601de577ee0
+
+% 0 1 0 068a5b4db65e1a1b007b306313d0ea7d
+
+% 1 1 0 0e03aafff74f73f9168c1bc94f7fc7e0
+
+@ 0 1 0 061e8387d6533dcd026a6b7b29e30b58
++   label ファイルが宣言しないメンバー
+
+% 0 1 0 1477c34ff41c7c99183443e1d3238ae1
+
+% 1 1 0 0960c596329e4eb20a0b442aaa85c43a
+
+% 2 1 0 0ed69d8e40b5826e1c0a8ab49f62153e
+
+% 3 1 0 11800f1f532862c7066a251fed74adde
+
+% 5 1 0 0bc0497883d2a909128fe7035527bed9
+
+% 0 1 0 09f6fde2f39954060a4b8a3e941221a5
+
+% 0 1 0 18eafb32caed3dd50f976e787bd035ca
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 2 0 156a269094a927db1003737ead1c1fcf
++ 各段階が何を検査するかは
++ [外部の型をたどる](../../soundness/modules/foreign-interop.md#navigating-foreign-types)で説明する。

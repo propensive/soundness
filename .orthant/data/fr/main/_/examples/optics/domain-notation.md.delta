@@ -1,0 +1,83 @@
+orthant 2 language
+
+@ 0 1 0 1b1a17b6339f15a50c203c9984818790
++ # Un chemin à travers une collection
+
+@ 0 3 0 0c615a7b1c0220d014d2fed5af791c09
++ Un chemin vers un champ s'écrit comme on sélectionnerait le champ, et une étape entre
++ parenthèses entre dans une collection : un élément, chaque élément, ou ceux qui satisfont un
++ prédicat. La mise à jour reste une affectation.
+
+% 2 1 0 0f74bbbe3d01a4381ed838f4898b95ec
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 2 0 125ad4fb11f0ed1b0deecd83ae68629a
++   label La première scène
++   highlight (Prim)  un élément
+
+% 1 1 0 1fbfc465eeee898701346d1cbefc8d5e
+
+% 2 1 0 0ce9f12d63b630ed1d7ac6d3e2c63945
+
+% 3 1 0 1a7cab990003682411e6fbbd4c15cf0c
+
+% 5 1 0 1174c02e6705c70c154606493058f6bc
+
+% 0 1 0 1436c05063bd570a0603e8ed5e1fb047
+
+% 1 1 0 11f40c1c36f1491918d7796d38063214
+
+@ 0 2 0 0c05689e094557861cf179413c48db6c
++   label Chaque scène
++   highlight (Each)  chaque élément
+
+% 1 1 0 0ecb7de7625ebad91de4f6a0bbccf4d0
+
+% 2 1 0 19452dab321dc45f13d4347db05dd291
+
+% 3 1 0 1df72b4df53fd3461c32215fadcbb7bc
+
+% 5 1 0 0945be8a08a5502000b16ae8f8d2e355
+
+% 0 1 0 0a743bf4720067691665686c832b942e
+
+% 1 1 0 185955a77a7eda2d1903eb488018f5a1
+
+@ 0 2 0 0aa0d46c8da7f39715218769aa7653d5
++   label Les scènes après la première
++   highlight (Filter[Scene](_.number..1))  les éléments qui correspondent
+
+% 1 1 0 01f2354626a8ee561bb603aae759c41b
+
+% 2 1 0 12036c7156685dc00868ee82c345fecf
+
+% 3 1 0 0662dda52047a3b10e84d9476906e139
+
+% 5 1 0 1607d501ae10ed1a11edb20c6c095996
+
+% 0 1 0 0945c6bf9ebea8c818588e14ddae80e8
+
+% 1 1 0 1888d504fc1b2c3c130daa63871e064d
+
+% 1 1 0 136d267ff733a60e0f6246170d49df5f
+
+% 2 1 0 1525a46c87e9e0571e7d21b8e7c42b7a
+
+% 0 1 0 08a86cbdc9b8cb0109ed8ce5b435ce67
+
+% 1 1 0 0cd6459499a6bd5203d659b3bcc1b6aa
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 0 1 0 0269d6a79c1259ff00227fb7900a7d9c
+
+% 0 1 0 0c7d114aeaeaec5c13bc602fb33d4f3f
+
+% 1 1 0 01819bb62512085a19c514b10ec8f43c
+
+@ 0 2 0 19babf96d2027bd918cb51f33939dc82
++ [Entrer dans les collections](../../soundness/modules/optics.md#reaching-into-collections)
++ énumère les étapes que peut prendre un chemin.

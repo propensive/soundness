@@ -1,0 +1,23 @@
+orthant 2 release
+
+@ 2 0 0 112ebe47a4a7816b0f36be0a11955485
++   entry .Composition   the schema's base with some of its layers, and the signature which documents written under it carry
++       A launcher chooses the composition, from the `.acceptance` the daemon publishes, and
++       the daemon answers under the one it was written to under. `interrupts` says whether it
++       has the `interrupts` layer.
++   entry .base   the composition of the schema's base alone, which every launcher can write under
++   entry .layered   the composition of the base with the `interrupts` layer
++   entry .acceptance   what the daemon reads, for a launcher to consult before it connects: the base, and each layer it holds
++   entry .recognize   the message of a session's first document, with the composition it was written under
++       The richest composition is tried first, and the rest of the session is read and written
++       under the one found.
+
+@ 1 0 0 02a15e50690bad971ede7f9faae12954
++
++           `interrupts` is carried only under the schema's `interrupts` layer. In raw mode it
++           leaves Ctrl-C, Ctrl-\ and Ctrl-Z generating signals, so that an invocation which is
++           not reading its keyboard can still be interrupted from it; the keys become bytes on
++           stdin when the invocation first reads stdin in raw mode, and are not given back.
+
+@ 1 0 0 0144c5baca7d0a26046b392a0caebdcc
++       entry #interrupts   whether, in raw mode, the keys which generate signals are left with the terminal

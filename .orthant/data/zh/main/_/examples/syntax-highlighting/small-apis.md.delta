@@ -1,0 +1,61 @@
+orthant 2 language
+
+@ 0 1 0 0535ba315e1f50e91ada95ec153abd87
++ # 一个方法，两种语言
+
+@ 0 3 0 1c1ec9bd6425016a00e00d52c937bcbb
++ `highlight` 是语言的一个方法。`Scala.highlight` 和 `Java.highlight` 给出同样的 `SourceCode`，由带着色类别的词法单元组成，并且各自用其编译器的词法分析器读取源代码：在 Scala 规定之处，`inline` 是一个修饰符，在其他任何地方则是一个名称。
+
+% 2 1 0 13551a402f5a1e6703020b361e0b4106
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 046b08c8f23d9dbe17af1de4804965ac
++   label Scala，其中 inline 是软关键字
+
+% 1 1 0 121bcd48c8d5554809aed17073fb12ec
+
+% 2 1 0 18dbee8ac46caa8412d256c5d0339845
+
+% 3 1 0 084d8e5167323c1d1b4c87caede9b66c
+
+% 5 1 0 0de004d709266cd5115c6aece9f54045
+
+% 1 1 0 01c180afa1785c3a14505ec5e98ce272
+
+@ 0 2 0 1fb9f96792d2a2c51951e29a44117f87
++   label Java，其中它只是一个名称
++   highlight Java.highlight  同一个方法，用于另一种语言
+
+% 1 1 0 01c3063771f3c05d1bb4176bcb91c32d
+
+% 2 1 0 1b14ca20e6fc22701a60546ba20ffffc
+
+% 3 1 0 072d72e99f6b7285083f3c2d01132fae
+
+% 5 1 0 123b01e1175a3f630c2c32d6f48f6d8f
+
+% 0 1 0 19032e0fe77475401770b635091b17ea
+
+% 1 1 0 08c9088f6caab0f10fd05f128d2f1c04
+
+% 1 1 0 136d267ff733a60e0f6246170d49df5f
+
+% 2 1 0 1525a46c87e9e0571e7d21b8e7c42b7a
+
+% 0 1 0 08a86cbdc9b8cb0109ed8ce5b435ce67
+
+% 1 1 0 0cd6459499a6bd5203d659b3bcc1b6aa
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 0 1 0 04811ed86f2e474b0d47e516dd08e421
+
+% 0 1 0 143c6c30193b0ea908d7ed4726474db3
+
+% 1 1 0 0df87a0c1a460a9b06b700d82d00cf2f
+
+@ 0 1 0 0df4adcab4a02d970cf677bafa94b048
++ [高亮](../../soundness/modules/syntax-highlighting.md#highlighting)列出了各种着色类别。

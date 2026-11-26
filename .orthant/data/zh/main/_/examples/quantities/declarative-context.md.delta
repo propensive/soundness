@@ -1,0 +1,54 @@
+orthant 2 language
+
+@ 0 1 0 124504d3d570bb9117dfa41bf11971f8
++ # 同一个温度，按作用域内的温标读取
+
+@ 0 2 0 0f12441a9102f9a210a3c84b5e51c9db
++ 温度在一个具名温标上创建，无论在哪种温标上显示，它都是同一个温度。显示所用的温标是一个导入，无需写任何转换。
+
+% 0 1 0 12705ff5e291290d17fbc8389d59ef4a
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+@ 0 2 0 14cdbe62a1854429003c289d379f92e3
++ alternative 摄氏
++   highlight celsiusScale  摄氏度
+
+% 1 1 0 19e6d4771e5b748c18412af414da59a0
+
+% 0 1 0 188e7d22cea0c78300098d70f42a0cc0
+
+% 2 1 0 0e52c202a7fbe32b040e364688b20bf9
+
+% 4 1 0 175b7485161fa9e2071e603c3f834048
+
+@ 0 2 0 10356adf3d2a4a1006f8cd19b1fd1067
++ alternative 华氏
++   highlight fahrenheitScale  华氏度
+
+% 1 1 0 09d1dcad3a2de2c4075c0b2a1d7f27d0
+
+% 0 1 0 054341ef0b038e2d0e829b941e3ddd73
+
+% 2 1 0 01b9aa1affbb92fe03c26cf7751b14f7
+
+% 4 1 0 115c63791c53911d1353a70913e52f26
+
+@ 0 2 0 0beaca7c0e459a1112ae465f2f83173f
++ alternative 开尔文
++   highlight kelvinScale  开尔文
+
+% 1 1 0 0311d4b58efa23820c908fbedd52fa44
+
+% 0 1 0 1a9bb4a47804f482096c5c8795c5d50a
+
+% 2 1 0 021e659e02b585fd0bf7f6eed6babc0f
+
+% 4 1 0 0a516ac76662d54d17274e84e5a7ab04
+
+% 0 1 0 18eafb32caed3dd50f976e787bd035ca
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 3 0 135ee5c177ec93b11113691cacbc278d
++ [温度](../../soundness/modules/quantities.md#temperature)展示了各种读数，[声明式上下文](../../philosophy/declarative-context.md)则说明了温标为何不是参数。

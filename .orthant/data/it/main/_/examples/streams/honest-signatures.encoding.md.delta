@@ -1,0 +1,60 @@
+orthant 2 language
+
+@ 0 1 0 1e8b90b777189764172e51a1914510d5
++ # Il testo non diventa byte da solo
+
+@ 0 2 0 02ad01187f254d1b01494d42dd73965e
++ Il testo è fatto di caratteri, e i byte sono byte. Leggere l'uno come gli altri richiede una
++ codifica, e non c'è un valore predefinito da dimenticare: senza una codifica nell'ambito, la
++ lettura non compila.
+
+% 2 1 0 053dedb92e4922841720faedb161cc31
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 1b08a3fcf02a513a176d9896ef8b24dd
++   label Testo, letto come byte, senza codifica
+
+% 0 1 0 1477c34ff41c7c99183443e1d3238ae1
+
+% 1 1 0 0960c596329e4eb20a0b442aaa85c43a
+
+% 0 1 0 12a618ab3fc8ab800817fdfca2fcb19c
+
+% 2 1 0 0042c28b2710f72e161c9d9eb696f0c7
+
+% 1 1 0 0aa4cfc1513ecdbb0b3814ad393f25a9
+
+% 0 1 0 10cafc5d01f7fe781f5ff3fc41bd797e
+
+@ 0 1 0 0f54a2e5eec5c7b70eac23c5676fc36d
++   highlight utf8Codepage  la codifica, dichiarata
+
+% 1 1 0 15409ba465f7340509e5cfa52e31797a
+
+% 0 1 0 03133bc60ae5e162053f2137fb7355f3
+
+% 2 1 0 1b328e61920346e80e5ff8d79ce13115
+
+% 1 1 0 0ee513035e07d69806ad87bbdb7a1799
+
+% 1 1 0 136d267ff733a60e0f6246170d49df5f
+
+% 2 1 0 1525a46c87e9e0571e7d21b8e7c42b7a
+
+% 0 1 0 08a86cbdc9b8cb0109ed8ce5b435ce67
+
+% 1 1 0 0cd6459499a6bd5203d659b3bcc1b6aa
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 0 1 0 10ebe3a8bcc51b1c0fbf4d7459fa2180
+
+% 1 1 0 1f351bd8c2d0cd8f1c291503f8d0f534
+
+@ 0 3 0 0deb67c25adf26ee1fefd2101397ff59
++ La riga ha ventisette caratteri, e più byte di così.
++ [Leggere una sorgente](../../soundness/modules/streams.md#reading-a-source) descrive `read`, e
++ [le firme oneste](../../philosophy/honest-signatures.md) il principio.

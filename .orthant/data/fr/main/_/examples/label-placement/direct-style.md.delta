@@ -1,0 +1,65 @@
+orthant 2 language
+
+@ 0 1 0 0b0bbbe6f853e3b919aafbed237323d6
++ # Deux étiquettes qui veulent la même place
+
+@ 0 3 0 00d644d23c6773eb00d77238c466f737
++ Aucune étiquette ne peut être placée avant qu'on les connaisse toutes, et pourtant le code
++ demande chaque position comme si elle était prête, une ligne après l'autre. `arrange` exécute
++ son corps une fois pour connaître les étiquettes, puis une seconde fois pour répondre.
+
+% 2 1 0 17e1c6908e1f48f20e42191f032fbfe7
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 11d95b84a29bc3811d3181cc95923144
++   label Une étiquette
+
+% 1 1 0 11b6e5e3ebf93d0f13b5cb4b59a3c8cf
+
+% 2 1 0 09aea02ef99050b9168d13e95bde4851
+
+% 3 1 0 1606e80de3a64bad044fa695b10a3cf0
+
+% 0 1 0 034bb28b990f22820813601ee16174ee
+
+% 1 1 0 021b6d3de859735b071e82f277ee1b86
+
+@ 0 2 0 0a836d302e31092b034c7e176f5e268f
++   label Une seconde, au même point
++   highlight mantua  demandée après la première, et arrangée avec elle
+
+% 1 1 0 0064b0baf5add99503c48f9498852bf5
+
+% 2 1 0 099461a6ae48c7e10af239b9fccd8923
+
+% 3 1 0 1afc107ec8fc8fb81a7250715ebabbcf
+
+% 0 1 0 1b87cb168bfb500301a60a3919b6c14e
+
+% 0 1 0 1fcd19e3e763097e1e53f859abc5ef44
+
+% 1 1 0 1ccbd6217914dc181c21f67adf4c2c91
+
+% 1 1 0 136d267ff733a60e0f6246170d49df5f
+
+% 2 1 0 1525a46c87e9e0571e7d21b8e7c42b7a
+
+% 0 1 0 08a86cbdc9b8cb0109ed8ce5b435ce67
+
+% 1 1 0 0cd6459499a6bd5203d659b3bcc1b6aa
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 0 1 0 1fdf554044c4f1fd0c22d3aa088c094f
+
+% 1 1 0 0a6c58169a11d99d0c9b9cca0728c9a1
+
+@ 0 4 0 00f0d7efa03baa0508cdeac23be6d970
++ La première étiquette se place à l'est du point, comme les étiquettes le font de préférence, et
++ la seconde cède la place vers l'ouest.
++ [Du placement](../../soundness/modules/label-placement.md#on-placement) explique ce que le corps
++ peut et ne peut pas faire, et [le style direct](../../philosophy/direct-style.md) pourquoi il n'a
++ pas de callback.

@@ -22,6 +22,10 @@ section roadmap doc/roadmap
 
 section errors doc/errors
 
+# The store of short examples, each of one topic under one theme (doc/examples/readme.md): a
+# directory for each topic, and in it a document for each theme the topic shows.
+section examples doc/examples
+
 # The classpath the fences are compiled against: the test assembly (`./mill test.assembly`,
 # which `make test` builds), carrying every JVM component and the fork's standard library.
 # Without it the fences are highlighted but not compiled.

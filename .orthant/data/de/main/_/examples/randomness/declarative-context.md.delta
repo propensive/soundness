@@ -1,0 +1,55 @@
+orthant 2 language
+
+@ 0 1 0 0ef2c117b36682db0bb9a760e5da841c
++ # Der Generator ist ein Import
+
+@ 0 3 0 0d6675e2c5e1381b0a1bffaae3c32aae
++ Ein `stochastic`-Block sagt nicht, woher seine Zufälligkeit kommt. Das tut ein Import, und der
++ Unterschied zwischen einer Simulation, die sich wiederholen lässt, und einem Geheimnis, das sich
++ nicht vorhersagen lässt, ist ein Wort am Anfang des Geltungsbereichs.
+
+% 0 1 0 12705ff5e291290d17fbc8389d59ef4a
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+@ 0 2 0 03c2ca8f305f19b81a3ea1eb2d550400
++ alternative Reproduzierbar
++   highlight seededRandomization  dieselbe Folge für denselben Seed
+
+% 1 1 0 0bb8093a6b740a1c0aba5ffeba20c718
+
+% 0 1 0 147a33188140db7f06261e1919884d24
+
+% 0 1 0 130d51fe88795b3d01d0c9989e6472fd
+
+% 2 1 0 1ff14821629b3a3e0a32f9254b5049fe
+
+@ 0 2 0 188989cffe609ab91cea97cf7786fb5d
++ alternative Bei jedem Lauf anders
++   highlight unseededRandomization  ein gewöhnlicher Generator
+
+% 1 1 0 1e980b8adfe0b0c519131855f79c616d
+
+% 0 1 0 019a6cc3a2ae932c1201d5e03b873746
+
+% 2 1 0 1ecd82330374fb270cbf7cf75b3aace8
+
+@ 0 2 0 1d9c49097ceb69481ef048269027c5c4
++ alternative Unvorhersagbar
++   highlight secureUnseededRandomization  die sichere Quelle des JDK
+
+% 1 1 0 05dce43df384e93010ea4960c63d694f
+
+% 0 1 0 07861209f13219931337b28576b18311
+
+% 2 1 0 04ef436938a843ff0ad1df516c1ca3e1
+
+% 0 1 0 18eafb32caed3dd50f976e787bd035ca
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 4 0 17f9336ab5d4636f12e4c0dc5a39cbe0
++ Nur der erste davon liefert zweimal dieselbe Zahl; das Beispiel wird also kompiliert, aber nicht
++ ausgeführt. [Quellen](../../soundness/modules/randomness.md#sources) listet die Generatoren auf, und
++ [Deklarativer Kontext](../../philosophy/declarative-context.md) erklärt, warum die Wahl kein
++ Argument ist.

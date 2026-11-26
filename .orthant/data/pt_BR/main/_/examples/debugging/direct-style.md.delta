@@ -1,0 +1,86 @@
+orthant 2 language
+
+@ 0 1 0 1d243ede79d6e6151c58fbc7953b73de
++ # O laço principal de um depurador é um percurso
+
+@ 0 3 0 109520111c30b48e01fe93c9f51c9730
++ A VM relata breakpoints, passos e saídas como eventos. Eles não são entregues a callbacks
++ registrados antes: `debug.events` é um fluxo, e o laço que os trata é um `each` comum sobre ele, com
++ um padrão para cada tipo de evento.
+
+% 0 1 0 12705ff5e291290d17fbc8389d59ef4a
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 2 0 1ab0fa9a1e8c18600aaf883ddf75abda
++   label Cada lote de eventos, à medida que chega
++   highlight debug.events.each  bloqueia até que a VM tenha algo a dizer
+
+% 1 1 0 12b70227e4e6a8780ff24fc4b87ec497
+
+% 2 1 0 1da78b0dccac495e1ce88f3aa404eccf
+
+% 4 1 0 1c19f3920fe06a5418156cf2aeda47e8
+
+% 5 1 0 163529d950da55ba05ea165d00210b1d
+
+% 0 1 0 0964772bf61985ce0f13c3633950bde1
+
+% 1 1 0 11e8ff088912c22108dcd842fd185c2f
+
+@ 0 2 0 0832f5ce247f7d580729157c2687218e
++   label Um breakpoint entre eles
++   highlight Jdwp.Event.Breakpoint(request,..location)  um valor tipado, desmontado
+
+% 1 1 0 129bd39cc06ff64416d9ed5257b401a9
+
+% 2 1 0 1fcff73447aa24f3057f16cce23041b2
+
+% 4 1 0 0a10a2916903c58c0585bbbbf00d0a8b
+
+% 5 1 0 01594100b5aac9b9166f63082595b322
+
+% 6 1 0 089daa13f6f9d56a0337ec88fa88a082
+
+% 7 1 0 0f1d5b1eb121774a10bbf23623459255
+
+% 8 1 0 110338b2dec684ae09d42d087cb050ab
+
+% 1 1 0 109ebb6f890178fd1f09e4e1fd9d1a9a
+
+% 1 1 0 16b2440bbc5d3b1f055025359efaa7f6
+
+@ 0 2 0 1670a22a4549a64c047fcab7017246d0
++   label E um passo
++   highlight Jdwp.Event.SingleStep(request,..location)  outro caso da mesma enumeração
+
+% 1 1 0 0b571ae0dd5206d8175304593762606d
+
+% 2 1 0 0a7bf19f8d73084e15bada3cce9211ad
+
+% 4 1 0 06fb07d16cb37ac10c6f7b6f862509bc
+
+% 5 1 0 1ff94614bfb7bde50f848d322fb8234d
+
+% 6 1 0 1d33d2a3f932ef7c1b6dc9882935d304
+
+% 7 1 0 073280ffaac7c6401748b542668ac389
+
+% 8 1 0 042b69ae50be6c690558d0b10e9008dc
+
+% 0 1 0 01eddcf6503f13d308f12269b04add29
+
+% 0 1 0 16197059e6565e9c0655e5ff53c46e4f
+
+% 1 1 0 072429999140c97902c1c2e7fa072175
+
+% 0 1 0 18eafb32caed3dd50f976e787bd035ca
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 3 0 0399b6767bd56e080c20bc8b61816a07
++ O exemplo é compilado, e não é executado, já que precisa de outra JVM para depurar.
++ [Eventos](../../soundness/modules/debugging.md#events) descreve o fluxo, e [estilo
++ direto](../../philosophy/direct-style.md) por que ele não é um conjunto de callbacks.

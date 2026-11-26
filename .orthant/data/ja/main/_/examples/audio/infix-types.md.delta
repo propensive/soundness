@@ -1,0 +1,49 @@
+orthant 2 language
+
+@ 0 1 0 055efc0cc82a799c010054b5cc5fde80
++ # 型に含まれる音の形式
+
+@ 0 2 0 1ab5c638c2d994cd166b1336233c0e98
++ `Audio in Wave` は書かれたとおりに読める。WAV 形式の音声である。
++ `Audio in Aiff` は別の型なので、ある形式の音が、もう一方の形式が求められる場所へ送られることはない。
+
+% 0 1 0 12705ff5e291290d17fbc8389d59ef4a
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 100666ecb684cd2e081874d5f0ccad04
++   label AIFF が求められる場所の WAV
+
+% 0 1 0 1477c34ff41c7c99183443e1d3238ae1
+
+% 1 1 0 0960c596329e4eb20a0b442aaa85c43a
+
+% 2 1 0 052b5d53c564213f191f74be413a911f
+
+% 4 1 0 09a640ac2045889908e52ad9d9c287d3
+
+% 0 1 0 0145373188e61e8416a9093d089e3446
+
+% 1 1 0 1b32df544fc3dd911063116c15f3980e
+
+@ 0 2 0 1cbd2e2132b11f67096f42997356b803
++   label 変換した WAV
++   highlight to[Aiff]  `Audio in Aiff` を返す
+
+% 1 1 0 1733fb050ecf016a1cca692be1cd364b
+
+% 2 1 0 0ee5ed2fba0cbd540e051d8fcece037e
+
+% 4 1 0 0564772d505fcb731b60e7ba5f2b6ef3
+
+% 0 1 0 04ba50964a6fcac1100e86127119d61a
+
+% 0 1 0 18eafb32caed3dd50f976e787bd035ca
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 3 0 1ef32b48d05c34441e704ea69ef689e5
++ [変換と書き込み](../../soundness/modules/audio.md#converting-and-writing)に変換の説明が、
++ [中置型](../../philosophy/infix-types.md)に型をつなぐ語の説明がある。

@@ -1,0 +1,75 @@
+orthant 2 language
+
+@ 0 1 0 1a5f10e28b7baee108cc14ddd0e2b252
++ # Kilometer, Millisekunden und Kibibyte
+
+@ 0 3 0 15d42c40237d096f1bc44ec42e373878
++ Ein metrisches Präfix wird auf eine Einheit angewandt wie in der Schrift und ergibt eine größere
++ oder kleinere Einheit derselben Dimension. Die dezimalen Präfixe skalieren mit Zehnerpotenzen, die
++ binären mit Zweierpotenzen.
+
+% 2 1 0 1ff2fe808e5dfa6d1d59259048df924f
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 2 0 035facc135f0961c1686bd546f3898c0
++   label Eine Strecke
++   highlight Kilo(Metre)  tausend Meter
+
+% 1 1 0 1d158502f7402105016e9a71d3ef49cd
+
+% 2 1 0 168b13b9dc2256fd191f3bb6516c66dc
+
+% 1 1 0 0cd31c09f709a9370312154b275cd3b1
+
+@ 0 2 0 133a2349d55ec2c8043304549e39076e
++   label Eine Zeit
++   highlight Milli(Second)  eine tausendstel Sekunde
+
+% 1 1 0 0c2d8fb0ef4458f31b689d0e9b62ba3c
+
+% 2 1 0 1cec652ccf431c3c0795c1f4a278b400
+
+% 3 1 0 1c0ab591e05d9599114bcc746b1416d4
+
+% 1 1 0 17d5a2faf9fa58aa086a628b8e8676ea
+
+@ 0 2 0 0e4dd5f0fe9545e2142b744f11eadf95
++   label Ihr Quotient, in Basiseinheiten
++   highlight march/blink  die Präfixe heben sich auf
+
+% 1 1 0 1842f11960a5729e04ef0eb15024cac9
+
+% 2 1 0 010378409cb87fed09a9540f3bc4c121
+
+% 3 1 0 17bf3648f89c90210744fd2674a9a256
+
+% 0 1 0 05b8a9c603643528171e89719c3a1783
+
+% 1 1 0 1e0b84fdeb3a8975027588a48ea976f3
+
+% 1 1 0 136d267ff733a60e0f6246170d49df5f
+
+% 2 1 0 1525a46c87e9e0571e7d21b8e7c42b7a
+
+% 0 1 0 08a86cbdc9b8cb0109ed8ce5b435ce67
+
+% 1 1 0 0cd6459499a6bd5203d659b3bcc1b6aa
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 0 1 0 1ff46eadb86ffabc103c1dc6d8e7c8b4
+
+% 0 1 0 1574617db14f45c1022ca36771226cef
+
+% 0 1 0 175e932caabbe10b17847ee2bed1120d
+
+% 0 1 0 0b2e5b79186452361019b0f5dfa07e56
+
+% 1 1 0 0d9e6770ffc1c0e9172a489f8428a8d4
+
+@ 0 1 0 17bdbb446d8c95ba1eb3bb98a7fcb339
++ [Metrische Präfixe](../../soundness/modules/quantities.md#metric-prefixes) enthält die vollständige
++ Menge.

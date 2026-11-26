@@ -1,0 +1,53 @@
+orthant 2 language
+
+@ 0 1 0 1890a65636dd0fc804fdbb0647daf0cd
++ # Un solo vocabolario, e ogni forma restituisce la propria
+
+@ 0 2 0 1155a3a2ee04f3ee045562343c7cadd6
++ `filter` è un'unica operazione, fornita da una typeclass, e ogni collezione restituisce la forma
++ che le è stata data. Il testo viene attraversato come i suoi caratteri, e restituisce testo.
+
+% 0 1 0 12705ff5e291290d17fbc8389d59ef4a
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+@ 0 2 0 12a50a290648eb870bb5911327579d8a
++ alternative Una lista
++   highlight List[Int]  una lista dà una lista
+
+% 1 1 0 1aef6054b6568ca21a2d305fb20fd1d0
+
+% 0 1 0 1d12b7bc24305906155bacffcc19f2b2
+
+@ 0 2 0 0c6e3f5293b892d60a7ef3f8e0794342
++ alternative Un insieme
++   highlight Set[Int]  un insieme dà un insieme
+
+% 1 1 0 15c7fc85490020d81ea87f2a108c9745
+
+% 0 1 0 0986bb23ce8eb3ff037934e19fa289d2
+
+@ 0 2 0 0b72c7388c568b6d0401b277b87ae5e0
++ alternative Una catena lazy
++   highlight Chain[Int]  ancora lazy
+
+% 1 1 0 01e9627533cc98cc100147d2265c9d67
+
+% 0 1 0 07cfe1d010e197650e7ba13d64cdf9bc
+
+@ 0 2 0 0edc09bb4d6cc89d1ac444bb96e6babb
++ alternative Testo
++   highlight Text  i caratteri danno testo
+
+% 1 1 0 02eb40375bda2af717a97787fe3e0ab9
+
+% 0 1 0 1a52f73522d377da17a1b7b8603a5bd9
+
+% 0 1 0 18eafb32caed3dd50f976e787bd035ca
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 3 0 122053d72c65f7481445976a5f50a501
++ [Attraversare e trasformare](../../soundness/modules/collections.md#traversing-and-transforming)
++ ha le altre operazioni, e [API ridotte](../../philosophy/small-apis.md) le ragioni di un solo
++ vocabolario.

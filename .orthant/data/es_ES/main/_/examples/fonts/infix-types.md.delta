@@ -1,0 +1,45 @@
+orthant 2 language
+
+@ 0 1 0 1aa40937c7e5ef0a030f7eb7f3a6fc71
++ # Una fuente en un medio
+
+@ 0 3 0 07319c674ee050ce1daf944e5580699e
++ Una provisión se declara para un tipo de letra en un medio, y su tipo dice exactamente eso:
++ `(Typeface of "Inter") is Typesettable in Web`. Una `Font in Web` es para un navegador y una
++ `Font in Print` para un PDF, y cada una solo se crea a partir de una provisión en su propio
++ medio.
+
+% 0 1 0 12705ff5e291290d17fbc8389d59ef4a
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+@ 0 2 0 1bf9622e7edcd1cc0ce24ea847787c9a
++ alternative En un navegador
++   highlight Font..Web  la única fuente que acepta una hoja de estilo o un SVG
+
+% 1 1 0 1d1b4168faced54c19ced01e0214d990
+
+% 2 1 0 0227fb968f06d91501f346c550519157
+
+% 0 1 0 05845ddae64c33d7187455fded880a7f
+
+% 0 1 0 0045a676f720f3c0032953604c3d47d5
+
+@ 0 2 0 191309837070710b184ff39808b75674
++ alternative En un PDF
++   highlight Font..Print  creada a partir de una provisión que `Print` tiene para Helvetica
+
+% 1 1 0 1cd14cba0ea54224043eddd84ee8c69f
+
+% 2 1 0 1f9cbcaa805eb9ef09cfc18c939968a8
+
+% 0 1 0 1902b26fa076f4e7076418903db8d6bc
+
+% 0 1 0 18eafb32caed3dd50f976e787bd035ca
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 3 0 01a7b5b947cc3c9e1c40499e1fc34376
++ [Proporcionar un tipo de letra](../../soundness/modules/fonts.md#providing-a-typeface) tiene la
++ tabla de provisiones y sus medios, y [los tipos infijos](../../philosophy/infix-types.md) las
++ palabras que unen los tipos.

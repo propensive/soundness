@@ -1,0 +1,57 @@
+orthant 2 language
+
+@ 0 1 0 1ebbf0e3b2649ee50ef3b150bdfc6ee1
++ # Un insieme non ha un ordine da invertire
+
+@ 0 2 0 0399fb6a1eacddde1043806364c8871a
++ Un `Set` contiene ogni elemento una sola volta, senza ordine. Le operazioni che richiedono un
++ ordine gli mancano, e non sono definite in modo da fare qualcosa di arbitrario.
+
+% 2 1 0 165f0418b120e3fd11cf506e4bf2a297
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 0715bded7ad5d19f04474266cc823693
++   label Un insieme, invertito
+
+% 0 1 0 1477c34ff41c7c99183443e1d3238ae1
+
+% 1 1 0 0960c596329e4eb20a0b442aaa85c43a
+
+% 0 1 0 0486be4e97c54110125d2cde22341be0
+
+% 1 1 0 002f4751d5c3c3cb06fee08863e9f9c4
+
+% 1 1 0 1775bfa2993d021a02b1a53ebc14e81d
+
+@ 0 2 0 12422d59697fb63500e96d5636b80f0a
++   label Una lista, invertita
++   highlight List  ha un ordine
+
+% 1 1 0 1d04beb0b535ebf41e5e3fd819623719
+
+% 0 1 0 004ed890c6569ab514d7cdc117036800
+
+% 1 1 0 1d8a47b6ee0290160f23298571e2b862
+
+% 1 1 0 1bb602e4a6060af71e27184d5e4fda0c
+
+% 1 1 0 136d267ff733a60e0f6246170d49df5f
+
+% 2 1 0 1525a46c87e9e0571e7d21b8e7c42b7a
+
+% 0 1 0 08a86cbdc9b8cb0109ed8ce5b435ce67
+
+% 1 1 0 0cd6459499a6bd5203d659b3bcc1b6aa
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 0 1 0 1c1a14c8f21e59f5037f03728b5c432c
+
+% 1 1 0 0e546d499773ed46086e2116faab40e6
+
+@ 0 2 0 132e0de01e2a4ff207dd147ebabcb123
++ [Duplicati e ordine](../../soundness/modules/collections.md#duplicates-and-order) dice quali
++ operazioni mancano a un insieme.

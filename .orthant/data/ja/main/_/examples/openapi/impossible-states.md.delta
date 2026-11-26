@@ -1,0 +1,59 @@
+orthant 2 language
+
+@ 0 1 0 0db81f21666565280b6e016d11e8b3d8
++ # 仕様の型を持つパスパラメータ
+
+@ 0 3 0 113f3176d23864f6045bceb17bbd1ed3
++ 仕様は各パスパラメータに型を与え、クライアントはその型でパラメータを受け取る。ペットは整数で、セッションはテキストで識別され、
++ どちらも他方で求めることはできない。
+
+% 0 1 0 12705ff5e291290d17fbc8389d59ef4a
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 17115f96528d6f7e1aa5363ed90e4292
++   label 名前で求めるペット
+
+% 0 1 0 1477c34ff41c7c99183443e1d3238ae1
+
+% 1 1 0 0960c596329e4eb20a0b442aaa85c43a
+
+% 2 1 0 1f08353c1092c6d21c5cc4b38f49f476
+
+% 0 1 0 1174221287ecc2610410689fd2118ef9
+
+% 1 1 0 1266de9d86e1c9161d3bb621c0c0b9c8
+
+@ 0 2 0 144da05acab55454028b487dda60f473
++   label 番号で求めるペット
++   highlight 42  petId は整数である
+
+% 1 1 0 092be701a7295a1b098fac86e8015a10
+
+% 2 1 0 1c8165ed5cc717971910897ebd7e5c56
+
+% 4 1 0 1d18cf93698aeb3d060b1421d612cc90
+
+% 1 1 0 1cf51e93cdfb7b6c036ffd386e58a4d1
+
+@ 0 2 0 0a2144c5d9cc817004f698e322d8e3bb
++   label トークンで求めるセッション
++   highlight t"tybalt"  token は文字列である
+
+% 1 1 0 02549fb08c8fdb52173adeb25daa24f8
+
+% 2 1 0 1a42232432625fd9081c144d63120f29
+
+% 4 1 0 0f7027613de3cf4105b440ee85f9137d
+
+% 0 1 0 1b7f97ac2a7c80d002acd584a5ebdaa5
+
+% 0 1 0 18eafb32caed3dd50f976e787bd035ca
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 3 0 02bda9cdd5421d94114659cc8224f49b
++ この例はコンパイルされるが、実行はされない。[型付きのクライアント](../../soundness/modules/openapi.md#a-typed-client)に型ごとの規則があり、
++ [不可能な状態](../../philosophy/impossible-states.md)にその原則がある。

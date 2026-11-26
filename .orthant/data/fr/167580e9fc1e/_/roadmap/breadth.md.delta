@@ -1,0 +1,22 @@
+orthant 2 language
+
+@ 0 2 0 1929cda851f58baa1629c06d27d88cdc
++ Terminé lorsque : le module est livré avec des tests, des pages d'erreur et un sujet dans
++ `doc/work/soundness/modules/`, et fait l'aller-retour des vecteurs d'exemple des RFC 7515/7516.
+
+@ 0 2 0 162c48f835fd768f0a9cfd9f73a3682c
++ Terminé lorsque : le module est livré avec des tests, des pages d'erreur et un sujet dans
++ `doc/work/soundness/modules/`, et passe la suite de conformité TOML standard.
+
+@ 0 2 0 1385aacb6e88e9540bce32e054ba8a53
++ Terminé lorsque : le module est livré avec des tests, des pages d'erreur et un sujet dans
++ `doc/work/soundness/modules/`, et qu'une cérémonie scriptée d'enregistrement et d'assertion réussit face à un
++ authentificateur de référence.
+
+@ 0 2 0 1358c2667696ccd4117c4bca7d69240c
++ Terminé lorsque : le module est livré avec des tests, des pages d'erreur et un sujet dans
++ `doc/work/soundness/modules/`, et interopère avec un serveur et un client HTTP/3 de référence.
+
+@ 0 2 0 03cdd5b8ffa5b93710b6b0e94e148d08
++ Terminé lorsque : le module est livré avec des tests, des pages d'erreur et un sujet dans
++ `doc/work/soundness/modules/`, et qu'une session scriptée réussit face à un serveur IMAP de référence.

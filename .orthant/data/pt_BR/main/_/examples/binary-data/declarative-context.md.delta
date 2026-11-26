@@ -1,0 +1,88 @@
+orthant 2 language
+
+@ 0 1 0 0ab07b9a41694c0e137d5eb4d4ed68a1
++ # A ordem dos bytes é escolhida onde o layout é declarado
+
+@ 0 2 0 1f25a672ec5b3129077e98f7e04407e5
++ A ordem dos bytes dentro de um campo pertence ao formato e não a cada leitura, então ela é um
++ import ao lado do layout. Sem um, o layout não pode ser derivado.
+
+% 2 1 0 1ff59e229c2102010f31f7328bd0ad2c
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 12d8a7365ac2a3310e5924d66bf68434
++   label Nenhuma ordem de bytes
+
+% 0 1 0 1477c34ff41c7c99183443e1d3238ae1
+
+% 1 1 0 0960c596329e4eb20a0b442aaa85c43a
+
+% 1 1 0 1cf4f43f5ab54fc20eccdf2066c144b0
+
+% 3 1 0 07bf4abf4172f4e41a10e75fa1ebcf86
+
+% 4 1 0 0ce47230678060231579aee3ae0a1a7a
+
+% 1 1 0 1a93bd53af7088261af5ff47d637a388
+
+% 0 1 0 161ad49b96eaaeb01b52fec01bc1aef4
+
+@ 0 1 0 085c50b758069d2010fc7f69a0f15342
++   highlight bigEndianByteOrder  o byte mais significativo primeiro
+
+% 1 1 0 0fc9effcc008b7f20addfde0714af994
+
+% 0 1 0 12c537d0fb41cdb51cffcc2124c99edb
+
+% 2 1 0 09bb52ebdb361a510caa957cc69a8615
+
+% 4 1 0 1b44a700e3f1060d005f941faf092004
+
+% 5 1 0 09189f6527fc7d601f24f639f403bd87
+
+% 7 1 0 07f35e9d3137eaf814eeace99093b83f
+
+% 1 1 0 08bf7ba6debe9e9c176e679713266217
+
+% 0 1 0 1c57b568563200741c1f01caa48dc319
+
+@ 0 1 0 127049b2c38494391657ba1195f5d386
++   highlight littleEndianByteOrder  o byte menos significativo primeiro
+
+% 1 1 0 04f9fb63d66680c1080146dedd5e5da1
+
+% 0 1 0 1d2dd844bd756b0d037c898d175e643b
+
+% 2 1 0 0fcdff46a2528743050b9fa0bc992c21
+
+% 4 1 0 0d0013d722b5638d0405853d244b363c
+
+% 5 1 0 0c903ab57713e2461baccbb7cd5a8923
+
+% 7 1 0 0285b72d2c4f616a1c5d3422574146c2
+
+% 1 1 0 0cffbee8eb87a77912e3daa5b5615407
+
+% 1 1 0 136d267ff733a60e0f6246170d49df5f
+
+% 2 1 0 1525a46c87e9e0571e7d21b8e7c42b7a
+
+% 0 1 0 08a86cbdc9b8cb0109ed8ce5b435ce67
+
+% 1 1 0 0cd6459499a6bd5203d659b3bcc1b6aa
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 0 1 0 0854f9d3140771a018b90bab9adf83eb
+
+% 0 1 0 09e6d03b7ef4c73c06c9cceb4dce1b88
+
+% 1 1 0 06d6dc8332661d3410c0ed2b9ca6dfe5
+
+@ 0 3 0 0adf1715ac371eba05df9b3c705f80d5
++ Os mesmos quatro bytes são uma versão diferente sob cada import.
++ [Descrição de um layout](../../soundness/modules/binary-data.md#describing-a-layout) diz como é
++ declarado um formato que mistura as duas.

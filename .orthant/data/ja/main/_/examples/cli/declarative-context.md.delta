@@ -1,0 +1,61 @@
+orthant 2 language
+
+@ 0 1 0 05484fc110a0714c107f85600bfde640
++ # 引数の読み方はインポートで決まる
+
+@ 0 3 0 1cb6ed7fc5d88dd8057cf438b808faad
++ `-vq` が一つのフラグか二つのフラグかは慣習であり、すべてのプログラムが同じ慣習に従うわけではない。
++ 慣習はインタプリタであり、エントリポイントを定義する場所でインポートによって選ばれ、フラグを読むプログラムはどの慣習のもとでも同じである。
+
+% 0 1 0 12705ff5e291290d17fbc8389d59ef4a
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 0 1 0 09f2014446fda08512cb35981407ee8c
+
+@ 0 1 0 0ae48041e9253713055fbd69ecf63976
++   highlight interpreters.posixInterpreter  `--verbose` と `-v`
+
+% 1 1 0 157279f8c5970af2026533ea4e56e316
+
+% 2 1 0 061a3bf83d7d1b821fad496f960c46fd
+
+% 3 1 0 0aced37f68f995cd036df0cc677a3681
+
+% 0 1 0 0194d13457cb7c55010c5bdcc93c646d
+
+% 2 1 0 1fad43218660056b1e371b441d094b4e
+
+% 3 1 0 1c777ec52d0b3f610cd228c3268c87ea
+
+% 4 1 0 1ae239a1218aefaa13a6ece5061c6884
+
+% 5 1 0 14d9b83c910b20ca0474f4b11af3edbe
+
+@ 0 2 0 05d42dd09fbaafd8025fe2dc77e25a91
++ alternative まとめ書き
++   highlight interpreters.posixClusteringInterpreter  `-vq` は `-v -q` として読まれる
+
+% 1 1 0 1b88a2d41065875c07de967ab756064e
+
+% 2 1 0 183e2bbaf8e52d18015b227809617b1d
+
+% 3 1 0 0316d5dc929d1e0011697cb4d63c71d9
+
+% 0 1 0 0e665ef8fa2d993b0ec1ca0b49fba513
+
+% 2 1 0 0938c31f165f15af17db467533598e61
+
+% 3 1 0 16d94f3fd4f09bfa165edc02720265d9
+
+% 4 1 0 01b87abe9b97e196068591de6db3edd1
+
+% 5 1 0 08036eef57dbe82a0d506f1b3a9d77ea
+
+% 0 1 0 18eafb32caed3dd50f976e787bd035ca
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 4 0 10f77f6afc6d45ab029415e421b7a616
++ この例はコンパイルされるが、プログラム全体なので実行はされない。[引数](../../soundness/modules/cli.md#arguments)がインタプリタを列挙し、
++ [宣言的なコンテキスト](../../philosophy/declarative-context.md)がその選択をインポートにする理由を説明する。

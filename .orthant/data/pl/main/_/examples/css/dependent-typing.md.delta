@@ -1,0 +1,45 @@
+orthant 2 language
+
+@ 0 1 0 1e3b1ebf89af568b1264516220d4f05c
++ # Długość nie jest kątem
+
+@ 0 2 0 06457149aa18948d14d035548b6795a2
++ Jednostki CSS są wielkościami, a każda ma swój wymiar w typie. Dwie długości można dodać, w
++ jakichkolwiek jednostkach je zapisano, a długości i kąta – nie.
+
+% 0 1 0 12705ff5e291290d17fbc8389d59ef4a
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 2 0 0f519221af9d78dd17806790d1139243
++   label Dwie długości
++   highlight +  obie są długościami
+
+% 1 1 0 124d0dba87412d640350f1bcc3b07873
+
+% 2 1 0 062e994c5f4dc3d601ca5ca092a38244
+
+% 0 1 0 1da60392ba9124cb06d7884286df5dd8
+
+% 1 1 0 0c736a03fefd58551865903506b4a02c
+
+@ 0 1 0 0b7677e61edd73ad1fe4f11dbebbc2b6
++   label Długość i kąt
+
+% 0 1 0 1477c34ff41c7c99183443e1d3238ae1
+
+% 1 1 0 0960c596329e4eb20a0b442aaa85c43a
+
+% 2 1 0 108bc1fdc2173c8116af96f563c4eba1
+
+% 0 1 0 11950ada4181a2ec18d64ace3bacbdd3
+
+% 0 1 0 18eafb32caed3dd50f976e787bd035ca
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 2 0 0fb498992657f8d3150e5eddf0cc5ed5
++ Sekcja [Jednostki](../../soundness/modules/css.md#units) wymienia jednostki, które są tymi samymi
++ [wielkościami](../../soundness/modules/quantities.md), których używa się wszędzie indziej.

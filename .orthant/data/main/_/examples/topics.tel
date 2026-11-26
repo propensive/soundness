@@ -1,0 +1,535 @@
+tel 1.0
+
+# The topics an example may be about: the first of its two aspects, what a reader wants to do.
+# Each is a tutorial in doc/soundness/modules, by whose file name it is known, so an example of
+# the topic `json` is a file in doc/examples/json. doc/examples/readme.md explains the store.
+
+topic text
+  title  Text
+  group  Foundations
+  summary  writing, slicing, searching and rendering text, with the types that are textual
+
+topic characters
+  title  Characters
+  group  Foundations
+  summary  encodings, Unicode properties, widths and grapheme clusters
+
+topic numbers
+  title  Numbers
+  group  Foundations
+  summary  checked arithmetic, bit manipulation, precision, ordinals and bounded numbers
+
+topic mathematics
+  title  Mathematics
+  group  Foundations
+  summary  complex numbers, vectors, matrices and permutations
+
+topic optional-values
+  title  Optional Values
+  group  Foundations
+  summary  absence without `Option`, and what it costs
+
+topic errors
+  title  Errors
+  group  Foundations
+  summary  declaring that code can fail, choosing a strategy, and recovering
+
+topic collections
+  title  Collections
+  group  Foundations
+  summary  the collection types, and how they cross to the standard library
+
+topic patterns
+  title  Patterns
+  group  Foundations
+  summary  regular expressions and globs, checked as the code compiles
+
+topic interpolation
+  title  Interpolation
+  group  Foundations
+  summary  writing an interpolator of your own
+
+topic names
+  title  Names
+  group  Foundations
+  summary  identifiers validated against a plane of rules
+
+topic decoding
+  title  Decoding
+  group  Foundations
+  summary  turning text into typed values, and extracting them in patterns
+
+topic display
+  title  Display
+  group  Foundations
+  summary  showing and inspecting values
+
+topic derivation
+  title  Derivation
+  group  Foundations
+  summary  deriving typeclass instances for products and sums
+
+topic annotations
+  title  Annotations
+  group  Foundations
+  summary  reading annotations at compiletime
+
+topic generic-data
+  title  Generic Data
+  group  Foundations
+  summary  a representation every format can be converted through
+
+topic records
+  title  Records
+  group  Foundations
+  summary  typed records from a specification
+
+topic catalogs
+  title  Catalogs
+  group  Foundations
+  summary  a value for every field of a type, addressed by path
+
+topic optics
+  title  Optics
+  group  Foundations
+  summary  updating nested immutable values
+
+topic flags
+  title  Bit Flags
+  group  Foundations
+  summary  sets of flags as bits
+
+topic bloom-filters
+  title  Bloom Filters
+  group  Foundations
+  summary  probabilistic membership
+
+topic caching
+  title  Caching
+  group  Foundations
+  summary  an LRU cache and expiring values
+
+topic uuid
+  title  UUIDs
+  group  Foundations
+  summary  generating, parsing and combining UUIDs
+
+topic randomness
+  title  Randomness
+  group  Foundations
+  summary  random values, distributions and reproducible runs
+
+topic versioning
+  title  Versioning
+  group  Foundations
+  summary  versions and manifests
+
+topic diffing
+  title  Diffing
+  group  Foundations
+  summary  diffs, patches and evolutions
+
+topic trees
+  title  Trees
+  group  Foundations
+  summary  trees and graphs drawn as diagrams
+
+topic graphs
+  title  Graphs
+  group  Foundations
+  summary  building, ordering, folding and drawing graphs
+
+topic json
+  title  JSON
+  group  Data formats
+  summary  parsing, typed access, building, schemas and validation
+
+topic yaml
+  title  YAML
+  group  Data formats
+  summary  parsing, tags, anchors and encoding
+
+topic xml
+  title  XML
+  group  Data formats
+  summary  nodes, namespaces, XPath and schemas
+
+topic cbor
+  title  CBOR
+  group  Data formats
+  summary  binary JSON-like encoding, with tags and diagnostic notation
+
+topic csv
+  title  CSV
+  group  Data formats
+  summary  rows, headers and formats, decoded to case classes
+
+topic tel
+  title  TEL
+  group  Data formats
+  summary  the indentation-based data language, its schemas and editing
+
+topic protobuf
+  title  Protocol Buffers
+  group  Data formats
+  summary  messages, fields and compatibility
+
+topic markdown
+  title  Markdown
+  group  Data formats
+  summary  parsing, rendering and writing back
+
+topic base-encoding
+  title  Base Encoding
+  group  Data formats
+  summary  Base64, hexadecimal and other alphabets
+
+topic binary-data
+  title  Binary Data
+  group  Data formats
+  summary  describing, reading and writing a binary layout
+
+topic compression
+  title  Compression
+  group  Data formats
+  summary  compressing values and streams
+
+topic archives
+  title  Archives
+  group  Data formats
+  summary  ZIP, tar and ar
+
+topic hashing
+  title  Hashing
+  group  Data formats
+  summary  digests, checksums and fast hashing
+
+topic cryptography
+  title  Cryptography
+  group  Data formats
+  summary  encryption, signing, keys and certificates
+
+topic media-types
+  title  Media Types
+  group  Data formats
+  summary  media types, and types that know theirs
+
+topic time
+  title  Time
+  group  Time, quantity and locale
+  summary  dates, times, instants, zones, calendars, recurrences and formatting
+
+topic quantities
+  title  Quantities
+  group  Time, quantity and locale
+  summary  units, dimensions and conversions, checked at compiletime
+
+topic money
+  title  Money
+  group  Time, quantity and locale
+  summary  amounts, splitting, prices and tax
+
+topic geography
+  title  Geography
+  group  Time, quantity and locale
+  summary  angles, compass points and locations
+
+topic chemistry
+  title  Chemistry
+  group  Time, quantity and locale
+  summary  elements, molecules, formulas and equations
+
+topic colors
+  title  Colors
+  group  Time, quantity and locale
+  summary  color spaces, mixing, distance and palettes
+
+topic internationalization
+  title  Internationalization
+  group  Time, quantity and locale
+  summary  translations and locales
+
+topic hyphenation
+  title  Hyphenation
+  group  Time, quantity and locale
+  summary  hyphenating and syllabifying words
+
+topic paths
+  title  Paths
+  group  Filesystem, processes and the environment
+  summary  building, relating and deconstructing paths
+
+topic filesystem
+  title  Filesystem
+  group  Filesystem, processes and the environment
+  summary  files, directories, access and watching
+
+topic environment
+  title  Environment
+  group  Filesystem, processes and the environment
+  summary  variables, properties, directories and the machine
+
+topic streams
+  title  Streams
+  group  Filesystem, processes and the environment
+  summary  reading, writing and composing streams of data
+
+topic processes
+  title  Processes
+  group  Filesystem, processes and the environment
+  summary  defining, running and piping commands
+
+topic concurrency
+  title  Concurrency
+  group  Filesystem, processes and the environment
+  summary  supervised tasks, cancellation and promises
+
+topic logging
+  title  Logging
+  group  Filesystem, processes and the environment
+  summary  loggers, levels and routing
+
+topic classpath
+  title  Classpaths
+  group  Filesystem, processes and the environment
+  summary  resources, classloaders and services
+
+topic packaging
+  title  Packaging
+  group  Filesystem, processes and the environment
+  summary  slim JARs whose dependencies are fetched by hash
+
+topic daemons
+  title  Daemons
+  group  Filesystem, processes and the environment
+  summary  long-running applications with fast clients
+
+topic docker
+  title  Containers
+  group  Filesystem, processes and the environment
+  summary  building and reading images, and talking to a daemon
+
+topic git
+  title  Git
+  group  Filesystem, processes and the environment
+  summary  repositories, commits, branches and remotes
+
+topic ssh
+  title  SSH
+  group  Filesystem, processes and the environment
+  summary  host keys, transports and remote commands
+
+topic database
+  title  Databases
+  group  Filesystem, processes and the environment
+  summary  declaring, storing and querying
+
+topic network-addresses
+  title  Network Addresses
+  group  Networking and the web
+  summary  URLs, hostnames, IP addresses and ports
+
+topic sockets
+  title  Sockets
+  group  Networking and the web
+  summary  serving, clients, TLS and conversations
+
+topic http-client
+  title  HTTP Client
+  group  Networking and the web
+  summary  requests, headers, bodies and sessions
+
+topic http-server
+  title  HTTP Server
+  group  Networking and the web
+  summary  servers, responses, WebSockets and HTTP/2
+
+topic rpc
+  title  RPC
+  group  Networking and the web
+  summary  interfaces over JSON-RPC, gRPC and server-sent events
+
+topic email
+  title  Email
+  group  Networking and the web
+  summary  composing and sending
+
+topic oauth
+  title  OAuth 2
+  group  Networking and the web
+  summary  tokens and credentials
+
+topic jose
+  title  JOSE
+  group  Networking and the web
+  summary  signed and encrypted tokens: JWS, JWE, JWK and JWT
+
+topic webauthn
+  title  WebAuthn
+  group  Networking and the web
+  summary  passwordless sign-in with passkeys and security keys
+
+topic openapi
+  title  OpenAPI
+  group  Networking and the web
+  summary  typed clients from a document
+
+topic service-discovery
+  title  Service Discovery
+  group  Networking and the web
+  summary  advertising and browsing services
+
+topic web-automation
+  title  Web Automation
+  group  Networking and the web
+  summary  driving a browser
+
+topic html
+  title  HTML
+  group  Networking and the web
+  summary  constructing, checking, rendering and parsing HTML
+
+topic pages
+  title  Web Pages
+  group  Networking and the web
+  summary  whole pages from archetypes
+
+topic dom
+  title  The Browser DOM
+  group  Networking and the web
+  summary  typed scripting of the page
+
+topic css
+  title  CSS
+  group  Networking and the web
+  summary  writing, validating and rendering stylesheets
+
+topic forms
+  title  Forms
+  group  Networking and the web
+  summary  rendering and handling forms
+
+topic svg
+  title  SVG
+  group  Networking and the web
+  summary  shapes, paths, transforms and documents
+
+topic charts
+  title  Charts
+  group  Networking and the web
+  summary  series, chart kinds and rendering
+
+topic label-placement
+  title  Label placement
+  group  Networking and the web
+  summary  captions that avoid their obstacles
+
+topic images
+  title  Images
+  group  Networking and the web
+  summary  pixels, canvases and conversion
+
+topic audio
+  title  Audio
+  group  Networking and the web
+  summary  reading, writing, recording and playback
+
+topic fonts
+  title  Fonts
+  group  Networking and the web
+  summary  loading, measuring and subsetting
+
+topic pdf
+  title  PDF
+  group  Networking and the web
+  summary  creating, reading and editing documents
+
+topic mathematical-markup
+  title  Mathematical Markup
+  group  Networking and the web
+  summary  MathML trees
+
+topic cli
+  title  Command-Line Applications
+  group  Command line and terminal
+  summary  entry points, arguments, flags, completions and help
+
+topic terminal
+  title  Terminal
+  group  Command line and terminal
+  summary  styled text, input, menus and layout
+
+topic terminal-emulator
+  title  Terminal Emulation
+  group  Command line and terminal
+  summary  feeding and inspecting a terminal
+
+topic tables
+  title  Tables
+  group  Command line and terminal
+  summary  tabulating values at any width
+
+topic gauges
+  title  Gauges
+  group  Command line and terminal
+  summary  statuses as gauges
+
+topic syntax-highlighting
+  title  Syntax Highlighting
+  group  Command line and terminal
+  summary  highlighting, types and completions
+
+topic compiler
+  title  Compilation
+  group  Compiler, tooling and agents
+  summary  configuring and running compilers, and producing artifacts
+
+topic metaprogramming
+  title  Metaprogramming
+  group  Compiler, tooling and agents
+  summary  givens, type-level values and expansions
+
+topic staging
+  title  Staging
+  group  Compiler, tooling and agents
+  summary  quotes, splices and rigs
+
+topic testing
+  title  Testing
+  group  Compiler, tooling and agents
+  summary  suites, tests, contrasts and benchmarks
+
+topic debugging
+  title  Debugging
+  group  Compiler, tooling and agents
+  summary  sessions, breakpoints and stepping
+
+topic stack-traces
+  title  Stack Traces
+  group  Compiler, tooling and agents
+  summary  capturing, demangling and resolving traces
+
+topic foreign-interop
+  title  Foreign Interoperability
+  group  Compiler, tooling and agents
+  summary  loading and navigating foreign interfaces
+
+topic lsp
+  title  Language Server Protocol
+  group  Compiler, tooling and agents
+  summary  defining and running a server
+
+topic acp
+  title  ACP
+  group  Compiler, tooling and agents
+  summary  the agent client protocol
+
+topic mcp
+  title  MCP
+  group  Compiler, tooling and agents
+  summary  the model context protocol
+
+topic llm
+  title  Language Models
+  group  Compiler, tooling and agents
+  summary  conversations, tools and structured answers

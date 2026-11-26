@@ -1,0 +1,63 @@
+orthant 2 language
+
+@ 0 1 0 076ca969b04e51da0c1d5684ce80fe64
++ # Ein Flag, das vielleicht nicht angegeben wurde
+
+@ 0 2 0 008a21596a3b40860ed2e3248ce60bfb
++ Ein Benutzer kann jedes Flag weglassen. Das Lesen eines Flags liefert einen optionalen Wert, daher
++ kann das Programm die Anzahl der Souffleure nicht verwenden, bevor es gesagt hat, wie viele es sind,
++ wenn niemand eine Wahl getroffen hat.
+
+% 0 1 0 12705ff5e291290d17fbc8389d59ef4a
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 10745312b3273c7e1d0c01bae921cbb4
++   label Ein Flag, verwendet, als wäre es immer angegeben
+
+% 0 1 0 1477c34ff41c7c99183443e1d3238ae1
+
+% 1 1 0 0960c596329e4eb20a0b442aaa85c43a
+
+% 2 1 0 1370fde91f549635091e04a7dae5a766
+
+% 3 1 0 0e958df266f2b0e81fa0ba5b26f0aa5d
+
+% 4 1 0 1d9fecf81212317b14d04a0828e17d65
+
+% 0 1 0 048196aec338d56e10ca9be676de1277
+
+% 1 1 0 1446908d6bfe31361071c7e7578e3541
+
+% 2 1 0 166e3da4c61514240dd9002a33645bba
+
+% 1 1 0 0bbd6d02382494b41a33a964001e0913
+
+@ 0 2 0 0c81320586901a9a156fdec84d2b5b83
++   label Ein Flag, und der Wert, der für sein Fehlen steht
++   highlight or(1)  was das Weglassen des Flags bedeutet
+
+% 1 1 0 0a00b944901cf78201f4882d5de3dbf6
+
+% 2 1 0 0874ce5967abc8c3189412ec41e1b110
+
+% 3 1 0 1a2662fe9dd263ef1330e966102b51f6
+
+% 4 1 0 05080497097f3b1409f5ea1d2f233aa0
+
+% 0 1 0 18819984a579cd95009474b9fe5a6677
+
+% 1 1 0 13b5fd5af6ecdb350bfe7cfceb7c6455
+
+% 2 1 0 127a9f8372262c641d57c9a75807b92a
+
+% 0 1 0 18eafb32caed3dd50f976e787bd035ca
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 3 0 002f88e6d0ac9b3701e1dfde60256433
++ Das Beispiel wird kompiliert, aber nicht ausgeführt, da es ein ganzes Programm ist.
++ [Flags](../../soundness/modules/cli.md#flags) enthält die Parameter eines Flags, und
++ [Optionalität](../../philosophy/optionality.md) beschreibt `or`.

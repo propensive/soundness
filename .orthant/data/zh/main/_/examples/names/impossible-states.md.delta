@@ -1,0 +1,65 @@
+orthant 2 language
+
+@ 0 1 0 1c40f0788b99f49a1a85784c7b174ad4
++ # 标签不是分支
+
+@ 0 2 0 1238efd057cf9a9f1e87f7af25423e57
++ 两个命名空间今天可能有相同的规则，明天则可能不同。每个命名空间都是独立的类型，因此为其中一个验证过的名称，不会在要求另一个的地方被接受。
+
+% 0 1 0 12705ff5e291290d17fbc8389d59ef4a
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 144081b63d367d771d61d9367f73e6ae
++   label 作为分支给出的标签
+
+% 0 1 0 1477c34ff41c7c99183443e1d3238ae1
+
+% 1 1 0 0960c596329e4eb20a0b442aaa85c43a
+
+% 2 1 0 0e2cb3e0424ca734006dc040ff40c19c
+
+% 3 1 0 0b3b441a1f98b253118b18174981650c
+
+% 5 1 0 1cbcb26bdf9e3fe1118ac990234faf39
+
+% 6 1 0 0884f92165eb69b417bb38d450f8d974
+
+% 8 1 0 006656199110252d0daeb2a8c1bea3b3
+
+% 0 1 0 0a7912d905d029c3123703a10fceff06
+
+% 0 1 0 1f9a60e210f9ca260e3c96d9a7eb21bb
+
+% 1 1 0 0c7cd16664c54baa1d1b26cd39ee1595
+
+@ 0 2 0 12ab00c1c5d9611b0f52917015644152
++   label 一个分支
++   highlight Name[Branch]  作为分支验证
+
+% 0 1 0 1accf43fe92797661dc8da9a374d03c7
+
+% 1 1 0 0f96500e809b345d021c32bae868d834
+
+% 2 1 0 0c0391605ed0ae64145d0d71d4cf2439
+
+% 3 1 0 0cdd4d81bbc3556c19134c3c66acdcf6
+
+% 5 1 0 189066f6490fd85b05208311b531d39d
+
+% 6 1 0 152509bd29bd0a2811af8ceb8451f745
+
+% 8 1 0 03e5aa787fcc0b430a76633bb9ac7402
+
+% 0 1 0 0b46008b97ca901906a3b7d17b6bef16
+
+% 0 1 0 1240e25701351cc000c185e9634c5fc7
+
+% 0 1 0 18eafb32caed3dd50f976e787bd035ca
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 3 0 114f265782c97fe017aa13efd77a81d9
++ [组合规则](../../soundness/modules/names.md#combining-rules)说明了为什么两者从来就不是同一种东西，[不可能状态](../../philosophy/impossible-states.md)则给出了更广泛的论证。

@@ -1,0 +1,20 @@
+orthant 2 language
+
+@ 0 17 0 0ec7a54fa0928f921723afad3dc6834b
++ column  判据
++ column  条目
++ row  `proscenium.compat` 为空  `core-2`
++ row  proscenium 之外没有文件导入 `scala.collection`  `core-3`
++ row  `lib/` 中不再有 `caps.unsafe` 逃生舱口  `safety-4`
++ row  平台清单在 CI 中强制执行，其排除项都附有理由，并且在 CI 中构建并签名一个 Android APK  `plat-1`、`plat-2`、`plat-3`
++ row  `etc/api-reduction-candidates.md` 不再存在  `api-5`
++ row  每个错误类型都有 bolt 代码和文档页面，并在 CI 中检查  `doc-1`
++ row  每个已发布的模块都由一个 `doc/soundness/modules/` 主题覆盖  `doc-4`
++ row  为每个组件生成并发布 API 文档  `doc-5`
++ row  `fury build` 能构建 Soundness 自身，其证明与 Mill 构建相等  `tool-4`
++ row  fume 运行完整的测试套件，且没有套件被禁用  `tool-2`
++ row  一个脚本化的 LSP 编辑器会话在 CI 中通过  `tool-3`
++ row  最近连续十个版本中的每个破坏性变更都附带了可由智能体执行的迁移说明  `dist-2`
++ row  每个版本都以经过证明的 LIRA 文件发布  `dist-7`
++ row  JOSE、TOML 和 WebAuthn 已交付  `brd-1`、`brd-2`、`brd-3`
++ row  一个智能体仅按照 `doc/` 中的文档，只使用生态系统内的工具，把一个新项目从零做成经过测试、已部署的 JVM 加 JavaScript Web 应用，并且这一演练在 CI 中执行并记录  `doc-8`

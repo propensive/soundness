@@ -8,11 +8,9 @@ orthant 2 release
 +   [`status.tel`](https://github.com/propensive/soundness/blob/main/doc/roadmap/status.tel).**
 +   The prose files say what and why;
 
-@ 0 1 0 1a28c8dced37ca4a0b3db28d23d0945f
-+ row  `etc/api-reduction-candidates.md` no longer exists  `api-5`
+% 0 1 0 16854213c2206f8f099cbaedfb128608
 
-@ 0 1 0 09a22f72548c79781c6445e859e5a4f7
-+ row  Every published module is covered by a `doc/soundness/modules/` topic  `doc-4`
+% 0 1 0 18b4fa7ee3f8b9ad0b5f69b1993e0548
 
 @ 0 1 0 163106ebb65fb93d1b4c9fbe6f51e6e4
 + - Read

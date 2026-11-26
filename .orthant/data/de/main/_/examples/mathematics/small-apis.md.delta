@@ -1,0 +1,65 @@
+orthant 2 language
+
+@ 0 1 0 1b5607b112909729105d82c728d06a48
++ # Ein Operator für jedes Produkt
+
+@ 0 2 0 08fbebb9b8139f150a6235c90ba34ce9
++ Eine Matrix multipliziert eine Matrix, einen Vektor oder einen Skalar, und jedes Produkt wird mit
++ `*` geschrieben. Die gefundene Typklasseninstanz entscheidet, was berechnet wird, und den Typ des
++ Ergebnisses.
+
+% 2 1 0 044477eeb4a09d0f0599dce1a6e6ea03
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+@ 0 2 0 168ea16ee3f215c81154b2c00e5f7ee3
++ alternative Mit einer Matrix
++   highlight Matrix[Int,..2]  die inneren Dimensionen heben sich auf
+
+% 1 1 0 18acf3f927ac6f7606e9434b5ae7d7b5
+
+% 2 1 0 0a1e2dc97fca0c6e0084c5dd0eae879c
+
+% 0 1 0 0e2a8f377a16602e196006e42712787d
+
+% 0 1 0 169a8d632725cc16061f3b0049041932
+
+@ 0 2 0 1c921bd891e704161cd94504cf855b9f
++ alternative Mit einem Vektor
++   highlight Vector[Int,..2]  eine Komponente für jede Zeile
+
+% 1 1 0 17e087b5c9ddbd62084197049d5eb9c9
+
+% 2 1 0 1c3a251d72f8805d172166fe4046f448
+
+% 0 1 0 167fde99d7a216701acc3b31422cf83b
+
+@ 0 2 0 1e1fc34ced09b7ae0e6a8b90301d453a
++ alternative Mit einer Zahl
++   highlight Matrix[Int,..3]  die Gestalt bleibt unverändert
+
+% 1 1 0 0fd136c78487018b0e2c6e7f94e19674
+
+% 2 1 0 0e039c2d74f1b3f519ca0ed843c85e83
+
+% 0 1 0 18b5ac0ba54b5b231a2731f53fe54f23
+
+% 1 1 0 1e74514ae084c5131daedaeb1db3f9bd
+
+% 1 1 0 136d267ff733a60e0f6246170d49df5f
+
+% 2 1 0 1525a46c87e9e0571e7d21b8e7c42b7a
+
+% 0 1 0 08a86cbdc9b8cb0109ed8ce5b435ce67
+
+% 1 1 0 0cd6459499a6bd5203d659b3bcc1b6aa
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 0 1 0 1c3f9b550efcc7de1286cc8d047cbe8f
+
+% 1 1 0 1c036afb6276b6581594b8f4b8b39b90
+
+@ 0 2 0 07fb47f45d9517e51636682b88460261
++ [Matrizen](../../soundness/modules/mathematics.md#matrices) zeigt die anderen Operationen und
++ [kleine APIs](../../philosophy/small-apis.md) die Argumente für einen einzigen Namen.

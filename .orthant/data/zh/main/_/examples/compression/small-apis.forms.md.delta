@@ -1,0 +1,54 @@
+orthant 2 language
+
+@ 0 1 0 1943bd226b252cf0139780bde6b568a4
++ # 值、链和流共用一个名字
+
+@ 0 3 0 0bd9572cebfa0d9e0b5e156ef6014f57
++ 无论数据是整体保存、作为数据块链到达，还是流经一个流，压缩它都是同一个方法、同一个类型参数。只有结果不同：结果的形状与被压缩的东西相同。
+
+% 0 1 0 12705ff5e291290d17fbc8389d59ef4a
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+@ 0 2 0 08d72347536195c113902f1178c5d39f
++ alternative 一个值
++   highlight compress[Gzip]  字节进，字节出
+
+% 1 1 0 1be8e0839360847c0e3b083f614b53ea
+
+% 2 1 0 15f82dfaac9b6f9b0365bc4e7623bb77
+
+% 4 1 0 1207a9eca3ceaa14182f28824be3b082
+
+% 0 1 0 015d7175395444b00acf743cfbfb6bfe
+
+@ 0 2 0 1c3517a514cba4be1c3d7580763fb865
++ alternative 数据块链
++   highlight compress[Gzip]  每个数据块，在被需求时
+
+% 1 1 0 12dcb7dea1d5d0111d987a461b2505a6
+
+% 2 1 0 0e63db1ab185ab951e6cf3464a31bb2d
+
+% 0 1 0 1a3bdda81ad8c0ca00e037e7c20deb15
+
+% 0 1 0 1b4fbbf42f1e15b51b032fffa222aaf3
+
+@ 0 2 0 0a6861ffc8020be21a5e0b10987539d5
++ alternative 一个流
++   highlight compress[Gzip]  流水线的一个阶段
+
+% 1 1 0 0c93602fa6f3a359185c5f8233fad174
+
+% 2 1 0 0e12e838b8caa95e0ad21c29beb22089
+
+% 4 1 0 127506390a8d6e6509c6cf63a3238ea2
+
+% 0 1 0 02fffa0c86ac29e612aea5a12a2d23fa
+
+% 0 1 0 18eafb32caed3dd50f976e787bd035ca
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 2 0 10f57a2cd45a42351995c2841ad14e62
++ [压缩流](../../soundness/modules/compression.md#compressing-a-stream)说明了这些形式如何互操作。

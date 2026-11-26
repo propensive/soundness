@@ -1,0 +1,76 @@
+orthant 2 language
+
+@ 0 1 0 0671e51a15a59820077acfe8b9e1f89a
++ # Flaga z innego wyliczenia
+
+@ 0 3 0 1b74b5a397642c0b171b9b7dcce21e3a
++ `Flags[Color]` ma jeden bit dla każdego przypadku `Color`, a bit nazywa się tylko przypadkiem.
++ Surowa maska sprawdziłaby ten bit, który ma tę samą pozycję, ale przypadek innego wyliczenia w ogóle
++ nie jest flagą tego zbioru.
+
+% 2 1 0 1c8693f4b3272ea50dd98dc44824137e
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 0c769158decb9e3d1b4761989768fc66
++   label Dzień tygodnia nie jest kolorem
+
+% 0 1 0 1477c34ff41c7c99183443e1d3238ae1
+
+% 1 1 0 0960c596329e4eb20a0b442aaa85c43a
+
+% 2 1 0 0b7c7e7dc2e0bfc8002b70a502f6ff3c
+
+% 3 1 0 1cb9a42e7bf2b9161ba403a56c4b240c
+
+% 5 1 0 1d65fa3f94f963b1030e967139851add
+
+% 6 1 0 045e77e6a6a5c02701d4e158626b1d17
+
+% 8 1 0 15fa4fbfd093d31c0480ce11bea1ea0d
+
+% 0 1 0 170629746e6940f80c78d6b9486202dc
+
+% 1 1 0 186b66b13eb6e8b10e46874942535f36
+
+@ 0 2 0 10bb15ae646c28761cb70ba94a76eaa8
++   label Kolor jest
++   highlight Color.Orange  przypadek właściwego wyliczenia
+
+% 0 1 0 0fd2ac3797a0477d02117fa7e01a94b3
+
+% 1 1 0 0831db4166dd7587114b3740732b8e38
+
+% 2 1 0 0d6ffac3a9214a9b08be4cf62a2b5d3c
+
+% 3 1 0 0f3cedd3ce2bc45209217d8f738f847b
+
+% 5 1 0 01a041ef5b25fb88001f830e86b5616f
+
+% 6 1 0 0a8c10da6aefdd1f05dc4b0cd033f6d0
+
+% 8 1 0 134acb39aaf2f9ef15bf916d3b6c535d
+
+% 0 1 0 03121f703ea0c33b1a3f6d5bc86e1186
+
+% 1 1 0 15eca3c00539325b07a9de7728745d15
+
+% 1 1 0 136d267ff733a60e0f6246170d49df5f
+
+% 2 1 0 1525a46c87e9e0571e7d21b8e7c42b7a
+
+% 0 1 0 08a86cbdc9b8cb0109ed8ce5b435ce67
+
+% 1 1 0 0cd6459499a6bd5203d659b3bcc1b6aa
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 0 1 0 10b35c982641dcb91c73f9be262a6eb5
+
+% 1 1 0 036e9ebc868f5e201b1a944d588abf2d
+
+@ 0 2 0 04a4038e0f53971107212257f100ab08
++ Sekcja [Co odrzuca kompilator](../../soundness/modules/flags.md#what-the-compiler-rejects) zawiera
++ pełny przypadek, a [stany niemożliwe](../../philosophy/impossible-states.md) – zasadę.

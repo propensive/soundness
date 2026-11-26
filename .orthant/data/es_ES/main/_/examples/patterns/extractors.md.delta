@@ -1,0 +1,73 @@
+orthant 2 language
+
+@ 0 1 0 16f7ac41402a5bd60e77eea52b756a49
++ # Grupos que ligan variables
+
+@ 0 2 0 16adbb8917bda3960ba5ef1c422c10df
++ Un nombre escrito delante de un grupo en un patrón liga lo que coincidió con el grupo. El patrón
++ y las variables que extrae son una sola expresión, así que no pueden distanciarse.
+
+% 2 1 0 175e9b66f297cda91b837da99e576a33
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 12599347ee96c0cf080d35a8c89ec51d
++   label Un patrón que coincide
+
+% 1 1 0 0c94d9d686b982770ac0adde0fc81e09
+
+% 2 1 0 058e6258af80d43915270cefeaf472e5
+
+% 0 1 0 147af337adffe2ae1b8535b3404d0803
+
+% 0 1 0 0608b1fdb6eda0dc036bdd1410c28d1b
+
+% 1 1 0 13ebe2f26e7071010aba5abaa147a978
+
+@ 0 1 0 16bd12b260c8e8261a707b16e0caa627
++   label Un grupo
+
+% 0 1 0 1067148350d2f693163dca6708d20364
+
+% 1 1 0 1f4f0476f99fb6060c48a217323f6c0b
+
+% 2 1 0 1745c177db78f2ee04e3d7fc1e263f5a
+
+% 0 1 0 12b1335a3468e80a1a1e166ba4cdd19c
+
+% 0 1 0 1edb106d1e57608616903ddfaf2994d1
+
+% 1 1 0 07c131b917f453131866cf7bb9cac812
+
+@ 0 2 0 1fe45737198eda030e9676e42cfcdf22
++   label Un nombre para el grupo
++   highlight $last  liga el grupo que le sigue
+
+% 1 1 0 175a905a5fd216d8071aecbd260c12d8
+
+% 2 1 0 0a486e41c8d2a6810e26f3e4aed6e974
+
+% 0 1 0 1585d2822e977a3e1a5737be88e6fe67
+
+% 0 1 0 17ca4fd112f282870491407bc0308d60
+
+% 1 1 0 1bf877c3528c06e012b72c96a2144db5
+
+% 1 1 0 136d267ff733a60e0f6246170d49df5f
+
+% 2 1 0 1525a46c87e9e0571e7d21b8e7c42b7a
+
+% 0 1 0 08a86cbdc9b8cb0109ed8ce5b435ce67
+
+% 1 1 0 0cd6459499a6bd5203d659b3bcc1b6aa
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 0 1 0 01bcb619c39c7d7e14ef2b7e0e4ced8f
+
+% 1 1 0 111bb3efe38dbfb31e19a978c328a1f0
+
+@ 0 1 0 0c5a7184aa4a74e40c7406c075aafc07
++ [Coincidencias](../../soundness/modules/patterns.md#matching) tiene más sobre las capturas.

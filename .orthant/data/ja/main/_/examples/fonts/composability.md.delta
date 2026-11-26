@@ -1,0 +1,65 @@
+orthant 2 language
+
+@ 0 1 0 0b865eed429b2108186eadc95b192ebf
++ # 文字のフォントを宣言する図
+
+@ 0 3 0 0f1c789e671e098708ec4bb42353ab21
++ SVGの図の文字は`Font in Web`を取り、それは書体のプロビジョンなしには作れない。図はフォントから
++ プロビジョンを読み、`@font-face`規則を自ら書き出す。
+
+% 2 1 0 15d89e5bc7fde8b5170f66114764e3fd
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 165e6e6efdb112360ba7066a5326e4f0
++   label 文字
+
+% 1 1 0 19951756327051d5038d6f7a33502de7
+
+% 2 1 0 0e66573d3a1215c115332aef9a1a853e
+
+% 3 1 0 1a81d5bbb237f38814d1703f9e54414e
+
+% 0 1 0 033b95305f8254be03846d52b8010bc7
+
+% 1 1 0 0aa7fe3f09a1ebec0e75ae2e87da0c0c
+
+% 1 1 0 10ea7576604399f6169532ed8556abe2
+
+@ 0 2 0 14b8b10f8bd0fc1a00d46b736e54d1a3
++   label プロビジョンを伴う書体による文字
++   highlight Font(Typeface["Menlo"].bold)  スコープ内のプロビジョンがフェイスと組み合わされる
+
+% 1 1 0 0334473f1e2d19d209c563a7e83130bb
+
+% 2 1 0 1b38dafee7b80bf012e07eebea939160
+
+% 3 1 0 0e0960405679fe9b024e44719fb2c5bb
+
+% 0 1 0 1cb34e7e298cedee0ed208b6db231c48
+
+% 0 1 0 00ced72c6e34874d1fe38cb2c3797625
+
+% 1 1 0 0d493908916b998813f4e0be6033a959
+
+% 1 1 0 152ab8b86d0ca2d3120aa5fc27919dd2
+
+% 1 1 0 136d267ff733a60e0f6246170d49df5f
+
+% 2 1 0 1525a46c87e9e0571e7d21b8e7c42b7a
+
+% 0 1 0 08a86cbdc9b8cb0109ed8ce5b435ce67
+
+% 1 1 0 0cd6459499a6bd5203d659b3bcc1b6aa
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 0 1 0 0813e8f46d097eed1e5656f39fe1c60c
+
+% 1 1 0 0620c2b514e764d809554cc279a6909c
+
+@ 0 3 0 0b18da60e4d94c8d03ac2b57a6fa58e8
++ 文書の種類ごとにフォントをどう扱うかは[フォント](../../soundness/modules/fonts.md#fonts)で、文字につ
++ いては[SVG](../../soundness/modules/svg.md#groups-polylines-and-text)で説明する。

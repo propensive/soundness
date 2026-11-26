@@ -1,0 +1,71 @@
+orthant 2 language
+
+@ 0 1 0 16d76bd6150638ba16c15fceed5cfcb2
++ # Inny algorytm przez import
+
+@ 0 3 0 15abe2d6f1662e28066e753f6c8c09d8
++ Algorytm, który rozmieszcza etykiety, to `Arranger` w zasięgu. Kod, który opisuje etykiety,
++ nigdy go nie nazywa, więc zatłoczony obraz otrzymuje dokładniejszy algorytm przez import, a
++ jego ciało pozostaje nietknięte.
+
+% 2 1 0 0ad429a54e8fef0f0fc73a867cac057e
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 18becb1238ff96610c562f3c8538a596
++   label Domyślny umieszcza etykiety po kolei
+
+% 1 1 0 06a3b3cf0426ccc91b63de0325504057
+
+% 1 1 0 07ed4d548396a86d076162fbeca4fa0c
+
+% 2 1 0 01790d528f784d53007eae525fba64ec
+
+% 3 1 0 0ab786f324605fb70e7bec256b37fcbe
+
+% 4 1 0 0615f5d9222d1b9b18dd5fdb0ffd7c98
+
+% 5 1 0 1e6b09a0c71845490a5274cb06dd1182
+
+% 1 1 0 0f5bdb879a88e1ee1915ae6bd3705e0c
+
+@ 0 2 0 0c87cea495ab457005f660f6de1a5368
++   label Symulowane wyżarzanie rozważa je razem
++   highlight arrangers.annealingArranger  jedyna zmiana
+
+% 1 1 0 0ecf59f7526e2a891ff95b7f02bac9b6
+
+% 0 1 0 075d39f9c7df0f841fd3f22930e552d6
+
+% 1 1 0 0cc2da723a43a2030bab4d06c7f96268
+
+% 2 1 0 0f289af0694765b615f2bb8f119d9770
+
+% 3 1 0 046e08a82493005c1317aafaec23bbeb
+
+% 4 1 0 1885a78cf731b8e0048e56f8ba5e6a5b
+
+% 5 1 0 10c223b312a4168515f8832c70e6a295
+
+% 1 1 0 139c1ec9a751eacb148b217a75ab4ffc
+
+% 1 1 0 136d267ff733a60e0f6246170d49df5f
+
+% 2 1 0 1525a46c87e9e0571e7d21b8e7c42b7a
+
+% 0 1 0 08a86cbdc9b8cb0109ed8ce5b435ce67
+
+% 1 1 0 0cd6459499a6bd5203d659b3bcc1b6aa
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 0 1 0 0dc62eb90a65b2280aea72dc16a6bdad
+
+% 1 1 0 03e437bc1c270c730f6cd7f386925fdf
+
+@ 0 3 0 1d4ede9e7334770a02fcc1dfde1de73c
++ [Wybór rozmieszczacza](../../soundness/modules/label-placement.md#choosing-an-arranger)
++ zawiera parametry obu, a [kontekst deklaratywny](../../philosophy/declarative-context.md) –
++ powód, dla którego import wystarcza.

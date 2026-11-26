@@ -1,0 +1,71 @@
+orthant 2 language
+
+@ 0 1 0 10fc8e2b722d6f3401f264ed1c95c70d
++ # Uma chave que pode não estar no mapa
+
+@ 0 2 0 121da45cc6600d1b1b2f220b73ccb956
++ Procurar uma chave que um mapa não tem dá `Unset`. Isso não lança exceção, e não dá `null`, então o
++ caso que falta é respondido na consulta.
+
+% 2 1 0 1540d0f63e49986f1dad0aa38acafcdd
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 0d5f723b3f261adc1f6747874ff636fd
++   label Uma consulta, presumida bem-sucedida
+
+% 0 1 0 1477c34ff41c7c99183443e1d3238ae1
+
+% 1 1 0 0960c596329e4eb20a0b442aaa85c43a
+
+% 2 1 0 0e927e889f4f03570ccec8bcf64a0c21
+
+% 0 1 0 1e376b8952ad13271e6fcc352563bf76
+
+% 1 1 0 092b271dd6fc058119f594b3c39b7b93
+
+@ 0 2 0 1e574fbd4db9b784157ad9ba1b9ff1e6
++   label Uma consulta que pode não encontrar nada
++   highlight Optional[Int]  Unset para uma chave que não está lá
+
+% 1 1 0 034eec0d6bbee2e715773098f66de2f7
+
+% 2 1 0 1179907cd13128e2199c86c249b00b0a
+
+% 3 1 0 1efc042881ae2fee056c0afced2f2be0
+
+% 1 1 0 166f76fddaccdb9b11fd16e8aa9e19dd
+
+@ 0 2 0 0b6762fb907411461d201e72bdfe68bd
++   label Uma frase para cada caso
++   highlight lay  um valor reserva, depois uma função
+
+% 1 1 0 1546f2632f840e8f04cd835f490b47f9
+
+% 2 1 0 1cbd067a5eab7c7a1a81ce4cdc8c6c70
+
+% 3 1 0 11d0e8481848d52d006fc61735d017b5
+
+% 0 1 0 11041a58a92c8dff0a1da2cea06eb3cc
+
+% 1 1 0 188b9f31a55da1301f8be5db7399c026
+
+% 1 1 0 136d267ff733a60e0f6246170d49df5f
+
+% 2 1 0 1525a46c87e9e0571e7d21b8e7c42b7a
+
+% 0 1 0 08a86cbdc9b8cb0109ed8ce5b435ce67
+
+% 1 1 0 0cd6459499a6bd5203d659b3bcc1b6aa
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 0 1 0 156ccd68f66eca4f027f646c013e4068
+
+% 1 1 0 0889a6aa400eabd01d3b1938d3d4eccb
+
+@ 0 2 0 1f5d7e04433d916f17b7aec6f3bf875c
++ [Conjuntos e mapas](../../soundness/modules/collections.md#sets-and-maps) traz as outras operações
++ de um mapa.

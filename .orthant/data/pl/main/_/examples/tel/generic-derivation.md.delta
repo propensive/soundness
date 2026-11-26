@@ -1,0 +1,82 @@
+orthant 2 language
+
+@ 0 1 0 0757d08576af2d591effd44d6460a991
++ # Schemat z klasy case
+
+@ 0 3 0 02ee1ecb8b509f250fd8d1ae3b1c3382
++ Schemat TEL mówi, jakie słowa kluczowe może mieć dokument i jakie są ich wartości. Kompilator
++ derywuje go z klasy case, tak jak derywuje kodek, więc schemat, kodek i typ nie mogą się różnić, a
++ schemat kieruje zwartą postacią binarną tego samego dokumentu.
+
+% 2 1 0 1a0c2df7925128c012eecf1309efec69
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 0ab0546acb31ac51047368fffb380891
++   label Dokument z derywowanego kodeka
+
+% 1 1 0 16b7a0b1d4ff68ca171d3e2f1f8f3552
+
+% 2 1 0 19fa7fc0a85489e7022cc496df23d45d
+
+% 4 1 0 0b9b1096df02de000daac2e2642dc30c
+
+% 6 1 0 1021ff87203ec7ba15015aea70951460
+
+% 1 1 0 17c68f2f28ba606b123d0be7c461e4e7
+
+@ 0 2 0 0ef4af0758ddaf3f131f23b1ec3c6516
++   label Schemat tego samego typu
++   highlight Tels.tels[Player]  derywowany, tak jak kodek
+
+% 1 1 0 0c9dd07fafc7613e171fbea8ca351a7e
+
+% 2 1 0 14c2e347cdbeda4e024f756c433c116b
+
+% 4 1 0 0d95283f27a5ba151d199cbc4a250077
+
+% 6 1 0 1e7adb13e1a41bcd09b62a2270602f36
+
+% 7 1 0 1201cbd574a962b00d537a5de4f6377d
+
+% 1 1 0 0546f07848b1136c1577db4208af2eb1
+
+@ 0 2 0 144403a793831c6b04fe6894d2cab8c2
++   label Dokument jako BinTEL, według schematu
++   highlight bintel(schema)  typowany przez schemat, a nie tagowany
+
+% 1 1 0 0a6806fb7f48eaa3054f14aa67c1e641
+
+% 2 1 0 16267646051b04c51eba0f4f89e1a5e4
+
+% 4 1 0 0ff2b6b9a81bcc700e2b062679bee80c
+
+% 6 1 0 0aac383aa047a5810915f21d90d116bc
+
+% 7 1 0 19369f1e4a1e44b91f6cc39f83ae32e1
+
+% 0 1 0 129b4e3be872409b1ce9b3a58ca1ec8a
+
+% 1 1 0 119df15b9d6b924a13dc9e01f085bd33
+
+% 1 1 0 136d267ff733a60e0f6246170d49df5f
+
+% 2 1 0 1525a46c87e9e0571e7d21b8e7c42b7a
+
+% 0 1 0 08a86cbdc9b8cb0109ed8ce5b435ce67
+
+% 1 1 0 0cd6459499a6bd5203d659b3bcc1b6aa
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 0 1 0 0ecdea623b2f054303ebb04bf189b6ef
+
+% 0 1 0 0a2e75731860c9420b0a9cd0e9170015
+
+% 1 1 0 07cff28cd6b396610f2767a10261d6b6
+
+@ 0 2 0 1e577d790b71036616fb95bed1652dae
++ [Schematy](../../soundness/modules/tel.md#schemas) opisuje warstwy, walidatory i wzorce, a
++ [BinTEL](../../soundness/modules/tel.md#bintel) – postać binarną.

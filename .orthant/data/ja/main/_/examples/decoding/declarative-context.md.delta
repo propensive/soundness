@@ -1,0 +1,57 @@
+orthant 2 language
+
+@ 0 1 0 1f4729578a38d3f91eff3dbd721dbf23
++ # 真を意味する語
+
+@ 0 2 0 0f0e2d447658256c0c93c77f30fbce60
++ `Boolean` は `true` か `false` から読まれる。`yes` と `no` も受け付けるツールはインポートでそれを示し、
++ そのスコープ内のすべてのデコードがそれらの綴りも受け付ける。
+
+% 2 1 0 0868d884a04b96cd0d4af5d123bdcdff
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 0554ff6d2a449016096803dedc49d2da
++   label true と false だけが真偽値である
+
+% 1 1 0 10867c7c8e1b757f1b3cf2cd02b63ac4
+
+% 1 1 0 1878e1b33a9549d11fa609c63cc3d40c
+
+% 1 1 0 1de602f199004b171d049f85de84cfac
+
+@ 0 2 0 12dac05f5adf98930fe05918f72f967c
++   label yes と no も真偽値である
++   highlight yesNoTruth  二つの綴りを加える
+
+% 1 1 0 0152ff2165ef899d07345e2613faf5f2
+
+% 0 1 0 080f284eb7dc88801c79d5f89d43d940
+
+% 1 1 0 1d4e6ed0f142436703eff3d118183c69
+
+% 1 1 0 02264633a5c953f5187a129480bfc19c
+
+% 1 1 0 136d267ff733a60e0f6246170d49df5f
+
+% 2 1 0 1525a46c87e9e0571e7d21b8e7c42b7a
+
+% 0 1 0 08a86cbdc9b8cb0109ed8ce5b435ce67
+
+% 1 1 0 0cd6459499a6bd5203d659b3bcc1b6aa
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 0 1 0 156c1e6781fe916a066c65510bb9f6fe
+
+% 0 1 0 04e3eef209cc4cca11fc84ef0061a2a4
+
+% 0 1 0 08d1c8aa3827524d1fa2c7b0cf653284
+
+% 1 1 0 1654461631f0297b0819af92c697d8e0
+
+@ 0 3 0 1f45a9cb0c19099319ddb89886de87b6
++ インポートがなければ、一行目も値の不在になる。[真偽値](../../soundness/modules/decoding.md#booleans)がほかの綴りを列挙し、
++ [宣言的なコンテキスト](../../philosophy/declarative-context.md)がそれらをインポートする理由を説明する。

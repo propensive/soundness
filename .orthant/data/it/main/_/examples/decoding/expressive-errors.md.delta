@@ -1,0 +1,65 @@
+orthant 2 language
+
+@ 0 1 0 03b8d71922bf1c480ab9ceef674bc0cb
++ # Perché un testo non era un numero
+
+@ 0 3 0 0856636d64408caf1d003a7d99e9220a
++ Un testo può non essere un `Byte` in due modi: non è affatto un numero, oppure è un numero che non
++ ci sta. Un `Number.Error` registra quale dei due casi si è verificato, come valore su cui il codice
++ può fare un match, e non solo come messaggio.
+
+% 2 1 0 1f38069580c7f2c11138e6ba1000230c
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 2 0 0e172f1d14d727b41afdcde3e20bac3b
++   label L'errore, catturato
++   highlight capture[Number.Error]  l'errore, come valore
+
+% 1 1 0 1da172b9cfa4c6a30d4dc079e0bd8ca2
+
+% 2 1 0 196002b18288e474170cc7c921049130
+
+% 4 1 0 156334f175e6a0ea1a52130b3003b9cb
+
+% 1 1 0 127986a6043182400f4a5571a67391cd
+
+@ 0 2 0 1e49b6013988175d0ac7ba4eb06faac6
++   label Il suo motivo
++   highlight reason  un valore su cui fare un match
+
+% 1 1 0 1af16ce9c1448a0012087dd1397d58e2
+
+% 2 1 0 069aa2d1177e2de9115836834a3df612
+
+% 4 1 0 0fc94ce706eab1d71637fd3aed795042
+
+% 0 1 0 0c716a4370a3da900608f09035f7e5dc
+
+% 0 1 0 0e84dbff2d2a00b517a91a3d66e2d90b
+
+% 1 1 0 009fd3bfbb102c9406637967c5131272
+
+% 1 1 0 136d267ff733a60e0f6246170d49df5f
+
+% 2 1 0 1525a46c87e9e0571e7d21b8e7c42b7a
+
+% 0 1 0 08a86cbdc9b8cb0109ed8ce5b435ce67
+
+% 1 1 0 0cd6459499a6bd5203d659b3bcc1b6aa
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 0 1 0 0506d04e1a96249c1ea4aac58affe8c6
+
+% 0 1 0 1be9723cb2dd9f69026fd1c79c8fda3b
+
+% 0 1 0 1fd9244113fff2e9151be9ee9b3c7401
+
+% 1 1 0 0f09d0a4198abc020ea56911957474b3
+
+@ 0 2 0 18edd47021a3bfb21eb00d27a9c2805d
++ [Decodificare un valore](../../soundness/modules/decoding.md#decoding-a-value) descrive l'errore, e
++ [gli errori espressivi](../../philosophy/expressive-errors.md) perché il suo motivo è tipizzato.

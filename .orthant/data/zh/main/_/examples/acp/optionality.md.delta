@@ -1,0 +1,48 @@
+orthant 2 language
+
+@ 0 1 0 1ca92a5264638fef1ec6ca2de6e9dfd9
++ # 智能体可能没有提供的权限
+
+@ 0 3 0 1e48850be64d24b20fd9362794764262
++ 请求权限的智能体会提供一个选项列表，而这个列表未必包含某个方针会选择的那一类选项。因此某一类的第一个选项是一个 `Optional`，`lay` 同时给出两种答案：有这样的选项时给出它的 id，没有时给出 `Cancelled`。
+
+% 0 1 0 12705ff5e291290d17fbc8389d59ef4a
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 1026528bb65922320ed8534b6ebb55c6
++   label 想当然地认为有“允许一次”的选项
+
+% 0 1 0 1477c34ff41c7c99183443e1d3238ae1
+
+% 1 1 0 0960c596329e4eb20a0b442aaa85c43a
+
+% 2 1 0 02d10c1317eeef3c0dbf1d970b53eaa6
+
+% 3 1 0 14ccb0eb61ad96d1091fb12b4011a21e
+
+% 0 1 0 00a95542a07667b50bad7e10582b7f5e
+
+% 1 1 0 1782186b87647a8a09823e335df85235
+
+@ 0 3 0 0755ea6b10bfa55817d71f9cdb04857a
++   label 在未提供该选项时取消请求
++   highlight lay(Acp.Cancelled)  不存在这样的选项时的答案
++   highlight Acp.Selected(option.optionId)  以及存在时的答案
+
+% 1 1 0 1bab1b6c33b5d2c40c37bb97032527d5
+
+% 2 1 0 08b03c07e5cee01302f37d2d7e09d623
+
+% 3 1 0 190fda82788bd98605c01c74f7a2fb34
+
+% 0 1 0 05a54887e941b63b10957fddca6e3094
+
+% 0 1 0 18eafb32caed3dd50f976e787bd035ca
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 3 0 028dd2f53c2a6e1b07514386b925c3d0
++ 此示例只编译，不运行，因为处理函数回应另一个进程中的智能体。[权限](../../soundness/modules/acp.md#permissions)列出了选项的种类，[可选性](../../philosophy/optionality.md)则解释了 `lay` 的含义。

@@ -1,0 +1,92 @@
+orthant 2 language
+
+@ 0 1 0 0643f671f75f41f301263423ae382c16
++ # Teclas descompuestas en un patrón
+
+@ 0 2 0 13d573afa9ca028911e9402f3c35ff36
++ Una pulsación de tecla es un valor, y los modificadores pulsados con ella son envoltorios
++ alrededor de la tecla. Un `match` sobre pulsaciones de tecla se lee, por tanto, como las propias
++ teclas, y nunca menciona una secuencia de escape.
+
+% 2 1 0 0415e04f4d6bd0d1087ec3999d125eb9
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 0505fc44e95be4e40c66e3595eae5334
++   label Un carácter ordinario
+
+% 1 1 0 172dffa16cede28e1566d276a7771bab
+
+% 2 1 0 046d9df68306fd51141e0ca7c1bf591b
+
+% 4 1 0 0b405c551f158e8212e9883f3127fdcc
+
+% 5 1 0 148e71f53547d6841047059b09f41f4c
+
+% 1 1 0 0387ec43e55bd6b2131857eef184db5b
+
+% 2 1 0 17184d0719a6455b0f0b236b736e33d5
+
+@ 0 2 0 0be36720298176de15a6e8e2ec8f772c
++   label Un carácter de control
++   highlight Ctrl('C')  un literal, emparejado exactamente
+
+% 1 1 0 1cb52638c331fa000f5e5f07a28182d7
+
+% 2 1 0 0b4ff627a450235d03cac64df1e5d5ee
+
+% 4 1 0 1f293e9e4aa0634610218b09a8ba59fd
+
+% 5 1 0 0ce390c949e5bb6a195fcc82f55be682
+
+% 0 1 0 17adfa3701ef45451201fffdc754ffe3
+
+% 1 1 0 05d0e21c4bd58cc91d666e8be9a97afc
+
+% 2 1 0 02579a89c0126a5d10277c9fd0ca4dd5
+
+@ 0 2 0 17795a7a25ae5f0c0f756607f9370d1b
++   label Dos modificadores y una flecha
++   highlight Ctrl(Alt(Left))  anidados hacia fuera desde la tecla
+
+% 1 1 0 0fb8e98fd4d55543060fb9967b3ee72e
+
+% 2 1 0 0f09f6f232c4a24b03ee58bf98cd7639
+
+% 4 1 0 0adeb7eb8be387a817aec9bc8f5340b8
+
+% 0 1 0 13094d77727404100248d830bf28e69b
+
+% 0 1 0 123d77ad4eb4da1608aa9ce5cb7052d3
+
+% 0 1 0 1e00af25aa2db3c81953f8cc556dc3c1
+
+% 0 1 0 1c9791a226cfa4e918d8cd18dc7f7c59
+
+% 1 1 0 0a51c2afcf76a3930c75cf9fbe1661d1
+
+% 1 1 0 136d267ff733a60e0f6246170d49df5f
+
+% 2 1 0 1525a46c87e9e0571e7d21b8e7c42b7a
+
+% 0 1 0 08a86cbdc9b8cb0109ed8ce5b435ce67
+
+% 1 1 0 0cd6459499a6bd5203d659b3bcc1b6aa
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 0 1 0 0cdf86b283b92e4915fb1296b97963a9
+
+% 0 1 0 04d15ca60b3e96d91afc5bce7e26adb5
+
+% 0 1 0 133c64d3ef475eda131c6b569f02e5ab
+
+% 0 1 0 165c5f217868c803022cd78b528703ac
+
+% 1 1 0 02a36a7f6671621b181fff6b0f1b0c1b
+
+@ 0 2 0 1eb3ddbe28fc5fe903b1192cd7348dd7
++ [Entrada de teclado](../../soundness/modules/terminal.md#keyboard-input) muestra los mismos
++ patrones aplicados a los eventos de un terminal en vivo.

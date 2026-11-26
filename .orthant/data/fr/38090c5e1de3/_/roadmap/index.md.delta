@@ -1,0 +1,20 @@
+orthant 2 language
+
+@ 0 17 0 0ec7a54fa0928f921723afad3dc6834b
++ column  Critère
++ column  Éléments
++ row  `proscenium.compat` est vide  `core-2`
++ row  Aucun fichier hors de proscenium n'importe `scala.collection`  `core-3`
++ row  Aucune échappatoire `caps.unsafe` ne subsiste dans `lib/`  `safety-4`
++ row  Le manifeste des plateformes est imposé en CI, ses exclusions portent des raisons, et un APK Android est construit et signé en CI  `plat-1`, `plat-2`, `plat-3`
++ row  `etc/api-reduction-candidates.md` n'existe plus  `api-5`
++ row  Chaque type d'erreur a un code bolt et une page de documentation, vérifiés en CI  `doc-1`
++ row  Chaque module publié est couvert par un sujet de `doc/soundness/modules/`  `doc-4`
++ row  La documentation d'API est générée et publiée pour chaque composant  `doc-5`
++ row  `fury build` construit Soundness lui-même, avec une attestation égale à celle du build Mill  `tool-4`
++ row  fume exécute la suite de tests complète, et aucune suite n'est désactivée  `tool-2`
++ row  Une session d'éditeur LSP scriptée passe en CI  `tool-3`
++ row  Chaque changement incompatible des dix dernières versions consécutives a été livré avec des instructions de migration exécutables par un agent  `dist-2`
++ row  Chaque version est publiée sous forme de fichiers LIRA attestés  `dist-7`
++ row  JOSE, TOML et WebAuthn sont livrés  `brd-1`, `brd-2`, `brd-3`
++ row  Un agent, en ne suivant que la documentation de `doc/`, mène un nouveau projet de rien jusqu'à une application web JVM et JavaScript testée et déployée, avec les seuls outils de l'écosystème, et cette démonstration est exécutée et consignée en CI  `doc-8`

@@ -1,0 +1,65 @@
+orthant 2 language
+
+@ 0 1 0 1015dd7b2be168c91f15ead3a9c39955
++ # 说明哪项检查失败的拒绝
+
+@ 0 2 0 0bbefb35824bfb480a712f63322b2f7f
++ `WebAuthn.Error` 把原因保存为一个枚举值，标准所要求的每项检查各对应一个分支，而它的消息是由原因生成的一句话。
+
+% 2 1 0 0b5af69b4dda1b100dc68dc69e467310
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 1cd23e20e3eca4db1a3d5eaecf754c39
++   label 一个不成其为回答的回答
+
+% 1 1 0 18675633611cbb7f00f95570da0f65dc
+
+% 2 1 0 1f65599cb416755c0151fdfd29e4a668
+
+% 4 1 0 196f007f396222bb1352cd68eea5cae1
+
+% 6 1 0 0b5e2371ed3dc4b108bcdb65ac6cdf7a
+
+% 1 1 0 1626eda5280368fc0f0db2688f9ab795
+
+@ 0 2 0 14b252908a4d4a5c0d0fb0553a7ff61a
++   label 原因，作为值
++   highlight refusal.reason  WebAuthn.Error.Reason 的一个分支
+
+% 1 1 0 1e33db0d91f63d22138108451b5d47e4
+
+% 2 1 0 1d0b570b62abcaf00b6914de0a513408
+
+% 4 1 0 005fed5945cffaf20655b16c675eb762
+
+% 6 1 0 05bbccb106e2ab0c11ec205947618ff2
+
+% 0 1 0 112f2cb6378122c90ab5a1e03aa5499f
+
+% 0 1 0 0b1c15d97c5cad0403ccb25f319b4f8b
+
+% 0 1 0 0df6b95c174554471f3fa9fbad0c3387
+
+% 1 1 0 00af5b8500fb34441e65c5435e6a49a5
+
+% 1 1 0 136d267ff733a60e0f6246170d49df5f
+
+% 2 1 0 1525a46c87e9e0571e7d21b8e7c42b7a
+
+% 0 1 0 08a86cbdc9b8cb0109ed8ce5b435ce67
+
+% 1 1 0 0cd6459499a6bd5203d659b3bcc1b6aa
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 0 1 0 001e96630d112f401e6c4d41dd305866
+
+% 0 1 0 0b7c3b3c0ec258461b3a5f985acfcd46
+
+% 1 1 0 08aebae7679901821d8b2f02dd034282
+
+@ 0 2 0 0c74ff77454e979812b325b82c941570
++ [认证](../../soundness/modules/webauthn.md#authentication)列出了会检查什么，[富于表达的错误](../../philosophy/expressive-errors.md)说明了错误为何不只是文本。

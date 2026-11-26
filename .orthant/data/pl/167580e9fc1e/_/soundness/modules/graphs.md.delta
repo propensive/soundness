@@ -1,0 +1,10 @@
+orthant 2 language
+
+@ 0 7 0 0f69aa704889b83009468d9357fd3e7e
++ - [Drzewa](trees.md) rysują drzewa i grafy jako tekst.
++ - [Kolekcje](collections.md) opisują słownictwo, które dzieli graf, oraz potwierdzenia kosztu w
++   `dysasymptotics`.
++ - [Współbieżność](concurrency.md) uruchamia zadania, których kolejność wyznacza graf zależności.
++ - [Stany niemożliwe](../../philosophy/impossible-states.md) wyjaśniają, dlaczego `Dag` nie może
++   zawierać cyklu.
++ - [Wykresy](charts.md) rysują graf jako wykres pierścieniowy, a [kompilator](compiler.md) buduje toolchain jako graf.

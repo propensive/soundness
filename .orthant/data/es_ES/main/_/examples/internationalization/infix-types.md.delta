@@ -1,0 +1,60 @@
+orthant 2 language
+
+@ 0 1 0 16edcca37e289edc1ebb704ec9a14dee
++ # Texto, por medio de una configuración regional
+
+@ 0 2 0 0a8da6447e6a4a521d82aa7c70b2d61b
++ Un valor que se lee de un `Polyglot` depende de una configuración regional para los idiomas que
++ tiene. El tipo `Text via (en & fr)` lo dice: texto, por medio de una configuración regional que es
++ inglesa o francesa.
+
+% 2 1 0 0e20273512e8b8f71625b21bbda1932f
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 2 0 19c39e70df8701c01783c524c1ad49e6
++   label Una configuración regional, como parámetro
++   highlight (using..fr])  la configuración regional de la que depende
+
+% 1 1 0 0fa4e9641a141bc319e101d9ca64fbb6
+
+% 2 1 0 100755022d4d494b1fdeb1e6b4114f9d
+
+% 0 1 0 1ad3e3003eabb6531163eb8c9d84236a
+
+% 1 1 0 117437096148e1d8129138abe351589d
+
+@ 0 2 0 05bb34ce86c5707d1ab0e5cbe0ba8d88
++   label Lo mismo, en el tipo del resultado
++   highlight via..fr)  se lee como una frase
+
+% 1 1 0 1557fc298d52e086075237ebd7dc5b0c
+
+% 2 1 0 0129d299b08b032510de0b7e9dd422ce
+
+% 0 1 0 127d7e12cf5bf6fa0b44998e74eba9bf
+
+% 1 1 0 16440989786b386a102b95f868777e3a
+
+% 1 1 0 136d267ff733a60e0f6246170d49df5f
+
+% 2 1 0 1525a46c87e9e0571e7d21b8e7c42b7a
+
+% 0 1 0 08a86cbdc9b8cb0109ed8ce5b435ce67
+
+% 1 1 0 0cd6459499a6bd5203d659b3bcc1b6aa
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 0 1 0 0a179dad9d6d9b9908f65e190ab0174f
+
+% 0 1 0 0bdc57734ebc53b4051e066dac4a147f
+
+% 1 1 0 18d9946572ac4390079b6a1b5154ddb4
+
+@ 0 3 0 0c835a2d4c0902280feec909e6ee484f
++ [Seleccionar un idioma](../../soundness/modules/internationalization.md#selecting-a-language)
++ describe las configuraciones regionales, y [los tipos infijos](../../philosophy/infix-types.md)
++ las palabras de las que se componen estos tipos.

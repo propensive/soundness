@@ -1,0 +1,57 @@
+orthant 2 language
+
+@ 0 1 0 0b407e523af70eb6157a34b20ba212c6
++ # Kotlin 的 `val` 仍然是 `val`
+
+@ 0 3 0 1cf20abd8e842f3606239469af5229d1
++ 门面把 Kotlin 的属性读作成员，并且知道其中哪些是 Kotlin 用 `val` 声明的。`Pair` 在 Kotlin 中不可变，因此在 Scala 中对其 `first` 赋值同样无法编译，尽管 JVM 类本身并不会阻止去查找 setter。
+
+% 2 1 0 15f9dd178d36e8500848197c83942ca4
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 0bf7ba6e12f4a44a14d4214b9681a3dd
++   label 对 Kotlin 用 val 声明的属性赋值
+
+% 0 1 0 1477c34ff41c7c99183443e1d3238ae1
+
+% 1 1 0 0960c596329e4eb20a0b442aaa85c43a
+
+% 2 1 0 176c471cfa7f56d00642948e48557092
+
+% 0 1 0 05e785f9b445d2dd1dc5172fa8d481cc
+
+% 1 1 0 1b4c820a4d639b8b07c01aebbe1995b3
+
+@ 0 2 0 1e2ef4ce55dab97e10cc6fb1d28251d5
++   label 一个新的 pair
++   highlight twins.second  通过 Kotlin 生成的 getter 读取
+
+% 1 1 0 0919c628e3c72dc113852c66c6e5bddb
+
+% 2 1 0 0c0b59eda4535acd0b102d2afcefc154
+
+% 0 1 0 1452bd9eef63148501e5e3083472930e
+
+% 1 1 0 13610943fec4ced410e23cdc12016b9d
+
+% 1 1 0 136d267ff733a60e0f6246170d49df5f
+
+% 2 1 0 1525a46c87e9e0571e7d21b8e7c42b7a
+
+% 0 1 0 08a86cbdc9b8cb0109ed8ce5b435ce67
+
+% 1 1 0 0cd6459499a6bd5203d659b3bcc1b6aa
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 0 1 0 16ee5b0efdbaa9c10c2c53f6ec0e926f
+
+% 0 1 0 1447c0c1a4e336ad01ea0f976fa29cc8
+
+% 1 1 0 055c56401b86e9ea056d96555d6c40ac
+
+@ 0 2 0 00ee8bd0ce309962169cf562ef442ec9
++ [Kotlin 与 Java 门面](../../soundness/modules/foreign-interop.md#kotlin-and-java-facades)介绍了属性及其 setter。

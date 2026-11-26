@@ -1,0 +1,95 @@
+orthant 2 language
+
+@ 0 1 0 1e58e7a336f0735411ba14a86589eace
++ # Une question posée à un serveur de langage
+
+@ 0 3 0 19d095ed889b9784040dd35807ee9349
++ Le protocole est asynchrone : requêtes et réponses sont appariées par un identifiant, et peuvent
++ se croiser. Le client le cache. Chaque requête est une méthode qui renvoie sa réponse typée, si
++ bien qu'une conversation avec un serveur se lit de haut en bas.
+
+% 0 1 0 12705ff5e291290d17fbc8389d59ef4a
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 2 0 01458e1ca2fb82bf1f6bb52ac5dd89cc
++   label Un serveur est lancé, et salué
++   highlight session:  le processus vit aussi longtemps que ce bloc
+
+% 1 1 0 1e8c554c67d2ac160304328ac14fd301
+
+% 2 1 0 0a1954da54841d901dfbd15c1939fb9c
+
+% 3 1 0 034c2c9251ae9cf71ab66beea214917e
+
+% 4 1 0 1dc863249c3f0149159480c9118a0762
+
+% 6 1 0 17101df3897bc9c6075c77250dc5c70d
+
+% 7 1 0 1ad55f84173822921fef85274e5479de
+
+% 8 1 0 1594a1cc0ef5f38718b035c5ef02f100
+
+% 9 1 0 11263b2aa28a6a920a8c8f5237061a22
+
+% 1 1 0 19da551f7c76af201542923fb7f4a856
+
+@ 0 2 0 0ab54802a58e12461f546b054e312127
++   label On lui montre un document
++   highlight server.open  une notification : rien ne revient
+
+% 1 1 0 030a6ac7a76d43c51e1627f0dc6989cf
+
+% 2 1 0 18c8e69c903d46a117f1204301cf3ca6
+
+% 3 1 0 1712e103b65bf5d91d6e5c09d98957e0
+
+% 4 1 0 0839c597c29198bc10197f1fc32eca2c
+
+% 6 1 0 0df3ee1237c699310732a7091f7ff44b
+
+% 7 1 0 14a861ce4cfce581056b1d84b18d5f89
+
+% 8 1 0 07905f5a5958bb23000c284ce41cb280
+
+% 9 1 0 11c290f69f2df34c01196904293f821d
+
+% 4 1 0 08e9bb694e0d5d530910686e522a0558
+
+% 1 1 0 08eb22519fa4f97d1fb439489d852638
+
+@ 0 3 0 1a6bbd7a1edc0d6d054d38556e47a984
++   label Et on l'interroge sur une position du document
++   highlight Optional[Lsp.Hover]  la réponse, et non un future de celle-ci
++   highlight server.hover  une requête : cette ligne attend la réponse
+
+% 1 1 0 017ab6acbf67be1a182dab5d3a4fa279
+
+% 2 1 0 017fda1f6a7da8971d4ac50a0a347767
+
+% 3 1 0 1c3fa080c1895bd60bd503a668267440
+
+% 4 1 0 17937a0fb70f10f908a9f4bf7a4cf6f8
+
+% 0 1 0 0c007cd6487f51cb16fc62fdb77e294e
+
+% 1 1 0 1eb917031def57841598904306b33587
+
+% 2 1 0 019b1a815df273a50a7be666adb2107f
+
+% 3 1 0 05de23cc21da7e9019c23b505a01a0ea
+
+% 4 1 0 151ebadc94cfdb3f031f7d2803d99477
+
+% 0 1 0 067e1619b7c7435f05ca281bbdc399fb
+
+% 0 1 0 18eafb32caed3dd50f976e787bd035ca
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 3 0 1babbf9c3aefd73b040bed5fd9020f8e
++ L'exemple est compilé, mais pas exécuté, car il lance un serveur de langage.
++ [Dialoguer avec un serveur](../../soundness/modules/lsp.md#talking-to-a-server) présente les
++ autres requêtes, et [le style direct](../../philosophy/direct-style.md) ce qui rend cela possible.

@@ -1,0 +1,72 @@
+orthant 2 language
+
+@ 0 1 0 0025d3afb44236fc0b2d3478efc8001b
++ ### Conjuntos de inteiros
+
+@ 0 4 0 1d180ebd9e904176171927d236a99e27
++ Um valor `Flags` serve para os casos de uma única enumeração, e para em 64 deles. Um `Bitset` é a
++ mesma ideia para quaisquer inteiros não negativos: um conjunto que custa um bit para cada membro
++ possível, e cresce até o seu maior membro. Ele convém a um conjunto de números pequenos que é
++ consultado com frequência, como as linhas de uma tabela que já foram visitadas, ou as posições de
++ um texto em que houve correspondência.
+
+@ 0 2 0 093c3b75053f8d4e018bb1df87124167
++ Seus membros são `Ordinal`s, e ele é uma coleção como qualquer outra. `has` testa um membro, `+` e
++ `-` dão um conjunto com um membro adicionado ou removido, e o `+` de dois conjuntos é a sua união:
+
+% 2 1 0 06031ae7ad28b8db14055bd2ffc6575e
+
+% 3 1 0 084246e38a379af218b5e2f3d2c8a952
+
+% 4 1 0 17a01002e98ecc1a10d45182664f734c
+
+% 0 1 0 0f7a2c42fa67aa9f154f7dbfb8c42d78
+
+% 0 1 0 1f2c7b7d73f8b3e402aee54c9f50f064
+
+% 0 1 0 0c9c61d30ec229c018b9cd40e8d3006d
+
+% 0 1 0 1d5a7b059c740e451fe7065ed2a00e6c
+
+% 0 1 0 0102757534920ae50f64810a256a3d3e
+
+% 0 1 0 08423f89183d0c73077d46ef06783f6b
+
+% 1 1 0 15a51aeca14e0eed1aaecac34073d600
+
+@ 0 2 0 1cea220c254fd83402245bc31a33295b
++ `intersect` e `except` são como para um `Set`, e um `Bitset` é percorrido em ordem crescente, seja
++ qual for a ordem em que foi feito:
+
+% 2 1 0 08c5e60346075e7c190eb1b2e356d1d4
+
+% 3 1 0 19d68cc86daf3b5512cd7f1411e17341
+
+% 4 1 0 05bca7ee9c783c2514ad13b530f8695f
+
+% 0 1 0 0dcaa3a5f91192861169fd8b84d416bf
+
+% 0 1 0 07f9973f625c610f1e5457fb1f09af45
+
+% 1 1 0 1a9b83fb634f1f6213e62dbfb0d5e781
+
+@ 0 3 0 1caf1d0709cb27a718d8323598048955
++ Um conjunto que é preenchido em um laço é construído no local. `Bitset.build` empresta a um bloco
++ um builder no qual escrever, e devolve um `Bitset` imutável quando o bloco termina, como
++ [`Map.build`](collections.md#sets-and-maps) faz para um mapa:
+
+% 2 1 0 0b648a5a4056a8350ced5c0856442043
+
+% 3 1 0 0acabbbde96df78219254f7abc2adef5
+
+% 4 1 0 1c9739cde4f8e24814977b07a6c947b6
+
+% 0 1 0 1a57fc2e9f815f2219fe454bdeb02296
+
+% 0 1 0 1b7bdd7ce9bcd65a02ad22a229096167
+
+% 0 1 0 1606f2033e9a1170155c1b9102cddf2e
+
+% 0 1 0 0d7d46ae272293b616fa6031d2aa65df
+
+% 1 1 0 1f7685acee9bc1dc160410b2b3dfd41d

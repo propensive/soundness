@@ -1,0 +1,49 @@
+orthant 2 language
+
+@ 0 1 0 1a25328fbbefa9aa0630f55bed2d1f45
++ # Die schmalste Ganzzahl, die ein Pixel fasst
+
+@ 0 2 0 1df99120df8e293f1d2e86c3870748d7
++ Ein Pixel-Layout ist ein Tupel von Kanälen, jeder mit seiner Tiefe in Bits. Der Compiler addiert
++ die Tiefen und berechnet aus der Summe den Ganzzahltyp, der ein Pixel speichert.
+
+% 0 1 0 12705ff5e291290d17fbc8389d59ef4a
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 0382f7afd625592d16285209816a6246
++   label Sechzehn Bits passen nicht in ein Byte
+
+% 0 1 0 1477c34ff41c7c99183443e1d3238ae1
+
+% 1 1 0 0960c596329e4eb20a0b442aaa85c43a
+
+% 2 1 0 06b8ec1d823be13f1f6b840f2bfe8e6f
+
+% 4 1 0 18ec49a8e2d6af9008046fc129dfb8b3
+
+% 0 1 0 0a364a6406a9a480119a7c477869072a
+
+% 1 1 0 068330ada213e4261a6be3000f2e531c
+
+@ 0 2 0 1b507406f94f95ce001f9d04a1ec46cc
++   label Sie passen in ein Short
++   highlight Short  sechzehn Bits
+
+% 1 1 0 10468434c96b0aa016fe5dffd0697fb8
+
+% 2 1 0 0a10553de97bde9b028de77b5666fa91
+
+% 4 1 0 13bd3ce2585a7f8f08bfc512d49c983e
+
+% 0 1 0 01b4d73b02ec21e104dc4c777fe1241b
+
+% 0 1 0 18eafb32caed3dd50f976e787bd035ca
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 1 0 01f70088820646f507799a4f19b884bb
++ [Pixel-Layouts](../../soundness/modules/colors.md#pixel-layouts) enthält die vordefinierten
++ Layouts.

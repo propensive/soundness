@@ -1,0 +1,91 @@
+orthant 2 language
+
+@ 0 1 0 1351bd50b0405242193f69184390dc04
++ # Una recurrencia que se describe a sí misma
+
+@ 0 3 0 1d7a8097a343d10e05cc6b1d4a737479
++ Una regla de recurrencia puede decir con palabras lo que significa, y las palabras pertenecen a
++ un idioma. La descripción toma los nombres de los meses y de los días de la semana de la
++ configuración regional que está en el ámbito, y no compila sin ella.
+
+% 2 1 0 04e41d2cc47b1a2a010a3ce67078ea21
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 1303efa174eeba09119e4dbd7d02d005
++   label El cuarto jueves de noviembre, sin idioma
+
+% 0 1 0 1477c34ff41c7c99183443e1d3238ae1
+
+% 1 1 0 0960c596329e4eb20a0b442aaa85c43a
+
+% 2 1 0 1813ff25c8f61a1e126d7c4dd24952e7
+
+% 2 1 0 043697b5ddb11bf713e79195f2b1ec21
+
+% 3 1 0 0d2bf57aff4e28fb1879e5c8ce41e318
+
+% 5 1 0 19fb6ac1e7e6c62f1001177d3bedc937
+
+% 6 1 0 0be214d2ef0b722505b0ce17555dfba4
+
+@ 0 2 0 19fe4454cf9f95a81d2e912eab8f6c8c
++   label En inglés
++   highlight Locale(en)  el idioma de la descripción
+
+% 1 1 0 1046b514dc8ec30319cc59d21a29c73b
+
+% 2 1 0 05b9c9070b2a0328145a15b057e4663f
+
+% 0 1 0 09c2a1913df0a529011d16fde1ec3795
+
+% 0 1 0 1daa9df619d73f590c44dd09aadd097b
+
+% 2 1 0 1eaf04272baccbfc0811a5481b7425a2
+
+% 3 1 0 0d14a680525e02311aca54d40464f710
+
+% 5 1 0 08598e5e28b4c8a112611634e8c83d33
+
+% 6 1 0 094b1daa4327686008b21ab008ba1bfb
+
+@ 0 2 0 0629a74ab787f739198c61d40e934477
++   label En francés
++   highlight Locale(fr)  otro idioma, la misma regla
+
+% 1 1 0 0dde232660230f23138458c6c9df966f
+
+% 2 1 0 0ef3631d51db2af211f27b17448c7cb5
+
+% 0 1 0 07e2341dd67da09e087536efda663ab1
+
+% 0 1 0 17b46e61ce2b52a309d5772313ba1acf
+
+% 2 1 0 0bd6d43e9a1c8d9c1c82117a934ee49f
+
+% 3 1 0 04f1f68055f359171d8c480dfedc500c
+
+% 5 1 0 01a6e0f65f9f00901504eaa018f42b6b
+
+% 1 1 0 1e08b293bdaaf56518e777c195608f34
+
+% 1 1 0 136d267ff733a60e0f6246170d49df5f
+
+% 2 1 0 1525a46c87e9e0571e7d21b8e7c42b7a
+
+% 0 1 0 08a86cbdc9b8cb0109ed8ce5b435ce67
+
+% 1 1 0 0cd6459499a6bd5203d659b3bcc1b6aa
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 0 1 0 1146516c4ccf4da318ef8dc8794ad447
+
+% 1 1 0 156b7770b140f5ca093af833136ce9d5
+
+@ 0 2 0 1ec9774ffaf7409a08c246c6c87347ed
++ [Descripción de recurrencias](../../soundness/modules/time.md#describing-recurrences) tiene más,
++ e [internacionalización](../../soundness/modules/internationalization.md) describe las
++ configuraciones regionales.

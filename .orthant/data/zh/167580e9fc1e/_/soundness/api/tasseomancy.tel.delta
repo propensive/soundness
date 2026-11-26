@@ -1,0 +1,109 @@
+orthant 2 language
+
+@ 0 1 0 112e00a0bd848b011c4e0e445a493659
++ info   由有类型数据生成的 SVG 图表：柱状图、折线图、散点图、饼图、直方图、箱线图和环形图
+
+@ 0 16 0 067dd5b85b1b7504178320a4b398acdc
++     - 形状由类型表达。
++       `Series[x, y]` 是一组具名的点序列；它的横轴类型决定坐标轴：`Text`、枚举或 `Chart.Category` 是 `Categorical`，数字、`Duration`、`Instant` 或任何 `Quantity` 是 `Continuous`。
++       `Samples[y]` 是原始测量值，`Chart.Estimate` 是带有区间的值，`Noted` 是带有注释的值，而由 `Weighted`、`Progressive` 节点组成的 `Dag` 是依赖图。
++     - 种类是一个值——`Bars()`、`StackedBars()`、`Lines()`、`Scatter()`、`Pie()`、`Histogram()`、`Boxes()` 或 `Annulus()`——而 `data.chart(kind)` 只有在某个 `Plottable` 实例表明该种类能够绘制数据的形状时才能编译：由三个序列组成的饼图，或穿过类别标注的折线，都是编译错误。
++     - 适配——每条坐标轴的范围、变换和分度——由按坐标轴值类型选取的 `Calibration` 决定，可以被作用域内的 given、从 `calibrations` 导入的 given 或传给种类的参数覆盖。
++       结果是 `Scale` 或 `Bands`：普通的数据，正因如此，图表才能判断新数据是否仍然适合它的坐标轴。
++     - 样式是一个 `Chart.Style` 值——默认为 `Chart.Standard`——它为所绘制的每个组件提供一个方法，有一个按角色命名颜色的 `ChartPalette`，还有一个为布局测量文本的 `FontMetric`。
+
+@ 0 3 0 0a7750f3b1455772047955d94e1ba081
++     不兼容的配对无法编译：分类序列不能是 `Lines()`，序列的集合不能是 `Pie()`，`Samples` 不能是 `Bars()`，节点缺少 `Weighted` 或 `Progressive` 的 `Dag` 不能是 `Annulus()`。
+
+@ 0 6 0 1917a3de2b6d1ec40d240e530bbf9c42
++       `Chart[data, form, fit, style]` 持有它的 `#data`、它的种类（`#form`）、该种类根据数据计算出的 `#fit`，以及把它们配对的 `Plottable` 实例。
++       它由 `chart` 扩展方法构造，而不是直接构造。
++       适配的类型是该种类自己的——`Bars.Fit` 带有 `bands` 和 `ordinate`，`Lines.Fit` 带有两个比例尺，`Annulus.Fit[node]` 带有其环带——而样式类型是该种类的样式特质，因此柱状图按 `Bars.Style` 渲染，饼图按 `Pie.Style` 渲染；`Chart.Standard` 实现了所有这些特质。
+
+@ 0 9 0 072fce925d770d9e02e5a9a1c5d675b3
++   entry .Legend   图例的位置：`Hidden`、`Right` 或 `Bottom`
++       由 `Chart.Style#legend` 选择其一。
++       `Right` 在绘图区旁边为每个序列堆叠一个色样和名称，`Bottom` 把它们排成一行沿底部排列，`Hidden` 不绘制图例，也不为图例预留空间。
++       无论如何设置，环形图都没有图例。
++   entry .Axis   笛卡儿样式钩子正在绘制的坐标轴：`Abscissa` 或 `Ordinate`
++       传给 `Chart.Cartesian` 的 `axisLine`、`tick`、`tickLabel`、`gridLine`、`axisTitle`、`arrowhead`、`axisBreak` 和 `labelRoom`，使一个覆盖方法能以不同于纵轴的方式处理横轴。
++   entry .Anchoring   一段文本的放置位置，由排列决定：锚点和对齐方式
+
+@ 0 5 0 1831b6ac69f488340d399a735a559cbd
++         以坐标轴组件及其布局参数扩展 `Chart.Style`。
++         位置以绘图的坐标给出；样式决定形状、描边，以及标注相对于其刻度的位置。
++         `Bars.Style`、`Lines.Style`、`Scatter.Style`、`Boxes.Style` 以及（经由 `Bars.Style`）`StackedBars.Style` 和 `Histogram.Style` 扩展它；`Pie.Style` 和 `Annulus.Style` 没有坐标轴，因此不扩展它。
+
+@ 0 8 0 0891e807181f12b60920a4f6d3afeed6
++         同时实现 `Bars.Style`、`StackedBars.Style`、`Histogram.Style`、`Lines.Style`、`Scatter.Style`、`Boxes.Style`、`Pie.Style` 和 `Annulus.Style`，因此作用域中的一个值就能为任何图表设置样式。
++         每个参数都有默认值：`width = 640.0`、`height = 400.0`、`inset = 12.0`、`font = Web.sansSerifFont`、`fontSize = 12.0`、`legend = Legend.Right`、`pitch = 60.0`、`tickLength = 5.0`、`grid = true`、`abscissaTitle` 和 `ordinateTitle` 未设置、`strokeWidth = 2.0`、`markerRadius = 3.5`、`markers = false`、`smoothing = 0.0`、`barGap = 0.25`、`boxGap = 0.25`、`hole = 0.0`、`sectorGap = 2.0` 以及 `bandGap = 2.0`。
++         任何组件的渲染方式都可以在匿名子类上覆盖：
+
+@ 0 15 0 1a99d3afece48c15170f5b17c966e665
++         `Chart#drawing` 的结果：画布大小、任何 SVG 定义，以及一个从 `Svg.Id` 到 `Figure` 的 `Ledger`，其中依次是 `backdrop`，然后（对笛卡儿图表而言）`grid`、`abscissa`、`ordinate`、`series-0`、`series-1`……以及 `legend`；饼图有 `wedges` 和 `legend`；环形图有 `rank-0`、`rank-1`……。
++         这些标识符就是 `Chart.Revision.Replace` 所指名的东西，每个都会成为 SVG 中一个 `<g>` 的 `id`。
++     entry .encodable   以一个 `Svg` 表示的整个绘图，即 `drawing.in[Svg]`
++     entry #width   画布宽度，来自样式
++     entry #height   画布高度，来自样式
++     entry #defs   绘图所需的 SVG 定义；标准种类不需要任何定义
++     entry #parts   按标识符排列的各部分，按绘制顺序
++   entry .encodable   以 `Svg` 表示的图表，即 `chart.in[Svg]`，带有它所要求的组件
++       需要作用域中有图表自己的样式类型（柱状图为 `Bars.Style`；`Chart.Standard` 满足所有种类）、一个 `ChartPalette`、一个 `FontMetric` 和一个 `Arranger`，它们都有伴生对象中的默认值。
++       `chart.in[Svg].in[Xml].show` 就是 SVG 文本。
++   entry .Revision   图表的一次绘制与下一次绘制之间的变化
+
+@ 0 9 0 1c28ec2691d0d19507526a5acda9efaa
++       `data is Plottable in form to fit by style` 只在该种类能够绘制该数据的地方存在：饼图需要一个分类序列，折线需要数值坐标轴，环形图需要由带权重、有进度的节点组成的 `Dag`。
++       种类是 `Form`，适配是 `Result`（因此图表的适配是该种类自己的，其坐标轴可见），样式是 `Operand`，以 `Chart.Style` 为上界。
++       标准实例位于各个种类的伴生对象中——`Bars.series`、`Bars.traversable`、`Lines.series`、`Histogram.samples`、`Annulus.dag`……——因此无需导入即可找到；`traversable` 实例涵盖由序列或样本组成的任何集合（`List`、`Set` 或 `Sequence`），其遍历证据会在元素类型的类型类之前解析。
+
+@ 0 8 0 10d090d5a3debda7022c250b95d296cc
++   entry #fit   根据数据选择坐标轴：即 `Result`，例如 `Lines.Fit`
++   entry #accommodates   适配是否仍能容纳新数据，以便修订只替换一个部分
++       对笛卡儿种类而言，每个位置和区间都位于比例尺之内，每个类别都是已知的条带；对饼图而言，类别没有变化；对环形图而言，图的形状和权重没有变化。
++   entry #draw   针对某个适配把数据渲染为 `Chart.Drawing`
++       以上下文值的形式接收样式（`Operand`）、一个 `ChartPalette`、一个 `FontMetric` 和一个 `Arranger`。
+
+@ 0 4 0 1bdbb9d5ce2db9910b3f17d117999156
++ entry .Weighted   环形图节点的大小：它在其层级角度中所占的份额，以及在环带厚度中所占的份额
++     `node is Weighted` 给出 `weight(node): Double`。
++     在 `Annulus` 中，节点的扇区所扫过的角度占其环带一周的份额，等于其权重占该层级总权重的份额；环带的厚度则等于其层级在整个图的权重中所占的份额。
++     负权重按零计算。
+
+@ 0 5 0 124bcb22acae8dcd16f6400eea87d86d
++ entry .Progressive   环形图节点的进展程度，从 0（未开始）到 1（已完成）
++     `node is Progressive` 给出 `completion(node): Double`，绘制时截取到 `[0, 1]`。
++     节点自带进度，因此环形图与任何图表一样进行修订：使用形状相同、节点进展更远的新 `Dag`，只有扇区填充得更多的环带会被替换。
+
+% 0 1 0 054d3f904bd128ce022edacb2a896287
+
+@ 0 1 0 12f074268f4e474211e04fa1a4fdb787
++ entry .Annulus   以同心环带表示的依赖图：每个秩一条环带，每个节点一个扇区，按其完成程度填充
+
+@ 0 10 0 1d16274da5ae74870b75e0bde129fae8
++       一个图表种类，适用于节点为 `Weighted` 和 `Progressive` 的 acyclicity `Dag[node]`，并要求作用域中有一个 `Ranking`（acyclicity 伴生对象中的默认值；`import rankings.balancedRanking` 让每个节点尽可能靠近它的依赖者）。
++       不依赖任何东西的节点构成最内层的环带，此后每条环带是秩再向外一级的节点，因此构建过程从中心向外填充。
++       节点的扇区在其秩内扫过与其权重成正比的角度，并按顺序排列，使它位于它所靠近的那些依赖之上；环带的厚度等于其秩在总权重中所占的份额。
++       扇区按节点的完成程度顺时针填充，剩余部分用较暗淡的色调表示；颜色是调色板的第一种颜色，按扇区所在的位置加以明暗变化。
++       环形图没有标注、没有坐标轴，也没有图例。
+
+% 0 2 0 14e9c2ce8abadbba09354805377d870d
+
+% 0 1 0 192dfaa53893ba201815a4fa9a1268c7
+
+@ 0 3 0 0c218c9188a3bb0711c8d394d44717cf
++         完成程度不在这里；每次绘制时都从节点读取。
++     entry #bands   各环带，最内层在前
++   entry .Style   环形图的组件：每个扇区的已完成部分和剩余部分，以及间隙
+
+@ 0 11 0 0c3ca24d87538fed06175a0f6738d39a
++         扩展 `Chart.Style`。
++         `Chart.Standard` 提供 `hole`、`sectorGap` 和 `bandGap`。
++     entry #hole   从中心挖空的半径比例，与 `Pie.Style` 共用
++     entry #sectorGap   相邻扇区之间间隙的宽度，以像素计
++     entry #bandGap   相邻环带之间间隙的宽度，以像素计
++     entry #shade   扇区按其位置得到的颜色，以调色板的第一种颜色为基础
++         `x` 和 `y` 从环形图左侧或底部的 -1 变化到右侧或顶部的 1：色相从左到右转过三十度，而从下到上，颜色从暗五分之一，经过纯色相，变为亮五分之一。
++     entry #sector   节点扇区的已完成部分，由其路径操作构成：`sector-N`
++     entry #remainder   未完成的部分，使用较暗淡的色调：`sector-N-rest`
++   entry .dag   由带权重、可进展节点组成的 `Dag`，在给定 `Ranking` 时可以绘制为环形图

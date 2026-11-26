@@ -1,0 +1,53 @@
+orthant 2 language
+
+@ 0 1 0 194b44049e4e5ec2121043f6cc2885d0
++ # Ein Bild in einer Frage, durch eine URL benannt
+
+@ 0 4 0 14bd85e1db2cbdce196a47c3f3abf92f
++ Eine Nachricht ist eine Rolle und eine Liste von Inhalten, und ein Bild ist eine Art von Inhalt. Wo
++ das Bild liegt, ist eine URL, wie
++ [Netzwerkadressen](../../soundness/modules/network-addresses.md#urls) sie beschreibt: beim
++ Kompilieren des Codes geprüft, ohne dass zwischen den beiden Bibliotheken etwas sie umwandelt.
+
+% 0 1 0 12705ff5e291290d17fbc8389d59ef4a
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 0e5e01f646ea3127074da9334a79c33b
++   label Eine Frage in Worten
+
+% 1 1 0 020bf2ff8ef978ec0849963fb12c9581
+
+% 0 1 0 065b03c723ac2e040ae6a5ed192ae292
+
+% 1 1 0 1d9cd4a0eb60a75f14c0c6f1dd193bff
+
+@ 0 2 0 05ad5a2283e498680554e7087c89b9aa
++   label Dieselbe Frage, mit einem Bild
++   highlight url"https://example.com/yorick.png"  eine geprüfte URL, so verwendet, wie sie ist
+
+% 0 1 0 0a0deb7941ddf8a50daeecf5cd63d9cd
+
+% 1 1 0 121d75a57da2fbaa05c6421c614968ee
+
+% 0 1 0 061b8a0c981679d903085648f8f95420
+
+% 0 1 0 1e2662303c3d4356085c206e7d1c67b7
+
+% 0 1 0 09f52cc11c8467c10f3d885a12ab3805
+
+% 0 1 0 03b6f43130e34f0f1c52b501699474a7
+
+% 0 1 0 04d6a449e0a4674f0d3e8249157cdce2
+
+% 0 1 0 14b6d9841f7b10f00c92b1cfd524e575
+
+% 0 1 0 18eafb32caed3dd50f976e787bd035ca
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 2 0 1663db269c71a56b01dc8ca91fa378e6
++ [Nachrichten und Inhalte](../../soundness/modules/llm.md#messages-and-content) listet die Arten von
++ Inhalten auf, und [Kombinierbarkeit](../../philosophy/composability.md) die Idee.

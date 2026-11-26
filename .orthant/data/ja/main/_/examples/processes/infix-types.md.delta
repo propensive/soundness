@@ -1,0 +1,64 @@
+orthant 2 language
+
+@ 0 1 0 0780a9a749456d3d1f2ed7c987dc55dc
++ # 独自の型を引数として
+
+@ 0 2 0 098ee9305a2fc2301a55910cc8d40a7f
++ コマンドに埋め込めるのは、引数であることがわかっている値だけである。型は一行で仲間に加わり、その行はそれが意味する文としてそのまま読める。
++ `Scene` は `Parameterizable` である、と。
+
+% 2 1 0 0c2eeeef1ecc66570be52b4726d0b9d0
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 051c6f07d5f3d3d71650cb5ba81747d8
++   label 引数ではない値
+
+% 0 1 0 1477c34ff41c7c99183443e1d3238ae1
+
+% 1 1 0 0960c596329e4eb20a0b442aaa85c43a
+
+% 2 1 0 14237d73114a85c804c421e7965fdc15
+
+% 2 1 0 05084fc473ebaf8e1b604e67b1a79a99
+
+% 3 1 0 1276f5de978dd63f0884f60e54db1373
+
+% 1 1 0 1b651c1f6d7561240225c037f73c899a
+
+@ 0 1 0 0c52ea591c75e154179cd61964d4cb8a
++   label 場面の書き方
+
+% 0 1 0 1a09b1704359120c1507a612d56ddb1c
+
+% 1 1 0 05c4336bbfe1d6b50de6228cbee3ee03
+
+% 2 1 0 1494447b74ee9e770f3101f2c52e0219
+
+% 0 1 0 1376e0058325cfce048310c1f8c4ec4e
+
+% 2 1 0 026736f2a88702501d536926876c3a46
+
+% 3 1 0 1d2ab8f29aa36cb60060919c8b03928e
+
+% 1 1 0 1fa55f617a3e6a011d9b334699777b89
+
+% 1 1 0 136d267ff733a60e0f6246170d49df5f
+
+% 2 1 0 1525a46c87e9e0571e7d21b8e7c42b7a
+
+% 0 1 0 08a86cbdc9b8cb0109ed8ce5b435ce67
+
+% 1 1 0 0cd6459499a6bd5203d659b3bcc1b6aa
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 0 1 0 1a305596c46f7fb30c7637f3cf240dc3
+
+% 1 1 0 13cde774bb5b4a8d04a34ed96574254b
+
+@ 0 3 0 13dd755265b0c3f81313b1c3ab565114
++ [埋め込みとエスケープ](../../soundness/modules/processes.md#substitution-and-escaping)が値の置ける位置を、
++ [中置型](../../philosophy/infix-types.md)がそうした行を書く語を説明する。

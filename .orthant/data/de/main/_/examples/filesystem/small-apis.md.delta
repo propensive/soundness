@@ -1,0 +1,70 @@
+orthant 2 language
+
+@ 0 1 0 0799143bd50238300440f8892ee978d0
++ # Eine Methode liest eine Datei als beliebigen Typ
+
+@ 0 3 0 087d31ffe67ab2090048c5f6acb53515
++ Eine ganze Datei wird mit `read` gelesen, das den gewünschten Typ annimmt. Text wird mit dem
++ Zeichensatz im Geltungsbereich dekodiert, Bytes werden genommen, wie sie sind, und JSON wird
++ geparst, alles von der einen Methode.
+
+% 0 1 0 12705ff5e291290d17fbc8389d59ef4a
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 2 0 0705cb3cc5b5bb761adc79474529abd3
++   label Als Text
++   highlight read[Text]  mit dem Zeichensatz im Geltungsbereich dekodiert
+
+% 1 1 0 1f21cd2f2f320c5c1d1fdddf7d076086
+
+% 2 1 0 1dc0334ae7b18c1f114d416942a97a44
+
+% 3 1 0 085d26fa411753f91a63b900c84eb138
+
+% 5 1 0 156cd9f0ba6588fa10a225819ab1ba72
+
+% 1 1 0 083fce38a5a1a9e4073f30826436cf3d
+
+@ 0 2 0 06f60d532454734f181f40a7fd913315
++   label Als Bytes
++   highlight read[Data]  die Bytes, wie sie sind
+
+% 1 1 0 0cb2a967a6dcc34103e77c2e927279e3
+
+% 2 1 0 0c3ec8bee6ccacb60b605b06b3c908de
+
+% 3 1 0 008db6c082efbc3f19d38bf422f781a4
+
+% 5 1 0 0c278c561380029c13d13740447545b1
+
+% 6 1 0 16fd66fe52199e1408747d4c5ced7a2c
+
+% 1 1 0 1297e0c561d8ef811ab7042c6039e8b1
+
+@ 0 2 0 1cc69e233fe7a357175390952430a43f
++   label Als JSON
++   highlight read[Json]  geparst
+
+% 1 1 0 0fab1446fc92ac900e11b3ac8d991416
+
+% 2 1 0 0553e8e3cbafa764189025c20d0bd35c
+
+% 3 1 0 00ab6898ba18d5ee1cb76e5b97637554
+
+% 5 1 0 007c6832130abae709192898354a5e85
+
+% 6 1 0 117d352b5b3932300cb59876e4ba664b
+
+% 0 1 0 093408a701f9278f10354440c40dbc41
+
+% 0 1 0 18eafb32caed3dd50f976e787bd035ca
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 4 0 12fb0b24cd15fbce1a43850b27af9dd2
++ Das Beispiel wird kompiliert, aber nicht ausgeführt, da es keine Datei zum Lesen hat. [Lesen und
++ Schreiben](../../soundness/modules/filesystem.md#reading-and-writing) behandelt die Handles für
++ größere Dateien, [Kleine APIs](../../philosophy/small-apis.md) die Gründe für einen einzigen Namen.

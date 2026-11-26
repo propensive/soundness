@@ -1,0 +1,69 @@
+orthant 2 language
+
+@ 0 1 0 1c4363a51ae50ace1e9c59539b389aac
++ # 介于两个界限之间的值
+
+@ 0 2 0 0a14ed18af2bb25803677b0ba5ef8edd
++ 比较可以像在数学中一样连写。针对下界和上界的检验写成一个表达式，值位于中间，也就在读它的地方。
+
+% 2 1 0 13939548ccfda91a05a99286abafaedc
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 08e58ae1fa4c423b06a183c671650c77
++   label 两次比较，连接起来
+
+% 1 1 0 1b4570c7348f479716ea74294a7b7c46
+
+% 2 1 0 1b93f6ad98eebdf402334d5070918ce6
+
+% 0 1 0 0556f9c27d028a4c0b53f867eac11225
+
+% 1 1 0 0ce453c254a4529c08d7cd1ac9162272
+
+@ 0 2 0 1fc38837a333eb361c0c193ffc0e40a0
++   label 一次连写的比较
++   highlight 18.0..65.0  像数学中那样读
+
+% 1 1 0 04205d39f7ae30ca05974fd8ee785cae
+
+% 2 1 0 0b2c3042e56c176614e7a384d06f3b22
+
+% 3 1 0 01e4848ab8e804f6082c48b0465f478c
+
+% 0 1 0 002894f483eced511f8f2dcde86337cd
+
+% 1 1 0 1c64c9174ba2337c1c5c1673c7c4fc92
+
+@ 0 2 0 10e7223c48a80ac5053049ee56e478d4
++   label 使用占位符
++   highlight 18.0..65.0  中间的值
+
+% 1 1 0 15e8a40b8520c7b607e1f60c176401be
+
+% 2 1 0 1a07dea7de7705f70ed9866e04c456db
+
+% 3 1 0 1df91d2787f765e306f235eb774879ec
+
+% 0 1 0 10d6822ffbfbd31b1afaaeb41c80f792
+
+% 1 1 0 08fb635c26592ecb18145667b8a35f67
+
+% 1 1 0 136d267ff733a60e0f6246170d49df5f
+
+% 2 1 0 1525a46c87e9e0571e7d21b8e7c42b7a
+
+% 0 1 0 08a86cbdc9b8cb0109ed8ce5b435ce67
+
+% 1 1 0 0cd6459499a6bd5203d659b3bcc1b6aa
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 0 1 0 0d8a6f249c34fecd1b330257a046c0d8
+
+% 1 1 0 1ce8a5d30b29ce27054b1c061f7fc4f9
+
+@ 0 1 0 111433d1d91e644d0bb0357993099b2d
++ [比较](../../soundness/modules/numbers.md#comparisons)还介绍了与之并列的 `min` 和 `max`。

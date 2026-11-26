@@ -1,0 +1,64 @@
+orthant 2 language
+
+@ 0 1 0 1b730e7f4c94c6c50461858dd43cde3f
++ # Un metodo Kotlin che può restituire null
+
+@ 0 3 0 0ff8bd22848e01ae1a1c8b847fe07f8a
++ Kotlin indica nel tipo un risultato che può essere `null`, e un compilatore Kotlin lo registra nel
++ file di classe. Una facciata lo legge: `Regex.find` restituisce un `MatchResult?`, quindi qui
++ restituisce un `Optional`, che non si può usare come se una corrispondenza fosse certa.
+
+% 2 1 0 179b6043d49ec6cd1aee08c153e0773b
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 0a3bbb8bbf9fa8e80fea89512112ba54
++   label Una corrispondenza data per scontata
+
+% 0 1 0 1477c34ff41c7c99183443e1d3238ae1
+
+% 1 1 0 0960c596329e4eb20a0b442aaa85c43a
+
+% 2 1 0 1ca3c0c948d2173b1fa22465bd6b56f2
+
+% 0 1 0 16e20c536d054a7207f496a34d0f03f6
+
+% 1 1 0 00d8ef32bd18646809643928a4a758e6
+
+@ 0 3 0 05ce26774bad180a194585730360079d
++   label All'assenza di corrispondenza viene dato un significato
++   highlight let(_.value)  la facciata su un MatchResult, dove ce n'è uno
++   highlight or(t"none")  ciò che qui diventa il null di Kotlin
+
+% 1 1 0 197d04c36b7f116f0f266493ff3c9314
+
+% 2 1 0 1e017167ca742f4f16093f6a714ce8bc
+
+% 0 1 0 0074a6b7b961dfc50a4396f765dc4c31
+
+% 0 1 0 0d07707caa38fae4100525fb3f9548a4
+
+% 1 1 0 064af7ee7ee5c2301aadd6edffde837b
+
+% 1 1 0 136d267ff733a60e0f6246170d49df5f
+
+% 2 1 0 1525a46c87e9e0571e7d21b8e7c42b7a
+
+% 0 1 0 08a86cbdc9b8cb0109ed8ce5b435ce67
+
+% 1 1 0 0cd6459499a6bd5203d659b3bcc1b6aa
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 0 1 0 0592f49fe24e46e40b1cce0f136cbed1
+
+% 0 1 0 1a565a68e6273a4319a65f17fecdcdf4
+
+% 1 1 0 19d27b508b1f30211389e598c725b29a
+
+@ 0 3 0 024f739e6f701cf216b3475d01eb841f
++ [Facciate Kotlin e Java](../../soundness/modules/foreign-interop.md#kotlin-and-java-facades)
++ descrive ciò che legge una facciata, e l'[opzionalità](../../philosophy/optionality.md) il tipo che
++ sta al posto del `?` di Kotlin.

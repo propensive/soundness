@@ -1,0 +1,71 @@
+orthant 2 language
+
+@ 0 1 0 0591207e729fd9a6106c33ad9bd8c253
++ # Un'enumerazione, con il suo caso nominato nella mappa
+
+@ 0 3 0 134e1e390d239c5a1c82edb2562881fd
++ Un'enumerazione si codifica come una mappa CBOR con una voce in più, che nomina il caso. Un given
++ dice quale chiave contiene il nome, e il codec derivato per l'enumerazione lo scrive e lo legge.
+
+% 2 1 0 1b201169263e4a6e0c7c2b8555bb21a8
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 2 0 1ebcc28d65f984c70622926e4312903b
++   label La chiave che nomina il caso
++   highlight Cbor.discriminatedUnion(t"kind")  dichiarata una volta
+
+% 1 1 0 1dac02653eadae170f671f26b281e396
+
+% 2 1 0 1e7c5e76405c94fc000a20184968683d
+
+% 4 1 0 13a7a1303a5f6a0a197b772e8cc059a6
+
+% 5 1 0 0ed85fa24715908f0f143cfc4011085d
+
+% 6 1 0 17ab3bc05be059c91e98e0a25f72c60d
+
+% 8 1 0 08cac91506a8cecd1ea04e916ac080ec
+
+% 1 1 0 03df5a8820ccfe5c1c382d181b730ca2
+
+@ 0 2 0 1d8e0ede756f18f808fc4aa0705ebb7b
++   label Un caso, scritto e riletto
++   highlight as[Status]  la chiave sceglie il caso
+
+% 1 1 0 0a60e6eedd85021e1d0398afa6d008ea
+
+% 2 1 0 0de94868475a3a860c6cb77541c726eb
+
+% 4 1 0 13b421340ab38fff05d480bdc53f140d
+
+% 5 1 0 19563217df5f5bdd0b3d7c8dee65f0cc
+
+% 6 1 0 1cf2f54c42f053f00af3d45157fab3ea
+
+% 8 1 0 0afff6228feb8aa00632b3c663637a07
+
+% 0 1 0 09a75104b1153fdc1cdb728a071ec541
+
+% 0 1 0 1e69eede383ec00601a8b74e2df796d7
+
+% 1 1 0 171f660b8a0dc8a513c6e632c40e6fb0
+
+% 1 1 0 136d267ff733a60e0f6246170d49df5f
+
+% 2 1 0 1525a46c87e9e0571e7d21b8e7c42b7a
+
+% 0 1 0 08a86cbdc9b8cb0109ed8ce5b435ce67
+
+% 1 1 0 0cd6459499a6bd5203d659b3bcc1b6aa
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 0 1 0 1cac71ec74caf68e03e4fa6d581b1009
+
+% 1 1 0 14b16e91f34540961584eb556f0da2e5
+
+@ 0 1 0 026042105c81200717e3ed0ac16d1f9b
++ [Codifica e decodifica](../../soundness/modules/cbor.md#encoding-and-decoding) contiene il resto.

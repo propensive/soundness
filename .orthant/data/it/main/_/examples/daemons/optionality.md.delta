@@ -1,0 +1,64 @@
+orthant 2 language
+
+@ 0 1 0 113abf96643254ff10afa73384f8a7f5
++ # Un aggiornamento che può non essere avvenuto
+
+@ 0 3 0 14041c0b835b3e1b035e0f07621a75b2
++ Il launcher registra che cosa ha fatto con un aggiornamento candidato, e `Upgrade.outcome` rilegge
++ quella registrazione. Di solito non ce n'è nessuna, quindi l'esito è opzionale, e un resoconto si
++ scrive con `let`, che non fa nulla dove non c'è nulla da riportare.
+
+% 0 1 0 12705ff5e291290d17fbc8389d59ef4a
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 2 0 088f77442540eeb71b45fa7eb3bc7c74
++   label L'esito, se ce n'è uno
++   highlight Optional[Upgrade.Outcome]  di solito assente
+
+% 1 1 0 12123ce5b311570605b885be7069bf2a
+
+% 2 1 0 0dcdbe9f773b06c91973e599c942e116
+
+% 0 1 0 16177f7bb2d518a2020271c962774ea9
+
+% 1 1 0 0acd2fc9198e187a061d20a2419fc942
+
+@ 0 2 0 0ae4d3fe1d86caeb1e5e9c4df0f06576
++   label Un messaggio su di esso, se ce n'è uno
++   highlight let  viene eseguito solo dove c'è un esito
+
+% 1 1 0 0491f6563b3241071de7029e3fa209c5
+
+% 2 1 0 1ea9259531b7301a0e8cf62b4195ebe3
+
+% 4 1 0 0c3aa2d270d6a2d41b4faa889ef2ca92
+
+% 1 1 0 04ef83936b84bde40f641a6a98dd7e72
+
+% 1 1 0 0c6ac56c9fea92bc1420335acce7e0eb
+
+@ 0 2 0 13232f7cbdcd98661498f45270333469
++   label Confermato, così che venga riportato una sola volta
++   highlight Upgrade.acknowledge()  cancella la registrazione
+
+% 1 1 0 0895bdbd9906df841536f9645aee4f33
+
+% 2 1 0 01ef4c997c6f6cd20e9c1cde11681e6d
+
+% 4 1 0 0daaad4729d42dd108eb65cdefeff15c
+
+% 0 1 0 044eebc8b1a7578f128b84216c6af7f3
+
+% 1 1 0 07941104c25083ec18ee8d7bb271eb06
+
+% 0 1 0 18eafb32caed3dd50f976e787bd035ca
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 3 0 1614f93a42868ac71d59c8f28c3b183f
++ L'esempio viene compilato, ma non eseguito, perché legge lo stato di un programma installato.
++ [Preparare un aggiornamento](../../soundness/modules/daemons.md#staging-an-upgrade) elenca i
++ risultati, e [l'opzionalità](../../philosophy/optionality.md) descrive `let`.

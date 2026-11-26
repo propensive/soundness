@@ -1,0 +1,55 @@
+orthant 2 language
+
+@ 0 1 0 0689ee8ec9fb8ac90858862c2e24553f
++ # Un service sur le mauvais transport
+
+@ 0 3 0 1db23fd3fb394d6f1d037af73c3af870
++ Un port peut s'écrire par le nom de son service, que le compilateur recherche dans le registre de
++ l'IANA. Le registre indique aussi quel transport utilise un service, et Docker n'est enregistré
++ que pour TCP.
+
+% 2 1 0 106d156cab85f8911bbd7c8d99b4e254
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 18f3aa47ab2ac35212e14d43024bd656
++   label Docker, sur UDP
+
+% 0 1 0 1477c34ff41c7c99183443e1d3238ae1
+
+% 1 1 0 0960c596329e4eb20a0b442aaa85c43a
+
+% 0 1 0 0e925009e173438c1a58f32741d4731d
+
+% 1 1 0 11f435d6b51cfcd707782a3fb14718c0
+
+@ 0 1 0 1dfefc40ace62ca4005eca1376cd3099
++   label Docker, sur TCP
+
+% 0 1 0 14f3ef07a75cf4d500a583c1b1ac5e72
+
+% 1 1 0 1878dda88a6b633812d5c7f4959e1f8d
+
+% 0 1 0 06834f4a81595adf025796e52c7ff1a0
+
+% 1 1 0 1c2e746d814b94350c406c9815bedb44
+
+% 1 1 0 136d267ff733a60e0f6246170d49df5f
+
+% 2 1 0 1525a46c87e9e0571e7d21b8e7c42b7a
+
+% 0 1 0 08a86cbdc9b8cb0109ed8ce5b435ce67
+
+% 1 1 0 0cd6459499a6bd5203d659b3bcc1b6aa
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 0 1 0 0b45267e9efb2b2309efc1635cca4071
+
+% 1 1 0 0bd0b28bb00a1aee1a05fb450dee51c5
+
+@ 0 2 0 01c7fbdcff30db600b624b562b533f69
++ [Ports](../../soundness/modules/network-addresses.md#ports) en dit davantage, et
++ [la sûreté par construction](../../philosophy/safety-by-construction.md) en donne les raisons.

@@ -1,0 +1,93 @@
+orthant 2 language
+
+@ 0 1 0 1077103f25d97361194dfb3b566caed8
++ # Quatre opérations sur un disque, l'une après l'autre
+
+@ 0 2 0 05d339a551cd65550b8f8275401be3e6
++ Écrire un fichier, le copier, le déplacer et le relire peuvent chacun échouer. Ils s'écrivent en
++ quatre lignes simples, et la seule façon dont ils échouent figure dans le type de la méthode.
+
+% 0 1 0 12705ff5e291290d17fbc8389d59ef4a
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 1851805286fc390207d1f8824db9936d
++   label Écrire
+
+% 1 1 0 1cb2357dd3e3394c19f17608c7abc5e5
+
+% 2 1 0 0dee15865d6e7d6f1cab9fa324f679d3
+
+% 3 1 0 041f93b4b3c29dbf13056a0f7bc853b5
+
+% 4 1 0 14c94113773f33ca1cbaef77f1b7b72b
+
+% 5 1 0 0e566d62e5bdea1a097f116a34999720
+
+% 7 1 0 0c8e7a4308e0f3de15a29223d947e542
+
+% 8 1 0 1615f8f5b94a9919015ae78b14f2c9b8
+
+% 9 1 0 0a3393d73d824c1f18fd40c8ea9f2beb
+
+% 1 1 0 1e168ab7a6c3a86317cb5f1ad51c6169
+
+@ 0 2 0 12cea23289f31d47182772ab514ceef6
++   label Copier
++   highlight copyTo  peut échouer, et le dit plus haut
+
+% 1 1 0 0c2e9a54b2934e6214cb224772b80d96
+
+% 2 1 0 091c0f03e69fdd0c0664f3e61b22f087
+
+% 3 1 0 0b8ed5745254ce35030fa4a162685e8b
+
+% 4 1 0 08478ce65d3ec28e13f42f04c6d5b601
+
+% 5 1 0 16c633721a1f4add1c33cc45b5b1eadd
+
+% 7 1 0 15dfa5c51f3087b80282a01cb155bcff
+
+% 8 1 0 077bfa985185e7e9081e8dfbd6df01f0
+
+% 9 1 0 165996733ffab50619fca7d164fdb577
+
+% 3 1 0 0d0d00c77deec37c1a6abea4775a25a1
+
+% 1 1 0 109ad175c6c7c8700df04e137c0b54e5
+
+@ 0 2 0 11183180df62929d06a03ba72783d3d7
++   label Déplacer, et lire
++   highlight moveTo  donne le nouveau chemin
+
+% 1 1 0 0843f1740fabcf980f8d273fab6ebdfc
+
+% 2 1 0 0e701b6cb84ebdc51ff52e993b1a73bf
+
+% 3 1 0 1a779377baf972eb19c2b9cda2399fdf
+
+% 4 1 0 0fce06df6ed3a92c05fa72f79c37cb82
+
+% 5 1 0 139ee9d93bbfab8513c3d6194d62f4c7
+
+% 0 1 0 0317d94ed71e1e8d094305acdfa02b52
+
+% 1 1 0 1dacbe030aedffe5051b062b8c928655
+
+% 2 1 0 1a156aae6681db1e1d19e41786a07061
+
+% 3 1 0 03dbca177b4a7f421a11cbf996a4da3d
+
+% 0 1 0 152f19165d8442aa0b4fcafff9c36b00
+
+% 0 1 0 18eafb32caed3dd50f976e787bd035ca
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 4 0 1932493b38b615901b99e082c563a3e5
++ L'exemple est compilé, mais pas exécuté, car il écrirait sur le disque.
++ [Copier, déplacer et supprimer](../../soundness/modules/filesystem.md#copying-moving-and-deleting)
++ présente les opérations, et [le style direct](../../philosophy/direct-style.md) dit ce que sont
++ devenus les effets.

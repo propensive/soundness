@@ -1,0 +1,64 @@
+orthant 2 language
+
+@ 0 1 0 011050cdf7df458e1b636182ff981f4f
++ # Jedno zdarzenie niesione wewnątrz innego
+
+@ 0 3 0 02788c955433f0810d8d97ad0a43cc8c
++ Metoda nazywa logowane zdarzenia w swoim typie, za pomocą `logs`. Gdy wywołuje metodę, która
++ loguje zdarzenia innego rodzaju, jeden given mówi, jak są one niesione, a jego typ czyta się jak
++ zdanie, które oznacza: `Performance` transkrybuje `Cue`.
+
+% 0 1 0 12705ff5e291290d17fbc8389d59ef4a
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 2 0 1d0b6c65a166de00004237dea251c9f6
++   label Metoda, która loguje kwestie
++   highlight logs  zdarzenia, które emituje
+
+% 1 1 0 14156b1df374a0211af147ddc24640b2
+
+% 2 1 0 188744023a835b37140adabf925414d5
+
+% 3 1 0 1e93681c55ce5ee11ec6561d842f9507
+
+% 5 1 0 0abb493bf74703bd007950e69abc3045
+
+% 1 1 0 15490275db271fad1efdee14ae77e827
+
+@ 0 2 0 0e8a87dc22317b930d563a196d4f5bc1
++   label Metoda, która loguje przedstawienia i ją wywołuje
++   highlight transcribes  każda kwestia staje się sceną
+
+% 1 1 0 00dd2e9e8bc144e3117ccec190b2e7aa
+
+% 2 1 0 0b22584e2b65dd4b070988461a504318
+
+% 3 1 0 1bc27fbfb1807909063f576122cec6c9
+
+% 5 1 0 10dfa14f7c4216c509244335894a44bb
+
+% 0 1 0 0cf309fb35ef2f7001011f81dae3ae35
+
+% 0 1 0 1827461cd0a5c65f049c83e26fe302f8
+
+% 0 1 0 0ce3f267ed122d5617a01b65993b3d40
+
+% 0 1 0 106408f8921633a01cd062469d121f36
+
+% 0 1 0 16f75bd1dbc67042147a7e18c6a72bd9
+
+% 0 1 0 0ad907f78ae1c071195599bf79764be5
+
+% 0 1 0 1836be12735a29341b19dc9055131bd8
+
+% 0 1 0 18eafb32caed3dd50f976e787bd035ca
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 3 0 03e2521898eb4fec136a645f7bc7dfe5
++ [Deklarowanie, że metoda loguje](../../soundness/modules/logging.md#declaring-that-a-method-logs)
++ pokazuje ten sam układ między dwiema bibliotekami, a
++ [typy infiksowe](../../philosophy/infix-types.md) – słownictwo `logs` i `transcribes`.

@@ -1,0 +1,60 @@
+orthant 2 language
+
+@ 0 1 0 1525e4a7a957cb6e1551416a617b7f24
++ # Uma requisição à VM pode ser recusada
+
+@ 0 3 0 168c9e0b079015dc08307b844d3cd79c
++ A VM pode responder a qualquer requisição com um erro: a thread morreu, o frame sumiu, a conexão
++ caiu. Todo método de uma sessão tem `raises Debugger.Error`, então um método que pergunta algo à VM
++ ou declara esse erro ou decide o que fazer a respeito.
+
+% 0 1 0 12705ff5e291290d17fbc8389d59ef4a
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 0bee1772299d4bab02a2e057156f584e
++   label A recusa não é levada em conta
+
+% 0 1 0 1477c34ff41c7c99183443e1d3238ae1
+
+% 1 1 0 0960c596329e4eb20a0b442aaa85c43a
+
+% 0 1 0 1e08687cb13957e8035b172cb8fc6d89
+
+% 1 1 0 051dddca37b9759e0823d8a32fac3262
+
+@ 0 2 0 1ad11225fb3ab5701d036fd2b5f5803b
++   label Ela é declarada
++   highlight raises..Error  repassada a quem chama
+
+% 1 1 0 094488e219acbd4000809ac96f129b08
+
+% 0 1 0 1636123759f8e61d00f4cece0d80263e
+
+% 0 1 0 0712c4862a830cfe1a47a1554d6d66f3
+
+% 1 1 0 15bd238c8df88cd515c6ac5a434df68d
+
+@ 0 3 0 00f5ec64e3a4855907c40052edfbce5e
++   label Ou uma thread que não pode ser nomeada recebe um nome
++   highlight safely  um resultado Optional no lugar do erro
++   highlight or(t"exeunt")  o que a sua ausência significa aqui
+
+% 1 1 0 113e7bd988f5df6f05afba4167f04583
+
+% 0 1 0 1f75ae734e17be47168fa469c2ddbfbf
+
+% 0 1 0 0fc302efafad757714e1c2e004791887
+
+% 0 1 0 18eafb32caed3dd50f976e787bd035ca
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 3 0 0b65c8a6843b52fd1358798f58e812c6
++ O exemplo é compilado, e não é executado, já que precisa de outra JVM para depurar. [Threads e
++ frames](../../soundness/modules/debugging.md#threads-and-frames) traz as requisições, e
++ [erros](../../soundness/modules/errors.md#choosing-a-strategy) as estratégias que enfrentam um
+
+% 0 1 0 0ade282a13f7f31403f13bb36775e662

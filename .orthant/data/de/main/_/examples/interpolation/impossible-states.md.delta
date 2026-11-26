@@ -1,0 +1,66 @@
+orthant 2 language
+
+@ 0 1 0 180014a4183e621319325b9874972feb
++ # Nichts wird mit `toString` eingesetzt
+
+@ 0 3 0 1c0062fcef61408d0ff1705a81f4b3aa
++ Scalas `s"…"` wandelt jeden Wert mit `toString` um und gibt klaglos `Player@1b6d3586` aus. Eine
++ Einsetzung in `t"…"` wird über eine Typklasse aufgelöst, sodass ein Wert, der sich nicht anzeigen
++ lässt, dort nicht eingesetzt werden kann.
+
+% 2 1 0 0bc5193f933620c81ece126cf85eb52d
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 1dbd209ecffc372d1baeda19e032ff5e
++   label Ein Wert, der sich nicht anzeigen lässt
+
+% 0 1 0 1477c34ff41c7c99183443e1d3238ae1
+
+% 1 1 0 0960c596329e4eb20a0b442aaa85c43a
+
+% 2 1 0 05d32c2f4a074d550f0e07ac87fcfe8a
+
+% 2 1 0 03c87655435e158f1f921ae7969b6133
+
+% 3 1 0 1813764774369ad414f3478343d8451b
+
+% 1 1 0 0babf077bcdac4e21d2b0a2ff9b7948f
+
+@ 0 2 0 009494e486d2e0830ef5796720610389
++   label Eine Art, ihn anzuzeigen, deklariert
++   highlight Player..Showable  wie ein Spieler zu Text wird
+
+% 0 1 0 1accf43fe927975f1dc8da9a374d03c0
+
+% 1 1 0 1355c71f5d40d7ac08d3588c7243e073
+
+% 2 1 0 1fcd8f731f71e07b0506f538d11c2035
+
+% 0 1 0 1b7c3365996ded180fceb5340e2770ca
+
+% 2 1 0 171c22da6809b38e074c747013f1f3d5
+
+% 3 1 0 1f682c3d4b41358d0a14fe5b93555aa6
+
+% 1 1 0 0fec33b9c9a3cdbf18a07d3e9bf2867f
+
+% 1 1 0 136d267ff733a60e0f6246170d49df5f
+
+% 2 1 0 1525a46c87e9e0571e7d21b8e7c42b7a
+
+% 0 1 0 08a86cbdc9b8cb0109ed8ce5b435ce67
+
+% 1 1 0 0cd6459499a6bd5203d659b3bcc1b6aa
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 0 1 0 16dc4b89cc1d9bd01e04d324ce3eabad
+
+% 1 1 0 03a586265550ffa11214ff9a54496eae
+
+@ 0 2 0 0bd91714a3d0d18a0bc2aab349c38836
++ [Einsetzungen](../../soundness/modules/interpolation.md#substitutions) beschreibt die Typklassen,
++ die einen Wert für einen Interpolator zulassen.

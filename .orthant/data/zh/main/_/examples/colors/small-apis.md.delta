@@ -1,0 +1,82 @@
+orthant 2 language
+
+@ 0 1 0 0f94b54aa5dc6d370a561d3f6f663dfb
++ # 一个方法转换到每个色彩空间
+
+@ 0 2 0 1811eb0205f8647b01b77a050a9e4219
++ 没有 `toHsl`、`rgbToLab` 或 `asCmyk`。颜色用 `to` 转换，它接受所需的色彩空间，并从颜色所在的任何空间到达那里。
+
+% 2 1 0 12fe10e18f237f311f2f808acdb7ffd6
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 2 0 1b71cb9ae5f8c568131a044d6622fad5
++   label 用于调整
++   highlight to[Hsl]  色相、饱和度和亮度
+
+% 1 1 0 1f7b72155e1a6a71178dcdc916face2d
+
+% 2 1 0 1a07b7ee8d71d7880325953637ca88ec
+
+% 4 1 0 1cfd95affbf0f8d110c0f359586110b7
+
+% 5 1 0 0195ec5e6c72103b16dc12337d5c25d0
+
+% 1 1 0 1b49500a834be2c4053c908143a1026e
+
+@ 0 2 0 07596d6cf7b80f980f4a87939dc96e4c
++   label 用于印刷
++   highlight to[Cmyk]  四种油墨
+
+% 1 1 0 0b62cf6ccd34e8d51c594d48a5c26cb1
+
+% 2 1 0 152055b406c8e144129917fdbcdfea19
+
+% 4 1 0 1d9aede63674bb000d21bc76fb29aad4
+
+% 5 1 0 00125629eac60a8d1a7d6f314410c19a
+
+% 6 1 0 07691dc94298cf3a0c4e51d9878574fd
+
+% 1 1 0 0cf7cc3724d50dcc0b687f585121ef42
+
+@ 0 2 0 124fcc4e49bf21350b1fd4ae284cbff4
++   label 用于感知距离
++   highlight to[Cielab]  需要作用域中的光照
+
+% 1 1 0 09d76154a6bed8fc0d055ad38bfb5a20
+
+% 2 1 0 02a30458f2a1538c08a37342bc69c958
+
+% 4 1 0 12e70e685c559077031523e0fa6b298c
+
+% 5 1 0 1b70027e93699bf80a1dabad75b44b77
+
+% 6 1 0 02d796d53c60bb40056eaaa06b38e4a7
+
+% 0 1 0 1e8c3b6e7e51365900de9f4f1c556907
+
+% 1 1 0 19bee592863143b61ceb8f6b4f3f3132
+
+% 1 1 0 136d267ff733a60e0f6246170d49df5f
+
+% 2 1 0 1525a46c87e9e0571e7d21b8e7c42b7a
+
+% 0 1 0 08a86cbdc9b8cb0109ed8ce5b435ce67
+
+% 1 1 0 0cd6459499a6bd5203d659b3bcc1b6aa
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 0 1 0 1084786fbbc27f90056d957b949c857f
+
+% 0 1 0 0d91b18bafe73f5e182069adef461f5c
+
+% 0 1 0 0a778496cc0f9d5504a571ba1a7bae97
+
+% 1 1 0 1a5637f6ef2283ba1d5779b759a59a1e
+
+@ 0 2 0 029fe294ba43a65502dd0c27edebd13f
++ [色彩空间之间的转换](../../soundness/modules/colors.md#converting-between-spaces)介绍了各种转换，[精简 API](../../philosophy/small-apis.md)则给出了只用一个名字的理由。

@@ -1,0 +1,83 @@
+orthant 2 language
+
+@ 0 1 0 06f1a01ce864cae7083893b434b75102
++ # Una ruta, desmontada desde el principio
+
+@ 0 2 0 050f94a908668aea117ad4979dd9b00c
++ El extractor `/:` separa la raíz, y después cada nombre, del principio de una ruta. Por eso un
++ patrón se lee en el orden de la ruta con la que coincide.
+
+% 2 1 0 02f379bbbee7b31c1b038f8782799b70
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 12db9c522427c08413ba5d2e23144647
++   label La raíz, y el resto
+
+% 1 1 0 00819907881bb6590f8d1c6fd5ba8bfd
+
+% 2 1 0 1b79e18af7c4f2630c9ec7da2f6fce8f
+
+% 4 1 0 138e23425fbc760e0570ef581537fc80
+
+% 6 1 0 15198649c6659ed80a785186f2a4d28f
+
+% 0 1 0 0fd86832d56958191e211feeb2c3b820
+
+% 1 1 0 1e5550a24ffc87d81854c17e08e0d934
+
+@ 0 2 0 1c25c07b57092000082813a405f212bb
++   label Un nombre que debe coincidir
++   highlight t"home"  un literal, con el que coincidir
+
+% 1 1 0 1091a7db12c50f340a2e268d2b280246
+
+% 2 1 0 159c01012b1ea9450302674abefaca33
+
+% 4 1 0 0d8bb21e25f0bd8d01a26de4d601fe3c
+
+% 6 1 0 07a541210f18373702c2a5d0f5b02e35
+
+% 0 1 0 0a2760d5a37abb4f10fc45563ca4eaa2
+
+% 0 1 0 0a7b48a393e0b0fa0651957d5d47ad02
+
+% 1 1 0 0eaf8064ac1511f30888b7815e245b38
+
+@ 0 2 0 072e9e1b02ae938f1e014437f3f8350b
++   label Un nombre que se liga
++   highlight user  el siguiente nombre, sea cual sea
+
+% 1 1 0 0f385c3671022a4c12ea9c94ff91e781
+
+% 2 1 0 0222a5d28b54d0a3136ee08c0e824c75
+
+% 4 1 0 12e4a1d29c385142140208b778c7d2f5
+
+% 6 1 0 064aeb821826ce4313ea3130d5e429d9
+
+% 0 1 0 0d323c538611dae60648fdc39570a2ad
+
+% 0 1 0 07fa90c24316138003794270ef279f4d
+
+% 1 1 0 1d503146240cb52c08363892638554f8
+
+% 1 1 0 136d267ff733a60e0f6246170d49df5f
+
+% 2 1 0 1525a46c87e9e0571e7d21b8e7c42b7a
+
+% 0 1 0 08a86cbdc9b8cb0109ed8ce5b435ce67
+
+% 1 1 0 0cd6459499a6bd5203d659b3bcc1b6aa
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 0 1 0 0f8e62ba886a3771160bfc263523ca05
+
+% 1 1 0 002af5d9e8e490fa05f124e88fbffc13
+
+@ 0 2 0 1fdf5df2cd62d02b1c464385be7369d3
++ [Deconstruir](../../soundness/modules/paths.md#deconstructing) explica por qué también se hace
++ coincidir la raíz.

@@ -1,0 +1,57 @@
+orthant 2 language
+
+@ 0 1 0 12fa35523bb54a871e3f60d289c8fcef
++ # Kein Baum zwischen den Bytes und dem Wert
+
+@ 0 3 0 1743aaf6b0a1094118cc39927661b5a6
++ Eine Case-Klasse aus CBOR zu lesen baut gewöhnlich einen Baum des Dokuments und dekodiert ihn dann.
++ Unter `codecs.strict` wird ein Datensatz von einem Codec geschrieben und gelesen, der beim
++ Kompilieren für seine eigene Gestalt zusammengesetzt wird, und ein Typ, der nur über den Baum gehen
++ könnte, ist ein Kompilierfehler.
+
+% 0 1 0 12705ff5e291290d17fbc8389d59ef4a
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 2 0 0aa43730e23b27c31b1e8379496bebe4
++   label Ein Datensatz, direkt geschrieben und gelesen
++   highlight codecs.strict  kein Baum, oder keine Kompilierung
+
+% 1 1 0 1b23413457a36eb31b82f61db8ba49e6
+
+% 2 1 0 17f4c8a6b57a01ae1d7fe08176d9e7f5
+
+% 3 1 0 070dedf448a9c7e41fa66046bba38390
+
+% 0 1 0 13840d4d20227fac189d875ce82acf30
+
+% 0 1 0 1ce9d30f4a2cf76511980c5056f15e00
+
+% 0 1 0 04e17812caf00b441cc8c7d7d4678029
+
+% 1 1 0 165e52f65d4215fd12ccb38c6a6e1417
+
+@ 0 1 0 15079dd531390131178be7b062261dbe
++   label Ein generischer Typ, der keinen direkten Codec hat
+
+% 0 1 0 1477c34ff41c7c99183443e1d3238ae1
+
+% 1 1 0 0960c596329e4eb20a0b442aaa85c43a
+
+% 2 1 0 052b5d53c564213f191f74be413a911f
+
+% 3 1 0 169f8e51c36438ab12b20cb4294c117e
+
+% 0 1 0 0bcb5acd491e05f302e2052bc714d4a7
+
+% 0 1 0 0551e2a393f4e22203282693b680b9d7
+
+% 0 1 0 18eafb32caed3dd50f976e787bd035ca
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 2 0 13e43d57c186b24f00ade8adfcbe1041
++ [Den Weg für jeden Typ wählen](../../soundness/modules/cbor.md#choosing-the-route-for-every-type)
++ vergleicht die drei Modi.

@@ -1,0 +1,9 @@
+orthant 2 language
+
+! The `cellulose` module, which implemented CoDL, has been removed. Its role is filled by
+! [TEL](../en/modules/tel.md), which is a schema-typed, indentation-based data language of the
+! same kind.
+@ 0 3 0 1ce7d49ebce1e98e1165b415a790c7e7
++ Moduł `cellulose`, który implementował CoDL, został usunięty. Jego rolę pełni
++ [TEL](/doc/soundness/modules/tel.md), język danych tego samego rodzaju, typowany schematem i oparty na
++ wcięciach.

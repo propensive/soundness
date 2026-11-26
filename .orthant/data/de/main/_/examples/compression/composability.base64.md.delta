@@ -1,0 +1,82 @@
+orthant 2 language
+
+@ 0 1 0 02a27f77f53916141aa2c85d52925828
++ # Komprimierte Bytes, bereit für eine Textzeile
+
+@ 0 2 0 037dde1ef7db0fa01a89e4cf6a40eb16
++ Komprimierung liefert Bytes, und eine Base-Kodierung nimmt sie an. Keine der beiden Bibliotheken
++ kennt die andere, und ein Wert, klein genug, um ihn in eine Konfigurationsdatei einzufügen, ist
++ einen Ausdruck lang.
+
+% 2 1 0 11f2942f9e9a8361195c978d54b85d2f
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 06b8a254d37db2911399e947f0991e21
++   label Eine lange Rede
+
+% 1 1 0 0746c844b895d10c016bcf3b4d3a1678
+
+% 2 1 0 0c10a1132ce6c1f902f0f9fd7058fe83
+
+% 4 1 0 1fc590a919cb08d411e2624962e5a830
+
+% 5 1 0 15bbbd8759fe83c917c9f6e02e548952
+
+% 1 1 0 0ab0773cdff74fd81fcc04205069006e
+
+@ 0 2 0 18d7827eaf8993b6134f56f9eec07ee2
++   label Komprimiert
++   highlight compress[Deflate]  der rohe Algorithmus, ohne Framing
+
+% 1 1 0 1b59b5ec62e843c71b53e2112762a967
+
+% 2 1 0 0f801990e78f04711781d762d1a16c17
+
+% 4 1 0 1f169032fc509de61898d626d7d3cca6
+
+% 5 1 0 084581ac8fb3ac561980e9c38619fb5a
+
+% 6 1 0 10a1275b9f7c7ac90ae49254249a2976
+
+% 1 1 0 1490393e69628f28029eed9f3f2d4519
+
+@ 0 2 0 1705e4ed85fb96a90c8c0bddce7fad36
++   label Und als Base64 geschrieben
++   highlight serialize[Base64]  Text, der das Einfügen übersteht
+
+% 1 1 0 08f1fe9eb0bd0cb905149cb01c1927fe
+
+% 2 1 0 0ec21273042bead619d3b721ed896a64
+
+% 4 1 0 09b7182dfc714cc01d66181d208130bb
+
+% 5 1 0 02342a8c2a76ac0406e765f0557a2d93
+
+% 6 1 0 0db59e6afb60c224139997f509776449
+
+% 0 1 0 1f2b9e3db5b60c1a119073737e1fe996
+
+% 1 1 0 1dbf1b4dc92efd3a0690dcab307fd466
+
+% 1 1 0 136d267ff733a60e0f6246170d49df5f
+
+% 2 1 0 1525a46c87e9e0571e7d21b8e7c42b7a
+
+% 0 1 0 08a86cbdc9b8cb0109ed8ce5b435ce67
+
+% 1 1 0 0cd6459499a6bd5203d659b3bcc1b6aa
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 0 1 0 10b0919745db990d0ca8cb0729805ec4
+
+% 0 1 0 1c24acf8231e6a31119fa30aa761cef5
+
+% 1 1 0 19e62bb164e873a70ced8aa407a12c44
+
+@ 0 2 0 1d5caece9d7a0b7d1d98188a87e68013
++ [Die Formate](../../soundness/modules/compression.md#the-formats) listet die Kompressoren auf, und
++ [Base-Kodierung](../../soundness/modules/base-encoding.md) die Kodierungen.

@@ -1,0 +1,32 @@
+orthant 2 language
+
+@ 0 17 0 00e5f700f5864e911ea5f726341922cd
++ column  Critério
++ column  Itens
++ row  `proscenium.compat` está vazio  `core-2`
++ row  Nenhum arquivo fora de proscenium importa `scala.collection`  `core-3`
++ row  Nenhuma válvula de escape `caps.unsafe` resta em `lib/`  `safety-4`
++ row  O manifesto de plataformas é imposto em CI, suas exclusões têm motivos, e um APK Android é construído e assinado em CI  `plat-1`, `plat-2`, `plat-3`
++ row  `etc/api-reduction-candidates.md` não existe mais  `api-5`
++ row  Todo tipo de erro tem um código bolt e uma página de documentação, verificados em CI  `doc-1`
++ row  Todo módulo publicado é coberto por um tópico de `doc/work/soundness/modules/`  `doc-4`
++ row  A documentação de API é gerada e publicada para todos os componentes  `doc-5`
++ row  `fury build` faz o build do próprio Soundness, com atestação igual à do build do Mill  `tool-4`
++ row  fume executa a suíte de testes completa, e nenhuma suíte está desativada  `tool-2`
++ row  Uma sessão roteirizada de editor LSP passa em CI  `tool-3`
++ row  Toda mudança incompatível nas últimas dez releases consecutivas foi publicada com instruções de migração executáveis por agentes  `dist-2`
++ row  Toda release é publicada como arquivos LIRA atestados  `dist-7`
++ row  JOSE, TOML e WebAuthn foram entregues  `brd-1`, `brd-2`, `brd-3`
++ row  Um agente, seguindo apenas a documentação em `doc/`, leva um projeto novo do zero a uma aplicação web JVM e JavaScript testada e implantada, usando apenas ferramentas do ecossistema, e esse passo a passo é executado e registrado em CI  `doc-8`
+
+@ 0 10 0 0dd4e95027ea72261a6dd2c1c524be09
++ - Os identificadores de itens são âncoras estáveis; cite-os (`core-3`, `dist-2`) em vez de
++   descrever o trabalho em prosa.
++ - Verifique qualquer alegação de progresso executando o comando `Done when:` do item; nunca
++   confie em prosa ou em memória mais do que na saída do comando. Meça de novo as linhas de base
++   antes de depender delas e informe a variação.
++ - Leia [`status.tel`](status.tel) para o status atual; atualize-o no mesmo commit do trabalho
++   que ele descreve.
++ - Quando um item do roadmap muda uma API pública, siga a convenção de instruções de migração
++   definida por `dist-2` em `doc/work/standards/migration.md` — essa convenção é o que torna
++   compatíveis “as APIs mudam livremente” e “o código continua funcionando”.

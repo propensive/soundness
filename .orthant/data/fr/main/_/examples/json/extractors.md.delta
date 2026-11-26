@@ -1,0 +1,88 @@
+orthant 2 language
+
+@ 0 1 0 1bbc5e1893a40d400feed01598c554e3
++ # Un document décomposé selon sa forme
+
+@ 0 2 0 1330ea209b2801250eb7f9020ac856e1
++ Un littéral `j"…"` est aussi un motif. Dans un `case`, chaque substitution lie le JSON trouvé à
++ sa place, et un document de toute autre forme passe au cas suivant.
+
+% 2 1 0 071c2013d46aa344103b0cc10e37c658
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 2 0 13b264f60e55b5a8189f52cef1537181
++   label Une valeur liée depuis un champ
++   highlight $title  liée en tant que Json
+
+% 0 1 0 1accf43fe92797611dc8da9a374d03c2
+
+% 1 1 0 1b683763b07f3b4c19314dbe4ae0b985
+
+% 2 1 0 171b9a5faf1f1eb11c3a34798de7330f
+
+% 4 1 0 15801c689738c08e11fea3da38cf8668
+
+% 0 1 0 1563376eb8d1566504d5b9f48737d6cd
+
+% 0 1 0 02958a09f8ff4f1509d3d7fb304606a1
+
+% 1 1 0 09eedb92ec80fef91c2659b9ee3e632d
+
+@ 0 2 0 14404c093bdf43a5179c71bd95872dca
++   label Les autres champs, liés en tant qu'objet
++   highlight $rest  un objet Json de tout ce qui s'y trouve d'autre
+
+% 1 1 0 0a598368d25084ff0920698962807a44
+
+% 2 1 0 1b601106be58fda113dd62bf62048dab
+
+% 4 1 0 03d384c83d75a9cd123972cd59acd62b
+
+% 5 1 0 03a52980eacf23eb187135d0ba39ae83
+
+% 1 1 0 060f797307573cef10e83910f5121235
+
+% 1 1 0 169f25da3317e1ea0181ab2240565113
+
+@ 0 2 0 06d1d2d1bc21aa3b1720f9c5b591adc3
++   label Un tableau, par son premier élément et les autres
++   highlight $others*  un tableau Json
+
+% 1 1 0 13fa0e7ec183bfa50fea9eced8b2a4eb
+
+% 2 1 0 110dfc50ffddd90a17dc63b5e3f3e9f4
+
+% 4 1 0 14f259ca900f8a1c0a53b678c7417d69
+
+% 5 1 0 01947b84e29b0a351100fde4c72714df
+
+% 0 1 0 1cd60f8eb842f4670ad8b67a2ec80f72
+
+% 1 1 0 0c71e796ae3759d31990513c8aca8084
+
+% 1 1 0 1adf691c3fe0eac71cf71e30e2914302
+
+% 1 1 0 136d267ff733a60e0f6246170d49df5f
+
+% 2 1 0 1525a46c87e9e0571e7d21b8e7c42b7a
+
+% 0 1 0 08a86cbdc9b8cb0109ed8ce5b435ce67
+
+% 1 1 0 0cd6459499a6bd5203d659b3bcc1b6aa
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 0 1 0 1fb11dd5611988240ed60cedd8be232c
+
+% 0 1 0 11c186ce323b604c007d45275a80a2d0
+
+% 0 1 0 092173d9b03a5e23117543af44ccc0cc
+
+% 1 1 0 03388222db94786e1d8f3a4987ea8729
+
+@ 0 2 0 108979cc6449bf350800edeca5bab9dc
++ [Filtrer du JSON](../../soundness/modules/json.md#matching-json) énumère ce que lie chaque
++ substitution.

@@ -1,0 +1,81 @@
+orthant 2 language
+
+@ 0 1 0 08af8ae62ad9297b0f8d619c22b45e3e
++ # Układ derywowany z klasy case
+
+@ 0 2 0 1afc94925c2a88011c420807bcb179de
++ Rekord binarny to klasa case, której pola mają stałe szerokości. Derywacja oblicza każde
++ przesunięcie z kolejności pól, więc czytnika nigdy się nie pisze i nie pojawia się żaden indeks.
+
+% 2 1 0 195db7ed53cbb4811c87e06d7b2bf92e
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 09c1b077b6e3ae94169ea0afd29f90ab
++   label Pola, każde ze swoją szerokością
+
+% 1 1 0 0396a5e16e17a1840796faf0fc6f11d7
+
+% 2 1 0 1d217f86b58ad6a004be80bd82784450
+
+% 4 1 0 0f2b12a51dd25a730d6ba8f08021a3d7
+
+% 1 1 0 1797c8931b48429f1e8c7ba56cd5fa2c
+
+@ 0 2 0 0341ede788662dc5048c104486349c14
++   label Układ
++   highlight Structural.derived  każde przesunięcie, obliczone z pól
+
+% 1 1 0 10ab474cc1a1b14d15c38a83597b781d
+
+% 2 1 0 02559a9de39fb9a902f9e5e5123a30de
+
+% 4 1 0 1afd253f73c440971690fee71e0b01d4
+
+% 6 1 0 0765d5f606399d2b034532f54a298948
+
+% 7 1 0 1a844fed9870a00416c38ea01eb14509
+
+% 1 1 0 158986d23dcb3603042a71dd5a6d7178
+
+@ 0 2 0 1964c23ade8762fb1c3fd0a8536b1a3f
++   label Rekord odczytany z dwunastu bajtów
++   highlight unpack[Header](0)  żądany typ i jego przesunięcie
+
+% 1 1 0 10c123e6be05b66400502571705ddf34
+
+% 2 1 0 00998ee796660cd012f84581a5b8f1b0
+
+% 4 1 0 15be230d59987dc402c5d74c87c68e90
+
+% 6 1 0 1ec403fcff4bf5411408bbfd526c0237
+
+% 7 1 0 1d7eb1ec49f8c6a61e13c5ac7adc1d7d
+
+% 0 1 0 146bab5bb56a0a88112f6bca960588d3
+
+% 1 1 0 15f4e991b0e034b60aaec5f981c90c09
+
+% 1 1 0 136d267ff733a60e0f6246170d49df5f
+
+% 2 1 0 1525a46c87e9e0571e7d21b8e7c42b7a
+
+% 0 1 0 08a86cbdc9b8cb0109ed8ce5b435ce67
+
+% 1 1 0 0cd6459499a6bd5203d659b3bcc1b6aa
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 0 1 0 192f2ea9c942ba560b5d0f33c3e229eb
+
+% 0 1 0 1f19f3b42ac63e0c0c6dcf7512b94078
+
+% 0 1 0 17eb49a3ba34b04600a8e4a56e010fd5
+
+% 1 1 0 138639e8e14fe47804a4f47405da3911
+
+@ 0 2 0 16b90127a173230d0141774ae4face74
++ Sekcja [Opisywanie układu](../../soundness/modules/binary-data.md#describing-a-layout) wyjaśnia, jak
++ sumują się szerokości.

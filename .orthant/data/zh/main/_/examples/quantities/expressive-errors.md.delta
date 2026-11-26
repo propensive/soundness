@@ -1,0 +1,53 @@
+orthant 2 language
+
+@ 0 1 0 1baf2d496e1b405c1a8dcc68e1ab0757
++ # 长度不是时间
+
+@ 0 2 0 011b35e5fc7811ea1d94fa7e32311621
++ 量的单位是其类型的一部分，因此编译器会检查每次计算的量纲。量纲不一致时，编译器会像物理学家那样指出问题，而不提及任何类型。
+
+% 2 1 0 1b8284b43d4d0ecc00c81d60c36d25ff
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 128204f3aad296ec162c6c7d6737c6a2
++   label 距离加上时间
+
+% 0 1 0 1477c34ff41c7c99183443e1d3238ae1
+
+% 1 1 0 0960c596329e4eb20a0b442aaa85c43a
+
+% 0 1 0 0ddc8382cf5ae2a60b773ddc2f99dc18
+
+% 1 1 0 0bb1ec7b01a5f3590d8c1505c1da9c6b
+
+@ 0 2 0 1a2acce4bd5178a2084dbad62ed834ef
++   label 距离除以时间
++   highlight /  速度，以米每秒为单位
+
+% 1 1 0 03a4d19685caa4850e0820bdc336c449
+
+% 0 1 0 18922b4f91761aed058bbd2277e58d63
+
+% 1 1 0 1fb16e756bdbef181fc60b268b5237ce
+
+% 1 1 0 136d267ff733a60e0f6246170d49df5f
+
+% 2 1 0 1525a46c87e9e0571e7d21b8e7c42b7a
+
+% 0 1 0 08a86cbdc9b8cb0109ed8ce5b435ce67
+
+% 1 1 0 0cd6459499a6bd5203d659b3bcc1b6aa
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 0 1 0 1ff46eadb86ffabc103c1dc6d8e7c8b4
+
+% 0 1 0 16b3d9af8ac8280c110452cfbec2e4ea
+
+% 1 1 0 1963a0c85a05d8901e85f432b4a4ebee
+
+@ 0 3 0 1accdc2d00257d0d043d08f48cc9810a
++ [量](../../soundness/modules/quantities.md#arithmetic-and-dimensions)给出了其余的算术，[富于表达的错误](../../philosophy/expressive-errors.md)则说明了这样措辞错误的理由。

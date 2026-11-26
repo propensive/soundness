@@ -1,0 +1,73 @@
+orthant 2 language
+
+@ 0 1 0 0e8889e17cb89988074059e3cb184ba2
++ # Una risposta non sopravvive alla sua connessione
+
+@ 0 3 0 0e326eaa243e759012f2f1f0372e58f0
++ Una sessione HTTP tiene aperta una connessione per un blocco, e ogni fetch al suo interno viaggia su
++ quella connessione. Il corpo di una risposta è ancora in transito quando `fetch` restituisce, quindi
++ la risposta dipende dalla sessione, e non può essere il risultato del blocco. Il suo stato è un
++ valore, e può esserlo.
+
+% 0 1 0 12705ff5e291290d17fbc8389d59ef4a
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 0 1 0 05379442125b483c0fa7601737add2cc
+
+% 1 1 0 01df03af649144fc135e9cf4a153349c
+
+@ 0 1 0 06f48c4cb59f5ce1144548a5b0d3470f
++   label Una risposta il cui corpo verrebbe letto da una connessione chiusa
+
+% 0 1 0 1477c34ff41c7c99183443e1d3238ae1
+
+% 0 1 0 17c0bee9b74155fc06df9326c7112eb5
+
+% 1 1 0 1cee5475e369a2a713cadca3898a17db
+
+% 2 1 0 0434a436368e147402aac4b827fd9ad4
+
+% 3 1 0 15a15742c0c7dcb60449cf51c356ab42
+
+% 4 1 0 07c65a4c99a5e3dc089111d4666b7248
+
+% 6 1 0 196505c4c99db5291b742617153deb31
+
+% 7 1 0 0ae3b759642dc9bf1c127c4aee38cd93
+
+% 9 1 0 07eaece17b5b7b4010b8ad910946bde3
+
+% 0 1 0 09b85a125b609dc700face4a2c9b5edc
+
+% 1 1 0 144bf935f72aa68007c5cd1e2bc24384
+
+@ 0 1 0 0d244e662cdb41ce1c562c89e7ee0d24
++   label Ciò che se ne vuole, preso all'interno della sessione
+
+% 0 1 0 02f5064352e0316813ffe6c473c3beb0
+
+% 1 1 0 12e9dc58de935cdc17b3513671e183ff
+
+% 2 1 0 00a90da47c466889012dbaf68c62e360
+
+% 3 1 0 1e3739a4a3fe5c4911943816fc727cd5
+
+% 4 1 0 1c782ea3ca2afb5a1d517da9d167786f
+
+% 6 1 0 12e8f1006420120c1cac9664020cb8fe
+
+% 7 1 0 04a8b579795475f30750209404672a65
+
+% 9 1 0 1e5dc64753fbfe1312f5ac8779ee0f4d
+
+% 0 1 0 0825fc5f37d8fda30b47b0846c4512fe
+
+% 0 1 0 18eafb32caed3dd50f976e787bd035ca
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 3 0 02601513f87824e007d90085a292e399
++ L'esempio viene compilato, ma non eseguito, perché richiede la rete. [Le
++ sessioni](../../soundness/modules/http-client.md#sessions) descrive come le richieste condividono
++ una connessione.

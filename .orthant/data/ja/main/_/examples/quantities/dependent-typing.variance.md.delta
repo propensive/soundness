@@ -1,0 +1,74 @@
+orthant 2 language
+
+@ 0 1 0 159c133fde3ecd641582e2b5d98c6970
++ # 秒の分散は秒の2乗である
+
+@ 0 2 0 0d010e4d81bb24870b7549c37216ec8b
++ 量のリストは1つの量に集約され、それぞれの集約は単位に何が起こるかを知っている。時間の平均は時間であ
++ る。その分散は時間ではなく、型がそう述べている。
+
+% 2 1 0 19faa673c6a632e505e1edbd996da5f0
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 2 0 12a57b58fedaed8904467e3bc0c21015
++   label 3つのラップとその平均
++   highlight Quantity[Seconds[1]]  時間
+
+% 0 1 0 1accf43fe92797601dc8da9a374d03c1
+
+% 1 1 0 175eff4186e0097c110253255e924cfc
+
+% 2 1 0 0664f8f727a38528062cc25d5c7331fb
+
+% 0 1 0 1568b193d12badd40e2d4188504f7815
+
+% 1 1 0 0001eb6676234f620d6b3915e4d36ff6
+
+@ 0 1 0 0296180008e7373e158a44f2a1de108d
++   label 時間であるかのように扱った分散
+
+% 0 1 0 1477c34ff41c7c99183443e1d3238ae1
+
+% 1 1 0 0960c596329e4eb20a0b442aaa85c43a
+
+% 2 1 0 106fa8cf4810bcdb19a2ebb9918d502d
+
+% 0 1 0 1344f34cb7c3ee6917c95daac5fd57cc
+
+% 1 1 0 01a266dfb2d4279d1ddda3bdae41b66c
+
+@ 0 2 0 0f1e90f75b377ea514a0414a7918b15f
++   label 秒の2乗で表した分散
++   highlight Seconds[2]  2乗された単位
+
+% 1 1 0 16fb038ac7ed49e61ce1911ec7199558
+
+% 2 1 0 0c6c224a8110ccd30db2c0dc7c4e3292
+
+% 0 1 0 1122bda271f3cc2d01bb7fd3afc59e6f
+
+% 1 1 0 125f36a0cb08cbc319d7c4234f88ef3c
+
+% 1 1 0 136d267ff733a60e0f6246170d49df5f
+
+% 2 1 0 1525a46c87e9e0571e7d21b8e7c42b7a
+
+% 0 1 0 08a86cbdc9b8cb0109ed8ce5b435ce67
+
+% 1 1 0 0cd6459499a6bd5203d659b3bcc1b6aa
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 0 1 0 1ff46eadb86ffabc103c1dc6d8e7c8b4
+
+% 0 1 0 0ad38a960cfa1d1c08569e495e0a3a6b
+
+% 0 1 0 04451f2cc17e2bcf0448a91673c5208e
+
+% 1 1 0 04c830bff3c7c09b16af1f869b77c67a
+
+@ 0 1 0 100c32e34d871d130d4b661846a658a8
++ 集約の一覧は[集約](../../soundness/modules/quantities.md#aggregating)にある。

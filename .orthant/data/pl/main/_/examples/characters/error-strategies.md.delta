@@ -1,0 +1,69 @@
+orthant 2 language
+
+@ 0 1 0 110bc86aa361b6a60be8eeb3c673e526
++ # Trzy odpowiedzi na bajt, który nie jest tekstem
+
+@ 0 3 0 1e80b9ec185d6a1a131bd990449c931f
++ Dekoder, który napotyka bajty niepoprawne w swoim kodowaniu, radzi się sanityzatora będącego w
++ zasięgu. Dekodowanie zapisuje się raz, a import decyduje, czy złe bajty są pomijane, zastępowane,
++ czy odrzucane.
+
+% 2 1 0 0292f7c31471d9bf15bafa6f97a88466
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+@ 0 2 0 0dda7e60e71621a807cdcf13ea5b6424
++ alternative Pominięte
++   highlight textSanitizers.skipSanitizer  zły bajt znika
+
+% 1 1 0 1aa7895aff5b61621433535ee8594e4c
+
+% 0 1 0 0378d4a135a8bfbe1c514ed63cec8806
+
+% 2 1 0 18d5b66b28c0b6171786a3e38a626cb8
+
+% 3 1 0 0ffcce4aa94be93c01c0ec71ddba136c
+
+@ 0 2 0 15e35937486e753b0487d6861bd1831b
++ alternative Zastąpione
++   highlight textSanitizers.substituteSanitizer  zastępuje go znak zapytania
+
+% 1 1 0 1dd8533d08cbeb9412909fa37b077327
+
+% 0 1 0 038cc035db33453d06b6e3c446be01bc
+
+% 2 1 0 1eb5341df19891e70081b0b667f8defd
+
+% 3 1 0 10a5cac41466c8850d7826bed1abdc61
+
+@ 0 2 0 04654c245caef9921cd5c7ed3a2bf7ad
++ alternative Odrzucone
++   highlight textSanitizers.strictSanitizer  dekodowanie zawodzi i daje Unset
+
+% 1 1 0 1e08c0228c9e965114211b315dc5e266
+
+% 0 1 0 0d4706ca5d21504f006fd04b6ce6c2b6
+
+% 2 1 0 13d1a6fb40c761f710b8198c6d8e4744
+
+% 3 1 0 03cdb5844b6aa1fb1e9ea2d4d2810438
+
+% 1 1 0 1cdb9da45e7389091095847981acebbe
+
+% 1 1 0 136d267ff733a60e0f6246170d49df5f
+
+% 2 1 0 1525a46c87e9e0571e7d21b8e7c42b7a
+
+% 0 1 0 08a86cbdc9b8cb0109ed8ce5b435ce67
+
+% 1 1 0 0cd6459499a6bd5203d659b3bcc1b6aa
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 0 1 0 070b2447fc03b8d4041064116891781f
+
+% 1 1 0 1b0ba977c94d06f8186e3a5109c60450
+
+@ 0 2 0 05ef1202cdb427f908e9b03628328469
++ [Złe wejście](../../soundness/modules/characters.md#bad-input) opisuje czwarty sanityzator, który
++ zachowuje tekst i zgłasza każdą usterkę.

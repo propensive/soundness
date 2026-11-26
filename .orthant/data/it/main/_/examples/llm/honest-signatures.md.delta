@@ -1,0 +1,66 @@
+orthant 2 language
+
+@ 0 1 0 05387e16ceccf2f904b02290e2988dd3
++ # Una domanda ha bisogno di una conversazione in cui essere posta
+
+@ 0 3 0 1f0445260b6fba7f03a443632111844f
++ `llm` raggiunge la sessione del blocco in cui è scritto, e non esiste altrove. Un metodo che chiede
++ qualcosa al modello quindi o apre una sessione o ne nomina una nella sua firma, e chi legge la firma
++ sa quale delle due.
+
+% 0 1 0 12705ff5e291290d17fbc8389d59ef4a
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 17b656322606236e110317640381244b
++   label Una domanda, senza una sessione in cui porla
+
+% 0 1 0 1477c34ff41c7c99183443e1d3238ae1
+
+% 1 1 0 0960c596329e4eb20a0b442aaa85c43a
+
+% 0 1 0 1f2b86fa45d19400001539c19523f452
+
+% 1 1 0 1da24c5033de843f0306b76782186f26
+
+@ 0 2 0 13d53f62595752f31031a349046c2e60
++   label La sessione è un parametro
++   highlight (using..Session)  la conversazione del chiamante prosegue
+
+% 1 1 0 1295ad92e3e378631424c4bb3913aeba
+
+% 1 1 0 02f56fc6498d6ba80bcbb6133d7f6eb7
+
+% 1 1 0 13bb076f0cd708ab001696138d95e03c
+
+@ 0 1 0 06ff91cff8ed90831e7bd644a71fc052
++   label Ed è fornita dal blocco che lo chiama
+
+% 0 1 0 131828d0d2b5042f16324ca85b47ffe0
+
+% 1 1 0 17d610a95effe5c401e5dbdcece8121b
+
+% 0 1 0 0c6fcd332ad9ec1d1973630669137515
+
+% 0 1 0 03133bc60ae5e162053f2137fb7355f3
+
+% 0 1 0 0116a331765d22681fde66f1f935428d
+
+% 1 1 0 07cafce4003a653e1015a01e18d3d713
+
+% 0 1 0 07b19b85e0271a440ef7a22b021759fb
+
+% 0 1 0 104cd92b51ef9ad01268cb2d207e4344
+
+% 0 1 0 037abf13285792c81075ac6a82b221d5
+
+% 0 1 0 18eafb32caed3dd50f976e787bd035ca
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 3 0 0beede161770f8bc090a4b9e19a5c368
++ L'esempio viene compilato, ma non eseguito, perché chiamerebbe un provider attraverso la rete. [Una
++ conversazione](../../soundness/modules/llm.md#a-conversation) descrive una sessione, e [firme
++ oneste](../../philosophy/honest-signatures.md) il principio.

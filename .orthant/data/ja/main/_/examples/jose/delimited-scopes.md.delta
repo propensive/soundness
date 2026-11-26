@@ -1,0 +1,62 @@
+orthant 2 language
+
+@ 0 1 0 0c5f3c411e01fb201a7a4c74a27e281d
++ # 守られたブロックの中の検証済みトークン
+
+@ 0 3 0 0746ff6d71ea6de01948a252e9194372
++ `bearerAuth` は、トークンが検証されたリクエストに対してだけブロックを実行し、ブロックの中では
++ トークンが `jwt` としてスコープ内にある。その外には読むべきトークンがないので、誰も検査していない
++ クレームからレスポンスを組み立てることはできない。
+
+% 0 1 0 12705ff5e291290d17fbc8389d59ef4a
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 1adfc3a3040a32b21acef7f5e3ccbd19
++   label トークンが検証されていない場所でのクレーム
+
+% 0 1 0 1477c34ff41c7c99183443e1d3238ae1
+
+% 1 1 0 0960c596329e4eb20a0b442aaa85c43a
+
+% 2 1 0 058ff1ab4bd16fb508adf559c39e04f5
+
+% 3 1 0 016ebb41de88906d10ae2b7461c8297c
+
+% 4 1 0 16ed7d8452f024681314e40719d3abf8
+
+% 6 1 0 02c6008fa73c8064085b4d58bbf3d1dd
+
+% 0 1 0 0a5bf00054c496a0177a531fce5e0de8
+
+% 1 1 0 061365efe9ec8a3a0cb75634619bc1da
+
+@ 0 1 0 0c3990e3fac708e81098242f73c076bc
++   label ガードの中のクレーム
+
+% 0 1 0 0de4958ef1d881271a8139b56059c771
+
+% 1 1 0 05edbc0d56e264551b624be9d4731ed8
+
+% 2 1 0 002596378d28bde00aaaa6d851406307
+
+% 3 1 0 1a9cc55502a9a9fd1aeee7fe61d09162
+
+% 4 1 0 0229fc23a15c3a5701bf4d48a0cab2eb
+
+% 6 1 0 1569d92af5c3e7fb0b9abe9d87283f00
+
+% 0 1 0 0879a765e504929f18c7dbabd6290683
+
+% 0 1 0 028308c6ee4ccf480d3a7eeaa79b5690
+
+% 0 1 0 18eafb32caed3dd50f976e787bd035ca
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 3 0 0e8d7b06b7a5e12009142d500051f620
++ [Bearer 認証](../../soundness/modules/jose.md#bearer-authentication)は、有効なトークンのない
++ リクエストに何が送られるかを説明し、
++ [区切られたスコープ](../../philosophy/delimited-scopes.md)はその考え方を説明する。

@@ -1,0 +1,71 @@
+orthant 2 language
+
+@ 0 1 0 18a908bb7f8186a00d17b239c666f8a0
++ # Un layout fatto di layout più piccoli
+
+@ 0 2 0 02d7cfae70a9646a1502e4ea7af7ae35
++ Un campo il cui tipo ha un proprio layout contribuisce con tutta la sua larghezza, quindi un record
++ si compone di record più piccoli e non viene mai appiattito a mano.
+
+% 2 1 0 0b6fce801fa822fa05a128c54dd9b08d
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 196cc9ab79f1082a0a504fc13525d005
++   label Un record di due campi
+
+% 1 1 0 036fed96d6772f820e42a45ef8e3c89d
+
+% 2 1 0 070918c4f879fbdc13bcfcda5e64664a
+
+% 4 1 0 032a44b64171c6681c523b7ce98471d9
+
+% 6 1 0 1f8b6f926543026b035ad856cc58fb20
+
+% 7 1 0 01546f2c00c261d10fd875d765bbbfa0
+
+% 1 1 0 13aa0bfb5cad255c0c2a582c17709eae
+
+@ 0 2 0 11401cbeaf729c450436f0681e3cffc8
++   label Un record di due record
++   highlight from:..Point)  quattro byte ciascuno
+
+% 1 1 0 04aa6aad6c9e3b7314cb6d0edd6957e8
+
+% 2 1 0 1300894620f068b50a3f74af1efdd5b3
+
+% 4 1 0 072cd1692ab6f6cd15ae49cd2744697c
+
+% 6 1 0 0b7bc4b27cb880511b223def9fa25f97
+
+% 7 1 0 0b486c76b35bb69d0ae8f5a56b9e267c
+
+% 0 1 0 0ff583eef1ef32041814bc2586f4d5a5
+
+% 0 1 0 1f9010085214ec550800c15dabe1997d
+
+% 0 1 0 0158af187a92a51a04d600828f65a298
+
+% 1 1 0 07ffa2b7196d5e700ffbbf9223d86e20
+
+% 1 1 0 136d267ff733a60e0f6246170d49df5f
+
+% 2 1 0 1525a46c87e9e0571e7d21b8e7c42b7a
+
+% 0 1 0 08a86cbdc9b8cb0109ed8ce5b435ce67
+
+% 1 1 0 0cd6459499a6bd5203d659b3bcc1b6aa
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 0 1 0 02d300198d92c8820797cead12452ba9
+
+% 0 1 0 1de8c79158f1032a14b8c0d1ac68642e
+
+% 1 1 0 1d83126d05f949831bdf217e18a30e7b
+
+@ 0 2 0 0f12dd4ed40c3e8b0bc171a558a472ca
++ [Descrivere un layout](../../soundness/modules/binary-data.md#describing-a-layout) dice di più
++ sull'annidamento.

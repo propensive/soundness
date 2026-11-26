@@ -1,0 +1,9 @@
+orthant 2 language
+
+@ 0 7 0 060bbc9e119dc3320a83454349a15995
++ `FilesystemBackend` собирает stat, open, read, write, list, link и delete; всё в API
++ [файловой системы](/doc/soundness/modules/filesystem.md) определено через них. Реализация на `java.nio`,
++ реализация WASI поверх `wasi:filesystem` и любая будущая взаимозаменяемы, а API для пользователя
++ вообще не упоминает платформу. Та же форма даёт [сокетам](/doc/soundness/modules/sockets.md)
++ `SocketBackend`, [сжатию](/doc/soundness/modules/compression.md) — его движки DEFLATE для каждой платформы,
++ а [изображениям](/doc/soundness/modules/images.md) — их кодеки.

@@ -1,0 +1,68 @@
+orthant 2 language
+
+@ 0 1 0 0866ff43ea4d447719c4049bb71e04dd
++ # Una respuesta en flujo se lee mientras la conexión está abierta
+
+@ 0 4 0 00408d2a3769e4940f6d549054006286
++ `stream` devuelve una respuesta cuyo texto llega en fragmentos, que se extraen de la conexión a
++ medida que se necesitan. El iterador de fragmentos es perezoso, y depende de una sesión que se
++ cierra con su bloque, así que el compilador no deja que sea el resultado del bloque. La respuesta
++ ensamblada es un dato, y sí puede serlo.
+
+% 0 1 0 12705ff5e291290d17fbc8389d59ef4a
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 0 1 0 05379442125b483c0fa7601737add2cc
+
+% 1 1 0 01df03af649144fc135e9cf4a153349c
+
+@ 0 1 0 120fc934d6a599981a5859014abc6338
++   label Fragmentos que se extraerían de una conexión cerrada
+
+% 0 1 0 1477c34ff41c7c99183443e1d3238ae1
+
+% 0 1 0 0f075f49df5bc7f816d93fd899100c7a
+
+% 1 1 0 1a5cc30518a3d4431a6a2aa53fbb7db8
+
+% 2 1 0 0c1dcf6a12d9be830945d6c0d183233a
+
+% 3 1 0 029fd1480a3dbe4c1f2bc25c78afdf7e
+
+% 4 1 0 1e365951502926170501c76059973d95
+
+% 6 1 0 1c57580b648fabfe1185497d3960e518
+
+% 0 1 0 06023ed1444ea4971cb2baa93976efcd
+
+% 0 1 0 1699d0005c9721dd10d61e02fe0f8c32
+
+% 1 1 0 049b14812c2e18a11fef5d0251f3cb6c
+
+@ 0 1 0 02c9a06fed9b456e0fa6d41bbfec52d2
++   label La respuesta completa, ensamblada dentro del bloque
+
+% 0 1 0 1e03345b71a3aa25045bc877211ce97c
+
+% 1 1 0 119849e33771ac9605ba22ba1f323c7b
+
+% 2 1 0 0ca8ce85a93d72b806a346fc1f0aef49
+
+% 3 1 0 1e33ce3dc00c2fc206fdf2f1ced4dbab
+
+% 4 1 0 1776377031856dca1007d90b1b189cdb
+
+% 6 1 0 0d5f7c368e2a696410a3eb69194cb6b8
+
+% 0 1 0 076f6814db11af5318e261e623c480d7
+
+% 0 1 0 17ed8d5f9ef3ae751650b45e75fc29ee
+
+% 0 1 0 18eafb32caed3dd50f976e787bd035ca
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 2 0 0b678374a576b7590e127c2a3650dc1c
++ El ejemplo se compila, pero no se ejecuta, porque llamaría a un proveedor a través de la red.
++ [Flujos](../../soundness/modules/llm.md#streaming) describe una respuesta y sus fragmentos.

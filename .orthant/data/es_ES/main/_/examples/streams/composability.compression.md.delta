@@ -1,0 +1,77 @@
+orthant 2 language
+
+@ 0 1 0 052fac71ccf3d3ab0ef539337ac92a36
++ # La compresión, como un paso entre el texto y los bytes
+
+@ 0 2 0 0648c57b058068720489124af9154f29
++ El texto se convierte en bytes con una codificación, los bytes se comprimen con un formato, y
++ cada paso nombra como un tipo lo que necesita. El camino de vuelta son los mismos pasos en el
++ orden contrario.
+
+% 2 1 0 032d67131c37c9c4080893c4ed81c52f
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 2 0 1b4f8ac172955dbe093137db28bf16a1
++   label Texto, como bytes
++   highlight in[Data]  con la codificación que está en el ámbito
+
+% 1 1 0 0e6afd65c7d81fff03f5d122b4aee2fc
+
+% 2 1 0 15eb5ff17556b4c916ae7a5a0eb63841
+
+% 4 1 0 00c73132ca588ea91a4ebf51e2c99623
+
+% 0 1 0 0615304e36e8bc7e01b2f36ce9b07f4c
+
+% 1 1 0 08d7502417659e330b6924f18b349551
+
+@ 0 2 0 1f02ef6c896ecf4f14c49df74c0060f1
++   label Comprimido
++   highlight compress[Gzip]  el formato es un tipo
+
+% 1 1 0 00bf60c6c58437fd07f565844c7a1621
+
+% 2 1 0 07af28f13f4c1ce504fde5733a4d283f
+
+% 4 1 0 0dfb721cbf511fa10700db0201aa6a7e
+
+% 5 1 0 18a20054a7b9a93d119972a1001463e9
+
+% 1 1 0 0bef5ee26cc8275f10f8d3987fad15b5
+
+@ 0 2 0 1ab76696bd338b0b064fc4c638a367d6
++   label Y de vuelta
++   highlight decompress[Gzip].utf8  los mismos pasos, invertidos
+
+% 1 1 0 0f71b1c7b38dc39d0aa4faa7a76eef2f
+
+% 2 1 0 0e0f97db778099421f0b717909b94e7d
+
+% 4 1 0 0476a9a9958d862b1a9ae4d55c591ee0
+
+% 5 1 0 0d444aeec447325013aea61799383f65
+
+% 0 1 0 1ac3baffb23d391b1d7282e19fc03e18
+
+% 1 1 0 090c0932c796ac8407bab89d035e5486
+
+% 1 1 0 136d267ff733a60e0f6246170d49df5f
+
+% 2 1 0 1525a46c87e9e0571e7d21b8e7c42b7a
+
+% 0 1 0 08a86cbdc9b8cb0109ed8ce5b435ce67
+
+% 1 1 0 0cd6459499a6bd5203d659b3bcc1b6aa
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 0 1 0 04283b017eb2547519fec0676bac27eb
+
+% 1 1 0 10b574ec3c62924d14ccdc72d15583f9
+
+@ 0 2 0 1514888b242a83170bca8507be07bc87
++ [Compresión](../../soundness/modules/streams.md#compression) muestra lo mismo en un pipeline, y
++ [el tutorial sobre compresión](../../soundness/modules/compression.md) tiene los formatos.

@@ -1,0 +1,46 @@
+orthant 2 language
+
+@ 0 1 0 0b3fd00fb603bb33199c8d0ad3672d28
++ # Un rechazo que da su motivo
+
+@ 0 3 0 18a02c224a9d7ce50785715ae4642505
++ Git tiene una docena de reglas para el nombre de una referencia. Un nombre que incumple una se
++ rechaza con un `Git.RefError`, que contiene como valores el nombre y la regla que incumplió, y
++ dice ambas cosas en su mensaje.
+
+% 2 1 0 02526de0f09781a2153c9a4fde79a12d
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 0 1 0 14aab7f0be2434f81421fb69d99543da
+
+@ 0 2 0 063cc653edade3d51b6b18c4d635cdb7
++   label Una rama, a partir de un nombre
++   highlight parse  comprueba el nombre según las reglas de Git
+
+% 0 1 0 0feeb6ee26eddc7916a3c923ea9fa7b1
+
+% 0 1 0 12a618ab3fc8ab800817fdfca2fcb19c
+
+% 0 1 0 0428cb7d9744fc631ad499280b36bc0e
+
+% 1 1 0 039ed4d146de60480e0a07ff18948f88
+
+% 1 1 0 136d267ff733a60e0f6246170d49df5f
+
+% 2 1 0 1525a46c87e9e0571e7d21b8e7c42b7a
+
+% 0 1 0 08a86cbdc9b8cb0109ed8ce5b435ce67
+
+% 0 1 0 036507956a3da5f908cf31ec98bf4ed3
+
+% 1 1 0 07f2b8311cc534e60b2b7413314b03b3
+
+% 0 1 0 1efd46d1dda093400e7dcefd3db8e7eb
+
+% 1 1 0 189729d9537794181e5d80542f8e0136
+
+@ 0 3 0 097a90561f98995a1cf5454ecadb4868
++ [Referencias](../../soundness/modules/git.md#references) tiene las reglas, y
++ [errores expresivos](../../philosophy/expressive-errors.md) las razones de un error que se explica
++ a sí mismo.

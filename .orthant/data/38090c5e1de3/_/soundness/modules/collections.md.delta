@@ -1,0 +1,97 @@
+orthant 2 release
+
+@ 2 0 0 1dbb65a35d0414830b296d4fbe6d1103
++ #### Searching what is sorted
++
++ Elements which are kept in order can be searched in logarithmic time. But such a search is only
++ right if the elements really are sorted, and sorted by the very order the search compares with.
++ A `Sorting` holds the two together: it is made from a collection and the key to sort by, keeps
++ the elements in that order, and searches by it.
++
++ ```scala fuel
++ run
++ ##
++ case class Player(name: Text, age: Int)
++
++ val players = List(Player(t"Orsino", 31), Player(t"Viola", 19), Player(t"Feste", 44))
++ val cast = Sorting(players)(_.age)
++
++ Out.println(cast.find(31).let(_.name).inspect)
++ Out.println(cast.find(25).inspect)
++ Out.println(cast.locate(19).let(_.n0).inspect)
++ ```
++
++ `find` gives the element with a key, and `locate` its position, each `Unset` if there is none.
++ `lowerBound` is the position at which a key is, or would be inserted, and `upperBound` the
++ position after the last element with that key, so the two span the elements whose keys are
++ equal:
++
++ ```scala fuel
++ run
++ ##
++ val years = Sorting(List(31, 19, 44, 31, 28))
++
++ Out.println(years.lowerBound(31).n0.show)
++ Out.println(years.upperBound(31).n0.show)
++ Out.println(years.lowerBound(30).n0.show)
++ ```
++
++ With no key given, the elements are sorted by their own comparison. The sorted elements
++ themselves are the `Sorting`'s `elements`.
++
+
+@ 3 0 0 1e0a4f66471a12e0081283fb97189a28
++ `intersect` and `except` are also defined for a `List`, a `Sequence` and a `Chain`, which they
++ treat as multisets. Each element of the operand accounts for at most one equal element of the
++ receiver, and the receiver's order is kept. So `except` counts what one list has beyond another,
++ with a repeated element counted once for each extra occurrence:
++
++ ```scala fuel
++ run
++ ##
++ val before = List(t"warn", t"warn", t"note")
++ val after = List(t"warn", t"warn", t"warn", t"note", t"halt")
++
++ Out.println(after.except(before).inspect)
++ Out.println(after.intersect(List(t"warn", t"halt", t"halt")).inspect)
++ ```
++
+
+@ 2 0 0 0760f91c80330d0e19d16f7d3bc825dc
++ #### Keys told apart another way
++
++ Two keys of a map are the same key when they are equal. That is a policy, and `Map.build` takes
++ it from the context: an `Equatable`, which says when two keys are the same, and a `Hashable`
++ which agrees with it. For every type they are `==` and the ordinary hash, unless another is in
++ scope.
++
++ The usual reason to choose another is to tell keys apart by *which object* they are. Notes
++ attached to the nodes of an immutable tree must not merge two nodes which happen to be equal,
++ and a large node should not be hashed through on every lookup.
++ `equalities.identityEquality` chooses that:
++
++ ```scala fuel
++ run
++ ##
++ case class Node(label: Text)
++
++ val first = Node(t"leaf")
++ val second = Node(t"leaf")
++
++ val depths =
++   import equalities.identityEquality
++
++   Map.build[Node, Int]: map =>
++     map(first) = 1
++     map(second) = 2
++
++ Out.println(depths.at(first).inspect)
++ Out.println(depths.at(second).inspect)
++ Out.println(depths.at(Node(t"leaf")).inspect)
++ ```
++
++ The map keeps the policy it was built with. A key added to it with `define`, or removed with
++ `omit`, is compared the same way, and so are the keys of a map added to it with `+`. A map made
++ from it with *other* keys, by a conversion or a filter, is built afresh by whichever policy is
++ in scope there.
++

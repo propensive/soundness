@@ -1,0 +1,64 @@
+orthant 2 language
+
+@ 0 1 0 15858726609baa75090b0457bea63ef6
++ # Um laço em segundo plano que termina com seu escopo
+
+@ 0 3 0 1e5877bf6325cdab1661ab09d1b4d9be
++ Um daemon é um trabalho que é iniciado e deixado em execução. O escopo que o iniciou não espera
++ por ele, e o cancela ao sair, então um daemon é executado exatamente enquanto dura seu escopo, e
++ não há nada que se precise lembrar de parar.
+
+% 2 1 0 0e21637502b26bab0104ff398362907f
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 0e8f1207f3d4f62411a47846c935e45c
++   label Um escopo
+
+% 1 1 0 10d91490a6a6c030178174208c10eb73
+
+% 2 1 0 1d2d328369aacd1418656988cfffe8ba
+
+% 4 1 0 0081d96e932f9f9d1b32b86847cf0f67
+
+% 1 1 0 0de530c0d42d9a370239c3a372d09ebd
+
+% 1 1 0 0989ae7d4a49b0370ae62390a63359ba
+
+@ 0 2 0 1e4a64f25ddd4bcb150608f08471e316
++   label Um ponto, enquanto durar a peça
++   highlight daemon  cancelado quando o escopo termina
+
+% 1 1 0 0b66d259971c72d9079338491dd15428
+
+% 2 1 0 19f2e6ff12ab74170054452d89489bb0
+
+% 4 1 0 0505fb8cc8b3edb41e3d9450eff1c49e
+
+% 0 1 0 13c840c7442384d81f1fe3b50f3c8fa4
+
+% 1 1 0 04fcf455d8b0ba070687452f20a5c2b0
+
+% 1 1 0 0dc9f1bf5712b914065b969f486e4baa
+
+% 1 1 0 136d267ff733a60e0f6246170d49df5f
+
+% 2 1 0 1525a46c87e9e0571e7d21b8e7c42b7a
+
+% 0 1 0 08a86cbdc9b8cb0109ed8ce5b435ce67
+
+% 1 1 0 0cd6459499a6bd5203d659b3bcc1b6aa
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 0 1 0 16fbe8e7c89fdcb2099028acd37449ef
+
+% 1 1 0 0cb91bee631312a70afd647e8cae407a
+
+@ 0 4 0 06f3a8dec97058f01a627b732a53f3ee
++ `Exeunt` é impresso imediatamente, e não depois de cinco segundos.
++ [Daemons](../../soundness/modules/concurrency.md#daemons) explica por que um daemon não pode usar
++ o tratador de erros de seu pai, e [escopos delimitados](../../philosophy/delimited-scopes.md) a
++ ideia de um tempo de vida que é um bloco.

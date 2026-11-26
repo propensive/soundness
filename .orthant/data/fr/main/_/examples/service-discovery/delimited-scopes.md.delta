@@ -1,0 +1,82 @@
+orthant 2 language
+
+@ 0 1 0 189a0f6707d0aae211cf9975c8e2b456
++ # Une annonce dure autant que son bloc
+
+@ 0 3 0 0e3804a372c0623f156e402fd48dccd0
++ Annoncer un service est un prêt. L'instance est revendiquée sur le réseau quand le bloc commence,
++ est connue sous son nom revendiqué à l'intérieur, et est retirée par un adieu quand le bloc se
++ termine, de quelque façon qu'il se termine.
+
+% 0 1 0 12705ff5e291290d17fbc8389d59ef4a
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 010d04f6e90bac9f10de261fd6e24a33
++   label Un service et la description d'une instance
+
+% 1 1 0 182c424a94abd46111b3dd6de9abdeb6
+
+% 2 1 0 1aade805aced8c8506e06bc4c957e789
+
+% 3 1 0 1d70d4bbf164d4ae178cad54af483e0a
+
+% 5 1 0 0900ce61af9e19a50ff149ad6e67dd2b
+
+% 6 1 0 0eea2b208807b6900cd37b6c6a404393
+
+% 1 1 0 07a820c2a8a98f491f1116a94a5d4bb0
+
+@ 0 2 0 0fcd538b96ec2a22042f22525f19ecb1
++   label Le bloc pendant lequel elle est annoncée
++   highlight fury.advertise(elsinore):  revendiquée ici, et retirée là où le bloc se termine
+
+% 1 1 0 094b927e22a2f1790b864329428e5d4f
+
+% 2 1 0 01616e2526b323900c6fe495cea8031f
+
+% 3 1 0 0181b9de174e5a1701c2e05262b88951
+
+% 5 1 0 0fc7dde9e988f1010f33af5bfe94dca7
+
+% 6 1 0 14e6024805409be906a94097b52e6e46
+
+% 8 1 0 002297a6cbe4a0dd109618fa30f73a22
+
+% 9 1 0 1018576c7d2363fb000aa70ffa427925
+
+% 0 1 0 1781931597b722a81c248c1705807038
+
+% 1 1 0 1b953d3169991a9e19fc83d6f210c08a
+
+@ 0 2 0 0153e3160ae3658d044d50aebdf82cc6
++   label Le nom sous lequel elle a été revendiquée
++   highlight summon[Discovery.Advertisement]  n'existe que dans le bloc
+
+% 1 1 0 1fb641a7718c05e4107a349601cc42e4
+
+% 2 1 0 09e4e847c0f724ff1543613f489ab0c6
+
+% 3 1 0 043aa5e5f74bc8541f86fbf1e1816a7f
+
+% 5 1 0 05a44caa3231433b0012f9e5916a84d1
+
+% 6 1 0 015d1fe3bfc6278003a45c5f16fa2d38
+
+% 8 1 0 151a528a178e14a71f5a0271dd5d7d60
+
+% 9 1 0 190466048d5da5250613026aacf4f5e5
+
+% 0 1 0 01238a4e92bd380411aeefeabf5e9453
+
+% 0 1 0 18eafb32caed3dd50f976e787bd035ca
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 3 0 029823fc773a572a079cb91d8db298d4
++ L'exemple est compilé, mais pas exécuté, car il a besoin du réseau.
++ [Annoncer](../../soundness/modules/service-discovery.md#advertising) explique pourquoi le nom
++ revendiqué peut différer, et [les portées délimitées](../../philosophy/delimited-scopes.md) la
++ forme.

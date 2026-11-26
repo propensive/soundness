@@ -1,0 +1,49 @@
+orthant 2 language
+
+@ 0 1 0 194b44049e4e5ec2121043f6cc2885d0
++ # 问题中的图片，用 URL 指明
+
+@ 0 4 0 14bd85e1db2cbdce196a47c3f3abf92f
++ 消息由一个角色和一个内容列表组成，而图片是一种内容。图片所在的位置是一个 URL，就像[网络地址](../../soundness/modules/network-addresses.md#urls)所描述的那样：在代码编译时检查，两个库之间无需任何转换。
+
+% 0 1 0 12705ff5e291290d17fbc8389d59ef4a
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 0e5e01f646ea3127074da9334a79c33b
++   label 用文字提出的问题
+
+% 1 1 0 020bf2ff8ef978ec0849963fb12c9581
+
+% 0 1 0 065b03c723ac2e040ae6a5ed192ae292
+
+% 1 1 0 1d9cd4a0eb60a75f14c0c6f1dd193bff
+
+@ 0 2 0 05ad5a2283e498680554e7087c89b9aa
++   label 同一个问题，附带一张图片
++   highlight url"https://example.com/yorick.png"  经过检查的 URL，原样使用
+
+% 0 1 0 0a0deb7941ddf8a50daeecf5cd63d9cd
+
+% 1 1 0 121d75a57da2fbaa05c6421c614968ee
+
+% 0 1 0 061b8a0c981679d903085648f8f95420
+
+% 0 1 0 1e2662303c3d4356085c206e7d1c67b7
+
+% 0 1 0 09f52cc11c8467c10f3d885a12ab3805
+
+% 0 1 0 03b6f43130e34f0f1c52b501699474a7
+
+% 0 1 0 04d6a449e0a4674f0d3e8249157cdce2
+
+% 0 1 0 14b6d9841f7b10f00c92b1cfd524e575
+
+% 0 1 0 18eafb32caed3dd50f976e787bd035ca
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 2 0 1663db269c71a56b01dc8ca91fa378e6
++ [消息与内容](../../soundness/modules/llm.md#messages-and-content)列出了各种内容，[可组合性](../../philosophy/composability.md)则阐述了这一思想。

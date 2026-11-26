@@ -1,0 +1,68 @@
+orthant 2 language
+
+@ 0 1 0 1b32aa6f1444f0530f2f8af5cf8bf327
++ # より少ないバイトで同じ値
+
+@ 0 2 0 10532bf2485cbde608d8d1c3d126a7b7
++ CBOR は JSON と同じ語で書き、読む。`in[Data over Json]` は値のバイトを JSON テキストとして返し、
++ 型の一語を変えれば CBOR としてのバイトが得られる。
+
+% 2 1 0 16dadd88f25ea083122ee3e7324a582c
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 2 0 13909a92fe32220407de075ea08a08e9
++   label JSON テキストのバイトとしての役者
++   highlight in[Data..Json]  25 バイト
+
+% 1 1 0 1651b064181fbd501c71c4aaadbbd37b
+
+% 2 1 0 1e11ec72392bd44b1788374ccce3cd86
+
+% 0 1 0 135a962eef3d32a00b4c8b00859a82f8
+
+% 2 1 0 0fc33f7c99caa68a147ed453382e84fc
+
+% 0 1 0 164a686cbdd7cd190096e1197898cd36
+
+% 0 1 0 1e420d703e9ae0f70bc79ca0f60eef5f
+
+% 1 1 0 1bedb17c3de619ac009f8b557f35638c
+
+@ 0 2 0 0f1034f3672cadde0ac6ad104b1d59a3
++   label CBOR としての同じ役者
++   highlight in[Data..Cbor]  17 バイト
+
+% 1 1 0 156885bf3708da930bf016e32b496082
+
+% 2 1 0 079b62433ebb23430094b6ab72582485
+
+% 2 1 0 100b36f0ec41ac4809d1333f3e3a0af0
+
+% 0 1 0 1ce9d30f4a2cf76511980c5056f15e00
+
+% 0 1 0 04e17812caf00b441cc8c7d7d4678029
+
+% 1 1 0 1a9e96386a0b1eda0e42269b0ca90607
+
+% 1 1 0 136d267ff733a60e0f6246170d49df5f
+
+% 2 1 0 1525a46c87e9e0571e7d21b8e7c42b7a
+
+% 0 1 0 08a86cbdc9b8cb0109ed8ce5b435ce67
+
+% 1 1 0 0cd6459499a6bd5203d659b3bcc1b6aa
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 0 1 0 10ebe3a8bcc51b1c0fbf4d7459fa2180
+
+% 0 1 0 1db10ec94dbd07900dd0c8e43673cf2e
+
+% 1 1 0 1b723b8f5169da350f8d42405f4419de
+
+@ 0 3 0 109c9ec1e11149ed142008006ae1ad8f
++ JSON は 25 バイトである。[エンコードとデコード](../../soundness/modules/cbor.md#encoding-and-decoding)にその間の段階が、
++ [小さな API](../../philosophy/small-apis.md) に語を共有する理由がある。

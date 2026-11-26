@@ -1,0 +1,94 @@
+orthant 2 language
+
+@ 0 1 0 179e29acd805de8f0427ee8b306b5501
++ # Une seule méthode, outil pour MCP et pour un modèle
+
+@ 0 3 0 10c2b09831ae9d930b1a341ecbd90578
++ Un serveur MCP offre des outils à tout assistant qui s'y connecte. Un `Toolkit` les offre à un
++ modèle avec lequel ce programme converse lui-même. La même méthode sert aux deux : elle est
++ marquée pour chacun, et décrite une seule fois, puisque `@about` est partagé entre les deux
++ bibliothèques.
+
+% 0 1 0 12705ff5e291290d17fbc8389d59ef4a
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 1a0008415465a31002c10c683dac670d
++   label Un outil d'un serveur MCP
+
+% 0 1 0 13ecb108756d61c60288e2a01d7dbe48
+
+% 1 1 0 0d943fd243c22eb8198ac1066e19cd1d
+
+% 2 1 0 0a144d46feccc131140b1ae3b9dfc9ff
+
+% 4 1 0 1d61c938c45cbe06069ddd6dc23c97d5
+
+% 5 1 0 1464812ecb4c061c11fa3ad41bce3e9b
+
+% 6 1 0 1751eef417d02184129e5c502fbd57f6
+
+% 7 1 0 0dcd30b83b4457cd109ff878a18d3b01
+
+% 8 1 0 18acfaeaf9b92a3e0d34288ac3f30221
+
+% 9 1 0 193e01de05a9cdd5192473297b1895a1
+
+% 10 1 0 05854ac98a6f31ff136101d180067dc5
+
+% 12 1 0 0b8972482de0621f0c8177eba395ab62
+
+% 1 1 0 09792b38d926afa2054fe23468121a9a
+
+% 2 1 0 0decb410441ed2081b5d2e6726084a1b
+
+% 1 1 0 11dce0f48f73b1501ac1e76e53a49a49
+
+@ 0 1 0 1e1610a75732e58a180bf7c78a411e4f
++   label La même méthode, comme capacité d'un modèle
+
+% 0 1 0 178bf40db37c274a17182ae819a739ab
+
+@ 0 2 0 1f3543aa64c357690684f72c68081862
++   highlight @ability  la marque pour un Toolkit
++   highlight Toolkit(Almanac)  construit à partir de l'objet serveur lui-même
+
+% 1 1 0 0b8e1f8652c915881e2037e8a5ad4368
+
+% 2 1 0 1e9fc504bca20f9f16119c61e8360b09
+
+% 4 1 0 0e0e67057876cc5c078a976145a32e89
+
+% 5 1 0 0b84cf447a54dbcb1d1ae2aa970d34e2
+
+% 6 1 0 14f6cc4e79fdbbff105c5282619cf8d3
+
+% 7 1 0 04dbf940ed7295d5176cc2f6271a2a16
+
+% 8 1 0 0f5f695837ddbb070c41bc21c8627dee
+
+% 9 1 0 0093e9c8aa25ccef0975f9aa0c2f3fe3
+
+% 10 1 0 00dcdb2015c29aa200403ae4e46bcfeb
+
+% 12 1 0 05e511528da74b94004e1c611cc7ce3a
+
+% 0 1 0 15f24b57cb8bc2650eeea4b7d55506ab
+
+% 1 1 0 11dc21bc9aa974ea06dd962f6e3bce7d
+
+% 2 1 0 047415e4868dad3b05e8ea851273820c
+
+% 0 1 0 163fa73cd8c06af71a3621d131c04d49
+
+% 0 1 0 18eafb32caed3dd50f976e787bd035ca
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 4 0 19649805685acd641a8416b13032e45a
++ L'exemple est compilé, mais pas exécuté, car un serveur parle à un client par HTTP.
++ [Les outils](../../soundness/modules/llm.md#tools) décrit un toolkit, et
++ [la composabilité](../../philosophy/composability.md) l'idée de bibliothèques qui se rencontrent
++ sans adaptateur.

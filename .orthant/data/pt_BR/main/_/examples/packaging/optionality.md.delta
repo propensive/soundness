@@ -1,0 +1,47 @@
+orthant 2 language
+
+@ 0 1 0 11a1e22bde45a7cd16950a5a101eadc1
++ # O endereço público de uma dependência, ou nenhum
+
+@ 0 3 0 0df3c983354d6cc4197ecb7f13e03264
++ O repackager encontra onde uma dependência pode ser baixada pelo seu hash de conteúdo. Um
++ resolvedor é uma função de um hash para uma URL opcional, então duas fontes são combinadas com
++ `or`: as dicas que foram nomeadas primeiro, depois o índice global, e um hash que nenhum dos dois
++ conhece é `Unset`.
+
+% 0 1 0 12705ff5e291290d17fbc8389d59ef4a
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 10925d93413ca704169b81e6377a720a
++   label As dicas que foram nomeadas
+
+% 1 1 0 1e7e49f1b20e59391198c02e738f2042
+
+% 2 1 0 0f9863940590366109e31a87388b5004
+
+% 0 1 0 00921e405914d50503f3187b9d69e617
+
+% 1 1 0 100617df151cb4741d0d78833b866761
+
+@ 0 2 0 0f06590f73afcf1708098fc74c8483ec
++   label Depois o índice de artefatos Maven
++   highlight or(DepsDev.mavenUrl(hash))  consultado só onde as dicas não têm nada
+
+% 1 1 0 1af5f9efb2e449ce1c2407cc6919fb68
+
+% 2 1 0 084145c6de1574b7191b6b3cf54991c8
+
+% 0 1 0 13287be15b0d9e6a138bf351eed17cea
+
+% 0 1 0 18eafb32caed3dd50f976e787bd035ca
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 3 0 03871b1df1050b0a1915aa1866606bf7
++ O exemplo é compilado, e não é executado, já que a consulta precisa da rede. Uma dependência sem
++ endereço é incorporada ao JAR, como descreve o
++ [reempacotamento](../../soundness/modules/packaging.md#repackaging), e a
++ [opcionalidade](../../philosophy/optionality.md) traz as operações usadas aqui.

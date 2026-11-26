@@ -1,0 +1,65 @@
+orthant 2 language
+
+@ 0 1 0 0f6e0a299b47810713e9f1fd5b1adeb5
++ # Des lignes qui ne respectent pas les blocs dans lesquels elles arrivent
+
+@ 0 3 0 12e9b8d24c927f64194d384804396b4c
++ Un réseau ou un disque livre des octets en blocs de la taille qu'il choisit, et une ligne peut
++ commencer dans l'un et finir dans un autre. `delineate` transforme un flux d'octets en un flux de
++ lignes, en reportant d'un bloc au suivant une ligne inachevée, et `records` les distribue une à
++ une.
+
+% 2 1 0 1de2df600bc394890b674dc45f034eba
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 2 0 0c4131a89e9ddd8b0e5ac2ca914426dc
++   label Trois lignes, coupées en deux blocs au milieu d'un mot
++   highlight Guild..enstern  un seul nom, en deux blocs
+
+% 1 1 0 1dea471baca84f1202d3ae6de50bf18f
+
+% 2 1 0 143a897c7684466f1065f10a87888ae8
+
+% 3 1 0 1dacc62f4424e74410ac1aee81747711
+
+% 5 1 0 1ea847724a93a2d006dec9d01134fa5f
+
+% 1 1 0 03c65c5310879cfa135668b0b916e7d2
+
+@ 0 1 0 0aab5f0a9b898f851b60f9da9dab0432
++   label Les lignes, entières
+
+% 0 1 0 0848326f8078f164172dc6a298bdd873
+
+% 1 1 0 1d808b4fefabcd7310f9873c4aee3d02
+
+% 2 1 0 1c08ce21d9583535154108aa12b89327
+
+% 3 1 0 0a4795ee6c5491441ff2108d8e13e5da
+
+% 5 1 0 19b0f6a75bfd5d3704bdf4888afc5ba5
+
+% 0 1 0 0be5058933ca16951b35d9f8b188e835
+
+% 1 1 0 1915eb7aa28b8786095757b31db46463
+
+% 1 1 0 136d267ff733a60e0f6246170d49df5f
+
+% 2 1 0 1525a46c87e9e0571e7d21b8e7c42b7a
+
+% 0 1 0 08a86cbdc9b8cb0109ed8ce5b435ce67
+
+% 1 1 0 0cd6459499a6bd5203d659b3bcc1b6aa
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 0 1 0 1a6da4b21172ca721509d232747206e9
+
+% 1 1 0 129534502829392502ce100537bb4c70
+
+@ 0 2 0 05091068baffda1e1779694cca84a1de
++ [Les enregistrements](../../soundness/modules/streams.md#records) décrit les flux dont les
++ éléments sont des enregistrements, et non des octets.

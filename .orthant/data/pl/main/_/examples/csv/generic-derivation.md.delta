@@ -1,0 +1,70 @@
+orthant 2 language
+
+@ 0 1 0 0ffc692e433966d00c6680f3ad7a3065
++ # Zagnieżdżona klasa case zajmuje tyle kolumn, ile ma pól
+
+@ 0 3 0 1d02ce42aef1150a1ddff6dbfa6f6fba
++ Wiersz dekoduje się do klasy case, biorąc jego komórki po kolei. Pole, które samo jest klasą case,
++ zajmuje jedną komórkę na każde ze swoich pól, a liczba ta jest obliczana z typów podczas kompilacji
++ kodu.
+
+% 2 1 0 13d491c445ac181d0cd8693e6ae7845c
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 1f9181421e5ccdf70e92fb69a2c26649
++   label Trzy pola, trzy kolumny
+
+% 1 1 0 01dec85a056b252009bfdc7a408af4fa
+
+% 2 1 0 0d7ff492cf9207f80eb03285ea900415
+
+% 3 1 0 194c8d9933be11a9014703fd902c5faf
+
+% 0 1 0 067d3d3df9dcef881eb4e647d608be6e
+
+% 0 1 0 1205ff51c30253730480135e078a386a
+
+% 1 1 0 114d7cffa56cdd9d03cd5f2a8c99c134
+
+@ 0 2 0 124f79f25bd5aa3708c23fefaa2cc767
++   label Pole na dwie kolumny
++   highlight name..Name  obejmuje dwie kolumny
+
+% 1 1 0 1862d98cf066ba3b031de0b76d636dd0
+
+% 2 1 0 012c9e6f2db07ceb070ffedc8874badd
+
+% 3 1 0 1da8ccc16138e88002fb74f7fcb9d6cc
+
+% 0 1 0 04d228a178d777a912acec5d8bea4daf
+
+% 0 1 0 073bc70d06d1041817b11a5466c4052b
+
+% 0 1 0 0172dc909f36362d01b90b9a9dd4406a
+
+% 0 1 0 1590317b3ee2d11b101b4beadce06d30
+
+% 1 1 0 10b312e32e609f200a08823af524c4a4
+
+% 1 1 0 136d267ff733a60e0f6246170d49df5f
+
+% 2 1 0 1525a46c87e9e0571e7d21b8e7c42b7a
+
+% 0 1 0 08a86cbdc9b8cb0109ed8ce5b435ce67
+
+% 1 1 0 0cd6459499a6bd5203d659b3bcc1b6aa
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 0 1 0 09b7c76c0813865513b9fea18be1216d
+
+% 0 1 0 0a33596bc6add9a500e48d78dc3fad7a
+
+% 1 1 0 0817d28205d7473500aece4753b09cac
+
+@ 0 2 0 1b1b73198e882e2101dd466db5c65359
++ [Zakresy kolumn](../../soundness/modules/csv.md#column-spans) mówi, co to oznacza dla danych
++ odczytywanych według pozycji.

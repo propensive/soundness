@@ -1,0 +1,75 @@
+orthant 2 language
+
+@ 0 1 0 194cf93fc361715b1f2431f118bb5bfd
++ # Nowy katalog ze starego
+
+@ 0 2 0 1c24b547b9ecf62c142998ef4b4aada7
++ Katalog buduje się raz i nigdy się go nie zmienia. `map` daje inny katalog nad tym samym typem, z
++ nową wartością w każdym wpisie, a ścieżka, która adresowała stary, adresuje nowy.
+
+% 2 1 0 046caf4cc68826da1ec6b348befbc14e
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 00ef84f4145c2a7f00b1732a0bf5725d
++   label Katalog etykiet
+
+% 1 1 0 0df77faf2164e2c60c542c6c24b78e41
+
+% 2 1 0 10af02cc72fff1cf094d364ca253fff8
+
+% 3 1 0 0cd4bc8bd2ccc51a067b4a4ec42cd501
+
+% 5 1 0 1be8ebdf3392ab631263d8198eb0cee6
+
+% 7 1 0 1ae0b4e935a6e1400a4d3193e20e43ee
+
+% 8 1 0 0bdb6f0c006d4edf0c16d0622f8f749e
+
+% 1 1 0 1e17d07c3a2136e40d95af4a854e2f0e
+
+@ 0 2 0 0d1f4fa40d125c640c44265f2de29058
++   label Katalog ich szerokości
++   highlight map(_.length)  etykiety pozostają nietknięte
+
+% 1 1 0 0a55c77e9a91432c00166002087aa359
+
+% 2 1 0 05684a3bd9798685153dd4eeb36adf2c
+
+% 3 1 0 154cb16f156e98080441d6e8f519fcc4
+
+% 5 1 0 1375fb7b8def87301ebcfd2fb4c5e65f
+
+% 7 1 0 1598978dd7de3168034e41b02915fd7d
+
+% 8 1 0 0b7f90261044df980040f292ec34428f
+
+% 0 1 0 0bbf9f4dc7ccde82161a8ea9e2837358
+
+% 0 1 0 11921269c75edf1a0328d15c4ef0d143
+
+% 0 1 0 0ed49d809da1f48d009557d93da14083
+
+% 1 1 0 0fc695da9f991f580a02f35309ef3716
+
+% 1 1 0 136d267ff733a60e0f6246170d49df5f
+
+% 2 1 0 1525a46c87e9e0571e7d21b8e7c42b7a
+
+% 0 1 0 08a86cbdc9b8cb0109ed8ce5b435ce67
+
+% 1 1 0 0cd6459499a6bd5203d659b3bcc1b6aa
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 0 1 0 1101b30adff8bf6b012d15f85b0a500b
+
+% 0 1 0 0881889043a729e307bf05d302ae8566
+
+% 1 1 0 0af329eae28657721c1a7d7f19ccab1e
+
+@ 0 2 0 13f46355d253c12606023ae05efea805
++ [Przekształcanie katalogu](../../soundness/modules/catalogs.md#transforming-a-catalog) opisuje
++ więcej, a [niemutowalność](../../philosophy/immutability.md) – powody.

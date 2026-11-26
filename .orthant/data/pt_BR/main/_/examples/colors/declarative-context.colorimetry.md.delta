@@ -1,0 +1,51 @@
+orthant 2 language
+
+@ 0 1 0 14347b6787088be11f131b3b48ab1d2d
++ # O mesmo marfim, sob outra luz
+
+@ 0 2 0 1b4e3b24bd519ad410f3338d4ecea3b7
++ As coordenadas de uma cor no CIELAB dependem da luz à qual o olho se adaptou. A luz é um given,
++ e a conversão abaixo dela é a mesma linha sob cada uma.
+
+% 0 1 0 12705ff5e291290d17fbc8389d59ef4a
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+@ 0 2 0 09cc00aa8dba4fc016258882da1ea932
++ alternative Luz do dia
++   highlight daylightColorimetry  o iluminante D65
+
+% 1 1 0 0d8ba86bd5a2c5e3015860f336cf4d00
+
+% 0 1 0 0ad72771585d597c1dc176af74bf2c7e
+
+% 2 1 0 1cb4a4fcf9d172a0028cf5c3455e8d37
+
+@ 0 2 0 1594b53521331aff0d7422884afce771
++ alternative Uma lâmpada de tungstênio
++   highlight incandescentTungstenColorimetry  o iluminante A
+
+% 1 1 0 1ea37dd021d6ed8611563e191c867523
+
+% 0 1 0 0a0a8ad8076beea415afbab1e549a499
+
+% 2 1 0 08730039aaf2cdd3170d45b63bcb6ba8
+
+@ 0 2 0 0cad33b4e0b0fecd19fcf80054d180cf
++ alternative Um tubo fluorescente frio
++   highlight coolFluorescentColorimetry  o iluminante F2
+
+% 1 1 0 0fb97dc6d5d6d29e1b0c82e91bf42224
+
+% 0 1 0 0f6406275ad4027e1279fabb1638266d
+
+% 2 1 0 132070df39ef87c71948d4569c6c2989
+
+% 0 1 0 18eafb32caed3dd50f976e787bd035ca
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 3 0 00ee8551b21fbfb613271613f87ddd0d
++ [Perfis de cor](../../soundness/modules/colors.md#color-profiles) lista os iluminantes, e
++ [contexto declarativo](../../philosophy/declarative-context.md) explica por que a luz não é um
++ argumento.

@@ -1,0 +1,60 @@
+orthant 2 language
+
+@ 0 1 0 1e1783651c1a9cf202aa4d617a23025f
++ # 跨越两个块的带引号单元格
+
+@ 0 3 0 01ce2607a1ecab6a03b7354cffeededf
++ 流以块的形式交付字符，而这些块对行或单元格一无所知。`rows` 在每一行被请求时解析它，把未完成的单元格从一个块带入下一个块，因此含有逗号的带引号单元格始终是一个单元格，无论流恰好在哪里被切开。
+
+% 2 1 0 070a97d291c1819b1da66d08f94e6ee1
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 2 0 0c8ff25d8f8c191c16fb5433f4ea81bc
++   label 被流的块切成两半的单元格
++   highlight Bottom..Nick  一个单元格，分在两个块中
+
+% 1 1 0 1b5097d6eba6b2061aa98a13f3aaef8a
+
+% 2 1 0 0c011203ece7d6171481364cb2150ceb
+
+% 4 1 0 072e84e5b4cdef5c089b7582aa67f906
+
+% 6 1 0 13962dbc0fe612b118fd95d3eae0e414
+
+% 1 1 0 1ae5538ce34af4ba0ed1ae9c95b2d52e
+
+@ 0 2 0 11110109eac0d3320f356a695024dc6b
++   label 行，在被拉取时解析
++   highlight .rows  每一行在消费者请求时读取
+
+% 1 1 0 064d35f7d36982480f6179b7f89919a0
+
+% 2 1 0 0c2d9d2eac11f02b1c229b8d7d960e9d
+
+% 4 1 0 15cc9bc4f773cd0a074894d7682abd52
+
+% 6 1 0 1d7272ed9c1e0d01159f0cbc23bd01bb
+
+% 0 1 0 1165348117225b7b1da97df53913ad0a
+
+% 1 1 0 1f2bf06143fbd0b90bd13fa88c57cd17
+
+% 1 1 0 136d267ff733a60e0f6246170d49df5f
+
+% 2 1 0 1525a46c87e9e0571e7d21b8e7c42b7a
+
+% 0 1 0 08a86cbdc9b8cb0109ed8ce5b435ce67
+
+% 1 1 0 0cd6459499a6bd5203d659b3bcc1b6aa
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 0 1 0 05d8dee4dae770da1b7fa635b33378aa
+
+% 1 1 0 049b576191db49140a6c4d9afa2465a4
+
+@ 0 2 0 126f437d0433cec50fa5f1f311a1b699
++ [读取行](../../soundness/modules/csv.md#reading-rows)把保存所有行的表与行的流作了比较。

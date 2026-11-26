@@ -1,0 +1,81 @@
+orthant 2 language
+
+@ 0 1 0 024055658c3eb85018ed71427294af84
++ # Ustawienie, które konfiguracja pomija
+
+@ 0 3 0 00f73621444d1b3607b0bb2d0fc2f5d7
++ `~/.ssh/config` rzadko mówi wszystko o hoście. Rozwiązanie celu daje nazwę hosta i port, które
++ mają wartości domyślne, oraz użytkownika, który ich nie ma, więc użytkownik jest opcjonalny, a
++ kod, który się łączy, decyduje, co oznacza jego nieobecność.
+
+% 2 1 0 0c786da78a68476008e87a146aeae196
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 2 0 07f419cc19158787078dab35bb380f70
++   label Host rozwiązany
++   highlight resolve  pierwsza znaleziona wartość każdego ustawienia
+
+% 1 1 0 0106a6a5047726e8078bd8bf0f171085
+
+% 2 1 0 07f506f815052a540b4b1a30557d32ed
+
+% 3 1 0 15c93ca7c09053661dc3bd1950d5df79
+
+% 4 1 0 172873633ea49eb50dc513f86aa470a9
+
+% 5 1 0 0e3b69563a7ef1fb0c176290bb78063a
+
+% 6 1 0 104f0423aa7f1d7203575cd5c86541a5
+
+% 8 1 0 1c32171f72368ab914ee47930bd2464e
+
+% 1 1 0 0e871b2d2c0bcd2a1c21d3bfaf711262
+
+@ 0 2 0 142a0708c0fc2b9f108f27ad60370b1e
++   label Użytkownik, którego plik nie podaje
++   highlight or(t"hamlet")  wartość domyślna, wybrana tutaj
+
+% 1 1 0 055b9f84b67b199704c9eb736b389578
+
+% 2 1 0 1d63a1f683fbb7fb03fbe2f20c779ec5
+
+% 3 1 0 146c9eb2a9c9af2d19b7f1011487355f
+
+% 4 1 0 0151fd76ff07de0b1fd875ac368a5f31
+
+% 5 1 0 01cbe40d55a43cab06f4705919dc9f43
+
+% 6 1 0 0a2b7fc46661da141f0124f200ea5291
+
+% 8 1 0 19c7b0b81f5bf59b067c1a74cdd6e737
+
+% 0 1 0 127c14f90a1945831ca2511033aa8453
+
+% 1 1 0 058abba5e503d58617ecd2fe6b25d39d
+
+% 1 1 0 136d267ff733a60e0f6246170d49df5f
+
+% 2 1 0 1525a46c87e9e0571e7d21b8e7c42b7a
+
+% 0 1 0 08a86cbdc9b8cb0109ed8ce5b435ce67
+
+% 1 1 0 0cd6459499a6bd5203d659b3bcc1b6aa
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 0 1 0 0188536ec8d3805b163db72091d60768
+
+% 0 1 0 06752c5c876ea88f0f37bae5b04630d8
+
+% 0 1 0 1a632000c74b7e0107414ca73b37ad2a
+
+% 0 1 0 061f89a0d40ab43c06c03ad8b0258813
+
+% 1 1 0 1e41ba34c4828b1013de335bc079de37
+
+@ 0 2 0 0afcca6a460907eb0b8b1ea4077777a8
++ [Konfiguracja klienta](../../soundness/modules/ssh.md#client-configuration) opisuje plik, a
++ [opcjonalność](../../philosophy/optionality.md) – `or`.

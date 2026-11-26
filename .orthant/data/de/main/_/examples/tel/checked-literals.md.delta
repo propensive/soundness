@@ -1,0 +1,66 @@
+orthant 2 language
+
+@ 0 1 0 0506f71df4e4a9e01c2837ea6fb970de
++ # Ein Pfad, der sagen muss, wie er unterteilt ist
+
+@ 0 3 0 0b3b775d3a2deada19d670ae020b2b88
++ Das erste Zeichen eines TEL-Pfads ist sein Trennzeichen, und der Rest wird danach gelesen. Ein
++ `telp"…"`-Literal wird vom Compiler geparst; ein Pfad, der mit einem Schlüsselwort beginnt,
++ kompiliert also nicht, und zwei Pfade, die sich nur im Trennzeichen unterscheiden, sind gleich.
+
+% 2 1 0 039b4069cd2b909a11887a895eba0de4
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 0f31e8ef6ced5ed71327da3d3c25d278
++   label Ein Pfad ohne Trennzeichen
+
+% 0 1 0 1477c34ff41c7c99183443e1d3238ae1
+
+% 1 1 0 0960c596329e4eb20a0b442aaa85c43a
+
+% 0 1 0 1ceb970e70cbd34a13d9fb78e41dfcaf
+
+% 1 1 0 1891f265ee97bcb71a18470276fff573
+
+@ 0 2 0 1cca44e018d1d8a61c3a3c11ff4fc96a
++   label Ein durch Schrägstriche unterteilter Pfad
++   highlight /  das Trennzeichen
+
+% 1 1 0 134f3ec5d56b27190d7ab9eedc263993
+
+% 2 1 0 1a03699baf18b4370b862b91fdf219b5
+
+% 1 1 0 09d635ece4fb0eb912c52db70e6a136d
+
+@ 0 2 0 0e55e32209caee1e0ae6293fe3395532
++   label Derselbe Pfad, durch Punkte unterteilt
++   highlight .castle.city  gleich dem ersten
+
+% 1 1 0 01d3ad861896b043095e51bc13dc752d
+
+% 2 1 0 1d0acfafc9105c441b4698b9c21f5a5d
+
+% 0 1 0 04d4889f729b935811160c34c82e8023
+
+% 1 1 0 07bc61ecbe8d04140990f2cb2d99bfbf
+
+% 1 1 0 136d267ff733a60e0f6246170d49df5f
+
+% 2 1 0 1525a46c87e9e0571e7d21b8e7c42b7a
+
+% 0 1 0 08a86cbdc9b8cb0109ed8ce5b435ce67
+
+% 1 1 0 0cd6459499a6bd5203d659b3bcc1b6aa
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 0 1 0 1fa182648bd071dd0c8681741e6a9543
+
+% 1 1 0 0e161e5d9b1813fb05c190a624b012da
+
+@ 0 1 0 0fdad49b9e5916e01e57fd00be1f214e
++ [Pfade](../../soundness/modules/tel.md#paths) sagt, was eine Komponente eines Pfads sonst noch
++ auswählen kann.

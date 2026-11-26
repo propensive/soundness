@@ -1,0 +1,78 @@
+orthant 2 language
+
+@ 0 1 0 18e8a49e288914710f24ec0c5522b12e
++ # Um proxy ajusta uma resposta fazendo outra
+
+@ 0 3 0 18623f2d153fa53e0b9c544cc47a4a93
++ Um proxy fica entre um editor e um servidor de linguagem real, e pode alterar o que passa. Uma
++ resposta é decodificada para a mesma case class imutável que um servidor teria devolvido, e um
++ reescritor é uma função de um desses valores para o seguinte.
+
+% 0 1 0 12705ff5e291290d17fbc8389d59ef4a
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 2 0 0bf46e9ef5a3d70d09ab1fbf5b23831a
++   label Todo hover é marcado
++   highlight hover.copy  um novo Hover; o do servidor fica intacto
+
+% 1 1 0 058b92c9955b599a17dec989cc3897d2
+
+% 2 1 0 1c6724b948160c0f101f8f0c7dfcc985
+
+% 4 1 0 118de3dfcd0208e615da02ffd8135d43
+
+% 5 1 0 00e659e7beff06ad09837ad4f41b8067
+
+% 6 1 0 1a4815aced6e05ca19f4c7c40d1d7b4d
+
+% 1 1 0 17836eb43397ed8200560851afceb2ef
+
+@ 0 2 0 152adeb3337badd81a0651ba43f5e87a
++   label Dicas são filtradas dos diagnósticos
++   highlight _.filter  uma lista entra, uma lista sai
+
+% 1 1 0 10ade61b41a9dde019e23f0470089c81
+
+% 2 1 0 1dca71e945f204810bf65880d9f5335d
+
+% 4 1 0 0aca462b1066183a040746097ab41fff
+
+% 5 1 0 1b0e831e215de2530db889f8a930d35d
+
+% 6 1 0 1e1d4f299d0d53cd1582b6505574cbec
+
+% 8 1 0 042554aa335cb5c70f7053c0323b420a
+
+% 1 1 0 0ac7158317318e1c1e10711e8911b779
+
+@ 0 1 0 0de8031a556dc54f1b760579d989b40a
++   label As capabilities do servidor também são ajustadas
+
+% 0 1 0 0cb477585435e9bd123a020b7ac1c01e
+
+% 1 1 0 1a4a21cc525a2e0317ea5da8a3cce627
+
+% 2 1 0 0a3109388c1ed49c18c7b865f60d9142
+
+% 4 1 0 020f6166fd5dfa29199db3c0777e4ee5
+
+% 5 1 0 1f3c66937ba9c0831cff9dab6897eff5
+
+% 6 1 0 042dc38b98928c910622a67c6723cf5e
+
+% 8 1 0 0776b23f1a084dbf01f28b0d3e0ddf0a
+
+% 0 1 0 0b20bfe3ef89853e0ea8baaa9c4fa618
+
+% 0 1 0 18eafb32caed3dd50f976e787bd035ca
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 3 0 0cfbabcc7a85acee090a0587538b923b
++ O exemplo é compilado, e não é executado, já que um proxy inicia um servidor e conversa com um
++ editor. [Fazendo proxy de um servidor](../../soundness/modules/lsp.md#proxying-a-server) lista o que
++ pode ser reescrito, e [imutabilidade](../../philosophy/immutability.md) por que uma mudança é um
++ novo valor.

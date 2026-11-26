@@ -1,0 +1,63 @@
+orthant 2 language
+
+@ 0 1 0 12b56e6bc12bbacd0d965de7cec72616
++ # Eine Pause hat eine Einheit
+
+@ 0 3 0 0d7e2b56212b034b14354be1f961527d
++ `snooze` nimmt eine Dauer, und eine bloße Zahl ist keine. Als Nanosekunden gelesen, würde
++ `200L` fast sofort zurückkehren, als Millisekunden gelesen nicht; deshalb liest niemand sie,
++ bevor eine Einheit genannt ist.
+
+% 0 1 0 12705ff5e291290d17fbc8389d59ef4a
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 14b2c60a4989c41800331e9bb726ce2a
++   label Zweihundert wovon?
+
+% 0 1 0 1477c34ff41c7c99183443e1d3238ae1
+
+% 1 1 0 0960c596329e4eb20a0b442aaa85c43a
+
+% 2 1 0 1eed81ddf38f946017f44fc7470fe0b9
+
+% 2 1 0 0ede01f7238197530a0d1117124a9426
+
+% 1 1 0 13d5e8d67bca8d361a7ceee736b23811
+
+@ 0 1 0 18f1125c46e904161a4294d795cee144
++   label Eine Zeitgröße
+
+% 0 1 0 18bee4a11fdcaa7e1c445b8c432ac680
+
+% 1 1 0 1d1fa4b645859f2019f94c142e5531f5
+
+% 2 1 0 155703ea068e330800551ba3a51042f5
+
+% 0 1 0 128adb4a8d74151f0fb812200ebb857f
+
+% 1 1 0 07e2e52dc3d136fa112ef29fd6bbeec9
+
+@ 0 1 0 1ec9340afa6b64f7018c541583c720e1
++   label Oder eine namentlich gewählte Lesart einer bloßen Zahl
+
+% 0 1 0 0ab1e428714b71241ecca45ba79c3554
+
+% 1 1 0 14c9808ba1f94b3107bb8dfd548117c3
+
+% 2 1 0 0c4cd140b9efd50b14283ded03e97e26
+
+% 0 1 0 0b78a915063968591f7338f44c86803a
+
+% 2 1 0 100442e103f5c6131f46d9cfa197c728
+
+% 0 1 0 18eafb32caed3dd50f976e787bd035ca
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 3 0 07b77dbf9d499b2c0172c505b3eff407
++ [Einheiten](../../soundness/modules/concurrency.md#units) führt die Lesarten eines `Long` auf,
++ und [Unmögliche Zustände](../../philosophy/impossible-states.md) erklärt, warum ein mehrdeutiger
++ Wert ausgeschlossen wird.

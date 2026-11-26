@@ -1,0 +1,82 @@
+orthant 2 language
+
+@ 0 1 0 0de6d2f160a85bf11daf1bfba2430380
++ # Une formule, écrite comme l'écrit un physicien
+
+@ 0 2 0 1b4ff754eefe3b3815040ce9db1cc275
++ Une quantité est un nombre multiplié par une unité, et les unités se multiplient et se divisent
++ comme les nombres qui les accompagnent. Le déplacement d'un corps en chute, `s = ut + ½at²`,
++ s'écrit tel quel.
+
+% 2 1 0 1e65c715c01887e80d5c9eddf01c9e83
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 1c9963f4d6522b341523ec28b712b422
++   label Une vitesse, une durée et une accélération
+
+% 1 1 0 1ce2978bdc01f12e16338a575604d266
+
+% 2 1 0 0f8f09f6b4a02aea1f132e1b22d80391
+
+% 3 1 0 0c2552561ef754c61b9d0f82af3f5964
+
+% 4 1 0 1bb6362d42d278aa09f0b6cae4a6c31a
+
+% 1 1 0 103397a4762e695b03c831bcb591a000
+
+@ 0 2 0 03795ed003d1d90a12d440597797f4aa
++   label Le premier terme, une distance
++   highlight u*t  la vitesse multipliée par la durée
+
+% 1 1 0 06901e5cd790d2061c949b98c0f5558e
+
+% 2 1 0 066112d991650d2c1e85e2f9a6d57a32
+
+% 3 1 0 0390b648e56864260ee9223df3acff52
+
+% 4 1 0 06563d7e4a303de8005afc201808a72d
+
+% 0 1 0 10ba65f2151ad28e1a04bfb7a8433755
+
+% 1 1 0 1d166f6c875dc12d06808a276b5aaf76
+
+@ 0 2 0 1ca0f409cb2335720254287dbcf3753c
++   label Le second terme, une distance lui aussi
++   highlight 0.5*a*t*t  l'accélération multipliée par le carré de la durée
+
+% 1 1 0 033f7b5f187d1c1b0dc066ca16189539
+
+% 2 1 0 045ea3a6b521044e0a3cd8e1d1d119c3
+
+% 3 1 0 09674d87cee9f85406060b1b5ebabed9
+
+% 4 1 0 05173320629018d900680ade7a53cbdd
+
+% 0 1 0 1c63cb17c6fdd6d71a90b4759cc2b183
+
+% 1 1 0 185c027af7c2238514cb5f74a26cd234
+
+% 1 1 0 136d267ff733a60e0f6246170d49df5f
+
+% 2 1 0 1525a46c87e9e0571e7d21b8e7c42b7a
+
+% 0 1 0 08a86cbdc9b8cb0109ed8ce5b435ce67
+
+% 1 1 0 0cd6459499a6bd5203d659b3bcc1b6aa
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 0 1 0 1ff46eadb86ffabc103c1dc6d8e7c8b4
+
+% 0 1 0 1cd1eb1eee02c5821218ab2576550e85
+
+% 1 1 0 006160f0de3903df0490ce37b07af26b
+
+@ 0 3 0 19799905a8935c490e66642e8f68c9c8
++ La somme compile parce que les deux termes sont des longueurs.
++ [Les calculs](../../soundness/modules/quantities.md#calculations) écrit la formule sous forme de
++ méthode, et [la prose élégante](../../philosophy/elegant-prose.md) explique pourquoi la notation
++ compte.

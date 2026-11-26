@@ -1,0 +1,57 @@
+orthant 2 language
+
+@ 0 1 0 01c9eb2af7c71d49072d07f464bbc163
++ # リテラルと照合される名前
+
+@ 0 3 0 1dd731184100af46052c2b60e024f01e
++ `n"…"` 記法は、式であると同時にパターンでもある。そのリテラルが比較対象の名前の規則を破るために
++ 決して一致しえないケースは、コードのコンパイル時に拒否される。
+
+% 0 1 0 12705ff5e291290d17fbc8389d59ef4a
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 2 0 0c4401e6c0c6804c03e261fa1f5428c2
++   label パターンとしての名前
++   highlight n"release"  Tag の規則と照合される
+
+% 1 1 0 1056af2da6585bbf07c5cda52cad7dd9
+
+% 2 1 0 1a307b067e387c2a136a1215433d76d8
+
+% 4 1 0 1ac3ee7b39c7308a021c0554cdd222d0
+
+% 6 1 0 0b8efa061f42661d162e3a91882da57a
+
+% 0 1 0 1a8c2342abfd133712758aa7c8801e8a
+
+% 0 1 0 07fceef90fb09d7702798b4937d465bb
+
+% 1 1 0 0a36730ba908fd7b0f684399a3220787
+
+@ 0 1 0 1c6d3e0713a7c3c70241854f27303005
++   label どのタグも一致しえないパターン
+
+% 0 1 0 1477c34ff41c7c99183443e1d3238ae1
+
+% 1 1 0 0960c596329e4eb20a0b442aaa85c43a
+
+% 2 1 0 0e2cb3e0424ca734006dc040ff40c19c
+
+% 4 1 0 1e92cecc42722b9d1affb0fd85d1ee5d
+
+% 6 1 0 1085bfa770d8eacd157ba0e2c5128863
+
+% 0 1 0 1100bd4906af4b730a50c54f0c31d4a6
+
+% 0 1 0 1f4541c5f46c93cc0726a0a2dca8d97e
+
+% 0 1 0 18eafb32caed3dd50f976e787bd035ca
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 2 0 0d0def2020e8168b1a73c0bd5fa863ea
++ [名前の書き方](../../soundness/modules/names.md#writing-a-name)は、パターンが写し取るリテラルを
++ 説明する。

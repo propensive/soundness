@@ -1,0 +1,55 @@
+orthant 2 language
+
+@ 0 1 0 0c01b353cae3428d124f5b7eea20da1b
++ # 文本不是标识符
+
+@ 0 3 0 0e4a1e460eb238e2180d17c0e74c79b9
++ 接受 `Uuid` 的方法不能接受文本，无论这段文本看起来多么像标识符。把文本变为标识符的检查必须先进行，因此该方法永远不会遇到格式错误的标识符。
+
+% 2 1 0 089470df9e4df684062cc8367c8c7adc
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 037bf2a2c9ec9a131d9a466ed47ef233
++   label 在需要标识符的地方使用文本
+
+% 0 1 0 1477c34ff41c7c99183443e1d3238ae1
+
+% 1 1 0 0960c596329e4eb20a0b442aaa85c43a
+
+% 2 1 0 10ae28a9f36ae38c1f030baad53ef940
+
+% 0 1 0 00a703b515d2f92f02b37a60a48e79b1
+
+% 1 1 0 0d4e2d03cce43edb1ce2aafd6db3d0a1
+
+@ 0 2 0 0c4eb51e67b685dd0745abd71127c45d
++   label 在代码编译时检查的标识符
++   highlight uuid  一个词，编译器会读取其中的数字
+
+% 1 1 0 178b508ad1b9b0fa13340e8a077e7830
+
+% 2 1 0 08b64a5e45af67db09efe89f51f874b5
+
+% 0 1 0 1bacff535c03e0831f6d51dc5d747564
+
+% 1 1 0 06953b6c3dfc97d20eb7dda098265eb2
+
+% 1 1 0 136d267ff733a60e0f6246170d49df5f
+
+% 2 1 0 1525a46c87e9e0571e7d21b8e7c42b7a
+
+% 0 1 0 08a86cbdc9b8cb0109ed8ce5b435ce67
+
+% 1 1 0 0cd6459499a6bd5203d659b3bcc1b6aa
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 0 1 0 1326920c417a895b0ccb10833b9ae944
+
+% 1 1 0 1709bb076f772903034a5539fd9960c5
+
+@ 0 2 0 0f137c5d879998621202287ec2d20cec
++ [关于 UUID](../../soundness/modules/uuid.md#on-uuids)解释了为何字符串不是存放 UUID 的可靠之处，[不可能状态](../../philosophy/impossible-states.md)则阐述了这一原则。

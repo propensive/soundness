@@ -1,0 +1,56 @@
+orthant 2 language
+
+@ 0 1 0 1d33e30799be897e098f25aa06e4af4b
++ # Un'etichetta si colloca solo all'interno di una disposizione
+
+@ 0 3 0 09aa6906018bd308039eed2a09499d33
++ Dove va un'etichetta dipende da tutte le altre etichette, quindi non se ne può collocare una da
++ sola. `position` ha bisogno della disposizione che `arrange` apre, e al di fuori di quel blocco non
++ c'è nulla a cui chiedere.
+
+% 2 1 0 09f3524740e11d691cd9f0c1275fb422
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 08e592652a1eb30717b4d80423153584
++   label Un'etichetta senza disposizione
+
+% 0 1 0 1477c34ff41c7c99183443e1d3238ae1
+
+% 1 1 0 0960c596329e4eb20a0b442aaa85c43a
+
+% 0 1 0 195482748459863b0695a7a79ba3f8a7
+
+% 1 1 0 166326636b90c7c2075fccb8954026bf
+
+@ 0 2 0 0b802f3e0ef7ded41dca1f1862e58c69
++   label Un'etichetta all'interno di una disposizione
++   highlight arrange:  le etichette richieste nel suo corpo vengono disposte insieme
+
+% 1 1 0 154985c55c6b2351016223de4e538543
+
+% 0 1 0 1ff84f177bb5793f039b7b2c1d81dbc3
+
+% 0 1 0 14b0e50b74458ac00e8b937c9ca08bca
+
+% 1 1 0 072b205a01af1b0004b82b5ff52ca372
+
+% 1 1 0 136d267ff733a60e0f6246170d49df5f
+
+% 2 1 0 1525a46c87e9e0571e7d21b8e7c42b7a
+
+% 0 1 0 08a86cbdc9b8cb0109ed8ce5b435ce67
+
+% 1 1 0 0cd6459499a6bd5203d659b3bcc1b6aa
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 0 1 0 0340ecb5ab0ab0fd0652e09fcfedc3eb
+
+% 1 1 0 016fe3232e9e8f3c1549b3a95270585c
+
+@ 0 2 0 0f59813f371ba173124d64d3f1d6a9df
++ [Sulla collocazione](../../soundness/modules/label-placement.md#on-placement) descrive le due
++ esecuzioni del blocco, e [gli ambiti delimitati](../../philosophy/delimited-scopes.md) lo schema.

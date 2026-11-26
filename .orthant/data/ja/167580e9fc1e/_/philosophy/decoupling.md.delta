@@ -1,0 +1,6 @@
+orthant 2 language
+
+@ 0 7 0 060bbc9e119dc3320a83454349a15995
++ `FilesystemBackend` は stat、open、read、write、list、link、delete を集めたものであり、[ファイルシステム](/doc/soundness/modules/filesystem.md)の API のすべてはそれらによって定義されている。
++ `java.nio` による実装も、`wasi:filesystem` の上の WASI による実装も、将来のどの実装も交換可能であり、ユーザーに向けた API はどのプラットフォームにも全く言及しない。
++ 同じ形が、[ソケット](/doc/soundness/modules/sockets.md)に `SocketBackend` を、[圧縮](/doc/soundness/modules/compression.md)にプラットフォームごとの DEFLATE エンジンを、[画像](/doc/soundness/modules/images.md)にそのコーデックを与えている。

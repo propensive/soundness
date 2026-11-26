@@ -1,0 +1,48 @@
+orthant 2 language
+
+@ 0 1 0 07e43f7f4e2ad9440f4882e405e45986
++ # 程序看到的是哪个环境
+
+@ 0 3 0 1fa0e5516d4d0c4503bc4ecabed41368
++ 读取变量所用的环境由导入或 given 选择。真实的环境、用于测试的空环境，以及专门编写的环境，对读取它们的代码来说都是一样的。
+
+% 0 1 0 12705ff5e291290d17fbc8389d59ef4a
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+@ 0 2 0 1b7d63f9982fd78101718821f5b0bbe6
++ alternative 真实的环境
++   highlight javaBaseEnvironment  JVM 自己的环境
+
+% 1 1 0 10bd996da142eba81f6a64adc83a5d29
+
+% 0 1 0 1127b14c14fb4ec81dbeb7f7a40648e7
+
+% 2 1 0 100604e7c05747521a987869837644c7
+
+@ 0 2 0 002314ed40a458740702ae92e880c9da
++ alternative 完全没有环境
++   highlight emptyEnvironment  每个变量都未设置
+
+% 1 1 0 056228ae8da89e5500733f64678af75d
+
+% 0 1 0 1a43306476ff5b5a0caac56334944a1d
+
+% 2 1 0 1daf50599da9e678173d7e78ea896bca
+
+@ 0 2 0 039f54f9e0eb8d7215873ea6674a19dc
++ alternative 为测试编写的环境
++   highlight given..Environment  一个以名称为参数的函数
+
+% 1 1 0 1ce28a75f88af5de06a3bd6fd499cd51
+
+% 0 1 0 19d57f9b0582e79b066d21050480e571
+
+% 2 1 0 1ee1635ec3daf19b0b2ed5dfa01c2d3a
+
+% 0 1 0 18eafb32caed3dd50f976e787bd035ca
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 4 0 19f3eef32dfe4f1b1cb26d902d9b8ec5
++ 此示例只编译，不运行，因为第一个标签页会读取它所运行的机器。[为代码块覆盖](../../soundness/modules/environment.md#overriding-for-a-block)给出了替换环境的理由，[声明式上下文](../../philosophy/declarative-context.md)则阐述了其中的原则。

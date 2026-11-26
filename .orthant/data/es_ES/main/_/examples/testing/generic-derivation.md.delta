@@ -1,0 +1,63 @@
+orthant 2 language
+
+@ 0 1 0 06bd9ab98f60407c03368b2099808b75
++ # Una enumeración es un eje
+
+@ 0 3 0 08a97fd523de1d1c0c04662fbc02110e
++ Una prueba extendida sobre un eje se ejecuta una vez por cada valor, y cada veredicto se registra
++ bajo ese valor. Los valores pueden enumerarse, pero para una enumeración no hay nada que enumerar:
++ su objeto compañero es el eje, y un caso que se le añade es un caso que se prueba.
+
+% 0 1 0 12705ff5e291290d17fbc8389d59ef4a
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 14bbe279effaef0308fe3f1c42f09b7c
++   label Valores, enumerados
+
+% 0 1 0 0c7952de6370096a11df1c27771b0f8f
+
+% 1 1 0 16a8832ff3b980020a44a3b76e729411
+
+% 1 1 0 049d1bc4a13b3b911acca99d2268e3c6
+
+% 2 1 0 161cf2ddd6237c3919d475604febdbb5
+
+% 0 1 0 0116d1e1088a94b41b8486515dd9a839
+
+% 0 1 0 17c29d8c4400e6a61cd830be4eaaaaa3
+
+% 0 1 0 179d60d6d7f275c21d74ad136804c530
+
+% 1 1 0 18db07d787fd0c7e11f34014cdbc2842
+
+@ 0 2 0 00efbc93f91748ff19a4ded85fa5e6ac
++   label Todos los casos de una enumeración
++   highlight over(Genre)  el objeto compañero, sin ninguna lista de casos
+
+% 1 1 0 0319cb6f8d971dde05fb98584de1d26a
+
+% 0 1 0 01291941c519e1cc08ed0402368c2bd7
+
+% 0 1 0 1ca71a30243db4c91987b20735353126
+
+% 1 1 0 0972a8e257e835271f1693a7fdbd4c22
+
+% 2 1 0 03cc807baff2949d0f48829d01cf0e3a
+
+% 0 1 0 04a550e9ec600c720013bd2838e70ed7
+
+% 0 1 0 19d9216ecc1ce4a4081850f0e158b1db
+
+% 0 1 0 04ffb43113141d6b15c20c6d2d812580
+
+% 0 1 0 18eafb32caed3dd50f976e787bd035ca
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 3 0 0b1089a44e0c0b9b1da89f01d6b1e5c4
++ El ejemplo se compila, pero no se ejecuta, porque una prueba la ejecuta un ejecutor de pruebas.
++ [Extender una prueba sobre ejes](../../soundness/modules/testing.md#spreading-a-test-over-axes)
++ continúa con cuadrículas de dos ejes.

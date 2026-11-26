@@ -1,0 +1,60 @@
+orthant 2 language
+
+@ 0 1 0 01acc6caa6932efe088c0fe716e69bcb
++ # Una respuesta puede rechazarse
+
+@ 0 3 0 017145126dbb78791fcfa908333717c8
++ `WebAuthn.register` hace todas las comprobaciones que el estándar exige a la respuesta de un
++ navegador, y cualquiera de ellas puede fallar. El rechazo es un `WebAuthn.Error`, y un método que
++ comprueba una respuesta o bien lo gestiona o bien lo nombra en su propio tipo.
+
+% 0 1 0 12705ff5e291290d17fbc8389d59ef4a
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 0bee1772299d4bab02a2e057156f584e
++   label No se tiene en cuenta el rechazo
+
+% 0 1 0 1477c34ff41c7c99183443e1d3238ae1
+
+% 1 1 0 0960c596329e4eb20a0b442aaa85c43a
+
+% 2 1 0 0f5a48eae35563981629f68a3ea05808
+
+% 4 1 0 1f12e241b80fb5371d3c31005d809278
+
+% 5 1 0 080fef24c19515441a69ff3eda712fea
+
+% 0 1 0 015e2e16c84b363a129bdaf6254d61ad
+
+% 1 1 0 14995e3c84bf1d3d1bbe786677ccaef9
+
+% 1 1 0 1c55b0f8afa938c70d600dc1bdd9326b
+
+@ 0 2 0 078ec7d1c33d86ce13234f17a1727842
++   label Se declara el rechazo
++   highlight raises..Error  lo que un llamante debe gestionar
+
+% 1 1 0 1908e4868b7160bf18af3f42d77237a2
+
+% 2 1 0 1bca2a876c31aef31a27c6c322387a6b
+
+% 4 1 0 072ad120db1c0cab1e43f8874c4603c1
+
+% 5 1 0 044390e1ece4c41818397a41ff2a046d
+
+% 0 1 0 19fc93f45e1ccc0e195430b3c8caa497
+
+% 0 1 0 1c01ee12cab9040f0e00ef5f41d098cd
+
+% 1 1 0 16c2c2b1f670dd010012e0d1acd4c8d4
+
+% 0 1 0 18eafb32caed3dd50f976e787bd035ca
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 2 0 02020c05b91f07c018ea2cf8031610b8
++ [Registro](../../soundness/modules/webauthn.md#registration) describe lo que se comprueba, y
++ [gestión de errores](../../philosophy/error-handling.md), los motivos para declararlo.

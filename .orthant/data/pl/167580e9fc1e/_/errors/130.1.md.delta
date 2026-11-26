@@ -1,0 +1,6 @@
+orthant 2 language
+
+@ 0 3 0 0e4ca06698293693048feb52cbda8aab
++ Należy sprawdzić, czy element i jego atrybuty należą do tych, które modeluje Savagery. SVG
++ wytworzone przez program do rysowania może zawierać konstrukcje spoza tego podzbioru; ścieżką
++ rezerwową jest odczytanie go jako zwykłego [XML](/doc/soundness/modules/xml.md).

@@ -1,0 +1,11 @@
+orthant 2 release
+
+@ 0 1 0 18bb9bce817f9a0d0c1ce47e3a55ab51
++ break it listed in `doc/standards/naming.md`.
+
+@ 0 2 0 1335af9ef1610c8b19db1e769086e625
++ belong in `doc/standards/capabilities.md`, with the tag vocabulary `safety-2` relies on and the
++ one sanctioned hatch form for each tag, and a pointer from `doc/philosophy/capture-checking.md`.
+
+@ 0 1 0 10e3a9a4c4b1ed470e0b516239a7a316
++ Done when: `doc/standards/capabilities.md` exists, defines every tag the census recognises, and

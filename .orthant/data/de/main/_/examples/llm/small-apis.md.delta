@@ -1,0 +1,95 @@
+orthant 2 language
+
+@ 0 1 0 071b10c939ae79670a64bde9e9b3ea23
++ # Ein Gespräch, gleich bei welchem Provider
+
+@ 0 3 0 10e57bdd27c5b62310843e7a399b30a5
++ Die API jedes Providers ist ein anderer JSON-Dialekt. Das Vokabular hier ist eines: Ein Provider ist
++ ein Wert, `session` öffnet darauf ein Gespräch, und `llm.ask` gibt eine `Llm.Reply` zurück. Den
++ Provider zu wechseln ändert eine Zeile.
+
+% 0 1 0 12705ff5e291290d17fbc8389d59ef4a
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 0 1 0 15a944ddc3024abf1ba41195e08945cf
+
+@ 0 1 0 00de1ff76772f5691d1d8535000516c3
++   highlight Anthropic  die Messages API
+
+% 1 1 0 0a824863021ca7b00389329246764412
+
+% 2 1 0 09fa8d33a76c69790191240f5d57d269
+
+% 3 1 0 1a8dddb50012759e04c15dd1f856f240
+
+% 4 1 0 164dfcc0012e73680ac1ab8e1fee653f
+
+% 0 1 0 1da120cf3c18856b1bd4aaba1842c874
+
+% 2 1 0 0ac05fbeb5d8abe710e6f6163e097654
+
+% 3 1 0 135cbae4aaf0e7d6185ff35ef275f108
+
+% 0 1 0 06a3af1363e636ed0098a62bf47da4b0
+
+% 0 1 0 05bcdd96c3fc6543124bccb1ced9aa1f
+
+% 1 1 0 1f9420b321cf6ffc140c1e882bf7d2c0
+
+% 2 1 0 109c7d99c7a2b1c3096c204a1efcc7cb
+
+% 3 1 0 023161332a1bd3e61af7e2fbee9a9ab8
+
+% 4 1 0 06bf4679ef74a2f405db7fb16b01fa6b
+
+% 0 1 0 1430bc6621ccb85d0d51814962d82226
+
+% 2 1 0 0ecca72055a1335503c20b549409da02
+
+% 3 1 0 00dc851eb1c58ea81455c2a4ce63d8b7
+
+% 0 1 0 1b3f1912c10d8a14174dc24ba89145e9
+
+% 0 1 0 1324a18cf56aa55c14e4f130e210423b
+
+% 1 1 0 1974a4730039abee067c33bdb81a3b36
+
+% 2 1 0 08fe9da937a381ad0407da1ff35ef74a
+
+% 3 1 0 006ff34e77b30f6e05c503370013f978
+
+% 4 1 0 0c9a98d1cf7537960501cbeb2e519036
+
+% 0 1 0 055720ad0cfaded61b9da3fe09d1c53c
+
+% 2 1 0 152023282f06ef3e0414d86771a910e4
+
+% 3 1 0 0abb4c6a8b7aa56e0e0a3b5b94f6e2a1
+
+@ 0 2 0 1b5c3eb0fd5dbecf12ea5b90e32ed89d
++ alternative Ein lokaler Server
++   highlight OpenAI.compatible  jeder Server, der den OpenAI-Dialekt spricht
+
+% 1 1 0 0a1976f4d498889e15eee3dc36dc21cd
+
+% 2 1 0 19fa962aa8ddbd4d1a401119aaba4072
+
+% 3 1 0 1ccd98d76c0e25c104acf9c49e6279d8
+
+% 4 1 0 1e0ca9d3c86f011f1131724670d58603
+
+% 0 1 0 1565e6143fb426561714ad3eb66fb79e
+
+% 2 1 0 12344125b2d4c0c3138ef38d2e776143
+
+% 3 1 0 17db9bf5ac3fe46b0b6825151a0f32c7
+
+% 0 1 0 18eafb32caed3dd50f976e787bd035ca
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 3 0 1db09d4efc3800420d7a60b814aa4e94
++ Das Beispiel wird kompiliert, aber nicht ausgeführt, da es einen Provider über das Netzwerk aufrufen
++ würde. [Provider und Modelle](../../soundness/modules/llm.md#providers-and-models) beschreibt die
++ Werte, und [Kleine APIs](../../philosophy/small-apis.md), warum das Vokabular geteilt wird.

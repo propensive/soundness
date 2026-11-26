@@ -1,0 +1,72 @@
+orthant 2 language
+
+@ 0 1 0 190cedba2d69a3b403d6c9e3518ff692
++ # セルの中の装飾付きテキスト
+
+@ 0 3 0 1d43d560e1fc14b00f797d285d8ecc40
++ 表は装飾付きテキストについて知らず、装飾付きテキストも表について知らない。見出しを `e"…"` で書いた列は装飾付きのセルの列であり、
++ レイアウトはエスケープコードではなく、目に見えるものを測る。
+
+% 2 1 0 062d30768872ab1515419ef50424badc
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 1ec1a5b8cb74f24e0d4db1742a4c690d
++   label 装飾のない見出し、装飾のないセル
+
+% 1 1 0 1f8223f341f217d00c2a1c3976ff4d37
+
+% 2 1 0 03b7f9e0457bf8b7006dd9e95ab42d7e
+
+% 3 1 0 1f15108a5f2981ae1f92e9486176074c
+
+% 5 1 0 0ca9d060d983b8df1acc37c10ee3fee6
+
+% 7 1 0 1fac0a51eb1022d51b1a04c6c03c1b5a
+
+% 0 1 0 075e2dd9bd4c4f0115b0edee7e7856c0
+
+% 1 1 0 12e60c692cac72e807aa7bb94cf7ffc1
+
+@ 0 3 0 079cab1fe61095301e4485947c0c64d6
++   label 装飾付きの見出し、装飾付きのセル
++   highlight e"$Bold(Role)"  見出しが列の型を決める
++   highlight e"$Italic(${role.play})"  独自の装飾を持つセル
+
+% 1 1 0 1455c2904e8465b21f707b046c8642db
+
+% 2 1 0 0b9429fcb4423f6719ad52da99d39be8
+
+% 3 1 0 0991d46b3950a9490340a0847b88a22e
+
+% 5 1 0 1fd8097f960ac4f900b5f56e16e1e3a5
+
+% 7 1 0 1ef08ad3cc094abb074e0ec3a9a8b555
+
+% 0 1 0 094f22e241d46c6e073d33067310d5da
+
+% 0 1 0 012e064083988fd90675eb8161766a5a
+
+% 0 1 0 1964b783f909390115a5f58cd709830f
+
+% 1 1 0 1fa931e4f064407e120347ab8882d91b
+
+% 1 1 0 136d267ff733a60e0f6246170d49df5f
+
+% 2 1 0 1525a46c87e9e0571e7d21b8e7c42b7a
+
+% 0 1 0 08a86cbdc9b8cb0109ed8ce5b435ce67
+
+% 1 1 0 0cd6459499a6bd5203d659b3bcc1b6aa
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 0 1 0 0ae56de05da1510b025faaad1cd05363
+
+% 1 1 0 086a22e0796f17a61d7b7fb8333934e0
+
+@ 0 2 0 18c6e51373e7bee9190c9f4b7ec5431f
++ [明示的な列](../../soundness/modules/tables.md#explicit-columns)が見出しが型を定める仕組みを、
++ [端末](../../soundness/modules/terminal.md#styled-text)が装飾を説明する。

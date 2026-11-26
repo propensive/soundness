@@ -1,0 +1,72 @@
+orthant 2 language
+
+@ 0 1 0 172467c71624918b03704adcc4ab58f7
++ # L'assenza, trattata dove conta
+
+@ 0 2 0 12b93a14651ba0fb0bb339b993db23da
++ Un valore opzionale non si può usare come uno semplice finché non si è risposto al caso assente.
++ `let` agisce su un valore presente, e `or` dice che cosa prende il posto di uno che non lo è.
+
+% 0 1 0 12705ff5e291290d17fbc8389d59ef4a
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 14fb8722e359e7a3001ea781801b9a03
++   label Un valore opzionale usato come uno semplice
+
+% 0 1 0 1477c34ff41c7c99183443e1d3238ae1
+
+% 1 1 0 0960c596329e4eb20a0b442aaa85c43a
+
+% 2 1 0 03e049962d08255c0424e79ff53f04d7
+
+% 0 1 0 13ad2194b28748a209312ca7ab20b48f
+
+% 1 1 0 06be6881c406f60a02ec8c7f47f59a44
+
+@ 0 2 0 0afdd153f078c0b507bb6de6fc01c6bf
++   label Un ripiego
++   highlight or  il valore da usare in sua assenza
+
+% 0 1 0 1accf43fe927975f1dc8da9a374d03c0
+
+% 1 1 0 1355c71f5d40d7ac08d3588c7243e073
+
+% 2 1 0 1ddaacda0272b8821a1dd52c3e5e2681
+
+% 0 1 0 0690b43cf24b1d55064f7f7c3ea63c51
+
+% 1 1 0 0a9ad0385db610be09d803401d21503d
+
+@ 0 2 0 158222abb03fcc780957cc541464717a
++   label Prima una modifica a un valore presente
++   highlight let(_.upper)  si applica solo a un valore presente
+
+% 1 1 0 0a20416d72d1ba43123b096c100686a1
+
+% 2 1 0 1caf5fd5d82b1c671b52a824045ada3e
+
+% 0 1 0 0b9c767a2c1a4a2d117eb74d57e22f12
+
+% 1 1 0 0a2d9103af33b17c06d4e2dca543436d
+
+@ 0 2 0 1a75673a97109c83069a974d32774550
++   label Entrambi insieme
++   highlight lay(t"untitled")(_.upper)  il ripiego, poi la funzione
+
+% 1 1 0 1d861b269b42e79b00b3868242b45b37
+
+% 2 1 0 1b148d25f30dac211957bf9a6f766faa
+
+% 0 1 0 10dcb349970276a112391534dc12ab61
+
+% 0 1 0 18eafb32caed3dd50f976e787bd035ca
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 3 0 18914e6bb55566e51ed24c9b1163d54b
++ [Fornire un ripiego](../../soundness/modules/optional-values.md#supplying-a-fallback) e
++ [Trasformare](../../soundness/modules/optional-values.md#transforming) descrivono ciascuno, e
++ l'[opzionalità](../../philosophy/optionality.md) le ragioni.

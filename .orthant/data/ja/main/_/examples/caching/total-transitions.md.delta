@@ -1,0 +1,94 @@
+orthant 2 language
+
+@ 0 1 0 04cf84a896591dc203597c82f3f64950
++ # 外れることのない検索
+
+@ 0 3 0 15581575ee65ce951d107421b65bdb5e
++ `LruCache` はどのキーを追い出していてもおかしくないので、保持しているものを返すだけの検索は、
++ 一部のキーについて失敗することになる。そのような検索はない。読み取りはキーと、その値を作る計算を指定し、
++ 計算はキーがないときにだけ実行される。
+
+% 2 1 0 14b8b2cdaf7ba3301840e0072c5b50d9
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 127f8b2282f28f8e1cc88296bcc098f4
++   label 四行のキャッシュ
+
+% 1 1 0 0c8af24045d17ea21fe5ce4929a32975
+
+% 2 1 0 0e1ade5e38127eab0192cfa073505c8b
+
+% 4 1 0 174392677523afa70e554fd1c010af0b
+
+% 5 1 0 03a3b60ac1073ff30cf9ef4991911ab8
+
+% 6 1 0 0c8e0e1a8409c17a1c9453ca2817287e
+
+% 8 1 0 0f0edca4399d19d60c6b9ed5b894bc5f
+
+% 1 1 0 02678f307cb964140a92bb6445e9e947
+
+@ 0 2 0 17a93fc6f801f68710820b470b4fa494
++   label 埋め方を添えた読み取り
++   highlight (recite(1))  名前渡しで渡される
+
+% 1 1 0 1dd6f5aea56d69ba0d260a4b96e7409a
+
+% 2 1 0 0b8c182cdaebb902029e6b95ea143bba
+
+% 4 1 0 1338471b4334a82f1e7239c099375a26
+
+% 5 1 0 099ed54cca275b0f03208b7fff3bcbf0
+
+% 6 1 0 17fbbd884ab6ffe60ac8c33d36ffc938
+
+% 8 1 0 097212df4fa1fbe319bca9e18ee75487
+
+% 9 1 0 1bbf47e44c6595490cfa473c3a29baa6
+
+% 1 1 0 1c4699140eb1931b098db5b639d14adc
+
+@ 0 2 0 0ae0f67b8e75ede80cfefda2ed0ee678
++   label 再び同じ読み取り
++   highlight again  すでに保持しているので、何も朗唱されない
+
+% 1 1 0 05d0b4790ca8abe60f1e3ababddb5a66
+
+% 2 1 0 0b172b9495e1bd6103ef9b16771ac862
+
+% 4 1 0 1b5c9d8c2a8953ad0461a537ec84c39d
+
+% 5 1 0 001424685a2bf174046a8fe24b1d139b
+
+% 6 1 0 157a74fc9161b9c00ff351afa2847a54
+
+% 8 1 0 0bc1239e73ea36340269782cc88e0ecf
+
+% 9 1 0 1135967a3a29c8310c6f8e697bb738a9
+
+% 0 1 0 1c14ce8c25fb4e9809899f82a34bc5dd
+
+% 1 1 0 0bf0d820e9d15cf30e3e3962931aa3ec
+
+% 1 1 0 136d267ff733a60e0f6246170d49df5f
+
+% 2 1 0 1525a46c87e9e0571e7d21b8e7c42b7a
+
+% 0 1 0 08a86cbdc9b8cb0109ed8ce5b435ce67
+
+% 1 1 0 0cd6459499a6bd5203d659b3bcc1b6aa
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 0 1 0 04283b017eb2547519fec0676bac27eb
+
+% 0 1 0 1eba9a418a4764ec0d06ca7921d04407
+
+% 1 1 0 0f6f57e2c6caa0fa004382d2a320eedf
+
+@ 0 3 0 1fe7e46b93f4dd6f1736c2e144d87c62
++ どちらの読み取りも `Text` を返し、台詞は一度だけ朗唱された。[LRU キャッシュ](../../soundness/modules/caching.md#an-lru-cache)が追い出しを、
++ [全域的な遷移](../../philosophy/total-transitions.md)がその原則を示す。

@@ -1,0 +1,11 @@
+orthant 2 language
+
+@ 0 11 0 1f902bd79280361b10ba58acbbd8d7cb
++       错误由三个数字标识，它们构成其 bolt 代码。
++       `module` 是错误所在库的编号，记录在 `doc/errors` 中的 `bolt.tel` 里；`number` 是该错误在库内自己的编号，即编写该错误类型时下一个空闲的编号，且从不复用（已退役的编号留在注册表中，并加以标记）；`variant` 是错误原因的编号——即其 `Reason` 分支（一个扩展 `Clarification` 的枚举）的 `number`——若该错误没有原因则为 0。
++       错误在 `doc/errors/<module>.<number>.md` 中有文档，说明其起因和常见的补救办法，因此用户报告中的 `↯/s.25.1` 可以被查到，而不必猜测。
++       以 `Error(message)` 编写的错误的 `module = 0`：没有代码，`getMessage` 改为以其组件作为前缀。
++       该代码呈现在 `#labelled`、`getMessage` 以及编译时 `halt` 的 `[↯/s.25.1.2]` 前缀中。
+
+@ 0 3 0 18479486cd81994d11e7509da0fbbecc
++       Soundness 每个代码含义的记录是 `doc/errors` 中的 `bolt.tel`，[bolt](https://github.com/propensive/bolt) 仓库中的代码索引指名了它。

@@ -1,0 +1,56 @@
+orthant 2 language
+
+@ 0 1 0 0fb68b30b532eb5a13536a3b80b886b5
++ # Ein Dokument oder eine Folge von Inline-Inhalt
+
+@ 0 3 0 09101d63829fd7cf1ffd0dcb5620a623
++ `Markdown of Layout` ist ein ganzes Dokument aus Blöcken, und `Markdown of Prose` ist eine Folge
++ von Inline-Inhalt. Das Wort nach `of` ist Teil des Typs, daher wird das eine nicht akzeptiert, wo
++ das andere verlangt wird.
+
+% 0 1 0 12705ff5e291290d17fbc8389d59ef4a
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 2 0 0df985d3e30b7aa5147d37003f885308
++   label Ein Dokument aus Blöcken
++   highlight Markdown..Layout  Überschriften, Absätze, Listen
+
+% 1 1 0 10c2af3785d453f505b601814d984b94
+
+% 2 1 0 141ccaccb30c650e1642e96954de1c32
+
+% 1 1 0 1abd64b9202431e518ac819bfe6df0eb
+
+@ 0 2 0 0323b3ad7afb9cb61ab9401ff6e7ce10
++   label Eine Folge von Inline-Inhalt
++   highlight Markdown..Prose  Text, Hervorhebung, Links
+
+% 1 1 0 0ef3df03ba2eba70186aeea116502d3f
+
+% 2 1 0 0af5da45010a65a302e9918d6a8559ca
+
+% 1 1 0 01c594ea8ed7e8e80ef1a29339db1ace
+
+% 1 1 0 0272ac515395dc9705768b231ee1ba1d
+
+@ 0 1 0 08ae54146e769e170a64888fd8825523
++   label Inline-Inhalt, für ein Dokument gehalten
+
+% 0 1 0 1477c34ff41c7c99183443e1d3238ae1
+
+% 1 1 0 0960c596329e4eb20a0b442aaa85c43a
+
+% 1 1 0 1ae693269fca24340e4c2cef25fc71ea
+
+% 0 1 0 1139bf099e711aed0b7464ffbff0a366
+
+% 0 1 0 18eafb32caed3dd50f976e787bd035ca
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 2 0 04bd427e90baba0f1f14406b291a1540
++ [Markdown](../../soundness/modules/markdown.md#on-markdown) erklärt die beiden Ebenen, und
++ [Infix-Typen](../../philosophy/infix-types.md) das Wort `of`.

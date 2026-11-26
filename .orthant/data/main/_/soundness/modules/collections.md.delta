@@ -40,6 +40,8 @@ orthant 2 release
 + themselves are the `Sorting`'s `elements`.
 +
 
+@ 0 38 0 1d209432aa53be281afd94d311886b33
+
 @ 3 0 0 1e0a4f66471a12e0081283fb97189a28
 + `intersect` and `except` are also defined for a `List`, a `Sequence` and a `Chain`, which they
 + treat as multisets. Each element of the operand accounts for at most one equal element of the
@@ -56,6 +58,8 @@ orthant 2 release
 + Out.println(after.intersect(List(t"warn", t"halt", t"halt")).inspect)
 + ```
 +
+
+@ 0 15 0 0b95d55d9a362e34190f47ae4ef86faa
 
 @ 2 0 0 174f328f9d2f041f17651133bd3462c0
 + A map with many entries is quicker to fill in place than to grow one `define` at a time.
@@ -174,3 +178,5 @@ orthant 2 release
 + fewer, or one whose keys are not all texts, all `Int`s, all `Long`s or all `Char`s, is given
 + back as it was.
 +
+
+@ 0 116 0 080709eff0266da41762b0aa7cacfba6

@@ -1,0 +1,13 @@
+orthant 2 language
+
+! `FilesystemBackend` collects stat, open, read, write, list, link and delete; everything
+! in the [filesystem](../en/modules/filesystem.md) API is defined in terms of them. The
+! `java.nio` implementation, the WASI implementation over `wasi:filesystem`, and any
+! future one are interchangeable, and the user-facing API mentions no platform at all. The
+! same shape gives [sockets](../en/modules/sockets.md) a `SocketBackend`,
+! [compression](../en/modules/compression.md) its per-platform DEFLATE engines, and
+! [images](../en/modules/images.md) their codecs.
+@ 0 7 0 060bbc9e119dc3320a83454349a15995
++ `FilesystemBackend` 汇集了 stat、open、read、write、list、link 和 delete；[文件系统](/doc/soundness/modules/filesystem.md) API 中的一切都是基于它们定义的。
++ `java.nio` 实现、基于 `wasi:filesystem` 的 WASI 实现，以及将来的任何实现都可以互换，而面向用户的 API 根本不提及任何平台。
++ 同样的形状为[套接字](/doc/soundness/modules/sockets.md)提供了 `SocketBackend`，为[压缩](/doc/soundness/modules/compression.md)提供了按平台划分的 DEFLATE 引擎，为[图像](/doc/soundness/modules/images.md)提供了编解码器。

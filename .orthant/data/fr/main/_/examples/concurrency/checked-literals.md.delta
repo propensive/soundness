@@ -1,0 +1,64 @@
+orthant 2 language
+
+@ 0 1 0 0d89b2e7dce23391094dabcd7254fac7
++ # Le nom d'une tâche est vérifié
+
+@ 0 3 0 0652599f4eaa2ce118a5d56734bdd3bb
++ Une tâche nommée apparaît dans une trace de pile sous la forme d'un chemin, comme
++ `play/scene-one`, qui reflète l'arbre des portées. Un nom contenant lui-même un séparateur
++ briserait ce chemin : le nom est donc un littéral que le compilateur vérifie.
+
+% 2 1 0 0c4b518029c5fcbb1b49fee1a1a7787c
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 0ebf1bf03a2ffe520150b59c1f9a396e
++   label Un nom contenant un séparateur
+
+% 0 1 0 1477c34ff41c7c99183443e1d3238ae1
+
+% 1 1 0 0960c596329e4eb20a0b442aaa85c43a
+
+% 2 1 0 01d9d7d7d12044611876c017d3497bf1
+
+% 3 1 0 0004329cb43bb8210e2224c264236828
+
+% 0 1 0 179894d261007cb71b94146930aad1d7
+
+% 1 1 0 1414b1edc79c133609efa55366e75ace
+
+@ 0 1 0 00518b8ca430d5f91aaa474b7252e3f0
++   label Un nom
+
+% 0 1 0 1f3d5fea4a657f5f122a30821dfc2398
+
+% 1 1 0 193652a35eab1cbb09650055f9ef95e5
+
+% 2 1 0 01adf7976719af951f6b6ec8c319cf66
+
+% 3 1 0 0cd6d64c1f0d125815c296601429ec73
+
+% 0 1 0 070fd3ca88982e701f8ddcbeda77343b
+
+% 1 1 0 092eb80bcdb2b8aa01a3f47e1e050be8
+
+% 1 1 0 136d267ff733a60e0f6246170d49df5f
+
+% 2 1 0 1525a46c87e9e0571e7d21b8e7c42b7a
+
+% 0 1 0 08a86cbdc9b8cb0109ed8ce5b435ce67
+
+% 1 1 0 0cd6459499a6bd5203d659b3bcc1b6aa
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 0 1 0 070b2447fc03b8d4041064116891781f
+
+% 1 1 0 1b0ba977c94d06f8186e3a5109c60450
+
+@ 0 2 0 19805fd9a74a50890223ad4de1a37a1d
++ [Nommer les tâches](../../soundness/modules/concurrency.md#naming-tasks) décrit à quoi servent
++ les noms, et [les noms](../../soundness/modules/names.md) comment se déclarent les règles d'un
++ nom.

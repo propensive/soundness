@@ -1,0 +1,73 @@
+orthant 2 language
+
+@ 0 1 0 1e95fd99a88efffd1608fa8f57ab7237
++ # Eine Führungslinie, die es vielleicht nicht gibt
+
+@ 0 3 0 0535ffa3c2e9cd8c142d330349f9dc64
++ Eine Beschriftung, die weit von ihrem Punkt weg verschoben werden musste, hat eine Führungslinie,
++ eine Linie zurück zu dem, was sie benennt, und eine Beschriftung, die blieb, hat keine. Die
++ Führungslinie ist daher ein optionaler Wert und kann nicht gezeichnet werden, bevor der Code gesagt
++ hat, was ihr Fehlen bedeutet.
+
+% 2 1 0 1943e8a136644d31165ffbdb5fdc5603
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 0c27de8375b91d4f1c04c86a6f99cfd5
++   label Eine Führungslinie, verwendet, als wäre sie immer da
+
+% 0 1 0 1477c34ff41c7c99183443e1d3238ae1
+
+% 1 1 0 0960c596329e4eb20a0b442aaa85c43a
+
+% 2 1 0 053a7b135af77a49056f9a7fdfa9f94a
+
+% 3 1 0 017a528903fb533f1a4fbe1cf8acea5f
+
+% 4 1 0 10d7c61680c48bd81202213d5b4210c0
+
+% 0 1 0 10238a1ab2f1948b0e8923739805dd68
+
+% 1 1 0 0fb818bf7f804f981df317e2bbb31e12
+
+@ 0 2 0 1706f23f5d40c3271b6ec628bd506ccd
++   label Eine Länge, wo es eine Führungslinie gibt, und null, wo keine ist
++   highlight lay(0.0)  der Wert, der für keine Führungslinie steht
+
+% 1 1 0 0dcd80bcbb2c57c50e9d9fec68882136
+
+% 2 1 0 0945b473a09c40a61d531e89cec1d479
+
+% 3 1 0 179544f85df76ab004fa6cac03f1f819
+
+% 4 1 0 0a14e5c76278fd321956209b5d0f868a
+
+% 0 1 0 1dd1e8b5ee0d8b9700b06a91b925541e
+
+% 0 1 0 1bf41146cfe7b48b1ca9aca55008cb1e
+
+% 1 1 0 0d7cc1a721e506f00dad73f9a167fad4
+
+% 1 1 0 136d267ff733a60e0f6246170d49df5f
+
+% 2 1 0 1525a46c87e9e0571e7d21b8e7c42b7a
+
+% 0 1 0 08a86cbdc9b8cb0109ed8ce5b435ce67
+
+% 1 1 0 0cd6459499a6bd5203d659b3bcc1b6aa
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 0 1 0 1723ead770986b44057821f0c1a99251
+
+% 0 1 0 098b53af700beb6d1782d412b280aa00
+
+% 1 1 0 0ef54a9cd1ae2b70189c3f7370f070b5
+
+@ 0 3 0 0979e76efa7c1ed1033d2c32727a1c45
++ [Verschiebung und
++ Führungslinien](../../soundness/modules/label-placement.md#displacement-and-leaders) sagt, wann eine
++ Beschriftung eine erhält, und [Optionalität](../../philosophy/optionality.md) beschreibt `lay` und
++ seine Verwandten.

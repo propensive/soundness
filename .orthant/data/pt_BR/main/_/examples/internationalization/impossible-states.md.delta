@@ -1,0 +1,58 @@
+orthant 2 language
+
+@ 0 1 0 11f3e2689f4d528f19cac13cd015beba
++ # Uma localidade para a qual o texto não foi escrito
+
+@ 0 3 0 0b61cb70ad00ac9719c9ca6682fde0fe
++ Uma `Locale` registra no seu tipo os idiomas que pode representar, e um `Polyglot` só é lido sob
++ uma localidade que ele cobre. Uma saudação em inglês e francês não pode ser lida onde o idioma
++ pode ser alemão.
+
+% 2 1 0 1d6729b8180edac21833ffaab6091fbf
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 1215bd9f09b611ba13ef0b4a020443f6
++   label Onde a localidade pode ser alemã
+
+% 0 1 0 1477c34ff41c7c99183443e1d3238ae1
+
+% 1 1 0 0960c596329e4eb20a0b442aaa85c43a
+
+% 2 1 0 19f6ed82bcbabdb018ac1845489a610c
+
+% 0 1 0 04654b47226b639019c9782b1734ca4f
+
+% 1 1 0 00bab9b42f46e30803deb35abc37e55c
+
+@ 0 2 0 0e8a9dd4df72b06f1c518742ae5f5ef1
++   label Onde ela é inglesa ou francesa
++   highlight Locale[en..fr]  os idiomas que a saudação tem
+
+% 1 1 0 0dd4efe38ffea1370ce7e9a046174fe6
+
+% 2 1 0 128862b83511e01806421806c8a1ba0c
+
+% 0 1 0 1ad3e3003eabb6531163eb8c9d84236a
+
+% 1 1 0 15b47a4b6e11eab50e06abba858c4a8d
+
+% 1 1 0 136d267ff733a60e0f6246170d49df5f
+
+% 2 1 0 1525a46c87e9e0571e7d21b8e7c42b7a
+
+% 0 1 0 08a86cbdc9b8cb0109ed8ce5b435ce67
+
+% 1 1 0 0cd6459499a6bd5203d659b3bcc1b6aa
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 0 1 0 0a179dad9d6d9b9908f65e190ab0174f
+
+% 1 1 0 0c5e9c3787849ae21a47f4d5e55d84c9
+
+@ 0 2 0 075733c958b2f26b03e56dd9c73d9aa5
++ [Seleção de um idioma](../../soundness/modules/internationalization.md#selecting-a-language) tem
++ mais sobre localidades.

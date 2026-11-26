@@ -1,0 +1,60 @@
+orthant 2 language
+
+@ 0 1 0 006ecbbd3d287b451343c7299efeb3c6
++ # Una matriz que puede no tener inversa
+
+@ 0 3 0 14cf979c10611cf204021b6e4775eb11
++ Una matriz singular no tiene inversa, y si una matriz es singular no se sabe por su tipo. `inverse`
++ da una matriz opcional, así que el caso singular se afronta donde se usa la inversa, y no como una
++ excepción ni como una matriz de `NaN`s.
+
+% 2 1 0 0dc37301b9cbe62d0e422d94401edd3e
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 16635967d02e5a3e0c7f1cb752def512
++   label Una inversa que se supone que existe
+
+% 0 1 0 1477c34ff41c7c99183443e1d3238ae1
+
+% 1 1 0 0960c596329e4eb20a0b442aaa85c43a
+
+% 2 1 0 105b7c20b6cb105e195ab045c3f51268
+
+% 0 1 0 1cf56ed11ba074191434bd351b47c725
+
+% 1 1 0 08d48c60bde45b01006b591e5d59b57f
+
+@ 0 2 0 0290185fa893a4910dbba9e7c268fc89
++   label Una inversa que puede faltar
++   highlight Optional[Matrix[Double,..2]]  ausente para una matriz singular
+
+% 1 1 0 0c9687201d967bd11e92bcfbccd027d6
+
+% 2 1 0 12b23c964a7899cc04e1177d197f3ce1
+
+% 0 1 0 190b7bfc7ed985ed0929c64c742c72e2
+
+% 0 1 0 10c44e5424ee7e75033216dd43dc901c
+
+% 1 1 0 07269ef7b650fcab0e8f24ef595c5098
+
+% 1 1 0 136d267ff733a60e0f6246170d49df5f
+
+% 2 1 0 1525a46c87e9e0571e7d21b8e7c42b7a
+
+% 0 1 0 08a86cbdc9b8cb0109ed8ce5b435ce67
+
+% 1 1 0 0cd6459499a6bd5203d659b3bcc1b6aa
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 0 1 0 0a8f8c52b9860dd20ede33b5711e5c06
+
+% 1 1 0 08d63e2d3f42c65a088441427737160f
+
+@ 0 2 0 0553e667a7d3246b0fae620a446a7c56
++ [Matrices](../../soundness/modules/mathematics.md#matrices) trata `solve` y `eigenvalues`, que son
++ opcionales por el mismo motivo.

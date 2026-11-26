@@ -1,0 +1,77 @@
+orthant 2 language
+
+@ 0 1 0 01fe8f3411cbc9d51f75f2ebf08277e2
++ # Gli errori che un'operazione dichiara
+
+@ 0 3 0 151724923b4fc224135228b49d953641
++ Ogni risposta che la specifica dichiara al di fuori dell'intervallo di successo è un tipo di errore,
++ con il nome del suo stato. `attempt` dà un risultato su esattamente quelli che l'operazione
++ dichiara, quindi un caso per qualsiasi altro stato è un errore che il compilatore trova.
+
+% 0 1 0 12705ff5e291290d17fbc8389d59ef4a
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 00ad72966d16a0320b40824b3bf6d203
++   label Gli errori dichiarati di GET /store/order/{orderId}
+
+% 1 1 0 0c9513ace8abb1e81c6354b5bdcb34c2
+
+% 2 1 0 1aa87da120c2c8c606cafafd9fe5180b
+
+% 3 1 0 1d0ed8a77168e92e1f1a1e43eceb4cfc
+
+% 4 1 0 070137cabfca356612d85a35f77270d7
+
+% 6 1 0 105e52c655508089169144a0c46046ad
+
+% 7 1 0 10e8751e8da795b101067031c866a0f1
+
+% 9 1 0 1255b4708baa6f7b021af692b483123f
+
+% 10 1 0 0b9ed162cabd94491e6a9a2c0743bbcf
+
+% 11 1 0 19d97c9dabe3e28e11bd492010a7212f
+
+% 0 1 0 044b5696b033421f1948e6c96a3d0b9e
+
+% 1 1 0 1b83694525a807b81e4973dc813294a9
+
+% 1 1 0 0aa175dbe59c657f0b1406ddc91203ec
+
+@ 0 1 0 198727c5c28b74f91a18679451cb5342
++   label Uno stato che non dichiara
+
+% 0 1 0 1477c34ff41c7c99183443e1d3238ae1
+
+% 1 1 0 0960c596329e4eb20a0b442aaa85c43a
+
+% 2 1 0 092b07dc9fd04b15104afe672311e543
+
+% 3 1 0 08c07d60eedd90850aa0366cf6e06b12
+
+% 4 1 0 15c3c6419716e78d1d1e684de6fe8ece
+
+% 6 1 0 197eaba5000deb7b1db528e6d2886dfb
+
+% 7 1 0 100d7ad8e50f6f2219ff73045d14c3d0
+
+% 9 1 0 00f32f90fca54f8d138465bc53e7fb75
+
+% 10 1 0 0428caa6601318d7142d5e32daa31fec
+
+% 11 1 0 00f629307cb83b02119ad552d5696456
+
+% 0 1 0 0d7f527da5365bf8034f2f145014dc1c
+
+% 1 1 0 008202f5228412ac0f9edeb0f183abcc
+
+% 0 1 0 18eafb32caed3dd50f976e787bd035ca
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 2 0 11b0881d08c76a7e065c818fe3a34783
++ L'esempio viene compilato, ma non eseguito, poiché richiede la rete.
++ [Errori](../../soundness/modules/openapi.md#errors) contiene il tipo per ogni genere di risposta.

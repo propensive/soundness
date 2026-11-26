@@ -1,0 +1,67 @@
+orthant 2 language
+
+@ 0 1 0 0a58fb9d227839f102e70c4bc9de1fc4
++ # Pytanie o pole zadane jako typ
+
+@ 0 2 0 19f3e32e23b6bbfa01c44bce58d757cc
++ Adnotacje typu odczytuje się, przywołując klasę typów, a przywoływany typ jest pytaniem: który typ,
++ z jaką adnotacją, przy którym polu. Każde słowo je zawęża.
+
+% 2 1 0 1315f486e2341de91e1cd9edbec4b5fb
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 2 0 0f0a4eee8dab16250dd35c91006b22a2
++   label Każda adnotacja przy polu
++   highlight Speech..on  który typ i które pole
+
+% 0 1 0 1accf43fe92797631dc8da9a374d03c4
+
+% 1 1 0 037aa7a803bd9eed098f42f0237d9298
+
+% 2 1 0 16a88328528ae302122f4e207f48e0a3
+
+% 3 1 0 058469a754930e1a1516d7415a759b1c
+
+% 5 1 0 0b639a317efd45c7048ebe2cd2d264dc
+
+% 0 1 0 15ca9ca39af5370911271b4b0306bf5f
+
+% 1 1 0 1d5fb3a18b9f9f7a1b91bc14ae1be9f8
+
+@ 0 2 0 17e6af766e5ebcb00d4ec08fc837f429
++   label Tylko adnotacje jednego typu
++   highlight by..ident  która adnotacja
+
+% 1 1 0 19e6c5eeb2a02f8a0df6575eb356eaec
+
+% 2 1 0 164812513d94e16d19cac944e21d85f8
+
+% 3 1 0 1e502d29924ee117066072f5d9adae85
+
+% 5 1 0 049d5023ea8246fb0536bd439db44556
+
+% 0 1 0 04bae53497e6ce900c752dcdbe704f45
+
+% 1 1 0 0c223f13e70cc4f2138d55a2d02f3dbe
+
+% 1 1 0 136d267ff733a60e0f6246170d49df5f
+
+% 2 1 0 1525a46c87e9e0571e7d21b8e7c42b7a
+
+% 0 1 0 08a86cbdc9b8cb0109ed8ce5b435ce67
+
+% 1 1 0 0cd6459499a6bd5203d659b3bcc1b6aa
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 0 1 0 00aecaf1429511ed051e5037ae16a82b
+
+% 1 1 0 12388213eaab906c1eaefd6ef934fe3c
+
+@ 0 3 0 1fcef76496a11e39134cc4e481674b24
++ Odpowiedź jest stałą w skompilowanym programie i nie znajduje jej żadna refleksja. Sekcja
++ [Odczytywanie adnotacji](../../soundness/modules/annotations.md#reading-annotations) zawiera każdą
++ postać pytania, a [typy infiksowe](../../philosophy/infix-types.md) – jego słownictwo.

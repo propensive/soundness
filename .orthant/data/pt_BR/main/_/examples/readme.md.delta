@@ -1,0 +1,68 @@
+orthant 2 language
+
+@ 0 1 0 13f238314765d59d0159c433fa627cb5
++ # Exemplos
+
+@ 0 3 0 118caabe485a828e0f4ef835380646e5
++ Este é um acervo de exemplos curtos. Cada um mostra uma coisa que um leitor pode querer fazer com
++ o Soundness, à luz de uma ideia que o percorre por inteiro, em duas a dez linhas de código. Eles
++ são feitos para serem lidos um de cada vez, escolhidos em duas listas.
+
+@ 0 1 0 16f462eb3f0ed69103512ea22b3a401c
++ ## Os dois aspectos
+
+@ 0 3 0 0d374221d04d833c09f1abfaa03232a2
++ Um *tópico* é o que o exemplo faz: ler JSON, fazer uma requisição HTTP, escrever uma data. Os
++ tópicos são os tutoriais da [documentação](../soundness/modules/overview.md), e estão listados em
++ `topics.tel`.
+
+@ 0 4 0 0cc9265ff2e3ae7c05702092f7db1d0a
++ Um *tema* é a ideia que o exemplo mostra: que um literal é verificado pelo compilador, que um
++ erro é nomeado em um tipo, que uma capability não pode sair do seu escopo. Os temas estão
++ listados em `themes.tel`, cada um com uma frase que diz o que ele significa, e a maioria tem um
++ ensaio próprio na [filosofia](../philosophy/correctness.md).
+
+@ 0 5 0 165a921dbd9cca9e1eb10bd9c03fe67a
++ Um exemplo do tema `checked-literals` no tópico `json` é o arquivo
++ `json/checked-literals.md`. Um segundo exemplo do mesmo par tem uma palavra depois do tema, como
++ `json/checked-literals.pointer.md`. A maioria dos pares não tem exemplo, porque a maioria dos
++ tópicos mostra bem apenas alguns dos temas: um exemplo só é escrito onde o par ensina algo que
++ nenhum dos aspectos ensina sozinho.
+
+@ 0 1 0 109912b0e81854f51798283e62286277
++ `python3 etc/check-examples.py --matrix` mostra quais pares estão preenchidos.
+
+@ 0 1 0 06547c0c9f012f3100bacf887bbc5a33
++ ## Escrevendo um exemplo
+
+@ 0 3 0 11eff9b174d597c019639fdd0d3186a9
++ Um exemplo é um título, uma ou duas frases, um bloco de código e uma frase que leva ao tutorial
++ ou ao ensaio por trás dele. O padrão para a prosa e o código é o dos
++ [tutoriais](../standards/style.md), e estas regras são acrescentadas a ele:
+
+@ 0 20 0 01f3017254127fe91f38190ec2a9ee0b
++ - O título diz o que o exemplo mostra, nas palavras do tópico, e não nomeia nenhum dos aspectos.
++ - O código é o mínimo que mostra a ideia: de duas a dez linhas em cada quadro. Os dados de
++   exemplo vêm de Shakespeare, como em [todo o resto](../standards/examples.md).
++ - O código não tem comentários. O que um comentário diria é dito por um `highlight` ou um
++   `focus`, pelo `label` de um quadro, ou pelas frases em volta do código.
++ - Onde a ideia é que algo errado não compila, o exemplo é uma animação: um quadro marcado com
++   `errors show` que contém o erro, com a própria mensagem do compilador sobre ele, e depois um
++   quadro que o corrige. Um erro nunca é escrito à mão.
++ - Onde a ideia é uma escolha, como uma estratégia, um calendário ou um backend, as versões são
++   `alternative`s, em abas.
++ - Todo quadro é compilado. Um exemplo que mostra um resultado o imprime a partir de um bloco
++   `run` depois da animação, e um que não pode ser executado onde a documentação é gerada, porque
++   precisa da rede ou de um terminal, diz isso.
++ - Uma marca nomeia o seu intervalo sem espaço, já que o que vem depois do primeiro espaço é a sua
++   legenda: um intervalo de várias palavras é escrito dos seus primeiros caracteres aos últimos,
++   como `raises..Error`. Toda marca tem uma legenda.
++ - Onde todos os quadros repetiriam os mesmos vários imports, eles vão em um bloco simples antes
++   da animação, que os quadros então seguem.
++ - Um exemplo é independente. Ele importa o que precisa, além do próprio pacote `soundness`, e
++   não depende de outro exemplo.
+
+@ 0 3 0 1e54fb1abfaef2e60c3bec21aa9a4411
++ Se o código de que um exemplo precisa não é curto, ou não é seguro, a falha pode estar na API e
++ não no exemplo. Esse caso é registrado na issue que os acompanha, e o exemplo fica de fora até
++ que a API esteja apta a ser mostrada.

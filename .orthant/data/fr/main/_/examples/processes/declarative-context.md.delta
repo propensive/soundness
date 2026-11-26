@@ -1,0 +1,66 @@
+orthant 2 language
+
+@ 0 1 0 1617311d2eeeaacc1accad45620fae3e
++ # Un sous-processus hérite de l'environnement présent dans la portée
+
+@ 0 3 0 0093c48dc6504f860350433e85a0b083
++ Une commande ne va pas chercher l'environnement de la JVM. Elle est lancée avec l'`Environment`
++ présent dans la portée, si bien qu'un bloc doté d'un environnement vide et d'une variable lance
++ un processus qui voit cette variable et aucune autre.
+
+% 2 1 0 03686b5993bf4e2807c9f8ca80a81650
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 2 0 1c108d4107e4004810e7ea583fb8305d
++   label L'environnement de la JVM
++   highlight javaBaseEnvironment  celui avec lequel la JVM a été lancée
+
+% 1 1 0 0b310348d021f1b30f8027efda6634f2
+
+% 0 1 0 1c6b2ada822a6fee1c8601d335535a08
+
+% 1 1 0 139b33f9ec1cafa50d1823cfdac213f7
+
+% 0 1 0 006d3af3b9191e3305e088d85b638db1
+
+% 1 1 0 0b8232718577ee0f13fbdace2a77ac3f
+
+@ 0 3 0 0835f8c1accf887e164f72e712a49cee
++   label Une variable, et rien d'autre
++   highlight emptyEnvironment  aucune variable
++   highlight variables(home  en ajoute une, pour ce bloc
+
+% 1 1 0 171724c37719b2cb09d6c6104b8e8a4e
+
+% 0 1 0 099139c32fd817a5074218aa5c7c0b31
+
+% 1 1 0 1e852aca81208b2708239b1732ab1063
+
+% 0 1 0 0b1266280866bbb3038024ebd0c750c2
+
+% 0 1 0 09085847d14a516b069f1ccdc3351124
+
+% 1 1 0 154d363ed2d1220c01f3e2104db577c7
+
+% 1 1 0 136d267ff733a60e0f6246170d49df5f
+
+% 2 1 0 1525a46c87e9e0571e7d21b8e7c42b7a
+
+% 0 1 0 08a86cbdc9b8cb0109ed8ce5b435ce67
+
+% 1 1 0 0cd6459499a6bd5203d659b3bcc1b6aa
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 0 1 0 121b97917d0fbe8607ccaf7efa0c9478
+
+% 1 1 0 004b6a5b3223c44b013ef0993cdfc0f1
+
+@ 0 2 0 106aa17b96c3fda30e63778cf7918b03
++ [Détacher](../../soundness/modules/processes.md#detaching) repose sur la même règle, et
++ [l'environnement](../../soundness/modules/environment.md#overriding-for-a-block) décrit
+
+% 0 1 0 16ccdad6c0846f651ee115767073fa24

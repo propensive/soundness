@@ -1,0 +1,71 @@
+orthant 2 language
+
+@ 0 1 0 199a77bc7c68fe3e00f9ed03983fc961
++ # Una codifica che il compilatore ha già cercato
+
+@ 0 3 0 14af75d550816c560a8fb1574e68d09a
++ Una codifica nominata con `enc"…"` viene cercata mentre il codice compila, quindi un nome che non è
++ una codifica non arriva mai al runtime. Chiedere un encoder verifica anche che la codifica sappia
++ codificare, cosa che non tutte sanno fare.
+
+% 0 1 0 12705ff5e291290d17fbc8389d59ef4a
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 0813c0446522138f179dd9f87aed0323
++   label Un nome che non è una codifica
+
+% 1 1 0 1ad804498231ea850ec8ddf458f99723
+
+% 2 1 0 13c41a2e87dd3b72161ab09d376d7a6f
+
+% 0 1 0 1aaa5b38db5ca3400698e6b3b2b4afef
+
+% 1 1 0 049d7565b424b89216820b4145abd8ae
+
+@ 0 2 0 0c3aa196d9f6c65a0d12f7f11a2140f5
++   label Una codifica
++   highlight enc"UTF-8"  cercata dal compilatore
+
+% 1 1 0 006a9b9eb1b2344309fb1d8c74062ded
+
+% 2 1 0 1a9980c68eb3c8fe1da5d20b8d078d73
+
+% 1 1 0 044b498e70ff02100190ad34514437ac
+
+@ 0 2 0 07eb7f30708dd9960490a978cd094bca
++   label Il suo encoder
++   highlight encoder  esiste perché UTF-8 sa codificare
+
+% 0 1 0 1accf43fe927975f1dc8da9a374d03c0
+
+% 0 1 0 0fd2ac3797a0477d02117fa7e01a94b3
+
+% 1 1 0 0831db4166dd7587114b3740732b8e38
+
+% 2 1 0 07227da3b02986261bfce28a0552d14f
+
+% 0 1 0 139a5b452dd509a3172c29d189dedf8c
+
+% 1 1 0 077694a337ba15a71912bd3c181a051e
+
+@ 0 1 0 0f71a98c23857c72184984404e2cdaa5
++   label Una codifica che sa solo decodificare
+
+% 1 1 0 16e7e834839bf16a1f035369e9680970
+
+% 2 1 0 10a1fcd1037382340d1878b06a7dab95
+
+% 0 1 0 088bcc035cad362a19a1ac5a881281b2
+
+% 0 1 0 0598e38f81bd20331c7a5aed4e8a7dd8
+
+% 0 1 0 18eafb32caed3dd50f976e787bd035ca
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 2 0 17667feaa63d458a023191664986ce48
++ [Codifica e decodifica](../../soundness/modules/characters.md#encoding-and-decoding) elenca le
++ codifiche che non richiedono una ricerca.

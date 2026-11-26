@@ -1,0 +1,76 @@
+orthant 2 language
+
+@ 0 1 0 0eee4687c763ec88096558642310bd5b
++ # Um produto vetorial precisa de três dimensões
+
+@ 0 3 0 08db534ec73e643509eb13d791cfc1e7
++ O produto escalar de dois vetores existe em qualquer dimensão, e o produto vetorial não. `dot` é
++ definido para todo par de vetores de um mesmo comprimento, e `cross` só para os comprimentos que
++ têm produto vetorial.
+
+% 2 1 0 12361f87d21824ce1f8831e980b7db7a
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 2 0 0a428c3ee1f2ac4c0720a66b449b9bc3
++   label O produto escalar, em duas dimensões
++   highlight dot  definido em toda dimensão
+
+% 1 1 0 0e5573a94af2660810e6cdf17f197674
+
+% 2 1 0 04e858c2d78cfd1f010b8440d5a5613f
+
+% 3 1 0 006235a3ac051ea202cd68ae33aa92d5
+
+% 0 1 0 0c5b407caf6250d102138f0674a3019d
+
+% 1 1 0 055312fb552b98341b8845943364eb03
+
+@ 0 1 0 03288322f331a8de0adc0aac26984214
++   label O produto vetorial, em duas dimensões
+
+% 0 1 0 1477c34ff41c7c99183443e1d3238ae1
+
+% 1 1 0 0960c596329e4eb20a0b442aaa85c43a
+
+% 2 1 0 111bc0eee2e2b15004f68fb150f453a6
+
+% 3 1 0 1e52a312d72c209809775bfde1d8e640
+
+% 1 1 0 12a324b0b87b82421d95fb1108a1dde6
+
+% 1 1 0 1bf603d146c652ff16fa61e0f450b0a4
+
+@ 0 2 0 11ab359d720370f311d75d6f23a71078
++   label O produto vetorial, em três
++   highlight cross  definido em três
+
+% 1 1 0 1d209577885ecf6d10c33b5dc667f0b0
+
+% 0 1 0 1900f29da0e3dafa01f1f88c6a64a42b
+
+% 0 1 0 1b0a469331cf264616196564001360a2
+
+% 1 1 0 0d8eac48dc4333f708bc06459eec37ef
+
+% 1 1 0 00364713538f5bdd126fd4ef968ba294
+
+% 1 1 0 136d267ff733a60e0f6246170d49df5f
+
+% 2 1 0 1525a46c87e9e0571e7d21b8e7c42b7a
+
+% 0 1 0 08a86cbdc9b8cb0109ed8ce5b435ce67
+
+% 1 1 0 0cd6459499a6bd5203d659b3bcc1b6aa
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 0 1 0 1c3f9b550efcc7de1286cc8d047cbe8f
+
+% 1 1 0 1c036afb6276b6581594b8f4b8b39b90
+
+@ 0 2 0 14f3498e1fbb2875179985d534ae2f64
++ [Vetores](../../soundness/modules/mathematics.md#vectors) traz a aritmética que toda dimensão
++ compartilha.

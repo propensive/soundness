@@ -1,0 +1,41 @@
+orthant 2 language
+
+@ 0 1 0 1a26dee1d32c457f154f39a6cd8b8097
++   entry #trees   ogni `Markup.Tree` nel messaggio, ovunque sia annidato
+
+@ 0 2 0 06d9964a216b63ce0ea8450093d7ce20
++       row  `Tree(omitted, children)`  l'albero che spiega una risoluzione contestuale fallita; `omitted` conta i nodi omessi per lunghezza
++       row  `Node(role, name, note, repeated, children)`  un nodo di un tale albero: il suo `Role`, il `name` di ciò che era cercato, trovato o proposto, una `note` su di esso, e se il suo sottoalbero è già stato mostrato prima ed è qui omesso
+
+@ 0 3 0 19bd5f1a17ead8801f0d056cc9832871
++       I figli di un `Tree` o di un `Node` sono i suoi `Node` figli, inframmezzati dai `Textual` —
++       interruzioni di riga e caratteri di disegno di riquadri — che disegnano lo stesso albero come
++       testo semplice; `#nodes` dà i soli `Node`.
+
+@ 0 21 0 097f0e9e07a724d7170810e6bafc0c7c
++   entry .marked   se un testo contiene uno qualsiasi dei marcatori che `parse` legge
++       Un carattere nell'intervallo a uso privato da `U+E000` a `U+E003`.
++   entry .parse   analizza un testo marcato in una lista di nodi, come farebbe il parser del compilatore stesso
++       Segue esattamente `DiagnosticMarkup.parse` del compilatore: un marcatore si apre con un
++       carattere di inizio, il suo tipo, un separatore degli attributi, attributi `key=value` (con
++       codifica percentuale dove un valore contiene un carattere riservato, qui decodificata) e un
++       separatore del testo, e si chiude con un carattere di fine. Tutto ciò che non forma un
++       marcatore completo viene scartato e il contenuto circostante conservato come testo — un
++       carattere di inizio o di fine isolato sparisce, un'intestazione troncata si legge come testo
++       semplice — e i figli di un marcatore mai chiuso vengono inseriti nel suo genitore, così che
++       anche un messaggio interrotto si possa analizzare. Il tipo decide il nodo: `type`, `sym`,
++       `name`, `code` e `tree` hanno i loro casi, come pure un `node` il cui `role` è uno di quelli
++       di `.Role`, e qualsiasi altro tipo è `Spanned`.
++   entry .plain   il testo con ogni marcatore rimosso, che conserva solo il contenuto visibile
++       Il testo senza marcatori viene restituito così com'è, senza analizzarlo.
++   entry .wrap   racchiude un testo in un marcatore di un tipo, con attributi, come fa il compilatore stesso
++       Per una macro il cui messaggio deve conservare la propria struttura: con
++       `-Zsemantic-diagnostics` il marcatore arriva intatto a `.parse`, e ogni altro lettore vede
++       solo il testo al suo interno.
++   entry .Role   il ruolo che un `Node` ha in un albero: `Resolving`, `Candidate`, `Requires`, `Propose`, `Prohibits` o `Found`
++     entry #glyph   il simbolo con cui il ruolo è disegnato
++     entry #word   il nome del ruolo in minuscolo, come lo riporta l'attributo `role` di un marcatore
++   entry #plain   il testo visibile di questo nodo: il suo stesso testo, o quello dei suoi figli unito
+
+@ 0 1 0 0040f586709e95720edf25cba05cb8b5
++   entry #nodes   i `Node` figli di un `Tree` o di un `Node`, senza il testo che li disegna

@@ -1,0 +1,53 @@
+orthant 2 language
+
+@ 0 1 0 0116a9d115157bd51986acc32f7eeb98
++ # メッセージには配達人と差出人が必要である
+
+@ 0 3 0 1b880646a7897ffb06f294f4d96f4b83
++ `send` は自分でメールサーバーを取りに行かない。メッセージを配達する `Courier` と、
++ 差出人である `Sender` をコンテキストから受け取る。メールを送るメソッドはそう明示し、その結果の型は配達人が返すものになる。
+
+% 0 1 0 12705ff5e291290d17fbc8389d59ef4a
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 17952b32b35edea31e85f4148b86cd30
++   label 送る手段がない
+
+% 0 1 0 1477c34ff41c7c99183443e1d3238ae1
+
+% 1 1 0 0960c596329e4eb20a0b442aaa85c43a
+
+% 2 1 0 184cfb5ee95bfaf901fdf87d0d03b757
+
+% 0 1 0 1fe4ad9b1d0d914d06466eaeca3ae23b
+
+% 1 1 0 0820ed1c428c1c2618d0f243070ed24e
+
+% 1 1 0 15a95b700b86c910155ab0c071d8cd06
+
+@ 0 1 0 03d1b4af6b1fcc2702536c76d62c9085
++   label 呼び出し側に求める配達人と差出人
+
+% 0 1 0 094ff5cec9eaf03c1ecf4e3c8b1c9db0
+
+@ 0 1 0 0e3a9eba152f93420144836616e773c7
++   highlight courier.Result  与えられた配達人の受領証
+
+% 1 1 0 0a8e7f5d2e4f3b761887971c45cb7713
+
+% 2 1 0 133d0c351ed0d48507024d233a8486f3
+
+% 0 1 0 17f2181144a67c70144cef0fd0c77feb
+
+% 1 1 0 151b661d0df1a58316bfecefc4fc294d
+
+% 0 1 0 18eafb32caed3dd50f976e787bd035ca
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 2 0 0944b8f16571863115fb250a10dfc075
++ [配達人](../../soundness/modules/email.md#couriers)が用意されている配達人を、
++ [正直なシグネチャ](../../philosophy/honest-signatures.md)がその原則を説明する。

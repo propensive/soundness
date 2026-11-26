@@ -1,24 +1,18 @@
 orthant 2 release
 
-@ 0 1 0 1e20761ba0b2e982193e903c29fe5df5
-+ The surface has already been measured: `etc/api-reduction-candidates.md` inventories every
+% 0 1 0 1e5b006ccc5174ed03f4009e06754919
 
 @ 0 1 0 0c0d9dd5db7d32ca0190c6fa32c2b6a2
 + The track's items, with their horizons and hard dependencies;
 + [`status.tel`](https://github.com/propensive/soundness/blob/main/doc/roadmap/status.tel)
 + records where each one stands:
 
-@ 0 1 0 1b87c40e0deaabbf0bf3e9cd08ea15c5
-+ Done when: the rename table in `etc/api-nesting-proposal.md` (which superseded the C1
+% 0 1 0 0ea63b6dd90f890216fd1fbf2c34d246
 
-@ 0 1 0 1e7ed4c04f595edc046969e7d633312b
-+ `etc/api-nesting-proposal.md` and closed with it.)
+% 0 1 0 07c687ffacfdeb010751cc33357e12ec
 
-@ 0 1 0 00e326d1bb046aa11262e578534b4047
-+     test -f etc/api-reduction-candidates.md || echo absent    # absent
+% 0 1 0 1d3fa0088fed0fe510c1edd92a8d31f0
 
-@ 0 1 0 1351c4666652e8a3135f446582c1cdb9
-+ case by case against rule R8 in `etc/api-nesting-proposal.md`. Convenience keeps a name
+% 0 1 0 1cac37bda26292ea18a15f88f1eb2e9e
 
-@ 0 1 0 1c536c52ee2828b20b6961dd35384e26
-+ `etc/api-nesting-proposal.md` has been either applied or moved to its "Reviewed and kept
+% 0 1 0 1d8ac97961de038e1ff4f76211cca907

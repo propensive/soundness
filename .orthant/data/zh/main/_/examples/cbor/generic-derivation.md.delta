@@ -1,0 +1,62 @@
+orthant 2 language
+
+@ 0 1 0 0034600b8c412a7c1ed246a8f00d4b4b
++ # 增加了字段的消息
+
+@ 0 3 0 06a21fbfd28c6d82027e0c02892da1db
++ case class 的编解码器由其字段派生，因此类型就是模式。带默认值的字段或可选字段不要求在字节中出现，具有新类型的读取方仍然能读取具有旧类型的写入方所写的内容。
+
+% 2 1 0 1bbbd97deffcbffc0f0a4088c6e6676b
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 0d4f388655c6bc981e51a64e1c0ee18e
++   label 旧传感器写出的读数
+
+% 1 1 0 09f67e03e5d0030d008885f0354af90c
+
+% 2 1 0 144735c9b0a85dfc05fedd7d744562c9
+
+% 4 1 0 09673639c6942b5a0e584371dc6d3da6
+
+% 2 1 0 1d0ebe8bf7d098d50fde67db2164eb8d
+
+% 1 1 0 0d602e41f1c0df5a113482d8dcde5834
+
+@ 0 3 0 04c84f10437eca781c1c043920411410
++   label 同样的字节，由较新的类型读取
++   highlight unit..celsius"  取其默认值
++   highlight wind..Optional[Int]  读作 Unset
+
+% 1 1 0 1d72c74f44fa147e1e2e848e070344f6
+
+% 2 1 0 062d3778551e253817db1df3451f89f6
+
+% 4 1 0 18892817b51bbd1a1c786dca166f0188
+
+% 0 1 0 1959ea6a98152412043895db3a8db77c
+
+% 2 1 0 01f0c4ba0dcabb63099aab5b16a830a3
+
+% 0 1 0 07c3370b49d31d9d0ea89ecdc134fe00
+
+% 1 1 0 1fea719e86e17b3e1ae36d47be406623
+
+% 1 1 0 136d267ff733a60e0f6246170d49df5f
+
+% 2 1 0 1525a46c87e9e0571e7d21b8e7c42b7a
+
+% 0 1 0 08a86cbdc9b8cb0109ed8ce5b435ce67
+
+% 1 1 0 0cd6459499a6bd5203d659b3bcc1b6aa
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 0 1 0 0f60ee0797a556491e7ee262ab9fe57a
+
+% 1 1 0 0e5e6f0a6cd061d50de610bca8d17688
+
+@ 0 2 0 16e7fbbb30c2124310dc47238aa7435e
++ [可选字段](../../soundness/modules/cbor.md#optional-fields)给出了处理缺失、为 null 或有误的字段的方针。

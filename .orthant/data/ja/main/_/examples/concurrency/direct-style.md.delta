@@ -1,0 +1,71 @@
+orthant 2 language
+
+@ 0 1 0 0fdf31c5ee68eaef034b3297a6f83a53
++ # 並列のコードも形を保つ
+
+@ 0 3 0 1a4ddb64a8491f5511d8641496925ded
++ 順に実行される二つの計算は、それぞれを `async` で包み、それぞれの結果を `await` で求めることで、
++ 同時に実行される二つの計算になる。両者を組み合わせる式は変わらず、そこに至るために `Future` を map する必要もない。
+
+% 2 1 0 02c94c863c76a09712324b27ba38852b
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 1265c2ea7aaf063a0f5f2dad4be2e6c5
++   label 順に実行
+
+% 1 1 0 112bba9757c9bf6f0c04665b32fa8801
+
+% 1 1 0 0ff4bfc74a39f253007974d6aea96088
+
+% 0 1 0 00357a7c90f6c4c91ef0898a0bec46f0
+
+% 0 1 0 095c169b859934670a1634ed6220d877
+
+% 0 1 0 1a70c1aef9055d35108eadf94b8b502b
+
+% 0 1 0 076c004910cdc874097e8bf0e5593ba4
+
+% 1 1 0 05bcf746004f31be0dd7c8e0ff96a291
+
+@ 0 2 0 00d8b8e7d3a9683408fb23dffd3056c0
++   label それぞれを独自のタスクで
++   highlight async  すぐに、独自のスレッドで開始する
+
+% 0 1 0 197de0e2fc79015f162742b59f8dacb6
+
+% 1 1 0 11981ce7a35d8f24195ef2b25dfa47f7
+
+% 0 1 0 0f54932f4b84cea2076f4956350b9c6e
+
+% 1 1 0 14ca4ce500e6ebe904c35ee189fdc8e4
+
+% 0 1 0 1cb1855055e90b831639f6e055280ee0
+
+% 0 1 0 0397a341647394411a3fd5969207395d
+
+% 0 1 0 07fb4228d539eb3f166e98e4b9247192
+
+% 0 1 0 08198151ac6086051d97eedd4ea6ebbf
+
+% 1 1 0 030f9f2d3991f0431bd3658cfeee57e7
+
+% 1 1 0 136d267ff733a60e0f6246170d49df5f
+
+% 2 1 0 1525a46c87e9e0571e7d21b8e7c42b7a
+
+% 0 1 0 08a86cbdc9b8cb0109ed8ce5b435ce67
+
+% 1 1 0 0cd6459499a6bd5203d659b3bcc1b6aa
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 0 1 0 1f2b83b9f1be5f260aeb146e9b711f36
+
+% 1 1 0 0ad98fe8194aa4b00b04039fd0e2a807
+
+@ 0 3 0 1146129373ac7b6303a56b33bde06072
++ [タスクの起動](../../soundness/modules/concurrency.md#spawning-a-task)が `async` と `await` を、
++ [ダイレクトスタイル](../../philosophy/direct-style.md)が待機を通常の呼び出しとして書く理由を説明する。

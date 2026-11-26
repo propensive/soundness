@@ -1,0 +1,62 @@
+orthant 2 language
+
+@ 0 1 0 14799379789b514304c559aa734eace5
++ # Un terminal mientras dura un bloque
+
+@ 0 3 0 150af539e4c379951e8227aa108ad247
++ Algunos programas se comportan de otra manera cuando su salida es un terminal. `pty` describe un
++ comando en un pseudoterminal, y `session` asigna uno, presta el comando en ejecución a un bloque y
++ le cuelga cuando el bloque termina.
+
+% 0 1 0 12705ff5e291290d17fbc8389d59ef4a
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 2 0 05a7f816b32d50691e24e03c17511269
++   label Un comando, descrito en un terminal de un tamaño dado
++   highlight pty(100,  todavía no se ejecuta nada
+
+% 1 1 0 0897563c9b8d986b13a36677bd6bdc8a
+
+% 2 1 0 1e6f2ad9a437892d0c88e63924513f49
+
+% 3 1 0 19807efee8981a5914991887a1759a9a
+
+% 4 1 0 03aed015d9f9888c12100ef3bb932843
+
+% 6 1 0 0f66e1cab424eb140fc1256c76b18bca
+
+% 1 1 0 050ffe47639c7c64003d8e7e77d04e78
+
+@ 0 2 0 1ee7e362e43cb7d4190bc7b9a22a4b3f
++   label Una sesión con él
++   highlight session:  el terminal existe hasta que termina el bloque
+
+% 1 1 0 090c1ab8ca728d181568f6f30d7afde9
+
+% 2 1 0 01a0714adad2386012b029c392fe198a
+
+% 3 1 0 0a1c5f784e4fb2490755a0480e1d1b52
+
+% 4 1 0 161abe541a93935317d92ecc257cc64c
+
+% 6 1 0 1825e27c747bd1550f122fd448c7df35
+
+% 0 1 0 00f93cb8c100f9f604ba80c3c2f47b05
+
+% 0 1 0 0c0bde2f3648d25f112a062c1ad41ad4
+
+% 0 1 0 1195e3561fbbe87a1f5ce4935f05b7ba
+
+% 0 1 0 0f3fb2a77ecee1310419fc5cb9bc8621
+
+% 0 1 0 18eafb32caed3dd50f976e787bd035ca
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 3 0 16977fd8b33a4637057324a916117072
++ El ejemplo se compila, pero no se ejecuta, porque iniciaría un proceso en un terminal.
++ [En un terminal](../../soundness/modules/processes.md#on-a-terminal) describe las sesiones, y
++ [ámbitos delimitados](../../philosophy/delimited-scopes.md) la razón del préstamo.

@@ -1,0 +1,66 @@
+orthant 2 language
+
+@ 0 4 0 116039505d7799e102fc0724b884b287
++ Certi lavori ricorrono in profondità: compilare o valutare il codice di un utente è il caso
++ tipico. Lo stack di un thread è fissato quando il thread viene creato, quindi un lavoro del genere
++ ha bisogno di un thread creato con uno stack più grande. `threads.stackThreads` è un modello di
++ thread che dà a ogni task un platform thread tutto suo con uno stack della dimensione richiesta.
++ Prende quella dimensione, quindi viene legato e non importato:
+
+% 2 1 0 02dc8d1e5e9e362409ed693112cbb8c3
+
+% 3 1 0 1a5d75eed85ff67e159b239676a82de3
+
+% 4 1 0 08d8dac3f788acf70cd7937c3ac8c91a
+
+% 0 1 0 15cea9b948946ab218c7d56e773e9ac6
+
+% 0 1 0 0f2af863e5e92938047f21fd70823889
+
+% 0 1 0 054995314d0372921e86ada8920b86e5
+
+% 0 1 0 0e3c9d1035115d7805df688afe964177
+
+% 0 1 0 0b3e4df41e974db01821f92c645955cd
+
+% 1 1 0 0f7814a212d4376206a0c642669adef2
+
+@ 0 1 0 03866c7e953bb38708139d6ec40acf61
++ #### Un thread tutto suo
+
+@ 0 5 0 1291ac58fc58e3381b3c04353a6587c0
++ Certo stato esterno può essere toccato da un solo thread: un compilatore e il suo contesto sono
++ l'esempio tipico. Una `Lane` è un singolo thread a cui il lavoro viene consegnato, e che lo svolge
++ un blocco alla volta, nell'ordine in cui è stato inviato. `submit` dà un ordinario `Task` del
++ risultato del blocco, che quindi viene atteso, annullato e supervisionato come qualunque altro,
++ qualunque sia il task che lo ha inviato:
+
+% 2 1 0 1c039e805af3cd88092457663a2e27da
+
+% 3 1 0 03e0e1d0a6bfe7fb1bdcc91238947ea6
+
+% 4 1 0 0ab3a39a90d525fe0216437ea8fa7de6
+
+% 0 1 0 1fba0d6aac3935390cf530046ef20694
+
+% 0 1 0 1255643e429532be15e1072f16d34b3d
+
+% 0 1 0 05eb095abf89fca5036c53e81f14c177
+
+% 0 1 0 03991aa5bb189ad518e14341b32d177f
+
+% 0 1 0 01ec73c9ff3d190c083dae6e683c7f49
+
+% 0 1 0 0225542be2dffe6e196f7ad4cee1f5b5
+
+% 0 1 0 08c73c82ca5046440bcf6845c644cdfa
+
+% 0 1 0 0ccb519ea78688cc1037e58e32746327
+
+% 1 1 0 0f7a1d03193fbd691922f42bdaaf3b05
+
+@ 0 3 0 0ad53fab9dc08e0d058acfe9e8fca4a1
++ Anche a una lane si può dare una dimensione dello stack, come `Lane(t"compiler", 512.mib)`. Il suo
++ thread è un daemon, quindi una lane aperta non tiene in vita il programma, e `close` la termina
++ una volta completato il lavoro già inviato. Una lane ha bisogno di un thread vero, quindi non è
++ per Scala.js.

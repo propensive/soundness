@@ -1,0 +1,71 @@
+orthant 2 language
+
+@ 0 1 0 00de11b8255ce61107a27afa073641d7
++ # Un chemin, écrit avec des barres obliques
+
+@ 0 2 0 081b21da0ddd28f804aab6827bff186d
++ Un chemin se construit à partir de la racine `%` avec `/`, comme on l'écrit dans un shell. Un
++ chemin relatif part de `?`, remonte avec `^`, et s'applique à un chemin absolu avec `+`.
+
+% 2 1 0 13c8ce8db886982112ee895ce7516d91
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 01a50b39bfb6b0fc0a218ff985de2d7c
++   label En descendant depuis la racine
+
+% 1 1 0 0bcbf489211b489713fc12fa6cafeadd
+
+% 2 1 0 14f6fee4c4b0bf5d0d15bddffd943366
+
+% 1 1 0 15285607fea23587159ba7900bd94c0b
+
+@ 0 2 0 03e934a5190070a7141ac62fd15902de
++   label Un niveau plus haut, puis de nouveau vers le bas
++   highlight ^  un pas vers le haut
+
+% 1 1 0 145a34e79430017d0085727832049ee7
+
+% 2 1 0 085248c0e5a27587080d8c1353db33a9
+
+% 3 1 0 13c9119f15a86b400b8df9242908c86a
+
+% 1 1 0 190b819e85c6b9dd197b7b2b05f8029f
+
+@ 0 2 0 1b1eb4afa3ac98a313da66dce340030b
++   label L'un appliqué à l'autre
++   highlight +  un chemin relatif, appliqué
+
+% 1 1 0 0a21d1401e42a4d3091d20b9f290de5d
+
+% 2 1 0 177984085103c2fc16ecf2afa79be7e4
+
+% 3 1 0 0274549b3bd9baa20a11514a8f756eab
+
+% 0 1 0 1df7e5bf31ae923e02f7dc489ea5e6c3
+
+% 1 1 0 1f26ab24a9ad206d0d33fff0dba36f85
+
+% 1 1 0 136d267ff733a60e0f6246170d49df5f
+
+% 2 1 0 1525a46c87e9e0571e7d21b8e7c42b7a
+
+% 0 1 0 08a86cbdc9b8cb0109ed8ce5b435ce67
+
+% 1 1 0 0cd6459499a6bd5203d659b3bcc1b6aa
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 0 1 0 1db10ec94dbd07900dd0c8e43673cf2e
+
+% 0 1 0 17a6f99c98263c0f146071045e91098a
+
+% 0 1 0 05497372818bf3b6055a0ec859b91964
+
+% 1 1 0 18516af8debc556d0cad38545f719379
+
+@ 0 2 0 066348876e7215da176cdb5d190b86ef
++ [Construire un chemin](../../soundness/modules/paths.md#building-a-path) énumère les symboles,
++ et [la prose élégante](../../philosophy/elegant-prose.md) plaide pour une telle notation.

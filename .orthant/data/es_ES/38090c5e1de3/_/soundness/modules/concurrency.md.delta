@@ -1,0 +1,65 @@
+orthant 2 language
+
+@ 0 4 0 116039505d7799e102fc0724b884b287
++ Algunos trabajos tienen una recursión muy profunda: compilar o evaluar el código de un usuario es el
++ caso habitual. La pila de un hilo queda fijada cuando se crea el hilo, así que un trabajo así
++ necesita un hilo creado con una pila mayor. `threads.stackThreads` es un modelo de hilos que da
++ a cada tarea un hilo de plataforma propio con una pila del tamaño pedido. Toma ese tamaño, así
++ que se vincula y no se importa:
+
+% 2 1 0 02dc8d1e5e9e362409ed693112cbb8c3
+
+% 3 1 0 1a5d75eed85ff67e159b239676a82de3
+
+% 4 1 0 08d8dac3f788acf70cd7937c3ac8c91a
+
+% 0 1 0 15cea9b948946ab218c7d56e773e9ac6
+
+% 0 1 0 0f2af863e5e92938047f21fd70823889
+
+% 0 1 0 054995314d0372921e86ada8920b86e5
+
+% 0 1 0 0e3c9d1035115d7805df688afe964177
+
+% 0 1 0 0b3e4df41e974db01821f92c645955cd
+
+% 1 1 0 0f7814a212d4376206a0c642669adef2
+
+@ 0 1 0 03866c7e953bb38708139d6ec40acf61
++ #### Un hilo propio
+
+@ 0 5 0 1291ac58fc58e3381b3c04353a6587c0
++ Cierto estado ajeno solo puede tocarse desde un único hilo: un compilador y su contexto son el
++ ejemplo habitual. Un `Lane` es un hilo al que se entrega trabajo, y que hace ese trabajo de
++ bloque en bloque, en el orden en que se envió. `submit` da una `Task` ordinaria del resultado
++ del bloque, de modo que se espera, se cancela y se supervisa como cualquier otra, sea cual sea
++ la tarea que la envió:
+
+% 2 1 0 1c039e805af3cd88092457663a2e27da
+
+% 3 1 0 03e0e1d0a6bfe7fb1bdcc91238947ea6
+
+% 4 1 0 0ab3a39a90d525fe0216437ea8fa7de6
+
+% 0 1 0 1fba0d6aac3935390cf530046ef20694
+
+% 0 1 0 1255643e429532be15e1072f16d34b3d
+
+% 0 1 0 05eb095abf89fca5036c53e81f14c177
+
+% 0 1 0 03991aa5bb189ad518e14341b32d177f
+
+% 0 1 0 01ec73c9ff3d190c083dae6e683c7f49
+
+% 0 1 0 0225542be2dffe6e196f7ad4cee1f5b5
+
+% 0 1 0 08c73c82ca5046440bcf6845c644cdfa
+
+% 0 1 0 0ccb519ea78688cc1037e58e32746327
+
+% 1 1 0 0f7a1d03193fbd691922f42bdaaf3b05
+
+@ 0 3 0 0ad53fab9dc08e0d058acfe9e8fca4a1
++ A un lane también se le puede dar un tamaño de pila, como `Lane(t"compiler", 512.mib)`. Su hilo
++ es un demonio, así que un lane abierto no mantiene vivo el programa, y `close` lo termina una vez
++ hecho el trabajo ya enviado. Un lane necesita un hilo real, así que no es para Scala.js.

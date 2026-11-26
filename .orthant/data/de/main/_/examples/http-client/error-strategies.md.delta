@@ -1,0 +1,71 @@
+orthant 2 language
+
+@ 0 1 0 0be79b25cc06d41a0528098a8c62290a
++ # Was aus einem fehlgeschlagenen Request wird
+
+@ 0 2 0 1afdf3f39585f6e0056edd152be59be6
++ `fetch` und `receive` entscheiden nicht, was eine abgelehnte Verbindung oder eine fehlende Seite
++ bedeutet. Das tut die Methode, die sie aufruft, und derselbe Request dient jeder Wahl.
+
+% 0 1 0 12705ff5e291290d17fbc8389d59ef4a
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+@ 0 1 0 0a9c60562a8c98dd179f666be3977a88
++ alternative Eine fehlende Seite
+
+% 0 1 0 095674c459fb074f082ec3675cad07bf
+
+% 1 1 0 06c9028e272c82fd03be89f91f94796b
+
+% 2 1 0 04205e2de3f923c4188e8915adfe23e0
+
+% 3 1 0 1557a98de0ed05d918782b0f5459bf19
+
+% 0 1 0 1c3ad556366ddeca0818cfc4a9e11f9f
+
+@ 0 1 0 0d830ad7e1bae84807ffc03b7dea8aff
++ alternative Eine leere Seite bei schlechtem Status
+
+% 0 1 0 05e95e550c85ca9a00b6dc7307d8579b
+
+% 1 1 0 14ad50394d45ac7217d24449a307742e
+
+% 2 1 0 022a909fbf7abc2008c0fbc6b9e101d8
+
+% 3 1 0 0dae99ec918c85730ebe654264663f7b
+
+% 0 1 0 162e1e915b8ae34d0e353577a6ee8ce2
+
+% 0 1 0 1ffe5c415422113702a4a9b03386f84a
+
+% 0 1 0 0937a2760449edb417696b151a5d7a56
+
+% 0 1 0 111d58d57f2607021b6a25522c0a2175
+
+@ 0 1 0 1bee66d1f472317e1c7ea1049987a1d1
++ alternative Die Entscheidung des Aufrufers
+
+% 0 1 0 06604cd83f2703ab0346a8a49db96a28
+
+% 1 1 0 031bc81f925764ff15f10945053bad67
+
+% 2 1 0 156ae5778884d06f041916ffb471d162
+
+% 3 1 0 0065e2341360e96c18fe06d77cd8c04f
+
+% 0 1 0 14ef51fc71398b821795a1e4643c0b14
+
+% 0 1 0 013844c6e35ff84f19cc84a75c1a6ee3
+
+% 0 1 0 14ed93b95b1db72e07ba954f68a1418e
+
+% 0 1 0 18eafb32caed3dd50f976e787bd035ca
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 4 0 0dfb610cdda02f9002eddea113855f56
++ Das Beispiel wird kompiliert, aber nicht ausgeführt, da es das Netzwerk braucht.
++ [Fehler](../../soundness/modules/http-client.md#errors) beschreibt die beiden Fehler und [Eine
++ Strategie wählen](../../soundness/modules/errors.md#choosing-a-strategy) die Wege, ihnen zu
++ begegnen.

@@ -1,0 +1,73 @@
+orthant 2 language
+
+@ 0 1 0 1867e2cf641584df1e8ffa724fa66ced
++ # Un conflitto è un esito
+
+@ 0 3 0 0533459574f0ae341102677d5e8327f7
++ Un merge può far avanzare un branch, creare un commit di merge, non trovare nulla da fare, o
++ fermarsi su un conflitto. Nessuno di questi casi è un errore. `merge` restituisce ciò che è accaduto
++ come valore, e un match su di esso tiene conto di tutti e quattro.
+
+% 0 1 0 12705ff5e291290d17fbc8389d59ef4a
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 148dc950a6ab664818dc5cb235943bc0
++   label L'esito di un merge
+
+% 0 1 0 0b5575bb504be2860c104ca298f395ca
+
+% 1 1 0 13df9855407665a9188689fc30e8e17f
+
+% 2 1 0 082df33fad2ffa79187495b508fcd1bf
+
+% 3 1 0 018d2bcc693c99680a3756ea4a346c8e
+
+% 4 1 0 15aaecce9ed2d3b40c72c781a526bb2e
+
+% 0 1 0 0c795583ffab79ad14e89dbe2940f12c
+
+% 1 1 0 1ac8300cd7e441de1735fabe6881c00b
+
+% 0 1 0 148ac5b3d2923732188609e318000d7b
+
+% 1 1 0 1b83816bf899ddfc14ec12be923ea722
+
+@ 0 2 0 0b66d430972b2fbc0fc04a70ee6fbfd2
++   label Ciascuno dei suoi casi
++   highlight Stopped(operation)  porta i percorsi in conflitto, e i modi per proseguire
+
+% 1 1 0 11153b834aa399101b1e938605f83197
+
+% 2 1 0 08bc2a2d8ddec2441289ae5b6688a998
+
+% 3 1 0 0977c06eac8273491221cbfeb8d7d0e1
+
+% 4 1 0 1d1d7a200fb864dc16753ff5ce0c9ac5
+
+% 0 1 0 1534fef53535c187124ab504726a9555
+
+% 0 1 0 1e03a2d808ce63d21d2838f0bf443431
+
+% 1 1 0 1bfae6824eeb32dd18d2c6ad2dcae305
+
+% 0 1 0 0bc0613f4782fc310855c917ec2bed8e
+
+% 0 1 0 13824ac72bd412851f52ebcc081a6c08
+
+% 0 1 0 0d54cb1d69af9cec0f88fefe3dad317c
+
+% 0 1 0 0ece9d39afec5da50cc41d1689e1d636
+
+% 0 1 0 1ce8dd1c4580c3bc1cd7d71679e5e29a
+
+% 0 1 0 18eafb32caed3dd50f976e787bd035ca
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 3 0 0b9586c4c34b3b6311a7fe86366ae65c
++ L'esempio viene compilato, ma non eseguito, perché richiede un repository. [Merge, cherry-pick,
++ revert e rebase](../../soundness/modules/git.md#merging-cherry-picking-reverting-and-rebasing) dice
++ come un'operazione fermata viene ripresa o abbandonata.

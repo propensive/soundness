@@ -1,0 +1,19 @@
+orthant 2 language
+
+@ 0 5 0 027aa8507cfead550859e240b33d26f4
++ O item da pedra angular: `etc/migration.md` define o formato de instruções de migração executável
++ por agentes — o que mudou, como detectar o código afetado, a reescrita exata e como verificá-la — e
++ a CI garante que os pull requests rotulados como incompatíveis tragam instruções nesse formato.
++ Várias trilhas terminam aqui: é por onde `api-6` flui e o que `tool-5` serve aos agentes.
+
+@ 0 8 0 1fc13f6d9faff5a7091ff85728b72d87
++ Concluído quando: `etc/migration.md` define a convenção, o release se recusa a rodar sem
++ `etc/migration/<version>.md`, e uma verificação de CI reprova qualquer pull request que altere
++ `lib/**/src` sem tocar nas notas de migração ainda não publicadas. As duas primeiras condições
++ valem: a convenção está escrita, `0.65.0.md` e as seguintes existem, e a diretiva `migration` em
++ `etc/release` recusa uma tag enquanto faltam as notas da versão ou as de outra versão não foram
++ publicadas. O que resta é a verificação de pull requests: `main.yml` verifica a atestação e nada
++ mais. A convenção não se baseia em rótulos: toda mudança material se registra no
++ `etc/migration/<version>.md` do próximo release, nomeado com esse release desde o início.
+
+% 0 1 0 0b0af992e6bfac6c10ea3d9a4cadef9e

@@ -1,0 +1,46 @@
+orthant 2 language
+
+@ 0 1 0 0e6a2d5fc72a75d6005580216a7590f9
++ ### Du code qui n'a pas été écrit ainsi
+
+@ 0 5 0 0d520984391183e80282dbedb6c118f0
++ Chaque gestionnaire présenté ici traite une `Exception`, ce qui convient à du code qui lève ses
++ erreurs. Un outil qui pilote du code *étranger*, comme un compilateur ou un chargeur de classes,
++ doit aussi survivre à ce que ce code lance, et une bonne part n'est pas du tout une `Exception` :
++ une assertion qui échoue, une pile épuisée, ou une classe qui n'a pas pu être liée. Rien de tout
++ cela ne met fin au programme, mais rien de tout cela n'atteint non plus `safely` ni `recover`.
+
+@ 0 2 0 06401e6939a385e10196cfcce9ddcb4e
++ `pacify` exécute un bloc d'un tel code, et lève tout ce qu'il lance sous la forme d'une
++ `Disturbance`, une erreur ordinaire qui conserve le `throwable` qu'elle représente :
+
+% 2 1 0 0dba5c706250d4671e5743603546c51f
+
+% 3 1 0 17de0ad2648dcc39195457705a3c3cb9
+
+% 4 1 0 1cb26e680046005b08d1a34cfae2b58f
+
+% 0 1 0 1e980016bc0ae3691f2176cfce4a94ee
+
+% 0 1 0 0571eeec5b91741516793a8732dd7f8a
+
+% 0 1 0 19fd4b2af4417e5d0e09a3f1a86836d0
+
+% 0 1 0 0b84ea1ab161c55f1c224fb28dc68767
+
+% 0 1 0 138f5b6c8e0f98b30566beba6d577194
+
+% 0 1 0 04608a27162d88501f0382027e5c5d83
+
+% 0 1 0 15375e1b6e1575021224d9dc8df437b7
+
+% 0 1 0 1b007dc2e33556d113df2073cb071363
+
+% 1 1 0 1e712c7ff8b0d734180073eb67749afd
+
+@ 0 4 0 0154979ea18f29e4151a531d5d1b21cb
++ `pacify` prend en charge tout throwable qui n'est pas fatal au programme, ainsi que les trois sortes
++ de `java.lang.Error` nommées ci-dessus. Un tas épuisé, ou une interruption, se propage toujours,
++ puisqu'aucun gestionnaire ne pourrait rien en faire d'utile. Une erreur levée dans les règles à
++ l'intérieur du bloc n'est pas étrangère : elle traverse `pacify` intacte, jusqu'au gestionnaire pour
++ lequel elle a été levée.

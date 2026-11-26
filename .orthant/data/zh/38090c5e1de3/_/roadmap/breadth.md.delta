@@ -1,0 +1,16 @@
+orthant 2 language
+
+@ 0 2 0 157a3a44b6f07b3214a91645500dd5a3
++ 完成条件：该模块附带测试、错误页面和一个 `doc/soundness/modules/` 主题发布，并能往返处理 RFC 7515/7516 的示例向量。
+
+@ 0 2 0 127cb5949af86617091c53779bd8b0f3
++ 完成条件：该模块附带测试、错误页面和一个 `doc/soundness/modules/` 主题发布，并通过标准的 TOML 合规测试套件。
+
+@ 0 2 0 0242546bb2e491fe01ce6eb76fd4fb16
++ 完成条件：该模块附带测试、错误页面和一个 `doc/soundness/modules/` 主题发布，并且一套脚本化的注册与断言流程能针对参考认证器通过。
+
+@ 0 2 0 0fa92f02db91bc5c0ffba1a2a59e6cd3
++ 完成条件：该模块附带测试、错误页面和一个 `doc/soundness/modules/` 主题发布，并能与参考 HTTP/3 服务器和客户端互操作。
+
+@ 0 2 0 128a7f59440161e006b6ecc0692efdcb
++ 完成条件：该模块附带测试、错误页面和一个 `doc/soundness/modules/` 主题发布，并且一次脚本化的会话能针对参考 IMAP 服务器通过。

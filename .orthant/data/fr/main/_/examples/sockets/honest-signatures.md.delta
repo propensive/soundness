@@ -1,0 +1,77 @@
+orthant 2 language
+
+@ 0 1 0 0ab57734a952185418f2f1ccfc768f31
++ # Une connexion à une autre machine a besoin d'internet
+
+@ 0 3 0 17ddca22c2300fd1149cdef64004fe64
++ Une socket de domaine Unix est un fichier sur la même machine, et s'y connecter ne demande rien
++ de plus qu'un backend. Un endpoint doté d'une adresse IP est ailleurs, et le code qui s'y
++ connecte doit avoir reçu l'accès au réseau.
+
+% 0 1 0 12705ff5e291290d17fbc8389d59ef4a
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 1163c8e966daf60c18df21f3ca4b7e43
++   label Une socket sur cette machine
+
+% 1 1 0 1c6b5def3e1ea6d703abbb2518869ab6
+
+% 2 1 0 05b7f3cb7162f2ce109e5a188ba32880
+
+% 3 1 0 17a3f5a8457caea50199111f8622534e
+
+% 0 1 0 029226982123208e122213caa4a2783e
+
+% 1 1 0 08545b0666b30115049ac554f16866f3
+
+% 2 1 0 05554ff1e34a04c4011daee1ad679587
+
+% 3 1 0 1f5bb416a4dadb051b7bc808677dd7f6
+
+@ 0 1 0 084ef77e3dd8d77c073dc416b4b65706
++   label Une adresse, sans réseau dans la portée
+
+% 0 1 0 1477c34ff41c7c99183443e1d3238ae1
+
+% 1 1 0 0960c596329e4eb20a0b442aaa85c43a
+
+% 2 1 0 19c5d1130323f8681f3b898ed8c44964
+
+% 3 1 0 01dbd4ada370b77e1b625a06a2e50068
+
+% 2 1 0 09050b4d43f14aad110b7b6f6e6bc556
+
+% 3 1 0 030814fc2e84ffd5044fc735eda7963e
+
+% 4 1 0 084ef61d4c85d18701f7da748accc4be
+
+% 3 1 0 06f11877c121f05015f1a45da77d2451
+
+@ 0 1 0 070a385e1b88eae808b0b6397708c17d
++   label Le réseau, accordé par un import
+
+% 0 1 0 03106c15e86385d00f58af65dbcc9858
+
+% 1 1 0 0cfa35959662a90000bf4bec3071fdc5
+
+% 2 1 0 148161eb04694dbb1e532c1a6f90f8bc
+
+% 0 1 0 18e4632fed950e921b8ad1ead937fb0f
+
+% 2 1 0 1ad18d7bb7de7b8311ba2f96c45166be
+
+% 3 1 0 037bb97db05013671dceb887c3ace00b
+
+% 4 1 0 146babb779f064871b82c960b6ef05e3
+
+% 0 1 0 18eafb32caed3dd50f976e787bd035ca
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 3 0 142766add66d377e0a095001b8c16c08
++ L'exemple est compilé, mais pas exécuté, car il ouvrirait une connexion.
++ [Les sessions](../../soundness/modules/sockets.md#sessions) décrit `session`, et
++ [les signatures honnêtes](../../philosophy/honest-signatures.md) pourquoi le réseau est demandé.

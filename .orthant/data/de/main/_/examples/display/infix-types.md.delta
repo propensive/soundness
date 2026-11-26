@@ -1,0 +1,78 @@
+orthant 2 language
+
+@ 0 1 0 0f5af8aeab7d67301331317e17272a67
++ # Ein Typ, der sagt, wie er dargestellt wird
+
+@ 0 3 0 1db410a99b6662ac17fb7a9b6c49b8ef
++ Eine `Showable`-Instanz ist eine Funktion von einem Wert zu seinem Text, und ihr Typ liest sich
++ als Aussage über den Typ, dem sie dient: Ein `Purse` ist darstellbar. Ist sie gegeben, verwenden
++ sowohl die Interpolation als auch `show` sie.
+
+% 2 1 0 00ae364c45c539ad0a4bcc89e3dd10c3
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 14960170c801fc0e06e039cd4b9f7ccf
++   label Eine Geldbörse lässt sich nicht in Text einfügen
+
+% 0 1 0 1477c34ff41c7c99183443e1d3238ae1
+
+% 1 1 0 0960c596329e4eb20a0b442aaa85c43a
+
+% 2 1 0 18de1dbc8deb74381a5198654ce08627
+
+% 2 1 0 0f9ca11e3484ad4d0ac1933f7df211b3
+
+% 3 1 0 1425367fa2ad807f1b399930082d40db
+
+@ 0 2 0 1f9fa23583c5d60b0bc4e01b2ffa2b99
++   label Eine darstellbare Geldbörse
++   highlight Purse..Showable  der Typ der Instanz
+
+% 0 1 0 1accf43fe92797601dc8da9a374d03c1
+
+% 1 1 0 175eff4186e0097c110253255e924cfc
+
+% 2 1 0 0ed36de46d7e3c8506db6f0917c667f5
+
+% 4 1 0 0bf590bca17d6a470f3fc4684f6e20a3
+
+% 6 1 0 0f8c04f278b9ba4c1a847964dbf0e902
+
+% 3 1 0 15c9e0ee570740051488a060b2732351
+
+@ 0 2 0 1927404f5522355203a9740966626146
++   label Dieselbe Instanz, beim Namen aufgerufen
++   highlight show  verwendet dieselbe Instanz
+
+% 1 1 0 0a79a0a0af548023142befc7d90cff93
+
+% 2 1 0 04997082254b7db303d1c71401b06fc5
+
+% 4 1 0 04d0aba0a1f655190a4e1cdfe8f9a0bd
+
+% 6 1 0 146c7ca7ea7775dc0fe99f9534d3d3f5
+
+% 0 1 0 1cf75fcf92aa4d3914573b41138246a9
+
+% 1 1 0 15d3eaff5e5f88e519024d345bbcfb4f
+
+% 1 1 0 136d267ff733a60e0f6246170d49df5f
+
+% 2 1 0 1525a46c87e9e0571e7d21b8e7c42b7a
+
+% 0 1 0 08a86cbdc9b8cb0109ed8ce5b435ce67
+
+% 1 1 0 0cd6459499a6bd5203d659b3bcc1b6aa
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 0 1 0 0ceaf4387639a3bc1c02f735e6e874e3
+
+% 1 1 0 0b11cc69f169290200be57113f590b7e
+
+@ 0 2 0 0b4f133e44bb9136160c53e861b4cf2a
++ [Ein Showable schreiben](../../soundness/modules/display.md#writing-a-showable) enthält die
++ Einzelheiten, und [Infix-Typen](../../philosophy/infix-types.md) erklärt das Wort `is`.

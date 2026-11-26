@@ -1,0 +1,22 @@
+orthant 2 release
+
+@ 0 1 0 14d7c8ec88612de20269c9f78fd704ae
++ The prose exists in three parallel systems today: the topic guides in `doc/soundness/modules/` — the
+
+@ 0 1 0 1b0ca89be9c508d408b3ea1776af08a5
++ `doc/standards/messages.md` was a self-declared stub, despite the message convention being
+
+@ 0 1 0 0d058f6728c5dcb01b3e933f5d633bc3
++     grep -c 'Stub' doc/standards/messages.md    # 0
+
+@ 0 1 0 0c030f81c83b4aa20438e7eee0c06b9c
++ worth keeping moved into `doc/soundness/modules/` topics, and the rest was deleted rather than left to
+
+@ 0 1 0 0e51eb5da737dbe9044d65c4f11e117f
++ Baseline was 99 topics in `doc/soundness/modules/` and 1 of 144 libraries uncovered (measured 2026-09-25; 91 topics and 35 uncovered on 2026-08-01); 101 topics cover 145 of 145 on 2026-10-21
+
+@ 0 1 0 052d1dce0454a33116967155b6c2aadc
++ Every published module is covered by at least one `doc/soundness/modules/` topic, and a coverage script
+
+@ 0 1 0 15ef3537c362320607625a3de9575597
++ touched in #801, each an older and shorter copy of a `doc/philosophy/` page. The website

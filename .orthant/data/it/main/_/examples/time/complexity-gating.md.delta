@@ -1,0 +1,73 @@
+orthant 2 language
+
+@ 0 1 0 198459522edb2dbc0061a5a888cad198
++ # Contare i punti di un periodo
+
+@ 0 3 0 1b84a01cbc70f36e14cde0926bbf8c90
++ Percorrere un periodo a passo fisso dà una catena pigra, e una catena che copre anni non costa nulla
++ finché i suoi punti non vengono richiesti. Contarli li percorre tutti, quindi il conteggio non
++ compila finché un import non dichiara che è lineare.
+
+% 2 1 0 0005dcf6624ad90b1fa2bc2e297cf0fe
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 2 0 0d3eebaf5913aed41e6e0a30095c054b
++   label Un punto per ogni giorno di sei anni
++   highlight by(1*Day)  non viene ancora calcolato nulla
+
+% 1 1 0 0844fe48f6f819730e3dfa80d0e78bdf
+
+% 2 1 0 15c2f82ed7af34fa1fddc1c472efd453
+
+% 4 1 0 03f4681befe384d60a733d3f9abfa216
+
+% 1 1 0 12d23a12989d99a800f0ee8333e85840
+
+@ 0 1 0 082c7f1dddd955881be19c430ca7edfe
++   label Il conteggio
+
+% 0 1 0 1477c34ff41c7c99183443e1d3238ae1
+
+% 1 1 0 0960c596329e4eb20a0b442aaa85c43a
+
+% 2 1 0 1813ff25c8f61a1e126d7c4dd24952e7
+
+% 4 1 0 0dadcde48c6ef06f13c1eb7060ca4d19
+
+% 3 1 0 164f4a84de6358201e479f65491c2f40
+
+% 1 1 0 11d13b2fa86adcdc05675b21e33fd65b
+
+@ 0 2 0 096909bd8fbbb2881aa2f1a171074755
++   label Il costo, dichiarato
++   highlight linearSize  ogni punto viene visitato
+
+% 1 1 0 1692689d6adb3eff041bb133d93dab2f
+
+% 0 1 0 0660be549c841c2f1289dc51a8eff99a
+
+% 2 1 0 0a7034bb828c9d350f21736b66313a64
+
+% 3 1 0 039cf2ea8bee6cbf1551581c55c41244
+
+% 1 1 0 16117e71b533e5b900dcce30857ac84b
+
+% 1 1 0 136d267ff733a60e0f6246170d49df5f
+
+% 2 1 0 1525a46c87e9e0571e7d21b8e7c42b7a
+
+% 0 1 0 08a86cbdc9b8cb0109ed8ce5b435ce67
+
+% 1 1 0 0cd6459499a6bd5203d659b3bcc1b6aa
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 0 1 0 02e23cfb8f131e7e0d043d84754b5f14
+
+% 1 1 0 005c493af619da3917afe248b520c8bf
+
+@ 0 1 0 1fbed7f35451231918c152e0cd75efba
++ [Periodi](../../soundness/modules/time.md#periods) descrive `by` e `segments`.

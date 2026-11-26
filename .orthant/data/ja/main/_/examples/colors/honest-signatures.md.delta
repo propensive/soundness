@@ -1,0 +1,53 @@
+orthant 2 language
+
+@ 0 1 0 029564d8c59aabde11b97d6f261f19bb
++ # 光に依存する変換
+
+@ 0 2 0 13d5af48c290122b01005d851692dbcf
++ CIELAB は、目が順応した光を基準に色を表す。そのため CIELAB への変換は光を知る必要があり、
++ スコープに `Colorimetry` があるまでコンパイルされない。
+
+% 0 1 0 12705ff5e291290d17fbc8389d59ef4a
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 085799ed99e9df2b0db460ec890b6ac2
++   label 特定の光のもとではない
+
+% 0 1 0 1477c34ff41c7c99183443e1d3238ae1
+
+% 1 1 0 0960c596329e4eb20a0b442aaa85c43a
+
+% 1 1 0 023dec418b60f2c70f7da154661b62e9
+
+% 2 1 0 1a7e7a4799fe16b204f3b2c3815549d1
+
+@ 0 2 0 15999254f289a9c814849c84db962360
++   label 昼光のもとで
++   highlight daylightColorimetry  目が順応した光
+
+% 1 1 0 1411780efeb5a7660e3b2e13b4cddc57
+
+% 0 1 0 10d0e6e46ee5920e149f03f450dd74da
+
+% 1 1 0 0713795f420dec5d13c78b5f416fcb45
+
+% 2 1 0 082e07e573cd2f161a67c00033387c55
+
+@ 0 2 0 0789df1451dd809c072ed78a7f603fcc
++   label 光を必要としない変換
++   highlight to[Hsl]  基準白色なしで定義される
+
+% 1 1 0 1e1aa33c80bcb4771a563b74e92e8da9
+
+% 0 1 0 176fe2082ce38c290194256a4eb7d97c
+
+% 0 1 0 18eafb32caed3dd50f976e787bd035ca
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 3 0 14315da4f0596f0d1917b96b969cc94d
++ [カラープロファイル](../../soundness/modules/colors.md#color-profiles)に光源が挙げられており、
++ [正直なシグネチャ](../../philosophy/honest-signatures.md)に依存関係を宣言する理由の説明がある。

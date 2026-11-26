@@ -1,0 +1,62 @@
+orthant 2 language
+
+@ 0 1 0 009c422eaf34bccd0202266c0709f34b
++ # La même requête, envoyée autrement
+
+@ 0 3 0 037ab2a87c7232c701f2c8ea0e91ec87
++ L'implémentation qui envoie une requête, et le fait qu'elle suive ou non une redirection, ne
++ sont pas des arguments de `fetch`. Chacun est choisi par un import, pour toutes les requêtes de
++ sa portée, et la requête elle-même reste la même ligne.
+
+% 0 1 0 12705ff5e291290d17fbc8389d59ef4a
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+@ 0 1 0 1febc8a1c87dd8801848f78ae2a33335
++ alternative Le client de la JVM
+
+% 0 1 0 04cf51979777b0880b5a2d32bd0d741b
+
+% 1 1 0 1d4ec3b564526afa1bd5e60b71834422
+
+% 0 1 0 0d95e158a2e74a4308f5a7dadf486a7f
+
+% 1 1 0 119ad7ebf4e25c411a9d5f244a64bac9
+
+% 3 1 0 02f403107aa0a5a009b19d7caa505e26
+
+@ 0 1 0 083ce885078e0f381abb1c890e9c7a4a
++ alternative Les codecs de Soundness
+
+% 0 1 0 190a4c77bd82a61e1ca17aad644320a4
+
+% 1 1 0 1e8f849b5834c3591c97f5281978a27b
+
+% 0 1 0 0dd2869c2c1ed27314e39f8e199b1512
+
+% 1 1 0 1d5166dda6fc653a10f65bcddf339335
+
+% 3 1 0 1684f99c4255a17c1da8e431c99118ad
+
+@ 0 1 0 10c106017879917f1b96962176b56496
++ alternative Pas de redirections
+
+% 0 1 0 0b4a5f08b0c4242d1036c3c53de4d400
+
+% 1 1 0 0039fe0502b8bd2b0cbcf19b3bd9c65e
+
+% 0 1 0 15ba94e9fdb081b71795f2a9bb02e3dc
+
+% 1 1 0 1b92d9b6d9180073173bf41eb0d8cf30
+
+% 3 1 0 1b78c8d37643003c1a563b50c1f3c3ac
+
+% 0 1 0 18eafb32caed3dd50f976e787bd035ca
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 4 0 1026f53924bfd3d101afdd8893493f0d
++ L'exemple est compilé, mais pas exécuté, car il a besoin du réseau.
++ [Choisir un transport](../../soundness/modules/http-client.md#choosing-a-transport) compare les
++ backends, et [le contexte déclaratif](../../philosophy/declarative-context.md) explique
++ l'approche.

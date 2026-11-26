@@ -1,0 +1,82 @@
+orthant 2 language
+
+@ 0 1 0 1d16aa192ae5459e19e033b53c4c5dc5
++ # Obraz, który sam się opisuje, ze świata WIT
+
+@ 0 3 0 0f273500f9c172721950d72e8175b9c8
++ Obraz Wasm zapisuje interfejsy, które jego komponent eksportuje i importuje, aby host mógł
++ stwierdzić, czy potrafi go uruchomić. Są one już określone w świecie WIT, z którym skonsolidowano
++ komponent, a obraz bierze je stamtąd, więc kontrakt zapisuje się raz.
+
+% 2 1 0 0b4a5d5a256565f11da201635e1cf688
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 02e3de2a48fd855715efe7bb911382e5
++   label Świat
+
+% 1 1 0 1bd04f8e5b25742812d9a6e4e0e9e591
+
+% 0 1 0 12a618ab3fc8ab800817fdfca2fcb19c
+
+% 2 1 0 151219c2b7ba68e20d5aee4532b1bc7f
+
+% 4 1 0 012ba2f835ab92721d8a0b099ad9b42d
+
+% 5 1 0 0e4c17ddf77f6180165434c035e53342
+
+% 6 1 0 0349b982388f650f079a5400fb3b1b94
+
+% 7 1 0 15cb8047647ec7e30ad12f6572b9b502
+
+% 0 1 0 11f20ba09dd48b221905179629659cc2
+
+% 1 1 0 12b651779b588c1e0c65c60c45a0f4d6
+
+@ 0 1 0 1f0a5f8fb8988b781d2cebfd166068c8
++   label Obraz, który eksportuje to, co eksportuje świat
+
+% 0 1 0 0bc3d7e03c2c44f7028533d58d1558ac
+
+% 1 1 0 106a8eaff043dcc917bce67d9763f0ae
+
+% 0 1 0 00c2e21e742aafb914b71aa940ad4bc5
+
+% 0 1 0 135a962eef3d32a00b4c8b00859a82f8
+
+% 2 1 0 14ca224e6543632418088f592ca6368b
+
+% 4 1 0 0a0d0eef306ae48c16238cad44d347f5
+
+% 5 1 0 1b13cb6fae9d6e23164811320ad0c77f
+
+% 6 1 0 00d80a518c8e5c0a02a9dab0ff80ec19
+
+% 7 1 0 0485a3e62014db8d163c812ca4314c8b
+
+% 0 1 0 06c7e05f012672e71fb5fbf2d2d136a0
+
+% 0 1 0 1599a0fca779642b023680f647563e6f
+
+% 1 1 0 0191bce7f87b9f3116a7ee05bbbc915f
+
+% 1 1 0 136d267ff733a60e0f6246170d49df5f
+
+% 2 1 0 1525a46c87e9e0571e7d21b8e7c42b7a
+
+% 0 1 0 08a86cbdc9b8cb0109ed8ce5b435ce67
+
+% 1 1 0 0cd6459499a6bd5203d659b3bcc1b6aa
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 0 1 0 0f51de1224b43a5105dfc16ddca28162
+
+% 1 1 0 095a9e1c341ea3b5089eb0deeedcda07
+
+@ 0 3 0 129f2f78a9e355d613300075ec95d9b3
++ Sekcja [Obciążenia WebAssembly](../../soundness/modules/docker.md#webassembly-workloads) opisuje
++ artefakt, a [składalność](../../philosophy/composability.md) – sposób, w jaki dwie biblioteki
++ spotykają się w zwykłej wartości.

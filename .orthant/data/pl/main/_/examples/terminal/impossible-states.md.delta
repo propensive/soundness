@@ -1,0 +1,69 @@
+orthant 2 language
+
+@ 0 1 0 03822dc817626a5a1309fdc7def4092e
++ # Klawisz, którego nie da się nacisnąć
+
+@ 0 3 0 0bb81e764a3cc85211b70e05cd29c9a1
++ `Keypress` opakowuje klawisz w modyfikatory przytrzymane razem z nim, a każdy modyfikator przyjmuje
++ tylko klawisze, które może sensownie zmodyfikować. `a` z Shiftem to znak `A`, więc nie da się
++ zapisać Shiftu z literą.
+
+% 2 1 0 0f5f9a96bba3687f0574f83707662173
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 09445fb44672e486006f734533df5693
++   label Litera z Shiftem
+
+% 0 1 0 1477c34ff41c7c99183443e1d3238ae1
+
+% 1 1 0 0960c596329e4eb20a0b442aaa85c43a
+
+% 0 1 0 1869f96e6eaa60ec1ce326ab2607ae73
+
+% 1 1 0 02085158bd740fe71a2fa0e8a63f88f4
+
+@ 0 2 0 1f2a883216361b2c12533504f47a7407
++   label Litera, którą daje
++   highlight CharKey('A')  Shift został już zastosowany
+
+% 1 1 0 05dace09e2f9fb150f33bd7bbf07a07d
+
+% 2 1 0 02e321fcd6f68c57198f43d004c93513
+
+% 1 1 0 05a00f486161a31b17b536c902f02e9c
+
+@ 0 2 0 01bade4c77e3aeda17a50c0a5d3acbac
++   label Klawisz, który Shift zmienia
++   highlight Shift(Keypress.Enter)  klawisz edycyjny zachowuje swój modyfikator
+
+% 1 1 0 05759bd4d202391b1696ecfcf4a5a669
+
+% 2 1 0 1633c00ad85083721661d69e86b736cf
+
+% 0 1 0 1e131c35066de41116b555122ed5526f
+
+% 1 1 0 04aeb43488ed35901426919f000ded1f
+
+% 1 1 0 136d267ff733a60e0f6246170d49df5f
+
+% 2 1 0 1525a46c87e9e0571e7d21b8e7c42b7a
+
+% 0 1 0 08a86cbdc9b8cb0109ed8ce5b435ce67
+
+% 1 1 0 0cd6459499a6bd5203d659b3bcc1b6aa
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 0 1 0 188fd4939c7f631c0d97594501719623
+
+% 0 1 0 022228e6d86bc45d01afad877a310697
+
+% 1 1 0 092357d51585992300b4ebdbffed5fff
+
+@ 0 3 0 1d1213abbcbe3fcc09ccd1bfd79ee3b4
++ [Wejście z klawiatury](../../soundness/modules/terminal.md#keyboard-input) wymienia klawisze i ich
++ modyfikatory, a [stany niemożliwe](../../philosophy/impossible-states.md) wyjaśniają, dlaczego
++ błędnej wartości nie da się zapisać.

@@ -1,0 +1,46 @@
+orthant 2 language
+
+@ 0 1 0 1c7ea9b5c4c3a77209312ccdf9e06fd7
++ # 可能放不下的数字
+
+@ 0 3 0 08450f4f769b493b064b586bec50e13b
++ 每个 `Byte` 都是 `Int`，而只有部分 `Int` 是 `Byte`。因此收窄不是一个截断的方法，而是一个会拒绝匹配的模式：`As[Byte]` 匹配放得下的值，由代码说明其余的值如何处理。
+
+% 2 1 0 1eb76c2d66b9fd821e8a717e7bb44416
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 0 1 0 14aab7f0be2434f81421fb69d99543da
+
+@ 0 2 0 0986ff72fb894618085af1bb80fe2c27
++   label 收窄，并写明另一种情况
++   highlight As[Byte](byte)  只匹配放得下的值
+
+% 0 1 0 0feeb6ee26eddc7916a3c923ea9fa7b1
+
+% 0 1 0 11b692a377b556e60288592ced19ec0d
+
+% 0 1 0 0a10a96b80746a8b0268dbeb5312ba5b
+
+% 0 1 0 1ab777edb3aaa09a1a13ce6caf7fed9f
+
+% 1 1 0 1aed7c53e0d272da096dc1689d6b51a3
+
+% 1 1 0 136d267ff733a60e0f6246170d49df5f
+
+% 2 1 0 1525a46c87e9e0571e7d21b8e7c42b7a
+
+% 0 1 0 08a86cbdc9b8cb0109ed8ce5b435ce67
+
+% 1 1 0 0cd6459499a6bd5203d659b3bcc1b6aa
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 0 1 0 1c21f63fca32ea7f0785c19553a3e257
+
+% 0 1 0 0c5e1be4d084ce1d1e1b66f002c78798
+
+% 1 1 0 125439782faa868c1521d592e3ae481e
+
+@ 0 3 0 1683b4a99aa40454091b88f7b9476ba6
++ [收窄与拓宽](../../soundness/modules/decoding.md#narrowing-and-widening)给出了规则，[全转换](../../philosophy/total-transitions.md)给出了理由：300 永远不会变成 44。

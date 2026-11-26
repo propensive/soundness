@@ -1,0 +1,52 @@
+orthant 2 language
+
+@ 0 1 0 1f5169bb68daf46a179054eab9bfc0ed
++ # Le numéro d'un port est dans son type
+
+@ 0 3 0 0580b6fc1fa822571675f0ddf3e6e4d8
++ Un littéral de port a un type qui enregistre son transport et son numéro, comme
++ `Port over Tcp of 443`. Un nom de service est résolu en ce numéro pendant la compilation du code,
++ si bien que le type sait ce que signifie `https`.
+
+% 0 1 0 12705ff5e291290d17fbc8389d59ef4a
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 181e840ae0db9a2a1bcefbe63151d43f
++   label Le type d'un port numéroté
+
+% 0 1 0 1746bfd7de574e520fba3fbfdb7503e4
+
+% 1 1 0 0a5ddf3fe476af78093e32d8eee17933
+
+% 0 1 0 14f5d8d5cc7655c805a684fecb364d2f
+
+% 1 1 0 069cac9a258d48720ad445f92b50531f
+
+@ 0 2 0 1a09770223acefe11fd2e798eb622a05
++   label Le même type, à partir d'un nom de service
++   highlight tcp"https"  résolu dans le registre des services
+
+% 1 1 0 1df69316678b6b0119cc29caaaf74791
+
+% 0 1 0 1916eb9e3fedc02d021a6a04cd1c93c1
+
+% 1 1 0 0246b115b3dd20441a057af8a076cecd
+
+@ 0 1 0 14c5941ab080258d1d07ccba1535e207
++   label Un numéro qui n'est pas celui de ce service
+
+% 0 1 0 1477c34ff41c7c99183443e1d3238ae1
+
+% 1 1 0 0960c596329e4eb20a0b442aaa85c43a
+
+% 0 1 0 1b250805f02e1c7b151994a68fb07e7e
+
+% 0 1 0 18eafb32caed3dd50f976e787bd035ca
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 1 0 1dd0c715b2730293093fa02782082495
++ [Ports](../../soundness/modules/network-addresses.md#ports) décrit les littéraux.

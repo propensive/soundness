@@ -1,0 +1,84 @@
+orthant 2 language
+
+@ 0 1 0 0546d6988e67598d1a0651239afe4309
++ # Un mois après le 31 janvier
+
+@ 0 3 0 0f2569c73b29318e104c963e37b3b5f4
++ Ajouter des jours à une date a toujours une réponse. Ajouter un mois, non : il n'y a pas de 31
++ février. Aucune réponse n'est choisie en silence : la somme ne compile donc pas tant qu'une
++ politique de fin de mois n'est pas dans la portée.
+
+% 2 1 0 1550f34c5e3fc75d0fb9e769fa8487d8
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 08c9593f254398c01a0588c3d35b3c91
++   label Les jours sont réguliers
+
+% 1 1 0 050c4583b94cab5c13d63ec1c970fb5e
+
+% 2 1 0 16dca9428a0d643c16cc9f3729902c88
+
+% 0 1 0 01b0c2a27a3d12d2172d3f69c6160c9e
+
+% 1 1 0 1bdaae324263b9f506ab592583e901ce
+
+@ 0 1 0 133e1a5273a3a0371cbc6ed45a21601b
++   label Les mois ne le sont pas
+
+% 0 1 0 1477c34ff41c7c99183443e1d3238ae1
+
+% 1 1 0 0960c596329e4eb20a0b442aaa85c43a
+
+% 2 1 0 1813ff25c8f61a1e126d7c4dd24952e7
+
+% 2 1 0 1efbfb5b5405ebfc1977ab189a018e1d
+
+% 3 1 0 0ede73cf3abb6f470e41497dac403312
+
+@ 0 2 0 0044e27674fbd7a4139293ae0bf6b64e
++   label Le dernier jour qui existe
++   highlight clampMonthEnd  le dernier jour de février
+
+% 1 1 0 1dd2086d07d1a99214008e11917d8c8f
+
+% 0 1 0 16ff7935b868b2e814608c3ef981ccd9
+
+% 2 1 0 0b22c6fd288eeec209c8b446de576f14
+
+% 3 1 0 012da35cc66703b01da4ba41a0cbc49f
+
+@ 0 2 0 0bab1b507f37e62d0ea212c0dc4d24f7
++   label Ou les jours restants, dans le mois suivant
++   highlight overflowMonthEnd  en débordant sur mars
+
+% 1 1 0 023da5e649fb4fc10714e458e5a997a9
+
+% 0 1 0 05e8406e2740ccd917b20490b72a62dd
+
+% 2 1 0 1af5aeaa5b98ca2c0be8c939d0a66a24
+
+% 1 1 0 0bb4093eec24e92908f1e923ddbd62f1
+
+% 1 1 0 136d267ff733a60e0f6246170d49df5f
+
+% 2 1 0 1525a46c87e9e0571e7d21b8e7c42b7a
+
+% 0 1 0 08a86cbdc9b8cb0109ed8ce5b435ce67
+
+% 1 1 0 0cd6459499a6bd5203d659b3bcc1b6aa
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 0 1 0 1ffc216c123501de05bfcc61dc208228
+
+% 0 1 0 080dc6bc4bd277971ed942a10981eefe
+
+% 1 1 0 097935ecd501307401ba887a89ef7e78
+
+@ 0 2 0 136701c14cc1ab2e1023173178f67481
++ [L'arithmétique des dates](../../soundness/modules/time.md#arithmetic-on-dates) présente aussi
++ les jours ouvrés, et [les transitions totales](../../philosophy/total-transitions.md) le
++ principe.

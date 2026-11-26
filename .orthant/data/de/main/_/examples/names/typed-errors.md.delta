@@ -1,0 +1,42 @@
+orthant 2 language
+
+@ 0 1 0 0c1f59092f684ab30fd7fe502c1af8f7
++ # Text, der vielleicht kein gültiger Name ist
+
+@ 0 2 0 112578361c60bb0d098f23d71ce74e85
++ Text, der zur Laufzeit ankommt, wird nur dadurch zu einem `Name`, dass er die Validierung besteht,
++ und die Validierung kann fehlschlagen. Eine Methode, die aus Text einen Namen erzeugt, sagt das in
++ ihrem Typ, oder sie kompiliert nicht.
+
+% 0 1 0 12705ff5e291290d17fbc8389d59ef4a
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 1466e449756a737a0ef915ff5dd07f58
++   label Eine Methode, die nicht eingesteht, dass die Validierung fehlschlagen kann
+
+% 0 1 0 1477c34ff41c7c99183443e1d3238ae1
+
+% 1 1 0 0960c596329e4eb20a0b442aaa85c43a
+
+% 0 1 0 0c8a6a8bb0b43a630823d803381af45d
+
+% 1 1 0 0f5af6f1f97337d60c94b4c8b00e2b25
+
+@ 0 2 0 054cdc202753730e0c1d49a9405211c7
++   label Der Fehlschlag, im Rückgabetyp
++   highlight raises..Name.Error  der Aufrufer muss ihn behandeln
+
+% 1 1 0 0c6a59195dc989e9081fd7fe52a6dc1f
+
+% 0 1 0 0f46a8563b9b623714b63413b70466ab
+
+% 0 1 0 18eafb32caed3dd50f976e787bd035ca
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 2 0 0e0309e9993633350ea2577bf456a961
++ [Zur Laufzeit validieren](../../soundness/modules/names.md#validating-at-runtime) zeigt den Fehler,
++ der ausgelöst wird.

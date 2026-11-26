@@ -1,0 +1,53 @@
+orthant 2 language
+
+@ 0 1 0 14da2ed91ba6c6ba09f30b3c6b6f576e
++ # Kąt nie jest liczbą
+
+@ 0 2 0 0cb959271760123f0c333fc9da33167f
++ `Angle` tworzy się przez jego jednostkę, więc goła liczba nigdy go nie zastępuje. To, czy
++ `90.0` miało oznaczać stopnie, czy radiany, jest pytaniem, na które trzeba odpowiedzieć tam,
++ gdzie się je zapisuje.
+
+% 0 1 0 12705ff5e291290d17fbc8389d59ef4a
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 1d8fab64da99ccc40abca2b365ec0d20
++   label Liczba bez jednostki
+
+% 0 1 0 1477c34ff41c7c99183443e1d3238ae1
+
+% 1 1 0 0960c596329e4eb20a0b442aaa85c43a
+
+% 0 1 0 01ccff839d941efa066606b90bf3a0d9
+
+% 1 1 0 02950df463b57bff0354334aaa53b6ba
+
+@ 0 2 0 00cde0f0eb99491d1e8d8591e6d0c56e
++   label Dziewięćdziesiąt stopni
++   highlight .deg  jednostka, tam gdzie zapisano liczbę
+
+% 1 1 0 014856376a56fab217e6d0108aacc008
+
+% 0 1 0 0a4a6cd354d720af07b8c623498d07d6
+
+% 1 1 0 16fba0906ed405020ffa7e3378543224
+
+@ 0 2 0 05316cab294989380288686559b940ed
++   label Ten sam kąt w radianach
++   highlight .rad  druga jednostka
+
+% 1 1 0 1562718e4b20754c1217cee69a024034
+
+% 0 1 0 13842e7151ab47641a3ec8cd71d7e7eb
+
+% 0 1 0 18eafb32caed3dd50f976e787bd035ca
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 3 0 0537e58c283a1dda0db811eb0bfed94e
++ [Kąty](../../soundness/modules/geography.md#angles) odczytują kąt z powrotem w dowolnej z
++ jednostek, a [stany niemożliwe](../../philosophy/impossible-states.md) wyjaśniają, dlaczego
++ liczba jest wykluczona.

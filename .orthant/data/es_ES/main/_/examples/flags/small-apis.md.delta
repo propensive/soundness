@@ -1,0 +1,58 @@
+orthant 2 language
+
+@ 0 1 0 0d4ebb3a2ae30d61093e2c0b551ae72b
++ # Un conjunto de bits es un conjunto como cualquier otro
+
+@ 0 3 0 1a1b7e8fd062e87d1e7b1fa6bac44952
++ Un `Bitset` guarda sus miembros en bits y un `Set` los guarda en una tabla hash, pero ninguno
++ tiene métodos propios para la pertenencia, la intersección o la diferencia. `has`, `intersect`,
++ `except` y `size` son los mismos nombres en ambos, y solo el constructor dice cuál es cuál.
+
+% 0 1 0 12705ff5e291290d17fbc8389d59ef4a
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+@ 0 2 0 04cb039a696924f00e14d7cb117ac4f3
++ alternative Un conjunto hash
++   highlight Set  una tabla hash
+
+% 1 1 0 1dbba91536d541f21f6c0d09a6092a9a
+
+% 2 1 0 19bc15e397e7f92d03b8b3820cf09506
+
+% 0 1 0 135832fb8b53866a005e08fd0d96f4d0
+
+% 0 1 0 0de19e11b56357ba15bb9a9b0961faaa
+
+% 1 1 0 0038a24d67c3bc810dddb110e682f57c
+
+% 2 1 0 16d0900a2df379e2130e35739320a249
+
+% 3 1 0 07b3d586fdeadd791b984007d85df348
+
+@ 0 2 0 15aa3c89c4d08b5a1df4c5dc9a0d414a
++ alternative Un conjunto de bits
++   highlight Bitset  un bit para cada miembro posible
+
+% 1 1 0 018f615808b34000040561a0671c905d
+
+% 2 1 0 1322a3ef3e63ab3818503c1e9077ecd6
+
+% 0 1 0 14bf8483a87570750886868c884e14e3
+
+% 0 1 0 0bd2115ccbe5974c02566552ea5a7b6e
+
+% 1 1 0 1af95d82e3eeac200133787b0de1995e
+
+% 2 1 0 1c6e4ef5c1356d5c0654cff3ab100fde
+
+% 3 1 0 0c546e5c378fdcbd1b5887974faed769
+
+% 0 1 0 18eafb32caed3dd50f976e787bd035ca
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 2 0 1d2531d65d4409fd1c4b8b8e3820b718
++ [Conjuntos de enteros](../../soundness/modules/flags.md#sets-of-integers) dice cuándo los bits son
++ la mejor elección, y [las API pequeñas](../../philosophy/small-apis.md) por qué se comparten los
++ nombres.

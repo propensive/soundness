@@ -1,0 +1,64 @@
+orthant 2 language
+
+@ 0 1 0 0623a0cd6fc98fdf04de55519f57d557
++ # Um gráfico de pizza de duas séries
+
+@ 0 2 0 071f337ef66c01101ccc18ff415ce6c0
++ Um tipo de gráfico desenha dados de uma única forma. Uma pizza são as partes de um único todo,
++ então ela recebe uma série, e uma lista de duas é recusada pelo compilador, e não descoberta na
++ página.
+
+% 0 1 0 12705ff5e291290d17fbc8389d59ef4a
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 0a32e451f406099d137b1b3136a50bb1
++   label Duas séries em uma pizza
+
+% 0 1 0 1477c34ff41c7c99183443e1d3238ae1
+
+% 1 1 0 0960c596329e4eb20a0b442aaa85c43a
+
+% 2 1 0 0479941ed09441ba0577fa0858746482
+
+% 3 1 0 06b18211ca1c62ea06f5ca68bb28c55b
+
+% 0 1 0 0f6defaa8603582a1381fa6170229472
+
+% 1 1 0 1e63f0dc55d2aa18125aba24bb19941c
+
+@ 0 2 0 153b5854f9cb5a9713b92ca91a8592b9
++   label Duas séries, lado a lado
++   highlight Bars()  um tipo que desenha qualquer número de séries
+
+% 1 1 0 0074f19779722f9e18283ca37b66fa81
+
+% 2 1 0 02eff333b96909361242b3e84a6b5287
+
+% 3 1 0 01686cad5056e9b41a62c506a236bef1
+
+% 0 1 0 12d29105a8129184115943ba5594984c
+
+% 1 1 0 1a40f07174a9b5211e315425080149ce
+
+@ 0 2 0 00d3c5b46333671e1ecf8bf56f85f80e
++   label Uma série em uma pizza
++   highlight comedies.chart(Pie())  um todo, e as suas partes
+
+% 1 1 0 109c74325b1fd1511d187e6cb6b8e258
+
+% 2 1 0 1123e986e6eea6fe17855073ea4f731f
+
+% 3 1 0 01cf731cad28697202f4a316fa4dbf77
+
+% 0 1 0 10c4d22b8c0c4a4c052ab0f0821bccef
+
+% 0 1 0 18eafb32caed3dd50f976e787bd035ca
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 2 0 1fa50067bb141289109b0943685ed8aa
++ [Tipos de gráfico](../../soundness/modules/charts.md#chart-kinds) traz a tabela de tipos e
++ formas, e os [estados impossíveis](../../philosophy/impossible-states.md) o princípio.

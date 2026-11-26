@@ -1,0 +1,70 @@
+orthant 2 language
+
+@ 0 1 0 0e3c0c4f903e5a3314f0cbab7e988256
++ # Des adresses dans un document JSON
+
+@ 0 3 0 04975cccd0d0d2060ef6fce03d8f0e80
++ Un nom d'hôte, une adresse IP et une adresse MAC se décodent depuis du texte, et c'est tout ce
++ que JSON a besoin de savoir. Une case class dont les champs sont de ces types se lit depuis un
++ document sans qu'aucun codec soit écrit pour elle, et chaque champ est validé à sa lecture.
+
+% 2 1 0 1973566f485b12470aa634f25c1867e8
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 1b5236fd0284c8460978fa0289a836da
++   label Des champs de texte
+
+% 1 1 0 1327b5bf5937bc720491466aa70fb436
+
+% 2 1 0 094f50bf7a3102ab0162f1f56053ef2a
+
+% 0 1 0 169db37cf0a561d904b4fb26f048b46c
+
+% 2 1 0 09bc44afcd10d26804de4ff69c07ce9d
+
+% 3 1 0 15b87191d91c950a027afdee251d862f
+
+% 5 1 0 1ea3812f2f541f3a1e12679b4de1bb5f
+
+% 1 1 0 1e2a4064329c4b9306d5ff58b10acd6f
+
+@ 0 1 0 06353a4da1b3ed920f7f10fa1d4d5383
++   label Des champs qui sont validés
+
+% 0 1 0 0a547e40673f5a9503f160bdd3ab9ba2
+
+% 1 1 0 120e0e54bd746e740c9814047bb9d589
+
+% 2 1 0 0e316ab6efb304130135d4e024dd45ba
+
+% 0 1 0 0a4ffc2e2424e94c1a39407372dc58b8
+
+% 2 1 0 1e3f16b1e3d12f20191b9875669f7ac7
+
+% 3 1 0 0e093d685e0e0548182a19d5218bff6b
+
+% 5 1 0 118f9e5cf0ca87f8116b57a7fdd53c06
+
+% 1 1 0 026a83a63f655471024b72675345bf5f
+
+% 1 1 0 136d267ff733a60e0f6246170d49df5f
+
+% 2 1 0 1525a46c87e9e0571e7d21b8e7c42b7a
+
+% 0 1 0 08a86cbdc9b8cb0109ed8ce5b435ce67
+
+% 1 1 0 0cd6459499a6bd5203d659b3bcc1b6aa
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 0 1 0 1d2ec0eba231c7af11e2eaf277b5345e
+
+% 1 1 0 02138dbe64231784136f219399a27e8b
+
+@ 0 2 0 107ef831276be4b61c5cdae172ee7e4d
++ [Analyser à l'exécution](../../soundness/modules/network-addresses.md#parsing-at-runtime) indique
++ comment chaque type est décodé, et [JSON](../../soundness/modules/json.md) comment l'est une case
++ class.

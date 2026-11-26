@@ -1,0 +1,73 @@
+orthant 2 language
+
+@ 0 1 0 1f17a19605fd016c037a18b022112000
++ # Un valor para cada campo de un tipo
+
+@ 0 3 0 001ce057c233530814221c9b27f8abc0
++ `catalog` aplica una función a un valor y a cada campo dentro de él, por muy anidado que esté. Las
++ entradas se disponen a partir de la estructura del tipo, así que no se escribe nada para `Play` ni
++ para `Person`.
+
+% 2 1 0 19317804e3784ec804af36cd3d6b0f52
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 2 0 0aaac2b9757f5ca60200c8d4e2e0e098
++   label Un valor, y una función de cualquier campo
++   highlight [field]..field.toString.tt  aplicada a cada campo, a cualquier profundidad
+
+% 1 1 0 1fb3d68d131339ee10e2db115c01bd66
+
+% 2 1 0 14c113e16d016bb6188c1887d552a12d
+
+% 3 1 0 15584beb5556c93b0ba92f829928a5bc
+
+% 5 1 0 1f0711a1314a1d85053dbd4c66dba77f
+
+% 7 1 0 08cd03583cfd67a5192b85cf9715a9b7
+
+% 8 1 0 082a19e5592630610d65313b81b87cbd
+
+% 1 1 0 1e17d07c3a2136e40d95af4a854e2f0e
+
+@ 0 2 0 172411b9709d6edc13972d75bcd3736b
++   label Una entrada, por su ruta
++   highlight proxy.villain.name  una ruta, no una clave
+
+% 1 1 0 1420c26d96553b880c4e642245a35b01
+
+% 2 1 0 0feff9f10699db401200dcb1730ca7e0
+
+% 3 1 0 1aa97e5c4502f1d50b79a31ae52affa7
+
+% 5 1 0 12033f7cea65eb5f19d2b8ecc1b4aaae
+
+% 7 1 0 14592a76294f8fb30dd3854106683539
+
+% 8 1 0 1194c64e8a9b17b315f5e55f161f6647
+
+% 0 1 0 072f121cfd8b2d55165e18ce6297be0f
+
+% 1 1 0 01899460f761137c0a4d8f7e4707e838
+
+% 1 1 0 136d267ff733a60e0f6246170d49df5f
+
+% 2 1 0 1525a46c87e9e0571e7d21b8e7c42b7a
+
+% 0 1 0 08a86cbdc9b8cb0109ed8ce5b435ce67
+
+% 1 1 0 0cd6459499a6bd5203d659b3bcc1b6aa
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 0 1 0 16ed2160a03392dc1490e5906942dfa7
+
+% 0 1 0 01e5f1fd18c5fe3311ba4a0a08688021
+
+% 1 1 0 0ff54dbd8bbc33f603d35c9cf1c2e6b8
+
+@ 0 2 0 1678a3172730e83406950bbd9a2baa2e
++ Hay siete entradas: la obra, sus dos personajes, y los dos campos de cada uno.
++ [Construir un catálogo](../../soundness/modules/catalogs.md#building-a-catalog) da su orden.

@@ -1,0 +1,58 @@
+orthant 2 language
+
+@ 0 1 0 1231e8e1f49f022114919078c8b69ca5
++ # Um digest escrito no alfabeto no escopo
+
+@ 0 2 0 03cf9360f9fba7891a9a5b6e28eee6a6
++ Um digest são bytes, e não tem uma forma textual própria. `serialize` o escreve em uma
++ codificação de base, e o alfabeto dessa codificação é um import.
+
+% 0 1 0 12705ff5e291290d17fbc8389d59ef4a
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+@ 0 2 0 04daab442c8031720049ab5a910689ae
++ alternative Hexadecimal minúsculo
++   highlight hexLowerCase  0-9 e a-f
+
+% 1 1 0 10a2909a7b3b52cb04a04ff64c18b329
+
+% 2 1 0 00c38b6e7773928f1400875d3568aeac
+
+% 0 1 0 03775d0ecd055392006e7b2cb3ffcda6
+
+% 2 1 0 0fb3ffe6688bfaa803cf503bf04ee0b6
+
+@ 0 2 0 18c45c48bcd4548618eb184a0d568960
++ alternative Hexadecimal maiúsculo
++   highlight hexUpperCase  0-9 e A-F
+
+% 1 1 0 136d9835b4c6dbd3084718a8e000e379
+
+% 2 1 0 13f2a8312588d1f50c0a40a2623e622b
+
+% 0 1 0 1265d55fb370a4731d5207a8e44c19ca
+
+% 2 1 0 16a414b6b4931f10088fc88c3b0fbdda
+
+% 0 1 0 038bc999d43fce880e647bae324614df
+
+@ 0 1 0 05371af02d44be080bd76a5da6661795
++   highlight base64Standard  compacto, com + e /
+
+% 1 1 0 06ec13f1ffce98e8132cc7c16a7a7199
+
+% 2 1 0 02e9fc85b90d5cbb19769d86e44e721c
+
+% 0 1 0 1e16732a0b3e88fb034a49fc31ebb932
+
+% 0 1 0 0e28b39030804d5d07c7c9f0786011be
+
+% 0 1 0 18eafb32caed3dd50f976e787bd035ca
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 3 0 09d9a51bdc9b61bb05ba19963279c072
++ [Exibição de um digest](../../soundness/modules/hashing.md#rendering-a-digest) mostra a saída, e
++ [contexto declarativo](../../philosophy/declarative-context.md) por que o alfabeto não é um
++ argumento.

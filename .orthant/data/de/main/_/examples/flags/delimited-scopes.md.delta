@@ -1,0 +1,68 @@
+orthant 2 language
+
+@ 0 1 0 1da122df94966bce0be0541513475dfe
++ # Eine Menge ganzer Zahlen, in einem Block gefüllt
+
+@ 0 3 0 18d776335a2608690eb9223f093328fb
++ Ein `Bitset` ist unveränderlich, aber eines, das in einer Schleife gefüllt wird, muss nicht bei
++ jedem Schritt kopiert werden. `Bitset.build` verleiht einem Block einen Builder, der an Ort und
++ Stelle hineinschreibt, und die fertige Menge ist der Wert des Blocks.
+
+% 2 1 0 14b0a106e4e627a20a49a33490e80160
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 033193c11eeb04a40e35e2bb6bb6f6ab
++   label Eine neue Menge für jedes Element
+
+% 1 1 0 16ca2e4445357451196a76fc3849d158
+
+% 2 1 0 1dc272d3baf1045804e32cbe5748c9ba
+
+% 0 1 0 193dbc3496de98fe07d32a0ea4546b3c
+
+% 0 1 0 0f4ddcb7ef0d34be0b6f72e73de4552d
+
+% 0 1 0 0b5974686e2c2e911f70a0fb42c948e7
+
+% 1 1 0 07b825a750acd1150bb33a1b0f2662b6
+
+@ 0 3 0 1ef705d8467e981217715ed1de28e973
++   label Ein Builder, für die Dauer des Blocks
++   highlight Bitset.build..=>  ein Builder, dem Block verliehen
++   highlight bits.add(line.z)  an Ort und Stelle geschrieben
+
+% 1 1 0 0d3ce123cd46f6c011da9ea0dfb0de26
+
+% 2 1 0 0c5f12dc336c5e9b0ae591e96ebf3957
+
+% 0 1 0 0a6103e425ee199e036380e3d11d7dff
+
+% 0 1 0 11704e4f7924704f132f55621928f967
+
+% 0 1 0 15b89012b6c70adf01fdd3854e427467
+
+% 1 1 0 1ebd9363e5d2668e0c930de3bdf21791
+
+% 1 1 0 136d267ff733a60e0f6246170d49df5f
+
+% 2 1 0 1525a46c87e9e0571e7d21b8e7c42b7a
+
+% 0 1 0 08a86cbdc9b8cb0109ed8ce5b435ce67
+
+% 1 1 0 0cd6459499a6bd5203d659b3bcc1b6aa
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 0 1 0 0a1da717f4b4408817f32ae992eef257
+
+% 0 1 0 1666848c18c27cd11d2b53dee97f0e5e
+
+% 1 1 0 0ba98a74cb3993a11803e343a1f179de
+
+@ 0 3 0 167ce8868ccc4fa4178fcc53ddaf5032
++ Der Builder überlebt den Block nicht, also kann nichts mehr in die Menge schreiben, sobald sie
++ zurückgegeben ist. [Mengen ganzer Zahlen](../../soundness/modules/flags.md#sets-of-integers) zeigt
++ den Rest eines `Bitset`.

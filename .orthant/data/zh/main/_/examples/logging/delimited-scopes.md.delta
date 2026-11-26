@@ -1,0 +1,59 @@
+orthant 2 language
+
+@ 0 1 0 0006391fb4fa77810beb0e793497b3a5
++ # 在一个块的执行期间保持沉默
+
+@ 0 2 0 194117d73e607bfe01291db6ed69bba1
++ `mute` 在压制某一种事件的情况下运行一个块。在块内，这些事件有去处，那就是哪里也不去，因此让其事件静默的方法不再需要声明它们。
+
+% 0 1 0 12705ff5e291290d17fbc8389d59ef4a
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 0fe6d7e5035d28350f231265cf1f0c8d
++   label 传递其事件的方法
+
+% 1 1 0 02a157ca79d54d590c07734ee6bae129
+
+% 2 1 0 06b13f73d577875910d597bc8b04f25c
+
+% 3 1 0 183834432c83dd9100205c3ca508297f
+
+% 5 1 0 1505c209089bd7700f1facd89f4e381a
+
+% 0 1 0 0093e5c23c80c2770a090c82143d1dda
+
+% 0 1 0 0ad907f78ae1c071195599bf79764be5
+
+% 0 1 0 0f03bc058f93a6101545aa1993d3cd93
+
+% 1 1 0 0087b84180e004410c9d5c0c4a117438
+
+@ 0 2 0 159a00d2b2b3360c14b01c46c4972229
++   label 让事件保持安静的方法
++   highlight mute[Cue]  没有任何提示离开这个块
+
+% 1 1 0 181fd6d932ddc94a1a92bc511c800948
+
+% 2 1 0 09fdc41f43bf3a450bf3007077e8023f
+
+% 3 1 0 164bb114985bce4d061c174437e2a4f9
+
+% 5 1 0 0dc6838822e6c468008b2a1c1d56b08f
+
+% 0 1 0 0c9d7346c750f98f0e48dce304f6af8f
+
+% 0 1 0 0e03a9315f6d7aa40c4cacbedf8876bd
+
+% 0 1 0 0bdaae296e0ae5ba162777ca120c4032
+
+% 0 1 0 1005623772bccb59121788242c69c1e0
+
+% 0 1 0 18eafb32caed3dd50f976e787bd035ca
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 3 0 1605e54379e1de3b100a3e3efc73bacb
++ [静默](../../soundness/modules/logging.md#silencing)介绍了为整个文件做同样事情的导入，[定界作用域](../../philosophy/delimited-scopes.md)介绍了授予某种东西的块这一理念。

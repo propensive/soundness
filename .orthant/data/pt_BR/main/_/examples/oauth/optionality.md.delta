@@ -1,0 +1,61 @@
+orthant 2 language
+
+@ 0 1 0 10549aaa67ffea810f5621f3eb99095e
++ # Um cliente sem segredo
+
+@ 0 3 0 16c9a1ff14d784b51b36e0aa0e7a118c
++ Um cliente que não consegue guardar um segredo, como uma aplicação na própria máquina de um
++ usuário, prova a sua identidade com PKCE em vez disso. O seu segredo é `Unset`, que é o mesmo
++ valor ausente de todos os outros lugares, e não um texto vazio que um servidor poderia aceitar.
+
+% 0 1 0 12705ff5e291290d17fbc8389d59ef4a
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 1a31edae3512d2061bd81995af3f5e16
++   label Um cliente que guarda um segredo
+
+% 0 1 0 169a2c6b502eaece0c3bf6d8acdca178
+
+% 1 1 0 12b9af61a368ad50039e5f1145b9da47
+
+% 2 1 0 18e3a9aafb251dca02b0936add20858b
+
+% 0 1 0 185dec60abd05a69053e2934edac4799
+
+% 1 1 0 026875f1198e36421f8db54922b32c47
+
+% 0 1 0 062dbaaf0cd30fcc14139e9271781b45
+
+% 1 1 0 14c4e45f0d831883083adf6cf08f4eb8
+
+@ 0 1 0 1530f7619168b5031bb1c1821ea9b413
++   label Um cliente que não guarda nenhum
+
+% 0 1 0 0645975b8753c13c0685e20b267678da
+
+% 0 1 0 10c63e519b0f42ec0a58819bc3420107
+
+% 0 1 0 0fd2ac3797a0477d02117fa7e01a94b3
+
+% 1 1 0 0831db4166dd7587114b3740732b8e38
+
+% 2 1 0 071ed999aba4ac1201b2510f686eef20
+
+% 0 1 0 0fbb2132dd2a247c1064d55f394ff5f8
+
+% 1 1 0 0568cc7df4828e410be3f8d0da97f9a5
+
+% 0 1 0 0c4aac6c974881f81c169b6a41238a7f
+
+% 0 1 0 0895064e8c2027dd1d48674940dbcfcf
+
+% 0 1 0 18eafb32caed3dd50f976e787bd035ca
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 2 0 02d79820b9ecb68c17d7f2001c890cf9
++ [Obtendo um token](../../soundness/modules/oauth.md#obtaining-a-token) descreve os dois passos do
++ fluxo, e a [opcionalidade](../../philosophy/optionality.md) o valor ausente.

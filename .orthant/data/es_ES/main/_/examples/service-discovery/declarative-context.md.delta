@@ -1,0 +1,62 @@
+orthant 2 language
+
+@ 0 1 0 07ea4484f1fe1a1d0acfbd5d12f7b712
++ # El respondedor se elige con una importación
+
+@ 0 2 0 14d56617be6a26f6128e0bea15081e95
++ Buscar un servicio no dice nada de cómo se pregunta a la red. Ese es el trabajo de un
++ `Discovery.Backend`, elegido una sola vez con una importación, y el código que no tiene ningún
++ backend en el ámbito no puede buscar.
+
+% 0 1 0 12705ff5e291290d17fbc8389d59ef4a
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 0977c9b8ee7e47a4161d6cf604334361
++   label No hay ningún backend en el ámbito
+
+% 0 1 0 1477c34ff41c7c99183443e1d3238ae1
+
+% 1 1 0 0960c596329e4eb20a0b442aaa85c43a
+
+% 2 1 0 07ebb485cf59465e1ad69d937c49a171
+
+% 3 1 0 0a1d9df65dbfe3c8191fb1e701944c1c
+
+% 2 1 0 0606cf9b44347f581518b2970d727513
+
+% 4 1 0 0d61800418067cca088d121041542ca2
+
+% 5 1 0 1425c3e81a6d8d9a1ad05d4e059bea00
+
+% 1 1 0 05c3640f4e0331da17c6f7c3ab5f427b
+
+@ 0 1 0 1b3669dc76f3c9c6039b92c827d05f3d
++   label DNS multicast, sobre sockets
+
+% 0 1 0 074c97aa58625c6707b0664c20a64d57
+
+% 1 1 0 1ff7ad2074c0804a025c2ca4443ab4d3
+
+% 2 1 0 1ce50de4d61839f206e12d85633f3faa
+
+% 3 1 0 166920d2269ff7100b9c873483f8024c
+
+% 0 1 0 159d573c8d326f8f182b25226a078f7c
+
+% 2 1 0 0a6a37b34fdf26f017f12a4c03f8d20d
+
+% 4 1 0 0546af6c2731e5d90498ab5afed3be84
+
+% 5 1 0 07bf1f4e273746211af6afd0cd9484a8
+
+% 0 1 0 18eafb32caed3dd50f976e787bd035ca
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 3 0 0ecea33c280ca2f91ff67fcebe5d3edd
++ El ejemplo se compila, pero no se ejecuta, porque necesita la red.
++ [El respondedor](../../soundness/modules/service-discovery.md#the-responder) describe este
++ backend, y [el contexto declarativo](../../philosophy/declarative-context.md) la elección.

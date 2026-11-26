@@ -1,0 +1,27 @@
+orthant 2 release
+
+@ 0 1 0 1bd3f5650460726d07480f20316ffe0f
++     `doc/errors/25.1.md`; its distinct causes are the cases of a `Reason` enum extending
+
+@ 0 1 0 1962db1a01d1400a03e10fff135f8249
++       number of the library the error is in, as `bolt.tel` in `doc/errors` records it;
+
+@ 0 1 0 06776a6ac406a42716dc2cd3bf411c7f
++       documented at `doc/errors/<module>.<number>.md` with its cause and the usual remedies,
+
+@ 0 1 0 191b79d2bfb33a0d007c67b159c8bab6
++       The house style for the message is `doc/standards/messages.md`: lowercase, no trailing
+
+@ 0 2 0 1e42b06c995d9a4f0576039facd8d8f9
++       The record of what each of Soundness's codes means is `bolt.tel` in `doc/errors`,
++       which the index of codes in the [bolt](https://github.com/propensive/bolt) repository
++       names.
+
+@ 0 1 0 1b00085c23cb817210b7e86018390e25
++     The house style for what a message says is `doc/standards/messages.md`.
+
+@ 0 1 0 1821b3e4e85cb7080d3ad94efa8ef8c6
++     sub-section of the error's page in `doc/errors`. A `Reason` carries data of its own where
+
+@ 0 1 0 1acee97102babb66122912aecb9c0174
++     reports without one. Every macro-raised code has a page in `doc/errors`, like a runtime

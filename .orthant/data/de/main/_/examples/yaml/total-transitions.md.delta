@@ -1,0 +1,79 @@
+orthant 2 language
+
+@ 0 1 0 07fce29f0c22bf4f0885bbb190eb260f
++ # Eine quotierte Zahl ist keine Zahl
+
+@ 0 2 0 1320f4c8a84c7d110e38460e10d52c55
++ YAML typisiert einen unquotierten Skalar nach seinem Inhalt, und ein quotierter ist immer Text. Das
++ Dekodieren hält sich daran: Ein quotiertes `"42"`, das als `Int` verlangt wird, ist ein Fehlschlag
++ und wird nie stillschweigend umgewandelt.
+
+% 2 1 0 1567b796406180441a7d99fe276a9544
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 0c3f15b520196b9519c9d65cdf83d472
++   label Ein unquotierter Skalar, als Zahl gelesen
+
+% 1 1 0 04ac52fbff9dc8150f421a866dca3f0c
+
+% 2 1 0 150cd7362a8b13dc018ae042130f024c
+
+% 4 1 0 089d7ede1030308e1fc68af49595f874
+
+% 1 1 0 1a2f139b1fc489f30fae1a2e97beb82c
+
+@ 0 2 0 1fa99a902067e8680c3335a3060fa665
++   label Ein quotierter Skalar, der Text ist
++   highlight \"42\"  ein String, was auch immer er enthält
+
+% 1 1 0 06da5cc2db30c3151c52fc3beb71efcd
+
+% 2 1 0 19b47b4b193e5cc90021ef0aff811ca8
+
+% 4 1 0 17d439d968309c1e1c79246dd4e2b819
+
+% 5 1 0 01169ae4ae995b9c1ca410f5428b0c9e
+
+% 1 1 0 0aab9bcca90f551c010e35b83b0ac3e6
+
+@ 0 2 0 07260325412d39a516bac5cce03f23fd
++   label Ein Tag, das etwas anderes sagt
++   highlight !!int  die eigene Umwandlung des Dokuments
+
+% 1 1 0 11b8d40b57ddf6e30bd5ff2f442e2899
+
+% 2 1 0 133a54d43f0e4bae1e19377c11f124e9
+
+% 4 1 0 01821c9264cd7ed71ea9e3c6b574e816
+
+% 5 1 0 103d21f5c37501be173e1e538ea2f738
+
+% 0 1 0 1bc930ed1fe5318512e899592e919a05
+
+% 1 1 0 0096765ac86f82eb0f75c6efa495fbbe
+
+% 1 1 0 136d267ff733a60e0f6246170d49df5f
+
+% 2 1 0 1525a46c87e9e0571e7d21b8e7c42b7a
+
+% 0 1 0 08a86cbdc9b8cb0109ed8ce5b435ce67
+
+% 1 1 0 0cd6459499a6bd5203d659b3bcc1b6aa
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 0 1 0 02767b9f18f7be851d96fe1768e77ac3
+
+% 0 1 0 058b8a2871d789651892ee7427ae1333
+
+% 0 1 0 0135c9075a1d63a805bf2c2f70bd01aa
+
+% 1 1 0 0da66ac6dd23a1af11a630e286b836c1
+
+@ 0 2 0 0c3c8d051483dc011586d80987dc6699
++ [Skalare, Quotierung und
++ Blockstile](../../soundness/modules/yaml.md#scalars-quoting-and-block-styles) und
++ [Tags](../../soundness/modules/yaml.md#tags) enthalten die Regeln.

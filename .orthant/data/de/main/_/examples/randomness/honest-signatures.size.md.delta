@@ -1,0 +1,64 @@
+orthant 2 language
+
+@ 0 1 0 0533ac80da3092fe0390d73e70e3a8b3
++ # Eine zufällige Liste hat eine zufällige Länge
+
+@ 0 3 0 1dbe5b52b4e30b390cdc6a4c15458b3d
++ Eine zufällige `List` braucht mehr als zufällige Elemente: Etwas muss entscheiden, wie viele es
++ sind. `arbitrary` verlangt auch das von seinem Kontext, als `Random.Size`, und eine Liste wird erst
++ erzeugt, wenn eine Schranke für ihre Länge gewählt wurde.
+
+% 2 1 0 0ecfec53609411ba0d427d6208c3e111
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 06df2efcafb7a3dd1f4605ac815724f5
++   label Eine Liste ohne bestimmte Länge
+
+% 0 1 0 1477c34ff41c7c99183443e1d3238ae1
+
+% 1 1 0 0960c596329e4eb20a0b442aaa85c43a
+
+% 2 1 0 06ff77c106dc513e172d94dab7c62ca7
+
+% 2 1 0 1bb6d1e54171fee90ce4d4789806f8fb
+
+% 4 1 0 0b70dc84cd98ab3e1c1fb0fa4d8b9318
+
+% 1 1 0 1761cca0cc292fd000f8798f41a21a15
+
+@ 0 2 0 00eafade13b4b8f80d6373abcb38771a
++   label Höchstens zehn Elemente
++   highlight uniformSizeUpto10  die Schranke, mit Namen gewählt
+
+% 1 1 0 144ddc659029f6c51937e2b2a531531a
+
+% 2 1 0 19226c061a5a884400f954f742c4fa85
+
+% 0 1 0 1735a7a404f929e5095bbb9ffd3785ca
+
+% 2 1 0 054cc616dc5a54731228e21410417f4b
+
+% 4 1 0 1a6adeeed8ed43e0196a17e1db8b8421
+
+% 1 1 0 1ba20fe2d8f238ad1c6dec9de3dd0c04
+
+% 1 1 0 136d267ff733a60e0f6246170d49df5f
+
+% 2 1 0 1525a46c87e9e0571e7d21b8e7c42b7a
+
+% 0 1 0 08a86cbdc9b8cb0109ed8ce5b435ce67
+
+% 1 1 0 0cd6459499a6bd5203d659b3bcc1b6aa
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 0 1 0 068041d44495e76c1eb3455bda8f9f87
+
+% 1 1 0 077ded763b5ce864134c03d16712a33c
+
+@ 0 2 0 1acd3a25377d70020ad71925fa20904e
++ [Collections und eigene Typen](../../soundness/modules/randomness.md#collections-and-custom-types)
++ behandelt die bereitgestellten Größen.

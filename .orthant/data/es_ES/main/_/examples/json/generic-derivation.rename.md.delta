@@ -1,0 +1,58 @@
+orthant 2 language
+
+@ 0 1 0 15bde97959853db407607d2194dd81df
++ # Una clave que no es el nombre del campo
+
+@ 0 3 0 09880f77d4aa306818a11122526addee
++ Las claves de un códec derivado son los nombres de los campos, y el JSON de otras procedencias
++ rara vez los escribe como Scala. Una anotación en un campo da su clave, y tanto el codificador
++ como el decodificador la respetan.
+
+% 2 1 0 16b3a76e4b9f81e00143945f886813aa
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 044de02518f3686403e6d24bb15b5490
++   label Claves con el nombre de los campos
+
+% 1 1 0 0a5e207f6bef87241a20c2b00958911d
+
+% 0 1 0 1b47fc980142803f0b8c08ee21170954
+
+% 2 1 0 0b2fdd3649cdf2421e1f6d122769181a
+
+% 1 1 0 15afbe06d19796ce15dc691b41b542d8
+
+@ 0 2 0 08e88f7e911f751507deaa42299c17e6
++   label Una clave, renombrada para JSON
++   highlight @name[Json](t"first_folio")  solo en JSON
+
+% 1 1 0 1994e20bd012d9b11ac7a0a9e33a1fb0
+
+% 0 1 0 140d9a0e2e3ce982150b23bf4727a013
+
+% 2 1 0 1fbd78bb7a72d70717e36bee69de92d4
+
+% 1 1 0 19f00148de609fab1151dc29e3f034c8
+
+% 1 1 0 136d267ff733a60e0f6246170d49df5f
+
+% 2 1 0 1525a46c87e9e0571e7d21b8e7c42b7a
+
+% 0 1 0 08a86cbdc9b8cb0109ed8ce5b435ce67
+
+% 1 1 0 0cd6459499a6bd5203d659b3bcc1b6aa
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 0 1 0 026901931200bf591262a034768d6b95
+
+% 0 1 0 16fc7678e5d8225f085e81802149d6a1
+
+% 1 1 0 0ae03c5ece6122340ae5da59260a87ab
+
+@ 0 2 0 14977318cec40bb00547b63186c3021c
++ [Renombrar campos](../../soundness/modules/json.md#renaming-fields) tiene la forma que renombra un
++ campo en todos los formatos.

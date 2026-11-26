@@ -1,0 +1,45 @@
+orthant 2 language
+
+@ 0 1 0 1d9d17ed5f0c280e0ba1e84326432ffb
++ # Тема, светлая или тёмная
+
+@ 0 3 0 164bb707203d12e7156bac6aef766f05
++ `Theme` — согласованный набор цветов, и у неё есть светлый и тёмный вариант. Какая тема и какой
++ вариант — это два импорта, и код, который запрашивает фон, задаёт один и тот же вопрос при каждом
++ из них.
+
+% 0 1 0 12705ff5e291290d17fbc8389d59ef4a
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+@ 0 2 0 0c211143d9a4ca1818ce5c7f61d61f2a
++ alternative Тёмная
++   highlight darkBrightness  вариант
+
+% 1 1 0 0339e3d31a1f82b605122346b056e3ec
+
+% 0 1 0 080b12083d5d367f023c768c5fc16471
+
+% 2 1 0 0cfd247d380d77790b3378b8aeaa0a86
+
+% 3 1 0 16ed3e37ffd346e302fc713b5ca56e52
+
+@ 0 2 0 05f42de771b7c78b1dc395a46db50502
++ alternative Светлая
++   highlight lightBrightness  вариант
+
+% 1 1 0 118f4832082232fd0a76c134cebbc750
+
+% 0 1 0 19b80d0ebeca705a19748958f4791c71
+
+% 2 1 0 03f83ba97379462c13443ba11f4563cd
+
+% 3 1 0 150d1b0fc9a189b9070eb4e799420070
+
+% 0 1 0 18eafb32caed3dd50f976e787bd035ca
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 3 0 017772c9487b6d33118684def11617f2
++ [Темы и палитры](../../soundness/modules/colors.md#themes-and-palettes) описывает роли палитры, а
++ [декларативный контекст](../../philosophy/declarative-context.md) — причины для импорта.

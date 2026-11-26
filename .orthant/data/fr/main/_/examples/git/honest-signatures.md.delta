@@ -1,0 +1,64 @@
+orthant 2 language
+
+@ 0 1 0 1d54a4b25dab0e7507ded0a482162f7b
++ # Une lecture qui dit qu'elle peut être périmée
+
+@ 0 3 0 094a2f412cedc2c40790b4f0a19c35fa
++ D'autres processus écrivent dans un dépôt, si bien que l'historique d'une branche n'est vrai qu'au
++ moment où il est lu. `log` le renvoie sous forme de valeur `Stale`, et le code qui veut la liste
++ doit l'extraire avec `value`, en connaissance de cause.
+
+% 0 1 0 12705ff5e291290d17fbc8389d59ef4a
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 1cde426d14fcb0aa0d454621b303d928
++   label L'historique, comme s'il ne pouvait pas changer
+
+% 0 1 0 1477c34ff41c7c99183443e1d3238ae1
+
+% 1 1 0 0960c596329e4eb20a0b442aaa85c43a
+
+% 2 1 0 152ffc3ff2232b6805c4abaac1d7e861
+
+% 3 1 0 0a2f175aaa2a3ff31d23477a3fc53afe
+
+% 4 1 0 11092eae2bbd57da0cfc468ecd07709a
+
+% 7 1 0 174209c5f2ae1c3c10a03bd4bbacd2dc
+
+% 8 1 0 1b0729f96ab9438a05e26e3f2fac469b
+
+% 0 1 0 17273573521fac3a00b7d23ebfe5cc05
+
+% 1 1 0 1f5f6ea391e0521e15fd4f71b653322f
+
+@ 0 2 0 0c6efa2eaf7654ac098f1c6b7eae1cc2
++   label L'historique tel qu'il était quand il a été lu
++   highlight .value  ce qui était vrai au moment de la lecture
+
+% 1 1 0 151606dec824167a1a857bd7351a98b7
+
+% 2 1 0 1cf5872b487469c50789a9906b0ef0f7
+
+% 3 1 0 05f3307175f55be3111bc305c4568011
+
+% 4 1 0 1ef48991f9d06c3e05d9973eda0e3447
+
+% 7 1 0 0727325dace9fde11862964c582c0a90
+
+% 8 1 0 1b22836afb9230570c091a07ee6a58c5
+
+% 0 1 0 0cf046148935f97c158e4b5eb944e36c
+
+% 0 1 0 18eafb32caed3dd50f976e787bd035ca
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 4 0 1d04c4fefc9b0f320f15ec04c7392330
++ L'exemple est compilé, mais pas exécuté, car il a besoin d'un dépôt.
++ [Inspecter l'historique](../../soundness/modules/git.md#inspecting-history) indique quelles
++ lectures sont périmées et lesquelles ne le sont pas, et
++ [les signatures honnêtes](../../philosophy/honest-signatures.md) pourquoi le type l'avoue.

@@ -1,0 +1,71 @@
+orthant 2 language
+
+@ 0 1 0 149897aa27a01aa314983bbd11143246
++ # Sygnał rozłożony na części
+
+@ 0 3 0 083722662f3cd4df00cf3274292d2609
++ Sygnał, który dociera do wywołania, jest wartością, a pułapka jest dopasowaniem do wzorca na nim.
++ Przerwanie i to, co dołączył do niego launcher, na przykład nowy rozmiar terminala, są wiązane przez
++ wzorzec, a rozmiar jest opcjonalny, ponieważ nie każdy sygnał go ma.
+
+% 0 1 0 12705ff5e291290d17fbc8389d59ef4a
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 104b3fda8425b39f15085ea8660347a0
++   label Dowolny sygnał
+
+% 1 1 0 171f45cc1e8fd6381f6d56bb498275a5
+
+% 2 1 0 14d937b022f1d29a07ecd7a699b818c5
+
+% 3 1 0 0c66ab3ed7094c7001c26efef413deef
+
+% 5 1 0 0bfd7dbb33cdc87511c5d4112fc796ad
+
+% 6 1 0 1f0bf708050cf1bb11ed7b77979f793f
+
+% 7 1 0 06c9bf0ee21264d20e7a125e0b78daf9
+
+% 1 1 0 06b2f6b62ec27df60282e42b06e7dfe0
+
+% 3 1 0 1209805529c457301070aff4fdcc795d
+
+% 1 1 0 15c02c11820acf4a073d29a79539fc62
+
+@ 0 2 0 1740db728fd3a4c315c48545dca84456
++   label Zmiana rozmiaru terminala
++   highlight Signal(Interrupt.Winch,  zmieniono rozmiar terminala
+
+% 1 1 0 00d05b580c3500541b337bb30449f19d
+
+% 2 1 0 1e23fc471b7e8e631b371250fdee5f72
+
+% 3 1 0 1b5c23907940f1051acc114d8700dc7d
+
+% 5 1 0 0756a7ee83e883d80b3066d60c1afad5
+
+% 6 1 0 14b47502d11bc0ae13cc979768ff7bd0
+
+% 7 1 0 11b9f17f91b8795f077f7fd86c8291b3
+
+% 0 1 0 1975adc95aaae7b0178e0d92c04e3258
+
+% 0 1 0 0a055e9ddb30001a1a4bb78a9d5f04b8
+
+% 0 1 0 0099a0c4632d1f050a0018b3e6516298
+
+% 1 1 0 0f852072a9bd6a5e1525ea7733a12657
+
+% 3 1 0 13ff7d83cb82b6530020b8cec66fd5c0
+
+% 0 1 0 18eafb32caed3dd50f976e787bd035ca
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 3 0 0c183122c83d459b1aff62bc74aea63f
++ Przykład jest kompilowany, ale nie jest uruchamiany, ponieważ definiuje cały program. [Sygnały i
++ zamykanie](../../soundness/modules/daemons.md#signals-and-shutdown) wymienia, co niesie każdy
++ sygnał.

@@ -1,0 +1,7 @@
+orthant 2 language
+
+@ 0 4 0 12b07e19a23cc3a90e9f3a30d1922b9f
++ Terminado cuando: ninguna colección de `lib/` expone un `apply` indexado parcial, y cada `while`
++ que queda es una de las tres formas que admite [`doc/work/standards/loops.md`](../standards/loops.md),
++ con el comentario que nombra su invariante. El objetivo no es un cero literal: la aritmética de
++ índices derivada de los datos, y las entrañas de los propios combinadores, siguen siendo bucles.

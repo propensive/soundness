@@ -1,0 +1,89 @@
+orthant 2 language
+
+@ 0 1 0 0a26f8d3fdac91e806815fe4c723b9ad
++ # Ein Tool, das mit seinem Client spricht, verlangt einen
+
+@ 0 3 0 06a125de8edcc9a306b766db3935fc74
++ Die meisten Tools berechnen ein Ergebnis und geben es zurück. Eines, das Fortschritt meldet oder dem
++ Benutzer während der Ausführung eine Frage stellt, braucht den Client und nennt ihn als
++ Kontextparameter. Der Client ist nicht Teil des Eingabeschemas, also wird das Modell nie
++ aufgefordert, ihn zu liefern.
+
+% 0 1 0 12705ff5e291290d17fbc8389d59ef4a
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 030814e58b2a242800a4aa71c46c60ec
++   label Ein Tool, das nur antwortet
+
+% 1 1 0 09fa97e79f6bc1da00e0db1f315f4ebc
+
+% 1 1 0 0045c6b74ce975800516d6a49a20ec79
+
+% 2 1 0 15e939dcfa6b6d291810d76bf294db1c
+
+% 4 1 0 1dc8c30e0c5acda718b4430db5b7c2b9
+
+% 5 1 0 05c000d4f8d62c5110a419d61cfb05c9
+
+% 6 1 0 0952c0a7eb4738dc1852e0ee9b30b2a7
+
+% 7 1 0 1569d39661ce6fce01d30fc168bda19a
+
+% 8 1 0 0fda104d9ac8542f1bcf020e2c769926
+
+% 9 1 0 14911ad9406a647906682635a27d4612
+
+% 10 1 0 0af8eef8d388fb9c0dc44fbac71f2e88
+
+% 12 1 0 1e67035203826b541f356c777dca5214
+
+% 0 1 0 154552675d0665c90956739ee61c0ab2
+
+% 1 1 0 19b989cf13e36b8e04305aec222aefb2
+
+@ 0 1 0 0079742e501d7d6709124daa5790c11e
++   label Ein Tool, das während der Arbeit berichtet
+
+% 1 1 0 01ce4ed74f51430a05f92a5647f303b1
+
+@ 0 2 0 15fda64200daf1e6052eee5ab57ac931
++   highlight (using..Client)  vom Server für jeden Aufruf geliefert
++   highlight client.log  eine Fortschrittsbenachrichtigung, während des Aufrufs gesendet
+
+% 1 1 0 0273a61a42de36c5124d2ddd320dbfa6
+
+% 2 1 0 0f47c1208e3594530e8c51be318e07ae
+
+% 4 1 0 0425a77caedeadf2078e22ec115d4ba9
+
+% 5 1 0 0bac4253d809c1a908ac36898f41068a
+
+% 6 1 0 1fb977210b5b69f80bbc8c39dc36d84e
+
+% 7 1 0 07655e426bad223a1fb85659a97145d8
+
+% 8 1 0 1ad72fb31a478aa2072a9d23692a8b34
+
+% 9 1 0 10eecc1da4495d7e02bf7944f52786e1
+
+% 10 1 0 124d9fd29a3a38f3130d73f86203e1dd
+
+% 12 1 0 0ed167a3a376f6a9041c2e4301006e4e
+
+% 0 1 0 0b6ec68371a0014e0e36ac49a4686dee
+
+% 0 1 0 1cd7800f5e47bdfd1bb8473a4a955f66
+
+% 0 1 0 098be5ce8f506c4e1f947a580bd6111c
+
+% 0 1 0 18eafb32caed3dd50f976e787bd035ca
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 4 0 1215f3c78476ad2b191800c1b961c86e
++ Das Beispiel wird kompiliert, aber nicht ausgeführt, da ein Server mit einem Client über HTTP
++ spricht. [Mit dem Client sprechen](../../soundness/modules/mcp.md#talking-back-to-the-client) zeigt
++ `log` und `elicit` und [ehrliche Signaturen](../../philosophy/honest-signatures.md) das Prinzip.

@@ -1,0 +1,95 @@
+orthant 2 language
+
+@ 0 1 0 02b57adea2e75f240bae9c0d5ce5df26
++ # 一行一行的对话
+
+@ 0 3 0 1ceba1cfa264226d0361c943feb5cdc0
++ 每个问题都是一个 HTTP 请求，流式回答则通过保持打开的连接以片段形式到达。这些都不影响代码的形态：问题是一个返回回复的调用，会话记住说过的内容，流则是一个可供遍历的迭代器。
+
+% 0 1 0 12705ff5e291290d17fbc8389d59ef4a
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 2 0 0becd6846058c64605cdb30c45244346
++   label 一个问题
++   highlight llm.ask  返回回复
+
+% 1 1 0 1745997d8f55f194006b9d65e34e4390
+
+% 2 1 0 1fb432f654e659af04774569e39302e2
+
+% 3 1 0 0f32438229b0bee104459a4f6a1ea7a3
+
+% 4 1 0 0e6cd56432619ef10a8876f5e6652339
+
+% 5 1 0 07a439d04fd3752600049ec76731f932
+
+% 7 1 0 0d01a522122669d10176ca3c7c5ece53
+
+% 9 1 0 0105a26e9c1793241ecab59b0fdc6305
+
+% 10 1 0 171f5f6acce9d56901c39272521eaf1e
+
+% 1 1 0 00679d2c207ddea019afa8c44204fd73
+
+@ 0 2 0 02c76f76b29769940d7154c7cf527655
++   label 第二个问题，依赖于第一个
++   highlight her  会话保存历史
+
+% 1 1 0 0112fb4bc17303b603ce78e0084da1f5
+
+% 2 1 0 179d099d52decbc91b1b4fadd4e84df2
+
+% 3 1 0 1bb4c6f62cc34b5d122e5cd8abe3a910
+
+% 4 1 0 064e6ccf955ad37f1a20085efe85bd22
+
+% 5 1 0 14071832f03fc8c21740e2b2b2c73ea7
+
+% 7 1 0 0bbe5378ddd4d3b31a4e57466ea7d8fe
+
+% 9 1 0 107361a24f2ebf8d10f561c4aec3947c
+
+% 10 1 0 1b1c97fbe9a9466e05d2c081d416526e
+
+% 11 1 0 133117141c47d16d19c0b1610ec3811e
+
+% 1 1 0 1cb09d64454e3ef20abf83dd81948775
+
+@ 0 3 0 06d2da42037988dd00c29a184b7e5b6e
++   label 第三个问题，到达时即打印
++   highlight response.text.each  每个片段，在连接交付时
++   highlight response.reply()  完整的回复，在流耗尽后
+
+% 1 1 0 0d98698b1ed508c81eb49a923b074d7c
+
+% 2 1 0 1cc75653ca252716026bd82f759ec266
+
+% 3 1 0 0add2023835d453c0e1b966ae7381d24
+
+% 4 1 0 08032a71b464227807ab3ec759562562
+
+% 5 1 0 015202e4952bc2cf018ceda5ae87d9b6
+
+% 7 1 0 02613754c472710f07f96271dfffd660
+
+% 9 1 0 09a20163ba8d9cd61c7cfcee299f4774
+
+% 10 1 0 1e9c84dddc7f243a157b88ba5a8ab088
+
+% 11 1 0 1d3bf651401f84aa0262614e231affe8
+
+% 0 1 0 0412f09d03f52b1e0d09ff2dc159326c
+
+% 0 1 0 1d96fe8f21294033047ca648bca831ed
+
+% 0 1 0 18fde683e36f921819870ce7b99df6da
+
+% 0 1 0 18eafb32caed3dd50f976e787bd035ca
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 3 0 13251a7a572951901ab005f454e9ee40
++ 该示例只编译而不运行，因为它会通过网络调用提供方。[流式传输](../../soundness/modules/llm.md#streaming)介绍了响应，[直接风格](../../philosophy/direct-style.md)则说明了等待去了哪里。

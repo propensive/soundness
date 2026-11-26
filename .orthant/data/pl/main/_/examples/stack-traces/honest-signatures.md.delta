@@ -1,0 +1,76 @@
+orthant 2 language
+
+@ 0 1 0 08b988f35ba07960108f751d1cd908f7
++ # Metoda, która wie, skąd ją wywołano
+
+@ 0 3 0 17ba487b95b784770080d8bef7ab0dc9
++ Metoda, która zgłasza pozycję w źródle, żąda `Codepoint` jako parametru kontekstowego. Kompilator
++ dostarcza plik i wiersz każdego wywołania, więc żaden wywołujący nie przekazuje położenia, a
++ sygnatura pokazuje, że metoda od niego zależy.
+
+% 2 1 0 070145d1976c83f406bddaee868e1313
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 01c3498703d32cfe0eac11f122fdeb7d
++   label Kwestia bez pozycji
+
+% 1 1 0 0b2ff3ab7ec9e34c06f84f5c3d2d45c0
+
+% 0 1 0 060908a5752bfaac1ff7f80cdca190b7
+
+% 2 1 0 0136822c1272f41e049aa938c24e9b11
+
+% 3 1 0 0e12ef7cf6e528d0150c4071a71987f4
+
+@ 0 2 0 05fbabd5a3c34f3a1bfaf44ad1f04457
++   label Żądana jest pozycja wywołania
++   highlight (using..Codepoint)  uzupełniana przez kompilator przy każdym wywołaniu
+
+% 1 1 0 044fa72ffda127da1733aa4c60d61214
+
+% 2 1 0 03dd515f6404e37b0e22fbfa1901bf42
+
+% 3 1 0 1b77a93dc8ad81651da4eaf44992af84
+
+% 5 1 0 1a794c2e03e28cb21702fa6df0d2df73
+
+% 3 1 0 1ba7a351774dbc760eedbf61ee95298c
+
+@ 0 2 0 140c2c79b250a75208bb1ba9c2506d80
++   label Dwa wywołania, dwie pozycje
++   highlight cue(t"Exit  wiersz pod pierwszym
+
+% 1 1 0 07511bf9f417ef5f0def7c1c5fd5d43e
+
+% 2 1 0 0dc99b5072c4f6561e43239a0034e9d6
+
+% 3 1 0 1e459b6e585e6ce4141ab831380e2c02
+
+% 5 1 0 16b94af616155d6f036f43aa3490c8b1
+
+% 0 1 0 1dc7ce6f3b1d0c65177cbfdea58a9fa0
+
+% 1 1 0 0d33a991ac980be317b0f8140384273c
+
+% 1 1 0 136d267ff733a60e0f6246170d49df5f
+
+% 2 1 0 1525a46c87e9e0571e7d21b8e7c42b7a
+
+% 0 1 0 08a86cbdc9b8cb0109ed8ce5b435ce67
+
+% 1 1 0 0cd6459499a6bd5203d659b3bcc1b6aa
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 0 1 0 16dc4b89cc1d9bd01e04d324ce3eabad
+
+% 0 1 0 170ee372ad4645860fe22ebf3e3e813f
+
+% 1 1 0 1d7a9da2325fe1f10f941e6df580cebb
+
+@ 0 2 0 017077b11dd70d280c894bc8188d1fd1
++ [Punkty kodu](../../soundness/modules/stack-traces.md#codepoints) wymienia biblioteki, które go
++ używają, a [uczciwe sygnatury](../../philosophy/honest-signatures.md) – zasadę.

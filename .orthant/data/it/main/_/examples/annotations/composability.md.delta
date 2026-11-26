@@ -1,0 +1,70 @@
+orthant 2 language
+
+@ 0 1 0 12ce8c7b9bf5d84319c1fa9105542a25
++ # Una lente sul campo annotato
+
+@ 0 3 0 099240d7e9e12ba90eeff619a93ca112
++ Una libreria che ha bisogno del «campo marcato come identificatore» non ha bisogno del suo nome.
++ L'istanza che trova l'annotazione offre una lente sul campo, e la lente lo legge e lo sostituisce.
+
+% 2 1 0 03a01515d826d6e20461c8482fd9e8e3
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 04b989ba42dc764402612a82fb2357b8
++   label L'istanza per il campo marcato
+
+% 1 1 0 1d933da6c5f8d92112517301e9e8b882
+
+% 2 1 0 1565f6c7dd96aebe0ba631a2a5afb27f
+
+% 4 1 0 06d123a48c55da2c1a85a96a4a9ca682
+
+% 6 1 0 129ff458617273fb011693ba8bb40f20
+
+% 7 1 0 0b798c1f407c530a10a7bef3a9356dfc
+
+% 1 1 0 01e139c0c54ae5e9152d5064a4b7e504
+
+@ 0 2 0 0a94134e2ebab5461e7bc65035fb79ed
++   label La sua lente, in lettura e in aggiornamento
++   highlight identity.lens  una lente su email
+
+% 1 1 0 13b494d9848656150a05ed8d3f6d6bf3
+
+% 2 1 0 10abd4be224941cf0a6ec85794e6d715
+
+% 4 1 0 101e735e8a7499fb047263d184a134f0
+
+% 6 1 0 1ec8b89ec934e24d0cc19ec2807c7c71
+
+% 7 1 0 02e244d5bfe39d7d0b39416c12b2adc8
+
+% 0 1 0 0ab6083fb0b67bfe146e5f6aaaa57028
+
+% 0 1 0 02dff3a946d93316015ecb5cdd7dd55a
+
+% 1 1 0 0f2890c9db676673072f34e8c19d2833
+
+% 1 1 0 136d267ff733a60e0f6246170d49df5f
+
+% 2 1 0 1525a46c87e9e0571e7d21b8e7c42b7a
+
+% 0 1 0 08a86cbdc9b8cb0109ed8ce5b435ce67
+
+% 1 1 0 0cd6459499a6bd5203d659b3bcc1b6aa
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 0 1 0 0b9b582835201d7103c86aa78b128eda
+
+% 0 1 0 1f21ce186dc538261437520831c4687f
+
+% 1 1 0 131dcbeba73f6e2816b1de53090825c4
+
+@ 0 2 0 1d4a8ca0c021f0c904d8a8b376a5db84
++ [Lenti come valori](../../soundness/modules/optics.md#lenses-as-values) descrive la lente, e la
++ [componibilità](../../philosophy/composability.md) perché le due librerie non hanno bisogno di
++ adattatori.

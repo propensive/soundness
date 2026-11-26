@@ -1,0 +1,74 @@
+orthant 2 language
+
+@ 0 1 0 14857bf5342779e50c9af8c7b8c650e2
++ # Krótki rekord, obsłużony tak, jak wybierze wywołujący
+
+@ 0 2 0 0bff2978030667ef108d4b8d17181ac0
++ `unpack` zgłasza jeden błąd, gdy bajty kończą się przed końcem rekordu. Nie decyduje, co dalej.
++ Decyduje otaczający kod, a każdy wybór nadaje wynikowi inny typ.
+
+% 0 1 0 12705ff5e291290d17fbc8389d59ef4a
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+@ 0 2 0 068b4b04afd6bd25181a7c630f0100a6
++ alternative Wartość nieobecna
++   highlight safely  `Unset` dla krótkiego rekordu
+
+% 1 1 0 16311da2b274343801aaca7bd1e003e3
+
+% 2 1 0 11318cd34f90c5b816614b82f8e4449b
+
+% 4 1 0 01b9d4cd865cf0b916bf8e509d17bc8c
+
+% 6 1 0 13c29527f8a58b1319d2d8184473fe54
+
+% 7 1 0 0cfbcd4817e604120a97f80f8eed2258
+
+% 0 1 0 0bcb77fe17750f0318f3a65d06ca693d
+
+@ 0 2 0 142cb4803c1552e01cb452949280ced7
++ alternative Zastępstwo
++   highlight recover  wartość domyślna zamiast błędu
+
+% 1 1 0 160746182eb7982514344fa8fbec9504
+
+% 2 1 0 14eeb867dc5adcb21a8b01c81ce284e8
+
+% 4 1 0 1560a3e4a72854190e37f6cc23893cbf
+
+% 6 1 0 085337dac30481480f03a1d6a7213ab3
+
+% 7 1 0 01fd31b11d342b0c03e8f7568670aaaa
+
+% 0 1 0 1565e39bd9d8898606dabae464161c3e
+
+% 0 1 0 1ffe5c415422113702a4a9b03386f84a
+
+% 0 1 0 180dd95a0352b8411c1896f9e03031d3
+
+% 0 1 0 0265c903cbbbacef17b0dd12f89dffa7
+
+@ 0 2 0 1e0cbf047c366ce217586987b55ec207
++ alternative Decyzja wywołującego
++   highlight raises..Structural.Error  przekazana dalej, w typie
+
+% 1 1 0 116a65cbab5105a80f5ec368284a8c72
+
+% 2 1 0 1f540e115b30f9af0e3197f407322f1d
+
+% 4 1 0 12c65d7a65e790a9142f5970358f4eec
+
+% 6 1 0 10cc6d87ea2cd1c01c70788dac5089d1
+
+% 7 1 0 03ce4166bf3a12ab147577e6e33f45b5
+
+% 0 1 0 14fe8fa93cc6663b1d1560ac5cbb0986
+
+% 0 1 0 18eafb32caed3dd50f976e787bd035ca
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 2 0 003cde7bac223ca710545f32524b0e69
++ Sekcja [Odczyt](../../soundness/modules/binary-data.md#reading) mówi, co zawiera błąd, a [wybór
++ strategii](../../soundness/modules/errors.md#choosing-a-strategy) wymienia resztę.

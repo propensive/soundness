@@ -1,0 +1,13 @@
+orthant 2 language
+
+@ 0 9 0 1bd7a6beb6e17d6e0b0e8c51346922a0
++ Déboguer une application en cours d'exécution devrait sembler natif, et non hébergé : points
++ d'arrêt, exécution pas à pas et inspection par un serveur Debug Adapter Protocol, les valeurs
++ inspectées étant rendues sous leurs types Soundness — la même discipline sans encodages Java que
++ `core-5` applique aux traces, appliquée à l'état vivant. vivisection est ce serveur :
++ `vivisection.DapServer` traite l'ensemble des requêtes (lancement, attachement, points d'arrêt,
++ threads, traces de pile, portées, variables, évaluation, exécution pas à pas), et le `DapClient`
++ de sa suite pilote, dans l'exécution ordinaire, un programme débogué réel à travers un point
++ d'arrêt, un pas `next` et une inspection, chaque variable locale étant rendue par son instance
++ `Inspectable` et un instantané d'objet étant affiché par son nom simple et son identité plutôt
++ que par un nom de classe JVM. Le sujet est `doc/soundness/modules/debugging.md`.

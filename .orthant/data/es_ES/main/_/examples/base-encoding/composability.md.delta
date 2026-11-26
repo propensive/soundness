@@ -1,0 +1,76 @@
+orthant 2 language
+
+@ 0 1 0 01b079af8adfe06d1c77a1c78f4eac6f
++ # Bytes en un documento JSON
+
+@ 0 3 0 1a3d19f0e2bd41681cd279e54681eb83
++ JSON no tiene ningún tipo para los bytes, así que viajan en una cadena. `serialize` da el texto, y
++ un literal `j"…"` lo codifica allí donde se sustituye. Las dos bibliotecas se encuentran en `Text`,
++ y ninguna tiene un método para la otra.
+
+% 2 1 0 0c2a06abcc6c46190515137a79122e63
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 12ec1b903422e64305d825ff392db571
++   label Una clave, como bytes
+
+% 1 1 0 0db4e2921ac216e51df20d1d44f3e229
+
+% 1 1 0 04c7dfbd16e8a8f514fa1356471ce941
+
+% 1 1 0 1ec8365b52824b0e06d979c19c03069a
+
+@ 0 2 0 195d2f3340ae8ca1019f9e38d8d416a5
++   label La misma clave, en una cadena JSON
++   highlight ${key.serialize[Base64]}  texto, codificado como una cadena JSON
+
+% 1 1 0 0c9b9606fba0e472186285a846687191
+
+% 0 1 0 08f8b8dc07cf8439133657af70f81bd2
+
+% 2 1 0 1bbd8a28e7c4817519269bf58d444cdb
+
+% 3 1 0 1457ecde228657190b57bd2e0826582a
+
+% 1 1 0 13f79b322cddf52c0e8933ac1243945e
+
+@ 0 2 0 0d006d3a0a15fc39157410b80fd3590d
++   label Y leída de nuevo
++   highlight deserialize[Base64]  bytes otra vez
+
+% 1 1 0 149deb9ff6be5ab218c2fc7ac892f6dd
+
+% 0 1 0 0c9dc6a24724bd4b0497e5b671b4ceb4
+
+% 2 1 0 112d109673b58d4903ff03fcee4625cb
+
+% 3 1 0 0adc7b0faa9de3d8016202880a14895d
+
+% 0 1 0 0341da0f9f00756012ec7e96c985e112
+
+% 1 1 0 01d9bba658785d2614a3baf3b21a4203
+
+% 1 1 0 136d267ff733a60e0f6246170d49df5f
+
+% 2 1 0 1525a46c87e9e0571e7d21b8e7c42b7a
+
+% 0 1 0 08a86cbdc9b8cb0109ed8ce5b435ce67
+
+% 1 1 0 0cd6459499a6bd5203d659b3bcc1b6aa
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 0 1 0 026901931200bf591262a034768d6b95
+
+% 0 1 0 14357d017465598900fc8e1f9451fa89
+
+% 0 1 0 04a210e79e0bcd091c780de76e626526
+
+% 1 1 0 041cda46121d5253012619391b4982b1
+
+@ 0 2 0 0e79694e40467ba7153ff675c143610c
++ [Serializar bytes](../../soundness/modules/base-encoding.md#serializing-bytes) y
++ [construir JSON](../../soundness/modules/json.md#building-json) describen las dos mitades.

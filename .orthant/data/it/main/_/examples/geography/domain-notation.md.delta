@@ -1,0 +1,66 @@
+orthant 2 language
+
+@ 0 1 0 19a44d6882b4abcf0da9b74592ad19b9
++ # Gradi, primi e secondi
+
+@ 0 2 0 057d461e8fbc67a11b3d9978485997bb
++ Una latitudine si scrive come la scrive un navigatore: tanti gradi, tanti primi d'arco, tanti
++ secondi. Ogni termine è un `Angle`, e lo è anche la loro somma.
+
+% 2 1 0 1a4fffb6fe6ed26b050cea3cd009a29d
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 168a3fe2b57968fb161e5e468aad697f
++   label Gradi interi
+
+% 1 1 0 1c1dcbd48c044d010076d7549ed07b21
+
+% 0 1 0 1b968b7462f07430050c3b3ac3fea0b1
+
+% 1 1 0 0753f5efae8ba8911a75a747ce265adf
+
+@ 0 2 0 149771babd066fce18a025cda5a8ade8
++   label Primi d'arco
++   highlight 30.0*ArcMinute  mezzo grado
+
+% 1 1 0 12638b87cc9e8c4a1cdb2660c05e21aa
+
+% 0 1 0 1eff644753d27dfd0e98f4288e640db4
+
+% 1 1 0 0e698d310e1daeab0d7af6683376a482
+
+@ 0 2 0 1368f5e36ebf790e1dc4ccae72332db1
++   label Secondi d'arco
++   highlight 36.0*ArcSecond  un centesimo di grado
+
+% 1 1 0 1325107ae3e38ca7015396840b4d3ff9
+
+% 0 1 0 1e8963a315104d03002fb2bb9746d9d5
+
+% 1 1 0 173fb340c7558d771c402c426b4c950a
+
+% 1 1 0 136d267ff733a60e0f6246170d49df5f
+
+% 2 1 0 1525a46c87e9e0571e7d21b8e7c42b7a
+
+% 0 1 0 08a86cbdc9b8cb0109ed8ce5b435ce67
+
+% 1 1 0 0cd6459499a6bd5203d659b3bcc1b6aa
+
+% 0 1 0 1914c57b5f7a7a7700823cf0d609cd72
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 0 1 0 173ceef34824c6ef1c4e6dd059002799
+
+% 0 1 0 0a4582f4bf290e550e10004666a94bd7
+
+% 1 1 0 1ac0a31e120083630b088a59bbf4c6c5
+
+@ 0 2 0 145f41f4b3ac25b1066659eea808f8c8
++ La seconda riga è otto volte la latitudine, che oltrepassando un giro completo ricomincia da
++ capo, come fa ogni angolo. [Angoli](../../soundness/modules/geography.md#angles) ha le due forme
++ normali.

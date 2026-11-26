@@ -1,0 +1,63 @@
+orthant 2 language
+
+@ 0 1 0 11eaa69f3973fab0003c56875b28d90d
++ # 不经拼接，任何东西都无法越过边界
+
+@ 0 3 0 1724fc13b9e0388618cd050f0a47bf0a
++ 这个 JVM 堆上的值在另一个 JVM 中毫无意义。因此在引用块内，局部值只能在拼接中提及，并在那里被编组，而本会悬空的引用是编译错误。
+
+% 0 1 0 12705ff5e291290d17fbc8389d59ef4a
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 158fc01ffa4ec0a813a296bfcf9214a7
++   label 一个局部值，在远程使用，仿佛它就在那里
+
+% 0 1 0 1477c34ff41c7c99183443e1d3238ae1
+
+% 1 1 0 0960c596329e4eb20a0b442aaa85c43a
+
+% 2 1 0 0c51db964b21a74207ba9581a14b09dc
+
+% 3 1 0 0044d5e26573cc5a1853b6eff1b4f291
+
+% 4 1 0 05e2b5027f17b47f03212ea4039d2d8d
+
+% 5 1 0 1fd6fce32afec73a11b2fd5d4a5b32f7
+
+% 6 1 0 15c1c03d0df5b6bf1fbfc2829864acd5
+
+% 8 1 0 09779551678c37a1154ebb668f148915
+
+% 0 1 0 00ce4f0d7e95782e0eeeac8ddbd23cf9
+
+% 1 1 0 0ff022a5085ee4e71175eb58d19c36c0
+
+@ 0 2 0 1bde770960413191043e1c7ab01aba32
++   label 经过拼接，因而被带过边界
++   highlight ${lines}  在这里求值、编组，然后在那里使用
+
+% 1 1 0 068db3282585a1ae0ff704f0e76b125a
+
+% 2 1 0 1f39ae797fb3e2d1067797a10c81cff6
+
+% 3 1 0 09635ba194e96105131cae15428a21ad
+
+% 4 1 0 03eddf47f3576d7e191c3e8e18db8162
+
+% 5 1 0 0a6837a293ea96491d72025ab7f9dc40
+
+% 6 1 0 021fd00c29b0a4a402fecff312bc79bd
+
+% 8 1 0 0909c84e489429e7060372a1d4aee332
+
+% 0 1 0 0ee5100ec36884b7005e0a179a3dfd4e
+
+% 0 1 0 18eafb32caed3dd50f976e787bd035ca
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 3 0 13098b24218a82e006872007c650cc4c
++ 本示例只编译，不运行，因为它会启动另一个进程。[引用、拼接与阶段](../../soundness/modules/staging.md#quotes-splices-and-phases)解释了这条规则，[不可能状态](../../philosophy/impossible-states.md)阐述了其目标。

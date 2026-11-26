@@ -1,0 +1,32 @@
+orthant 2 language
+
+@ 0 9 0 0ffe1fa729118f45146c25fc4b506118
++ - `s` est la lettre par laquelle les codes bolt désignent Soundness ;
++ - `m` est le numéro du module où se trouve l'erreur, tel que le donnent
++   [la liste des modules](modules.md) et `bolt.tel` : les
++   modules sont numérotés dans un ordre où chacun vient après ceux dont il
++   dépend, tels qu'ils étaient au moment où chacun a été numéroté, et un nouveau
++   module prend le numéro suivant ;
++ - `n` est le numéro de l'erreur au sein de son module, le prochain numéro libre
++   au moment où l'erreur est écrite ;
++ - `v`, lorsqu'il est présent, identifie une variante précise de l'erreur
++   (généralement le cas d'une énumération `Reason`).
+
+@ 0 8 0 190d5ec87213cd8006246e0294bc0c6e
++ `bolt.tel`, à côté de ce fichier, est le registre de tous les codes : le numéro
++ et le nom de chaque module, de chaque erreur et de chaque variante, dans le
++ schéma `bolt`. L'index des codes bolt le désigne comme celui de Soundness, et
++ n'en garde aucune copie ; une erreur ajoutée, renommée ou retirée y est donc
++ consignée, dans la même modification. Un nom est en kebab-case, et épelle la
++ forme longue d'un code : `↯/s.87.2.1` est
++ `↯/soundness.legerdemain.query.missing`. Un type d'erreur `Query.Error` se nomme
++ `query`, et une `Reason` telle que `BadSignature`, `bad-signature`.
+
+@ 0 6 0 0e6d996121bd51fd0c84762bd81f5efa
++ Un code n'est jamais réutilisé. Lorsqu'une erreur est supprimée, sa page reste,
++ marquée `(retired)`, et dit ce qu'elle est devenue, et son numéro est marqué
++ retiré dans `bolt.tel` : une référence au code depuis une version plus ancienne se
++ résout toujours, et le numéro ne peut pas être réattribué par accident. Une page
++ retirée indique ce qui a remplacé le code dans un tableau `Was` et `Now`, avec
++ une ligne pour le code et pour chacune de ses variantes qui a un successeur,
++ même lorsqu'il n'y en a qu'une.

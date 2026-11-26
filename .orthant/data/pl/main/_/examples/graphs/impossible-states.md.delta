@@ -1,0 +1,76 @@
+orthant 2 language
+
+@ 0 1 0 16e854d38abc8fc40abcec0a96201727
++ # Graf, który nie może zawierać cyklu
+
+@ 0 3 0 0010b630dded6f6b02a67ded353b808f
++ `Dag` jest acykliczny z racji swojego typu, a operacja, która mogłaby zamknąć cykl, nie daje
++ `Dag`. `+` dodaje dowolną krawędź, więc jej wynikiem jest `Digraph`, a drogą z powrotem do `Dag`
++ jest jedyna konwersja, która sprawdza.
+
+% 2 1 0 0e632d32fbae15b41e060ce1210ad6a2
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 1f4c68b1e7b2a03903074a5e23f6dc99
++   label Dodana krawędź i oczekiwany `Dag`
+
+% 0 1 0 1477c34ff41c7c99183443e1d3238ae1
+
+% 1 1 0 0960c596329e4eb20a0b442aaa85c43a
+
+% 2 1 0 052b5d53c564213f191f74be413a911f
+
+% 4 1 0 03d75590a062f15403872a176fe91757
+
+% 0 1 0 197d7c01157cfa7b075045de3879b215
+
+% 1 1 0 0f673e8437812b2f0b2591031af1f10f
+
+@ 0 2 0 0cb81e04b3e016ac156f19730b2afd17
++   label Typ, który naprawdę ma
++   highlight Digraph[Text]  cykl jest możliwy
+
+% 1 1 0 1cfb6a7ea41e58ea0da7ac3ca132a56a
+
+% 2 1 0 069c6e01ce1ebbd30ab63e5255822a1b
+
+% 4 1 0 07a83d99bc8d0e4b1fbf453b610a5559
+
+% 0 1 0 028a0a6b9a2eb4be1fb2c2eef56065bc
+
+% 1 1 0 0a1593a64e6f806a0885f7882754b267
+
+@ 0 2 0 0d9cb1e8864270240e6c1d6c4ef217ae
++   label Sprawdzony i znów `Dag`
++   highlight acyclic  sprawdzająca konwersja
+
+% 1 1 0 011df49aea53f99f1b45c36fa59138a1
+
+% 2 1 0 130a7a99fdbf412902f5555964262264
+
+% 4 1 0 1e8ba2be09dcc6021e8994e645e2c7ec
+
+% 0 1 0 01eb6f68e2535b691ef9b6a9a9b64895
+
+% 1 1 0 1cec969abbc4ce130e3e04fc96a2225b
+
+% 1 1 0 136d267ff733a60e0f6246170d49df5f
+
+% 2 1 0 1525a46c87e9e0571e7d21b8e7c42b7a
+
+% 0 1 0 08a86cbdc9b8cb0109ed8ce5b435ce67
+
+% 1 1 0 0cd6459499a6bd5203d659b3bcc1b6aa
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 0 1 0 0307d02b8f8b33e51af9bc2f6ce078d9
+
+% 1 1 0 1c38b33c6cfd5cb11e7f3c43073ff231
+
+@ 0 2 0 082ff85c8d43fdd405ed139c568475a4
++ [Edycja](../../soundness/modules/graphs.md#editing) zawiera tabelę, która mówi, jaki typ daje
++ każda edycja, a [stany niemożliwe](../../philosophy/impossible-states.md) – zasadę.

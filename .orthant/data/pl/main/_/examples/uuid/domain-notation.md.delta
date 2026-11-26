@@ -1,0 +1,79 @@
+orthant 2 language
+
+@ 0 1 0 0fc17bdd9a338e9e1da295db254a74ee
++ # Identyfikatory łączone jak bity
+
+@ 0 3 0 0711a2038bd31a95159b7013ad3ee6af
++ UUID to 128 bitów, a w tych rzadkich przypadkach, gdy traktuje się go jak bity, zapisuje się go
++ tak jak bity. `^` to alternatywa wykluczająca dwóch identyfikatorów, a `~` negacja jednego, i
++ każde z nich daje kolejny `Uuid`.
+
+% 2 1 0 177ab04c54ded30a1fa9ec38a1d6d79b
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 00973faa8494297c0ae9a6afc2d6d21d
++   label Dwa identyfikatory
+
+% 1 1 0 0255dd8564aee34715e90cc5ab18ef71
+
+% 2 1 0 0bc498847df97988012e005f89263874
+
+% 3 1 0 0d0f7e24808cfde81970bd8f6bec72c6
+
+% 1 1 0 0aca1e7ee1c5fd4d00e62cf465709131
+
+@ 0 2 0 0b763fb01e60b68317a3cd49eec320eb
++   label Jeden utworzony z obu
++   highlight ^  alternatywa wykluczająca wszystkich 128 bitów
+
+% 1 1 0 118cda9bb2a2ea731e37224ac72c5690
+
+% 2 1 0 00abd4e87b153c1b0867547fad330e89
+
+% 3 1 0 03280de0285916b51bf1b1b8159c1af6
+
+% 5 1 0 084ed82f69e49ce50426ea88366a85d8
+
+% 1 1 0 0bf3847463a1064f109da98ba9b640af
+
+@ 0 2 0 1fae437ae2e73e9915514e344facff50
++   label I znów rozłożony
++   highlight twins..sebastian  alternatywa wykluczająca sama się odwraca
+
+% 0 1 0 1accf43fe92797621dc8da9a374d03c3
+
+% 1 1 0 1f716f85da1e6d1c01604857372f260f
+
+% 2 1 0 0954d8126bbd438f1e45d4c6909016ab
+
+% 3 1 0 00cb051935996c2c02370cc7bf77907c
+
+% 5 1 0 06b4c2d13f0696131e47684b6d2727c7
+
+% 0 1 0 07e78be2638f81251fca33b58788cd78
+
+% 1 1 0 16fc4165936ffe32007180b04b4aca34
+
+% 1 1 0 136d267ff733a60e0f6246170d49df5f
+
+% 2 1 0 1525a46c87e9e0571e7d21b8e7c42b7a
+
+% 0 1 0 08a86cbdc9b8cb0109ed8ce5b435ce67
+
+% 1 1 0 0cd6459499a6bd5203d659b3bcc1b6aa
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 0 1 0 0f85544d7539443d1c649b32f8b8e0b1
+
+% 0 1 0 01cf4610a894eca20bc1aaffac41d78a
+
+% 0 1 0 129a04539d559f8a18c13a708b879f94
+
+% 1 1 0 0946e13fd065e25913b8eea6d6d8b0e2
+
+@ 0 1 0 02581036a71174fc12b6916b288c7872
++ [Łączenie](../../soundness/modules/uuid.md#combining) zawiera negację, `~`.

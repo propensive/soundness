@@ -1,0 +1,52 @@
+orthant 2 language
+
+@ 0 1 0 07e43f7f4e2ad9440f4882e405e45986
++ # Qual ambiente um programa vê
+
+@ 0 3 0 1fa0e5516d4d0c4503bc4ecabed41368
++ O ambiente de onde uma variável é lida é escolhido por um import ou por um given. O real, um vazio
++ para um teste e um escrito para a ocasião são iguais para o código que os lê.
+
+% 0 1 0 12705ff5e291290d17fbc8389d59ef4a
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+@ 0 2 0 1b7d63f9982fd78101718821f5b0bbe6
++ alternative O ambiente real
++   highlight javaBaseEnvironment  o da própria JVM
+
+% 1 1 0 10bd996da142eba81f6a64adc83a5d29
+
+% 0 1 0 1127b14c14fb4ec81dbeb7f7a40648e7
+
+% 2 1 0 100604e7c05747521a987869837644c7
+
+@ 0 2 0 002314ed40a458740702ae92e880c9da
++ alternative Nenhum ambiente
++   highlight emptyEnvironment  toda variável está indefinida
+
+% 1 1 0 056228ae8da89e5500733f64678af75d
+
+% 0 1 0 1a43306476ff5b5a0caac56334944a1d
+
+% 2 1 0 1daf50599da9e678173d7e78ea896bca
+
+@ 0 2 0 039f54f9e0eb8d7215873ea6674a19dc
++ alternative Um escrito para um teste
++   highlight given..Environment  uma função a partir de um nome
+
+% 1 1 0 1ce28a75f88af5de06a3bd6fd499cd51
+
+% 0 1 0 19d57f9b0582e79b066d21050480e571
+
+% 2 1 0 1ee1635ec3daf19b0b2ed5dfa01c2d3a
+
+% 0 1 0 18eafb32caed3dd50f976e787bd035ca
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 4 0 19f3eef32dfe4f1b1cb26d902d9b8ec5
++ O exemplo é compilado, e não é executado, já que a primeira aba lê a máquina em que roda.
++ [Substituindo para um bloco](../../soundness/modules/environment.md#overriding-for-a-block) traz os
++ motivos para substituir um ambiente, e [contexto
++ declarativo](../../philosophy/declarative-context.md) o princípio.

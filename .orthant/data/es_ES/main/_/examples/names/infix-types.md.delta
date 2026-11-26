@@ -1,0 +1,65 @@
+orthant 2 language
+
+@ 0 1 0 05a80198f846f55d10caf16baf0f3d01
++ # Reglas que se leen en el tipo
+
+@ 0 2 0 141f9befc227cae4033a69531a63d667
++ Las reglas de un espacio de nombres no son código que se ejecuta sobre una cadena. Son un solo
++ tipo, una intersección de reglas, que se lee como una frase: un `Tag` es nominativo bajo estas
++ reglas.
+
+% 0 1 0 12705ff5e291290d17fbc8389d59ef4a
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 2 0 0e1af6b92fc833a50a73f92612c6e0ce
++   label Un espacio de nombres cuyos nombres no están vacíos
++   highlight Tag..under  el plano, y sus reglas
+
+% 0 1 0 1accf43fe92797601dc8da9a374d03c1
+
+% 1 1 0 175eff4186e0097c110253255e924cfc
+
+% 2 1 0 0422040821df6f810cf796e4ca26a369
+
+% 0 1 0 100a4dfb2b8d37b0066d5e885d93b021
+
+% 1 1 0 0316a0236b3771d1059f580376e69e38
+
+@ 0 2 0 039e3c0048f3133c13d801cba695f244
++   label Y no contienen ningún punto
++   highlight &..MustNotContain["."]  una segunda regla
+
+% 1 1 0 16ee28014b1406f913aeca166bf28897
+
+% 2 1 0 0078cb7872931e540d19866dff0fe2bd
+
+% 4 1 0 165a4eab8f950a57098291fe27a27630
+
+% 0 1 0 0877ad2e2415e87b1f2a622fd13979f9
+
+% 1 1 0 00a55cac4b8ebd0418a35e9aee42a210
+
+@ 0 2 0 0097d7e8d5854beb1233c137f2d780d0
++   label Y no empiezan por 0
++   highlight &..MustNotStart["0"]  una tercera
+
+% 0 1 0 0fd2ac3797a0477d02117fa7e01a94b3
+
+% 1 1 0 0831db4166dd7587114b3740732b8e38
+
+% 2 1 0 10203026288d320709009c9226751f9c
+
+% 4 1 0 0e04924ee795130819aadc9dd8adf48f
+
+% 0 1 0 0e2f196217130ae206bac8127e56b740
+
+% 0 1 0 18eafb32caed3dd50f976e787bd035ca
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 2 0 16899886e0516767179c74bc64011b18
++ [Definir un plano](../../soundness/modules/names.md#defining-a-plane) tiene los detalles, y [los
++ tipos infijos](../../philosophy/infix-types.md) los motivos de unos tipos que se leen como frases.

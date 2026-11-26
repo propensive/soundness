@@ -1,0 +1,89 @@
+orthant 2 language
+
+@ 0 1 0 0989a2f674cca306038cdc2d706b9c2d
++ # Un solo metodo per ogni base
+
+@ 0 2 0 12cb9a02b8c678a2105d5991b799a989
++ `serialize` scrive byte come testo, e prende la base come tipo. L'esadecimale, il binario e un
++ alfabeto quaternario dei quattro nucleotidi del DNA sono la stessa chiamata.
+
+% 2 1 0 11f239b903c8d0400da2c441dff13f2e
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 04104f247812b4e804fbab9acdb6bb06
++   label Quattro bit per carattere
+
+% 1 1 0 01f08e8e813a627d1004331efafe79b9
+
+% 2 1 0 1ba97bbfb47fd30500e78109539089b2
+
+% 0 1 0 03775d0ecd055392006e7b2cb3ffcda6
+
+% 2 1 0 18ee0f7603dc8e191355fd124773e895
+
+% 3 1 0 004d42b206c37fc6169d742227e45ad5
+
+% 1 1 0 01efaf1526f5f2dc100088bf24edb2a9
+
+@ 0 2 0 1ce10967dddfc92f18f9fa9f8f0e5639
++   label Un bit per carattere
++   highlight serialize[Binary]  lo stesso metodo
+
+% 1 1 0 02ad9ab05a9fce251338c5c18c3c331d
+
+% 2 1 0 1171fa63c99a49ef05cf4bbb3d414ea1
+
+% 0 1 0 19f03eeeb044fb8415aaeca7cbff0a3d
+
+% 2 1 0 1884ee3ceec08f431ac3279fd6da1107
+
+% 3 1 0 09a6d43612421d0213da5a35528722a1
+
+% 4 1 0 11b025a1336af46d0d62ef8b64625385
+
+% 1 1 0 06db356387d1305513b58197ed41fd60
+
+@ 0 2 0 08467c63905ee3c10137502f08978b31
++   label Due bit per carattere, come nucleotidi
++   highlight serialize[Quaternary]  l'alfabeto nell'ambito è ATCG
+
+% 1 1 0 00f5c38ed8e40d2d0356f51e354bc70c
+
+% 2 1 0 0a39c5449f66c51b1ca11186db65cad5
+
+% 0 1 0 02f80f720635eae107241d69b8d26132
+
+% 2 1 0 1dad7ec80967f3550e741359fd51c359
+
+% 3 1 0 01590b3e56cfee7201f53777191a01e2
+
+% 4 1 0 0cacef67960c8956128978776d328098
+
+% 0 1 0 0a952b04248c99f11046fef726f4f4ab
+
+% 1 1 0 0beecd71919506900ba1be289a97f98c
+
+% 1 1 0 136d267ff733a60e0f6246170d49df5f
+
+% 2 1 0 1525a46c87e9e0571e7d21b8e7c42b7a
+
+% 0 1 0 08a86cbdc9b8cb0109ed8ce5b435ce67
+
+% 1 1 0 0cd6459499a6bd5203d659b3bcc1b6aa
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 0 1 0 158164b74dca6d8418ef9f735a88912f
+
+% 0 1 0 181bbad23fc8ac6f05124b7c0b1dc772
+
+% 0 1 0 075d15a5bc2193730bfdf02cc9ef779b
+
+% 1 1 0 113cf8dd3068f3990161e46bedd2469b
+
+@ 0 2 0 13997014a0a3967e1919227b21c69038
++ [Altre basi](../../soundness/modules/base-encoding.md#other-bases) riporta le basi in una tabella, e
++ le [API ridotte](../../philosophy/small-apis.md) spiegano il nome unico.

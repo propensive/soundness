@@ -1,0 +1,68 @@
+orthant 2 language
+
+@ 0 1 0 15aaa68363a4822a0292f15ce88516ef
++ # Matemática escrita e lida como todo o resto
+
+@ 0 2 0 061477ac7a69f2801ed5c97774060b18
++ Uma fórmula não tem métodos próprios para XML. Ela é escrita com `in[Xml]` e lida de volta com
++ `read[Math]`, como qualquer outro documento, e qualquer número se torna uma com `math`.
+
+% 2 1 0 1f1a616457649b1e0671dd10aaa6f97c
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 2 0 06a47ae10016d2f4148a96de9685bc01
++   label Uma fórmula, escrita como XML
++   highlight in[Xml]  o método que escreve HTML e SVG
+
+% 1 1 0 0d57972b1227d33c126ea54c183c57f7
+
+% 2 1 0 15b2ca9bdb2f750f1365bacab628bb9a
+
+% 3 1 0 01bb39bf1f685069094753bd67c9fdb1
+
+% 5 1 0 1c3e0bfa81affa5900728d2a5e4c55ec
+
+% 6 1 0 14162a7055820edd1e0cba695bd38b21
+
+% 1 1 0 014ef5586014e94f0ded1862770bdb6f
+
+@ 0 2 0 07812217bdc4afa80205cb04cfb215ca
++   label O XML, lido como uma fórmula
++   highlight read[Math]  o método que lê JSON e imagens
+
+% 1 1 0 084a3e8e9fb159471a0329a1e0d3a127
+
+% 2 1 0 18bade3cf7484e2f109fe9539f61fc57
+
+% 3 1 0 0feb2986b7bb16e30a3b504cbee1e551
+
+% 5 1 0 0f2ffd8cc2170a0b0fa87f9eee082aae
+
+% 6 1 0 0ac9721a54d287e20c453343027541ee
+
+% 0 1 0 0135ecb88607a8870e1001dfeafecaa0
+
+% 1 1 0 1de51c55c10935781b509778e78e6e62
+
+% 1 1 0 136d267ff733a60e0f6246170d49df5f
+
+% 2 1 0 1525a46c87e9e0571e7d21b8e7c42b7a
+
+% 0 1 0 08a86cbdc9b8cb0109ed8ce5b435ce67
+
+% 1 1 0 0cd6459499a6bd5203d659b3bcc1b6aa
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 0 1 0 149d2c775a7b75331b087e62ac6b8ad2
+
+% 0 1 0 1fa182648bd071dd0c8681741e6a9543
+
+% 1 1 0 0e161e5d9b1813fb05c190a624b012da
+
+@ 0 2 0 0d02bc27a00ead110328d80c470f534b
++ [A árvore MathML](../../soundness/modules/mathematical-markup.md#the-mathml-tree) descreve a ida
++ e volta, e [APIs pequenas](../../philosophy/small-apis.md) o motivo para um só nome.

@@ -1,0 +1,59 @@
+orthant 2 language
+
+@ 0 1 0 0c01b353cae3428d124f5b7eea20da1b
++ # Texto não é um identificador
+
+@ 0 3 0 0e4a1e460eb238e2180d17c0e74c79b9
++ Um método que recebe um `Uuid` não pode receber texto, por mais que o texto se pareça com um. A
++ verificação que transforma texto em identificador precisa acontecer antes, então o método nunca
++ encontra um malformado.
+
+% 2 1 0 089470df9e4df684062cc8367c8c7adc
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 037bf2a2c9ec9a131d9a466ed47ef233
++   label Texto, onde se quer um identificador
+
+% 0 1 0 1477c34ff41c7c99183443e1d3238ae1
+
+% 1 1 0 0960c596329e4eb20a0b442aaa85c43a
+
+% 2 1 0 10ae28a9f36ae38c1f030baad53ef940
+
+% 0 1 0 00a703b515d2f92f02b37a60a48e79b1
+
+% 1 1 0 0d4e2d03cce43edb1ce2aafd6db3d0a1
+
+@ 0 2 0 0c4eb51e67b685dd0745abd71127c45d
++   label Um identificador, verificado enquanto o código compila
++   highlight uuid  uma palavra, e o compilador lê os dígitos
+
+% 1 1 0 178b508ad1b9b0fa13340e8a077e7830
+
+% 2 1 0 08b64a5e45af67db09efe89f51f874b5
+
+% 0 1 0 1bacff535c03e0831f6d51dc5d747564
+
+% 1 1 0 06953b6c3dfc97d20eb7dda098265eb2
+
+% 1 1 0 136d267ff733a60e0f6246170d49df5f
+
+% 2 1 0 1525a46c87e9e0571e7d21b8e7c42b7a
+
+% 0 1 0 08a86cbdc9b8cb0109ed8ce5b435ce67
+
+% 1 1 0 0cd6459499a6bd5203d659b3bcc1b6aa
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 0 1 0 1326920c417a895b0ccb10833b9ae944
+
+% 1 1 0 1709bb076f772903034a5539fd9960c5
+
+@ 0 2 0 0f137c5d879998621202287ec2d20cec
++ [Sobre UUIDs](../../soundness/modules/uuid.md#on-uuids) explica por que uma string é um lugar
++ pouco confiável para guardar um, e os [estados impossíveis](../../philosophy/impossible-states.md)
++ o princípio.

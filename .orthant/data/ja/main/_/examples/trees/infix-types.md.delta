@@ -1,0 +1,74 @@
+orthant 2 language
+
+@ 0 1 0 0aa7cada47e341051697d8a5c6800c27
++ # 自分の子を知っている型
+
+@ 0 2 0 05f93375a0cf41d80ce7626eaf206408
++ 木は、その根と、ノードの子を見つける方法から描かれる。その方法は描くたびに与えることも、
++ 型について一度だけ一文で述べることもできる。`Scene is Expandable` である。
+
+% 2 1 0 1790988242fedddb0c03177c3b4dbf26
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 2 0 1660a43f06b4b0d21f21b32f246501bf
++   label 木を描く場所で与える子
++   highlight by[Scene](_.parts)  描くたびに述べる
+
+% 1 1 0 1dee403e9193a3ef0d1b731f562ecc0d
+
+% 2 1 0 15812e2e751bd5f3025c1e480bf17e20
+
+% 4 1 0 0d67689ec4f66bdc136bd04596ba25ec
+
+% 2 1 0 074577ef3beb66401accb76eb9b67cae
+
+% 3 1 0 147c80c2c759b5b11048fcb5f17b1a88
+
+% 4 1 0 0c98cb2914a2db301badb4f3c4ae1ed9
+
+% 0 1 0 08d8dde244222fb01550ff7a0b67d634
+
+% 1 1 0 090f975119bcaace1196e5c162b7c730
+
+@ 0 2 0 0650eaa7aa332d0f1b2996c1a4bfd26b
++   label 型についての事実としての子
++   highlight given..Expandable  型について一度だけ述べる
+
+% 1 1 0 1abfe33e3f1f06341e9ffb55b5b17d6b
+
+% 2 1 0 01a9195d7f798362168b7e918370311e
+
+% 4 1 0 01fb493c259aa424065e35148001be3b
+
+% 0 1 0 118f89ccadccc475111fe12e2cd50edf
+
+% 2 1 0 12075a9baefdd09b10592ed7947d4f21
+
+% 3 1 0 1035783185bfc43f1c061aea5a0d2354
+
+% 4 1 0 1bb5839ba774935d1bf46c2e2f262597
+
+% 0 1 0 043941266452e91a1d3b5de99722e8a1
+
+% 1 1 0 0a44df87f1bbf84e04ca92a949cf170e
+
+% 1 1 0 136d267ff733a60e0f6246170d49df5f
+
+% 2 1 0 1525a46c87e9e0571e7d21b8e7c42b7a
+
+% 0 1 0 08a86cbdc9b8cb0109ed8ce5b435ce67
+
+% 1 1 0 0cd6459499a6bd5203d659b3bcc1b6aa
+
+% 0 1 0 00af3fdb360e27f9095168ce70444642
+
+% 0 1 0 13a5644b6d48f7ed11a6befc59d8d9be
+
+% 1 1 0 1c5f88df1799f597140617419b78897b
+
+@ 0 2 0 1c901bd35041fd5e111a4162eaa6ca60
++ [木を与える](../../soundness/modules/trees.md#supplying-the-tree)で二つを比べており、
++ [中置型](../../philosophy/infix-types.md)にこうした型がどう読めるかの説明がある。

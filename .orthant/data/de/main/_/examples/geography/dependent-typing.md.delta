@@ -1,0 +1,67 @@
+orthant 2 language
+
+@ 0 1 0 020ee2c116d498b112f7ff8f79126eb4
++ # Ein Kompass mit so vielen Punkten, wie sein Typ sagt
+
+@ 0 3 0 138ce7827445cb9419b00e794371c0ac
++ Die Zahl der Punkte einer Kompassrose ist ein Typargument, und der Typ einer Peilung wird daraus
++ berechnet. `Compass[4]` ist einer von vier Winden, und eine Peilung von einer Rose mit acht Punkten
++ ist keiner davon.
+
+% 2 1 0 083a8bdb30c4873212dffa38f79f6629
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 1d324eb77f66fcad177407639131f9c6
++   label Acht Punkte passen nicht in vier
+
+% 0 1 0 1477c34ff41c7c99183443e1d3238ae1
+
+% 1 1 0 0960c596329e4eb20a0b442aaa85c43a
+
+% 0 1 0 12efca759be999641be9bb199e4584af
+
+% 1 1 0 17bfa73de9b0653d124b51a7688b090c
+
+@ 0 2 0 0d2ab0e14a2770bf0b02a3f49182189a
++   label Eine Rose mit vier Punkten
++   highlight Compass[4](  das Typargument wählt die Rose
+
+% 1 1 0 1158509eb4e537b814605c6e38d27b63
+
+% 0 1 0 12777f2b8f45d2290ebe70643ffe3a2c
+
+% 0 1 0 099ed43bd1f48fb51bfaf4cd577a2ff7
+
+% 0 1 0 03f47f7ccc777070140615ffb8e03ab7
+
+% 0 1 0 142546fd7ad7a1011aebb32ebe986178
+
+% 0 1 0 091cea1d04d9a5d01dcb6cfcd8fb6f72
+
+% 0 1 0 0b54b17b702062251bce7e795077b8f6
+
+% 1 1 0 06d39e94a20e1f81129fae9a71a32310
+
+% 1 1 0 136d267ff733a60e0f6246170d49df5f
+
+% 2 1 0 1525a46c87e9e0571e7d21b8e7c42b7a
+
+% 0 1 0 08a86cbdc9b8cb0109ed8ce5b435ce67
+
+% 1 1 0 0cd6459499a6bd5203d659b3bcc1b6aa
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 0 1 0 170432ace65eb506197608287369cf77
+
+% 0 1 0 07eaa6a523672a0111eadd93fe8c2626
+
+% 1 1 0 066bde3fb49559811140425ce30af192
+
+@ 0 2 0 114270c5a3ae04d90ebd3a270cbbeb39
++ Der Musterabgleich braucht vier Fälle und nicht mehr, denn `Compass[4]` ist `CardinalWind` und
++ nichts anderes. [Kompasspunkte](../../soundness/modules/geography.md#compass-points) behandelt die
++ drei Rosen.

@@ -1,0 +1,39 @@
+orthant 2 language
+
+@ 0 1 0 1a26dee1d32c457f154f39a6cd8b8097
++   entry #trees   każde `Markup.Tree` w komunikacie, gdziekolwiek jest zagnieżdżone
+
+@ 0 2 0 06d9964a216b63ce0ea8450093d7ce20
++       row  `Tree(omitted, children)`  drzewo wyjaśniające nieudane rozstrzygnięcie kontekstowe; `omitted` liczy węzły pominięte ze względu na długość
++       row  `Node(role, name, note, repeated, children)`  jeden węzeł takiego drzewa: jego `Role`, `name` tego, czego szukano, co znaleziono lub zaproponowano, `note` na jego temat oraz to, czy jego poddrzewo pokazano już wcześniej i tutaj je pominięto
+
+@ 0 3 0 19bd5f1a17ead8801f0d056cc9832871
++       Dziećmi `Tree` lub `Node` są jego potomne `Node`, przeplecione z `Textual` — znakami nowej
++       linii i znakami ramek — które rysują to samo drzewo jako zwykły tekst; `#nodes` daje same
++       `Node`.
+
+@ 0 21 0 097f0e9e07a724d7170810e6bafc0c7c
++   entry .marked   czy tekst zawiera którykolwiek ze znaczników odczytywanych przez `parse`
++       Znak z obszaru prywatnego użytku od `U+E000` do `U+E003`.
++   entry .parse   parsuje oznaczony tekst do listy węzłów, tak jak zrobiłby to parser samego kompilatora
++       Postępuje dokładnie jak `DiagnosticMarkup.parse` kompilatora: znacznik otwiera się znakiem
++       początkowym, swoim rodzajem, separatorem atrybutów, atrybutami `key=value` (zakodowanymi
++       procentowo tam, gdzie wartość zawiera zastrzeżony znak, i tu dekodowanymi) oraz separatorem
++       tekstu, a zamyka znakiem końcowym. Wszystko, co nie tworzy kompletnego znacznika, jest
++       odrzucane, a otaczająca treść zachowywana jako tekst – zabłąkany znak początkowy lub końcowy
++       znika, obcięty nagłówek odczytuje się jako zwykły tekst – a dzieci nigdy niezamkniętego
++       znacznika są wplatane w jego rodzica, więc przedwcześnie urwany komunikat nadal się parsuje.
++       Rodzaj decyduje o węźle: `type`, `sym`, `name`, `code` i `tree` mają własne przypadki,
++       podobnie jak `node`, którego `role` jest jedną z `.Role`, a każdy inny rodzaj to `Spanned`.
++   entry .plain   tekst z usuniętymi wszystkimi znacznikami, zawierający tylko widoczną treść
++       Tekst bez znaczników jest zwracany bez zmian, bez parsowania.
++   entry .wrap   opakowuje tekst w znacznik danego rodzaju, z atrybutami, tak jak robi to sam kompilator
++       Dla makra, którego komunikat ma zachować strukturę: przy `-Zsemantic-diagnostics` znacznik
++       dociera do `.parse` nienaruszony, a każdy inny odbiorca widzi tylko tekst w jego wnętrzu.
++   entry .Role   rola, jaką `Node` odgrywa w drzewie: `Resolving`, `Candidate`, `Requires`, `Propose`, `Prohibits` lub `Found`
++     entry #glyph   symbol, którym rysowana jest rola
++     entry #word   nazwa roli małymi literami, tak jak podaje ją atrybut `role` znacznika
++   entry #plain   widoczny tekst tego węzła: jego własny tekst lub połączony tekst jego dzieci
+
+@ 0 1 0 0040f586709e95720edf25cba05cb8b5
++   entry #nodes   potomne `Node` węzła `Tree` lub `Node`, bez tekstu, który je rysuje

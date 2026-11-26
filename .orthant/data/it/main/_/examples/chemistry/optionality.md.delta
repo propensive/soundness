@@ -1,0 +1,58 @@
+orthant 2 language
+
+@ 0 1 0 00d13d9e806f8e46115ab0617321f895
++ # Un numero atomico che può non avere un elemento
+
+@ 0 3 0 184a39c98ea3c42710d766dcb8bbb073
++ La tavola periodica ha 118 elementi, e un numero cercato in essa può non corrispondere a nessuno di
++ essi. Il risultato è un elemento `Optional`, che non può essere usato come elemento finché al caso
++ assente non è stato dato un significato.
+
+% 2 1 0 19a4f96491ae552a1dcf7a94511aa822
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 100b536de07742f01376e8f8eece1f30
++   label Un elemento che può non esistere, usato come tale
+
+% 0 1 0 1477c34ff41c7c99183443e1d3238ae1
+
+% 1 1 0 0960c596329e4eb20a0b442aaa85c43a
+
+% 0 1 0 18cb026b472cf2661dd2637abbd6e6ea
+
+% 1 1 0 0dcfa5e6e3a811b91b065778f87163d7
+
+@ 0 2 0 07529fb6406e32bc04de81c21c7d6afe
++   label Un nome per il caso assente
++   highlight or(t"undiscovered")  che cosa significa qui l'assenza
+
+% 1 1 0 018e6727394a8abf0671de4599145d2b
+
+% 0 1 0 198da67a2f114c0f02d0012af2790fad
+
+% 0 1 0 18d8cfb1871d74491b113125d0431dfc
+
+% 1 1 0 17c80570ad6b201b1f5ff2407717b876
+
+% 1 1 0 136d267ff733a60e0f6246170d49df5f
+
+% 2 1 0 1525a46c87e9e0571e7d21b8e7c42b7a
+
+% 0 1 0 08a86cbdc9b8cb0109ed8ce5b435ce67
+
+% 1 1 0 0cd6459499a6bd5203d659b3bcc1b6aa
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 0 1 0 149947a5ce5be3e308f04cf0036054da
+
+% 0 1 0 030c53c50bf1b56d197f71766ccbc978
+
+% 1 1 0 0e1034fa785fbc1000ba819a451c1c25
+
+@ 0 2 0 0d3043498a17620b15056ad00b5bc32e
++ [Gli elementi](../../soundness/modules/chemistry.md#elements) presenta gli altri modi di raggiungere
++ un elemento, e [l'opzionalità](../../philosophy/optionality.md) spiega `let` e `or`.

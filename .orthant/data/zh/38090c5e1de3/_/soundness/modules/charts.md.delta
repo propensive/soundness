@@ -1,0 +1,123 @@
+orthant 2 language
+
+! column  Kind
+! column  Draws
+! column  Abscissa
+! column  Ordinate
+! column  Style
+! row  `Bars()`  a series, or a collection of series  categorical  continuous  `Bars.Style`
+! row  `StackedBars()`  a collection of series  categorical  continuous  `StackedBars.Style`
+! row  `Lines()`  a series, or a collection of series  continuous  continuous  `Lines.Style`
+! row  `Scatter()`  a series, or a collection of series  continuous  continuous  `Scatter.Style`
+! row  `Pie()`  exactly one series  categorical  continuous  `Pie.Style`
+! row  `Histogram()`  `Samples`, or a collection of them  continuous  counts  `Histogram.Style`
+! row  `Boxes()`  `Samples`, or a collection of them  one box per set  continuous  `Boxes.Style`
+! row  `Doughnut()`  a `Dag` of `Weighted`, `Progressive` nodes  none  none  `Doughnut.Style`
+@ 0 13 0 1f804944cbbab0300db1429dc29c7687
++ column  种类
++ column  绘制
++ column  横坐标
++ column  纵坐标
++ column  样式
++ row  `Bars()`  一个系列，或系列的集合  类别型  连续型  `Bars.Style`
++ row  `StackedBars()`  系列的集合  类别型  连续型  `StackedBars.Style`
++ row  `Lines()`  一个系列，或系列的集合  连续型  连续型  `Lines.Style`
++ row  `Scatter()`  一个系列，或系列的集合  连续型  连续型  `Scatter.Style`
++ row  `Pie()`  恰好一个系列  类别型  连续型  `Pie.Style`
++ row  `Histogram()`  `Samples`，或它们的集合  连续型  计数  `Histogram.Style`
++ row  `Boxes()`  `Samples`，或它们的集合  每个集合一个箱体  连续型  `Boxes.Style`
++ row  `Annulus()`  由 `Weighted`、`Progressive` 节点构成的 `Dag`  无  无  `Annulus.Style`
+
+! column  Hook
+! column  Draws
+! column  Defined on
+! row  `fontStyle`, `lettering`  the size and colour of text; every run of text  `Chart.Style`
+! row  `backdrop`  the canvas behind the chart  `Chart.Style`
+! row  `swatch`, `legendLabel`  a legend entry  `Chart.Style`
+! row  `leader`  the line from a moved label back to its point  `Chart.Style`
+! row  `axisLine`  the stroke of each axis  `Chart.Cartesian`
+! row  `axisBreak`  a break mark where a linear axis starts away from zero  `Chart.Cartesian`
+! row  `arrowhead`  the end of an axis  `Chart.Cartesian`
+! row  `tick`, `gridLine`  a gradation and its grid line  `Chart.Cartesian`
+! row  `tickLabel`  a tick's label, where it sits and whether it is rotated  `Chart.Cartesian`
+! row  `axisTitle`  an axis's title  `Chart.Cartesian`
+! row  `marker`, `errorBar`  a point and its interval  `Chart.Cartesian`
+! row  `pointLabel`  the note of a `Noted` point  `Chart.Cartesian`
+! row  `bar`  a bar  `Bars.Style`
+! row  `line`, `band`  a series line and an estimate's band  `Lines.Style`
+! row  `box`, `whisker`, `median`  a box plot's parts  `Boxes.Style`
+! row  `wedge`, `wedgeLabel`  a wedge and its percentage  `Pie.Style`
+! row  `shade`, `sector`, `remainder`  a sector's colour and its two parts  `Doughnut.Style`
+@ 0 20 0 07a1c9f65a6293bd096dfd926a73c63d
++ column  钩子
++ column  绘制
++ column  定义于
++ row  `fontStyle`, `lettering`  文本的大小和颜色；每一段文本  `Chart.Style`
++ row  `backdrop`  图表背后的画布  `Chart.Style`
++ row  `swatch`, `legendLabel`  一个图例条目  `Chart.Style`
++ row  `leader`  从被移开的标注回到其点的线  `Chart.Style`
++ row  `axisLine`  每条坐标轴的笔画  `Chart.Cartesian`
++ row  `axisBreak`  线性坐标轴不从零开始处的断开标记  `Chart.Cartesian`
++ row  `arrowhead`  坐标轴的末端  `Chart.Cartesian`
++ row  `tick`, `gridLine`  一个分度及其网格线  `Chart.Cartesian`
++ row  `tickLabel`  刻度的标注，它的位置以及是否旋转  `Chart.Cartesian`
++ row  `axisTitle`  坐标轴的标题  `Chart.Cartesian`
++ row  `marker`, `errorBar`  一个点及其区间  `Chart.Cartesian`
++ row  `pointLabel`  `Noted` 点的注释  `Chart.Cartesian`
++ row  `bar`  一个条形  `Bars.Style`
++ row  `line`, `band`  系列的折线和估计值的条带  `Lines.Style`
++ row  `box`, `whisker`, `median`  箱线图的各部分  `Boxes.Style`
++ row  `wedge`, `wedgeLabel`  一个扇形及其百分比  `Pie.Style`
++ row  `shade`, `sector`, `remainder`  扇区的颜色及其两个部分  `Annulus.Style`
+
+! column  Identifier
+! column  Holds
+! column  In
+! row  `backdrop`  the canvas, in the palette's background colour  every chart
+! row  `grid`  the grid lines  cartesian charts
+! row  `abscissa`, `ordinate`  each axis, its gradations and its title  cartesian charts
+! row  `legend`  the legend  charts with a legend
+! row  `series-0`, `series-1`, …  each series  cartesian charts
+! row  `wedges`  every wedge and its label  `Pie`
+! row  `rank-0`, `rank-1`, …  each band  `Doughnut`
+@ 0 10 0 1c600122182c2eb2189e07b099bd189d
++ column  标识符
++ column  内容
++ column  出现于
++ row  `backdrop`  画布，使用调色板的背景色  每种图表
++ row  `grid`  网格线  笛卡尔图表
++ row  `abscissa`, `ordinate`  每条坐标轴、其分度及其标题  笛卡尔图表
++ row  `legend`  图例  带图例的图表
++ row  `series-0`, `series-1`, …  每个系列  笛卡尔图表
++ row  `wedges`  每个扇形及其标注  `Pie`
++ row  `rank-0`, `rank-1`, …  每个环带  `Annulus`
+
+! A `Doughnut` draws a dependency graph, a [`Dag`](graphs.md), as concentric bands. The nodes
+! which depend on nothing are in the innermost band, and each further band holds the nodes one
+! rank further out, so a build fills in from the center outwards. Each node is a sector of its
+! band, which sweeps an angle proportional to its size within the rank, and a band is as thick as
+! its rank's share of the total size.
+@ 0 5 0 094a00dfd1bbeae2143c54d55798a5bd
++ `Annulus` 把依赖图，即 [`Dag`](graphs.md)，绘制为同心的环带。
++ 不依赖任何节点的节点位于最内层的环带，此后每个环带容纳向外再进一个秩的节点，因此一次构建从中心向外逐渐填满。
++ 每个节点是其环带中的一个扇区，所扫过的角度与它在该秩内的大小成正比，而环带的厚度等于其秩在总大小中所占的份额。
+
+! val doughnut = Dag(typecheck -> parse, emit -> typecheck).chart(Doughnut())
+% 0 1 0 1877856c8ab7469c04f0ffb78800176f
+
+! Out.println(doughnut.fit.bands.size.show)
+% 0 1 0 14e225babf96351702cd5d73f93e40d6
+
+! Out.println(doughnut.revise(Dag(typechecked -> parse, emit -> typechecked))(1).size.show)
+% 0 1 0 14c1482790cf4ef70542451dfecf4315
+
+! `Chart.Standard(hole = 0.3)` hollows the center. `sectorGap` and `bandGap` are the widths of the
+! grout between sectors and between bands. `Doughnut.Style` has `shade` for the color of a sector
+! from its position, and `sector` and `remainder` for its two parts. The ranking is the one
+! [graphs](graphs.md#layering) describes: `import rankings.balancedRanking` draws each node as
+! close to its dependents as it can be, rather than as close to the center.
+@ 0 5 0 0882828f30df7a830a6f292209c4fb9f
++ `Chart.Standard(hole = 0.3)` 把中心挖空。
++ `sectorGap` 和 `bandGap` 是扇区之间和环带之间缝隙的宽度。
++ `Annulus.Style` 有 `shade`，根据扇区的位置给出其颜色，还有 `sector` 和 `remainder`，用于扇区的两个部分。
++ 排秩方式就是[图](graphs.md#layering)中所描述的：`import rankings.balancedRanking` 把每个节点绘制得尽可能靠近其依赖者，而不是尽可能靠近中心。

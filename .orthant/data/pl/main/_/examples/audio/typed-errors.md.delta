@@ -1,0 +1,47 @@
+orthant 2 language
+
+@ 0 1 0 0bf44e6d62ad20701046cedaa0a7073d
++ # Nagrywanie może zawieść i mówi o tym
+
+@ 0 3 0 1c13052860f7ccd2000fadadc771f5de
++ Urządzenie wejściowe może zostać odłączone, być zajęte albo nie móc nagrywać z żądaną
++ częstotliwością. `record` nazywa to niepowodzenie w swoim typie, więc metoda, która nagrywa, musi
++ obsłużyć błąd albo także go zadeklarować.
+
+% 0 1 0 12705ff5e291290d17fbc8389d59ef4a
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 190580def8f5e8bb19913ae2f0bb7973
++   label Błąd nie jest ani obsłużony, ani zadeklarowany
+
+% 0 1 0 1477c34ff41c7c99183443e1d3238ae1
+
+% 1 1 0 0960c596329e4eb20a0b442aaa85c43a
+
+% 0 1 0 10a11c7d9effec5a1f81f3c858ced693
+
+% 1 1 0 06941c57fcae0bd40a870ef315f11812
+
+% 1 1 0 1142fc68287a32640700ec01de4a62dd
+
+@ 0 2 0 008001f108933ebf1c9deca015a78a34
++   label Błąd jest zadeklarowany
++   highlight raises..Error  teraz musi zdecydować wywołujący
+
+% 1 1 0 07a4ce27b07a40c50c7a525562874c98
+
+% 0 1 0 183e3ff91ba83dfe1dc706223a84e55d
+
+% 1 1 0 0aa582ebff31e2131b172da49c78bbb7
+
+% 0 1 0 18eafb32caed3dd50f976e787bd035ca
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 3 0 0df81f73036ad182002d4e89b811e0e6
++ Przykład jest kompilowany, ale nie jest uruchamiany, ponieważ potrzebuje urządzenia audio.
++ [Nagrywanie](../../soundness/modules/audio.md#recording) opisuje strumień wejściowy, a [obsługa
++ błędów](../../philosophy/error-handling.md) – co może zrobić wywołujący.

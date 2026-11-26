@@ -1,0 +1,63 @@
+orthant 2 language
+
+@ 0 1 0 186b5b061b9bcaf601e1ffdca724cb80
++ # Le même historique, avec ou sans git
+
+@ 0 3 0 0748e608dce9871e0005f768b5e4c7c7
++ Les opérations sur un dépôt sont effectuées par un backend, et le backend est une importation.
++ L'un exécute la commande `git`, avec tout ce que cela implique. L'autre lit lui-même les fichiers
++ du dépôt, et n'a pas besoin que `git` soit installé.
+
+% 0 1 0 12705ff5e291290d17fbc8389d59ef4a
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+@ 0 2 0 1d794d73a1c93f8f12ed34c68b3ce0a1
++ alternative Le backend natif
++   highlight soundnessGit  lit directement la base d'objets
+
+% 1 1 0 1872a1e9db9baee51c555ffb6813c2c5
+
+% 0 1 0 02aab7976c87b5aa14bd34e9239a08dd
+
+% 1 1 0 1b46f9a86d5f754a064448a4c992e557
+
+% 2 1 0 1844ba5c70210ea416c029a21fa9e295
+
+% 4 1 0 0eea24fd244b31ea1c8f2d8c2ec9b6bf
+
+% 5 1 0 0cb85d81f5b0286f18492103c97181da
+
+% 6 1 0 1c91db408cae0bc60bcfd01a418120d6
+
+@ 0 2 0 1532a8e5b5c5a98f166b4aef1b9a04c5
++ alternative La commande git
++   highlight commandlineGit  exécute git, trouvé dans le chemin de recherche
+
+% 1 1 0 114baca9a2c55ae71b4d66e391d8c230
+
+% 0 1 0 141519c07141489a0eb0f03232c7103d
+
+% 0 1 0 02505b03d5a6bbc4174ed74242d016e8
+
+% 0 1 0 03133bc60ae5e162053f2137fb7355f3
+
+% 1 1 0 0d67fa6917577aba1eca16c02245ad7d
+
+% 2 1 0 1a6ddb449105f5951a1e3d25afb6ca2b
+
+% 4 1 0 1d3b89da728490b11bb89d806ca2325d
+
+% 5 1 0 1d4ade25fdad65140d8e5189406ccea5
+
+% 6 1 0 162c87525bfdb0750098632dde53df85
+
+% 0 1 0 18eafb32caed3dd50f976e787bd035ca
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 4 0 18a9ac19d049987413a78fe053a7fc47
++ L'exemple est compilé, mais pas exécuté, car il a besoin d'un dépôt.
++ [Choisir un backend](../../soundness/modules/git.md#choosing-a-backend) compare les deux, et
++ [le contexte déclaratif](../../philosophy/declarative-context.md) explique pourquoi le choix se
++ fait par importation.

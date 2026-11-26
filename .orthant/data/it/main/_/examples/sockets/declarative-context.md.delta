@@ -1,0 +1,89 @@
+orthant 2 language
+
+@ 0 1 0 032c9ccf375e81ba0b933c15f71579e9
++ # Le opzioni dei socket, dichiarate una volta
+
+@ 0 3 0 1f7e0efbdface3ef12195d4a26844a94
++ Le opzioni di un socket non sono argomenti di `listen`. Vengono raccolte dall'ambito, ciascuna con
++ un tipo che dice a quali trasporti si applica, quindi un import fissa la politica per ogni socket
++ associato al di sotto di esso.
+
+% 0 1 0 12705ff5e291290d17fbc8389d59ef4a
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 0216e9200adaa5ee1abb29fe38332be3
++   label Un listener con i default della piattaforma
+
+% 1 1 0 04c69646e48f22e81aa6939c19ace3e2
+
+% 2 1 0 0168af152e4f61cb1778e82da31a566f
+
+% 3 1 0 0042e31f5163ab94183c5f7b363c4145
+
+% 2 1 0 129137ff3c29061c1ff66c1a9f84b920
+
+% 3 1 0 07d69bc8480c5ca1097cb30c07bdb851
+
+% 4 1 0 1ae2747947a28bdd1585dfbbae7fb0ec
+
+% 5 1 0 151c5fad9bb9af771152cad2b036c2af
+
+% 6 1 0 1bb11c02a6d76839002833f3bb00bcb8
+
+@ 0 1 0 065f2c986299606c0ec451c631c0ff8d
++   label Uno che può riassociare subito il suo indirizzo
+
+% 0 1 0 102cff747438d7031bc120ec66b1c497
+
+% 1 1 0 1d0f58e4e74e43f50758853ad9bb3e18
+
+% 2 1 0 057db21c5942b89e19705fc6afd8053a
+
+% 3 1 0 077cdbae631716b902cd78425ee1dab5
+
+% 4 1 0 0d02e078bb89b1ac1827fb3eaceb7258
+
+% 2 1 0 1167dd71801d7e031d48bb08ee7229a6
+
+% 3 1 0 0e6e375cf5d0a8151576ba97873d73b8
+
+% 4 1 0 0880ee982c12ffb817f94f1b29baa1ec
+
+% 5 1 0 13ae3594b0b7766411c11c037301ebff
+
+% 6 1 0 1861e5fb85586cbe1155baf6d5cfa57b
+
+@ 0 1 0 1a2d4ac9c24530ba1d978dfbced55040
++   label E che ha un buffer più grande
+
+% 0 1 0 13a8d58bc7e4732212f9e44354988bf4
+
+% 1 1 0 1b04364539a9522c071d76200c00f52f
+
+% 2 1 0 1db5ac39f66daf480be7a2d813331fd3
+
+% 3 1 0 1f1a2a15997364910de91bd1f0d40a6e
+
+% 4 1 0 1b7fefaff579107c0bb907e31006fde4
+
+% 0 1 0 0aecb354f629e24d0a8ab10df5e10f6e
+
+% 2 1 0 0e1648455adba8881f49a6155b0e6f56
+
+% 3 1 0 1f05778902f22a2e1c015630cc616b05
+
+% 4 1 0 0c0575880457f8130c99bf54cbaf9f6f
+
+% 5 1 0 1ceb97dc0bd383ef097c8aef4a2b99da
+
+% 0 1 0 18eafb32caed3dd50f976e787bd035ca
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 3 0 0a1b2518765f2faf0b26a4bb7c72ee7f
++ L'esempio viene compilato, ma non eseguito, poiché occuperebbe una porta. [Opzioni dei
++ socket](../../soundness/modules/sockets.md#socket-options) le elenca tutte, e il [contesto
++ dichiarativo](../../philosophy/declarative-context.md) spiega l'approccio.

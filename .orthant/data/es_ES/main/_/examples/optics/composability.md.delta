@@ -1,0 +1,73 @@
+orthant 2 language
+
+@ 0 1 0 1d43da514fcaebed01285a47d6b940ab
++ # La misma actualización, en un documento JSON
+
+@ 0 2 0 17e1ea0a447d02ac04d979592bb01b74
++ Una lente no sabe nada de JSON, y JSON no sabe nada de lentes, pero un documento analizado se
++ actualiza con la ruta y la asignación que actualizan una case class. Las importaciones aportan
++ las ópticas para JSON.
+
+% 2 1 0 17edba0602b8567a04aac149351aa45a
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 1f38bb3f241655771a4c29182b1fd0ab
++   label Una case class
+
+% 1 1 0 01a565a20e2e79c301f8fa8d6d508eb9
+
+% 1 1 0 1d9f025a8b651bd90041b34418e2ca8e
+
+% 2 1 0 195133de9b82db9118aa0ed03e0075be
+
+% 4 1 0 071cd7b0b4074084192ffb02ea84dfe1
+
+% 0 1 0 0af80a5f31670f2b107faa107beca36e
+
+% 1 1 0 191f243083658433058d73d4033afa92
+
+@ 0 2 0 111de84b627670c80b3f1d295955c21a
++   label El mismo valor, como JSON
++   highlight in[Json]  un valor JSON, no una case class
+
+% 1 1 0 149dcb56662bee0f170ff1dcdbc0fed2
+
+% 0 1 0 1d0c03267f34cd171a73e16e4cd6801b
+
+% 0 1 0 1ff84385ba8c2cd117789983cfeeffdf
+
+% 1 1 0 02748f7842121570048b9d4ef43732ea
+
+% 2 1 0 0700c17c7551f3f50e1e1c0cefe3a843
+
+% 4 1 0 198c8964890bddc904e0f22094e5cda4
+
+% 0 1 0 08bfd32a2f58e6d91cd41d187bb0c9a7
+
+% 0 1 0 1101df45e74e6e1807ce2fbef17ba638
+
+% 1 1 0 06200011ee0ab60f0dab7d24a7101fce
+
+% 1 1 0 136d267ff733a60e0f6246170d49df5f
+
+% 2 1 0 1525a46c87e9e0571e7d21b8e7c42b7a
+
+% 0 1 0 08a86cbdc9b8cb0109ed8ce5b435ce67
+
+% 1 1 0 0cd6459499a6bd5203d659b3bcc1b6aa
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 0 1 0 026901931200bf591262a034768d6b95
+
+% 0 1 0 06bfa3411ef68dcf06f196d4a909fe00
+
+% 1 1 0 18f6c7f78c4bfdc20cc142b481a3d0a2
+
+@ 0 3 0 1df619e2e852da70110ead29ff2a80f2
++ [También los documentos](../../soundness/modules/optics.md#documents-too) enumera los formatos
++ que definen ópticas, y [la componibilidad](../../philosophy/composability.md) explica cómo se
++ encuentran dos bibliotecas sin un adaptador.

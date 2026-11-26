@@ -1,0 +1,58 @@
+orthant 2 language
+
+@ 0 1 0 0577a0d08c069ffd144e4132674f0d83
++ # Обработчик событий, который не является строкой
+
+@ 0 3 0 167d20bfba39e69c116775f73695b9c6
++ Атрибут `onclick` ожидает скрипт, а у скрипта собственный тип. Проверенное выражение DOM — это
++ скрипт, и оно записывается в страницу как JavaScript. Текст им не является, как бы он ни был похож
++ на JavaScript.
+
+% 2 1 0 102d1b3cd1a840e40a92b971bc5bc400
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 11a35a302327183515cc289f44f4cf34
++   label JavaScript в строке
+
+% 0 1 0 1477c34ff41c7c99183443e1d3238ae1
+
+% 1 1 0 0960c596329e4eb20a0b442aaa85c43a
+
+% 2 1 0 1bbd94d0e721f1ee0d0a109118d37676
+
+% 0 1 0 0eb5596270598db219c5a40f4da64f78
+
+% 1 1 0 0e41f85c308bf6320addd47e4be93871
+
+@ 0 2 0 0d8aea976df9cd5115656891fe893819
++   label Тот же скрипт, проверенный
++   highlight document.getElementById(t"stage").focus()  навигация, а не кавычки
+
+% 1 1 0 1df36ad046bcb83e16d86bcaffc0d979
+
+% 2 1 0 0c74363a5e9062b60f6491632dfcea98
+
+% 0 1 0 0d31dd1d7871e39b03b743da34e576da
+
+% 1 1 0 01607ec7dcbbfcf31cf92efc621de97a
+
+% 1 1 0 136d267ff733a60e0f6246170d49df5f
+
+% 2 1 0 1525a46c87e9e0571e7d21b8e7c42b7a
+
+% 0 1 0 08a86cbdc9b8cb0109ed8ce5b435ce67
+
+% 1 1 0 0cd6459499a6bd5203d659b3bcc1b6aa
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 0 1 0 0d20cde2f010e01f1f8d81f94777dd3c
+
+% 1 1 0 132ee5787ceafda906eb5aabdc8a06dc
+
+@ 0 2 0 0d4ee6f1d3c52446023aecae351c41ff
++ [Скрипты в атрибутах HTML](../../soundness/modules/dom.md#scripts-in-html-attributes) объясняет,
++ почему годится только выражение из экосистемы браузера.

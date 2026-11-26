@@ -1,0 +1,64 @@
+orthant 2 language
+
+@ 0 1 0 1d871ee5a4613f1600d955ee2a627bf3
++ # Dodawanie zadeklarowane jako zdanie
+
+@ 0 2 0 109b6a4c4f23eda404a7cd26b43d7711
++ `+` nie jest metodą żadnego typu. Znajduje się je przez klasę typów `Addable`, której instancja
++ nazywa lewy operand, prawy operand i wynik, i czyta się jak zdanie.
+
+% 2 1 0 162fb8373708526d1494241ab0ba4929
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 1dada554068961b908e68258e583570e
++   label Typ bez dodawania
+
+% 0 1 0 1477c34ff41c7c99183443e1d3238ae1
+
+% 1 1 0 0960c596329e4eb20a0b442aaa85c43a
+
+% 2 1 0 0f7abfc66e11de38036aa62e2c040eea
+
+% 2 1 0 0ed97eddb574f0731051dc6e910fd4e8
+
+% 1 1 0 14f8529919ee68801d392b7d91b3870b
+
+@ 0 2 0 0a881a62bfbdcd6e1677e3d0cef12327
++   label Sakiewkę można dodać do sakiewki, dając sakiewkę
++   highlight is..to  operandy, a potem wynik
+
+% 0 1 0 1accf43fe92797601dc8da9a374d03c1
+
+% 1 1 0 175eff4186e0097c110253255e924cfc
+
+% 2 1 0 05700fee4da4a6850ff47cd1f6e9f0b7
+
+% 0 1 0 1feac4931d65fac617be6508c4c25809
+
+% 0 1 0 05a3ceaad950dbb41ba8230088d126a7
+
+% 2 1 0 07c92b133148b4a1123da48ad270bd5b
+
+% 1 1 0 193895db26b7715d18ae9e8c33ee78fb
+
+% 1 1 0 136d267ff733a60e0f6246170d49df5f
+
+% 2 1 0 1525a46c87e9e0571e7d21b8e7c42b7a
+
+% 0 1 0 08a86cbdc9b8cb0109ed8ce5b435ce67
+
+% 1 1 0 0cd6459499a6bd5203d659b3bcc1b6aa
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 0 1 0 1243dfd5de84808a1e1d2581d1e2c41e
+
+% 1 1 0 0b0b2c54678304d30f2bc8d63e27f273
+
+@ 0 2 0 0150d866ca21b9100fc282fc48b7cd1f
++ Sekcja [Przeciążanie operatorów](../../soundness/modules/numbers.md#overloading-the-operators)
++ zawiera pozostałe klasy typów, a [typy infiksowe](../../philosophy/infix-types.md) – słowa, które
++ dzielą.

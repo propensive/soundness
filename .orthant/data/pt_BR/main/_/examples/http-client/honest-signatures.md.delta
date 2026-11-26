@@ -1,0 +1,60 @@
+orthant 2 language
+
+@ 0 1 0 09c0f40ad19fe5bf163d66dbae7aeee0
++ # Uma requisição precisa da rede
+
+@ 0 2 0 16cc26f8510aaa211cf1794fe3910531
++ Buscar uma URL usa a rede, e `fetch` diz isso: ele recebe uma capability `Online` do seu contexto.
++ O código que nunca recebeu uma não pode fazer uma requisição.
+
+% 0 1 0 12705ff5e291290d17fbc8389d59ef4a
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 174878c3bfacd4cb121aded238ab56ea
++   label Sem acesso à rede
+
+% 0 1 0 1477c34ff41c7c99183443e1d3238ae1
+
+% 1 1 0 0960c596329e4eb20a0b442aaa85c43a
+
+% 2 1 0 157522e20b070b431465a07c8e8f4fa8
+
+% 2 1 0 1651e506b8f1aeb7000ecfd0aad24666
+
+% 3 1 0 086791027d757c5d06ba516059e4cef5
+
+@ 0 1 0 182cf8bb687f8c9501906595c3a58e6b
++   label Acesso concedido, por um import
+
+% 0 1 0 03106c15e86385d00f58af65dbcc9858
+
+% 1 1 0 0cfa35959662a90000bf4bec3071fdc5
+
+% 0 1 0 13d845c2653bca210dea9f893561a7cf
+
+% 2 1 0 1488a3da504acd0d1796cfc621696caf
+
+% 3 1 0 19568ea5264e988018dfe439cd1f8251
+
+@ 0 2 0 13dbb1541a120ba218b7e8a4736dc60c
++   label Acesso pedido a quem chama
++   highlight (using..Online)  quem chama precisa tê-lo
+
+% 1 1 0 0e82d674c42da808083fa35ea7dcd5c4
+
+% 2 1 0 132a3909ab328cb30f2399d8daf415ea
+
+% 0 1 0 146890a6c71d80731f0e3b37ac3b9372
+
+% 0 1 0 04b1a97ed948e32e0537faa5a6ab0741
+
+% 0 1 0 18eafb32caed3dd50f976e787bd035ca
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 2 0 077f8bef975861a904dbaa5a9e233a9e
++ [O que uma requisição precisa no escopo](../../soundness/modules/http-client.md#what-a-request-needs-in-scope)
++ lista as outras decisões das quais uma requisição depende.

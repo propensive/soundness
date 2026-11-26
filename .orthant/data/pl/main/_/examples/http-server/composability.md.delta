@@ -1,0 +1,70 @@
+orthant 2 language
+
+@ 0 1 0 037d5acc5f993ca500a04573a00e0c48
++ # Wartość JSON jest odpowiedzią
+
+@ 0 3 0 156566e0fbae7a5e052ecaf1a4984fa0
++ Treść odpowiedzi to dowolna wartość, którą można serwować, a jej typ dostarcza `Content-Type`. Tekst
++ jest serwowany jako `text/plain`. Z jednym importem wartość `Json` jest serwowana jako
++ `application/json`, a klasa case staje się taką wartością za pomocą `in[Json]`.
+
+% 0 1 0 12705ff5e291290d17fbc8389d59ef4a
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 0d205c3e0d416a961763891f7bb38798
++   label Tekst serwowany jako text/plain
+
+% 1 1 0 117a0b2a02a2709b0eb0cfa6ac2ebd33
+
+% 2 1 0 0ada83203b0bc58b0ee90a00f97f4c7c
+
+% 3 1 0 06f004630d9e929206f0e01f67b377ac
+
+% 0 1 0 05c7b6b663c0853b10f681bb6ec5d7d3
+
+% 2 1 0 06155825af3f0756144223265e37200f
+
+% 4 1 0 1d41905fc2d53fbf03a441e3da2b8274
+
+% 5 1 0 0583e845388a9cb31c42b07bbb5d5945
+
+% 0 1 0 1952672b0d5784490d6055dc0b64b41d
+
+% 1 1 0 1e903833d2b7dc9008c60d9f059ba0c9
+
+@ 0 1 0 1a2a3af9b2b4a93e0c90574c63cbfb0c
++   label Wartość serwowana jako application/json
+
+% 0 1 0 1d7f21d6e00a041a19f50dc8fb1fa4ec
+
+% 0 1 0 12433f8258e94ae913c9fa1f670d5fdd
+
+% 1 1 0 17ca6f9539a717ca1225e6ee91122a81
+
+% 2 1 0 0a6ee4ea4269651301fba5a05b3fdc00
+
+% 3 1 0 1eef12ecccac78cc0b207d6c84ca8bfa
+
+% 0 1 0 0cc562f69012c7241297fb4c8aaa83b9
+
+% 0 1 0 1ae279738df7173f06e307f4ba453ed1
+
+% 2 1 0 0c0b2ea1d10647ed0aa6f0e1c90530e5
+
+% 4 1 0 06953726d030d982028aad0f01f7bd87
+
+% 5 1 0 13f87b934f6a000512b444bd6ffa16fb
+
+% 0 1 0 1ef4a0814498a6e71ce4b287410f963f
+
+% 0 1 0 18eafb32caed3dd50f976e787bd035ca
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 4 0 1e00e16ce8c2a8880964645bb82a0e90
++ Przykład jest kompilowany, ale nie jest uruchamiany, ponieważ zająłby port. Sekcja
++ [Odpowiedzi](../../soundness/modules/http-server.md#responses) wymienia typ mediów każdego rodzaju
++ treści, a [składalność](../../philosophy/composability.md) wyjaśnia, dlaczego nie potrzeba adaptera.

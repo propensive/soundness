@@ -1,0 +1,23 @@
+orthant 2 release
+
+@ 3 0 0 148014b7bdcff7f302f01d49f33ac6cb
++ The `JavaRuntime` entry can say what it is made of, which a tool that indexes or documents the
++ JDK's own API needs. `modules` names the runtime's modules, `exports` the packages which a
++ module exports to every other module, and `classes` the classes of one of those packages, each
++ by its full name:
++
++ ```scala fuel
++ run
++ ##
++ val runtime = Classpath.Entry.JavaRuntime
++
++ Out.println(runtime.modules.has(t"java.base").inspect)
++ Out.println(runtime.exports(t"java.base").has(t"java.util").inspect)
++ Out.println(runtime.classes(t"java.base", t"java.util").has(t"java.util.Optional").inspect)
++ ```
++
++ A package which a module exports only to named modules is not among its `exports`, and a
++ nested class is named as the runtime names it, such as `java.util.Map$Entry`. A module or a
++ package which does not exist has nothing in it, so each gives an empty list. These are for
++ the JVM only: a program compiled by Scala Native has no runtime image to list.
++

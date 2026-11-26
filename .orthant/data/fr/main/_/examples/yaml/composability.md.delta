@@ -1,0 +1,64 @@
+orthant 2 language
+
+@ 0 1 0 1909ad80c5ca6ba41464414c326971e8
++ # Un fichier de configuration aux champs typés
+
+@ 0 3 0 17e87c89e06216f00741a1b0193c4cd9
++ Un champ d'une case class peut être de tout type qui se lit depuis du texte. Une adresse IP et
++ un numéro de version proviennent d'autres bibliothèques, qui ne savent rien du YAML, et un
++ fichier de configuration est décodé directement vers eux.
+
+% 2 1 0 1e596f43e77bfdd20b4363735e348e21
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 1b5236fd0284c8460978fa0289a836da
++   label Des champs de texte
+
+% 1 1 0 1327b5bf5937bc720491466aa70fb436
+
+% 2 1 0 18e22da4af13ccc9043bceba07dd4ad3
+
+% 0 1 0 1bbbe8acb33a02631d5e72b63165cc29
+
+% 2 1 0 0720eeb0355b753917daea39118fa4a1
+
+% 1 1 0 1bb613c31b8e870116a263ee64fd6da0
+
+@ 0 3 0 1f659ebf4e5dd2e81ba7ae36dac4df41
++   label Des champs de leurs propres types
++   highlight Ipv4  issu de la bibliothèque réseau
++   highlight Semver  issu de la bibliothèque de versions
+
+% 1 1 0 11f4675701cd41b919fa75825f4241b8
+
+% 2 1 0 08bda070439c2b170f7771d196047d77
+
+% 0 1 0 0983ca252d7de20f0e72ce543a243339
+
+% 2 1 0 0efbc5e106f46e3a034b915200e58363
+
+% 1 1 0 1ff6570528578fde1217d6fd07385f90
+
+% 1 1 0 136d267ff733a60e0f6246170d49df5f
+
+% 2 1 0 1525a46c87e9e0571e7d21b8e7c42b7a
+
+% 0 1 0 08a86cbdc9b8cb0109ed8ce5b435ce67
+
+% 1 1 0 0cd6459499a6bd5203d659b3bcc1b6aa
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 0 1 0 064ca4d7f77b9f66003e313046d1aa2e
+
+% 0 1 0 10955cc68628d8d61fe7eeb72e6b2fba
+
+% 1 1 0 0c163ed81cd2ef4211b77eaa5257089a
+
+@ 0 2 0 0f3f162a2fe516e610002675a6428874
++ [Décodage](../../soundness/modules/decoding.md) indique comment un type devient lisible depuis
++ du texte, et [YAML](../../soundness/modules/yaml.md#parsing-and-decoding) comment un document est
++ décodé.

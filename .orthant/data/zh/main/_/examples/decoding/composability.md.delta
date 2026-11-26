@@ -1,0 +1,58 @@
+orthant 2 language
+
+@ 0 1 0 1900319ea4ec611b008a24b8f8003deb
++ # 来自模式中各组的类型化值
+
+@ 0 3 0 17e30570bf2eddf20dee3e11af0c5b47
++ 正则表达式捕获文本，`As` 把文本变成类型化的值。两者互不知晓，但写在组前面的 `As` 提取器会把这个组绑定为数字，因此一次匹配就在一步之内完成验证、捕获和转换。
+
+% 2 1 0 04021353294ddf150cdf1cd6e70a627a
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 2 0 1be61fb0bfcf73021763735ccf0764b0
++   label 绑定文本的组
++   highlight $hours  把组绑定为 Text
+
+% 1 1 0 0f8b8e255c599df119ec10719b7c41fc
+
+% 0 1 0 04b2249af758e63c00f27d8f01a42e35
+
+% 0 1 0 09185cfe2a61450d0f9c030ee825894b
+
+% 0 1 0 066cb45c12f0e28b054890a55913c820
+
+% 1 1 0 18fa291e884d512911c47ed8c50cd253
+
+@ 0 2 0 1fe8ecd7ae4c49ff16ccb92916f60da5
++   label 绑定数字的组
++   highlight ${As[Int](hours)}  把组绑定为 Int
+
+% 1 1 0 0fd4375cab2bec4215c19893ccb4e2ad
+
+% 0 1 0 0b2e0ec8918171ec194d79c1ece34251
+
+% 0 1 0 06fb114a93eb0e341201a6b816d01f6b
+
+% 0 1 0 05f80067b005642e17523d34756b15a6
+
+% 1 1 0 13166ee8e130f385032a9261299c9c6d
+
+% 1 1 0 136d267ff733a60e0f6246170d49df5f
+
+% 2 1 0 1525a46c87e9e0571e7d21b8e7c42b7a
+
+% 0 1 0 08a86cbdc9b8cb0109ed8ce5b435ce67
+
+% 1 1 0 0cd6459499a6bd5203d659b3bcc1b6aa
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 0 1 0 18c92adf0cc3dc5713987bf44077ecd4
+
+% 1 1 0 1d57583a6eaac8f51bc9d24eb84c3a6d
+
+@ 0 2 0 1a0912d998d04a51143bdbae3a2834af
++ [模式](../../soundness/modules/patterns.md#matching)介绍了组，[可组合性](../../philosophy/composability.md)说明了来自两个库的提取器如何嵌套。

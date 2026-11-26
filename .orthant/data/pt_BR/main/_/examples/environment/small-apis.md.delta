@@ -1,0 +1,67 @@
+orthant 2 language
+
+@ 0 1 0 0c1f586cb7a1284d02e307f4f61c1e91
++ # Uma variável, lida como texto ou como caminho
+
+@ 0 3 0 00aa5ac190b643d0027805f6c1d9c652
++ `HOME` contém um caminho, e é lida como qualquer que seja o tipo de caminho pedido. A mesma leitura
++ dá texto simples, ou um `Path on Linux` a partir do qual se pode descer, e nenhum segundo método
++ converte um no outro.
+
+% 2 1 0 074275da14e07531061ea7c26feb1d25
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 2 0 02208f78b541f35a1cb723e05e33fb76
++   label Como texto
++   highlight home[Text]  o tipo desejado
+
+% 1 1 0 02472f862eb653ba1080bd35784cf5c7
+
+% 2 1 0 1ec2f7f209d114d319b21622d100b833
+
+% 4 1 0 062029dad2770ffd041c29d37c81645f
+
+% 6 1 0 18a071a0f3df63151bc62082985644d6
+
+% 1 1 0 028488fa30bbf94e1ba7df61a9d83bb2
+
+@ 0 2 0 122502161feac67b0b4b44749a868868
++   label Como caminho
++   highlight home[Path..Linux]  verificado contra as regras da plataforma
+
+% 1 1 0 0dae8a4f4f8d9143127515cf04537267
+
+% 2 1 0 059871cdccc3082705831ff300cb1940
+
+% 4 1 0 06fe1e65e10ad95300ed6a51c0c476ef
+
+% 6 1 0 1a9a4c12653f3c901eab2a6f30c189f6
+
+% 0 1 0 169b2fadfdab0da61a2096a7f3825826
+
+% 0 1 0 1984637d9d21ec1311add6d4a99e9e71
+
+% 1 1 0 1abe4c2b3a6838c41f26dd5f35bb6b42
+
+% 1 1 0 136d267ff733a60e0f6246170d49df5f
+
+% 2 1 0 1525a46c87e9e0571e7d21b8e7c42b7a
+
+% 0 1 0 08a86cbdc9b8cb0109ed8ce5b435ce67
+
+% 1 1 0 0cd6459499a6bd5203d659b3bcc1b6aa
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 0 1 0 14850a09f6384c9f159ab6d95b562121
+
+% 0 1 0 11441682450bd16a1d60015dfd9f2019
+
+% 1 1 0 06976ceaf2f873261caea89e6c72b6f6
+
+@ 0 2 0 04d262f3c073be680cdb9b2c8c38a3fa
++ [Variáveis de ambiente](../../soundness/modules/environment.md#environment-variables) traz a
++ leitura, e [APIs pequenas](../../philosophy/small-apis.md) os motivos de um só nome.

@@ -1,0 +1,57 @@
+orthant 2 language
+
+@ 0 1 0 060f9855f2bf9cd90bc28f48af77e279
++ # 別のフロントエンドでの同じハンドラ
+
+@ 0 3 0 0033963f2aea695b16e3f62929dfb7b0
++ 接続をどう処理するかは、ハンドラの一部ではない。インポートで選ばれる `Frontend` が、各接続が専用の
++ 仮想スレッドを持つか、少数のセレクタスレッドがすべての接続を処理するかを決める。
+
+% 0 1 0 12705ff5e291290d17fbc8389d59ef4a
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+@ 0 2 0 0288469934c7ae801c28373365688264
++ alternative 接続ごとに一つのスレッド
++   highlight frontends.threadPerConnectionFrontend  ハンドラはブロックしてよい
+
+% 1 1 0 1f47b234454b1def0bea5dd4e94804d9
+
+% 2 1 0 0cfab0d5ac711bcc1334856388411700
+
+% 3 1 0 0390da64aefc8ca706abf5312ea17579
+
+% 0 1 0 1bd0f274d48c9f3617426d93676ee3e8
+
+% 2 1 0 110294d275e38f4f0aeb09efec975032
+
+% 3 1 0 19eea4da3769cc93131feac940846c2b
+
+% 4 1 0 0f1eca1881de802000c451e1591c975a
+
+@ 0 2 0 1ec792ecc2f7c8a91c75e370bd5c6cb1
++ alternative イベントループ
++   highlight frontends.reactiveFrontend  ハンドラはブロックしてはならない
+
+% 1 1 0 1985656f2b1c00430d4ee744e7473b21
+
+% 2 1 0 0a48447900a9bb170619b3d0b4b913ab
+
+% 3 1 0 1e72ee66b7cfc3c50c8717d31c234732
+
+% 0 1 0 12cd52019310ba120926e9b2d609c81d
+
+% 2 1 0 0e1472ca63352e0d0ae2a26072931e7d
+
+% 3 1 0 01cdf3b33e221f180f2c80baa02c20ba
+
+% 4 1 0 1baf1a6a22c696b80112578076871308
+
+% 0 1 0 18eafb32caed3dd50f976e787bd035ca
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 3 0 1717695aeb8186e70b340f04ae2e2ffa
++ この例はコンパイルされるが、ポートをバインドすることになるため、実行はされない。
++ [フロントエンド](../../soundness/modules/http-server.md#front-ends)は二つを比べ、
++ [宣言的なコンテキスト](../../philosophy/declarative-context.md)はその手法を説明する。
