@@ -1709,7 +1709,11 @@ object coaxial extends Library:
   object dns extends Component(core, urticose.dns):
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
-  object test extends Tests(core, jvm, dns, galilei.jvm)
+  object test extends Tests(core, jvm, dns, galilei.jvm):
+    // `-Ycc-new` is inert for a file without the `captureChecking` import, and selects the new
+    // checker for `CaptureTests`, which has it (as `enigmatic.test` does).
+    override def scalacOptions = Task:
+      super.scalacOptions() :+ "-Ycc-new"
 
 object prophesy extends Library:
   object core extends Component(stenography.core, gossamer.core):
@@ -2878,7 +2882,11 @@ object parasite extends Library:
     override def scalaJs = false
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
-  object test extends Tests(core, jvm, quantitative.units)
+  object test extends Tests(core, jvm, quantitative.units):
+    // `-Ycc-new` is inert for a file without the `captureChecking` import, and selects the new
+    // checker for `CaptureTests`, which has it (as `enigmatic.test` does).
+    override def scalacOptions = Task:
+      super.scalacOptions() :+ "-Ycc-new"
   // The effect-runtime rivals: the cats-effect/fs2 and Kyo constructions of
   // github.com/stasimus/scala-effect-bench, each measured beside its direct-style Soundness
   // idiom. `zephyrine.core` supplies `Handoff`, the bounded hand-off ring the queue rows use.

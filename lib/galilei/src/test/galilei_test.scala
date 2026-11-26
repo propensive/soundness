@@ -158,6 +158,22 @@ object Tests extends Suite("filesystem", m"Galilei tests"):
         unsafely(virtual.open[File]()(file.read[Data]).utf8)
       . assert(_ == t"from the table")
 
+      // A lazy `Chain` of the file's content was pure, and left the block to be read after the
+      // file had closed (#2565); the handle's stream is a capability, which cannot.
+      test(m"A handle's stream cannot leave the block which opened it"):
+        demilitarize:
+          import strategies.throwUnsafely
+          val escaped = virtual.open[File]()(file.stream)
+        . map(_.message)
+      . assert(_.exists(_.tt.contains(t"outlives its scope")))
+
+      test(m"A handle reads its content under capture checking"):
+        demilitarize:
+          import strategies.throwUnsafely
+          val content: Data = virtual.open[File]()(file.read[Data])
+          val bytes: Data = virtual.open[File]()(file.stream.memoize)
+      . assert(_ == Nil)
+
       test(m"A governed path is written through its descriptor"):
         unsafely:
           virtual.write(t"replaced")

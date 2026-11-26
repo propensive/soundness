@@ -67,6 +67,16 @@ object CaptureTests extends Suite("crypto-capture", m"Capability confinement tes
           t"Hello world".encrypt(InitializationVector.random).decrypt.as[Text]
     . assert(_ == Nil)
 
+    // A key's type names its cloak, so no root capability is left in it, and a member of an
+    // object or a class may hold one without an ascription (#2565).
+    test(m"a key or a password held in a member needs no ascription"):
+      demilitarize:
+        object Vault:
+          val key = SymmetricKey.generate[Aes[256] over Cbc against Pkcs7]()
+          val pair = PrivateKey.generate[Rsa[1024]]()
+          val password = Password(t"hunter2")
+    . assert(_ == Nil)
+
     test(m"the Encryptor capability cannot be returned from uncloak"):
       demilitarize:
         val key = PrivateKey.generate[Rsa[1024]]()
