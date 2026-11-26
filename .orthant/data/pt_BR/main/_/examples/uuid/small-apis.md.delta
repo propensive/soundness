@@ -1,0 +1,77 @@
+orthant 2 language
+
+@ 0 1 0 1c49a341b4249bfb131bf029571cfedd
++ # Os nomes de sempre, para um identificador
+
+@ 0 3 0 155b6d1ba38f87591a43a956a0e13e6d
++ Um `Uuid` tem poucos métodos próprios. Ele é lido a partir de texto com `as`, como um número é, e
++ os seus bytes são pedidos com `in`, como os de qualquer valor codificável. O tipo nomeado entre
++ colchetes é tudo o que diz que um UUID está envolvido.
+
+% 2 1 0 022529d849f386331c80044d1e748dbb
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 2 0 04e91685af1873b9059daf22d8c3dcea
++   label Lido a partir de texto
++   highlight as[Uuid]  o mesmo `as` que lê um `Int`
+
+% 1 1 0 07cb9feb3f1f5b2807651f4d51112dfb
+
+% 2 1 0 156ad7359bf4556b1ccd745159f3a422
+
+% 4 1 0 1986c41f00bf2e6d19f37c3e89bfc9e8
+
+% 1 1 0 108b57c8b2c5ed5b1ff092a3f7d471d8
+
+@ 0 2 0 13d19e3ff4d51fad0efef15142d30634
++   label Os seus dezesseis bytes
++   highlight in[Data]  o tipo desejado, entre colchetes
+
+% 1 1 0 045dee2ff0e88a8c05f8ac1b58bb014e
+
+% 2 1 0 0394b1cbfe19e73104c2f1cdd8bf5848
+
+% 4 1 0 10c51b75a49ae4de0489ea7abb59d4ad
+
+% 5 1 0 17f984e1d01ac3dc14f90505549f1864
+
+% 1 1 0 1c3049246eba02ec191a40df1f112a18
+
+@ 0 2 0 04e14dbcaf74b3c311b37aefa7119d2e
++   label O seu texto
++   highlight show  como para qualquer valor que pode ser mostrado
+
+% 1 1 0 1043db22ff413b1109195878aacb4977
+
+% 2 1 0 01938f33a823cb2c065a36beb9f3b980
+
+% 4 1 0 18a048bf3aefbddb0aef369ac6795103
+
+% 5 1 0 14202e955e8c2df71c8536df1f1773e4
+
+% 0 1 0 1c99f15c3745de6c145d72bf877f4470
+
+% 1 1 0 1fa8e7b3dc5642691702850001da253d
+
+% 1 1 0 136d267ff733a60e0f6246170d49df5f
+
+% 2 1 0 1525a46c87e9e0571e7d21b8e7c42b7a
+
+% 0 1 0 08a86cbdc9b8cb0109ed8ce5b435ce67
+
+% 1 1 0 0cd6459499a6bd5203d659b3bcc1b6aa
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 0 1 0 10ebe3a8bcc51b1c0fbf4d7459fa2180
+
+% 0 1 0 14850a09f6384c9f159ab6d95b562121
+
+% 1 1 0 02c371e50557b52a07c2c78bb855e0e2
+
+@ 0 2 0 13550201fba4464d1f7fa572a357f194
++ [Renderização e bytes](../../soundness/modules/uuid.md#rendering-and-bytes) traz o restante, e as
++ [APIs pequenas](../../philosophy/small-apis.md) a razão pela qual os nomes são compartilhados.

@@ -1,0 +1,62 @@
+orthant 2 language
+
+@ 0 1 0 0933ba2204186c7c1afc5c5313c96d95
++ # Uma alternativa para um nome inválido
+
+@ 0 2 0 1ce84845ebb1695703398e01e8d0468e
++ Um nome inválido não precisa ser um erro. `safely` torna o resultado da validação um `Optional`,
++ e `or` fornece no seu lugar um literal, que o compilador já verificou.
+
+% 2 1 0 0bcbdefe37bfda06121e9b4e56ec9583
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 2 0 04a660f345b1e36410b76a60258c75f2
++   label Um nome, ou nada
++   highlight safely  um nome inválido é Unset
+
+% 1 1 0 0e581a09b6201aa5058e661a3067b692
+
+% 2 1 0 161f7c48dcaf8f5d01cf12439ede1678
+
+% 4 1 0 0ea127980b0d065715fc4ca3b0bd930e
+
+% 0 1 0 162e9f5692df65490c45a05247768c41
+
+% 1 1 0 118764005750981f0a26b9e0650002f4
+
+@ 0 2 0 098ef10842231d56164d156cc11b9edd
++   label Um nome, ou um valor padrão
++   highlight or(n"untagged")  um literal não pode ser inválido
+
+% 1 1 0 0eda5e455522d4af17fe0c3750858e47
+
+% 2 1 0 05fedc09e1d7f69b15ba5d37691fb02d
+
+% 4 1 0 1eb474a319e17ab91793199a977a337f
+
+% 0 1 0 135010b2744aecae0e3fe5af7b5a3ac6
+
+% 1 1 0 12e8007c394f9e44040f4b8556793164
+
+% 1 1 0 136d267ff733a60e0f6246170d49df5f
+
+% 2 1 0 1525a46c87e9e0571e7d21b8e7c42b7a
+
+% 0 1 0 08a86cbdc9b8cb0109ed8ce5b435ce67
+
+% 1 1 0 0cd6459499a6bd5203d659b3bcc1b6aa
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 0 1 0 084d214d32c0c60800bf938376bca4ef
+
+% 0 1 0 0a82ef807799448d142f9e34a68c2e06
+
+% 1 1 0 0c844c05ca36eb1807ac483cbdcde1fc
+
+@ 0 2 0 03d7c0b2317001381dd8aaf11b48f18d
++ [Validando em tempo de execução](../../soundness/modules/names.md#validating-at-runtime) mostra
++ o erro que `safely` absorve, e a [opcionalidade](../../philosophy/optionality.md) explica `or`.

@@ -1,0 +1,60 @@
+orthant 2 language
+
+@ 0 1 0 064974f1d1e7030f1dafc20fdcddeb9f
++ # Um algoritmo quebrado precisa de uma autorização
+
+@ 0 3 0 1032adbe3f33fe5e1aaee63ce14515fe
++ O MD5 é mantido por compatibilidade, e não é seguro para mais nada. Ele não compila até que um
++ import o autorize, então a aceitação de criptografia fraca por um programa é uma linha que pode
++ ser buscada.
+
+% 0 1 0 12705ff5e291290d17fbc8389d59ef4a
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 09cc602610f8c4e41559b80a4411e4fd
++   label MD5, sem nada que o autorize
+
+% 0 1 0 1477c34ff41c7c99183443e1d3238ae1
+
+% 1 1 0 0960c596329e4eb20a0b442aaa85c43a
+
+% 2 1 0 149d32f158a8cea016220d823aee285c
+
+% 2 1 0 0a0ead53d6d011811618db51cd062bb3
+
+% 3 1 0 12829cc7491943261a0b6cbd0462bdc3
+
+@ 0 2 0 0f0aed6c40bcc5520030ddbe6546e285
++   label A autorização
++   highlight permitDisallowedCrypto  uma concessão deliberada, que pode ser buscada
+
+% 1 1 0 18806d91e2b5f7480cd855ab82b7bbe5
+
+% 2 1 0 09368930ee63b5df18cc22d6f7061818
+
+% 0 1 0 067a0f655c87ce8f02d3f8e270a462fe
+
+% 2 1 0 0a4017bee89bd2081c385e2fe52709a3
+
+% 3 1 0 1e539707f0abb84b18f8d2d9c151cc1b
+
+@ 0 2 0 113d8e9bfa5b9bdc0a62228079f0543b
++   label Um algoritmo forte não precisa de nenhuma
++   highlight Sha2[256]  nenhuma autorização necessária
+
+% 1 1 0 1276842d38e7f7ac1ed8cace15707f5a
+
+% 2 1 0 1c4020bec6d6c76f14754b1b789d24b3
+
+% 0 1 0 023f48aeb1b22fd304c83927718deddd
+
+% 0 1 0 18eafb32caed3dd50f976e787bd035ca
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 2 0 0737dbd0efad1af7122df7f6f16638d3
++ [Algoritmos fracos](../../soundness/modules/hashing.md#weak-algorithms) nomeia a autorização de
++ que cada algoritmo precisa.

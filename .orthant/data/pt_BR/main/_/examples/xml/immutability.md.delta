@@ -1,0 +1,71 @@
+orthant 2 language
+
+@ 0 1 0 143650327eed935b0207d162ad087c28
++ # Todos os elementos correspondentes, alterados de uma vez
+
+@ 0 3 0 1912cd6b90d8b63505c9c018d720d1a7
++ Um valor `Xml` nunca muda. Uma lente escreve uma atualização como uma atribuição a um caminho
++ pelo documento, e o resultado é um novo documento. Com `Each` no caminho, a atribuição é feita a
++ cada filho.
+
+% 2 1 0 1b84e4718b0cb19819ea5f5123b3d586
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 2 0 01728216cbf3f04f0bd8777b68fe47b8
++   label Um elemento substituído
++   highlight _.line..>  a primeira linha
+
+% 1 1 0 14434f103d3f5b4c12aa15e3fa4a0049
+
+% 2 1 0 06faa202b465023416a7bedea1ff1cbb
+
+% 3 1 0 066dfcf9e421879a1bb695c73ba25bf2
+
+% 4 1 0 1091d96c10ef3e240ceff16b108b6113
+
+% 6 1 0 10a10aa2f4de11c20ed476ebd3cfb830
+
+% 0 1 0 1879cde59ccd6e2000135ed85708d146
+
+% 1 1 0 155a26ebe2c2000014dd393a8f35d1d5
+
+@ 0 2 0 099bf52cdae6c2e3155a44df95a193b5
++   label Todos os elementos substituídos
++   highlight _(Each)  cada filho
+
+% 1 1 0 05eecd2bd6a1996c1517e868b7205497
+
+% 2 1 0 1e1defde932dc0b71efdc66d1a5109f2
+
+% 3 1 0 091de41a7f9bfbfd0d9538eb966cc9e3
+
+% 4 1 0 046cef98c0aa2ba21fee6878275f456f
+
+% 6 1 0 02948e9a3fccdabf0b90bb4c43be1b03
+
+% 0 1 0 0a83c30388e88596138a2929426aab73
+
+% 1 1 0 04206ee3a0a39412081ec452864f4c00
+
+% 1 1 0 136d267ff733a60e0f6246170d49df5f
+
+% 2 1 0 1525a46c87e9e0571e7d21b8e7c42b7a
+
+% 0 1 0 08a86cbdc9b8cb0109ed8ce5b435ce67
+
+% 1 1 0 0cd6459499a6bd5203d659b3bcc1b6aa
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 0 1 0 195ec039c25e4c1913f21a5e065a7a22
+
+% 0 1 0 0cc0b48c4d3dca990970319ba0f9f172
+
+% 1 1 0 1cdd7fb66e6925311a53f73af17b0b15
+
+@ 0 2 0 1f5b609b648accf700605c063c138382
++ [Atualizando](../../soundness/modules/xml.md#updating) traz o resto, e
++ [óptica](../../soundness/modules/optics.md) as próprias lentes.

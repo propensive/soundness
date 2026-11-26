@@ -1,0 +1,59 @@
+orthant 2 language
+
+@ 0 1 0 04f96beccda2f3eb103a22d14fbc4934
++ # Tags de fechamento que o parser fornece
+
+@ 0 3 0 0f91baa64d9d01fb000e6078486cc38e
++ A especificação permite que algumas tags de fechamento sejam omitidas, e um literal segue as mesmas
++ regras. Dois literais escritos de formas diferentes são o mesmo valor onde um navegador os leria
++ como o mesmo documento.
+
+% 2 1 0 0b3fec22ed9f21d20fbc4f6d76f1513b
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 1db9a80ab3eb0e6806555f22cf0ddd04
++   label Todas as tags fechadas
+
+% 1 1 0 0b2e1f8a29c27b2b045a06924ad6b42c
+
+% 2 1 0 1c86505f7b2ba7ed138975715028717a
+
+% 4 1 0 17e746089fa689d80dbf50841a7bd4f6
+
+% 1 1 0 0e6726cc7971053b086e7cacc9ab576f
+
+@ 0 2 0 1785e5df66fd4b480d303df6ac0d7e34
++   label As opcionais omitidas
++   highlight <li>Oberon<li>Titania  cada item termina onde o seguinte começa
+
+% 1 1 0 0c10031aeaa5628006d4981b83578ac4
+
+% 2 1 0 0d40ddb244d16967026f5b0956d63167
+
+% 4 1 0 1ab6427d043d95b107f81aea3c211783
+
+% 0 1 0 141907ec7a06acf20495ff48ae71c002
+
+% 1 1 0 0cf35df6701f8a910f19ea2b1525e65a
+
+% 1 1 0 136d267ff733a60e0f6246170d49df5f
+
+% 2 1 0 1525a46c87e9e0571e7d21b8e7c42b7a
+
+% 0 1 0 08a86cbdc9b8cb0109ed8ce5b435ce67
+
+% 1 1 0 0cd6459499a6bd5203d659b3bcc1b6aa
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 0 1 0 139aeecfe49b082219597a9dcfe64c96
+
+% 1 1 0 05131d3e78b579c31cc618cecc3cdde4
+
+@ 0 2 0 194e30b4f65f025c19031f939ea27779
++ [Escrevendo HTML literalmente](../../soundness/modules/html.md#writing-html-literally) descreve o
++ literal, que é analisado enquanto o código compila e não custa nada para analisar em tempo de
++ execução.

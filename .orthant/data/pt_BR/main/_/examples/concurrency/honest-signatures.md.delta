@@ -1,0 +1,61 @@
+orthant 2 language
+
+@ 0 1 0 0638a5b5b17071410128cefb6c10be27
++ # Um método que espera diz isso
+
+@ 0 3 0 04d417007b0884d51e1e1b3db4999fdf
++ Pausar suspende a tarefa em execução, então `snooze` precisa saber que tarefa é essa. Ele pede
++ um `Monitor`, e um método que pausa também precisa pedir um: o fato de que ele pode esperar está
++ em sua assinatura.
+
+% 0 1 0 12705ff5e291290d17fbc8389d59ef4a
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 05e3e8ff248b25fd17f74b02a5d53627
++   label Uma pausa, em um método que não a admite
+
+% 0 1 0 1477c34ff41c7c99183443e1d3238ae1
+
+% 1 1 0 0960c596329e4eb20a0b442aaa85c43a
+
+% 0 1 0 11ac78bf9eb7e8451f41291108aea95d
+
+% 1 1 0 133c2133d2294b551a535c743ca4947b
+
+@ 0 1 0 1b2cdd8ce4b8fa250844ec6f93831e28
++   label O método pede um monitor
+
+% 0 1 0 0ad1677b817fbbd61758c5807cf23dfc
+
+% 1 1 0 14455fb64e290781126a70014e2f29e0
+
+% 1 1 0 140eaf38c71e06380c3f8cf67d3231f8
+
+% 1 1 0 0bd7c0356758c067174fb16857699191
+
+@ 0 1 0 1c6c9d3c0545fc42151533f2b3d82650
++   label E é chamado onde há um
+
+% 0 1 0 1acd59770eb867130b67a4d9e2a58dc8
+
+% 1 1 0 014b1aff7d3848991d96c0c54a45b1e0
+
+% 0 1 0 0c683d356df41ea206ecd905a8d20136
+
+% 1 1 0 18e43c567dcaffce1089770158869a54
+
+% 0 1 0 0dfc77e67985d54506d17c5a2e10a030
+
+% 0 1 0 1d110985674017a619ab8643f7d41ba4
+
+% 0 1 0 18eafb32caed3dd50f976e787bd035ca
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 3 0 02ce31e6a4059d3f0ecf35b6db1623ed
++ [A suspensão como efeito](../../soundness/modules/concurrency.md#suspension-as-an-effect)
++ defende o bloqueio, e [assinaturas honestas](../../philosophy/honest-signatures.md) o hábito de
++ declará-lo.

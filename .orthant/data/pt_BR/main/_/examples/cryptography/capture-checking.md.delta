@@ -1,0 +1,65 @@
+orthant 2 language
+
+@ 0 1 0 16659ef71aeebe3b158a1c3a1a871828
++ # Uma chave só cifra dentro do seu bloco
+
+@ 0 3 0 185bb14bb5b70b8319b3526107861134
++ `uncloak` empresta uma chave a um bloco, como a capability de cifrar e decifrar. Um texto cifrado
++ feito no bloco é um dado e pode sair dele. Uma função que continuaria cifrando depois carrega a
++ capability consigo, e o compilador a barra na fronteira do bloco.
+
+% 0 1 0 12705ff5e291290d17fbc8389d59ef4a
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 0 1 0 05379442125b483c0fa7601737add2cc
+
+% 1 1 0 01df03af649144fc135e9cf4a153349c
+
+@ 0 1 0 1a7d252399b4c60c1b00805aad3f2c97
++   label Uma função que mantém a chave em uso
+
+% 0 1 0 1477c34ff41c7c99183443e1d3238ae1
+
+@ 0 1 0 01dbf466d762d3e502021fbe09dc04bd
++   highlight text.encrypt..random)  cifraria depois de o bloco ter terminado
+
+% 1 1 0 118ed81ed9af80f205e5a45705812419
+
+% 2 1 0 1abb7787718035c91464cc54df0dbd9a
+
+% 3 1 0 0ca1b5c6c21aec85096adbce83c9aa28
+
+% 4 1 0 1e170cda2bf8d131038db5270daaab2f
+
+% 6 1 0 09a4eeece6abe8ea1e2e5abeda9db1fc
+
+% 0 1 0 16877aafda0709c4187ddd8a2ec9743c
+
+% 1 1 0 182b337a52209d3c185ad65ffa8b8c39
+
+@ 0 1 0 1989c50a271ddd0c1d428be26cc2c534
++   label Uma mensagem, cifrada enquanto a chave está emprestada
+
+% 0 1 0 0a324f48b17692b61aa814540e61dab0
+
+% 1 1 0 0014c8389e7b45441e23978e85573cdf
+
+% 2 1 0 0db9100ce42b19f61a00d64c048efad0
+
+% 3 1 0 13abdd610ae1545809a7597c835720f5
+
+% 4 1 0 1ac4fa2c43d6efd91e74d9a58de97e13
+
+% 6 1 0 05eb86b91247875e03862044f7db3384
+
+% 0 1 0 16e093ec51440f9d12dfa4de44a8f74e
+
+% 0 1 0 18eafb32caed3dd50f976e787bd035ca
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 3 0 0734e2ec10e6f2101f88733ef03bba8f
++ [Criptografia simétrica](../../soundness/modules/cryptography.md#symmetric-encryption) descreve
++ chaves, modos e preenchimentos, e [escopos delimitados](../../philosophy/delimited-scopes.md) a
++ ideia de emprestar uma capability a um bloco.

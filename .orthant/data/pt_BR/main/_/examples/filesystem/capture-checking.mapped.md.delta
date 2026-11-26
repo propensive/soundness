@@ -1,0 +1,65 @@
+orthant 2 language
+
+@ 0 1 0 143c41367a1b51d91e814b2e0140808c
++ # Uma visão de um arquivo mapeado termina com o mapeamento
+
+@ 0 3 0 1042b5e1a26a824004f7c239f1be4d82
++ `mapped` mapeia um arquivo na memória e empresta uma visão dele pela duração de um bloco. Um
++ `slice` é uma visão mais estreita da mesma memória, sem cópia, então ele depende do mapeamento
++ como a visão inteira depende, e nenhum dos dois pode sair do bloco. Os bytes copiados com `read`
++ são `Data` comuns.
+
+% 0 1 0 12705ff5e291290d17fbc8389d59ef4a
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 0 1 0 05379442125b483c0fa7601737add2cc
+
+% 1 1 0 01df03af649144fc135e9cf4a153349c
+
+@ 0 1 0 035cebf4eb1659b609c5a56f41e502d9
++   label Um trecho de memória que será desmapeado
+
+% 0 1 0 1477c34ff41c7c99183443e1d3238ae1
+
+% 0 1 0 0f40a9e7f26adadb0d4efdbf1ac1aed1
+
+% 1 1 0 13914978cc134c3a0288172c22fcbd82
+
+% 2 1 0 165a2a30c7afd864066c119264d9bf5d
+
+% 3 1 0 059e4b677d2f9e601c8848c3fe08f725
+
+% 4 1 0 1512fd34f99edf9b14401e1f7319d44f
+
+% 6 1 0 16a9de08c39bc99009d76bb86e8df37a
+
+% 0 1 0 0d9dd144218505280f8bc10db80f5da2
+
+% 1 1 0 198cfee62302a00c04dfe37ec5441d54
+
+@ 0 1 0 0a7d60d378249c6d0216fb4738697eac
++   label Três bytes dele, copiados
+
+% 0 1 0 1502bc2d6ef4dad2158a006a8c0f01de
+
+% 1 1 0 1794d43e886123290b617e82bb135259
+
+% 2 1 0 17069cc9ad7fe79d1e9bbc79d114c9a8
+
+% 3 1 0 137cf7dc76ed2b7517328eef9cc4102d
+
+% 4 1 0 1f2e21adc539b2e81a3453cbe0395689
+
+% 6 1 0 07ae544e51d878ea1f0f7de11ab0f826
+
+% 0 1 0 1c8e2faab29761ec1e31c651514f00ce
+
+% 0 1 0 18eafb32caed3dd50f976e787bd035ca
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 3 0 0b636639d69c649f1b5684054f0af0b5
++ O exemplo é compilado, e não é executado.
++ [Acesso posicional](../../soundness/modules/filesystem.md#positional-access) descreve o que uma
++ visão pode carregar.

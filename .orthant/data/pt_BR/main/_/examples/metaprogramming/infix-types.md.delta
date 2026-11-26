@@ -1,0 +1,74 @@
+orthant 2 language
+
+@ 0 1 0 00b2e0d825b6af8c105610b773eb1f48
++ # Um tipo, como o seu autor o escreveria
+
+@ 0 3 0 1da406da401dca4c0f736567e5d1a60f
++ Uma macro que relata um tipo deve mostrá-lo como ele aparece no código-fonte: infixo onde foi
++ escrito infixo, e pelos nomes que os imports tornam disponíveis. `Syntax.name` renderiza um tipo
++ dessa maneira, então um erro que menciona `Addable by Int to Double` diz exatamente isso.
+
+% 2 1 0 0c2f9e048e8dfcd006e5e7708d50367f
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 1aa6e7dc274a6e6903d56a59d0fd05a6
++   label Uma união e uma interseção
+
+% 1 1 0 170abcdbfb571410034cf7a1373f938d
+
+% 2 1 0 115de113f8a56e201f618bc3507bd136
+
+% 1 1 0 1af6d61d00da9e3c0c6f3bc7420b72cc
+
+@ 0 2 0 01a2bb644a3d2608019c898681c4fc45
++   label Uma classe de tipos, lida como uma frase
++   highlight Addable..Double  infixo no código-fonte, infixo no resultado
+
+% 1 1 0 0e865966a7fde70d02c1932db75107be
+
+% 2 1 0 08aced325580b4f80fc65dc0e8d94b0a
+
+% 3 1 0 1afcc7ff3364e2690aeb102f6aab8747
+
+% 1 1 0 108cba0ce2294b5918465954444a2e52
+
+@ 0 1 0 0e6c6642a271023e06598c572a25ca95
++   label Uma função dependente
+
+% 0 1 0 16ea53781d073a03062818e009e114da
+
+% 1 1 0 0531f6caa806c08a06b67483ee158490
+
+% 2 1 0 1b5260f549ba275c04f35ef43f1c1ea4
+
+% 3 1 0 044b2923110fc0161ae5a425a5349942
+
+% 0 1 0 0896561c5a4285e7139869ea29d7472b
+
+% 1 1 0 1bf1ab100aee66ba16d13a323057f94e
+
+% 1 1 0 136d267ff733a60e0f6246170d49df5f
+
+% 2 1 0 1525a46c87e9e0571e7d21b8e7c42b7a
+
+% 0 1 0 08a86cbdc9b8cb0109ed8ce5b435ce67
+
+% 1 1 0 0cd6459499a6bd5203d659b3bcc1b6aa
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 0 1 0 1612c386234a7e0601e89692d383ac5a
+
+% 0 1 0 17e57d0c3c76abf00edd983a91c61bab
+
+% 0 1 0 15f5ef6a061479b610ab59e9542aa358
+
+% 1 1 0 1ab1dbf55d625d5012ac718cb36d849a
+
+@ 0 3 0 050770e620c0d22f0469d3f62c26f47a
++ [Tipos como texto-fonte](../../soundness/modules/metaprogramming.md#types-as-source-text) traz
++ mais, e os [tipos infixos](../../philosophy/infix-types.md) explicam por que vale a pena manter a
++ frase.

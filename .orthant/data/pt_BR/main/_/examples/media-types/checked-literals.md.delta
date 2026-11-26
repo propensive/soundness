@@ -1,0 +1,53 @@
+orthant 2 language
+
+@ 0 1 0 0171e6e1283f4c221619d1f7669ec58a
++ # Um tipo de mídia que o registro não tem
+
+@ 0 3 0 08613766a05152f00d65dd8a2c12afe5
++ Um tipo de mídia escrito errado parece plausível, e nenhum consumidor o reconhece. Um literal
++ `media"…"` é procurado no registro da IANA enquanto o código compila, e um quase acerto é respondido
++ com o que provavelmente se quis dizer.
+
+% 0 1 0 12705ff5e291290d17fbc8389d59ef4a
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 1464e5230ae9b20111dd834702b9d715
++   label Um deslize do dedo
+
+% 0 1 0 1477c34ff41c7c99183443e1d3238ae1
+
+% 1 1 0 0960c596329e4eb20a0b442aaa85c43a
+
+% 0 1 0 19827c79ec38bf130510b5ebdb0cef58
+
+% 1 1 0 0f4a3098161855bb07252b0cd122ff9b
+
+@ 0 2 0 011fe6d2c4cb2e141fa26fabce2705d5
++   label Um tipo registrado
++   highlight media"application/json"  registrado na IANA
+
+% 1 1 0 0e26ef90123137c81c8dd510133ac5d0
+
+% 0 1 0 1dc1e70271dbc7e6182a4019de7d629c
+
+% 1 1 0 13f07865afbd584001bb82dad88d6d01
+
+@ 0 2 0 0f2e240a523af35916aea92963511d07
++   label O tipo próprio de um fornecedor, que não é procurado
++   highlight vnd.globe.script  a árvore de fornecedor
+
+% 1 1 0 172b1daf2a9d04340f116f27ff38645b
+
+% 0 1 0 128a88b82bd6055c196c6aa7d6223e95
+
+% 0 1 0 18eafb32caed3dd50f976e787bd035ca
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 3 0 07e1f6c3b65389b41dc1e0607737ba93
++ [Escrevendo um tipo de mídia](../../soundness/modules/media-types.md#writing-a-media-type) diz quais
++ árvores são verificadas, e [segurança por construção](../../philosophy/safety-by-construction.md)
++ por que um literal é verificado.

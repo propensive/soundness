@@ -1,0 +1,66 @@
+orthant 2 language
+
+@ 0 1 0 06aaa68ef527ea2a192b394a5b665f62
++ # Acrescentar a um filtro dá outro filtro
+
+@ 0 2 0 19c65f09adff9c141ce99098061f63df
++ Um filtro de Bloom congelado nunca muda. `+` dá um novo filtro que contém um elemento a mais, e o
++ filtro a partir do qual ele foi feito continua respondendo como antes.
+
+% 2 1 0 19c0c8e0d293d9cb1d252ebb22454ba3
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 02bbf64152fd5361165e4efc0e586b43
++   label Um filtro com um elemento
+
+% 1 1 0 0e49fde8aaeb924d0775ce2b93bcc210
+
+% 2 1 0 07b8b114ac09b0c413b7b8675627995d
+
+% 3 1 0 1b54364bf1a307400813336952ad44ae
+
+% 5 1 0 166ab536f5ae9fc01fe9877e65133706
+
+% 1 1 0 139987e18e127d8e1b31b36dce03faa7
+
+@ 0 2 0 114db7965dafd7d21e6295134ca56ff2
++   label Outro, com mais dois
++   highlight ++  um novo filtro, e uma cópia dos bits
+
+% 1 1 0 17a060af64b00b2719c699a3b07e2e67
+
+% 2 1 0 035e0e75f41a44d11adcbab8ca5c93e2
+
+% 3 1 0 07050a68de56d1fb0da26bd0c60b8ef4
+
+% 5 1 0 1988410e4b56f0d006c0602b00773d02
+
+% 0 1 0 17d7dc6a74cc08360b6283f6138bf92c
+
+% 1 1 0 061e6b59007247b51b3d1da5bfd5f35f
+
+% 1 1 0 136d267ff733a60e0f6246170d49df5f
+
+% 2 1 0 1525a46c87e9e0571e7d21b8e7c42b7a
+
+% 0 1 0 08a86cbdc9b8cb0109ed8ce5b435ce67
+
+% 1 1 0 0cd6459499a6bd5203d659b3bcc1b6aa
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 0 1 0 17a6c48673b9fb511ba3d447aa2bfeb1
+
+% 0 1 0 1a3b86e1c896de7b099637f0495c2dde
+
+% 0 1 0 0f1e40f403edbccf17723e140966ad97
+
+% 1 1 0 1df86e335073f51f0e2a6a071c1bfe75
+
+@ 0 3 0 183e30c5391b426014e38d79ca9b175f
++ Mantua está no segundo filtro e não no primeiro.
++ [Imutabilidade](../../soundness/modules/bloom-filters.md#immutability) lista o que cada operação
++ copia.

@@ -1,0 +1,74 @@
+orthant 2 language
+
+@ 0 1 0 06f15e31fb9165dc1171d4052fe4a7ba
++ # Uma mensagem WebSocket, tipada pelo seu portador
+
+@ 0 2 0 0a6b26737e7eee100cda0c62fdc3e62c
++ Um handler de WebSocket recebe cada mensagem como um valor. `Cue over Json` é uma `Cue` que chegou
++ como JSON, e a resposta é feita nas mesmas palavras, então os frames do protocolo nunca aparecem.
+
+% 0 1 0 12705ff5e291290d17fbc8389d59ef4a
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 2 0 0932f4e0e5286e500d57c0bca2064e8b
++   label Uma mensagem
++   highlight Cue..Json  decodificada de cada frame à medida que chega
+
+% 1 1 0 1c001febf5ce2fcf1db239cf2db6790f
+
+% 2 1 0 1df719b838e78ccf1a9f4d9318ebb0eb
+
+% 3 1 0 05a0c14ed1d10f0804daf8b672f1c1e7
+
+% 4 1 0 0a9656df3f5430951cccd70197f20224
+
+% 5 1 0 0fd87e88e572b1df0d6414be645581cc
+
+% 7 1 0 1239cd278880ce380d65ff1fe765f5eb
+
+% 9 1 0 074561deb433c6f80ae9e5cb3f5fec2b
+
+% 10 1 0 14950b3e8a9559f00293be2031b172f9
+
+% 11 1 0 0c498093bb69129e1c177bf4cac541eb
+
+% 0 1 0 043c2aaa5e1b460313090e3816d2b721
+
+% 1 1 0 0c2e819c7f582cbe08daa1515aa9d96e
+
+@ 0 1 0 1967afc90a917bfc012a0fff0a1ff60f
++   label E a sua resposta
+
+% 0 1 0 1c5c8c1d0b49523a1173a73896b6d48a
+
+% 1 1 0 18223764fd437a9f03a21c4f25d8161a
+
+% 2 1 0 1d4a56adc5f4173e07ebc9a431056086
+
+% 3 1 0 0bcac65d5d60cb6d1c5ce6485d124c26
+
+% 4 1 0 1eb61386b1f4242a078277e333ed81eb
+
+% 5 1 0 1767587acf099c9b096c1672402c0808
+
+% 7 1 0 1eecf288c1e1020f02067322bf87fe14
+
+% 9 1 0 18debf792d877ff001de9c5766060851
+
+% 10 1 0 0d007c3e8f4d87eb018331249cec40e4
+
+% 11 1 0 175e01a24a64de361cead6766af79fb6
+
+% 0 1 0 13ab5af0f9abb11b178b01b9b7e31c04
+
+% 0 1 0 18eafb32caed3dd50f976e787bd035ca
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 3 0 1a3d91ddcfdef9e30947826ff46f1af7
++ O exemplo é compilado, e não é executado, já que vincularia uma porta.
++ [WebSockets](../../soundness/modules/http-server.md#websockets) traz a tabela de respostas, e [tipos
++ infixos](../../philosophy/infix-types.md) explica `over`.

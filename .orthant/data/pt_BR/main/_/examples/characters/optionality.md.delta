@@ -1,0 +1,63 @@
+orthant 2 language
+
+@ 0 1 0 18f289b6b577adaa151e969d6069fb44
++ # Um sobrescrito que pode não existir
+
+@ 0 2 0 04afc4d2a5408cd7045257466245aa85
++ O Unicode tem uma forma sobrescrita para os dígitos e para algumas letras, e para mais nada. A forma
++ é um valor opcional, então o código que pede uma precisa dizer o que fazer sem ela.
+
+% 2 1 0 0daae7f37158e63f0c62079bdec92edf
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 1f756bfa547dd1c818d8b79502eeceea
++   label Um sobrescrito, presumido existente
+
+% 0 1 0 1477c34ff41c7c99183443e1d3238ae1
+
+% 1 1 0 0960c596329e4eb20a0b442aaa85c43a
+
+% 2 1 0 0d09b894cedb34a309062320c9b029b4
+
+% 3 1 0 12a7107a8ac4b317144906ba06276c6f
+
+% 0 1 0 07978cdeae63fbe804bc0c8caa168a8b
+
+% 1 1 0 0e7f760df589242f10969c19b369333a
+
+@ 0 2 0 18138baddba4adc60f5373296a9e6eb0
++   label O próprio caractere, onde não há sobrescrito
++   highlight form.or(char)  o valor reserva é o caractere
+
+% 1 1 0 0ceae11721e85c11056ffa8b050e8b6d
+
+% 2 1 0 077711623e3c3a0b09688ec5b4c92248
+
+% 3 1 0 1bf2c8baaf43b129079e273543a19cd2
+
+% 0 1 0 11e535dd15abf61f183eaeb31bc5c38b
+
+% 1 1 0 034556e826f891bd12925ebcf986ab84
+
+% 1 1 0 136d267ff733a60e0f6246170d49df5f
+
+% 2 1 0 1525a46c87e9e0571e7d21b8e7c42b7a
+
+% 0 1 0 08a86cbdc9b8cb0109ed8ce5b435ce67
+
+% 1 1 0 0cd6459499a6bd5203d659b3bcc1b6aa
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 0 1 0 1a0a9d8d8e4b2a980ae08871324ee42b
+
+% 0 1 0 1151f460a579595e10411c0ac37cba85
+
+% 1 1 0 1fc1defe4d345b7915e1920fe0ac3b55
+
+@ 0 2 0 1ea0fd71bf76509c17c9bee642f3ecd9
++ [Propriedades Unicode](../../soundness/modules/characters.md#unicode-properties) lista o que mais se
++ pode perguntar a um caractere.

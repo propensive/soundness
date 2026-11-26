@@ -1,0 +1,65 @@
+orthant 2 language
+
+@ 0 1 0 12c27f755ab8f1a91a5853c9c1449db6
++ # A forma de um número aleatório
+
+@ 0 2 0 0081aad8c03609570912c2b6476600e6
++ `arbitrary[Double]` não diz como os seus valores se distribuem. Uma distribuição no escopo diz, e
++ as comuns são escolhidas por um import, que decide para cada sorteio abaixo dele.
+
+% 0 1 0 12705ff5e291290d17fbc8389d59ef4a
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 0 1 0 0e5b559f1a006b6308c2bbaaf3f357cf
+
+@ 0 1 0 1b51667adf53d1a005a1367869135e8b
++   highlight gaussianDistribution  média 0, desvio padrão 1
+
+% 1 1 0 0bd38404445d33e91ab10cf20c77f62e
+
+% 2 1 0 0a9e6087e386153516551679ade60674
+
+% 0 1 0 09eb6b68918ef5cc19b059fed8a8aec5
+
+% 2 1 0 1da7488a281cd5b31e4a1099430f8813
+
+% 4 1 0 18f7d096b1f5a4550a6ab9ddc9e33082
+
+@ 0 2 0 1f0d0f3afc8d3d2e01e30354695d76f8
++ alternative Uniforme, de 0 a 1
++   highlight uniformUnitIntervalDistribution  todo valor tão provável quanto qualquer outro
+
+% 1 1 0 15ff3efaea29f5dd0c76c3d2e94b8158
+
+% 2 1 0 1f29cbd22288822a07cb4e2bf9e03a85
+
+% 0 1 0 1a649c8aa7891ff31aff1bbab297d881
+
+% 2 1 0 1fad92b40801cd76004daf04f339d9f9
+
+% 4 1 0 0e0cbdd25648f05b095880bc6b06b8e3
+
+@ 0 2 0 0d1b5b69c093bf0318327f27d3bdfabd
++ alternative Uniforme, de -1 a 1
++   highlight uniformSymmetricUnitIntervalDistribution  centrada em zero
+
+% 1 1 0 0a1627d79fc42d6a078e5b29c72599ac
+
+% 2 1 0 0f9a62f8bf2cbe001f57c351adef95e2
+
+% 0 1 0 1c15f02f8cbbdd4b0c451ee4db682472
+
+% 2 1 0 10803f2821c96b2b0228de36f4a9928a
+
+% 4 1 0 1d019788eaeec67318255531462865c8
+
+% 0 1 0 18eafb32caed3dd50f976e787bd035ca
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 3 0 0852a9dbe5d28fec1958a96c8e538cdd
++ Os três são compilados, e não executados.
++ [Distribuições](../../soundness/modules/randomness.md#distributions) traz a tabela, e o
++ [contexto declarativo](../../philosophy/declarative-context.md) a razão pela qual a forma não é um
++ argumento.

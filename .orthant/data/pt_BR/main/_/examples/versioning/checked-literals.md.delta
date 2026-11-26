@@ -1,0 +1,67 @@
+orthant 2 language
+
+@ 0 1 0 1e84e490c57f10db18efb90ed2e6ab41
++ # Uma versão que o compilador já leu
+
+@ 0 3 0 04ca9ba8a1c0eaa603a05743f0d398ec
++ Uma versão semântica tem uma gramática: três números, nenhum com zero à esquerda, e talvez um
++ pré-lançamento. Um literal `v"…"` é lido por essa gramática enquanto o código compila, então uma
++ versão que a especificação proíbe nunca é um valor.
+
+% 2 1 0 0a662c8580cafe0f05dd46d683276f6f
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 1616fdcdf42a518a1291d3a422be90c2
++   label Dois números
+
+% 1 1 0 04d814ff20938cbf0bb128090b2f0734
+
+% 2 1 0 0be759e6fad71def1db14cc6981448fd
+
+% 0 1 0 1f9d5ba6f821b577021a2c7cc7f6f569
+
+% 1 1 0 02d9911257dae4f91cf6e7964b0a6f5b
+
+@ 0 1 0 09d8b9111e9bc3660176960d0b2444f3
++   label Um zero à esquerda
+
+% 1 1 0 1ac58e064d011abf0b1eefe58492d7f1
+
+% 2 1 0 00f70f672a3d2d031bc46356da14350b
+
+% 0 1 0 1045bb116e23f8cd0baf6fa48b947e5d
+
+% 1 1 0 150e8223ab9ba08010326deb7cf22f5b
+
+@ 0 2 0 0109fe7ea642bda11afcc23871402986
++   label Três números, e um pré-lançamento
++   highlight -rc.1  um pré-lançamento
+
+% 1 1 0 062753c5be32ddc81d9d6dbbe00a71be
+
+% 0 1 0 11c796bb69a744b70d454e3e4b245d27
+
+% 1 1 0 092df60eb88805af03e734bb4a439927
+
+% 1 1 0 136d267ff733a60e0f6246170d49df5f
+
+% 2 1 0 1525a46c87e9e0571e7d21b8e7c42b7a
+
+% 0 1 0 08a86cbdc9b8cb0109ed8ce5b435ce67
+
+% 1 1 0 0cd6459499a6bd5203d659b3bcc1b6aa
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 0 1 0 0786bf6bd4093fa20fa5c5fa21e6f372
+
+% 0 1 0 0c0542562b74ae960ba4d49e90466e88
+
+% 1 1 0 05a32130e85a48350eda04207ec53689
+
+@ 0 3 0 0ad1c447d5fefd5b14cc3555b357ebba
++ [Versões](../../soundness/modules/versioning.md#versions) lê a mesma gramática em tempo de execução,
++ e [segurança por construção](../../philosophy/safety-by-construction.md) explica o literal.

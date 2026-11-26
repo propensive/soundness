@@ -1,0 +1,79 @@
+orthant 2 language
+
+@ 0 1 0 121c7f1ac9628b2a08df8a52bee93b15
++ # Todos os caminhos entre texto, JSON e um valor
+
+@ 0 2 0 0de267b558f7b22f1834b61f56e30db5
++ `read`, `as` e `in` recebem, cada um, um tipo que diz para onde o valor vai. `Player in Json` é um
++ jogador guardado em JSON, e `Text over Json` é um texto que carrega JSON.
+
+% 2 1 0 03be7c85bc3ebf9d18eff168b28ce43c
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 0a1cf92e8b8dc1b30059766d1bddd9e9
++   label Texto para JSON, e JSON para um valor
+
+% 1 1 0 1331e1560be61da211e5010eb9d0ab64
+
+% 2 1 0 043e2c0405257a1d06d8d509acb15998
+
+% 4 1 0 1175f3cd05ac319d17af76d1d3d85f86
+
+% 0 1 0 09318b8b00f72247119fb21115f744b8
+
+% 0 1 0 07f182b64af271671074256fdc2489c1
+
+% 1 1 0 1ac44304a5204ab51a376d09c590a14f
+
+@ 0 2 0 1126414c0e00dc100869ef750172655b
++   label Os dois passos de uma vez
++   highlight read[Player..Json]  analisado e decodificado
+
+% 1 1 0 14c583929ae11a1c0a97d5411c2ef1ad
+
+% 2 1 0 11cfb5add2e6e7d209f7894ca35d43a9
+
+% 4 1 0 04987843d159e047164bc7fb328cb7eb
+
+% 4 1 0 0d2fd845bf46a3521f8748bf79c7f488
+
+% 1 1 0 15e73819f98fb23a1ac1391a6b349a31
+
+@ 0 2 0 0b5147c58c761cf105d877117b2c2843
++   label E de volta
++   highlight in[Text..Json]  codificado e renderizado
+
+% 1 1 0 09bd7e285407ab0612dcac33e49d9605
+
+% 2 1 0 158f64b9803770090858ecb2c929d312
+
+% 0 1 0 1ae279738df7173f06e307f4ba453ed1
+
+% 2 1 0 048e43fb3a8bca9f1ce0356d95cdc8a1
+
+% 4 1 0 125aa7728e5530510905eaa1163db3e9
+
+% 0 1 0 040f3100a9430e09032696fef2ca1c66
+
+% 1 1 0 00f6b0be18343c420350d58db2715027
+
+% 1 1 0 136d267ff733a60e0f6246170d49df5f
+
+% 2 1 0 1525a46c87e9e0571e7d21b8e7c42b7a
+
+% 0 1 0 08a86cbdc9b8cb0109ed8ce5b435ce67
+
+% 1 1 0 0cd6459499a6bd5203d659b3bcc1b6aa
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 0 1 0 14850a09f6384c9f159ab6d95b562121
+
+% 1 1 0 02c371e50557b52a07c2c78bb855e0e2
+
+@ 0 2 0 00edc1882f6cdb2a05388ff4941e8f98
++ [Case classes e enumerações](../../soundness/modules/json.md#case-classes-and-enumerations) tabula
++ os caminhos, e [tipos infixos](../../philosophy/infix-types.md) as palavras que eles usam.

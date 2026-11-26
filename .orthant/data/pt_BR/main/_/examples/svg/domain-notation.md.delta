@@ -1,0 +1,70 @@
+orthant 2 language
+
+@ 0 1 0 1417c61fef0851b718835f6df16d702e
++ # Um caminho desenhado pelos seus passos
+
+@ 0 3 0 133b5710f7ace7550e2b44c9ddea29db
++ O atributo `d` de um caminho SVG é um pequeno programa de letras e números. Um `Outline` é o
++ mesmo programa como uma cadeia de passos nomeados, cada um um método, então o trajeto da caneta é
++ lido no código que o desenha.
+
+% 2 1 0 02a9c7fa80000d3909cd70c193c85eea
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 0b68094282a9d553038cd65792685482
++   label A caneta é pousada
+
+% 1 1 0 140c1a13c4eb533801d3c67e23f1ec3f
+
+% 2 1 0 1f52fae130202b9c1db93f5b1c84e386
+
+% 0 1 0 17ed8378e6060e030dcd6d386d82b9da
+
+% 1 1 0 0dbb9dcf42eb3ab3151bfa1b2ad94886
+
+@ 0 2 0 095d8f59f57b33bb067fd4c50aced823
++   label Um mastro
++   highlight lineUp(8)  um passo relativo, direto para cima
+
+% 1 1 0 1e3df23bbd2c7ad01e382962259ac675
+
+% 2 1 0 18b98eca33d097c80a7b9a1e9ba60202
+
+% 4 1 0 078dc222e4386fb4135213bd5943b487
+
+% 1 1 0 0db53eb0d9d5f32e08e8803697b2ac8c
+
+@ 0 2 0 11f15a31478d6935026ad5cd1a7667c0
++   label Uma flâmula
++   highlight line(3*Delta.Right..Delta.Down)  um deslocamento, escrito como aritmética
+
+% 1 1 0 0fecf5c92c5cddc707fbef65c65f02cb
+
+% 2 1 0 0135403f7fb4e62c024e1928de70fc90
+
+% 4 1 0 01286e974b169065068a06353333643c
+
+% 0 1 0 1030c5777c96cf5e04c9a46fffc7dada
+
+% 1 1 0 0c3eb14ad8288e12199420dceb48dd35
+
+% 1 1 0 136d267ff733a60e0f6246170d49df5f
+
+% 2 1 0 1525a46c87e9e0571e7d21b8e7c42b7a
+
+% 0 1 0 08a86cbdc9b8cb0109ed8ce5b435ce67
+
+% 1 1 0 0cd6459499a6bd5203d659b3bcc1b6aa
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 0 1 0 1e94df9f0e1304b3077479da56ef0109
+
+% 1 1 0 0d381061f54d56160b4d50ef29f4bb00
+
+@ 0 2 0 180b71a9563331a207fca5c18b61b33b
++ O eixo y do SVG aponta para baixo, então `lineUp(8)` é escrito como o passo vertical `v -8.0`.
++ [Caminhos](../../soundness/modules/svg.md#paths) lista todos os passos.

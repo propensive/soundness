@@ -1,0 +1,68 @@
+orthant 2 language
+
+@ 0 1 0 147ee6288c02836f034d96cd8a5563ae
++ # Dependências, desenhadas como setas
+
+@ 0 2 0 0baa4d098962b75014db4d3258e8dfff
++ Um grafo é escrito como seria desenhado no papel. `a -> b` diz que `a` depende de `b`, e um `Dag`
++ é uma lista dessas setas, ou de nós que apontam cada um para o conjunto das suas dependências.
+
+% 2 1 0 178737950f3c48070e6116bdef0de96b
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 2 0 0075ac76eec5849515e2a5e583e13f45
++   label Uma seta para cada aresta
++   highlight ->  depende de
+
+% 0 1 0 0fd2ac3797a0477c02117fa7e01a94b2
+
+% 1 1 0 0428a31f3d3e43b7091c3ca786dd21af
+
+% 2 1 0 0b23ecb5a17c76ec0b2167f7e6a82efd
+
+% 0 1 0 1cf9a8366cc8952a0279ed374570a57e
+
+% 1 1 0 17560d19d6fa19761c15acf35092d3af
+
+@ 0 2 0 0a2b8486dd1d03d2169335f64820668c
++   label Uma seta para cada nó
++   highlight Set(t"play"..t"voyage")  tudo de que o duelo depende
+
+% 1 1 0 122ba5625469d04b01b203cc4603daaa
+
+% 2 1 0 04e76d950dd8587c138deda87200fbc1
+
+% 0 1 0 1e5547a67f5069df1bc710b5d0a5b125
+
+% 0 1 0 0f6ae18e41156ee91ebf4f530d088d4b
+
+% 0 1 0 1e4176a778b90be70997989a475f4cb5
+
+% 0 1 0 0cb687d1a604edd01233233d99ff1494
+
+% 0 1 0 0f55f995121d938f1cdc30dadb044126
+
+% 1 1 0 1533550f6145ccb608fbc4a778378311
+
+% 1 1 0 136d267ff733a60e0f6246170d49df5f
+
+% 2 1 0 1525a46c87e9e0571e7d21b8e7c42b7a
+
+% 0 1 0 08a86cbdc9b8cb0109ed8ce5b435ce67
+
+% 1 1 0 0cd6459499a6bd5203d659b3bcc1b6aa
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 0 1 0 0245afe806a6afaf0ba092b7fbe339b1
+
+% 0 1 0 05b42b0ee9863aaf1499748d74a171bc
+
+% 1 1 0 04898e889b8eca4c0f56daa190bef5ea
+
+@ 0 2 0 16580268d6385f900031d0ef4c0cb41f
++ [Construção de um grafo](../../soundness/modules/graphs.md#building-a-graph) tem a terceira forma,
++ que recebe uma função.

@@ -1,0 +1,65 @@
+orthant 2 language
+
+@ 0 1 0 013485b54d95a3ce19333565a6e4824a
++ # Um desenho que não pode falhar
+
+@ 0 3 0 1709b7d33f6642da081cb0426f2b7e47
++ Um grafo é desenhado na ordem de suas dependências, e um grafo com um ciclo não tem tal ordem.
++ Os diagramas, portanto, só aceitam um grafo que se sabe ser acíclico, e um `Digraph`, que pode
++ não ser, não tem desenho até ter sido verificado.
+
+% 2 1 0 1d1149c2d6f3bf9e1bdd828d0571d08c
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 04d8ce7f8e665fc60e1e036cf78713f2
++   label Um grafo que pode conter um ciclo
+
+% 0 1 0 1477c34ff41c7c99183443e1d3238ae1
+
+% 1 1 0 0960c596329e4eb20a0b442aaa85c43a
+
+% 2 1 0 1312694313b5e0751ecd75058755ae46
+
+% 2 1 0 11379412907e403202a87ff71ae51d8b
+
+% 0 1 0 190186e82625729c11f8f39a7b920fa6
+
+% 1 1 0 05b5325a66b08d5b028bd8390547e51b
+
+@ 0 2 0 077d968041b3951b100c96855fb30aac
++   label O mesmo grafo, verificado
++   highlight acyclic  o único lugar onde se procura um ciclo
+
+% 1 1 0 0cee1f1ead3f93060d296efb7d935b27
+
+% 2 1 0 033a6a0fde30dccb0f0a7a4b03412904
+
+% 0 1 0 12a618ab3fc8ab800817fdfca2fcb19c
+
+% 2 1 0 0ceed6e5235b011f01f9a92fe335fec4
+
+% 0 1 0 0012ac82dea508ff16006f737ee510bb
+
+% 1 1 0 0ee93de65796362b1c9697d9256f90ef
+
+% 1 1 0 136d267ff733a60e0f6246170d49df5f
+
+% 2 1 0 1525a46c87e9e0571e7d21b8e7c42b7a
+
+% 0 1 0 08a86cbdc9b8cb0109ed8ce5b435ce67
+
+% 1 1 0 0cd6459499a6bd5203d659b3bcc1b6aa
+
+% 0 1 0 00af3fdb360e27f9095168ce70444642
+
+% 0 1 0 0f11343269dab63404ffde156c3292c8
+
+% 1 1 0 1e93d697e17ee1690eedf414a6137131
+
+@ 0 3 0 05f74117c5eb7d0e1be7ab246800ca0e
++ [Escolhendo um layout de grafo](../../soundness/modules/trees.md#choosing-a-graph-layout) diz
++ quais grafos podem ser desenhados, e [transições totais](../../philosophy/total-transitions.md)
++ por que a verificação está no tipo.

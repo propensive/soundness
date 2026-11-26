@@ -1,0 +1,61 @@
+orthant 2 language
+
+@ 0 1 0 0bdb559a52f7487b1d6819fdb51e9079
++ # Os primeiros bytes de um stream, e nada mais
+
+@ 0 3 0 0f89c67cc0637d9112c1924f7b83322f
++ `truncate` limita um stream sem drená-lo. O stream que ele dá termina depois da contagem, e o
++ restante da fonte é liberado sem ser lido, então tirar um cabeçalho de um corpo grande custa só o
++ cabeçalho.
+
+% 2 1 0 123f8ba8a18cd40705539072ffea499d
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 11cb18bdf4aabdd01b22465249d06738
++   label Um stream de um discurso inteiro
+
+% 1 1 0 159ab498f26a7fc0064f1f8f8310e7c9
+
+% 2 1 0 186ddf788ad2cb99014b6a092be7694c
+
+% 4 1 0 05a9052e3d8cc4481c20b11ab7614cf8
+
+% 0 1 0 1081d2b22f41e41a073d0125496fb0ce
+
+% 1 1 0 1d5be279eea22fde0d2ab15933d7ab62
+
+@ 0 1 0 062ba6830084789606fad46e43ffa073
++   label Os seus primeiros sete bytes
+
+% 0 1 0 17768cc5451c4361135d71d2f004bef5
+
+% 1 1 0 19a70bc3dbfb8d21057a9fab57b6a55f
+
+% 2 1 0 1f4fe9a0b8abb784186d0108eeccfdbd
+
+% 4 1 0 19b1e45829abb38e077805386fee8180
+
+% 0 1 0 040ad700b284df910c591e11b5de4c76
+
+% 1 1 0 020fe48a31471ebd040b614790529d72
+
+% 1 1 0 136d267ff733a60e0f6246170d49df5f
+
+% 2 1 0 1525a46c87e9e0571e7d21b8e7c42b7a
+
+% 0 1 0 08a86cbdc9b8cb0109ed8ce5b435ce67
+
+% 1 1 0 0cd6459499a6bd5203d659b3bcc1b6aa
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 0 1 0 18d18fb7fa523c561cdec29b0680793e
+
+% 1 1 0 0e1ebda55d3fe45e1932476769ea6daa
+
+@ 0 2 0 069e2f769d7b5ddb070879d73a9be6f9
++ [Compondo um pipeline](../../soundness/modules/streams.md#composing-a-pipeline) descreve
++ `truncate` e a sua contraparte, `discard`.

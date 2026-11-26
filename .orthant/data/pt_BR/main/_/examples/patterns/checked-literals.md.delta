@@ -1,0 +1,49 @@
+orthant 2 language
+
+@ 0 1 0 077ef79b7d51529212c9901d3058fa73
++ # Uma expressão regular que o compilador leu
+
+@ 0 2 0 1cde9e5aeb6ed2a61bb4c381728cd1ce
++ Um padrão escrito com `r"…"` é analisado enquanto o código é compilado. Um que não seja uma
++ expressão regular é um erro de compilação, que nomeia a falha e sua posição.
+
+% 0 1 0 12705ff5e291290d17fbc8389d59ef4a
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 054bf4cedbbbbe5907608eeb519a2385
++   label Um grupo não fechado
+
+% 0 1 0 1477c34ff41c7c99183443e1d3238ae1
+
+% 1 1 0 0960c596329e4eb20a0b442aaa85c43a
+
+% 2 1 0 1f985236191bf8191343f569e57e17cb
+
+% 0 1 0 149e42d90338e1e80602c6e9edfce07e
+
+% 0 1 0 04860fe08e0982ce16663da48a7a0d24
+
+% 1 1 0 0189d66b2cdf2a0816247f5c2f324212
+
+@ 0 2 0 1a1376283516f0bc0c71466df4d2eb53
++   label O grupo fechado
++   highlight (..)?  um grupo, fechado
+
+% 1 1 0 1c344001110b4a2011f75b5dec9edccf
+
+% 2 1 0 1e9127fc6e60314812a807ba3015a310
+
+% 0 1 0 0045a38938cefd3d1ae46b326ab3524e
+
+% 0 1 0 0f07d26ec9ab803c03a0854b5e45f16f
+
+% 0 1 0 18eafb32caed3dd50f976e787bd035ca
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 2 0 0fb65a4673994f31054c219e4122f00b
++ [Padrões](../../soundness/modules/patterns.md#compiletime-checking) descreve o que mais é
++ verificado.

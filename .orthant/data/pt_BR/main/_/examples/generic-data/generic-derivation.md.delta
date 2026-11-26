@@ -1,0 +1,82 @@
+orthant 2 language
+
+@ 0 1 0 1e47afaecec6987b13570351b855c619
++ # Um valor que atravessa sem sua classe
+
+@ 0 3 0 1d71929003c2d0200e8a0ef5113c0dac
++ `pojo` transforma um valor em arrays, strings e primitivos com boxing, que todo classloader
++ compartilha, e `as` o converte de volta. As duas direções são derivadas da case class, então não
++ há codec a escrever nem esquema a enviar.
+
+% 2 1 0 0145b72153028f5c0971222f5b70e198
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 1751b0f54ad98125193cd9d80af45504
++   label Um valor
+
+% 1 1 0 1ce4f13f05801164174cbd259d14e39f
+
+% 2 1 0 1cb42e66260e03550df78d6ee270151d
+
+% 3 1 0 0ebefc74e81d4f6d0308693fff4e18b1
+
+% 5 1 0 08cc082b19d7a4ae05df118b1b1ae744
+
+% 1 1 0 126867c6af4d1dc8036c90887447f36d
+
+@ 0 2 0 02d06ae37e3d022817f18587d09a8915
++   label Codificado só com tipos do JDK
++   highlight pojo  arrays, strings e primitivos com boxing
+
+% 1 1 0 026fe5ee2c8fc2d501ffc2cedbb5bb4e
+
+% 2 1 0 1904519dd585abf30396c91f910ec5f7
+
+% 3 1 0 11275111945210550eafdbd7a2f22a4a
+
+% 5 1 0 10164129ef1760470ed5fd1c4e4d1080
+
+% 5 1 0 026483964b44d0f60fa8fb292f5cb6cf
+
+% 1 1 0 050295d54dadecd3121ab12e8427b8ce
+
+@ 0 2 0 12e33f3084d2da2a0963ed245eadabbd
++   label E decodificado do outro lado
++   highlight as[Troupe]  o tipo esperado
+
+% 1 1 0 037c073b5dc709ad0bb78098a179e1d5
+
+% 0 1 0 12a618ab3fc8ab800817fdfca2fcb19c
+
+% 1 1 0 178d456f49c1b17c00cc81f5d4793bba
+
+% 2 1 0 189db748bef6c2c41062894fe97c3f37
+
+% 4 1 0 12bf3502e3f3c67619337d4d64c33adb
+
+% 5 1 0 14bb9da896d0a2311b4f098a996647e2
+
+% 0 1 0 1c3e406b8d017ded1c33eaa3fa570379
+
+% 1 1 0 04d9363f77edb068031e478b6f035ad9
+
+% 1 1 0 136d267ff733a60e0f6246170d49df5f
+
+% 2 1 0 1525a46c87e9e0571e7d21b8e7c42b7a
+
+% 0 1 0 08a86cbdc9b8cb0109ed8ce5b435ce67
+
+% 1 1 0 0cd6459499a6bd5203d659b3bcc1b6aa
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 0 1 0 08ab23fc4b3228350c6d7f5f4d41f2fb
+
+% 1 1 0 19ce077fe8cc790e10c46b4d358ed5c4
+
+@ 0 2 0 03630cc38e24cc491be7b6931cbf9752
++ [Codificação e decodificação](../../soundness/modules/generic-data.md#encoding-and-decoding) traz
++ os detalhes.

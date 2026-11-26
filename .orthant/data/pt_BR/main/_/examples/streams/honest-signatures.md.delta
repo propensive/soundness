@@ -1,0 +1,54 @@
+orthant 2 language
+
+@ 0 1 0 12d030bfb837201819291d546ad82ab6
++ # Imprimir exige um lugar onde imprimir
+
+@ 0 3 0 1c0c4e86e5f58bdc17ea717e8596f937
++ A saída padrão é uma capability, e não um global. `Out.println` imprime por meio do `Stdio` no
++ escopo, então um método que imprime diz isso na sua assinatura, e o código que não recebeu nenhum
++ `Stdio` não imprime nada.
+
+% 2 1 0 0dc36a3f7b1ac08c1e2554bc51520472
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 0b0423bf687f31531de16545675bba9f
++   label Um método que imprime, e não diz isso
+
+% 0 1 0 1477c34ff41c7c99183443e1d3238ae1
+
+% 1 1 0 0960c596329e4eb20a0b442aaa85c43a
+
+% 0 1 0 07ca5cce5b4bd82f1ba7e93caa430e9b
+
+% 1 1 0 03a3013b9556c60f07d5b4e50298ee63
+
+@ 0 2 0 11d4b2518799c11215f2b30c9e68fe74
++   label A saída padrão, como parâmetro
++   highlight (using..Stdio)  para onde vai a saída
+
+% 1 1 0 0aa89d321e89c8181e212b4225c0ed27
+
+% 0 1 0 170800abfdfad5d31d3df303e3b58369
+
+% 1 1 0 1b758e5a0a76ad3a1bd1d136c8a7caa1
+
+% 1 1 0 136d267ff733a60e0f6246170d49df5f
+
+% 2 1 0 1525a46c87e9e0571e7d21b8e7c42b7a
+
+% 0 1 0 08a86cbdc9b8cb0109ed8ce5b435ce67
+
+% 1 1 0 0cd6459499a6bd5203d659b3bcc1b6aa
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 0 1 0 0c1e78524555ad76053405e964a70a58
+
+% 1 1 0 12b3624d1898f914151cb7119bf0cc08
+
+@ 0 2 0 07b739560b7a987e0afa33ea2f004a22
++ [Streams padrão](../../soundness/modules/streams.md#standard-streams) os redireciona e os
++ captura, e as [assinaturas honestas](../../philosophy/honest-signatures.md) trazem o princípio.

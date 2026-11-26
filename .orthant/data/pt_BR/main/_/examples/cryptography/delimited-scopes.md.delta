@@ -1,0 +1,60 @@
+orthant 2 language
+
+@ 0 1 0 16a4b7aafe16daf003b516aa72cb0a88
++ # Uma chave que é emprestada a um bloco
+
+@ 0 2 0 13974e0b90340ebb069fb6e3b5dc2101
++ Os bytes de uma chave nunca são entregues. `uncloak` empresta a chave a um bloco, como a capability
++ de cifrar e decifrar, e fora do bloco não há nada com que cifrar.
+
+% 0 1 0 12705ff5e291290d17fbc8389d59ef4a
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 123c40915afd78b10eaa5e75734f4648
++   label Cifragem, sem nenhuma chave emprestada
+
+% 0 1 0 1477c34ff41c7c99183443e1d3238ae1
+
+% 1 1 0 0960c596329e4eb20a0b442aaa85c43a
+
+% 2 1 0 02d620d47b5b75250596f15626c249bc
+
+% 3 1 0 06533c8a35ef2c2617bab3869e9e8620
+
+% 4 1 0 1a190e7cdeb083c712de9f21879d038f
+
+% 6 1 0 121086256e6c878c12efd7afd7ad8f1a
+
+% 0 1 0 0085fc2a7a26de0c0fce4734ddfa49ea
+
+% 1 1 0 0af6d7408738a9f2132fefcb21567f3a
+
+@ 0 1 0 06db7f89579927a0141898383dd914fd
++   label Dentro do bloco que a empresta
+
+% 0 1 0 1635cd1eaeef4a040d15d8fddede0aa9
+
+% 1 1 0 18e50d151682efb815a4a6f983bfcef8
+
+% 2 1 0 15105e7e66afcf1a05b3141ad311f514
+
+% 3 1 0 13779b0aa290104f12b317f3423b6354
+
+% 4 1 0 0b4642a2825c88a91f4f7daaa6151077
+
+% 6 1 0 0f1dbe3d30b87dac130a8c7976a38998
+
+% 0 1 0 01ae9a8616c00dcf17f588a03fa7d1da
+
+% 0 1 0 112263c75688319416ba247ecb190182
+
+% 0 1 0 18eafb32caed3dd50f976e787bd035ca
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 3 0 0fa621c6b88ec07107d4e3a75d6c1000
++ [Criptografia simétrica](../../soundness/modules/cryptography.md#symmetric-encryption) decifra a
++ mensagem de novo, e [escopos delimitados](../../philosophy/delimited-scopes.md) descreve o bloco.

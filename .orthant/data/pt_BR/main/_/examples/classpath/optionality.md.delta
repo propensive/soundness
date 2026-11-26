@@ -1,0 +1,78 @@
+orthant 2 language
+
+@ 0 1 0 09953c63b1e71dfa154544ab2daabbaa
++ # Um recurso que pode não estar lá
+
+@ 0 3 0 06bc6601136566b507ded81cb36c17cc
++ Pedir um recurso a um classloader pelo seu caminho dá um valor opcional: os bytes, ou `Unset`. Não
++ há nenhum `null` a esquecer, e os bytes não podem ser usados até que a ausência tenha recebido um
++ significado.
+
+% 2 1 0 1fdbc5ba4f216437006741b95d369fd7
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 08a80c5e0ccc5fcc1ffcfbc08d2e336f
++   label O comprimento de algo que pode estar ausente
+
+% 0 1 0 1477c34ff41c7c99183443e1d3238ae1
+
+% 1 1 0 0960c596329e4eb20a0b442aaa85c43a
+
+% 2 1 0 0834d4f7f3c666e107dab16bc7123cfd
+
+% 3 1 0 007e8b7571edeace01fc91c0bc2c055b
+
+% 0 1 0 095e1e56092001f40f38578135244c71
+
+% 1 1 0 0d47b9e291ae0cf30cf524a90f5b36d3
+
+@ 0 1 0 02cff122e75b39de06ceaac7da36d603
++   label O comprimento, se estiver presente
+
+% 0 1 0 07c8a824ed9697aa0b90d011781bb137
+
+% 1 1 0 0145bceace8f5d7e0d4ebe61a8e76a46
+
+% 2 1 0 158251d6d5055b050ae9cb3af51b0cbf
+
+% 3 1 0 1b917661b12a90fb1548028fb8ed7a0e
+
+% 0 1 0 0a155c22dd2c3e7903742271c1420225
+
+% 1 1 0 10cd0c5e82b34c820973a67aa4299c0f
+
+@ 0 1 0 120390d9c82271b21e24b3e85a72c182
++   label Ou nada, onde não estiver
+
+% 0 1 0 1eda3cd0f350756a0f88e4764af1ba98
+
+% 1 1 0 1aa0143b393a6c070b71e388ad9dcfd6
+
+% 2 1 0 1590cc27fb9725971481b305f42475e5
+
+% 3 1 0 0f23598b133afa6505e0ad97cdbe7c32
+
+% 0 1 0 06f9e0ea60a4afd20b92316fc9bb51f4
+
+% 1 1 0 06a38517f5fd0d861dc5ad06d1318656
+
+% 1 1 0 136d267ff733a60e0f6246170d49df5f
+
+% 2 1 0 1525a46c87e9e0571e7d21b8e7c42b7a
+
+% 0 1 0 08a86cbdc9b8cb0109ed8ce5b435ce67
+
+% 1 1 0 0cd6459499a6bd5203d659b3bcc1b6aa
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 0 1 0 0f0957f368f956881a00c92f3c40729f
+
+% 1 1 0 1cd9dd4b7396508a081ac57b34c01e89
+
+@ 0 2 0 0cac4f8aa5f9f54709dcfdbea27192de
++ [Construindo um classloader](../../soundness/modules/classpath.md#building-a-classloader) descreve o
++ carregador, e [opcionalidade](../../philosophy/optionality.md) `let` e `or`.

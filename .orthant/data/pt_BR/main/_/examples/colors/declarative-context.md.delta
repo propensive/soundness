@@ -1,0 +1,53 @@
+orthant 2 language
+
+@ 0 1 0 11a92e39aeb6fda3000c172237b84384
++ # As mesmas tintas, misturadas em outro modo
+
+@ 0 2 0 0b974ad4fb38a98e129729b3bb601666
++ Amarelo e ciano são somados em partes iguais. O resultado da soma depende do modo de mistura, e
++ o modo é escolhido por um import: uma média, um produto como o das tintas, ou o screen de duas
++ luzes.
+
+% 0 1 0 12705ff5e291290d17fbc8389d59ef4a
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+@ 0 2 0 0d73be927819301c1136b594331ce936
++ alternative Proporcional
++   highlight proportionalMixing  uma média
+
+% 1 1 0 1110a9c973629efa0c211f3e8132fbba
+
+% 0 1 0 045c05f05fa766af06ef236bb8541ba6
+
+% 2 1 0 0cdfc90bd843bff90ccebacdd0c7a9e5
+
+@ 0 2 0 05c18ef42c73ff521492ee35edd3488c
++ alternative Multiplicação
++   highlight multiplyMixing  como as tintas se misturam
+
+% 1 1 0 0cd92421e01cd8ac1f2aa1ebaeb26b2f
+
+% 0 1 0 12dcc8cf4aa7795a02f82cd438686fd8
+
+% 2 1 0 03c974afe6e2c95d0436fda3748623a0
+
+% 0 1 0 0437e97e33ca437c1415ecc30cc4d78e
+
+@ 0 1 0 1a739a788c2084cf0779aa44b7abb37c
++   highlight screenMixing  como as luzes se misturam
+
+% 1 1 0 11b986e0ed50a835024232cdd10b33b9
+
+% 0 1 0 1d2f9ea4cb666026051634074d8ea8fb
+
+% 2 1 0 1f7398ba43424938186319487986bfcd
+
+% 0 1 0 18eafb32caed3dd50f976e787bd035ca
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 3 0 1b2032e48f15ce640c23b6aaf9698745
++ [Modos de mistura](../../soundness/modules/colors.md#mixing-modes) define cada modo, e
++ [contexto declarativo](../../philosophy/declarative-context.md) explica por que o modo não é um
++ argumento.

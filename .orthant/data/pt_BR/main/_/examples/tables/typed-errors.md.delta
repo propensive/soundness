@@ -1,0 +1,107 @@
+orthant 2 language
+
+@ 0 1 0 0d3047131f8480f2190f49ae670246ca
++ # Uma tabela larga demais para ser desenhada
+
+@ 0 4 0 062f0787944b0b8105196c240db4d875
++ O que acontece com uma tabela que não cabe em sua largura é uma política, escolhida por um
++ import. Sob `ignoreAttenuation`, ela é desenhada da melhor forma possível, e nada pode falhar. Sob
++ `failAttenuation`, a mesma linha levanta um `Table.Error`, e deixa de compilar até que o erro
++ seja tratado.
+
+% 2 1 0 10ebd30d7e1fd743156782f2a7261686
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 2 0 103b63f1980144a20284e7f3795f785f
++   label Desenhada de qualquer forma
++   highlight ignoreAttenuation  não pode falhar, então nada é tratado
+
+% 1 1 0 1550db7f33043df90781646e62bad716
+
+% 2 1 0 0d3f77c0df13f5e416e9255cdd7b8064
+
+% 3 1 0 00680ccd89bf92d51d5ba84b7fb20c10
+
+% 5 1 0 05be2d4700322c280e9e75f85cb3ccb6
+
+% 7 1 0 0a6667b21f1793ce1a46b5aed9c7e752
+
+% 9 1 0 0a3921096d29bfcf13102c7372f16783
+
+% 0 1 0 1741726b21fae2c800b8badd6856cb91
+
+% 1 1 0 19f733a289212335145a6478e9f0bf23
+
+% 2 1 0 028de909055cde49067e1f99399f33ca
+
+@ 0 1 0 1ddc86265814ec3802c6980c598737eb
++   label Recusada, e não tratada
+
+% 0 1 0 1477c34ff41c7c99183443e1d3238ae1
+
+% 1 1 0 0960c596329e4eb20a0b442aaa85c43a
+
+% 2 1 0 1852bc18ded112c803d2693c4c464197
+
+% 3 1 0 059adc01bebca6760a60b891cb6e6b63
+
+% 5 1 0 1f79a2c1015d9ccf0c047b03bdf917e6
+
+% 7 1 0 1e0cc0a10522f10c003fdd8c8616d79b
+
+% 9 1 0 11cc77eb38a3125115d43bd802e531aa
+
+% 10 1 0 16de383674303f7b0c1bed093cb1c2a7
+
+% 1 1 0 0221100eabb67d7e0d7b5cc370dec825
+
+% 2 1 0 119a6cf1cb48149c1bb67214bbec46a2
+
+@ 0 2 0 1d991795f4c534bc0f7c6eea5481fc10
++   label Recusada, com uma resposta
++   highlight Table.Error(minimum,..available)  as duas larguras, como números
+
+% 1 1 0 0dcb486ab28dd39d1606053b24aae355
+
+% 2 1 0 18152c8f52724a18126b3b239b929c65
+
+% 3 1 0 0e7ea0512adb49c30f0de8903e41f860
+
+% 5 1 0 0077da3c50cb7d2c119d48ba8d5a2286
+
+% 7 1 0 180ceaff51021331050e90f5cc4bde95
+
+% 9 1 0 0a624d09322f819a0dc514fcc6ee9c3a
+
+% 10 1 0 129bf0d8e1105bc101005469c95fdd3c
+
+% 0 1 0 1ffe5c415422113702a4a9b03386f84a
+
+% 0 1 0 1a476e986ee8746d0fffec390f2c5263
+
+% 0 1 0 0f4011fa09aa340809ed7745d2f4bb28
+
+% 1 1 0 1073c554890baa68078bbb9b14215cad
+
+% 1 1 0 136d267ff733a60e0f6246170d49df5f
+
+% 2 1 0 1525a46c87e9e0571e7d21b8e7c42b7a
+
+% 0 1 0 08a86cbdc9b8cb0109ed8ce5b435ce67
+
+% 1 1 0 0cd6459499a6bd5203d659b3bcc1b6aa
+
+% 0 1 0 00af3fdb360e27f9095168ce70444642
+
+% 0 1 0 1d5e4ea410fd979706526d45f941475d
+
+% 0 1 0 172a207c3bb568920c027269e65bb0a8
+
+% 1 1 0 00e7045f07389c7507df8594f7c19049
+
+@ 0 2 0 1a022d4cf31006cf04709ff0296bf197
++ [Quando a tabela não cabe](../../soundness/modules/tables.md#when-the-table-does-not-fit) diz
++ qual política convém a cada saída.

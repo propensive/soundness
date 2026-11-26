@@ -1,0 +1,55 @@
+orthant 2 language
+
+@ 0 1 0 127fa781ba55c6b80fd1565e8e3eb4bf
++ # Uma instrução de log que não é lida não é avaliada
+
+@ 0 3 0 10ed9a7e31479ca70f0437a8720ed401
++ O argumento de um método de log é passado por nome, e só é avaliado se um logger for registrá-lo.
++ Sem nenhum logger no escopo, a mensagem nunca é construída, então o método que teria descrito a
++ cena nunca é chamado.
+
+% 2 1 0 0b260619564970e80f15212f5fa333cd
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 0 1 0 14aab7f0be2434f81421fb69d99543da
+
+@ 0 2 0 0677cfec9c740b261909c3a0b43c1000
++   label Uma mensagem cara de construir
++   highlight ${describe()}  nunca avaliado
+
+% 0 1 0 0feeb6ee26eddc7916a3c923ea9fa7b1
+
+% 0 1 0 04cec7969d02d6900f2535ed1e22dc3a
+
+% 0 1 0 1b0484a08a57f0bb0806030ffd67b06b
+
+% 0 1 0 0d9a1a87459e8f981b4c5493e845c540
+
+% 0 1 0 1fca6afdc60c11e30ca88eb929f273ea
+
+% 0 1 0 0af379ffb044a2a109b2cd34aa6769ef
+
+% 0 1 0 1acbb7754373b12a1ec30398ea591e7e
+
+% 0 1 0 0faeeff950f451cf104115ee82c23edf
+
+% 1 1 0 1d669f4fd62013a103d8f028744fd814
+
+% 1 1 0 136d267ff733a60e0f6246170d49df5f
+
+% 2 1 0 1525a46c87e9e0571e7d21b8e7c42b7a
+
+% 0 1 0 08a86cbdc9b8cb0109ed8ce5b435ce67
+
+% 1 1 0 0cd6459499a6bd5203d659b3bcc1b6aa
+
+% 0 1 0 018efcb2fac3b93c07ab69b77e76d533
+
+% 1 1 0 0866a8cd8b97bcdf1929477e4c3694b8
+
+@ 0 4 0 1f88eee3ea21dcde0309ce798c15f1cc
++ Só `rehearsed` é impresso.
++ [Custo quando desativado](../../soundness/modules/logging.md#cost-when-disabled) explica o que
++ decorre disso para o design de um evento, e [custo zero](../../philosophy/zero-cost.md) o
++ princípio.

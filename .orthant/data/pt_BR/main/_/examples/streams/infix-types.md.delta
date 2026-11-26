@@ -1,0 +1,78 @@
+orthant 2 language
+
+@ 0 1 0 025a93518d9fd31805afffcf9fded038
++ # Um tipo que diz como se torna um stream
+
+@ 0 2 0 1f295b2bd5bef8900042f108a045bbd2
++ Um tipo passa a ter `read` e `writeTo` por meio de um único given, cujo tipo se lê como uma frase:
++ um `Cue` é streamable, por texto. Nada mais é definido para ele.
+
+% 2 1 0 156e7871452602281f9c813c1485326c
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 1922531ea22dfa2e018a94a357060b3a
++   label Um tipo próprio
+
+% 1 1 0 155a06ba95403c9605de8a5574b2ac30
+
+% 2 1 0 129f86f90511d9a01487b5130b07d75d
+
+% 4 1 0 1cedfbf8f826f0130f548da1e604c108
+
+% 1 1 0 1ec2583abf2050cb0c983a6efeb91ace
+
+@ 0 2 0 1410236ee3ed4fad02316c1894664577
++   label Como ele se torna um stream
++   highlight (Cue..Credit)  lido como uma frase
+
+% 1 1 0 0653da487645a44c0386aeb095e72c9c
+
+% 2 1 0 1a2aaecfd6805382089e70ce1be9ef0b
+
+% 4 1 0 0316b74b8254d7bc06adf52ce0bc7b28
+
+% 6 1 0 1e66fbfe6671e0a118605f98decfd6f5
+
+% 7 1 0 0019d328ebfc030f14a297cc419a0cf2
+
+% 1 1 0 0cd6ad0389fbb9521b6ffdc608400ab8
+
+@ 0 2 0 0dbce5120a9af8e91c4b052f683be204
++   label Ele é lido como qualquer outra fonte
++   highlight read[Text]  não precisa de mais nada
+
+% 1 1 0 0f766da98a4bd2861eb6a340fffb7624
+
+% 2 1 0 061837a322bb9d301f7ea48b748e6fd8
+
+% 4 1 0 14d684521e934f4716d42d783a6315e5
+
+% 6 1 0 03ce755a61b2184f0ea1fbfaedbd977a
+
+% 7 1 0 023e19841ee46d1a1ff0aa9126b5fca1
+
+% 0 1 0 01be6a0dec5eebd200fa21c41cd00e73
+
+% 1 1 0 0a3a633cc44213cb0a91ab3a7c8b86b2
+
+% 1 1 0 136d267ff733a60e0f6246170d49df5f
+
+% 2 1 0 1525a46c87e9e0571e7d21b8e7c42b7a
+
+% 0 1 0 08a86cbdc9b8cb0109ed8ce5b435ce67
+
+% 1 1 0 0cd6459499a6bd5203d659b3bcc1b6aa
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 0 1 0 18501276ab031c430bca1c7148192e31
+
+% 1 1 0 1669caa2474d32d00d79035fd90ab4ef
+
+@ 0 3 0 1642f7b5037cec1219e83c576ec4feb3
++ [Tornando um valor legível ou gravável](../../soundness/modules/streams.md#making-a-value-readable-or-writable)
++ traz o lado do sink, e os [tipos infixos](../../philosophy/infix-types.md) as palavras de que esses
++ tipos são feitos.

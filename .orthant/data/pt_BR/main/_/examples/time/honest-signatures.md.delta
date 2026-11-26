@@ -1,0 +1,62 @@
+orthant 2 language
+
+@ 0 1 0 10631346c4452dcd0fa36170481eb117
++ # Hoje depende de onde, e de qual calendário
+
+@ 0 3 0 1189f7833e326f0d15be3877499ebbc3
++ A data atual não é um fato sobre a máquina. Ela precisa de um relógio, de um fuso horário em que ler
++ o relógio e de um calendário para nomear o dia, e `today()` pede os três. Um teste fornece um
++ relógio que fica parado.
+
+% 2 1 0 02c381eb2703589a0648903a0ac0a7ff
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 09e2d63050b732ae1c6063442d7c7d48
++   label Uma data, sem nada a partir de que calculá-la
+
+% 0 1 0 1477c34ff41c7c99183443e1d3238ae1
+
+% 1 1 0 0960c596329e4eb20a0b442aaa85c43a
+
+% 1 1 0 0acb4e472731814d1ed03bf99bc88610
+
+% 1 1 0 02f0608fbb89f9521c295dae4c6877a9
+
+@ 0 2 0 149367dc48c100c710c0196e4ce48407
++   label Um calendário, um fuso e um relógio
++   highlight Clock.fixed  primeiro de janeiro de 1970, sempre
+
+% 1 1 0 0399a58242eb6171076ce2457ff0cdc6
+
+% 0 1 0 12a34da530f63b0307d1d54b4e025377
+
+% 0 1 0 16443e9b06ad96ca1971a4a020cf197d
+
+% 0 1 0 1668f7732bc672ef1ff833734cbd7582
+
+% 1 1 0 0fa0db64ddde7ae3031a2604771cee6d
+
+% 1 1 0 0730a3d1c853022f179ed0bceea36999
+
+% 1 1 0 136d267ff733a60e0f6246170d49df5f
+
+% 2 1 0 1525a46c87e9e0571e7d21b8e7c42b7a
+
+% 0 1 0 08a86cbdc9b8cb0109ed8ce5b435ce67
+
+% 1 1 0 0cd6459499a6bd5203d659b3bcc1b6aa
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 0 1 0 1ffc216c123501de05bfcc61dc208228
+
+% 0 1 0 1a5240253db4581a100471df58bbf5c8
+
+% 1 1 0 0f49a59d9d99348119610dddb27813fc
+
+@ 0 2 0 05f717060cd6ba42100feb8db27a5a83
++ [Instantes](../../soundness/modules/time.md#instants) lista o que cada leitura do tempo precisa, e
++ [assinaturas honestas](../../philosophy/honest-signatures.md) por que isso é pedido.

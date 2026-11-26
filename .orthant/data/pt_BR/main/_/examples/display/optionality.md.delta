@@ -1,0 +1,65 @@
+orthant 2 language
+
+@ 0 1 0 0c0bc1f7ec46162b1e890059c810b954
++ # Um valor ausente, visto na saída de depuração
+
+@ 0 3 0 1d72ff9c88c3014e1a1e3e61ea8396f4
++ Um `Optional[Int]` que contém cinco é o número cinco, sem envoltório, então imprimi-lo de forma
++ ingênua não permitiria distingui-lo de um `Int`. `inspect` marca a diferença: um valor presente
++ fica entre colchetes de canto, e um ausente é um círculo.
+
+% 2 1 0 18b3973de9518bff0752f68f972a9b32
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 12b3296514b541f0142c9bb7e76c7e2c
++   label Três valores que parecem iguais
+
+% 1 1 0 0cd0a066d6064eb01c47e2ba45f45fdd
+
+% 2 1 0 1ac72ce03d6ab6300d3f0a8852d25368
+
+% 3 1 0 0c4157071aa3b04c147ff77a892d693a
+
+% 4 1 0 17b66b629d05cfa615b73b0bd8eb658c
+
+% 1 1 0 02ffea0ab362370a1de3931cbfb8a46d
+
+@ 0 2 0 17587f1878eeff86032c459204c34200
++   label Inspecionados, são distintos
++   highlight inspect  para um programador
+
+% 0 1 0 1accf43fe92797621dc8da9a374d03c3
+
+% 1 1 0 1f716f85da1e6d1c01604857372f260f
+
+% 2 1 0 1700efd9ceb352091cec6b600717b5e4
+
+% 3 1 0 06aab07bae42ebdd1ab69cbc2cae30e8
+
+% 4 1 0 1e0ccb10614f9e431db9294e7fd6e6e5
+
+% 0 1 0 197a1c91bfd4fdf30f4e0406e829cf03
+
+% 1 1 0 1071d62d375d477d1d9b987a5b75689a
+
+% 1 1 0 136d267ff733a60e0f6246170d49df5f
+
+% 2 1 0 1525a46c87e9e0571e7d21b8e7c42b7a
+
+% 0 1 0 08a86cbdc9b8cb0109ed8ce5b435ce67
+
+% 1 1 0 0cd6459499a6bd5203d659b3bcc1b6aa
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 0 1 0 0374394d693732b6172bbf5a0d8d2f8b
+
+% 1 1 0 0e4c932be9c412a605ae4f7b62a28b82
+
+@ 0 3 0 1e39dc02d745fd67030e1784934961aa
++ [A cadeia de alternativas](../../soundness/modules/display.md#the-fallback-chain) lista os
++ delimitadores que `inspect` usa, e [opcionalidade](../../philosophy/optionality.md) explica por
++ que não há envoltório a imprimir.

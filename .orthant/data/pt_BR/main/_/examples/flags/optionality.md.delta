@@ -1,0 +1,65 @@
+orthant 2 language
+
+@ 0 1 0 12a6e552ef53fcce118415b14693aa31
++ # O maior membro, se houver um
+
+@ 0 2 0 1849584a5ef6b3000b5b328c4cd1433a
++ Um conjunto vazio não tem maior membro. `last` sobre um `Bitset`, portanto, dá um ordinal
++ `Optional`, e o código que quer um número precisa dizer o que um conjunto vazio significa para ele.
+
+% 2 1 0 056fd0007cdabef9046774dacf11fb4b
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 1e7f9c3d7975867106c503559b203080
++   label Usado como se o conjunto tivesse membros
+
+% 0 1 0 1477c34ff41c7c99183443e1d3238ae1
+
+% 1 1 0 0960c596329e4eb20a0b442aaa85c43a
+
+% 0 1 0 034c389fc29dc27018d3800ec591431f
+
+% 1 1 0 0cab3f4b91b9e36011b14daca71deadc
+
+@ 0 2 0 1fd18ef968cf2227109314316ba4b935
++   label Transformado, se estiver lá
++   highlight let(_.n0)  aplicado apenas a um membro que existe
+
+% 1 1 0 1063e2d14c28520005c95efe6b76483e
+
+% 0 1 0 0158ecd6b95a806311292b39165e9e87
+
+% 1 1 0 090e13c7c4fff5d1150dafe789d7d8ff
+
+@ 0 2 0 1529887ea2a985a706e18522f78273db
++   label E substituído, se não estiver
++   highlight or(-1)  o que um conjunto vazio significa aqui
+
+% 1 1 0 170f1bf4c84cb2271b570368ab3e953f
+
+% 0 1 0 1d8c7069ff41bb531b40bae3db132fa3
+
+% 1 1 0 159bc66996d5355411a1aa9127f335e0
+
+% 1 1 0 136d267ff733a60e0f6246170d49df5f
+
+% 2 1 0 1525a46c87e9e0571e7d21b8e7c42b7a
+
+% 0 1 0 08a86cbdc9b8cb0109ed8ce5b435ce67
+
+% 1 1 0 0cd6459499a6bd5203d659b3bcc1b6aa
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 0 1 0 1691ef0977a9c1ef004d4ef15c0f7c8b
+
+% 0 1 0 16749080e2dcf2d31ac6c96ab31e669d
+
+% 1 1 0 182cc12c4895586a19c25d8fbb150796
+
+@ 0 2 0 0611090f9c96ac6d12e608b74d62e880
++ [Conjuntos de inteiros](../../soundness/modules/flags.md#sets-of-integers) traz as outras operações,
++ e [opcionalidade](../../philosophy/optionality.md) explica `let` e `or`.

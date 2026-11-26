@@ -1,0 +1,62 @@
+orthant 2 language
+
+@ 0 1 0 0c916b61e74a5a1f19bd556257c259ff
++ # Um subcomando é um padrão
+
+@ 0 3 0 068389b46ed2ace61204a9fb5576384b
++ Um `Subcommand` é declarado uma vez, com a descrição que a ajuda e os completamentos mostram. O
++ mesmo valor é um extrator, então o programa escolhe o que fazer casando os seus argumentos com os
++ comandos que declarou.
+
+% 0 1 0 12705ff5e291290d17fbc8389d59ef4a
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 1cf6c57c5d460d820281d35d20d13c09
++   label Dois subcomandos
+
+% 1 1 0 02e58caa6a47711e1708a55cb33536cc
+
+% 2 1 0 04df32c15b18cd7006958c1dda84fc62
+
+% 3 1 0 1b7e3eab787f78e303937cb650b75ed7
+
+% 4 1 0 1224db63af4a65aa1ca211a52cc41070
+
+% 5 1 0 069dd86dd6631cd912a013a5f01fab5f
+
+% 1 1 0 17cd4732ff506f2c0a2a99eda39a1d82
+
+@ 0 2 0 1972db024e32a91605a01d6ffbbef429
++   label Os argumentos, casados com eles
++   highlight Rehearse()  casa com o argumento `rehearse`
+
+% 1 1 0 0538e5dc56408003028e518e465dca95
+
+% 2 1 0 0e24d5a459bfba7111d33f836ddd6dae
+
+% 3 1 0 0e3d01d2a2e25f3c15bf3053187a452a
+
+% 4 1 0 0a962b41d74a3ca217ed47d6a2d30ebe
+
+% 5 1 0 171fdd73003fb0cc02b3cc0d33b31c8f
+
+% 0 1 0 0af93f0b6d9b913b1771c9e7a430be76
+
+% 0 1 0 0fdc8129bb44091518883861c5fd576f
+
+% 0 1 0 0c9fb4cba2f998a21c9d00775acf810f
+
+% 0 1 0 098f763aedf5e204167467b17bc8e4da
+
+% 0 1 0 11d47767930b5ca51f8a2f4d4c02483f
+
+% 0 1 0 18eafb32caed3dd50f976e787bd035ca
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 2 0 0b3f3928cfeda94f01056cd9622a3194
++ O exemplo é compilado, e não é executado, já que é um programa inteiro.
++ [Subcomandos](../../soundness/modules/cli.md#subcommands) descreve o aninhamento e os grupos.

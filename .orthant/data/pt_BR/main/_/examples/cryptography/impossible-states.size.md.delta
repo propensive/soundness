@@ -1,0 +1,46 @@
+orthant 2 language
+
+@ 0 1 0 04a6eaa6c0def5a9004734624a5f1547
++ # Só os tamanhos de chave que uma cifra tem
+
+@ 0 3 0 03b898a926264c2319656dd76fb7372e
++ O AES-GCM tem chaves de 128 e 256 bits. O tamanho é um número no tipo da chave, então uma chave de
++ um tamanho que a cifra não define não pode ser gerada, e nenhuma verificação disso é feita enquanto
++ o programa roda.
+
+% 0 1 0 12705ff5e291290d17fbc8389d59ef4a
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 2 0 09980a8fb4a4388b188061249bce24c6
++   label Uma chave de 256 bits
++   highlight AesGcm[256]  um tamanho que a cifra define
+
+% 1 1 0 12220c7d14133dd60d596720172a9b38
+
+% 2 1 0 0f4bff1744cc86110d9c1c028ceb3d0d
+
+% 0 1 0 1911a982b8a0a8ec15e7a8dfc18b265f
+
+% 1 1 0 19f85bcde772d8fa13b6a1c19db04da0
+
+@ 0 1 0 0b37102d1c370b1a02cd21db504fb0ab
++   label Uma chave de 200 bits
+
+% 0 1 0 1477c34ff41c7c99183443e1d3238ae1
+
+% 1 1 0 0960c596329e4eb20a0b442aaa85c43a
+
+% 2 1 0 10f81f0f06b7bd5c1cccb6a85bfbda61
+
+% 0 1 0 09795ffc691b0eb71efd29c50d578c56
+
+% 0 1 0 18eafb32caed3dd50f976e787bd035ca
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 2 0 1564af5a92b8b6761dc51bd2887acf36
++ [Algoritmos fracos](../../soundness/modules/cryptography.md#weak-algorithms) lista os tamanhos de
++ todas as cifras.

@@ -1,0 +1,76 @@
+orthant 2 language
+
+@ 0 1 0 179c7e5f93ddb31b09673184c5f78e9c
++ # Uma diferença é um valor
+
+@ 0 2 0 0ad53547973197270a6f717869ded552
++ `diff` não altera nenhuma das sequências. Ele dá um `Diff`, que é um valor como qualquer outro: pode
++ ser guardado, enviado a outro lugar e aplicado mais tarde ao original para dar a revisão.
+
+% 2 1 0 0ea644499e5e38840bab22f23a127927
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 140042d1f78fde7205e4708917667905
++   label Dois elencos
+
+% 1 1 0 144a458c196e4dbc0823f0cb09be89af
+
+% 2 1 0 15f941a8a660e7cf030ff4361fd9ce9c
+
+% 3 1 0 1f8f0e1a703d3c361850d7ad4709c5f7
+
+% 1 1 0 135774597bb028440daf052393ec817c
+
+@ 0 2 0 0d68f0f19d78705f07dd31f44a26bff3
++   label A diferença entre eles
++   highlight diff  nenhuma das listas é alterada
+
+% 1 1 0 11a4ff56d775518d039b7ce678456564
+
+% 2 1 0 1662f895c67b9dc11363f1ff87e2b65c
+
+% 3 1 0 11cab91aedc1958203e29ac2b3d8ffb2
+
+% 5 1 0 1bf346a0c23ab3580eee690663c0b452
+
+% 1 1 0 157336afeec308a919a01b36d40d11f9
+
+@ 0 2 0 0d68ecb41575711700fdc4278a3aef40
++   label Aplicada à primeira, dá a segunda
++   highlight succession.patch(before)  uma nova sequência
+
+% 1 1 0 189ecc1fb181a01f1a983c8acb9e7a35
+
+% 2 1 0 000ccf38c6ce1916090ebdc7bf958e92
+
+% 3 1 0 15437e4a4e12400e15009bd392fcba13
+
+% 5 1 0 1f36dcf6664b4de912aef7524a61c7b3
+
+% 0 1 0 15a09b74c2cfca58081080aa9c89ee39
+
+% 1 1 0 1d91580c162820e80fd63056a707c9fb
+
+% 1 1 0 136d267ff733a60e0f6246170d49df5f
+
+% 2 1 0 1525a46c87e9e0571e7d21b8e7c42b7a
+
+% 0 1 0 08a86cbdc9b8cb0109ed8ce5b435ce67
+
+% 1 1 0 0cd6459499a6bd5203d659b3bcc1b6aa
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 0 1 0 01e087694313ae110eb384ca8d8f881b
+
+% 0 1 0 0df28b02c38adbe506b3cb3de0a5818b
+
+% 1 1 0 09c5bd41d5769ff20ed40c08cf034bc2
+
+@ 0 2 0 0b4b76f3e22a4a2a08880eb752395c95
++ A lista original continua como estava. [Aplicando um
++ patch](../../soundness/modules/diffing.md#applying-a-patch) traz mais, e
++ [imutabilidade](../../philosophy/immutability.md) os motivos.

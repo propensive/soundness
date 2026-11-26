@@ -1,0 +1,51 @@
+orthant 2 language
+
+@ 0 1 0 058791b3e4c7713d00957e1df17ef243
++ # Um cabeçalho recebe o tipo que carrega
+
+@ 0 2 0 0020a882342557f114b89879766f2a10
++ Um cabeçalho de requisição é um argumento nomeado de `fetch`, e o seu tipo é o que aquele
++ cabeçalho contém. O cabeçalho `Accept` recebe um tipo de mídia, que é ele próprio verificado, e
++ não qualquer texto.
+
+% 0 1 0 12705ff5e291290d17fbc8389d59ef4a
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 1be4d88621c6495e022912ed136fe2ca
++   label Texto onde cabe um tipo de mídia
+
+% 0 1 0 1477c34ff41c7c99183443e1d3238ae1
+
+% 1 1 0 0960c596329e4eb20a0b442aaa85c43a
+
+% 2 1 0 065d8a6aead73fe01ef2164ad39f8752
+
+% 3 1 0 04665def975916a218756943f47e7fd4
+
+% 0 1 0 19e8998c582f2d4f175263b1afd1e429
+
+% 1 1 0 1e8e80f5a7407f520a45b44da7776154
+
+@ 0 1 0 0b0ba5de8a0d753d1dade30048895fab
++   label Um tipo de mídia
+
+% 0 1 0 127237ad59b261860c73e70d8f51628f
+
+% 1 1 0 187c44981b81e66e0fd84650553ed4b2
+
+% 2 1 0 1f6f43484258240d066f7bf4c2664599
+
+% 3 1 0 1972832ab8d6013601aa27cb2b9e7201
+
+% 0 1 0 0216f5f69ec24d8d1d4593c0635f3d53
+
+% 0 1 0 18eafb32caed3dd50f976e787bd035ca
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 2 0 071818bfc378cb750195c5badd6f9a75
++ Os [cabeçalhos de requisição](../../soundness/modules/http-client.md) são descritos com o restante
++ de uma requisição.

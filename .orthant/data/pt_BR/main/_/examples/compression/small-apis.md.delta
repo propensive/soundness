@@ -1,0 +1,93 @@
+orthant 2 language
+
+@ 0 1 0 1d6e2ac9b094e21109038090875c978d
++ # O formato é um tipo
+
+@ 0 2 0 1e2d2075c4b5ede80f4bb138fc04fd0d
++ Nenhum codec é construído, alimentado e finalizado. `compress` e `decompress` são métodos sobre
++ os dados, e o formato é o tipo que eles recebem.
+
+% 2 1 0 05bdc32278022f40037079705e0da552
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+% 0 1 0 0920ed0590f989be1031abfe188c4ce4
+
+@ 0 1 0 0748d6940e715e5e0e92ecee0ecdcbed
++   highlight compress[Gzip]  o formato, como um tipo
+
+% 1 1 0 0a60d3165a4f694c190de4c4e17109b0
+
+% 2 1 0 0b5a3aa86c0c860a1cdb8e0ae32ff2fa
+
+% 4 1 0 03c3cc3a45f2a4a6052ad654131615cc
+
+% 5 1 0 00969e9b8aedf9fc1458b4caaa523b98
+
+% 6 1 0 0e6881a9e5be25c61ce9e1879c6f3896
+
+% 1 1 0 1ea97ec05307593c1c31147cc4328102
+
+@ 0 2 0 04b5e6ff6452c98609e4db034ad986bb
++   label DEFLATE bruto, sem o enquadramento
++   highlight compress[Deflate]  outro tipo, o mesmo método
+
+% 1 1 0 14c5e771d64317e210256d0943f24da6
+
+% 2 1 0 032fec2761635ae512a0e66de18042f3
+
+% 4 1 0 021b341821a8383f173c274e9d8d6c17
+
+% 5 1 0 080a89501f1405d310fc465b3687eb65
+
+% 6 1 0 058a1dd5bb5a530c18b082610bfc8d3f
+
+% 7 1 0 01fb7075699a1bd2019dbe06b4fa1f02
+
+% 1 1 0 0c171aecaa03964805bd946fab54e96b
+
+@ 0 2 0 06568447ae121bf61b2499aea28b974f
++   label E de volta
++   highlight decompress[Deflate]  e o seu inverso
+
+% 1 1 0 0bd59b04d178bcb610196c5ec0476790
+
+% 2 1 0 07583ab6e53ee0cd1c75c6995aade910
+
+% 4 1 0 04ed31405bb6f39e1bdb7340e9aecd06
+
+% 5 1 0 130912896c4b120c10e3aac03d913d43
+
+% 6 1 0 13f26deaa879a909107db48235dfe5df
+
+% 7 1 0 19b8c24e10e60a7a167c0ab6cdb38870
+
+% 0 1 0 061d4fbd1f136edf095c081dac69e62f
+
+% 1 1 0 00e150303a27d5ff19c1c514b3589693
+
+% 1 1 0 136d267ff733a60e0f6246170d49df5f
+
+% 2 1 0 1525a46c87e9e0571e7d21b8e7c42b7a
+
+% 0 1 0 08a86cbdc9b8cb0109ed8ce5b435ce67
+
+% 1 1 0 0cd6459499a6bd5203d659b3bcc1b6aa
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 0 1 0 1229ddcec678f16d127096f74d224cb0
+
+% 0 1 0 11f355a479e719381462ca37ce0806f0
+
+% 0 1 0 1b3cddb32006df9416fbf10de4cc8917
+
+% 0 1 0 0f525c5fd2fe9e4316cb2a01cbd4eee8
+
+% 1 1 0 1c578bddfc3043920b9b03e36a7c887b
+
+@ 0 2 0 033ea8d2dc8e013a118ba9ec4c8ed466
++ [Os formatos](../../soundness/modules/compression.md#the-formats) lista todos os sete, e
++ [APIs pequenas](../../philosophy/small-apis.md) diz por que eles compartilham dois nomes.

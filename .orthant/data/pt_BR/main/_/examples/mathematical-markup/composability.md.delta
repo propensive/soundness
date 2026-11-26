@@ -1,0 +1,65 @@
+orthant 2 language
+
+@ 0 1 0 1dd1ddbc566cffe1169a7fdc72d2cabd
++ # Uma grandeza composta como matemática
+
+@ 0 2 0 067a9a1da057bb3a19d678616c5545da
++ Um valor substituído em uma expressão Ergo se torna uma parte da árvore. Um número é um número da
++ fórmula, e uma grandeza traz consigo as suas unidades, compostas como a matemática que elas são.
+
+% 2 1 0 11a6f6cfb3313fec1df2997b17e62058
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 064d4aeb07cd49f30f4ba53188f64bf2
++   label Uma fórmula de símbolos
+
+% 1 1 0 1e13c02a124f991c00f7a8fe467de11d
+
+% 0 1 0 11ecfd497476625e1977167c138094c2
+
+% 1 1 0 02c84870772028c3051ec5c61bdfb9e5
+
+@ 0 2 0 1da9908b93e0f89019bbfb30601de53b
++   label Um número nela
++   highlight $radius  um `Int`, composto como um número
+
+% 1 1 0 192bdb86c731069109bb1e656d639a45
+
+% 0 1 0 0d5200067c4d53771f7acbf073a847b2
+
+% 0 1 0 151b1dc0ff7ffa7d1eb8eed84ce4edc8
+
+% 1 1 0 02081a3ae8419cbc10955b756cc83109
+
+@ 0 2 0 102028ab54eb4e1400f384f48c3e95d3
++   label Uma grandeza
++   highlight $surface  uma grandeza, composta com as suas unidades
+
+% 1 1 0 0fd976a4acf8d31b08264d8758f37e50
+
+% 0 1 0 145a1d47c354ed51037ced20aef205d7
+
+% 0 1 0 0355d746da6ae7331194916f324b2c71
+
+% 1 1 0 1cd7c9acab38f24906887cc3635e10e1
+
+% 1 1 0 136d267ff733a60e0f6246170d49df5f
+
+% 2 1 0 1525a46c87e9e0571e7d21b8e7c42b7a
+
+% 0 1 0 08a86cbdc9b8cb0109ed8ce5b435ce67
+
+% 1 1 0 0cd6459499a6bd5203d659b3bcc1b6aa
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 0 1 0 10867f9fa47f75841727895b335d23a3
+
+% 1 1 0 0646d421633a8d101c026b008a5a08a1
+
+@ 0 3 0 1f22c8c2c57f41e117e86acfab10e3d4
++ [A árvore MathML](../../soundness/modules/mathematical-markup.md#the-mathml-tree) descreve o que
++ é escrito, e [grandezas](../../soundness/modules/quantities.md) o valor que foi substituído.

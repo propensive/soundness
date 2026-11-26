@@ -1,0 +1,51 @@
+orthant 2 language
+
+@ 0 1 0 1a3a4d10b1d4448e14dbf0df2361fba9
++ # Um tipo que cresce a cada tradução
+
+@ 0 2 0 0e4cfa04b9b48295000f4bd106f409e5
++ Cada idioma é um valor que embrulha uma tradução, e `|` une dois deles. O tipo do resultado é
++ calculado a partir dos seus operandos: ele lista os idiomas fornecidos até então.
+
+% 0 1 0 12705ff5e291290d17fbc8389d59ef4a
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 034a87fcacabcbb11fbf277ba429b0af
++   label Inglês
+
+% 1 1 0 1f1e5cd7f687cf630a76ba524a728011
+
+% 0 1 0 00db9693b8f056e80c35de24ee6ab042
+
+% 1 1 0 0e77ae7426bf65de102cf088c161bdb0
+
+@ 0 2 0 02b49f0a1aa602b905729caf96acb145
++   label E francês
++   highlight fr(t"Adieu")  acrescenta fr ao tipo
+
+% 1 1 0 04d6af46f315e7871440a2c7a59a65a4
+
+% 0 1 0 0d7c8db661830f2e021417a67644f3f0
+
+% 1 1 0 1beddb21df7690f7196dc0da52ee6883
+
+@ 0 2 0 157196e05f22cfb01f0f4fab0690dae3
++   label E alemão
++   highlight de(t"Lebewohl")  acrescenta de ao tipo
+
+% 1 1 0 1eb86e482467933105b1e85599f1de4a
+
+% 0 1 0 0603fdfa294dfd8a152d4bd9c44200d9
+
+% 0 1 0 0427f7f671fa4af9071d75dee71f4aee
+
+% 0 1 0 18eafb32caed3dd50f976e787bd035ca
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 2 0 15c58e9a26680b5619d23b225455a9da
++ [Fornecimento de traduções](../../soundness/modules/internationalization.md#providing-translations)
++ tem os idiomas.

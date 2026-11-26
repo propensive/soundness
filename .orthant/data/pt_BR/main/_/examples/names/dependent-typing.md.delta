@@ -1,0 +1,60 @@
+orthant 2 language
+
+@ 0 1 0 1664e5feab8033b3057613e5e95b4e1b
++ # Um literal, válido em vários namespaces
+
+@ 0 3 0 1c361767a08672a9032a5f6ebcfa8391
++ O tipo de um literal `n"…"` é calculado a partir do seu texto: ele é um nome de cada plano no
++ escopo cujas regras o texto satisfaz. Um literal é ao mesmo tempo uma tag e um branch, e outro,
++ que contém uma barra, é só um branch.
+
+% 0 1 0 12705ff5e291290d17fbc8389d59ef4a
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 2 0 1919b47b3aef56280b91437abfe76d7d
++   label Um literal que satisfaz os dois conjuntos de regras
++   highlight Name[Tag..Branch]  um nome dos dois planos
+
+% 1 1 0 116e1f3f1e1ad5fe121eef217159745a
+
+% 2 1 0 1ba2ab63ec15f6360510ae5393c31cc9
+
+% 3 1 0 0735d241e1c6b1b119736136f1603772
+
+% 5 1 0 0f6ff73ff10b861619f5ee5e45367bc5
+
+% 6 1 0 0edf3f6240e772e41ce039a50024753e
+
+% 0 1 0 11c3816185614d1d102ad0cd0c9826c2
+
+% 1 1 0 154312a8f45114680c673c179a652190
+
+@ 0 1 0 0e9276477f643b180f8f18bf9775e2ff
++   label Um literal que satisfaz só um
+
+% 0 1 0 1477c34ff41c7c99183443e1d3238ae1
+
+% 1 1 0 0960c596329e4eb20a0b442aaa85c43a
+
+% 2 1 0 0e2cb3e0424ca734006dc040ff40c19c
+
+% 3 1 0 0b3b441a1f98b253118b18174981650c
+
+% 5 1 0 005515c8750ffe630eba1d94c59cde4b
+
+% 6 1 0 07850199e88260df18f7e768f58b4510
+
+% 0 1 0 13d331ab8d7f6a1111bc944658e34d6b
+
+% 0 1 0 1343f2322dd0b96e1385909bcdaa9d54
+
+% 0 1 0 18eafb32caed3dd50f976e787bd035ca
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 2 0 05285e1c623ce149025b8e84495f248a
++ [Devolvendo um tipo preciso](../../soundness/modules/interpolation.md#returning-a-precise-type)
++ explica como um interpolador calcula o seu tipo de resultado.

@@ -1,0 +1,56 @@
+orthant 2 language
+
+@ 0 1 0 02cc024380d20bee1d6424f92496fb37
++ # O que acontece com dados da forma errada
+
+@ 0 2 0 165fc3652e2007481d7d8b17cbfa3b84
++ O decodificador de um `Pojo` não decide o que uma incompatibilidade provoca. Quem escolhe é o
++ código que recebe os dados, e o mesmo `as[Player]` serve a cada escolha.
+
+% 0 1 0 12705ff5e291290d17fbc8389d59ef4a
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+@ 0 2 0 179f76911411248a19f93411997fdbcc
++ alternative Um valor ausente
++   highlight safely  uma incompatibilidade é Unset
+
+% 1 1 0 0a3e3e36084bcbcd04d78547da0d574d
+
+% 2 1 0 0907dffbe59c7ee10d56ec1e42218ded
+
+% 0 1 0 05fa60b0258c34471605df350a941237
+
+@ 0 2 0 069425bb3d58eb8100609812b2be2151
++ alternative Um substituto
++   highlight recover  uma incompatibilidade é substituída
+
+% 1 1 0 16e48e2e99790bc9171fbadd09dfff3f
+
+% 2 1 0 1f8fe683ba4e2f0807603e31cf7a52af
+
+% 0 1 0 12994423f7835fbb0aae871d22c9f950
+
+% 0 1 0 1ffe5c415422113702a4a9b03386f84a
+
+% 0 1 0 1dc7663399f257100f5035153d73251d
+
+% 0 1 0 14e86fe4eb282e38034b5b627251bb3a
+
+@ 0 2 0 083045fa79f303ed0416dbd2f0be5db5
++ alternative A decisão de quem chama
++   highlight raises..Pojo.Error  uma incompatibilidade fica a cargo de quem chama
+
+% 1 1 0 00408b870aaf6e560a4d98380d7b83f2
+
+% 2 1 0 10bd9b28089a10bb0e2cce49cc7b3c84
+
+% 0 1 0 1db9e3b50769954f037c1abb14941579
+
+% 0 1 0 18eafb32caed3dd50f976e787bd035ca
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 1 0 141297c64ab1e5b51e58f1abefcf418d
++ [Escolhendo uma estratégia](../../soundness/modules/errors.md#choosing-a-strategy) traz o
++ conjunto completo.

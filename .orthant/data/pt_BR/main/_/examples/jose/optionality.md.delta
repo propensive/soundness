@@ -1,0 +1,79 @@
+orthant 2 language
+
+@ 0 1 0 05f24c9f8f8af9241d37fa0cde68b739
++ # Uma claim que não foi feita
+
+@ 0 3 0 044fa5445750e05c16aa2cb8472b29fb
++ Nenhuma das claims registradas de um token é obrigatória, então cada uma é um `Optional`. Um
++ token que não nomeia nenhum sujeito tem um ausente, e o código que cumprimenta o seu portador
++ precisa dizer como chamar um estranho.
+
+% 2 1 0 0f9188f22fdc3a2a1d550b9c907a1d79
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 114fa1d27ed1905f1d173abe087c44fb
++   label O sujeito, usado como se estivesse lá
+
+% 0 1 0 1477c34ff41c7c99183443e1d3238ae1
+
+% 1 1 0 0960c596329e4eb20a0b442aaa85c43a
+
+% 2 1 0 058ff1ab4bd16fb508adf559c39e04f5
+
+% 3 1 0 016ebb41de88906d10ae2b7461c8297c
+
+% 4 1 0 16ed7d8452f024681314e40719d3abf8
+
+% 5 1 0 0dbea2561a09321d0a4c9765d4ee62a7
+
+% 7 1 0 1b7c587a2d60fe820c4595eb8b596694
+
+% 8 1 0 01504f74a9c434821592446ff121e450
+
+% 0 1 0 1edb39fb6b023c060db13c14208c9617
+
+% 1 1 0 0fb55987adca79fa1b2521cafc8e8133
+
+@ 0 1 0 1f47655a31d26be202fdf9bbb0ea770c
++   label O sujeito, ou um estranho
+
+% 0 1 0 10f7a0051bd482ab13d6de725d789d36
+
+% 1 1 0 0858a17215eeca780d67ab5e55b67755
+
+% 2 1 0 029a2d53f3e5bbc21fc2c9279d8919c8
+
+% 3 1 0 0340801e3e8693371386fc4cfc25cced
+
+% 4 1 0 19f839c7f90c75ce01c32b8b07c95824
+
+% 5 1 0 0ea89827d1976afd14c8d7dd6b3ad59c
+
+% 7 1 0 09c740b92b2c00ba150ed46cf0ea6a22
+
+% 8 1 0 1995042173585ca40607ee06df047a16
+
+% 0 1 0 16ebeafc96e254fc048648fcd4710beb
+
+% 1 1 0 0406b8e4d73542431944e112fcf9bda0
+
+% 1 1 0 136d267ff733a60e0f6246170d49df5f
+
+% 2 1 0 1525a46c87e9e0571e7d21b8e7c42b7a
+
+% 0 1 0 08a86cbdc9b8cb0109ed8ce5b435ce67
+
+% 1 1 0 0cd6459499a6bd5203d659b3bcc1b6aa
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 0 1 0 1c4461de375b71af171c54ac456f3753
+
+% 1 1 0 1e9e17179bd90f8416b84b8bdddfaefc
+
+@ 0 2 0 1d27a42d0a5c697d0b9091f0f3320fdb
++ [Tokens](../../soundness/modules/jose.md#tokens) lista as claims, e
++ [opcionalidade](../../philosophy/optionality.md) explica `or`.

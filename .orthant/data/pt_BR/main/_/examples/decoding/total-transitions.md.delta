@@ -1,0 +1,50 @@
+orthant 2 language
+
+@ 0 1 0 1c7ea9b5c4c3a77209312ccdf9e06fd7
++ # Um número que pode não caber
+
+@ 0 3 0 08450f4f769b493b064b586bec50e13b
++ Todo `Byte` é um `Int`, e só alguns `Int`s são `Byte`s. Estreitar, portanto, não é um método que
++ trunca, mas um padrão que recusa: `As[Byte]` casa com os valores que cabem, e o código diz o que
++ acontece com o resto.
+
+% 2 1 0 1eb76c2d66b9fd821e8a717e7bb44416
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 0 1 0 14aab7f0be2434f81421fb69d99543da
+
+@ 0 2 0 0986ff72fb894618085af1bb80fe2c27
++   label Estreitamento, com o outro caso explícito
++   highlight As[Byte](byte)  casa só com um valor que cabe
+
+% 0 1 0 0feeb6ee26eddc7916a3c923ea9fa7b1
+
+% 0 1 0 11b692a377b556e60288592ced19ec0d
+
+% 0 1 0 0a10a96b80746a8b0268dbeb5312ba5b
+
+% 0 1 0 1ab777edb3aaa09a1a13ce6caf7fed9f
+
+% 1 1 0 1aed7c53e0d272da096dc1689d6b51a3
+
+% 1 1 0 136d267ff733a60e0f6246170d49df5f
+
+% 2 1 0 1525a46c87e9e0571e7d21b8e7c42b7a
+
+% 0 1 0 08a86cbdc9b8cb0109ed8ce5b435ce67
+
+% 1 1 0 0cd6459499a6bd5203d659b3bcc1b6aa
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 0 1 0 1c21f63fca32ea7f0785c19553a3e257
+
+% 0 1 0 0c5e1be4d084ce1d1e1b66f002c78798
+
+% 1 1 0 125439782faa868c1521d592e3ae481e
+
+@ 0 3 0 1683b4a99aa40454091b88f7b9476ba6
++ [Estreitamento e alargamento](../../soundness/modules/decoding.md#narrowing-and-widening) traz a
++ regra, e [transições totais](../../philosophy/total-transitions.md) o motivo: 300 nunca se torna
++ 44.

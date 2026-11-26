@@ -1,0 +1,72 @@
+orthant 2 language
+
+@ 0 1 0 1cafef16e80d97bc026a450ce8c1f6e2
++ # Por que um texto não é uma versão
+
+@ 0 3 0 16e01936dce7a5e21084d748b54178be
++ Quando um texto não é uma versão semântica, o `Semver.Error` levantado contém o motivo como um valor
++ de uma enumeração. O código que trata o erro casa com o motivo, e não tem nenhuma mensagem em que
++ procurar.
+
+% 2 1 0 0ef50af80d699cce042e1740e0098297
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 176307d9ad878b460b85d28ffce7f26c
++   label Qualquer falha
+
+% 1 1 0 14c42ba77d7bac5c19eae06ac5e7bf76
+
+% 2 1 0 1a79a614e5902371172fafec78765110
+
+% 3 1 0 169339cc051dad620ab3107166196cdc
+
+% 0 1 0 04860281f5bc59a31c05c33318f734fc
+
+% 1 1 0 0f74343fbf90310f0adb6aa93db661a4
+
+% 1 1 0 03678ed0b13b5d741baf36c6b616afdc
+
+@ 0 2 0 1e52f4a4813a2650065fb5fe05aa2786
++   label Uma falha em particular
++   highlight Semver.Error.Reason.LeadingZero  um caso de uma enumeração
+
+% 1 1 0 1e7f9dd19efe9cda019911540d98feeb
+
+% 2 1 0 10d0fe5d87e30ee917394d2915efe456
+
+% 3 1 0 05129db0b28bc0f4086a1a1cd67af648
+
+% 0 1 0 08479c4e6b8e6ac902aed3688dc82a68
+
+% 0 1 0 1aa7218a028a0c261183cff94f4ca567
+
+% 0 1 0 11b56aeec5f36cdc1aff1d6686184768
+
+% 1 1 0 0813c3e28b49e0221b655c5d73d69ffa
+
+% 1 1 0 07a7d212be0466511724a9d55851a1cc
+
+% 1 1 0 136d267ff733a60e0f6246170d49df5f
+
+% 2 1 0 1525a46c87e9e0571e7d21b8e7c42b7a
+
+% 0 1 0 08a86cbdc9b8cb0109ed8ce5b435ce67
+
+% 1 1 0 0cd6459499a6bd5203d659b3bcc1b6aa
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 0 1 0 08e8b7d19044cc970db80670f2829aad
+
+% 0 1 0 1a0318637054b0811ed1768b96db64b2
+
+% 0 1 0 01b676c878432f6a026111ee0569d294
+
+% 1 1 0 07b5101ef2de762206273e9300c998fc
+
+@ 0 2 0 1a2d63664cb2d5911890ec64ada52595
++ [Versões](../../soundness/modules/versioning.md#versions) mostra o erro como uma mensagem, e [erros
++ expressivos](../../philosophy/expressive-errors.md) por que ele também é um dado.

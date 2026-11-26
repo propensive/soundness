@@ -1,0 +1,55 @@
+orthant 2 language
+
+@ 0 1 0 044418bdb03728f515e5a24453b76820
++ # Um documento que pode não ter título
+
+@ 0 3 0 1190208c70d9d14c014446b16eeabaf6
++ O dicionário de informações de um PDF muitas vezes está incompleto, e às vezes falta. Cada um
++ dos seus campos é um valor opcional, então um título não pode ser mostrado sem dizer o que é
++ mostrado quando não há nenhum.
+
+% 0 1 0 12705ff5e291290d17fbc8389d59ef4a
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 020e6aeaee2741a41f3cafb408ff0b60
++   label Um título, usado como se todo documento tivesse um
+
+% 0 1 0 1477c34ff41c7c99183443e1d3238ae1
+
+% 1 1 0 0960c596329e4eb20a0b442aaa85c43a
+
+% 2 1 0 0cc52ffb340720f6110bab5a8f866deb
+
+% 4 1 0 0d9a89f95d02b3dd1f0db17646606737
+
+% 5 1 0 02552850f5e2144a1b6df580ac406c08
+
+% 0 1 0 1167bc07ba14b97304f19819b9f6fc40
+
+% 1 1 0 0c19a1e4773e9fb5069d83769483aaa7
+
+@ 0 2 0 045b6f739fe405ea11705fbacc5fba84
++   label O autor no seu lugar, e uma palavra para nenhum dos dois
++   highlight or(pdf.info.author).or(t"Anonymous")  cada ausência é respondida por vez
+
+% 1 1 0 1aa0946a8421b0c710391bf82966199b
+
+% 2 1 0 17f21c3fa6ae115e11c844becd9d3e39
+
+% 4 1 0 18d2d0bea8bdd7bf09ff787b012aa953
+
+% 5 1 0 1e55e676d25c90f31eb6f57374327bbb
+
+% 0 1 0 0e8224c37d772e1517f403546044e362
+
+% 0 1 0 18eafb32caed3dd50f976e787bd035ca
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 3 0 02f15c83ae7ed1a410280933202d3075
++ O exemplo é compilado, e não é executado, já que lê um arquivo.
++ [Metadados, navegação e anexos](../../soundness/modules/pdf.md#metadata-navigation-and-attachments)
++ descreve o que é lido, e a [opcionalidade](../../philosophy/optionality.md) descreve `or`.

@@ -1,0 +1,71 @@
+orthant 2 language
+
+@ 0 1 0 037c62063a37f8220354780be990eecb
++ # Um barramento que transporta um só tipo de mensagem
+
+@ 0 3 0 143f5f0dc3b2b430040b6c1178500d59
++ As invocações de um daemon conversam entre si por um barramento, e o tipo das suas mensagens é o
++ argumento de tipo de `cli`. Toda invocação é compilada contra esse tipo, então uma mensagem que as
++ outras não entenderiam não pode ser enviada.
+
+% 0 1 0 12705ff5e291290d17fbc8389d59ef4a
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 105809badb0d699700358f5c2f04544c
++   label Uma mensagem do tipo errado
+
+% 0 1 0 1477c34ff41c7c99183443e1d3238ae1
+
+% 1 1 0 0960c596329e4eb20a0b442aaa85c43a
+
+% 2 1 0 06146a7cb839787311fcc206fe9c9160
+
+% 3 1 0 08c1ef044b8ee57b0d649e3e69365c01
+
+% 5 1 0 19ef635b974c54701db9a2a166e0b70b
+
+% 6 1 0 1ad728621c46c64406f1f849791ebe19
+
+% 8 1 0 1908dcf5e5a8a27c1ecc9dfd36669884
+
+% 9 1 0 181ac185e6632ba809ef979f89e68118
+
+% 0 1 0 0bb67e5dabb9053a1a6fef2e91a908ad
+
+% 1 1 0 02b5f6f98775e30000955958aa45cd23
+
+% 1 1 0 15c02c11820acf4a073d29a79539fc62
+
+@ 0 2 0 00d57b584131073b0feef44c69131117
++   label Um aviso
++   highlight Notice.CurtainUp  o tipo que todas as invocações combinaram
+
+% 1 1 0 155fe2a029ef546e031d57f4d957596c
+
+% 2 1 0 12dabb8e831da3921d1fe0bb2098185b
+
+% 3 1 0 1063be5d48045e560976aa75fe9ca695
+
+% 5 1 0 1d97b7328f3d5e75051b0f0befb21761
+
+% 6 1 0 02b88ab7a6ebe02b1ff609099b5209a5
+
+% 8 1 0 1d2af4ccecac4bf81e7f8781a69b91e0
+
+% 9 1 0 1a7c5048157de9be0269a4afd3dfecc9
+
+% 0 1 0 0da5191890b5c6e817dd3ac535f225c4
+
+% 1 1 0 043e539b9ef657cc069b16e162fc30fe
+
+% 0 1 0 18eafb32caed3dd50f976e787bd035ca
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 3 0 1b99fb076d15e2da1804cd2b6cc3c43b
++ O exemplo é compilado, e não é executado, já que define um programa inteiro. [O barramento de
++ mensagens](../../soundness/modules/daemons.md#the-message-bus) mostra o outro lado, que observa as
++ mensagens como um fluxo.

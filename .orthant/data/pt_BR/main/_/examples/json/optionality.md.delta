@@ -1,0 +1,55 @@
+orthant 2 language
+
+@ 0 1 0 17c3fae302ef74aa014c69901b6e183a
++ # Um campo que pode não estar lá
+
+@ 0 2 0 09b1b60d301b55ce1012e2b7dab3b467
++ Um campo do tipo `Optional[Text]` pode estar ausente do JSON. Um valor opcional não é um `Text`, e
++ não pode ser usado como um até que o código diga o que a ausência significa.
+
+% 0 1 0 12705ff5e291290d17fbc8389d59ef4a
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 01d3c754504de736118d437ae409fccf
++   label Um valor opcional usado como se estivesse presente
+
+% 0 1 0 1477c34ff41c7c99183443e1d3238ae1
+
+% 1 1 0 0960c596329e4eb20a0b442aaa85c43a
+
+% 2 1 0 1598806e90815720164697f999b13576
+
+% 4 1 0 07ec22e3221780e412e6e5e0f46ce610
+
+% 6 1 0 0dd45a18d60486df1d66a34b94fd5f7f
+
+% 0 1 0 1a5acbd8dc9af02815cbc5e0668bc501
+
+% 1 1 0 1c52459eace3f0e313b287a352cbc090
+
+@ 0 1 0 0e5bf20af54b22b00401deea145e0888
++   label Uma alternativa, para quando está ausente
+
+% 0 1 0 138667fa32928d9314a5e2dc8ce2421e
+
+% 1 1 0 1c995a2a57413b9b01c7152e79cb6f47
+
+% 2 1 0 05f67817d15153d014d582983d6812fd
+
+% 4 1 0 0525393e2effd93e13044ed99de6e8b4
+
+% 6 1 0 19489323d4e9f1480874e135d5708ab3
+
+% 0 1 0 183bbd905eefef0c077ed46f62326d10
+
+% 0 1 0 18eafb32caed3dd50f976e787bd035ca
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 3 0 13e487cf33d95be715abe097ef4564bb
++ [Campos opcionais e valores padrão](../../soundness/modules/json.md#optional-fields-and-defaults)
++ traz as políticas para `null`, e [opcionalidade](../../philosophy/optionality.md) os argumentos
++ contra `Option`.

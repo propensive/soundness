@@ -1,0 +1,71 @@
+orthant 2 language
+
+@ 0 1 0 11f63e8d5f7f428908125b8f94da49cb
++ # Um ajuste dá uma nova cor
+
+@ 0 3 0 1c7df57e9d8edafb1f49f8ed9f932c21
++ Uma cor é um valor, e clareá-la ou reduzir a sua saturação dá outra. A cor que foi ajustada fica
++ como estava, então uma paleta pode ser derivada de uma cor sem que se guarde uma cópia dela.
+
+% 2 1 0 0aa01163f09bfc701a9f765a1cb93c5b
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 1 0 055192c3536973a60835b541bdd7c2d3
++   label Uma cor
+
+% 1 1 0 1dc97147a5a1f89a01457ad93b57906c
+
+% 2 1 0 0c3014665d7d2b6c0421dca0da724895
+
+% 1 1 0 0e8a94d1ebbcc59c090be71b6c36a3b5
+
+@ 0 2 0 1b4fd8f9bdfd14bb147a60f7e111b02f
++   label Uma mais pálida
++   highlight lighten(0.5)  a meio caminho do branco
+
+% 1 1 0 1a30b5668103f2631f06fde8d489531c
+
+% 2 1 0 01b24c439719560114dda9b4b562db14
+
+% 3 1 0 03efcc08772de8e809919bea02312463
+
+% 1 1 0 134467fe06d658fc0df8e7420e4dcece
+
+@ 0 2 0 0178bac52643716d13eadfa623f2ddf1
++   label Uma mais escura, a partir da mesma cor
++   highlight tomato.darken(0.5)  tomato não mudou
+
+% 1 1 0 168026b610f1d42a0c7e9ab07fa7b4f2
+
+% 2 1 0 07e977d4107624651be6b744631268f9
+
+% 3 1 0 100b0f7d88f133900ec7b6d81fa3291b
+
+% 0 1 0 0e24f0f3208db4e80825970267a636ca
+
+% 1 1 0 109aac16c98aae6108463929444492a8
+
+% 1 1 0 136d267ff733a60e0f6246170d49df5f
+
+% 2 1 0 1525a46c87e9e0571e7d21b8e7c42b7a
+
+% 0 1 0 08a86cbdc9b8cb0109ed8ce5b435ce67
+
+% 1 1 0 0cd6459499a6bd5203d659b3bcc1b6aa
+
+% 0 1 0 149f2cfa079b858f01f357afe0e54643
+
+% 0 1 0 0642f1be87566a6707ef29b6e6fbd570
+
+% 0 1 0 1b6492bee5f8833a0c4682e90278a949
+
+% 0 1 0 043a8018887e75721dbe058ed3678e96
+
+% 1 1 0 09e2cf15a2ce8f6f122f2128c715b310
+
+@ 0 2 0 05cc26a19674583601ebbd52f3305a39
++ [Ajustes](../../soundness/modules/colors.md#adjusting) tem os outros ajustes, e
++ [imutabilidade](../../philosophy/immutability.md) o princípio.

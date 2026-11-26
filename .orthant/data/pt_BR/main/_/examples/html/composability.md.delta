@@ -1,0 +1,54 @@
+orthant 2 language
+
+@ 0 1 0 06b41ccaa893c40a1e978d9bd8e4a4ad
++ # Uma lista que sabe onde deve ficar
+
+@ 0 3 0 1d00700e51809d080d0dd5f19e52139e
++ Qualquer tipo pode ficar onde se espera HTML, desde que diga em que tipo de conteúdo se transforma.
++ Uma lista de nomes que é renderizada como itens de lista pode ser colocada em um `<ul>`, e em nenhum
++ lugar onde itens não podem ir.
+
+% 0 1 0 12705ff5e291290d17fbc8389d59ef4a
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 1 1 0 1fd89d0a41d68ae00a7c626c69803bc1
+
+@ 0 2 0 0ace18942514dddb04425188461287d1
++   label Nomes, renderizados como itens de lista
++   highlight Renderable..li"  o conteúdo em que este tipo se transforma
+
+% 1 1 0 18a28160d7b2c54313a4aac0189e73fd
+
+% 2 1 0 1eaaedf40bfd195502ca96a57e0fa945
+
+% 4 1 0 1d7e368fbd15fd8c054b71c777c4150d
+
+% 5 1 0 0b3fa3ed8068e71513d5603c4ecea9fe
+
+% 0 1 0 11a8e437f373e6d01f1599c36f3ae4c1
+
+% 1 1 0 05bcfa94fea527fc10a33c4409946a5f
+
+@ 0 1 0 093ae07c961f322812b14d59b7462f83
++   label Os mesmos nomes, onde itens não podem ir
+
+% 0 1 0 1477c34ff41c7c99183443e1d3238ae1
+
+% 1 1 0 0960c596329e4eb20a0b442aaa85c43a
+
+% 2 1 0 1556ad06aba8bec61b9a1d90b3fb5989
+
+% 4 1 0 0c9a9d283bea3d9f017cff081d897677
+
+% 5 1 0 17bb4de79a6c0b7a12dbdd61d6004794
+
+% 0 1 0 0f7db6ac3ab8502503afed7a14fe0cc6
+
+% 0 1 0 18eafb32caed3dd50f976e787bd035ca
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 2 0 00fe94943885595515c7d2c95c9c30f9
++ [Renderizando outros tipos como HTML](../../soundness/modules/html.md#rendering-other-types-as-html)
++ descreve a classe de tipos.
