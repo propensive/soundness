@@ -1,0 +1,15 @@
+orthant 2 language
+
+@ 0 5 0 0d4f4931c47703b11e29c2bafddc171f
++ 这一保证覆盖的是类型所记录的内容，而有一种类型什么也不记录。
++ `Chain` 是类型为纯的惰性列表，因此在代码块内用 `map` 或 `filter`、以一个使用该代码块能力的函数构建的链，会不经检查地离开代码块，并在外部被求值时失败。
++ 应在代码块内用 `to[List]` 对这样的链求值，或者使用 `Iterator`，它的类型确实带有其函数所捕获的内容。
+
+@ 0 2 0 1f6ffc39339e52f60f90fade551667c4
++ 因此 `Stream` 是一个*独占*能力，已被消费的流不能再次使用：
+
+% 0 2 0 1dbf2fb40583a738049151ad26c7fe0a
+
+@ 0 5 0 074e6701385a5d4e1590a315e9ffdefc
++ 为流起第二个名字本身并不是错误；在其中一个名字消费了流之后，再通过任一名字使用它才是错误。
++ 检查是在使用流的代码中进行的，因此这段代码要同时启用 `scala.language.experimental.captureChecking` 和 `scala.language.experimental.separationChecking`；只启用前者时，第二个 `memoize` 可以通过编译。

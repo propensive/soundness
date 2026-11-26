@@ -1,0 +1,21 @@
+orthant 2 language
+
+@ 0 5 0 0d4f4931c47703b11e29c2bafddc171f
++ La garantie couvre ce que le type consigne, et un type ne consigne rien. Un `Chain` est une liste
++ paresseuse dont le type est pur, si bien qu'une chaîne construite dans un bloc par `map` ou
++ `filter`, avec une fonction qui utilise la capacité du bloc, quitte le bloc sans contrôle, et
++ échoue lorsqu'elle est forcée à l'extérieur. Forcez une telle chaîne dans le bloc, avec
++ `to[List]`, ou utilisez un `Iterator`, dont le type porte bien ce que ses fonctions capturent.
+
+@ 0 2 0 1f6ffc39339e52f60f90fade551667c4
++ Un `Stream` est donc une capacité *exclusive*, et celui qui a été consommé ne peut plus être
++ utilisé :
+
+% 0 2 0 1dbf2fb40583a738049151ad26c7fe0a
+
+@ 0 5 0 074e6701385a5d4e1590a315e9ffdefc
++ Un second nom pour le flux n'est pas en soi une erreur ; utiliser le flux par l'un ou l'autre nom
++ après que l'un l'a consommé en est une. Le contrôle se fait dans le code qui utilise le flux, si
++ bien que ce code active à la fois `scala.language.experimental.captureChecking` et
++ `scala.language.experimental.separationChecking` ; avec le premier seul, le second `memoize`
++ compile.

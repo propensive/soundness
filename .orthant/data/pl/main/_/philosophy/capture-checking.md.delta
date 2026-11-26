@@ -1,0 +1,21 @@
+orthant 2 language
+
+@ 0 5 0 0d4f4931c47703b11e29c2bafddc171f
++ Gwarancja obejmuje to, co zapisuje typ, a jeden typ nie zapisuje niczego. `Chain` jest leniwą
++ listą, której typ jest czysty, więc łańcuch zbudowany wewnątrz bloku przez `map` lub `filter`, z
++ funkcją używającą zdolności bloku, opuszcza blok bez sprawdzenia i zawodzi, gdy zostanie wymuszony
++ na zewnątrz. Taki łańcuch należy wymusić wewnątrz bloku, przez `to[List]`, albo użyć `Iterator`,
++ którego typ niesie to, co przechwytują jego funkcje.
+
+@ 0 2 0 1f6ffc39339e52f60f90fade551667c4
++ `Stream` jest więc zdolnością *na wyłączność*, a tego, który został skonsumowany, nie można użyć
++ ponownie:
+
+% 0 2 0 1dbf2fb40583a738049151ad26c7fe0a
+
+@ 0 5 0 074e6701385a5d4e1590a315e9ffdefc
++ Druga nazwa strumienia sama w sobie nie jest błędem; błędem jest użycie strumienia przez
++ którąkolwiek z nazw po tym, jak jedna go skonsumowała. Sprawdzenie odbywa się w kodzie, który
++ używa strumienia, więc ten kod włącza zarówno `scala.language.experimental.captureChecking`, jak i
++ `scala.language.experimental.separationChecking`; z samym pierwszym drugie `memoize` się
++ kompiluje.

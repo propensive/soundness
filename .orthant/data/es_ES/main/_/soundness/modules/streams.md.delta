@@ -1,0 +1,18 @@
+orthant 2 language
+
+@ 0 8 0 0e1d7bd5116b163c0167d6a37913e98f
++ El diseño tiene un requisito. Una ventana pertenece a un consumidor, así que un flujo no debe
++ leerse dos veces ni compartirse. Esto se comprueba, no solo se documenta. Un flujo es una
++ [capacidad] exclusiva, y las bibliotecas de flujos se compilan con la [comprobación de capturas y
++ de separación](../../philosophy/capture-checking.md) activada. Volver a usar un flujo después de
++ haberlo consumido, o dejar que uno escape del ámbito al que pertenece su fuente, es un error de
++ compilación en el código que activa ambas comprobaciones. Donde de verdad se quiere reproducir,
++ `memoize` vacía el flujo una vez en un valor [inmutable], que después se puede compartir
++ libremente. Ese es el sustituto explícito y acotado de la caché implícita de una lista perezosa.
+
+@ 0 5 0 12ca85145116b4c61780eb29f34a75ef
++ Un `mark` registra un punto al que volver, o desde el que copiar. `grab` da todo lo que hay entre
++ dos marcadores como un único valor, aunque se extienda sobre los bloques en que se suministró la
++ fuente. Solo se puede tomar un marcador, leer desde él con `grab` y volver a él dentro de `hold`,
++ que mantiene la región marcada en el búfer hasta que termina el bloque. Fuera de `hold`, el cursor
++ puede descartar lo que ya ha pasado:

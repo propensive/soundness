@@ -1,0 +1,23 @@
+orthant 2 language
+
+@ 0 5 0 0d4f4931c47703b11e29c2bafddc171f
++ Die Garantie deckt ab, was der Typ festhält, und ein Typ hält nichts fest. Eine `Chain` ist eine
++ lazy Liste, deren Typ rein ist, sodass eine Chain, die innerhalb eines Blocks mit `map` oder
++ `filter` und einer Funktion gebaut wird, die die Capability des Blocks benutzt, den Block
++ ungeprüft verlässt und scheitert, wenn sie außerhalb ausgewertet wird. Eine solche Chain wird
++ innerhalb des Blocks mit `to[List]` ausgewertet, oder man nimmt einen `Iterator`, dessen Typ sehr
++ wohl trägt, was seine Funktionen erfassen.
+
+@ 0 2 0 1f6ffc39339e52f60f90fade551667c4
++ Daher ist ein `Stream` eine *exklusive* Capability, und einer, der verbraucht wurde, kann nicht
++ noch einmal benutzt werden:
+
+% 0 2 0 1dbf2fb40583a738049151ad26c7fe0a
+
+@ 0 5 0 074e6701385a5d4e1590a315e9ffdefc
++ Ein zweiter Name für den Stream ist für sich genommen kein Fehler; den Stream über einen der
++ beiden Namen zu benutzen, nachdem einer ihn verbraucht hat, ist einer. Geprüft wird in dem Code,
++ der den Stream benutzt, daher aktiviert dieser Code sowohl
++ `scala.language.experimental.captureChecking` als auch
++ `scala.language.experimental.separationChecking`; mit dem ersten allein kompiliert das zweite
++ `memoize`.

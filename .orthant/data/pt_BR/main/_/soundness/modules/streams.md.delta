@@ -1,0 +1,18 @@
+orthant 2 language
+
+@ 0 8 0 0e1d7bd5116b163c0167d6a37913e98f
++ O design tem um requisito. Uma janela pertence a um consumidor, de modo que um stream não pode ser
++ lido duas vezes, nem compartilhado. Isso é verificado, e não apenas documentado. Um stream é uma
++ [capability] exclusiva, e as bibliotecas de streaming são compiladas com a [verificação de
++ capturas e de separação](../../philosophy/capture-checking.md) ativada. Usar um stream de novo
++ depois de consumido, ou deixar que um escape do escopo que é dono da sua origem, é um erro de
++ compilação no código que ativa as duas verificações. Onde a reprodução é realmente desejada,
++ `memoize` esgota o stream uma vez em um valor [imutável], que pode então ser compartilhado
++ livremente. Essa é a substituta explícita e limitada do cache implícito de uma lista preguiçosa.
+
+@ 0 5 0 12ca85145116b4c61780eb29f34a75ef
++ Uma `mark` registra um ponto ao qual voltar, ou a partir do qual copiar. `grab` dá tudo o que está
++ entre duas marcas como um único valor, mesmo quando ele atravessa os blocos em que a origem foi
++ fornecida. Uma marca só pode ser tomada, lida com `grab` e retomada dentro de `hold`, que mantém a
++ região marcada no buffer até o fim do bloco. Fora de `hold`, o cursor está livre para descartar o
++ que já passou:

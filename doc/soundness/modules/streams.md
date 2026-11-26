@@ -52,10 +52,9 @@ twice, or shared. This is checked, and not merely documented. A stream is an exc
 [capability], and the streaming libraries are compiled with
 [capture and separation checking](../../philosophy/capture-checking.md) enabled. Using a
 stream again after it has been consumed, or letting one escape the scope which owns its source,
-is a compile error in code which enables both checks. Where
-replay really is wanted, `memoize` drains the stream once into an [immutable] value, which may
-then be shared freely. That is the explicit, bounded replacement for a lazy list's implicit
-caching.
+is a compile error in code which enables both checks. Where replay really is wanted, `memoize`
+drains the stream once into an [immutable] value, which may then be shared freely. That is the
+explicit, bounded replacement for a lazy list's implicit caching.
 
 Everything comes from the `soundness` package. An encoding and a decoding of characters are in
 scope, for the boundary between text and bytes, and the last two imports let the samples print
@@ -244,7 +243,8 @@ Out.println(cursor.position.inspect)
 A `mark` records a point to return to, or to copy from. `grab` gives everything between two
 marks as one value, even where it straddles the blocks which the source was supplied in. A
 mark may be taken, grabbed from and returned to only within `hold`, which keeps the marked
-region in the buffer until the block ends. Outside `hold`, the cursor is free to discard what it has already passed:
+region in the buffer until the block ends. Outside `hold`, the cursor is free to discard what
+it has already passed:
 
 ```scala fuel
 run
