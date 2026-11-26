@@ -306,6 +306,99 @@ refuses while `doc/` differs from the store.
   checkout <values> --force` discards whatever is not checked in.
 - **After a release is tagged**, `orthant sync` takes the tag up as a value. Everything checked
   in at `main` becomes that release's, and `main` starts again beneath it. Commit the change to
-  `.orthant/config.tel`.
+  `.orthant/config.tel` and the records it moved in `.orthant/data/`. The next section says why
+  this cannot wait.
 
 `orthant <command> --help` describes each command.
+
+## Keeping the store up to date
+
+Two things go out of date if nobody looks: the releases, and the translations. Each has a check.
+
+**The releases.** `orthant sync` makes a release of whatever is stored at `main` *when it is
+run*, not of what was there when the tag was made. Run after other documentation has been
+stored, it puts that later text into the release as well. So the sync is the first change after
+a release: on a branch from the tagged commit, before any branch which changes `doc/` is merged.
+`etc/check-doc-store.py`, which `make docs` runs (and so `make build` and `make attest`), fails
+while a release tag which `HEAD` contains is not a value of the `release` axis.
+
+**The translations.** `orthant tag` says what it leaves to translate, and nothing fails on it: the
+English shows where a line has no translation. The work is small when it is done with the change
+which made it, and that is the rule: a change to `doc/` brings its translations with it, in the
+same pull request.
+
+```
+orthant grid                  # every language at every release
+make translations             # fails unless every cell of the grid is done
+orthant todo fr --checkout    # the first point with work, in the view which shows it
+```
+
+In an indirect view, finish each run before checking in. A `?` line left directly above a `-`
+and `+` pair is read with the pair, as one English run of two lines whose translation is the one
+`+` line: the first line is then left out of the translation. A line which reads the same in
+both languages is a pair of its own, as above.
+
+## A release which was not synced
+
+If a release was tagged and documentation was stored at `main` before `orthant sync` was run,
+the sync can no longer be used: it would give the release everything stored since. (Nor can the
+release's text be restored afterwards with `checkin --only release`, which leaves the
+translations of every later line behind.) The release is added beneath `main` instead, empty,
+and its text is stored into it. This is how 0.78.0 and 0.79.0 were made.
+
+1. Add the value by hand to the `release` axis in `.orthant/config.tel`, between the last release
+   and `main`, and make it `main`'s parent. Its name is the first twelve digits of the tag's
+   commit:
+
+   ```
+   value
+     name 167580e9fc1e
+     parent 9f0bb13ad599
+     label 0.78.0
+     commit 167580e9fc1e51bc762eab19e53f912f2e4d01b7
+   ```
+
+   Nothing has changed yet: the release reads as the one above it, and `main` as before.
+   `orthant sync` now reports nothing new.
+
+2. Get the documentation as it was released, from the store of the tagged commit, in English and
+   in each language:
+
+   ```
+   git worktree add /tmp/at-0.78.0 0.78.0
+   (cd /tmp/at-0.78.0 && orthant export /tmp/0.78.0/en en main && orthant export /tmp/0.78.0/fr fr main)
+   ```
+
+3. Store the English at the release. The edit reaches `main` only where `main` has not changed
+   the same lines, so store `doc/` again afterwards, and check both:
+
+   ```
+   orthant checkout en 0.78.0
+   rsync -a --delete /tmp/0.78.0/en/ .orthant/work/tree/
+   orthant checkin --remove
+   orthant tag
+   orthant export /tmp/check en 0.78.0 && diff -r /tmp/check /tmp/0.78.0/en
+   ```
+
+4. Store each translation at the release from its plain documents, in a direct view. Lines which
+   are the same in both languages cannot be given a translation there, and are paired in the
+   indirect view afterwards. The passages left marked stale are those whose English changed at
+   this release: where the release's own translation was complete, they are right as stored, and
+   are confirmed.
+
+   ```
+   orthant checkout fr 0.78.0 --direct
+   rsync -a /tmp/0.78.0/fr/ .orthant/work/tree/
+   orthant checkin
+   orthant checkout fr 0.78.0 --indirect     # pair the `?` lines which are code, and check in
+   orthant confirm <path>…
+   ```
+
+5. With several releases to add, add all the values first, then do steps 2 to 4 for each, the
+   oldest first. Finish with `orthant grid`, `orthant check`, and an export of each language at
+   `main` compared with one made before the work began.
+
+The English at `main` is then marked stale wherever a release above it now differs. It is the
+live tree's, which `orthant checkout` refuses, so `orthant confirm` cannot reach it: until
+Orthant can, take the line `live doc` out of `.orthant/config.tel`, check out `en main`, confirm,
+and put the line back.

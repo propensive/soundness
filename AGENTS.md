@@ -77,7 +77,18 @@ store's working tree, `.orthant/work/tree/`, which git ignores.
   not stored with `orthant tag` is caught there.
 - `orthant todo fr main` shows what has yet to be translated, and the translations of text that
   has since changed.
+- **A change to `doc/` brings its translations with it.** `orthant tag` reports the lines it
+  leaves to translate and the passages it leaves stale in each language, and nothing fails on
+  them, which is how nine languages each fell 1,600 lines behind. Before a PR that changes the
+  documentation is opened, translate what the change left (`orthant todo <language> --checkout`,
+  then `orthant checkin`), confirm the passages an English edit left right (`orthant confirm
+  <path>`), and run `make translations`, which fails unless every language is complete at every
+  release. If the translations really must follow later, the PR body says so, with the output of
+  `orthant grid`.
 - Do not run `orthant tag <name>`: a release here is a git tag, which `orthant sync` takes up.
+- `make docs` first runs `etc/check-doc-store.py`, which fails while a release tag that `HEAD`
+  contains has no value on the `release` axis: run `orthant sync` (see "Releasing") before
+  anything else is stored.
 
 An edit stored at a point is seen at every point below it (later releases, and the
 translations and dialects of its language) which has not changed the same lines. Each kind of
@@ -229,9 +240,16 @@ version its notes name. The tag fires
 `.github/workflows/release.yml`, which runs the shared `release.sh` in propensive/.github.
 Never publish by hand, and never create a release or upload an asset with `gh`.
 
-After the release is published, run `orthant sync` and commit the change to
-`.orthant/config.tel`: it adds the tag as a value of the `release` axis, makes everything
-checked in at `main` that release's, and starts `main` again beneath it.
+After the release is published, run `orthant sync` and commit the change to `.orthant/`: it
+adds the tag as a value of the `release` axis, makes everything checked in at `main` that
+release's, and starts `main` again beneath it. **This is the first change after a release, and
+is merged before any PR that changes `doc/`**: the sync snapshots what is stored at `main` when
+it runs, not what was there at the tag, so documentation stored in between is taken into the
+release. Make it on a branch from the tagged commit; it touches only `.orthant/`, which is
+outside the CI input set, so it needs no new build to be attested. Until it is merged, `make
+docs` — and so `make build` and `make attest` — fails on any commit that contains the tag
+(`etc/check-doc-store.py`). If documentation was stored first all the same, do not sync: "A
+release which was not synced" in `.orthant/readme.md` has the recipe.
 
 It gates before anything is published: the tag must be signed and verified by GitHub; CI must
 *already* be green on that exact commit — which is what verifies the attestation note, so the

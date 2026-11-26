@@ -66,6 +66,13 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
   (`orthant export out/doc en main`) and which fails while `doc/` has edits that are not
   tagged; `make build`, `doccheck` and `plumbing` run it first. `.orthant/readme.md` and
   `AGENTS.md` have the details.
+- A change to `doc/` brings its translations with it: `orthant tag` lists the lines it leaves to
+  translate in each language, and they are translated in the same PR (`orthant todo <language>
+  --checkout`, `orthant checkin`), until `make translations` passes. Report the `orthant grid`
+  in the PR body if any is left.
+- After a release is tagged, `orthant sync` is the first change, before any other documentation
+  is stored: `make docs` fails (`etc/check-doc-store.py`) while a release tag has no snapshot in
+  the store.
 
 ## Tutorial examples
 
