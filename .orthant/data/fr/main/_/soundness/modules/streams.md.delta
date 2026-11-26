@@ -67,7 +67,15 @@ orthant 2 language
 +   imbriqués sur le thread du consommateur, sans synchronisation, jusqu'à ce qu'une étape passe
 +   explicitement sur un autre thread.
 
-@ 0 8 0 19d4cf43ebbf886b123cefc661d18f0f
+! The design has one requirement. A window belongs to one consumer, so a stream must not be read
+! twice, or shared. This is checked, and not merely documented. A stream is an exclusive
+! [capability], and the streaming libraries are compiled with
+! [capture and separation checking](../../philosophy/capture-checking.md) enabled. Aliasing a
+! stream, or letting one escape the scope which owns its source, is a compile error. Where
+! replay really is wanted, `memoize` drains the stream once into an [immutable] value, which may
+! then be shared freely. That is the explicit, bounded replacement for a lazy list's implicit
+! caching.
+@ 0 9 0 0ae7b2a823163b651a9d95ecca5f9642
 + La conception a une exigence. Une fenêtre appartient à un seul consommateur, si bien qu'un
 + flux ne doit pas être lu deux fois, ni partagé. Cela est vérifié, et pas seulement documenté.
 + Un flux est une [capacité] exclusive, et les bibliothèques de flux sont compilées avec le
@@ -351,18 +359,22 @@ orthant 2 language
 
 % 1 1 0 073323edc30661660acf5b5f529b225b
 
-@ 0 4 0 1cb530a2cc6ad9bf10c8aaf23271f456
+! A `mark` records a point to return to, or to copy from. `grab` gives everything between two
+! marks as one value, even where it straddles the blocks which the source was supplied in. A
+! mark may be taken only within `hold`, which keeps the marked region in the buffer until the
+! block ends. Outside `hold`, the cursor is free to discard what it has already passed:
+@ 0 4 0 0f2e401092f2aea10dead86c6c75d090
 + Un `mark` enregistre un point auquel revenir, ou à partir duquel copier. `grab` donne tout ce
 + qui se trouve entre deux marques sous forme d'une seule valeur, même lorsque cela chevauche
 + les blocs dans lesquels la source a été fournie. Une marque ne peut être prise qu'à
 + l'intérieur de `hold`, qui conserve la région marquée dans le tampon jusqu'à la fin du bloc.
 + Hors de `hold`, le curseur est libre de jeter ce qu'il a déjà dépassé :
 
-% 2 1 0 007d02399ed7daba0ac2143a8023335c
+% 2 1 0 0e818d9edecb998a17d693036a56105f
 
-% 3 1 0 00fefe0deae79020169d3340f23aebc5
+% 3 1 0 15b0d66d2321b806011a8a30f36aec21
 
-% 4 1 0 078659d81ba16ee600d8409286de0ca6
+% 4 1 0 17bb6b659eb54dcb1cb3748dbac269fe
 
 % 0 1 0 080a480f667ceb671de4a7f7a9b12b12
 
