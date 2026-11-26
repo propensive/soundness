@@ -1,0 +1,65 @@
+orthant 2 language
+
+@ 0 1 0 1dbec1f4e6bd94f10fa5639c6765ceae
++ # Один способ читать объявления трёх языков
+
+@ 0 3 0 013356a16672eb93087d952fd62152ab
++ Файл объявлений TypeScript, заголовок C и описание WIT для WebAssembly — каждый является авторитетом
++ в том, что существует в его мире. Каждый из них — `Interface` в своей собственной `Ecosystem`, а
++ вызовы, проверяемые по ним, записываются одинаково.
+
+% 0 1 0 12705ff5e291290d17fbc8389d59ef4a
+
+% 0 1 0 1a979ed47beed0ac17e21ce8357554bb
+
+% 0 1 0 1e095b0c1d2cb7ca140bc6ac26838d78
+
+@ 0 1 0 1534385fbd0385a40ff0cd52aba11c13
++   highlight Typescript  interface Play с greet(name: string): string
+
+% 1 1 0 070710328380449f1f1a2f5b10d4d14a
+
+% 0 1 0 1c5158e5bb1a0caf0b0313f3012435bb
+
+% 0 1 0 0ee011d6de3f545418ffc584b7d7167c
+
+% 0 1 0 19441f6b0b6d784219f5e5616db4115e
+
+% 0 1 0 0d8dc3fa8745d2ec0d19a3eeba670183
+
+@ 0 1 0 1235ab43542988aa0de1299172e62188
++ alternative Заголовок C
+
+% 0 1 0 0dcc5630b3562b42188fc398d14bb6ec
+
+% 1 1 0 1163f37c71371a8815e093f3119353d3
+
+% 0 1 0 1ec6ad87ff3f2c57067f801ec8403c22
+
+% 0 1 0 1ff4c16423b2001d1b913f21157ae8ec
+
+% 0 1 0 124060cd8b3b88e41cfe1f369455a920
+
+% 0 1 0 15424e78e6005c4b16bd3ab52e27293c
+
+% 0 1 0 1a344d2f4e922ba617ae8f733a3f79e3
+
+% 0 1 0 0a81ce222fa87e03055e30624535c928
+
+% 1 1 0 1e17f8c37eb3b6350d23bc096f0f79d1
+
+% 0 1 0 08ca3c0498fc800d051b4ffed13fbbeb
+
+% 0 1 0 1248c1cf6fc202db0a290a0c2dc28016
+
+% 0 1 0 1dd7da4ef5c4f3ae1ed2abfdec1c2419
+
+% 0 1 0 08683b7f3817ed031d2ac3ad098ffa26
+
+% 0 1 0 18eafb32caed3dd50f976e787bd035ca
+
+% 0 1 0 16b5f0a657fd18400373b503dafccd37
+
+@ 0 2 0 19a6a679f32b2f1a0f86b55d7434593a
++ [Загрузка интерфейса](../../soundness/modules/foreign-interop.md#loading-an-interface) перечисляет
++ диалекты, которые можно прочитать.
