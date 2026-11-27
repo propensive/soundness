@@ -195,7 +195,7 @@ private[hallucination] object WebpHuffmanEncoder:
         total -= 1
 
       // Reassign lengths shortest-code to most-frequent, longest to least-frequent.
-      val order = (0 until frequencies.length).sortBy(frequencies(_)).toArray
+      val order = frequencies.zipWithIndex.sortBy(_(0)).map(_(1))
       var current = limit
       var k = 0
 

@@ -91,7 +91,7 @@ object SumDerivation:
         val array = new scala.Array[result](valueOf[Tuple.Size[Variants]])
 
         choicesFold[derivation, Variants, Labels, Unit]((), 0): accumulator =>
-          [variant <: derivation] => context ?=> array(index) = lambda[variant](context)
+          [variant <: derivation] => context => array(index) = lambda[variant](context)
 
         // [closure-capture] filled by the fold's closure, then never written again
         Array.unsafeFrozen(array)

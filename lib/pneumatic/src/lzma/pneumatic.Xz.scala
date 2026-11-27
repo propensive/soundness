@@ -228,7 +228,13 @@ private[pneumatic] final class XzDecompressorEngine extends XzEngine:
             val produced = decompressor.produced
 
             if produced > 0 then
-              if checkSize > 0 then checker.absorb(decompressor.output, 0, produced)
+              // The checker and the decompressor are distinct fields of this engine, and the
+              // checker only reads the bytes.
+              // [aliased-read] decompressor's output read while the checker is updated
+              if checkSize > 0 then
+                caps.unsafe.unsafeAssumeSeparate:
+                  checker.absorb(decompressor.output, 0, produced)
+
               pending.append(decompressor.output, 0, produced)
               decompressor.resetOutput()
 
@@ -267,7 +273,13 @@ private[pneumatic] final class XzDecompressorEngine extends XzEngine:
         val produced = decompressor.produced
 
         if produced > 0 then
-          if checkSize > 0 then checker.absorb(decompressor.output, 0, produced)
+          // The checker and the decompressor are distinct fields of this engine, and the
+          // checker only reads the bytes.
+          // [aliased-read] decompressor's output read while the checker is updated
+          if checkSize > 0 then
+            caps.unsafe.unsafeAssumeSeparate:
+              checker.absorb(decompressor.output, 0, produced)
+
           pending.append(decompressor.output, 0, produced)
           decompressor.resetOutput()
 

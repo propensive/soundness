@@ -817,7 +817,7 @@ object internal:
   // member type itself, dealiased beneath its annotations as the pattern dealiases it.
   private def bindField[result](using Quotes)
     ( product: quotes.reflect.TypeRepr, field: quotes.reflect.Symbol )
-    ( lambda: [field] => Type[field] -> result )
+    ( lambda: [field] => Type[field] => result )
   :   result =
 
     import quotes.reflect.*
@@ -882,6 +882,22 @@ object internal:
     val resolved = productType(repr)
     if resolved.termSymbol.isNoSymbol then resolved.typeSymbol.name else resolved.termSymbol.name
 
+  // `function.apply[types]`, ready to be applied to the term arguments. Up to Scala 3.10.1 the
+  // `apply` of a polymorphic function type is a polymorphic *method* taking the term parameters;
+  // from 3.10.2 it is a polymorphic method returning a function value, whose own `apply` takes
+  // them. Either way the result of this method takes the term arguments directly.
+  private def polyApply(using Quotes)
+    ( function: quotes.reflect.Term, types: sci.List[quotes.reflect.TypeTree] )
+  :   quotes.reflect.Term =
+
+    import quotes.reflect.*
+
+    val typeApplied = TypeApply(Select.unique(function, "apply"), types)
+
+    typeApplied.tpe.widenTermRefByName match
+      case _: MethodType => typeApplied
+      case _             => Select.unique(typeApplied, "apply")
+
   // Applies the polymorphic-function `lambda` at type `field`, passing `value` as the value
   // argument and `contextArgs` as the trailing context-function arguments. The applications are
   // beta-reduced — substituting `field` and inlining the body with concrete types, exactly as the
@@ -896,7 +912,7 @@ object internal:
 
     def reduce(term: Term): Term = Term.betaReduce(term).getOrElse(term)
 
-    val typeApplied = TypeApply(Select.unique(lambda, "apply"), sci.List(TypeTree.of[field]))
+    val typeApplied = polyApply(lambda, sci.List(TypeTree.of[field]))
     val applied = reduce(Apply(typeApplied, sci.List(value.asTerm)))
 
     reduce(Apply(Select.unique(applied, "apply"), contextArgs.stdlib.map(_.asTerm)))
@@ -1023,16 +1039,14 @@ object internal:
 
     // `pure.apply[monadic](value)`
     def applyPure(monadic: TypeRepr, value: Term): Term =
-      Apply
-        ( TypeApply(Select.unique(pureTerm, "apply"), sci.List(TypeTree.of(using monadic.asType))),
-          sci.List(value) )
+      Apply(polyApply(pureTerm, sci.List(TypeTree.of(using monadic.asType))), sci.List(value))
 
     // `bind.apply[input, output](monad)(function)` — the poly `apply` is curried, so the function
     // argument is applied to the returned `Function1` via its own `apply`.
     def applyBind(input: TypeRepr, output: TypeRepr, monad: Term, function: Term): Term =
       val typed =
-        TypeApply
-          ( Select.unique(bindTerm, "apply"),
+        polyApply
+          ( bindTerm,
             sci.List(TypeTree.of(using input.asType), TypeTree.of(using output.asType)) )
 
       Apply(Select.unique(Apply(typed, sci.List(monad)), "apply"), sci.List(function))

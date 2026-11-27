@@ -351,7 +351,7 @@ object Array:
     def map[element2: scala.reflect.ClassTag](lambda: element => element2)
     :   Array[element2]^{} =
 
-      val result: Array[element2]^ = Array.allocate[element2](array.length)
+      val result: scala.Array[element2]^ = new scala.Array[element2](array.length)
       var index = 0
 
       while index < array.length do
