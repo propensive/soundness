@@ -62,3 +62,9 @@ object CaptureTests extends Suite("concurrency-capture", m"Task confinement test
       demilitarize:
         val answer: Int = supervise(async(6*7).await())
     . assert(_ == Nil)
+
+    // A collection may hold tasks, which capture their monitor (#2565).
+    test(m"tasks in a list can each be awaited"):
+      demilitarize:
+        val answers: List[Int] = supervise(List(async(6), async(7)).map(_.await()))
+    . assert(_ == Nil)
