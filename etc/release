@@ -28,6 +28,11 @@ probes     beneficence.plugin larceny.plugin rudiments.core rudiments.core.js ru
 # ones by their tags.
 migration  etc/migration
 
+# The documentation is released as a jar of what `fuel compile` writes (`release.docsOutput` in
+# build.mill), so the `fuel` pinned in etc/tools has to be on the path before `release.stage`
+# runs; the gates are the only commands which run before the build, and this one installs it.
+verify     ./etc/shared tools.sh
+
 # The trust boundary is the signed attestation note on refs/notes/ci-attestation, not the runner.
 verify     ./mill groupCheck.validate
 verify     ./etc/ci/verify-attest.sh
