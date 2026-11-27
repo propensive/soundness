@@ -336,7 +336,7 @@ extends RequestServable:
             // (memoised) blocks doesn't move the cursor, so the position delta
             // measures only what the drain itself reads.
             val drainStart = cursor.position.n0
-            val drain = bodyRef.asInstanceOf[Stream[Data] over Credit]
+            val drain: (Stream[Data] over Credit)^ = bodyRef.asInstanceOf[Stream[Data] over Credit]
             var intact = true
             var draining = true
 

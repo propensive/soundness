@@ -93,7 +93,8 @@ private[hallucination] object Quantization:
 
         if candidate == -1 then boxes += Array[Int]()
         else
-          val sorted = boxes(candidate).asInstanceOf[scala.Array[Int]].sortBy(channel(_, shift))
+          val shift0 = shift
+          val sorted = boxes(candidate).asInstanceOf[scala.Array[Int]].sortBy(channel(_, shift0))
 
           var total = 0L
 

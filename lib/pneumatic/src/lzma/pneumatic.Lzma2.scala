@@ -491,7 +491,7 @@ private[pneumatic] final class Lzma2Decompressor(dictSize: Int) extends caps.Mut
   private var outCount = 0
 
   // The decoded bytes, valid at indices `0 until produced`.
-  def output: scala.Array[Byte] = outBuffer
+  def output: scala.Array[Byte]^{this.rd} = outBuffer
   def produced: Int = outCount
   update def resetOutput(): Unit = outCount = 0
 
