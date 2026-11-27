@@ -4170,7 +4170,11 @@ object release extends Module:
         Task.Anon((module.jar(), module.pomSettings().organization, module.artifactId(),
                    module.publishVersion(), module.pom(), module.ivy())))()
 
-    jars.flatMap: (jar, group, artifactId, version, pom, ivy) =>
+    val documentation: Seq[PathRef] =
+      docsOutput().toSeq.flatMap: compiled =>
+        stageDocs(Task.dest, compiled.path, docsArtifact(), docsSettings())
+
+    documentation ++ jars.flatMap: (jar, group, artifactId, version, pom, ivy) =>
       val target = Task.dest / s"$artifactId-$version.jar"
       val prefix = s"META-INF/maven/$group/$artifactId"
       val descriptors = Seq(s"$prefix/pom.xml" -> pom.path, s"$prefix/ivy.xml" -> ivy.path)
@@ -4178,6 +4182,126 @@ object release extends Module:
       val metadata = Task.dest / s"$artifactId-$version.ivy.xml"
       os.write.over(metadata, stripDescriptor(os.read(ivy.path)))
       Seq(PathRef(target), PathRef(metadata))
+
+  // The documentation, compiled: `dev.propensive:soundness-docs`, a jar of data and no classes,
+  // which depends on nothing. It holds what `fuel compile` writes for the documents in `doc`
+  // (`output` in .pyrocosm/fuel/config.tel) — a manifest, `index.fuel`, and a record for every
+  // document and API page, each as BinTEL, with every fence already compiled and run — under
+  // `soundness/docs`, and beside them the files of data a section's documents are indexed by.
+  // A site which shows the documentation reads it from this jar, and compiles nothing.
+  //
+  // The records are of Pyrocosm's model, as the Fuel pinned in etc/tools has it: what reads
+  // the jar reads it with the Pyrocosm that Fuel was built against, which the manifest's
+  // record of Fuel's version decides.
+
+  // The jars the documentation's fences are compiled against, beyond the test assembly: those
+  // .pyrocosm/fuel/config.tel names as its `classpath`.
+  private val docsClasspath: Seq[JavaModule] = Seq(
+    ambience.wasi, aviation.wasi, capricious.wasi, coaxial.wasi, galilei.wasi, telekinesis.wasi,
+    turbulence.wasi, telekinesis.forms, breviloquence.http, caesura.http, locomotion.http,
+    eucalyptus.gcp, caduceus.resend, orthodoxy.server)
+
+  // What a compile of the documentation reads, besides those jars: the store, its live tree,
+  // Fuel's configuration and the fixtures of the fences.
+  def docsSources = Task.Sources(
+    mill.api.BuildCtx.workspaceRoot / ".orthant",
+    mill.api.BuildCtx.workspaceRoot / "doc",
+    mill.api.BuildCtx.workspaceRoot / ".pyrocosm" / "fuel",
+    mill.api.BuildCtx.workspaceRoot / "etc" / "fixtures")
+
+  // The files of data which go into the jar as they are, each beneath `soundness/docs`: the two
+  // lists the examples are chosen by.
+  private val docsData: Seq[(os.SubPath, os.SubPath)] = Seq(
+    os.sub / "doc" / "examples" / "themes.tel" -> os.sub / "examples" / "themes.tel",
+    os.sub / "doc" / "examples" / "topics.tel" -> os.sub / "examples" / "topics.tel")
+
+  // Compiles the documentation with the `fuel` command (FUEL names another), which `make tools`
+  // installs at the version pinned in etc/tools. Fuel keeps its output in `out/fuel`, outside
+  // this task's own directory, and compiles again only what has changed since it last ran. A
+  // fence which does not do as its preamble says fails the task, and so a release.
+  //
+  // With SOUNDNESS_SKIP_DOCS set, nothing is compiled and there is no documentation to stage:
+  // that is for a snapshot of the code alone (`make snapshot`), made while a document is at
+  // fault, or where there is no `fuel`. Nothing sets it for a release.
+  def docsSkipped = Task.Input(Task.env.contains("SOUNDNESS_SKIP_DOCS"))
+
+  def docsOutput: T[Option[PathRef]] = Task:
+    docsSources()
+    test.assembly()
+    Task.traverse(docsClasspath)(_.jar)()
+
+    if docsSkipped() then None else Some(compileDocs(Task.env.getOrElse("FUEL", "fuel")))
+
+  private def compileDocs(fuel: String): PathRef =
+    val root = mill.api.BuildCtx.workspaceRoot
+
+    val status =
+      try os.proc(fuel, "compile").call(cwd = root, check = false, stdout = os.Inherit, stderr = os.Inherit).exitCode
+      catch case error: java.io.IOException =>
+        throw new Exception(s"the `$fuel` command could not be run; `make tools` installs it", error)
+
+    if status != 0 then
+      throw new Exception(s"`$fuel compile` failed with status $status; the documentation is not released with a fault in it")
+
+    val output = root / "out" / "fuel"
+
+    if !os.exists(output / "index.fuel") then
+      throw new Exception("`fuel compile` wrote no manifest; is `output out/fuel` in .pyrocosm/fuel/config.tel?")
+
+    PathRef(output)
+
+  private def docsArtifact: Task[Artifact] = Task.Anon:
+    soundness.universal.artifactMetadata().copy(id = "soundness-docs")
+
+  private def docsSettings: Task[PomSettings] = Task.Anon:
+    soundness.universal.pomSettings().copy(description = "The documentation of Soundness, compiled")
+
+  // Writes the documentation's jar and its descriptor into `directory`, under the names a
+  // component's have. The records are named by the hash of their content, so they are put in
+  // the jar in the order of their names, and the same documentation makes the same jar.
+  private def stageDocs(directory: os.Path, compiled: os.Path, artifact: Artifact, settings: PomSettings)
+  :   Seq[PathRef] =
+    val Artifact(group, id, version) = artifact
+    val ivy: String = Ivy(artifact, Seq())
+    val pom: String = Pom(artifact, Seq(), id, settings, Map(), "jar", None)
+    val prefix = s"META-INF/maven/$group/$id"
+    val root = mill.api.BuildCtx.workspaceRoot
+    val target = directory / s"$id-$version.jar"
+    val output = new java.util.zip.ZipOutputStream(new java.io.FileOutputStream(target.toIO))
+
+    def put(name: String, content: Array[Byte]): Unit =
+      val entry = new java.util.zip.ZipEntry(name)
+      entry.setTime(0L)
+      output.putNextEntry(entry)
+      output.write(content)
+      output.closeEntry()
+
+    try
+      put("META-INF/MANIFEST.MF", "Manifest-Version: 1.0\r\n\r\n".getBytes("UTF-8"))
+      put(s"$prefix/pom.xml", pom.getBytes("UTF-8"))
+      put(s"$prefix/ivy.xml", ivy.getBytes("UTF-8"))
+      put("soundness/docs/index.fuel", os.read.bytes(compiled / "index.fuel"))
+
+      for record <- os.list(compiled / "objects").filter(_.ext == "fuel").sortBy(_.last) do
+        put(s"soundness/docs/objects/${record.last}", os.read.bytes(record))
+
+      for (source, name) <- docsData do put(s"soundness/docs/$name", os.read.bytes(root / source))
+    finally output.close()
+
+    val metadata = directory / s"$id-$version.ivy.xml"
+    os.write.over(metadata, stripDescriptor(ivy))
+    Seq(PathRef(target), PathRef(metadata))
+
+  // The documentation's jar alone, without a single component staged.
+  def docs: T[Seq[PathRef]] = Task:
+    docsOutput().toSeq.flatMap: compiled =>
+      stageDocs(Task.dest, compiled.path, docsArtifact(), docsSettings())
+
+  // The same from what `out/fuel` already holds, without compiling anything: for looking at the
+  // jar while the documentation is being written.
+  def docsUnchecked(): Command[Seq[PathRef]] = Task.Command:
+    val compiled = mill.api.BuildCtx.workspaceRoot / "out" / "fuel"
+    stageDocs(Task.dest, compiled, docsArtifact(), docsSettings())
 
 // A tiny Scala.js app whose `fastLinkJS` actually LINKS a representative slice of
 // the JS-capable modules, so the linker reports any reachable reference to a

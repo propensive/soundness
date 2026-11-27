@@ -56,6 +56,13 @@ Individual modules do not have coordinates of their own: Maven Central limits
 how many files a single deployment may contain, and Soundness has too many
 modules to publish each one separately.
 
+The documentation is released too, as `dev.propensive:soundness-docs:<version>`: a
+JAR of data, and no classes, which holds every document of the `doc` directory as
+[Fuel](https://github.com/propensive/fuel) compiled it, with its code already
+checked and run. A site which shows the documentation reads it from there. It is
+among the release's assets on GitHub, with the component JARs, and is not on
+Maven Central.
+
 Version numbers are synchronized across all bundles, and the latest release
 version is shown at the top of this page. Binary compatibility is not guaranteed
 between modules with different version numbers.
