@@ -54,13 +54,14 @@ object settings:
   // below like the tools, and resolved from its GitHub release by crux, which also forces every
   // `org.scala-lang` artifact to it: the flare plugin names the release it was built with, and
   // the fork stays TASTy-compatible across its patch releases.
-  val scalaVersion = "3.10.0-pro-1.2.0"
+  val scalaVersion = "3.11.0-54094c068ffa2602-pro-1.2.1"
 
   // The compiler *stream* — the major Scala version, without the patch level — which is what
   // decides the shape of the compiler-internal APIs a handful of modules wrap. Everything else
   // in Soundness is written once and compiles on every stream; where an API genuinely differs
   // (see the `Shim` component trait), this selects the sources that bridge it.
-  val scalaStream = if scalaVersion.startsWith("3.10") then "3.10" else "3.9"
+  // The 3.11 stream (upstream `main`) has the 3.10 shapes so far, and shares its sources.
+  val scalaStream = if scalaVersion.startsWith("3.9") then "3.9" else "3.10"
   // Empty by default → download `scalaVersion` from `scalaRelease`. Set to a local `release`
   // directory to use its `lib` jars directly (fork-developer mode).
   val scalaJsVersion = "1.22.0-wasm.4"
