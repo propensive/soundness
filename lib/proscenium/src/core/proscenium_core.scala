@@ -37,7 +37,13 @@ import scala.compiletime
 export Predef.runtimeChecked as absolve
 export scala.reflect.{ClassTag, Typeable}
 export scala.collection.immutable.{TreeSet, TreeMap}
-export scala.collection.concurrent.TrieMap
+
+// Not an `export`: from Scala 3.10.2 an exported object is a `val` of the package, initialized
+// with it, so the export loaded `TrieMap`'s companion in every program. Scala.js cannot link
+// that: its library has no `MainNode`, `INodeBase`, `BasicNode` or `Gen`, the parts of `TrieMap`
+// which are written in Java. An inline method reaches the companion only where it is used.
+type TrieMap[key, value] = scala.collection.concurrent.TrieMap[key, value]
+inline def TrieMap: scala.collection.concurrent.TrieMap.type = scala.collection.concurrent.TrieMap
 
 export Predef
 . { nn, identity, summon, charWrapper, $conforms, ArrowAssoc, intWrapper, longWrapper,

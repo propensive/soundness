@@ -60,7 +60,7 @@ type Chain[+element] = proscenium.Chain[element]
 val Chain: proscenium.Chain.type = proscenium.Chain
 export proscenium.{Nil, `::`, `#::`}
 export scala.collection.immutable.{TreeMap, TreeSet}
-export scala.collection.concurrent.TrieMap
+export proscenium.TrieMap
 
 export
   Predef
