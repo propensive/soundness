@@ -2029,6 +2029,36 @@ object DirectTests extends Suite("json-direct", m"Jacinta direct parsing and for
           case _                => false
       . assert(identity)
 
+    suite(m"Literals constructed directly"):
+      test(m"an object literal has its members in order"):
+        j"""{"juliet": 13, "romeo": 16, "paris": 25}""".show
+      . assert(_ == t"""{"juliet":13,"romeo":16,"paris":25}""")
+
+      test(m"an object literal with substitutions has its members in order"):
+        val age = 13
+        val name = t"Juliet"
+        j"""{"name": $name, "age": $age, "house": "Capulet"}""".show
+      . assert(_ == t"""{"name":"Juliet","age":13,"house":"Capulet"}""")
+
+      test(m"the literal for null is null"):
+        j"null".show
+      . assert(_ == t"null")
+
+      test(m"a null within a literal is null"):
+        j"""{"heir": null, "houses": [null, "Capulet"]}""".show
+      . assert(_ == t"""{"heir":null,"houses":[null,"Capulet"]}""")
+
+      test(m"a pattern of null matches null"):
+        j"null" match
+          case j"null" => true
+          case _       => false
+      . assert(identity)
+
+      test(m"an array literal of mixed values has its elements in order"):
+        val name = t"Juliet"
+        j"""[1, $name, true, {"house": "Capulet"}]""".show
+      . assert(_ == t"""[1,"Juliet",true,{"house":"Capulet"}]""")
+
     suite(m"Compile-time hole-position errors"):
       test(m"non-Iterable spread is highlighted at the splice"):
         val bad: Int = 42
@@ -2043,6 +2073,18 @@ object DirectTests extends Suite("json-direct", m"Jacinta direct parsing and for
         // The literal is 19 chars; a precise focus on the trailing `,` is shorter.
         errors.map(_.focus.length < 19)
       . assert(_ == List(true))
+
+      test(m"a parse error is drawn where the parser stopped"):
+        demilitarize:
+          j"[1, 2,, 3]"
+        . map(_.focus)
+      . assert(_ == List(","))
+
+      test(m"a parse error in a triple-quoted literal is drawn where it is"):
+        demilitarize:
+          j"""{"a": 1, }"""
+        . map(_.focus)
+      . assert(_ == List("}"))
 
       test(m"non-Iterable spread honours the `*` source skip"):
         // The spread literal has a `*` prefix in the second part that the

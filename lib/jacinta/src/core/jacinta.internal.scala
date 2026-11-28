@@ -423,7 +423,31 @@ object internal:
         new HaltTactic[Parse.Error, Json.Ast]:
           override def abort(error: Diagnostics ?=> Parse.Error): Nothing =
             val pe = error
-            val off = pe.position.offset.or(0)
+
+            // The parser counts bytes, and gives where a faulty token began only when it marked
+            // one; otherwise the fault is at the byte it had reached, which is its `column`.
+            // The literal's parts are characters, so the count is of the characters before it.
+            def characters(bytes: Int): Int =
+              var count = 0
+              var index = 0
+
+              while index < source.length && count < bytes do
+                val char = source.charAt(index)
+
+                count +=
+                  ( if char < 0x80 then 1
+                    else if char < 0x800 || Character.isSurrogate(char) then 2
+                    else 3 )
+
+                index += 1
+
+              index
+
+            val reached: Int = pe.position.asMatchable match
+              case position: Json.Ast.Position => position.column
+              case _                           => 0
+
+            val off = characters(pe.position.offset.or(reached))
             val length = pe.position.length.or(0)
             halt(pe.labelled, translateOffset(off, length))
 
@@ -554,62 +578,85 @@ object internal:
 
         val indexed = elements.stdlib.zipWithIndex
 
-        val pieces = indexed.to(List).map: (elem, idx) =>
-          elem.asMatchable match
-            case Unset =>
-              if spreads.has(holeIndex) then
-                if idx != n - 1 then halt:
-                  m"a `*`-spread is only allowed as the last element of an array"
+        // Each element as its value (on the right), or, for a `*`-spread, as the values it
+        // gives (on the left).
+        val pieces: scala.List[scala.Either[Expr[Iterable[Json.Ast]], Expr[Json.Ast]]] =
+          indexed.toList.map: (elem, idx) =>
+            elem.asMatchable match
+              case Unset =>
+                if spreads.has(holeIndex) then
+                  if idx != n - 1 then halt:
+                    m"a `*`-spread is only allowed as the last element of an array"
 
-                encodeArraySpread(consumeHole())
-              else
-                val v = encodeValue(consumeHole())
-                '{Iterable($v)}
+                  scala.Left(encodeArraySpread(consumeHole()))
+                else
+                  scala.Right(encodeValue(consumeHole()))
 
-            case other =>
-              val v = serialize(other)
-              '{Iterable($v)}
+              case other =>
+                scala.Right(serialize(other))
 
-        ' {
-            val all = ${List.quoted(pieces)}.fuse(scala.collection.immutable.List.empty[Json.Ast]):
-              state ++ next
+        val spread = pieces.collectFirst { case scala.Left(values) => values }
+        val values: scala.List[Expr[Json.Ast]] = pieces.collect { case scala.Right(value) => value }
 
-            Json.Ast.arr(Array.from(all).asInstanceOf[Array[Any]^{}])
-          }
+        // Without a spread, the number of elements is known, and the array is made as it is.
+        spread match
+          case None =>
+            '{Json.Ast.arr(Array[Json.Ast](${Varargs(values)}*).asInstanceOf[Array[Any]^{}])}
+
+          case Some(rest) =>
+            ' {
+                val all = scala.collection.immutable.List(${Varargs(values)}*) ++ $rest
+                Json.Ast.arr(Array.from(all).asInstanceOf[Array[Any]^{}])
+              }
 
       def serializeObject(node: Array[Any]^{}): Expr[Json.Ast] =
         val n = node.length/2
 
-        val pieces =
+        // Each member as its key and value (on the right), or, for a rest hole, as the members
+        // it gives (on the left).
+        type Rest = Expr[Iterable[(String, Json.Ast)]]
+
+        val pieces: scala.List[scala.Either[Rest, (String, Expr[Json.Ast])]] =
           (0 until n).toList.map: i =>
             val k = node.readUnchecked(i*2).asInstanceOf[String]
             val v = node.readUnchecked(i*2 + 1)
 
             if k == MarkerString then
               v.asMatchable match
-                case Unset => encodeObjectRest(consumeHole())
+                case Unset => scala.Left(encodeObjectRest(consumeHole()))
 
                 case _ => halt:
                   m"unexpected non-rest hole in object key position"
             else
               v.asMatchable match
-                case Unset =>
-                  val expr = encodeValue(consumeHole())
-                  '{Iterable((${Expr(k)}, $expr))}
+                case Unset => scala.Right((k, encodeValue(consumeHole())))
+                case other => scala.Right((k, serialize(other)))
 
-                case other =>
-                  val expr = serialize(other)
-                  '{Iterable((${Expr(k)}, $expr))}
+        val members: scala.List[(String, Expr[Json.Ast])] =
+          pieces.collect { case scala.Right(member) => member }
 
-        ' {
-            val all =
-              ${Expr.ofList(pieces)}
-              . foldLeft(scala.collection.immutable.List.empty[(String, Json.Ast)])(_ ++ _)
+        // Without a rest hole, the keys are known as the code compiles, and the two arrays are
+        // made as they are. With one, the members are gathered in the order they are written.
+        if members.length == pieces.length then
+          ' {
+              Json.Ast.obj
+                ( Array[String](${Varargs(members.map { (key, _) => Expr(key) })}*),
+                  Array[Json.Ast](${Varargs(members.map(_(1)))}*).asInstanceOf[Array[Any]^{}] )
+            }
+        else
+          val groups: scala.List[Rest] = pieces.map:
+            case scala.Right((key, value)) => '{Iterable((${Expr(key)}, $value))}
+            case scala.Left(rest)          => rest
 
-            val keysArr: Array[String]^{} = Array.from(all.map(_(0)))
-            val valuesArr: Array[Json.Ast]^{} = Array.from(all.map(_(1)))
-            Json.Ast.obj(keysArr, valuesArr.asInstanceOf[Array[Any]^{}])
-          }
+          ' {
+              val all =
+                ${Expr.ofList(groups)}
+                . foldLeft(scala.collection.immutable.List.empty[(String, Json.Ast)])(_ ++ _)
+
+              val keysArr: Array[String]^{} = Array.from(all.map(_(0)))
+              val valuesArr: Array[Json.Ast]^{} = Array.from(all.map(_(1)))
+              Json.Ast.obj(keysArr, valuesArr.asInstanceOf[Array[Any]^{}])
+            }
 
       def serialize(node: Any): Expr[Json.Ast] = node.asMatchable match
         case Unset =>
@@ -648,7 +695,9 @@ object internal:
 
           '{Json.Ast(Bcd.fromString(${Expr(unsigned)}, ${Expr(negative)}))}
 
-        case null =>
+        // The parser gives `null` as the `JsonNull` object; a Java `null` is not expected, but
+        // has meant the same.
+        case null | Json.JsonNull =>
           '{Json.Ast(Json.JsonNull)}
 
         case bcds: scala.Array[Long] @unchecked =>
@@ -760,7 +809,7 @@ object internal:
                   $scrutinee.asInstanceOf[Bcd].toBigDecimal == BigDecimal(${Expr(s)})
               }
 
-          case null =>
+          case null | Json.JsonNull =>
             '{$accept && $scrutinee.isNull}
 
           case nums: scala.Array[Double] @unchecked =>
