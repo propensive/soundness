@@ -37,7 +37,10 @@ import prepositional.*
 import symbolism.*
 
 object Color:
-  given chromatic: [form <: Color: Perceptual in Srgb as perceptual] => Color in form is Chromatic =
+  // For any color of the form, and not only for one whose type is exactly `Color in form`: a
+  // typeclass's `Self` is invariant, and a color has the type of its own class, as an `Hsl` does.
+  given chromatic: [form <: Color: Perceptual in Srgb as perceptual, color <: Color in form]
+  =>  color is Chromatic =
     color =>
       val srgb = color.to[Srgb]
       Chroma((srgb.red*255).toInt, (srgb.green*255).toInt, (srgb.blue*255).toInt)

@@ -44,3 +44,8 @@ object Parse:
 
     // The internal parser `Position` rendered as a uniform `Span` for public use.
     def span: Span = position.span
+
+    // The error without its position, for a literal which is checked as the code compiles: the
+    // compiler marks the place in the source, and the parser's own line and column, which are
+    // of the literal's text and not of the file it is written in, would only mislead.
+    def unlocated: Message = m"${bolt.label} the ${format.name} is not valid because ${issue.describe}"

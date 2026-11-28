@@ -1,0 +1,6 @@
+orthant 2 language
+
+@ 0 8 0 0ebedd6b12effe7d136016c001289d63
++     `r"…"` の中ではバックスラッシュはバックスラッシュである。正規表現自身のエスケープだけが適用されるので、リテラルの括弧は `r"\("` となる。また `$` そのものを表すには `$$` と書く。
++     パースできないパターンは、理由を示し問題の文字を指すコンパイルエラーとなる。_[↯/s.34.1.1] the regular expression could not be parsed because a capturing group was not closed_ のようになり、後にグループのない `$name` は _[↯/s.34.1.2] … a capturing group was expected immediately following an extractor_ となる。
++     `regexBackends.re2` のもとでは、パターンは RE2 のサブセットに対しても検査されるので、後方参照や先読み・後読みは最初に使われるときではなくコンパイル時に拒否される。

@@ -1,0 +1,6 @@
+orthant 2 language
+
+@ 0 8 0 089cde83f6a8282d194ab7b207f9f99a
++       不供直接使用：这个对象的存在是为了让 `sh` 宏有一个稳定的归属。
++   entry .sh   该宏：在编译时解析字面量各部分，定位错误，并拼接运行时解析
++       用 `Sh.Runtime` 检查字面量（在导致 `Sh.Error` 的字符处报告它，并经由 `$$` 和 unicode 转义映射回源代码），为每个代入的类型召唤一个 `Insertion[Sh.Parameters, T]`（失败时给出 _a `T` cannot be substituted into a command: its type needs an instance of `Parameterizable`_），并产生一个以其第一个单词作为 `Exec` 类型来细化的 `Command`：代码运行时不会再次对字面量进行词法分析。

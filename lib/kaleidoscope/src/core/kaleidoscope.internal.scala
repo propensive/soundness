@@ -98,7 +98,14 @@ object internal:
     def fail(error: Regex.Error): Nothing =
       val length = parts.map(_.length).total
       val offset = error.index.min(length - 1).max(0)
-      halt(error.labelled, Interpolation.sourcePosition(parts, origins, 0, offset))
+      // The mark says where, so the message gives the reason alone, without the index the
+      // error carries when it is raised as the code runs.
+      halt
+        ( m"""
+            ${error.bolt.label} the regular expression could not be parsed because
+            ${error.reason}
+          """,
+          Interpolation.sourcePosition(parts, origins, 0, offset) )
 
     val regex =
       given Diagnostics = Diagnostics.omit
@@ -138,7 +145,16 @@ object internal:
 
         given HaltTactic[Motif.Error, Motif] = new HaltTactic[Motif.Error, Motif]:
           override def abort(error: Diagnostics ?=> Motif.Error): Nothing =
-            halt(error.labelled, Interpolation.sourcePosition(parts, origins, 0, 0))
+            val failure = error
+            val length = parts.map(_.length).total
+            val offset = failure.index.min(length - 1).max(0)
+
+            halt
+              ( m"""
+                  ${failure.bolt.label} the regular expression could not be compiled because
+                  ${failure.reason}
+                """,
+                Interpolation.sourcePosition(parts, origins, 0, offset) )
 
         Some(Motif.parse(regex.plainPattern))
 

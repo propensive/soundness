@@ -1029,8 +1029,14 @@ object Tests extends Suite("css", m"Cataclysm Tests"):
         . map(_.focus)
       . assert(_ == List("e"))
 
-      test(m"an invalid-CSS message names the line and column"):
+      test(m"an invalid-CSS message gives the reason"):
         demilitarize:
           css"""p { color: red /* unterminated"""
         . map(_.message)
       . assert(_.head.lay(false)(_.contains("a comment was not terminated")))
+
+      test(m"an invalid-CSS message does not say where in words"):
+        demilitarize:
+          css"""p { color: red /* unterminated"""
+        . map(_.message)
+      . assert(_.head.lay(false)(!_.contains("line")))

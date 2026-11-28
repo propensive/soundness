@@ -1,0 +1,9 @@
+orthant 2 language
+
+@ 0 5 0 0f6d9be83ed132d01a735d9d7ec702f5
++ entry .uuid   el interpolador `uuid"…"`: un literal UUID, comprobado al compilar el código
++     Una macro que analiza el literal en tiempo de compilación y se expande a `Uuid(msb, lsb)` con
++     las dos mitades como constantes, de modo que no se analiza nada en tiempo de ejecución. Un
++     literal mal formado es un error de compilación: _not-a-uuid is not a valid UUID: n is not a
++     hexadecimal digit_. El mensaje dice en qué está mal formado el literal, en el carácter erróneo.
++     El interpolador no admite sustituciones.

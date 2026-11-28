@@ -1,0 +1,13 @@
+orthant 2 language
+
+@ 0 8 0 0ebedd6b12effe7d136016c001289d63
++     Innerhalb von `r"…"` ist ein Backslash ein Backslash — es gilt nur das eigene Escaping des
++     regulären Ausdrucks, daher ist eine literale Klammer `r"\("` —, und `$` wird `$$`
++     geschrieben, um sich selbst zu bedeuten. Ein Pattern, das sich nicht parsen lässt, ist ein
++     Kompilierfehler, der den Grund nennt und auf das fehlerhafte Zeichen zeigt,
++     _[↯/s.34.1.1] the regular expression could not be parsed because a
++     capturing group was not closed_; ein `$name` ohne folgende Gruppe ergibt
++     _[↯/s.34.1.2] … a capturing group was expected immediately following an extractor_. Unter
++     `regexBackends.re2` wird das Pattern außerdem gegen die RE2-Teilmenge geprüft, daher wird
++     ein Rückverweis oder ein Lookaround zur Kompilierzeit abgelehnt statt bei seiner ersten
++     Verwendung.

@@ -1,0 +1,6 @@
+orthant 2 language
+
+@ 0 8 0 089cde83f6a8282d194ab7b207f9f99a
++       直接使うためのものではない。このオブジェクトは `sh` マクロに安定した置き場所を与えるために存在する。
++   entry .sh   マクロ：コンパイル時にリテラル部分をパースし、エラーの位置を定め、実行時のパースをスプライスする
++       `Sh.Runtime` でリテラルを検査し（`Sh.Error` を、それを引き起こした文字の位置で、`$$` と Unicode エスケープを通してソースに対応づけて報告する）、埋め込まれた型ごとに `Insertion[Sh.Parameters, T]` を召喚し（失敗すると _a `T` cannot be substituted into a command: its type needs an instance of `Parameterizable`_）、最初の語を `Exec` 型として細分化した `Command` を生成する。リテラルはコードの実行時に再び字句解析されることはありません。

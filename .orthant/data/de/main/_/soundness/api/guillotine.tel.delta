@@ -1,0 +1,12 @@
+orthant 2 language
+
+@ 0 8 0 089cde83f6a8282d194ab7b207f9f99a
++       Nicht zur direkten Verwendung: Das Objekt existiert, damit das Makro `sh` ein stabiles
++       Zuhause hat.
++   entry .sh   das Makro: parst die Literalteile zur Kompilierzeit, positioniert Fehler und spleißt den Laufzeit-Parse ein
++       Prüft das Literal mit `Sh.Runtime` (meldet einen `Sh.Error` an dem Zeichen, das ihn verursacht
++       hat, über `$$` und Unicode-Escapes zurück auf den Quelltext abgebildet), ruft für jeden
++       eingesetzten Typ eine `Insertion[Sh.Parameters, T]` herbei (und schlägt mit _a `T` cannot be
++       substituted into a command: its type needs an instance of `Parameterizable`_ fehl) und erzeugt
++       ein `Command`, verfeinert mit seinem ersten Wort als `Exec`-Typ: Das Literal wird beim
++       Ausführen des Codes nicht erneut zerlegt.

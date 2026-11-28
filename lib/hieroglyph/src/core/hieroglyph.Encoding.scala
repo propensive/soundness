@@ -82,6 +82,15 @@ object Encoding:
   extension (encoding: Encoding { type CanEncode = true })
     def encoder: Codepage = Codepage(encoding)
 
+  // An encoding which Java can read but not write has no encoder. Asking for one is refused
+  // here, in words about the encoding: without this the compiler says only that `encoder` is
+  // not a member of a refinement of `Encoding`, and suggests `decoder`.
+  extension (encoding: Encoding { type CanEncode = false })
+    @scala.annotation.targetName("encoderOfDecodeOnly")
+    inline def encoder: Nothing =
+      scala.compiletime.error:
+        "this encoding can be decoded but not encoded, so it has no encoder; use its decoder"
+
 class Encoding(name0: Text):
   def name: Text = charset.displayName.nn.tt
 

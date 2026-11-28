@@ -3364,7 +3364,10 @@ object spectacular extends Library:
   // types otherwise, and an orphan component would make every debug rendering of a sized number
   // depend on remembering an import. The closure grows by `hypotenuse.core` and
   // `anticipation.opaque` only, and nothing at or below hypotenuse depends on spectacular.
-  object core extends Component(stenography.core, wisteria.core, hypotenuse.core):
+  // `anticipation.color` is one for the same reason: `Chroma` is an opaque `Int` whose companion
+  // cannot see `Inspectable`, and without an instance a color shows as a number in quotes.
+  object core
+  extends Component(stenography.core, wisteria.core, hypotenuse.core, anticipation.color):
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
   object test extends Tests(core):

@@ -1,0 +1,12 @@
+orthant 2 language
+
+@ 0 8 0 0ebedd6b12effe7d136016c001289d63
++     Dentro `r"…"` una barra rovesciata è una barra rovesciata — vale solo l'escaping proprio
++     dell'espressione regolare, così una parentesi letterale è `r"\("` — e `$` si scrive `$$` per
++     indicare se stesso. Un pattern che non si analizza è un errore di compilazione che indica il
++     motivo e punta al carattere responsabile, _[↯/s.34.1.1] the regular expression could not be
++     parsed because a capturing group was not closed_; un `$name` senza gruppo dopo di sé è
++     _[↯/s.34.1.2] … a capturing group was expected immediately following an extractor_. Sotto
++     `regexBackends.re2` il pattern viene verificato anche rispetto al sottoinsieme RE2, così un
++     riferimento all'indietro o un lookaround viene rifiutato in fase di compilazione anziché al
++     primo utilizzo.

@@ -138,9 +138,32 @@ object internal:
     def isin: Text = t"$countryCode$nsin"
 
   def interpolator(context: Expr[StringContext]): Macro[Isin] =
-    abortive:
-      val isin = Isin(context.valueOrAbort.parts.head)
-      '{${Expr[Long](isin)}.asInstanceOf[Isin]}
+    import quotes.reflect.*
+
+    val text: String = context.valueOrAbort.parts.head
+
+    given Diagnostics = Diagnostics.omit
+
+    // A character which cannot be part of an ISIN is marked where it is, and the message does
+    // not repeat its position; any other fault is of the whole number.
+    val isin: Isin =
+      recover:
+        case error: Isin.Error => error.reason match
+          case Isin.Error.InvalidCharacter(index, char) =>
+            halt
+              ( m"""
+                  ${error.bolt.label} the ISIN number is not valid because the character $char is
+                  not a digit or uppercase letter
+                """,
+                contextual.Interpolation.sourcePosition
+                  ( List(text), contextual.Interpolation.literalOrigins(context, 1), 0, index ) )
+
+          case _ =>
+            halt(error.labelled)
+
+      . protect(Isin(text.tt))
+
+    '{${Expr[Long](isin)}.asInstanceOf[Isin]}
 
   object Money:
     inline given underlying: [currency <: Label] => Underlying[Money in currency, Long] = !!

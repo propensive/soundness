@@ -141,6 +141,17 @@ object Inspectable extends Inspectable2:
     if boolean then "true".tt else "false".tt
 
   given unit: [unit <: Unit] => unit is Inspectable = unit => "()".tt
+
+  // A packed color as the `rgb"…"` literal which makes it: six hexadecimal digits. `Chroma` is
+  // an opaque `Int` of anticipation's, whose companion cannot see this typeclass, and without
+  // an instance it would render as the number it erases to, in quotes.
+  given chroma: [chroma <: Chroma] => chroma is Inspectable = chroma =>
+    val color: Chroma = chroma
+    def hex(channel: Int): String =
+      val digits = Integer.toHexString(channel).nn
+      if digits.length < 2 then "0"+digits else digits
+
+    ("rgb\"#"+hex(color.red)+hex(color.green)+hex(color.blue)+"\"").tt
   given bigInt: [bigInt <: BigInt] => bigInt is Inspectable = bigInt => ("BigInt("+bigInt+")").tt
 
   given bigDecimal: [bigDecimal <: BigDecimal] => bigDecimal is Inspectable = bigDecimal =>

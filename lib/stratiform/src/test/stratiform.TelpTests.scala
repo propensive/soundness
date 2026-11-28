@@ -335,6 +335,12 @@ object TelpTests extends Suite("telp", m"Stratiform TELP tests"):
         . map(_.focus)
       . assert(_ == List("c"))
 
+      test(m"a literal not beginning with a delimiter is told what its first character must be"):
+        demilitarize:
+          telp"contact/email"
+        . map(_.message)
+      . assert(_.exists(_.contains("its first character must be the delimiter")))
+
       test(m"an empty component is rejected at the component"):
         demilitarize:
           telp"/contact//email"

@@ -58,6 +58,36 @@ import vacuous.*
 import zephyrine.*
 
 object internal:
+  // What a rejected substitution is, and what an attribute takes, in words a reader can act on:
+  // the type of the value as it would be written, without the name of the `val` it came from,
+  // and the kind of the attribute by its name, not by the form the compiler prints of its type.
+  private[honeycomb] def described(using Quotes)(repr: quotes.reflect.TypeRepr): Text =
+    val name = repr.widen.dealias.typeSymbol.name
+
+    val shown: String =
+      if name.isEmpty || name.startsWith("<") || name.contains("$") then repr.widen.show else name
+
+    ((if "AEIOUaeiou".indexOf(shown.charAt(0)) >= 0 then "an " else "a ")+shown).tt
+
+  private[honeycomb] def kind(using Quotes)(repr: quotes.reflect.TypeRepr): Text =
+    repr.dealias.typeSymbol.name match
+      case "Url"                          => t"a URL"
+      case "Integral"                     => t"an integer"
+      case "PositiveInt"                  => t"a positive integer"
+      case "Decimal"                      => t"a number"
+      case "Presence" | "Switch" | "Truth" => t"a Boolean"
+      case "Textual"                      => t"text"
+      case "Id"                           => t"an identifier"
+      case "Ids"                          => t"identifiers"
+      case "CssClassList"                 => t"CSS class names"
+      case "Css"                          => t"CSS declarations"
+
+      case name =>
+        // The words of the kind's name, as `ButtonType` is `a button type`.
+        val words = name.replaceAll("([a-z0-9])([A-Z])", "$1 $2").nn.toLowerCase.nn
+        val article = if words.nonEmpty && "aeiou".indexOf(words.charAt(0)) >= 0 then "an " else "a "
+        (if words.isEmpty then "another kind of value" else article+words).tt
+
   // The names of a `ClassList[name]()`: each label of the type is checked against `CssClass`'s
   // rules here, so an invalid class name halts the expansion, and the names the expansion
   // yields need no check when the list is made.
@@ -418,7 +448,7 @@ object internal:
           val pe = error
           val off = pe.position.offset.or(0)
           val length = pe.position.length.or(0)
-          halt(pe.labelled, translateOffset(off, length))
+          halt(pe.unlocated, translateOffset(off, length))
 
       Html.parse(Iterator(parts.mkString("\u0000").tt), whatwg.generic, capture(_, _))
 
@@ -449,8 +479,8 @@ object internal:
                             case _ =>
                               halt
                                 ( m"""
-                                    ${TypeRepr.of[value].show} cannot be attributed to an attribute
-                                    of ${Syntax(TypeRepr.of[result]).show}
+                                    ${described(TypeRepr.of[value])} cannot be the value of the
+                                    attribute $attribute, which takes ${kind(TypeRepr.of[result])}
                                   """,
                                   expr.asTerm.underlyingArgument.pos )
 
@@ -475,6 +505,36 @@ object internal:
                             element
                           """,
                           expr.asTerm.underlyingArgument.pos )
+
+              // A value which is already HTML is put in as the nodes it is. Its type says which
+              // elements it may be, and each must be one the parent admits, as it would have to
+              // be were it written in the literal (#2576).
+              case Hole.Node(tag) if TypeRepr.of[value] <:< TypeRepr.of[Html] =>
+                def topic(repr: TypeRepr): Optional[TypeRepr] = repr.dealias match
+                  case Refinement(_, "Topic", TypeBounds(_, upper)) => upper
+                  case Refinement(parent, _, _)                     => topic(parent)
+                  case AndType(left, right)                         => topic(left).or(topic(right))
+                  case _                                            => Unset
+
+                def labels(repr: TypeRepr): Optional[scala.List[String]] = repr.dealias match
+                  case ConstantType(StringConstant(label)) => scala.List(label)
+
+                  case OrType(left, right) =>
+                    labels(left).let: left => labels(right).let(left ++ _)
+
+                  case _ =>
+                    Unset
+
+                whatwg.elements(tag).let: parent =>
+                  if !parent.foreign && !parent.transparent then
+                    topic(TypeRepr.of[value].widen).let(labels(_)).let: labels =>
+                      labels.filter(!_.startsWith("#")).foreach: label =>
+                        if !parent.admissible.has(label.tt) then
+                          halt
+                            ( m"<${label.tt}> cannot be a child of <$tag>",
+                              expr.asTerm.underlyingArgument.pos )
+
+                (expr.asExprOf[Html]: Expr[Any])
 
               case Hole.Node(tag) =>
                 ConstantType(StringConstant(tag.s)).asType.absolve match
@@ -504,7 +564,10 @@ object internal:
 
                 case None =>
                   halt
-                    ( m"a ${TypeRepr.of[value is Showable].show} is required",
+                    ( m"""
+                        ${described(TypeRepr.of[value])} cannot be shown as text, so it cannot be
+                        substituted here
+                      """,
                       expr.asTerm.underlyingArgument.pos )
 
               case Hole.Text => Expr.summon[(? >: value) is Showable] match
@@ -513,7 +576,10 @@ object internal:
 
                 case None =>
                   halt
-                    ( m"a ${TypeRepr.of[value is Showable].show} is required",
+                    ( m"""
+                        ${described(TypeRepr.of[value])} cannot be shown as text, so it cannot be
+                        substituted here
+                      """,
                       expr.asTerm.underlyingArgument.pos )
 
               case Hole.Tagbody =>
@@ -530,7 +596,19 @@ object internal:
 
         . iterator
 
-      def serialize(html: Html): Seq[Expr[Html.Node]] = html match
+      // The nodes of a list of pieces of HTML. Each is a node, unless it was substituted, when it
+      // may be a fragment of several: then the nodes are gathered when the code runs.
+      def nodes(pieces: Seq[Expr[Html]]): Expr[Array[Html.Node]^{}] =
+        // Cast-erased: both arrays are frozen, though as the result of a quote each has a type
+        // which says only that it can be read.
+        val array: Expr[Any] =
+          if pieces.forall(_.isExprOf[Html.Node])
+          then '{Array[Html.Node](${Varargs(pieces.map(_.asExprOf[Html.Node]))}*)}
+          else '{Html.nodes(proscenium.List[Html](${Varargs(pieces)}*))}
+
+        array.asInstanceOf[Expr[Array[Html.Node]^{}]]
+
+      def serialize(html: Html): Seq[Expr[Html]] = html match
         case Html.Fragment(children*) => children.flatMap(serialize(_))
 
         case Html.Element(label, attributes, children, foreign) =>
@@ -538,9 +616,12 @@ object internal:
             ' {
                 ( ${Expr(key)},
                   $ {
+                      // The text is lifted as a `String` and ascribed: under capture checking
+                      // the code which `Text`'s own lifting makes is not taken for an
+                      // `Optional[Text]`, and a literal attribute did not compile (#2574).
                       if value == "\u0000".tt then iterator.next().asExprOf[Optional[Text]]
-                      else if value == Unset then '{Unset}
-                      else Expr[Text](value.asInstanceOf[Text])
+                      else if value == Unset then '{Unset: Optional[Text]}
+                      else '{(${Expr(value.asInstanceOf[Text].s)}.tt: Optional[Text])}
                     } )
               }
 
@@ -549,8 +630,7 @@ object internal:
           val attrs = '{Attributes(${Expr.ofList(exprs)}*)}
           // Cast-erased: the per-element `Expr` types are fresh-decorated, which an
           // outer seal cannot reach.
-          val elements =
-            Array.quoted(children.flatMap(serialize(_)).asInstanceOf[Array[Expr[Html.Node]]^{}])
+          val elements = nodes(children.stdlib.toList.flatMap(serialize(_)))
 
           List('{Html.Element(${Expr(label)}, $attrs, $elements, ${Expr(foreign)})})
 
@@ -574,7 +654,7 @@ object internal:
           List('{Html.Comment($content.tt)})
 
         case Html.Text("\u0000") =>
-          List(iterator.next().asExprOf[Html.Node])
+          List(iterator.next().asExprOf[Html])
 
         case Html.Text(text) =>
           // Deliberate stdlib opt-out: `recur` below walks the stdlib `List` the quotes API uses.
@@ -606,13 +686,13 @@ object internal:
           ' {
               $ {
                   serialize(html).absolve match
-                    case List(one: Expr[?]) => html.absolve match
+                    case List(one: Expr[?]) if one.isExprOf[Html.Node] => html.absolve match
                       case _: Html.Text    => one.asExprOf[Html.Text]
                       case _: Html.Element => one.asExprOf[Html.Element]
                       case _: Html.Comment => one.asExprOf[Html.Comment]
                       case _: Html.Doctype => one.asExprOf[Html.Doctype]
 
-                    case many               => '{Html.Fragment(${Expr.ofList(many)}*)}
+                    case many               => '{Html.Fragment(${nodes(many)}*)}
                 }
 
               . of[topic]
@@ -659,10 +739,8 @@ object internal:
 
                                 case _ => halt:
                                   m"""
-                                    $key has attribute type ${TypeRepr.of[result].show}, but
-                                    ${TypeRepr.of[value].show} cannot be attributed as a
-                                    ${TypeRepr.of[result].show} without a contextual instance of
-                                    ${TypeRepr.of[value is Attributive to result].show}
+                                    ${described(TypeRepr.of[value])} cannot be the value of the attribute $key,
+                                    which takes ${kind(TypeRepr.of[result])}
                                   """
 
                             case _ =>

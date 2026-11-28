@@ -58,6 +58,36 @@ import vacuous.*
 import zephyrine.*
 
 object internal:
+  // What a rejected substitution is, and what an attribute takes, in words a reader can act on:
+  // the type of the value as it would be written, without the name of the `val` it came from,
+  // and the kind of the attribute by its name, not by the form the compiler prints of its type.
+  private[xylophone] def described(using Quotes)(repr: quotes.reflect.TypeRepr): Text =
+    val name = repr.widen.dealias.typeSymbol.name
+
+    val shown: String =
+      if name.isEmpty || name.startsWith("<") || name.contains("$") then repr.widen.show else name
+
+    ((if "AEIOUaeiou".indexOf(shown.charAt(0)) >= 0 then "an " else "a ")+shown).tt
+
+  private[xylophone] def kind(using Quotes)(repr: quotes.reflect.TypeRepr): Text =
+    repr.dealias.typeSymbol.name match
+      case "Url"                          => t"a URL"
+      case "Integral"                     => t"an integer"
+      case "PositiveInt"                  => t"a positive integer"
+      case "Decimal"                      => t"a number"
+      case "Presence" | "Switch" | "Truth" => t"a Boolean"
+      case "Textual"                      => t"text"
+      case "Id"                           => t"an identifier"
+      case "Ids"                          => t"identifiers"
+      case "CssClassList"                 => t"CSS class names"
+      case "Css"                          => t"CSS declarations"
+
+      case name =>
+        // The words of the kind's name, as `ButtonType` is `a button type`.
+        val words = name.replaceAll("([a-z0-9])([A-Z])", "$1 $2").nn.toLowerCase.nn
+        val article = if words.nonEmpty && "aeiou".indexOf(words.charAt(0)) >= 0 then "an " else "a "
+        (if words.isEmpty then "another kind of value" else article+words).tt
+
   def extractor[parts <: Tuple: Type, origins <: Tuple: Type]
     ( scrutinee: Expr[Xml] )
   :   Macro[Extrapolation[Xml]] =
@@ -182,20 +212,28 @@ object internal:
                   types ::= TypeRepr.of[Text]
                   nextHole()
 
+                  // An element without the attribute does not match, so the attribute is looked
+                  // for before it is read: `pick` throws for a key which is not there.
                   ' {
-                      $array(${Expr(index)}) =
-                        Attributes.pick
-                          ( $scrutinee.attributes.asInstanceOf[Attributes], ${Expr(head)} )
+                      Attributes.holds
+                        ( $scrutinee.attributes.asInstanceOf[Attributes], ${Expr(head)} ) &&
+                        {
+                          $array(${Expr(index)}) =
+                            Attributes.pick
+                              ( $scrutinee.attributes.asInstanceOf[Attributes], ${Expr(head)} )
 
-                      true
+                          true
+                        }
                     }
 
                 case text: Text =>
                   ' {
-                      Attributes.pick
-                        ( $scrutinee.attributes.asInstanceOf[Attributes],
-                          ${Expr(head)} ) ==
-                        ${Expr(text)}
+                      Attributes.holds
+                        ( $scrutinee.attributes.asInstanceOf[Attributes], ${Expr(head)} ) &&
+                        Attributes.pick
+                          ( $scrutinee.attributes.asInstanceOf[Attributes],
+                            ${Expr(head)} ) ==
+                          ${Expr(text)}
                     }
 
               '{$expr && $boolean}
@@ -629,7 +667,7 @@ object internal:
 
     val expression: Expression =
       recover:
-        case error: Parse.Error => halt(error.message, translate(error.span.offset.lay(0)(_.n0)))
+        case error: Parse.Error => halt(error.unlocated, translate(error.span.offset.lay(0)(_.n0)))
 
       . protect(XPathReader.parse(joined.tt, holes = true))
 
@@ -786,7 +824,7 @@ object internal:
           val pe = error
           val off = pe.position.offset.or(0)
           val length = pe.position.length.or(0)
-          halt(pe.labelled, translateOffset(off, length))
+          halt(pe.unlocated, translateOffset(off, length))
 
       Xml.parse(Iterator(parts.mkString("\u0000").tt), XmlSchema.generic, capture(_, _))
 
@@ -816,8 +854,8 @@ object internal:
                             case _ =>
                               halt
                                 ( m"""
-                                    ${TypeRepr.of[value].show} cannot be attributed to an attribute
-                                    of ${Syntax(TypeRepr.of[result]).show}
+                                    ${described(TypeRepr.of[value])} cannot be the value of the
+                                    attribute $attribute, which takes ${kind(TypeRepr.of[result])}
                                   """,
                                   expr.asTerm.underlyingArgument.pos )
 
@@ -870,7 +908,10 @@ object internal:
 
                 case None =>
                   halt
-                    ( m"a ${TypeRepr.of[value is Showable].show} is required",
+                    ( m"""
+                        ${described(TypeRepr.of[value])} cannot be shown as text, so it cannot be
+                        substituted here
+                      """,
                       expr.asTerm.underlyingArgument.pos )
 
               case Hole.Text => Expr.summon[(? >: value) is Showable] match
@@ -879,7 +920,10 @@ object internal:
 
                 case None =>
                   halt
-                    ( m"a ${TypeRepr.of[value is Showable].show} is required",
+                    ( m"""
+                        ${described(TypeRepr.of[value])} cannot be shown as text, so it cannot be
+                        substituted here
+                      """,
                       expr.asTerm.underlyingArgument.pos )
 
               case Hole.Tagbody =>
@@ -1100,10 +1144,8 @@ object internal:
                                 case _ =>
                                   halt:
                                     m"""
-                                      $key has attribute type ${TypeRepr.of[result].show}, but
-                                      ${TypeRepr.of[value].show} cannot be attributed as a
-                                      ${TypeRepr.of[result].show} without a contextual instance of
-                                      ${TypeRepr.of[value is Attributive to result].show}
+                                      ${described(TypeRepr.of[value])} cannot be the value of the attribute $key,
+                                      which takes ${kind(TypeRepr.of[result])}
                                     """
 
                             case _ =>
@@ -1210,6 +1252,19 @@ object internal:
     // (and the quotes compiled here) go through this instead.
     // Any readable reference: a frozen-typed parameter is read as `attrs.rd`, which its own
     // `^{}` cannot absorb; callers in this file, where the opaque is transparent, conform.
+    // Whether the attribute is there, for a caller which must not have `pick` throw.
+    private[xylophone] def holds(attrs: Array[String]^{caps.any.rd}, key: Text): Boolean =
+      val a = Array.unsafeJvm(attrs)
+      val keyStr: String = key.s
+      var i = 0
+      var found = false
+
+      while !found && i < a.length do
+        found = a(i) == keyStr
+        i += 2
+
+      found
+
     private[xylophone] def pick(attrs: Array[String]^{caps.any.rd}, key: Text): Text =
       val a = Array.unsafeJvm(attrs)
       val keyStr: String = key.s

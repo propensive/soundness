@@ -492,6 +492,59 @@ object Tests extends Suite("internet", m"Urticose tests"):
         url"http://user:pw@example.com/$message"
       . assert(_ == Url(Origin(Scheme(t"http"), Authority(example.com, t"user:pw")), t"/Hello+world%21"))
 
+      test(m"A substituted host is read as a hostname"):
+        val host: Text = t"example.com"
+        url"https://$host/path"
+      . assert(_ == Url(Origin(Scheme(t"https"), Authority(example.com)), t"/path"))
+
+      test(m"A substitution in the query is escaped there"):
+        val term: Text = t"star-crossed lovers"
+        url"https://example.com/search?q=$term#top"
+      . assert(_ == Url(Origin(Scheme(t"https"), Authority(example.com)), t"/search",
+          t"q=star-crossed+lovers", t"top"))
+
+      test(m"A number cannot be substituted into a path"):
+        val act = 3
+        demilitarize(url"https://example.com/acts/$act").map(_.focus)
+      . assert(_ == List("act"))
+
+      test(m"A number shown as text can be substituted into a path"):
+        val act = 3
+        url"https://example.com/acts/${act.show}"
+      . assert(_ == Url(Origin(Scheme(t"https"), Authority(example.com)), t"/acts/3"))
+
+      test(m"A number which is embeddable in a URL can be substituted into a path"):
+        given Int is Embeddable by Url.Fragment in Url[Label] = number => Url.Fragment(number.show)
+        val act = 3
+        url"https://example.com/acts/$act"
+      . assert(_ == Url(Origin(Scheme(t"https"), Authority(example.com)), t"/acts/3"))
+
+      test(m"A number which is embeddable in a URL is still a port after a colon"):
+        given Int is Embeddable by Url.Fragment in Url[Label] = number => Url.Fragment(number.show)
+        val port = 8080
+        url"https://example.com:$port/acts"
+      . assert(_ == Url(Origin(Scheme(t"https"), Authority(example.com, Unset, 8080)), t"/acts"))
+
+      test(m"A URL literal with substitutions shows as it is written"):
+        val port = 8080
+        val scene: Text = t"balcony"
+        url"http://user:pw@example.com:$port/verona/$scene?act=2#lines".show
+      . assert(_ == t"http://user:pw@example.com:8080/verona/balcony?act=2#lines")
+
+      test(m"A URL literal with no colon is reported at its last character"):
+        demilitarize(url"example").map: error =>
+          (error.message, error.focus)
+      . assert(_ == List((t"[↯/s.100.8.1] the URL is not valid: a colon was expected", "e")))
+
+      test(m"A bad hostname in a URL literal is reported at the hostname"):
+        demilitarize(url"https://www..com/path").map(_.focus)
+      . assert(_ == List("w"))
+
+      test(m"The scheme of a URL literal cannot be substituted"):
+        val scheme: Text = t"https"
+        demilitarize(url"$scheme://example.com/").map(_.message)
+      . assert(_ == List(t"the scheme of a URL cannot be a substitution"))
+
       test(m"Parse URL with no path"):
         t"http://example.com".as[HttpUrl]
       . assert(_ == Url(Origin(Scheme.Http, Authority(example.com)), t""))

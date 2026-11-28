@@ -989,6 +989,36 @@ object Tests extends Suite("html", m"Honeycombd Tests"):
           h"""<input alt="$alt" dirname="$dirname" title="$title" placeholder="$placeholder" maxlength="$maxlength">"""
         . assert(_ == Input(title = "title", dirname = "dirname", alt = "alt", maxlength = 10, placeholder = "placeholder"))
 
+        test(m"a literal attribute beside a substituted one"):
+          val limit = 40
+          h"""<input alt="title" maxlength="$limit">"""
+        . assert(_ == Input(alt = "title", maxlength = 40))
+
+        test(m"an unquoted substituted attribute after a literal one"):
+          val limit = 3
+          h"""<td class="x" colspan=$limit>Feste</td>""".show
+        . assert(_ == t"""<td class="x" colspan="3">Feste</td>""")
+
+        test(m"a substituted element is a child, not text"):
+          val item = h"<li>Titania</li>"
+          h"<ul>$item</ul>"
+        . assert(_ == h"<ul><li>Titania</li></ul>")
+
+        test(m"a substituted fragment gives each of its nodes as a child"):
+          val items = h"<li>Titania</li><li>Oberon</li>"
+          h"<ul>$items</ul>"
+        . assert(_ == h"<ul><li>Titania</li><li>Oberon</li></ul>")
+
+        test(m"a substituted element is checked against its parent"):
+          val para = h"<p>Oberon</p>"
+          demilitarize(h"<ul>$para</ul>").map(_.message)
+        . assert(_ == List(t"<p> cannot be a child of <ul>"))
+
+        test(m"a rejected attribute value is reported in plain words"):
+          val width = 2
+          demilitarize(h"<a href=$width>The Globe</a>").map(_.message)
+        . assert(_.map(_.trim) == List(t"an Int cannot be the value of the attribute href, which takes a URL"))
+
         test(m"single extraction"):
           P("whole text").absolve match
             case h"""<p>$whole</p>""" => whole

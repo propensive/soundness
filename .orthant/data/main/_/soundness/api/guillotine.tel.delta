@@ -1,0 +1,7 @@
+orthant 2 release
+
+@ 0 3 0 1960656c1907532610fb211749c7aab5
++       `Insertion[Sh.Parameters, T]` for each substituted type (failing with _a `T` cannot be
++       substituted into a command: its type needs an instance of `Parameterizable`_), and
++       constructs a `Command` refined with its first word as the `Exec` type: the literal is not
++       tokenized again when the code runs.

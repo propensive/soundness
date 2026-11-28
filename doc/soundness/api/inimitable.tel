@@ -118,7 +118,8 @@ entry .Uuid   a 128-bit universally unique identifier, as its two 64-bit halves
 entry .uuid   the `uuid"…"` interpolator: a UUID literal, checked as the code compiles
     A macro which parses the literal at compile time and expands to `Uuid(msb, lsb)` with
     the two halves as constants, so no parsing happens at runtime. A malformed literal is a
-    compile error: _not-a-uuid is not a valid UUID_. The interpolator takes no substitutions.
+    compile error which says how it is malformed, at the character at fault: _not-a-uuid is not a
+    valid UUID: n is not a hexadecimal digit_. The interpolator takes no substitutions.
 
     ```scala
     import soundness.*

@@ -1,0 +1,12 @@
+orthant 2 language
+
+@ 0 8 0 0ebedd6b12effe7d136016c001289d63
++       À l'intérieur de `r"…"`, une barre oblique inverse est une barre oblique inverse — seul
++       l'échappement propre à l'expression régulière s'applique, de sorte qu'une parenthèse
++       littérale s'écrit `r"\("` — et `$` s'écrit `$$` pour se désigner lui-même. Un motif qui ne
++       s'analyse pas est une erreur de compilation qui nomme la raison et désigne le caractère
++       fautif, _[↯/s.34.1.1] the regular expression could not be parsed because a capturing group
++       was not closed_ ; un `$name` qu'aucun groupe ne suit donne _[↯/s.34.1.2] … a capturing
++       group was expected immediately following an extractor_. Sous `regexBackends.re2`, le motif
++       est aussi vérifié par rapport au sous-ensemble RE2, de sorte qu'une référence arrière ou une
++       assertion avant ou arrière est rejetée à la compilation plutôt qu'à sa première utilisation.

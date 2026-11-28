@@ -139,7 +139,7 @@ entry .r   the `r"…"` interpolator: a regular expression as a pattern, or as a
     applies, so a literal parenthesis is `r"\("` — and `$` is written `$$` to mean itself. A
     pattern which does not parse is a compile error naming the reason and pointing at the
     offending character, _[↯/s.34.1.1] the regular expression could not be parsed because a
-    capturing group was not closed at 11_; a `$name` with no group after it is
+    capturing group was not closed_; a `$name` with no group after it is
     _[↯/s.34.1.2] … a capturing group was expected immediately following an extractor_. Under
     `regexBackends.re2` the pattern is also checked against the RE2 subset, so a
     backreference or a lookaround is rejected at compile time rather than at its first use.

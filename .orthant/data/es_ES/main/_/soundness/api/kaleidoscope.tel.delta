@@ -1,0 +1,12 @@
+orthant 2 language
+
+@ 0 8 0 0ebedd6b12effe7d136016c001289d63
++     Dentro de `r"…"` una barra invertida es una barra invertida —solo se aplica el escape propio
++     de la expresión regular, así que un paréntesis literal es `r"\("`— y `$` se escribe `$$` para
++     significarse a sí mismo. Un patrón que no se puede analizar es un error de compilación que
++     nombra el motivo y señala el carácter culpable, _[↯/s.34.1.1] the regular expression could
++     not be parsed because a capturing group was not closed_; un `$name` sin grupo detrás es
++     _[↯/s.34.1.2] … a capturing group was expected immediately following an extractor_. Con
++     `regexBackends.re2`, el patrón se comprueba además frente al subconjunto de RE2, así que una
++     referencia hacia atrás o un lookaround se rechazan en tiempo de compilación y no en su primer
++     uso.

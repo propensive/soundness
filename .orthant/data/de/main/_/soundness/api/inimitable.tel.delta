@@ -1,0 +1,9 @@
+orthant 2 language
+
+@ 0 5 0 0f6d9be83ed132d01a735d9d7ec702f5
++ entry .uuid   der Interpolator `uuid"…"`: ein UUID-Literal, beim Kompilieren des Codes geprüft
++     Ein Makro, das das Literal zur Kompilierzeit parst und zu `Uuid(msb, lsb)` mit den zwei Hälften
++     als Konstanten expandiert, sodass zur Laufzeit kein Parsen stattfindet. Ein fehlerhaftes Literal
++     ist ein Kompilierfehler: _not-a-uuid is not a valid UUID: n is not a hexadecimal digit_. Die
++     Meldung sagt, worin das Literal fehlerhaft ist, am fehlerhaften Zeichen. Der Interpolator nimmt
++     keine Einsetzungen.

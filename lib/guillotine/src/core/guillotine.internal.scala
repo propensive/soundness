@@ -33,6 +33,7 @@
 package guillotine
 
 import scala.collection.immutable.Seq
+import scala.collection.immutable as sci
 import scala.collection.immutable.{List, Nil}
 import scala.language.experimental.pureFunctions
 import scala.quoted.*
@@ -128,11 +129,40 @@ object internal:
       try block
       catch case error: Sh.Error => halt(error.detail, position(error.offset, 1))
 
-    var checkState = rethrow(Sh.Runtime.parse(Sh.Runtime.initial, parts.head.tt))
+    // The literal is tokenized once, here, with a character which appears nowhere in it standing
+    // for each substitution. The arguments which result are the command's, and say where in
+    // them each substitution goes, so the code which is made constructs the command: nothing is
+    // tokenized when it runs.
+    val marker: Char =
+      scala.Iterator.range(0xe000, 0xf900).map(_.toChar).find: char =>
+        parts.forall(_.indexOf(char) < 0)
 
-    var runtimeExpr: Expr[Sh.State] =
-      '{Sh.Runtime.parse(Sh.Runtime.initial, ${Expr(parts.head)}.tt)}
+      . getOrElse(halt(m"the command uses every private-use character"))
 
+    // The words in which a quotation was opened: such a word is an argument even if it turns
+    // out to be empty, which a word made only of a substitution of no parameters is not.
+    var quoted: sci.Set[Int] = sci.Set()
+
+    def tokenize(state: Sh.State, part: String): Sh.State =
+      var current = state
+      var index = 0
+
+      while index < part.length do
+        val before = current.current
+        current = rethrow(Sh.Runtime.parse(current, part.charAt(index).toString.tt))
+
+        if current.current != before
+          && (current.current == Sh.Context.Quotes1 || current.current == Sh.Context.Quotes2)
+        then quoted = quoted + (current.arguments.length - 1)
+
+        index += 1
+
+      current
+
+    var checkState = tokenize(rethrow(Sh.Runtime.initial), parts.head)
+
+    // Each substitution's parameters, and whether it stands within a quotation.
+    var holes: List[(Expr[Sh.Parameters], Boolean)] = Nil
     var i = 0
 
     while i < insertionExprs.length do
@@ -143,23 +173,76 @@ object internal:
         case '{$value: tpe} =>
           val typeclassExpr: Expr[Insertion[Sh.Parameters, tpe]] =
             Expr.summon[Insertion[Sh.Parameters, tpe]].getOrElse:
-              halt(m"can't substitute ${TypeRepr.of[tpe].show} into a sh-interpolator")
+              // The type as it would be written, not the singleton type of the `val` it is.
+              val name = TypeRepr.of[tpe].widen.dealias.typeSymbol.name
+              val shown: String =
+                if name.isEmpty || name.contains("$") then TypeRepr.of[tpe].widen.show else name
 
-          checkState = rethrow(Sh.Runtime.skip(checkState))
-          checkState = rethrow(Sh.Runtime.parse(checkState, nextPart.tt))
+              val article = if "AEIOUaeiou".indexOf(shown.charAt(0)) >= 0 then "an" else "a"
 
-          val current = runtimeExpr
+              halt
+                ( m"""
+                    ${article.tt} ${shown.tt} cannot be substituted into a command: its type needs an
+                    instance of `Parameterizable`, which gives the text of a parameter
+                  """,
+                  head.asTerm.pos )
 
-          runtimeExpr =
-            ' {
-                Sh.Runtime.parse
-                  ( Sh.Runtime.insert($current, $typeclassExpr.embed($value)),
-                    ${Expr(nextPart)}.tt )
-              }
+          val inQuotes =
+            checkState.current == Sh.Context.Quotes1 || checkState.current == Sh.Context.Quotes2
+
+          holes = holes :+ ('{$typeclassExpr.embed($value)}, inQuotes)
+
+          checkState =
+            rethrow(Sh.Runtime.insert(checkState, Sh.Parameters(marker.toString.tt)))
+
+          checkState = tokenize(checkState, nextPart)
 
       i += 1
 
-    rethrow(Sh.Runtime.complete(checkState))
+    val arguments: List[String] = rethrow(Sh.Runtime.complete(checkState)).arguments.toList.map(_.s)
+
+    // A word of the command: the literal text and the substitutions which make up one argument,
+    // or, where a substitution outside a quotation gives several parameters, several.
+    var next = 0
+
+    val words: List[(Boolean, Expr[Text], Expr[sci.List[Text]])] =
+      arguments.zipWithIndex.map: (argument, index) =>
+        var spread = false
+        var text: Expr[String] = '{""}
+        var pieces: List[Expr[sci.List[Text]]] = Nil
+        var start = 0
+
+        def literal(end: Int): Unit = if end > start then
+          val part = argument.substring(start, end).nn
+          text = '{$text+${Expr(part)}}
+          pieces = pieces :+ '{sci.List(${Expr(part)}.tt)}
+
+        var position = argument.indexOf(marker)
+
+        while position >= 0 do
+          literal(position)
+          val (parameters, inQuotes) = holes(next)
+          next += 1
+
+          if inQuotes then
+            text = '{$text+Sh.Runtime.quoted($parameters).s}
+            pieces = pieces :+ '{sci.List(Sh.Runtime.quoted($parameters))}
+          else
+            spread = true
+            pieces = pieces :+ '{$parameters.params.toList}
+
+          start = position + 1
+          position = argument.indexOf(marker, start)
+
+        literal(argument.length)
+        if quoted.contains(index) then pieces = pieces :+ '{sci.List("".tt)}
+
+        val word = if argument.indexOf(marker) < 0 then '{${Expr(argument)}.tt} else '{$text.tt}
+        (spread, word, '{Sh.Runtime.word(${Expr.ofList(pieces)})})
+
+    val command: Expr[Command] =
+      if words.exists(_(0)) then '{Sh.Runtime.command(${Expr.ofList(words.map(_(2)))})}
+      else '{Command(${Varargs(words.map(_(1)))}*)}
 
     val execType =
       ConstantType(StringConstant(parts.head.split(" ").nn.head.nn))
@@ -168,4 +251,4 @@ object internal:
 
     Refinement(TypeRepr.of[Command], "Exec", bounds).asType.absolve match
       case '[type commandType <: Command; commandType] =>
-        '{Sh.Runtime.complete($runtimeExpr).asInstanceOf[commandType]}
+        '{$command.asInstanceOf[commandType]}

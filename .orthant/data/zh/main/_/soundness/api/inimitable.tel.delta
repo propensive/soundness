@@ -1,0 +1,5 @@
+orthant 2 language
+
+@ 0 5 0 0f6d9be83ed132d01a735d9d7ec702f5
++ entry .uuid   `uuid"…"` 插值器：一个在代码编译时检查的 UUID 字面量
++     一个宏，在编译时解析字面量，并展开为以两个半部为常量的 `Uuid(msb, lsb)`，因此运行时不进行任何解析。格式错误的字面量会导致编译错误：_not-a-uuid is not a valid UUID: n is not a hexadecimal digit_。该消息会在出错的字符处说明字面量错在哪里。该插值器不接受任何替换。

@@ -165,3 +165,25 @@ object Tests extends Suite("manifest", m"Revolution Tests"):
       test(m"Release is not less than its prerelease"):
         v"1.0.0" < v"1.0.0-alpha"
       . assert(_ == false)
+
+      test(m"A version literal is the version it is written as"):
+        v"1.2.3-rc.1+build.7"
+      . assert(_ == Semver(1, 2, 3, List(t"rc", 1L), List(t"build", 7L)))
+
+      test(m"A version literal keeps its build metadata"):
+        v"1.2.3-rc.1+build.7".build
+      . assert(_ == List[Long | Text](t"build", 7L))
+
+      test(m"A version with a number missing is reported where it is missing"):
+        demilitarize(v"1.2").map: error =>
+          (error.message, error.focus)
+      . assert(_ == List((t"[↯/s.97.1.1] the version is not valid: the string did not match the SemVer 2.0 grammar", "2")))
+
+      test(m"A leading zero in a version is reported at the number"):
+        demilitarize(v"1.02.3").map: error =>
+          (error.message, error.focus)
+      . assert(_ == List((t"[↯/s.97.1.3] the version is not valid: a numeric identifier had a leading zero", "02")))
+
+      test(m"An invalid character in a prerelease is reported at the character"):
+        demilitarize(v"1.2.3-rc_1").map(_.focus)
+      . assert(_ == List("_"))

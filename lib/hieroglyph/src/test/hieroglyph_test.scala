@@ -119,6 +119,12 @@ object Tests extends Suite("unicode", m"Hieroglyph tests"):
         capture[Charset.Error](charsets.utf8Charset.decoded(badUtf8))
       . assert(_ == Charset.Error(1, enc"UTF-8"))
 
+      test(m"An encoding which cannot encode says why it has no encoder"):
+        demilitarize:
+          enc"ISO-2022-CN".encoder
+        . map(_.message)
+      . assert(_.exists(_.contains("can be decoded but not encoded")))
+
       test(m"Ensure that decoding is finished"):
         import textSanitizers.strictSanitizer
         given Codepage = enc"UTF-8".encoder

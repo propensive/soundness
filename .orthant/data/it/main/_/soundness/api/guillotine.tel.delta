@@ -1,0 +1,11 @@
+orthant 2 language
+
+@ 0 8 0 089cde83f6a8282d194ab7b207f9f99a
++       Non è per l'uso diretto: l'oggetto esiste perché la macro `sh` abbia una sede stabile.
++   entry .sh   la macro: analizza le parti letterali in fase di compilazione, posiziona gli errori e inserisce il parsing a runtime
++       Verifica il letterale con `Sh.Runtime` (segnalando uno `Sh.Error` sul carattere che lo ha
++       causato, rimappato attraverso `$$` e gli escape unicode fino al sorgente), evoca
++       un'`Insertion[Sh.Parameters, T]` per ogni tipo sostituito (fallendo con _a `T` cannot be
++       substituted into a command: its type needs an instance of `Parameterizable`_), e produce un
++       `Command` raffinato con la sua prima parola come tipo `Exec`: il letterale non viene
++       tokenizzato di nuovo quando il codice è eseguito.

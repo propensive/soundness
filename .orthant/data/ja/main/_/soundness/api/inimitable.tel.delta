@@ -1,0 +1,5 @@
+orthant 2 language
+
+@ 0 5 0 0f6d9be83ed132d01a735d9d7ec702f5
++ entry .uuid   `uuid"…"` 補間子：コードのコンパイル時に検査される UUID リテラル
++     リテラルをコンパイル時にパースし、二つの半分を定数とする `Uuid(msb, lsb)` に展開するマクロなので、実行時にはパースは行われない。不正な形式のリテラルはコンパイルエラーになる。_not-a-uuid is not a valid UUID: n is not a hexadecimal digit_。メッセージは、リテラルのどこがどう誤っているかを、誤りのある文字の位置で示します。この補間子は埋め込みを受け付けない。
