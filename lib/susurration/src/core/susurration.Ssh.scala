@@ -35,6 +35,11 @@ package susurration
 import scala.caps
 
 import anticipation.*
+
+// Named, so that this library's `Channel` is the one meant: a name in another file of the
+// package ranks below a wildcard import, and `anticipation.*` has a `Channel` of its own, of
+// a color, wherever `anticipation.color` is on the classpath.
+import susurration.Channel
 import coaxial.*
 import contingency.*
 import enigmatic.*
