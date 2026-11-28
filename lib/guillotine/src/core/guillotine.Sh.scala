@@ -85,6 +85,23 @@ object Sh:
       Command(arguments*)
 
     def initial: State = State(Awaiting, false, Nil.stdlib)
+
+    // What the code of an `sh"…"` literal calls. The literal is tokenized as the code compiles,
+    // so only the parameters which are substituted remain to be put in their places.
+
+    // The parameters of a substitution within a quotation, which are a single piece of text.
+    def quoted(parameters: Parameters): Text = parameters.params.to(List).join(t" ")
+
+    // The arguments which a word makes: its pieces are joined end to end, the last of one to
+    // the first of the next, so that a substitution of several parameters makes several
+    // arguments, and one of none adds nothing.
+    def word(pieces: sci.List[sci.List[Text]]): sci.List[Text] =
+      pieces.foldLeft(sci.List[Text]()): (word, piece) =>
+        if piece.isEmpty then word
+        else if word.isEmpty then piece
+        else word.init ++ (t"${word.last}${piece.head}" :: piece.tail)
+
+    def command(words: sci.List[sci.List[Text]]): Command = Command(words.flatten*)
     def skip(state: State): State = insert(state, Parameters(t"x"))
 
     def insert(state: State, value: Parameters): State = value.params.toList match

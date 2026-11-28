@@ -55,6 +55,36 @@ object Tests extends Suite("shell", m"Guillotine tests"):
         sh"ls $flags"
       . assert(_ == Command(t"ls", t"-la"))
 
+      test(m"a substituted list gives an argument for each element"):
+        val files = List(t"romeo.txt", t"juliet.txt")
+        sh"cat -n $files"
+      . assert(_ == Command(t"cat", t"-n", t"romeo.txt", t"juliet.txt"))
+
+      test(m"a substituted list joins the text on either side of it"):
+        val files = List(t"romeo", t"juliet")
+        sh"cat act-$files.txt"
+      . assert(_ == Command(t"cat", t"act-romeo", t"juliet.txt"))
+
+      test(m"an empty substituted list gives no argument"):
+        val files = List[Text]()
+        sh"cat $files -n"
+      . assert(_ == Command(t"cat", t"-n"))
+
+      test(m"an empty substituted list leaves the text beside it"):
+        val files = List[Text]()
+        sh"cat act-$files.txt"
+      . assert(_ == Command(t"cat", t"act-.txt"))
+
+      test(m"an empty list before an empty quotation gives an empty argument"):
+        val files = List[Text]()
+        sh"cat $files''"
+      . assert(_ == Command(t"cat", t""))
+
+      test(m"a substituted list within a quotation is a single argument"):
+        val names = List(t"Romeo", t"Juliet")
+        sh"echo 'O $names'"
+      . assert(_ == Command(t"echo", t"O Romeo Juliet"))
+
       test(m"parse two substitutions"):
         val flags = t"-la"
         val file = t"filename"
