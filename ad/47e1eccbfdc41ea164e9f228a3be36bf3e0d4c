@@ -1,0 +1,34 @@
+{
+  "signature": "-----BEGIN SSH SIGNATURE-----\nU1NIU0lHAAAAAQAAAZcAAAAHc3NoLXJzYQAAAAMBAAEAAAGBANKeZiOgGy2ygR1XnKHjPk\nGD1dnDP8rPMDkaTfybosrPoQPXc6dnx28ZedTB+gQmW1RbBeFO4xOUWdP6MbJZbmQHko3e\n+OQAnqn8RD3zmJ4HYqG+OF1n9dS89tEG0yrlJaoMfWSm5uMK/iGeBVIAHPPPejKY41X0AP\nU/4G5o7+3Yv2JKcK/nB5vd1A0XBOnGJCOQGzOxxFAIX1t3btuEPyL04540eAOAtm6OxuMX\ntpy057iBQr89StE3OoQxU9Nxd8Qd0+6G1bqVjjdhhy+BU5D8Md3jkEyQP6Uan+nmcxA+TD\nG1m0ZNkusZqWtojXjgxqTCZqSiNO87JyyKtOpWLEeRlm9+hA7Xa8HPu8hsR+e0JhotXpLe\nxJvCBVK60ZTdzfmhCujT8GrXiRjMDMF7rHPyBaLIbUl5EuoU1yJyfu4pZdJgpxe1zHQX5I\nGGy8MXuOsJ9J2IqX9izuZINS5AsycfFX+Y1YvInzALxhAhEKjrsvyi/u3Kte/4hcoLvrbF\nwQAAAAxzb3VuZG5lc3MtY2kAAAAAAAAABnNoYTUxMgAAAZQAAAAMcnNhLXNoYTItNTEyAA\nABgMdDMi6dS1S0S4IURSypA+AG7Thhf2aIEbnSXAF6BKN48mc1N0Fyou66CKjUzbvynyBy\nJegtRXT2CvIvfbW8uy7nNtBF1z0VyLDyBx7fwEvwKk5SeVcglq42APCp9rvDpsNVSRJL2u\n3cmukeCezxaR00WfC/Hx5+td85EhjNZz3vEXt+razFLzRA2zkGtqmXnfBu0fdsjVxAGTgp\neRxxLw0JTezCdnSG/TQVimmhLB+JMXYeRIkGu7IG4kTx8qKgMxAeGY8rxAZ9ktw7fXET5v\nVGHGnC7KIWHOrnHjq8+a7VZMvjThP+/Bhf93pw6EN+BJ257vLN/gu2gKe8HexWQTF/eRTu\ng6lOrp+cqbR5cVw0hTdgag9VSquFkwngKZTdeniNFIX9uIkVm5SUO9InKyMrHoW5Vh8muh\n1Zjn0aGhE2HSw2IFxhAPEaInMN1STzGW0CVMjxNIKcsXf5qmCtYZGrfJrOTiQENNZj063V\ntIEJcQnBHMlS/4rlaslShjyuoA==\n-----END SSH SIGNATURE-----\n",
+  "statement": {
+    "_type": "https://in-toto.io/Statement/v1",
+    "predicate": {
+      "commands": [
+        "./mill --no-daemon -j 6 --ticker false soundness.all.compile",
+        "./mill --no-daemon -j 6 --ticker false soundness.js.compile",
+        "./mill --no-daemon -j 6 --ticker false benches.compile",
+        "skipped: no Scala Native artifacts exist for the pinned compiler",
+        "./mill --no-daemon -j 6 --ticker false test.assembly",
+        "make ci",
+        "make wasm-e2e"
+      ],
+      "commit": "34acf44f125f7580269ee96ed33d33086786191e",
+      "ranAt": "2026-11-28T16:32:52Z",
+      "ranBy": "jon.pretty@propensive.com",
+      "result": "pass",
+      "tooling": {
+        "mill": "1.1.5"
+      }
+    },
+    "predicateType": "https://soundness.dev/local-ci/v1",
+    "subject": [
+      {
+        "digest": {
+          "gitTree": "ad47e1eccbfdc41ea164e9f228a3be36bf3e0d4c",
+          "sha256": "6127703ede3e60fcd7b41d2e7edd2aaeb2ca83397b0ce6a66fe8f1fd0e488435"
+        },
+        "name": "soundness-ci-inputs"
+      }
+    ]
+  }
+}
