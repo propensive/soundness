@@ -1,5 +1,19 @@
 orthant 2 language
 
+@ 0 1 0 103824356dd531aa090b1ccd3d5abc40
++     entry .Reason   CSS 无效的原因：十种错误，各有编号
+
+@ 0 1 0 0d328bb2fc31e46a1ad4548da82a3197
++           row  `UnknownDescriptor(rule, name)`  10  _`name` is not a recognized descriptor of the @`rule` rule_  `@font-face` 这类 at 规则的块中的一条声明
+
+@ 0 6 0 1cee0f3071fca5d014d2ac12d14ccdc7
++       entry .communicable   将每个原因渲染为其消息
++       entry #number   原因的编号，1 到 10，即错误的子代码
++     entry #reason   出了什么问题
++     entry #line   错误所在的行，作为 `Ordinal`
++     entry #column   错误所在的列，作为 `Ordinal`
++   entry .Errors   读取样式表时发现的每个 `Css.Error`，一次性抛出
+
 @ 0 38 0 15177b5972e74eeb18897d1f690c0e42
 +     entry .pixels   作为 `<length>` 的 `Pixels` 量：`4px`
 +     entry .ems   作为 `<length>` 的 `Ems` 量（quantitative 的）：`2em`
@@ -50,3 +64,14 @@ orthant 2 language
 +   entry #check   根据属性的语法检查值，或直接根据 `Css.Syntax` 检查
 +       两个重载：`check(property: PropertyDef, value)` 使用属性的已解析语法，`check(grammar: Css.Syntax, value)` 使用任意语法。
 +       两者都需要一个 `Tactic[Css.Error]`，只有当值的文本无法进行词法分析（未终止的字符串）时才会抛出。
+
+@ 0 9 0 0f6b192ddb5b9646140987a0b248e2c4
++   entry .list   每个已知属性，按数据集顺序
++   entry .all   每个已知属性，在 `Dictionary` 中按名称索引
++   entry .descriptors   at 规则的每个已知描述符，在 `Dictionary` 中以 `rule/descriptor` 为键
++   entry .descriptor   at 规则的描述符（例如 `font-face` 中的 `src`）的定义，或 `Unset`
++   entry .descriptive   一条 at 规则是否属于其块中包含数据集所定义描述符的那一类
++   entry .of   具名属性的定义，若不是可识别的属性则为 `Unset`
++   entry #name   属性的名称，kebab-case 形式
++   entry #syntax   数据集所写的值语法，`<length> | auto`
++   entry #grammar   解析为 `Css.Syntax` 的值语法，首次使用时计算

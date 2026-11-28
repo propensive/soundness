@@ -1,5 +1,19 @@
 orthant 2 language
 
+@ 0 1 0 103824356dd531aa090b1ccd3d5abc40
++     entry .Reason
++       info
++           la raison pour laquelle le CSS était invalide : les dix sortes de fautes, chacune
++           numérotée
+
+@ 0 1 0 0d328bb2fc31e46a1ad4548da82a3197
++           row  `UnknownDescriptor(rule, name)`  10  _`name` is not a recognized descriptor of the @`rule` rule_  une déclaration dans le bloc d'une règle-at telle que `@font-face`
+
+@ 0 1 0 045dd06c04d00ce60c93fb942aaf52f5
++       entry #number
++         info
++             le numéro de la raison, de 1 à 10, qui est le sous-code de l'erreur
+
 @ 0 1 0 0c13a2fd7ac59c7b11ae560a824ae162
 +   entry #rules
 +     info
@@ -26,3 +40,16 @@ orthant 2 language
 +         la propriété, et `check(grammar: Css.Syntax, value)` une grammaire quelconque. Toutes deux
 +         requièrent un `Tactic[Css.Error]`, levée uniquement lorsque le texte de la valeur ne peut
 +         pas être découpé en jetons (une chaîne non terminée).
+
+@ 0 3 0 0566041d4c31e0620123b624e67dc08f
++   entry .descriptors
++     info
++         chaque descripteur connu d'une règle-at, indexé sous la forme `rule/descriptor` dans un
++         `Dictionary`
++   entry .descriptor
++     info
++         la définition d'un descripteur d'une règle-at, tel que `src` dans `font-face`, ou `Unset`
++   entry .descriptive
++     info
++         si une règle-at est de celles dont le bloc contient des descripteurs que le jeu de données
++         définit

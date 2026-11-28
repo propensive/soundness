@@ -1,5 +1,19 @@
 orthant 2 language
 
+@ 0 1 0 103824356dd531aa090b1ccd3d5abc40
++     entry .Reason   почему CSS был некорректен: десять видов ошибок, каждый со своим номером
+
+@ 0 1 0 0d328bb2fc31e46a1ad4548da82a3197
++           row  `UnknownDescriptor(rule, name)`  10  _`name` is not a recognized descriptor of the @`rule` rule_  объявление в блоке at-правила, такого как `@font-face`
+
+@ 0 6 0 1cee0f3071fca5d014d2ac12d14ccdc7
++       entry .communicable   отображает каждую причину как её сообщение
++       entry #number   номер причины, от 1 до 10, который служит подкодом ошибки
++     entry #reason   что было не так
++     entry #line   строка ошибки в виде `Ordinal`
++     entry #column   столбец ошибки в виде `Ordinal`
++   entry .Errors   все `Css.Error`, найденные при чтении таблицы стилей, порождаемые один раз
+
 @ 0 38 0 15177b5972e74eeb18897d1f690c0e42
 +     entry .pixels   величина `Pixels` как `<length>`: `4px`
 +     entry .ems   величина `Ems` (из quantitative) как `<length>`: `2em`
@@ -59,3 +73,14 @@ orthant 2 language
 +       грамматику свойства, а `check(grammar: Css.Syntax, value)` — любую грамматику. Обеим
 +       нужна `Tactic[Css.Error]`, порождаемая, только когда текст значения нельзя разбить на
 +       токены (незакрытая строка).
+
+@ 0 9 0 0f6b192ddb5b9646140987a0b248e2c4
++   entry .list   все известные свойства в порядке набора данных
++   entry .all   все известные свойства с ключами по имени в `Dictionary`
++   entry .descriptors   все известные дескрипторы at-правила, с ключом вида `rule/descriptor` в `Dictionary`
++   entry .descriptor   определение дескриптора at-правила, например `src` в `font-face`, или `Unset`
++   entry .descriptive   относится ли at-правило к тем, чей блок содержит дескрипторы, определённые в наборе данных
++   entry .of   определение названного свойства или `Unset`, если такое свойство не распознано
++   entry #name   имя свойства в kebab-case
++   entry #syntax   грамматика значений в том виде, в каком её записывает набор данных, `<length> | auto`
++   entry #grammar   грамматика значений, разобранная в `Css.Syntax`, вычисляемая при первом использовании

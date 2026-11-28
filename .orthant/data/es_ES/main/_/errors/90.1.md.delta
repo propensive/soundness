@@ -1,0 +1,9 @@
+orthant 2 language
+
+@ 0 4 0 052a5dab684d82bd18505c746890d4a4
++ Cataclysm comprueba los nombres de las propiedades con el conjunto conocido, los descriptores de
++ una regla-at como `@font-face` con el conjunto propio de esa regla, y analiza los selectores según
++ la gramática moderna completa, de modo que una propiedad mal escrita o un selector mal formado se
++ notifica en lugar de pasarse a un navegador que lo ignorará en silencio.
+
+% 0 1 0 1e3578333b618c721dbd04a39bb3c6e3
