@@ -324,6 +324,12 @@ object Tests extends Suite("ansi", m"Escapade tests"):
     // ─── background colors ────────────────────────────────────────────────
 
     suite(m"Background colors"):
+      test(m"A color in another space can be a background"):
+        val leaf: Hsl = red.color.to[Hsl]
+        val general: Color in Hsl = leaf
+        emulate(e"${Bg(leaf)}(text)").buffer.style(0.z, 0.z).background == general.chroma
+      . assert(identity(_))
+
       test(m"24-bit Red background"):
         emulate(e"${Bg(red)}(text)").buffer.style(0.z, 0.z).background
       . assert(_ == red)

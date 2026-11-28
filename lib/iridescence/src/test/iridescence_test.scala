@@ -98,6 +98,20 @@ object Tests extends Suite("color", m"Iridescence tests"):
         rgb"#abcdef"
       . assert(_ == Chroma(171, 205, 239))
 
+      test(m"A color literal inspects as the literal which makes it"):
+        rgb"#abcdef".inspect
+      . assert(_ == t"""rgb"#abcdef"""")
+
+      test(m"A color with small channels inspects with every digit"):
+        rgb"#000a0f".inspect
+      . assert(_ == t"""rgb"#000a0f"""")
+
+      test(m"A color in another space is chromatic by its own type"):
+        val hsl: Hsl = rgb"#cc3366".color.to[Hsl]
+        val general: Color in Hsl = hsl
+        summon[Hsl is Chromatic].convert(hsl) == general.chroma
+      . assert(identity(_))
+
       test(m"Read a hex value without a leading hash"):
         rgb"abcdef"
       . assert(_ == Chroma(171, 205, 239))
