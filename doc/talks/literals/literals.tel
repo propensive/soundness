@@ -1,0 +1,569 @@
+tel 1.0
+
+# Checked literals in Soundness: a presentation, shown with
+#
+#   fuel present doc/talks/literals/literals.tel --transcript doc/talks/literals/literals.md
+#
+# Each state has an id, a slide's on its line and a frame's on its own, which the transcript
+# cues. A slide of code shows the code alone: what is said of it is in the transcript. Each
+# frame holds one example, or one more step of the example before it; a step which edits
+# the code before it is `typed`.
+title  Checked literals
+style  ../soundness.css
+script  ../soundness.js
+
+slide
+  markdown
+      # Checked literals
+
+      Exact handling in Soundness
+
+slide overview
+  markdown
+      ## What follows
+
+      - Literals for many types of value
+      - Mistakes which do not compile
+      - Substitutions which are typed
+      - Construction at no cost
+      - The same literals as patterns
+
+slide golden-rules
+  markdown
+      ## Two golden rules
+
+      1. Impossible states should be unrepresentable.
+      2. Transitions between states should be total.
+
+slide
+  syntax scala
+    compile
+    frame runtime-parse
+      code
+          def read(text: Text): MediaType raises MediaType.Error =
+            text.as[MediaType]
+    frame must-handle
+      typed
+      code
+          def read(text: Text): MediaType raises MediaType.Error =
+            text.as[MediaType]
+
+          val found = safely(read(t"text/plian"))
+    frame literal-cannot-fail
+      typed
+      code
+          def read(text: Text): MediaType raises MediaType.Error =
+            text.as[MediaType]
+
+          val found = safely(read(t"text/plian"))
+
+          val plain: MediaType = media"text/plain"
+
+slide exact-handling
+  markdown
+      ## Exact handling
+
+      Handle every failure which is possible.
+
+      Never handle a failure which is impossible.
+
+slide
+  syntax scala
+    compile
+    frame tour-text
+      code
+          val name = t"Viola"
+    frame tour-url
+      code
+          val site = url"https://illyria.example.com/court"
+    frame tour-email
+      code
+          val mail = email"viola@illyria.example.com"
+    frame tour-host
+      code
+          val host = host"illyria.example.com"
+    frame tour-ip
+      code
+          val address = ip"192.168.1.12"
+    frame tour-mac
+      code
+          val card = mac"01-23-45-ab-cd-ef"
+    frame tour-port
+      code
+          val port = tcp"443"
+    frame tour-uuid
+      code
+          val id = uuid"7a0c2f5e-1b6d-4c3a-9e8f-2d4b6a8c0e1f"
+    frame tour-version
+      code
+          val release = v"1.2.0-rc.1"
+    frame tour-isin
+      code
+          val share = isin"GB00BH4HKS39"
+    frame tour-media
+      code
+          val kind = media"text/plain"
+    frame tour-colour
+      code
+          val indigo = rgb"#4b0082"
+    frame tour-hex
+      code
+          val bytes = hex"cafebabe"
+    frame tour-binary
+      code
+          val flags = bin"10110010"
+    frame tour-timezone
+      code
+          val zone = tz"Europe/London"
+    frame tour-date
+      code
+          val day = ts"1602-02-02"
+    frame tour-duration
+      code
+          val length = dur"PT2H30M"
+    frame tour-regex
+      code
+          val word = r"[A-Z][a-z]+"
+    frame tour-path
+      code
+          val home = p"/home/viola/letters"
+    frame tour-command
+      code
+          val list = sh"ls -l letters"
+    frame tour-json
+      code
+          val json = j"""{"name": "Feste", "songs": 4}"""
+    frame tour-yaml
+      code
+          val yaml = y"{name: Hamlet, age: 30}"
+    frame tour-xml
+      code
+          val xml = x"<play><title>Twelfth Night</title></play>"
+    frame tour-html
+      code
+          val html = h"<ul><li>Oberon</li><li>Titania</li></ul>"
+    frame tour-css
+      code
+          val style = css"p { color: red }"
+
+slide
+  syntax scala
+    compile
+    frame uuid-wrong
+      errors show
+      code
+          val id = uuid"not-a-uuid"
+    frame uuid-right
+      typed
+      code
+          val id = uuid"7a0c2f5e-1b6d-4c3a-9e8f-2d4b6a8c0e1f"
+    frame date-wrong
+      errors show
+      code
+          val opening = ts"2024-02-30T19:30:00"
+    frame date-right
+      typed
+      code
+          val opening = ts"2024-02-29T19:30:00"
+    frame isin-wrong
+      errors show
+      code
+          val share = isin"GB00BH4HKS38"
+    frame isin-right
+      typed
+      code
+          val share = isin"GB00BH4HKS39"
+    frame media-wrong
+      errors show
+      code
+          val kind = media"text/plian"
+    frame media-right
+      typed
+      code
+          val kind = media"text/plain"
+    frame port-wrong
+      errors show
+      code
+          val port = tcp"70000"
+    frame port-right
+      typed
+      code
+          val port = tcp"7000"
+
+slide
+  syntax scala
+    compile
+    frame hex-wrong
+      errors show
+      code
+          val bytes = hex"cafebabg"
+    frame hex-right
+      typed
+      code
+          val bytes = hex"cafebabe"
+    frame regex-wrong
+      errors show
+      code
+          val greeting = r"hello(world"
+    frame regex-right
+      typed
+      code
+          val greeting = r"hello(world)"
+    frame shell-wrong
+      errors show
+      code
+          val echo = sh"echo 'Hello world"
+    frame shell-right
+      typed
+      code
+          val echo = sh"echo 'Hello world'"
+    frame xml-wrong
+      errors show
+      code
+          val user = x"<user>Viola</usr>"
+    frame xml-right
+      typed
+      code
+          val user = x"<user>Viola</user>"
+    frame html-wrong
+      errors show
+      code
+          val fairies = h"<ul><p>Oberon</p></ul>"
+    frame html-right
+      typed
+      code
+          val fairies = h"<ul><li>Oberon</li></ul>"
+
+slide typed-substitutions
+  markdown
+      ## A substitution is a value
+
+      It is never turned into a string first.
+
+      `toString` is never called.
+
+slide
+  syntax scala
+    compile
+    frame text-shown
+      code
+          val name = t"Feste"
+          val songs = 4
+
+          val line = t"$name sings $songs songs"
+    frame text-lute
+      typed
+      code
+          val name = t"Feste"
+          val songs = 4
+
+          val line = t"$name sings $songs songs"
+
+          class Lute
+          val lute = Lute()
+    frame text-rejected
+      errors show
+      typed
+      code
+          val name = t"Feste"
+          val songs = 4
+
+          val line = t"$name sings $songs songs"
+
+          class Lute
+          val lute = Lute()
+
+          val wrong = t"$name plays the $lute"
+
+slide
+  syntax scala
+    compile
+    frame json-values
+      code
+          val json = j"""{"name": $name, "songs": $songs}"""
+    frame json-in-string
+      code
+          val json = j"""{"greeting": "Hello, $name!"}"""
+    frame json-spread
+      code
+          val roles = List(t"fool", t"singer")
+
+          val json = j"""{"roles": ["clown", $roles*]}"""
+    frame json-record
+      code
+          case class Player(name: Text, songs: Int)
+          val feste = Player(t"Feste", 4)
+
+          val record = j"""{"player": $feste, "year": 1602}"""
+    frame json-rejected
+      errors show
+      code
+          val wrong = j"""{"instrument": $lute}"""
+
+slide
+  syntax scala
+    compile
+    frame html-child
+      code
+          val item = h"<li>$name</li>"
+    frame html-nested
+      typed
+      code
+          val item = h"<li>$name</li>"
+          val list = h"<ul>$item</ul>"
+    frame html-url
+      code
+          val globe = url"https://globe.example.com/"
+
+          val link = h"<a href=$globe>The Globe</a>"
+    frame html-number
+      code
+          val width = 2
+
+          val cell = h"<td colspan=$width>$name</td>"
+    frame html-wrong-tag
+      errors show
+      typed
+      code
+          val width = 2
+
+          val wrong = h"<p colspan=$width>$name</p>"
+    frame html-rejected
+      errors show
+      code
+          val wrong = h"<p>$lute</p>"
+
+slide
+  syntax scala
+    compile
+    frame xml-values
+      code
+          val title = t"Twelfth Night"
+
+          val play =
+            x"<play title=$title><fool>$name</fool></play>"
+    frame yaml-values
+      code
+          val yaml = y"{name: $name, songs: $songs}"
+
+slide
+  syntax scala
+    compile
+    frame css-colour
+      code
+          val red = rgb"#cc0000"
+
+          val style = css"p { color: $red }"
+    frame css-wrong-type
+      errors show
+      typed
+      code
+          val red = rgb"#cc0000"
+
+          val style = css"p { width: $red }"
+    frame css-unknown
+      errors show
+      typed
+      code
+          val red = rgb"#cc0000"
+
+          val style = css"p { colour: $red }"
+
+slide
+  syntax scala
+    compile
+    frame shell-text
+      code
+          val file = t"act one.txt"
+
+          val count = sh"wc -l $file"
+    frame shell-list
+      typed
+      code
+          val files = List(t"act one.txt", t"act two.txt")
+
+          val count = sh"wc -l $files"
+    frame shell-quoted
+      typed
+      code
+          val files = List(t"act one.txt", t"act two.txt")
+
+          val echo = sh"echo '$files'"
+
+slide
+  syntax scala
+    compile
+    frame url-text
+      code
+          val title = t"Twelfth Night"
+
+          val page = url"https://globe.example.com/plays/$title"
+    frame url-port
+      code
+          val port = 8080
+
+          val local = url"http://localhost:$port/plays"
+
+slide
+  syntax scala
+    compile
+    frame type-url
+      code
+          val site: Url["https"] = url"https://globe.example.com"
+    frame type-port
+      code
+          val web: Port over Tcp of 443 = tcp"443"
+    frame type-date
+      code
+          val day: Date = ts"1602-02-02"
+    frame type-moment
+      typed
+      code
+          val evening: Timestamp = ts"1602-02-02T19:30:00"
+    frame type-ip
+      code
+          val local: Ipv4 = ip"192.168.1.12"
+    frame type-ip6
+      code
+          val global: Ipv6 = ip"2001:db8::1"
+    frame type-xml
+      code
+          val play: Xml of "play" = x"<play>Twelfth Night</play>"
+
+slide
+  syntax scala
+    parse
+    frame cost-literal
+      code
+          val item = h"<li>$name</li>"
+    frame cost-reparsed
+      code
+          val item = Html.parse(t"<li>" + name + t"</li>")
+    frame cost-constructed
+      code
+          val item = Html.Element
+            ( "li", Attributes(), Array(Html.Text(name)) )
+    frame cost-json
+      code
+          val json = j"""{"name": $name, "songs": 4}"""
+    frame cost-json-constructed
+      code
+          val json = Json.ast:
+            Json.Ast.obj
+              ( Array("name", "songs"),
+                Array(encode(name), Json.Ast(4)) )
+
+slide
+  syntax scala
+    compile
+    frame match-json
+      code
+          val play = j"""{"title": "Twelfth Night", "year": 1602,
+                          "fools": ["Feste", "Fabian"]}"""
+
+          val found = play match
+            case j"""{"title": $title, $rest}""" => title
+            case _ => j"{}"
+    frame match-json-exact
+      typed
+      code
+          val play = j"""{"title": "Twelfth Night", "year": 1602,
+                          "fools": ["Feste", "Fabian"]}"""
+
+          val found = play match
+            case j"""{"year": 1602, $rest}""" => rest
+            case _ => j"{}"
+    frame match-json-array
+      typed
+      code
+          val play = j"""{"title": "Twelfth Night", "year": 1602,
+                          "fools": ["Feste", "Fabian"]}"""
+
+          val found = play match
+            case j"""{"fools": [$one, $more*], $rest}""" => one
+            case _ => j"{}"
+
+slide
+  syntax scala
+    compile
+    frame match-xml
+      code
+          val play =
+            x"""<play year="1602"><fool>Feste</fool></play>"""
+
+          val year = play match
+            case x"<play year=$year>$child</play>" => year
+            case _ => t"unknown"
+    frame match-xml-element
+      typed
+      code
+          val play =
+            x"""<play year="1602"><fool>Feste</fool></play>"""
+
+          val count = play match
+            case x"<play $attrs><$fool></play>" => attrs.size
+            case _ => 0
+    frame match-html
+      code
+          val fairies = h"<ul><li>Oberon</li></ul>"
+
+          val single = fairies match
+            case h"<ul>$item</ul>" => true
+            case _ => false
+
+slide
+  syntax scala
+    compile
+    frame match-regex
+      code
+          val place: (Text, Text) = t"act 3 scene 12" match
+            case r"act $act(\d) scene $scene(\d+)" => (act, scene)
+            case _ => (t"", t"")
+    frame match-regex-optional
+      code
+          val aside: Optional[Text] = t"Enter Viola aside" match
+            case r"Enter [A-Z][a-z]+$aside( aside)?" => aside
+            case _ => Unset
+    frame match-regex-repeated
+      code
+          val digits: List[Char] = t"line 1602" match
+            case r"line $digits\d+" => digits
+            case _ => Nil
+
+slide wrap-up
+  markdown
+      ## A checked literal is
+
+      - **checked**, as the code compiles
+      - **typed**, in what it takes and what it gives
+      - **fast**, with nothing left to parse
+
+      Handle every failure which is possible.
+
+      Never handle a failure which is impossible.
+
+slide
+  syntax scala
+    compile
+    frame next-populated
+      code
+          val cast = List(t"Viola", t"Olivia", t"Feste")
+          val lead: Text = cast.head
+    frame next-optional
+      typed
+      code
+          val cast = List(t"Viola", t"Olivia", t"Feste")
+          val lead: Text = cast.head
+
+          def first(cast: List[Text]): Optional[Text] = cast.head
+
+slide links
+  markdown
+      ## Soundness
+
+      - **soundness.dev**
+      - **github.com/propensive/soundness**
+      - **propensive.com/discord**
+      - **propensive** on YouTube, Instagram and TikTok
+
+      Consultancy and training: **propensive.com**

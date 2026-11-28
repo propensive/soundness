@@ -1,0 +1,143 @@
+@import url("https://fonts.googleapis.com/css2?family=Bungee+Hairline&family=Space+Grotesk:wght@300..700&family=Space+Mono:ital,wght@0,400;0,700;1,400&display=swap");
+
+/* A presentation in the colours and faces of soundness.dev, as Glimmer's stylesheet has them
+   (`glimmer.Stylesheet`): Space Grotesk for text and Space Mono for code, on the logo's dark
+   radial gradient, with the site's waves behind (`soundness.js`, which a deck names with
+   `script`). A deck names this file with `style`, and its rules come after Pyrocosm's. */
+
+:root {
+  --edge: #00141a;
+  --middle: #002124;
+
+  --text: #a8bbbd;
+  --strong: #ffffff;
+  --muted: #7f9a9d;
+
+  --orange: #e17418;
+  --magenta: #d4004d;
+  --rose: #ff5c93;
+  --yellow: #fefc1b;
+  --note: #ffb163;
+
+  --line: rgba(213, 225, 225, 0.12);
+
+  --sans: 'Space Grotesk', system-ui, sans-serif;
+  --mono: 'Space Mono', ui-monospace, Menlo, monospace;
+
+  color-scheme: dark;
+
+  /* Pyrocosm's own properties, given the site's values. */
+  --pyro-bg: var(--edge);
+  --pyro-fg: var(--text);
+  --pyro-title: var(--strong);
+  --pyro-muted: var(--muted);
+  --pyro-surface: var(--middle);
+  --pyro-border: var(--line);
+  --pyro-rule: var(--line);
+  --pyro-link: var(--strong);
+  --pyro-selection: rgba(254, 252, 27, 0.18);
+  --pyro-inline-bg: rgba(254, 252, 27, 0.07);
+  --pyro-inline-border: transparent;
+
+  --pyro-tone-accent: var(--orange);
+  --pyro-on-accent: var(--edge);
+  --pyro-tone-warning: var(--note);
+  --pyro-tone-failure: var(--rose);
+
+  --pyro-font-body: var(--sans);
+  --pyro-font-title: var(--sans);
+  --pyro-font-mono: var(--mono);
+  --pyro-font-label: var(--mono);
+  --pyro-radius: 0.75rem;
+
+  --pyro-code-bg: transparent;
+  --pyro-code-fg: var(--text);
+
+  /* A colour for each kind of token, so that every kind Fuel tells apart is told apart here:
+     the site's rose, orange and yellow for keywords, types and strings, as it has them, and a
+     colour of its own for each of the rest. Each is at least 5:1 against the backdrop. */
+  --pyro-code-accent-keyword: var(--rose);
+  --pyro-code-accent-modifier: #c9a0ff;
+  --pyro-code-accent-typal: #f2a25c;
+  --pyro-code-accent-string: var(--yellow);
+  --pyro-code-accent-number: #7ee0a1;
+  --pyro-code-accent-term: #e6eeee;
+  --pyro-code-accent-symbol: #4fc3d9;
+  --pyro-code-accent-parens: #6c8fe0;
+  --pyro-code-accent-unparsed: var(--text);
+  --pyro-code-accent-command: #ff8a65;
+  --pyro-code-accent-comment: #6b8f7c;
+  --pyro-code-accent-substitute: #c4ad84;
+  --pyro-code-accent-error: #ff4d4d;
+}
+
+/* The backdrop is on `<html>`, as the site's is, and the stage is clear over it, so that the
+   canvas of waves the script makes shows between the two. */
+html {
+  background: var(--edge) radial-gradient(circle farthest-corner at center, var(--middle), var(--edge)) fixed;
+}
+
+#ripple { position: fixed; inset: 0; width: 100vw; height: 100vh; z-index: -1; display: block; }
+
+body.pyro-stage {
+  background: transparent;
+  color: var(--text);
+  font-family: var(--sans);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Text: headings white and medium, prose in the site's grey, stress as the site marks it. */
+.pyro-stage .pyro-leaf h1,
+.pyro-stage .pyro-leaf h2,
+.pyro-stage .pyro-leaf h3 {
+  font-family: var(--sans);
+  font-weight: 500;
+  line-height: 1.15;
+  letter-spacing: -0.02em;
+  color: var(--strong);
+}
+
+.pyro-stage .pyro-leaf p,
+.pyro-stage .pyro-leaf li {
+  font-family: var(--sans);
+  font-weight: 300;
+  color: var(--text);
+}
+
+.pyro-stage .pyro-leaf strong { font-weight: 500; color: var(--strong); }
+
+.pyro-stage .pyro-leaf em {
+  font-style: normal;
+  color: var(--strong);
+  box-shadow: inset 0 -0.08em 0 var(--orange);
+}
+
+.pyro-stage .pyro-leaf :not(pre) > code {
+  font-family: var(--mono);
+  color: var(--yellow);
+  background: rgba(254, 252, 27, 0.07);
+  border: 0;
+  border-radius: 0.3em;
+  padding: 0.1em 0.3em;
+}
+
+/* Code: on the backdrop itself, with no panel of its own and nothing beside it. */
+.pyro-stage .pyro-leaf .pyro-codeblock {
+  font-family: var(--mono);
+  font-variant-ligatures: none;
+  font-feature-settings: 'liga' 0, 'clig' 0, 'calt' 0;
+  font-size: 1.05em;
+  line-height: 1.6;
+  background: transparent;
+  border: 0;
+}
+
+/* The cursor of a change which is typed, in the site's yellow. */
+.pyro-typing-caret { background-color: var(--yellow); }
+
+/* A slide shows its code alone: no markers for an animation's steps, and no controls. */
+.pyro-stage .pyro-animation-steps,
+.pyro-stage .pyro-deck-controls,
+.pyro-stage .pyro-deck-counter {
+  display: none;
+}
