@@ -667,7 +667,7 @@ object internal:
 
     val expression: Expression =
       recover:
-        case error: Parse.Error => halt(error.message, translate(error.span.offset.lay(0)(_.n0)))
+        case error: Parse.Error => halt(error.unlocated, translate(error.span.offset.lay(0)(_.n0)))
 
       . protect(XPathReader.parse(joined.tt, holes = true))
 
@@ -824,7 +824,7 @@ object internal:
           val pe = error
           val off = pe.position.offset.or(0)
           val length = pe.position.length.or(0)
-          halt(pe.labelled, translateOffset(off, length))
+          halt(pe.unlocated, translateOffset(off, length))
 
       Xml.parse(Iterator(parts.mkString("\u0000").tt), XmlSchema.generic, capture(_, _))
 

@@ -448,7 +448,7 @@ object internal:
           val pe = error
           val off = pe.position.offset.or(0)
           val length = pe.position.length.or(0)
-          halt(pe.labelled, translateOffset(off, length))
+          halt(pe.unlocated, translateOffset(off, length))
 
       Html.parse(Iterator(parts.mkString("\u0000").tt), whatwg.generic, capture(_, _))
 

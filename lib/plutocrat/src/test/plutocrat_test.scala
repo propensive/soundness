@@ -185,8 +185,8 @@ object Tests extends Suite("money", m"Plutocrat tests"):
       . assert(_ == List(t"[↯/s.50.1.2] the ISIN number is not valid because its country code 55 was not valid"))
 
       test(m"Compiletime ISIN invalid character"):
-        demilitarize(isin"US00Bx4HKS30").map(_.message)
-      . assert(_ == List(t"[↯/s.50.1.1] the ISIN number is not valid because the character x at position 5 is not a digit or uppercase letter"))
+        demilitarize(isin"US00Bx4HKS30").map(_.message.trim.nn)
+      . assert(_ == List(t"[↯/s.50.1.1] the ISIN number is not valid because the character x is not a digit or uppercase letter"))
 
       test(m"Compiletime ISIN Luhn check failure"):
         demilitarize(isin"GB00BH4HKS34").map(_.message)

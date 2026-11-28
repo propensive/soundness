@@ -99,7 +99,25 @@ object Tests extends Suite("uuid", m"Inimitable Tests"):
         demilitarize:
           uuid"not-a-uuid"
         .map(_.message)
-      . assert(_ == List(t"[↯/s.47.1] not-a-uuid is not a valid UUID"))
+      . assert(_ == List(t"[↯/s.47.1] not-a-uuid is not a valid UUID: n is not a hexadecimal digit"))
+
+      test(m"A bad digit in a UUID literal is marked where it is"):
+        demilitarize:
+          uuid"a0cb16f0-d41e-4c28-862f-bd6164bbccXY"
+        .map(_.focus)
+      . assert(_ == List("X"))
+
+      test(m"A UUID literal which is too short says how long it is"):
+        demilitarize:
+          uuid"a0cb16f0-d41e-4c28-862f"
+        .map(_.message)
+      . assert(_ == List(t"[↯/s.47.1] a0cb16f0-d41e-4c28-862f is not a valid UUID: it has 23 characters, and needs 36"))
+
+      test(m"A missing hyphen in a UUID literal is marked where it should be"):
+        demilitarize:
+          uuid"a0cb16f0d41e-4c28-862f-bd6164bbcc8c"
+        .map(_.focus)
+      . assert(_ == List("d"))
 
     suite(m"Native-rendering coverage"):
       test(m"inimitable's types inspect natively"):

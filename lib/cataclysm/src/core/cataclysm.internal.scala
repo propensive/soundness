@@ -124,7 +124,7 @@ object internal:
             Interpolation.sourcePosition
               ( parts.to(List), Interpolation.decodeOrigins[origins], 1, offset )
 
-          halt(cssError.message, position)
+          halt(m"${cssError.bolt.label} invalid CSS: ${cssError.reason}", position)
 
       // Literal declarations are validated as they are parsed; one with a substitution
       // is left for `hole`, which checks its property against the substitution's type.

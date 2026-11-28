@@ -137,6 +137,26 @@ object protointernal:
         case _ =>
           false
 
+  // The first rule of the `limit` intersection which `name` breaks, in the rule's own words, or
+  // nothing if it breaks none which can be evaluated as the code compiles.
+  def planeFault(using Quotes)(name: Text, limit: quotes.reflect.TypeRepr): List[Message] =
+    import quotes.reflect.*
+
+    val faults: List[Message] = decompose(limit).to(List).flatMap: repr =>
+      repr.asMatchable match
+        case AppliedType(_, List(param)) => param.asMatchable match
+          case ConstantType(StringConstant(text)) =>
+            val rule = companion[Rule](repr.typeSymbol)
+            if rule.check(name, text.tt) then Nil else List(rule.describe(text.tt))
+
+          case _ =>
+            Nil
+
+        case _ =>
+          Nil
+
+    faults.take(1)
+
   def extractor(context: Expr[StringContext]): Macro[Any] =
     import quotes.reflect.*
 
@@ -172,8 +192,31 @@ object protointernal:
       . foldLeft(List[TypeRepr]()): (acc, self) =>
           if acc.exists(_ =:= self) then acc else self :: acc
 
-    if planes.isEmpty
-    then halt(68, 8, m"the name $name is not a valid identifier in any namespace in scope")
+    // A name which no plane in scope accepts is reported with the rule it breaks in each, in
+    // the words the same name gets when it is checked as the code runs.
+    def faults: List[Message] =
+      everyNominative().flatMap: tree =>
+        tree.asExpr match
+          case '{ type self
+                  type limit
+                  type nominative <: Nominative { type Self = self; type Limit = limit }
+                  $value: nominative } =>
+
+            planeFault(name, TypeRepr.of[limit]).map: fault =>
+              val plane = TypeRepr.of[self].typeSymbol.name.tt
+              m"as a $plane, it $fault"
+
+          case _ =>
+            Nil
+
+    if planes.isEmpty then
+      val reasons = faults
+
+      val detail: Message =
+        if reasons.isEmpty then m"" else reasons.tail.foldLeft(m": ${reasons.head}"): (all, next) =>
+          m"$all; $next"
+
+      halt(68, 8, m"the name $name is not a valid identifier in any namespace in scope$detail")
     else planes.reduce(AndType(_, _)).asType.absolve match
       case '[type plane; plane] => '{${Expr(name)}.asInstanceOf[Name[plane]]}
 

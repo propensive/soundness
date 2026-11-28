@@ -125,6 +125,12 @@ object Tests extends Suite("names", m"Nomenclature tests"):
         val name = n"."
     . assert(!_.nil)
 
+    test(m"An identifier valid in no plane in scope is told which rule it breaks"):
+      demilitarize:
+        val name = n"."
+      . map(_.message)
+    . assert(_.exists(_.contains("it must")))
+
     test(m"Name is required"):
       capture[Name.Error](Name[Required](t"")).message.show
     . assert(_ == t"""the name “” is not valid because it must not be empty""")

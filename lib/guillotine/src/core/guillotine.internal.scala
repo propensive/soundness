@@ -173,7 +173,19 @@ object internal:
         case '{$value: tpe} =>
           val typeclassExpr: Expr[Insertion[Sh.Parameters, tpe]] =
             Expr.summon[Insertion[Sh.Parameters, tpe]].getOrElse:
-              halt(m"can't substitute ${TypeRepr.of[tpe].show} into a sh-interpolator")
+              // The type as it would be written, not the singleton type of the `val` it is.
+              val name = TypeRepr.of[tpe].widen.dealias.typeSymbol.name
+              val shown: String =
+                if name.isEmpty || name.contains("$") then TypeRepr.of[tpe].widen.show else name
+
+              val article = if "AEIOUaeiou".indexOf(shown.charAt(0)) >= 0 then "an" else "a"
+
+              halt
+                ( m"""
+                    ${article.tt} ${shown.tt} cannot be substituted into a command: its type needs an
+                    instance of `Parameterizable`, which gives the text of a parameter
+                  """,
+                  head.asTerm.pos )
 
           val inQuotes =
             checkState.current == Sh.Context.Quotes1 || checkState.current == Sh.Context.Quotes2

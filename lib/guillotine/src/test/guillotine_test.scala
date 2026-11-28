@@ -201,6 +201,15 @@ object Tests extends Suite("shell", m"Guillotine tests"):
       . assert(_ == Command(t"cat", t"/etc/hosts"))
 
     suite(m"Compile-time checking"):
+      test(m"a value which is not a parameter is refused in plain words"):
+        case class Scene(name: Text)
+        val scene = Scene(t"balcony")
+
+        demilitarize:
+          sh"echo $scene"
+        . map(_.message)
+      . assert(_.exists(_.contains("a Scene cannot be substituted into a command")))
+
       test(m"unterminated single quote is a compile error"):
         demilitarize:
           sh"echo 'Hello world"

@@ -118,8 +118,18 @@ object protointernal:
         case '{$value: tpe} =>
           val typeclass: Expr[Insertion[Url.Fragment, tpe]] =
             Expr.summon[Insertion[Url.Fragment, tpe]].getOrElse:
+              // The type as it would be written, not the singleton type of the `val` it is.
+              val name = TypeRepr.of[tpe].widen.dealias.typeSymbol.name
+              val shown: String =
+                if name.isEmpty || name.contains("$") then TypeRepr.of[tpe].widen.show else name
+
+              val article = if "AEIOUaeiou".indexOf(shown.charAt(0)) >= 0 then "an" else "a"
+
               halt
-                ( m"can't substitute ${TypeRepr.of[tpe].show} into a url-interpolator",
+                ( m"""
+                    ${article.tt} ${shown.tt} cannot be substituted into a URL: its type needs an
+                    instance of `Encodable in Text`, or of `Embeddable by Url.Fragment`
+                  """,
                   insertion.asTerm.pos )
 
           val label: String = typeclass.absolve match

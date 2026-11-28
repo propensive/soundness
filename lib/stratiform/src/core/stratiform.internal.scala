@@ -396,7 +396,21 @@ object internal:
             ( parts.to(proscenium.List), contextual.Interpolation.decodeOrigins[origins], 1,
               offsetOf(error.index), 1 )
 
-        halt(error.message, position)
+        // Every fault the parser finds in a path's text is one kind of failure (telp.md §7), so
+        // which rule of the syntax was broken is said here, where the text is at hand.
+        val rule: Message =
+          if raw.isEmpty then m"a path cannot be empty"
+          else if !Telp.delimiters.contains(raw.take(1)) then
+            m"""
+              its first character must be the delimiter which separates its components, one of
+              ${Telp.delimiters}, and ${raw.take(1).tt} is not
+            """
+          else if raw.contains("\n") || raw.contains("\r") then
+            m"a component cannot contain a line break"
+          else
+            m"a component cannot be empty"
+
+        halt(m"${error.message}: $rule", position)
 
     . protect(Telp.parse(raw.tt))
 
@@ -437,7 +451,7 @@ object internal:
       given HaltTactic[Tel.Error, Tel.Document] = new HaltTactic[Tel.Error, Tel.Document]:
         private def fail(telError: Tel.Error): Nothing =
           halt
-            ( m"the tel\"…\" literal is invalid: ${telError.message}",
+            ( m"${telError.bolt.label} the tel\"…\" literal is invalid because ${telError.reason}",
               errorPosition[origins](telError, source, parts) )
 
         override def record(error: Diagnostics ?=> Tel.Error): Unit = fail(error)
@@ -644,7 +658,7 @@ object internal:
       given HaltTactic[Tel.Error, Tel.Document] = new HaltTactic[Tel.Error, Tel.Document]:
         private def fail(telError: Tel.Error): Nothing =
           halt
-            ( m"the tel\"…\" pattern is invalid: ${telError.message}",
+            ( m"${telError.bolt.label} the tel\"…\" pattern is invalid because ${telError.reason}",
               errorPosition[origins](telError, source, parts) )
 
         override def record(error: Diagnostics ?=> Tel.Error): Unit = fail(error)

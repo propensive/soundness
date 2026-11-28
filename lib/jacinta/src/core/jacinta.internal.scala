@@ -447,9 +447,16 @@ object internal:
               case position: Json.Ast.Position => position.column
               case _                           => 0
 
-            val off = characters(pe.position.offset.or(reached))
+            // A fault found at the end of the text, such as an array which is never closed, is
+            // marked at the last character: there is nothing after it to mark.
+            val off =
+              characters(pe.position.offset.or(reached)).min((source.length - 1).max(0))
+
             val length = pe.position.length.or(0)
-            halt(pe.labelled, translateOffset(off, length))
+
+            // The mark says where the fault is, so the message does not: the parser's own line
+            // and column are of the literal's text, not of the source, and say nothing here.
+            halt(pe.unlocated, translateOffset(off, length))
 
       Json.Ast.parse(data, true)
 

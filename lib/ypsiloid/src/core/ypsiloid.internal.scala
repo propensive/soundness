@@ -240,9 +240,15 @@ object internal:
         new HaltTactic[Parse.Error, Yaml.Ast]:
           override def abort(error: Diagnostics ?=> Parse.Error): Nothing =
             val pe = error
-            val off = pe.position.offset.or(0)
+
+            // A fault found at the end of the text, such as a mapping which is never closed, is
+            // marked at the last character: there is nothing after it to mark.
+            val off = pe.position.offset.or(0).min((source.length - 1).max(0))
             val length = pe.position.length.or(0)
-            halt(pe.labelled, translateOffset(off, length))
+
+            // The mark says where the fault is, so the message does not: the parser's own line
+            // and column are of the literal's text, not of the source, and say nothing here.
+            halt(pe.unlocated, translateOffset(off, length))
 
       Yaml.Parser.parse(source.tt)
 
