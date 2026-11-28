@@ -558,7 +558,11 @@ object RatelTests extends Suite("ratel", m"Stratiform RaTEL tests"):
           val first = image.open[Ratel]()((ratel.root / t"play")(Prim))
           image.open[Ratel]()(first.text(t"title"))
         . map(_.message.tt)
-      . assert(_.exists(_.contains(t"is read through the reader of that image")))
+
+      // The row's own reader is what is missing. `Ratel.Reader` gives a message of its own for
+      // this (`@missingContext`), which the compiler on Scala's `main` line does not show here,
+      // so the test is of the refusal and of the reader it names, not of that wording.
+      . assert(_.exists(_.contains(t"Ratel.Reader of first.Topic")))
 
       test(m"a row is read through its own reader within another's block"):
         val other: Ratel = catalogue.ratel(catalogueSchema)

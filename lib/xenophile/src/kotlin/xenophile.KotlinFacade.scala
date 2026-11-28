@@ -63,8 +63,19 @@ object KotlinFacade:
   private def transport(using quotes: Quotes)(self: Expr[Facade]): quotes.reflect.TypeRepr =
     import quotes.reflect.*
 
-    Xenophile.refinements(self.asTerm.tpe.widen).to(Map)(t"Transport").or:
+    val recorded = Xenophile.refinements(self.asTerm.tpe.widen).to(Map)(t"Transport").or:
       halt(m"xenophile: the facade does not record its underlying type")
+
+    // The companion of a Kotlin class, a nested Java class reached through a static field, can
+    // be recorded as an intersection, `Outer#Companion & Outer.Companion`: the class itself and
+    // the module the compiler gives every Java class for its statics. An intersection of the
+    // two has no class symbol, so the side which names a class is taken, the class first.
+    recorded.dealias match
+      case AndType(left, right) if recorded.classSymbol.isEmpty =>
+        if left.classSymbol.isDefined then left else right
+
+      case _ =>
+        recorded
 
   private def classNameOf(using quotes: Quotes)(repr: quotes.reflect.TypeRepr): Text =
     // A nested Java class's owner may surface as the module class (`Regex$.Companion`);
