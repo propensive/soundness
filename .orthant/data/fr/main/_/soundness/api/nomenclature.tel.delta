@@ -1,0 +1,11 @@
+orthant 2 language
+
+@ 0 7 0 11846cc9b9a22ec30a44f7e8a78abc7c
++   detail
++       `n"main"` est un `Name` dont le plan est l'intersection de tous les plans dotés d'un given
++       `Nominative` dans la portée dont le littéral satisfait les règles, de sorte qu'un seul
++       littéral sert partout où l'un de ces plans est exigé, et c'est une erreur de compilation si
++       aucun plan dans la portée ne l'accepte : _the name `.` is not a valid identifier in any
++       namespace in scope_, suivi de la règle que le nom enfreint dans chacun de ces plans. Avec un
++       type attendu `Name[Tag]`, un littéral qui enfreint l'une des règles de `Tag` n'est pas
++       conforme, puisque `Tag` ne figure pas parmi les plans dans lesquels il a été jugé valide.

@@ -107,7 +107,8 @@ entry .n   the `n"…"` interpolator: a name literal, checked against the planes
     `n"main"` is a `Name` whose plane is the intersection of every plane with a `Nominative`
     given in scope whose rules the literal satisfies, so one literal serves wherever any of
     those planes is required, and it is a compile error if no plane in scope accepts it: _the
-    name `.` is not a valid identifier in any namespace in scope_. With an expected type
+    name `.` is not a valid identifier in any namespace in scope_, followed by the rule the
+    name breaks in each of those planes. With an expected type
     `Name[Tag]`, a literal which breaks one of `Tag`'s rules fails to conform, since `Tag` is
     not among the planes it was found valid in.
 

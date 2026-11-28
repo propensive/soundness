@@ -1,0 +1,11 @@
+orthant 2 language
+
+@ 0 8 0 089cde83f6a8282d194ab7b207f9f99a
++       Nie do bezpośredniego użytku: obiekt istnieje po to, by makro `sh` miało stabilne miejsce.
++   entry .sh   makro: parsuje części literału w czasie kompilacji, umiejscawia błędy i wstawia parsowanie w czasie wykonania
++       Sprawdza literał przez `Sh.Runtime` (raportując `Sh.Error` przy znaku, który go wywołał,
++       odwzorowanym z powrotem przez `$$` i escape'y Unicode na źródło), przywołuje
++       `Insertion[Sh.Parameters, T]` dla każdego podstawionego typu (kończąc się niepowodzeniem z _a
++       `T` cannot be substituted into a command: its type needs an instance of `Parameterizable`_) i
++       tworzy `Command` z refinementem, w którym pierwsze słowo jest typem `Exec`: literał nie jest
++       ponownie tokenizowany podczas wykonywania kodu.

@@ -1,0 +1,12 @@
+orthant 2 language
+
+@ 0 8 0 0ebedd6b12effe7d136016c001289d63
++     Wewnątrz `r"…"` ukośnik wsteczny jest ukośnikiem wstecznym – obowiązuje tylko escapowanie
++     samego wyrażenia regularnego, więc dosłowny nawias to `r"\("` – a `$` zapisuje się jako
++     `$$`, aby oznaczało samo siebie. Wzorzec, który się nie parsuje, jest błędem kompilacji
++     podającym przyczynę i wskazującym wadliwy znak, _[↯/s.34.1.1] the regular expression could
++     not be parsed because a capturing group was not closed_; `$name` bez grupy po nim to
++     _[↯/s.34.1.2] … a capturing group was expected immediately following an extractor_. Przy
++     `regexBackends.re2` wzorzec jest dodatkowo sprawdzany względem podzbioru RE2, więc
++     odwołanie wsteczne czy lookaround jest odrzucane w czasie kompilacji, a nie przy pierwszym
++     użyciu.

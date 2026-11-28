@@ -1,0 +1,9 @@
+orthant 2 language
+
+@ 0 4 0 0a7a02eb2e364d0705848a93930188ff
++   detail
++       Une macro qui analyse le littéral à la compilation et se développe en `Uuid(msb, lsb)` avec
++       les deux moitiés comme constantes : aucune analyse n'a donc lieu à l'exécution. Un littéral
++       mal formé est une erreur de compilation : _not-a-uuid is not a valid UUID: n is not a
++       hexadecimal digit_. Le message dit en quoi le littéral est mal formé, au caractère fautif.
++       L'interpolateur n'accepte aucune substitution.

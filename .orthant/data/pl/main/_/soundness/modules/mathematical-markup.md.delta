@@ -1,0 +1,35 @@
+orthant 2 language
+
+@ 0 3 0 10c402cfc174eded04438698d7949d7d
++ Wyrażenie znane w chwili pisania kodu może być literałem `ergo"…"`. Jest on parsowany podczas
++ kompilacji kodu, więc błąd w nim jest błędem kompilacji przy błędnym znaku, a jego wartość to ten
++ sam `Math`, który daje `Ergo.parse`:
+
+% 2 1 0 15bfb53fa01000b307ec9f4928042671
+
+% 3 1 0 0094529fa419625f1645a3bf7f2342f2
+
+% 4 1 0 01fb3583abbbc1fe12fc4731a542c086
+
+% 0 1 0 1e3cbb764891f3de1ebd8975aea7ffb0
+
+% 0 1 0 0c5049e3df24721c0042a393f53b1733
+
+% 1 1 0 09b1e28de571e4e7143f7b0d19580a9e
+
+@ 0 3 0 0ea68cdc41b2f0671c8512a3086b3e01
++ Do literału można podstawić wartość, która stoi w nim jako pojedynczy atom. Liczba to `<mn>`, a
++ każda wartość, która jest `Encodable in Math`, na przykład wektor, to znaczniki, do których jest
++ kodowana:
+
+% 2 1 0 0bfb26984662a2c2102d16e5761b049c
+
+% 3 1 0 01fd5782351b2bb0153899d85e073826
+
+% 4 1 0 117ce215d2d7173a0fc41976d6f4d56e
+
+% 0 1 0 1e2f0b00ee0ab2800dc10098b89f18f0
+
+% 0 1 0 0b44c6cd5e1c357d110fa7b306dd68de
+
+% 1 1 0 0888092c6bf146521a9434b434ed4954

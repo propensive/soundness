@@ -121,6 +121,30 @@ row  digits, with an interior `.` allowed  one number, `<mn>`  `3.14`
 row  any other character  an operator, `<mo>`  `=`
 ```
 
+An expression which is known as the code is written can be an `ergo"…"` literal. It is parsed
+as the code compiles, so a mistake in it is a compile error at the character at fault, and its
+value is the same `Math` which `Ergo.parse` gives:
+
+```scala fuel
+run
+##
+val power = ergo"(x↗(y + 1))"
+
+Out.println(power.in[Xml].show)
+```
+
+A value can be substituted into the literal, where it stands as a single atom. A number is an
+`<mn>`, and any value which is `Encodable in Math`, such as a vector, is the markup it encodes
+to:
+
+```scala fuel
+run
+##
+val exponent = 2
+
+Out.println(ergo"(x↗$exponent)".in[Xml].show)
+```
+
 ### Structural glyphs
 
 Scripts and limits attach to the atom on their left, and a fraction binds more loosely than the

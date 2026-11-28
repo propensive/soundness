@@ -1,0 +1,27 @@
+orthant 2 release
+
+@ 3 0 0 1e7a196f5801d5761cd9d23d4d1589c4
++ An expression which is known as the code is written can be an `ergo"…"` literal. It is parsed
++ as the code compiles, so a mistake in it is a compile error at the character at fault, and its
++ value is the same `Math` which `Ergo.parse` gives:
++
++ ```scala fuel
++ run
++ ##
++ val power = ergo"(x↗(y + 1))"
++
++ Out.println(power.in[Xml].show)
++ ```
++
++ A value can be substituted into the literal, where it stands as a single atom. A number is an
++ `<mn>`, and any value which is `Encodable in Math`, such as a vector, is the markup it encodes
++ to:
++
++ ```scala fuel
++ run
++ ##
++ val exponent = 2
++
++ Out.println(ergo"(x↗$exponent)".in[Xml].show)
++ ```
++

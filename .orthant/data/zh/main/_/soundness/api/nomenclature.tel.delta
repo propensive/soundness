@@ -1,0 +1,5 @@
+orthant 2 language
+
+@ 0 8 0 0b9204f4827a51480c8ce4f88f0f56b5
++ entry .n   `n"…"` 插值器：名称字面量，在代码编译时对照作用域内的平面检查
++     `n"main"` 是一个 `Name`，其平面是作用域内所有带 `Nominative` given 且其规则被该字面量满足的平面的交集，因此一个字面量可以用在要求其中任何一个平面的地方；如果作用域内没有平面接受它，则是编译错误：_the name `.` is not a valid identifier in any namespace in scope_，其后是该名称在每个平面中所违反的规则。在期望类型为 `Name[Tag]` 时，违反 `Tag` 某条规则的字面量无法符合该类型，因为 `Tag` 不在它被判定为有效的那些平面之中。

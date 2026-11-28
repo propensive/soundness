@@ -1,0 +1,11 @@
+orthant 2 language
+
+@ 0 8 0 0b9204f4827a51480c8ce4f88f0f56b5
++ entry .n   l'interpolatore `n"…"`: un letterale di nome, verificato rispetto ai piani nell'ambito mentre il codice compila
++     `n"main"` è un `Name` il cui piano è l'intersezione di tutti i piani con un given `Nominative`
++     nell'ambito le cui regole il letterale soddisfa, per cui un solo letterale serve ovunque sia
++     richiesto uno qualunque di quei piani, ed è un errore di compilazione se nessun piano
++     nell'ambito lo accetta: _the name `.` is not a valid identifier in any namespace in scope_,
++     seguito dalla regola che il nome viola in ciascuno di quei piani. Con un tipo atteso
++     `Name[Tag]`, un letterale che viola una delle regole di `Tag` non è conforme, poiché `Tag` non è
++     tra i piani in cui è stato trovato valido.

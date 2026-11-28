@@ -1130,6 +1130,7 @@ entry .internal   the macro implementation behind `sh"…"`
   entry .sh   the macro: parses the literal parts at compile time, positions errors, and splices the runtime parse
       Checks the literal with `Sh.Runtime` (reporting a `Sh.Error` at the character which
       caused it, mapped back through `$$` and unicode escapes to the source), summons an
-      `Insertion[Sh.Parameters, T]` for each substituted type (failing with _can't substitute
-      `T` into a sh-interpolator_), and produces a `Command` refined with its first word as
-      the `Exec` type.
+      `Insertion[Sh.Parameters, T]` for each substituted type (failing with _a `T` cannot be
+      substituted into a command: its type needs an instance of `Parameterizable`_), and
+      constructs a `Command` refined with its first word as the `Exec` type: the literal is not
+      tokenized again when the code runs.

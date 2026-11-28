@@ -1,0 +1,10 @@
+orthant 2 language
+
+@ 0 6 0 1bc396a5779e39890a18a9c49428bd3d
++     detail
++         Vérifie le littéral avec `Sh.Runtime` (en signalant une `Sh.Error` au caractère qui l'a
++         causée, ramené au code source à travers `$$` et les échappements Unicode), invoque une
++         `Insertion[Sh.Parameters, T]` pour chaque type substitué (en échouant avec _a `T` cannot be
++         substituted into a command: its type needs an instance of `Parameterizable`_), et produit
++         une `Command` raffinée avec son premier mot comme type `Exec` : le littéral n'est pas
++         découpé de nouveau à l'exécution du code.

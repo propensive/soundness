@@ -1,0 +1,11 @@
+orthant 2 language
+
+@ 0 8 0 0b9204f4827a51480c8ce4f88f0f56b5
++ entry .n   der Interpolator `n"…"`: ein Namensliteral, beim Kompilieren gegen die Ebenen im Geltungsbereich geprüft
++     `n"main"` ist ein `Name`, dessen Ebene der Schnitt aller Ebenen mit einem `Nominative`-given im
++     Geltungsbereich ist, deren Regeln das Literal erfüllt. Ein Literal dient also überall, wo eine
++     dieser Ebenen verlangt ist, und es ist ein Kompilierfehler, wenn keine Ebene im Geltungsbereich
++     es akzeptiert: _the name `.` is not a valid identifier in any namespace in scope_, gefolgt von
++     der Regel, die der Name in jeder dieser Ebenen verletzt. Mit dem erwarteten Typ `Name[Tag]` ist
++     ein Literal, das eine der Regeln von `Tag` verletzt, nicht konform, da `Tag` nicht zu den Ebenen
++     gehört, in denen es als gültig befunden wurde.

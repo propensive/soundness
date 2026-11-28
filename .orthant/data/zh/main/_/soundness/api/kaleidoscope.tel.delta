@@ -1,0 +1,6 @@
+orthant 2 language
+
+@ 0 8 0 0ebedd6b12effe7d136016c001289d63
++     在 `r"…"` 内部，反斜杠就是反斜杠——只适用正则表达式自身的转义，因此字面括号写作 `r"\("`——而 `$` 要写成 `$$` 才表示其本身。
++     无法解析的模式是编译错误，它指明原因并指向出错的字符，_[↯/s.34.1.1] the regular expression could not be parsed because a capturing group was not closed_；后面没有组的 `$name` 则是 _[↯/s.34.1.2] … a capturing group was expected immediately following an extractor_。
++     在 `regexBackends.re2` 下，模式还会对照 RE2 子集进行检查，因此反向引用或环视会在编译时被拒绝，而不是在首次使用时。
