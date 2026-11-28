@@ -503,10 +503,27 @@ object Tests extends Suite("internet", m"Urticose tests"):
       . assert(_ == Url(Origin(Scheme(t"https"), Authority(example.com)), t"/search",
           t"q=star-crossed+lovers", t"top"))
 
-      test(m"A number substituted into a path is its digits"):
+      test(m"A number cannot be substituted into a path"):
+        val act = 3
+        demilitarize(url"https://example.com/acts/$act").map(_.focus)
+      . assert(_ == List("act"))
+
+      test(m"A number shown as text can be substituted into a path"):
+        val act = 3
+        url"https://example.com/acts/${act.show}"
+      . assert(_ == Url(Origin(Scheme(t"https"), Authority(example.com)), t"/acts/3"))
+
+      test(m"A number which is embeddable in a URL can be substituted into a path"):
+        given Int is Embeddable by Url.Fragment in Url[Label] = number => Url.Fragment(number.show)
         val act = 3
         url"https://example.com/acts/$act"
       . assert(_ == Url(Origin(Scheme(t"https"), Authority(example.com)), t"/acts/3"))
+
+      test(m"A number which is embeddable in a URL is still a port after a colon"):
+        given Int is Embeddable by Url.Fragment in Url[Label] = number => Url.Fragment(number.show)
+        val port = 8080
+        url"https://example.com:$port/acts"
+      . assert(_ == Url(Origin(Scheme(t"https"), Authority(example.com, Unset, 8080)), t"/acts"))
 
       test(m"A URL literal with substitutions shows as it is written"):
         val port = 8080

@@ -44,6 +44,7 @@ import contingency.*
 import distillate.*
 import fulminate.*
 import gossamer.*
+import prepositional.*
 import spectacular.*
 import symbolism.*
 import vacuous.*
@@ -110,7 +111,9 @@ object protointernal:
     // Each substitution as the `Url.Fragment` its `Insertion` makes of it, and the text which
     // stands for it while the literal is checked: a substitution declares that text as its
     // label (`x` for text, `80` for a number), and any other insertion is a digit.
-    val holes: List[(Expr[Url.Fragment], String)] = insertionExprs.map: insertion =>
+    type Hole = (Expr[Url.Fragment], String, Optional[Expr[Url.Fragment]])
+
+    val holes0: List[Hole] = insertionExprs.map: insertion =>
       insertion.absolve match
         case '{$value: tpe} =>
           val typeclass: Expr[Insertion[Url.Fragment, tpe]] =
@@ -129,7 +132,20 @@ object protointernal:
             case _ =>
               "1"
 
-          ('{$typeclass.embed($value)}, label)
+          // A number is a port. Anywhere else in a URL it may stand only if its type is declared
+          // to be embeddable in one, by an `Embeddable` instance which says what it becomes
+          // there. The type is widened first: the value's own is the singleton type of what
+          // was written.
+          val textual: Optional[Expr[Url.Fragment]] =
+            if label != "80" then Unset else
+              TypeRepr.of[tpe].widen.asType.absolve match
+                case '[wide] =>
+                  Expr.summon[wide is Embeddable by Url.Fragment].map: embeddable =>
+                    '{$embeddable.embed(${value.asExprOf[wide]})}: Expr[Url.Fragment]
+
+                  . getOrElse(Unset)
+
+          ('{$typeclass.embed($value)}, label, textual)
 
     // The text which is checked, and where in it each part of the literal and each substitution
     // lies: `starts(i)` is where part `i` begins, and its substitution follows it.
@@ -138,13 +154,13 @@ object protointernal:
     val starts: List[Int] = parts.zipWithIndex.map: (part, index) =>
       val start = builder.length
       builder.append(part)
-      if index < holes.length then builder.append(holes(index)(1))
+      if index < holes0.length then builder.append(holes0(index)(1))
       start
 
     val check: String = builder.toString.nn
 
     def holeStart(index: Int): Int = starts(index) + parts(index).length
-    def holeEnd(index: Int): Int = holeStart(index) + holes(index)(1).length
+    def holeEnd(index: Int): Int = holeStart(index) + holes0(index)(1).length
 
     // The place in the source of an offset into the checked text: within a part of the literal,
     // its character; within a substitution, the expression substituted.
@@ -153,7 +169,7 @@ object protointernal:
       val index = starts.lastIndexWhere(_ <= offset).max(0)
       val within = offset - starts(index)
 
-      if within < parts(index).length || index >= holes.length then
+      if within < parts(index).length || index >= holes0.length then
         Interpolation.sourcePosition
           ( proscenium.List(parts(index)),
             proscenium.List(origins(index)),
@@ -191,12 +207,42 @@ object protointernal:
     val hash = first(if mark < 0 then pathStart else mark + 1, check.length)(_ == '#')
     val pathEnd = if mark >= 0 then mark else orElse(hash, check.length)
 
-    holes.indices.foreach: index =>
+    holes0.indices.foreach: index =>
       if holeStart(index) <= colon then
         halt(m"the scheme of a URL cannot be a substitution", insertionExprs(index).asTerm.pos)
 
+    // Where the port lies, if the URL has one: a number may be substituted there, and nowhere
+    // else unless it can be written as text.
+    val portRange: (Int, Int) =
+      if !authoritative then (-1, -1) else
+        val arobase = first(authorityStart, pathStart)(_ == '@')
+        val hostStart = if arobase < 0 then authorityStart else arobase + 1
+
+        if hostStart < pathStart && check.charAt(hostStart) == '[' then
+          val close = first(hostStart, pathStart)(_ == ']')
+          if close + 1 < pathStart then (close + 2, pathStart) else (-1, -1)
+        else
+          val portColon = first(hostStart, pathStart)(_ == ':')
+          if portColon < 0 then (-1, -1) else (portColon + 1, pathStart)
+
+    val holes: List[(Expr[Url.Fragment], String)] = holes0.indices.toList.map: index =>
+      val (fragment, label, textual) = holes0(index)
+      val inPort = holeStart(index) >= portRange(0) && holeEnd(index) <= portRange(1)
+
+      if label != "80" || inPort then (fragment, label) else
+        val text = textual.or:
+          halt
+            ( m"""
+                a number can be substituted into a URL only as its port, after a colon; elsewhere
+                it can be shown as text, or its type needs an `Embeddable by Url.Fragment`
+                instance
+              """,
+              insertionExprs(index).asTerm.pos )
+
+        (text, label)
+
     def pieces(from: Int, to: Int): List[Piece] =
-      val inside = holes.indices.toList.filter: index =>
+      val inside = holes0.indices.toList.filter: index =>
         holeStart(index) >= from && holeEnd(index) <= to
 
       val (last, found) = inside.foldLeft((from, List[Piece]())):
