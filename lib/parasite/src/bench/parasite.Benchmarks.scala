@@ -256,7 +256,10 @@ object Benchmarks extends Suite("threads-bench", m"Effect runtimes: Soundness vs
       var i = 0
       while i < ops do
         val value = i
-        sum += async(value).await()
+        // Bound first: from Scala 3.10.1, `sum += f(x)` is not rewritten to an assignment when
+        // `f` has a leading `using` clause (propensive/proscala#61).
+        val joined = async(value).await()
+        sum += joined
         i += 1
       sum
 

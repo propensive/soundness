@@ -176,7 +176,7 @@ object Benchmarks extends Suite("dsv-bench", m"Caesura benchmarks"):
         size
 
     . over(Axis(Library), Axis(Corpus)):
-        case (library, corpus) =>
+        (library, corpus) =>
           val document: Text = Text(caesura.Benchmarks.documentFor(corpus))
           val tsv: Boolean = corpus == Corpus.Tsv
 

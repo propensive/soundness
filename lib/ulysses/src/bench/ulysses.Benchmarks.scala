@@ -116,7 +116,7 @@ object Benchmarks extends Suite("bloom-bench", m"Ulysses Bloom filter benchmarks
 
   // The rivals, each written as its own users would write it.
   def buildGuava(size: Int): com.google.common.hash.BloomFilter[CharSequence] =
-    val funnel = com.google.common.hash.Funnels.stringFunnel(StandardCharsets.UTF_8).nn
+    val funnel = com.google.common.hash.Funnels.stringFunnel(StandardCharsets.UTF_8.nn).nn
     val filter = com.google.common.hash.BloomFilter.create(funnel, size, errorRate.double).nn
     var index = 0
 
