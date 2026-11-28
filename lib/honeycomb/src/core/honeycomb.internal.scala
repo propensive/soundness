@@ -58,6 +58,19 @@ import vacuous.*
 import zephyrine.*
 
 object internal:
+  // Whether an attribute's instance is for particular elements: its type fixes the `Plane` the
+  // attribute is `on`. A global attribute, such as `title`, leaves it open. An attribute which
+  // is not found `on` an element may still be a global one, but one which is for other elements
+  // is not an attribute of this one (#2423).
+  private def placed(using Quotes)(repr: quotes.reflect.TypeRepr): Boolean =
+    import quotes.reflect.*
+
+    repr.widen.dealias match
+      case Refinement(_, "Plane", _)     => true
+      case Refinement(parent, _, _)      => placed(parent)
+      case AndType(left, right)          => placed(left) || placed(right)
+      case _                             => false
+
   // What a rejected substitution is, and what an attribute takes, in words a reader can act on:
   // the type of the value as it would be written, without the name of the `val` it came from,
   // and the kind of the attribute by its name, not by the form the compiler prints of its type.
@@ -454,6 +467,82 @@ object internal:
 
     abortive:
 
+      // A type member of a refined type, by name: the `Topic` of a piece of HTML, or the `Form`
+      // of a renderer, each of which is the elements the HTML may be.
+      def member(repr: TypeRepr, name: String): Optional[TypeRepr] = repr.dealias match
+        case Refinement(_, `name`, TypeBounds(_, upper)) => upper
+        case Refinement(parent, _, _)                    => member(parent, name)
+        case AndType(left, right)                        => member(left, name).or(member(right, name))
+        case _                                           => Unset
+
+      // Refuses HTML which may be an element the parent does not admit, given the type which
+      // lists the elements it may be. Nothing is refused where that type does not say, or where
+      // the parent takes its content model from its own parent, as `<a>` does.
+      def admit(tag: Text, elements: Optional[TypeRepr], position: Position): Unit =
+        def labels(repr: TypeRepr): Optional[scala.List[String]] = repr.dealias match
+          case ConstantType(StringConstant(label)) => scala.List(label)
+
+          case OrType(left, right) =>
+            labels(left).let: left => labels(right).let(left ++ _)
+
+          case _ =>
+            Unset
+
+        whatwg.elements(tag).let: parent =>
+          if !parent.foreign && !parent.transparent then
+            elements.let(labels(_)).let: labels =>
+              labels.filter(!_.startsWith("#")).foreach: label =>
+                if !parent.admissible.has(label.tt)
+                then halt(m"<${label.tt}> cannot be a child of <$tag>", position)
+
+      // The renderer of a type, if it has one whose HTML the parent admits: what it renders is
+      // the elements of its `Form`, and each must be a child the parent takes (#2450). The form
+      // was asked to include the parent's own tag, which is true of no renderer of children, so
+      // a renderable value was shown as text.
+      def renderer[value: Type](tag: Text, position: Position): Optional[Expr[Renderable]] =
+        Expr.summon[(? >: value) is Renderable] match
+          case Some('{$renderable: Renderable}) =>
+            admit(tag, member(renderable.asTerm.tpe.widen, "Form"), position)
+            renderable
+
+          case _ =>
+            Unset
+
+      // The HTML of a list whose elements are HTML, or are renderable as HTML for this parent:
+      // a fragment of each element's nodes, in order. `Unset` for anything else.
+      def elements(tag: Text, repr: TypeRepr, list: Expr[Any]): Optional[Expr[Html]] =
+        val position = list.asTerm.underlyingArgument.pos
+
+        // The type of a list's elements. A list written out has the type of a list which is
+        // known to have an element, an intersection, so each side is looked at.
+        def element(repr: TypeRepr): Optional[TypeRepr] = repr.dealias match
+          case wide@AppliedType(_, scala.List(element))
+            if wide <:< TypeRepr.of[proscenium.List[Any]] =>
+
+            element
+
+          case AndType(left, right)     => element(left).or(element(right))
+          case Refinement(parent, _, _) => element(parent)
+          case _                        => Unset
+
+        element(repr.widen).let: element =>
+          element.asType.absolve match
+            case '[element] =>
+              val items = list.asExprOf[proscenium.List[element]]
+
+              if element <:< TypeRepr.of[Html] then
+                admit(tag, member(element.widen, "Topic"), position)
+                '{Html.Fragment(Html.nodes($items.asInstanceOf[proscenium.List[Html]])*)}
+              else renderer[element](tag, position).let: renderable =>
+                ' {
+                    val renderer = $renderable
+
+                    Html.Fragment
+                      ( Html.nodes
+                          ( $items.map: item =>
+                              renderer.render(item.asInstanceOf[renderer.Self]): Html )* )
+                  }
+
       // The quotes API's own lists are walked through the stdlib's iterator (a reflect boundary).
       val iterator: scala.collection.Iterator[Expr[Any]] =
         holes.to(List).sortBy(_(0).n0).map(_(1)).zip(insertions).map: (hole, expr) =>
@@ -464,7 +553,11 @@ object internal:
                   case '[tag] => ConstantType(StringConstant(attribute.s)).asType.absolve match
                     case '[attribute] =>
                       Expr.summon[attribute is Attribute in Whatwg on (? >: tag)]
-                      . orElse(Expr.summon[attribute is Attribute in Whatwg]) match
+                      . orElse:
+                          Expr.summon[attribute is Attribute in Whatwg].filter: global =>
+                            !placed(global.asTerm.tpe)
+
+                      . match
                         case
                           Some
                             ( ' {
@@ -510,53 +603,43 @@ object internal:
               // elements it may be, and each must be one the parent admits, as it would have to
               // be were it written in the literal (#2576).
               case Hole.Node(tag) if TypeRepr.of[value] <:< TypeRepr.of[Html] =>
-                def topic(repr: TypeRepr): Optional[TypeRepr] = repr.dealias match
-                  case Refinement(_, "Topic", TypeBounds(_, upper)) => upper
-                  case Refinement(parent, _, _)                     => topic(parent)
-                  case AndType(left, right)                         => topic(left).or(topic(right))
-                  case _                                            => Unset
-
-                def labels(repr: TypeRepr): Optional[scala.List[String]] = repr.dealias match
-                  case ConstantType(StringConstant(label)) => scala.List(label)
-
-                  case OrType(left, right) =>
-                    labels(left).let: left => labels(right).let(left ++ _)
-
-                  case _ =>
-                    Unset
-
-                whatwg.elements(tag).let: parent =>
-                  if !parent.foreign && !parent.transparent then
-                    topic(TypeRepr.of[value].widen).let(labels(_)).let: labels =>
-                      labels.filter(!_.startsWith("#")).foreach: label =>
-                        if !parent.admissible.has(label.tt) then
-                          halt
-                            ( m"<${label.tt}> cannot be a child of <$tag>",
-                              expr.asTerm.underlyingArgument.pos )
+                admit
+                  ( tag, member(TypeRepr.of[value].widen, "Topic"),
+                    expr.asTerm.underlyingArgument.pos )
 
                 (expr.asExprOf[Html]: Expr[Any])
 
+              // A list is put in element by element, where its elements are HTML or can be
+              // rendered as HTML for this parent; without this, the list as a whole was shown,
+              // and its text put in as one text node (#2450).
+              case Hole.Node(tag) if elements(tag, TypeRepr.of[value], expr).present =>
+                val html = elements(tag, TypeRepr.of[value], expr)
+                (html.or(halt(m"the list cannot be rendered")): Expr[Any])
+
               case Hole.Node(tag) =>
-                ConstantType(StringConstant(tag.s)).asType.absolve match
-                  case '[tag] => Expr.summon[(? >: value) is Renderable in (? >: tag)] match
-                    case Some('{$renderable: Renderable}) =>
-                      // Widened eagerly: joining the branch types under capture
-                      // checking decorates the summoned evidence's skolem, which
-                      // then fails to unify (the macro only needs `Expr[Any]`).
-                      ('{$renderable.render($expr)}: Expr[Any])
+                val position = expr.asTerm.underlyingArgument.pos
 
-                    case _ =>
-                      Expr.summon[(? >: value) is Showable] match
-                        case Some('{$showable: Showable}) =>
-                          '{Html.Text($showable.text($expr))}
+                renderer[value](tag, position).let: renderable =>
+                  // Widened eagerly: joining the branch types under capture checking decorates
+                  // the summoned evidence's skolem, which then fails to unify (the macro only
+                  // needs `Expr[Any]`).
+                  ' {
+                      val renderer = $renderable
+                      renderer.render($expr.asInstanceOf[renderer.Self]): Html
+                    }: Expr[Any]
 
-                        case _ =>
-                          halt
-                            ( m"""
-                                a value of ${TypeRepr.of[value].show} is not renderable or
-                                showable inside a <$tag> element
-                              """,
-                              expr.asTerm.underlyingArgument.pos )
+                . or:
+                    Expr.summon[(? >: value) is Showable] match
+                      case Some('{$showable: Showable}) =>
+                        '{Html.Text($showable.text($expr))}
+
+                      case _ =>
+                        halt
+                          ( m"""
+                              ${described(TypeRepr.of[value])} is not renderable or showable
+                              inside a <$tag> element
+                            """,
+                            position )
 
               case Hole.Comment => Expr.summon[(? >: value) is Showable] match
                 case Some(showable) =>
@@ -728,7 +811,11 @@ object internal:
                       else ConstantType(StringConstant(key)).asType.absolve match
                         case '[type key <: Label; key] =>
                           Expr.summon[key is Attribute in form on (? >: topic)]
-                          . orElse(Expr.summon[key is Attribute in form]) match
+                          . orElse:
+                              Expr.summon[key is Attribute in form].filter: global =>
+                                !placed(global.asTerm.tpe)
+
+                          . match
                             case Some('{type result; $expr: Attribute { type Topic = result }}) =>
                               Expr.summon[(? >: value) is Attributive to result] match
                                 case Some('{$converter: Attributive}) =>

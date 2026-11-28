@@ -1,0 +1,11 @@
+orthant 2 release
+
+@ 0 2 0 10879972c2e979650fbe8984dd0e8c06
++ For a large document, or for streaming output, `source` gives a `Document[Html]` as a
++ [`Stream[Text]`](streams.md) in chunks instead. The document is written by a task which runs
++ concurrently, so the stream is taken and read within `supervise`, with the
+
+@ 0 1 0 19778cbfe8f8a5451162f62b713ddc60
+
+@ 0 1 0 166a8fe5bd16f2aa078072eac4b77133
++ val text: Text = supervise(document.source[Text].memoize)

@@ -1,0 +1,9 @@
+orthant 2 language
+
+@ 0 4 0 16e0fbc934fe333113463629631cab98
++ Para un documento grande, o para una salida en flujo, `source` da en su lugar un `Document[Html]`
++ como un [`Stream[Text]`](streams.md) en fragmentos. El documento lo escribe una tarea que se
++ ejecuta de forma concurrente, así que el flujo se toma y se lee dentro de `supervise`, con el
++ contexto de [concurrencia](concurrency.md) en el ámbito:
+
+% 0 1 0 04e191ce5932bc2417464d0a97340a2d

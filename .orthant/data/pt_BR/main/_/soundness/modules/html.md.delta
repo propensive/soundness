@@ -1,0 +1,9 @@
+orthant 2 language
+
+@ 0 4 0 16e0fbc934fe333113463629631cab98
++ Para um documento grande, ou para uma saída em fluxo, `source` fornece um `Document[Html]` como um
++ [`Stream[Text]`](streams.md) em blocos. O documento é escrito por uma tarefa que roda de forma
++ concorrente, de modo que o fluxo é obtido e lido dentro de `supervise`, com o contexto de
++ [concorrência](concurrency.md) no escopo:
+
+% 0 1 0 04e191ce5932bc2417464d0a97340a2d
