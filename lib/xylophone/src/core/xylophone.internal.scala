@@ -58,6 +58,36 @@ import vacuous.*
 import zephyrine.*
 
 object internal:
+  // What a rejected substitution is, and what an attribute takes, in words a reader can act on:
+  // the type of the value as it would be written, without the name of the `val` it came from,
+  // and the kind of the attribute by its name, not by the form the compiler prints of its type.
+  private[xylophone] def described(using Quotes)(repr: quotes.reflect.TypeRepr): Text =
+    val name = repr.widen.dealias.typeSymbol.name
+
+    val shown: String =
+      if name.isEmpty || name.startsWith("<") || name.contains("$") then repr.widen.show else name
+
+    ((if "AEIOUaeiou".indexOf(shown.charAt(0)) >= 0 then "an " else "a ")+shown).tt
+
+  private[xylophone] def kind(using Quotes)(repr: quotes.reflect.TypeRepr): Text =
+    repr.dealias.typeSymbol.name match
+      case "Url"                          => t"a URL"
+      case "Integral"                     => t"an integer"
+      case "PositiveInt"                  => t"a positive integer"
+      case "Decimal"                      => t"a number"
+      case "Presence" | "Switch" | "Truth" => t"a Boolean"
+      case "Textual"                      => t"text"
+      case "Id"                           => t"an identifier"
+      case "Ids"                          => t"identifiers"
+      case "CssClassList"                 => t"CSS class names"
+      case "Css"                          => t"CSS declarations"
+
+      case name =>
+        // The words of the kind's name, as `ButtonType` is `a button type`.
+        val words = name.replaceAll("([a-z0-9])([A-Z])", "$1 $2").nn.toLowerCase.nn
+        val article = if words.nonEmpty && "aeiou".indexOf(words.charAt(0)) >= 0 then "an " else "a "
+        (if words.isEmpty then "another kind of value" else article+words).tt
+
   def extractor[parts <: Tuple: Type, origins <: Tuple: Type]
     ( scrutinee: Expr[Xml] )
   :   Macro[Extrapolation[Xml]] =
@@ -824,8 +854,8 @@ object internal:
                             case _ =>
                               halt
                                 ( m"""
-                                    ${TypeRepr.of[value].show} cannot be attributed to an attribute
-                                    of ${Syntax(TypeRepr.of[result]).show}
+                                    ${described(TypeRepr.of[value])} cannot be the value of the
+                                    attribute $attribute, which takes ${kind(TypeRepr.of[result])}
                                   """,
                                   expr.asTerm.underlyingArgument.pos )
 
@@ -878,7 +908,10 @@ object internal:
 
                 case None =>
                   halt
-                    ( m"a ${TypeRepr.of[value is Showable].show} is required",
+                    ( m"""
+                        ${described(TypeRepr.of[value])} cannot be shown as text, so it cannot be
+                        substituted here
+                      """,
                       expr.asTerm.underlyingArgument.pos )
 
               case Hole.Text => Expr.summon[(? >: value) is Showable] match
@@ -887,7 +920,10 @@ object internal:
 
                 case None =>
                   halt
-                    ( m"a ${TypeRepr.of[value is Showable].show} is required",
+                    ( m"""
+                        ${described(TypeRepr.of[value])} cannot be shown as text, so it cannot be
+                        substituted here
+                      """,
                       expr.asTerm.underlyingArgument.pos )
 
               case Hole.Tagbody =>
@@ -1108,10 +1144,8 @@ object internal:
                                 case _ =>
                                   halt:
                                     m"""
-                                      $key has attribute type ${TypeRepr.of[result].show}, but
-                                      ${TypeRepr.of[value].show} cannot be attributed as a
-                                      ${TypeRepr.of[result].show} without a contextual instance of
-                                      ${TypeRepr.of[value is Attributive to result].show}
+                                      ${described(TypeRepr.of[value])} cannot be the value of the attribute $key,
+                                      which takes ${kind(TypeRepr.of[result])}
                                     """
 
                             case _ =>
