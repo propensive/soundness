@@ -182,20 +182,28 @@ object internal:
                   types ::= TypeRepr.of[Text]
                   nextHole()
 
+                  // An element without the attribute does not match, so the attribute is looked
+                  // for before it is read: `pick` throws for a key which is not there.
                   ' {
-                      $array(${Expr(index)}) =
-                        Attributes.pick
-                          ( $scrutinee.attributes.asInstanceOf[Attributes], ${Expr(head)} )
+                      Attributes.holds
+                        ( $scrutinee.attributes.asInstanceOf[Attributes], ${Expr(head)} ) &&
+                        {
+                          $array(${Expr(index)}) =
+                            Attributes.pick
+                              ( $scrutinee.attributes.asInstanceOf[Attributes], ${Expr(head)} )
 
-                      true
+                          true
+                        }
                     }
 
                 case text: Text =>
                   ' {
-                      Attributes.pick
-                        ( $scrutinee.attributes.asInstanceOf[Attributes],
-                          ${Expr(head)} ) ==
-                        ${Expr(text)}
+                      Attributes.holds
+                        ( $scrutinee.attributes.asInstanceOf[Attributes], ${Expr(head)} ) &&
+                        Attributes.pick
+                          ( $scrutinee.attributes.asInstanceOf[Attributes],
+                            ${Expr(head)} ) ==
+                          ${Expr(text)}
                     }
 
               '{$expr && $boolean}
@@ -1210,6 +1218,19 @@ object internal:
     // (and the quotes compiled here) go through this instead.
     // Any readable reference: a frozen-typed parameter is read as `attrs.rd`, which its own
     // `^{}` cannot absorb; callers in this file, where the opaque is transparent, conform.
+    // Whether the attribute is there, for a caller which must not have `pick` throw.
+    private[xylophone] def holds(attrs: Array[String]^{caps.any.rd}, key: Text): Boolean =
+      val a = Array.unsafeJvm(attrs)
+      val keyStr: String = key.s
+      var i = 0
+      var found = false
+
+      while !found && i < a.length do
+        found = a(i) == keyStr
+        i += 2
+
+      found
+
     private[xylophone] def pick(attrs: Array[String]^{caps.any.rd}, key: Text): Text =
       val a = Array.unsafeJvm(attrs)
       val keyStr: String = key.s

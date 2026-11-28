@@ -718,6 +718,27 @@ object Tests extends Suite("xml", m"Xylophone tests"):
           case x"<a id=$value>$child</a>" => (value, child)
       . assert(_ == (t"5", x"<b>1</b>"))
 
+      test(m"A literal attribute does not match an element without it"):
+        val scrutinee: Xml = x"<a>hello</a>"
+        scrutinee match
+          case x"""<a id="5">$child</a>""" => t"matched"
+          case _                           => t"fell through"
+      . assert(_ == t"fell through")
+
+      test(m"A literal attribute does not match another value of it"):
+        val scrutinee: Xml = x"""<a id="6">hello</a>"""
+        scrutinee match
+          case x"""<a id="5">$child</a>""" => t"matched"
+          case _                           => t"fell through"
+      . assert(_ == t"fell through")
+
+      test(m"An attribute to extract does not match an element without it"):
+        val scrutinee: Xml = x"<a>hello</a>"
+        scrutinee match
+          case x"<a id=$value>$child</a>" => t"matched"
+          case _                          => t"fell through"
+      . assert(_ == t"fell through")
+
       test(m"Extract comment content alongside an attribute"):
         val scrutinee: Xml = x"""<a id="1"><!--note--></a>"""
         scrutinee.absolve match
