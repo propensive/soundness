@@ -1014,6 +1014,46 @@ object Tests extends Suite("html", m"Honeycombd Tests"):
           demilitarize(h"<ul>$para</ul>").map(_.message)
         . assert(_ == List(t"<p> cannot be a child of <ul>"))
 
+        test(m"a list which is renderable is rendered, not shown"):
+          given listRenderable: (List[Text] is Renderable in "li") =
+            list => Html.Fragment(list.map(Li(_))*)
+
+          val items = List(t"one", t"two", t"three")
+          h"<ol>$items</ol>".show
+        . assert(_ == t"<ol><li>one</li><li>two</li><li>three</li></ol>")
+
+        test(m"a list of renderable values is rendered element by element"):
+          given (Text is Renderable in "li") = text => Li(text)
+          val items = List(t"one", t"two")
+          h"<ol>$items</ol>".show
+        . assert(_ == t"<ol><li>one</li><li>two</li></ol>")
+
+        test(m"a list of elements gives each as a child"):
+          val items = List(h"<li>one</li>", h"<li>two</li>")
+          h"<ul>$items</ul>".show
+        . assert(_ == t"<ul><li>one</li><li>two</li></ul>")
+
+        test(m"a renderable value is refused where its HTML cannot go"):
+          given listRenderable: (List[Text] is Renderable in "li") =
+            list => Html.Fragment(list.map(Li(_))*)
+
+          val items = List(t"one", t"two", t"three")
+          demilitarize(h"<div>$items</div>").map(_.message)
+        . assert(_ == List(t"<li> cannot be a child of <div>"))
+
+        test(m"an attribute of another element is refused by a tag"):
+          demilitarize(P(colspan = 3)).map(_.message)
+        . assert(_ == List(t"the attribute colspan cannot be used on the element <p>"))
+
+        test(m"an attribute of another element is refused whatever its value"):
+          val source = url"https://example.com/image.gif"
+          demilitarize(P(src = source)).map(_.message)
+        . assert(_ == List(t"the attribute src cannot be used on the element <p>"))
+
+        test(m"a global attribute is accepted by any tag"):
+          P(title = "Feste").show
+        . assert(_ == t"""<p title="Feste"></p>""")
+
         test(m"a rejected attribute value is reported in plain words"):
           val width = 2
           demilitarize(h"<a href=$width>The Globe</a>").map(_.message)
