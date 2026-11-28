@@ -361,18 +361,18 @@ run
 Out.println(Ol(Li("Alpha"), Li("Beta")).show)
 ```
 
-For a large document, or for streaming output, a `Document[Html]` gives a
-[`Stream[Text]`](streams.md) in chunks instead. That runs concurrently, so it needs the
+For a large document, or for streaming output, `source` gives a `Document[Html]` as a
+[`Stream[Text]`](streams.md) in chunks instead. The document is written by a task which runs
+concurrently, so the stream is taken and read within `supervise`, with the
 [concurrency](concurrency.md) context in scope:
 
 ```scala fuel
 parse
 ##
 import probates.cancelProbate
-import supervisors.globalSupervisor
 import threads.virtualThreads
 
-document.stream[Text]
+val text: Text = supervise(document.source[Text].memoize)
 ```
 
 ### Pattern matching

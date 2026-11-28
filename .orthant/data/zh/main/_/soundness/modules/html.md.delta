@@ -1,0 +1,6 @@
+orthant 2 language
+
+@ 0 4 0 16e0fbc934fe333113463629631cab98
++ 对于大型文档或流式输出，`source` 会把 `Document[Html]` 以分块的 [`Stream[Text]`](streams.md) 形式给出。文档由一个并发运行的任务写出，因此要在作用域中具备[并发](concurrency.md)上下文的情况下，在 `supervise` 之内获取并读取该流：
+
+% 0 1 0 04e191ce5932bc2417464d0a97340a2d

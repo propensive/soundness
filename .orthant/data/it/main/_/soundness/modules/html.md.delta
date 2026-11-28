@@ -1,0 +1,9 @@
+orthant 2 language
+
+@ 0 4 0 16e0fbc934fe333113463629631cab98
++ Per un documento grande, o per un output in streaming, `source` dà invece un `Document[Html]` come
++ [`Stream[Text]`](streams.md) a blocchi. Il documento è scritto da un task eseguito in modo
++ concorrente, perciò lo stream viene preso e letto all'interno di `supervise`, con il contesto di
++ [concorrenza](concurrency.md) nello scope:
+
+% 0 1 0 04e191ce5932bc2417464d0a97340a2d
