@@ -280,7 +280,7 @@ lib/guillotine/src/core/guillotine.Executable.scala	0	0	0	0	0	0	0	0	0	0	1	0	0	0	
 lib/guillotine/src/core/guillotine.Job.scala	0	0	0	0	0	0	0	0	1	2	0	0	0	0	0	0	0
 lib/guillotine/src/core/guillotine.Process.scala	0	0	0	0	0	0	0	0	0	0	1	0	0	0	0	0	0
 lib/guillotine/src/core/guillotine.Sh.scala	0	0	0	0	0	0	0	0	0	0	2	0	0	0	3	0	0
-lib/guillotine/src/core/guillotine.internal.scala	0	0	0	0	0	0	0	0	0	0	0	0	0	0	2	0	0
+lib/guillotine/src/core/guillotine.internal.scala	0	0	0	0	0	0	0	0	0	0	0	0	0	0	3	0	0
 lib/hallucination/src/bmp/hallucination.BmpCodec.scala	0	0	0	0	1	0	0	0	0	0	0	0	0	0	0	0	0
 lib/hallucination/src/canvas/hallucination.CanvasHandle.scala	0	0	0	0	0	0	0	0	0	4	0	0	0	0	0	0	0
 lib/hallucination/src/core-jvm/hallucination.ImageIo.scala	0	0	0	0	1	0	0	0	0	0	0	0	0	0	0	0	0
@@ -320,7 +320,7 @@ lib/hieroglyph/src/core/hieroglyph_core.scala	3	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0
 lib/hieroglyph/src/test/hieroglyph_test.scala	0	0	0	0	4	0	0	0	0	0	6	0	2	0	0	0	0
 lib/honeycomb/src/core/honeycomb.Dom.scala	0	0	0	0	0	0	0	0	0	0	0	0	0	0	1	0	0
 lib/honeycomb/src/core/honeycomb.Html.scala	2	0	1	0	3	5	0	0	5	5	1	0	1	0	0	0	0
-lib/honeycomb/src/core/honeycomb.internal.scala	0	0	0	0	0	0	0	0	0	1	9	1	3	0	4	0	0
+lib/honeycomb/src/core/honeycomb.internal.scala	0	0	0	0	0	0	0	0	0	1	10	1	4	0	4	0	0
 lib/hyperbole/src/core/hyperbole.internal.scala	0	0	0	0	0	0	0	0	0	0	0	0	0	0	1	0	0
 lib/hyperbole/src/stacks/hyperbole.StackResolver.scala	0	0	0	0	0	0	0	0	0	0	0	0	0	0	1	0	0
 lib/hyperbole/src/tasty/hyperbole.TastyFiles.scala	1	0	0	0	0	1	0	0	0	0	0	0	0	0	0	0	0
@@ -340,7 +340,7 @@ lib/jacinta/src/core/jacinta.Json.scala	25	0	2	0	6	0	0	0	16	30	2	0	2	0	3	0	0
 lib/jacinta/src/core/jacinta.Json4.scala	0	0	0	0	0	0	0	0	0	0	2	0	0	0	0	0	0
 lib/jacinta/src/core/jacinta.dynamicAccess.scala	0	0	0	0	0	0	0	1	0	0	0	0	0	0	0	0	0
 lib/jacinta/src/core/jacinta.inlining.scala	2	0	0	0	0	0	0	0	5	0	0	0	0	0	2	0	0
-lib/jacinta/src/core/jacinta.internal.scala	2	0	0	0	0	0	0	0	1	3	17	1	0	1	2	0	0
+lib/jacinta/src/core/jacinta.internal.scala	2	0	0	0	0	0	0	0	1	5	17	1	0	1	2	0	0
 lib/jacinta/src/schema/jacinta.JsonSchema.scala	8	0	0	0	0	0	0	0	0	0	1	0	1	0	0	0	0
 lib/jacinta/src/staged/jacinta.InlinableStager.scala	0	0	0	0	0	0	0	0	0	0	0	0	0	0	1	0	0
 lib/jacinta/src/test/jacinta.ParserTests.scala	0	0	0	0	6	0	0	0	1	0	1	0	1	0	0	0	0
@@ -477,7 +477,7 @@ lib/quantitative/src/units/quantitative.Typometry.scala	0	0	0	0	0	0	0	1	0	0	0	0	
 lib/querencia/src/test/querencia_test.scala	0	0	0	0	0	0	0	0	0	0	1	0	0	0	0	0	0
 lib/revolution/src/core/revolution.Manifest.scala	0	0	0	0	1	0	0	0	0	0	0	0	0	0	0	0	0
 lib/revolution/src/semver/revolution.Semver.scala	0	0	0	0	0	0	0	0	0	0	2	0	0	0	0	0	0
-lib/revolution/src/semver/revolution.internal.scala	0	0	0	0	0	0	0	0	0	0	0	0	0	0	1	0	0
+lib/revolution/src/semver/revolution.internal.scala	0	0	0	0	0	0	0	0	0	0	2	1	1	0	1	0	0
 lib/rudiments/src/core/rudiments.Atomic.scala	0	0	0	0	0	0	0	0	2	0	0	0	0	0	0	0	0
 lib/rudiments/src/core/rudiments.Defaulting.scala	0	0	0	0	0	0	0	2	0	0	0	0	0	0	0	0	0
 lib/rudiments/src/core/rudiments.Dynamical.scala	0	0	0	0	0	0	0	1	0	0	0	0	0	0	0	0	0
@@ -624,7 +624,7 @@ lib/urticose/src/core/urticose.NetworkInterface.scala	0	0	0	0	1	1	0	0	0	0	0	0	0	
 lib/urticose/src/core/urticose.internal.scala	0	0	0	0	0	0	0	3	0	0	1	0	0	0	0	0	0
 lib/urticose/src/dns/urticose.Dns.scala	0	0	0	0	1	2	0	0	0	0	0	0	0	0	2	0	0
 lib/urticose/src/test/urticose_test.scala	0	1	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0
-lib/urticose/src/url/urticose.protointernal.scala	0	0	0	0	0	0	0	0	0	0	0	0	0	0	2	0	0
+lib/urticose/src/url/urticose.protointernal.scala	0	0	0	0	0	0	0	0	0	0	1	0	1	0	3	0	0
 lib/vacuous/src/core/vacuous.internal.scala	0	0	0	0	0	0	0	0	0	0	0	0	0	0	1	0	0
 lib/vicarious/src/core/vicarious.internal.scala	0	0	0	0	0	0	0	0	0	0	0	0	0	0	1	0	0
 lib/vicarious/src/test/vicarious_test.scala	0	0	0	0	0	0	0	0	1	0	0	0	0	0	0	0	0
@@ -672,7 +672,7 @@ lib/xylophone/src/core/xylophone.XmlSchema.scala	0	0	0	0	0	0	0	0	0	0	0	0	0	0	1	0
 lib/xylophone/src/core/xylophone.Xsd.scala	0	0	0	0	0	0	0	0	0	0	0	0	0	0	2	0	0
 lib/xylophone/src/core/xylophone.dynamicAccess.scala	0	0	0	0	0	0	0	1	0	0	0	0	0	0	0	0	0
 lib/xylophone/src/core/xylophone.inlining.scala	2	0	0	0	0	0	0	0	5	0	0	0	0	0	3	0	0
-lib/xylophone/src/core/xylophone.internal.scala	1	0	0	0	0	2	0	0	0	3	15	1	5	0	4	0	0
+lib/xylophone/src/core/xylophone.internal.scala	1	0	0	0	0	3	0	0	0	3	15	1	5	0	4	0	0
 lib/xylophone/src/core/xylophone_core.scala	0	0	0	0	0	0	0	0	0	0	2	0	0	0	1	0	0
 lib/xylophone/src/staged/xylophone.InlinableStager.scala	0	0	0	0	0	0	0	0	0	0	0	0	0	0	1	0	0
 lib/xylophone/src/test/xylophone.DirectParsingTests.scala	0	0	0	0	1	0	0	0	0	0	0	0	0	0	0	0	0
