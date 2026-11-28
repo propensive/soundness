@@ -1,5 +1,17 @@
 orthant 2 release
 
+@ 0 5 0 0e6ce169ee79625708555ad2b50f5b0f
++ [capture and separation checking](../../philosophy/capture-checking.md) enabled. Using a
++ stream again after it has been consumed, or letting one escape the scope which owns its source,
++ is a compile error in code which enables both checks. Where replay really is wanted, `memoize`
++ drains the stream once into an [immutable] value, which may then be shared freely. That is the
++ explicit, bounded replacement for a lazy list's implicit caching.
+
+@ 0 2 0 0d1446081cc0ccd40132f4f5240743d3
++ mark may be taken, grabbed from and returned to only within `hold`, which keeps the marked
++ region in the buffer until the block ends. Outside `hold`, the cursor is free to discard what
++ it has already passed:
+
 @ 3 0 0 17aa0e17a924169e036e3c389d3d38c0
 + What a block writes to the two streams can be collected instead of shown. `Stdio.capture`
 + runs a block and gives its result beside the text written to each stream, and it reaches

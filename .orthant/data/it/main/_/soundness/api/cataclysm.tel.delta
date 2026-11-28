@@ -1,5 +1,19 @@
 orthant 2 language
 
+@ 0 1 0 103824356dd531aa090b1ccd3d5abc40
++     entry .Reason   perché il CSS non era valido: i dieci tipi di difetto, ciascuno numerato
+
+@ 0 1 0 0d328bb2fc31e46a1ad4548da82a3197
++           row  `UnknownDescriptor(rule, name)`  10  _`name` is not a recognized descriptor of the @`rule` rule_  una dichiarazione nel blocco di una regola-at come `@font-face`
+
+@ 0 6 0 1cee0f3071fca5d014d2ac12d14ccdc7
++       entry .communicable   rende ogni motivo come il suo messaggio
++       entry #number   il numero del motivo, da 1 a 10, che è il sottocodice dell'errore
++     entry #reason   che cosa non andava
++     entry #line   la riga del difetto, come `Ordinal`
++     entry #column   la colonna del difetto, come `Ordinal`
++   entry .Errors   ogni `Css.Error` trovato leggendo un foglio di stile, sollevato una volta sola
+
 @ 0 38 0 15177b5972e74eeb18897d1f690c0e42
 +     entry .pixels   una quantità `Pixels` come `<length>`: `4px`
 +     entry .ems   una quantità `Ems` (di quantitative) come `<length>`: `2em`
@@ -59,3 +73,14 @@ orthant 2 language
 +       proprietà, e `check(grammar: Css.Syntax, value)` una grammatica qualunque. Entrambi
 +       richiedono un `Tactic[Css.Error]`, sollevato solo quando il testo del valore non si
 +       può suddividere in token (una stringa non terminata).
+
+@ 0 9 0 0f6b192ddb5b9646140987a0b248e2c4
++   entry .list   ogni proprietà nota, nell'ordine del dataset
++   entry .all   ogni proprietà nota, indicizzata per nome in un `Dictionary`
++   entry .descriptors   ogni descrittore noto di una regola-at, indicizzato come `rule/descriptor` in un `Dictionary`
++   entry .descriptor   la definizione di un descrittore di una regola-at, come `src` in `font-face`, oppure `Unset`
++   entry .descriptive   se una regola-at è di quelle il cui blocco contiene descrittori che l'insieme di dati definisce
++   entry .of   la definizione di una proprietà con nome, oppure `Unset` se non è una proprietà riconosciuta
++   entry #name   il nome della proprietà, in kebab-case
++   entry #syntax   la grammatica dei valori come la scrive il dataset, `<length> | auto`
++   entry #grammar   la grammatica dei valori analizzata in un `Css.Syntax`, calcolata al primo uso

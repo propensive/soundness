@@ -45,9 +45,13 @@ import spectacular.*
 // `Sessional` trait itself lives in aperture, which cannot know transports,
 // so `import coaxial.*` (which every socket consumer already has) brings this
 // instance into scope.
-given connectableSessional: [endpoint: {Connectable, Showable}]
-=>  ( loggable: (Socket.Event is Loggable)^, socketError: Tactic[Socket.Error] )
-=>  ( (endpoint is Sessional to Duplex)^{loggable, socketError, caps.any} ) =
+// The `Connectable` instance may itself be a capability (a TCP endpoint's carries `Online`),
+// so it is taken with a capture set of its own, which the session instance retains.
+given connectableSessional: [endpoint: Showable, instance^]
+=>  ( connectable: (endpoint is Connectable)^{instance},
+      loggable:    (Socket.Event is Loggable)^,
+      socketError: Tactic[Socket.Error] )
+=>  ( (endpoint is Sessional to Duplex)^{connectable, loggable, socketError, caps.any} ) =
 
   new Sessional:
     type Self = endpoint

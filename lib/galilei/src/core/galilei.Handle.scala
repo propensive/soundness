@@ -90,13 +90,10 @@ object Handle:
   // can fail under capture checking (given resolution widens the scoped capture to `{any}`);
   // the extensions summon typeclasses on the (non-scoped) source/result types instead.
   extension (handle: (Handle & Granting[Grant.Read])^)
-    def stream(using Tactic[Truncation.Error]): Chain[Data] = handle.reader()
-
-    def read[result]
-      ( using readable: (Chain[Data] is Readable to result)^, tactic: Tactic[Truncation.Error] )
-    :   result =
-
-      readable.read(handle.reader())
+    // The handle's content as a stream which is a capability of its own, and so cannot leave
+    // the block the handle was lent to: a lazy `Chain`, which is pure, would leave it freely
+    // and be read after the file had closed.
+    def stream(using Tactic[Truncation.Error]): (Stream[Data] over Credit)^ = handle.source()
 
   extension (handle: (Handle & Granting[Grant.Write])^)
     def write[source](source: source)
@@ -116,3 +113,16 @@ abstract class Handle extends caps.ExclusiveCapability:
   def writer(data: Chain[Data])(using Emit[Truncation.Error]): Unit
   def source()(using Tactic[Truncation.Error]): (Stream[Data] over Credit)^
   def intake()(using Emit[Truncation.Error]): Intake[Data] over Credit
+
+  // A member, and not an extension: the generic `read` of every readable value is in lexical
+  // scope wherever `soundness.*` is imported, and would be chosen ahead of an extension here,
+  // only to fail under capture checking, since its `Readable` instance cannot be typed over a
+  // scoped capability. The handle's grants are a part of its type alone, so the grant to read
+  // is asked for as evidence about `this.type`.
+  def read[result]
+    ( using readable: (Chain[Data] is Readable to result)^,
+            tactic:   Tactic[Truncation.Error],
+            grant:    this.type <:< (Granting[Grant.Read]^) )
+  :   result =
+
+    readable.read(reader())

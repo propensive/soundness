@@ -46,12 +46,12 @@ object Password:
   // From cleartext `Text`. The immutable `String` has already pinned the cleartext on the
   // heap, where it cannot be zeroed, so the cloak protects only the copy it stores; prefer
   // the `Array[Char]` overload when the password originates from mutable input.
-  def apply(cleartext: Text)(using cloak: Cloak^): Password^{cloak} =
+  def apply(cleartext: Text)(using cloak: Cloak^): Cloaked[Password, {cloak}] =
     new Password(cloak.cloak(cleartext.s.getBytes(jnc.StandardCharsets.UTF_8).nn))
 
   // From mutable chars: encodes to UTF-8, then zeroes both the input array and the
   // intermediate encoding buffer, leaving the cloaked copy as the only cleartext.
-  def apply(cleartext: scala.Array[Char])(using cloak: Cloak^): Password^{cloak} =
+  def apply(cleartext: scala.Array[Char])(using cloak: Cloak^): Cloaked[Password, {cloak}] =
     val buffer = jnc.StandardCharsets.UTF_8.nn.encode(jn.CharBuffer.wrap(cleartext)).nn
     val bytes = new scala.Array[Byte](buffer.remaining)
     buffer.get(bytes)
@@ -75,7 +75,7 @@ object Password:
 // block, so it (and any closure over it) cannot escape; `result` is instantiated at the call
 // site. The chars are zeroed when the block exits, so they must not escape either.
 class Password private[enigmatic] (private[enigmatic] val secret: Secret^):
-  def uncloak[result](block: Cleartext^ ?=> result): result =
+  def uncloak[result](block: (cleartext: Cleartext^) ?=> result): result =
     secret.uncloak: bytes =>
       val buffer = jnc.StandardCharsets.UTF_8.nn.decode(jn.ByteBuffer.wrap(bytes)).nn
       val chars = new scala.Array[Char](buffer.remaining)

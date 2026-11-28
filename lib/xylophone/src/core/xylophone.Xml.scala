@@ -3482,7 +3482,7 @@ object Xml extends Tag.Container
           cursor.advance()
           steps += 1
 
-        cursor.cue(mark)
+        cursor.cue(mark)(using Cursor.shared)
         syncFrom()
 
     // Skips whole words while `clear` finds no stop byte in them, leaving `pos` on the word
@@ -3529,7 +3529,7 @@ object Xml extends Tag.Container
 
     protected update def reset(start: Cursor.Mark): Unit =
       syncTo()
-      cursor.cue(start)
+      cursor.cue(start)(using Cursor.shared)
       syncFrom()
 
     protected update def appendSlice(start: Cursor.Mark, buf: jl.StringBuilder)

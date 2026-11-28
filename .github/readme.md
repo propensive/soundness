@@ -23,12 +23,21 @@ Soundness is composed of over one hundred modules. Each module has its own
 unique name and purpose, and may be used alone (with its dependencies) or in
 combination with other modules in the ecosystem. Most modules have a `core`
 component, but many have additional components for optional functionality.
-Modules are distributed in bundles, one for each of the domains above.
+Modules are grouped into bundles, one for each of the domains above.
 
 ### Binary dependencies
 
-Releases are published on Maven Central as bundles, each of which packages the
-modules for one domain, and can be specified as follows:
+Releases are published on GitHub, not on Maven Central: every component is a jar
+of its own, attached to the release. [Crux](https://github.com/propensive/crux)
+is the build plugin, for Mill and for sbt, which resolves them from there. It
+resolves [Proscala](https://github.com/propensive/proscala) too, the compiler
+Soundness is built with. A dependency is specified as follows:
+
+ - To include _everything in Soundness_, use
+   `dev.propensive:soundness:<version>`. This covers every bundle except the two
+   opt-in ones, `staged` and `android`, whose dependencies (the staging compiler
+   and R8) are heavyweight enough that they should only ever be asked for by
+   name.
 
  - To include a bundle of modules, use
    `dev.propensive:soundness-<bundle>:<version>` where _`<bundle>`_ is one of:
@@ -38,23 +47,27 @@ modules for one domain, and can be specified as follows:
    - `staged`, the expansion-time variants of the data-format modules
    - `android`, the Android dexing and packaging stages
 
-   for example, `dev.propensive:soundness-sci:0.65.0`. A bundle depends on the
-   other bundles it needs, so `soundness-sci` brings in `soundness-base`
-   automatically.
+   for example, `dev.propensive:soundness-sci:0.80.0`.
 
- - To include _everything in Soundness_, use
-   `dev.propensive:soundness:<version>`. This covers every bundle except the two
-   opt-in ones, `staged` and `android`, whose dependencies (the staging compiler
-   and R8) are heavyweight enough that they should only ever be asked for by
-   name.
+ - To include a single component, use
+   `dev.propensive:<module>-<component>:<version>`, for example
+   `dev.propensive:jacinta-core:0.80.0`. Whatever it depends on is included too.
 
- - The compiler plugins are published separately, since they are used with
-   `-Xplugin:` rather than on the classpath: `dev.propensive:larceny-plugin`,
+ - The compiler plugins are used with `-Xplugin:` rather than on the classpath,
+   and are in no bundle: `dev.propensive:larceny-plugin`,
    `dev.propensive:umbrageous-plugin` and `dev.propensive:beneficence-plugin`.
 
-Individual modules do not have coordinates of their own: Maven Central limits
-how many files a single deployment may contain, and Soundness has too many
-modules to publish each one separately.
+A bundle has no classes of its own: it depends on each of its components, so a
+build may name a bundle and a component together. For Scala.js and Scala Native,
+a bundle and a component have the platform's suffix, as
+`soundness-web_sjs1_3` and `soundness_native0.5_3`.
+
+The documentation is released too, as `dev.propensive:soundness-docs:<version>`: a
+JAR of data, and no classes, which holds every document of the `doc` directory as
+[Fuel](https://github.com/propensive/fuel) compiled it, with its code already
+checked and run. A site which shows the documentation reads it from there. It is
+among the release's assets on GitHub, with the component JARs, and is not on
+Maven Central.
 
 Version numbers are synchronized across all bundles, and the latest release
 version is shown at the top of this page. Binary compatibility is not guaranteed

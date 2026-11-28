@@ -1,0 +1,43 @@
+orthant 2 language
+
+@ 0 7 0 1b7517f2e58e45ee07ec0cdc9caba396
++ [CSS](https://en.wikipedia.org/wiki/CSS) jest parsowany, walidowany i generowany jako typowane
++ wartości. Arkusz stylów parsuje się do drzewa `Css` złożonego z reguł i deklaracji. Każda
++ właściwość jest sprawdzana względem swojej rzeczywistej gramatyki, czyli składni definicji
++ wartości z [MDN data](https://github.com/mdn/data), dla ponad sześciuset właściwości. Błędnie
++ zapisana właściwość lub niepoprawna wartość jest więc ustrukturyzowanym błędem, a nie stylem,
++ który po cichu zawodzi w przeglądarce. [Interpolator][interpolator] `css"…"` zapisuje arkusz
++ stylów w kodzie źródłowym, z podstawionymi typowanymi wartościami, i sprawdza go w ten sam sposób
++ podczas kompilacji kodu.
+
+@ 0 2 0 07a528cf00459f03152ecdcdbb3a65dc
++ Tekst literału jest sprawdzany podczas kompilacji kodu. Właściwość, która nie istnieje, jest
++ błędem w miejscu jej deklaracji, podobnie jak wartość, której nie akceptuje gramatyka jej
++ właściwości:
+
+% 2 1 0 17e8f1d9fff632490d9966ad0b975037
+
+% 3 1 0 03d2e94bf315489c113dbdcaaeeb3d87
+
+% 4 1 0 1c31bd935c6792b41c5a8af4e4270398
+
+% 5 1 0 08ac657d863b1fc304d96c2a18a57a76
+
+% 0 1 0 1b5639915b3c5ff50dbe0783928bf32a
+
+% 1 1 0 00bfdd054dc72c23121ffaa919dc0bbf
+
+% 3 1 0 16bde7f251ef75be04e8b833bac3bc7b
+
+% 3 1 0 16af7c0135b043f705b99ffeb5ac97fb
+
+% 4 1 0 11e21ea8e3e4d91a0b31e7458e39bf4a
+
+% 5 1 0 1ff55a334cb9215f1a6cddcbac0719fd
+
+% 0 1 0 00d53b0c1755fa160df5d1d1c6b1c2e5
+
+% 1 1 0 1b836a20c5ab0db10433350be9496cb6
+
+@ 0 1 0 011f1bb2455374b010b4b76763b4a18c
++ Podstawiona wartość jest sprawdzana według jej typu, więc długości nie można podać jako koloru.

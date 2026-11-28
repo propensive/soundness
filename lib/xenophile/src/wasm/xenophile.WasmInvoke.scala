@@ -797,7 +797,9 @@ object WasmInvoke extends Materializer:
     val decodable = Expr.summon[result is Decodable in Wasm].getOrElse:
       halt(m"xenophile: no way to read a ${TypeRepr.of[result].show} from a WIT boundary")
 
-    (carrierType(decodable), call => '{$decodable.decoded(Wasm($call))})
+    // Ascribed: the call's own type is `codec.Self`, a member of the codec's path, which the
+    // check of a macro's expansion does not take for the result type it is an alias of.
+    (carrierType(decodable), call => '{$decodable.decoded(Wasm($call)).asInstanceOf[result]})
 
   // The `Carrier` type of a summoned `Encodable`/`Decodable in Wasm` codec, read from the `Carrier`
   // refinement member of the codec's (precise) type.

@@ -43,6 +43,12 @@ exactly the features that defeat by-eye reasoning about lifetimes, because they 
 capability's scope travels in the type, so an escape is impossible to write rather than
 inadvisable to attempt.
 
+The guarantee covers what the type records, and one type records nothing. A `Chain` is a lazy
+list whose type is pure, so a chain which is built inside a block by `map` or `filter`, with a
+function which uses the block's capability, leaves the block unchecked, and fails when it is
+forced outside. Force such a chain within the block, with `to[List]`, or use an `Iterator`,
+whose type does carry what its functions capture.
+
 ## Separation checking
 
 Capture checking answers "may this value outlive that scope?". Its companion,
@@ -54,14 +60,22 @@ exposes a mutable window into a buffer without copying it, which is what makes t
 fast — and which is only sound if exactly one consumer reads it. Two aliases would each
 consume bytes the other expected.
 
-So a `Stream` is an *exclusive* capability, and aliasing one does not compile:
+So a `Stream` is an *exclusive* capability, and one which has been consumed cannot be used
+again:
 
 ```scala fuel
 parse
 ##
 val stream = file.stream
-val other = stream          // does not compile: the stream is exclusive
+val bytes = stream.memoize
+val again = stream.memoize  // does not compile: the stream was consumed on the line above
 ```
+
+A second name for the stream is not itself an error; using the stream through either name
+after one has consumed it is. The check is made in the code which uses the stream, so that
+code enables both `scala.language.experimental.captureChecking` and
+`scala.language.experimental.separationChecking`; with the first alone, the second `memoize`
+compiles.
 
 The modules that depend on this — the kernel itself and its immediate consumers — are
 compiled with separation checking enabled, so the guarantee is checked rather than

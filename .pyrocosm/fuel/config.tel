@@ -99,3 +99,8 @@ imports soundness
 # The words the documents use with a precise meaning, which a term in brackets in prose shows
 # the definition of when pointed at (doc/standards/style.md, "Glossary"), are
 # doc/soundness/glossary.tel: the `glossary` of the section `soundness`, translated with it.
+
+# Where what is compiled is kept, as BinTEL: a manifest and a record for each document and API
+# page. A compile reads it to compile again only what has changed, and a release packages it as
+# the `soundness-docs` jar (`release.docs` in build.mill).
+output out/fuel

@@ -71,7 +71,7 @@ case object Directory extends WindowsEntry, UnixEntry:
 
     // A method rather than an extension: generic `/` extensions (e.g. symbolism's) are lexically
     // visible at use sites and would be tried first, failing without falling through.
-    transparent inline infix def / (child: Any) = base / child
+    transparent inline infix def / (child: Any): Path = base / child
 
     // Public: called from transparent-inline subtree operations, where a `private` member's
     // inline-accessor bridge would fail capture checking.

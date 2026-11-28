@@ -1,0 +1,25 @@
+orthant 2 release
+
+@ 0 1 0 0c81124cb98e35351262507ac66120db
++ typed values substituted into it, and checks it in the same way as the code compiles.
+
+@ 3 0 0 18789f243fdeb6c21bf18da739bbf0d3
++ The text of the literal is checked as the code compiles. A property which does not exist is
++ an error at its declaration, and so is a value which its property's grammar does not accept:
++
++ ```scala fuel
++ compile
++ errors show
++ ##
++ val faulty = css"a { colour: red }"
++ ```
++
++ ```scala fuel
++ compile
++ errors show
++ ##
++ val wide = css"a { width: wide }"
++ ```
++
++ A substituted value is checked by its type, so a length cannot be given as a color.
++

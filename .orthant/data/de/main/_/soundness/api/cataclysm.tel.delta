@@ -1,5 +1,19 @@
 orthant 2 language
 
+@ 0 1 0 103824356dd531aa090b1ccd3d5abc40
++     entry .Reason   warum das CSS ungültig war: die zehn Arten von Fehlern, jede nummeriert
+
+@ 0 1 0 0d328bb2fc31e46a1ad4548da82a3197
++           row  `UnknownDescriptor(rule, name)`  10  _`name` is not a recognized descriptor of the @`rule` rule_  eine Deklaration im Block einer At-Regel wie `@font-face`
+
+@ 0 6 0 1cee0f3071fca5d014d2ac12d14ccdc7
++       entry .communicable   stellt jeden Grund als seine Meldung dar
++       entry #number   die Nummer des Grunds, 1 bis 10, die der Untercode des Fehlers ist
++     entry #reason   was falsch war
++     entry #line   die Zeile des Fehlers, als `Ordinal`
++     entry #column   die Spalte des Fehlers, als `Ordinal`
++   entry .Errors   jeder beim Lesen eines Stylesheets gefundene `Css.Error`, einmal ausgelöst
+
 @ 0 38 0 15177b5972e74eeb18897d1f690c0e42
 +     entry .pixels   eine `Pixels`-Größe als `<length>`: `4px`
 +     entry .ems   eine `Ems`-Größe (aus quantitative) als `<length>`: `2em`
@@ -60,3 +74,14 @@ orthant 2 language
 +       Grammatik der Eigenschaft und `check(grammar: Css.Syntax, value)` eine beliebige
 +       Grammatik. Beide brauchen eine `Tactic[Css.Error]`, die nur ausgelöst wird, wenn der Text
 +       des Werts nicht tokenisiert werden kann (ein nicht abgeschlossener String).
+
+@ 0 9 0 0f6b192ddb5b9646140987a0b248e2c4
++   entry .list   jede bekannte Eigenschaft, in der Reihenfolge des Datensatzes
++   entry .all   jede bekannte Eigenschaft, nach Namen in einem `Dictionary` abgelegt
++   entry .descriptors   jeder bekannte Deskriptor einer At-Regel, als `rule/descriptor` in einem `Dictionary` indiziert
++   entry .descriptor   die Definition eines Deskriptors einer At-Regel, etwa `src` in `font-face`, oder `Unset`
++   entry .descriptive   ob eine At-Regel zu denen gehört, deren Block Deskriptoren enthält, die der Datensatz definiert
++   entry .of   die Definition einer benannten Eigenschaft, oder `Unset`, wenn sie keine anerkannte Eigenschaft ist
++   entry #name   der Name der Eigenschaft, in kebab-case
++   entry #syntax   die Wertgrammatik, wie der Datensatz sie schreibt, `<length> | auto`
++   entry #grammar   die zu einer `Css.Syntax` geparste Wertgrammatik, bei der ersten Verwendung berechnet

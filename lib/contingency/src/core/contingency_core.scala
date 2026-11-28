@@ -96,7 +96,10 @@ def abort[success, exception <: Hazard](error: Diagnostics ?=> exception)
 // created inside `safely`, after the block value). Collapsing the layers makes the block's result
 // the plain `success` value, which retains nothing.
 def safely[error <: Hazard](using erased void: Void)[success]
-  ( block: (Diagnostics, OptionalTactic[error, success]^, CanThrow[Exception]) ?=> success )
+  ( block: ( diagnostics: Diagnostics,
+             tactic:      OptionalTactic[error, success]^,
+             canThrow:    CanThrow[Exception] )
+           ?=> success )
 :   Optional[success] =
 
   try boundary: label ?=>

@@ -1,5 +1,19 @@
 orthant 2 language
 
+@ 0 1 0 103824356dd531aa090b1ccd3d5abc40
++     entry .Reason   dlaczego CSS był nieprawidłowy: dziesięć rodzajów błędów, każdy z numerem
+
+@ 0 1 0 0d328bb2fc31e46a1ad4548da82a3197
++           row  `UnknownDescriptor(rule, name)`  10  _`name` is not a recognized descriptor of the @`rule` rule_  deklaracja w bloku reguły at, takiej jak `@font-face`
+
+@ 0 6 0 1cee0f3071fca5d014d2ac12d14ccdc7
++       entry .communicable   przedstawia każdą przyczynę jako jej komunikat
++       entry #number   numer przyczyny, od 1 do 10, będący podkodem błędu
++     entry #reason   co było nie tak
++     entry #line   wiersz błędu jako `Ordinal`
++     entry #column   kolumna błędu jako `Ordinal`
++   entry .Errors   każdy `Css.Error` znaleziony podczas odczytu arkusza stylów, zgłoszony raz
+
 @ 0 38 0 15177b5972e74eeb18897d1f690c0e42
 +     entry .pixels   wielkość `Pixels` jako `<length>`: `4px`
 +     entry .ems   wielkość `Ems` (z quantitative) jako `<length>`: `2em`
@@ -60,3 +74,14 @@ orthant 2 language
 +       właściwości, a `check(grammar: Css.Syntax, value)` – dowolnej gramatyki. Oba wymagają
 +       `Tactic[Css.Error]`, zgłaszanej tylko wtedy, gdy tekstu wartości nie da się podzielić
 +       na tokeny (niezakończony napis).
+
+@ 0 9 0 0f6b192ddb5b9646140987a0b248e2c4
++   entry .list   każda znana właściwość, w kolejności zbioru danych
++   entry .all   każda znana właściwość, kluczowana nazwą w `Dictionary`
++   entry .descriptors   każdy znany deskryptor reguły at, z kluczem w postaci `rule/descriptor` w `Dictionary`
++   entry .descriptor   definicja deskryptora reguły at, takiego jak `src` w `font-face`, albo `Unset`
++   entry .descriptive   czy reguła at należy do tych, których blok zawiera deskryptory zdefiniowane w zbiorze danych
++   entry .of   definicja nazwanej właściwości lub `Unset`, jeśli nie jest to rozpoznana właściwość
++   entry #name   nazwa właściwości w kebab-case
++   entry #syntax   gramatyka wartości w postaci zapisanej w zbiorze danych, `<length> | auto`
++   entry #grammar   gramatyka wartości sparsowana do `Css.Syntax`, obliczana przy pierwszym użyciu

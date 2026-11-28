@@ -1,0 +1,19 @@
+orthant 2 language
+
+@ 0 8 0 0e1d7bd5116b163c0167d6a37913e98f
++ Projekt ma jedno wymaganie. Okno należy do jednego konsumenta, więc strumienia nie wolno czytać
++ dwukrotnie ani współdzielić. Jest to sprawdzane, a nie tylko udokumentowane. Strumień jest
++ [zdolnością][zdolność] na wyłączność, a biblioteki strumieniowe kompiluje się z włączonym
++ [sprawdzaniem przechwytywania i separacji](../../philosophy/capture-checking.md). Ponowne użycie
++ strumienia po jego skonsumowaniu albo pozwolenie mu na ucieczkę poza zasięg, do którego należy
++ jego źródło, jest błędem kompilacji w kodzie, który włącza oba sprawdzenia. Tam, gdzie odtwarzanie
++ jest naprawdę potrzebne, `memoize` opróżnia strumień raz do [niemutowalnej][niemutowalny]
++ wartości, którą można potem swobodnie współdzielić. To jawny, ograniczony zamiennik niejawnego
++ buforowania leniwej listy.
+
+@ 0 5 0 12ca85145116b4c61780eb29f34a75ef
++ `mark` zapisuje punkt, do którego można wrócić lub od którego można kopiować. `grab` daje wszystko
++ między dwoma znacznikami jako jedną wartość, nawet jeśli obejmuje bloki, w których dostarczono
++ źródło. Znacznik można pobrać, odczytać od niego przez `grab` i do niego wrócić tylko wewnątrz
++ `hold`, który utrzymuje oznaczony obszar w buforze do końca bloku. Poza `hold` kursor może
++ swobodnie odrzucać to, co już minął:

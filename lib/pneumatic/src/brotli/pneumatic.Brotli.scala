@@ -96,7 +96,7 @@ private[pneumatic] trait BrotliAccumulator extends caps.Mutable:
   private var input: scala.Array[Byte] = new scala.Array[Byte](8192)
   private var length0: Int = 0
 
-  protected def accumulated: scala.Array[Byte] = input
+  protected def accumulated: scala.Array[Byte]^{this.rd} = input
   protected def accumulatedLength: Int = length0
 
   protected update def accumulate(bytes: Array[Byte]^{caps.any.rd}, offset: Int, length: Int)

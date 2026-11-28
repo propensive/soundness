@@ -1,5 +1,19 @@
 orthant 2 language
 
+@ 0 1 0 103824356dd531aa090b1ccd3d5abc40
++     entry .Reason   CSS が不正だった理由：番号のついた十種類の誤り
+
+@ 0 1 0 0d328bb2fc31e46a1ad4548da82a3197
++           row  `UnknownDescriptor(rule, name)`  10  _`name` is not a recognized descriptor of the @`rule` rule_  `@font-face` のようなアットルールのブロック内の宣言
+
+@ 0 6 0 1cee0f3071fca5d014d2ac12d14ccdc7
++       entry .communicable   各理由をそのメッセージとして描画する
++       entry #number   理由の番号。1 から 10 で、エラーのサブコードになる
++     entry #reason   何が誤っていたか
++     entry #line   誤りの行。`Ordinal` として
++     entry #column   誤りの列。`Ordinal` として
++   entry .Errors   スタイルシートを読む間に見つかったすべての `Css.Error`。一度だけ発生する
+
 @ 0 38 0 15177b5972e74eeb18897d1f690c0e42
 +     entry .pixels   `Pixels` の量を `<length>` として：`4px`
 +     entry .ems   `Ems` の量（quantitative のもの）を `<length>` として：`2em`
@@ -54,3 +68,14 @@ orthant 2 language
 +       二つのオーバーロードがある。
 +       `check(property: PropertyDef, value)` はプロパティのパースされた文法を使い、`check(grammar: Css.Syntax, value)` は任意の文法を使う。
 +       どちらも `Tactic[Css.Error]` を必要とし、エラーが発生するのは値のテキストをトークン化できない場合（閉じられていない文字列）だけである。
+
+@ 0 9 0 0f6b192ddb5b9646140987a0b248e2c4
++   entry .list   既知のすべてのプロパティ。データセットの順
++   entry .all   既知のすべてのプロパティ。`Dictionary` の中で名前をキーとする
++   entry .descriptors   アットルールの既知の記述子すべて。`Dictionary` 内で `rule/descriptor` をキーとする
++   entry .descriptor   アットルールの記述子（`font-face` の `src` など）の定義、または `Unset`
++   entry .descriptive   アットルールが、データセットの定義する記述子をブロックに持つものかどうか
++   entry .of   名前のついたプロパティの定義。認識されたプロパティでなければ `Unset`
++   entry #name   プロパティの名前。ケバブケース
++   entry #syntax   データセットが書くとおりの値の文法。`<length> | auto`
++   entry #grammar   `Css.Syntax` にパースされた値の文法。最初に使うときに計算される

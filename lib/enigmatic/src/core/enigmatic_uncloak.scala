@@ -140,15 +140,15 @@ extension (data: Data)
 // `CaptureTests`.
 
 extension [cipher <: Cipher](key: PublicKey[cipher])
-  def uncloak[result](block: Encryptor[cipher]^ ?=> result): result =
+  def uncloak[result](block: (encryptor: Encryptor[cipher]^) ?=> result): result =
     block(using Encryptor(key.bytes))
 
 extension [cipher <: Cipher](key: PrivateKey[cipher]^)
-  def uncloak[result](block: Decryptor[cipher]^ ?=> result): result =
+  def uncloak[result](block: (decryptor: Decryptor[cipher]^) ?=> result): result =
     key.secret.uncloak: bytes => block(using Decryptor(Array.unsafeFrozen(bytes)))
 
 extension [cipher <: Cipher](key: SymmetricKey[cipher]^)
-  def uncloak[result](block: (Encryptor[cipher]^, Decryptor[cipher]^) ?=> result): result =
+  def uncloak[result](block: (encryptor: Encryptor[cipher]^, decryptor: Decryptor[cipher]^) ?=> result): result =
     key.secret.uncloak: bytes =>
       val data = Array.unsafeFrozen(bytes)
       block(using Encryptor(data), Decryptor(data))

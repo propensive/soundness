@@ -1178,7 +1178,7 @@ extends caps.Mutable:
   inline def offset(mark: Cursor.Mark): Cursor.Offset =
     Cursor.offsetFromLong(offsetForMark(mark.absolute))
 
-  inline update def cue(mark: Cursor.Mark): Unit =
+  inline update def cue(mark: Cursor.Mark)(using held: Cursor.Held): Unit =
     pos = (mark.absolute - basePos).toInt
 
     if lineationActive then
@@ -1195,7 +1195,7 @@ extends caps.Mutable:
         holdStart = -1
         marksSize = 0
 
-  inline def grab(start: Cursor.Mark, end: Cursor.Mark): data =
+  inline def grab(start: Cursor.Mark, end: Cursor.Mark)(using held: Cursor.Held): data =
     val len = (end.absolute - start.absolute).toInt
 
     if len <= 0 then addressable.empty

@@ -866,6 +866,128 @@ object Tests extends Suite("css", m"Cataclysm Tests"):
         !demilitarize(css"a { margin: $width 0 }").nil
       . assert(_ == true)
 
+    suite(m"CSS interpolator validation"):
+      val red = iridescence.Srgb(1.0, 0.0, 0.0)
+
+      test(m"an unknown property in a rule fails to compile"):
+        demilitarize(css"a { colour: red }").map(_.message)
+      . assert(_.exists(_.contains("colour is not a recognized CSS property")))
+
+      test(m"a bad value in a rule fails to compile"):
+        demilitarize(css"a { width: wide }").map(_.message)
+      . assert(_.exists(_.contains("wide is not a valid value for the width property")))
+
+      test(m"an unknown property in an inline style fails to compile"):
+        demilitarize(css"colour: red").map(_.message)
+      . assert(_.exists(_.contains("colour is not a recognized CSS property")))
+
+      test(m"a bad value in an inline style fails to compile"):
+        demilitarize(css"color: red; width: wide").map(_.message)
+      . assert(_.exists(_.contains("wide is not a valid value for the width property")))
+
+      test(m"a bad value inside a media query fails to compile"):
+        demilitarize(css"@media screen { a { width: wide } }").map(_.message)
+      . assert(_.exists(_.contains("wide is not a valid value for the width property")))
+
+      test(m"an unknown property is reported at its declaration"):
+        demilitarize(css"a { color: red; colour: red }").map(_.focus)
+      . assert(_ == List("c"))
+
+      test(m"an unknown property with a substitution fails to compile"):
+        demilitarize(css"a { colour: $red }").map(_.message)
+      . assert(_.exists(_.contains("colour is not a known CSS property")))
+
+      test(m"a valid declaration beside a substitution compiles"):
+        css"a { color: $red; width: 4px }"
+      . assert(_ == t"a { color: #ff0000; width: 4px }".read[Css])
+
+      test(m"a custom property takes any value"):
+        css"a { --accent: wide }"
+      . assert(_ == t"a { --accent: wide }".read[Css])
+
+      test(m"a var() reference is a valid value"):
+        css"a { width: var(--gutter) }"
+      . assert(_ == t"a { width: var(--gutter) }".read[Css])
+
+      test(m"the descriptors of a font face are not checked as properties"):
+        css"""@font-face { font-family: "Inter"; src: url("inter.woff2") }""".rules.size
+      . assert(_ == 1)
+
+      test(m"descriptors read at runtime are not checked as properties"):
+        t"""@font-face { font-family: "Inter"; src: url("inter.woff2") }""".read[Css].rules.size
+      . assert(_ == 1)
+
+      test(m"the font face of the issue reads without error"):
+        val source = t"""url("https://propensive.dev/propensity.woff2") format("woff2")"""
+
+        t"""@font-face { font-family: "Propensity"; src: $source; font-display: swap }"""
+        . read[Css].rules.size
+      . assert(_ == 1)
+
+      test(m"a font source with a keyword format and a local fallback reads"):
+        t"""@font-face { src: local("Inter"), url(inter.woff2) format(woff2) tech(variations) }"""
+        . read[Css].rules.size
+      . assert(_ == 1)
+
+      test(m"the descriptors of a font face which are not properties read"):
+        t"@font-face { unicode-range: U+0025-00FF; size-adjust: 90%; ascent-override: normal }"
+        . read[Css].rules.size
+      . assert(_ == 1)
+
+      test(m"a font face Cataclysm writes reads back"):
+        val source = t"""url("https://x/inter.woff2") format("woff2")"""
+
+        t"""@font-face{font-family:"Inter";src:$source;font-weight:100 900;}""".read[Css].rules.size
+      . assert(_ == 1)
+
+      test(m"an unknown descriptor of a font face is an error"):
+        capture[Css.Errors](t"""@font-face { colour: red }""".read[Css]).errors.map(_.reason)
+      . assert(_ == List(Css.Error.Reason.UnknownDescriptor(t"font-face", t"colour")))
+
+      test(m"a property which is not a descriptor of a font face is an error"):
+        capture[Css.Errors](t"""@font-face { color: red }""".read[Css]).errors.map(_.reason)
+      . assert(_ == List(Css.Error.Reason.UnknownDescriptor(t"font-face", t"color")))
+
+      test(m"a bad value of a descriptor is an error"):
+        capture[Css.Errors](t"@font-face { font-display: quickly }".read[Css]).errors.map(_.reason)
+      . assert(_ == List(Css.Error.Reason.BadValue(t"font-display", t"quickly")))
+
+      test(m"a page rule takes its descriptors and properties"):
+        t"@page { size: A4 landscape; margin: 2cm }".read[Css].rules.size
+      . assert(_ == 1)
+
+      test(m"an unknown declaration in a page rule is an unknown property"):
+        capture[Css.Errors](t"@page { colour: red }".read[Css]).errors.map(_.reason)
+      . assert(_ == List(Css.Error.Reason.UnknownProperty(t"colour")))
+
+      test(m"the declarations of a keyframe are checked as properties"):
+        val keyframes = t"@keyframes fade { from { opacity: 0 } to { opacity: clear } }"
+
+        capture[Css.Errors](keyframes.read[Css]).errors.map(_.reason)
+      . assert(_ == List(Css.Error.Reason.BadValue(t"opacity", t"clear")))
+
+      test(m"the block of an unknown at-rule is not checked"):
+        t"@font-feature-values Inter { @styleset { nice-style: 12 } }".read[Css].rules.size
+      . assert(_ == 1)
+
+      test(m"a bad descriptor in a literal fails to compile"):
+        demilitarize(css"@font-face { font-display: quickly }").map(_.message)
+      . assert(_.exists(_.contains("quickly is not a valid value")))
+
+      test(m"every bundled descriptor has a grammar which parses"):
+        PropertyDef.descriptorList.map(_(1).grammar).size
+      . assert(_ == 36)
+
+      test(m"a rule after a descriptor block is still checked"):
+        capture[Css.Errors](t"""@font-face { src: url("x") } a { colour: red }""".read[Css])
+        . errors.map(_.reason)
+      . assert(_ == List(Css.Error.Reason.UnknownProperty(t"colour")))
+
+      test(m"a validation error is reported at the start of its declaration"):
+        capture[Css.Errors](t"a {\n  color: red;\n  colour: red;\n}".read[Css])
+        . errors.map: error => (error.line.n0, error.column.n0)
+      . assert(_ == List((2, 2)))
+
     suite(m"CSS interpolator result type"):
       val width = 4.0*Px
 

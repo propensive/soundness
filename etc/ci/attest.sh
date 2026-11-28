@@ -133,6 +133,24 @@ JOBS="${SOUNDNESS_CI_JOBS:-6}"
 WASM_STEP="make wasm-e2e"
 
 wasm_e2e() { CLAUDECODE=1 make wasm-e2e; }
+
+# The Scala Native stages need Native artifacts for the compiler in use: Scala Native's own
+# compiler plugin, published for each released Scala version, and Proscala's `tasty-core` and
+# `proscala-library` compiled with it. Neither exists for a build of Scala's `main` line (3.11.0),
+# so on that pin the three stages are skipped, and the statement records that they were. They
+# run again as soon as the pin names a compiler which has the artifacts.
+if grep -q '^  val scalaVersion = "3\.11\.' build.mill; then
+  NATIVE_STEP="skipped: no Scala Native artifacts exist for the pinned compiler"
+  native_stage() { echo "Skipping the Scala Native stages: no artifacts for the pinned compiler" >&2; }
+else
+  NATIVE_STEP="./mill --no-daemon -j 6 --ticker false soundness.native.compile && ./mill --no-daemon -j 6 --ticker false nativelink.binary && ./out/nativelink/binary.dest/soundness-native && ./mill --no-daemon -j 6 --ticker false nativelink.testSuites"
+  native_stage() {
+    CLAUDECODE=1 ./mill --no-daemon -j "$JOBS" --ticker false soundness.native.compile \
+      && CLAUDECODE=1 ./mill --no-daemon -j "$JOBS" --ticker false nativelink.binary \
+      && ./out/nativelink/binary.dest/soundness-native \
+      && CLAUDECODE=1 ./mill --no-daemon -j "$JOBS" --ticker false nativelink.testSuites
+  }
+fi
 if [[ "${SOUNDNESS_CI_SKIP_BUILD:-0}" != "1" ]]; then
   mkdir -p out
   LOG="out/attest-$(date -u +%Y%m%dT%H%M%SZ).log"
@@ -164,11 +182,8 @@ if [[ "${SOUNDNESS_CI_SKIP_BUILD:-0}" != "1" ]]; then
     make xek-fetch \
       && CLAUDECODE=1 ./mill --no-daemon -j "$JOBS" --ticker false soundness.all.compile \
       && CLAUDECODE=1 ./mill --no-daemon -j "$JOBS" --ticker false soundness.js.compile \
-      && CLAUDECODE=1 ./mill --no-daemon -j "$JOBS" --ticker false soundness.native.compile \
       && CLAUDECODE=1 ./mill --no-daemon -j "$JOBS" --ticker false benches.compile \
-      && CLAUDECODE=1 ./mill --no-daemon -j "$JOBS" --ticker false nativelink.binary \
-      && ./out/nativelink/binary.dest/soundness-native \
-      && CLAUDECODE=1 ./mill --no-daemon -j "$JOBS" --ticker false nativelink.testSuites \
+      && native_stage \
       && CLAUDECODE=1 ./mill --no-daemon -j "$JOBS" --ticker false test.assembly \
       && make ci \
       && wasm_e2e
@@ -197,9 +212,9 @@ trap 'rm -rf "$TMP"' EXIT
 STMT="$TMP/statement.json"
 ENV_FILE="$TMP/envelope.json"
 
-python3 - "$DIGEST" "$TREE" "$SIGNER" "$HEAD_SHA" "$WASM_STEP" > "$STMT" <<'PY'
+python3 - "$DIGEST" "$TREE" "$SIGNER" "$HEAD_SHA" "$WASM_STEP" "$NATIVE_STEP" > "$STMT" <<'PY'
 import datetime, json, sys
-digest, tree, signer, commit, wasm_step = sys.argv[1], sys.argv[2], sys.argv[3], sys.argv[4], sys.argv[5]
+digest, tree, signer, commit, wasm_step, native_step = sys.argv[1:7]
 mill_version = open(".mill-version").read().strip()
 now = datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
 statement = {
@@ -212,10 +227,8 @@ statement = {
         "commands": [
             "./mill --no-daemon -j 6 --ticker false soundness.all.compile",
             "./mill --no-daemon -j 6 --ticker false soundness.js.compile",
-            "./mill --no-daemon -j 6 --ticker false soundness.native.compile",
             "./mill --no-daemon -j 6 --ticker false benches.compile",
-            "./mill --no-daemon -j 6 --ticker false nativelink.binary && ./out/nativelink/binary.dest/soundness-native",
-            "./mill --no-daemon -j 6 --ticker false nativelink.testSuites",
+            native_step,
             "./mill --no-daemon -j 6 --ticker false test.assembly",
             "make ci",
             wasm_step,

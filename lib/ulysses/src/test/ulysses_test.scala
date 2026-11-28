@@ -142,6 +142,15 @@ object Tests extends Suite("bloom", m"Ulysses tests"):
 
     . check(identity(_))
 
+    // A frozen filter has an empty capture set, and `add` is an update method (#2565).
+    test(m"A frozen filter cannot be added to in place"):
+      demilitarize:
+        val filter = BloomFilter[Text](1000, 0.01)
+        val frozen = BloomFilter.freeze(filter)
+        frozen.add(t"one")
+      . map(_.message)
+    . assert(_.exists(_.contains("Cannot call update method add")))
+
     test(m"A case class can be an element"):
       val filter = BloomFilter[Point](100, 0.01) + Point(1, 2)
       filter.hits(Point(1, 2)) && !filter.hits(Point(2, 1))

@@ -155,8 +155,24 @@ object Tests extends Suite("filesystem", m"Galilei tests"):
       . assert(_ == t"from the table")
 
       test(m"A governed path is opened through its descriptor"):
-        unsafely(virtual.open[File]()(file.stream.read[Data]).utf8)
+        unsafely(virtual.open[File]()(file.read[Data]).utf8)
       . assert(_ == t"from the table")
+
+      // A lazy `Chain` of the file's content was pure, and left the block to be read after the
+      // file had closed (#2565); the handle's stream is a capability, which cannot.
+      test(m"A handle's stream cannot leave the block which opened it"):
+        demilitarize:
+          import strategies.throwUnsafely
+          val escaped = virtual.open[File]()(file.stream)
+        . map(_.message)
+      . assert(_.exists(_.tt.contains(t"outlives its scope")))
+
+      test(m"A handle reads its content under capture checking"):
+        demilitarize:
+          import strategies.throwUnsafely
+          val content: Data = virtual.open[File]()(file.read[Data])
+          val bytes: Data = virtual.open[File]()(file.stream.memoize)
+      . assert(_ == Nil)
 
       test(m"A governed path is written through its descriptor"):
         unsafely:
@@ -205,7 +221,7 @@ object Tests extends Suite("filesystem", m"Galilei tests"):
 
         test(m"The file accessor reaches the contextual handle"):
           unsafely:
-            dest.open[File]()(file.stream.read[Data]).utf8
+            dest.open[File]()(file.read[Data]).utf8
         . check(_ == t"Hello world!")
 
     suite(m"Opening directories"):
@@ -1180,7 +1196,7 @@ object Tests extends Suite("filesystem", m"Galilei tests"):
 
         test(m"An Exclusive file open succeeds and reads its content"):
           unsafely:
-            target.open[File](Read & Exclusive)(file.stream.read[Data]).utf8
+            target.open[File](Read & Exclusive)(file.read[Data]).utf8
         . check(_ == t"content")
 
         test(m"A second Exclusive open of the same file is Busy"):

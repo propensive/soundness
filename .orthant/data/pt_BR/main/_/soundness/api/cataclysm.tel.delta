@@ -1,5 +1,19 @@
 orthant 2 language
 
+@ 0 1 0 103824356dd531aa090b1ccd3d5abc40
++     entry .Reason   por que o CSS era inválido: as dez categorias de falha, cada uma numerada
+
+@ 0 1 0 0d328bb2fc31e46a1ad4548da82a3197
++           row  `UnknownDescriptor(rule, name)`  10  _`name` is not a recognized descriptor of the @`rule` rule_  uma declaração no bloco de uma regra-at como `@font-face`
+
+@ 0 6 0 1cee0f3071fca5d014d2ac12d14ccdc7
++       entry .communicable   renderiza cada motivo como a sua mensagem
++       entry #number   o número do motivo, de 1 a 10, que é o subcódigo do erro
++     entry #reason   o que estava errado
++     entry #line   a linha da falha, como `Ordinal`
++     entry #column   a coluna da falha, como `Ordinal`
++   entry .Errors   cada `Css.Error` encontrado ao ler uma folha de estilo, lançado uma única vez
+
 @ 0 38 0 15177b5972e74eeb18897d1f690c0e42
 +     entry .pixels   uma quantidade `Pixels` como `<length>`: `4px`
 +     entry .ems   uma quantidade `Ems` (de quantitative) como `<length>`: `2em`
@@ -61,3 +75,14 @@ orthant 2 language
 +       propriedade, e `check(grammar: Css.Syntax, value)`, qualquer gramática. Ambas
 +       precisam de uma `Tactic[Css.Error]`, lançado apenas quando o texto do valor não pode
 +       ser tokenizado (uma string não terminada).
+
+@ 0 9 0 0f6b192ddb5b9646140987a0b248e2c4
++   entry .list   cada propriedade conhecida, na ordem do conjunto de dados
++   entry .all   cada propriedade conhecida, indexada pelo nome em um `Dictionary`
++   entry .descriptors   todos os descritores conhecidos de uma regra-at, indexados como `rule/descriptor` em um `Dictionary`
++   entry .descriptor   a definição de um descritor de uma regra-at, como `src` em `font-face`, ou `Unset`
++   entry .descriptive   se uma regra-at é daquelas cujo bloco contém descritores que o conjunto de dados define
++   entry .of   a definição de uma propriedade nomeada, ou `Unset` se ela não for uma propriedade reconhecida
++   entry #name   o nome da propriedade, em kebab-case
++   entry #syntax   a gramática de valores tal como o conjunto de dados a escreve, `<length> | auto`
++   entry #grammar   a gramática de valores analisada em uma `Css.Syntax`, calculada no primeiro uso

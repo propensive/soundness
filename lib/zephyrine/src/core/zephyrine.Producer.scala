@@ -206,7 +206,11 @@ object Producer:
   // A consumer lent a filled block: the block's storage as a `Region` with its branded
   // extent, valid only for the duration of the call — the discipline of `Stream.lend` — so
   // nothing is copied, and a consumer that must keep the bytes materializes them itself.
-  type Lending[medium] = (region: Region[medium]) => (Interval in region.type) => Unit
+  // The region is a capability which the consumer's inner function may use (it is named in
+  // that function's capture set) but which nothing can keep: it cannot flow into a variable
+  // or a value outside the call.
+  type Lending[medium] =
+    (region: Region[medium]^) => (Interval in region.type) ->{caps.any, region} Unit
 
   // Streaming text as UTF-8: characters are encoded straight into a byte block, and each full
   // block is lent to `lending` inline, so a text serializer writes bytes to a socket or an

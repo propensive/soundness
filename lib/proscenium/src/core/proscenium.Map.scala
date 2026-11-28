@@ -201,7 +201,7 @@ object Map extends scala.caps.Pure:
       hashes = hashes2
       shift -= 1
 
-    private[proscenium] def result(): sci.Map[key, value] =
+    private[proscenium] update def result(): sci.Map[key, value] =
       val keyed0 = keyed
 
       if keyed0 != null then keyed0

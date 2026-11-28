@@ -54,13 +54,14 @@ object settings:
   // below like the tools, and resolved from its GitHub release by crux, which also forces every
   // `org.scala-lang` artifact to it: the flare plugin names the release it was built with, and
   // the fork stays TASTy-compatible across its patch releases.
-  val scalaVersion = "3.10.0-pro-1.2.0"
+  val scalaVersion = "3.11.0-54094c068ffa2602-pro-1.2.1"
 
   // The compiler *stream* — the major Scala version, without the patch level — which is what
   // decides the shape of the compiler-internal APIs a handful of modules wrap. Everything else
   // in Soundness is written once and compiles on every stream; where an API genuinely differs
   // (see the `Shim` component trait), this selects the sources that bridge it.
-  val scalaStream = if scalaVersion.startsWith("3.10") then "3.10" else "3.9"
+  // The 3.11 stream (upstream `main`) has the 3.10 shapes so far, and shares its sources.
+  val scalaStream = if scalaVersion.startsWith("3.9") then "3.9" else "3.10"
   // Empty by default → download `scalaVersion` from `scalaRelease`. Set to a local `release`
   // directory to use its `lib` jars directly (fork-developer mode).
   val scalaJsVersion = "1.22.0-wasm.4"
@@ -685,8 +686,10 @@ trait Benchmarks(dependencies: PublishModule*) extends BaseScalaModule:
 // file count, size and deployment frequency ruled out publishing every component across three
 // platforms); releases now go to GitHub Releases, one asset per component jar (see `release`
 // below), and the bundles remain as the coarse-grained fat jars — `soundness-cli.jar` and so on
-// — that tools and documentation put on a classpath. Components remain ordinary `PublishModule`s
-// in the build, so `mill rudiments.core.publishLocal` still works for debugging.
+// — that tools and documentation put on a classpath. A release has each bundle too, but as a
+// name for its components and not as this jar: see `release.bundleReleases`. Components remain
+// ordinary `PublishModule`s in the build, so `mill rudiments.core.publishLocal` still works for
+// debugging.
 //
 // Two invariants keep the bundles sound, both enforced by `groupCheck.validate`:
 //
@@ -1614,8 +1617,9 @@ object cataclysm extends Library:
       quantitative.units, iridescence.core, gesticulate.core, rudiments.core,
       contextual.core, nomenclature.core,
       anticipation.color, anticipation.focus, parasite.core):
-    // The MDN `css/properties.json` and `syntaxes.json` datasets (CC0), compiled into string
-    // tables: only each entry's `syntax` is used, by the `css"…"` macro and at run time alike.
+    // The MDN `css/properties.json`, `syntaxes.json` and `at-rules.json` datasets (CC0), compiled
+    // into string tables: only each entry's `syntax` is used, by the `css"…"` macro and at run
+    // time alike. A descriptor of an at-rule is named `rule/descriptor`, as `font-face/src`.
     def cssData = Task.Sources(moduleDir / os.up / os.up / "data")
     def generatedSources = Task:
       val data = cssData().head.path
@@ -1623,12 +1627,20 @@ object cataclysm extends Library:
         ujson.read(os.read(data / file)).obj.toSeq.map { (name, entry) => (name, entry("syntax").str) }
       val properties = table("properties.json")
       val syntaxes = table("syntaxes.json")
+      val descriptors: Seq[(String, String)] =
+        ujson.read(os.read(data / "at-rules.json")).obj.toSeq.flatMap { (rule, entry) =>
+          entry.obj.get("descriptors").toSeq.flatMap(_.obj.toSeq).map { (name, descriptor) =>
+            (s"${rule.stripPrefix("@")}/$name", descriptor("syntax").str)
+          }
+        }
       val source =
         "package cataclysm\n\nprivate[cataclysm] object CssData:\n"
         + stringTable("propertyNames", properties.map(_._1))
         + stringTable("propertySyntaxes", properties.map(_._2))
         + stringTable("syntaxNames", syntaxes.map(_._1))
         + stringTable("syntaxSyntaxes", syntaxes.map(_._2))
+        + stringTable("descriptorNames", descriptors.map(_._1))
+        + stringTable("descriptorSyntaxes", descriptors.map(_._2))
       os.write.over(Task.dest / "cataclysm" / "cataclysm.CssData.scala", source, createFolders = true)
       Seq(PathRef(Task.dest))
     override def scalacOptions = Task:
@@ -1709,7 +1721,11 @@ object coaxial extends Library:
   object dns extends Component(core, urticose.dns):
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
-  object test extends Tests(core, jvm, dns, galilei.jvm)
+  object test extends Tests(core, jvm, dns, galilei.jvm):
+    // `-Ycc-new` is inert for a file without the `captureChecking` import, and selects the new
+    // checker for `CaptureTests`, which has it (as `enigmatic.test` does).
+    override def scalacOptions = Task:
+      super.scalacOptions() :+ "-Ycc-new"
 
 object prophesy extends Library:
   object core extends Component(stenography.core, gossamer.core):
@@ -2878,7 +2894,11 @@ object parasite extends Library:
     override def scalaJs = false
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
-  object test extends Tests(core, jvm, quantitative.units)
+  object test extends Tests(core, jvm, quantitative.units):
+    // `-Ycc-new` is inert for a file without the `captureChecking` import, and selects the new
+    // checker for `CaptureTests`, which has it (as `enigmatic.test` does).
+    override def scalacOptions = Task:
+      super.scalacOptions() :+ "-Ycc-new"
   // The effect-runtime rivals: the cats-effect/fs2 and Kyo constructions of
   // github.com/stasimus/scala-effect-bench, each measured beside its direct-style Soundness
   // idiom. `zephyrine.core` supplies `Handoff`, the bounded hand-off ring the queue rows use.
@@ -4083,8 +4103,9 @@ def bundleClosure(roots: Seq[Bundled]): Seq[Bundle] =
 
 // Everything a release publishes: every component of every library (which includes the three
 // compiler plugins), plus the `js` and `native` cross of each platform-capable component. Each is
-// released as its own jar. Not the bundles or the universal artifact (whose contents are these
-// same jars), and not the test, benchmark or `Internal` modules, which are never released.
+// released as its own jar. Not the test, benchmark or `Internal` modules, which are never
+// released. The bundles and the universal artifact are released beside these, as jars with no
+// classfiles whose descriptors name these as dependencies (`release.bundleReleases`).
 val releasableModules: Seq[PublishModule] =
   allLibraries.flatMap(_.moduleDirectChildren).flatMap:
     case component: Component =>
@@ -4101,9 +4122,10 @@ val releasableModules: Seq[PublishModule] =
 
 // The release pipeline's view of the build, driven by `etc/ci/release.sh`. Releases go to GitHub
 // Releases rather than Maven Central: a tagged version becomes one release whose assets are the
-// jars of `releasableModules`, each named `<artifactId>-<version>.jar` — no bundles, no source or
-// javadoc jars, and no checksum files (GitHub records a SHA-256 digest per asset, which is what
-// downstream tools such as burdock match against).
+// jars of `releasableModules`, each named `<artifactId>-<version>.jar`, and a jar without
+// classfiles for each bundle (`bundleReleases`) — no source or javadoc jars, and no checksum
+// files (GitHub records a SHA-256 digest per asset, which is what downstream tools such as
+// burdock match against).
 //
 // Each released jar is self-describing: it carries its own POM and ivy.xml under
 // `META-INF/maven/<group>/<artifactId>/`, the Maven convention for an embedded descriptor. That
@@ -4162,7 +4184,13 @@ object release extends Module:
         Task.Anon((module.jar(), module.pomSettings().organization, module.artifactId(),
                    module.publishVersion(), module.pom(), module.ivy())))()
 
-    jars.flatMap: (jar, group, artifactId, version, pom, ivy) =>
+    val documentation: Seq[PathRef] =
+      docsOutput().toSeq.flatMap: compiled =>
+        stageDocs(Task.dest, compiled.path, docsArtifact(), docsSettings())
+
+    val bundles: Seq[BundleRelease] = Task.sequence(bundleReleases)()
+
+    val components: Seq[PathRef] = jars.flatMap: (jar, group, artifactId, version, pom, ivy) =>
       val target = Task.dest / s"$artifactId-$version.jar"
       val prefix = s"META-INF/maven/$group/$artifactId"
       val descriptors = Seq(s"$prefix/pom.xml" -> pom.path, s"$prefix/ivy.xml" -> ivy.path)
@@ -4170,6 +4198,214 @@ object release extends Module:
       val metadata = Task.dest / s"$artifactId-$version.ivy.xml"
       os.write.over(metadata, stripDescriptor(os.read(ivy.path)))
       Seq(PathRef(target), PathRef(metadata))
+
+    documentation ++ components ++ bundles.flatMap(stageBundle(Task.dest, _))
+
+  // The documentation, compiled: `dev.propensive:soundness-docs`, a jar of data and no classes,
+  // which depends on nothing. It holds what `fuel compile` writes for the documents in `doc`
+  // (`output` in .pyrocosm/fuel/config.tel) — a manifest, `index.fuel`, and a record for every
+  // document and API page, each as BinTEL, with every fence already compiled and run — under
+  // `soundness/docs`, and beside them the files of data a section's documents are indexed by.
+  // A site which shows the documentation reads it from this jar, and compiles nothing.
+  //
+  // The records are of Pyrocosm's model, as the Fuel pinned in etc/tools has it: what reads
+  // the jar reads it with the Pyrocosm that Fuel was built against, which the manifest's
+  // record of Fuel's version decides.
+
+  // The jars the documentation's fences are compiled against, beyond the test assembly: those
+  // .pyrocosm/fuel/config.tel names as its `classpath`.
+  private val docsClasspath: Seq[JavaModule] = Seq(
+    ambience.wasi, aviation.wasi, capricious.wasi, coaxial.wasi, galilei.wasi, telekinesis.wasi,
+    turbulence.wasi, telekinesis.forms, breviloquence.http, caesura.http, locomotion.http,
+    eucalyptus.gcp, caduceus.resend, orthodoxy.server)
+
+  // What a compile of the documentation reads, besides those jars: the store, its live tree,
+  // Fuel's configuration and the fixtures of the fences.
+  def docsSources = Task.Sources(
+    mill.api.BuildCtx.workspaceRoot / ".orthant",
+    mill.api.BuildCtx.workspaceRoot / "doc",
+    mill.api.BuildCtx.workspaceRoot / ".pyrocosm" / "fuel",
+    mill.api.BuildCtx.workspaceRoot / "etc" / "fixtures")
+
+  // The files of data which go into the jar as they are, each beneath `soundness/docs`: the two
+  // lists the examples are chosen by.
+  private val docsData: Seq[(os.SubPath, os.SubPath)] = Seq(
+    os.sub / "doc" / "examples" / "themes.tel" -> os.sub / "examples" / "themes.tel",
+    os.sub / "doc" / "examples" / "topics.tel" -> os.sub / "examples" / "topics.tel")
+
+  // Compiles the documentation with the `fuel` command (FUEL names another), which `make tools`
+  // installs at the version pinned in etc/tools. Fuel keeps its output in `out/fuel`, outside
+  // this task's own directory, and compiles again only what has changed since it last ran. A
+  // fence which does not do as its preamble says fails the task, and so a release.
+  //
+  // With SOUNDNESS_SKIP_DOCS set, nothing is compiled and there is no documentation to stage:
+  // that is for a snapshot of the code alone (`make snapshot`), made while a document is at
+  // fault, or where there is no `fuel`. Nothing sets it for a release.
+  def docsSkipped = Task.Input(Task.env.contains("SOUNDNESS_SKIP_DOCS"))
+
+  def docsOutput: T[Option[PathRef]] = Task:
+    docsSources()
+    test.assembly()
+    Task.traverse(docsClasspath)(_.jar)()
+
+    if docsSkipped() then None else Some(compileDocs(Task.env.getOrElse("FUEL", "fuel")))
+
+  private def compileDocs(fuel: String): PathRef =
+    val root = mill.api.BuildCtx.workspaceRoot
+
+    val status =
+      try os.proc(fuel, "compile").call(cwd = root, check = false, stdout = os.Inherit, stderr = os.Inherit).exitCode
+      catch case error: java.io.IOException =>
+        throw new Exception(s"the `$fuel` command could not be run; `make tools` installs it", error)
+
+    if status != 0 then
+      throw new Exception(s"`$fuel compile` failed with status $status; the documentation is not released with a fault in it")
+
+    val output = root / "out" / "fuel"
+
+    if !os.exists(output / "index.fuel") then
+      throw new Exception("`fuel compile` wrote no manifest; is `output out/fuel` in .pyrocosm/fuel/config.tel?")
+
+    PathRef(output)
+
+  private def docsArtifact: Task[Artifact] = Task.Anon:
+    soundness.universal.artifactMetadata().copy(id = "soundness-docs")
+
+  private def docsSettings: Task[PomSettings] = Task.Anon:
+    soundness.universal.pomSettings().copy(description = "The documentation of Soundness, compiled")
+
+  // Writes the documentation's jar and its descriptor into `directory`, under the names a
+  // component's have. The records are named by the hash of their content, so they are put in
+  // the jar in the order of their names, and the same documentation makes the same jar.
+  private def stageDocs(directory: os.Path, compiled: os.Path, artifact: Artifact, settings: PomSettings)
+  :   Seq[PathRef] =
+    val Artifact(group, id, version) = artifact
+    val ivy: String = Ivy(artifact, Seq())
+    val pom: String = Pom(artifact, Seq(), id, settings, Map(), "jar", None)
+    val prefix = s"META-INF/maven/$group/$id"
+    val root = mill.api.BuildCtx.workspaceRoot
+    val target = directory / s"$id-$version.jar"
+    val output = new java.util.zip.ZipOutputStream(new java.io.FileOutputStream(target.toIO))
+
+    def put(name: String, content: Array[Byte]): Unit =
+      val entry = new java.util.zip.ZipEntry(name)
+      entry.setTime(0L)
+      output.putNextEntry(entry)
+      output.write(content)
+      output.closeEntry()
+
+    try
+      put("META-INF/MANIFEST.MF", "Manifest-Version: 1.0\r\n\r\n".getBytes("UTF-8"))
+      put(s"$prefix/pom.xml", pom.getBytes("UTF-8"))
+      put(s"$prefix/ivy.xml", ivy.getBytes("UTF-8"))
+      put("soundness/docs/index.fuel", os.read.bytes(compiled / "index.fuel"))
+
+      for record <- os.list(compiled / "objects").filter(_.ext == "fuel").sortBy(_.last) do
+        put(s"soundness/docs/objects/${record.last}", os.read.bytes(record))
+
+      for (source, name) <- docsData do put(s"soundness/docs/$name", os.read.bytes(root / source))
+    finally output.close()
+
+    val metadata = directory / s"$id-$version.ivy.xml"
+    os.write.over(metadata, stripDescriptor(ivy))
+    Seq(PathRef(target), PathRef(metadata))
+
+  // A bundle as it is released: a name for a set of components, and nothing more. Its jar holds
+  // no classfiles, only its own descriptors, and those name each component it stands for as a
+  // dependency; so a build which depends on `soundness-cli` depends on every component of the
+  // `cli` bundle, each resolved as its own jar, and a build which names a bundle and one of its
+  // components besides has each class once. (The fat jar a `Bundle` module builds is a different
+  // thing: one file to put on a classpath by hand, which is never released.)
+  //
+  // There is one for each platform a bundle has components on — `soundness-cli`,
+  // `soundness-cli_sjs1_3`, `soundness-cli_native0.5_3` — naming that platform's components; and
+  // one of everything for each platform — `soundness`, `soundness_sjs1_3`,
+  // `soundness_native0.5_3` — naming that platform's bundles, without the opt-in ones (see
+  // `soundness.universal`).
+  //
+  // A jar, though it is empty, because everything downstream of a release takes a module to be
+  // one: the release counts a descriptor for each jar, `sync_releases.py` installs a module from
+  // the descriptors inside its jar, and a resolver asked for a module fetches its artifact.
+  private case class BundleRelease
+    ( artifact: Artifact, components: Seq[Artifact], settings: PomSettings )
+
+  private def bundleRelease
+    ( artifact: Task[Artifact], components: Seq[Task[Artifact]], settings: Task[PomSettings] )
+  :   Task[BundleRelease] =
+    Task.Anon(BundleRelease(artifact(), Task.sequence(components)(), settings()))
+
+  // The universal artifact's coordinate on a platform: its own name, with the suffix that
+  // platform gives a bundle's.
+  private def universal(plain: Task[Artifact], cross: Task[Artifact]): Task[Artifact] = Task.Anon:
+    val artifact = soundness.universal.artifactMetadata()
+    artifact.copy(id = artifact.id + cross().id.stripPrefix(plain().id))
+
+  private def bundleReleases: Seq[Task[BundleRelease]] =
+    val platforms: Seq[(Bundle => Seq[PublishModule], Bundle => PublishModule)] = Seq(
+      ((bundle: Bundle) => bundle.contents,       (bundle: Bundle) => bundle),
+      ((bundle: Bundle) => bundle.jsContents,     (bundle: Bundle) => bundle.js),
+      ((bundle: Bundle) => bundle.nativeContents, (bundle: Bundle) => bundle.native))
+
+    platforms.flatMap: (contents, cross) =>
+      val bundles: Seq[Bundle] = leafBundles.filter(contents(_).nonEmpty)
+
+      val each: Seq[Task[BundleRelease]] = bundles.map: bundle =>
+        bundleRelease
+          ( cross(bundle).artifactMetadata,
+            contents(bundle).map(_.artifactMetadata),
+            bundle.pomSettings )
+
+      val everything: Task[BundleRelease] =
+        bundleRelease
+          ( universal(soundness.base.artifactMetadata, cross(soundness.base).artifactMetadata),
+            bundles.filterNot(_.optIn).map(cross(_).artifactMetadata),
+            soundness.universal.pomSettings )
+
+      each :+ everything
+
+  // Writes a bundle's jar and its descriptor into `directory`, under the names a component's
+  // have.
+  private def stageBundle(directory: os.Path, bundle: BundleRelease): Seq[PathRef] =
+    val Artifact(group, id, version) = bundle.artifact
+    val dependencies: Seq[mill.javalib.publish.Dependency] =
+      bundle.components.map(mill.javalib.publish.Dependency(_, Scope.Compile))
+    val ivy: String = Ivy(bundle.artifact, dependencies)
+    val pom: String = Pom(bundle.artifact, dependencies, id, bundle.settings, Map(), "jar", None)
+    val prefix = s"META-INF/maven/$group/$id"
+    val target = directory / s"$id-$version.jar"
+    val output = new java.util.zip.ZipOutputStream(new java.io.FileOutputStream(target.toIO))
+
+    try
+      val entries = Seq(
+        "META-INF/MANIFEST.MF" -> "Manifest-Version: 1.0\r\n\r\n",
+        s"$prefix/pom.xml"     -> pom,
+        s"$prefix/ivy.xml"     -> ivy)
+
+      for (name, content) <- entries do
+        output.putNextEntry(new java.util.zip.ZipEntry(name))
+        output.write(content.getBytes("UTF-8"))
+        output.closeEntry()
+    finally output.close()
+
+    val metadata = directory / s"$id-$version.ivy.xml"
+    os.write.over(metadata, stripDescriptor(ivy))
+    Seq(PathRef(target), PathRef(metadata))
+
+  // The documentation's jar alone, without a single component staged.
+  def docs: T[Seq[PathRef]] = Task:
+    docsOutput().toSeq.flatMap: compiled =>
+      stageDocs(Task.dest, compiled.path, docsArtifact(), docsSettings())
+
+  // The same from what `out/fuel` already holds, without compiling anything: for looking at the
+  // jar while the documentation is being written.
+  def docsUnchecked(): Command[Seq[PathRef]] = Task.Command:
+    val compiled = mill.api.BuildCtx.workspaceRoot / "out" / "fuel"
+    stageDocs(Task.dest, compiled, docsArtifact(), docsSettings())
+
+  // The bundles alone, staged without building a single component: what they are named and what
+  // each stands for is decided by the module graph, so this is how to look at them.
+  def bundles: T[Seq[PathRef]] = Task:
+    Task.sequence(bundleReleases)().flatMap(stageBundle(Task.dest, _))
 
 // A tiny Scala.js app whose `fastLinkJS` actually LINKS a representative slice of
 // the JS-capable modules, so the linker reports any reachable reference to a

@@ -1,0 +1,9 @@
+orthant 2 language
+
+@ 0 4 0 052a5dab684d82bd18505c746890d4a4
++ Cataclysm sprawdza nazwy właściwości względem znanego zbioru, deskryptory reguły at, takiej jak
++ `@font-face`, względem własnego zbioru tej reguły, i parsuje selektory zgodnie z pełną współczesną
++ gramatyką, dzięki czemu błędnie zapisana właściwość lub źle sformułowany selektor jest zgłaszany,
++ a nie przekazywany przeglądarce, która po cichu go zignoruje.
+
+% 0 1 0 1e3578333b618c721dbd04a39bb3c6e3

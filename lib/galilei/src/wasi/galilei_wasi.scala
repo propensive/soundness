@@ -556,7 +556,7 @@ package filesystemBackends:
 
             val target: Foreign of "descriptor" from Wit = opened
 
-            def read(): Chain[Data] =
+            def content(): Chain[Data] =
               val streamHandle =
                 target.`read-via-stream`(U64(0L.bits)).call[Wasm.Handle of "input-stream"]()
 
@@ -585,13 +585,13 @@ package filesystemBackends:
 
             val handle =
               new Handle:
-                def reader()(using Tactic[Truncation.Error]): Chain[Data] = read()
+                def reader()(using Tactic[Truncation.Error]): Chain[Data] = content()
                 def writer(data: Chain[Data])(using Emit[Truncation.Error]): Unit = write(data)
 
                 def source()(using Tactic[Truncation.Error])
                 :   (zephyrine.Stream[Data] over zephyrine.Credit)^ =
 
-                  zephyrine.Stream(read())
+                  zephyrine.Stream(content())
 
                 def intake()(using Emit[Truncation.Error])
                 :   zephyrine.Intake[Data] over zephyrine.Credit =
